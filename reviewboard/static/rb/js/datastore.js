@@ -2017,7 +2017,7 @@ RB.apiCall = function(options) {
 
         var activityIndicator = $("#activity-indicator");
 
-        if (!options.noActivityIndicator) {
+        if (RB.ajaxOptions.enableIndicator && !options.noActivityIndicator) {
             activityIndicator
                 .removeClass("error")
                 .text((options.type || options.type == "GET")
@@ -2078,7 +2078,8 @@ RB.apiCall = function(options) {
                 options.buttons.attr("disabled", false);
             }
 
-            if (!options.noActivityIndicator &&
+            if (RB.ajaxOptions.enableIndicator &&
+                !options.noActivityIndicator &&
                 !activityIndicator.hasClass("error")) {
                 activityIndicator
                     .delay(1000)
@@ -2153,13 +2154,29 @@ RB.apiCall = function(options) {
 
     options.type = options.type || "POST";
 
-    if (options.type != "GET") {
+    /* We allow disabling the function queue for the sake of unit tests. */
+    if (RB.ajaxOptions.enableQueuing && options.type !== "GET") {
         $.funcQueue("rbapicall").add(doCall);
         $.funcQueue("rbapicall").start();
     } else {
         doCall();
     }
-}
+};
+
+RB.ajaxOptions = {
+    enableQueuing: true,
+    enableIndicator: true
+};
+
+/*
+ * Call RB.apiCall instead of $.ajax.
+ *
+ * We wrap instead of assign for now so that we can hook in/override
+ * RB.apiCall with unit tests.
+ */
+Backbone.ajax = function(options) {
+    return RB.apiCall(options);
+};
 
 
 function sendFileBlob(file, save_func, obj, options) {

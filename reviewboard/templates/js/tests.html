@@ -32,6 +32,9 @@ $(document).ready(function() {
     var jasmineEnv = jasmine.getEnv(),
         htmlReporter = new jasmine.HtmlReporter();
 
+    RB.ajaxOptions.enableQueuing = false;
+    RB.ajaxOptions.enableIndicator = false;
+
     jasmineEnv.specFilter = function(spec) {
         return htmlReporter.specFilter(spec);
     };

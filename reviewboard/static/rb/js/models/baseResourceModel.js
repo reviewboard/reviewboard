@@ -153,17 +153,18 @@ RB.BaseResource = Backbone.Model.extend({
      *
      * If we fail to fetch the resource, options.error() will be called.
      */
-    fetch: function(options) {
+    fetch: function(options, context) {
         var parentObject,
             fetchObject = _.bind(function() {
-                Backbone.Model.prototype.fetch.call(this, options);
+                Backbone.Model.prototype.fetch.call(
+                    this, this._wrapCallbacks(options, context));
             }, this);
 
         options = options || {};
 
         if (this.isNew()) {
             if (_.isFunction(options.error)) {
-                options.error(
+                options.error.call(context,
                     'fetch cannot be used on a resource without an ID');
             }
 
@@ -203,33 +204,22 @@ RB.BaseResource = Backbone.Model.extend({
      * data is saved to the server.
      *
      * If we successfully save the resource, options.success() will be
-     * called.
+     * called, and the "saved" event will be triggered.
      *
      * If we fail to save the resource, options.error() will be called.
      */
-    save: function(options) {
-        var url = _.result(this, 'url'),
-            saveObject = _.bind(function() {
-                Backbone.Model.prototype.save.call(this, {}, options);
-            }, this);
-
+    save: function(options, context) {
         options = options || {};
-
-        if (!url) {
-            if (_.isFunction(options.error)) {
-                options.error('The object must either be loaded from the ' +
-                              'server or have a parent object before it can ' +
-                              'be saved');
-            }
-
-            return;
-        }
 
         this.ready({
             ready: function() {
-                var parentObject = this.get('parentObject');
+                var parentObject = this.get('parentObject'),
+                    saveObject;
 
                 if (parentObject) {
+                    saveObject = _.bind(this._saveObject, this, options,
+                                        context);
+
                     if (parentObject.cid) {
                         parentObject.ensureCreated({
                             success: saveObject,
@@ -239,11 +229,45 @@ RB.BaseResource = Backbone.Model.extend({
                         parentObject.ensureCreated(saveObject);
                     }
                 } else {
-                    saveObject();
+                    this._saveObject(options, context);
                 }
             },
             error: options.error
         }, this);
+    },
+
+    /*
+     * Handles the actual saving of the object's state.
+     *
+     * This is called internally by save() once we've handled all the
+     * readiness and creation checks of this object and its parent.
+     */
+    _saveObject: function(options, context) {
+        var url = _.result(this, 'url');
+
+        if (!url) {
+            if (_.isFunction(options.error)) {
+                options.error.call(context,
+                    'The object must either be loaded from the server or ' +
+                    'have a parent object before it can be saved');
+            }
+
+            return;
+        }
+
+        Backbone.Model.prototype.save.call(this, {}, _.defaults({
+            success: _.bind(function() {
+                if (_.isFunction(options.success)) {
+                    options.success.apply(context, arguments);
+                }
+
+                this.trigger('saved');
+            }, this),
+
+            error: _.isFunction(options.error)
+                   ? _.bind(options.error, context)
+                   : undefined
+        }, options));
     },
 
     /*
@@ -257,28 +281,29 @@ RB.BaseResource = Backbone.Model.extend({
      *
      * If we fail to delete the resource, options.error() will be called.
      */
-    destroy: function(options) {
+    destroy: function(options, context) {
         var url = _.result(this, 'url');
 
         options = options || {};
 
         if (!url) {
             if (_.isFunction(options.error)) {
-                options.error('The object must either be loaded from the ' +
-                              'server or have a parent object before it can ' +
-                              'be deleted');
+                options.error.call(context,
+                    'The object must either be loaded from the server or ' +
+                    'have a parent object before it can be deleted');
             }
 
             return;
         }
 
-        options = options || {};
-
         this.ready({
             ready: function() {
-                Backbone.Model.prototype.destroy.call(this, options);
+                Backbone.Model.prototype.destroy.call(
+                    this, this._wrapCallbacks(options, context));
             },
-            error: options.error
+            error: _.isFunction(options.error)
+                   ? _.bind(options.error, context)
+                   : undefined
         }, this);
     },
 
@@ -291,7 +316,12 @@ RB.BaseResource = Backbone.Model.extend({
      * BaseResource.protoype.parse as well.
      */
     parse: function(rsp) {
-        var rspData = rsp[this.rspNamespace];
+        var rspData;
+
+        console.assert(this.rspNamespace,
+                       'rspNamespace must be defined on the resource model');
+
+        rspData = rsp[this.rspNamespace];
 
         return {
             id: rspData.id,
@@ -309,5 +339,61 @@ RB.BaseResource = Backbone.Model.extend({
      */
     toJSON: function() {
         return {};
+    },
+
+    /*
+     * Handles all AJAX communication for the model and its subclasses.
+     *
+     * Backbone.js will internally call the model's sync function to
+     * communicate with the server, which usually uses Backbone.sync.
+     *
+     * We wrap this to convert the data to encoded form data (instead
+     * of Backbone's default JSON payload).
+     *
+     * We also parse the error response from Review Board so we can provide
+     * a more meaningful error callback.
+     */
+    sync: function(method, model, options) {
+        options = options || {};
+
+        return Backbone.sync.call(this, method, model, _.defaults({
+            /* Use form data instead of a JSON payload. */
+            contentType: 'application/x-www-form-urlencoded',
+            data: options.attrs || model.toJSON(options),
+            processData: true,
+
+            error: function(xhr, textStatus, errorThrown) {
+                var rsp = null,
+                    text;
+
+                try {
+                    rsp = $.parseJSON(xhr.responseText);
+                    text = rsp.err.msg;
+                } catch (e) {
+                    text = 'HTTP ' + xhr.status + ' ' + xhr.statusText;
+                }
+
+                options.error(model, text, xhr.statusText);
+            }
+        }, options));
+    },
+
+    /*
+     * Wraps success and error callbacks with a bound context.
+     *
+     * Backbone.js's various ajax-related functions don't take a context
+     * with their callbacks, so BaseResource needs to do that itself when
+     * calling those functions. This function simplifies those call sites
+     * by handling the wrapping.
+     */
+    _wrapCallbacks: function(options, context) {
+        return _.defaults({
+            success: _.isFunction(options.success)
+                     ? _.bind(options.success, context)
+                     : undefined,
+            error: _.isFunction(options.error)
+                   ? _.bind(options.error, context)
+                   : undefined
+        }, options);
     }
 });
