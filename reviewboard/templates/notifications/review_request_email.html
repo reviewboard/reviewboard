@@ -49,6 +49,26 @@
 </table>
 {% endif %}{% endif %}
 
+{% if review_request.bugs_closed != "" %}
+<div style="margin-top: 1.5em;">
+ <b style="color: #575012; font-size: 10pt; margin-top: 1.5em;">Bugs: </b>
+{%  if review_request.repository.bug_tracker == "" %}
+{{review_request.get_bug_list|join:", "}}
+{%  else %}
+{%   for bug in review_request.get_bug_list %}
+ <a href="{{bug|bug_url:review_request}}">{{bug}}</a>{% if not forloop.last %}, {% endif %}
+{%   endfor %}
+{%  endif %}
+</div>
+{% endif %}
+
+{% if review_request.repository %}
+<div style="margin-top: 1.5em;">
+ <b style="color: #575012; font-size: 10pt;">Repository: </b>
+{{review_request.repository.name}}
+</div>
+{% endif %}
+
 <h1 style="color: #575012; font-size: 10pt; margin-top: 1.5em;">Description {% if changes %}{% if changes.description %} (updated){% endif %}{% endif %}</h1>
  <table width="100%" bgcolor="#ffffff" cellspacing="0" cellpadding="10" style="border: 1px solid #b8b5a0">
  <tr>
@@ -67,19 +87,6 @@
   </td>
  </tr>
 </table>
-{% endif %}
-
-{% if review_request.bugs_closed != "" %}
-<div style="margin-top: 1.5em;">
- <b style="color: #575012; font-size: 10pt; margin-top: 1.5em;">Bugs: </b>
-{%  if review_request.repository.bug_tracker == "" %}
-{{review_request.get_bug_list|join:", "}}
-{%  else %}
-{%   for bug in review_request.get_bug_list %}
- <a href="{{bug|bug_url:review_request}}">{{bug}}</a>{% if not forloop.last %}, {% endif %}
-{%   endfor %}
-{%  endif %}
-</div>
 {% endif %}
 
 <h1 style="color: #575012; font-size: 10pt; margin-top: 1.5em;">Diffs</b> {% if changes and changes.diff %}(updated){% endif %}</h1>
