@@ -130,7 +130,6 @@ describe('models/BaseComment', function() {
             });
         });
 
-
         describe('text field', function() {
             it('With value', function() {
                 var data;
@@ -193,7 +192,7 @@ describe('models/BaseComment', function() {
             it('Unset', function() {
                 expect(model.validate({
                     parentObject: null
-                })).toBe(strings.UNSET_PARENT_OBJECT);
+                })).toBe(RB.BaseResource.strings.UNSET_PARENT_OBJECT);
             });
         });
     });

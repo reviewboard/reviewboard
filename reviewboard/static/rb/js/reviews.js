@@ -1,3 +1,9 @@
+var CommentReplyClasses = {
+    diff_comments: RB.DiffCommentReply,
+    screenshot_comments: RB.ScreenshotCommentReply,
+    file_attachment_comments: RB.FileAttachmentCommentReply
+};
+
 this.gReviewRequest = new RB.ReviewRequest(gReviewRequestId,
                                            gReviewRequestSitePrefix,
                                            gReviewRequestPath);
@@ -438,6 +444,8 @@ $.fn.commentSection = function(review_id, context_id, context_type) {
                         gEditCount++;
                     },
                     "complete": function(e, value) {
+                        var replyClass;
+
                         gEditCount--;
 
                         self.html(linkifyText(self.text()));
@@ -446,24 +454,22 @@ $.fn.commentSection = function(review_id, context_id, context_type) {
                             context_type == "body_bottom") {
                             review_reply[context_type] = value;
                             obj = review_reply;
-                        } else if (context_type === "diff_comments") {
-                            obj = new RB.DiffCommentReply(review_reply, null,
-                                                        context_id);
-                            obj.setText(value);
-                        } else if (context_type === "screenshot_comments") {
-                            obj = new RB.ScreenshotCommentReply(review_reply, null,
-                                                                context_id);
-                            obj.setText(value);
-                        } else if (context_type === "file_attachment_comments") {
-                            obj = new RB.FileAttachmentCommentReply(
-                                review_reply, null, context_id);
-                            obj.setText(value);
                         } else {
-                            /* Shouldn't be reached. */
-                            console.log("createCommentEditor received unexpected " +
-                                        "context type '%s'",
-                                        context_type);
-                            return;
+                            replyClass = CommentReplyClasses[context_type];
+
+                            if (!replyClass) {
+                                /* Shouldn't be reached. */
+                                console.log("createCommentEditor received " +
+                                            "unexpected context type '%s'",
+                                            context_type);
+                                return;
+                            }
+
+                            obj = new replyClass({
+                                parentObject: review_reply,
+                                replyToID: context_id,
+                                text: value
+                            });
                         }
 
                         obj.save({

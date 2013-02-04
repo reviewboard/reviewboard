@@ -396,4 +396,8 @@ RB.BaseResource = Backbone.Model.extend({
                    : undefined
         }, options);
     }
+}, {
+    strings: {
+        UNSET_PARENT_OBJECT: 'parentObject must be set'
+    }
 });

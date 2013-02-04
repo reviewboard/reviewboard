@@ -92,7 +92,7 @@ RB.BaseComment = RB.BaseResource.extend({
      */
     validate: function(attrs, options) {
         if (_.has(attrs, 'parentObject') && !attrs.parentObject) {
-            return RB.BaseComment.strings.UNSET_PARENT_OBJECT;
+            return RB.BaseResource.strings.UNSET_PARENT_OBJECT;
         }
 
         if (attrs.issueStatus &&
@@ -108,7 +108,6 @@ RB.BaseComment = RB.BaseResource.extend({
     STATE_RESOLVED: 'resolved',
 
     strings: {
-        UNSET_PARENT_OBJECT: 'parentObject must be set',
         INVALID_ISSUE_STATUS: 'issueStatus must be one of STATE_DROPPED, ' +
                               'STATE_OPEN, or STATE_RESOLVED'
     }
