@@ -191,10 +191,9 @@ class LocalSiteProfile(models.Model):
                 p.user, p.user, None, local_site=p.local_site).count())
     starred_public_request_count = CounterField(
         _('starred public review request count'),
-        initializer=lambda p: \
-            p.pk and
-            (p.profile.starred_review_requests.public(
-                None, local_site=p.local_site).count() or 0))
+        initializer=lambda p: (p.pk and
+                               p.profile.starred_review_requests.public(
+                               None, local_site=p.local_site).count()) or 0)
 
     class Meta:
         unique_together = (('user', 'local_site'),

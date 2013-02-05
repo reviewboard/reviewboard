@@ -1204,9 +1204,9 @@ class CounterTests(TestCase):
         self.site_profile = \
             LocalSiteProfile.objects.create(user=self.user,
                                             profile=self.profile)
-        self.assertEqual(self.site_profile.total_outgoing_request_count, None)
-        self.assertEqual(self.site_profile.pending_outgoing_request_count, None)
-        self.assertEqual(self.site_profile.starred_public_request_count, None)
+        self.assertEqual(self.site_profile.total_outgoing_request_count, 1)
+        self.assertEqual(self.site_profile.pending_outgoing_request_count, 1)
+        self.assertEqual(self.site_profile.starred_public_request_count, 0)
 
         self.review_request.publish(self.user)
 
