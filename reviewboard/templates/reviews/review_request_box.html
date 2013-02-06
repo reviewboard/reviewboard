@@ -191,7 +191,8 @@
      </div>
      <div class="file-thumbnail-container">
       {% if file.review_ui %}
-      <a href="{% url file_attachment review_request.pk file.pk %}">{{file.thumbnail}}</a>
+      <a href="{% url file_attachment review_request.pk file.pk %}" class="file-thumbnail-overlay"> </a>
+      {{file.thumbnail}}
       {% else %}
       {{file.thumbnail}}
       {% endif %}
