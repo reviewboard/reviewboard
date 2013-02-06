@@ -589,6 +589,10 @@ class ReviewRequest(BaseReviewRequestDetails):
             to one or more groups listed as requested reviewers (either by
             being a member of an invite-only group, or the group being public).
         """
+        # Users always have access to their own review requests.
+        if self.submitter == user:
+            return True
+
         if not self.public and not self.is_mutable_by(user):
             return False
 
