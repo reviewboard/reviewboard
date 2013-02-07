@@ -139,6 +139,12 @@ class RepositoryForm(forms.ModelForm):
                     "bug number."),
         validators=[validate_bug_tracker])
 
+    # Perforce-specific fields
+    use_ticket_auth = forms.BooleanField(
+        label=_("Use ticket-based authentication"),
+        initial=False,
+        required=False)
+
     def __init__(self, *args, **kwargs):
         self.local_site_name = kwargs.pop('local_site_name', None)
 
@@ -281,6 +287,7 @@ class RepositoryForm(forms.ModelForm):
                 'disabled'
 
         if self.instance:
+            self._populate_repository_info_fields()
             self._populate_hosting_service_fields()
             self._populate_bug_tracker_fields()
 
@@ -317,6 +324,15 @@ class RepositoryForm(forms.ModelForm):
             'type': repo_type_id,
             'label': unicode(repo_type_label),
         })
+
+    def _populate_repository_info_fields(self):
+        """Populates auxiliary repository info fields in the form.
+
+        Most of the fields under "Repository Info" are core model fields. This
+        method populates things which are stored into extra_data.
+        """
+        self.fields['use_ticket_auth'].initial = \
+            self.instance.extra_data.get('use_ticket_auth', False)
 
     def _populate_hosting_service_fields(self):
         """Populates all the main hosting service fields in the form.
@@ -899,6 +915,10 @@ class RepositoryForm(forms.ModelForm):
 
         if self.cert:
             repository.extra_data['cert'] = self.cert
+
+        if repository.get_scmtool().supports_ticket_auth:
+            repository.extra_data['use_ticket_auth'] = \
+                self.cleaned_data['use_ticket_auth']
 
         hosting_type = self.cleaned_data['hosting_type']
 

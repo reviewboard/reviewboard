@@ -4,7 +4,7 @@ var HOSTING_SERVICES = {{form.hosting_service_info|json_dumps:2}};
 
 var TOOLS_INFO = {
     "none": {
-        fields: [ "raw_file_url", "username", "password" ],
+        fields: [ "raw_file_url", "username", "password", "use_ticket_auth" ],
     },
 
 {% for tool in form.tool.field.queryset %}
@@ -13,6 +13,9 @@ var TOOLS_INFO = {
 {%  if tool.supports_raw_file_urls %}
            "raw_file_url",
 {%  endif %}
+{%  if tool.supports_ticket_auth %}
+           "use_ticket_auth",
+{% endif %}
            "username", "password"
         {% endspaceless %} ],
         help_text: {{tool.field_help_text|json_dumps:2}}
