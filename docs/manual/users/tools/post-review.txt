@@ -49,6 +49,13 @@ for 64-bit.
 .. _`Python 2.7 Installer`: http://www.python.org/download/releases/2.7.3/
 
 
+MacOS X
+~~~~~~~
+
+Python 2.x should come with any modern version of MacOS X. You will need
+Python 2.4 or higher.
+
+
 Installing Setuptools
 ---------------------
 
@@ -106,11 +113,33 @@ directories to your system path.
 .. _`Python Setuptools Installer`: http://pypi.python.org/pypi/setuptools#windows
 
 
+MacOS X
+~~~~~~~
+
+This may already be installed on your system. You can try running
+:command:`easy_install` from the command line to check.
+
+If it's not installed already, `download
+<http://pypi.python.org/pypi/setuptools#files>`_ the :file:`setuptools-*.egg`
+file that matches your version of Python. You can then install it by running::
+
+    $ sudo sh setuptools-0.6c11-py2.7.egg
+
+Of course, change the filename to match that of the one you downloaded.
+
+
 Installing RBTools
 ------------------
 
-Once Python and Setuptools are installed, you can install RBTools just by
-typing::
+Once Python and Setuptools are installed, you can install RBTools using
+:command:`easy_install`.
+
+For Linux or MacOS X, type::
+
+    $ sudo easy_install -U RBTools
+
+
+And for Windows::
 
     $ easy_install -U RBTools
 
