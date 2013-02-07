@@ -1207,9 +1207,9 @@ class CounterTests(TestCase):
         self.site_profile = \
             LocalSiteProfile.objects.create(user=self.user,
                                             profile=self.profile)
-        self.assertEqual(self.site_profile.total_outgoing_request_count, None)
-        self.assertEqual(self.site_profile.pending_outgoing_request_count, None)
-        self.assertEqual(self.site_profile.starred_public_request_count, None)
+        self.assertEqual(self.site_profile.total_outgoing_request_count, 1)
+        self.assertEqual(self.site_profile.pending_outgoing_request_count, 1)
+        self.assertEqual(self.site_profile.starred_public_request_count, 0)
 
         self.review_request.publish(self.user)
 
@@ -1775,6 +1775,18 @@ class PolicyTests(TestCase):
             group in Group.objects.accessible(self.user, visible_only=False))
         self.assertTrue(
             group in Group.objects.accessible(self.user, visible_only=True))
+
+    def test_group_invite_only_review_request_ownership(self):
+        """Testing visibility of review requests assigned to invite-only groups by a non-member"""
+        group = Group.objects.create(name='test-group', visible=False,
+                                     invite_only=True)
+
+        review_request = self._get_review_request()
+        review_request.submitter = self.user
+        review_request.target_groups.add(group)
+        review_request.save()
+
+        self.assertTrue(review_request.is_accessible_by(self.user))
 
     def test_repository_public(self):
         """Testing access to a public repository"""

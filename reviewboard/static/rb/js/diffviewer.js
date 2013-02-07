@@ -1405,7 +1405,7 @@ function toggleWhitespaceChunks()
     /* Dim the anchor to each chunk in the file list */
     chunks.each(function() {
         var target = this.id.split("chunk")[1];
-        $("ol.index a[href=#" + target + "]").toggleClass("dimmed");
+        $("ol.index a[href='#" + target + "']").toggleClass("dimmed");
     });
 
     /* Remove chunk identifiers */

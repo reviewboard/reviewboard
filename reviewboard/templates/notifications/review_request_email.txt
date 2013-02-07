@@ -33,16 +33,20 @@ Changes
 {{review_request.summary}}
 {% endif %}{% endif %}
 
+{% ifnotequal review_request.bugs_closed "" %}
+Bugs: {{ review_request.get_bug_list|humanize_list }}{% ifnotequal review_request.repository.bug_tracker "" %}{% for bug in review_request.get_bug_list %}
+    {{ bug|bug_url:review_request }}{% endfor %}
+{% endifnotequal %}
+{% endifnotequal %}
+
+{% if review_request.repository %}
+Repository: {{review_request.repository.name}}
+{% endif %}
+
 Description{% if changes %}{% if changes.description %} (updated){% endif %}{% endif %}
 -------
 
 {{review_request.description}}
-
-{% ifnotequal review_request.bugs_closed "" %}
-This addresses bug{{ review_request.get_bug_list|length|pluralize }} {{ review_request.get_bug_list|humanize_list }}.{% ifnotequal review_request.repository.bug_tracker "" %}{% for bug in review_request.get_bug_list %}
-    {{ bug|bug_url:review_request }}{% endfor %}
-{% endifnotequal %}
-{% endifnotequal %}
 
 
 Diffs{% if changes and changes.diff %} (updated){% endif %}

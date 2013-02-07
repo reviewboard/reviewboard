@@ -39,6 +39,7 @@ $.widget("ui.rbautocomplete", {
             return value.replace(new RegExp("(?![^&;]+;)(?!<[^<>]*)(" + term.replace(/([\^\$\(\)\[\]\{\}\*\.\+\?\|\\])/gi, "\\$1") + ")(?![^<>]*>)(?![^&;]+;)", "gi"), "<strong>$1</strong>");
         },
         scroll: true,
+        clickToURL: false,
         scrollHeight: 180
     },
 
@@ -652,6 +653,17 @@ $.ui.rbautocomplete.select = function (options, input, select, config) {
             : available;
     }
 
+    function makeItem(data) {
+        if (options.clickToURL === false) {
+            return $("<li/>");
+        } else {
+            // For Quick Search
+            return $("<li/>").click(function() {
+                window.open(data["url"]);
+            });
+        }
+    }
+
     function fillList() {
         list.empty();
         var max = limitNumberOfItems(data.length);
@@ -661,7 +673,10 @@ $.ui.rbautocomplete.select = function (options, input, select, config) {
             var formatted = options.formatItem(data[i].data, i+1, max, data[i].value, term);
             if ( formatted === false )
                 continue;
-            var li = $("<li/>").html( options.highlight(formatted, term) ).addClass(i%2 == 0 ? "ui-autocomplete-even" : "ui-autocomplete-odd").appendTo(list)[0];
+            var li = makeItem(data[i].data)
+                .html(options.highlight(formatted, term))
+                .addClass(i%2 == 0 ? "ui-autocomplete-even" : "ui-autocomplete-odd")
+                .appendTo(list)[0];
             $.data(li, "ui-autocomplete-data", data[i]);
         }
         listItems = list.find("li");
