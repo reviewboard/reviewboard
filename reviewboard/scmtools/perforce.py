@@ -84,12 +84,14 @@ class STunnelProxy(object):
 
 
 class PerforceClient(object):
-    def __init__(self, p4port, username, password, encoding, use_stunnel=False):
+    def __init__(self, p4port, username, password, encoding, use_stunnel=False,
+                 use_ticket_auth=False):
         self.p4port = p4port
         self.username = username
         self.password = password
         self.encoding = encoding
         self.use_stunnel = use_stunnel
+        self.use_ticket_auth = use_ticket_auth
         self.proxy = None
 
         import P4
@@ -120,6 +122,9 @@ class PerforceClient(object):
         else:
             self.p4.port = self.p4port
         self.p4.connect()
+
+        if self.use_ticket_auth:
+            self.p4.run_login()
 
     def _disconnect(self):
         """
@@ -208,34 +213,9 @@ class PerforceClient(object):
         else:
             depot_path = '%s#%s' % (path, revision)
 
-        args = ['p4', '-p', self.p4.port]
-        if self.p4.user:
-            args.extend(['-u', self.p4.user])
-        if self.p4.password:
-            args.extend(['-P', self.p4.password])
-        if self.p4.charset:
-            args.extend(['-C', self.p4.charset])
-        args.extend(['print', '-q', depot_path])
-
-        p = subprocess.Popen(args, stdout=subprocess.PIPE,
-                             stderr=subprocess.PIPE)
-
-        result, errdata = p.communicate()
-        failure = p.poll()
-
-        if failure:
-            error = errdata.splitlines()
-            # The command-line output is the same as the contents of a
-            # P4Exception except they're prefixed with a line that says
-            # "Perforce client error:", and the lines of the error are indented
-            # with tabs.
-            if error[0].startswith('Perforce client error:'):
-                error = error[1:]
-            text = '\n'.join(line.lstrip('\t') for line in error)
-
-            self._convert_p4exception_to_scmexception(Exception(text))
-        else:
-            return result
+        res = self.p4.run_print('-q', depot_path)
+        if res:
+            return res[-1]
 
     def get_file(self, path, revision):
         """
@@ -259,6 +239,7 @@ class PerforceTool(SCMTool):
     name = "Perforce"
     uses_atomic_revisions = True
     supports_authentication = True
+    supports_ticket_auth = True
     field_help_text = {
         'path': 'The Perforce port identifier (P4PORT) for the repository. If '
                 'your server is set up to use SSL (2012.1+), prefix the port '
@@ -276,16 +257,19 @@ class PerforceTool(SCMTool):
             str(repository.mirror_path or repository.path),
             str(repository.username),
             str(repository.password),
-            str(repository.encoding))
+            str(repository.encoding),
+            repository.extra_data.get('use_ticket_auth', False))
 
     @staticmethod
-    def _create_client(path, username, password, encoding=''):
+    def _create_client(path, username, password, encoding='',
+                       use_ticket_auth=False):
         if path.startswith('stunnel:'):
             path = path[8:]
             use_stunnel = True
         else:
             use_stunnel = False
-        return PerforceClient(path, username, password, encoding, use_stunnel)
+        return PerforceClient(path, username, password, encoding, use_stunnel,
+                              use_ticket_auth)
 
     @staticmethod
     def _convert_p4exception_to_scmexception(e):
@@ -313,6 +297,9 @@ class PerforceTool(SCMTool):
         super(PerforceTool, cls).check_repository(path, username, password,
                                                   local_site_name)
 
+        # 'p4 info' will succeed even if the server requires ticket auth and we
+        # don't run 'p4 login' first. We therefore don't go through all the
+        # trouble of handling tickets here.
         client = cls._create_client(str(path), str(username), str(password))
         client.get_info()
 

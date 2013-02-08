@@ -31,6 +31,7 @@ class RepositoryAdmin(admin.ModelAdmin):
                 'raw_file_url',
                 'username',
                 'password',
+                'use_ticket_auth',
             ),
             'classes': ('wide',),
         }),
