@@ -24,7 +24,9 @@ sys.path.append(os.path.abspath('_ext'))
 
 
 # Set this up to parse Django-driven code.
-sys.path.insert(0, os.path.join(__file__, "..", ".."))
+sys.path.insert(0, os.path.abspath(os.path.join(__file__, '..', '..', '..')))
+sys.path.insert(0, os.path.abspath(os.path.join(__file__, '..', '..', '..',
+                                                '..', 'djblets')))
 sys.path.insert(0, os.path.dirname(__file__))
 
 import reviewboard
