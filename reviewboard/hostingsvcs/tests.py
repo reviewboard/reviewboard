@@ -161,7 +161,7 @@ class FedoraHosted(ServiceTests):
                         'git://git.fedorahosted.org/git/myrepo.git')
         self.assertEqual(fields['raw_file_url'],
                          'http://git.fedorahosted.org/cgit/myrepo.git/'
-                         'tree/<filename>?id2=<revision>')
+                         'plain/<filename>?id2=<revision>')
 
     def test_repo_field_values_mercurial(self):
         """Testing the Fedora Hosted repository field values for Mercurial"""
