@@ -46,9 +46,10 @@ from reviewboard.hostingsvcs.errors import AuthorizationError
 from reviewboard.hostingsvcs.models import HostingServiceAccount
 from reviewboard.hostingsvcs.service import get_hosting_service
 from reviewboard.reviews.errors import PermissionError
-from reviewboard.reviews.forms import UploadDiffForm, UploadScreenshotForm
-from reviewboard.reviews.models import BaseComment, Comment, DiffSet, \
-                                       FileDiff, Group, Repository, \
+from reviewboard.reviews.forms import DefaultReviewerForm, UploadDiffForm, \
+                                      UploadScreenshotForm
+from reviewboard.reviews.models import BaseComment, Comment, DefaultReviewer, \
+                                       DiffSet, FileDiff, Group, Repository, \
                                        ReviewRequest, ReviewRequestDraft, \
                                        Review, ScreenshotComment, Screenshot, \
                                        FileAttachmentComment
@@ -406,6 +407,350 @@ class BaseDiffCommentResource(BaseCommentResource):
     def get(self, *args, **kwargs):
         """Returns information on the comment."""
         pass
+
+
+class DefaultReviewerResource(WebAPIResource):
+    """Provides information on default reviewers for review requests.
+
+    Review Board will apply any default reviewers that match the repository
+    and any file path in an uploaded diff for new and updated review requests.
+    A default reviewer entry can list multiple users and groups.
+
+    This is useful when different groups own different parts of a codebase.
+    Adding DefaultReviewer entries ensures that the right people will always
+    see the review request and discussions.
+
+    Default reviewers take a regular expression for the file path matching,
+    making it flexible.
+
+    As a tip, specifying ``.*`` for the regular expression would have this
+    default reviewer applied to every review request on the matched
+    repositories.
+    """
+    name = 'default_reviewer'
+    model = DefaultReviewer
+    fields = {
+        'id': {
+            'type': int,
+            'description': 'The numeric ID of the default reviewer.',
+        },
+        'name': {
+            'type': str,
+            'description': 'The descriptive name of the entry.',
+        },
+        'file_regex': {
+            'type': str,
+            'description': 'The regular expression that is used to match '
+                           'files uploaded in a diff.',
+        },
+        'repositories': {
+            'type': str,
+            'description': 'A comma-separated list of repository IDs that '
+                           'this default reviewer will match against.',
+        },
+        'users': {
+            'type': str,
+            'description': 'A comma-separated list of usernames that '
+                           'this default reviewer applies to matched review '
+                           'requests.',
+        },
+        'groups': {
+            'type': str,
+            'description': 'A comma-separated list of group names that '
+                           'this default reviewer applies to matched review '
+                           'requests.',
+        },
+    }
+    uri_object_key = 'default_reviewer_id'
+    autogenerate_etags = True
+
+    allowed_methods = ('GET', 'POST', 'PUT', 'DELETE')
+
+    def serialize_repositories_field(self, default_reviewer, **kwargs):
+        return default_reviewer.repository.all()
+
+    def serialize_users_field(self, default_reviewer, **kwargs):
+        return default_reviewer.people.all()
+
+    @webapi_check_login_required
+    def get_queryset(self, request, is_list=False, local_site_name=None,
+                     *args, **kwargs):
+        """Returns a queryset for DefaultReviewer models.
+
+        By default, this returns all default reviewers.
+
+        If the queryset is being used for a list of default reviewer
+        resources, then it can be further filtered by one or more of the
+        arguments listed in get_list.
+        """
+        local_site = _get_local_site(local_site_name)
+        queryset = self.model.objects.filter(local_site=local_site)
+
+        if is_list:
+            if 'repositories' in request.GET:
+                for repo_id in request.GET.get('repositories').split(','):
+                    try:
+                        queryset = queryset.filter(repository=repo_id)
+                    except ValueError:
+                        pass
+
+            if 'users' in request.GET:
+                for username in request.GET.get('users').split(','):
+                    queryset = queryset.filter(people__username=username)
+
+            if 'groups' in request.GET:
+                for name in request.GET.get('groups').split(','):
+                    queryset = queryset.filter(groups__name=name)
+
+        return queryset
+
+    def has_access_permissions(self, request, default_reviewer,
+                               *args, **kwargs):
+        return default_reviewer.is_accessible_by(request.user)
+
+    def has_modify_permissions(self, request, default_reviewer,
+                               *args, **kwargs):
+        return default_reviewer.is_mutable_by(request.user)
+
+    def has_delete_permissions(self, request, default_reviewer,
+                               *args, **kwargs):
+        return default_reviewer.is_mutable_by(request.user)
+
+    @webapi_check_local_site
+    @augment_method_from(WebAPIResource)
+    def get_list(self, request, *args, **kwargs):
+        """Retrieves the list of default reviewers on the server.
+
+        By default, this lists all default reviewers. This list can be
+        further filtered down by one or more of the following arguments
+        in the URL:
+
+          * ``repositories``
+            - A comma-separated list of IDs of repositories that the default
+              reviewer matches against. Only default reviewers that match
+              every specified repository will be returned.
+
+          * ``users``
+            - A comma-separated list of usernames that the default reviewer
+              applies. Only default reviewers that apply each of these users
+              will be returned.
+
+          * ``groups``
+            - A comma-separated list of group names that the default reviewer
+              applies. Only default reviewers that apply each of these groups
+              will be returned.
+        """
+        pass
+
+    @webapi_check_local_site
+    @augment_method_from(WebAPIResource)
+    def get(self, *args, **kwargs):
+        """Retrieves information on a particular default reviewer."""
+        pass
+
+    @webapi_check_local_site
+    @webapi_login_required
+    @webapi_response_errors(INVALID_FORM_DATA, NOT_LOGGED_IN,
+                            PERMISSION_DENIED)
+    @webapi_request_fields(
+        required={
+            'name': {
+                'type': str,
+                'description': 'The name of the default reviewer entry.',
+            },
+            'file_regex': {
+                'type': str,
+                'description': 'The regular expression used to match file '
+                               'paths in newly uploaded diffs.',
+            },
+        },
+        optional={
+            'repositories': {
+                'type': str,
+                'description': 'A comma-separated list of repository IDs.',
+            },
+            'groups': {
+                'type': str,
+                'description': 'A comma-separated list of group names.',
+            },
+            'users': {
+                'type': str,
+                'description': 'A comma-separated list of usernames.',
+            }
+        },
+    )
+    def create(self, request, local_site_name=None, *args, **kwargs):
+        """Creates a new default reviewer entry.
+
+        Note that by default, a default reviewer will apply to review
+        requests on all repositories, unless one or more repositories are
+        provided in the default reviewer's list.
+        """
+        local_site = _get_local_site(local_site_name)
+
+        if not self.model.objects.can_create(request.user, local_site):
+            return _no_access_error(request.user)
+
+        code, data = self._create_or_update(local_site, **kwargs)
+
+        if code == 200:
+            return 201, data
+        else:
+            return code, data
+
+    @webapi_check_local_site
+    @webapi_login_required
+    @webapi_response_errors(INVALID_FORM_DATA, NOT_LOGGED_IN,
+                            PERMISSION_DENIED)
+    @webapi_request_fields(
+        optional={
+            'name': {
+                'type': str,
+                'description': 'The name of the default reviewer entry.',
+            },
+            'file_regex': {
+                'type': str,
+                'description': 'The regular expression used to match file '
+                               'paths in newly uploaded diffs.',
+            },
+            'repositories': {
+                'type': str,
+                'description': 'A comma-separated list of repository IDs.',
+            },
+            'groups': {
+                'type': str,
+                'description': 'A comma-separated list of group names.',
+            },
+            'users': {
+                'type': str,
+                'description': 'A comma-separated list of usernames.',
+            }
+        },
+    )
+    def update(self, request, local_site_name=None, *args, **kwargs):
+        """Updates an existing default reviewer entry.
+
+        If the list of repositories is updated with a blank entry, then
+        the default reviewer will apply to review requests on all repositories.
+        """
+        try:
+            default_reviewer = self.get_object(
+                request, local_site_name=local_site_name, *args, **kwargs)
+        except ObjectDoesNotExist:
+            return DOES_NOT_EXIST
+
+        if not self.has_modify_permissions(request, default_reviewer):
+            return _no_access_error(request.user)
+
+        local_site = _get_local_site(local_site_name)
+
+        return self._create_or_update(local_site, default_reviewer, **kwargs)
+
+    def _create_or_update(self, local_site, default_reviewer=None, **kwargs):
+        invalid_fields = {}
+        form_data = {}
+
+        if 'groups' in kwargs:
+            group_names = kwargs['groups'].split(',')
+            group_ids = [
+                group['pk']
+                for group in Group.objects.filter(
+                    name__in=group_names, local_site=local_site).values('pk')
+            ]
+
+            if len(group_ids) != len(group_names):
+                invalid_fields['groups'] = [
+                    'One or more groups were not found'
+                ]
+
+            form_data['groups'] = group_ids
+
+        if 'repositories' in kwargs:
+            repo_ids = []
+
+            try:
+                repo_ids = [
+                    int(repo_id)
+                    for repo_id in kwargs['repositories'].split(',')
+                ]
+            except ValueError:
+                invalid_fields['repositories'] = [
+                    'One or more repository IDs were not in a valid format.'
+                ]
+
+            if repo_ids:
+                found_count = Repository.objects.filter(
+                    pk__in=repo_ids, local_site=local_site).count()
+
+                if len(repo_ids) != found_count:
+                    invalid_fields['repositories'] = [
+                        'One or more repositories were not found'
+                    ]
+
+            form_data['repository'] = repo_ids
+
+        if 'users' in kwargs:
+            usernames = kwargs['users'].split(',')
+            user_ids = [
+                user['pk']
+                for user in User.objects.filter(username__in=usernames)
+                    .values('pk')
+            ]
+
+            if len(user_ids) != len(usernames):
+                invalid_fields['users'] = [
+                    'One or more users were not found'
+                ]
+
+            form_data['people'] = user_ids
+
+        if invalid_fields:
+            return INVALID_FORM_DATA, {
+                'fields': invalid_fields
+            }
+
+        for field in ('name', 'file_regex'):
+            if field in kwargs:
+                form_data[field] = kwargs[field]
+
+        if local_site:
+            form_data['local_site'] = local_site.pk
+
+        form = DefaultReviewerForm(form_data, instance=default_reviewer)
+
+        if not form.is_valid():
+            # The form uses "people" and "repository", but we expose these
+            # as "users" and "repositories", so transmogrify the errors a bit.
+            field_errors = _get_form_errors(form)
+
+            if 'people' in field_errors:
+                field_errors['users'] = field_errors.pop('people')
+
+            if 'repository' in field_errors:
+                field_errors['repositories'] = field_errors.pop('repository')
+
+            return INVALID_FORM_DATA, {
+                'fields': field_errors,
+            }
+
+        default_reviewer = form.save()
+
+        return 200, {
+            self.item_result_key: default_reviewer,
+        }
+
+    @augment_method_from(WebAPIResource)
+    def delete(self, *args, **kwargs):
+        """Deletes the default reviewer entry.
+
+        This will not remove any reviewers from any review requests.
+        It will only prevent these default reviewer rules from being
+        applied to any new review requests or updates.
+        """
+        pass
+
+
+default_reviewer_resource = DefaultReviewerResource()
 
 
 class FileDiffCommentResource(BaseDiffCommentResource):
@@ -6739,6 +7084,7 @@ class RootResource(DjbletsRootResource):
 
     def __init__(self, *args, **kwargs):
         super(RootResource, self).__init__([
+            default_reviewer_resource,
             hosting_service_account_resource,
             repository_resource,
             review_group_resource,
@@ -6768,6 +7114,7 @@ register_resource_for_model(
     lambda obj: obj.review.get().is_reply() and
                 review_reply_diff_comment_resource or
                 review_diff_comment_resource)
+register_resource_for_model(DefaultReviewer, default_reviewer_resource)
 register_resource_for_model(DiffSet, diffset_resource)
 register_resource_for_model(FileDiff, filediff_resource)
 register_resource_for_model(Group, review_group_resource)

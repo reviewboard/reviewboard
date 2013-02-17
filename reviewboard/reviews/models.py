@@ -171,6 +171,25 @@ class DefaultReviewer(models.Model):
 
     objects = DefaultReviewerManager()
 
+    def is_accessible_by(self, user):
+        "Returns whether the user can access this default reviewer."""
+        if self.local_site and not self.local_site.is_accessible_by(user):
+            return False
+
+        return True
+
+    def is_mutable_by(self, user):
+        """Returns whether the user can modify or delete this default reviewer.
+
+        Only those with the default_reviewer.change_group permission (such as
+        administrators) can modify or delete default reviewers not bound
+        to a LocalSite.
+
+        LocalSite administrators can modify or delete them on their LocalSites.
+        """
+        return (user.has_perm('reviews.change_default_reviewer') or
+                (self.local_site and self.local_site.is_mutable_by(user)))
+
     def __unicode__(self):
         return self.name
 
