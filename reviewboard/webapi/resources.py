@@ -2101,6 +2101,10 @@ class UserResource(WebAPIResource, DjbletsUserResource):
 
         return data
 
+    def serialize_url_field(self, user, **kwargs):
+        return local_site_reverse('user', kwargs['request'],
+                                  kwargs={'username': user.username})
+
     def serialize_avatar_url_field(self, user, request=None, **kwargs):
         return get_gravatar_url(request, user)
 
