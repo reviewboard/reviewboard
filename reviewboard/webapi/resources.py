@@ -3447,11 +3447,14 @@ class RepositoryResource(WebAPIResource):
         if not self.has_delete_permissions(request, repository):
             return _no_access_error(request.user)
 
-        # We don't actually delete the repository. We instead just hide it.
-        # Otherwise, all the review requests are lost. By marking it as not
-        # visible, it'll be removed from the UI and from the list in the API.
-        repository.visible = False
-        repository.save()
+        if not repository.review_requests.exists():
+            repository.delete()
+        else:
+            # We don't actually delete the repository. We instead just hide it.
+            # Otherwise, all the review requests are lost. By marking it as not
+            # visible, it'll be removed from the UI and from the list in the API.
+            repository.visible = False
+            repository.save()
 
         return 204, {}
 
