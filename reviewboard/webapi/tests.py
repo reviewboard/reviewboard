@@ -917,19 +917,36 @@ class RepositoryResourceTests(BaseWebAPITestCase):
     def test_delete_repository(self):
         """Testing the DELETE repositories/<id>/ API"""
         self._login_user(admin=True)
-        repo_id = self._delete_repository(False)
+        repo_id = self._delete_repository(False, with_review_request=True)
 
         repo = Repository.objects.get(pk=repo_id)
         self.assertFalse(repo.visible)
+
+    def test_delete_empty_repository(self):
+        """Testing the DELETE repositories/<id>/ API with no review requests"""
+        self._login_user(admin=True)
+        repo_id = self._delete_repository(False)
+        self.assertRaises(Repository.DoesNotExist,
+                          Repository.objects.get,
+                          pk=repo_id)
 
     @add_fixtures(['test_site'])
     def test_delete_repository_with_site(self):
         """Testing the DELETE repositories/<id>/ API with a local site"""
         self._login_user(local_site=True, admin=True)
-        repo_id = self._delete_repository(True)
+        repo_id = self._delete_repository(True, with_review_request=True)
 
         repo = Repository.objects.get(pk=repo_id)
         self.assertFalse(repo.visible)
+
+    @add_fixtures(['test_site'])
+    def test_delete_empty_repository_with_site(self):
+        """Testing the DELETE repositories/<id>/ API with a local site and no review requests"""
+        self._login_user(local_site=True, admin=True)
+        repo_id = self._delete_repository(True)
+        self.assertRaises(Repository.DoesNotExist,
+                          Repository.objects.get,
+                          pk=repo_id)
 
     def test_delete_repository_with_no_access(self):
         """Testing the DELETE repositories/<id>/ API with no access"""
@@ -1001,10 +1018,16 @@ class RepositoryResourceTests(BaseWebAPITestCase):
 
         return repo_id
 
-    def _delete_repository(self, use_local_site, expected_status=204):
+    def _delete_repository(self, use_local_site, expected_status=204,
+                           with_review_request=False):
         local_site, local_site_name = self._get_local_site_info(use_local_site)
-        repo_id = Repository.objects.filter(local_site=local_site,
-                                            tool__name='Subversion')[0].pk
+        repo = Repository.objects.filter(local_site=local_site,
+                                         tool__name='Subversion')[0]
+        repo_id = repo.pk
+
+        if with_review_request:
+            request = ReviewRequest.objects.create(self.user, repo)
+            request.save()
 
         self.apiDelete(self.get_item_url(repo_id, local_site_name),
                        expected_status=expected_status)
