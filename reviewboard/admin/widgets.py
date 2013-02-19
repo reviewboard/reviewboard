@@ -2,6 +2,7 @@ import datetime
 import re
 import time
 
+from django.core.cache import cache
 from django.contrib.auth.models import User
 from django.db.models.aggregates import Count
 from django.template.context import RequestContext
@@ -22,7 +23,6 @@ from reviewboard.scmtools.models import Repository
 DAYS_TOTAL = 30 # Set the number of days to display in date browsing widgets
 
 NAME_TRANSFORM_RE = re.compile('([A-Z])')
-
 
 primary_widgets = []
 secondary_widgets = []
@@ -92,7 +92,27 @@ class Widget(object):
         widget is displaying specific to, for example, the user, this should
         be overridden to include that data in the key.
         """
-        return "w-%s-%s" % (self.name, str(datetime.date.today()))
+        syncnum = get_sync_num()
+        key = "w-%s-%s-%s-%s" % (self.name, str(datetime.date.today()),
+                                 request.user.username, str(syncnum))
+        return key
+
+
+def get_sync_num():
+    """Get the sync_num, which is number to sync.
+
+    sync_num is number of update and initialized to 1 every day.
+    """
+    KEY = datetime.date.today()
+    cache.add(KEY, 1)
+    return cache.get(KEY)
+
+
+def increment_sync_num():
+    """Increment the sync_num."""
+    KEY = datetime.date.today()
+    if cache.get(KEY) is not None:
+        cache.incr(KEY)
 
 
 class UserActivityWidget(Widget):
@@ -191,8 +211,10 @@ class RepositoriesWidget(Widget):
         }
 
     def generate_cache_key(self, request):
-        return "w-%s-%s-%s" % (self.name, request.user.username,
-                               str(datetime.date.today()))
+        syncnum = get_sync_num()
+        key = "w-%s-%s-%s-%s" % (self.name, str(datetime.date.today()),
+                                 request.user.username, str(syncnum))
+        return key
 
 
 class ReviewGroupsWidget(Widget):
