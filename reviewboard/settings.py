@@ -4,6 +4,7 @@ import os
 import sys
 
 import djblets
+from django.core.urlresolvers import reverse
 from djblets.util.filesystem import is_exe_in_path
 
 
@@ -408,3 +409,8 @@ elif DEBUG:
 
 # Packages to unit test
 TEST_PACKAGES = ['reviewboard']
+
+# URL Overrides
+ABSOLUTE_URL_OVERRIDES = {
+    'auth.user': lambda u: reverse('user', kwargs={'username': u.username})
+}

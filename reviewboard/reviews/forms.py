@@ -52,8 +52,15 @@ class DefaultReviewerForm(forms.ModelForm):
         return file_regex
 
     def clean(self):
-        validate_users(self, 'people')
-        validate_review_groups(self, 'groups')
+        try:
+            validate_users(self, 'people')
+        except forms.ValidationError, e:
+            self._errors['people'] = self.error_class(e.messages)
+
+        try:
+            validate_review_groups(self, 'groups')
+        except forms.ValidationError, e:
+            self._errors['groups'] = self.error_class(e.messages)
 
         # Now make sure the repositories are valid.
         local_site = self.cleaned_data['local_site']
@@ -61,10 +68,11 @@ class DefaultReviewerForm(forms.ModelForm):
 
         for repository in repositories:
             if repository.local_site != local_site:
-                raise forms.ValidationError([
+                self._errors['repository'] = self.error_class([
                     _("The repository '%s' doesn't exist on the local site.")
                     % repository.name,
                 ])
+                break
 
         return self.cleaned_data
 
