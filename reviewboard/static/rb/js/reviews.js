@@ -207,8 +207,7 @@ function setDraftField(field, value) {
 
                 $("#review-request-warning")
                     .show()
-                    .find("td")
-                        .html(message);
+                    .html(message);
             }
 
             var func = gEditorCompleteHandlers[field];
