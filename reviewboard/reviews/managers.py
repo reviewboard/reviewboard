@@ -25,6 +25,11 @@ class DefaultReviewerManager(Manager):
         return self.filter(local_site=local_site).filter(
             Q(repository__isnull=True) | Q(repository=repository))
 
+    def can_create(self, user, local_site=None):
+        """Returns whether the user can create default reviewers."""
+        return (user.is_superuser or
+                (local_site and local_site.is_mutable_by(user)))
+
 
 class ReviewGroupManager(Manager):
     """A manager for Group models."""
