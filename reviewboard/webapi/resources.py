@@ -547,19 +547,19 @@ class DefaultReviewerResource(WebAPIResource):
         in the URL:
 
           * ``repositories``
-            - A comma-separated list of IDs of repositories that the default
-              reviewer matches against. Only default reviewers that match
-              every specified repository will be returned.
+              - A comma-separated list of IDs of repositories that the default
+                reviewer matches against. Only default reviewers that match
+                every specified repository will be returned.
 
           * ``users``
-            - A comma-separated list of usernames that the default reviewer
-              applies. Only default reviewers that apply each of these users
-              will be returned.
+              - A comma-separated list of usernames that the default reviewer
+                applies. Only default reviewers that apply each of these users
+                will be returned.
 
           * ``groups``
-            - A comma-separated list of group names that the default reviewer
-              applies. Only default reviewers that apply each of these groups
-              will be returned.
+              - A comma-separated list of group names that the default reviewer
+                applies. Only default reviewers that apply each of these groups
+                will be returned.
         """
         pass
 

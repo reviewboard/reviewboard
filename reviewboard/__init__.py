@@ -57,6 +57,10 @@ def initialize():
     """
     import logging
     import os
+    import sys
+
+    # Set PYTHONPATH to match sys.patch, for subprocesses.
+    os.environ['PYTHONPATH'] = ':'.join(sys.path)
 
     from django.conf import settings
     from django.db import DatabaseError

@@ -9,6 +9,8 @@ Resources
    change
    diff-list
    diff
+   default-reviewer-list
+   default-reviewer
    draft-file-attachment-list
    draft-file-attachment
    draft-screenshot-list

@@ -4,6 +4,7 @@ import sys
 os.environ['DJANGO_SETTINGS_MODULE'] = "reviewboard.settings"
 os.environ['PYTHON_EGG_CACHE'] = "@sitedir@/tmp/egg_cache"
 os.environ['HOME'] = "@sitedir@/data"
+os.environ['PYTHONPATH'] = '@sitedir@/conf:' + os.environ.get('PYTHONPATH', '')
 
 sys.path = ['@sitedir@/conf'] + sys.path
 
