@@ -265,3 +265,5 @@ def load_site_config():
         settings.AWS_CALLING_FORMAT = int(siteconfig.get('aws_calling_format'))
     except ValueError:
         settings.AWS_CALLING_FORMAT = 0
+
+    settings.ALLOWED_HOSTS = [siteconfig.site.domain]
