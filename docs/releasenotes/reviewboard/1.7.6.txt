@@ -1,0 +1,94 @@
+================================
+Review Board 1.7.6 Release Notes
+================================
+
+**Release date**: February 21, 2013
+
+
+This release contains all bug fixes and features found in
+Review Board version :doc:`1.6.16 <1.6.16>`.
+
+
+Security Updates
+================
+
+We now require Django 1.4.5, which fixes a few `security vulnerabilities`_.
+We recommend all 1.7.x users upgrade to 1.7.6.
+
+.. _`security vulnerabilities`:
+   https://www.djangoproject.com/weblog/2013/feb/19/security/
+
+
+New Features
+============
+
+* Added Perforce ticket-based authentication. (:bug:`1623`)
+
+  Perforce servers using ticket-based authentication are now properly
+  supported.
+
+  When configuring a Perforce repository, you can now enable ticket-based
+  authentication, and Review Board will request a new ticket as needed.
+
+* Added a setting for choosing Review Board log levels. (:bug:`1859`)
+
+  The minimum log level can now be set in the Administration UI, under
+  the Logging settings page. You can now set the log level to "Info,"
+  for example, to keep the log smaller, or "Debug," to get additional
+  information.
+
+  Patch by Raja Venkataraman.
+
+
+Web API Changes
+===============
+
+* Added API support for querying and manipulating default reviewers. This is
+  accessible at ``/api/default-reviewers/``.
+
+* Repositories deleted through the Web API are now only archived if they
+  have any associated review requests. Otherwise, they're deleted, which
+  helps prevent collisions when creating a repository, deleting it, and
+  re-creating it.
+
+
+Bug Fixes
+=========
+
+* Fixed fetching files with FedoraHosted. Patch by Stephen Gallagher.
+  (:bug:`2897`)
+
+* Fixed some cases where URLs to user pages were incorrect, especially
+  on subdirectory installs and local sites. Patch by Raja Venkataraman.
+
+* We try harder now to set the :envvar:`PYTHONPATH` for subprocesses,
+  which should fix some issues fetching files over Subversion. (:bug:`2834`)
+
+* The Administration UI dashboard widgets no longer cache their data
+  too aggressively. They should be more up-to-date and accurate now.
+  (:bug:`2753`)
+
+  Patch by Yuri Honami.
+
+* Fixed showing the error box when entering an invalid reviewer.
+  Patch by Jon Demelo. (:bug:`2869`)
+
+* Fixed ``config/`` and ``db/`` links for extensions, when in a
+  subdirectory install. Patch by Raja Venkataraman. (:bug:`2843`)
+
+* The Manual Updates page for the media upload directory no longer points
+  to a non-existant wiki page.
+
+
+Contributors
+============
+
+* Christian Hammond
+* David Trowbridge
+* Jon Demelo
+* Raja Venkataraman
+* Stephen Gallagher
+* Yuri Honami
+
+
+.. comment: vim: ft=rst et
