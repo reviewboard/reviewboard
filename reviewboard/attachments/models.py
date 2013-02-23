@@ -38,6 +38,11 @@ class FileAttachment(models.Model):
         """Returns the thumbnail for display."""
         return self.mimetype_handler.get_thumbnail()
 
+    @thumbnail.setter
+    def thumbnail(self, data):
+        """Set the thumbnail."""
+        self.mimetype_handler.set_thumbnail(data)
+
     @property
     def filename(self):
         """Returns the filename for display purposes."""

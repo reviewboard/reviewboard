@@ -4032,9 +4032,13 @@ class BaseFileAttachmentResource(WebAPIResource):
                 'type': str,
                 'description': 'The new caption for the file.',
             },
+            'thumbnail': {
+                'type': str,
+                'description': 'The thumbnail data for the file.',
+            },
         }
     )
-    def update(self, request, caption=None, *args, **kwargs):
+    def update(self, request, caption=None, thumbnail=None, *args, **kwargs):
         """Updates the file's data.
 
         This allows updating the file in a draft. The caption, currently,
@@ -4050,14 +4054,28 @@ class BaseFileAttachmentResource(WebAPIResource):
         if not review_request.is_mutable_by(request.user):
             return PERMISSION_DENIED
 
-        try:
-            review_request_draft_resource.prepare_draft(request,
-                                                        review_request)
-        except PermissionDenied:
-            return _no_access_error(request.user)
+        if caption is not None:
+            try:
+                review_request_draft_resource.prepare_draft(request,
+                                                            review_request)
+            except PermissionDenied:
+                return _no_access_error(request.user)
 
-        file.draft_caption = caption
-        file.save()
+            file.draft_caption = caption
+            file.save()
+
+        if thumbnail is not None:
+            try:
+                file.thumbnail = thumbnail
+            except Exception, e:
+                logging.error(
+                    'Failed to store thumbnail for attachment %d: %s',
+                    file.pk, e)
+                return INVALID_FORM_DATA, {
+                    'fields': {
+                        'thumbnail': str(e),
+                    }
+                }
 
         return 200, {
             self.item_result_key: file,
