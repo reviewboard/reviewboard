@@ -422,6 +422,9 @@ ol.index li {
     vertical-align: bottom;
     margin: 4px;
   }
+  label {
+    display: inline!important;
+  }
 
   .revisions {
     padding: 0;
@@ -432,21 +435,37 @@ ol.index li {
       padding: 2px 6px;
       text-decoration: none;
 
-      &:hover {
+      &:hover, &.hovered {
         background: @revisions-hover-color;
         border-color: @revisions-hover-border-color;
         color: @revisions-text-color;
+      }
+      &.inter_diff {
+        cursor: pointer;
       }
 
       &:visited {
         color: @revisions-text-color;
       }
     }
-
     .current {
       font-weight: bold;
       padding: 2px 6px;
     }
+  }
+}
+
+#diffhopper_diff, #diffhopper_interdiff {
+  padding: 5px;
+  background: #fefadf;
+  margin: 2px;
+  border: 1px @revisions-hover-border-color solid;
+  position: absolute;
+  text-align: center;
+  display: none; /* hidden untill shown */
+  .pick_interdiff {
+    position: relative;
+    top: 13px;
   }
 }
 

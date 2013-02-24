@@ -139,15 +139,23 @@
 {#   Show a revision selector for jumping between revisions. #}
  <table class="revision-selector">
   <tr>
-   <th><label for="jump_to_revision">{% trans "Jump to revision:" %}<label></th>
-   <td>
+   <th><label for="jump_to_revision">{% trans "View revision:" %}<label></th>
+   <td id="jump_to_revision_wrapper" onmouseover="diffHopper.clearHideTimer()" onmouseout="diffHopper.startHideTimer()">
     <div id="jump_to_revision" class="revisions">
-{%  for item in review_request.diffset_history|revision_link_list:diffset_pair %}
-{%   if item.is_current %}
-     <span class="current">{{item.revision}}</span>
-{%   else %}
-     <a href="{{review_request.get_absolute_url}}diff/{{item.revision}}/#index_header">{{item.revision}}</a>
-{%   endif %}
+	   <div id="diffhopper_diff">
+		   <input type="button" value="Jump to it" onclick="diffHopper.hopToDiff('{{review_request.get_absolute_url}}diff/', '/#index_header');"/>
+	   </div>
+	   <div id="diffhopper_interdiff">
+		   <label>Compare with:</label>
+		   <br /><br />
+{%   for item in review_request.diffset_history.diffsets.all %}
+           <a id="diffhopper_interdiff_{{ item.revision }}" class="inter_diff"
+             onclick="diffHopper.hopToInterDiff({{ item.revision }}, '{{review_request.get_absolute_url}}diff/', '/#index_header');">
+             {{ item.revision }}</a>
+{%   endfor %}
+	   </div>
+{%  for item in review_request.diffset_history|interdiff_link_list:diffset_pair %}
+<a class="diff {% if item.is_current %} current{% endif %}" onmouseover="diffHopper.hoverOver({{item.revision}})">{{item.revision}}</a>
 {%  endfor %}
 {%  if draft and draft.diffset %}
 {#   There's a draft diff, so display it in the list. #}
@@ -160,31 +168,9 @@
     </div>
    </td>
   </tr>
-  <tr>
-   <th><label for="show_interdiff">{% blocktrans %}Changes between r{{revision}} and:{% endblocktrans %}</label></th>
-   <td>
-    <div id="show_interdiff" class="revisions">
-{%  for item in review_request.diffset_history|interdiff_link_list:diffset_pair %}
-{%   if item.is_current %}
-     <span class="current">{{item.revision}}</span>
-{%   else %}
-     <a href="{{review_request.get_absolute_url}}diff/{{item.path}}/#index_header">{{item.revision}}</a>
-{%   endif %}
-{%  endfor %}
-{%  if draft and draft.diffset %}
-{#   There's a draft diff, so display it in the list. #}
-{%   if is_draft_diff or is_draft_interdiff %}
-     <span class="current">{{draft.diffset.revision}}</span>
-{%   else %}
-     <a href="{{review_request.get_absolute_url}}diff/{{diffset_pair.0}}-{{diffset_pair.1}}/#index_header">{{draft.diffset.revision}}</a>
-{%   endif %}
-{%  endif %}
-    </div>
-   </td>
-  </tr>
  </table>
 {% endif %}
-
+<br />
  <p><label>{% trans "Files Changed:" %}</label></p>
 {% include "diffviewer/changeindex.html" %}
   </div>

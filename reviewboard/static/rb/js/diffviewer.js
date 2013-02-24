@@ -1554,4 +1554,72 @@ $(document).ready(function() {
     });
 });
 
+/**
+ * The magic behind the "View revision:" buttons
+ */
+var diffHopper = new function() {
+    var diffs = $('#jump_to_revision a.diff'),
+        currentDiff,
+        hideTimer = null,
+        /**
+         * Shows all the entries except the current selected
+         */
+        fixInterDiffForDisplay = function(revision) {
+            $('#diffhopper_interdiff a').show();
+            $('#diffhopper_interdiff_' + revision).hide();
+        },
+        /**
+         * Hides the top and the bottom pickers
+         */
+        hide = function() {
+            $('#diffhopper_diff').hide();
+            $('#diffhopper_interdiff').hide();
+            diffs.removeClass('hovered');
+        }
+    ;
+
+    // These make up the public API
+    return {
+        hoverOver: function(revision) {
+            currentDiff = revision;
+            fixInterDiffForDisplay(revision);
+            var revision_elem = diffs.eq(revision - 1),
+              revision_offset = revision_elem.offset();
+              centre = revision_offset.left + (revision_elem.outerWidth() / 2) - 1,
+              diff_elem = $('#diffhopper_diff'),
+              diff_width = diff_elem.outerWidth(),
+              interdiff_width = $('#diffhopper_interdiff').outerWidth();
+
+            diffs.removeClass('hovered');
+            revision_elem.addClass('hovered');
+
+            diff_elem.css({
+                top: (revision_offset.top - diff_elem.outerHeight(true)) + 'px',
+                left: (centre - diff_width / 2) + 'px',
+                display: 'block'
+            });
+
+            $('#diffhopper_interdiff').css({
+              top: (revision_offset.top + revision_elem.outerHeight()) + 'px',
+              left: (centre - interdiff_width / 2) + 'px',
+              display: 'block'
+            });
+        },
+        startHideTimer: function() {
+            hideTimer = window.setTimeout(hide, 500);
+        },
+        clearHideTimer: function() {
+            window.clearTimeout(hideTimer);
+        },
+        hopToDiff: function(prefix, postfix) {
+            location.href = prefix + currentDiff + postfix;
+        },
+        hopToInterDiff: function(otherDiff, prefix, postfix) {
+            var leftDiff = Math.min(currentDiff, otherDiff),
+              rightDiff = Math.max(currentDiff, otherDiff);
+            location.href = prefix + leftDiff + '-' + rightDiff + postfix;
+        }
+    }
+}();
+
 // vim: set et:
