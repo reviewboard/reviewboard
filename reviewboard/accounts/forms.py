@@ -178,7 +178,8 @@ class ActiveDirectorySettingsForm(SiteSettingsForm):
 
     auth_ad_find_dc_from_dns = forms.BooleanField(
         label=_("Find DC from DNS"),
-        help_text=_("Query DNS to find which domain controller to use"),
+        help_text=_("Query DNS to find which domain controller to use. "
+                    "Enable this for authentication against subdomains."),
         required=False)
 
     auth_ad_domain_controller = forms.CharField(
