@@ -667,12 +667,16 @@ class LoggingSettingsForm(SiteSettingsForm):
 
 
 class SSHSettingsForm(forms.Form):
+    """SSH key settings for Review Board."""
     generate_key = forms.BooleanField(required=False,
                                       initial=True,
                                       widget=forms.HiddenInput)
     keyfile = forms.FileField(label=_('Key file'),
                               required=False,
                               widget=forms.FileInput(attrs={'size': '35'}))
+    delete_key = forms.BooleanField(required=False,
+                                    initial=True,
+                                    widget=forms.HiddenInput)
 
     def create(self, files):
         if self.cleaned_data['generate_key']:
@@ -699,6 +703,21 @@ class SSHSettingsForm(forms.Form):
             except Exception, e:
                 self.errors['keyfile'] = forms.util.ErrorList([
                     _('Error uploading SSH key: %s') % e
+                ])
+                raise
+
+    def did_request_delete(self):
+        """Return whether the user has requested to delete the user SSH key"""
+        return 'delete_key' in self.cleaned_data
+
+    def delete(self):
+        """Try to delete the user SSH key upon request"""
+        if self.cleaned_data['delete_key']:
+            try:
+                SSHClient().delete_user_key()
+            except Exception, e:
+                self.errors['delete_key'] = forms.util.ErrorList([
+                    _('Unable to delete SSH key file: %s') % e
                 ])
                 raise
 
