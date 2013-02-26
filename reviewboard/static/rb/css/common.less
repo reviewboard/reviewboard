@@ -284,8 +284,9 @@ h1.title,
   background-image: url('../images/box_bottom_bg.png');
   background-position: bottom left;
   background-repeat: repeat-x;
-  padding-bottom: 1px; /* IE wants this and it does no harm. */
   .border-radius(@box-border-radius);
+
+  padding-bottom: 1px\9; /* IE wants this. The \9 targets IE 7,8,9. */
 }
 
 .box-inner form {
@@ -295,28 +296,53 @@ h1.title,
 .datagrid-title,
 .datagrid-titlebox {
   background: @box-title-bg !important;
+  .border-radius(@box-border-radius @box-border-radius 0 0);
+}
+
+.datagrid-main {
+  .border-radius(@box-border-radius);
 }
 
 .datagrid-header {
   border-top: 0 !important;
+
+  &:last-child {
+    border-right: 0;
+  }
 }
 
 .datagrid-menu {
   border: 1px #888A85 solid;
 }
 
-.datagrid .shipit-count {
-  background-image: url("../images/shipit_bg.png");
-  background-position: top left;
-  background-repeat: repeat-x;
-  background-color: #6bc810;
-  border: 1px #478a06 solid;
-  display: block;
-  color: white;
-  font-weight: bold;
-  padding: 0.05em 0.5em;
-  white-space: nowrap;
-  .border-radius(10px);
+.datagrid {
+  tr:last-child {
+    td:first-child {
+      .border-radius(0 0 0 @box-border-radius);
+    }
+
+    td:last-child {
+      .border-radius(0 0 @box-border-radius 0);
+    }
+  }
+
+  td:last-child {
+    border-right: 0;
+  }
+
+  .shipit-count {
+    background-image: url("../images/shipit_bg.png");
+    background-position: top left;
+    background-repeat: repeat-x;
+    background-color: #6bc810;
+    border: 1px #478a06 solid;
+    display: block;
+    color: white;
+    font-weight: bold;
+    padding: 0.05em 0.5em;
+    white-space: nowrap;
+    .border-radius(10px);
+  }
 }
 
 .server-error-box .response-data {
