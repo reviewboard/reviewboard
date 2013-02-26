@@ -27,42 +27,57 @@ from urlparse import urljoin
 class APIError(Exception):
         pass
 
+# We override urllib2.Request so we can actually do a PUT request
+class HTTPRequest(urllib2.Request):
+    def __init__(self, url, body='', headers={}, method="PUT"):
+        urllib2.Request.__init__(self, url, body, headers)
+        self.method = method
 
-# This is shamelessly ripped off from post-review
+    def get_method(self):
+        return self.method
+
+
+# This once was shamelessly ripped off from post-review
+# It has now gained support for the new api, but without
+# copy-ing everything from post-review, because we simply
+# don't need all that.
 class ReviewBoardServer:
-    """
-    An instance of a Review Board server.
-    """
+    """An instance of a Review Board server."""
     def __init__(self, url):
+        self.root_resource = None
         self.url = url
         if self.url[-1] != '/':
             self.url += '/'
+
+        passman = urllib2.HTTPPasswordMgrWithDefaultRealm()
+        passman.add_password("Web API", self.url, USERNAME, PASSWORD)
+
+        authhandler = urllib2.HTTPBasicAuthHandler(passman)
+        opener = urllib2.build_opener(authhandler)
+
         cj = cookielib.CookieJar()
-        opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cj))
+        opener.add_handler(urllib2.HTTPCookieProcessor(cj))
+
         urllib2.install_opener(opener)
 
-    def login(self):
-        """
-        Logs in to a Review Board server, prompting the user for login
-        information if needed.
-        """
-        try:
-            self.api_post('api/json/accounts/login/', {
-                'username': USERNAME,
-                'password': PASSWORD,
-            })
-        except APIError, e:
-            rsp, = e.args
+        self.root_resource = self.api_get('api/')
 
-            die("Unable to log in: %s (%s)" % (rsp["err"]["msg"],
-                                               rsp["err"]["code"]))
+    def get_review(self, review_request_id):
+        """Returns the review request with the specified ID."""
+        url = '%s%s/' % (\
+            self.root_resource['links']['review_requests']['href'], \
+                review_request_id)
+        rsp = self.api_get(url)
+        return rsp['review_request']
 
-    def set_submitted(self, review_request_id):
-        """
-        Marks a review request as submitted.
-        """
-        self.api_post('api/json/reviewrequests/%s/close/submitted/' %
-                      review_request_id)
+    def set_submitted(self, review_request_id, revision):
+        """Marks a review request as submitted."""
+        review_request = self.get_review(review_request_id)
+        arguments = {'status': 'submitted'}
+        if revision > 0:
+            arguments['description'] = "Committed in revision %d" % revision
+
+        self.api_put(review_request['links']['update']['href'], arguments)
 
     def process_json(self, data):
         """
@@ -83,11 +98,8 @@ class ReviewBoardServer:
             url = 'http://%s' % url
         return url
 
-    def http_post(self, path, fields, files=None):
-        """
-        Performs an HTTP POST on the specified path, storing any cookies that
-        were set.
-        """
+    def http_put(self, path, fields, files=None):
+        """Performs an HTTP PUT on the specified path."""
         url = self._make_url(path)
 
         content_type, body = self._encode_multipart_formdata(fields, files)
@@ -97,7 +109,7 @@ class ReviewBoardServer:
         }
 
         try:
-            r = urllib2.Request(url, body, headers)
+            r = HTTPRequest(url, body, headers, method='PUT')
             data = urllib2.urlopen(r).read()
             return data
         except urllib2.URLError, e:
@@ -107,11 +119,28 @@ class ReviewBoardServer:
             die("Unable to access %s (%s). The host path may be invalid\n%s" % \
                 (url, e.code, e.read()))
 
-    def api_post(self, path, fields=None, files=None):
-        """
-        Performs an API call using HTTP POST at the specified path.
-        """
-        return self.process_json(self.http_post(path, fields, files))
+    def http_get(self, path):
+        """Performs an HTTP GET on the specified path."""
+        url = self._make_url(path)
+
+        try:
+            rsp = urllib2.urlopen(url).read()
+            return rsp
+        except urllib2.URLError, e:
+            die("Unable to access %s. The host path may be invalid\n%s" % \
+                (url, e))
+        except urllib2.HTTPError, e:
+            die("Unable to access %s (%s). The host path may be invalid\n%s" % \
+                (url, e.code, e.read()))
+
+
+    def api_put(self, path, fields=None, files=None):
+        """Performs an API call using HTTP PUT at the specified path."""
+        return self.process_json(self.http_put(path, fields, files))
+
+    def api_get(self, path):
+        """Performs an API call using HTTP GET at the specified path."""
+        return self.process_json(self.http_get(path))
 
     def _encode_multipart_formdata(self, fields, files):
         """
@@ -147,9 +176,7 @@ class ReviewBoardServer:
 
 
 def die(msg=None):
-    """
-    Cleanly exits the program with an error message.
-    """
+    """Cleanly exits the program with an error message."""
     if msg:
         print msg
 
@@ -163,7 +190,6 @@ server = None
 for match in re.finditer(REVIEWBOARD_URL + '/r/(\d+)', log_message):
     if server is None:
         server = ReviewBoardServer(REVIEWBOARD_URL)
-        server.login()
 
     review_request_id = match.group(1)
-    server.set_submitted(review_request_id)
+    server.set_submitted(review_request_id, int(sys.argv[2]))
