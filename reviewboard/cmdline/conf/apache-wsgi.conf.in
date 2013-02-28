@@ -1,4 +1,4 @@
-<VirtualHost *:80>
+<VirtualHost *:@port@>
 	ServerName @sitedomain@
 	DocumentRoot "@sitedir@/htdocs"
 

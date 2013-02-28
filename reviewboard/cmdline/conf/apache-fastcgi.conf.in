@@ -8,7 +8,7 @@
 	FastCGIServer "@sitedir@/htdocs/reviewboard.fcgi" -socket "@sitedir@/tmp/fastcgi.sock"
 </IfModule>
 
-<VirtualHost *:80>
+<VirtualHost *:@port@>
 	ServerName @sitedomain@
 	DocumentRoot "@sitedir@/htdocs"
 
