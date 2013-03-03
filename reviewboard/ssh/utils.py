@@ -9,6 +9,8 @@ from reviewboard.ssh.errors import BadHostKeyError, SSHAuthenticationError, \
 from reviewboard.ssh.policy import RaiseUnknownHostKeyPolicy
 
 
+SSH_PORT = 22
+
 # A list of known SSH URL schemes.
 ssh_uri_schemes = ["ssh", "sftp"]
 
@@ -25,7 +27,7 @@ def is_ssh_uri(url):
     return urlparse.urlparse(url)[0] in ssh_uri_schemes
 
 
-def check_host(hostname, username=None, password=None, namespace=None):
+def check_host(netloc, username=None, password=None, namespace=None):
     """
     Checks if we can connect to a host with a known key.
 
@@ -40,6 +42,13 @@ def check_host(hostname, username=None, password=None, namespace=None):
 
     kwargs = {}
 
+    if ':' in netloc:
+        hostname, port = netloc.split(':')
+        port = int(port)
+    else:
+        hostname = netloc
+        port = SSH_PORT
+
     # We normally want to notify on unknown host keys, but not when running
     # unit tests.
     if getattr(settings, 'RUNNING_TEST', False):
@@ -47,7 +56,7 @@ def check_host(hostname, username=None, password=None, namespace=None):
         kwargs['allow_agent'] = False
 
     try:
-        client.connect(hostname, username=username, password=password,
+        client.connect(hostname, port, username=username, password=password,
                        pkey=client.get_user_key(), **kwargs)
     except paramiko.BadHostKeyException, e:
         raise BadHostKeyError(e.hostname, e.key, e.expected_key)
