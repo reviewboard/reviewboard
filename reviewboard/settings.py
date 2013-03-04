@@ -274,8 +274,8 @@ LOGIN_URL = SITE_ROOT + 'account/login/'
 PIPELINE_JS = {
     '3rdparty': {
         'source_filenames': (
-            'lib/js/underscore-1.3.3.min.js',
-            'lib/js/backbone-0.9.2.min.js',
+            'lib/js/underscore-1.4.4.min.js',
+            'lib/js/backbone-0.9.10.min.js',
             'lib/js/jquery.form.js',
             'lib/js/jquery.timesince.js',
             'lib/js/ui.autocomplete.js',
