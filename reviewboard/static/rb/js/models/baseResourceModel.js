@@ -157,7 +157,7 @@ RB.BaseResource = Backbone.Model.extend({
         var parentObject,
             fetchObject = _.bind(function() {
                 Backbone.Model.prototype.fetch.call(
-                    this, this._wrapCallbacks(options, context));
+                    this, _.bindCallbacks(options, context));
             }, this);
 
         options = options || {};
@@ -301,7 +301,7 @@ RB.BaseResource = Backbone.Model.extend({
         this.ready({
             ready: function() {
                 Backbone.Model.prototype.destroy.call(
-                    this, this._wrapCallbacks(options, context));
+                    this, _.bindCallbacks(options, context));
             },
             error: _.isFunction(options.error)
                    ? _.bind(options.error, context)
@@ -378,29 +378,6 @@ RB.BaseResource = Backbone.Model.extend({
                 options.error(model, text, xhr.statusText);
             }
         }, options));
-    },
-
-    /*
-     * Wraps success and error callbacks with a bound context.
-     *
-     * Backbone.js's various ajax-related functions don't take a context
-     * with their callbacks, so BaseResource needs to do that itself when
-     * calling those functions. This function simplifies those call sites
-     * by handling the wrapping.
-     */
-    _wrapCallbacks: function(options, context) {
-        if (!context) {
-            return options;
-        }
-
-        return _.defaults({
-            success: _.isFunction(options.success)
-                     ? _.bind(options.success, context)
-                     : undefined,
-            error: _.isFunction(options.error)
-                   ? _.bind(options.error, context)
-                   : undefined
-        }, options);
     }
 }, {
     strings: {
