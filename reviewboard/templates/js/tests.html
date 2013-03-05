@@ -56,6 +56,12 @@ $(document).ready(function() {
                 throw Error(msg);
             }
         });
+
+        /*
+         * Reset the user session, since tests should explicitly create it
+         * if it's needed.
+         */
+        RB.UserSession.instance = null;
     });
 
     afterEach(function() {

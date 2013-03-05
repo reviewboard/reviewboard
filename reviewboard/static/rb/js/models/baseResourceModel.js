@@ -232,7 +232,9 @@ RB.BaseResource = Backbone.Model.extend({
                     this._saveObject(options, context);
                 }
             },
-            error: options.error
+            error: _.isFunction(options.error)
+                   ? _.bind(options.error, context)
+                   : undefined
         }, this);
     },
 
@@ -387,6 +389,10 @@ RB.BaseResource = Backbone.Model.extend({
      * by handling the wrapping.
      */
     _wrapCallbacks: function(options, context) {
+        if (!context) {
+            return options;
+        }
+
         return _.defaults({
             success: _.isFunction(options.success)
                      ? _.bind(options.success, context)

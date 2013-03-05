@@ -154,6 +154,16 @@
   {% compressed_js "3rdparty" %}
   <script type="text/javascript" src="{% static "djblets/js/jquery.gravy.js" %}"></script>
   {% compressed_js "common" %}
+{% if request.user.is_authenticated %}
+  <script type="text/javascript">
+    RB.UserSession.create({
+        username: "{{user.username|escapejs}}",
+        sessionURL: "{% url session-resource %}",
+        watchedReviewGroupsURL: "{% url watched-review-groups-resource request.user %}",
+        watchedReviewRequestsURL: "{% url watched-review-requests-resource request.user %}"
+    });
+  </script>
+{% endif %}
 {% block scripts-post %}{% endblock %}
 {% template_hook_point "base-scripts-post" %}
  </body>

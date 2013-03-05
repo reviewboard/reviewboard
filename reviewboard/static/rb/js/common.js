@@ -222,7 +222,9 @@ function registerToggleStar() {
             if (type == "reviewrequests") {
                 obj = new RB.ReviewRequest(objid);
             } else if (type == "groups") {
-                obj = new RB.ReviewGroup(objid);
+                obj = new RB.ReviewGroup({
+                    id: objid
+                });
             } else {
                 self.remove();
                 return;

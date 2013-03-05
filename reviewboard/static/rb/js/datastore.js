@@ -194,25 +194,17 @@ $.extend(RB.ReviewRequest.prototype, {
         });
     },
 
-    setStarred: function(starred) {
-        var apiType;
-        var path = "/users/" + gUserName + "/watched/review-requests/";
-        var data = {};
+    /*
+     * Marks a review request as starred or unstarred.
+     */
+    setStarred: function(starred, options, context) {
+        var watched = RB.UserSession.instance.watchedReviewRequests;
 
         if (starred) {
-            apiType = "POST";
-            data.object_id = this.id;
+            watched.addImmediately(this, options, context);
         } else {
-            apiType = "DELETE";
-            path += this.id + "/";
+            watched.removeImmediately(this, options, context);
         }
-
-        RB.apiCall({
-            type: apiType,
-            path: path,
-            data: data,
-            success: function() {}
-        });
     },
 
     publish: function(options) {
@@ -552,36 +544,6 @@ $.extend(RB.Review.prototype, {
             }
 
             RB.apiCall(options);
-        });
-    }
-});
-
-
-RB.ReviewGroup = function(id) {
-    this.id = id;
-
-    return this;
-};
-
-$.extend(RB.ReviewGroup.prototype, {
-    setStarred: function(starred) {
-        var apiType;
-        var path = "/users/" + gUserName + "/watched/review-groups/";
-        var data = {};
-
-        if (starred) {
-            apiType = "POST";
-            data.object_id = this.id;
-        } else {
-            apiType = "DELETE";
-            path += this.id + "/";
-        }
-
-        RB.apiCall({
-            type: apiType,
-            path: path,
-            data: data,
-            success: function() {}
         });
     }
 });
