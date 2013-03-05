@@ -288,6 +288,7 @@ PIPELINE_JS = {
             'lib/js/jquery.form.js',
             'lib/js/jquery.timesince.js',
             'lib/js/moment-2.0.0.min.js',
+            'lib/js/retina.js',
             'lib/js/ui.autocomplete.js',
         ),
         'output_filename': 'lib/js/3rdparty.min.js',
