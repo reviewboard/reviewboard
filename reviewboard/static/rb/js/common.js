@@ -141,8 +141,13 @@ $.fn.formDlg = function(options) {
          * Sends the form data to the server.
          */
         function send() {
-            options.dataStoreObject.setForm(form);
+            // TODO: Remove this when we move fully to Backbone.js.
+            if (options.dataStoreObject.setForm) {
+                options.dataStoreObject.setForm(form);
+            }
+
             options.dataStoreObject.save({
+                form: form,
                 buttons: $("input:button", box.modalBox("buttons")),
                 success: function(rsp) {
                     options.success(rsp);
@@ -161,10 +166,16 @@ $.fn.formDlg = function(options) {
          * @param {object} rsp  The server response.
          */
         function displayErrors(rsp) {
-            var errorStr = rsp.err.msg;
+            var errorStr;
 
-            if (options.dataStoreObject.getErrorString) {
-                errorStr = options.dataStoreObject.getErrorString(rsp);
+            if (_.isObject(rsp)) {
+                errorStr = rsp.err.msg;
+
+                if (options.dataStoreObject.getErrorString) {
+                    errorStr = options.dataStoreObject.getErrorString(rsp);
+                }
+            } else {
+                errorStr = rsp;
             }
 
             errors

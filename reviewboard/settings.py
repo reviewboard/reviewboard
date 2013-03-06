@@ -315,6 +315,7 @@ PIPELINE_JS = {
             'rb/js/models/baseCommentReplyModel.js',
             'rb/js/models/diffCommentModel.js',
             'rb/js/models/diffCommentReplyModel.js',
+            'rb/js/models/diffModel.js',
             'rb/js/models/fileAttachmentCommentModel.js',
             'rb/js/models/fileAttachmentCommentReplyModel.js',
             'rb/js/models/reviewGroupModel.js',

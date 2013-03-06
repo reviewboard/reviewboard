@@ -1,63 +1,3 @@
-RB.Diff = function(review_request, revision, interdiff_revision) {
-    this.review_request = review_request;
-    this.revision = revision;
-    this.interdiff_revision = interdiff_revision;
-
-    return this;
-};
-
-$.extend(RB.Diff.prototype, {
-    getErrorString: function(rsp) {
-        if (rsp.err.code == 207) {
-            return 'The file "' + rsp.file + '" (revision ' + rsp.revision +
-                    ') was not found in the repository';
-        }
-
-        return rsp.err.msg;
-    },
-
-    setForm: function(form) {
-        this.form = form;
-    },
-
-    save: function(options) {
-        var self = this;
-
-        options = $.extend(true, {
-            success: function() {},
-            error: function() {}
-        }, options);
-
-        if (self.id != undefined) {
-            options.error("The diff " + self.id + " was already created. " +
-                          "This is a script error. Please report it.");
-            return;
-        }
-
-        if (!self.form) {
-            options.error("No data has been set for this diff. This " +
-                          "is a script error. Please report it.");
-            return;
-        }
-
-        self.review_request.ready(function() {
-            RB.apiCall({
-                url: self.review_request.links.diffs.href,
-                form: self.form,
-                buttons: options.buttons,
-                success: function(rsp) {
-                    if (rsp.stat == "ok") {
-                        options.success(rsp);
-                    } else {
-                        options.error(rsp, rsp.err.msg);
-                    }
-                }
-            });
-        });
-    }
-});
-
-
 RB.ReviewRequest = function(id, prefix, path) {
     this.id = id;
     this.prefix = prefix;
@@ -80,7 +20,9 @@ $.extend(RB.ReviewRequest, {
 $.extend(RB.ReviewRequest.prototype, {
     /* Review request API */
     createDiff: function(revision, interdiff_revision) {
-        return new RB.Diff(this, revision, interdiff_revision);
+        return new RB.Diff({
+            parentObject: this
+        });
     },
 
     createReview: function(review_id) {
@@ -127,6 +69,11 @@ $.extend(RB.ReviewRequest.prototype, {
                 }
             });
         }
+    },
+
+    // XXX Needed until we move this to Backbone.js.
+    ensureCreated: function(cb) {
+        this.ready(cb);
     },
 
     setDraftField: function(options) {
