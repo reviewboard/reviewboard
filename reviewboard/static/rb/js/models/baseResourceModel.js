@@ -284,6 +284,24 @@ RB.BaseResource = Backbone.Model.extend({
      * If we fail to delete the resource, options.error() will be called.
      */
     destroy: function(options, context) {
+        var parentObject = this.get('parentObject'),
+            destroyObject = _.bind(this._destroyObject,
+                                   this, options, context);
+
+        if (parentObject) {
+            parentObject.ready(destroyObject);
+        } else {
+            destroyObject();
+        }
+    },
+
+    /*
+     * Handles the actual deletion of the object.
+     *
+     * This is called internally by destroy() once we've handled all the
+     * readiness and creation checks of this object and its parent.
+     */
+    _destroyObject: function(options, context) {
         var url = _.result(this, 'url');
 
         options = options || {};

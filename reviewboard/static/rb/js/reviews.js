@@ -1126,24 +1126,23 @@ $.fn.screenshotThumbnail = function() {
                 },
                 "complete": function(e, value) {
                     gEditCount--;
-                    screenshot.ready(function() {
-                        screenshot.caption = value;
-                        screenshot.save({
-                            buttons: gDraftBannerButtons,
-                            success: function(rsp) {
-                                gDraftBanner.show();
-                            }
-                        });
+                    screenshot.set('caption', value);
+                    screenshot.save({
+                        buttons: gDraftBannerButtons,
+                        success: function(rsp) {
+                            gDraftBanner.show();
+                        }
                     });
                 }
             });
 
         captionEl.find("a.delete")
             .click(function() {
-                screenshot.ready(function() {
-                    screenshot.deleteScreenshot()
-                    self.empty();
-                    gDraftBanner.show();
+                screenshot.destroy({
+                    success: function() {
+                        self.empty();
+                        gDraftBanner.show();
+                    }
                 });
 
                 return false;
