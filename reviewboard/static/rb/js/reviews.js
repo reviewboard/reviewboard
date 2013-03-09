@@ -452,7 +452,7 @@ $.fn.commentSection = function(review_id, context_id, context_type) {
 
                         if (context_type == "body_top" ||
                             context_type == "body_bottom") {
-                            review_reply[context_type] = value;
+                            review_reply.set(context_type, value);
                             obj = review_reply;
                         } else {
                             replyClass = CommentReplyClasses[context_type];
@@ -733,7 +733,8 @@ $.replyDraftBanner = function(review_reply, bannerButtonsEl) {
         .append($('<input type="button"/>')
             .val("Publish")
             .click(function() {
-                review_reply.publish({
+                review_reply.set('public', true);
+                review_reply.save({
                     buttons: bannerButtonsEl,
                     success: function() {
                         window.location = gReviewRequestPath;
@@ -744,7 +745,7 @@ $.replyDraftBanner = function(review_reply, bannerButtonsEl) {
         .append($('<input type="button"/>')
             .val("Discard")
             .click(function() {
-                review_reply.discard({
+                review_reply.destroy({
                     buttons: bannerButtonsEl,
                     success: function() {
                         window.location = gReviewRequestPath;
