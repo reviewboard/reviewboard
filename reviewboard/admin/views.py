@@ -67,12 +67,19 @@ def ssh_settings(request, template_name='admin/ssh_settings.html'):
         form = SSHSettingsForm(request.POST, request.FILES)
 
         if form.is_valid():
-            try:
-                form.create(request.FILES)
-                return HttpResponseRedirect('.')
-            except Exception, e:
-                # Fall through. It will be reported inline and in the log.
-                logging.error('Uploading SSH key failed: %s' % e)
+            if form.did_request_delete() and client.get_user_key() is not None:
+                try:
+                    form.delete()
+                    return HttpResponseRedirect('.')
+                except Exception, e:
+                    logging.error('Deleting SSH key failed: %s' % e)
+            else:
+                try:
+                    form.create(request.FILES)
+                    return HttpResponseRedirect('.')
+                except Exception, e:
+                    # Fall through. It will be reported inline and in the log.
+                    logging.error('Uploading SSH key failed: %s' % e)
     else:
         form = SSHSettingsForm()
 

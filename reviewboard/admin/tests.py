@@ -1,10 +1,17 @@
+import os
+import shutil
+import tempfile
+
 from django.conf import settings
 from django.forms import ValidationError
 from django.test import TestCase
+from django.test import Client
 from djblets.siteconfig.models import SiteConfiguration
 
 from reviewboard.admin import checks
+from reviewboard.ssh.client import SSHClient
 from reviewboard.admin.validation import validate_bug_tracker
+from reviewboard.site.urlresolvers import local_site_reverse
 
 
 class UpdateTests(TestCase):
@@ -73,3 +80,69 @@ class ValidatorTests(TestCase):
             self.assertFalse(True, "validate_bug_tracker() raised a "
                                    "ValidationError when no error was "
                                    "expected.")
+
+
+class SSHSettingsFormTestCase(TestCase):
+    """Unit tests for SSHSettingsForm in /admin/forms.py"""
+    fixtures = ['test_users']
+
+    def setUp(self):
+        # Setup temp directory to prevent the original ssh related
+        # configurations been overwritten.
+        self.old_home = os.getenv('HOME')
+        self.tempdir = tempfile.mkdtemp(prefix='rb-tests-home-')
+        os.environ['RBSSH_ALLOW_AGENT'] = '0'
+        self._set_home(self.tempdir)
+
+        # Init client for http request, ssh_client for ssh config manipulation.
+        self.client = Client()
+        self.ssh_client = SSHClient()
+
+    def tearDown(self):
+        self._set_home(self.old_home)
+
+        if self.tempdir:
+            shutil.rmtree(self.tempdir)
+
+    def _set_home(self, homedir):
+        os.environ['HOME'] = homedir
+
+    def test_generate_key(self):
+        """Testing SSHSettingsForm POST with generate_key=1"""
+
+        # Should have no ssh key at this point.
+        self.assertEqual(self.ssh_client.get_user_key(), None)
+
+        # Send post request with 'generate_key' = 1.
+        self.client.login(username='admin', password='admin')
+        response = self.client.post(local_site_reverse('settings-ssh'), {
+            'generate_key': 1,
+        })
+
+        # Check the response's status_code,
+        # 302 means the request has been proceeded as POST.
+        self.assertEqual(response.status_code, 302)
+
+        # Check whether the key has been created.
+        self.assertNotEqual(self.ssh_client.get_user_key(), None)
+
+    def test_delete_key(self):
+        """Testing SSHSettingsForm POST with delete_key=1"""
+
+        # Should have no ssh key at this point, generate one.
+        self.assertEqual(self.ssh_client.get_user_key(), None)
+        self.ssh_client.generate_user_key()
+        self.assertNotEqual(self.ssh_client.get_user_key(), None)
+
+        # Send post request with 'delete_key' = 1.
+        self.client.login(username='admin', password='admin')
+        response = self.client.post(local_site_reverse('settings-ssh'), {
+            'delete_key': 1,
+        })
+
+        # Check the response's status_code,
+        # 302 means the request has been proceeded as POST.
+        self.assertEqual(response.status_code, 302)
+
+        # Check whether the key has been deleted.
+        self.assertEqual(self.ssh_client.get_user_key(), None)

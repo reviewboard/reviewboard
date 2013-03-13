@@ -1,0 +1,10 @@
+If you're looking to contribute to Review Board, we've written up a handy
+little guide that will be useful to you:
+
+http://www.reviewboard.org/docs/codebase/dev/contributing-patches/
+
+Please note that we do *not* accept pull requests! Instead, every patch must
+go through a code review process on our own Review Board server at
+http://reviews.reviewboard.org/.
+
+Also, bonus points for unit tests.

@@ -46,6 +46,7 @@ from reviewboard.ssh.client import SSHClient
 DEBUG = os.getenv('DEBUG_RBSSH')
 DEBUG_LOGDIR = os.getenv('RBSSH_LOG_DIR')
 
+SSH_PORT = 22
 
 options = None
 
@@ -236,7 +237,12 @@ def parse_options(args):
         hostname = args[0]
         args = args[1:]
 
-    return hostname, args
+    if options.port:
+        port = options.port
+    else:
+        port = SSH_PORT
+
+    return hostname, port, args
 
 
 def main():
@@ -265,7 +271,7 @@ def main():
     ch.addFilter(logging.Filter('root'))
     logging.getLogger('').addHandler(ch)
 
-    path, command = parse_options(sys.argv[1:])
+    path, port, command = parse_options(sys.argv[1:])
 
     if '://' not in path:
         path = 'ssh://' + path
@@ -287,7 +293,7 @@ def main():
 
     while True:
         try:
-            client.connect(hostname, username=username, password=password,
+            client.connect(hostname, port, username=username, password=password,
                            pkey=key, allow_agent=options.allow_agent)
             break
         except paramiko.AuthenticationException, e:

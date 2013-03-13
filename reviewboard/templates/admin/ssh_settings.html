@@ -30,6 +30,13 @@
   <label class="required">{% trans "Public key:" %}</label>
   <textarea cols="65" rows="10" readonly="readonly" class="public-key">{{key.get_name}} {{public_key}}</textarea>
  </div>
+ <div class="form-row">
+  <label></label>
+  <form method="POST" action=".">
+   {{form.delete_key}}
+   <input type="submit" value="{% trans "Delete Key" %}" />
+  </form>
+ </div>
 </fieldset>
 {% else %}
 <fieldset class="module aligned">
