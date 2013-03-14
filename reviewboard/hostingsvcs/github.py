@@ -3,6 +3,7 @@ import logging
 import urllib2
 
 from django import forms
+from django.conf import settings
 from django.contrib.sites.models import Site
 from django.utils import simplejson
 from django.utils.translation import ugettext_lazy as _
@@ -165,18 +166,30 @@ class GitHub(HostingService):
             local_site_reverse('root', local_site_name=local_site_name))
 
         try:
+            body = {
+                'scopes': [
+                    'user',
+                    'repo',
+                ],
+                'note': 'Access for Review Board',
+                'note_url': site_url,
+            }
+
+            # If the site is using a registered GitHub application,
+            # send it in the requests. This will gain the benefits of
+            # a GitHub application, such as higher rate limits.
+            if (hasattr(settings, 'GITHUB_CLIENT_ID') and
+                hasattr(settings, 'GITHUB_CLIENT_SECRET')):
+                body.update({
+                    'client_id': settings.GITHUB_CLIENT_ID,
+                    'client_secret': settings.GITHUB_CLIENT_SECRET,
+                })
+
             rsp, headers = self._json_post(
                 url=self.API_URL + 'authorizations',
                 username=username,
                 password=password,
-                body=simplejson.dumps({
-                    'scopes': [
-                        'user',
-                        'repo',
-                    ],
-                    'note': 'Access for Review Board',
-                    'note_url': site_url,
-                }))
+                body=simplejson.dumps(body))
         except (urllib2.HTTPError, urllib2.URLError), e:
             data = e.read()
 
