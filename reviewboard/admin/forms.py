@@ -47,6 +47,7 @@ from reviewboard.admin.checks import get_can_enable_search, \
                                      get_can_use_amazon_s3, \
                                      get_can_use_couchdb
 from reviewboard.admin.siteconfig import load_site_config
+from reviewboard.admin.support import get_install_key
 from reviewboard.ssh.client import SSHClient
 
 
@@ -857,3 +858,45 @@ class StorageSettingsForm(SiteSettingsForm):
                 'fields':  ('couchdb_default_server',),
             },
         )
+
+
+class SupportSettingsForm(SiteSettingsForm):
+    """Support settings for Review Board."""
+    install_key = forms.CharField(
+        label=_('Install key'),
+        help_text=_('The installation key to provide when purchasing a '
+                    'support contract.'),
+        required=False,
+        widget=forms.TextInput(attrs={
+            'size': '80',
+            'disabled': 'disabled'
+        }))
+
+    support_url = forms.CharField(
+        label=_('Custom Support URL'),
+        help_text=_("The location of your organization's own Review Board "
+                    "support page. Leave blank to use the default support "
+                    "page."),
+        required=False,
+        widget=forms.TextInput(attrs={'size': '80'}))
+
+    def load(self):
+        super(SupportSettingsForm, self).load()
+        self.fields['install_key'].initial = get_install_key()
+
+    class Meta:
+        title = _('Support Settings')
+        save_blacklist = ('install_key',)
+        fieldsets = ({
+            'classes': ('wide',),
+            'description':
+                '<p>For fast one-on-one support, plus other benefits, '
+                'purchase a <a href="'
+                'http://www.beanbaginc.com/support/contracts/">'
+                'support contract</a>.</p>'
+                '<p>You can also customize where your users will go for '
+                'support by changing the Custom Support URL below. If '
+                'left blank, they will be taken to our support '
+                'channel.</p>',
+            'fields': ('install_key', 'support_url'),
+        },)

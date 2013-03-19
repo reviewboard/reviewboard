@@ -82,6 +82,10 @@ localsite_urlpatterns = patterns('',
     url(r'^dashboard/$',
         'reviewboard.reviews.views.dashboard', name="dashboard"),
 
+    # Support
+    url(r'^support/$',
+        'reviewboard.admin.views.support_redirect', name="support"),
+
     # Users
     url(r'^users/$',
         'reviewboard.reviews.views.submitter_list', name="all-users"),

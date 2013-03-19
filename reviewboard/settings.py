@@ -215,6 +215,11 @@ LANGUAGE_COOKIE_NAME = "rblanguage"
 SESSION_COOKIE_NAME = "rbsessionid"
 SESSION_COOKIE_AGE = 365 * 24 * 60 * 60 # 1 year
 
+# Default support settings
+DEFAULT_SUPPORT_URL = 'http://www.beanbaginc.com/support/reviewboard/' \
+                      '?support-data=%(support_data)s'
+
+
 # Load local settings.  This can override anything in here, but at the very
 # least it needs to define database connectivity.
 try:
