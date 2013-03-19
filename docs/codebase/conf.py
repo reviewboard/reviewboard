@@ -18,6 +18,7 @@ import sys, os
 
 # Set this up to parse Django-driven code.
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
+sys.path.insert(0, os.path.dirname(__file__))
 import reviewboard
 from reviewboard import settings
 from django.core.management import setup_environ
