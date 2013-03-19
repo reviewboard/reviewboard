@@ -151,6 +151,7 @@ class Site(object):
 
         # State saved during installation
         self.domain_name = None
+        self.web_server_port = None
         self.site_root = None
         self.static_url = None
         self.media_url = None
@@ -609,6 +610,7 @@ class Site(object):
 
         data = {
             'rbsite': rbsite_path,
+            'port': self.web_server_port,
             'sitedir': sitedir,
             'sitedomain': self.domain_name,
             'sitedomain_escaped': domain_name_escaped,
@@ -1355,6 +1357,9 @@ class InstallCommand(Command):
                               "or file cache directory)")
         group.add_option("--web-server-type",
                          help="web server (apache or lighttpd)")
+        group.add_option("--web-server-port",
+                         help="port that the web server should listen on",
+                         default=80)
         group.add_option("--python-loader",
                          help="python loader for apache (modpython, fastcgi or wsgi)")
         group.add_option("--admin-user", default="admin",
