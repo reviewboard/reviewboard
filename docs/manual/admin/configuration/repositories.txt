@@ -144,7 +144,7 @@ listed will depend on the requirements of the hosting service.
     For example:
 
     * **cgit**:
-      ``http://git.gnome.org/browse/gtk+/blob/<filename>?id=<revision>``
+      ``http://git.gnome.org/browse/gtk+/blob/<filename>?id2=<revision>``
     * **Gitweb**:
       ``http://git.kernel.org/?p=bluetooth/bluez-gnome.git;a=blob_plain;f=<filename>;hb=<revision>``
 
@@ -476,11 +476,11 @@ cgit
 
 For cgit, this path should be in the form of:
 
-:samp:`http://{servername}/browse/repo/blob/<filename>?id=<revision>`
+:samp:`http://{servername}/browse/repo/blob/<filename>?id2=<revision>`
 
 For example:
 
-:samp:`http://git.gnome.org/browse/gtk+/blob/<filename>?id=<revision>`
+:samp:`http://git.gnome.org/browse/gtk+/blob/<filename>?id2=<revision>`
 
 
 Gitweb
