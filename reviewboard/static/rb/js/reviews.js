@@ -888,8 +888,14 @@ $.reviewForm = function(review) {
                         .val("Discard Review")
                         .click(function(e) {
                             gEditCount--;
-                            review.deleteReview({
-                                buttons: buttons
+                            review.destroy({
+                                buttons: buttons,
+                                success: function() {
+                                    hideReviewBanner();
+                                    gReviewBanner.queue(function() {
+                                        window.location = gReviewRequestPath;
+                                    });
+                                }
                             });
                         }),
                     $('<input type="button"/>')
@@ -969,23 +975,22 @@ $.reviewForm = function(review) {
         });
 
         $.funcQueue("reviewForm").add(function() {
-            review.ship_it = $("#id_shipit", dlg)[0].checked;
-            review.body_top = $(".body-top", dlg).text();;
-            review.body_bottom = $(".body-bottom", dlg).text();;
-
-            var options = {
-                buttons: buttons,
-                success: $.funcQueue("reviewForm").next
-            };
+            review.set({
+                shipIt: $("#id_shipit", dlg)[0].checked,
+                bodyTop: $(".body-top", dlg).text(),
+                bodyBottom: $(".body-bottom", dlg).text(),
+                public: publish
+            });
 
             gEditCount--;
 
-            if (publish) {
-                review.publish(options);
-            }
-            else {
-                review.save(options);
-            }
+            review.save({
+                buttons: buttons,
+                success: $.funcQueue("reviewForm").next,
+                error: function() {
+                    console.log(arguments);
+                }
+            });
         });
 
         $.funcQueue("reviewForm").add(function() {
@@ -1689,9 +1694,12 @@ $(document).ready(function() {
 
     $("#shipit-link").click(function() {
         if (confirm("Are you sure you want to post this review?")) {
-            pendingReview.ship_it = true;
-            pendingReview.body_top = "Ship It!";
-            pendingReview.publish({
+            pendingReview.set({
+                shipIt: true,
+                bodyTop: 'Ship It!',
+                public: true
+            });
+            pendingReview.save({
                 buttons: null,
                 success: function() {
                     hideReviewBanner();
@@ -1705,7 +1713,8 @@ $(document).ready(function() {
 
     /* Review banner's Publish button. */
     $("#review-banner-publish").click(function() {
-        pendingReview.publish({
+        pendingReview.set('public', true);
+        pendingReview.save({
             buttons: $("input", gReviewBanner),
             success: function() {
                 hideReviewBanner();
@@ -1727,7 +1736,7 @@ $(document).ready(function() {
                     $('<input type="button" value="Cancel"/>'),
                     $('<input type="button" value="Discard"/>')
                         .click(function(e) {
-                            pendingReview.deleteReview({
+                            pendingReview.destroy({
                                 buttons: $("input", gReviewBanner),
                                 success: function() {
                                     hideReviewBanner();

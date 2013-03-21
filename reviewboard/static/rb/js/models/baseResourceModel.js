@@ -408,7 +408,7 @@ RB.BaseResource = Backbone.Model.extend({
             data: options.attrs || model.toJSON(options),
             processData: true,
 
-            error: function(xhr, textStatus, errorThrown) {
+            error: function(model, xhr) {
                 var rsp = null,
                     text;
 
@@ -419,7 +419,8 @@ RB.BaseResource = Backbone.Model.extend({
                     text = 'HTTP ' + xhr.status + ' ' + xhr.statusText;
                 }
 
-                options.error(model, text, xhr.statusText);
+                xhr.rbResponseText = text;
+                options.error(model, xhr, options);
             }
         }, options));
     }

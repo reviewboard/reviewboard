@@ -28,12 +28,17 @@ $.extend(RB.ReviewRequest.prototype, {
     createReview: function(review_id) {
         if (review_id == undefined) {
             if (this.draft_review == null) {
-                this.draft_review = new RB.Review(this);
+                this.draft_review = new RB.DraftReview({
+                    parentObject: this
+                });
             }
 
             return this.draft_review;
         } else if (!this.reviews[review_id]) {
-            this.reviews[review_id] = new RB.Review(this, review_id);
+            this.reviews[review_id] = new RB.Review({
+                parentObject: this,
+                id: review_id
+            });
         }
 
         return this.reviews[review_id];
@@ -244,212 +249,6 @@ $.extend(RB.ReviewRequest.prototype, {
         }
 
         RB.apiCall(options);
-    }
-});
-
-
-RB.Review = function(review_request, id) {
-    this.id = id;
-    this.review_request = review_request;
-    this.draft_reply = null;
-    this.ship_it = null;
-    this.body_top = null;
-    this.body_bottom = null;
-    this.url = null;
-    this.loaded = false;
-    this.public = null;
-
-    return this;
-};
-
-$.extend(RB.Review.prototype, {
-    createDiffComment: function(id, filediff, interfilediff, beginLineNum,
-                                endLineNum) {
-        return new RB.DiffComment({
-            parentObject: this,
-            id: id,
-            fileDiffID: filediff ? filediff.id : null,
-            interFileDiffID: interfilediff ? interfilediff.id : null,
-            beginLineNum: beginLineNum,
-            endLineNum: endLineNum
-        });
-    },
-
-    createScreenshotComment: function(id, screenshot_id, x, y, width, height) {
-        return new RB.ScreenshotComment({
-            parentObject: this,
-            id: id,
-            screenshotID: screenshot_id,
-            x: x,
-            y: y,
-            width: width,
-            height: height
-        });
-    },
-
-    createFileAttachmentComment: function(id, file_attachment_id) {
-        return new RB.FileAttachmentComment({
-            parentObject: this,
-            id: id,
-            fileAttachmentID: file_attachment_id
-        });
-    },
-
-    createReply: function() {
-        if (this.draft_reply == null) {
-            this.draft_reply = new RB.ReviewReply({
-                parentObject: this
-            });
-        }
-
-        return this.draft_reply;
-    },
-
-    ready: function(on_done) {
-        if (this.loaded) {
-            on_done.apply(this, arguments);
-        } else {
-            this._load(on_done);
-        }
-    },
-
-    ensureCreated: function(on_done) {
-        var self = this;
-
-        self.ready(function() {
-            if (self.loaded) {
-                on_done.apply(this, arguments);
-            } else {
-                /* The review doesn't exist. Create it. */
-                self.save({
-                    success: function(rsp) {
-                        self.id = rsp.review.id;
-                        self.loaded = true;
-                        on_done.apply(this, arguments);
-                    }
-                });
-            }
-        });
-    },
-
-    save: function(options) {
-        var data = {};
-
-        if (this.ship_it != null) {
-            data.ship_it = (this.ship_it ? 1 : 0);
-        }
-
-        if (this.body_top != null) {
-            data.body_top = this.body_top;
-        }
-
-        if (this.body_bottom != null) {
-            data.body_bottom = this.body_bottom;
-        }
-
-        if (options.public) {
-            data.public = 1;
-        }
-
-        var self = this;
-
-        this.ready(function() {
-            var type;
-            var url;
-
-            if (self.loaded) {
-                type = "PUT";
-                url = self.url;
-            } else {
-                type = "POST";
-                url = self.review_request.links.reviews.href;
-            }
-
-            self._apiCall({
-                type: type,
-                url: url,
-                data: data,
-                buttons: options.buttons,
-                success: function(rsp) {
-                    self._loadDataFromResponse(rsp);
-
-                    if ($.isFunction(options.success)) {
-                        options.success(rsp);
-                    }
-                }
-            });
-        });
-    },
-
-    publish: function(options) {
-        this.save($.extend(true, {
-            public: true
-        }, options));
-    },
-
-    deleteReview: function(options) {
-        var self = this;
-
-        self.ready(function() {
-            if (self.loaded) {
-                self._apiCall({
-                    type: "DELETE",
-                    buttons: options.buttons,
-                    success: options.success
-                });
-            } else if ($.isFunction(options.success)) {
-                options.success();
-            }
-        });
-    },
-
-    _load: function(on_done) {
-        var self = this;
-
-        self.review_request.ready(function() {
-            RB.apiCall({
-                type: "GET",
-                url: self.review_request.links.reviews.href +
-                     (self.id || "draft") + "/",
-                success: function(rsp, status) {
-                    if (status != 404) {
-                        self._loadDataFromResponse(rsp);
-                    }
-
-                    on_done.apply(this, arguments);
-                }
-            });
-        });
-    },
-
-    _loadDataFromResponse: function(rsp) {
-        this.id = rsp.review.id;
-        this.ship_it = rsp.review.ship_it;
-        this.body_top = rsp.review.body_top;
-        this.body_bottom = rsp.review.body_bottom;
-        this.links = rsp.review.links;
-        this.url = rsp.review.links.self.href;
-        this.loaded = true;
-        this.public = rsp.review.public;
-    },
-
-    _apiCall: function(options) {
-        var self = this;
-
-        self.review_request.ready(function() {
-            if (!options.url) {
-                options.url = self.review_request.links.reviews.href +
-                              self.id + "/" + (options.path || "");
-            }
-
-            if (!options.success) {
-                options.success = function() {
-                    window.location = self.review_request.path;
-                };
-            }
-
-            RB.apiCall(options);
-        });
     }
 });
 

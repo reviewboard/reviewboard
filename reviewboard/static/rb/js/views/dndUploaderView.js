@@ -175,7 +175,7 @@ RB.DnDUploader = Backbone.View.extend({
                 $thumb.replaceWith($.newFileAttachment(fileAttachment));
                 RB.draftBanner.show();
             },
-            error: function(rsp, msg) {
+            error: function() {
                 $thumb.remove();
             }
         });
