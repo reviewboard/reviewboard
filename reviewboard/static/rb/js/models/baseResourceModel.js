@@ -85,17 +85,35 @@ RB.BaseResource = Backbone.Model.extend({
      * If we fail to load the resource, objects.error() will be called instead.
      */
     ready: function(options, context) {
+        var parentObject = this.get('parentObject'),
+            success,
+            error;
+
         options = options || {};
 
-        if (!this.get('loaded') && !this.isNew()) {
+        success = options.ready ? _.bind(options.ready, context)
+                                : undefined;
+        error = options.error ? _.bind(options.error, context)
+                              : undefined;
+
+        if (this.get('loaded')) {
+            if (options.ready) {
+                options.ready.call(context);
+            }
+        } else if (!this.isNew()) {
             this.fetch({
-                success: options.ready
-                         ? _.bind(options.ready, context)
-                         : undefined,
-                error: options.error
-                       ? _.bind(options.error, context)
-                       : undefined
+                success: success,
+                error: error
             });
+        } else if (parentObject) {
+            if (parentObject.cid) {
+                parentObject.ready({
+                    ready: success,
+                    error: error
+                });
+            } else {
+                parentObject.ready(success || function() {});
+            }
         } else if (options.ready) {
             options.ready.call(context);
         }

@@ -354,6 +354,8 @@ describe('models/BaseResource', function() {
     });
 
     describe('save', function() {
+        var callbacks;
+
         describe('Callback handling', function() {
             beforeEach(function() {
                 callbacks = {
