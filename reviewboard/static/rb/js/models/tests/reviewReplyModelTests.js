@@ -29,8 +29,8 @@ describe('models/ReviewReply', function() {
 
             expect(data).not.toBe(undefined);
             expect(data.id).toBe(42);
-            expect(data.body_top).toBe('foo');
-            expect(data.body_bottom).toBe('bar');
+            expect(data.bodyTop).toBe('foo');
+            expect(data.bodyBottom).toBe('bar');
             expect(data.public).toBe(false);
         });
     });
@@ -40,7 +40,7 @@ describe('models/ReviewReply', function() {
             it('With value', function() {
                 var data;
 
-                model.set('body_top', 'foo');
+                model.set('bodyTop', 'foo');
                 data = model.toJSON();
                 expect(data.body_top).toBe('foo');
             });
@@ -50,7 +50,7 @@ describe('models/ReviewReply', function() {
             it('With value', function() {
                 var data;
 
-                model.set('body_bottom', 'foo');
+                model.set('bodyBottom', 'foo');
                 data = model.toJSON();
                 expect(data.body_bottom).toBe('foo');
             });

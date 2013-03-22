@@ -450,9 +450,11 @@ $.fn.commentSection = function(review_id, context_id, context_type) {
 
                         self.html(linkifyText(self.text()));
 
-                        if (context_type == "body_top" ||
-                            context_type == "body_bottom") {
-                            review_reply.set(context_type, value);
+                        if (context_type == "body_top") {
+                            review_reply.set('bodyTop', value);
+                            obj = review_reply;
+                        } else if (context_type == "body_bottom") {
+                            review_reply.set('bodyBottom', value);
                             obj = review_reply;
                         } else {
                             replyClass = CommentReplyClasses[context_type];
