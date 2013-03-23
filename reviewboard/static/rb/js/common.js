@@ -141,11 +141,6 @@ $.fn.formDlg = function(options) {
          * Sends the form data to the server.
          */
         function send() {
-            // TODO: Remove this when we move fully to Backbone.js.
-            if (options.dataStoreObject.setForm) {
-                options.dataStoreObject.setForm(form);
-            }
-
             options.dataStoreObject.save({
                 form: form,
                 buttons: $("input:button", box.modalBox("buttons")),

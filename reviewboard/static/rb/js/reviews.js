@@ -1187,14 +1187,16 @@ $.fn.fileAttachment = function() {
                     } else {
                         $(this).removeClass("empty-caption");
                     }
-                    fileAttachment.ready(function() {
-                        fileAttachment.caption = value;
-                        fileAttachment.save({
-                            buttons: gDraftBannerButtons,
-                            success: function(rsp) {
-                                gDraftBanner.show();
-                            }
-                        });
+                    fileAttachment.ready({
+                        ready: function() {
+                            fileAttachment.set('caption', value);
+                            fileAttachment.save({
+                                buttons: gDraftBannerButtons,
+                                success: function(rsp) {
+                                    gDraftBanner.show();
+                                }
+                            });
+                        }
                     });
                 }
             });
@@ -1214,10 +1216,15 @@ $.fn.fileAttachment = function() {
 
         self.find("a.delete")
             .click(function() {
-                fileAttachment.ready(function() {
-                    fileAttachment.deleteFileAttachment()
-                    self.empty();
-                    gDraftBanner.show();
+                fileAttachment.ready({
+                    ready: function() {
+                        fileAttachment.destroy({
+                            success: function() {
+                                self.empty();
+                                gDraftBanner.show();
+                            }
+                        });
+                    }
                 });
 
                 return false;
@@ -1370,14 +1377,14 @@ $.newFileAttachment = function(fileAttachment) {
         attachments = $("#file-list");
 
     container = $(newFileAttachmentTemplate({
-        caption: fileAttachment.caption,
+        caption: fileAttachment.get('caption'),
         delete_image_url: STATIC_URLS['rb/images/delete.png'],
-        filename: fileAttachment.filename,
-        icon_url: fileAttachment.icon_url,
+        filename: fileAttachment.get('filename'),
+        icon_url: fileAttachment.get('iconURL'),
         id: fileAttachment.id,
-        review_url: fileAttachment.review_url,
-        thumbnail: fileAttachment.thumbnail,
-        url: fileAttachment.url
+        review_url: fileAttachment.get('reviewURL'),
+        thumbnail: fileAttachment.get('thumbnailHTML'),
+        url: fileAttachment.get('downloadURL')
     }));
 
     container.fileAttachment();

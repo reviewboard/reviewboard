@@ -52,7 +52,10 @@ $.extend(RB.ReviewRequest.prototype, {
     },
 
     createFileAttachment: function(file_attachment_id) {
-        return new RB.FileAttachment(this, file_attachment_id);
+        return new RB.FileAttachment({
+            parentObject: this,
+            id: file_attachment_id
+        });
     },
 
     /*
@@ -253,162 +256,6 @@ $.extend(RB.ReviewRequest.prototype, {
 });
 
 
-RB.FileAttachment = function(review_request, id) {
-    this.review_request = review_request;
-    this.id = id;
-    this.caption = null;
-    this.thumbnail = null;
-    this.path = null;
-    this.url = null;
-    this.loaded = false;
-
-    return this;
-};
-
-$.extend(RB.FileAttachment.prototype, {
-    setFile: function(file) {
-        this.file = file;
-    },
-
-    setForm: function(form) {
-        this.form = form;
-    },
-
-    ready: function(on_done) {
-        if (this.loaded && this.id) {
-            on_done.apply(this, arguments);
-        } else {
-            this._load(on_done);
-        }
-    },
-
-    save: function(options) {
-        options = $.extend(true, {
-            success: function() {},
-            error: function() {}
-        }, options);
-
-        if (this.id) {
-            var data = {};
-
-            if (this.caption != null) {
-                data.caption = this.caption;
-            }
-
-            var self = this;
-            this.ready(function() {
-                RB.apiCall({
-                    type: "PUT",
-                    url: self.url,
-                    data: data,
-                    buttons: options.buttons,
-                    success: function(rsp) {
-                        self._loadDataFromResponse(rsp);
-
-                        if ($.isFunction(options.success)) {
-                            options.success(rsp);
-                        }
-                    }
-                });
-            });
-        } else {
-            if (this.form) {
-                this._saveForm(options);
-            } else if (this.file) {
-                this._saveFile(options);
-            } else {
-                options.error("No data has been set for this file. " +
-                              "This is a script error. Please report it.");
-            }
-        }
-    },
-
-    deleteFileAttachment: function() {
-        var self = this;
-
-        self.ready(function() {
-            if (self.loaded) {
-                RB.apiCall({
-                    type: "DELETE",
-                    url: self.url,
-                    success: function() {
-                        $.event.trigger("deleted", null, self);
-                        self._deleteAndDestruct();
-                    }
-                });
-            }
-        });
-    },
-
-    _load: function(on_done) {
-        if (!this.id) {
-            on_done.apply(this, arguments);
-            return;
-        }
-
-        var self = this;
-
-        self.review_request.ready(function() {
-            RB.apiCall({
-                type: "GET",
-                url: self.review_request.links.file_attachments.href + self.id + "/",
-                success: function(rsp, status) {
-                    if (status != 404) {
-                        self._loadDataFromResponse(rsp);
-                    }
-
-                    on_done.apply(this, arguments);
-                }
-            });
-        });
-    },
-
-    _loadDataFromResponse: function(rsp) {
-        this.id = rsp.file_attachment.id;
-        this.caption = rsp.file_attachment.caption;
-        this.thumbnail = rsp.file_attachment.thumbnail;
-        this.path = rsp.file_attachment.path;
-        this.url = rsp.file_attachment.links.self.href;
-        this.loaded = true;
-    },
-
-    _saveForm: function(options) {
-        this._saveApiCall(options.success, options.error, {
-            buttons: options.buttons,
-            form: this.form
-        });
-    },
-
-    _saveFile: function(options) {
-        sendFileBlob(this.file, this._saveApiCall, this, options);
-    },
-
-    _saveApiCall: function(onSuccess, onError, options) {
-        var self = this;
-        self.review_request.ready(function() {
-            RB.apiCall($.extend(options, {
-                url: self.review_request.links.file_attachments.href,
-                success: function(rsp) {
-                    if (rsp.stat == "ok") {
-                        self._loadDataFromResponse(rsp);
-
-                        if ($.isFunction(onSuccess)) {
-                            onSuccess(rsp, rsp.file_attachment);
-                        }
-                    } else if ($.isFunction(onError)) {
-                        onError(rsp, rsp.err.msg);
-                    }
-                }
-            }));
-        });
-    },
-
-    _deleteAndDestruct: function() {
-        $.event.trigger("destroyed", null, this);
-    }
-});
-
-
 /*
  * Convenience wrapper for Review Board API functions. This will handle
  * any button disabling/enabling, write to the correct path prefix, form
@@ -603,43 +450,6 @@ RB.ajaxOptions = {
 Backbone.ajax = function(options) {
     return RB.apiCall(options);
 };
-
-
-function sendFileBlob(file, save_func, obj, options) {
-    var reader = new FileReader();
-
-    reader.onloadend = function() {
-        var boundary = "-----multipartformboundary" + new Date().getTime();
-        var blob = "";
-        blob += "--" + boundary + "\r\n";
-        blob += 'Content-Disposition: form-data; name="path"; ' +
-                'filename="' + file.name + '"\r\n';
-        blob += 'Content-Type: ' + file.type + '\r\n';
-        blob += '\r\n';
-        blob += reader.result;
-        blob += '\r\n';
-        blob += "--" + boundary + "--\r\n";
-        blob += '\r\n';
-
-        save_func.call(obj, options.success, options.error, {
-            buttons: options.buttons,
-            data: blob,
-            processData: false,
-            contentType: "multipart/form-data; boundary=" + boundary,
-            xhr: function() {
-                var xhr = $.ajaxSettings.xhr();
-
-                xhr.send = function(data) {
-                    xhr.sendAsBinary(data);
-                };
-
-                return xhr;
-            }
-        });
-    };
-
-    reader.readAsBinaryString(file);
-}
 
 
 if (!XMLHttpRequest.prototype.sendAsBinary) {

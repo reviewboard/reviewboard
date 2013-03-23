@@ -168,10 +168,10 @@ RB.DnDUploader = Backbone.View.extend({
                 .css('opacity', 0)
                 .fadeTo(1000, 1);
 
-        fileAttachment.setFile(file);
+        fileAttachment.set('file', file);
         fileAttachment.save({
             buttons: RB.draftBannerButtons,
-            success: function(rsp, fileAttachment) {
+            success: function() {
                 $thumb.replaceWith($.newFileAttachment(fileAttachment));
                 RB.draftBanner.show();
             },

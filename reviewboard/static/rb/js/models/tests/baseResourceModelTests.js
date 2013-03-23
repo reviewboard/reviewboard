@@ -636,6 +636,173 @@ describe('models/BaseResource', function() {
                 expect($.ajax).toHaveBeenCalled();
             });
         });
+
+        describe('With file upload support', function() {
+            beforeEach(function() {
+                model.payloadFileKey = 'file';
+                model.url = '/api/foos/';
+                model.toJSON = function(options) {
+                    return {
+                        file: this.get('file'),
+                        myfield: 'myvalue'
+                    };
+                };
+
+                spyOn(Backbone.Model.prototype, 'save').andCallThrough();
+                spyOn(RB, 'apiCall').andCallThrough();
+            });
+
+            it('With file', function() {
+                var seenComplete = false,
+                    boundary = '-----multipartformboundary';
+
+                runs(function() {
+                    var blob = new Blob(['Hello world!'], {
+                        type: 'text/plain'
+                    });
+                    blob.name = 'myfile';
+
+                    spyOn($, 'ajax').andCallFake(function(request) {
+                        expect(request.type).toBe('POST');
+                        expect(request.processData).toBe(false);
+                        expect(request.contentType.indexOf(
+                            'multipart/form-data; boundary=')).toBe(0);
+                        expect(request.data).toBe(
+                            '--' + boundary + '\r\n' +
+                            'Content-Disposition: form-data; name="file"' +
+                            '; filename="myfile"\r\n' +
+                            'Content-Type: text/plain\r\n\r\n' +
+                            'Hello world!' +
+                            '\r\n' +
+                            '--' + boundary + '\r\n' +
+                            'Content-Disposition: form-data; ' +
+                            'name="myfield"\r\n\r\n' +
+                            'myvalue\r\n' +
+                            '--' + boundary + '--\r\n\r\n');
+
+                        request.success({
+                            stat: 'ok',
+                            foo: {
+                                id: 42
+                            }
+                        });
+                    });
+
+                    model.set('file', blob);
+                    model.save({
+                        success: function() {
+                            seenComplete = true;
+                        },
+                        boundary: boundary
+                    });
+                });
+
+                waitsFor(function() {
+                    return seenComplete;
+                });
+
+                runs(function() {
+                    expect(Backbone.Model.prototype.save).toHaveBeenCalled();
+                    expect(RB.apiCall).toHaveBeenCalled();
+                    expect($.ajax).toHaveBeenCalled();
+                });
+            });
+
+            it('Without file', function() {
+                runs(function() {
+                    spyOn($, 'ajax').andCallFake(function(request) {
+                        expect(request.type).toBe('POST');
+                        expect(request.processData).toBe(true);
+                        expect(request.contentType).toBe(
+                            'application/x-www-form-urlencoded');
+
+                        request.success({
+                            stat: 'ok',
+                            foo: {
+                                id: 42
+                            }
+                        });
+                    });
+
+                    model.save({
+                        success: function() {
+                            seenComplete = true;
+                        }
+                    });
+                });
+
+                waitsFor(function() {
+                    return seenComplete;
+                });
+
+                runs(function() {
+                    expect(Backbone.Model.prototype.save).toHaveBeenCalled();
+                    expect(RB.apiCall).toHaveBeenCalled();
+                    expect($.ajax).toHaveBeenCalled();
+                });
+            });
+        });
+
+        describe('With form upload support', function() {
+            beforeEach(function() {
+                model.url = '/api/foos/';
+            });
+
+            it('Overriding toJSON attributes', function() {
+                var form = $('<form/>')
+                    .append($('<input name="foo"/>'));
+
+                model.toJSON = function(options) {
+                    return {
+                        myfield: 'myvalue'
+                    };
+                };
+
+                spyOn(Backbone, 'sync').andCallThrough();
+                spyOn(RB, 'apiCall').andCallThrough();
+                spyOn($, 'ajax');
+                spyOn(form, 'ajaxSubmit');
+
+                model.save({
+                    form: form
+                });
+
+                expect(RB.apiCall).toHaveBeenCalled();
+                expect(form.ajaxSubmit).toHaveBeenCalled();
+                expect($.ajax).not.toHaveBeenCalled();
+                expect(Backbone.sync.calls[0].args[2].data).toBe(null);
+                expect(RB.apiCall.calls[0].args[0].data).toBe(null);
+            });
+
+            it('Overriding file attributes', function() {
+                var form = $('<form/>')
+                    .append($('<input name="foo"/>'));
+
+                model.payloadFileKey = 'file';
+                model.toJSON = function(options) {
+                    return {
+                        file: this.get('file')
+                    };
+                };
+
+                spyOn(model, '_saveWithFile').andCallThrough();
+                spyOn(Backbone, 'sync').andCallThrough();
+                spyOn(RB, 'apiCall').andCallThrough();
+                spyOn($, 'ajax');
+                spyOn(form, 'ajaxSubmit');
+
+                model.save({
+                    form: form
+                });
+
+                expect(model._saveWithFile).not.toHaveBeenCalled();
+                expect(RB.apiCall).toHaveBeenCalled();
+                expect(form.ajaxSubmit).toHaveBeenCalled();
+                expect($.ajax).not.toHaveBeenCalled();
+                expect(Backbone.sync.calls[0].args[2].data).toBe(null);
+                expect(RB.apiCall.calls[0].args[0].data).toBe(null);
+            });
+        });
     });
 
     describe('url', function() {

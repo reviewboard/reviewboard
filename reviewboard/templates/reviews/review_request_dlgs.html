@@ -22,16 +22,18 @@
 {%  endif %}
 
     $("#upload-file-link").click(function() {
+      var fileAttachment = gReviewRequest.createFileAttachment();
+
       $("<div/>").formDlg({
         title: "{% trans "Upload File" %}",
         confirmLabel: "{% trans "Upload" %}",
-        dataStoreObject: gReviewRequest.createFileAttachment(),
+        dataStoreObject: fileAttachment,
         width: "50em",
         upload: true,
         fields: {% form_dialog_fields file_attachment_form %},
         success: function(rsp) {
             if (!$("#file-list").length == 0) {
-                $.newFileAttachment(rsp.file_attachment);
+                $.newFileAttachment(fileAttachment);
             }
 
             RB.draftBanner.show();

@@ -273,7 +273,10 @@ RB.BaseResource = Backbone.Model.extend({
      * readiness and creation checks of this object and its parent.
      */
     _saveObject: function(options, context) {
-        var url = _.result(this, 'url');
+        var url = _.result(this, 'url'),
+            file,
+            reader,
+            saveOptions;
 
         if (!url) {
             if (_.isFunction(options.error)) {
@@ -285,7 +288,7 @@ RB.BaseResource = Backbone.Model.extend({
             return;
         }
 
-        Backbone.Model.prototype.save.call(this, {}, _.defaults({
+        saveOptions = _.defaults({
             success: _.bind(function() {
                 if (_.isFunction(options.success)) {
                     options.success.apply(context, arguments);
@@ -297,7 +300,84 @@ RB.BaseResource = Backbone.Model.extend({
             error: _.isFunction(options.error)
                    ? _.bind(options.error, context)
                    : undefined
+        }, options);
+
+        saveOptions.attrs = options.attrs || this.toJSON(options);
+
+        if (!options.form) {
+            if (this.payloadFileKey && window.File) {
+                /* See if there's a file in the attributes we're using. */
+                file = saveOptions.attrs[this.payloadFileKey];
+            }
+        }
+
+        if (file) {
+            reader = new FileReader();
+            reader.onloadend = _.bind(function() {
+                this._saveWithFile(file, reader.result, saveOptions);
+            }, this);
+
+            reader.readAsBinaryString(file);
+        } else {
+            Backbone.Model.prototype.save.call(this, {}, saveOptions);
+        }
+    },
+
+    /*
+     * Saves the model with a file upload.
+     *
+     * When doing file uploads, we need to hand-structure a form-data payload
+     * to the server. It will contain the file contents and the attributes
+     * we're saving. We cna then call the standard save function with this
+     * payload as our data.
+     */
+    _saveWithFile: function(file, fileData, options) {
+        var boundary = options.boundary ||
+                       ('-----multipartformboundary' + new Date().getTime()),
+            blob = [];
+
+        blob.push('--' + boundary + '\r\n');
+        blob.push('Content-Disposition: form-data; name="' +
+                  this.payloadFileKey + '"; filename="' + file.name + '"\r\n');
+        blob.push('Content-Type: ' + file.type + '\r\n');
+        blob.push('\r\n');
+        blob.push(fileData);
+        blob.push('\r\n');
+
+        _.each(options.attrs, function(value, key) {
+            if (key !== this.payloadFileKey && value !== undefined &&
+                value !== null) {
+                blob.push('--' + boundary + '\r\n');
+                blob.push('Content-Disposition: form-data; name="' + key +
+                          '"\r\n');
+                blob.push('\r\n');
+                blob.push(value + '\r\n');
+            }
+        }, this);
+
+        blob.push('--' + boundary + '--\r\n\r\n');
+
+        Backbone.Model.prototype.save.call(this, {}, _.extend({
+            data: blob.join(''),
+            processData: false,
+            contentType: 'multipart/form-data; boundary=' + boundary,
+            xhr: this._binaryXHR
         }, options));
+    },
+
+    /*
+     * Builds a binary-capable XHR.
+     *
+     * Since we must send files as blob data, and not all XHR implementations
+     * do this by default, we must override the XHR and change which send
+     * function it will use.
+     */
+    _binaryXHR: function() {
+        var xhr = $.ajaxSettings.xhr();
+
+        xhr.send = xhr.sendAsBinary;
+
+        return xhr;
     },
 
     /*
@@ -404,27 +484,30 @@ RB.BaseResource = Backbone.Model.extend({
     sync: function(method, model, options) {
         options = options || {};
 
-        return Backbone.sync.call(this, method, model, _.defaults({
+        return Backbone.sync.call(this, method, model, _.defaults({}, options, {
             /* Use form data instead of a JSON payload. */
             contentType: 'application/x-www-form-urlencoded',
-            data: options.attrs || model.toJSON(options),
+            data: options.form ? null
+                               : (options.attrs || model.toJSON(options)),
             processData: true,
 
             error: function(model, xhr) {
                 var rsp = null,
                     text;
 
-                try {
-                    rsp = $.parseJSON(xhr.responseText);
-                    text = rsp.err.msg;
-                } catch (e) {
-                    text = 'HTTP ' + xhr.status + ' ' + xhr.statusText;
-                }
+                if (_.isFunction(options.error)) {
+                    try {
+                        rsp = $.parseJSON(xhr.responseText);
+                        text = rsp.err.msg;
+                    } catch (e) {
+                        text = 'HTTP ' + xhr.status + ' ' + xhr.statusText;
+                    }
 
-                xhr.errorText = text;
-                options.error(model, xhr, options);
+                    xhr.errorText = text;
+                    options.error(model, xhr, options);
+                }
             }
-        }, options));
+        }));
     }
 }, {
     strings: {
