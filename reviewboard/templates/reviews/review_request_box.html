@@ -181,8 +181,9 @@
      </ul>
      <div class="file-header">
       <a href="{{file.get_absolute_url}}">
-      <img src="{{file.icon_url}}" />
-      {{file.filename}}</a>
+       <img class="icon" src="{{file.icon_url}}" />
+       <span class="filename">{{file.filename}}</span>
+      </a>
 {%  if request.user.pk == review_request.submitter_id or perms.reviews.delete_file %}
       <a href="#" class="delete">
        <img src="{% static "rb/images/delete.png" %}" alt="{% trans "Delete File" %}" />

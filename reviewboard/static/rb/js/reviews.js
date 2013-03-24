@@ -1198,177 +1198,63 @@ $.fn.screenshotThumbnail = function() {
 
  * @return {jQuery} The provided file attachment container.
  */
-$.fn.fileAttachment = function() {
+$.fn.fileAttachment = function(newFileAttachment) {
     return $(this).each(function() {
-        var self = $(this);
+        var $this = $(this),
+            $caption,
+            fileAttachment = newFileAttachment,
+            renderThumbnail = true,
+            comments = [],
+            id,
+            view;
 
-        var fileID = self.attr("data-file-id");
-        var fileAttachment = gReviewRequest.createFileAttachment(fileID);
-        var draftComment = null;
-        var comments = [];
-        var commentsProcessed = false;
+        if (!fileAttachment) {
+            id = $this.attr('data-file-id');
+            $caption = $this.find('.file-caption .edit');
+            comments = gFileAttachmentComments[id];
+            renderThumbnail = false;
 
-        self.find("a.edit")
-            .inlineEditor({
-                cls: "file-" + fileID + "-editor",
-                editIconPath: STATIC_URLS["rb/images/edit.png"],
-                showButtons: false
-            })
-            .on({
-                "beginEdit": function() {
-                     if ($(this).hasClass("empty-caption")) {
-                         $(this).inlineEditor("field").val("");
-                     }
+            fileAttachment = gReviewRequest.createFileAttachment(id);
 
-                    gEditCount++;
-                },
-                "cancel": function() {
-                    gEditCount--;
-                },
-                "complete": function(e, value) {
-                    gEditCount--;
-                    if (value === "") {
-                        $(this)
-                            .text("No caption")
-                            .addClass("empty-caption");
-                    } else {
-                        $(this).removeClass("empty-caption");
-                    }
-                    fileAttachment.ready({
-                        ready: function() {
-                            fileAttachment.set('caption', value);
-                            fileAttachment.save({
-                                buttons: gDraftBannerButtons,
-                                success: function(rsp) {
-                                    gDraftBanner.show();
-                                }
-                            });
-                        }
-                    });
-                }
-            });
-
-        var addCommentButton =
-            self.find('.file-add-comment a')
-                .click(function() {
-                    showCommentDlg();
-                    return false;
-                });
-
-        self.find('.file-review-inline a')
-            .click(function() {
-                showReviewUI();
-                return false;
-            });
-
-        self.find("a.delete")
-            .click(function() {
-                fileAttachment.ready({
-                    ready: function() {
-                        fileAttachment.destroy({
-                            success: function() {
-                                self.empty();
-                                gDraftBanner.show();
-                            }
-                        });
-                    }
-                });
-
-                return false;
-            });
-
-        function showCommentDlg() {
-            processComments();
-            createDraftComment();
-
-            RB.CommentDialogView.create({
-                comment: draftComment,
-                publishedComments: comments,
-                publishedCommentsType: 'file_attachment_comments',
-                position: {
-                    beside: {
-                        el: addCommentButton,
-                        side: 'b',
-                        fitOnScreen: true
-                    }
-                }
-            });
+            if (!$caption.hasClass('empty-caption')) {
+                fileAttachment.set('caption', $caption.text());
+            }
         }
 
-        function showReviewUI() {
-            /* TODO: Display a lightbox and show the page. */
-        }
+        view = new RB.FileAttachmentThumbnail({
+            el: $this,
+            model: fileAttachment,
+            comments: gFileAttachmentComments[id],
+            renderThumbnail: renderThumbnail,
+            reviewRequest: gReviewRequest
+        });
+        view.render();
 
-        function processComments() {
-            if (commentsProcessed) {
-                return;
-            }
+        view.on('beginEdit', function() {
+            gEditCount++;
+        });
 
-            var attachmentComments = gFileAttachmentComments[fileID];
+        view.on('endEdit', function() {
+            gEditCount--;
+        });
 
-            if (attachmentComments && attachmentComments.length > 0) {
-                for (var i in attachmentComments) {
-                    var comment = attachmentComments[i];
+        view.on('commentSaved', function() {
+            showReviewBanner();
+        });
 
-                    if (comment.localdraft) {
-                        createDraftComment(comment.comment_id, comment.text);
-                    } else {
-                        comments.push(comment);
-                    }
-                }
-            }
+        fileAttachment.on('saving', function() {
+            gDraftBannerButtons.prop('disabled', true);
+        });
 
-            commentsProcessed = true;
-        }
+        fileAttachment.on('saved', function() {
+            gDraftBannerButtons.prop('disabled', false);
+        });
 
-        function createDraftComment(commentID, text) {
-            if (draftComment != null) {
-                return;
-            }
-
-            var self = this;
-            var review = gReviewRequest.createReview();
-            draftComment = review.createFileAttachmentComment(commentID,
-                                                              fileID);
-
-            if (text) {
-                draftComment.set('text', text);
-            }
-
-            draftComment.on('saved', function() {
-                showReviewBanner();
-            });
-        }
+        fileAttachment.on('saved destroy', function() {
+            gDraftBanner.show();
+        });
     });
-}
-
-
-/*
- * Adds a loading placeholder to the file attachments list.
- *
- * @return {jQuery} The root file attachment div.
- */
-var newFileAttachmentPlaceholderTemplate = _.template([
-    '<div class="file-container">',
-    ' <div class="file">',
-    '  <div class="file-header" />',
-    '  <div class="file-thumbnail-container">',
-    '   <img class="file-thumbnail" width="16" height="16" src="<%= spinner %>" />',
-    '  </div>',
-    '  <div class="file-caption" />',
-    ' </div>',
-    '</div>'
-].join(''));
-
-$.newFileAttachmentPlaceholder = function() {
-    var attachments = $("#file-list");
-    var container = $(newFileAttachmentPlaceholderTemplate({
-        spinner: STATIC_URLS['rb/images/spinner.gif']
-    }));
-
-    $(attachments.parent()[0]).show();
-    return container.insertBefore(attachments.children("br"));
-}
+};
 
 
 /*
@@ -1381,60 +1267,9 @@ $.newFileAttachmentPlaceholder = function() {
  *
  * @return {jQuery} The root file attachment div.
  */
-var newFileAttachmentTemplate = _.template([
-    '<div class="file-container" data-file-id="<%= id %>">',
-    ' <div class="file">',
-    '  <ul class="actions">',
-    '   <% if (review_url) { %>',
-    '    <li class="file-review"><a href="<%= review_url %>">Review</a></li>',
-    '   <% } else { %>',
-    '    <li class="file-add-comment"><a href="#">Add Comment</a></li>',
-    '   <% } %>',
-    '  </ul>',
-    '  <div class="file-header">',
-    '   <a href="<%= url %>">',
-    '    <img src="<%= icon_url %>" />',
-    '    <%= filename %>',
-    '   </a>',
-    '   <a href="#" class="delete">',
-    '    <img src="<%= delete_image_url %>" alt="Delete File" />',
-    '   </a>',
-    '  </div>',
-    '  <div class="file-thumbnail-container">',
-    '   <% if (review_url) { %>',
-    '    <a href="<%= review_url %>" class="file-thumbnail-overlay"> </a>',
-    '   <% } %>',
-    '   <%= thumbnail %>',
-    '  </div>',
-    '  <div class="file-caption">',
-    '   <a href="<%= url %>" class="edit <% if (!caption) { %>empty-caption<% } %>">',
-    '    <% if (caption) { %><%= caption %><% } else { %>No caption<% } %>',
-    '   </a>',
-    '  </div>',
-    ' </div>',
-    '</div>'
-].join(''));
-
 $.newFileAttachment = function(fileAttachment) {
-    /*
-     * TODO: this currently doesn't have the allow_inline check that the
-     * django template does, because we don't have inline review UIs yet.
-     */
-    var container,
+    var container = $('<div/>').fileAttachment(fileAttachment, true);
         attachments = $("#file-list");
-
-    container = $(newFileAttachmentTemplate({
-        caption: fileAttachment.get('caption'),
-        delete_image_url: STATIC_URLS['rb/images/delete.png'],
-        filename: fileAttachment.get('filename'),
-        icon_url: fileAttachment.get('iconURL'),
-        id: fileAttachment.id,
-        review_url: fileAttachment.get('reviewURL'),
-        thumbnail: fileAttachment.get('thumbnailHTML'),
-        url: fileAttachment.get('downloadURL')
-    }));
-
-    container.fileAttachment();
 
     $(attachments.parent()[0]).show();
     return container.insertBefore(attachments.children("br"));

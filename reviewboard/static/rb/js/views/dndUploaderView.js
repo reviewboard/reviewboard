@@ -164,7 +164,7 @@ RB.DnDUploader = Backbone.View.extend({
     _uploadFile: function(file) {
         /* Create a temporary file listing. */
         var fileAttachment = this.options.reviewRequest.createFileAttachment(),
-            $thumb = $.newFileAttachmentPlaceholder()
+            $thumb = $.newFileAttachment(fileAttachment)
                 .css('opacity', 0)
                 .fadeTo(1000, 1);
 
@@ -172,7 +172,6 @@ RB.DnDUploader = Backbone.View.extend({
         fileAttachment.save({
             buttons: RB.draftBannerButtons,
             success: function() {
-                $thumb.replaceWith($.newFileAttachment(fileAttachment));
                 RB.draftBanner.show();
             },
             error: function() {
