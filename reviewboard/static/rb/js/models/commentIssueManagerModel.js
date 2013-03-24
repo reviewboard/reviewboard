@@ -79,32 +79,34 @@ RB.CommentIssueManager = Backbone.Model.extend({
     _requestState: function(comment, state) {
         var self = this;
 
-        comment.ready(function() {
-            var oldIssueStatus = comment.issue_status;
+        comment.ready({
+            ready: function() {
+                var oldIssueStatus = comment.get('issueStatus');
 
-            comment.issue_status = state;
-            comment.save({
-                success: function(rsp) {
-                    var rspComment = (rsp.diff_comment ||
-                                      rsp.file_attachment_comment ||
-                                      rsp.screenshot_comment);
-                    self._notifyCallbacks(comment.id,
-                                          comment.issue_status,
-                                          oldIssueStatus,
-                                          rspComment.timestamp);
+                comment.set('issueStatus', state);
+                comment.save({
+                    success: function(comment, rsp) {
+                        var rspComment = (rsp.diff_comment ||
+                                          rsp.file_attachment_comment ||
+                                          rsp.screenshot_comment);
+                        self._notifyCallbacks(comment.get('id'),
+                                              comment.get('issueStatus'),
+                                              oldIssueStatus,
+                                              rspComment.timestamp);
 
-                    /*
-                     * We don't want the current user to receive the
-                     * notification that the review request has been
-                     * updated, since they themselves updated the
-                     * issue status.
-                     */
-                    if (rsp.last_activity_time) {
-                        self.get('reviewRequest').markUpdated(
-                            rsp.last_activity_time);
+                        /*
+                         * We don't want the current user to receive the
+                         * notification that the review request has been
+                         * updated, since they themselves updated the
+                         * issue status.
+                         */
+                        if (rsp.last_activity_time) {
+                            self.get('reviewRequest').markUpdated(
+                                rsp.last_activity_time);
+                        }
                     }
-                }
-            });
+                });
+            }
         });
     },
 

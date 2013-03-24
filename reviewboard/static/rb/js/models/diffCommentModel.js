@@ -78,7 +78,13 @@ RB.DiffComment = RB.BaseComment.extend({
             hasBeginLineNum,
             hasEndLineNum;
 
-        if (_.has(attrs, 'fileDiffID') && !attrs.fileDiffID) {
+	/*
+	 * XXX: Existing diff comments won't have the "fileDiffID" attribute
+	 * populated when we load the object from the API. Since we don't do
+	 * anything that needs that attribute unless we're trying to create a
+	 * new diff comment, only check it if isNew().
+	 */
+        if (this.isNew() && _.has(attrs, 'fileDiffID') && !attrs.fileDiffID) {
             return strings.INVALID_FILEDIFF_ID;
         }
 
