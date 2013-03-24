@@ -1113,50 +1113,37 @@ $.fn.reviewRequestFieldEditor = function() {
  */
 $.fn.screenshotThumbnail = function() {
     return $(this).each(function() {
-        var self = $(this);
-
-        var screenshot_id = self.attr("data-screenshot-id");
-        var screenshot = gReviewRequest.createScreenshot(screenshot_id);
-        var captionEl = self.find(".screenshot-caption");
-
-        captionEl.find("a.edit")
-            .inlineEditor({
-                cls: this.id + "-editor",
-                editIconPath: STATIC_URLS["rb/images/edit.png"],
-                showButtons: false
-            })
-            .on({
-                "beginEdit": function() {
-                    gEditCount++;
-                },
-                "cancel": function() {
-                    gEditCount--;
-                },
-                "complete": function(e, value) {
-                    gEditCount--;
-                    screenshot.set('caption', value);
-                    screenshot.save({
-                        buttons: gDraftBannerButtons,
-                        success: function(rsp) {
-                            gDraftBanner.show();
-                        }
-                    });
-                }
+        var $this = $(this),
+            screenshotID = $this.attr("data-screenshot-id"),
+            screenshot = gReviewRequest.createScreenshot(screenshotID),
+            view = new RB.ScreenshotThumbnail({
+                el: $this,
+                model: screenshot
             });
 
-        captionEl.find("a.delete")
-            .click(function() {
-                screenshot.destroy({
-                    success: function() {
-                        self.empty();
-                        gDraftBanner.show();
-                    }
-                });
+        view.render();
 
-                return false;
-            });
+        view.on('beginEdit', function() {
+            gEditCount++;
+        });
+
+        view.on('endEdit', function() {
+            gEditCount--;
+        });
+
+        screenshot.on('saving', function() {
+            gDraftBannerButtons.prop('disabled', true);
+        });
+
+        screenshot.on('saved', function() {
+            gDraftBannerButtons.prop('disabled', false);
+        });
+
+        screenshot.on('saved destroy', function() {
+            gDraftBanner.show();
+        });
     });
-}
+};
 
 
 /*

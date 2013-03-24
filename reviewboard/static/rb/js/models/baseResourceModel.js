@@ -237,6 +237,8 @@ RB.BaseResource = Backbone.Model.extend({
     save: function(options, context) {
         options = options || {};
 
+        this.trigger('saving');
+
         this.ready({
             ready: function() {
                 var parentObject = this.get('parentObject'),
