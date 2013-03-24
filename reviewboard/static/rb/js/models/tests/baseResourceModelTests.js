@@ -302,6 +302,73 @@ describe('models/BaseResource', function() {
                 expect(model.get('loaded')).toBe(true);
             });
         });
+
+        describe('Request payload', function() {
+            beforeEach(function() {
+                model.set({
+                    id: 123,
+                    links: {
+                        self: {
+                            href: '/api/foo/'
+                        }
+                    }
+                });
+            });
+
+            describe('GET', function() {
+                it('No contentType sent', function() {
+                    spyOn(Backbone, 'sync')
+                        .andCallFake(function(method, model, options) {
+                            expect(options.contentType).toBe(undefined);
+                        });
+
+                    model.fetch();
+
+                    expect(Backbone.sync).toHaveBeenCalled();
+                });
+
+                it('No model data sent', function() {
+                    spyOn(Backbone, 'sync')
+                        .andCallFake(function(method, model, options) {
+                            expect(options.data).toBe(undefined);
+                        });
+
+                    model.toJSON = function() {
+                        return {
+                            a: 1,
+                            b: 2
+                        };
+                    };
+
+                    model.fetch();
+
+                    expect(Backbone.sync).toHaveBeenCalled();
+                });
+
+                it('Query attributes sent', function() {
+                    spyOn(Backbone, 'sync')
+                        .andCallFake(function(method, model, options) {
+                            expect(options.data).not.toBe(undefined);
+                            expect(options.data.foo).toBe('bar');
+                        });
+
+                    model.toJSON = function() {
+                        return {
+                            a: 1,
+                            b: 2
+                        };
+                    };
+
+                    model.fetch({
+                        data: {
+                            foo: 'bar'
+                        }
+                    });
+
+                    expect(Backbone.sync).toHaveBeenCalled();
+                });
+            });
+        });
     });
 
     describe('ready', function() {
@@ -816,6 +883,13 @@ describe('models/BaseResource', function() {
             });
 
             expect(model.url()).toBe(url);
+        });
+
+        it('With parentObject and model ID', function() {
+            model.set('parentObject', parentObject);
+            model.id = 123;
+
+            expect(model.url()).toBe('/api/foos/123/');
         });
 
         it('With parentObject, no links', function() {

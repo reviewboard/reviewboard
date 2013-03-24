@@ -65,7 +65,8 @@ RB.BaseResource = Backbone.Model.extend({
                     if (link) {
                         baseURL = link.href;
 
-                        return this.isNew() ? baseURL : baseURL + this.id;
+                        return this.isNew() ? baseURL
+                                            : (baseURL + this.id + '/');
                     }
                 }
             }
@@ -482,13 +483,23 @@ RB.BaseResource = Backbone.Model.extend({
      * a more meaningful error callback.
      */
     sync: function(method, model, options) {
+        var data,
+            contentType;
+
         options = options || {};
+
+        if (method === 'read') {
+            data = options.data;
+        } else {
+            data = options.form ? null
+                                : (options.attrs || model.toJSON(options));
+            contentType = 'application/x-www-form-urlencoded';
+        }
 
         return Backbone.sync.call(this, method, model, _.defaults({}, options, {
             /* Use form data instead of a JSON payload. */
-            contentType: 'application/x-www-form-urlencoded',
-            data: options.form ? null
-                               : (options.attrs || model.toJSON(options)),
+            contentType: contentType,
+            data: data,
             processData: true,
 
             error: function(model, xhr) {
