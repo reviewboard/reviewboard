@@ -8,6 +8,10 @@
  * By default, the element's property will be set to the model's current
  * property, and future changes to either will update the other.
  *
+ * There are special property names that bindProperty understands, which will
+ * update the state of an element but not through a $.prop call. These are
+ * 'text' (using $el.text()) and 'html' ($el.html()).
+ *
  * If options.modelToElement is false, then the element will not be updated
  * when the model's state changes, or updated to the initial model's state.
  *
@@ -36,7 +40,11 @@ $.fn.bindProperty = function(elPropName, model, modelPropName, options) {
                 value = !value;
             }
 
-            if ($this.prop(elPropName) !== value) {
+            if (elPropName === 'text' || elPropName === 'html') {
+                if ($this[elPropName]() !== value) {
+                    $this[elPropName](value || '');
+                }
+            } else if ($this.prop(elPropName) !== value) {
                 $this.prop(elPropName, value);
             }
         };
@@ -47,7 +55,9 @@ $.fn.bindProperty = function(elPropName, model, modelPropName, options) {
 
     if (options.elementToModel) {
         $this.on('change', function(value) {
-            var value = $this.prop(elPropName);
+            var value = (elPropName === 'text' || elPropName === 'html')
+                        ? $this[elPropName]()
+                        : $this.prop(elPropName);
 
             if (options.inverse) {
                 value = !value;

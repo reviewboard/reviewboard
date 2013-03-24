@@ -111,6 +111,30 @@ describe('propertyUtils', function() {
                 expect(model.get('mybool')).toBe(false);
             });
         });
+
+        describe("Special properties", function() {
+            it('text', function() {
+                var $el = $('<p/>');
+
+                $el.bindProperty('text', model, 'text', {
+                    elementToModel: false
+                });
+
+                model.set('text', 'hello world!');
+                expect($el.text()).toBe('hello world!');
+            });
+
+            it('html', function() {
+                var $el = $('<p/>');
+
+                $el.bindProperty('html', model, 'html', {
+                    elementToModel: false
+                });
+
+                model.set('html', '<b>hello world!</b>');
+                expect($el.html()).toBe('<b>hello world!</b>');
+            });
+        });
     });
 
     describe('$.fn.bindVisibility', function() {
