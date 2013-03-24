@@ -97,15 +97,22 @@ RB.BaseResource = Backbone.Model.extend({
                               : undefined;
 
         if (this.get('loaded')) {
+            // We already have data--just call the callbacks
             if (options.ready) {
                 options.ready.call(context);
             }
         } else if (!this.isNew()) {
+            // Fetch data from the server
             this.fetch({
                 success: success,
                 error: error
             });
         } else if (parentObject) {
+            /*
+             * This is a new object, which means there's nothing to fetch from
+             * the server, but we still need to ensure that the parent is loaded
+             * in order for it to have valid links.
+             */
             if (parentObject.cid) {
                 parentObject.ready({
                     ready: success,
@@ -115,6 +122,7 @@ RB.BaseResource = Backbone.Model.extend({
                 parentObject.ready(success || function() {});
             }
         } else if (options.ready) {
+            // Fallback for dummy objects
             options.ready.call(context);
         }
     },
