@@ -291,6 +291,7 @@ PIPELINE_JS = {
             'rb/js/models/tests/baseResourceModelTests.js',
             'rb/js/models/tests/diffCommentModelTests.js',
             'rb/js/models/tests/diffReviewableModelTests.js',
+            'rb/js/models/tests/draftReviewModelTests.js',
             'rb/js/models/tests/fileAttachmentCommentModelTests.js',
             'rb/js/models/tests/screenshotModelTests.js',
             'rb/js/models/tests/screenshotCommentModelTests.js',

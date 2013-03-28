@@ -404,7 +404,7 @@ RB.CommentDialogView = Backbone.View.extend({
         if (this.model.get('canSave')) {
             this.model.save({
                 error: function(model, xhr) {
-                    alert('Error saving comment: ' + xhr.rbResponseText);
+                    alert('Error saving comment: ' + xhr.errorText);
                 }
             }, this);
             this.close();

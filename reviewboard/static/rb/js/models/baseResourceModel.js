@@ -419,7 +419,7 @@ RB.BaseResource = Backbone.Model.extend({
                     text = 'HTTP ' + xhr.status + ' ' + xhr.statusText;
                 }
 
-                xhr.rbResponseText = text;
+                xhr.errorText = text;
                 options.error(model, xhr, options);
             }
         }, options));

@@ -19,13 +19,17 @@ RB.DraftReview = RB.Review.extend({
              * object is "new", this will make sure that the parentObject is
              * ready.
              */
-            options = _.defaults({
-                ready: function() {
-                    self._retrieveDraft.call(self, options, context);
-                },
-            }, options);
+            RB.Review.prototype.ready.call(
+                this,
+                _.defaults({
+                    ready: function() {
+                        self._retrieveDraft.call(self, options, context);
+                    },
+                }, options),
+                context);
+        } else {
+            RB.Review.prototype.ready.call(this, options, context);
         }
-        RB.Review.prototype.ready.call(this, options, context);
     },
 
     /*
@@ -54,7 +58,7 @@ RB.DraftReview = RB.Review.extend({
 
         Backbone.Model.prototype.fetch.call(this, {
             success: function() {
-                if (options.ready()) {
+                if (options && _.isFunction(options.ready)) {
                     options.ready.call(self);
                 }
             },
@@ -63,7 +67,7 @@ RB.DraftReview = RB.Review.extend({
                     self.ready = RB.Review.prototype.ready;
                     self.url = RB.Review.prototype.url;
                     RB.Review.prototype.ready.call(self, options, context);
-                } else if (options.error) {
+                } else if (options && _.isFunction(options.error)) {
                     options.error.call(xhr, status, err);
                 }
             }
