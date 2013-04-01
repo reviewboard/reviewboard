@@ -1,14 +1,16 @@
 import os
 import unittest
 
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
 from djblets.siteconfig.models import SiteConfiguration
 
+from reviewboard.diffviewer.forms import UploadDiffForm
 from reviewboard.diffviewer.models import DiffSet, FileDiff
 from reviewboard.diffviewer.templatetags.difftags import highlightregion
 import reviewboard.diffviewer.diffutils as diffutils
 import reviewboard.diffviewer.parser as diffparser
-from reviewboard.scmtools.models import Repository
+from reviewboard.scmtools.models import Repository, Tool
 
 
 class MyersDifferTest(TestCase):
@@ -448,3 +450,86 @@ class DbTests(TestCase):
         filediff2.save()
 
         self.assertEquals(filediff1.diff_hash, filediff2.diff_hash)
+
+
+class UploadDiffFormTests(TestCase):
+    """Unit tests for UploadDiffForm."""
+    fixtures = ['test_scmtools']
+
+    def test_parent_diff_filtering(self):
+        """Testing UploadDiffForm and filtering parent diff files"""
+        saw_file_exists = {}
+
+        def get_file_exists(filename, revision):
+            saw_file_exists[(filename, revision)] = True
+            return True
+
+        diff = (
+            'Index: README\n'
+            '==========================================================='
+            '========\n'
+            '--- README  (revision 124)\n'
+            '+++ README  (new)\n'
+            '@ -1,1 +1,1 @@\n'
+            '-blah blah\n'
+            '+blah!\n'
+        )
+        parent_diff_1 = (
+            'Index: README\n'
+            '==========================================================='
+            '========\n'
+            '--- README  (revision 123)\n'
+            '+++ README  (new)\n'
+            '@ -1,1 +1,1 @@\n'
+            '-blah..\n'
+            '+blah blah\n'
+        )
+        parent_diff_2 = (
+            'Index: UNUSED\n'
+            '==========================================================='
+            '========\n'
+            '--- UNUSED  (revision 123)\n'
+            '+++ UNUSED  (new)\n'
+            '@ -1,1 +1,1 @@\n'
+            '-foo\n'
+            '+bar\n'
+        )
+        parent_diff = parent_diff_1 + parent_diff_2
+
+        diff_file = SimpleUploadedFile('diff', diff,
+                                       content_type='text/x-patch')
+        parent_diff_file = SimpleUploadedFile('parent_diff', parent_diff,
+                                              content_type='text/x-patch')
+
+        # Note that we're using SVN here for the test just because it's
+        # a bit easier to test with than Git (easier diff parsing logic
+        # and revision numbers).
+        repository = Repository.objects.create(
+            name='Subversion SVN',
+            path='file://%s' % (os.path.join(os.path.dirname(__file__),
+                                             '..', 'scmtools', 'testdata',
+                                             'svn_repo')),
+            tool=Tool.objects.get(name='Subversion'))
+        repository.get_file_exists = get_file_exists
+
+        form = UploadDiffForm(
+            repository=repository,
+            data={
+                'basedir': '/',
+            },
+            files={
+                'path': diff_file,
+                'parent_diff_path': parent_diff_file,
+            })
+        self.assertTrue(form.is_valid())
+
+        diffset = form.create(diff_file, parent_diff_file)
+        self.assertEqual(diffset.files.count(), 1)
+
+        filediff = diffset.files.get()
+        self.assertEqual(filediff.diff, diff)
+        self.assertEqual(filediff.parent_diff, parent_diff_1)
+
+        self.assertTrue(('/README', '123') in saw_file_exists)
+        self.assertFalse(('/UNUSED', '123') in saw_file_exists)
+        self.assertEqual(len(saw_file_exists), 1)
