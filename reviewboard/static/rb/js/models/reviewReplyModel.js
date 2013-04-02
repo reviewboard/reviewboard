@@ -31,5 +31,5 @@ RB.ReviewReply = RB.BaseResource.extend({
         result.public = rspData.public;
 
         return result;
-    },
+    }
 });
