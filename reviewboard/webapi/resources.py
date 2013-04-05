@@ -253,18 +253,22 @@ class BaseCommentResource(WebAPIResource):
             'last_activity_time': last_activity_time,
         }
 
-    def should_update_issue_status(self, comment, **kwargs):
-        """ Returns true if the comment should have its issue status updated.
+    def should_update_issue_status(self, comment, issue_status=None,
+                                   issue_opened=None, **kwargs):
+        """Returns True if the comment should have its issue status updated.
 
         Determines if a comment should have its issue status updated based
         on the current state of the comment, the review, and the arguments
         passed in the request.
         """
-        return comment.review.get().public and (comment.issue_opened or \
-            kwargs.get('issue_opened')) and \
-            BaseComment \
-            .issue_string_to_status(kwargs.get('issue_status', None)) \
-            != comment.issue_status
+        if not issue_status:
+            return False
+
+        issue_status = BaseComment.issue_string_to_status(issue_status)
+
+        return (comment.review.get().public and
+                (comment.issue_opened or issue_opened) and
+                issue_status != comment.issue_status)
 
     def serialize_issue_status_field(self, obj, **kwargs):
         return BaseComment.issue_status_to_string(obj.issue_status)
