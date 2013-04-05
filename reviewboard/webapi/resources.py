@@ -5434,6 +5434,10 @@ class ReviewReplyFileAttachmentCommentResource(BaseFileAttachmentCommentResource
         q = q.filter(review=reply_id, review__base_reply_to=review_id)
         return q
 
+    def has_delete_permissions(self, request, comment, *args, **kwargs):
+        review = comment.review.get()
+        return not review.public and review.user == request.user
+
     @webapi_check_local_site
     @webapi_login_required
     @webapi_response_errors(DOES_NOT_EXIST, INVALID_FORM_DATA,
@@ -5828,7 +5832,7 @@ class ReviewReplyDraftResource(WebAPIResource):
     def get(self, request, *args, **kwargs):
         """Returns the location of the current draft reply.
 
-        If the draft reply exists, this will return :http:`301` with
+        If the draft reply exists, this will return :http:`302` with
         a ``Location`` header pointing to the URL of the draft. Any
         operations on the draft can be done at that URL.
 
@@ -5845,7 +5849,7 @@ class ReviewReplyDraftResource(WebAPIResource):
         if not reply:
             return DOES_NOT_EXIST
 
-        return 301, {}, {
+        return 302, {}, {
             'Location': review_reply_resource.get_href(reply, request,
                                                        *args, **kwargs),
         }
@@ -6073,6 +6077,8 @@ class ReviewReplyResource(BaseReviewResource):
 
         return 200, {
             self.item_result_key: reply,
+        }, {
+            'Last-Modified': self.get_last_modified(request, reply),
         }
 
 review_reply_resource = ReviewReplyResource()
@@ -6097,7 +6103,7 @@ class ReviewDraftResource(WebAPIResource):
         if not review:
             return DOES_NOT_EXIST
 
-        return 301, {}, {
+        return 302, {}, {
             'Location': review_resource.get_href(review, request,
                                                  *args, **kwargs),
         }

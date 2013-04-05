@@ -33,3 +33,4 @@ RB.ReviewReply = RB.BaseResource.extend({
         return result;
     }
 });
+_.extend(RB.ReviewReply.prototype, RB.DraftResourceModelMixin);

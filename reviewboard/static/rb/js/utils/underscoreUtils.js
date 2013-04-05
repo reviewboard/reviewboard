@@ -29,3 +29,11 @@ _.bindCallbacks = function(callbacks, context, methodNames) {
 
     return _.defaults(wrappedCallbacks, callbacks);
 };
+
+
+/*
+ * Returns the parent prototype for an object.
+ */
+_.super = function(obj) {
+    return Object.getPrototypeOf(Object.getPrototypeOf(obj));
+};

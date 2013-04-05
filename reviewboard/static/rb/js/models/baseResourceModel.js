@@ -398,7 +398,18 @@ RB.BaseResource = Backbone.Model.extend({
                                    this, options, context);
 
         if (parentObject) {
-            parentObject.ready(destroyObject);
+            /*
+             * XXX This is temporary to support older-style resource
+             *     objects. We should just use ready() once we're moved
+             *     entirely onto BaseResource.
+             */
+            if (parentObject.cid) {
+                parentObject.ready(_.defaults({
+                    ready: destroyObject
+                }, _.bindCallbacks(options, context)));
+            } else {
+                parentObject.ready(destroyObject);
+            }
         } else {
             destroyObject();
         }
@@ -411,7 +422,8 @@ RB.BaseResource = Backbone.Model.extend({
      * readiness and creation checks of this object and its parent.
      */
     _destroyObject: function(options, context) {
-        var url = _.result(this, 'url');
+        var self = this,
+            url = _.result(this, 'url');
 
         options = options || {};
 
@@ -427,8 +439,21 @@ RB.BaseResource = Backbone.Model.extend({
 
         this.ready({
             ready: function() {
-                Backbone.Model.prototype.destroy.call(
-                    this, _.bindCallbacks(options, context));
+                Backbone.Model.prototype.destroy.call(this, _.defaults({
+                    wait: true,
+                    success: function() {
+                        /* Reset the object so it's new again. */
+                        self.set({
+                            id: null,
+                            loaded: false,
+                            links: null
+                        });
+
+                        if (_.isFunction(options.success)) {
+                            options.success.apply(self, arguments);
+                        }
+                    }
+                }, _.bindCallbacks(options, context)));
             },
             error: _.isFunction(options.error)
                    ? _.bind(options.error, context)

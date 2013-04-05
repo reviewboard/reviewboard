@@ -9,12 +9,11 @@ RB.Review = RB.BaseResource.extend({
         shipIt: false,
         public: false,
         bodyTop: null,
-        bodyBottom: null
+        bodyBottom: null,
+        draftReply: null
     }, RB.BaseResource.prototype.defaults),
 
     rspNamespace: 'review',
-
-    draftReply: null,
 
     toJSON: function() {
         var data = {
@@ -75,12 +74,15 @@ RB.Review = RB.BaseResource.extend({
     },
 
     createReply: function() {
-        if (this.draftReply == null) {
-            this.draftReply = new RB.ReviewReply({
+        var draftReply = this.get('draftReply');
+
+        if (draftReply === null) {
+            draftReply = new RB.ReviewReply({
                 parentObject: this
             });
+            this.set('draftReply', draftReply);
         }
 
-        return this.draftReply;
+        return draftReply;
     }
 });
