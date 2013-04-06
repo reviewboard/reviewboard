@@ -430,9 +430,10 @@ $.fn.commentSection = function(review_id, context_id, context_type) {
      */
     function createCommentEditor(els) {
         return els.each(function() {
-            var self = $(this);
+            var $editor = $(this),
+                $item = $("#" + $editor[0].id + "-item");
 
-            self
+            $editor
                 .inlineEditor({
                     cls: "inline-comment-editor",
                     editIconPath: STATIC_URLS["rb/images/edit.png"],
@@ -444,11 +445,12 @@ $.fn.commentSection = function(review_id, context_id, context_type) {
                         gEditCount++;
                     },
                     "complete": function(e, value) {
-                        var replyClass;
+                        var replyClass,
+                            options;
 
                         gEditCount--;
 
-                        self.html(linkifyText(self.text()));
+                        $editor.html(linkifyText($editor.text()));
 
                         if (context_type == "body_top") {
                             review_reply.set('bodyTop', value);
@@ -467,25 +469,40 @@ $.fn.commentSection = function(review_id, context_id, context_type) {
                                 return;
                             }
 
-                            obj = new replyClass({
-                                parentObject: review_reply,
-                                replyToID: context_id,
-                                text: value
-                            });
+                            obj = $item.data('comment-obj');
+
+                            if (!obj) {
+                                obj = new replyClass({
+                                    parentObject: review_reply,
+                                    replyToID: context_id,
+                                    id: $item.data('comment-id')
+                                });
+
+                                $item.data('comment-obj', obj);
+                            }
                         }
 
-                        obj.save({
-                            buttons: bannerButtonsEl,
-                            success: function() {
-                                removeCommentFormIfEmpty(self);
-                                showReplyDraftBanner(review_id);
+                        obj.ready({
+                            ready: function() {
+                                if (value) {
+                                    obj.set('text', value);
+                                    obj.save({
+                                        buttons: bannerButtonsEl,
+                                        success: function() {
+                                            $item.data('comment-id', obj.id);
+                                            showReplyDraftBanner(review_id);
+                                        }
+                                    });
+                                } else {
+                                    removeCommentFormIfEmpty($item, $editor);
+                                }
                             }
                         });
                     },
                     "cancel": function(e) {
                         gEditCount--;
                         addCommentLink.fadeIn();
-                        removeCommentFormIfEmpty(self);
+                        removeCommentFormIfEmpty($item, $editor);
                     }
                 })
         });
@@ -494,29 +511,54 @@ $.fn.commentSection = function(review_id, context_id, context_type) {
     /*
      * Removes a comment form if the contents are empty.
      *
+     * @param {jQuery} itemEl    The comment item element.
      * @param {jQuery} editorEl  The inline editor element.
      */
-    function removeCommentFormIfEmpty(editorEl) {
-        var value = editorEl.inlineEditor("value");
+    function removeCommentFormIfEmpty($item, $editor) {
+        var value = $editor.inlineEditor("value"),
+            obj;
 
         if (value.stripTags().strip() != "") {
             return;
         }
 
-        $("#" + editorEl[0].id + "-item").hide("slow", function() {
-            $(this).remove();
+        obj = $item.data('comment-obj');
+        console.assert(obj,
+                      'comment-obj data is not populated for the comment ' +
+                      'editor');
 
-            if ($(".inline-comment-editor", reviewEl).length == 0) {
-                bannersEl.children().remove();
-            }
-
-            addCommentLink.fadeIn();
-
-            /* Find out if we need to discard this. */
-            review_reply.discardIfEmpty({
-                buttons: bannerButtonsEl
+        if (obj.isNew()) {
+            removeCommentForm($item, obj);
+        } else {
+            obj.destroy({
+                success: function() {
+                    removeCommentForm($item, obj);
+                }
             });
-        });
+        }
+    }
+
+    function removeCommentForm($item, obj) {
+        $item
+            .data({
+                'comment-id': null,
+                'comment-obj': null
+            })
+            .fadeOut(function() {
+                $(this).remove();
+                addCommentLink.fadeIn();
+
+                /* Find out if we need to discard this. */
+                review_reply.discardIfEmpty({
+                    buttons: bannerButtonsEl,
+                    success: function(discarded) {
+                        if (discarded) {
+                            /* The reply was discarded. */
+                            bannersEl.children().remove();
+                        }
+                    }
+                });
+            });
     }
 
     /*
@@ -735,11 +777,15 @@ $.replyDraftBanner = function(review_reply, bannerButtonsEl) {
         .append($('<input type="button"/>')
             .val("Publish")
             .click(function() {
-                review_reply.set('public', true);
-                review_reply.save({
-                    buttons: bannerButtonsEl,
-                    success: function() {
-                        window.location = gReviewRequestPath;
+                review_reply.ready({
+                    ready: function() {
+                        review_reply.set('public', true);
+                        review_reply.save({
+                            buttons: bannerButtonsEl,
+                            success: function() {
+                                window.location = gReviewRequestPath;
+                            }
+                        });
                     }
                 });
             })
@@ -1707,13 +1753,17 @@ $(document).ready(function() {
 
     /* Review banner's Publish button. */
     $("#review-banner-publish").click(function() {
-        pendingReview.set('public', true);
-        pendingReview.save({
-            buttons: $("input", gReviewBanner),
-            success: function() {
-                hideReviewBanner();
-                gReviewBanner.queue(function() {
-                    window.location = gReviewRequestPath;
+        pendingReview.ready({
+            ready: function() {
+                pendingReview.set('public', true);
+                pendingReview.save({
+                    buttons: $("input", gReviewBanner),
+                    success: function() {
+                        hideReviewBanner();
+                        gReviewBanner.queue(function() {
+                            window.location = gReviewRequestPath;
+                        });
+                    }
                 });
             }
         });

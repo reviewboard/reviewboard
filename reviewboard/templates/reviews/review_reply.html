@@ -1,7 +1,7 @@
 {% load djblets_utils %}
 {% load i18n %}
 {% load tz %}
-   <li class="reply-comment{% if draft %} draft" id="yourcomment_{{context_id}}-{{id}}-item{% endif %}">
+   <li class="reply-comment{% if draft %} draft" id="yourcomment_{{context_id}}-{{id}}-item{% endif %}"{% if comment_id %} data-comment-id="{{comment_id}}"{% endif %}>
     <dl>
      <dt>
       <label for="{% if draft %}your{% endif %}comment_{{context_id}}-{{id}}">

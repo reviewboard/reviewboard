@@ -92,6 +92,157 @@ describe('models/ReviewReply', function() {
         });
     });
 
+    describe('discardIfEmpty', function() {
+        var callbacks;
+
+        beforeEach(function() {
+            callbacks = {
+                success: function() {},
+                error: function() {}
+            };
+
+            spyOn(model, 'destroy')
+                .andCallFake(function(options) {
+                    if (options && _.isFunction(options.success)) {
+                        options.success();
+                    }
+                });
+            spyOn(parentObject, 'ready')
+                .andCallFake(function(options, context) {
+                    if (options && _.isFunction(options.ready)) {
+                        options.ready.call(context);
+                    }
+                });
+            spyOn(model, 'ready')
+                .andCallFake(function(options, context) {
+                    if (options && _.isFunction(options.ready)) {
+                        options.ready.call(context);
+                    }
+                });
+            spyOn(callbacks, 'success');
+            spyOn(callbacks, 'error');
+        });
+
+        it('With isNew=true', function() {
+            expect(model.isNew()).toBe(true);
+            expect(model.get('loaded')).toBe(false);
+
+            model.discardIfEmpty(callbacks);
+
+            expect(model.destroy).not.toHaveBeenCalled();
+        });
+
+        describe('With isNew=false', function() {
+            var commentsData = {};
+
+            beforeEach(function() {
+                model.set({
+                    id: 123,
+                    loaded: true,
+                    links: {
+                        self: {
+                            href: '/api/foos/replies/123/'
+                        },
+                        diff_comments: {
+                            href: '/api/diff-comments/'
+                        },
+                        screenshot_comments: {
+                            href: '/api/screenshot-comments/'
+                        },
+                        file_attachment_comments: {
+                            href: '/api/file-attachment-comments/'
+                        }
+                    }
+                });
+
+                spyOn(RB, 'apiCall').andCallFake(function(options) {
+                    var links = model.get('links'),
+                        data = {},
+                        key = _.find(
+                            RB.ReviewReply.prototype.COMMENT_LINK_NAMES,
+                            function(name) {
+                                return options.url === links[name].href;
+                            });
+
+                    if (key) {
+                        data[key] = commentsData[key] || [];
+                        options.success(data);
+                    } else {
+                        options.error({
+                            status: 404
+                        });
+                    }
+                });
+                spyOn(Backbone.Model.prototype, 'fetch')
+                    .andCallFake(function(options) {
+                        if (options && _.isFunction(options.success)) {
+                            options.success();
+                        }
+                    });
+            });
+
+            it('With no comments or body replies', function() {
+                model.discardIfEmpty(callbacks);
+
+                expect(model.destroy).toHaveBeenCalled();
+                expect(callbacks.success).toHaveBeenCalledWith(true);
+            });
+
+            it('With bodyTop', function() {
+                model.set({
+                    bodyTop: 'hi'
+                });
+                model.discardIfEmpty(callbacks);
+
+                expect(model.destroy).not.toHaveBeenCalled();
+                expect(callbacks.success).toHaveBeenCalledWith(false);
+            });
+
+            it('With bodyBottom', function() {
+                model.set({
+                    bodyBottom: 'hi'
+                });
+                model.discardIfEmpty(callbacks);
+
+                expect(model.destroy).not.toHaveBeenCalled();
+                expect(callbacks.success).toHaveBeenCalledWith(false);
+            });
+
+            it('With diff comment', function() {
+                commentsData['diff_comments'] = [{
+                    id: 1
+                }];
+
+                model.discardIfEmpty(callbacks);
+
+                expect(model.destroy).not.toHaveBeenCalled();
+                expect(callbacks.success).toHaveBeenCalledWith(false);
+            });
+
+            it('With screenshot comment', function() {
+                commentsData['screenshot_comments'] = [{
+                    id: 1
+                }];
+
+                model.discardIfEmpty(callbacks);
+
+                expect(model.destroy).not.toHaveBeenCalled();
+                expect(callbacks.success).toHaveBeenCalledWith(false);
+            });
+
+            it('With file attachment comment', function() {
+                commentsData['file_attachment_comments'] = [{
+                    id: 1
+                }];
+
+                model.discardIfEmpty(callbacks);
+
+                expect(model.destroy).not.toHaveBeenCalled();
+                expect(callbacks.success).toHaveBeenCalledWith(false);
+            });
+        });
+    });
+
     describe('ready', function() {
         var callbacks;
 
