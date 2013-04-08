@@ -1,5 +1,5 @@
 from django import template
-from django.core.urlresolvers import NoReverseMatch
+from django.core.urlresolvers import NoReverseMatch, ViewDoesNotExist
 from django.template.defaulttags import url as django_url
 
 
@@ -36,7 +36,7 @@ class LocalSiteURLNode(template.Node):
 
             try:
                 return self.url_node.render(context)
-            except NoReverseMatch:
+            except (NoReverseMatch, ViewDoesNotExist):
                 # We'll try it again without those arguments.
                 pass
 

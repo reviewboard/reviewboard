@@ -5,14 +5,16 @@
 {% block title %}{% trans "Permission Denied" %}{% endblock %}
 
 {% block content %}
-{%  box "important" %}
-<h1>{% trans "You don't have access to this review request." %}</h1>
-<p>
-{% blocktrans %}
- This review request is private. You must be a requested reviewer, either
- directly or on a requested group, and have permission to access the
- repository in order to view this review request.
-{% endblocktrans %}
- </p>
-{%  endbox %}
+<div class="permissions-offset">
+ {%  box "important" %}
+ <h1>{% trans "You don't have access to this review request." %}</h1>
+ <p>
+ {% blocktrans %}
+  This review request is private. You must be a requested reviewer, either
+  directly or on a requested group, and have permission to access the
+  repository in order to view this review request.
+ {% endblocktrans %}
+  </p>
+ {%  endbox %}
+</div>
 {% endblock %}
