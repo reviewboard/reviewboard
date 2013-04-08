@@ -99,10 +99,13 @@ class UploadDiffForm(forms.Form):
         parent_changeset_id = None
 
         if parent_diff_file:
+            diff_filenames = set([f.origFile for f in files])
+
             # If the user supplied a base diff, we need to parse it and
             # later apply each of the files that are in the main diff
             for f in self._process_files(parent_diff_file, basedir,
-                                         check_existance=True):
+                                         check_existance=True,
+                                         limit_to=diff_filenames):
                 parent_files[f.origFile] = f
 
                 # Store the original changeset ID if we have it; this should
@@ -155,7 +158,8 @@ class UploadDiffForm(forms.Form):
 
         return diffset
 
-    def _process_files(self, file, basedir, check_existance=False):
+    def _process_files(self, file, basedir, check_existance=False,
+                       limit_to=None):
         tool = self.repository.get_scmtool()
 
         for f in tool.get_parser(file.read()).parse():
@@ -166,6 +170,11 @@ class UploadDiffForm(forms.Form):
                 filename = f2
             else:
                 filename = os.path.join(basedir, f2).replace("\\", "/")
+
+            if limit_to is not None and filename not in limit_to:
+                # This file isn't actually needed for the diff, so save
+                # ourselves a remote file existence check and some storage.
+                continue
 
             # FIXME: this would be a good place to find permissions errors
             if (revision != PRE_CREATION and
