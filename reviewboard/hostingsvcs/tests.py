@@ -421,6 +421,44 @@ class GitHubTests(ServiceTests):
         self.assertEqual(http_post_data['kwargs']['username'], 'myuser')
         self.assertEqual(http_post_data['kwargs']['password'], 'mypass')
 
+    def test_authorization_with_client_info(self):
+        """Testing that GitHub account authorization with registered client info"""
+        http_post_data = {}
+        client_id = '<my client id>'
+        client_secret = '<my client secret>'
+
+        def _http_post(self, *args, **kwargs):
+            http_post_data['args'] = args
+            http_post_data['kwargs'] = kwargs
+
+            return simplejson.dumps({
+                'id': 1,
+                'url': 'https://api.github.com/authorizations/1',
+                'scopes': ['user', 'repo'],
+                'token': 'abc123',
+                'note': '',
+                'note_url': '',
+                'updated_at': '2012-05-04T03:30:00Z',
+                'created_at': '2012-05-04T03:30:00Z',
+            }), {}
+
+        self.service_class._http_post = _http_post
+
+        account = HostingServiceAccount(service_name=self.service_name,
+                                        username='myuser')
+        service = account.service
+        self.assertFalse(account.is_authorized)
+
+        with self.settings(GITHUB_CLIENT_ID=client_id,
+                           GITHUB_CLIENT_SECRET=client_secret):
+            service.authorize('myuser', 'mypass')
+
+        self.assertTrue(account.is_authorized)
+
+        body = simplejson.loads(http_post_data['kwargs']['body'])
+        self.assertEqual(body['client_id'], client_id)
+        self.assertEqual(body['client_secret'], client_secret)
+
     def _get_repo_api_url(self, plan, fields):
         account = self._get_hosting_account()
         service = account.service
