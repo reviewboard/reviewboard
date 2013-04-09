@@ -275,7 +275,8 @@ def mail_review_request(user, review_request, changedesc=None, on_close=False):
         or (not on_close and review_request.status == 'D')):
         return
 
-    subject = u"Review Request %d: %s" % (review_request.id, review_request.summary)
+    subject = u"Review Request %d: %s" % (review_request.display_id,
+                                          review_request.summary)
     reply_message_id = None
 
     if review_request.email_message_id:
@@ -328,7 +329,9 @@ def mail_review(user, review):
     review.email_message_id = \
         send_review_mail(user,
                          review_request,
-                         u"Re: Review Request %d: %s" % (review_request.id, review_request.summary),
+                         u"Re: Review Request %d: %s" % (
+                             review_request.display_id,
+                             review_request.summary),
                          review_request.email_message_id,
                          None,
                          'notifications/review_email.txt',
@@ -363,7 +366,9 @@ def mail_reply(user, reply):
     reply.email_message_id = \
         send_review_mail(user,
                          review_request,
-                         u"Re: Review Request %d: %s" % (review_request.id, review_request.summary),
+                         u"Re: Review Request %d: %s" % (
+                             review_request.display_id,
+                             review_request.summary),
                          review.email_message_id,
                          review.participants,
                          'notifications/reply_email.txt',
