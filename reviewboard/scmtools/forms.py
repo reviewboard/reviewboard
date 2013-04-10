@@ -916,9 +916,11 @@ class RepositoryForm(forms.ModelForm):
         if self.cert:
             repository.extra_data['cert'] = self.cert
 
-        if repository.get_scmtool().supports_ticket_auth:
+        try:
             repository.extra_data['use_ticket_auth'] = \
                 self.cleaned_data['use_ticket_auth']
+        except KeyError:
+            pass
 
         hosting_type = self.cleaned_data['hosting_type']
 
