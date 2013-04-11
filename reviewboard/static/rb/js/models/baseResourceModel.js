@@ -428,7 +428,15 @@ RB.BaseResource = Backbone.Model.extend({
         options = options || {};
 
         if (!url) {
-            if (_.isFunction(options.error)) {
+            if (this.isNew()) {
+                /*
+                 * If both this resource and its parent are new, it's possible
+                 * that we'll get through here without a url. In this case, all
+                 * the data is still local to the client and there's not much to
+                 * clean up; just call Model.destroy and be done with it.
+                 */
+                Backbone.Model.prototype.destroy.call(this, options, context);
+            } else if (_.isFunction(options.error)) {
                 options.error.call(context,
                     'The object must either be loaded from the server or ' +
                     'have a parent object before it can be deleted');

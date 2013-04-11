@@ -94,6 +94,7 @@ RB.CommentEditor = Backbone.Model.extend({
      */
     cancel: function() {
         var comment = this.get('comment');
+        this.off('change:comment', this._updateFromComment, this);
 
         if (comment) {
             comment.destroyIfEmpty();
