@@ -397,7 +397,7 @@ RB.BaseResource = Backbone.Model.extend({
             destroyObject = _.bind(this._destroyObject,
                                    this, options, context);
 
-        if (parentObject) {
+        if (!this.isNew() && parentObject) {
             /*
              * XXX This is temporary to support older-style resource
              *     objects. We should just use ready() once we're moved
@@ -416,10 +416,13 @@ RB.BaseResource = Backbone.Model.extend({
     },
 
     /*
-     * Handles the actual deletion of the object.
+     * Sets up the deletion of the object.
      *
      * This is called internally by destroy() once we've handled all the
      * readiness and creation checks of this object and its parent.
+     *
+     * Once we've done some work to ensure the URL is valid and the object
+     * is ready, we'll finish destruction by calling _finishDestroy.
      */
     _destroyObject: function(options, context) {
         var self = this,
@@ -435,7 +438,7 @@ RB.BaseResource = Backbone.Model.extend({
                  * the data is still local to the client and there's not much to
                  * clean up; just call Model.destroy and be done with it.
                  */
-                Backbone.Model.prototype.destroy.call(this, options, context);
+                this._finishDestroy(options, context);
             } else if (_.isFunction(options.error)) {
                 options.error.call(context,
                     'The object must either be loaded from the server or ' +
@@ -447,26 +450,35 @@ RB.BaseResource = Backbone.Model.extend({
 
         this.ready({
             ready: function() {
-                Backbone.Model.prototype.destroy.call(this, _.defaults({
-                    wait: true,
-                    success: function() {
-                        /* Reset the object so it's new again. */
-                        self.set({
-                            id: null,
-                            loaded: false,
-                            links: null
-                        });
-
-                        if (_.isFunction(options.success)) {
-                            options.success.apply(self, arguments);
-                        }
-                    }
-                }, _.bindCallbacks(options, context)));
+                this._finishDestroy(options, context);
             },
             error: _.isFunction(options.error)
                    ? _.bind(options.error, context)
                    : undefined
         }, this);
+    },
+
+    /*
+     * Finishes destruction of the object.
+     *
+     * This will call the parent destroy method, then reset the state
+     * of the object on success.
+     */
+    _finishDestroy: function(options, context) {
+        var self = this;
+
+        Backbone.Model.prototype.destroy.call(this, _.defaults({
+            wait: true,
+            success: function() {
+                /* Reset the object so it's new again. */
+                self.set('id', null);
+                self.set(_.result(self, 'defaults'));
+
+                if (_.isFunction(options.success)) {
+                    options.success.apply(context, arguments);
+                }
+            }
+        }, _.bindCallbacks(options, context)));
     },
 
     /*

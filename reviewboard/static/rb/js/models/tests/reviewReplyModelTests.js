@@ -371,7 +371,6 @@ describe('models/ReviewReply', function() {
             /* Now that it's destroyed, try to fetch it again. */
             model.ready(callbacks);
 
-            expect(parentObject.ready).toHaveBeenCalled();
             expect(model._retrieveDraft).toHaveBeenCalled();
             expect(Backbone.Model.prototype.fetch).toHaveBeenCalled();
             expect(callbacks.ready).toHaveBeenCalled();
