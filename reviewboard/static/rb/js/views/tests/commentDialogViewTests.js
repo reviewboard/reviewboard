@@ -485,5 +485,39 @@ describe('views/CommentDialogView', function() {
                 });
             });
         });
+
+        describe('User preference defaults', function() {
+            describe('Open Issue checkbox', function() {
+                it('When commentsOpenAnIssue is true', function() {
+                    RB.UserSession.instance.set('commentsOpenAnIssue', true);
+
+                    editor = new RB.CommentEditor();
+                    dlg = new RB.CommentDialogView({
+                        animate: false,
+                        model: editor
+                    });
+                    dlg.render();
+                    $checkbox = dlg.$el.find('input[type=checkbox]');
+
+                    expect(editor.get('openIssue')).toBe(true);
+                    expect($checkbox.prop('checked')).toBe(true);
+                });
+
+                it('When commentsOpenAnIssue is false', function() {
+                    RB.UserSession.instance.set('commentsOpenAnIssue', false);
+
+                    editor = new RB.CommentEditor();
+                    dlg = new RB.CommentDialogView({
+                        animate: false,
+                        model: editor
+                    });
+                    dlg.render();
+                    $checkbox = dlg.$el.find('input[type=checkbox]');
+
+                    expect(editor.get('openIssue')).toBe(false);
+                    expect($checkbox.prop('checked')).toBe(false);
+                });
+            });
+        });
     });
 });

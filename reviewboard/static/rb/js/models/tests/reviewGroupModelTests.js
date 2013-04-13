@@ -6,6 +6,7 @@ describe('models/ReviewGroup', function() {
             group;
 
         beforeEach(function() {
+            RB.UserSession.instance = null;
             session = RB.UserSession.create({
                 username: 'testuser',
                 watchedReviewGroupsURL: url

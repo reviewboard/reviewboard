@@ -12,13 +12,11 @@
   /* XXX Ideally, these should all be optional. */
   var gBugTrackerURL = '',
       gEditable = false,
-      gOpenAnIssue = true,
       gReviewPending = false,
       gReviewRequestId = 1,
       gReviewRequestPath = "{{SITE_ROOT}}/r/1/",
       gReviewRequestSitePrefix = "{{SITE_ROOT}}",
-      gReviewRequestSummary = '',
-      gUserURL = "{{SITE_ROOT}}/users/test/";
+      gReviewRequestSummary = '';
 {% endblock %}
 
 {% block scripts-post %}
@@ -47,21 +45,30 @@ $(document).ready(function() {
 
     beforeEach(function() {
         /*
+         * Set the session to be authenticated by default. If tests need
+         * it to be unauthenticated, they can reset this.
+         */
+        RB.UserSession.instance = null;
+        RB.UserSession.create({
+            authenticated: true,
+            commentsOpenAnIssue: true,
+            username: 'testuser',
+            userPageURL: '{{SITE_ROOT}}users/test/'
+        });
+
+        /*
          * Capture all assertions, so we can sanely inspect them.
          * We don't want to call the original version, though, or we'll
          * possibly get errors in the console.
+         *
+         * We do this after creating the UserSession, since that will also
+         * assert.
          */
         spyOn(console, 'assert').andCallFake(function(condition, msg) {
             if (!condition) {
                 throw Error(msg);
             }
         });
-
-        /*
-         * Reset the user session, since tests should explicitly create it
-         * if it's needed.
-         */
-        RB.UserSession.instance = null;
     });
 
     afterEach(function() {

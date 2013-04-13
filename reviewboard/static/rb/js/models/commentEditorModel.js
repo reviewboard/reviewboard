@@ -8,18 +8,22 @@
  * same region this comment is on, and more.
  */
 RB.CommentEditor = Backbone.Model.extend({
-    defaults: {
-        canDelete: false,
-        canEdit: gUserAuthenticated,
-        canSave: false,
-        editing: false,
-        comment: null,
-        dirty: false,
-        openIssue: gOpenAnIssue,
-        publishedComments: [],
-        publishedCommentsType: null,
-        statusText: '',
-        text: ''
+    defaults: function() {
+        var userSession = RB.UserSession.instance;
+
+        return {
+            canDelete: false,
+            canEdit: userSession.get('authenticated'),
+            canSave: false,
+            editing: false,
+            comment: null,
+            dirty: false,
+            openIssue: userSession.get('commentsOpenAnIssue'),
+            publishedComments: [],
+            publishedCommentsType: null,
+            statusText: '',
+            text: ''
+        }
     },
 
     initialize: function() {

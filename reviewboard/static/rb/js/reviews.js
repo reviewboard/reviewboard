@@ -382,7 +382,8 @@ $.fn.commentSection = function(review_id, context_id, context_type) {
      * Creates a new comment form in response to the "Add Comment" link.
      */
     function createNewCommentForm() {
-        var yourcomment_id = "yourcomment_" + review_id + "_" +
+        var userSession = RB.UserSession.instance,
+            yourcomment_id = "yourcomment_" + review_id + "_" +
                              context_type;
         if (sectionId) {
             yourcomment_id += "_" + sectionId;
@@ -398,8 +399,8 @@ $.fn.commentSection = function(review_id, context_id, context_type) {
                     .append($("<label/>")
                         .attr("for", yourcomment_id)
                         .append($("<a/>")
-                            .attr("href", gUserURL)
-                            .html(gUserFullName)
+                            .attr("href", userSession.get('userPageURL'))
+                            .html(userSession.get('fullName'))
                         )
                     )
                     .append('<dd><pre id="' + yourcomment_id + '"/></dd>')
@@ -1818,7 +1819,7 @@ $(document).ready(function() {
     $("#submitted-banner #changedescription.editable").reviewCloseCommentEditor(RB.ReviewRequest.CLOSE_SUBMITTED);
     $("#discard-banner #changedescription.editable").reviewCloseCommentEditor(RB.ReviewRequest.CLOSE_DISCARDED);
 
-    if (gUserAuthenticated) {
+    if (RB.UserSession.instance.get('authenticated')) {
         if (window["gEditable"]) {
             var dndUploader;
 

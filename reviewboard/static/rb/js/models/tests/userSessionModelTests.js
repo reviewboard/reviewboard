@@ -1,7 +1,10 @@
 describe('models/UserSession', function() {
     describe('create', function() {
         it('Instance is set', function() {
-            var session = RB.UserSession.create({
+            var session;
+
+            RB.UserSession.instance = null;
+            session = RB.UserSession.create({
                 username: 'testuser'
             });
 
@@ -9,6 +12,7 @@ describe('models/UserSession', function() {
         });
 
         it('Second attempt fails', function() {
+            RB.UserSession.instance = null;
             RB.UserSession.create({
                 username: 'testuser'
             });

@@ -53,25 +53,43 @@ var WatchedItems = RB.BaseResource.extend({
      * Immediately adds an object to a watched list on the server.
      */
     addImmediately: function(obj, options, context) {
-        var item = new Item({
-            objectID: obj.id,
-            baseURL: this.url()
-        });
+        var url = this.url(),
+            item;
 
-        item.save(options, context);
+        if (url) {
+            item = new Item({
+                objectID: obj.id,
+                baseURL: url
+            });
+
+            item.save(options, context);
+        } else if (options && _.isFunction(options.error)) {
+            options.error.call({
+                errorText: 'Must log in to add a watched item.'
+            });
+        }
     },
 
     /*
      * Immediately removes an object from a watched list on the server.
      */
     removeImmediately: function(obj, options, context) {
-        var proxyObj = new Item({
-            objectID: obj.id,
-            baseURL: this.url(),
-            watched: true
-        });
+        var url = this.url(),
+            item;
 
-        proxyObj.destroy(options, context);
+        if (url) {
+            var item = new Item({
+                objectID: obj.id,
+                baseURL: url,
+                watched: true
+            });
+
+            item.destroy(options, context);
+        } else if (options && _.isFunction(options.error)) {
+            options.error.call({
+                errorText: 'Must log in to add a watched item.'
+            });
+        }
     }
 });
 
@@ -88,7 +106,10 @@ var WatchedItems = RB.BaseResource.extend({
  */
 RB.UserSession = Backbone.Model.extend({
     defaults: {
+        authenticated: false,
+        fullName: null,
         username: null,
+        userPageURL: null,
         sessionURL: null,
         watchedReviewGroupsURL: null,
         watchedReviewRequestsURL: null

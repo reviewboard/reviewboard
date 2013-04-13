@@ -15,6 +15,58 @@ describe('models/CommentEditor', function() {
         });
     });
 
+    describe('Attribute defaults', function() {
+        describe('canEdit', function() {
+            it('When logged in', function() {
+                RB.UserSession.instance.set('authenticated', true);
+
+                editor = new RB.CommentEditor();
+                expect(editor.get('canEdit')).toBe(true);
+            });
+
+            it('When logged out', function() {
+                RB.UserSession.instance.set('authenticated', false);
+
+                editor = new RB.CommentEditor();
+                expect(editor.get('canEdit')).toBe(false);
+            });
+
+            it('With explicitly set value', function() {
+                RB.UserSession.instance.set('authenticated', false);
+
+                editor = new RB.CommentEditor({
+                    canEdit: true
+                });
+                expect(editor.get('canEdit')).toBe(true);
+            });
+        });
+
+        describe('openIssue', function() {
+            it('When user preference is true', function() {
+                RB.UserSession.instance.set('commentsOpenAnIssue', true);
+
+                editor = new RB.CommentEditor();
+                expect(editor.get('openIssue')).toBe(true);
+            });
+
+            it('When user preference is false', function() {
+                RB.UserSession.instance.set('commentsOpenAnIssue', false);
+
+                editor = new RB.CommentEditor();
+                expect(editor.get('openIssue')).toBe(false);
+            });
+
+            it('With explicitly set value', function() {
+                RB.UserSession.instance.set('commentsOpenAnIssue', false);
+
+                editor = new RB.CommentEditor({
+                    openIssue: true
+                });
+                expect(editor.get('openIssue')).toBe(true);
+            });
+        });
+    });
+
     describe('Capability states', function() {
         describe('canDelete', function() {
             it('When not editing', function() {

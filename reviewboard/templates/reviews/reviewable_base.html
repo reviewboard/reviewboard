@@ -2,14 +2,6 @@
 {% load compressed %}
 {% load i18n %}
 
-{% block jsconsts %}
-{{block.super}}
-{%  if request.user.is_authenticated %}
-  var gUserURL = "{% url user request.user %}";
-  var gOpenAnIssue = {{user.get_profile.open_an_issue|lower}};
-{%  endif %}
-{% endblock %}
-
 {% block ie6_csshacks %}
    #review-banner .banner { position: absolute; }
 {% endblock %}

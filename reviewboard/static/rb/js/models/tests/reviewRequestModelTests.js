@@ -6,6 +6,7 @@ describe('models/ReviewRequest', function() {
             reviewRequest;
 
         beforeEach(function() {
+            RB.UserSession.instance = null;
             session = RB.UserSession.create({
                 username: 'testuser',
                 watchedReviewRequestsURL: url
