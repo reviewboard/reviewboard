@@ -59,8 +59,12 @@ def initialize():
     import os
     import sys
 
-    # Set PYTHONPATH to match sys.patch, for subprocesses.
-    os.environ['PYTHONPATH'] = ':'.join(sys.path)
+    import settings_local
+
+    # Set PYTHONPATH to match the directory of settings, for subprocesses.
+    os.environ['PYTHONPATH'] = '%s:%s' % \
+        (os.path.dirname(settings_local.__file__),
+            os.environ.get('PYTHONPATH', ''))
 
     from django.conf import settings
     from django.db import DatabaseError
