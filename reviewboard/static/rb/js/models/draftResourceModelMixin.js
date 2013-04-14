@@ -123,6 +123,16 @@ RB.DraftResourceModelMixin = {
     _retrieveDraft: function(options, context) {
         var self = this;
 
+        if (!RB.UserSession.instance.get('authenticated')) {
+            if (options.error) {
+                options.error.call(this, {
+                    errorText: 'You must be logged in to retrieve the draft.'
+                });
+            }
+
+            return;
+        }
+
         Backbone.Model.prototype.fetch.call(this, {
             success: function() {
                 /*

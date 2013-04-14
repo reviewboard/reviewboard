@@ -91,7 +91,31 @@ RB.CommentDialogView = Backbone.View.extend({
     FORM_BOX_WIDTH: 380,
 
     className: 'comment-dlg',
-    template: _.template($('#comment-dlg-template').html()),
+    template: _.template([
+        '<div class="other-comments">',
+        ' <h1 class="title">Other reviews</h1>',
+        ' <ul></ul>',
+        '</div>',
+        '<form method="post">',
+        ' <h1 class="title">Your comment</h1>',
+        '<% if (!authenticated) { %>',
+        ' <p class="login-text">',
+        '  You must <a href="<%= loginURL %>">log in</a> to post a comment.',
+        ' </p>',
+        '<% } %>',
+        ' <textarea name="text" rows="6" cols="30"></textarea>',
+        ' <div class="comment-issue-options">',
+        '  <input type="checkbox" name="comment_issue" />',
+        '  <label for="comment_issue">Open an <u>i</u>ssue</label>',
+        ' </div>',
+        ' <div class="status"></div>',
+        ' <div class="buttons">',
+        '  <input type="button" class="save" value="Save" disabled="true" />',
+        '  <input type="button" class="cancel" value="Cancel" />',
+        '  <input type="button" class="delete" value="Delete" disabled="true" />',
+        ' </div>',
+        '</form>'
+    ].join('')),
 
     events: {
         'click .buttons .cancel': '_onCancelClicked',
@@ -106,11 +130,16 @@ RB.CommentDialogView = Backbone.View.extend({
     },
 
     render: function() {
+        var userSession = RB.UserSession.instance;
+
         this.options.animate = (this.options.animate !== false);
 
         this.$el
             .hide()
-            .html(this.template());
+            .html(this.template({
+                authenticated: userSession.get('authenticated'),
+                loginURL: userSession.get('loginURL')
+            }));
 
         this._$draftForm    = this.$el.find('form');
         this._$commentsPane = this.$el.find('.other-comments');

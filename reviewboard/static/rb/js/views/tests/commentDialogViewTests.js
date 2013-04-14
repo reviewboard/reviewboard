@@ -519,5 +519,31 @@ describe('views/CommentDialogView', function() {
                 });
             });
         });
+
+        describe('Logged Out indicator', function() {
+            it('When logged in', function() {
+                RB.UserSession.instance.set('authenticated', true);
+
+                dlg = new RB.CommentDialogView({
+                    animate: false,
+                    model: new RB.CommentEditor()
+                });
+                dlg.render();
+
+                expect(dlg.$el.find('p[class="login-text"]').length).toBe(0);
+            });
+
+            it('When logged out', function() {
+                RB.UserSession.instance.set('authenticated', false);
+
+                dlg = new RB.CommentDialogView({
+                    animate: false,
+                    model: new RB.CommentEditor()
+                });
+                dlg.render();
+
+                expect(dlg.$el.find('p[class="login-text"]').length).toBe(1);
+            });
+        });
     });
 });

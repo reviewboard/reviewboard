@@ -161,7 +161,8 @@
         watchedReviewGroupsURL: "{% url watched-review-groups-resource request.user %}",
         watchedReviewRequestsURL: "{% url watched-review-requests-resource request.user %}"
 {% else %}
-        authenticated: false
+        authenticated: false,
+        loginURL: "{% url login %}"
 {% endif %}
     });
   </script>
