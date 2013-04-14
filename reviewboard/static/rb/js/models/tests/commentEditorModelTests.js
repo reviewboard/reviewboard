@@ -83,7 +83,10 @@ describe('models/CommentEditor', function() {
 
             it('When editing existing comment', function() {
                 var comment = createComment();
-                comment.set('loaded', true);
+                comment.set({
+                    id: 123,
+                    loaded: true
+                });
                 editor.set('comment', comment);
 
                 editor.beginEdit();
@@ -92,7 +95,10 @@ describe('models/CommentEditor', function() {
 
             it('When editing existing comment with canEdit=false', function() {
                 var comment = createComment();
-                comment.set('loaded', true);
+                comment.set({
+                    id: 123,
+                    loaded: true
+                });
 
                 editor.set({
                     canEdit: false,
@@ -184,7 +190,10 @@ describe('models/CommentEditor', function() {
 
             it('After deleting', function() {
                 var comment = createComment();
-                comment.set('loaded', true);
+                comment.set({
+                    id: 123,
+                    loaded: true
+                });
                 editor.set('comment', comment);
 
                 editor.beginEdit();

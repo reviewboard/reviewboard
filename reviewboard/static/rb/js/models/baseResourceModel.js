@@ -182,10 +182,7 @@ RB.BaseResource = Backbone.Model.extend({
      */
     fetch: function(options, context) {
         var parentObject,
-            fetchObject = _.bind(function() {
-                Backbone.Model.prototype.fetch.call(
-                    this, _.bindCallbacks(options, context));
-            }, this);
+            fetchObject;
 
         options = options || {};
 
@@ -199,6 +196,8 @@ RB.BaseResource = Backbone.Model.extend({
         }
 
         parentObject = this.get('parentObject');
+        fetchObject = _.bind(Backbone.Model.prototype.fetch, this,
+                             _.bindCallbacks(options, context));
 
         if (parentObject) {
             if (parentObject.cid) {

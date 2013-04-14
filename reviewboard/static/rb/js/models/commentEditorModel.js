@@ -98,6 +98,7 @@ RB.CommentEditor = Backbone.Model.extend({
      */
     cancel: function() {
         var comment = this.get('comment');
+
         this.off('change:comment', this._updateFromComment, this);
 
         if (comment) {
@@ -182,16 +183,27 @@ RB.CommentEditor = Backbone.Model.extend({
         this.set('statusText', '');
 
         if (comment) {
+            /*
+             * Set the attributes based on what we know at page load time.
+             *
+             * Note that it is *possible* that the comments will have changed
+             * server-side since loading the page (if the user is reviewing
+             * the same diff in two tabs). However, it's unlikely.
+             *
+             * Doing this before the ready() call ensures that we'll have the
+             * text and state up-front and that it won't overwrite what the
+             * user has typed after load.
+             */
+            this.set({
+                dirty: false,
+                openIssue: comment.get('loaded')
+                           ? comment.get('issueOpened')
+                           : this.defaults.openIssue,
+                text: comment.get('text')
+            });
+
             comment.ready({
-                ready: function() {
-                    this.set({
-                        dirty: false,
-                        openIssue: comment.get('loaded')
-                                   ? comment.get('issueOpened')
-                                   : this.defaults.openIssue,
-                        text: comment.get('text')
-                    });
-                }
+                ready: this._updateState
             }, this);
         }
     },
@@ -208,7 +220,7 @@ RB.CommentEditor = Backbone.Model.extend({
             comment = this.get('comment');
 
         this.set({
-            canDelete: canEdit && editing && comment && comment.get('loaded'),
+            canDelete: canEdit && editing && comment && !comment.isNew(),
             canSave: canEdit && editing && this.get('text') !== ''
         });
     }
