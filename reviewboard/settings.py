@@ -211,7 +211,6 @@ PRODUCTION = True
 LANGUAGE_COOKIE_NAME = "rblanguage"
 SESSION_COOKIE_NAME = "rbsessionid"
 SESSION_COOKIE_AGE = 365 * 24 * 60 * 60 # 1 year
-SESSION_COOKIE_PATH = SITE_ROOT
 
 # Load local settings.  This can override anything in here, but at the very
 # least it needs to define database connectivity.
@@ -221,6 +220,7 @@ try:
 except ImportError, exc:
     dependency_error('Unable to import settings_local.py: %s' % exc)
 
+SESSION_COOKIE_PATH = SITE_ROOT
 
 INSTALLED_APPS = RB_BUILTIN_APPS + RB_EXTRA_APPS + ['django_evolution']
 MIDDLEWARE_CLASSES += RB_EXTRA_MIDDLEWARE_CLASSES
