@@ -36,6 +36,10 @@ import select
 import sys
 from optparse import OptionParser
 
+if 'RBSITE_PYTHONPATH' in os.environ:
+    for path in reversed(os.environ['RBSITE_PYTHONPATH'].split(':')):
+        sys.path.insert(1, path)
+
 import paramiko
 
 from reviewboard import get_version_string

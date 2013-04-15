@@ -61,10 +61,10 @@ def initialize():
 
     import settings_local
 
-    # Set PYTHONPATH to match the directory of settings, for subprocesses.
-    os.environ['PYTHONPATH'] = '%s:%s' % \
-        (os.path.dirname(settings_local.__file__),
-            os.environ.get('PYTHONPATH', ''))
+    # Set RBSITE_PYTHON_PATH to the path we need for any RB-bundled
+    # scripts we may call.
+    os.environ['RBSITE_PYTHONPATH'] = \
+        os.path.dirname(settings_local.__file__)
 
     from django.conf import settings
     from django.db import DatabaseError
