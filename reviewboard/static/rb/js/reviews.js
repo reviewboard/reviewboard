@@ -4,9 +4,10 @@ var CommentReplyClasses = {
     file_attachment_comments: RB.FileAttachmentCommentReply
 };
 
-this.gReviewRequest = new RB.ReviewRequest(gReviewRequestId,
-                                           gReviewRequestSitePrefix,
-                                           gReviewRequestPath);
+this.gReviewRequest = new RB.ReviewRequest({
+    id: gReviewRequestId,
+    localSitePrefix: gReviewRequestSitePrefix
+});
 
 // State variables
 var gEditCount = 0;
@@ -160,6 +161,15 @@ function linkifyText(text) {
 }
 
 
+var DRAFT_FIELD_MAP = {
+    bugs_closed: 'bugsClosed',
+    change_description: 'changeDescription',
+    target_groups: 'targetGroups',
+    target_people: 'targetPeople',
+    testing_done: 'testingDone'
+};
+
+
 /*
  * Sets a field in the draft.
  *
@@ -170,60 +180,69 @@ function linkifyText(text) {
  * @param {string} value  The field value.
  */
 function setDraftField(field, value) {
-    gReviewRequest.setDraftField({
-        field: field,
-        value: value,
+    var data = {};
+
+    data[field] = value;
+
+    gReviewRequest.draft.save({
+        data: data,
         buttons: gDraftBannerButtons,
-        success: function(rsp) {
-            /* Checking if invalid user or group was entered. */
-            if (rsp.stat == "fail" && rsp.fields) {
+        error: function(model, xhr) {
+            var rsp = xhr.errorPayload,
+                message;
 
-                $('#review-request-warning')
-                    .delay(6000)
-                    .fadeOut(400, function() {
-                        $(this).hide();
-                    });
+            gPublishing = false;
 
-                /* Wrap each term in quotes or a leading 'and'. */
-                $.each(rsp.fields[field], function(key, value) {
-                    var size = rsp.fields[field].length;
-
-                    if (key == size - 1 && size > 1) {
-                      rsp.fields[field][key] = "and '" + value + "'";
-                    } else {
-                      rsp.fields[field][key] = "'" + value + "'";
-                    }
+            $('#review-request-warning')
+                .delay(6000)
+                .fadeOut(400, function() {
+                    $(this).hide();
                 });
 
-                var message = rsp.fields[field].join(", ");
+            /* Wrap each term in quotes or a leading 'and'. */
+            $.each(rsp.fields[field], function(key, value) {
+                var size = rsp.fields[field].length;
 
-                if (rsp.fields[field].length == 1) {
-                    if (field == "target_groups") {
-                        message = "Group " + message + " does not exist.";
-                    } else {
-                        message = "User " + message + " does not exist.";
-                    }
+                if (key == size - 1 && size > 1) {
+                  rsp.fields[field][key] = "and '" + value + "'";
                 } else {
-                    if (field == "target_groups") {
-                        message = "Groups " + message + " do not exist.";
-                    } else {
-                        message = "Users " + message + " do not exist.";
-                    }
+                  rsp.fields[field][key] = "'" + value + "'";
                 }
+            });
 
-                $("#review-request-warning")
-                    .show()
-                    .html(message);
+            message = rsp.fields[field].join(", ");
+
+            if (rsp.fields[field].length == 1) {
+                if (field == "target_groups") {
+                    message = "Group " + message + " does not exist.";
+                } else {
+                    message = "User " + message + " does not exist.";
+                }
+            } else {
+                if (field == "target_groups") {
+                    message = "Groups " + message + " do not exist.";
+                } else {
+                    message = "Users " + message + " do not exist.";
+                }
             }
 
-            var func = gEditorCompleteHandlers[field];
+            $("#review-request-warning")
+                .show()
+                .html(message);
+        },
+        complete: function() {
+            var func = gEditorCompleteHandlers[field],
+                fieldName;
 
-            if ($.isFunction(func)) {
+            if (_.isFunction(func)) {
+                fieldName = DRAFT_FIELD_MAP[field] || field;
+
                 $("#" + field)
-		    .empty()
-		    .html(func(rsp['draft'][field]));
+                    .empty()
+                    .html(func(gReviewRequest.draft.get(fieldName)));
             }
-
+        },
+        success: function(model) {
             gDraftBanner.show();
 
             if (gPublishing) {
@@ -233,9 +252,6 @@ function setDraftField(field, value) {
                     publishDraft();
                 }
             }
-        },
-        error: function() {
-            gPublishing = false;
         }
     });
 }
@@ -333,8 +349,11 @@ function publishDraft() {
     } else if ($.trim($("#description").html()) == "") {
         alert("The draft must have a description.");
     } else {
-        gReviewRequest.publish({
-            buttons: gDraftBannerButtons
+        gReviewRequest.draft.publish({
+            buttons: gDraftBannerButtons,
+            success: function() {
+                window.location = gReviewRequestPath;
+            }
         });
     }
 }
@@ -1313,7 +1332,7 @@ RB.registerForUpdates = function(lastTimestamp, type) {
     var faviconURL = faviconEl.attr("href");
     var faviconNotifyURL = STATIC_URLS["rb/images/favicon_notify.ico"];
 
-    $.event.add(gReviewRequest, "updated", function(evt, info) {
+    gReviewRequest.on('updated', function(info) {
         if (bubble.length == 0) {
             updateFavIcon(faviconNotifyURL);
 
@@ -1491,8 +1510,11 @@ $(document).ready(function() {
     });
 
     $("#btn-draft-discard").click(function() {
-        gReviewRequest.discardDraft({
-            options: gDraftBannerButtons
+        gReviewRequest.draft.destroy({
+            buttons: gDraftBannerButtons,
+            success: function() {
+                window.location = gReviewRequestPath;
+            }
         });
         return false;
     });
@@ -1501,7 +1523,10 @@ $(document).ready(function() {
         .click(function() {
             gReviewRequest.close({
                 type: RB.ReviewRequest.CLOSE_DISCARDED,
-                buttons: gDraftBannerButtons
+                buttons: gDraftBannerButtons,
+                success: function() {
+                    window.location = gReviewRequestPath;
+                }
             });
             return false;
         });
@@ -1522,7 +1547,10 @@ $(document).ready(function() {
         if (submit) {
             gReviewRequest.close({
                 type: RB.ReviewRequest.CLOSE_SUBMITTED,
-                buttons: gDraftBannerButtons
+                buttons: gDraftBannerButtons,
+                success: function() {
+                    window.location = gReviewRequestPath;
+                }
             });
         }
 
@@ -1531,7 +1559,10 @@ $(document).ready(function() {
 
     $("#btn-review-request-reopen").click(function() {
         gReviewRequest.reopen({
-            buttons: gDraftBannerButtons
+            buttons: gDraftBannerButtons,
+            success: function() {
+                window.location = gReviewRequestPath;
+            }
         });
 
         return false;
@@ -1547,7 +1578,7 @@ $(document).ready(function() {
                     $('<input type="button" value="Cancel"/>'),
                     $('<input type="button" value="Delete"/>')
                         .click(function(e) {
-                            gReviewRequest.deletePermanently({
+                            gReviewRequest.destroy({
                                 buttons: gDraftBannerButtons.add(
                                     $("input", dlg.modalBox("buttons"))),
                                 success: function() {

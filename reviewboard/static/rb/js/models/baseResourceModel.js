@@ -47,16 +47,7 @@ RB.BaseResource = Backbone.Model.extend({
             parentObject = this.get('parentObject');
 
             if (parentObject) {
-                /*
-                 * XXX This is temporary to support older-style resource
-                 *     objects. We should just use get() once we're moved
-                 *     entirely onto BaseResource.
-                 */
-                if (parentObject.cid) {
-                    links = parentObject.get('links');
-                } else {
-                    links = parentObject.links;
-                }
+                links = parentObject.get('links');
 
                 if (links) {
                     key = _.result(this, 'listKey');
@@ -114,14 +105,10 @@ RB.BaseResource = Backbone.Model.extend({
              * the server, but we still need to ensure that the parent is loaded
              * in order for it to have valid links.
              */
-            if (parentObject.cid) {
-                parentObject.ready({
-                    ready: success,
-                    error: error
-                });
-            } else {
-                parentObject.ready(success || function() {});
-            }
+            parentObject.ready({
+                ready: success,
+                error: error
+            });
         } else if (options.ready) {
             // Fallback for dummy objects
             options.ready.call(context);
@@ -200,14 +187,10 @@ RB.BaseResource = Backbone.Model.extend({
                              _.bindCallbacks(options, context));
 
         if (parentObject) {
-            if (parentObject.cid) {
-                parentObject.ready({
-                    ready: fetchObject,
-                    error: options.error
-                }, this);
-            } else {
-                parentObject.ready(fetchObject);
-            }
+            parentObject.ready({
+                ready: fetchObject,
+                error: options.error
+            }, this);
         } else {
             fetchObject();
         }
@@ -248,14 +231,10 @@ RB.BaseResource = Backbone.Model.extend({
                     saveObject = _.bind(this._saveObject, this, options,
                                         context);
 
-                    if (parentObject.cid) {
-                        parentObject.ensureCreated({
-                            success: saveObject,
-                            error: options.error
-                        }, this);
-                    } else {
-                        parentObject.ensureCreated(saveObject);
-                    }
+                    parentObject.ensureCreated({
+                        success: saveObject,
+                        error: options.error
+                    }, this);
                 } else {
                     this._saveObject(options, context);
                 }
@@ -402,13 +381,9 @@ RB.BaseResource = Backbone.Model.extend({
              *     objects. We should just use ready() once we're moved
              *     entirely onto BaseResource.
              */
-            if (parentObject.cid) {
-                parentObject.ready(_.defaults({
-                    ready: destroyObject
-                }, _.bindCallbacks(options, context)));
-            } else {
-                parentObject.ready(destroyObject);
-            }
+            parentObject.ready(_.defaults({
+                ready: destroyObject
+            }, _.bindCallbacks(options, context)));
         } else {
             destroyObject();
         }
@@ -528,7 +503,8 @@ RB.BaseResource = Backbone.Model.extend({
      */
     sync: function(method, model, options) {
         var data,
-            contentType;
+            contentType,
+            syncOptions;
 
         options = options || {};
 
@@ -540,29 +516,41 @@ RB.BaseResource = Backbone.Model.extend({
             contentType = 'application/x-www-form-urlencoded';
         }
 
-        return Backbone.sync.call(this, method, model, _.defaults({}, options, {
+        syncOptions = _.defaults({}, options, {
             /* Use form data instead of a JSON payload. */
             contentType: contentType,
             data: data,
-            processData: true,
+            processData: true
+        });
 
-            error: function(model, xhr) {
-                var rsp = null,
-                    text;
+        syncOptions.error = _.bind(function(model, xhr) {
+            var rsp = null,
+                text;
 
-                if (_.isFunction(options.error)) {
-                    try {
-                        rsp = $.parseJSON(xhr.responseText);
-                        text = rsp.err.msg;
-                    } catch (e) {
-                        text = 'HTTP ' + xhr.status + ' ' + xhr.statusText;
-                    }
-
-                    xhr.errorText = text;
-                    options.error(model, xhr, options);
-                }
+            try {
+                rsp = $.parseJSON(xhr.responseText);
+                text = rsp.err.msg;
+            } catch (e) {
+                text = 'HTTP ' + xhr.status + ' ' + xhr.statusText;
             }
-        }));
+
+            if (rsp && _.has(rsp, this.rspNamespace)) {
+                /*
+                 * The response contains the current version of the object,
+                 * which we want to preserve, in case it did any partial
+                 * updating of data.
+                 */
+                this.set(this.parse(rsp));
+            }
+
+            if (_.isFunction(options.error)) {
+                xhr.errorText = text;
+                xhr.errorPayload = rsp;
+                options.error(model, xhr, options);
+            }
+        }, this);
+
+        return Backbone.sync.call(this, method, model, syncOptions);
     }
 }, {
     strings: {

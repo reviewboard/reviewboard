@@ -226,7 +226,9 @@ function registerToggleStar() {
             var objid = self.attr("data-object-id");
 
             if (type == "reviewrequests") {
-                obj = new RB.ReviewRequest(objid);
+                obj = new RB.ReviewRequest({
+                    id: objid
+                });
             } else if (type == "groups") {
                 obj = new RB.ReviewGroup({
                     id: objid

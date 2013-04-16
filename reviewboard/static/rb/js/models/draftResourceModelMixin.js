@@ -54,16 +54,22 @@ RB.DraftResourceModelMixin = {
     destroy: function(options, context) {
         options = _.bindCallbacks(options || {});
 
-        _.super(this).destroy.call(
-            this,
+        this.ready(
             _.defaults({
-                success: function() {
-                    /* We need to fetch the draft resource again. */
-                    this._needDraft = true;
+                ready: function() {
+                    _.super(this).destroy.call(
+                        this,
+                        _.defaults({
+                            success: function() {
+                                /* We need to fetch the draft resource again. */
+                                this._needDraft = true;
 
-                    if (_.isFunction(options.success)) {
-                        options.success.apply(context, arguments);
-                    }
+                                if (_.isFunction(options.success)) {
+                                    options.success.apply(context, arguments);
+                                }
+                            }
+                        }, options),
+                        this);
                 }
             }, options),
             this);
@@ -82,13 +88,7 @@ RB.DraftResourceModelMixin = {
         if (this._needDraft) {
             parentObject = this.get('parentObject');
             linkName = _.result(this, 'listKey');
-
-            /* XXX Work with old-style and new-style resources' links. */
-            if (parentObject.cid) {
-                links = parentObject.get('links');
-            } else {
-                links = parentObject.links;
-            }
+            links = parentObject.get('links');
 
             /*
              * Chrome hyper-aggressively caches things it shouldn't, and
