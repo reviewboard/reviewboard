@@ -317,7 +317,7 @@ PIPELINE_JS = {
             'rb/js/utils/propertyUtils.js',
             'rb/js/utils/underscoreUtils.js',
             'rb/js/common.js',
-            'rb/js/datastore.js',
+            'rb/js/utils/apiUtils.js',
             'rb/js/models/baseResourceModel.js',
             'rb/js/models/draftResourceModelMixin.js',
             'rb/js/models/draftReviewRequestModel.js',
