@@ -34,7 +34,9 @@ describe('models/ReviewRequest', function() {
     });
 
     it('createFileAttachment', function() {
-        var fileAttachment = reviewRequest.createFileAttachment(42);
+        var fileAttachment = reviewRequest.createFileAttachment({
+            id: 42
+        });
 
         expect(fileAttachment.get('parentObject')).toBe(reviewRequest);
         expect(fileAttachment.id).toBe(42);

@@ -553,6 +553,7 @@ RB.CommentDialogView = Backbone.View.extend({
             reviewRequestURL: options.reviewRequestURL,
             model: new RB.CommentEditor({
                 comment: options.comment,
+                reviewRequestEditor: options.reviewRequestEditor,
                 publishedComments: options.publishedComments || undefined,
                 publishedCommentsType: options.publishedCommentsType ||
                                        undefined

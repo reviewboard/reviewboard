@@ -31,10 +31,14 @@ RB.CommentEditor = Backbone.Model.extend({
         this._updateFromComment();
 
         this.on('change:dirty', function(model, dirty) {
-            if (dirty) {
-                gEditCount++;
-            } else {
-                gEditCount--
+            var reviewRequestEditor = this.get('reviewRequestEditor');
+
+            if (reviewRequestEditor) {
+                if (dirty) {
+                    reviewRequestEditor.incr('editCount');
+                } else {
+                    reviewRequestEditor.decr('editCount');
+                }
             }
 
             this.set('statusText',

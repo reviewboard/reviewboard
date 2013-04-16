@@ -179,6 +179,12 @@ RB.FileAttachmentThumbnail = Backbone.View.extend({
         return this;
     },
 
+    fadeIn: function() {
+        this.$el
+            .css('opacity', 0)
+            .fadeTo(1000, 1);
+    },
+
     /*
      * Shows the comment dialog for the file attachment.
      *

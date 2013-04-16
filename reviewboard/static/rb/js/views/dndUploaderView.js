@@ -163,20 +163,10 @@ RB.DnDUploader = Backbone.View.extend({
      */
     _uploadFile: function(file) {
         /* Create a temporary file listing. */
-        var fileAttachment = this.options.reviewRequest.createFileAttachment(),
-            $thumb = $.newFileAttachment(fileAttachment)
-                .css('opacity', 0)
-                .fadeTo(1000, 1);
+        var editor = this.options.reviewRequestEditor,
+            fileAttachment = editor.createFileAttachment();
 
         fileAttachment.set('file', file);
-        fileAttachment.save({
-            buttons: RB.draftBannerButtons,
-            success: function() {
-                RB.draftBanner.show();
-            },
-            error: function() {
-                $thumb.remove();
-            }
-        });
+        fileAttachment.save();
     }
 });

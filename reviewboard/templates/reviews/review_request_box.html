@@ -215,13 +215,3 @@
 </div>
 
 {% include "reviews/review_issue_summary_table.html" %}
-
-<script type="text/javascript">
-  $(document).ready(function() {
-    RB.setFileAttachmentComments({
-{% for file_attachment in file_attachments %}
-        {{file_attachment.id}}: {% file_attachment_comments file_attachment %}{% if not forloop.last %},{% endif %}
-{% endfor %}
-    });
-  });
-</script>

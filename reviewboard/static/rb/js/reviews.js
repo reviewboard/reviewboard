@@ -10,9 +10,6 @@ this.gReviewRequest = new RB.ReviewRequest({
 });
 
 // State variables
-var gEditCount = 0;
-var gPublishing = false;
-var gPendingSaveCount = 0;
 var gPendingDiffFragments = {};
 var gReviewBanner = $("#review-banner");
 var gDraftBanner = $("#draft-banner");
@@ -191,7 +188,7 @@ function setDraftField(field, value) {
             var rsp = xhr.errorPayload,
                 message;
 
-            gPublishing = false;
+            reviewRequestEditor.set('publishing', false);
 
             $('#review-request-warning')
                 .delay(6000)
@@ -245,10 +242,10 @@ function setDraftField(field, value) {
         success: function(model) {
             gDraftBanner.show();
 
-            if (gPublishing) {
-                gPendingSaveCount--;
+            if (reviewRequestEditor.get('publishing')) {
+                reviewRequestEditor.decr('pendingSaveCount');
 
-                if (gPendingSaveCount == 0) {
+                if (reviewRequestEditor.get('pendingSaveCount') === 0) {
                     publishDraft();
                 }
             }
@@ -462,13 +459,13 @@ $.fn.commentSection = function(review_id, context_id, context_type) {
                 })
                 .on({
                     "beginEdit": function() {
-                        gEditCount++;
+                        reviewRequestEditor.incr('editCount');
                     },
                     "complete": function(e, value) {
                         var replyClass,
                             options;
 
-                        gEditCount--;
+                        reviewRequestEditor.decr('editCount');
 
                         $editor.html(linkifyText($editor.text()));
 
@@ -520,7 +517,7 @@ $.fn.commentSection = function(review_id, context_id, context_type) {
                         });
                     },
                     "cancel": function(e) {
-                        gEditCount--;
+                        reviewRequestEditor.decr('editCount');
                         addCommentLink.fadeIn();
                         removeCommentFormIfEmpty($item, $editor);
                     }
@@ -933,7 +930,7 @@ $.reviewForm = function(review) {
      * @param {string} formHTML  The HTML content for the form.
      */
     function createForm(formHTML) {
-        gEditCount++;
+        reviewRequestEditor.incr('editCount');
 
         dlg = $("<div/>")
             .attr("id", "review-form")
@@ -953,7 +950,7 @@ $.reviewForm = function(review) {
                     $('<input type="button"/>')
                         .val("Discard Review")
                         .click(function(e) {
-                            gEditCount--;
+                            reviewRequestEditor.decr('editCount');
                             review.destroy({
                                 buttons: buttons,
                                 success: function() {
@@ -967,7 +964,7 @@ $.reviewForm = function(review) {
                     $('<input type="button"/>')
                         .val("Cancel")
                         .click(function() {
-                            gEditCount--;
+                            reviewRequestEditor.decr('editCount');
                         }),
                     $('<input type="button"/>')
                         .val("Save")
@@ -998,10 +995,10 @@ $.reviewForm = function(review) {
                 })
                 .on({
                     "beginEdit": function() {
-                        gEditCount++;
+                        reviewRequestEditor.incr('editCount');
                     },
                     "cancel complete": function() {
-                        gEditCount--;
+                        reviewRequestEditor.decr('editCount');
                     }
                 });
         }
@@ -1048,7 +1045,7 @@ $.reviewForm = function(review) {
                 public: publish
             });
 
-            gEditCount--;
+            reviewRequestEditor.decr('editCount');
 
             review.save({
                 buttons: buttons,
@@ -1099,13 +1096,13 @@ $.fn.reviewFormCommentEditor = function(comment) {
         })
         .on({
             "beginEdit": function() {
-                gEditCount++;
+                reviewRequestEditor.incr('editCount');
             },
             "cancel": function() {
-                gEditCount--;
+                reviewRequestEditor.decr('editCount');
             },
             "complete": function(e, value) {
-                gEditCount--;
+                reviewRequestEditor.decr('editCount');
                 comment.set('text', value);
                 comment.save({
                     success: function() {
@@ -1158,148 +1155,17 @@ $.fn.reviewRequestFieldEditor = function() {
             })
             .on({
                 "beginEdit": function() {
-                    gEditCount++;
+                    reviewRequestEditor.incr('editCount');
                 },
                 "cancel": function() {
-                    gEditCount--;
+                    reviewRequestEditor.decr('editCount');
                 },
                 "complete": function(e, value) {
-                    gEditCount--;
+                    reviewRequestEditor.decr('editCount');
                     setDraftField(this.id, value);
                 }
             });
     });
-}
-
-
-/*
- * Handles interaction and events with a screenshot thumbnail.
-
- * @return {jQuery} The provided screenshot containers.
- */
-$.fn.screenshotThumbnail = function() {
-    return $(this).each(function() {
-        var $this = $(this),
-            screenshotID = $this.attr("data-screenshot-id"),
-            screenshot = gReviewRequest.createScreenshot(screenshotID),
-            view = new RB.ScreenshotThumbnail({
-                el: $this,
-                model: screenshot
-            });
-
-        view.render();
-
-        view.on('beginEdit', function() {
-            gEditCount++;
-        });
-
-        view.on('endEdit', function() {
-            gEditCount--;
-        });
-
-        screenshot.on('saving', function() {
-            gDraftBannerButtons.prop('disabled', true);
-        });
-
-        screenshot.on('saved', function() {
-            gDraftBannerButtons.prop('disabled', false);
-        });
-
-        screenshot.on('saved destroy', function() {
-            gDraftBanner.show();
-        });
-    });
-};
-
-
-/*
- * Handles interaction and events with a file attachment.
-
- * @return {jQuery} The provided file attachment container.
- */
-$.fn.fileAttachment = function(newFileAttachment) {
-    return $(this).each(function() {
-        var $this = $(this),
-            $caption,
-            fileAttachment = newFileAttachment,
-            renderThumbnail = true,
-            comments = [],
-            id,
-            view;
-
-        if (!fileAttachment) {
-            id = $this.attr('data-file-id');
-            $caption = $this.find('.file-caption .edit');
-            comments = gFileAttachmentComments[id];
-            renderThumbnail = false;
-
-            fileAttachment = gReviewRequest.createFileAttachment(id);
-
-            if (!$caption.hasClass('empty-caption')) {
-                fileAttachment.set('caption', $caption.text());
-            }
-        }
-
-        view = new RB.FileAttachmentThumbnail({
-            el: $this,
-            model: fileAttachment,
-            comments: gFileAttachmentComments[id],
-            renderThumbnail: renderThumbnail,
-            reviewRequest: gReviewRequest
-        });
-        view.render();
-
-        view.on('beginEdit', function() {
-            gEditCount++;
-        });
-
-        view.on('endEdit', function() {
-            gEditCount--;
-        });
-
-        view.on('commentSaved', function() {
-            showReviewBanner();
-        });
-
-        fileAttachment.on('saving', function() {
-            gDraftBannerButtons.prop('disabled', true);
-        });
-
-        fileAttachment.on('saved', function() {
-            gDraftBannerButtons.prop('disabled', false);
-        });
-
-        fileAttachment.on('saved destroy', function() {
-            gDraftBanner.show();
-        });
-    });
-};
-
-
-/*
- * Adds a file to the file attachments list.
- *
- * If an FileAttachment object is given, then this will display the
- * file data. Otherwise, this will display a placeholder.
- *
- * @param {object} fileAttachment  The optional file to display.
- *
- * @return {jQuery} The root file attachment div.
- */
-$.newFileAttachment = function(fileAttachment) {
-    var container = $('<div/>').fileAttachment(fileAttachment, true);
-        attachments = $("#file-list");
-
-    $(attachments.parent()[0]).show();
-    return container.insertBefore(attachments.children("br"));
-};
-
-
-/*
- * Sets the list of file attachment comments.
- */
-RB.setFileAttachmentComments = function(comments) {
-    gFileAttachmentComments = comments;
 }
 
 
@@ -1390,6 +1256,9 @@ function showReviewBanner() {
                 .slideDown();
     }
 }
+
+// XXX This is temporary until the banner is moved into a new view.
+RB.showReviewBanner = showReviewBanner;
 
 
 /*
@@ -1496,11 +1365,14 @@ $(document).ready(function() {
 
     $("#btn-draft-publish").click(function() {
         /* Save all the fields if we need to. */
-        gPublishing = true;
         var fields = $(".editable:inlineEditorDirty");
-        gPendingSaveCount = fields.length;
 
-        if (gPendingSaveCount == 0) {
+        reviewRequestEditor.set({
+            publishing: true,
+            pendingSaveCount: fields.length
+        });
+
+        if (reviewRequestEditor.get('pendingSaveCount') === 0) {
             publishDraft();
         } else {
             fields.inlineEditor("save");
@@ -1690,8 +1562,6 @@ $(document).ready(function() {
             var dndUploader;
 
             $(".editable").reviewRequestFieldEditor();
-            $(".screenshot-container").screenshotThumbnail();
-            $(".file-container").fileAttachment();
 
             var targetGroupsEl = $("#target_groups");
             var targetPeopleEl = $("#target_people");
@@ -1701,10 +1571,10 @@ $(document).ready(function() {
                     .inlineEditor("field")
                     .on({
                         "beginEdit": function() {
-                            gEditCount++;
+                            reviewRequestEditor.incr('editCount');
                         },
                         "cancel complete": function() {
-                            gEditCount--;
+                            reviewRequestEditor.decr('editCount');
                         }
                     })
                     .reviewsAutoComplete({
@@ -1722,10 +1592,10 @@ $(document).ready(function() {
                     .inlineEditor("field")
                     .on({
                         "beginEdit": function() {
-                            gEditCount++;
+                            reviewRequestEditor.incr('editCount');
                         },
                         "cancel complete": function() {
-                            gEditCount--;
+                            reviewRequestEditor.decr('editCount');
                         }
                     })
                     .reviewsAutoComplete({
@@ -1746,7 +1616,7 @@ $(document).ready(function() {
              * @return {string} The dialog message (needed for IE).
              */
             window.onbeforeunload = function(evt) {
-                if (gEditCount > 0) {
+                if (reviewRequestEditor.get('editCount') > 0) {
                     /*
                      * On IE, the text must be set in evt.returnValue.
                      *
@@ -1766,7 +1636,7 @@ $(document).ready(function() {
             };
 
             dndUploader = new RB.DnDUploader({
-                reviewRequest: gReviewRequest
+                reviewRequestEditor: reviewRequestEditor
             });
         }
     }

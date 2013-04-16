@@ -102,11 +102,10 @@ RB.ReviewRequest = RB.BaseResource.extend({
     /*
      * Creates a FileAttachment object for this review request.
      */
-    createFileAttachment: function(fileAttachmentID) {
-        return new RB.FileAttachment({
-            parentObject: this,
-            id: fileAttachmentID
-        });
+    createFileAttachment: function(attributes) {
+        return new RB.FileAttachment(_.defaults({
+            parentObject: this
+        }, attributes));
     },
 
     /*

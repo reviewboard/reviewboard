@@ -1,6 +1,5 @@
 {% extends "base.html" %}
-{% load compressed %}
-{% load i18n %}
+{% load compressed i18n reviewtags %}
 
 {% block ie6_csshacks %}
    #review-banner .banner { position: absolute; }
@@ -11,7 +10,31 @@
 {% endblock %}
 
 {% block scripts-post %}
-{% compressed_js "reviews" %}
+<script type="text/javascript">
+    $(document).ready(function() {
+        if (gEditable) {
+            window.reviewRequestEditor = new RB.ReviewRequestEditor({
+                reviewRequest: gReviewRequest,
+                fileAttachmentComments: {
+{% if file_attachments %}
+{%  for file_attachment in file_attachments %}
+                    {{file_attachment.id}}: {% file_attachment_comments file_attachment %}{% if not forloop.last %},{% endif %}
+{%  endfor %}
+{% endif %}
+                }
+            });
+
+            window.reviewRequestEditorView = new RB.ReviewRequestEditorView({
+                el: $('.review-request')[0],
+                model: reviewRequestEditor
+            });
+
+            reviewRequestEditorView.render();
+        }
+    });
+</script>
+
+{%  compressed_js "reviews" %}
 {% endblock %}
 
 {% block bodytag %}
