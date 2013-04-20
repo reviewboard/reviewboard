@@ -325,6 +325,9 @@ class Site(object):
         fp.write("        'NAME': '%s',\n" % self.db_name.replace("\\", "\\\\"))
 
         if self.db_type != "sqlite3":
+            if ':' in self.db_host:
+                self.db_host, self.db_port = self.db_host.split(':', 1)
+
             fp.write("        'USER': '%s',\n" % (self.db_user or ""))
             fp.write("        'PASSWORD': '%s',\n" % (self.db_pass or ""))
             fp.write("        'HOST': '%s',\n" % (self.db_host or ""))
@@ -1572,12 +1575,6 @@ class InstallCommand(Command):
                         save_obj=site, save_var="db_name")
 
     def ask_database_host(self):
-        def normalize_host_port(value):
-            if ":" in value:
-                value, site.db_port = value.split(":", 1)
-
-            return value
-
         page = ui.page("What is the database server's address?",
                        is_visible_func=lambda: site.db_type != "sqlite3")
 
@@ -1586,7 +1583,6 @@ class InstallCommand(Command):
                       "port for the database type.")
 
         ui.prompt_input(page, "Database Server", site.db_host,
-                        normalize_func=normalize_host_port,
                         save_obj=site, save_var="db_host")
 
     def ask_database_login(self):
