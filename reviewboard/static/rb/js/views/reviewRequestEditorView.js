@@ -5,6 +5,13 @@
  * around editing a review request.
  */
 RB.ReviewRequestEditorView = Backbone.View.extend({
+    events: {
+        'click #btn-draft-publish': '_onPublishDraftClicked',
+        'click #btn-draft-discard': '_onDiscardDraftClicked',
+        'click #btn-review-request-discard': '_onCloseDiscardedClicked',
+        'click #btn-review-request-reopen': '_onReopenClicked'
+    },
+
     /*
      * Renders the editor.
      *
@@ -12,10 +19,23 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
      * thumbnails, turning them into FileAttachment and Screenshot objects.
      */
     render: function() {
+        var $closeDiscarded = this.$('#discard-review-request-link'),
+            $closeSubmitted = this.$('#link-review-request-close-submitted'),
+            $deletePermanently = this.$('#delete-review-request-link');
+
         this._$warning = $('#review-request-warning');
         this._$screenshots = $('#screenshot-thumbnails');
         this._$attachments = $('#file-list');
         this._$attachmentsContainer = $(this._$attachments.parent()[0]);
+
+        /*
+         * We don't want the click event filtering from these down to the
+         * parent menu, so we can't use events above.
+         */
+        $closeDiscarded.click(_.bind(this._onCloseDiscardedClicked, this));
+        $closeSubmitted.click(_.bind(this._onCloseSubmittedClicked, this));
+        $deletePermanently.click(_.bind(this._onDeleteReviewRequestClicked,
+                                        this));
 
         this.model.fileAttachments.on('add',
                                       this._buildFileAttachmentThumbnail,
@@ -40,6 +60,9 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
         _.each(this._$attachments.find('.file-container'),
                this._importFileAttachmentThumbnail,
                this);
+
+        this.model.on('change:editable', this._onEditableChanged, this);
+        this._onEditableChanged();
 
         return this;
     },
@@ -138,5 +161,143 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
         view.on('endEdit', function() {
             this.model.decr('editCount');
         }, this);
+    },
+
+    /*
+     * Handler for when the 'editable' property changes.
+     *
+     * Enables or disables all inlineEditors.
+     */
+    _onEditableChanged: function() {
+        this.$('.edit')
+            .inlineEditor(this.model.get('editable') ? 'enable' : 'disable');
+    },
+
+    /*
+     * Handler for when the Publish Draft button is clicked.
+     *
+     * Begins publishing the review request. If there are any field editors
+     * still open, they'll be saved first.
+     */
+    _onPublishDraftClicked: function() {
+        /* Save all the fields if we need to. */
+        var fields = this.$(".editable:inlineEditorDirty");
+
+        this.model.set({
+            publishing: true,
+            pendingSaveCount: fields.length
+        });
+
+        if (fields.length === 0) {
+            RB.publishDraft();
+        } else {
+            fields.inlineEditor("save");
+        }
+
+        return false;
+    },
+
+    /*
+     * Handler for when the Discard Draft button is clicked.
+     *
+     * Discards the draft of the review request and relodds the page.
+     */
+    _onDiscardDraftClicked: function() {
+        this.model.get('reviewRequest').draft.destroy({
+            buttons: RB.draftBannerButtons,
+            success: this._refreshPage
+        }, this);
+
+        return false;
+    },
+
+    /*
+     * Handler for when Close -> Discarded is clicked.
+     */
+    _onCloseDiscardedClicked: function() {
+        this.model.get('reviewRequest').close({
+            type: RB.ReviewRequest.CLOSE_DISCARDED,
+            buttons: RB.draftBannerButtons,
+            success: this._refreshPage
+        }, this);
+
+        return false;
+    },
+
+    /*
+     * Handler for Reopen Review Request.
+     */
+    _onReopenClicked: function() {
+        this.model.get('reviewRequest').reopen({
+            buttons: RB.draftBannerButtons,
+            success: this._refreshPage
+        }, this);
+
+        return false;
+    },
+
+    /*
+     * Handler for when Close -> Submitted is clicked.
+     *
+     * If there's an unpublished draft, this will first confirm if the
+     * user is sure.
+     */
+    _onCloseSubmittedClicked: function() {
+        /*
+         * This is a non-destructive event, so don't confirm unless there's
+         * a draft.
+         */
+        var submit = true;
+
+        if ($("#draft-banner").is(":visible")) {
+            submit = confirm("You have an unpublished draft. If you close " +
+                             "this review request, the draft will be " +
+                             "discarded. Are you sure you want to close " +
+                             "the review request?");
+        }
+
+        if (submit) {
+            this.model.get('reviewRequest').close({
+                type: RB.ReviewRequest.CLOSE_SUBMITTED,
+                buttons: RB.draftBannerButtons,
+                success: this._refreshPage
+            }, this);
+        }
+
+        return false;
+    },
+
+    /*
+     * Handler for Close -> Delete Permanently.
+     *
+     * The user will be asked for confirmation before the review request is
+     * deleted.
+     */
+    _onDeleteReviewRequestClicked: function() {
+        var dlg = $("<p/>")
+            .text("This deletion cannot be undone. All diffs and reviews " +
+                  "will be deleted as well.")
+            .modalBox({
+                title: "Are you sure you want to delete this review request?",
+                buttons: [
+                    $('<input type="button" value="Cancel"/>'),
+                    $('<input type="button" value="Delete"/>')
+                        .click(_.bind(function() {
+                            this.model.get('reviewRequest').destroy({
+                                buttons: RB.draftBannerButtons.add(
+                                    $("input", dlg.modalBox("buttons"))),
+                                success: function() {
+                                    window.location = SITE_ROOT;
+                                }
+                            });
+                        }, this))
+                ]
+            });
+
+        return false;
+    },
+
+    _refreshPage: function() {
+        window.location = gReviewRequestPath;
     }
 });

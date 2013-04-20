@@ -4,7 +4,25 @@ describe('views/ReviewRequestEditorView', function() {
         view,
         template = _.template([
             '<div>',
+            ' <div id="draft-banner" style="display: none;">',
+            '  <button id="btn-draft-publish" />',
+            '  <button id="btn-draft-discard" />',
+            '  <button id="btn-review-request-discard" />',
+            '  <button id="btn-review-request-reopen" />',
+            ' </div>',
+            ' <div id="draft-banner" style="display: none;">',
             ' <div id="review-request-warning"></div>',
+            ' <div class="actions">',
+            '  <a href="#" id="discard-review-request-link"></a>',
+            '  <a href="#" id="link-review-request-close-submitted"></a>',
+            '  <a href="#" id="delete-review-request-link"></a>',
+            ' </div>',
+            ' <div>',
+            '  <span id="summary"></span>',
+            '  <span id="target_groups"></span>',
+            '  <span id="target_people"></span>',
+            '  <span id="description"></span>',
+            ' </div>',
             ' <div>',
             '  <div id="file-list"><br /></div>',
             ' </div>',
@@ -32,9 +50,16 @@ describe('views/ReviewRequestEditorView', function() {
             id: 123
         });
 
+        // XXX Remove this when gReviewRequest goes away.
+        gReviewRequest = reviewRequest;
+
         editor = new RB.ReviewRequestEditor({
+            editable: true,
             reviewRequest: reviewRequest
         });
+
+        // XXX Remove this when window.reviewRequestEditor goes away.
+        window.reviewRequestEditor = editor;
 
         view = new RB.ReviewRequestEditorView({
             el: $el,
@@ -46,6 +71,60 @@ describe('views/ReviewRequestEditorView', function() {
         $screenshotsContainer = $testsScratch.find('#screenshot-thumbnails');
     });
 
+    describe('Actions bar', function() {
+        beforeEach(function() {
+            view.render();
+        });
+
+        describe('Close', function() {
+            it('Delete Permanently', function() {
+                var $buttons = $();
+
+                spyOn(reviewRequest, 'destroy');
+                spyOn($.fn, 'modalBox').andCallFake(function(options) {
+                    _.each(options.buttons, function($btn) {
+                        $buttons = $buttons.add($btn);
+                    });
+
+                    /* Simulate the modalBox API for what we need. */
+                    return {
+                        modalBox: function(cmd) {
+                            expect(cmd).toBe('buttons');
+
+                            return $buttons;
+                        }
+                    }
+                });
+
+                $('#delete-review-request-link').click();
+                expect($.fn.modalBox).toHaveBeenCalled();
+
+                $buttons.filter('input[value="Delete"]').click();
+                expect(reviewRequest.destroy).toHaveBeenCalled();
+            });
+
+            it('Discarded', function() {
+                spyOn(reviewRequest, 'close').andCallFake(function(options) {
+                    expect(options.type).toBe(RB.ReviewRequest.CLOSE_DISCARDED);
+                });
+
+                $('#discard-review-request-link').click();
+
+                expect(reviewRequest.close).toHaveBeenCalled();
+            });
+
+            it('Submitted', function() {
+                spyOn(reviewRequest, 'close').andCallFake(function(options) {
+                    expect(options.type).toBe(RB.ReviewRequest.CLOSE_SUBMITTED);
+                });
+
+                $('#link-review-request-close-submitted').click();
+
+                expect(reviewRequest.close).toHaveBeenCalled();
+            });
+        });
+    });
+
     describe('Banners', function() {
         beforeEach(function() {
             view.render();
@@ -53,11 +132,8 @@ describe('views/ReviewRequestEditorView', function() {
 
         describe('Draft banner', function() {
             beforeEach(function() {
-                RB.draftBanner = $('<div>')
-                    .hide()
-                    .appendTo($testsScratch);
-                RB.draftBannerButtons = $('<button/>')
-                    .appendTo(RB.draftBanner);
+                RB.draftBanner = view.$('#draft-banner');
+                RB.draftBannerButtons = RB.draftBanner.find('button');
             });
 
             describe('Visibility', function() {
@@ -71,6 +147,51 @@ describe('views/ReviewRequestEditorView', function() {
                     expect(RB.draftBanner.is(':visible')).toBe(false);
                     editor.trigger('saved');
                     expect(RB.draftBanner.is(':visible')).toBe(true);
+                });
+            });
+
+            describe('Buttons actions', function() {
+                it('Discard Draft', function() {
+                    spyOn(reviewRequest.draft, 'destroy');
+
+                    RB.draftBanner.find('#btn-draft-discard').click();
+
+                    expect(reviewRequest.draft.destroy).toHaveBeenCalled();
+                });
+
+                it('Discard Review Request', function() {
+                    spyOn(reviewRequest, 'close')
+                        .andCallFake(function(options) {
+                            expect(options.type).toBe(
+                                RB.ReviewRequest.CLOSE_DISCARDED);
+                        });
+
+                    RB.draftBanner.find('#btn-review-request-discard').click();
+
+                    expect(reviewRequest.close).toHaveBeenCalled();
+                });
+
+                it('Publish', function() {
+                    spyOn(reviewRequest.draft, 'publish');
+
+                    /* Set up some basic state so that we pass validation. */
+                    $('#target_groups').text('foo');
+                    $('#summary').text('foo');
+                    $('#description').text('foo');
+
+                    RB.draftBanner.find('#btn-draft-publish').click();
+
+                    expect(editor.get('publishing')).toBe(true);
+                    expect(editor.get('pendingSaveCount')).toBe(0);
+                    expect(reviewRequest.draft.publish).toHaveBeenCalled();
+                });
+
+                it('Reopen', function() {
+                    spyOn(reviewRequest, 'reopen');
+
+                    RB.draftBanner.find('#btn-review-request-reopen').click();
+
+                    expect(reviewRequest.reopen).toHaveBeenCalled();
                 });
             });
 

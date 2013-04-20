@@ -26,49 +26,49 @@
 {% endblock %}
 
 {% block content %}
-{% include "reviews/trophy_box.html" %}
-{% include "reviews/review_header.html" %}
+<div id="review_request">
+{%  include "reviews/trophy_box.html" %}
+{%  include "reviews/review_header.html" %}
 
-{% box "review-request" %}
-
-<div class="actions-container">
+{%  box "review-request" %}
+ <div class="actions-container">
  {% star review_request %}
- <ul class="actions">
+  <ul class="actions">
 {% review_request_action_hooks %}
 {% review_request_dropdown_action_hooks %}
 {% include "reviews/review_request_actions_secondary.html" %}
 {% if has_diffs %}
-  <li class="primary"><a href="diff/raw/">{% trans "Download Diff" %}</a></li>
+   <li class="primary"><a href="diff/raw/">{% trans "Download Diff" %}</a></li>
 {% endif %}
 {% include "reviews/review_request_actions_primary.html" %}
 {% if has_diffs %}
-  <li class="primary"><a href="diff/#index_header">{% trans "View Diff" %}</a></li>
+   <li class="primary"><a href="diff/#index_header">{% trans "View Diff" %}</a></li>
 {% endif %}
- </ul>
-</div>
+  </ul>
+ </div>
 
-<div class="main">
+ <div class="main">
 {% include "reviews/review_request_box.html" %}
 
-<ul class="controls">
+  <ul class="controls">
 {% if entries %}
- <li>
-  <a href="#" id="expand-all">
-   <img width="14" height="14" border="0" alt="" src="{% static "rb/images/expand.png" %}">
-   <span>{% trans "Expand All" %}</span>
-  </a>
- </li>
- <li>
-  <a href="#" id="collapse-all">
-   <img width="14" height="14" border="0" alt="" src="{% static "rb/images/collapse.png" %}">
-   <span>{% trans "Collapse All" %}</span>
-  </a>
- </li>
+   <li>
+    <a href="#" id="expand-all">
+     <img width="14" height="14" border="0" alt="" src="{% static "rb/images/expand.png" %}">
+     <span>{% trans "Expand All" %}</span>
+    </a>
+   </li>
+   <li>
+    <a href="#" id="collapse-all">
+     <img width="14" height="14" border="0" alt="" src="{% static "rb/images/collapse.png" %}">
+     <span>{% trans "Collapse All" %}</span>
+    </a>
+   </li>
 {% endif %}
-</ul>
-
-</div>
+  </ul>
+ </div>
 {% endbox %}
+</div>
 
 {% for entry in entries %}
 {%  if entry.review %}
@@ -310,5 +310,4 @@
 {% endif %}
   });
 </script>
-
 {% endblock %}

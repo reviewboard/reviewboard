@@ -246,7 +246,7 @@ function setDraftField(field, value) {
                 reviewRequestEditor.decr('pendingSaveCount');
 
                 if (reviewRequestEditor.get('pendingSaveCount') === 0) {
-                    publishDraft();
+                    RB.publishDraft();
                 }
             }
         }
@@ -336,7 +336,7 @@ $.fn.reviewsAutoComplete = function(options) {
  * Checks all the fields to make sure we have the information we need
  * and then redirects the user to the publish URL.
  */
-function publishDraft() {
+RB.publishDraft = function() {
     if ($.trim($("#target_groups").html()) == "" &&
         $.trim($("#target_people").html()) == "") {
         alert("There must be at least one reviewer or group " +
@@ -1362,107 +1362,6 @@ $(document).ready(function() {
     $(".actions > li:has(ul.menu)")
         .hover(showMenu, hideMenu)
         .toggle(showMenu, hideMenu);
-
-    $("#btn-draft-publish").click(function() {
-        /* Save all the fields if we need to. */
-        var fields = $(".editable:inlineEditorDirty");
-
-        reviewRequestEditor.set({
-            publishing: true,
-            pendingSaveCount: fields.length
-        });
-
-        if (reviewRequestEditor.get('pendingSaveCount') === 0) {
-            publishDraft();
-        } else {
-            fields.inlineEditor("save");
-        }
-
-        return false;
-    });
-
-    $("#btn-draft-discard").click(function() {
-        gReviewRequest.draft.destroy({
-            buttons: gDraftBannerButtons,
-            success: function() {
-                window.location = gReviewRequestPath;
-            }
-        });
-        return false;
-    });
-
-    $("#btn-review-request-discard, #discard-review-request-link")
-        .click(function() {
-            gReviewRequest.close({
-                type: RB.ReviewRequest.CLOSE_DISCARDED,
-                buttons: gDraftBannerButtons,
-                success: function() {
-                    window.location = gReviewRequestPath;
-                }
-            });
-            return false;
-        });
-
-    $("#link-review-request-close-submitted").click(function() {
-        /*
-         * This is a non-destructive event, so don't confirm unless there's
-         * a draft.
-         */
-        var submit = true;
-        if ($("#draft-banner").is(":visible")) {
-            submit = confirm("You have an unpublished draft. If you close " +
-                             "this review request, the draft will be " +
-                             "discarded. Are you sure you want to close " +
-                             "the review request?");
-        }
-
-        if (submit) {
-            gReviewRequest.close({
-                type: RB.ReviewRequest.CLOSE_SUBMITTED,
-                buttons: gDraftBannerButtons,
-                success: function() {
-                    window.location = gReviewRequestPath;
-                }
-            });
-        }
-
-        return false;
-    });
-
-    $("#btn-review-request-reopen").click(function() {
-        gReviewRequest.reopen({
-            buttons: gDraftBannerButtons,
-            success: function() {
-                window.location = gReviewRequestPath;
-            }
-        });
-
-        return false;
-    });
-
-    $("#delete-review-request-link").click(function() {
-        var dlg = $("<p/>")
-            .text("This deletion cannot be undone. All diffs and reviews " +
-                  "will be deleted as well.")
-            .modalBox({
-                title: "Are you sure you want to delete this review request?",
-                buttons: [
-                    $('<input type="button" value="Cancel"/>'),
-                    $('<input type="button" value="Delete"/>')
-                        .click(function(e) {
-                            gReviewRequest.destroy({
-                                buttons: gDraftBannerButtons.add(
-                                    $("input", dlg.modalBox("buttons"))),
-                                success: function() {
-                                    window.location = SITE_ROOT;
-                                }
-                            });
-                        })
-                ]
-            });
-
-        return false;
-    });
 
     var pendingReview = gReviewRequest.createReview();
 

@@ -10,29 +10,30 @@
 {% endblock %}
 
 {% block scripts-post %}
+{%  if request.user.pk == review_request.submitter_id or perms.reviews.can_edit_reviewrequest %}
 <script type="text/javascript">
     $(document).ready(function() {
-        if (gEditable) {
-            window.reviewRequestEditor = new RB.ReviewRequestEditor({
-                reviewRequest: gReviewRequest,
-                fileAttachmentComments: {
+        window.reviewRequestEditor = new RB.ReviewRequestEditor({
+            reviewRequest: gReviewRequest,
+            editable: {% if review_request.status == 'P' %}true{% else %}false{% endif %},
+            fileAttachmentComments: {
 {% if file_attachments %}
 {%  for file_attachment in file_attachments %}
-                    {{file_attachment.id}}: {% file_attachment_comments file_attachment %}{% if not forloop.last %},{% endif %}
+                {{file_attachment.id}}: {% file_attachment_comments file_attachment %}{% if not forloop.last %},{% endif %}
 {%  endfor %}
 {% endif %}
-                }
-            });
+            }
+        });
 
-            window.reviewRequestEditorView = new RB.ReviewRequestEditorView({
-                el: $('.review-request')[0],
-                model: reviewRequestEditor
-            });
+        window.reviewRequestEditorView = new RB.ReviewRequestEditorView({
+            el: $('#review_request'),
+            model: reviewRequestEditor
+        });
 
-            reviewRequestEditorView.render();
-        }
+        reviewRequestEditorView.render();
     });
 </script>
+{%  endif %}
 
 {%  compressed_js "reviews" %}
 {% endblock %}
