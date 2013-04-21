@@ -613,11 +613,11 @@ class Site(object):
 
         data = {
             'rbsite': rbsite_path,
-            'port': self.web_server_port,
+            'port': str(self.web_server_port),
             'sitedir': sitedir,
             'sitedomain': self.domain_name,
             'sitedomain_escaped': domain_name_escaped,
-            'siteid': self.site_id,
+            'siteid': str(self.site_id),
             'siteroot': self.site_root,
             'siteroot_noslash': self.site_root[1:-1],
         }
