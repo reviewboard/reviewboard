@@ -1362,7 +1362,7 @@ class InstallCommand(Command):
                          help="web server (apache or lighttpd)")
         group.add_option("--web-server-port",
                          help="port that the web server should listen on",
-                         default=80)
+                         default='80')
         group.add_option("--python-loader",
                          help="python loader for apache (modpython, fastcgi or wsgi)")
         group.add_option("--admin-user", default="admin",
