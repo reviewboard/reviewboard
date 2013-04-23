@@ -183,12 +183,12 @@ def view_diff(request, diffset, interdiffset=None, extra_context={},
         if interdiffset:
             logging.debug("Generating diff viewer page for interdiffset ids "
                           "%s-%s",
-                          diffset.id, interdiffset.id)
+                          diffset.id, interdiffset.id, request=request)
         else:
             logging.debug("Generating diff viewer page for filediff id %s",
-                          diffset.id)
+                          diffset.id, request=request)
 
-        files = get_diff_files(diffset, None, interdiffset)
+        files = get_diff_files(diffset, None, interdiffset, request=request)
 
         # Break the list of files into pages
         siteconfig = SiteConfiguration.objects.get_current()
@@ -249,13 +249,16 @@ def view_diff(request, diffset, interdiffset=None, extra_context={},
             filediff = first_file['filediff']
 
             if filediff.diffset == interdiffset:
-                temp_files = get_diff_files(interdiffset, filediff, None)
+                temp_files = get_diff_files(interdiffset, filediff, None,
+                                            request=request)
             else:
-                temp_files = get_diff_files(diffset, filediff, interdiffset)
+                temp_files = get_diff_files(diffset, filediff, interdiffset,
+                                            request=request)
 
             if temp_files:
                 try:
-                    populate_diff_chunks(temp_files, highlighting)
+                    populate_diff_chunks(temp_files, highlighting,
+                                         request=request)
                 except Exception, e:
                     file_temp = temp_files[0]
                     file_temp['index'] = first_file['index']
@@ -279,11 +282,11 @@ def view_diff(request, diffset, interdiffset=None, extra_context={},
         if interdiffset:
             logging.debug("Done generating diff viewer page for interdiffset "
                           "ids %s-%s",
-                          diffset.id, interdiffset.id)
+                          diffset.id, interdiffset.id, request=request)
         else:
             logging.debug("Done generating diff viewer page for filediff "
                           "id %s",
-                          diffset.id)
+                          diffset.id, request=request)
 
         return response
 
@@ -303,10 +306,11 @@ def view_diff_fragment(
     """View which renders a specific fragment from a diff."""
 
     def get_requested_diff_file(get_chunks=True):
-        files = get_diff_files(diffset, filediff, interdiffset)
+        files = get_diff_files(diffset, filediff, interdiffset,
+                               request=request)
 
         if get_chunks:
-            populate_diff_chunks(files, highlighting)
+            populate_diff_chunks(files, highlighting, request=request)
 
         if files:
             assert len(files) == 1

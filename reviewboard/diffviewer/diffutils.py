@@ -202,11 +202,12 @@ def convert_line_endings(data):
     return NEWLINE_CONVERSION_RE.sub('\n', data)
 
 
-def patch(diff, file, filename):
+def patch(diff, file, filename, request=None):
     """Apply a diff to a file.  Delegates out to `patch` because noone
        except Larry Wall knows how to patch."""
 
-    log_timer = log_timed("Patching file %s" % filename)
+    log_timer = log_timed("Patching file %s" % filename,
+                          request=request)
 
     if diff.strip() == "":
         # Someone uploaded an unchanged file. Return the one we're patching.
@@ -342,7 +343,7 @@ def convert_to_utf8(s, enc):
         raise TypeError("Value to convert is unexpected type %s", type(s))
 
 
-def get_original_file(filediff):
+def get_original_file(filediff, request=None):
     """
     Get a file either from the cache or the SCM, applying the parent diff if
     it exists.
@@ -354,7 +355,8 @@ def get_original_file(filediff):
     if filediff.source_revision != PRE_CREATION:
         def fetch_file(file, revision):
             log_timer = log_timed("Fetching file '%s' r%s from %s" %
-                                  (file, revision, repository))
+                                  (file, revision, repository),
+                                  request=request)
             data = repository.get_file(file, revision)
             data = convert_line_endings(data)
             log_timer.done()
@@ -380,16 +382,17 @@ def get_original_file(filediff):
 
     # If there's a parent diff set, apply it to the buffer.
     if filediff.parent_diff:
-        data = patch(filediff.parent_diff, data, filediff.source_file)
+        data = patch(filediff.parent_diff, data, filediff.source_file,
+                     request)
 
     return data
 
 
-def get_patched_file(buffer, filediff):
+def get_patched_file(buffer, filediff, request=None):
     tool = filediff.diffset.repository.get_scmtool()
     diff = tool.normalize_patch(filediff.diff, filediff.source_file,
                                 filediff.source_revision)
-    return patch(diff, buffer, filediff.dest_file)
+    return patch(diff, buffer, filediff.dest_file, request)
 
 
 def register_interesting_lines_for_filename(differ, filename):
@@ -445,7 +448,7 @@ def compute_chunk_last_header(lines, numlines, meta, last_header=None):
 
 
 def get_chunks(diffset, filediff, interfilediff, force_interdiff,
-               enable_syntax_highlighting):
+               enable_syntax_highlighting, request=None):
     def diff_line(vlinenum, oldlinenum, newlinenum, oldline, newline,
                   oldmarkup, newmarkup):
         # This function accesses the variable meta, defined in an outer context.
@@ -595,13 +598,13 @@ def get_chunks(diffset, filediff, interfilediff, force_interdiff,
 
     file = filediff.source_file
 
-    old = get_original_file(filediff)
-    new = get_patched_file(old, filediff)
+    old = get_original_file(filediff, request)
+    new = get_patched_file(old, filediff, request)
 
     if interfilediff:
         old = new
-        interdiff_orig = get_original_file(interfilediff)
-        new = get_patched_file(interdiff_orig, interfilediff)
+        interdiff_orig = get_original_file(interfilediff, request)
+        new = get_patched_file(interdiff_orig, interfilediff, request)
     elif force_interdiff:
         # Basically, revert the change.
         old, new = new, old
@@ -700,11 +703,13 @@ def get_chunks(diffset, filediff, interfilediff, force_interdiff,
     if interfilediff:
         log_timer = log_timed(
             "Generating diff chunks for interdiff ids %s-%s (%s)" %
-            (filediff.id, interfilediff.id, filediff.source_file))
+            (filediff.id, interfilediff.id, filediff.source_file),
+            request=request)
     else:
         log_timer = log_timed(
             "Generating diff chunks for filediff id %s (%s)" %
-            (filediff.id, filediff.source_file))
+            (filediff.id, filediff.source_file),
+            request=request)
 
     chunk_index = 0
 
@@ -995,7 +1000,7 @@ def get_revision_str(revision):
         return "Revision %s" % revision
 
 
-def get_diff_files(diffset, filediff=None, interdiffset=None):
+def get_diff_files(diffset, filediff=None, interdiffset=None, request=None):
     """Generates a list of files that will be displayed in a diff.
 
     This will go through the given diffset/interdiffset, or a given filediff
@@ -1013,21 +1018,25 @@ def get_diff_files(diffset, filediff=None, interdiffset=None):
         if interdiffset:
             log_timer = log_timed("Generating diff file info for "
                                   "interdiffset ids %s-%s, filediff %s" %
-                                  (diffset.id, interdiffset.id, filediff.id))
+                                  (diffset.id, interdiffset.id, filediff.id),
+                                  request=request)
         else:
             log_timer = log_timed("Generating diff file info for "
                                   "diffset id %s, filediff %s" %
-                                  (diffset.id, filediff.id))
+                                  (diffset.id, filediff.id),
+                                  request=request)
     else:
         filediffs = diffset.files.select_related().all()
 
         if interdiffset:
             log_timer = log_timed("Generating diff file info for "
                                   "interdiffset ids %s-%s" %
-                                  (diffset.id, interdiffset.id))
+                                  (diffset.id, interdiffset.id),
+                                  request=request)
         else:
             log_timer = log_timed("Generating diff file info for "
-                                  "diffset id %s" % diffset.id)
+                                  "diffset id %s" % diffset.id,
+                                  request=request)
 
 
     # A map used to quickly look up the equivalent interfilediff given a
@@ -1156,7 +1165,8 @@ def get_diff_files(diffset, filediff=None, interdiffset=None):
     return files
 
 
-def populate_diff_chunks(files, enable_syntax_highlighting=True):
+def populate_diff_chunks(files, enable_syntax_highlighting=True,
+                         request=None):
     """Populates a list of diff files with chunk data.
 
     This accepts a list of files (generated by get_diff_files) and generates
@@ -1193,7 +1203,8 @@ def populate_diff_chunks(files, enable_syntax_highlighting=True):
                 lambda: list(get_chunks(filediff.diffset,
                                         filediff, interfilediff,
                                         force_interdiff,
-                                        enable_syntax_highlighting)),
+                                        enable_syntax_highlighting,
+                                        request)),
                 large_data=True)
 
         file.update({
@@ -1277,8 +1288,13 @@ def get_file_chunks_in_range(context, filediff, interfilediff,
         files = context[key]
     else:
         assert 'user' in context
-        files = get_diff_files(filediff.diffset, filediff, interdiffset)
-        populate_diff_chunks(files, get_enable_highlighting(context['user']))
+        assert 'request' in context
+
+        request = context['request']
+        files = get_diff_files(filediff.diffset, filediff, interdiffset,
+                               request=request)
+        populate_diff_chunks(files, get_enable_highlighting(context['user']),
+                             request=request)
         context[key] = files
 
     if not files:

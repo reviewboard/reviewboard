@@ -177,6 +177,7 @@ CACHES = {
 }
 
 LOGGING_NAME = "reviewboard"
+LOGGING_REQUEST_FORMAT = "%(_local_site_name)s - %(user)s - %(path)s"
 
 AUTH_PROFILE_MODULE = "accounts.Profile"
 
