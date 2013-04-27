@@ -44,9 +44,12 @@ class UploadDiffForm(forms.Form):
     HEADER_EXTENSIONS = ["h", "H", "hh", "hpp", "hxx", "h++"]
     IMPL_EXTENSIONS   = ["c", "C", "cc", "cpp", "cxx", "c++", "m", "mm", "M"]
 
-    def __init__(self, repository, *args, **kwargs):
-        forms.Form.__init__(self, *args, **kwargs)
+    def __init__(self, repository, data=None, files=None, request=None,
+                 *args, **kwargs):
+        super(UploadDiffForm, self).__init__(data=data, files=files,
+                                             *args, **kwargs)
         self.repository = repository
+        self.request = request
 
         if self.repository.get_scmtool().get_diffs_use_absolute_paths():
             # This SCMTool uses absolute paths, so there's no need to ask
@@ -182,7 +185,8 @@ class UploadDiffForm(forms.Form):
                 not f.deleted and
                 not f.moved and
                 (check_existance and
-                 not self.repository.get_file_exists(filename, revision))):
+                 not self.repository.get_file_exists(filename, revision,
+                                                     self.request))):
                 raise FileNotFoundError(filename, revision)
 
             f.origFile = filename

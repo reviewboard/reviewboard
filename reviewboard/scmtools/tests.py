@@ -35,6 +35,9 @@ from reviewboard.scmtools.forms import RepositoryForm
 from reviewboard.scmtools.git import ShortSHA1Error
 from reviewboard.scmtools.models import Repository, Tool
 from reviewboard.scmtools.perforce import STunnelProxy, STUNNEL_SERVER
+from reviewboard.scmtools.signals import checked_file_exists, \
+                                         checking_file_exists, \
+                                         fetched_file, fetching_file
 from reviewboard.site.models import LocalSite
 from reviewboard.ssh.client import SSHClient
 from reviewboard.ssh.tests import SSHTestCase
@@ -149,6 +152,69 @@ class CoreTests(DjangoTestCase):
         self.assertEqual(cs.branch, '')
         self.assert_(len(cs.bugs_closed) == 0)
         self.assert_(len(cs.files) == 0)
+
+
+class RepositoryTests(DjangoTestCase):
+    fixtures = ['test_scmtools.json']
+
+    def setUp(self):
+        self.local_repo_path = os.path.join(os.path.dirname(__file__),
+                                            'testdata', 'git_repo')
+        self.repository = Repository(name='Git test repo',
+                                     path=self.local_repo_path,
+                                     tool=Tool.objects.get(name='Git'))
+
+    def test_get_file_signals(self):
+        """Testing Repository.get_file emits signals"""
+        def on_fetching_file(sender, path, revision, request, **kwargs):
+            found_signals.append(('fetching_file', path, revision, request))
+
+        def on_fetched_file(sender, path, revision, request, **kwargs):
+            found_signals.append(('fetched_file', path, revision, request))
+
+        found_signals = []
+
+        fetching_file.connect(on_fetching_file, sender=self.repository)
+        fetched_file.connect(on_fetched_file, sender=self.repository)
+
+        path = 'readme'
+        revision = 'e965047'
+        request = {}
+
+        self.repository.get_file(path, revision, request)
+
+        self.assertEqual(len(found_signals), 2)
+        self.assertEqual(found_signals[0],
+                         ('fetching_file', path, revision, request))
+        self.assertEqual(found_signals[1],
+                         ('fetched_file', path, revision, request))
+
+    def test_get_file_exists_signals(self):
+        """Testing Repository.get_file_exists emits signals"""
+        def on_checking(sender, path, revision, request, **kwargs):
+            found_signals.append(('checking_file_exists', path,
+                                  revision, request))
+
+        def on_checked(sender, path, revision, request, **kwargs):
+            found_signals.append(('checked_file_exists', path,
+                                  revision, request))
+
+        found_signals = []
+
+        checking_file_exists.connect(on_checking, sender=self.repository)
+        checked_file_exists.connect(on_checked, sender=self.repository)
+
+        path = 'readme'
+        revision = 'e965047'
+        request = {}
+
+        self.repository.get_file_exists(path, revision, request)
+
+        self.assertEqual(len(found_signals), 2)
+        self.assertEqual(found_signals[0],
+                         ('checking_file_exists', path, revision, request))
+        self.assertEqual(found_signals[1],
+                         ('checked_file_exists', path, revision, request))
 
 
 class BZRTests(SCMTestCase):

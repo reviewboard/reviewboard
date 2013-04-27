@@ -2018,7 +2018,8 @@ class DiffResource(WebAPIResource):
             return _no_access_error(request.user)
 
         form_data = request.POST.copy()
-        form = UploadDiffForm(review_request, form_data, request.FILES)
+        form = UploadDiffForm(review_request, form_data, request.FILES,
+                              request=request)
 
         if not form.is_valid():
             return INVALID_FORM_DATA, {

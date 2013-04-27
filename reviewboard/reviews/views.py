@@ -111,7 +111,7 @@ def _find_review_request(request, review_request_id, local_site_name):
         return None, _render_permission_denied(request)
 
 
-def _make_review_request_context(review_request, extra_context):
+def _make_review_request_context(request, review_request, extra_context):
     """Returns a dictionary for template contexts used for review requests.
 
     The dictionary will contain the common data that is used for all
@@ -121,7 +121,7 @@ def _make_review_request_context(review_request, extra_context):
     For convenience, extra data can be passed to this dictionary.
     """
     if review_request.repository:
-        upload_diff_form = UploadDiffForm(review_request)
+        upload_diff_form = UploadDiffForm(review_request, request=request)
         scmtool = review_request.repository.get_scmtool()
     else:
         upload_diff_form = None
@@ -263,7 +263,7 @@ def new_review_request(request,
         local_site = None
 
     if request.method == 'POST':
-        form = NewReviewRequestForm(request.user, local_site,
+        form = NewReviewRequestForm(request, request.user, local_site,
                                     request.POST, request.FILES)
 
         if form.is_valid():
@@ -277,7 +277,7 @@ def new_review_request(request,
             except (OwnershipError, SCMError, SSHError, ValueError):
                 pass
     else:
-        form = NewReviewRequestForm(request.user, local_site)
+        form = NewReviewRequestForm(request, request.user, local_site)
 
     return render_to_response(template_name, RequestContext(request, {
         'form': form,
@@ -709,24 +709,25 @@ def review_detail(request,
         if status in (ReviewRequest.DISCARDED, ReviewRequest.SUBMITTED):
             close_description = latest_changedesc.text
 
-    response = render_to_response(
-        template_name,
-        RequestContext(request, _make_review_request_context(review_request, {
-            'draft': draft,
-            'detail_hooks': ReviewRequestDetailHook.hooks,
-            'review_request_details': review_request_details,
-            'entries': entries,
-            'last_activity_time': last_activity_time,
-            'review': pending_review,
-            'request': request,
-            'latest_changedesc': latest_changedesc,
-            'close_description': close_description,
-            'PRE_CREATION': PRE_CREATION,
-            'issues': issues,
-            'has_diffs': (draft and draft.diffset) or len(diffsets) > 0,
-            'file_attachments': file_attachments,
-            'screenshots': screenshots,
-        })))
+    context_data = _make_review_request_context(request, review_request, {
+        'draft': draft,
+        'detail_hooks': ReviewRequestDetailHook.hooks,
+        'review_request_details': review_request_details,
+        'entries': entries,
+        'last_activity_time': last_activity_time,
+        'review': pending_review,
+        'request': request,
+        'latest_changedesc': latest_changedesc,
+        'close_description': close_description,
+        'PRE_CREATION': PRE_CREATION,
+        'issues': issues,
+        'has_diffs': (draft and draft.diffset) or len(diffsets) > 0,
+        'file_attachments': file_attachments,
+        'screenshots': screenshots,
+    })
+
+    response = render_to_response(template_name,
+                                  RequestContext(request, context_data))
     set_etag(response, etag)
 
     return response
@@ -1030,7 +1031,7 @@ def diff(request,
 
     return view_diff(
          request, diffset, interdiffset, template_name=template_name,
-         extra_context=_make_review_request_context(review_request, {
+         extra_context=_make_review_request_context(request, review_request, {
             'diffsets': diffsets,
             'latest_diffset': latest_diffset,
             'review': pending_review,

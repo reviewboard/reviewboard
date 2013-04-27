@@ -2,10 +2,14 @@ from django.contrib.auth.models import User
 from django.core.exceptions import ImproperlyConfigured
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
+from djblets.log import log_timed
 from djblets.util.fields import JSONField
 
 from reviewboard.hostingsvcs.models import HostingServiceAccount
 from reviewboard.scmtools.managers import RepositoryManager, ToolManager
+from reviewboard.scmtools.signals import checked_file_exists, \
+                                         checking_file_exists, \
+                                         fetched_file, fetching_file
 from reviewboard.site.models import LocalSite
 
 
@@ -142,7 +146,7 @@ class Repository(models.Model):
 
         return None
 
-    def get_file(self, path, revision):
+    def get_file(self, path, revision, request=None):
         """Returns a file from the repository.
 
         This will attempt to retrieve the file from the repository. If the
@@ -151,12 +155,30 @@ class Repository(models.Model):
         """
         hosting_service = self.hosting_service
 
-        if hosting_service:
-            return hosting_service.get_file(self, path, revision)
-        else:
-            return self.get_scmtool().get_file(path, revision)
+        fetching_file.send(sender=self,
+                           path=path,
+                           revision=revision,
+                           request=request)
 
-    def get_file_exists(self, path, revision):
+        log_timer = log_timed("Fetching file '%s' r%s from %s" %
+                              (path, revision, self),
+                              request=request)
+
+        if hosting_service:
+            result = hosting_service.get_file(self, path, revision)
+        else:
+            result = self.get_scmtool().get_file(path, revision)
+
+        log_timer.done()
+
+        fetched_file.send(sender=self,
+                          path=path,
+                          revision=revision,
+                          request=request)
+
+        return result
+
+    def get_file_exists(self, path, revision, request=None):
         """Returns whether or not a file exists in the repository.
 
         If the repository is backed by a hosting service, this will go
@@ -165,10 +187,22 @@ class Repository(models.Model):
         """
         hosting_service = self.hosting_service
 
+        checking_file_exists.send(sender=self,
+                                  path=path,
+                                  revision=revision,
+                                  request=request)
+
         if hosting_service:
-            return hosting_service.get_file_exists(self, path, revision)
+            result = hosting_service.get_file_exists(self, path, revision)
         else:
-            return self.get_scmtool().file_exists(path, revision)
+            result = self.get_scmtool().file_exists(path, revision)
+
+        checked_file_exists.send(sender=self,
+                                 path=path,
+                                 revision=revision,
+                                 request=request)
+
+        return result
 
     def is_accessible_by(self, user):
         """Returns whether or not the user has access to the repository.

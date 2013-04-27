@@ -354,12 +354,8 @@ def get_original_file(filediff, request=None):
 
     if filediff.source_revision != PRE_CREATION:
         def fetch_file(file, revision):
-            log_timer = log_timed("Fetching file '%s' r%s from %s" %
-                                  (file, revision, repository),
-                                  request=request)
-            data = repository.get_file(file, revision)
+            data = repository.get_file(file, revision, request)
             data = convert_line_endings(data)
-            log_timer.done()
             return data
 
         repository = filediff.diffset.repository
