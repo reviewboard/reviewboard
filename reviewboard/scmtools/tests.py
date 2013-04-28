@@ -10,6 +10,7 @@ except ImportError:
     from md5 import md5
 
 from django.contrib.auth.models import AnonymousUser, User
+from django.core.cache import cache
 from django.test import TestCase as DjangoTestCase
 from djblets.util.filesystem import is_exe_in_path
 import nose
@@ -164,6 +165,39 @@ class RepositoryTests(DjangoTestCase):
                                      path=self.local_repo_path,
                                      tool=Tool.objects.get(name='Git'))
 
+        self.scmtool_cls = self.repository.get_scmtool().__class__
+        self.old_get_file = self.scmtool_cls.get_file
+        self.old_file_exists = self.scmtool_cls.file_exists
+
+    def tearDown(self):
+        cache.clear()
+
+        self.scmtool_cls.get_file = self.old_get_file
+        self.scmtool_cls.file_exists = self.old_file_exists
+
+    def test_get_file_caching(self):
+        """Testing Repository.get_file caches result"""
+        def get_file(self, path, revision):
+            num_calls['get_file'] += 1
+            return 'file data'
+
+        num_calls = {
+            'get_file': 0,
+        }
+
+        path = 'readme'
+        revision = 'e965047'
+        request = {}
+
+        self.scmtool_cls.get_file = get_file
+
+        data1 = self.repository.get_file(path, revision, request)
+        data2 = self.repository.get_file(path, revision, request)
+
+        self.assertEqual(data1, 'file data')
+        self.assertEqual(data1, data2)
+        self.assertEqual(num_calls['get_file'], 1)
+
     def test_get_file_signals(self):
         """Testing Repository.get_file emits signals"""
         def on_fetching_file(sender, path, revision, request, **kwargs):
@@ -188,6 +222,60 @@ class RepositoryTests(DjangoTestCase):
                          ('fetching_file', path, revision, request))
         self.assertEqual(found_signals[1],
                          ('fetched_file', path, revision, request))
+
+    def test_get_file_exists_caching(self):
+        """Testing Repository.get_file_exists caches result"""
+        def file_exists(self, path, revision):
+            num_calls['get_file_exists'] += 1
+            return True
+
+        num_calls = {
+            'get_file_exists': 0,
+        }
+
+        path = 'readme'
+        revision = 'e965047'
+        request = {}
+
+        self.scmtool_cls.file_exists = file_exists
+
+        exists1 = self.repository.get_file_exists(path, revision, request)
+        exists2 = self.repository.get_file_exists(path, revision, request)
+
+        self.assertTrue(exists1)
+        self.assertTrue(exists2)
+        self.assertEqual(num_calls['get_file_exists'], 1)
+
+    def test_get_file_exists_caching_with_fetched_file(self):
+        """Testing Repository.get_file_exists uses get_file's cached result"""
+        def get_file(self, path, revision):
+            num_calls['get_file'] += 1
+            return 'file data'
+
+        def file_exists(self, path, revision):
+            num_calls['get_file_exists'] += 1
+            return True
+
+        num_calls = {
+            'get_file_exists': 0,
+            'get_file': 0,
+        }
+
+        path = 'readme'
+        revision = 'e965047'
+        request = {}
+
+        self.scmtool_cls.get_file = get_file
+        self.scmtool_cls.file_exists = file_exists
+
+        data = self.repository.get_file(path, revision, request)
+        exists1 = self.repository.get_file_exists(path, revision, request)
+        exists2 = self.repository.get_file_exists(path, revision, request)
+
+        self.assertTrue(exists1)
+        self.assertTrue(exists2)
+        self.assertEqual(num_calls['get_file'], 1)
+        self.assertEqual(num_calls['get_file_exists'], 0)
 
     def test_get_file_exists_signals(self):
         """Testing Repository.get_file_exists emits signals"""

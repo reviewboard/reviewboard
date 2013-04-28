@@ -15,7 +15,6 @@ except ImportError:
     pass
 
 from django.utils.html import escape
-from django.utils.http import urlquote
 from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext as _
 
@@ -353,28 +352,22 @@ def get_original_file(filediff, request=None):
     data = ""
 
     if filediff.source_revision != PRE_CREATION:
-        def fetch_file(file, revision):
-            data = repository.get_file(file, revision, request)
-            data = convert_line_endings(data)
-            return data
-
         repository = filediff.diffset.repository
-        file = filediff.source_file
-        revision = filediff.source_revision
+        data = repository.get_file(filediff.source_file,
+                                   filediff.source_revision,
+                                   request)
 
-        key = "%s:%s:%s" % (urlquote(filediff.diffset.repository.path),
-                            urlquote(file), urlquote(revision))
-
-        # We wrap the result of get_file in a list and then return the first
-        # element after getting the result from the cache. This prevents the
-        # cache backend from converting to unicode, since we're no longer
-        # passing in a string and the cache backend doesn't recursively look
-        # through the list in order to convert the elements inside.
+        # Repository.get_file doesn't know or care about how we need line
+        # endings to work. So, we'll just transform every time.
         #
-        # Basically, this fixes the massive regressions introduced by the
-        # Django unicode changes.
-        data = cache_memoize(key, lambda: [fetch_file(file, revision)],
-                             large_data=True)[0]
+        # This is mostly only a problem if the diff chunks aren't in the
+        # cache, though if several people are working off the same file,
+        # we'll be doing extra work to convert those line endings for each
+        # of those instead of once.
+        #
+        # Only other option is to cache the resulting file, but then we're
+        # duplicating the cached contents.
+        data = convert_line_endings(data)
 
     # If there's a parent diff set, apply it to the buffer.
     if filediff.parent_diff:

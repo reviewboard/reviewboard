@@ -1,9 +1,12 @@
 from django.contrib.auth.models import User
+from django.core.cache import cache
 from django.core.exceptions import ImproperlyConfigured
 from django.db import models
+from django.utils.http import urlquote
 from django.utils.translation import ugettext_lazy as _
 from djblets.log import log_timed
 from djblets.util.fields import JSONField
+from djblets.util.misc import cache_memoize, make_cache_key
 
 from reviewboard.hostingsvcs.models import HostingServiceAccount
 from reviewboard.scmtools.managers import RepositoryManager, ToolManager
@@ -153,30 +156,18 @@ class Repository(models.Model):
         repository is backed by a hosting service, it will go through that.
         Otherwise, it will attempt to directly access the repository.
         """
-        hosting_service = self.hosting_service
-
-        fetching_file.send(sender=self,
-                           path=path,
-                           revision=revision,
-                           request=request)
-
-        log_timer = log_timed("Fetching file '%s' r%s from %s" %
-                              (path, revision, self),
-                              request=request)
-
-        if hosting_service:
-            result = hosting_service.get_file(self, path, revision)
-        else:
-            result = self.get_scmtool().get_file(path, revision)
-
-        log_timer.done()
-
-        fetched_file.send(sender=self,
-                          path=path,
-                          revision=revision,
-                          request=request)
-
-        return result
+        # We wrap the result of get_file in a list and then return the first
+        # element after getting the result from the cache. This prevents the
+        # cache backend from converting to unicode, since we're no longer
+        # passing in a string and the cache backend doesn't recursively look
+        # through the list in order to convert the elements inside.
+        #
+        # Basically, this fixes the massive regressions introduced by the
+        # Django unicode changes.
+        return cache_memoize(
+            self._make_file_cache_key(path, revision),
+            lambda: [self._get_file_uncached(path, revision, request)],
+            large_data=True)[0]
 
     def get_file_exists(self, path, revision, request=None):
         """Returns whether or not a file exists in the repository.
@@ -184,25 +175,15 @@ class Repository(models.Model):
         If the repository is backed by a hosting service, this will go
         through that. Otherwise, it will attempt to directly access the
         repository.
+
+        The result of this call will be cached, making future lookups
+        of this path and revision on this repository faster.
         """
-        hosting_service = self.hosting_service
+        exists = cache_memoize(
+            self._make_file_exists_cache_key(path, revision),
+            lambda: self._get_file_exists_uncached(path, revision, request))
 
-        checking_file_exists.send(sender=self,
-                                  path=path,
-                                  revision=revision,
-                                  request=request)
-
-        if hosting_service:
-            result = hosting_service.get_file_exists(self, path, revision)
-        else:
-            result = self.get_scmtool().file_exists(path, revision)
-
-        checked_file_exists.send(sender=self,
-                                 path=path,
-                                 revision=revision,
-                                 request=request)
-
-        return result
+        return exists == '1'
 
     def is_accessible_by(self, user):
         """Returns whether or not the user has access to the repository.
@@ -231,6 +212,89 @@ class Repository(models.Model):
 
     def __unicode__(self):
         return self.name
+
+    def _make_file_cache_key(self, path, revision):
+        """Makes a cache key for fetched files."""
+        return "file:%s:%s:%s" % (self.pk, urlquote(path), urlquote(revision))
+
+    def _make_file_exists_cache_key(self, path, revision):
+        """Makes a cache key for file existence checks."""
+        return "file-exists:%s:%s:%s" % (self.pk, urlquote(path),
+                                         urlquote(revision))
+
+    def _get_file_uncached(self, path, revision, request):
+        """Internal function for fetching an uncached file.
+
+        This is called by get_file if the file isn't already in the cache.
+        """
+        fetching_file.send(sender=self,
+                           path=path,
+                           revision=revision,
+                           request=request)
+
+        log_timer = log_timed("Fetching file '%s' r%s from %s" %
+                              (path, revision, self),
+                              request=request)
+
+        hosting_service = self.hosting_service
+
+        if hosting_service:
+            data = hosting_service.get_file(self, path, revision)
+        else:
+            data = self.get_scmtool().get_file(path, revision)
+
+        log_timer.done()
+
+        fetched_file.send(sender=self,
+                          path=path,
+                          revision=revision,
+                          request=request,
+                          data=data)
+
+        return data
+
+    def _get_file_exists_uncached(self, path, revision, request):
+        """Internal function for checking that a file exists.
+
+        This is called by get_file_eixsts if the file isn't already in the
+        cache.
+
+        This function is smart enough to check if the file exists in cache,
+        and will use that for the result instead of making a separate call.
+        """
+        # First we check to see if we've fetched the file before. If so,
+        # it's in there and we can just return that we have it.
+        file_cache_key = make_cache_key(
+            self._make_file_cache_key(path, revision))
+
+        if cache.has_key(file_cache_key):
+            exists = True
+        else:
+            # We didn't have that in the cache, so check from the repository.
+            checking_file_exists.send(sender=self,
+                                      path=path,
+                                      revision=revision,
+                                      request=request)
+
+            hosting_service = self.hosting_service
+
+            if hosting_service:
+                exists = hosting_service.get_file_exists(self, path, revision)
+            else:
+                exists = self.get_scmtool().file_exists(path, revision)
+
+            checked_file_exists.send(sender=self,
+                                     path=path,
+                                     revision=revision,
+                                     request=request,
+                                     exists=exists)
+
+        # We're expected to return a string for cache_memoize, so serialize
+        # this as small as possible.
+        if exists:
+            return '1'
+        else:
+            return '0'
 
     class Meta:
         verbose_name_plural = "Repositories"
