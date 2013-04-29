@@ -1271,9 +1271,10 @@ class OriginalFileResource(WebAPIResource):
             return DOES_NOT_EXIST
 
         try:
-            orig_file = get_original_file(filediff)
+            orig_file = get_original_file(filediff, request=request)
         except Exception, e:
-            logging.error("Error retrieving original file: %s", e, exc_info=1)
+            logging.error("Error retrieving original file: %s", e, exc_info=1,
+                          request=request)
             return FILE_RETRIEVAL_ERROR
 
         resp = HttpResponse(orig_file, mimetype='text/plain')
@@ -1308,15 +1309,18 @@ class PatchedFileResource(WebAPIResource):
             return DOES_NOT_EXIST
 
         try:
-            orig_file = get_original_file(filediff)
+            orig_file = get_original_file(filediff, request=request)
         except Exception, e:
-            logging.error("Error retrieving original file: %s", e, exc_info=1)
+            logging.error("Error retrieving original file: %s", e, exc_info=1,
+                          request=request)
             return FILE_RETRIEVAL_ERROR
 
         try:
-            patched_file = get_patched_file(orig_file, filediff)
+            patched_file = get_patched_file(orig_file, filediff,
+                                            request=request)
         except Exception, e:
-            logging.error("Error retrieving patched file: %s", e, exc_info=1)
+            logging.error("Error retrieving patched file: %s", e, exc_info=1,
+                          request=request)
             return FILE_RETRIEVAL_ERROR
 
         resp = HttpResponse(patched_file, mimetype='text/plain')
@@ -1626,8 +1630,8 @@ class FileDiffResource(WebAPIResource):
 
         highlighting = request.GET.get('syntax-highlighting', False)
 
-        files = get_diff_files(filediff.diffset, filediff)
-        populate_diff_chunks(files, highlighting)
+        files = get_diff_files(filediff.diffset, filediff, request=request)
+        populate_diff_chunks(files, highlighting, request=request)
 
         if not files:
             # This may not be the right error here.
@@ -2014,7 +2018,8 @@ class DiffResource(WebAPIResource):
             return _no_access_error(request.user)
 
         form_data = request.POST.copy()
-        form = UploadDiffForm(review_request, form_data, request.FILES)
+        form = UploadDiffForm(review_request, form_data, request.FILES,
+                              request=request)
 
         if not form.is_valid():
             return INVALID_FORM_DATA, {
@@ -2039,7 +2044,8 @@ class DiffResource(WebAPIResource):
         except Exception, e:
             # This could be very wrong, but at least they'll see the error.
             # We probably want a new error type for this.
-            logging.error("Error uploading new diff: %s", e, exc_info=1)
+            logging.error("Error uploading new diff: %s", e, exc_info=1,
+                          request=request)
 
             return INVALID_FORM_DATA, {
                 'fields': {
@@ -3265,7 +3271,8 @@ class RepositoryResource(WebAPIResource):
         cert = {}
         error_result = self._check_repository(scmtool.get_scmtool_class(),
                                               path, username, password,
-                                              local_site, trust_host, cert)
+                                              local_site, trust_host, cert,
+                                              request)
 
         if error_result is not None:
             return error_result
@@ -3408,7 +3415,8 @@ class RepositoryResource(WebAPIResource):
                 repository.password,
                 repository.local_site,
                 trust_host,
-                cert)
+                cert,
+                request)
 
             if error_result is not None:
                 return error_result
@@ -3463,7 +3471,7 @@ class RepositoryResource(WebAPIResource):
         return 204, {}
 
     def _check_repository(self, scmtool_class, path, username, password,
-                          local_site, trust_host, ret_cert):
+                          local_site, trust_host, ret_cert, request):
         if local_site:
             local_site_name = local_site.name
         else:
@@ -3544,20 +3552,20 @@ class RepositoryResource(WebAPIResource):
             except SSHError, e:
                 logging.error('Got unexpected SSHError when checking '
                               'repository: %s'
-                              % e, exc_info=1)
+                              % e, exc_info=1, request=request)
                 return REPO_INFO_ERROR, {
                     'error': str(e),
                 }
             except SCMError, e:
                 logging.error('Got unexpected SCMError when checking '
                               'repository: %s'
-                              % e, exc_info=1)
+                              % e, exc_info=1, request=request)
                 return REPO_INFO_ERROR, {
                     'error': str(e),
                 }
             except Exception, e:
                 logging.error('Unknown error in checking repository %s: %s',
-                              path, e, exc_info=1)
+                              path, e, exc_info=1, request=request)
 
                 # We should give something better, but I don't have anything.
                 # This will at least give a HTTP 500.
@@ -4074,7 +4082,7 @@ class BaseFileAttachmentResource(WebAPIResource):
             except Exception, e:
                 logging.error(
                     'Failed to store thumbnail for attachment %d: %s',
-                    file.pk, e)
+                    file.pk, e, request=request)
                 return INVALID_FORM_DATA, {
                     'fields': {
                         'thumbnail': str(e),
@@ -6821,11 +6829,11 @@ class ReviewRequestResource(WebAPIResource):
             return EMPTY_CHANGESET
         except SSHError, e:
             logging.error("Got unexpected SSHError when creating repository: %s"
-                          % e, exc_info=1)
+                          % e, exc_info=1, request=request)
             return REPO_INFO_ERROR
         except SCMError, e:
             logging.error("Got unexpected SCMError when creating repository: %s"
-                          % e, exc_info=1)
+                          % e, exc_info=1, request=request)
             return REPO_INFO_ERROR
 
     @webapi_check_local_site

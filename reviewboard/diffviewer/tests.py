@@ -590,7 +590,7 @@ class UploadDiffFormTests(TestCase):
         """Testing UploadDiffForm and filtering parent diff files"""
         saw_file_exists = {}
 
-        def get_file_exists(filename, revision):
+        def get_file_exists(filename, revision, request):
             saw_file_exists[(filename, revision)] = True
             return True
 
