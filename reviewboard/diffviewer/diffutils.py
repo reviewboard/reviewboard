@@ -1277,9 +1277,8 @@ def get_file_chunks_in_range(context, filediff, interfilediff,
         files = context[key]
     else:
         assert 'user' in context
-        assert 'request' in context
 
-        request = context['request']
+        request = context.get('request', None)
         files = get_diff_files(filediff.diffset, filediff, interdiffset,
                                request=request)
         populate_diff_chunks(files, get_enable_highlighting(context['user']),
