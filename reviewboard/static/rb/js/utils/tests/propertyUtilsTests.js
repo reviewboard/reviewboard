@@ -1,4 +1,4 @@
-describe('propertyUtils', function() {
+describe('utils/propertyUtils', function() {
     var model;
 
     beforeEach(function() {
