@@ -13,6 +13,7 @@
  */
 RB.ReviewRequest = RB.BaseResource.extend({
     defaults: _.defaults({
+        bugTrackerURL: null,
         draftReview: null,
         localSitePrefix: null
     }),

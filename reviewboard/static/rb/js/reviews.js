@@ -5,6 +5,7 @@ var CommentReplyClasses = {
 };
 
 this.gReviewRequest = new RB.ReviewRequest({
+    bugTrackerURL: gBugTrackerURL,
     id: gReviewRequestId,
     localSitePrefix: gReviewRequestSitePrefix
 });
@@ -12,348 +13,10 @@ this.gReviewRequest = new RB.ReviewRequest({
 // State variables
 var gPendingDiffFragments = {};
 var gReviewBanner = $("#review-banner");
-var gDraftBanner = $("#draft-banner");
-var gDraftBannerButtons = $("input", gDraftBanner);
-var gFileAttachmentComments = {};
 var gCommentIssueManager = new RB.CommentIssueManager({
     reviewRequest: this.gReviewRequest
 });
 var issueSummaryTableManager;
-
-
-// Attach to global RB object
-RB.draftBanner = gDraftBanner;
-RB.draftBannerButtons = gDraftBannerButtons;
-
-/*
- * "complete" signal handlers for various fields, designed to do
- * post-processing of the values for display.
- */
-var gEditorCompleteHandlers = {
-    'bugs_closed': function(data) {
-        if (gBugTrackerURL == "") {
-            return data.join(", ");
-        } else {
-            return urlizeList(data, function(item) {
-                return gBugTrackerURL.replace("%s", item);
-            });
-        }
-    },
-    'target_groups': function(data) {
-        return urlizeList(data,
-            function(item) { return item.url; },
-            function(item) { return item.name; }
-        );
-    },
-    'target_people': function(data) {
-        return $(urlizeList(data,
-                            function(item) { return item.url; },
-                            function(item) { return item.username; }))
-            .addClass("user")
-            .user_infobox();
-    },
-    'description': linkifyText,
-    'testing_done': linkifyText
-};
-
-
-/*
- * Converts an array of items to a list of hyperlinks.
- *
- * By default, this will use the item as the URL and as the hyperlink text.
- * By overriding urlFunc and textFunc, the URL and text can be customized.
- *
- * @param {array}    list            The list of items.
- * @param {function} urlFunc         A function to return the URL for an item
- *                                   in the list.
- * @param {function} textFunc        A function to return the text for an item
- *                                   in the list.
- * @param {function} postProcessFunc Post-process generated elements in the
-                                     list.
- *
- * @return A string containing the HTML markup for the list of hyperlinks.
- */
-function urlizeList(list, urlFunc, textFunc, postProcessFunc) {
-    var str = "";
-
-    for (var i = 0; i < list.length; i++) {
-        var item = list[i];
-        str += '<a href="';
-        str += (urlFunc ? urlFunc(item) : item);
-        str += '">';
-        str += (textFunc ? textFunc(item) : item);
-        str += '</a>';
-
-        if (i < list.length - 1) {
-            str += ", ";
-        }
-    }
-
-    return str;
-}
-
-
-/*
- * Linkifies a block of text, turning URLs, /r/#/ paths, nad bug numbers
- * into clickable links.
- *
- * @param {string} text  The text to linkify.
- *
- * @returns {string} The resulting HTML.
- */
-function linkifyText(text) {
-    text = text.htmlEncode();
-
-    /* Linkify all URLs. */
-    text = text.replace(
-        /\b([a-z]+:\/\/[\-A-Za-z0-9+&@#\/%?=~_()|!:,.;]*([\-A-Za-z0-9+@#\/%=~_();|]|))/g,
-        function(url) {
-            /*
-             * We might catch an entity at the end of the URL. This is hard
-             * to avoid, since we can't rely on advanced RegExp techniques
-             * in all browsers. So, we'll now search for it and prevent it
-             * from being part of the URL if it exists. However, a URL with
-             * an open bracket will not have its close bracket removed. This
-             * was a modification to the original bug fix.
-             *
-             * See bug 1069.
-             */
-
-            var extra = '',
-                parts = url.match(/^(.*)(&[a-z]+;|\))$/),
-                openParen = url.match(/.*\(.*/);
-
-            if (parts != null && openParen == null) {
-                /* We caught an entity. Set it free. */
-                url = parts[1];
-                extra = parts[2];
-            }
-
-            return '<a target="_blank" href="' + url + '">' + url + '</a>' + extra;
-        });
-
-
-    /* Linkify /r/#/ review request numbers */
-    text = text.replace(
-        /(^|\s|&lt;)\/(r\/\d+(\/[\-A-Za-z0-9+&@#\/%?=~_()|!:,.;]*[\-A-Za-z0-9+&@#\/%=~_()|])?)/g,
-        '$1<a target="_blank" href="' + SITE_ROOT + '$2">/$2</a>');
-
-    /* Bug numbers */
-    if (gBugTrackerURL != "") {
-        text = text.replace(/\b(bug|issue) (#([^.\s]+)|#?(\d+))/gi,
-            function(text, m2, m3, bugnum1, bugnum2) {
-                /*
-                 * The bug number can appear in either of those groups,
-                 * depending on how this was typed, so try both.
-                 */
-                var bugnum = bugnum1 || bugnum2;
-
-                return '<a target="_blank" href="' +
-                       gBugTrackerURL.replace("%s", bugnum) +
-                       '">' + text + '</a>';
-            });
-    }
-
-    return text;
-}
-
-
-var DRAFT_FIELD_MAP = {
-    bugs_closed: 'bugsClosed',
-    change_description: 'changeDescription',
-    target_groups: 'targetGroups',
-    target_people: 'targetPeople',
-    testing_done: 'testingDone'
-};
-
-
-/*
- * Sets a field in the draft.
- *
- * If we're in the process of publishing, this will check if we have saved
- * all fields before publishing the draft.
- *
- * @param {string} field  The field name.
- * @param {string} value  The field value.
- */
-function setDraftField(field, value) {
-    var data = {};
-
-    data[field] = value;
-
-    gReviewRequest.draft.save({
-        data: data,
-        buttons: gDraftBannerButtons,
-        error: function(model, xhr) {
-            var rsp = xhr.errorPayload,
-                message;
-
-            reviewRequestEditor.set('publishing', false);
-
-            $('#review-request-warning')
-                .delay(6000)
-                .fadeOut(400, function() {
-                    $(this).hide();
-                });
-
-            /* Wrap each term in quotes or a leading 'and'. */
-            $.each(rsp.fields[field], function(key, value) {
-                var size = rsp.fields[field].length;
-
-                if (key == size - 1 && size > 1) {
-                  rsp.fields[field][key] = "and '" + value + "'";
-                } else {
-                  rsp.fields[field][key] = "'" + value + "'";
-                }
-            });
-
-            message = rsp.fields[field].join(", ");
-
-            if (rsp.fields[field].length == 1) {
-                if (field == "target_groups") {
-                    message = "Group " + message + " does not exist.";
-                } else {
-                    message = "User " + message + " does not exist.";
-                }
-            } else {
-                if (field == "target_groups") {
-                    message = "Groups " + message + " do not exist.";
-                } else {
-                    message = "Users " + message + " do not exist.";
-                }
-            }
-
-            $("#review-request-warning")
-                .show()
-                .html(message);
-        },
-        complete: function() {
-            var func = gEditorCompleteHandlers[field],
-                fieldName;
-
-            if (_.isFunction(func)) {
-                fieldName = DRAFT_FIELD_MAP[field] || field;
-
-                $("#" + field)
-                    .empty()
-                    .html(func(gReviewRequest.draft.get(fieldName)));
-            }
-        },
-        success: function(model) {
-            gDraftBanner.show();
-
-            if (reviewRequestEditor.get('publishing')) {
-                reviewRequestEditor.decr('pendingSaveCount');
-
-                if (reviewRequestEditor.get('pendingSaveCount') === 0) {
-                    RB.publishDraft();
-                }
-            }
-        }
-    });
-}
-
-
-/*
- * An autocomplete() wrapper that converts our autocomplete data into the
- * format expected by jQuery.ui.rbautocomplete. It also adds some additional
- * explanatory text to the bottom of the autocomplete list.
- *
- * options has the following fields:
- *
- *    fieldName   - The field name ("groups" or "people").
- *    nameKey     - The key containing the name in the result data.
- *    descKey     - The key containing the description in the result
- *                  data. This is optional.
- *    extraParams - Extra parameters to send in the query. This is optional.
- *
- * @param {object} options    The options, as listed above.
- *
- * @return {jQuery} This jQuery set.
- */
-$.fn.reviewsAutoComplete = function(options) {
-    return this.each(function() {
-        $(this)
-            .rbautocomplete({
-                formatItem: function(data) {
-                    var s = data[options.nameKey];
-
-                    if (options.descKey && data[options.descKey]) {
-                        s += " <span>(" + data[options.descKey] + ")</span>";
-                    }
-
-                    return s;
-                },
-                matchCase: false,
-                multiple: true,
-                parse: function(data) {
-                    var items = data[options.fieldName],
-                        parsed = [];
-
-                    for (var i = 0; i < items.length; i++) {
-                        var value = items[i];
-
-                        parsed.push({
-                            data: value,
-                            value: value[options.nameKey],
-                            result: value[options.nameKey]
-                        });
-                    }
-
-                    return parsed;
-                },
-                url: SITE_ROOT + gReviewRequestSitePrefix + "api/" + options.fieldName + "/",
-                extraParams: options.extraParams
-            })
-            .on("autocompleteshow", function() {
-                /*
-                 * Add the footer to the bottom of the results pane the
-                 * first time it's created.
-                 *
-                 * Note that we may have multiple .ui-autocomplete-results
-                 * elements, and we don't necessarily know which is tied to
-                 * this. So, we'll look for all instances that don't contain
-                 * a footer.
-                 */
-                var resultsPane = $(".ui-autocomplete-results:not(" +
-                                    ":has(.ui-autocomplete-footer))");
-
-                if (resultsPane.length > 0) {
-                    $("<div/>")
-                        .addClass("ui-autocomplete-footer")
-                        .text("Press Tab to auto-complete.")
-                        .appendTo(resultsPane);
-                }
-            });
-    });
-};
-
-
-/*
- * Publishes the draft to the server. This assumes all fields have been
- * saved.
- *
- * Checks all the fields to make sure we have the information we need
- * and then redirects the user to the publish URL.
- */
-RB.publishDraft = function() {
-    if ($.trim($("#target_groups").html()) == "" &&
-        $.trim($("#target_people").html()) == "") {
-        alert("There must be at least one reviewer or group " +
-        "before this review request can be published.");
-    } else if ($.trim($("#summary").html()) == "") {
-        alert("The draft must have a summary.");
-    } else if ($.trim($("#description").html()) == "") {
-        alert("The draft must have a description.");
-    } else {
-        gReviewRequest.draft.publish({
-            buttons: gDraftBannerButtons,
-            success: function() {
-                window.location = gReviewRequestPath;
-            }
-        });
-    }
-}
 
 
 /*
@@ -467,7 +130,8 @@ $.fn.commentSection = function(review_id, context_id, context_type) {
 
                         reviewRequestEditor.decr('editCount');
 
-                        $editor.html(linkifyText($editor.text()));
+                        $editor.html(RB.linkifyText($editor.text(),
+                                                    gBugTrackerURL));
 
                         if (context_type == "body_top") {
                             review_reply.set('bodyTop', value);
@@ -1139,37 +803,6 @@ $.fn.reviewCloseCommentEditor = function(type) {
 
 
 /*
- * Adds inline editing capabilities to a field for a review request.
- */
-$.fn.reviewRequestFieldEditor = function() {
-    return this.each(function() {
-        $(this)
-            .inlineEditor({
-                cls: this.id + "-editor",
-                editIconPath: STATIC_URLS["rb/images/edit.png"],
-                multiline: this.tagName == "PRE",
-                showButtons: !$(this).hasClass("screenshot-editable"),
-                startOpen: this.id == "changedescription",
-                useEditIconOnly: $(this).hasClass("comma-editable"),
-                showRequiredFlag: $(this).hasClass("required")
-            })
-            .on({
-                "beginEdit": function() {
-                    reviewRequestEditor.incr('editCount');
-                },
-                "cancel": function() {
-                    reviewRequestEditor.decr('editCount');
-                },
-                "complete": function(e, value) {
-                    reviewRequestEditor.decr('editCount');
-                    setDraftField(this.id, value);
-                }
-            });
-    });
-}
-
-
-/*
  * Registers for updates to the review request. This will cause a pop-up
  * bubble to be displayed when updates of the specified type are displayed.
  *
@@ -1432,8 +1065,8 @@ $(document).ready(function() {
             });
     });
 
-    $("pre.reviewtext, #description, #testing_done").each(function() {
-        $(this).html(linkifyText($(this).text()));
+    $("pre.reviewtext").each(function() {
+        $(this).html(RB.linkifyText($(this).text(), gBugTrackerURL));
     });
 
     /* Toggle the state of a review */
@@ -1459,53 +1092,6 @@ $(document).ready(function() {
     if (RB.UserSession.instance.get('authenticated')) {
         if (window["gEditable"]) {
             var dndUploader;
-
-            $(".editable").reviewRequestFieldEditor();
-
-            var targetGroupsEl = $("#target_groups");
-            var targetPeopleEl = $("#target_people");
-
-            if (targetGroupsEl.length > 0) {
-                targetGroupsEl
-                    .inlineEditor("field")
-                    .on({
-                        "beginEdit": function() {
-                            reviewRequestEditor.incr('editCount');
-                        },
-                        "cancel complete": function() {
-                            reviewRequestEditor.decr('editCount');
-                        }
-                    })
-                    .reviewsAutoComplete({
-                        fieldName: "groups",
-                        nameKey: "name",
-                        descKey: "display_name",
-                        extraParams: {
-                            displayname: 1
-                        }
-                    });
-            }
-
-            if (targetPeopleEl.length > 0) {
-                targetPeopleEl
-                    .inlineEditor("field")
-                    .on({
-                        "beginEdit": function() {
-                            reviewRequestEditor.incr('editCount');
-                        },
-                        "cancel complete": function() {
-                            reviewRequestEditor.decr('editCount');
-                        }
-                    })
-                    .reviewsAutoComplete({
-                        fieldName: "users",
-                        nameKey: "username",
-                        descKey: "fullname",
-                        extraParams: {
-                            fullname: 1
-                        }
-                    });
-            }
 
             /*
              * Warn the user if they try to navigate away with unsaved comments.
