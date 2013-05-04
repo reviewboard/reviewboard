@@ -167,10 +167,7 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
      * thumbnails, turning them into FileAttachment and Screenshot objects.
      */
     render: function() {
-        var draft = this.model.get('reviewRequest').draft,
-            $closeDiscarded = this.$('#discard-review-request-link'),
-            $closeSubmitted = this.$('#link-review-request-close-submitted'),
-            $deletePermanently = this.$('#delete-review-request-link');
+        var draft = this.model.get('reviewRequest').draft;
 
         this.$draftBanner = $('#draft-banner');
         this.$draftBannerButtons = this.$draftBanner.find('input');
@@ -180,14 +177,11 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
         this._$attachments = $('#file-list');
         this._$attachmentsContainer = $(this._$attachments.parent()[0]);
 
-        /*
-         * We don't want the click event filtering from these down to the
-         * parent menu, so we can't use events above.
-         */
-        $closeDiscarded.click(_.bind(this._onCloseDiscardedClicked, this));
-        $closeSubmitted.click(_.bind(this._onCloseSubmittedClicked, this));
-        $deletePermanently.click(_.bind(this._onDeleteReviewRequestClicked,
-                                        this));
+        this.dndUploader = new RB.DnDUploader({
+            reviewRequestEditor: this.model
+        });
+
+        this._setupActions();
 
         this.model.fileAttachments.on('add',
                                       this._buildFileAttachmentThumbnail,
@@ -247,6 +241,30 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
         this.model.on('change:editable', this._onEditableChanged, this);
         this._onEditableChanged();
 
+        /*
+         * Warn the user if they try to navigate away with unsaved comments.
+         */
+        window.onbeforeunload = _.bind(function(evt) {
+            if (this.model.get('editable') &&
+                this.model.get('editCount') > 0) {
+                /*
+                 * On IE, the text must be set in evt.returnValue.
+                 *
+                 * On Firefox, it must be returned as a string.
+                 *
+                 * On Chrome, it must be returned as a string, but you
+                 * can't set it on evt.returnValue (it just ignores it).
+                 */
+                var msg = "You have unsaved changes that will " +
+                          "be lost if you navigate away from " +
+                          "this page.";
+                evt = evt || window.event;
+
+                evt.returnValue = msg;
+                return msg;
+            }
+        }, this);
+
         return this;
     },
 
@@ -296,6 +314,49 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
         var reviewRequest = this.model.get('reviewRequest');
 
         return RB.linkifyText(text || '', reviewRequest.get('bugTrackerURL'));
+    },
+
+    /*
+     * Sets up all review request actions and listens for events.
+     */
+    _setupActions: function() {
+        var $closeDiscarded = this.$('#discard-review-request-link'),
+            $closeSubmitted = this.$('#link-review-request-close-submitted'),
+            $deletePermanently = this.$('#delete-review-request-link'),
+            $menuitem;
+
+        /* Provide support for expanding submenus in the action list. */
+        function showMenu() {
+            if ($menuitem) {
+                $menuitem.children('ul').fadeOut('fast');
+                $menuitem = null;
+            }
+
+            $(this).children('ul').fadeIn('fast');
+        }
+
+        function hideMenu() {
+            $menuitem = $(this);
+
+            setTimeout(function() {
+                if ($menuitem) {
+                    $menuitem.children('ul').fadeOut('fast');
+                }
+            }, 400);
+        }
+
+        this.$(".actions > li:has(ul.menu)")
+            .hover(showMenu, hideMenu)
+            .toggle(showMenu, hideMenu);
+
+        /*
+         * We don't want the click event filtering from these down to the
+         * parent menu, so we can't use events above.
+         */
+        $closeDiscarded.click(_.bind(this._onCloseDiscardedClicked, this));
+        $closeSubmitted.click(_.bind(this._onCloseSubmittedClicked, this));
+        $deletePermanently.click(_.bind(this._onDeleteReviewRequestClicked,
+                                        this));
     },
 
     /*

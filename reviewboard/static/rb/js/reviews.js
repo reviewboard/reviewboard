@@ -971,31 +971,6 @@ function loadDiffFragments(queue_name, container_prefix) {
 
 
 $(document).ready(function() {
-    /* Provide support for expanding submenus in the action list. */
-    var menuitem = null;
-
-    function showMenu() {
-        if (menuitem) {
-            $("ul", menuitem).fadeOut("fast");
-            menuitem = null;
-        }
-
-        $("ul", this).fadeIn("fast");
-    }
-
-    function hideMenu() {
-        menuitem = $(this);
-        setTimeout(function() {
-            if (menuitem) {
-                $("ul", menuitem).fadeOut("fast");
-            }
-        }, 400);
-    }
-
-    $(".actions > li:has(ul.menu)")
-        .hover(showMenu, hideMenu)
-        .toggle(showMenu, hideMenu);
-
     var pendingReview = gReviewRequest.createReview();
 
     /* Edit Review buttons. */
@@ -1088,43 +1063,6 @@ $(document).ready(function() {
 
     $("#submitted-banner #changedescription.editable").reviewCloseCommentEditor(RB.ReviewRequest.CLOSE_SUBMITTED);
     $("#discard-banner #changedescription.editable").reviewCloseCommentEditor(RB.ReviewRequest.CLOSE_DISCARDED);
-
-    if (RB.UserSession.instance.get('authenticated')) {
-        if (window["gEditable"]) {
-            var dndUploader;
-
-            /*
-             * Warn the user if they try to navigate away with unsaved comments.
-             *
-             * @param {event} evt The beforeunload event.
-             *
-             * @return {string} The dialog message (needed for IE).
-             */
-            window.onbeforeunload = function(evt) {
-                if (reviewRequestEditor.get('editCount') > 0) {
-                    /*
-                     * On IE, the text must be set in evt.returnValue.
-                     *
-                     * On Firefox, it must be returned as a string.
-                     *
-                     * On Chrome, it must be returned as a string, but you
-                     * can't set it on evt.returnValue (it just ignores it).
-                     */
-                    var msg = "You have unsaved changes that will " +
-                              "be lost if you navigate away from " +
-                              "this page.";
-                    evt = evt || window.event;
-
-                    evt.returnValue = msg;
-                    return msg;
-                }
-            };
-
-            dndUploader = new RB.DnDUploader({
-                reviewRequestEditor: reviewRequestEditor
-            });
-        }
-    }
 
     loadDiffFragments("diff_fragments", "comment_container");
 
