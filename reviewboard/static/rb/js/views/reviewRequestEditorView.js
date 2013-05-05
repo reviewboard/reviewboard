@@ -212,6 +212,12 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
             this.$draftBanner.show();
         }, this);
 
+        this.model.on('publishError', function(errorText) {
+            alert(errorText);
+        });
+
+        this.model.on('published', this._refreshPage, this);
+
         /*
          * Import all the screenshots and file attachments rendered onto
          * the page.
@@ -475,8 +481,7 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
      * Adds inline editing capabilities to a field for a review request.
      */
     _buildEditor: function($el, fieldOptions) {
-        var self = this,
-            model = this.model,
+        var model = this.model,
             el = $el[0],
             id = el.id;
 
@@ -497,10 +502,29 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
                 cancel: function() {
                     model.decr('editCount');
                 },
-                complete: function(e, value) {
+                complete: _.bind(function(e, value) {
                     model.decr('editCount');
-                    self._setDraftField(value, fieldOptions);
-                }
+                    model.setDraftField(
+                        fieldOptions.fieldName,
+                        value,
+                        _.defaults({
+                            error: function(error) {
+                                this._formatField(fieldOptions);
+                                this._$warning
+                                    .delay(6000)
+                                    .fadeOut(400, function() {
+                                        $(this).hide();
+                                    })
+                                    .show()
+                                    .html(error.errorText);
+                            },
+                            success: function() {
+                                this._formatField(fieldOptions);
+                                this.$draftBanner.show();
+                            }
+                        }, fieldOptions),
+                        this);
+                }, this)
             });
     },
 
@@ -577,87 +601,6 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
     },
 
     /*
-     * Sets a field in the draft.
-     *
-     * If we're in the process of publishing, this will check if we have saved
-     * all fields before publishing the draft.
-     */
-    _setDraftField: function(value, fieldOptions) {
-        var fieldID = fieldOptions.jsonFieldName,
-            model = this.model,
-            reviewRequest = model.get('reviewRequest'),
-            data = {};
-
-        if (fieldID === 'changedescription' &&
-            _.has(fieldOptions, 'closeType')) {
-            model.updateCloseDescription(fieldOptions.closeType, value);
-            return;
-        }
-
-        data[fieldID] = value;
-
-        reviewRequest.draft.save({
-            data: data,
-            buttons: this.$draftBannerButtons,
-            error: _.bind(function(model, xhr) {
-                var rsp = xhr.errorPayload,
-                    fieldValue = rsp.fields[fieldID],
-                    message;
-
-                model.set('publishing', false);
-
-                this._$warning
-                    .delay(6000)
-                    .fadeOut(400, function() {
-                        $(this).hide();
-                    });
-
-                /* Wrap each term in quotes or a leading 'and'. */
-                _.each(fieldValue, function(key, value) {
-                    var size = fieldValue.length;
-
-                    if (key == size - 1 && size > 1) {
-                      fieldValue[key] = "and '" + value + "'";
-                    } else {
-                      fieldValue[key] = "'" + value + "'";
-                    }
-                });
-
-                message = fieldValue.join(", ");
-
-                if (fieldValue.length === 1) {
-                    if (fieldID === "target_groups") {
-                        message = "Group " + message + " does not exist.";
-                    } else {
-                        message = "User " + message + " does not exist.";
-                    }
-                } else {
-                    if (fieldID === "target_groups") {
-                        message = "Groups " + message + " do not exist.";
-                    } else {
-                        message = "Users " + message + " do not exist.";
-                    }
-                }
-
-                this._$warning
-                    .show()
-                    .html(message);
-            }, this),
-            success: _.bind(function() {
-                this.$draftBanner.show();
-
-                if (model.get('publishing')) {
-                    model.decr('pendingSaveCount');
-
-                    if (model.get('pendingSaveCount') === 0) {
-                        this._publishDraft();
-                    }
-                }
-            }, this)
-        });
-    },
-
-    /*
      * Formats the contents of a field.
      *
      * If there's a registered field formatter for this field, it will
@@ -665,40 +608,14 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
      */
     _formatField: function(fieldOptions) {
         var formatter = fieldOptions.formatter,
-            reviewRequest;
+            $el = this.$(fieldOptions.selector),
+            reviewRequest = this.model.get('reviewRequest'),
+            value = reviewRequest.draft.get(fieldOptions.fieldName);
 
         if (_.isFunction(formatter)) {
-            reviewRequest = this.model.get('reviewRequest');
-
-            this.$(fieldOptions.selector)
-                .empty()
-                .html(formatter.call(
-                    fieldOptions.context || this, this,
-                    reviewRequest.draft.get(fieldOptions.fieldName)));
-        }
-    },
-
-    /*
-     * Publishes the draft to the server. This assumes all fields have been
-     * saved.
-     *
-     * Checks all the fields to make sure we have the information we need
-     * and then redirects the user to the publish URL.
-     */
-    _publishDraft: function() {
-        if ($.trim($("#target_groups").html()) === "" &&
-            $.trim($("#target_people").html()) === "") {
-            alert("There must be at least one reviewer or group " +
-                  "before this review request can be published.");
-        } else if ($.trim($("#summary").html()) === "") {
-            alert("The draft must have a summary.");
-        } else if ($.trim($("#description").html()) === "") {
-            alert("The draft must have a description.");
+            $el.html(formatter.call(fieldOptions.context || this, this, value));
         } else {
-            this.model.get('reviewRequest').draft.publish({
-                buttons: this.$draftBannerButtons,
-                success: _.bind(this._refreshPage, this)
-            });
+            $el.text(value);
         }
     },
 
@@ -728,7 +645,7 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
         });
 
         if (fields.length === 0) {
-            this._publishDraft();
+            this.model.publishDraft();
         } else {
             fields.inlineEditor("save");
         }

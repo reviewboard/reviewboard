@@ -13,7 +13,17 @@ RB.ReviewRequestEditor = Backbone.Model.extend({
         reviewRequest: null
     },
 
+    _jsonFieldMap: {
+        bugsClosed: 'bugs_closed',
+        changeDescription: 'changedescription',
+        targetGroups: 'target_groups',
+        targetPeople: 'target_people',
+        testingDone: 'testing_done'
+    },
+
     initialize: function() {
+        var reviewRequest = this.get('reviewRequest');
+
         this.fileAttachments = new Backbone.Collection([], {
             model: RB.FileAttachment
         });
@@ -25,6 +35,14 @@ RB.ReviewRequestEditor = Backbone.Model.extend({
         });
         this.screenshots.on('add', this._onFileAttachmentOrScreenshotAdded,
                             this);
+
+        reviewRequest.draft.on('saving', function() {
+            this.trigger('saving');
+        }, this);
+
+        reviewRequest.draft.on('saved', function() {
+            this.trigger('saved');
+        }, this);
     },
 
     /*
@@ -46,13 +64,117 @@ RB.ReviewRequestEditor = Backbone.Model.extend({
     },
 
     /*
-     * Updates the close description for the review request.
+     * Sets a field in the draft.
+     *
+     * If we're in the process of publishing, this will check if we have saved
+     * all fields before publishing the draft.
      */
-    updateCloseDescription: function(closeType, description) {
-        this.get('reviewRequest').close({
-            type: closeType,
-            description: description
-        });
+    setDraftField: function(fieldName, value, options, context) {
+        var reviewRequest = this.get('reviewRequest'),
+            jsonFieldName,
+            data = {};
+
+        options = options || {};
+
+        if (fieldName === 'changeDescription' && _.has(options, 'closeType')) {
+            reviewRequest.close({
+                type: options.closeType,
+                description: value
+            });
+
+            return;
+        }
+
+        jsonFieldName = this._jsonFieldMap[fieldName] || fieldName;
+        data[jsonFieldName] = value;
+
+        reviewRequest.draft.save({
+            data: data,
+            error: function(model, xhr) {
+                var rsp,
+                    fieldValue,
+                    fieldValueLen,
+                    message = '';
+
+                this.set('publishing', false);
+
+                if (_.isFunction(options.error)) {
+                    rsp = xhr.errorPayload;
+                    fieldValue = rsp.fields[jsonFieldName];
+                    fieldValueLen = fieldValue.length;
+
+                    /* Wrap each term in quotes or a leading 'and'. */
+                    _.each(fieldValue, function(value, i) {
+                        if (i === fieldValueLen - 1 && fieldValueLen > 1) {
+                            if (i > 2) {
+                                message += ', ';
+                            }
+
+                            message += " and '" + value + "'";
+                        } else {
+                            if (i > 0) {
+                                message += ', ';
+                            }
+
+                            message += "'" + value + "'";
+                        }
+                    });
+
+                    if (fieldValue.length === 1) {
+                        if (fieldName === "targetGroups") {
+                            message = "Group " + message + " does not exist.";
+                        } else {
+                            message = "User " + message + " does not exist.";
+                        }
+                    } else {
+                        if (fieldName === "targetGroups") {
+                            message = "Groups " + message + " do not exist.";
+                        } else {
+                            message = "Users " + message + " do not exist.";
+                        }
+                    }
+
+                    options.error.call(context, {
+                        errorText: message
+                    });
+                }
+            },
+            success: function() {
+                if (_.isFunction(options.success)) {
+                    options.success.call(context);
+                }
+
+                if (this.get('publishing')) {
+                    this.decr('pendingSaveCount');
+
+                    if (this.get('pendingSaveCount') === 0) {
+                        this.set('publishing', false);
+                        this.publishDraft();
+                    }
+                }
+            }
+        }, this);
+    },
+
+    /*
+     * Publishes the draft to the server. This assumes all fields have been
+     * saved.
+     *
+     * If there's an error during saving or validation, the "publishError"
+     * event will be triggered with the error message. Otherwise, upon
+     * success, the "publish" event will be triggered.
+     */
+    publishDraft: function() {
+        var reviewRequest = this.get('reviewRequest');
+
+        reviewRequest.draft.publish({
+            success: function() {
+                this.trigger('published');
+            },
+            error: function(error) {
+                this.trigger('publishError', error.errorText);
+            }
+        }, this);
     },
 
     /*

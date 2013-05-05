@@ -125,7 +125,7 @@ RB.DraftResourceModelMixin = {
 
         if (!RB.UserSession.instance.get('authenticated')) {
             if (options.error) {
-                options.error.call(this, {
+                options.error.call(context, {
                     errorText: 'You must be logged in to retrieve the draft.'
                 });
             }
@@ -142,7 +142,7 @@ RB.DraftResourceModelMixin = {
                 self._needDraft = false;
 
                 if (options && _.isFunction(options.ready)) {
-                    options.ready.call(self);
+                    options.ready.call(context);
                 }
             },
             error: function(model, xhr) {
@@ -154,7 +154,7 @@ RB.DraftResourceModelMixin = {
                     self._needDraft = false;
                     options.ready.call(context);
                 } else if (options && _.isFunction(options.error)) {
-                    options.error.call(xhr, xhr.status);
+                    options.error.call(context, xhr, xhr.status);
                 }
             }
         });

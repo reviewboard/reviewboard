@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load compressed i18n reviewtags %}
+{% load compressed djblets_js i18n reviewtags %}
 
 {% block ie6_csshacks %}
    #review-banner .banner { position: absolute; }
@@ -10,32 +10,72 @@
 {% endblock %}
 
 {% block scripts-post %}
+{%  compressed_js "reviews" %}
+
 {%  if request.user.pk == review_request.submitter_id or perms.reviews.can_edit_reviewrequest %}
 <script type="text/javascript">
-    $(document).ready(function() {
-        window.reviewRequestEditor = new RB.ReviewRequestEditor({
-            reviewRequest: gReviewRequest,
-            editable: {% if review_request.status == 'P' %}true{% else %}false{% endif %},
-            fileAttachmentComments: {
+    var reviewRequest = new RB.ReviewRequest({
+        bugTrackerURL: "{{review_request.repository.bug_tracker|escapejs}}",
+        id: {{review_request.display_id}},
+        localSitePrefix: "{% if review_request.local_site %}s/{{review_request.local_site.name}}/{% endif %}",
+        branch: "{{review_request.branch|escapejs}}",
+        bugsClosed: {{review_request.get_bug_list|json_dumps}},
+        changeDescription: "{{review_request.changedescription|escapejs}}",
+        description: "{{review_request.description|escapejs}}",
+        public: {% if review_request.public %}true{% else %}false{% endif %},
+        summary: "{{review_request.summary|escapejs}}",
+        targetGroups: [{% spaceless %}
+{% for group in review_request.target_groups.all %}
+            {
+                name: "{{group.name|escapejs}}",
+                url: "{{group.get_absolute_url}}"
+            }{% if not forloop.last %},{% endif %}
+{% endfor %}{% endspaceless %}],
+        targetPeople: [{% spaceless %}
+{% for user in review_request.target_people.all %}
+            {
+                username: "{{user.username|escapejs}}",
+                url: "{{user.get_absolute_url}}"
+            }{% if not forloop.last %},{% endif %}
+{% endfor %}{% endspaceless %}],
+        testingDone: "{{review_request.testing_done|escapejs}}"
+    });
+
+{% comment %}
+
+    XXX These should be removed once we've removed all usage of
+        gReviewRequest and found a new home for gCommentIssueManager.
+
+{% endcomment %}
+    window.gReviewRequest = reviewRequest;
+    window.gCommentIssueManager = new RB.CommentIssueManager({
+        reviewRequest: reviewRequest
+    });
+
+    window.reviewRequestEditor = new RB.ReviewRequestEditor({
+        reviewRequest: reviewRequest,
+        editable: {% if review_request.status == 'P' %}true{% else %}false{% endif %},
+        fileAttachmentComments: {
 {% if file_attachments %}
 {%  for file_attachment in file_attachments %}
-                {{file_attachment.id}}: {% file_attachment_comments file_attachment %}{% if not forloop.last %},{% endif %}
+            {{file_attachment.id}}: {% file_attachment_comments file_attachment %}{% if not forloop.last %},{% endif %}
 {%  endfor %}
 {% endif %}
-            }
-        });
+        }
+    });
 
-        window.reviewRequestEditorView = new RB.ReviewRequestEditorView({
-            el: $('#review_request'),
-            model: reviewRequestEditor
-        });
+    window.reviewRequestEditorView = new RB.ReviewRequestEditorView({
+        el: $('#review_request'),
+        model: reviewRequestEditor
+    });
 
+    $(document).ready(function() {
         reviewRequestEditorView.render();
+
+        RB.initReviewRequestPage();
     });
 </script>
 {%  endif %}
-
-{%  compressed_js "reviews" %}
 {% endblock %}
 
 {% block bodytag %}

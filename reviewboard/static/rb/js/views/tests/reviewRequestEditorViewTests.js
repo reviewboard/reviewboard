@@ -72,6 +72,17 @@ describe('views/ReviewRequestEditorView', function() {
         $warning = $testsScratch.find('#review-request-warning');
         $filesContainer = $testsScratch.find('#file-list');
         $screenshotsContainer = $testsScratch.find('#screenshot-thumbnails');
+
+        /*
+         * XXX Prevent _refreshPage from being called. Eventually, that
+         *     function will go away.
+         */
+        spyOn(view, '_refreshPage');
+
+        spyOn(reviewRequest.draft, 'ready')
+            .andCallFake(function(options, context) {
+                options.ready.call(context);
+            });
     });
 
     describe('Actions bar', function() {
@@ -171,17 +182,24 @@ describe('views/ReviewRequestEditorView', function() {
                 });
 
                 it('Publish', function() {
+                    spyOn(editor, 'publishDraft').andCallThrough();
                     spyOn(reviewRequest.draft, 'publish');
 
                     /* Set up some basic state so that we pass validation. */
-                    $('#target_groups').text('foo');
-                    $('#summary').text('foo');
-                    $('#description').text('foo');
+                    reviewRequest.draft.set({
+                        targetGroups: [{
+                            name: 'foo',
+                            url: '/groups/foo'
+                        }],
+                        summary: 'foo',
+                        description: 'foo'
+                    });
 
                     view.$draftBanner.find('#btn-draft-publish').click();
 
                     expect(editor.get('publishing')).toBe(true);
                     expect(editor.get('pendingSaveCount')).toBe(0);
+                    expect(editor.publishDraft).toHaveBeenCalled();
                     expect(reviewRequest.draft.publish).toHaveBeenCalled();
                 });
 
@@ -233,11 +251,6 @@ describe('views/ReviewRequestEditorView', function() {
                 .andCallFake(function(options, context) {
                     expect(options.data[jsonFieldName]).toBe('My Value');
                     options.success.call(context);
-                });
-
-            spyOn(reviewRequest.draft, 'ready')
-                .andCallFake(function(options, context) {
-                    options.ready.call(context);
                 });
 
             view.render();

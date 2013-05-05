@@ -10,12 +10,8 @@
 {% block jsconsts %}
 {{block.super}}
   /* XXX Ideally, these should all be optional. */
-  var gBugTrackerURL = '',
-      gEditable = false,
-      gReviewPending = false,
-      gReviewRequestId = 1,
+  var gReviewPending = false,
       gReviewRequestPath = "{{SITE_ROOT}}/r/1/",
-      gReviewRequestSitePrefix = "{{SITE_ROOT}}",
       gReviewRequestSummary = '';
 {% endblock %}
 

@@ -54,15 +54,25 @@ describe('models/DraftReviewRequest', function() {
             });
         });
 
+        /* Set some fields in order to pass validation. */
+        draft.set({
+            targetGroups: [{
+                name: 'mygroup',
+                url: '/groups/mygroup'
+            }],
+            summary: 'My summary',
+            description: 'My description'
+        });
+
         draft.publish({
             success: callbacks.success,
             error: callbacks.error
         });
 
+        expect(callbacks.error).not.toHaveBeenCalled();
+        expect(callbacks.success).toHaveBeenCalled();
         expect(RB.apiCall).toHaveBeenCalled();
         expect($.ajax).toHaveBeenCalled();
-        expect(callbacks.success).toHaveBeenCalled();
-        expect(callbacks.error).not.toHaveBeenCalled();
     });
 
     it('parse', function() {
@@ -92,6 +102,85 @@ describe('models/DraftReviewRequest', function() {
         expect(data.targetGroups).toBe('targetGroups');
         expect(data.targetPeople).toBe('targetPeople');
         expect(data.testingDone).toBe('testingDone');
+    });
+
+    describe('validate', function() {
+        describe('When publishing', function() {
+            var options = {
+                    publishing: true
+                },
+                attrs;
+
+            beforeEach(function() {
+                attrs = {
+                    targetGroups: [{
+                        name: 'mygroup',
+                        url: '/groups/mygroup/'
+                    }],
+                    targetPeople: [{
+                        username: 'myuser',
+                        url: '/users/myuser/',
+                    }],
+                    summary: 'summary',
+                    description: 'description'
+                };
+            });
+
+            describe('Description', function() {
+                it('Has description', function() {
+                    expect(draft.validate(attrs, options)).toBe(undefined);
+                });
+
+                it('No description', function() {
+                    attrs.description = '';
+                    expect(draft.validate(attrs, options)).toBe(
+                        RB.DraftReviewRequest.strings.DESCRIPTION_REQUIRED);
+                });
+
+                it('No description (after trim)', function() {
+                    attrs.description = '    ';
+                    expect(draft.validate(attrs, options)).toBe(
+                        RB.DraftReviewRequest.strings.DESCRIPTION_REQUIRED);
+                });
+            });
+
+            describe('Summary', function() {
+                it('Has summary', function() {
+                    expect(draft.validate(attrs, options)).toBe(undefined);
+                });
+
+                it('No summary', function() {
+                    attrs.summary = '';
+                    expect(draft.validate(attrs, options)).toBe(
+                        RB.DraftReviewRequest.strings.SUMMARY_REQUIRED);
+                });
+
+                it('No summary (after trim)', function() {
+                    attrs.summary = '    ';
+                    expect(draft.validate(attrs, options)).toBe(
+                        RB.DraftReviewRequest.strings.SUMMARY_REQUIRED);
+                });
+            });
+
+            describe('Reviewers', function() {
+                it('Has groups and no users', function() {
+                    attrs.targetPeople = [];
+                    expect(draft.validate(attrs, options)).toBe(undefined);
+                });
+
+                it('Has users and no groups', function() {
+                    attrs.targetGroups = [];
+                    expect(draft.validate(attrs, options)).toBe(undefined);
+                });
+
+                it('No reviewers', function() {
+                    attrs.targetGroups = [];
+                    attrs.targetPeople = [];
+                    expect(draft.validate(attrs, options)).toBe(
+                        RB.DraftReviewRequest.strings.REVIEWERS_REQUIRED);
+                });
+            });
+        });
     });
 });
 

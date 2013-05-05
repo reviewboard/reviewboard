@@ -12,8 +12,8 @@ RB.DraftReviewRequest = RB.BaseResource.extend(_.defaults({
         description: null,
         public: null,
         summary: null,
-        targetGroups: null,
-        targetPeople: null,
+        targetGroups: [],
+        targetPeople: [],
         testingDone: null
     }, RB.BaseResource.prototype.defaults),
 
@@ -28,15 +28,56 @@ RB.DraftReviewRequest = RB.BaseResource.extend(_.defaults({
 
     /*
      * Publishes the draft.
+     *
+     * The contents of the draft will be validated before being sent to the
+     * server in order to ensure that the appropriate fields are all there.
      */
     publish: function(options, context) {
-        this.save(
-            _.defaults({
-                data: {
-                    public: 1
+        options = options || {};
+
+        this.ready({
+            ready: function() {
+                var validationError = this.validate(this.attributes, {
+                    publishing: true
+                });
+
+                if (validationError) {
+                    if (_.isFunction(options.error)) {
+                        options.error.call(context, {
+                            errorText: validationError
+                        });
+                    }
+                } else {
+                    this.save(
+                        _.defaults({
+                            data: {
+                                public: 1
+                            }
+                        }, options),
+                        context);
                 }
-            }, options),
-            context);
+            },
+            error: _.isFunction(options.error)
+                   ? _.bind(options.error, context)
+                   : undefined
+        }, this);
+    },
+
+    validate: function(attrs, options) {
+        if (options.publishing) {
+            if (attrs.targetGroups.length === 0 &&
+                attrs.targetPeople.length === 0) {
+                return RB.DraftReviewRequest.strings.REVIEWERS_REQUIRED;
+            }
+
+            if ($.trim(attrs.summary) === '') {
+                return RB.DraftReviewRequest.strings.SUMMARY_REQUIRED;
+            }
+
+            if ($.trim(attrs.description) === '') {
+                return RB.DraftReviewRequest.strings.DESCRIPTION_REQUIRED;
+            }
+        }
     },
 
     parse: function(rsp) {
@@ -68,4 +109,12 @@ RB.DraftReviewRequest = RB.BaseResource.extend(_.defaults({
         return RB.BaseResource.prototype.sync.call(this, method, model,
                                                    options);
     }
-}, RB.DraftResourceModelMixin));
+}, RB.DraftResourceModelMixin),
+{
+    strings: {
+        DESCRIPTION_REQUIRED: 'The draft must have a description.',
+        REVIEWERS_REQUIRED: 'There must be at least one reviewer before this ' +
+                            'review request can be published.',
+        SUMMARY_REQUIRED: 'The draft must have a summary.'
+    }
+});

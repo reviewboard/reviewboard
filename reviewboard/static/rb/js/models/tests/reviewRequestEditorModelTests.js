@@ -13,18 +13,6 @@ describe('models/ReviewRequestEditor', function() {
     });
 
     describe('Methods', function() {
-        it('updateCloseDescription', function() {
-            spyOn(reviewRequest, 'close').andCallFake(function(options) {
-                expect(options.type).toBe(RB.ReviewRequest.CLOSE_SUBMITTED);
-                expect(options.description).toBe('My description');
-            });
-
-            editor.updateCloseDescription(RB.ReviewRequest.CLOSE_SUBMITTED,
-                                          'My description');
-
-            expect(reviewRequest.close).toHaveBeenCalled();
-        });
-
         describe('createFileAttachment', function() {
             it('With new FileAttachment', function() {
                 var fileAttachment;
@@ -90,6 +78,206 @@ describe('models/ReviewRequestEditor', function() {
                 expect(console.assert).toHaveBeenCalled();
                 expect(console.assert.mostRecentCall.args[0]).toBe(false);
                 expect(editor.get('foo')).toBe('abc');
+            });
+        });
+
+        describe('setDraftField', function() {
+            var callbacks,
+                draft;
+
+            beforeEach(function() {
+                callbacks = {
+                    error: function() {},
+                    success: function() {}
+                };
+
+                spyOn(callbacks, 'error');
+                spyOn(callbacks, 'success');
+
+                draft = editor.get('reviewRequest').draft;
+            });
+
+            describe('When publishing', function() {
+                beforeEach(function() {
+                    spyOn(editor, 'publishDraft');
+
+                    editor.set({
+                        publishing: true,
+                        pendingSaveCount: 1
+                    });
+                });
+
+                it('Successful saves', function() {
+                    spyOn(draft, 'save')
+                        .andCallFake(function(options, context) {
+                            options.success.call(context);
+                        });
+                    editor.setDraftField('summary', 'My Summary', callbacks);
+
+                    expect(callbacks.success).toHaveBeenCalled();
+                    expect(editor.get('publishing')).toBe(false);
+                    expect(editor.get('pendingSaveCount')).toBe(0);
+                    expect(editor.publishDraft).toHaveBeenCalled();
+                });
+
+                it('Field set errors', function() {
+                    spyOn(draft, 'save')
+                        .andCallFake(function(options, context) {
+                            options.error.call(context, draft, {
+                                errorPayload: {
+                                    fields: {
+                                        summary: ['Something went wrong']
+                                    }
+                                }
+                            });
+                        });
+                    editor.setDraftField('summary', 'My Summary', callbacks);
+
+                    expect(callbacks.error).toHaveBeenCalled();
+                    expect(editor.get('publishing')).toBe(false);
+                    expect(editor.get('pendingSaveCount')).toBe(1);
+                    expect(editor.publishDraft).not.toHaveBeenCalled();
+                });
+            });
+
+            describe('Special fields', function() {
+                describe('changeDescription', function() {
+                    it('Discarded description', function() {
+                        spyOn(reviewRequest, 'close')
+                            .andCallFake(function(options) {
+                                expect(options.type).toBe(
+                                    RB.ReviewRequest.CLOSE_DISCARDED);
+                                expect(options.description)
+                                    .toBe('My description');
+                            });
+
+                        editor.setDraftField('changeDescription',
+                                             'My description', {
+                            closeType: RB.ReviewRequest.CLOSE_DISCARDED
+                        });
+
+                        expect(reviewRequest.close).toHaveBeenCalled();
+                    });
+
+                    it('Draft description', function() {
+                        spyOn(reviewRequest, 'close');
+                        spyOn(reviewRequest.draft, 'save');
+
+                        editor.setDraftField('changeDescription',
+                                             'My description');
+
+                        expect(reviewRequest.close).not.toHaveBeenCalled();
+                        expect(reviewRequest.draft.save).toHaveBeenCalled();
+                    });
+
+                    it('Submitted description', function() {
+                        spyOn(reviewRequest, 'close')
+                            .andCallFake(function(options) {
+                                expect(options.type).toBe(
+                                    RB.ReviewRequest.CLOSE_SUBMITTED);
+                                expect(options.description)
+                                    .toBe('My description');
+                            });
+
+                        editor.setDraftField('changeDescription',
+                                             'My description', {
+                            closeType: RB.ReviewRequest.CLOSE_SUBMITTED
+                        });
+
+                        expect(reviewRequest.close).toHaveBeenCalled();
+                    });
+                });
+
+                describe('targetGroups', function() {
+                    it('Empty', function() {
+                        spyOn(draft, 'save')
+                            .andCallFake(function(options, context) {
+                                options.success.call(context);
+                            });
+
+                        editor.setDraftField('targetGroups', '', callbacks);
+
+                        expect(callbacks.success).toHaveBeenCalled();
+                    });
+
+                    it('With values', function() {
+                        spyOn(draft, 'save')
+                            .andCallFake(function(options, context) {
+                                options.success.call(context);
+                            });
+
+                        editor.setDraftField('targetGroups', 'group1, group2',
+                                             callbacks);
+
+                        expect(callbacks.success).toHaveBeenCalled();
+                    });
+
+                    it('With invalid groups', function() {
+                        spyOn(draft, 'save')
+                            .andCallFake(function(options, context) {
+                                options.error.call(context, draft, {
+                                    errorPayload: {
+                                        fields: {
+                                            target_groups: ['group1', 'group2']
+                                        }
+                                    }
+                                });
+                            });
+
+                        editor.setDraftField('targetGroups', 'group1, group2',
+                                             callbacks);
+
+                        expect(callbacks.error).toHaveBeenCalledWith({
+                            errorText: "Groups 'group1' and 'group2' do " +
+                                       "not exist."
+                        });
+                    });
+                });
+
+                describe('targetPeople', function() {
+                    it('Empty', function() {
+                        spyOn(draft, 'save')
+                            .andCallFake(function(options, context) {
+                                options.success.call(context);
+                            });
+
+                        editor.setDraftField('targetPeople', '', callbacks);
+
+                        expect(callbacks.success).toHaveBeenCalled();
+                    });
+
+                    it('With values', function() {
+                        spyOn(draft, 'save')
+                            .andCallFake(function(options, context) {
+                                options.success.call(context);
+                            });
+
+                        editor.setDraftField('targetPeople', 'user1, user2',
+                                             callbacks);
+
+                        expect(callbacks.success).toHaveBeenCalled();
+                    });
+
+                    it('With invalid users', function() {
+                        spyOn(draft, 'save')
+                            .andCallFake(function(options, context) {
+                                options.error.call(context, draft, {
+                                    errorPayload: {
+                                        fields: {
+                                            target_people: ['user1', 'user2']
+                                        }
+                                    }
+                                });
+                            });
+
+                        editor.setDraftField('targetPeople', 'user1, user2',
+                                             callbacks);
+
+                        expect(callbacks.error).toHaveBeenCalledWith({
+                            errorText: "Users 'user1' and 'user2' do not exist."
+                        });
+                    });
+                });
             });
         });
     });

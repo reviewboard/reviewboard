@@ -4,18 +4,10 @@ var CommentReplyClasses = {
     file_attachment_comments: RB.FileAttachmentCommentReply
 };
 
-this.gReviewRequest = new RB.ReviewRequest({
-    bugTrackerURL: gBugTrackerURL,
-    id: gReviewRequestId,
-    localSitePrefix: gReviewRequestSitePrefix
-});
-
 // State variables
 var gPendingDiffFragments = {};
 var gReviewBanner = $("#review-banner");
-var gCommentIssueManager = new RB.CommentIssueManager({
-    reviewRequest: this.gReviewRequest
-});
+var gCommentIssueManager;
 var issueSummaryTableManager;
 
 
@@ -947,7 +939,13 @@ function loadDiffFragments(queue_name, container_prefix) {
 }
 
 
-$(document).ready(function() {
+/*
+ * Initializes review request pages.
+ *
+ * XXX This is a temporary function that exists while we're transitioning
+ *     to Backbone.js.
+ */
+RB.initReviewRequestPage = function() {
     var pendingReview = gReviewRequest.createReview();
 
     /* Edit Review buttons. */
@@ -1018,7 +1016,7 @@ $(document).ready(function() {
     });
 
     $("pre.reviewtext").each(function() {
-        $(this).html(RB.linkifyText($(this).text(), gBugTrackerURL));
+        $(this).html(reviewRequestEditorView.linkifyText($(this).text()));
     });
 
     /* Toggle the state of a review */
@@ -1038,13 +1036,13 @@ $(document).ready(function() {
         return false;
     });
 
-    loadDiffFragments("diff_fragments", "comment_container");
-
     issueSummaryTableManager = new RB.IssueSummaryTableView({
         el: $('#issue-summary'),
         model: gCommentIssueManager
     });
     issueSummaryTableManager.render();
-});
+
+    loadDiffFragments("diff_fragments", "comment_container");
+}
 
 // vim: set et:sw=4:

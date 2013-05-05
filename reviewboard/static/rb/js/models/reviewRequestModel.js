@@ -13,9 +13,18 @@
  */
 RB.ReviewRequest = RB.BaseResource.extend({
     defaults: _.defaults({
+        branch: null,
         bugTrackerURL: null,
+        bugsClosed: null,
+        changeDescription: null,
+        description: null,
         draftReview: null,
-        localSitePrefix: null
+        localSitePrefix: null,
+        public: null,
+        summary: null,
+        targetGroups: [],
+        targetPeople: [],
+        testingDone: null
     }),
 
     rspNamespace: 'review_request',
@@ -28,7 +37,16 @@ RB.ReviewRequest = RB.BaseResource.extend({
         });
 
         this.draft = new RB.DraftReviewRequest({
-            parentObject: this
+            parentObject: this,
+            branch: this.get('branch'),
+            bugsClosed: this.get('bugsClosed'),
+            changeDescription: this.get('changeDescription'),
+            description: this.get('description'),
+            summary: this.get('summary'),
+            targetGroups: this.get('targetGroups'),
+            targetPeople: this.get('targetPeople'),
+            testingDone: this.get('testingDone'),
+            loaded: true
         });
     },
 
