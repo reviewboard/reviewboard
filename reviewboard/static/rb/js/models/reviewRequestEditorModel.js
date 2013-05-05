@@ -46,6 +46,16 @@ RB.ReviewRequestEditor = Backbone.Model.extend({
     },
 
     /*
+     * Updates the close description for the review request.
+     */
+    updateCloseDescription: function(closeType, description) {
+        this.get('reviewRequest').close({
+            type: closeType,
+            description: description
+        });
+    },
+
+    /*
      * Increments an attribute by 1.
      *
      * The attribute must be an integer.

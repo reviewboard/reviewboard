@@ -19,7 +19,7 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
         {
             fieldName: 'bugsClosed',
             jsonFieldName: 'bugs_closed',
-            elementID: 'bugs_closed',
+            selector: '#bugs_closed',
             useEditIconOnly: true,
             formatter: function(view, data) {
                 var reviewRequest = view.model.get('reviewRequest'),
@@ -38,10 +38,24 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
         },
         {
             fieldName: 'changeDescription',
-            elementID: 'changedescription',
+            selector: '#draft-banner #changedescription',
             jsonFieldName: 'changedescription',
             elementOptional: true,
             startOpen: true
+        },
+        {
+            fieldName: 'changeDescription',
+            selector: '#submitted-banner #changedescription',
+            jsonFieldName: 'changedescription',
+            elementOptional: true,
+            closeType: RB.ReviewRequest.CLOSE_SUBMITTED
+        },
+        {
+            fieldName: 'changeDescription',
+            selector: '#discard-banner #changedescription',
+            jsonFieldName: 'changedescription',
+            elementOptional: true,
+            closeType: RB.ReviewRequest.CLOSE_DISCARDED
         },
         {
             fieldName: 'description',
@@ -54,7 +68,7 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
         },
         {
             fieldName: 'targetGroups',
-            elementID: 'target_groups',
+            selector: '#target_groups',
             jsonFieldName: 'target_groups',
             useEditIconOnly: true,
             autocomplete: {
@@ -75,7 +89,7 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
         },
         {
             fieldName: 'targetPeople',
-            elementID: 'target_people',
+            selector: '#target_people',
             jsonFieldName: 'target_people',
             useEditIconOnly: true,
             autocomplete: {
@@ -100,7 +114,7 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
         },
         {
             fieldName: 'testingDone',
-            elementID: 'testing_done',
+            selector: '#testing_done',
             jsonFieldName: 'testing_done',
             formatter: function(view, data) {
                 return view.linkifyText(data);
@@ -109,7 +123,7 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
     ],
 
     initialize: function() {
-        this._fieldEditors = {};
+        this._fieldEditors = [];
 
         _.each(this.defaultFields, this.registerField, this);
     },
@@ -126,9 +140,6 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
      *
      * Optional:
      *
-     *     * elementID
-     *       - The ID of the element in the DOM. Defaults to fieldName.
-     *
      *     * elementOptional
      *       - true if the element doesn't have to be on the page.
      *
@@ -138,6 +149,10 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
      *
      *     * jsonFieldName
      *       - The field name in the JSON payload. Defaults to fieldName.
+     *
+     *     * selector
+     *       - The jQuery selector for the element in the DOM.
+     *         Defaults to '#' + fieldName.
      *
      *     * startOpen
      *       - Field starts opened in edit mode.
@@ -150,14 +165,14 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
     registerField: function(options) {
         console.assert(_.has(options, 'fieldName'));
 
-        this._fieldEditors[options.fieldName] = _.extend({
-            elementID: options.fieldName,
+        this._fieldEditors.push(_.extend({
+            selector: '#' + options.fieldName,
             elementOptional: false,
             formatter: null,
             jsonFieldName: options.fieldName,
             startOpen: false,
             useEditIconOnly: false
-        }, options);
+        }, options));
     },
 
     /*
@@ -172,6 +187,7 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
         this.$draftBanner = $('#draft-banner');
         this.$draftBannerButtons = this.$draftBanner.find('input');
 
+        this._$box = this.$('.review-request');
         this._$warning = $('#review-request-warning');
         this._$screenshots = $('#screenshot-thumbnails');
         this._$attachments = $('#file-list');
@@ -211,15 +227,15 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
          * Set up editors for every registered field.
          */
         _.each(this._fieldEditors, function(fieldOptions) {
-            var $el = $('#' + fieldOptions.elementID);
+            var $el = this.$(fieldOptions.selector);
 
             if (fieldOptions.elementOptional && $el.length === 0) {
                 return;
             }
 
             console.assert($el.length === 1,
-                           'There must be one element named "' +
-                           fieldOptions.elementID + '"');
+                           'There must be one element with selector "' +
+                           fieldOptions.selector + '"');
 
             this._buildEditor($el, fieldOptions);
 
@@ -572,6 +588,12 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
             reviewRequest = model.get('reviewRequest'),
             data = {};
 
+        if (fieldID === 'changedescription' &&
+            _.has(fieldOptions, 'closeType')) {
+            model.updateCloseDescription(fieldOptions.closeType, value);
+            return;
+        }
+
         data[fieldID] = value;
 
         reviewRequest.draft.save({
@@ -648,7 +670,7 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
         if (_.isFunction(formatter)) {
             reviewRequest = this.model.get('reviewRequest');
 
-            $('#' + fieldOptions.elementID)
+            this.$(fieldOptions.selector)
                 .empty()
                 .html(formatter.call(
                     fieldOptions.context || this, this,
@@ -686,7 +708,7 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
      * Enables or disables all inlineEditors.
      */
     _onEditableChanged: function() {
-        this.$('.edit, .editable')
+        this._$box.find('.edit, .editable')
             .inlineEditor(this.model.get('editable') ? 'enable' : 'disable');
     },
 

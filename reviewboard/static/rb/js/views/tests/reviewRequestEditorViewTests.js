@@ -9,16 +9,21 @@ describe('views/ReviewRequestEditorView', function() {
             '  <input type="button" id="btn-draft-discard" />',
             '  <input type="button" id="btn-review-request-discard" />',
             '  <input type="button" id="btn-review-request-reopen" />',
+            '  <span id="changedescription" class="editable"></span>',
             ' </div>',
-            ' <div id="draft-banner" style="display: none;" />',
+            ' <div id="discard-banner" style="display: none;">',
+            '  <span id="changedescription" class="editable"></span>',
+            ' </div>',
+            ' <div id="submitted-banner" style="display: none;">',
+            '  <span id="changedescription" class="editable"></span>',
+            ' </div>',
             ' <div id="review-request-warning"></div>',
             ' <div class="actions">',
             '  <a href="#" id="discard-review-request-link"></a>',
             '  <a href="#" id="link-review-request-close-submitted"></a>',
             '  <a href="#" id="delete-review-request-link"></a>',
             ' </div>',
-            ' <div>',
-            '  <span id="changedescription" class="editable"></span>',
+            ' <div class="review-request">',
             '  <span id="summary" class="editable"></span>',
             '  <span id="branch" class="editable"></span>',
             '  <span id="bugs_closed" class="editable"></span>',
@@ -241,7 +246,7 @@ describe('views/ReviewRequestEditorView', function() {
         function setupFieldTests(options) {
             beforeEach(function() {
                 jsonFieldName = options.jsonFieldName;
-                $field = view.$('#' + options.elementID);
+                $field = view.$(options.selector);
                 $input = $field.inlineEditor('field');
             });
         }
@@ -299,7 +304,7 @@ describe('views/ReviewRequestEditorView', function() {
         describe('Branch', function() {
             setupFieldTests({
                 jsonFieldName: 'branch',
-                elementID: 'branch'
+                selector: '#branch'
             });
 
             hasEditorTest();
@@ -310,7 +315,7 @@ describe('views/ReviewRequestEditorView', function() {
         describe('Bugs Closed', function() {
             setupFieldTests({
                 jsonFieldName: 'bugs_closed',
-                elementID: 'bugs_closed'
+                selector: '#bugs_closed'
             });
 
             hasEditorTest();
@@ -338,43 +343,98 @@ describe('views/ReviewRequestEditorView', function() {
             editCountTests();
         });
 
-        describe('Change Description', function() {
-            setupFieldTests({
-                jsonFieldName: 'changedescription',
-                elementID: 'changedescription'
+        describe('Change Descriptions', function() {
+            function closeDescriptionTests(bannerSel, closeType) {
+                setupFieldTests({
+                    jsonFieldName: 'changedescription',
+                    selector: bannerSel + ' #changedescription'
+                });
+
+                beforeEach(function() {
+                    $(bannerSel).show();
+
+                    spyOn(reviewRequest, 'close')
+                        .andCallFake(function(options) {
+                            expect(options.type).toBe(closeType);
+                            expect(options.description).toBe(
+                                'My Value');
+                        });
+                });
+
+                hasEditorTest();
+
+                it('Starts closed', function() {
+                    expect($input.is(':visible')).toBe(false);
+                });
+
+                it('Saves', function() {
+                    $field.inlineEditor('startEdit');
+                    $input
+                        .val('My Value')
+                        .triggerHandler('keyup');
+                    $field.inlineEditor('submit');
+
+                    expect(reviewRequest.close).toHaveBeenCalled();
+                });
+
+                editCountTests();
+            }
+
+            describe('Discarded review requests', function() {
+                closeDescriptionTests('#discard-banner',
+                                      RB.ReviewRequest.CLOSE_DISCARDED);
             });
 
-            hasEditorTest();
-            savingTest();
+            describe('Draft review requests', function() {
+                setupFieldTests({
+                    jsonFieldName: 'changedescription',
+                    selector: '#draft-banner #changedescription'
+                });
 
-            describe('Edit counts', function() {
-                /*
-                 * Unlike the rest of the fields, this one starts open,
-                 * without an edit count. Verify all that.
-                 */
+                beforeEach(function() {
+                    $('#draft-banner').show();
+                });
 
-                it('Initial value when starting opened', function() {
+                hasEditorTest();
+                savingTest();
+
+                it('Starts opened', function() {
                     expect($input.is(':visible')).toBe(true);
-                    expect(editor.get('editCount')).toBe(0);
                 });
 
-                it('When closed', function() {
-                    $field.inlineEditor('cancel');
-                    expect(editor.get('editCount')).toBe(0);
-                });
+                describe('Edit counts', function() {
+                    /*
+                     * Unlike the rest of the fields, this one starts open,
+                     * without an edit count. Verify all that.
+                     */
+                    it('Initial value when starting opened', function() {
+                        expect($input.is(':visible')).toBe(true);
+                        expect(editor.get('editCount')).toBe(0);
+                    });
 
-                it('When re-opened', function() {
-                    $field.inlineEditor('cancel');
-                    $field.inlineEditor('startEdit');
-                    expect(editor.get('editCount')).toBe(1);
+                    it('When closed', function() {
+                        $field.inlineEditor('cancel');
+                        expect(editor.get('editCount')).toBe(0);
+                    });
+
+                    it('When re-opened', function() {
+                        $field.inlineEditor('cancel');
+                        $field.inlineEditor('startEdit');
+                        expect(editor.get('editCount')).toBe(1);
+                    });
                 });
+            });
+
+            describe('Submitted review requests', function() {
+                closeDescriptionTests('#submitted-banner',
+                                      RB.ReviewRequest.CLOSE_SUBMITTED);
             });
         });
 
         describe('Description', function() {
             setupFieldTests({
                 jsonFieldName: 'description',
-                elementID: 'description'
+                selector: '#description'
             });
 
             hasEditorTest();
@@ -393,7 +453,7 @@ describe('views/ReviewRequestEditorView', function() {
         describe('Summary', function() {
             setupFieldTests({
                 jsonFieldName: 'summary',
-                elementID: 'summary'
+                selector: '#summary'
             });
 
             hasEditorTest();
@@ -404,7 +464,7 @@ describe('views/ReviewRequestEditorView', function() {
         describe('Testing Done', function() {
             setupFieldTests({
                 jsonFieldName: 'testing_done',
-                elementID: 'testing_done'
+                selector: '#testing_done'
             });
 
             hasEditorTest();
@@ -424,7 +484,7 @@ describe('views/ReviewRequestEditorView', function() {
             describe('Groups', function() {
                 setupFieldTests({
                     jsonFieldName: 'target_groups',
-                    elementID: 'target_groups'
+                    selector: '#target_groups'
                 });
 
                 hasAutoCompleteTest();
@@ -454,7 +514,7 @@ describe('views/ReviewRequestEditorView', function() {
             describe('People', function() {
                 setupFieldTests({
                     jsonFieldName: 'target_people',
-                    elementID: 'target_people'
+                    selector: '#target_people'
                 });
 
                 hasAutoCompleteTest();

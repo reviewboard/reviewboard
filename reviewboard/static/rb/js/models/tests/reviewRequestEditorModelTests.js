@@ -13,6 +13,18 @@ describe('models/ReviewRequestEditor', function() {
     });
 
     describe('Methods', function() {
+        it('updateCloseDescription', function() {
+            spyOn(reviewRequest, 'close').andCallFake(function(options) {
+                expect(options.type).toBe(RB.ReviewRequest.CLOSE_SUBMITTED);
+                expect(options.description).toBe('My description');
+            });
+
+            editor.updateCloseDescription(RB.ReviewRequest.CLOSE_SUBMITTED,
+                                          'My description');
+
+            expect(reviewRequest.close).toHaveBeenCalled();
+        });
+
         describe('createFileAttachment', function() {
             it('With new FileAttachment', function() {
                 var fileAttachment;

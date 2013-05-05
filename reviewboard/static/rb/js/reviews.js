@@ -780,29 +780,6 @@ $.fn.reviewFormCommentEditor = function(comment) {
 
 
 /*
- * Adds inline editing capabilities to close description for a review request
- * which have been submitted or discarded.
- *
- * @param {int} type  1: RB.ReviewRequest.CLOSE_DISCARDED
- *                    2: RB.ReviewRequest.CLOSE_SUBMITTED
- */
-$.fn.reviewCloseCommentEditor = function(type) {
-    return this
-        .inlineEditor({
-            editIconPath: STATIC_URLS["rb/images/edit.png"],
-            multiline: true,
-            startOpen: false
-        })
-        .on("complete", function(e, value) {
-            gReviewRequest.close({
-                type: type,
-                description: value
-            });
-        });
-}
-
-
-/*
  * Registers for updates to the review request. This will cause a pop-up
  * bubble to be displayed when updates of the specified type are displayed.
  *
@@ -1060,9 +1037,6 @@ $(document).ready(function() {
         $(".box").addClass("collapsed");
         return false;
     });
-
-    $("#submitted-banner #changedescription.editable").reviewCloseCommentEditor(RB.ReviewRequest.CLOSE_SUBMITTED);
-    $("#discard-banner #changedescription.editable").reviewCloseCommentEditor(RB.ReviewRequest.CLOSE_DISCARDED);
 
     loadDiffFragments("diff_fragments", "comment_container");
 
