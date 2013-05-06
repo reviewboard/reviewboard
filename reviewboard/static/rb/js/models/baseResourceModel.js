@@ -375,6 +375,8 @@ RB.BaseResource = Backbone.Model.extend({
             destroyObject = _.bind(this._destroyObject,
                                    this, options, context);
 
+        this.trigger('destroying');
+
         if (!this.isNew() && parentObject) {
             /*
              * XXX This is temporary to support older-style resource
@@ -447,6 +449,8 @@ RB.BaseResource = Backbone.Model.extend({
                 /* Reset the object so it's new again. */
                 self.set('id', null);
                 self.set(_.result(self, 'defaults'));
+
+                self.trigger('destroyed');
 
                 if (_.isFunction(options.success)) {
                     options.success.apply(context, arguments);

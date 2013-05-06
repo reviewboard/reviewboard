@@ -192,7 +192,7 @@ describe('views/FileAttachmentThumbnail', function() {
 
             expect($.ajax).toHaveBeenCalled();
             expect(model.destroy).toHaveBeenCalled();
-            expect(model.trigger.calls[2].args[0]).toBe('destroy');
+            expect(model.trigger.calls[2].args[0]).toBe('destroying');
             expect(view.$el.fadeOut).toHaveBeenCalled();
             expect(view.remove).toHaveBeenCalled();
         });
