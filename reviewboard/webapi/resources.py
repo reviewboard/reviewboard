@@ -5188,9 +5188,11 @@ class BaseFileAttachmentCommentResource(BaseCommentResource):
     def get_queryset(self, request, *args, **kwargs):
         review_request = \
             review_request_resource.get_object(request, *args, **kwargs)
+
         return self.model.objects.filter(
-            file_attachment__review_request=review_request,
-            review__isnull=False)
+            (Q(file_attachment__review_request=review_request) |
+             Q(file_attachment__inactive_review_request=review_request)) &
+            Q(review__isnull=False))
 
     def serialize_public_field(self, obj, **kwargs):
         return obj.review.get().public
