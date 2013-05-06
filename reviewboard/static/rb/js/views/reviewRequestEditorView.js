@@ -235,13 +235,9 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
         _.each(this._fieldEditors, function(fieldOptions) {
             var $el = this.$(fieldOptions.selector);
 
-            if (fieldOptions.elementOptional && $el.length === 0) {
+            if ($el.length === 0) {
                 return;
             }
-
-            console.assert($el.length === 1,
-                           'There must be one element with selector "' +
-                           fieldOptions.selector + '"');
 
             this._buildEditor($el, fieldOptions);
 
