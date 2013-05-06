@@ -610,10 +610,7 @@ $.reviewForm = function(review) {
                             review.destroy({
                                 buttons: buttons,
                                 success: function() {
-                                    hideReviewBanner();
-                                    gReviewBanner.queue(function() {
-                                        window.location = gReviewRequestPath;
-                                    });
+                                    RB.DraftReviewBannerView.instance.hideAndReload();
                                 }
                             });
                         }),
@@ -713,15 +710,14 @@ $.reviewForm = function(review) {
         });
 
         $.funcQueue("reviewForm").add(function() {
+            var reviewBanner = RB.DraftReviewBannerView.instance;
+
             dlg.modalBox("destroy");
 
             if (publish) {
-                hideReviewBanner();
-                gReviewBanner.queue(function() {
-                    window.location = gReviewRequestPath;
-                });
+                reviewBanner.hideAndReload();
             } else {
-                showReviewBanner();
+                reviewBanner.show();
             }
         });
 
@@ -847,34 +843,6 @@ RB.registerForUpdates = function(lastTimestamp, type) {
 
 
 /*
- * Shows the review banner.
- */
-function showReviewBanner() {
-    if (gReviewBanner.is(":hidden")) {
-        gReviewBanner
-            .slideDown()
-            .find(".banner")
-                .hide()
-                .slideDown();
-    }
-}
-
-// XXX This is temporary until the banner is moved into a new view.
-RB.showReviewBanner = showReviewBanner;
-
-
-/*
- * Hides the review banner.
- */
-function hideReviewBanner() {
-    gReviewBanner
-        .slideUp()
-        .find(".banner")
-            .slideUp();
-}
-
-
-/*
  * Queues the load of a diff fragment from the server.
  *
  * This will be added to a list, which will fetch the comments in batches
@@ -946,10 +914,20 @@ function loadDiffFragments(queue_name, container_prefix) {
  *     to Backbone.js.
  */
 RB.initReviewRequestPage = function() {
-    var pendingReview = gReviewRequest.createReview();
+    var pendingReview = gReviewRequest.createReview(),
+        reviewBanner;
+
+    reviewBanner = RB.DraftReviewBannerView.create({
+        el: $('#review-banner'),
+        model: pendingReview
+    });
+
+    pendingReview.on('destroyed published', function() {
+        reviewBanner.hideAndReload();
+    });
 
     /* Edit Review buttons. */
-    $("#review-link, #review-banner-edit").click(function() {
+    $("#review-link").click(function() {
         $.reviewForm(pendingReview);
     });
 
@@ -963,56 +941,10 @@ RB.initReviewRequestPage = function() {
             pendingReview.save({
                 buttons: null,
                 success: function() {
-                    hideReviewBanner();
-                    gReviewBanner.queue(function() {
-                        window.location = gReviewRequestPath;
-                    });
+                    RB.DraftReviewBannerView.instance.hideAndReload();
                 }
             });
         }
-    });
-
-    /* Review banner's Publish button. */
-    $("#review-banner-publish").click(function() {
-        pendingReview.ready({
-            ready: function() {
-                pendingReview.set('public', true);
-                pendingReview.save({
-                    buttons: $("input", gReviewBanner),
-                    success: function() {
-                        hideReviewBanner();
-                        gReviewBanner.queue(function() {
-                            window.location = gReviewRequestPath;
-                        });
-                    }
-                });
-            }
-        });
-    });
-
-    /* Review banner's Delete button. */
-    $("#review-banner-discard").click(function() {
-        var dlg = $("<p/>")
-            .text("If you discard this review, all related comments will " +
-                  "be permanently deleted.")
-            .modalBox({
-                title: "Are you sure you want to discard this review?",
-                buttons: [
-                    $('<input type="button" value="Cancel"/>'),
-                    $('<input type="button" value="Discard"/>')
-                        .click(function(e) {
-                            pendingReview.destroy({
-                                buttons: $("input", gReviewBanner),
-                                success: function() {
-                                    hideReviewBanner();
-                                    gReviewBanner.queue(function() {
-                                        window.location = gReviewRequestPath;
-                                    });
-                                }
-                            });
-                        })
-                ]
-            });
     });
 
     $("pre.reviewtext").each(function() {

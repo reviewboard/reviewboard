@@ -149,7 +149,7 @@ RB.AbstractCommentBlockView = Backbone.View.extend({
         comment.on('saved', function() {
             this._updateTooltip();
             this.notify('Comment Saved');
-            showReviewBanner();
+            RB.DraftReviewBannerView.instance.show();
         }, this);
 
         $el.addClass('draft');

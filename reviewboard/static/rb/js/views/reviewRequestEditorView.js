@@ -430,7 +430,7 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
         }, this);
 
         view.on('commentSaved', function() {
-            RB.showReviewBanner();
+            RB.DraftReviewBannerView.instance.show();
         }, this);
     },
 

@@ -321,7 +321,7 @@ $.extend(DiffCommentBlock.prototype, {
             this.updateCount();
             this.updateTooltip();
             this.notify("Comment Saved");
-            showReviewBanner();
+            RB.DraftReviewBannerView.instance.show();
         }, this);
 
         this.draftComment = comment;

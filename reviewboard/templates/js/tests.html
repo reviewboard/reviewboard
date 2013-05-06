@@ -27,6 +27,9 @@ $(document).ready(function() {
     RB.ajaxOptions.enableQueuing = false;
     RB.ajaxOptions.enableIndicator = false;
 
+    // Disable animations so we don't have to worry about them in tests.
+    $.fx.off = true;
+
     jasmineEnv.specFilter = function(spec) {
         return htmlReporter.specFilter(spec);
     };
