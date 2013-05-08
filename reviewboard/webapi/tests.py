@@ -6746,6 +6746,45 @@ class ReviewReplyFileAttachmentCommentResourceTests(BaseWebAPITestCase):
 
         return rsp, comment, comments_url
 
+    def test_post_reply_with_inactive_file_attachment_comment(self):
+        """Testing the POST review-requests/<id>/reviews/<id>/replies/<id>/file-attachment-comments/ API with inactive file attachment"""
+        comment_text = "My Comment Text"
+
+        comment = FileAttachmentComment.objects.all()[0]
+        review = comment.review.get()
+
+        # Create the reply
+        rsp = self.apiPost(
+            ReviewReplyResourceTests.get_list_url(review),
+            expected_mimetype=ReviewReplyResourceTests.item_mimetype)
+        self.assertEqual(rsp['stat'], 'ok')
+
+        self.assertTrue('reply' in rsp)
+        self.assertNotEqual(rsp['reply'], None)
+        self.assertTrue('links' in rsp['reply'])
+        self.assertTrue('diff_comments' in rsp['reply']['links'])
+        comments_url = \
+            rsp['reply']['links']['file_attachment_comments']['href']
+
+        # Make the file attachment inactive.
+        file_attachment = comment.file_attachment
+        review_request = file_attachment.review_request.get()
+        review_request.inactive_file_attachments.add(file_attachment)
+        review_request.file_attachments.remove(file_attachment)
+
+        # Now make the reply.
+        rsp = self.apiPost(comments_url, {
+            'reply_to_id': comment.id,
+            'text': comment_text,
+        }, expected_mimetype=self.item_mimetype)
+        self.assertEqual(rsp['stat'], 'ok')
+
+        reply_comment = FileAttachmentComment.objects.get(
+            pk=rsp['file_attachment_comment']['id'])
+        self.assertEqual(reply_comment.text, comment_text)
+
+        return rsp, comment, comments_url
+
     def test_post_reply_with_file_attachment_comment_http_303(self):
         """Testing the POST review-requests/<id>/reviews/<id>/replies/<id>/file-attachment-comments/ API and 303 See Other"""
         comment_text = "My New Comment Text"

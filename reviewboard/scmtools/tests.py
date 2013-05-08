@@ -223,8 +223,8 @@ class RepositoryTests(DjangoTestCase):
         self.assertEqual(found_signals[1],
                          ('fetched_file', path, revision, request))
 
-    def test_get_file_exists_caching(self):
-        """Testing Repository.get_file_exists caches result"""
+    def test_get_file_exists_caching_when_exists(self):
+        """Testing Repository.get_file_exists caches result when exists"""
         def file_exists(self, path, revision):
             num_calls['get_file_exists'] += 1
             return True
@@ -245,6 +245,29 @@ class RepositoryTests(DjangoTestCase):
         self.assertTrue(exists1)
         self.assertTrue(exists2)
         self.assertEqual(num_calls['get_file_exists'], 1)
+
+    def test_get_file_exists_caching_when_not_exists(self):
+        """Testing Repository.get_file_exists doesn't cache result when not exists"""
+        def file_exists(self, path, revision):
+            num_calls['get_file_exists'] += 1
+            return False
+
+        num_calls = {
+            'get_file_exists': 0,
+        }
+
+        path = 'readme'
+        revision = '12345'
+        request = {}
+
+        self.scmtool_cls.file_exists = file_exists
+
+        exists1 = self.repository.get_file_exists(path, revision, request)
+        exists2 = self.repository.get_file_exists(path, revision, request)
+
+        self.assertFalse(exists1)
+        self.assertFalse(exists2)
+        self.assertEqual(num_calls['get_file_exists'], 2)
 
     def test_get_file_exists_caching_with_fetched_file(self):
         """Testing Repository.get_file_exists uses get_file's cached result"""

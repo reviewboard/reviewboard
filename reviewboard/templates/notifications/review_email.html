@@ -46,7 +46,7 @@
 {% if review.body_bottom %}
  <pre style="{{precss}}">{{review.body_bottom}}</pre>
 {% endif %}
-<p>- {% if review.user.first_name != "" %}{{review.user.first_name}}{% else %}{{review.user.username}}{% endif %}</p>
+<p>- {{review.user|user_displayname}}</p>
 {% endblock %}
 
 {% block footer %}
