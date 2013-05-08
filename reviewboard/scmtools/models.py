@@ -179,11 +179,17 @@ class Repository(models.Model):
         The result of this call will be cached, making future lookups
         of this path and revision on this repository faster.
         """
-        exists = cache_memoize(
-            self._make_file_exists_cache_key(path, revision),
-            lambda: self._get_file_exists_uncached(path, revision, request))
+        key = self._make_file_exists_cache_key(path, revision)
 
-        return exists == '1'
+        if cache.get(make_cache_key(key)) == '1':
+            return True
+
+        exists = self._get_file_exists_uncached(path, revision, request)
+
+        if exists:
+            cache_memoize(key, lambda: '1')
+
+        return exists
 
     def is_accessible_by(self, user):
         """Returns whether or not the user has access to the repository.
@@ -289,12 +295,7 @@ class Repository(models.Model):
                                      request=request,
                                      exists=exists)
 
-        # We're expected to return a string for cache_memoize, so serialize
-        # this as small as possible.
-        if exists:
-            return '1'
-        else:
-            return '0'
+        return exists
 
     class Meta:
         verbose_name_plural = "Repositories"
