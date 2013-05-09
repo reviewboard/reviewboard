@@ -192,7 +192,8 @@
     </dd>
     <script type="text/javascript">
       $(document).ready(function() {
-        RB.queueLoadDiffFragment("diff_fragments", "{{comment.id}}",
+        reviewBoxListView.diffFragmentQueue.queueLoad(
+          "{{comment.id}}",
 {% if comment.interfilediff %}
           "{{comment.filediff.id}}-{{comment.interfilediff.id}}"
 {% else %}

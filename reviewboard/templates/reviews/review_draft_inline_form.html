@@ -146,7 +146,8 @@
             editor.inlineEditor("startEdit");
         });
 
-        RB.queueLoadDiffFragment("review_draft_diff_comments", "{{comment.id}}",
+        window.gReviewFormDiffQueue.queueLoad(
+          "{{comment.id}}",
 {% if comment.interfilediff %}
           "{{comment.filediff.id}}-{{comment.interfilediff.id}}"
 {% else %}

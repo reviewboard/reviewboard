@@ -17,6 +17,12 @@ RB.ReviewBoxListView = Backbone.View.extend({
      * Initializes the list.
      */
     initialize: function() {
+        this.diffFragmentQueue = new RB.DiffFragmentQueueView({
+            reviewRequestPath: gReviewRequestPath,
+            containerPrefix: 'comment_container',
+            queueName: 'diff_fragments'
+        });
+
         this._boxes = [];
     },
 
@@ -26,6 +32,9 @@ RB.ReviewBoxListView = Backbone.View.extend({
      * Each review on the page will be scanned and a ReviewBoxView will
      * be created. Along with this, a Review model will be created with
      * the information contained on the page.
+     *
+     * Each diff fragment that a comment references will be loaded and
+     * rendered into the appropriate review boxes.
      */
     render: function() {
         var pageEditState = this.options.pageEditState,
@@ -53,6 +62,8 @@ RB.ReviewBoxListView = Backbone.View.extend({
 
             this._boxes.push(box);
         }, this);
+
+        this.diffFragmentQueue.loadFragments();
 
         return this;
     },
