@@ -14,6 +14,10 @@ if (typeof console.warn === 'undefined') {
     console.warn = function() {}
 }
 
+if (typeof console.error === 'undefined') {
+    console.error = function() {}
+}
+
 /*
  * console.assert may not behave as we'd hope on all implementations.
  * On Chrome, for instance, it doesn't raise an exception. So, fall back

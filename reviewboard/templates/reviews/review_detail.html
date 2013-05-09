@@ -73,12 +73,11 @@
 {% for entry in entries %}
 {%  if entry.review %}
 <a name="review{{entry.review.id}}"></a>
-<div id="review{{entry.review.id}}">
+<div id="review{{entry.review.id}}" class="review" data-review-id="{{entry.review.id}}" data-ship-it="{% if entry.review.ship_it %}true{% else %}false{% endif %}">
 {%   if forloop.last %}
 <a name="last-review"></a>
 {%   endif %}
-{% definevar "boxclass" %}review {{entry.class}}{% enddefinevar %}
-{% box boxclass %}
+{% box entry.class %}
 <div class="main">
  <div class="header">
   {% template_hook_point "review-summary-header-pre" %}
@@ -292,22 +291,34 @@
 {%   endbox %}
 {%  endif %}
 {% endfor %}
+{% endblock %}
 
-{% localtime off %}
+{% block scripts-post %}
+{{block.super}}
+
 <script type="text/javascript">
-  $(document).ready(function() {
-	  /* Listen for updates to this review request. */
-	  RB.registerForUpdates("{{last_activity_time|date:"c"}}");
+    window.reviewBoxListView = new RB.ReviewBoxListView({
+        el: document.body,
+        pageEditState: reviewRequestEditor,
+        reviewRequest: reviewRequestEditor.get('reviewRequest')
+    });
+
+    $(document).ready(function() {
+{% localtime off %}
+        /* Listen for updates to this review request. */
+        RB.registerForUpdates("{{last_activity_time|date:"c"}}");
 {% endlocaltime %}
 
+        reviewBoxListView.render();
+
 {% if request.GET.reply_id and request.GET.reply_type %}
-      $.funcQueue("diff_comments").add(function() {
-          var link = $("#add_{{request.GET.reply_type}}_{{request.GET.reply_id}}");
-          $(window).scrollTop(link.offset().top);
-          link.click();
-          $.funcQueue("diff_comments").next();
-      });
+        $.funcQueue("diff_comments").add(function() {
+            var link = $("#add_{{request.GET.reply_type}}_{{request.GET.reply_id}}");
+            $(window).scrollTop(link.offset().top);
+            link.click();
+            $.funcQueue("diff_comments").next();
+        });
 {% endif %}
-  });
+    });
 </script>
 {% endblock %}

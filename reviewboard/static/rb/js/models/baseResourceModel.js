@@ -441,14 +441,21 @@ RB.BaseResource = Backbone.Model.extend({
      * of the object on success.
      */
     _finishDestroy: function(options, context) {
-        var self = this;
+        var self = this,
+            parentObject = this.get('parentObject');
 
         Backbone.Model.prototype.destroy.call(this, _.defaults({
             wait: true,
             success: function() {
-                /* Reset the object so it's new again. */
-                self.set('id', null);
+                /*
+                 * Reset the object so it's new again, but with the same
+                 * parentObject.
+                 */
                 self.set(_.result(self, 'defaults'));
+                self.set({
+                    id: null,
+                    parentObject: parentObject
+                });
 
                 self.trigger('destroyed');
 
