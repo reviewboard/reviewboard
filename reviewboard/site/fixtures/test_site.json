@@ -7,5 +7,14 @@
             "users": [1, 2],
             "admins": [1]
         }
+    },
+    {
+        "pk": 2,
+        "model": "site.localsite",
+        "fields": {
+            "name": "local-site-2",
+            "users": [1, 2],
+            "admins": [2]
+        }
     }
 ]
