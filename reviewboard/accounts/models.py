@@ -3,7 +3,7 @@ from django.db import models
 from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
 from djblets.util.db import ConcurrencyManager
-from djblets.util.fields import CounterField
+from djblets.util.fields import CounterField, JSONField
 from djblets.util.forms import TIMEZONE_CHOICES
 
 from reviewboard.reviews.models import Group, ReviewRequest
@@ -96,6 +96,8 @@ class Profile(models.Model):
     # Allows per-user timezone settings
     timezone = models.CharField(choices=TIMEZONE_CHOICES, default='UTC',
                                 max_length=20)
+
+    extra_data = JSONField(null=True)
 
 
     def star_review_request(self, review_request):
