@@ -237,6 +237,10 @@ class BaseCommentResource(WebAPIResource):
     }
     last_modified_field = 'timestamp'
 
+    def has_delete_permissions(self, request, comment, *args, **kwargs):
+        review = comment.review.get()
+        return not review.public and review.user == request.user
+
     def update_issue_status(self, request, comment_resource, *args, **kwargs):
         """Updates the issue status for a comment.
 
@@ -367,14 +371,9 @@ class BaseDiffCommentResource(BaseCommentResource):
         review_request = review_request_resource.get_object(
             request, review_request_id, *args, **kwargs)
 
-        q = Q(review__public = True)
-
-        if request.user.is_authenticated():
-            q = q | Q(review__user=request.user)
-
         q = self.model.objects.filter(
-            q,
-            filediff__diffset__history__review_request=review_request)
+            filediff__diffset__history__review_request=review_request,
+            review__isnull=False)
 
         if is_list:
             if 'interdiff-revision' in request.GET:
@@ -853,10 +852,6 @@ class ReviewDiffCommentResource(BaseDiffCommentResource):
         q = super(ReviewDiffCommentResource, self).get_queryset(
             request, review_request_id, *args, **kwargs)
         return q.filter(review=review_id)
-
-    def has_delete_permissions(self, request, comment, *args, **kwargs):
-        review = comment.review.get()
-        return not review.public and review.user == request.user
 
     @webapi_check_local_site
     @webapi_login_required
@@ -4778,10 +4773,6 @@ class ReviewScreenshotCommentResource(BaseScreenshotCommentResource):
             request, review_request_id, *args, **kwargs)
         return q.filter(review=review_id)
 
-    def has_delete_permissions(self, request, comment, *args, **kwargs):
-        review = comment.review.get()
-        return not review.public and review.user == request.user
-
     @webapi_check_local_site
     @webapi_login_required
     @webapi_request_fields(
@@ -5259,10 +5250,6 @@ class ReviewFileAttachmentCommentResource(BaseFileAttachmentCommentResource):
         q = super(ReviewFileAttachmentCommentResource, self).get_queryset(
             request, review_request_id, *args, **kwargs)
         return q.filter(review=review_id)
-
-    def has_delete_permissions(self, request, comment, *args, **kwargs):
-        review = comment.review.get()
-        return not review.public and review.user == request.user
 
     @webapi_check_local_site
     @webapi_login_required
