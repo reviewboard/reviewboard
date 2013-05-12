@@ -287,6 +287,18 @@ class ReviewRequestManager(ConcurrencyManager):
         else:
             return User.objects.get(username=user_or_username)
 
+    def for_id(self, pk, local_site=None):
+        """Returns the review request matching the given ID and LocalSite.
+
+        If a LocalSite is provided, then the ID will be matched against the
+        displayed ID for the LocalSite, rather than the in-database ID.
+        """
+        if local_site is None:
+            return self.model.objects.get(pk=pk)
+        else:
+            return self.model.objects.get(Q(local_id=pk) &
+                                          Q(local_site=local_site))
+
 
 class ReviewManager(ConcurrencyManager):
     """A manager for Review models.

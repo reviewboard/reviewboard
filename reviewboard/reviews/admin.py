@@ -110,8 +110,8 @@ class ReviewRequestAdmin(admin.ModelAdmin):
         (_('General Information'), {
             'fields': ('submitter', 'public', 'status',
                        'summary', 'description', 'testing_done',
-                       'bugs_closed', 'repository', 'branch', 'changenum',
-                       'time_added')
+                       'bugs_closed', 'repository', 'branch',
+                       'depends_on', 'changenum', 'time_added')
         }),
         (_('Reviewers'), {
             'fields': ('target_people', 'target_groups'),
@@ -189,7 +189,7 @@ class ReviewRequestDraftAdmin(admin.ModelAdmin):
         (_('General Information'), {
             'fields': ('review_request',
                        'summary', 'description', 'testing_done',
-                       'bugs_closed', 'branch'),
+                       'depends_on', 'bugs_closed', 'branch'),
         }),
         (_('Reviewers'), {
             'fields': ('target_people', 'target_groups'),

@@ -2946,6 +2946,85 @@ class ReviewRequestDraftResourceTests(BaseWebAPITestCase):
         self.assertNotEqual(draft.changedesc, None)
         self.assertEqual(draft.changedesc.text, changedesc)
 
+    def test_put_reviewrequestdraft_with_depends_on(self):
+        """Testing the PUT review-requests/<id>/draft/ API with depends_on field"""
+        review_request = ReviewRequest.objects.create(self.user,
+                                                      self.repository)
+        review_request.publish(self.user)
+
+        rsp = self.apiPut(self.get_url(review_request), {
+            'depends_on': '1, 3',
+        }, expected_mimetype=self.item_mimetype)
+
+        self.assertEqual(rsp['stat'], 'ok')
+
+        depends_1 = ReviewRequest.objects.get(pk=1)
+        depends_2 = ReviewRequest.objects.get(pk=3)
+
+        depends_on = rsp['draft']['depends_on']
+        self.assertEqual(len(depends_on), 2)
+        self.assertEqual(rsp['draft']['depends_on'][0]['title'],
+                         depends_1.summary)
+        self.assertEqual(rsp['draft']['depends_on'][1]['title'],
+                         depends_2.summary)
+
+        draft = ReviewRequestDraft.objects.get(pk=rsp['draft']['id'])
+        self.assertEqual(list(draft.depends_on.all()), [depends_1, depends_2])
+        self.assertEqual(list(depends_1.draft_blocks.all()), [draft])
+        self.assertEqual(list(depends_2.draft_blocks.all()), [draft])
+
+    @add_fixtures(['test_site'])
+    def test_put_reviewrequestdraft_with_depends_on_and_site(self):
+        """Testing the PUT review-requests/<id>/draft/ API with depends_on field and local site"""
+        local_site = LocalSite.objects.get(name=self.local_site_name)
+        review_request = ReviewRequest.objects.from_user(
+            'doc', local_site=local_site)[0]
+
+        self._login_user(local_site=True)
+
+        depends_1 = ReviewRequest.objects.create(self.user, self.repository)
+        depends_1.summary = "Test review request"
+        depends_1.local_site = local_site
+        depends_1.local_id = 3
+        depends_1.public = True
+        depends_1.save()
+
+        # This isn't the review request we want to match.
+        bad_depends = ReviewRequest.objects.get(pk=3)
+
+        rsp = self.apiPut(self.get_url(review_request, self.local_site_name), {
+            'depends_on': '3',
+        }, expected_mimetype=self.item_mimetype)
+
+        self.assertEqual(rsp['stat'], 'ok')
+
+        depends_on = rsp['draft']['depends_on']
+        self.assertEqual(len(depends_on), 1)
+        self.assertNotEqual(rsp['draft']['depends_on'][0]['title'],
+                            bad_depends.summary)
+        self.assertEqual(rsp['draft']['depends_on'][0]['title'],
+                         depends_1.summary)
+
+        draft = ReviewRequestDraft.objects.get(pk=rsp['draft']['id'])
+        self.assertEqual(list(draft.depends_on.all()), [depends_1])
+        self.assertEqual(list(depends_1.draft_blocks.all()), [draft])
+        self.assertEqual(bad_depends.draft_blocks.count(), 0)
+
+    def test_put_reviewrequestdraft_with_depends_on_invalid_id(self):
+        """Testing the PUT review-requests/<id>/draft/ API with depends_on field and invalid ID"""
+        review_request = ReviewRequest.objects.create(self.user,
+                                                      self.repository)
+        review_request.publish(self.user)
+
+        rsp = self.apiPut(self.get_url(review_request), {
+            'depends_on': '10000',
+        }, expected_status=400)
+
+        self.assertEqual(rsp['stat'], 'fail')
+
+        draft = review_request.get_draft()
+        self.assertEqual(draft.depends_on.count(), 0)
+
     def test_put_reviewrequestdraft_with_invalid_field_name(self):
         """Testing the PUT review-requests/<id>/draft/ API with Invalid Form Data error"""
         review_request = ReviewRequest.objects.from_user(self.user.username)[0]

@@ -231,6 +231,7 @@ fields_changed_name_map = {
     'description': _('Description'),
     'testing_done': _('Testing Done'),
     'bugs_closed': _('Bugs Closed'),
+    'depends_on': _('Depends On'),
     'branch': _('Branch'),
     'target_groups': _('Reviewers (Groups)'),
     'target_people': _('Reviewers (People)'),

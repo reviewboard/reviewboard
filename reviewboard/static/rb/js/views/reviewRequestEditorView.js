@@ -58,6 +58,19 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
             closeType: RB.ReviewRequest.CLOSE_DISCARDED
         },
         {
+            fieldName: 'dependsOn',
+            selector: '#depends_on',
+            jsonFieldName: 'depends_on',
+            useEditIconOnly: true,
+            formatter: function(view, data) {
+                return view.urlizeList(
+                    data,
+                    function(item) { return item.url; },
+                    function(item) { return item.id; }
+                );
+            }
+        },
+        {
             fieldName: 'description',
             formatter: function(view, data) {
                 return view.linkifyText(data);
@@ -571,7 +584,7 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
                     return parsed;
                 },
                 url: SITE_ROOT + reviewRequest.get('localSitePrefix') +
-                     'api/' + options.fieldName + '/',
+                     'api/' + (options.resourceName || options.fieldName) + '/',
                 extraParams: options.extraParams
             })
             .on('autocompleteshow', function() {

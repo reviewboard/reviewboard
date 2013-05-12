@@ -9,6 +9,7 @@ RB.DraftReviewRequest = RB.BaseResource.extend(_.defaults({
         branch: null,
         bugsClosed: null,
         changeDescription: null,
+        dependsOn: [],
         description: null,
         public: null,
         summary: null,
@@ -20,7 +21,7 @@ RB.DraftReviewRequest = RB.BaseResource.extend(_.defaults({
     rspNamespace: 'draft',
     listKey: 'draft',
 
-    expandedFields: ['target_people', 'target_groups'],
+    expandedFields: ['depends_on', 'target_people', 'target_groups'],
 
     url: function() {
         return this.get('parentObject').get('links').draft.href;
@@ -87,6 +88,7 @@ RB.DraftReviewRequest = RB.BaseResource.extend(_.defaults({
         result.branch = rspData.branch;
         result.bugsClosed = rspData.bugs_closed;
         result.changeDescription = rspData.change_description;
+        result.dependsOn = rspData.depends_on;
         result.description = rspData.description;
         result.public = rspData.public;
         result.summary = rspData.summary;

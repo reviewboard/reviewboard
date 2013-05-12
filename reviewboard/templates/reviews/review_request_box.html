@@ -57,6 +57,26 @@
 {%  endfor %}
 {% endspaceless %}</span></td>
    </tr>
+   <tr>
+    <th class="label"><label for="depends_on">{% trans "Depends On" %}:</label></th>
+    <td class="value" id="depends-value-cell"><span id="depends_on" class="editable comma-editable">
+{% spaceless %}
+{%  for dependency in review_request_details.depends_on.all %}
+     <a href="{{dependency.get_absolute_url}}">{{dependency.get_display_id}}</a>{% if not forloop.last %}, {% endif %}
+{%  endfor %}
+{% endspaceless %}
+    </span></td>
+   </tr>
+   <tr>
+    <th class="label"><label for="blocks">{% trans "Blocks" %}:</label></th>
+    <td class="value" id="blocks-value-cell"><span id="blocks">
+{% spaceless %}
+{%  for dependency in review_request_details.blocks.all %}
+     <a href="{{dependency.get_absolute_url}}">{{dependency.get_display_id}}</a>{% if not forloop.last %}, {% endif %}
+{%  endfor %}
+{% endspaceless %}
+    </span></td>
+   </tr>
 
 {% if review_request.changenum %}
    <tr>

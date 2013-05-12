@@ -522,6 +522,11 @@ class ReviewRequest(BaseReviewRequestDetails):
         related_name="review_request",
         blank=True)
 
+    depends_on = models.ManyToManyField('ReviewRequest',
+                                        blank=True, null=True,
+                                        verbose_name=_('Dependencies'),
+                                        related_name='blocks')
+
     # Review-related information
 
     # The timestamp representing the last public activity of a review.
@@ -1079,6 +1084,11 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
     repository = property(lambda self: self.review_request.repository)
     local_site = property(lambda self: self.review_request.local_site)
 
+    depends_on = models.ManyToManyField('ReviewRequest',
+                                        blank=True, null=True,
+                                        verbose_name=_('Dependencies'),
+                                        related_name='draft_blocks')
+
     # Set this up with a ConcurrencyManager to help prevent race conditions.
     objects = ConcurrencyManager()
 
@@ -1155,6 +1165,7 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
            *  'description'
            *  'testing_done'
            *  'bugs_closed'
+           *  'depends_on'
            *  'branch'
            *  'target_groups'
            *  'target_people'
@@ -1222,6 +1233,8 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
                     'target_groups', name_field="name")
         update_list(review_request.target_people, self.target_people,
                     'target_people', name_field="username")
+        update_list(review_request.depends_on, self.depends_on,
+                    'depends_on', name_field='summary')
 
         # Specifically handle bug numbers
         old_bugs = review_request.get_bug_list()

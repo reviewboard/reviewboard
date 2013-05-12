@@ -13,4 +13,5 @@ SEQUENCE = [
     'file_attachments',
     'file_attachment_comment_extra_data',
     'review_request_last_review_activity_timestamp',
+    'review_request_depends_on',
 ]

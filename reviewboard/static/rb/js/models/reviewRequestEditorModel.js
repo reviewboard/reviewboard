@@ -16,6 +16,7 @@ RB.ReviewRequestEditor = Backbone.Model.extend({
     _jsonFieldMap: {
         bugsClosed: 'bugs_closed',
         changeDescription: 'changedescription',
+        dependsOn: 'depends_on',
         targetGroups: 'target_groups',
         targetPeople: 'target_people',
         testingDone: 'testing_done'
@@ -123,14 +124,20 @@ RB.ReviewRequestEditor = Backbone.Model.extend({
                     if (fieldValue.length === 1) {
                         if (fieldName === "targetGroups") {
                             message = "Group " + message + " does not exist.";
-                        } else {
+                        } else if (fieldName === "targetPeople") {
                             message = "User " + message + " does not exist.";
+                        } else if (fieldName === "dependsOn") {
+                            message = "Review request " + message +
+                                      " does not exist.";
                         }
                     } else {
                         if (fieldName === "targetGroups") {
                             message = "Groups " + message + " do not exist.";
-                        } else {
+                        } else if (fieldName === "targetPeople") {
                             message = "Users " + message + " do not exist.";
+                        } else if (fieldName === "dependsOn") {
+                            message = "Review requests " + message +
+                                      " do not exist.";
                         }
                     }
 
