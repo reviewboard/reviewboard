@@ -493,8 +493,9 @@ $.extend(RB.ReviewRequest.prototype, {
         data = {};
         data[options.field] = options.value;
 
-        if (options.field == "target_people" ||
-            options.field == "target_groups") {
+        if (options.field === "target_people" ||
+            options.field === "target_groups" ||
+            options.field === "depends_on") {
             data.expand = options.field;
         }
 

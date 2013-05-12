@@ -48,6 +48,12 @@ var gEditorCompleteHandlers = {
             .addClass("user")
             .user_infobox();
     },
+    'depends_on': function(data) {
+        return urlizeList(data,
+            function(item) { return item.url; },
+            function(item) { return item.id; }
+        );
+    },
     'description': linkifyText,
     'testing_done': linkifyText
 };
@@ -194,12 +200,16 @@ function setDraftField(field, value) {
                 if (rsp.fields[field].length == 1) {
                     if (field == "target_groups") {
                         message = "Group " + message + " does not exist.";
+                    } else if (field === "depends_on") {
+                        message = "Review request " + message + " does not exist.";
                     } else {
                         message = "User " + message + " does not exist.";
                     }
                 } else {
                     if (field == "target_groups") {
                         message = "Groups " + message + " do not exist.";
+                    } else if (field === "depends_on") {
+                        message = "Review requests " + message + " do not exist.";
                     } else {
                         message = "Users " + message + " do not exist.";
                     }
