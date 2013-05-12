@@ -4385,6 +4385,7 @@ class ReviewReplyDiffCommentResourceTests(BaseWebAPITestCase):
         self.assertTrue('diff_comment' in rsp)
         self.assertTrue('id' in rsp['diff_comment'])
         comment_id = rsp['diff_comment']['id']
+        comment = Comment.objects.get(pk=comment_id)
 
         rsp = self.apiPost(
             ReviewReplyResourceTests.get_list_url(review, self.local_site_name),
@@ -4395,6 +4396,7 @@ class ReviewReplyDiffCommentResourceTests(BaseWebAPITestCase):
         self.assertNotEqual(rsp['reply'], None)
         self.assertTrue('links' in rsp['reply'])
         self.assertTrue('diff_comments' in rsp['reply']['links'])
+        diff_comments_url = rsp['reply']['links']['diff_comments']['href']
 
         post_data = {
             'reply_to_id': comment_id,
@@ -4403,13 +4405,13 @@ class ReviewReplyDiffCommentResourceTests(BaseWebAPITestCase):
 
         if badlogin:
             self._login_user()
-            rsp = self.apiPost(rsp['reply']['links']['diff_comments']['href'],
+            rsp = self.apiPost(diff_comments_url,
                                post_data,
                                expected_status=403)
             self.assertEqual(rsp['stat'], 'fail')
             self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
         else:
-            rsp = self.apiPost(rsp['reply']['links']['diff_comments']['href'],
+            rsp = self.apiPost(diff_comments_url,
                                post_data,
                                expected_mimetype=self.item_mimetype)
             self.assertEqual(rsp['stat'], 'ok')
@@ -4417,7 +4419,7 @@ class ReviewReplyDiffCommentResourceTests(BaseWebAPITestCase):
             reply_comment = Comment.objects.get(pk=rsp['diff_comment']['id'])
             self.assertEqual(reply_comment.text, comment_text)
 
-            return rsp
+        return rsp, comment, diff_comments_url
 
     @add_fixtures(['test_site'])
     def test_post_reply_with_diff_comment_and_local_site_no_access(self):
@@ -4465,7 +4467,7 @@ class ReviewReplyDiffCommentResourceTests(BaseWebAPITestCase):
         """Testing the PUT review-requests/<id>/reviews/<id>/replies/<id>/diff-comments/ API with a local site"""
         new_comment_text = 'My new comment text'
 
-        rsp = self.test_post_reply_with_diff_comment_and_local_site()
+        rsp = self.test_post_reply_with_diff_comment_and_local_site()[0]
 
         reply_comment = Comment.objects.get(pk=rsp['diff_comment']['id'])
 
@@ -4482,7 +4484,7 @@ class ReviewReplyDiffCommentResourceTests(BaseWebAPITestCase):
         """Testing the PUT review-requests/<id>/reviews/<id>/replies/<id>/diff-comments/ API with a local site and Permission Denied error"""
         new_comment_text = 'My new comment text'
 
-        rsp = self.test_post_reply_with_diff_comment_and_local_site()
+        rsp = self.test_post_reply_with_diff_comment_and_local_site()[0]
 
         self._login_user()
         rsp = self.apiPut(rsp['diff_comment']['links']['self']['href'],
@@ -4490,6 +4492,57 @@ class ReviewReplyDiffCommentResourceTests(BaseWebAPITestCase):
                           expected_status=403)
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
+
+    def test_delete_diff_comment(self):
+        """Testing the DELETE review-requests/<id>/reviews/<id>/replies/<id>/diff-comments/<id>/ API"""
+        rsp, comment, diff_comments_url = \
+            self.test_post_reply_with_diff_comment()
+
+        self.apiDelete(rsp['diff_comment']['links']['self']['href'])
+
+        rsp = self.apiGet(diff_comments_url,
+                          expected_mimetype=self.list_mimetype)
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertTrue('diff_comments' in rsp)
+        self.assertEqual(len(rsp['diff_comments']), 0)
+
+    @add_fixtures(['test_reviewrequests', 'test_site'])
+    def test_delete_diff_comment_with_local_site(self):
+        """Testing the DELETE review-requests/<id>/reviews/<id>/replies/<id>/diff-comments/<id>/ API with a local site"""
+        rsp, comment, diff_comments_url = \
+            self.test_post_reply_with_diff_comment_and_local_site()
+
+        self.apiDelete(rsp['diff_comment']['links']['self']['href'])
+
+        rsp = self.apiGet(diff_comments_url,
+                          expected_mimetype=self.list_mimetype)
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertTrue('diff_comments' in rsp)
+        self.assertEqual(len(rsp['diff_comments']), 0)
+
+    def test_delete_diff_comment_no_access(self):
+        """Testing the DELETE review-requests/<id>/reviews/<id>/replies/<id>/diff-comments/<id>/ API and Permission Denied"""
+        rsp, comment, diff_comments_url = \
+            self.test_post_reply_with_diff_comment()
+
+        self.client.login(username="doc", password="doc")
+
+        self.apiDelete(rsp['diff_comment']['links']['self']['href'],
+                       expected_status=403)
+
+    @add_fixtures(['test_reviewrequests', 'test_site'])
+    def test_delete_diff_comment_with_local_site_no_access(self):
+        """Testing the DELETE review-requests/<id>/reviews/<id>/replies/<id>/diff-comments/<id>/ API with a local site and Permission Denied"""
+        rsp, comment, diff_comments_url = \
+            self.test_post_reply_with_diff_comment_and_local_site()
+
+        local_site = LocalSite.objects.get(name=self.local_site_name)
+        local_site.users.add(User.objects.get(username='grumpy'))
+
+        self.client.login(username="grumpy", password="grumpy")
+
+        self.apiDelete(rsp['diff_comment']['links']['self']['href'],
+                       expected_status=403)
 
 
 class ReviewReplyScreenshotCommentResourceTests(BaseWebAPITestCase):
@@ -4613,6 +4666,8 @@ class ReviewReplyScreenshotCommentResourceTests(BaseWebAPITestCase):
             pk=rsp['screenshot_comment']['id'])
         self.assertEqual(reply_comment.text, comment_text)
 
+        return rsp, comment, screenshot_comments_url
+
     def test_post_reply_with_screenshot_comment_http_303(self):
         """Testing the POST review-requests/<id>/reviews/<id>/replies/<id>/screenshot-comments/ API"""
         comment_text = "My Comment Text"
@@ -4634,6 +4689,57 @@ class ReviewReplyScreenshotCommentResourceTests(BaseWebAPITestCase):
         reply_comment = ScreenshotComment.objects.get(
             pk=rsp['screenshot_comment']['id'])
         self.assertEqual(reply_comment.text, comment_text)
+
+    def test_delete_screenshot_comment(self):
+        """Testing the DELETE review-requests/<id>/reviews/<id>/replies/<id>/screenshot-comments/<id>/ API"""
+        rsp, comment, screenshot_comments_url = \
+            self.test_post_reply_with_screenshot_comment()
+
+        self.apiDelete(rsp['screenshot_comment']['links']['self']['href'])
+
+        rsp = self.apiGet(screenshot_comments_url,
+                          expected_mimetype=self.list_mimetype)
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertTrue('screenshot_comments' in rsp)
+        self.assertEqual(len(rsp['screenshot_comments']), 0)
+
+    @add_fixtures(['test_reviewrequests', 'test_site'])
+    def test_delete_screenshot_comment_with_local_site(self):
+        """Testing the DELETE review-requests/<id>/reviews/<id>/replies/<id>/screenshot-comments/<id>/ API with a local site"""
+        rsp, comment, screenshot_comments_url = \
+            self.test_post_reply_with_screenshot_comment_and_local_site()
+
+        self.apiDelete(rsp['screenshot_comment']['links']['self']['href'])
+
+        rsp = self.apiGet(screenshot_comments_url,
+                          expected_mimetype=self.list_mimetype)
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertTrue('screenshot_comments' in rsp)
+        self.assertEqual(len(rsp['screenshot_comments']), 0)
+
+    def test_delete_screenshot_comment_no_access(self):
+        """Testing the DELETE review-requests/<id>/reviews/<id>/replies/<id>/screenshot-comments/<id>/ API and Permission Denied"""
+        rsp, comment, screenshot_comments_url = \
+            self.test_post_reply_with_screenshot_comment()
+
+        self.client.login(username="doc", password="doc")
+
+        self.apiDelete(rsp['screenshot_comment']['links']['self']['href'],
+                       expected_status=403)
+
+    @add_fixtures(['test_reviewrequests', 'test_site'])
+    def test_delete_screenshot_comment_with_local_site_no_access(self):
+        """Testing the DELETE review-requests/<id>/reviews/<id>/replies/<id>/screenshot-comments/<id>/ API with a local site and Permission Denied"""
+        rsp, comment, screenshot_comments_url = \
+            self.test_post_reply_with_screenshot_comment_and_local_site()
+
+        local_site = LocalSite.objects.get(name=self.local_site_name)
+        local_site.users.add(User.objects.get(username='grumpy'))
+
+        self.client.login(username="grumpy", password="grumpy")
+
+        self.apiDelete(rsp['screenshot_comment']['links']['self']['href'],
+                       expected_status=403)
 
 
 class ChangeResourceTests(BaseWebAPITestCase):
@@ -6784,6 +6890,50 @@ class ReviewReplyFileAttachmentCommentResourceTests(BaseWebAPITestCase):
 
         return rsp, comment, comments_url
 
+    @add_fixtures(['test_site'])
+    def test_post_reply_with_file_attachment_comment_and_local_site(self):
+        """Testing the POST review-requests/<id>/reviews/<id>/replies/<id>/file-attachment-comments/ API with a local site"""
+        comment_text = "My Comment Text"
+
+        comment = FileAttachmentComment.objects.all()[0]
+        review = comment.review.get()
+        review_request = review.review_request
+
+        review.user = User.objects.get(username='doc')
+        review.save()
+
+        review_request.local_site = \
+            LocalSite.objects.get(name=self.local_site_name)
+        review_request.local_id = 42
+        review_request.save()
+
+        self._login_user(local_site=True)
+
+        # Create the reply
+        rsp = self.apiPost(
+            ReviewReplyResourceTests.get_list_url(review,
+                                                  self.local_site_name),
+            expected_mimetype=ReviewReplyResourceTests.item_mimetype)
+        self.assertEqual(rsp['stat'], 'ok')
+
+        self.assertTrue('reply' in rsp)
+        self.assertNotEqual(rsp['reply'], None)
+        self.assertTrue('links' in rsp['reply'])
+        self.assertTrue('diff_comments' in rsp['reply']['links'])
+        comments_url = rsp['reply']['links']['file_attachment_comments']['href']
+
+        rsp = self.apiPost(comments_url, {
+            'reply_to_id': comment.id,
+            'text': comment_text,
+        }, expected_mimetype=self.item_mimetype)
+        self.assertEqual(rsp['stat'], 'ok')
+
+        reply_comment = FileAttachmentComment.objects.get(
+            pk=rsp['file_attachment_comment']['id'])
+        self.assertEqual(reply_comment.text, comment_text)
+
+        return rsp, comment, comments_url
+
     def test_post_reply_with_inactive_file_attachment_comment(self):
         """Testing the POST review-requests/<id>/reviews/<id>/replies/<id>/file-attachment-comments/ API with inactive file attachment"""
         comment_text = "My Comment Text"
@@ -6864,6 +7014,57 @@ class ReviewReplyFileAttachmentCommentResourceTests(BaseWebAPITestCase):
         reply_comment = FileAttachmentComment.objects.get(
             pk=rsp['file_attachment_comment']['id'])
         self.assertEqual(reply_comment.text, new_comment_text)
+
+    def test_delete_file_attachment_comment(self):
+        """Testing the DELETE review-requests/<id>/reviews/<id>/replies/<id>/file-attachment-comments/<id>/ API"""
+        rsp, comment, file_attachment_comments_url = \
+            self.test_post_reply_with_file_attachment_comment()
+
+        self.apiDelete(rsp['file_attachment_comment']['links']['self']['href'])
+
+        rsp = self.apiGet(file_attachment_comments_url,
+                          expected_mimetype=self.list_mimetype)
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertTrue('file_attachment_comments' in rsp)
+        self.assertEqual(len(rsp['file_attachment_comments']), 0)
+
+    @add_fixtures(['test_reviewrequests', 'test_site'])
+    def test_delete_file_attachment_comment_with_local_site(self):
+        """Testing the DELETE review-requests/<id>/reviews/<id>/replies/<id>/file-attachment-comments/<id>/ API with a local site"""
+        rsp, comment, file_attachment_comments_url = \
+            self.test_post_reply_with_file_attachment_comment_and_local_site()
+
+        self.apiDelete(rsp['file_attachment_comment']['links']['self']['href'])
+
+        rsp = self.apiGet(file_attachment_comments_url,
+                          expected_mimetype=self.list_mimetype)
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertTrue('file_attachment_comments' in rsp)
+        self.assertEqual(len(rsp['file_attachment_comments']), 0)
+
+    def test_delete_file_attachment_comment_no_access(self):
+        """Testing the DELETE review-requests/<id>/reviews/<id>/replies/<id>/file-attachment-comments/<id>/ API and Permission Denied"""
+        rsp, comment, file_attachment_comments_url = \
+            self.test_post_reply_with_file_attachment_comment()
+
+        self.client.login(username="doc", password="doc")
+
+        self.apiDelete(rsp['file_attachment_comment']['links']['self']['href'],
+                       expected_status=403)
+
+    @add_fixtures(['test_reviewrequests', 'test_site'])
+    def test_delete_file_attachment_comment_with_local_site_no_access(self):
+        """Testing the DELETE review-requests/<id>/reviews/<id>/replies/<id>/file-attachment-comments/<id>/ API with a local site and Permission Denied"""
+        rsp, comment, file_attachment_comments_url = \
+            self.test_post_reply_with_file_attachment_comment_and_local_site()
+
+        local_site = LocalSite.objects.get(name=self.local_site_name)
+        local_site.users.add(User.objects.get(username='grumpy'))
+
+        self.client.login(username="grumpy", password="grumpy")
+
+        self.apiDelete(rsp['file_attachment_comment']['links']['self']['href'],
+                       expected_status=403)
 
 
 class DefaultReviewerResourceTests(BaseWebAPITestCase):
