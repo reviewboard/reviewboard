@@ -12,7 +12,6 @@
 {% block scripts-post %}
 {%  compressed_js "reviews" %}
 
-{%  if request.user.pk == review_request.submitter_id or perms.reviews.can_edit_reviewrequest %}
 <script type="text/javascript">
     var reviewRequest = new RB.ReviewRequest({
         bugTrackerURL: "{{review_request.repository.bug_tracker|escapejs}}",
@@ -75,7 +74,6 @@
         RB.initReviewRequestPage();
     });
 </script>
-{%  endif %}
 {% endblock %}
 
 {% block bodytag %}
