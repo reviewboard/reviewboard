@@ -17,7 +17,6 @@ except ImportError:
 from django.utils.html import escape
 from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext as _
-
 from djblets.log import log_timed
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.util.contextmanagers import controlled_subprocess
@@ -26,6 +25,8 @@ from djblets.util.misc import cache_memoize
 from reviewboard.accounts.models import Profile
 from reviewboard.admin.checks import get_can_enable_syntax_highlighting
 from reviewboard.diffviewer.myersdiff import MyersDiffer
+from reviewboard.diffviewer.processors import filter_interdiff_opcodes, \
+                                              merge_adjacent_chunks
 from reviewboard.diffviewer.smdiff import SMDiffer
 from reviewboard.scmtools.core import PRE_CREATION, HEAD
 
@@ -700,9 +701,23 @@ def get_chunks(diffset, filediff, interfilediff, force_interdiff,
             (filediff.id, filediff.source_file),
             request=request)
 
+    opcodes = differ.get_opcodes()
+
+    if interfilediff:
+        # Filter out any lines unrelated to these changes from the interdiff.
+        # This will get rid of any merge information.
+        opcodes = filter_interdiff_opcodes(opcodes, filediff.diff,
+                                           interfilediff.diff)
+
+        # From the filtered content, we may have ended up with consecutive
+        # "equal" chunks, so merge them.
+        opcodes = merge_adjacent_chunks(opcodes)
+
+    opcodes = process_opcode_metadata(opcodes, differ)
+
     chunk_index = 0
 
-    for tag, i1, i2, j1, j2, meta in opcodes_with_metadata(differ):
+    for tag, i1, i2, j1, j2, meta in opcodes:
         oldlines = markup_a[i1:i2]
         newlines = markup_b[j1:j2]
         numlines = max(len(oldlines), len(newlines))
@@ -765,7 +780,7 @@ def is_valid_move_range(lines):
     return False
 
 
-def opcodes_with_metadata(differ):
+def process_opcode_metadata(opcodes, differ):
     """Returns opcodes from the differ with extra metadata.
 
     This is a wrapper around a differ's get_opcodes function, which returns
@@ -779,7 +794,7 @@ def opcodes_with_metadata(differ):
     removes = {}
     inserts = []
 
-    for tag, i1, i2, j1, j2 in differ.get_opcodes():
+    for tag, i1, i2, j1, j2 in opcodes:
         meta = {
             # True if this chunk is only whitespace.
             "whitespace_chunk": False,

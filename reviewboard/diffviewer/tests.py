@@ -7,6 +7,8 @@ from djblets.siteconfig.models import SiteConfiguration
 
 from reviewboard.diffviewer.forms import UploadDiffForm
 from reviewboard.diffviewer.models import DiffSet, FileDiff
+from reviewboard.diffviewer.processors import filter_interdiff_opcodes, \
+                                              merge_adjacent_chunks
 from reviewboard.diffviewer.templatetags.difftags import highlightregion
 import reviewboard.diffviewer.diffutils as diffutils
 import reviewboard.diffviewer.parser as diffparser
@@ -309,7 +311,9 @@ class DiffParserTest(unittest.TestCase):
         r_moves = []
         i_moves = []
 
-        for opcodes in diffutils.opcodes_with_metadata(differ):
+        opcodes = differ.get_opcodes()
+
+        for opcodes in diffutils.process_opcode_metadata(opcodes, differ):
             tag = opcodes[0]
             meta = opcodes[-1]
 
@@ -663,3 +667,94 @@ class UploadDiffFormTests(TestCase):
         self.assertTrue(('/README', '123') in saw_file_exists)
         self.assertFalse(('/UNUSED', '123') in saw_file_exists)
         self.assertEqual(len(saw_file_exists), 1)
+
+
+class ProcessorsTests(TestCase):
+    """Unit tests for diff processors."""
+
+    def test_filter_interdiff_opcodes(self):
+        """Testing filter_interdiff_opcodes"""
+        opcodes = [
+            ('insert', 0, 0, 0, 1),
+            ('equal', 0, 5, 1, 5),
+            ('delete', 5, 10, 5, 5),
+            ('equal', 10, 25, 5, 20),
+            ('replace', 25, 26, 20, 26),
+            ('equal', 26, 40, 26, 40),
+            ('insert', 40, 40, 40, 45),
+        ]
+
+        orig_diff = (
+            '--- README\n'
+            '+++ README\n'
+            '@@ -22,7 +22,7 @@\n'
+            ' # line 22\n'
+            ' # line 23\n'
+            ' # line 24\n'
+            '-# line 25\n'
+            '+# line 25!\n'
+            ' # line 26\n'
+            ' # line 27\n'
+            ' # line 28\n'
+        )
+
+        new_diff = (
+            '--- README\n'
+            '+++ README\n'
+            '@@ -2,11 +2,6 @@\n'
+            ' # line 2\n'
+            ' # line 3\n'
+            ' # line 4\n'
+            '-# line 5\n'
+            '-# line 6\n'
+            '-# line 7\n'
+            '-# line 8\n'
+            '-# line 9\n'
+            ' # line 10\n'
+            ' # line 11\n'
+            ' # line 12\n'
+            '@@ -22,7 +22,7 @@\n'
+            ' # line 22\n'
+            ' # line 23\n'
+            ' # line 24\n'
+            '-# line 25\n'
+            '+# line 25!\n'
+            ' # line 26\n'
+            ' # line 27\n'
+            ' # line 28\n'
+        )
+
+        new_opcodes = list(filter_interdiff_opcodes(opcodes, orig_diff,
+                                                    new_diff))
+
+        self.assertEqual(new_opcodes, [
+            ('equal', 0, 0, 0, 1),
+            ('equal', 0, 5, 1, 5),
+            ('delete', 5, 10, 5, 5),
+            ('equal', 10, 25, 5, 20),
+            ('replace', 25, 26, 20, 26),
+            ('equal', 26, 40, 26, 40),
+            ('equal', 40, 40, 40, 45),
+        ])
+
+    def test_merge_adjacent_chunks(self):
+        """Testing merge_adjacent_chunks"""
+        opcodes = [
+            ('equal', 0, 0, 0, 1),
+            ('equal', 0, 5, 1, 5),
+            ('delete', 5, 10, 5, 5),
+            ('equal', 10, 25, 5, 20),
+            ('replace', 25, 26, 20, 26),
+            ('equal', 26, 40, 26, 40),
+            ('equal', 40, 40, 40, 45),
+        ]
+
+        new_opcodes = list(merge_adjacent_chunks(opcodes))
+
+        self.assertEqual(new_opcodes, [
+            ('equal', 0, 5, 0, 5),
+            ('delete', 5, 10, 5, 5),
+            ('equal', 10, 25, 5, 20),
+            ('replace', 25, 26, 20, 26),
+            ('equal', 26, 40, 26, 45),
+        ])
