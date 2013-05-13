@@ -120,6 +120,8 @@ function updateRepositoryType() {
 
 $(document).ready(function() {
     var hostingTypeEl = $("#id_hosting_type"),
+        hostingURLRowEl = $("#row-hosting_url"),
+        hostingURLEl = $("#id_hosting_url"),
         hostingAccountEl = $("#id_hosting_account"),
         hostingAccountRowEl = $("#row-hosting_account"),
         hostingAccountUserRowEl = $("#row-hosting_account_username"),
@@ -135,6 +137,7 @@ $(document).ready(function() {
         associateSshKeyElDisabled = associateSshKeyEl[0].disabled,
         bugTrackerUseHostingEl = $("#id_bug_tracker_use_hosting"),
         bugTrackerTypeEl = $("#id_bug_tracker_type"),
+        bugTrackerHostingURLRowEl = $("#row-bug_tracker_hosting_url"),
         bugTrackerTypeRowEl = $("#row-bug_tracker_type"),
         bugTrackerPlanEl = $("#id_bug_tracker_plan"),
         bugTrackerPlanRowEl = $("#row-bug_tracker_plan"),
@@ -199,47 +202,25 @@ $(document).ready(function() {
     hostingTypeEl
         .change(function() {
             var hostingType = hostingTypeEl[0].value,
-                selectedAccount;
+                isCustom = (hostingType === 'custom');
 
             updateRepositoryType();
 
-            if (hostingType === "custom") {
+            if (isCustom) {
                 repoPlanRowEl.hide();
                 repoPathRowEl.show();
                 repoMirrorPathRowEl.show();
             } else {
-                var accounts = HOSTING_SERVICES[hostingType].accounts,
-                    foundSelected = false,
-                    i;
-
                 hideAllToolsFields();
                 repoPathRowEl.hide();
                 repoMirrorPathRowEl.hide();
 
                 updatePlanEl(repoPlanRowEl, repoPlanEl, hostingType);
-
-                /* Rebuild the list of accounts. */
-                selectedAccount = parseInt(hostingAccountEl.val(), 10);
-                hostingAccountEl.find('option[value!=""]').remove();
-
-                for (i = 0; i < accounts.length; i++) {
-                    var account = accounts[i],
-                        opt = $("<option/>")
-                            .val(account.pk)
-                            .text(account.username)
-                            .data('account', account)
-                            .appendTo(hostingAccountEl);
-
-                    if (account.pk === selectedAccount || !foundSelected) {
-                        opt.attr("selected", "selected");
-                        foundSelected = true;
-                    }
-                }
             }
 
             repoPlanEl.triggerHandler("change");
 
-            if (hostingType === "custom" ||
+            if (isCustom ||
                 !HOSTING_SERVICES[hostingType].supports_bug_trackers) {
                 bugTrackerUseHostingEl[0].disabled = true;
                 bugTrackerUseHostingEl[0].checked = false;
@@ -248,7 +229,7 @@ $(document).ready(function() {
                 bugTrackerUseHostingEl[0].disabled = false;
             }
 
-            if (hostingType === "custom" ||
+            if (isCustom ||
                 !HOSTING_SERVICES[hostingType].supports_ssh_key_association) {
                 associateSshKeyFieldsetEl.hide();
                 associateSshKeyEl[0].disabled = true;
@@ -261,8 +242,49 @@ $(document).ready(function() {
                 associateSshKeyEl[0].disabled = associateSshKeyElDisabled;
                 associateSshKeyFieldsetEl.show();
             }
+
+            if (isCustom || !HOSTING_SERVICES[hostingType].self_hosted) {
+                hostingURLRowEl.hide();
+            } else {
+                hostingURLRowEl.show();
+            }
         })
         .triggerHandler("change");
+
+    $([hostingTypeEl[0], hostingURLEl[0]])
+        .change(function() {
+            var hostingType = hostingTypeEl[0].value;
+
+            if (hostingType !== "custom") {
+                var accounts = HOSTING_SERVICES[hostingType].accounts,
+                    foundSelected = false,
+                    selectedAccount,
+                    i;
+
+                /* Rebuild the list of accounts. */
+                selectedAccount = parseInt(hostingAccountEl.val(), 10);
+                selectedURL = hostingURLEl.val() || null;
+                hostingAccountEl.find('option[value!=""]').remove();
+
+                for (i = 0; i < accounts.length; i++) {
+                    var account = accounts[i];
+
+                    if (account.hosting_url === selectedURL) {
+                        var opt = $("<option/>")
+                            .val(account.pk)
+                            .text(account.username)
+                            .data('account', account)
+                            .appendTo(hostingAccountEl);
+
+                        if (account.pk === selectedAccount || !foundSelected) {
+                            opt.attr("selected", "selected");
+                            foundSelected = true;
+                            hostingAccountEl.triggerHandler('change');
+                        }
+                    }
+                }
+            }
+        });
 
     $([hostingTypeEl[0], hostingAccountEl[0]])
         .change(function() {
@@ -272,10 +294,15 @@ $(document).ready(function() {
 
             if (hostingType === "custom") {
                 hostingAccountRowEl.hide();
+                hostingURLRowEl.hide();
                 hostingAccountUserRowEl.hide();
                 hostingAccountPassRowEl.hide();
             } else {
                 hostingAccountRowEl.show();
+
+                if (HOSTING_SERVICES[hostingType].self_hosted) {
+                    hostingURLRowEl.show();
+                }
 
                 if (hostingAccountEl.val() === "") {
                     hostingAccountUserRowEl.show();
@@ -320,18 +347,27 @@ $(document).ready(function() {
 
             bugTrackerForms.hide();
 
-            if (bugTrackerType === 'custom') {
+            if (bugTrackerType === 'custom' || bugTrackerType === 'none') {
+                bugTrackerHostingURLRowEl.hide();
                 bugTrackerPlanRowEl.hide();
                 bugTrackerUsernameRowEl.hide();
+            }
+
+            if (bugTrackerType === 'custom') {
                 bugTrackerURLRowEl.show();
             } else if (bugTrackerType === 'none') {
-                bugTrackerPlanRowEl.hide();
-                bugTrackerUsernameRowEl.hide();
                 bugTrackerURLRowEl.hide();
             } else {
                 bugTrackerURLRowEl.hide();
                 updatePlanEl(bugTrackerPlanRowEl, bugTrackerPlanEl,
                              bugTrackerType);
+
+
+                if (HOSTING_SERVICES[bugTrackerType].self_hosted) {
+                    bugTrackerHostingURLRowEl.show();
+                } else {
+                    bugTrackerHostingURLRowEl.hide();
+                }
             }
         })
         .triggerHandler("change");

@@ -16,6 +16,7 @@ class RepositoryAdmin(admin.ModelAdmin):
         (_('Repository Hosting'), {
             'fields': (
                 'hosting_type',
+                'hosting_url',
                 'hosting_account',
                 'hosting_account_username',
                 'hosting_account_password',
@@ -45,6 +46,7 @@ class RepositoryAdmin(admin.ModelAdmin):
             'fields': (
                 'bug_tracker_use_hosting',
                 'bug_tracker_type',
+                'bug_tracker_hosting_url',
                 'bug_tracker_plan',
                 'bug_tracker_hosting_account_username',
                 'bug_tracker',
