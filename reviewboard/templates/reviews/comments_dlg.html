@@ -1,4 +1,4 @@
-{% load i18n %}
+{% load djblets_utils i18n %}
 <div id="comment-detail" style="display:none;position:absolute;">
  <div id="review_comments">
   <h1 class="title">{% trans "Other reviews" %}</h1>
@@ -12,6 +12,14 @@
   <p>
    {% blocktrans %}You must <a href="{{login_url}}">log in</a> to post
    a comment.{% endblocktrans %}
+  </p>
+{% elif draft %}
+{%  definevar "draft_url" %}{{review_request.get_absolute_url}}{% enddefinevar %}
+  <p class="draft-warning">
+{%  blocktrans %}
+   The review request's current <a href="{{draft_url}}">draft</a> needs to be
+   published before you can comment.
+{%  endblocktrans %}
   </p>
 {% endif %}
   <textarea id="comment_text" name="text" rows="6" cols="30"></textarea>

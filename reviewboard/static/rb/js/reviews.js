@@ -843,7 +843,6 @@ $.fn.floatReplyDraftBanner = function() {
  * @return {jQuery} This jQuery.
  */
 $.fn.commentDlg = function() {
-    var DIALOG_TOTAL_HEIGHT = 250;
     var SLIDE_DISTANCE = 10;
     var COMMENTS_BOX_WIDTH = 280;
     var FORM_BOX_WIDTH = 380;
@@ -855,6 +854,7 @@ $.fn.commentDlg = function() {
     var textFieldHeightDiff = 0;
     var dirty = false;
     var ignoreKeyUp = false;
+    var defaultDialogHeight = 250;
 
     /* Page elements */
     var draftForm    = $("#draft-form", this);
@@ -1011,9 +1011,20 @@ $.fn.commentDlg = function() {
         });
     }
 
-    if (!gUserAuthenticated) {
-        textField.attr("disabled", true);
+    if (!gUserAuthenticated || this.find('.draft-warning').length !== 0) {
+        textField
+            .attr("disabled", true)
+            .hide();
+
+        issueOptions.hide();
+
+        issueField.attr("disabled", true);
         saveButton.attr("disabled", true);
+
+        buttons.find('[id!=comment_cancel]').hide();
+        buttons.find('#comment_cancel').val('Close');
+
+        defaultDialogHeight = 120;
     }
 
     /*
@@ -1184,7 +1195,7 @@ $.fn.commentDlg = function() {
 
         self
             .width(width)
-            .height(DIALOG_TOTAL_HEIGHT);
+            .height(defaultDialogHeight);
 
         return this;
     }
