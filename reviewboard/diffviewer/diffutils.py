@@ -1027,16 +1027,15 @@ def get_diff_files(diffset, filediff=None, interdiffset=None, request=None):
                                   "diffset id %s" % diffset.id,
                                   request=request)
 
-
     # A map used to quickly look up the equivalent interfilediff given a
     # source file.
     interdiff_map = {}
+
     if interdiffset:
         for interfilediff in interdiffset.files.all():
-            if not filediff or \
-               filediff.source_file == interfilediff.source_file:
+            if (not filediff or
+                filediff.source_file == interfilediff.source_file):
                 interdiff_map[interfilediff.source_file] = interfilediff
-
 
     # In order to support interdiffs properly, we need to display diffs
     # on every file in the union of both diffsets. Iterating over one diffset
@@ -1046,17 +1045,14 @@ def get_diff_files(diffset, filediff=None, interdiffset=None, request=None):
     # filediff (if specified), and whether to force showing an interdiff
     # (in the case where a file existed in the source filediff but was
     # reverted in the interdiff).
-    filediff_parts = []
+    has_interdiffset = interdiffset is not None
 
-    for filediff in filediffs:
-        interfilediff = None
-
-        if filediff.source_file in interdiff_map:
-            interfilediff = interdiff_map[filediff.source_file]
-            del(interdiff_map[filediff.source_file])
-
-        filediff_parts.append((filediff, interfilediff, interdiffset != None))
-
+    filediff_parts = [
+        (temp_filediff,
+         interdiff_map.pop(temp_filediff.source_file, None),
+         has_interdiffset)
+        for temp_filediff in filediffs
+    ]
 
     if interdiffset:
         # We've removed everything in the map that we've already found.
@@ -1068,9 +1064,10 @@ def get_diff_files(diffset, filediff=None, interdiffset=None, request=None):
         # the source filediff and not specify an interdiff. Keeps things
         # simple, code-wise, since we really have no need to special-case
         # this.
-        filediff_parts += [(interdiff, None, False)
-                           for interdiff in interdiff_map.values()]
-
+        filediff_parts += [
+            (interdiff, None, False)
+            for interdiff in interdiff_map.itervalues()
+        ]
 
     files = []
 
