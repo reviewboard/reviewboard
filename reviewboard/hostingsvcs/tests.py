@@ -52,18 +52,26 @@ class ServiceTests(TestCase):
 
         return form
 
-    def _get_hosting_account(self):
-        return HostingServiceAccount(service_name=self.service_name,
-                                     username='myuser')
+    def _get_hosting_account(self, use_url=False):
+        if use_url:
+            hosting_url = 'https://example.com'
+        else:
+            hosting_url = None
 
-    def _get_repository_fields(self, tool_name, fields, plan=None):
+        return HostingServiceAccount(service_name=self.service_name,
+                                     username='myuser',
+                                     hosting_url=hosting_url)
+
+    def _get_repository_fields(self, tool_name, fields, plan=None,
+                               with_url=False):
         form = self._get_form(plan, fields)
-        account = self._get_hosting_account()
+        account = self._get_hosting_account(with_url)
         service = account.service
         self.assertNotEqual(service, None)
 
-        return service.get_repository_fields(account.username, plan,
-                                             tool_name, form.clean())
+        return service.get_repository_fields(account.username,
+                                             'https://example.com',
+                                             plan, tool_name, form.clean())
 
 
 class BitbucketTests(ServiceTests):
@@ -413,7 +421,7 @@ class GitHubTests(ServiceTests):
         service = account.service
         self.assertFalse(account.is_authorized)
 
-        service.authorize('myuser', 'mypass')
+        service.authorize('myuser', 'mypass', None)
         self.assertTrue(account.is_authorized)
 
         self.assertEqual(http_post_data['kwargs']['url'],
@@ -451,7 +459,7 @@ class GitHubTests(ServiceTests):
 
         with self.settings(GITHUB_CLIENT_ID=client_id,
                            GITHUB_CLIENT_SECRET=client_secret):
-            service.authorize('myuser', 'mypass')
+            service.authorize('myuser', 'mypass', None)
 
         self.assertTrue(account.is_authorized)
 

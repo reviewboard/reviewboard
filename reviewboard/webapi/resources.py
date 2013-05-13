@@ -2994,6 +2994,11 @@ class HostingServiceAccountResource(WebAPIResource):
             },
         },
         optional={
+            'hosting_url': {
+                'type': str,
+                'description': 'The hosting URL on the account, if the hosting '
+                               'service is self-hosted.',
+            },
             'password': {
                 'type': str,
                 'description': 'The password on the account, if the hosting '
@@ -3002,7 +3007,7 @@ class HostingServiceAccountResource(WebAPIResource):
         }
     )
     def create(self, request, username, service_id, password=None,
-               local_site_name=None, *args, **kwargs):
+               hosting_url=None, local_site_name=None, *args, **kwargs):
         local_site = _get_local_site(local_site_name)
 
         if not HostingServiceAccount.objects.can_create(request.user,
@@ -3010,21 +3015,32 @@ class HostingServiceAccountResource(WebAPIResource):
             return _no_access_error(request.user)
 
         # Validate the service.
-        if not get_hosting_service(service_id):
+        service = get_hosting_service(service_id)
+
+        if not service:
             return INVALID_FORM_DATA, {
                 'fields': {
                     'service': ['This is not a valid service name'],
                 }
             }
 
+        if service.self_hosted and not hosting_url:
+            return INVALID_FORM_DATA, {
+                'fields': {
+                    'hosting_url': ['This field is required'],
+                }
+            }
+
         account = HostingServiceAccount(service_name=service_id,
                                         username=username,
+                                        hosting_url=hosting_url,
                                         local_site=local_site)
         service = account.service
 
         if service.needs_authorization:
             try:
-                service.authorize(request, username, password)
+                service.authorize(request, username, password, hosting_url,
+                                  local_site_name)
             except AuthorizationError, e:
                 return HOSTINGSVC_AUTH_ERROR, {
                     'reason': str(e),

@@ -27,17 +27,24 @@
 
 {% block content %}
 {% box "tip" %}
-<h1>{% trans "Tip: Use post-review" %}</h1>
+<h1>{% trans "Tip: Use RBTools for new review requests" %}</h1>
 <p>
 {% blocktrans %}
  You can simplify creating and updating review requests by using
- <a href="http://www.reviewboard.org/docs/manual/dev/users/tools/post-review/">post-review</a>.
+ <tt>rbt post</tt> from
+ <a href="http://www.reviewboard.org/docs/rbtools/dev/">RBTools</a>.
 {% endblocktrans %}
 </p>
 <p>
 {% blocktrans %}
- post-review is a command line tool that will help create compatible diffs,
- create new review requests, and update them, effortlessly. It is compatible
+ <tt>rbt post</tt> is a command line tool that will create compatible
+ diffs and upload them into new or existing review requests. It can even
+ fill out the fields for you!
+{% endblocktrans %}
+</p>
+<p>
+{% blocktrans %}
+ RBTools contains many other helpful tools as well. It's compatible
  with Windows, Linux, MacOS X, and other unix-like operating systems.
 {% endblocktrans %}
 </p>

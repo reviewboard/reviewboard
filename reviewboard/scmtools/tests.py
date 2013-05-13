@@ -9,6 +9,7 @@ try:
 except ImportError:
     from md5 import md5
 
+from django import forms
 from django.contrib.auth.models import AnonymousUser, User
 from django.core.cache import cache
 from django.test import TestCase as DjangoTestCase
@@ -26,7 +27,11 @@ except ImportError:
 
 from reviewboard.diffviewer.diffutils import patch
 from reviewboard.diffviewer.parser import DiffParserError
+from reviewboard.hostingsvcs.forms import HostingServiceForm
 from reviewboard.hostingsvcs.models import HostingServiceAccount
+from reviewboard.hostingsvcs.service import HostingService, \
+                                            register_hosting_service, \
+                                            unregister_hosting_service
 from reviewboard.reviews.models import Group
 from reviewboard.scmtools.core import HEAD, PRE_CREATION, ChangeSet, Revision
 from reviewboard.scmtools.errors import SCMError, FileNotFoundError, \
@@ -1931,8 +1936,49 @@ class PolicyTests(DjangoTestCase):
         self.assertFalse(form.is_valid())
 
 
+class SelfHostedTestForm(HostingServiceForm):
+    test_repo_name = forms.CharField(
+        label='Repository name',
+        max_length=64,
+        required=True)
+
+
+class SelfHostedTestService(HostingService):
+    name = 'Self-Hosted Test'
+    form = SelfHostedTestForm
+    self_hosted = True
+    supports_repositories = True
+    supports_bug_trackers = True
+    supported_scmtools = ['Git']
+    bug_tracker_field = '%(hosting_url)s/%(test_repo_name)s/issue/%%s'
+    repository_fields = {
+        'Git': {
+            'path': '%(hosting_url)s/%(test_repo_name)s/',
+        },
+    }
+
+    def authorize(self, username, password, hosting_url, local_site_name=None,
+                  *args, **kwargs):
+        self.authorize_args = {
+            'username': username,
+            'password': password,
+            'hosting_url': hosting_url,
+            'local_site_name': local_site_name,
+        }
+
+
 class RepositoryFormTests(DjangoTestCase):
     fixtures = ['test_scmtools']
+
+    def setUp(self):
+        super(RepositoryFormTests, self).setUp()
+
+        register_hosting_service('self_hosted_test', SelfHostedTestService)
+
+    def tearDown(self):
+        super(RepositoryFormTests, self).tearDown()
+
+        unregister_hosting_service('self_hosted_test')
 
     def test_with_hosting_service_new_account(self):
         """Testing RepositoryForm with a hosting service and new account"""
@@ -1959,6 +2005,50 @@ class RepositoryFormTests(DjangoTestCase):
         self.assertEqual(repository.hosting_account.service_name, 'bitbucket')
         self.assertEqual(repository.hosting_account.local_site, None)
         self.assertEqual(repository.extra_data['repository_plan'], '')
+
+    def test_with_hosting_service_self_hosted_and_new_account(self):
+        """Testing RepositoryForm with a self-hosted hosting service and new account"""
+        form = RepositoryForm({
+            'name': 'test',
+            'hosting_type': 'self_hosted_test',
+            'hosting_url': 'https://example.com',
+            'hosting_account_username': 'testuser',
+            'hosting_account_password': 'testpass',
+            'test_repo_name': 'myrepo',
+            'tool': Tool.objects.get(name='Git').pk,
+            'bug_tracker_type': 'none',
+        })
+        form.validate_repository = False
+
+        self.assertTrue(form.is_valid())
+
+        repository = form.save()
+        self.assertEqual(repository.name, 'test')
+        self.assertEqual(repository.hosting_account.hosting_url,
+                         'https://example.com')
+        self.assertEqual(repository.hosting_account.username, 'testuser')
+        self.assertEqual(repository.hosting_account.service_name,
+                         'self_hosted_test')
+        self.assertEqual(repository.hosting_account.local_site, None)
+        self.assertEqual(repository.extra_data['test_repo_name'], 'myrepo')
+        self.assertEqual(repository.extra_data['hosting_url'],
+                         'https://example.com')
+
+    def test_with_hosting_service_self_hosted_and_blank_url(self):
+        """Testing RepositoryForm with a self-hosted hosting service and blank URL"""
+        form = RepositoryForm({
+            'name': 'test',
+            'hosting_type': 'self_hosted_test',
+            'hosting_url': '',
+            'hosting_account_username': 'testuser',
+            'hosting_account_password': 'testpass',
+            'test_repo_name': 'myrepo',
+            'tool': Tool.objects.get(name='Git').pk,
+            'bug_tracker_type': 'none',
+        })
+        form.validate_repository = False
+
+        self.assertFalse(form.is_valid())
 
     def test_with_hosting_service_new_account_localsite(self):
         """Testing RepositoryForm with a hosting service, new account and LocalSite"""
@@ -2015,6 +2105,52 @@ class RepositoryFormTests(DjangoTestCase):
         self.assertEqual(repository.name, 'test')
         self.assertEqual(repository.hosting_account, account)
         self.assertEqual(repository.extra_data['repository_plan'], '')
+
+    def test_with_hosting_service_self_hosted_and_existing_account(self):
+        """Testing RepositoryForm with a self-hosted hosting service and existing account"""
+        account = HostingServiceAccount.objects.create(
+            username='testuser',
+            service_name='self_hosted_test',
+            hosting_url='https://example.com')
+
+        form = RepositoryForm({
+            'name': 'test',
+            'hosting_type': 'self_hosted_test',
+            'hosting_url': 'https://example.com',
+            'hosting_account': account.pk,
+            'tool': Tool.objects.get(name='Git').pk,
+            'test_repo_name': 'myrepo',
+            'bug_tracker_type': 'none',
+        })
+        form.validate_repository = False
+
+        self.assertTrue(form.is_valid())
+
+        repository = form.save()
+        self.assertEqual(repository.name, 'test')
+        self.assertEqual(repository.hosting_account, account)
+        self.assertEqual(repository.extra_data['hosting_url'],
+                         'https://example.com')
+
+    def test_with_hosting_service_self_hosted_and_invalid_existing_account(self):
+        """Testing RepositoryForm with a self-hosted hosting service and invalid existing account"""
+        account = HostingServiceAccount.objects.create(
+            username='testuser',
+            service_name='self_hosted_test',
+            hosting_url='https://example1.com')
+
+        form = RepositoryForm({
+            'name': 'test',
+            'hosting_type': 'self_hosted_test',
+            'hosting_url': 'https://example2.com',
+            'hosting_account': account.pk,
+            'tool': Tool.objects.get(name='Git').pk,
+            'test_repo_name': 'myrepo',
+            'bug_tracker_type': 'none',
+        })
+        form.validate_repository = False
+
+        self.assertFalse(form.is_valid())
 
     def test_with_hosting_service_custom_bug_tracker(self):
         """Testing RepositoryForm with a custom bug tracker"""
@@ -2079,6 +2215,41 @@ class RepositoryFormTests(DjangoTestCase):
             repository.extra_data['bug_tracker-hosting_account_username'],
             'testuser')
 
+    def test_with_hosting_service_self_hosted_bug_tracker_service(self):
+        """Testing RepositoryForm with a self-hosted bug tracker service"""
+        account = HostingServiceAccount.objects.create(
+            username='testuser',
+            service_name='self_hosted_test',
+            hosting_url='https://example.com')
+
+        form = RepositoryForm({
+            'name': 'test',
+            'hosting_type': 'self_hosted_test',
+            'hosting_url': 'https://example.com',
+            'hosting_account': account.pk,
+            'tool': Tool.objects.get(name='Git').pk,
+            'test_repo_name': 'testrepo',
+            'bug_tracker_type': 'self_hosted_test',
+            'bug_tracker_hosting_url': 'https://example.com',
+            'bug_tracker-test_repo_name': 'testrepo',
+        })
+        form.validate_repository = False
+
+        self.assertTrue(form.is_valid())
+
+        repository = form.save()
+        self.assertFalse(repository.extra_data['bug_tracker_use_hosting'])
+        self.assertEqual(repository.bug_tracker,
+                         'https://example.com/testrepo/issue/%s')
+        self.assertEqual(repository.extra_data['bug_tracker_type'],
+                         'self_hosted_test')
+        self.assertEqual(
+            repository.extra_data['bug_tracker-test_repo_name'],
+            'testrepo')
+        self.assertEqual(
+            repository.extra_data['bug_tracker_hosting_url'],
+            'https://example.com')
+
     def test_with_hosting_service_with_hosting_bug_tracker(self):
         """Testing RepositoryForm with hosting service's bug tracker"""
         account = HostingServiceAccount.objects.create(username='testuser',
@@ -2110,6 +2281,42 @@ class RepositoryFormTests(DjangoTestCase):
         self.assertFalse('bug_tracker-github_public_repo_name'
                          in repository.extra_data)
         self.assertFalse('bug_tracker-hosting_account_username'
+                         in repository.extra_data)
+
+    def test_with_hosting_service_with_hosting_bug_tracker_and_self_hosted(self):
+        """Testing RepositoryForm with self-hosted hosting service's bug tracker"""
+        account = HostingServiceAccount.objects.create(
+            username='testuser',
+            service_name='self_hosted_test',
+            hosting_url='https://example.com')
+
+        account.data['authorization'] = {
+            'token': '1234',
+        }
+        account.save()
+
+        form = RepositoryForm({
+            'name': 'test',
+            'hosting_type': 'self_hosted_test',
+            'hosting_url': 'https://example.com',
+            'hosting_account': account.pk,
+            'tool': Tool.objects.get(name='Git').pk,
+            'test_repo_name': 'testrepo',
+            'bug_tracker_use_hosting': True,
+            'bug_tracker_type': 'googlecode',
+        })
+        form.validate_repository = False
+
+        self.assertTrue(form.is_valid())
+
+        repository = form.save()
+        self.assertTrue(repository.extra_data['bug_tracker_use_hosting'])
+        self.assertEqual(repository.bug_tracker,
+                         'https://example.com/testrepo/issue/%s')
+        self.assertFalse('bug_tracker_type' in repository.extra_data)
+        self.assertFalse('bug_tracker-test_repo_name'
+                         in repository.extra_data)
+        self.assertFalse('bug_tracker_hosting_url'
                          in repository.extra_data)
 
     def test_with_hosting_service_no_bug_tracker(self):
