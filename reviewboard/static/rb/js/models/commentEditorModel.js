@@ -13,7 +13,7 @@ RB.CommentEditor = Backbone.Model.extend({
 
         return {
             canDelete: false,
-            canEdit: userSession.get('authenticated'),
+            canEdit: undefined,
             canSave: false,
             editing: false,
             comment: null,
@@ -21,14 +21,26 @@ RB.CommentEditor = Backbone.Model.extend({
             openIssue: userSession.get('commentsOpenAnIssue'),
             publishedComments: [],
             publishedCommentsType: null,
+            reviewRequest: null,
             statusText: '',
             text: ''
         }
     },
 
     initialize: function() {
+        var reviewRequest = this.get('reviewRequest');
+
         this.on('change:comment', this._updateFromComment, this);
         this._updateFromComment();
+
+        /*
+         * Unless a canEdit value is explicitly given, we want to compute
+         * the proper state.
+         */
+        if (this.get('canEdit') === undefined) {
+            reviewRequest.on('change:hasDraft', this._updateCanEdit, this);
+            this._updateCanEdit();
+        }
 
         this.on('change:dirty', function(model, dirty) {
             var reviewRequestEditor = this.get('reviewRequestEditor');
@@ -210,6 +222,21 @@ RB.CommentEditor = Backbone.Model.extend({
                 ready: this._updateState
             }, this);
         }
+    },
+
+    /*
+     * Updates the canEdit state of the editor.
+     *
+     * This is based on the authentication state of the user, and
+     * whether or not there's an existing draft for the review request.
+     */
+    _updateCanEdit: function() {
+        var reviewRequest = this.get('reviewRequest'),
+            userSession = RB.UserSession.instance;
+
+        this.set('canEdit',
+                 userSession.get('authenticated') &&
+                 !reviewRequest.get('hasDraft'));
     },
 
     /*

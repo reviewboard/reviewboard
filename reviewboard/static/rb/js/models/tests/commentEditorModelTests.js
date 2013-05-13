@@ -1,5 +1,6 @@
 describe('models/CommentEditor', function() {
-    var editor;
+    var editor,
+        reviewRequest;
 
     function createComment() {
         return new RB.BaseComment({
@@ -10,24 +11,41 @@ describe('models/CommentEditor', function() {
     }
 
     beforeEach(function() {
+        reviewRequest = new RB.ReviewRequest();
+
         editor = new RB.CommentEditor({
-            canEdit: true
+            canEdit: true,
+            reviewRequest: reviewRequest
         });
     });
 
     describe('Attribute defaults', function() {
         describe('canEdit', function() {
-            it('When logged in', function() {
+            it('When logged in and hasDraft=false', function() {
                 RB.UserSession.instance.set('authenticated', true);
 
-                editor = new RB.CommentEditor();
+                editor = new RB.CommentEditor({
+                    reviewRequest: reviewRequest
+                });
                 expect(editor.get('canEdit')).toBe(true);
+            });
+
+            it('When logged in and hasDraft=true', function() {
+                RB.UserSession.instance.set('authenticated', true);
+                reviewRequest.set('hasDraft', true);
+
+                editor = new RB.CommentEditor({
+                    reviewRequest: reviewRequest
+                });
+                expect(editor.get('canEdit')).toBe(false);
             });
 
             it('When logged out', function() {
                 RB.UserSession.instance.set('authenticated', false);
 
-                editor = new RB.CommentEditor();
+                editor = new RB.CommentEditor({
+                    reviewRequest: reviewRequest
+                });
                 expect(editor.get('canEdit')).toBe(false);
             });
 
@@ -35,7 +53,8 @@ describe('models/CommentEditor', function() {
                 RB.UserSession.instance.set('authenticated', false);
 
                 editor = new RB.CommentEditor({
-                    canEdit: true
+                    canEdit: true,
+                    reviewRequest: reviewRequest
                 });
                 expect(editor.get('canEdit')).toBe(true);
             });
@@ -45,14 +64,18 @@ describe('models/CommentEditor', function() {
             it('When user preference is true', function() {
                 RB.UserSession.instance.set('commentsOpenAnIssue', true);
 
-                editor = new RB.CommentEditor();
+                editor = new RB.CommentEditor({
+                    reviewRequest: reviewRequest
+                });
                 expect(editor.get('openIssue')).toBe(true);
             });
 
             it('When user preference is false', function() {
                 RB.UserSession.instance.set('commentsOpenAnIssue', false);
 
-                editor = new RB.CommentEditor();
+                editor = new RB.CommentEditor({
+                    reviewRequest: reviewRequest
+                });
                 expect(editor.get('openIssue')).toBe(false);
             });
 
@@ -60,7 +83,8 @@ describe('models/CommentEditor', function() {
                 RB.UserSession.instance.set('commentsOpenAnIssue', false);
 
                 editor = new RB.CommentEditor({
-                    openIssue: true
+                    openIssue: true,
+                    reviewRequest: reviewRequest
                 });
                 expect(editor.get('openIssue')).toBe(true);
             });

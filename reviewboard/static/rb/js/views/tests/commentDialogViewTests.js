@@ -1,11 +1,26 @@
 describe('views/CommentDialogView', function() {
+    var reviewRequest;
+
+    beforeEach(function() {
+        reviewRequest = new RB.ReviewRequest();
+    });
+
     describe('Class methods', function() {
         describe('create', function() {
+            var reviewRequestEditor;
+
+            beforeEach(function() {
+                reviewRequestEditor = new RB.ReviewRequestEditor({
+                    reviewRequest: reviewRequest
+                });
+            });
+
             it('Without a comment', function() {
                 expect(function() {
                     RB.CommentDialogView.create({
                         animate: false,
-                        container: $testsScratch
+                        container: $testsScratch,
+                        reviewRequestEditor: reviewRequestEditor
                     });
                 }).toThrow();
 
@@ -17,7 +32,8 @@ describe('views/CommentDialogView', function() {
                 var dlg = RB.CommentDialogView.create({
                     animate: false,
                     comment: new RB.DiffComment(),
-                    container: $testsScratch
+                    container: $testsScratch,
+                    reviewRequestEditor: reviewRequestEditor
                 });
 
                 expect(dlg).toBeTruthy();
@@ -32,14 +48,16 @@ describe('views/CommentDialogView', function() {
                 dlg1 = RB.CommentDialogView.create({
                     animate: false,
                     comment: new RB.DiffComment(),
-                    container: $testsScratch
+                    container: $testsScratch,
+                    reviewRequestEditor: reviewRequestEditor
                 });
                 expect(dlg1).toBeTruthy();
 
                 dlg2 = RB.CommentDialogView.create({
                     animate: false,
                     comment: new RB.DiffComment(),
-                    container: $testsScratch
+                    container: $testsScratch,
+                    reviewRequestEditor: reviewRequestEditor
                 });
                 expect(dlg2).toBeTruthy();
 
@@ -58,7 +76,8 @@ describe('views/CommentDialogView', function() {
         beforeEach(function() {
             editor = new RB.CommentEditor({
                 comment: new RB.DiffComment(),
-                canEdit: true
+                canEdit: true,
+                reviewRequest: reviewRequest
             });
 
             dlg = new RB.CommentDialogView({
@@ -80,6 +99,10 @@ describe('views/CommentDialogView', function() {
         });
 
         describe('Buttons', function() {
+            beforeEach(function() {
+                dlg.open();
+            });
+
             describe('Cancel', function() {
                 var $button;
 
@@ -103,6 +126,51 @@ describe('views/CommentDialogView', function() {
                     $button.click();
                     expect(dlg.close).toHaveBeenCalled();
                 });
+
+                describe('Visibility', function() {
+                    it('Shown when canEdit=true', function() {
+                        editor.set('canEdit', true);
+                        expect($button.is(':visible')).toBe(true);
+                    });
+
+                    it('Hidden when canEdit=false', function() {
+                        editor.set('canEdit', false);
+                        expect($button.is(':visible')).toBe(false);
+                    });
+                });
+            });
+
+            describe('Close', function() {
+                var $button;
+
+                beforeEach(function() {
+                    $button = dlg.$el.find('.buttons .close');
+                });
+
+                it('Cancels editor when clicked', function() {
+                    spyOn(editor, 'cancel');
+                    $button.click();
+                    expect(editor.cancel).toHaveBeenCalled();
+                });
+
+                it('Closes dialog when clicked', function() {
+                    spyOn(editor, 'cancel');
+                    spyOn(dlg, 'close');
+                    $button.click();
+                    expect(dlg.close).toHaveBeenCalled();
+                });
+
+                describe('Visibility', function() {
+                    it('Shown when canEdit=false', function() {
+                        editor.set('canEdit', false);
+                        expect($button.is(':visible')).toBe(true);
+                    });
+
+                    it('Hidden when canEdit=true', function() {
+                        editor.set('canEdit', true);
+                        expect($button.is(':visible')).toBe(false);
+                    });
+                });
             });
 
             describe('Delete', function() {
@@ -110,16 +178,6 @@ describe('views/CommentDialogView', function() {
 
                 beforeEach(function() {
                     $button = dlg.$el.find('.buttons .delete');
-                });
-
-                it('Enabled when editor.canDelete=true', function() {
-                    editor.set('canDelete', true);
-                    expect($button.is(':disabled')).toBe(false);
-                });
-
-                it('Disabled when editor.canDelete=false', function() {
-                    editor.set('canDelete', false);
-                    expect($button.is(':disabled')).toBe(true);
                 });
 
                 it('Cancels editor when clicked', function() {
@@ -136,6 +194,30 @@ describe('views/CommentDialogView', function() {
                     $button.click();
                     expect(dlg.close).toHaveBeenCalled();
                 });
+
+                describe('Enabled state', function() {
+                    it('Enabled when editor.canDelete=true', function() {
+                        editor.set('canDelete', true);
+                        expect($button.is(':disabled')).toBe(false);
+                    });
+
+                    it('Disabled when editor.canDelete=false', function() {
+                        editor.set('canDelete', false);
+                        expect($button.is(':disabled')).toBe(true);
+                    });
+                });
+
+                describe('Visibility', function() {
+                    it('Shown when canDelete=true', function() {
+                        editor.set('canDelete', true);
+                        expect($button.is(':visible')).toBe(true);
+                    });
+
+                    it('Hidden when caDelete=false', function() {
+                        editor.set('canDelete', false);
+                        expect($button.is(':visible')).toBe(false);
+                    });
+                });
             });
 
             describe('Save', function() {
@@ -143,16 +225,6 @@ describe('views/CommentDialogView', function() {
 
                 beforeEach(function() {
                     $button = dlg.$el.find('.buttons .save');
-                });
-
-                it('Enabled when editor.canSave=true', function() {
-                    editor.set('canSave', true);
-                    expect($button.is(':disabled')).toBe(false);
-                });
-
-                it('Disabled when editor.canSave=false', function() {
-                    editor.set('canSave', false);
-                    expect($button.is(':disabled')).toBe(true);
                 });
 
                 it('Cancels editor when clicked', function() {
@@ -169,6 +241,94 @@ describe('views/CommentDialogView', function() {
                     $button.click();
                     expect(dlg.close).toHaveBeenCalled();
                 });
+
+                describe('Enabled state', function() {
+                    it('Enabled when editor.canSave=true', function() {
+                        editor.set('canSave', true);
+                        expect($button.is(':disabled')).toBe(false);
+                    });
+
+                    it('Disabled when editor.canSave=false', function() {
+                        editor.set('canSave', false);
+                        expect($button.is(':disabled')).toBe(true);
+                    });
+                });
+
+                describe('Visibility', function() {
+                    it('Shown when canEdit=true', function() {
+                        editor.set('canEdit', true);
+                        expect($button.is(':visible')).toBe(true);
+                    });
+
+                    it('Hidden when canEdit=false', function() {
+                        editor.set('canEdit', false);
+                        expect($button.is(':visible')).toBe(false);
+                    });
+                });
+            });
+        });
+
+        describe('Fields', function() {
+            beforeEach(function() {
+                dlg.open();
+            });
+
+            describe('Open an Issue checkbox', function() {
+                describe('Visibility', function() {
+                    it('Shown when canEdit=true', function() {
+                        editor.set('canEdit', true);
+                        expect(dlg._$issueOptions.is(':visible')).toBe(true);
+                    });
+
+                    it('Hidden when canEdit=false', function() {
+                        editor.set('canEdit', false);
+                        expect(dlg._$issueOptions.is(':visible')).toBe(false);
+                    });
+                });
+            });
+
+            describe('Textbox', function() {
+                describe('Visibility', function() {
+                    it('Shown when canEdit=true', function() {
+                        editor.set('canEdit', true);
+                        expect(dlg._$textField.is(':visible')).toBe(true);
+                    });
+
+                    it('Hidden when canEdit=false', function() {
+                        editor.set('canEdit', false);
+                        expect(dlg._$textField.is(':visible')).toBe(false);
+                    });
+                });
+            });
+        });
+
+        describe('Height', function() {
+            beforeEach(function() {
+                editor = new RB.CommentEditor({
+                comment: new RB.DiffComment(),
+                    reviewRequest: reviewRequest
+                });
+
+                dlg = new RB.CommentDialogView({
+                    animate: false,
+                    model: editor
+                });
+            });
+
+            it('When canEdit=true', function() {
+                editor.set('canEdit', true);
+                dlg.render();
+                dlg.open();
+                expect(dlg.$el.height()).toBe(
+                    RB.CommentDialogView.prototype.DIALOG_TOTAL_HEIGHT);
+            });
+
+            it('When canEdit=false', function() {
+                editor.set('canEdit', false);
+                dlg.render();
+                dlg.open();
+                expect(dlg.$el.height()).toBe(
+                    RB.CommentDialogView.prototype.DIALOG_NON_EDITABLE_HEIGHT);
             });
         });
 
@@ -491,7 +651,9 @@ describe('views/CommentDialogView', function() {
                 it('When commentsOpenAnIssue is true', function() {
                     RB.UserSession.instance.set('commentsOpenAnIssue', true);
 
-                    editor = new RB.CommentEditor();
+                    editor = new RB.CommentEditor({
+                        reviewRequest: reviewRequest
+                    });
                     dlg = new RB.CommentDialogView({
                         animate: false,
                         model: editor
@@ -506,7 +668,9 @@ describe('views/CommentDialogView', function() {
                 it('When commentsOpenAnIssue is false', function() {
                     RB.UserSession.instance.set('commentsOpenAnIssue', false);
 
-                    editor = new RB.CommentEditor();
+                    editor = new RB.CommentEditor({
+                        reviewRequest: reviewRequest
+                    });
                     dlg = new RB.CommentDialogView({
                         animate: false,
                         model: editor
@@ -526,7 +690,9 @@ describe('views/CommentDialogView', function() {
 
                 dlg = new RB.CommentDialogView({
                     animate: false,
-                    model: new RB.CommentEditor()
+                    model: new RB.CommentEditor({
+                        reviewRequest: reviewRequest
+                    })
                 });
                 dlg.render();
 
@@ -538,11 +704,45 @@ describe('views/CommentDialogView', function() {
 
                 dlg = new RB.CommentDialogView({
                     animate: false,
-                    model: new RB.CommentEditor()
+                    model: new RB.CommentEditor({
+                        reviewRequest: reviewRequest
+                    })
                 });
                 dlg.render();
 
                 expect(dlg.$el.find('p[class="login-text"]').length).toBe(1);
+            });
+        });
+
+        describe('In Draft indicator', function() {
+            it('Shown when hasDraft=true', function() {
+                reviewRequest.set('hasDraft', true);
+
+                dlg = new RB.CommentDialogView({
+                    animate: false,
+                    model: new RB.CommentEditor({
+                        reviewRequest: reviewRequest
+                    })
+                });
+                dlg.render();
+
+                expect(dlg.$el.find('p[class="draft-warning"]').length)
+                    .toBe(1);
+            });
+
+            it('Hidden when hasDraft=false', function() {
+                reviewRequest.set('hasDraft', false);
+
+                dlg = new RB.CommentDialogView({
+                    animate: false,
+                    model: new RB.CommentEditor({
+                        reviewRequest: reviewRequest
+                    })
+                });
+                dlg.render();
+
+                expect(dlg.$el.find('p[class="draft-warning"]').length)
+                    .toBe(0);
             });
         });
     });

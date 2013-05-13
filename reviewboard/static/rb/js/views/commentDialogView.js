@@ -86,6 +86,7 @@ var CommentsListView = Backbone.View.extend({
  */
 RB.CommentDialogView = Backbone.View.extend({
     DIALOG_TOTAL_HEIGHT: 250,
+    DIALOG_NON_EDITABLE_HEIGHT: 120,
     SLIDE_DISTANCE: 10,
     COMMENTS_BOX_WIDTH: 280,
     FORM_BOX_WIDTH: 380,
@@ -102,6 +103,12 @@ RB.CommentDialogView = Backbone.View.extend({
         ' <p class="login-text">',
         '  You must <a href="<%= loginURL %>">log in</a> to post a comment.',
         ' </p>',
+        '<% } else if (hasDraft) { %>',
+        ' <p class="draft-warning">',
+        '  The review request\'s current ',
+        '  <a href="{{reviewRequestURL}}">draft</a> needs to be published ',
+        '  before you can comment.',
+        ' </p>',
         '<% } %>',
         ' <textarea name="text" rows="6" cols="30"></textarea>',
         ' <div class="comment-issue-options">',
@@ -113,12 +120,14 @@ RB.CommentDialogView = Backbone.View.extend({
         '  <input type="button" class="save" value="Save" disabled="true" />',
         '  <input type="button" class="cancel" value="Cancel" />',
         '  <input type="button" class="delete" value="Delete" disabled="true" />',
+        '  <input type="button" class="close" value="Close" />',
         ' </div>',
         '</form>'
     ].join('')),
 
     events: {
         'click .buttons .cancel': '_onCancelClicked',
+        'click .buttons .close': '_onCancelClicked',
         'click .buttons .delete': '_onDeleteClicked',
         'click .buttons .save': '_onSaveClicked',
         'keydown textarea': '_onTextKeyDown',
@@ -130,7 +139,8 @@ RB.CommentDialogView = Backbone.View.extend({
     },
 
     render: function() {
-        var userSession = RB.UserSession.instance;
+        var userSession = RB.UserSession.instance,
+            reviewRequest = this.model.get('reviewRequest');
 
         this.options.animate = (this.options.animate !== false);
 
@@ -138,14 +148,17 @@ RB.CommentDialogView = Backbone.View.extend({
             .hide()
             .html(this.template({
                 authenticated: userSession.get('authenticated'),
-                loginURL: userSession.get('loginURL')
+                hasDraft: reviewRequest.get('hasDraft'),
+                loginURL: userSession.get('loginURL'),
+                reviewRequestURL: this.options.reviewRequestURL
             }));
 
         this._$draftForm    = this.$el.find('form');
         this._$commentsPane = this.$el.find('.other-comments');
         this._$buttons      = this._$draftForm.find(".buttons");
         this._$statusField  = this._$draftForm.find(".status");
-        this._$issueOptions = this._$draftForm.find(".comment-issue-options");
+        this._$issueOptions = this._$draftForm.find(".comment-issue-options")
+            .bindVisibility(this.model, 'canEdit');
 
         this._$issueField = this._$issueOptions.find('input')
             .bindProperty('checked', this.model, 'openIssue')
@@ -155,17 +168,24 @@ RB.CommentDialogView = Backbone.View.extend({
             });
 
         this._$saveButton = this._$buttons.find('input.save')
+            .bindVisibility(this.model, 'canEdit')
             .bindProperty('disabled', this.model, 'canSave', {
                 elementToModel: false,
                 inverse: true
             });
 
-        this._$cancelButton = this._$buttons.find('input.cancel');
+        this._$cancelButton = this._$buttons.find('input.cancel')
+            .bindVisibility(this.model, 'canEdit');
 
         this._$deleteButton = this._$buttons.find('input.delete')
             .bindVisibility(this.model, 'canDelete')
             .bindProperty('disabled', this.model, 'canDelete', {
                 elementToModel: false,
+                inverse: true
+            });
+
+        this._$closeButton = this._$buttons.find('input.close')
+            .bindVisibility(this.model, 'canEdit', {
                 inverse: true
             });
 
@@ -181,10 +201,7 @@ RB.CommentDialogView = Backbone.View.extend({
          */
         this._$textField = this._$draftForm.find('textarea')
             .keypress(_.bind(this._onTextKeyPress, this))
-            .bindProperty('disabled', this.model, 'canEdit', {
-                elementToModel: false,
-                inverse: true
-            })
+            .bindVisibility(this.model, 'canEdit')
             .bindProperty('value', this.model, 'text', {
                 elementToModel: false
             });
@@ -350,7 +367,9 @@ RB.CommentDialogView = Backbone.View.extend({
 
         this.$el
             .width(width)
-            .height(this.DIALOG_TOTAL_HEIGHT);
+            .height(this.model.get('canEdit')
+                    ? this.DIALOG_TOTAL_HEIGHT
+                    : this.DIALOG_NON_EDITABLE_HEIGHT);
     },
 
     /*
@@ -530,6 +549,8 @@ RB.CommentDialogView = Backbone.View.extend({
      */
     create: function(options) {
         var instance = RB.CommentDialogView._instance,
+            reviewRequestEditor = options.reviewRequestEditor ||
+                                  window.reviewRequestEditor,
             dlg;
 
         function showCommentDlg() {
@@ -553,7 +574,8 @@ RB.CommentDialogView = Backbone.View.extend({
             reviewRequestURL: options.reviewRequestURL,
             model: new RB.CommentEditor({
                 comment: options.comment,
-                reviewRequestEditor: options.reviewRequestEditor,
+                reviewRequest: reviewRequestEditor.get('reviewRequest'),
+                reviewRequestEditor: reviewRequestEditor,
                 publishedComments: options.publishedComments || undefined,
                 publishedCommentsType: options.publishedCommentsType ||
                                        undefined

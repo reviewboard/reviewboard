@@ -23,6 +23,7 @@
         changeDescription: "{{draft.changedesc.text|escapejs}}",
 {% endif %}
         description: "{{review_request_details.description|escapejs}}",
+        hasDraft: {% if draft %}true{% else %}false{% endif %},
         public: {% if review_request.public %}true{% else %}false{% endif %},
         summary: "{{review_request_details.summary|escapejs}}",
         targetGroups: [{% spaceless %}

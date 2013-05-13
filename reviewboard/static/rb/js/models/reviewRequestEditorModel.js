@@ -7,6 +7,7 @@
 RB.ReviewRequestEditor = Backbone.Model.extend({
     defaults: {
         editCount: 0,
+        hasDraft: false,
         fileAttachmentComments: {},
         pendingSaveCount: 0,
         publishing: false,
