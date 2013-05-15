@@ -1,7 +1,6 @@
 // State variables
 var gPendingDiffFragments = {};
 var gReviewBanner = $("#review-banner");
-var gCommentIssueManager;
 var issueSummaryTableManager;
 
 
