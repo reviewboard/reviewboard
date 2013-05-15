@@ -14,7 +14,7 @@
 
 {% for comment in reply.file_attachment_comments.all %}
 > On {{review.time_emailed}}, {{review.user|user_displayname}} wrote:
-> > File Attachment: {{comment.file_attachment.caption|default:comment.file_attachment.filename}}
+> > File Attachment: {% if comment.file_attachment.caption %}{{comment.file_attachment.caption}} - {% endif %}{{comment.get_link_text}}
 > > <{{domain_method}}://{{domain}}{{comment.get_review_url}}>
 > >
 {{comment.reply_to.text|indent|quote_text:2}}{% for reply_comment in comment.reply_to.public_replies %}{%  ifnotequal comment reply_comment %}

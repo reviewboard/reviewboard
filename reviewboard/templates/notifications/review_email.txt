@@ -10,7 +10,7 @@ Ship it!
 {{ review.body_top }}
 {% endif %}{% for comment in review.file_attachment_comments.all %}
 
-File Attachment: {{comment.file_attachment.caption|default:comment.file_attachment.filename}}
+File Attachment: {% if comment.file_attachment.caption %}{{comment.file_attachment.caption}} - {% endif %}{{comment.get_link_text}}
 <{{domain_method}}://{{domain}}/{{comment.get_review_url}}>
 {{comment.text|indent}}
 {% endfor %}{% for comment in review.screenshot_comments.all %}

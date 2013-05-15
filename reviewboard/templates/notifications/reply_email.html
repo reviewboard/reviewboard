@@ -38,7 +38,17 @@
 
   <table bgcolor="#f0f0f0" cellpadding="5" cellspacing="5" style="border: 1px solid #c0c0c0; margin-bottom: 10px">
    <tr>
-    <td><a href="{{domain_method}}://{{domain}}{{comment.file_attachment.get_absolute_url}}" style="color: black; font-weight: bold; font-size: 9pt;">{{comment.file_attachment.caption|default:comment.file_attachment.filename}}</a></td>
+    <td>
+     <a href="{{domain_method}}://{{domain}}{{comment.get_absolute_url}}" style="color: black; font-weight: bold; font-size: 9pt;">{{comment.get_link_text}}</a>
+{% if comment.file_attachment.caption %}
+     <p>{{comment.file_attachment.caption}}</p>
+{% endif %}
+{% with comment.thumbnail as thumbnail %}
+{%  if thumbnail %}
+     <div>{{thumbnail|default:''|safe}}</div>
+{%  endif %}
+{% endwith %}
+    </td>
    </tr>
   </table>
   <pre style="{{precss}}">{{comment.reply_to.text}}</pre>
