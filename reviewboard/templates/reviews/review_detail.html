@@ -126,9 +126,9 @@
     <dt>
      <a class="comment-anchor" name="{{comment.anchor_prefix}}{{comment.id}}"></a>
      <div class="file-attachment">
-      <a href="{{comment.file_attachment.get_absolute_url}}">{% spaceless %}
+      <a href="{{comment.get_absolute_url}}">{% spaceless %}
        <img src="{{comment.file_attachment.icon_url}}" />
-       <span class="filename">{{comment.file_attachment.filename}}</span>
+       <span class="filename">{{comment.get_link_text}}</span>
       </a>
 {% if draft and comment.file_attachment.draft_caption %}
       <p class="caption">{{comment.file_attachment.draft_caption}}</p>

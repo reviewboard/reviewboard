@@ -10,6 +10,7 @@ import mimeparse
 from reviewboard.attachments.mimetypes import score_match
 from reviewboard.diffviewer.models import DiffSet
 from reviewboard.reviews.models import FileAttachmentComment
+from reviewboard.site.urlresolvers import local_site_reverse
 
 
 _file_attachment_review_uis = []
@@ -76,6 +77,31 @@ class ReviewUI(object):
         None in order to use the fallback.
         """
         return None
+
+    def get_comment_link_url(self, comment):
+        """Returns the link for a comment.
+
+        This will normally just link to the review UI itself, but some may want
+        to specialize the URL to link to a specific location within the
+        file."""
+        local_site_name = None
+        if self.review_request.local_site:
+            local_site_name = self.review_request.local_site.name
+
+        return local_site_reverse(
+            'file_attachment',
+            local_site_name=local_site_name,
+            kwargs={
+                'review_request_id': self.review_request.display_id,
+                'file_attachment_id': self.obj.pk,
+            })
+
+    def get_comment_link_text(self, comment):
+        """Returns the text to link to a comment.
+
+        This will normally just return the filename, but some may want to
+        specialize to list things like page numbers or sections."""
+        return self.obj.filename
 
     def get_extra_context(self, request):
         return {}
