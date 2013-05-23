@@ -59,6 +59,7 @@ installation instructions in the `Administration Guide`_. You'll want to
 install, at a minimum, the following packages:
 
 * Git
+* kgb
 * nose
 * patch
 * Python Setuptools

@@ -2,14 +2,19 @@ import os
 import unittest
 
 from django.core.files.uploadedfile import SimpleUploadedFile
+from django.http import HttpResponse
 from django.test import TestCase
 from djblets.siteconfig.models import SiteConfiguration
+from djblets.util.misc import cache_memoize
+from kgb import SpyAgency
 
-from reviewboard.diffviewer.forms import UploadDiffForm
-from reviewboard.diffviewer.models import DiffSet, FileDiff
-from reviewboard.diffviewer.templatetags.difftags import highlightregion
 import reviewboard.diffviewer.diffutils as diffutils
 import reviewboard.diffviewer.parser as diffparser
+from reviewboard.diffviewer.errors import UserVisibleError
+from reviewboard.diffviewer.forms import UploadDiffForm
+from reviewboard.diffviewer.models import DiffSet, FileDiff
+from reviewboard.diffviewer.renderers import DiffRenderer
+from reviewboard.diffviewer.templatetags.difftags import highlightregion
 from reviewboard.scmtools.models import Repository, Tool
 
 
@@ -533,3 +538,119 @@ class UploadDiffFormTests(TestCase):
         self.assertTrue(('/README', '123') in saw_file_exists)
         self.assertFalse(('/UNUSED', '123') in saw_file_exists)
         self.assertEqual(len(saw_file_exists), 1)
+
+
+class DiffRendererTests(SpyAgency, TestCase):
+    """Unit tests for DiffRenderer."""
+    def test_construction_with_invalid_chunks(self):
+        """Testing DiffRenderer construction with invalid chunks"""
+        diff_file = {
+            'chunks': [{}]
+        }
+
+        self.assertRaises(
+            UserVisibleError,
+            lambda: DiffRenderer(diff_file, chunk_index=-1))
+        self.assertRaises(
+            UserVisibleError,
+            lambda: DiffRenderer(diff_file, chunk_index=1))
+
+    def test_construction_with_valid_chunks(self):
+        """Testing DiffRenderer construction with valid chunks"""
+        diff_file = {
+            'chunks': [{}]
+        }
+
+        # Should not assert.
+        renderer = DiffRenderer(diff_file, chunk_index=0)
+        self.assertEqual(renderer.num_chunks, 1)
+        self.assertEqual(renderer.chunk_index, 0)
+
+    def test_render_to_response(self):
+        """Testing DiffRenderer.render_to_response"""
+        diff_file = {
+            'chunks': [{}]
+        }
+
+        renderer = DiffRenderer(diff_file)
+        self.spy_on(renderer.render_to_string, call_fake=lambda self: 'Foo')
+
+        response = renderer.render_to_response()
+
+        self.assertTrue(renderer.render_to_string.called)
+        self.assertTrue(isinstance(response, HttpResponse))
+        self.assertEqual(response.content, 'Foo')
+
+    def test_render_to_string(self):
+        """Testing DiffRenderer.render_to_string"""
+        diff_file = {
+            'chunks': [{}]
+        }
+
+        renderer = DiffRenderer(diff_file)
+        self.spy_on(renderer.render_to_string_uncached,
+                    call_fake=lambda self: 'Foo')
+        self.spy_on(renderer.make_cache_key,
+                    call_fake=lambda self: 'my-cache-key')
+        self.spy_on(cache_memoize)
+
+        response = renderer.render_to_response()
+
+        self.assertEqual(response.content, 'Foo')
+        self.assertTrue(renderer.render_to_string_uncached.called)
+        self.assertTrue(renderer.make_cache_key.called)
+        self.assertTrue(cache_memoize.spy.called)
+
+    def test_render_to_string_uncached(self):
+        """Testing DiffRenderer.render_to_string_uncached"""
+        diff_file = {
+            'chunks': [{}]
+        }
+
+        renderer = DiffRenderer(diff_file, lines_of_context=[5, 5])
+        self.spy_on(renderer.render_to_string_uncached,
+                    call_fake=lambda self: 'Foo')
+        self.spy_on(renderer.make_cache_key,
+                    call_fake=lambda self: 'my-cache-key')
+        self.spy_on(cache_memoize)
+
+        response = renderer.render_to_response()
+
+        self.assertEqual(response.content, 'Foo')
+        self.assertTrue(renderer.render_to_string_uncached.called)
+        self.assertFalse(renderer.make_cache_key.called)
+        self.assertFalse(cache_memoize.spy.called)
+
+    def test_make_context_with_chunk_index(self):
+        """Testing DiffRenderer.make_context with chunk_index"""
+        diff_file = {
+            'chunks': [
+                {
+                    'lines': [],
+                    'meta': {},
+                    'change': 'insert',
+                },
+                {
+                    # This is not how lines really look, but it's fine for
+                    # current usage tests.
+                    'lines': range(10),
+                    'meta': {},
+                    'change': 'replace',
+                },
+                {
+                    'lines': [],
+                    'meta': {},
+                    'change': 'delete',
+                }
+            ],
+        }
+
+        renderer = DiffRenderer(diff_file, chunk_index=1)
+        context = renderer.make_context()
+
+        self.assertEqual(context['standalone'], True)
+        self.assertEqual(context['file'], diff_file)
+        self.assertEqual(len(diff_file['chunks']), 1)
+
+        chunk = diff_file['chunks'][0]
+        self.assertEqual(chunk['change'], 'replace')
