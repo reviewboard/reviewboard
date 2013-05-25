@@ -25,18 +25,14 @@ from djblets.util.misc import cache_memoize
 
 from reviewboard.accounts.models import Profile
 from reviewboard.admin.checks import get_can_enable_syntax_highlighting
-from reviewboard.diffviewer.errors import DiffCompatError, UserVisibleError
-from reviewboard.diffviewer.myersdiff import MyersDiffer
+from reviewboard.diffviewer.differ import get_differ
 from reviewboard.diffviewer.opcode_generator import get_diff_opcode_generator
-from reviewboard.diffviewer.smdiff import SMDiffer
 from reviewboard.scmtools.core import PRE_CREATION, HEAD
 
 
 # The maximum size a line can be before we start shutting off styling.
 STYLED_MAX_LINE_LEN = 1000
 STYLED_MAX_LIMIT_BYTES = 200000 # 200KB
-
-DEFAULT_DIFF_COMPAT_VERSION = 1
 
 NEW_FILE_STR = _("New File")
 NEW_CHANGE_STR = _("New Change")
@@ -46,99 +42,6 @@ NEWLINE_CONVERSION_RE = re.compile(r'\r(\r?\n)?')
 
 ALPHANUM_RE = re.compile(r'\w')
 WHITESPACE_RE = re.compile(r'\s')
-
-
-# A list of regular expressions for headers in the source code that we can
-# display in collapsed regions of diffs and diff fragments in reviews.
-HEADER_REGEXES = {
-    '.cs': [
-        re.compile(
-            r'^\s*((public|private|protected|static)\s+)+'
-            r'([a-zA-Z_][a-zA-Z0-9_\.\[\]]*\s+)+?'     # return arguments
-            r'[a-zA-Z_][a-zA-Z0-9_]*'                  # method name
-            r'\s*\('                                   # signature start
-        ),
-        re.compile(
-            r'^\s*('
-            r'(public|static|private|protected|internal|abstract|partial)'
-            r'\s+)*'
-            r'(class|struct)\s+([A-Za-z0-9_])+'
-        ),
-    ],
-
-    # This can match C/C++/Objective C header files
-    '.c': [
-        re.compile(r'^@(interface|implementation|class|protocol)'),
-        re.compile(r'^[A-Za-z0-9$_]'),
-    ],
-    '.java': [
-        re.compile(
-            r'^\s*((public|private|protected|static)\s+)+'
-            r'([a-zA-Z_][a-zA-Z0-9_\.\[\]]*\s+)+?'     # return arguments
-            r'[a-zA-Z_][a-zA-Z0-9_]*'                  # method name
-            r'\s*\('                                   # signature start
-        ),
-        re.compile(
-            r'^\s*('
-            r'(public|static|private|protected)'
-            r'\s+)*'
-            r'(class|struct)\s+([A-Za-z0-9_])+'
-        ),
-    ],
-    '.js': [
-        re.compile(r'^\s*function [A-Za-z0-9_]+\s*\('),
-        re.compile(r'^\s*(var\s+)?[A-Za-z0-9_]+\s*[=:]\s*function\s*\('),
-    ],
-    '.m': [
-        re.compile(r'^@(interface|implementation|class|protocol)'),
-        re.compile(r'^[-+]\s+\([^\)]+\)\s+[A-Za-z0-9_]+[^;]*$'),
-        re.compile(r'^[A-Za-z0-9$_]'),
-    ],
-    '.php': [
-        re.compile(r'^\s*(class|function) [A-Za-z0-9_]+'),
-    ],
-    '.pl': [
-        re.compile(r'^\s*sub [A-Za-z0-9_]+'),
-    ],
-    '.py': [
-        re.compile(r'^\s*(def|class) [A-Za-z0-9_]+\s*\(?'),
-    ],
-    '.rb': [
-        re.compile(r'^\s*(def|class) [A-Za-z0-9_]+\s*\(?'),
-    ],
-}
-
-HEADER_REGEX_ALIASES = {
-    # C/C++/Objective-C
-    '.cc': '.c',
-    '.cpp': '.c',
-    '.cxx': '.c',
-    '.c++': '.c',
-    '.h': '.c',
-    '.hh': '.c',
-    '.hpp': '.c',
-    '.hxx': '.c',
-    '.h++': '.c',
-    '.C': '.c',
-    '.H': '.c',
-    '.mm': '.m',
-
-    # Perl
-    '.pm': '.pl',
-
-    # Python
-    'SConstruct': '.py',
-    'SConscript': '.py',
-    '.pyw': '.py',
-    '.sc': '.py',
-
-    # Ruby
-    'Rakefile': '.rb',
-    '.rbw': '.rb',
-    '.rake': '.rb',
-    '.gemspec': '.rb',
-    '.rbx': '.rb',
-}
 
 
 class NoWrapperHtmlFormatter(HtmlFormatter):
@@ -155,22 +58,6 @@ class NoWrapperHtmlFormatter(HtmlFormatter):
         for tup in inner:
             if tup[0]:
                 yield tup
-
-
-def Differ(a, b, ignore_space=False,
-           compat_version=DEFAULT_DIFF_COMPAT_VERSION):
-    """
-    Factory wrapper for returning a differ class based on the compat version
-    and flags specified.
-    """
-    if compat_version == 0:
-        return SMDiffer(a, b)
-    elif compat_version == 1:
-        return MyersDiffer(a, b, ignore_space)
-    else:
-        raise DiffCompatError(
-            "Invalid diff compatibility version (%s) passed to Differ" %
-                (compat_version))
 
 
 def convert_line_endings(data):
@@ -376,29 +263,6 @@ def get_patched_file(buffer, filediff, request=None):
     diff = tool.normalize_patch(filediff.diff, filediff.source_file,
                                 filediff.source_revision)
     return patch(diff, buffer, filediff.dest_file, request)
-
-
-def register_interesting_lines_for_filename(differ, filename):
-    """Registers regexes for interesting lines to a differ based on filename.
-
-    This will add watches for headers (functions, classes, etc.) to the diff
-    viewer. The regular expressions used are based on the filename provided.
-    """
-    # Add any interesting lines we may want to show.
-    regexes = []
-
-    if file in HEADER_REGEX_ALIASES:
-        regexes = HEADER_REGEXES[HEADER_REGEX_ALIASES[filename]]
-    else:
-        basename, ext = os.path.splitext(filename)
-
-        if ext in HEADER_REGEXES:
-            regexes = HEADER_REGEXES[ext]
-        elif ext in HEADER_REGEX_ALIASES:
-            regexes = HEADER_REGEXES[HEADER_REGEX_ALIASES[ext]]
-
-    for regex in regexes:
-        differ.add_interesting_line_regex('header', regex)
 
 
 def compute_chunk_last_header(lines, numlines, meta, last_header=None):
@@ -673,11 +537,11 @@ def get_chunks(diffset, filediff, interfilediff, force_interdiff,
             ignore_space = False
             break
 
-    differ = Differ(a, b, ignore_space=ignore_space,
-                    compat_version=diffset.diffcompat)
+    differ = get_differ(a, b, ignore_space=ignore_space,
+                        compat_version=diffset.diffcompat)
 
     # Register any regexes for interesting lines we may want to show.
-    register_interesting_lines_for_filename(differ, file)
+    differ.add_interesting_lines_for_headers(file)
 
     # TODO: Make this back into a preference if people really want it.
     context_num_lines = siteconfig.get("diffviewer_context_num_lines")

@@ -13,6 +13,7 @@ import reviewboard.diffviewer.parser as diffparser
 from reviewboard.diffviewer.errors import UserVisibleError
 from reviewboard.diffviewer.forms import UploadDiffForm
 from reviewboard.diffviewer.models import DiffSet, FileDiff
+from reviewboard.diffviewer.myersdiff import MyersDiffer
 from reviewboard.diffviewer.opcode_generator import get_diff_opcode_generator
 from reviewboard.diffviewer.renderers import DiffRenderer
 from reviewboard.diffviewer.templatetags.difftags import highlightregion
@@ -43,7 +44,7 @@ class MyersDifferTest(TestCase):
                           ("equal",   5, 8, 9, 12)])
 
     def __test_diff(self, a, b, expected):
-        opcodes = list(diffutils.MyersDiffer(a, b).get_opcodes())
+        opcodes = list(MyersDiffer(a, b).get_opcodes())
         self.assertEquals(opcodes, expected)
 
 
@@ -158,8 +159,8 @@ class InterestingLinesTest(TestCase):
         b = f.readlines()
         f.close()
 
-        differ = diffutils.MyersDiffer(a, b)
-        diffutils.register_interesting_lines_for_filename(differ, filename)
+        differ = MyersDiffer(a, b)
+        differ.add_interesting_lines_for_headers(filename)
 
         # Begin the scan.
         list(differ.get_opcodes())
@@ -310,7 +311,7 @@ class DiffParserTest(unittest.TestCase):
         # (since it's content-less) and shouldn't be seen as once.
         old = self._get_file('orig_src', 'movetest1.c')
         new = self._get_file('new_src', 'movetest1.c')
-        differ = diffutils.Differ(old.splitlines(), new.splitlines())
+        differ = MyersDiffer(old.splitlines(), new.splitlines())
 
         r_moves = []
         i_moves = []

@@ -1,4 +1,7 @@
-class MyersDiffer:
+from reviewboard.diffviewer.differ import Differ
+
+
+class MyersDiffer(Differ):
     """
     An implementation of Eugene Myers's O(ND) Diff algorithm based on GNU diff.
     """
@@ -20,19 +23,13 @@ class MyersDiffer:
             self.undiscarded_lines = 0
             self.real_indexes = []
 
-    def __init__(self, a, b, ignore_space=False):
-        if type(a) != type(b):
-            raise TypeError
+    def __init__(self, *args, **kwargs):
+        super(MyersDiffer, self).__init__(*args, **kwargs)
 
-        self.a = a
-        self.b = b
         self.code_table = {}
         self.last_code = 0
         self.a_data = self.b_data = None
-        self.ignore_space = ignore_space
         self.minimal_diff = False
-        self.interesting_line_regexes = []
-        self.interesting_lines = [{}, {}]
         self.interesting_line_table = {}
 
         # SMS State
@@ -47,26 +44,6 @@ class MyersDiffer:
 
         return 1.0 * (a_equals + b_equals) / \
                      (self.a_data.length + self.b_data.length)
-
-    def add_interesting_line_regex(self, name, regex):
-        """Registers a regular expression used to look for interesting lines.
-
-        All interesting lines found that match the regular expression will
-        be stored and tagged with the given name. Callers can use
-        get_interesting_lines to get the results.
-        """
-        self.interesting_line_regexes.append((name, regex))
-        self.interesting_lines[0][name] = []
-        self.interesting_lines[1][name] = []
-
-    def get_interesting_lines(self, name, is_modified_file):
-        """Returns the interesting lines tagged with the given name."""
-        if is_modified_file:
-            index = 1
-        else:
-            index = 0
-
-        return self.interesting_lines[index].get(name, [])
 
     def get_opcodes(self):
         """
