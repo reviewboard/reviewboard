@@ -1,167 +1,21 @@
 import logging
 import traceback
 
-from django.conf import settings
 from django.core.paginator import Paginator
-from django.http import HttpResponse, HttpResponseServerError, Http404
+from django.http import HttpResponseServerError, Http404
 from django.shortcuts import get_object_or_404, render_to_response
 from django.template import RequestContext
 from django.template.loader import render_to_string
 from django.utils.translation import ugettext as _
 from djblets.siteconfig.models import SiteConfiguration
-from djblets.util.misc import cache_memoize
 
-from reviewboard.diffviewer.models import DiffSet, FileDiff
-from reviewboard.diffviewer.diffutils import UserVisibleError, \
-                                             compute_chunk_last_header, \
-                                             get_diff_files, \
+from reviewboard.diffviewer.diffutils import get_diff_files, \
                                              populate_diff_chunks, \
                                              get_enable_highlighting
-
-
-def build_diff_fragment(request, file, chunkindex, highlighting, collapseall,
-                        lines_of_context, standalone=False, context=None,
-                        template_name='diffviewer/diff_file_fragment.html'):
-    if not context:
-        context = {}
-
-    cache = not lines_of_context
-    key = ''
-
-    if cache:
-        filediff = file['filediff']
-        key = "%s-%s-%s-" % (template_name, file['index'],
-                             filediff.diffset.revision)
-
-        if file['force_interdiff']:
-            interfilediff = file['interfilediff']
-
-            if interfilediff:
-                key += 'interdiff-%s-%s' % (filediff.pk, interfilediff.pk)
-            else:
-                key += 'interdiff-%s-none' % filediff.pk
-        else:
-            key += str(filediff.pk)
-
-    if chunkindex:
-        chunkindex = int(chunkindex)
-        num_chunks = len(file['chunks'])
-
-        if chunkindex < 0 or chunkindex >= num_chunks:
-            raise UserVisibleError(_(u"Invalid chunk index %s specified.") % \
-                                   chunkindex)
-
-        file['chunks'] = [file['chunks'][chunkindex]]
-
-        if cache:
-            key += '-chunk-%s' % chunkindex
-
-        if lines_of_context:
-            assert collapseall
-
-            context['lines_of_context'] = lines_of_context
-
-            chunk = file['chunks'][0]
-            lines = chunk['lines']
-            num_lines = len(lines)
-            new_lines = []
-
-            # If we only have one value, then assume it represents before
-            # and after the collapsed header area.
-            if len(lines_of_context) == 1:
-                lines_of_context.append(lines_of_context[0])
-
-            if lines_of_context[0] + lines_of_context[1] >= num_lines:
-                # The lines of context we're expanding to would cover the
-                # entire chunk, so just expand the entire thing.
-                collapseall = False
-            else:
-                lines_of_context[0] = min(num_lines, lines_of_context[0])
-                lines_of_context[1] = min(num_lines, lines_of_context[1])
-
-                # The start of the collapsed header area.
-                collapse_i = 0
-
-                # Compute the start of the second chunk of code, after the
-                # header.
-                if chunkindex < num_chunks - 1:
-                    chunk2_i = max(num_lines - lines_of_context[1], 0)
-                else:
-                    chunk2_i = num_lines
-
-                if lines_of_context[0] and chunkindex > 0:
-                    # The chunk of context preceding the header.
-                    collapse_i = lines_of_context[0]
-                    file['chunks'].insert(0, {
-                        'change': chunk['change'],
-                        'collapsable': False,
-                        'index': chunkindex,
-                        'lines': lines[:collapse_i],
-                        'meta': chunk['meta'],
-                        'numlines': collapse_i,
-                    })
-
-                # The header contents
-                new_lines += lines[collapse_i:chunk2_i]
-
-                if (chunkindex < num_chunks - 1 and
-                    chunk2_i + lines_of_context[1] <= num_lines):
-                    # The chunk of context after the header.
-                    file['chunks'].append({
-                        'change': chunk['change'],
-                        'collapsable': False,
-                        'index': chunkindex,
-                        'lines': lines[chunk2_i:],
-                        'meta': chunk['meta'],
-                        'numlines': num_lines - chunk2_i,
-                    })
-
-                if new_lines:
-                    numlines = len(new_lines)
-
-                    chunk.update({
-                        'lines': new_lines,
-                        'numlines': numlines,
-                        'collapsable': True,
-                    })
-
-                    # Fix the headers to accommodate the new range.
-                    if chunkindex < num_chunks - 1:
-                        for prefix, index in (('left', 1), ('right', 4)):
-                            chunk['meta'][prefix + '_headers'] = [
-                                header
-                                for header in chunk['meta'][prefix + '_headers']
-                                if header[0] <= new_lines[-1][index]
-                            ]
-
-                        chunk['meta']['headers'] = \
-                            compute_chunk_last_header(new_lines, numlines,
-                                                      chunk['meta'])
-                else:
-                    file['chunks'].remove(chunk)
-
-    context.update({
-        'collapseall': collapseall,
-        'file': file,
-        'lines_of_context': lines_of_context or (0, 0),
-        'standalone': standalone,
-    })
-
-    func = lambda: render_to_string(template_name,
-                                    RequestContext(request, context))
-
-    if cache:
-        if collapseall:
-            key += '-collapsed'
-
-        if highlighting:
-            key += '-highlighting'
-
-        key += '-%s' % settings.AJAX_SERIAL
-
-        return cache_memoize(key, func)
-    else:
-        return func()
+from reviewboard.diffviewer.errors import UserVisibleError
+from reviewboard.diffviewer.models import DiffSet, FileDiff
+from reviewboard.diffviewer.renderers import get_diff_renderer, \
+                                             get_diff_renderer_class
 
 
 def get_collapse_diff(request):
@@ -233,14 +87,16 @@ def view_diff(request, diffset, interdiffset=None, extra_context={},
         }
         context.update(extra_context)
 
-        # Attempt to preload the first file before rendering any part of
-        # the page. This helps to remove the perception that the diff viewer
-        # takes longer to load now that we have progressive diffs. Users were
-        # seeing the page itself load quickly, but didn't see that first
-        # diff immediately and instead saw a spinner, making them feel it was
-        # taking longer than it used to to load a page. We just trick the
-        # user by providing that first file.
-        if page.object_list:
+        renderer_class = get_diff_renderer_class()
+
+        if renderer_class.preload_first_file and page.object_list:
+            # Attempt to preload the first file before rendering any part of
+            # the page. This helps to remove the perception that the diff
+            # viewer takes longer to load now that we have progressive diffs.
+            # Users were seeing the page itself load quickly, but didn't see
+            # that first diff immediately and instead saw a spinner, making
+            # them feel it was taking longer than it used to to load a page.
+            # We just trick the user by providing that first file.
             first_file = page.object_list[0]
         else:
             first_file = None
@@ -269,11 +125,14 @@ def view_diff(request, diffset, interdiffset=None, extra_context={},
                 else:
                     file_temp = temp_files[0]
                     file_temp['index'] = first_file['index']
-                    first_file['fragment'] = build_diff_fragment(
-                        request, file_temp, None, highlighting,
-                        collapse_diffs, None,
-                        context=context,
-                        template_name='diffviewer/diff_file_fragment.html')
+
+                    renderer = renderer_class(
+                        file_temp,
+                        highlighting=highlighting,
+                        collapse_all=collapse_diffs,
+                        extra_context=context)
+
+                    first_file['fragment'] = renderer.render_to_string()
 
         response = render_to_response(template_name,
                                       RequestContext(request, context))
@@ -289,7 +148,6 @@ def view_diff(request, diffset, interdiffset=None, extra_context={},
                           diffset.id, request=request)
 
         return response
-
     except Exception, e:
         return exception_traceback(request, e, template_name)
 
@@ -371,6 +229,12 @@ def view_diff_fragment(
     except (TypeError, ValueError):
         lines_of_context = None
 
+    if chunkindex is not None:
+        try:
+            chunkindex = int(chunkindex)
+        except (TypeError, ValueError):
+            chunkindex = None
+
     if lines_of_context:
         collapseall = True
     elif chunkindex:
@@ -384,19 +248,21 @@ def view_diff_fragment(
         collapseall = get_collapse_diff(request)
 
     try:
-        file = get_requested_diff_file()
+        diff_file = get_requested_diff_file()
 
-        if file:
-            return HttpResponse(
-                build_diff_fragment(request, file,
-                                    chunkindex,
-                                    highlighting, collapseall,
-                                    lines_of_context,
-                                    chunkindex is not None,
-                                    context={
-                                        'base_url': base_url,
-                                    },
-                                    template_name=template_name))
+        if diff_file:
+            renderer = get_diff_renderer(
+                diff_file,
+                chunk_index=chunkindex,
+                highlighting=highlighting,
+                collapse_all=collapseall,
+                lines_of_context=lines_of_context,
+                extra_context={
+                    'base_url': base_url,
+                },
+                template_name=template_name)
+
+            return renderer.render_to_response()
 
         raise UserVisibleError(
             _(u"Internal error. Unable to locate file record for filediff %s") % \

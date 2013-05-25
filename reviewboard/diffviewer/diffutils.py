@@ -24,6 +24,7 @@ from djblets.util.misc import cache_memoize
 
 from reviewboard.accounts.models import Profile
 from reviewboard.admin.checks import get_can_enable_syntax_highlighting
+from reviewboard.diffviewer.errors import DiffCompatError, UserVisibleError
 from reviewboard.diffviewer.myersdiff import MyersDiffer
 from reviewboard.diffviewer.processors import filter_interdiff_opcodes, \
                                               merge_adjacent_chunks
@@ -138,14 +139,6 @@ HEADER_REGEX_ALIASES = {
     '.gemspec': '.rb',
     '.rbx': '.rb',
 }
-
-
-class UserVisibleError(Exception):
-    pass
-
-
-class DiffCompatError(Exception):
-    pass
 
 
 class NoWrapperHtmlFormatter(HtmlFormatter):

@@ -1566,6 +1566,20 @@ class FileAttachmentComment(BaseComment):
         """
         return self.file_attachment.review_ui.get_comment_thumbnail(self)
 
+    def get_absolute_url(self):
+        """Returns the URL for this comment."""
+        if self.file_attachment.review_ui:
+            return self.file_attachment.review_ui.get_comment_link_url(self)
+        else:
+            return self.file_attachment.get_absolute_url()
+
+    def get_link_text(self):
+        """Returns the text for the link to the file."""
+        if self.file_attachment.review_ui:
+            return self.file_attachment.review_ui.get_comment_link_text(self)
+        else:
+            return self.file_attachment.filename
+
     def get_file(self):
         """
         Generates the file referenced by this
