@@ -321,6 +321,7 @@ PIPELINE_JS = {
     'common': {
         'source_filenames': (
             'rb/js/utils/backboneUtils.js',
+            'rb/js/utils/compatUtils.js',
             'rb/js/utils/consoleUtils.js',
             'rb/js/utils/propertyUtils.js',
             'rb/js/utils/underscoreUtils.js',
