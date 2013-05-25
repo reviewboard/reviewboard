@@ -1,63 +1,27 @@
 from __future__ import with_statement
-import fnmatch
 import os
 import re
 import subprocess
 import tempfile
-from difflib import SequenceMatcher
 
-try:
-    import pygments
-    from pygments.lexers import get_lexer_for_filename
-    # from pygments.lexers import guess_lexer_for_filename
-    from pygments.formatters import HtmlFormatter
-except ImportError:
-    pass
-
-from django.utils.html import escape
-from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext as _
 
 from djblets.log import log_timed
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.util.contextmanagers import controlled_subprocess
-from djblets.util.misc import cache_memoize
 
 from reviewboard.accounts.models import Profile
 from reviewboard.admin.checks import get_can_enable_syntax_highlighting
-from reviewboard.diffviewer.differ import get_differ
-from reviewboard.diffviewer.opcode_generator import get_diff_opcode_generator
 from reviewboard.scmtools.core import PRE_CREATION, HEAD
 
-
-# The maximum size a line can be before we start shutting off styling.
-STYLED_MAX_LINE_LEN = 1000
-STYLED_MAX_LIMIT_BYTES = 200000 # 200KB
 
 NEW_FILE_STR = _("New File")
 NEW_CHANGE_STR = _("New Change")
 
-NEWLINES_RE = re.compile(r'\r?\n')
 NEWLINE_CONVERSION_RE = re.compile(r'\r(\r?\n)?')
 
 ALPHANUM_RE = re.compile(r'\w')
 WHITESPACE_RE = re.compile(r'\s')
-
-
-class NoWrapperHtmlFormatter(HtmlFormatter):
-    """An HTML Formatter for Pygments that don't wrap items in a div."""
-    def __init__(self, *args, **kwargs):
-        super(NoWrapperHtmlFormatter, self).__init__(*args, **kwargs)
-
-    def _wrap_div(self, inner):
-        """
-        Method called by the formatter to wrap the contents of inner.
-        Inner is a list of tuples containing formatted code. If the first item
-        in the tuple is zero, then it's a wrapper, so we should ignore it.
-        """
-        for tup in inner:
-            if tup[0]:
-                yield tup
 
 
 def convert_line_endings(data):
@@ -144,85 +108,6 @@ def patch(diff, file, filename, request=None):
     return data
 
 
-def get_line_changed_regions(oldline, newline):
-    if oldline is None or newline is None:
-        return (None, None)
-
-    # Use the SequenceMatcher directly. It seems to give us better results
-    # for this. We should investigate steps to move to the new differ.
-    differ = SequenceMatcher(None, oldline, newline)
-
-    # This thresholds our results -- we don't want to show inter-line diffs if
-    # most of the line has changed, unless those lines are very short.
-
-    # FIXME: just a plain, linear threshold is pretty crummy here.  Short
-    # changes in a short line get lost.  I haven't yet thought of a fancy
-    # nonlinear test.
-    if differ.ratio() < 0.6:
-        return (None, None)
-
-    oldchanges = []
-    newchanges = []
-    back = (0, 0)
-
-    for tag, i1, i2, j1, j2 in differ.get_opcodes():
-        if tag == "equal":
-            if (i2 - i1 < 3) or (j2 - j1 < 3):
-                back = (j2 - j1, i2 - i1)
-            continue
-
-        oldstart, oldend = i1 - back[0], i2
-        newstart, newend = j1 - back[1], j2
-
-        if oldchanges != [] and oldstart <= oldchanges[-1][1] < oldend:
-            oldchanges[-1] = (oldchanges[-1][0], oldend)
-        elif not oldline[oldstart:oldend].isspace():
-            oldchanges.append((oldstart, oldend))
-
-        if newchanges != [] and newstart <= newchanges[-1][1] < newend:
-            newchanges[-1] = (newchanges[-1][0], newend)
-        elif not newline[newstart:newend].isspace():
-            newchanges.append((newstart, newend))
-
-        back = (0, 0)
-
-    return (oldchanges, newchanges)
-
-
-def convert_to_utf8(s, enc):
-    """
-    Returns the passed string as a unicode string. If conversion to UTF-8
-    fails, we try the user-specified encoding, which defaults to ISO 8859-15.
-    This can be overridden by users inside the repository configuration, which
-    gives users repository-level control over file encodings (file-level control
-    is really, really hard).
-    """
-    if isinstance(s, unicode):
-        return s.encode('utf-8')
-    elif isinstance(s, basestring):
-        try:
-            # First try strict unicode (for when everything is valid utf-8)
-            return unicode(s, 'utf-8')
-        except UnicodeError:
-            # Now try any candidate encodings.
-            for e in enc.split(','):
-                try:
-                    u = unicode(s, e)
-                    return u.encode('utf-8')
-                except UnicodeError:
-                    pass
-
-            # Finally, try to convert to straight unicode and replace all
-            # unknown characters.
-            try:
-                return unicode(s, 'utf-8', errors='replace')
-            except UnicodeError:
-                raise Exception(_("Diff content couldn't be converted to UTF-8 "
-                                  "using the following encodings: %s") % enc)
-    else:
-        raise TypeError("Value to convert is unexpected type %s", type(s))
-
-
 def get_original_file(filediff, request=None):
     """
     Get a file either from the cache or the SCM, applying the parent diff if
@@ -263,347 +148,6 @@ def get_patched_file(buffer, filediff, request=None):
     diff = tool.normalize_patch(filediff.diff, filediff.source_file,
                                 filediff.source_revision)
     return patch(diff, buffer, filediff.dest_file, request)
-
-
-def compute_chunk_last_header(lines, numlines, meta, last_header=None):
-    """Computes information for the displayed function/class headers.
-
-    This will record the displayed headers, their line numbers, and expansion
-    offsets relative to the header's collapsed line range.
-
-    The last_header variable, if provided, will be modified, which is
-    important when processing several chunks at once. It will also be
-    returned as a convenience.
-    """
-    if last_header is None:
-        last_header = [None, None]
-
-    line = lines[0]
-
-    for i, (linenum, header_key) in enumerate([(line[1], 'left_headers'),
-                                               (line[4], 'right_headers')]):
-        headers = meta[header_key]
-
-        if headers:
-            header = headers[-1]
-            last_header[i] = {
-                'line': header[0],
-                'text': header[1].strip(),
-            }
-
-    return last_header
-
-
-def get_chunks(diffset, filediff, interfilediff, force_interdiff,
-               enable_syntax_highlighting, request=None):
-    def diff_line(vlinenum, oldlinenum, newlinenum, oldline, newline,
-                  oldmarkup, newmarkup):
-        # This function accesses the variable meta, defined in an outer context.
-        if (oldline and newline and
-            len(oldline) <= STYLED_MAX_LINE_LEN and
-            len(newline) <= STYLED_MAX_LINE_LEN and
-            oldline != newline):
-            oldregion, newregion = get_line_changed_regions(oldline, newline)
-        else:
-            oldregion = newregion = []
-
-        result = [vlinenum,
-                  oldlinenum or '', mark_safe(oldmarkup or ''), oldregion,
-                  newlinenum or '', mark_safe(newmarkup or ''), newregion,
-                  (oldlinenum, newlinenum) in meta['whitespace_lines']]
-
-        if oldlinenum and oldlinenum in meta.get('moved', {}):
-            destination = meta["moved"][oldlinenum]
-            result.append(destination)
-        elif newlinenum and newlinenum in meta.get('moved', {}):
-            destination = meta["moved"][newlinenum]
-            result.append(destination)
-
-        return result
-
-    def new_chunk(chunk_index, all_lines, start, end, collapsable=False,
-                  tag='equal', meta=None):
-        if not meta:
-            meta = {}
-
-        left_headers = list(get_interesting_headers(differ, all_lines,
-                                                    start, end - 1, False))
-        right_headers = list(get_interesting_headers(differ, all_lines,
-                                                     start, end - 1, True))
-
-        meta['left_headers'] = left_headers
-        meta['right_headers'] = right_headers
-
-        lines = all_lines[start:end]
-        numlines = len(lines)
-
-        compute_chunk_last_header(lines, numlines, meta, last_header)
-
-        if (collapsable and end < len(all_lines) and
-            (last_header[0] or last_header[1])):
-            meta['headers'] = list(last_header)
-
-        return {
-            'index': chunk_index,
-            'lines': lines,
-            'numlines': numlines,
-            'change': tag,
-            'collapsable': collapsable,
-            'meta': meta,
-        }
-
-    def get_interesting_headers(differ, lines, start, end, is_modified_file):
-        """Returns all headers for a region of a diff.
-
-        This scans for all headers that fall within the specified range
-        of the specified lines on both the original and modified files.
-        """
-        possible_functions = differ.get_interesting_lines('header',
-                                                          is_modified_file)
-
-        if not possible_functions:
-            raise StopIteration
-
-        try:
-            if is_modified_file:
-                last_index = last_header_index[1]
-                i1 = lines[start][4]
-                i2 = lines[end - 1][4]
-            else:
-                last_index = last_header_index[0]
-                i1 = lines[start][1]
-                i2 = lines[end - 1][1]
-        except IndexError:
-            raise StopIteration
-
-        for i in xrange(last_index, len(possible_functions)):
-            linenum, line = possible_functions[i]
-            linenum += 1
-
-            if linenum > i2:
-                break
-            elif linenum >= i1:
-                last_index = i
-                yield (linenum, line)
-
-        if is_modified_file:
-            last_header_index[1] = last_index
-        else:
-            last_header_index[0] = last_index
-
-    def apply_pygments(data, filename):
-        # XXX Guessing is preferable but really slow, especially on XML
-        #     files.
-        #if filename.endswith(".xml"):
-        lexer = get_lexer_for_filename(filename, stripnl=False,
-                                       encoding='utf-8')
-        #else:
-        #    lexer = guess_lexer_for_filename(filename, data, stripnl=False)
-
-        try:
-            # This is only available in 0.7 and higher
-            lexer.add_filter('codetagify')
-        except AttributeError:
-            pass
-
-        return pygments.highlight(data, lexer, NoWrapperHtmlFormatter()).splitlines()
-
-
-    # There are three ways this function is called:
-    #
-    #     1) filediff, no interfilediff
-    #        - Returns chunks for a single filediff. This is the usual way
-    #          people look at diffs in the diff viewer.
-    #
-    #          In this mode, we get the original file based on the filediff
-    #          and then patch it to get the resulting file.
-    #
-    #          This is also used for interdiffs where the source revision
-    #          has no equivalent modified file but the interdiff revision
-    #          does. It's no different than a standard diff.
-    #
-    #     2) filediff, interfilediff
-    #        - Returns chunks showing the changes between a source filediff
-    #          and the interdiff.
-    #
-    #          This is the typical mode used when showing the changes
-    #          between two diffs. It requires that the file is included in
-    #          both revisions of a diffset.
-    #
-    #     3) filediff, no interfilediff, force_interdiff
-    #        - Returns chunks showing the changes between a source
-    #          diff and an unmodified version of the diff.
-    #
-    #          This is used when the source revision in the diffset contains
-    #          modifications to a file which have then been reverted in the
-    #          interdiff revision. We don't actually have an interfilediff
-    #          in this case, so we have to indicate that we are indeed in
-    #          interdiff mode so that we can special-case this and not
-    #          grab a patched file for the interdiff version.
-
-    assert filediff
-
-    file = filediff.source_file
-
-    old = get_original_file(filediff, request)
-    new = get_patched_file(old, filediff, request)
-
-    if interfilediff:
-        old = new
-        interdiff_orig = get_original_file(interfilediff, request)
-        new = get_patched_file(interdiff_orig, interfilediff, request)
-    elif force_interdiff:
-        # Basically, revert the change.
-        old, new = new, old
-
-    encoding = diffset.repository.encoding or 'iso-8859-15'
-    old = convert_to_utf8(old, encoding)
-    new = convert_to_utf8(new, encoding)
-
-    # Normalize the input so that if there isn't a trailing newline, we add
-    # it.
-    if old and old[-1] != '\n':
-        old += '\n'
-
-    if new and new[-1] != '\n':
-        new += '\n'
-
-    a = NEWLINES_RE.split(old or '')
-    b = NEWLINES_RE.split(new or '')
-
-    # Remove the trailing newline, now that we've split this. This will
-    # prevent a duplicate line number at the end of the diff.
-    del(a[-1])
-    del(b[-1])
-
-    a_num_lines = len(a)
-    b_num_lines = len(b)
-
-    markup_a = markup_b = None
-
-    siteconfig = SiteConfiguration.objects.get_current()
-
-    threshold = siteconfig.get('diffviewer_syntax_highlighting_threshold')
-
-    if threshold and (a_num_lines > threshold or b_num_lines > threshold):
-        enable_syntax_highlighting = False
-
-    if enable_syntax_highlighting:
-        # Very long files, especially XML files, can take a long time to
-        # highlight. For files over a certain size, don't highlight them.
-        if (len(old) > STYLED_MAX_LIMIT_BYTES or
-            len(new) > STYLED_MAX_LIMIT_BYTES):
-            enable_syntax_highlighting = False
-
-    if enable_syntax_highlighting:
-        # Don't style the file if we have any *really* long lines.
-        # It's likely a minified file or data or something that doesn't
-        # need styling, and it will just grind Review Board to a halt.
-        for lines in (a, b):
-            for line in lines:
-                if len(line) > STYLED_MAX_LINE_LEN:
-                    enable_syntax_highlighting = False
-                    break
-
-            if not enable_syntax_highlighting:
-                break
-
-    if enable_syntax_highlighting:
-        repository = filediff.diffset.repository
-        tool = repository.get_scmtool()
-        source_file = tool.normalize_path_for_display(filediff.source_file)
-        dest_file = tool.normalize_path_for_display(filediff.dest_file)
-        try:
-            # TODO: Try to figure out the right lexer for these files
-            #       once instead of twice.
-            markup_a = apply_pygments(old or '', source_file)
-            markup_b = apply_pygments(new or '', dest_file)
-        except:
-            pass
-
-    if not markup_a:
-        markup_a = NEWLINES_RE.split(escape(old))
-
-    if not markup_b:
-        markup_b = NEWLINES_RE.split(escape(new))
-
-    linenum = 1
-    last_header = [None, None]
-    last_header_index = [0, 0]
-
-    ignore_space = True
-    for pattern in siteconfig.get("diffviewer_include_space_patterns"):
-        if fnmatch.fnmatch(file, pattern):
-            ignore_space = False
-            break
-
-    differ = get_differ(a, b, ignore_space=ignore_space,
-                        compat_version=diffset.diffcompat)
-
-    # Register any regexes for interesting lines we may want to show.
-    differ.add_interesting_lines_for_headers(file)
-
-    # TODO: Make this back into a preference if people really want it.
-    context_num_lines = siteconfig.get("diffviewer_context_num_lines")
-    collapse_threshold = 2 * context_num_lines + 3
-
-    if interfilediff:
-        log_timer = log_timed(
-            "Generating diff chunks for interdiff ids %s-%s (%s)" %
-            (filediff.id, interfilediff.id, filediff.source_file),
-            request=request)
-    else:
-        log_timer = log_timed(
-            "Generating diff chunks for filediff id %s (%s)" %
-            (filediff.id, filediff.source_file),
-            request=request)
-
-    chunk_index = 0
-
-    opcode_generator = get_diff_opcode_generator(differ)
-
-    for tag, i1, i2, j1, j2, meta in opcode_generator:
-        oldlines = markup_a[i1:i2]
-        newlines = markup_b[j1:j2]
-        numlines = max(len(oldlines), len(newlines))
-
-        lines = map(diff_line,
-                    xrange(linenum, linenum + numlines),
-                    xrange(i1 + 1, i2 + 1), xrange(j1 + 1, j2 + 1),
-                    a[i1:i2], b[j1:j2], oldlines, newlines)
-
-        if tag == 'equal' and numlines > collapse_threshold:
-            last_range_start = numlines - context_num_lines
-
-            if linenum == 1:
-                yield new_chunk(chunk_index, lines, 0, last_range_start, True)
-                chunk_index += 1
-
-                yield new_chunk(chunk_index, lines, last_range_start, numlines)
-                chunk_index += 1
-            else:
-                yield new_chunk(chunk_index, lines, 0, context_num_lines)
-                chunk_index += 1
-
-                if i2 == a_num_lines and j2 == b_num_lines:
-                    yield new_chunk(chunk_index, lines, context_num_lines,
-                                    numlines, True)
-                    chunk_index += 1
-                else:
-                    yield new_chunk(chunk_index, lines, context_num_lines,
-                                    last_range_start, True)
-                    chunk_index += 1
-
-                    yield new_chunk(chunk_index, lines, last_range_start,
-                                    numlines)
-                    chunk_index += 1
-        else:
-            yield new_chunk(chunk_index, lines, 0, numlines, False, tag, meta)
-            chunk_index += 1
-
-        linenum += numlines
-
-    log_timer.done()
 
 
 def get_revision_str(revision):
@@ -785,41 +329,17 @@ def populate_diff_chunks(files, enable_syntax_highlighting=True,
     diff chunk data for each file in the list. The chunk data is stored in
     the file state.
     """
-    key_prefix = "diff-sidebyside-"
+    from reviewboard.diffviewer.chunk_generator import get_diff_chunk_generator
 
-    if enable_syntax_highlighting:
-        key_prefix += "hl-"
+    for diff_file in files:
+        generator = get_diff_chunk_generator(request,
+                                             diff_file['filediff'],
+                                             diff_file['interfilediff'],
+                                             diff_file['force_interdiff'],
+                                             enable_syntax_highlighting)
+        chunks = generator.get_chunks()
 
-    for file in files:
-        filediff = file['filediff']
-        interfilediff = file['interfilediff']
-        force_interdiff = file['force_interdiff']
-        chunks = []
-
-        # If the file is binary or deleted, don't get chunks. Also don't
-        # get chunks if there is no source_revision, which occurs if a
-        # file has moved and has no changes.
-        if (not filediff.binary and not filediff.deleted and
-            filediff.source_revision != ''):
-            key = key_prefix
-
-            if not force_interdiff:
-                key += str(filediff.pk)
-            elif interfilediff:
-                key += "interdiff-%s-%s" % (filediff.pk, interfilediff.pk)
-            else:
-                key += "interdiff-%s-none" % filediff.pk
-
-            chunks = cache_memoize(
-                key,
-                lambda: list(get_chunks(filediff.diffset,
-                                        filediff, interfilediff,
-                                        force_interdiff,
-                                        enable_syntax_highlighting,
-                                        request)),
-                large_data=True)
-
-        file.update({
+        diff_file.update({
             'chunks': chunks,
             'num_chunks': len(chunks),
             'changed_chunk_indexes': [],
@@ -830,14 +350,14 @@ def populate_diff_chunks(files, enable_syntax_highlighting=True,
             chunk['index'] = j
 
             if chunk['change'] != 'equal':
-                file['changed_chunk_indexes'].append(j)
+                diff_file['changed_chunk_indexes'].append(j)
                 meta = chunk.get('meta', {})
 
                 if not meta.get('whitespace_chunk', False):
-                    file['whitespace_only'] = False
+                    diff_file['whitespace_only'] = False
 
-        file.update({
-            'num_changes': len(file['changed_chunk_indexes']),
+        diff_file.update({
+            'num_changes': len(diff_file['changed_chunk_indexes']),
             'chunks_loaded': True,
         })
 

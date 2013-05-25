@@ -10,6 +10,7 @@ from kgb import SpyAgency
 
 import reviewboard.diffviewer.diffutils as diffutils
 import reviewboard.diffviewer.parser as diffparser
+from reviewboard.diffviewer.chunk_generator import DiffChunkGenerator
 from reviewboard.diffviewer.errors import UserVisibleError
 from reviewboard.diffviewer.forms import UploadDiffForm
 from reviewboard.diffviewer.models import DiffSet, FileDiff
@@ -272,37 +273,6 @@ class DiffParserTest(unittest.TestCase):
         self.assertEqual(diff, files[0].data)
         self.assertEqual(patched, new)
 
-    def testInterline(self):
-        """Testing inter-line diffs"""
-
-        def deepEqual(A, B):
-            typea, typeb = type(A), type(B)
-            self.assertEqual(typea, typeb)
-            if typea is tuple or typea is list:
-                for a, b in map(None, A, B):
-                    deepEqual(a, b)
-            else:
-                self.assertEqual(A, B)
-
-        deepEqual(diffutils.get_line_changed_regions(None, None),
-                  (None, None))
-
-        old = 'submitter = models.ForeignKey(Person, verbose_name="Submitter")'
-        new = 'submitter = models.ForeignKey(User, verbose_name="Submitter")'
-        regions = diffutils.get_line_changed_regions(old, new)
-        deepEqual(regions, ([(30, 36)], [(30, 34)]))
-
-        old = '-from reviews.models import ReviewRequest, Person, Group'
-        new = '+from .reviews.models import ReviewRequest, Group'
-        regions = diffutils.get_line_changed_regions(old, new)
-        deepEqual(regions, ([(0, 1), (6, 6), (43, 51)],
-                            [(0, 1), (6, 7), (44, 44)]))
-
-        old = 'abcdefghijklm'
-        new = 'nopqrstuvwxyz'
-        regions = diffutils.get_line_changed_regions(old, new)
-        deepEqual(regions, (None, None))
-
     def testMoveDetection(self):
         """Testing move detection"""
         # movetest1 has two blocks of code that would appear to be moves:
@@ -542,6 +512,42 @@ class UploadDiffFormTests(TestCase):
         self.assertTrue(('/README', '123') in saw_file_exists)
         self.assertFalse(('/UNUSED', '123') in saw_file_exists)
         self.assertEqual(len(saw_file_exists), 1)
+
+
+class DiffChunkGeneratorTests(TestCase):
+    """Unit tests for DiffChunkGenerator."""
+    def test_get_line_changed_regions(self):
+        """Testing DiffChunkGenerator._get_line_changed_regions"""
+        def deep_equal(A, B):
+            typea, typeb = type(A), type(B)
+            self.assertEqual(typea, typeb)
+            if typea is tuple or typea is list:
+                for a, b in map(None, A, B):
+                    deep_equal(a, b)
+            else:
+                self.assertEqual(A, B)
+
+        filediff = FileDiff(source_file='foo', diffset=DiffSet())
+        generator = DiffChunkGenerator(None, filediff)
+
+        deep_equal(generator._get_line_changed_regions(None, None),
+                   (None, None))
+
+        old = 'submitter = models.ForeignKey(Person, verbose_name="Submitter")'
+        new = 'submitter = models.ForeignKey(User, verbose_name="Submitter")'
+        regions = generator._get_line_changed_regions(old, new)
+        deep_equal(regions, ([(30, 36)], [(30, 34)]))
+
+        old = '-from reviews.models import ReviewRequest, Person, Group'
+        new = '+from .reviews.models import ReviewRequest, Group'
+        regions = generator._get_line_changed_regions(old, new)
+        deep_equal(regions, ([(0, 1), (6, 6), (43, 51)],
+                             [(0, 1), (6, 7), (44, 44)]))
+
+        old = 'abcdefghijklm'
+        new = 'nopqrstuvwxyz'
+        regions = generator._get_line_changed_regions(old, new)
+        deep_equal(regions, (None, None))
 
 
 class DiffRendererTests(SpyAgency, TestCase):

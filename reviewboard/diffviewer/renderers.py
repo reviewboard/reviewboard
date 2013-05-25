@@ -5,7 +5,7 @@ from django.template.loader import render_to_string
 from django.utils.translation import ugettext as _
 from djblets.util.misc import cache_memoize
 
-from reviewboard.diffviewer.diffutils import compute_chunk_last_header
+from reviewboard.diffviewer.chunk_generator import compute_chunk_last_header
 from reviewboard.diffviewer.errors import UserVisibleError
 
 
