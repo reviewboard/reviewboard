@@ -13,6 +13,7 @@ import reviewboard.diffviewer.parser as diffparser
 from reviewboard.diffviewer.errors import UserVisibleError
 from reviewboard.diffviewer.forms import UploadDiffForm
 from reviewboard.diffviewer.models import DiffSet, FileDiff
+from reviewboard.diffviewer.opcode_generator import get_diff_opcode_generator
 from reviewboard.diffviewer.renderers import DiffRenderer
 from reviewboard.diffviewer.templatetags.difftags import highlightregion
 from reviewboard.scmtools.models import Repository, Tool
@@ -314,7 +315,9 @@ class DiffParserTest(unittest.TestCase):
         r_moves = []
         i_moves = []
 
-        for opcodes in diffutils.opcodes_with_metadata(differ):
+        opcode_generator = get_diff_opcode_generator(differ)
+
+        for opcodes in opcode_generator:
             tag = opcodes[0]
             meta = opcodes[-1]
 
