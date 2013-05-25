@@ -7,7 +7,8 @@
 {% endblock %}
 
 {% block content %}
-{%  box "review-request"%}
+<div id="review_request">
+{%  box "review-request" %}
 <div class="actions-container">
  {% star review_request %}
  <ul class="actions">
@@ -35,6 +36,7 @@
   </div>
  </div>
 {%  endbox %}
+</div>
 
 {%  block review_ui_content %}
 {%  endblock %}
