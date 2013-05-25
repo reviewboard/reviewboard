@@ -47,8 +47,7 @@ RB.ReviewRequest = RB.BaseResource.extend({
             summary: this.get('summary'),
             targetGroups: this.get('targetGroups'),
             targetPeople: this.get('targetPeople'),
-            testingDone: this.get('testingDone'),
-            loaded: true
+            testingDone: this.get('testingDone')
         });
     },
 
