@@ -31,7 +31,6 @@ from djblets.util.misc import get_object_or_none
 from reviewboard.accounts.decorators import check_login_required, \
                                             valid_prefs_required
 from reviewboard.accounts.models import ReviewRequestVisit, Profile
-from reviewboard.attachments.forms import UploadFileForm, CommentFileForm
 from reviewboard.attachments.models import FileAttachment
 from reviewboard.changedescs.models import ChangeDescription
 from reviewboard.diffviewer.diffutils import get_file_chunks_in_range
@@ -41,15 +40,14 @@ from reviewboard.diffviewer.views import view_diff, view_diff_fragment, \
 from reviewboard.extensions.hooks import DashboardHook, \
                                          ReviewRequestDetailHook
 from reviewboard.reviews.ui.screenshot import LegacyScreenshotReviewUI
+from reviewboard.reviews.context import make_review_request_context
 from reviewboard.reviews.datagrids import DashboardDataGrid, \
                                           GroupDataGrid, \
                                           ReviewRequestDataGrid, \
                                           SubmitterDataGrid, \
                                           WatchedGroupDataGrid
 from reviewboard.reviews.errors import OwnershipError
-from reviewboard.reviews.forms import NewReviewRequestForm, \
-                                      UploadDiffForm, \
-                                      UploadScreenshotForm
+from reviewboard.reviews.forms import NewReviewRequestForm
 from reviewboard.reviews.models import Comment, \
                                        FileAttachmentComment, \
                                        Group, ReviewRequest, Review, \
@@ -109,32 +107,6 @@ def _find_review_request(request, review_request_id, local_site_name):
         return review_request, None
     else:
         return None, _render_permission_denied(request)
-
-
-def _make_review_request_context(request, review_request, extra_context):
-    """Returns a dictionary for template contexts used for review requests.
-
-    The dictionary will contain the common data that is used for all
-    review request-related pages (the review request detail page, the diff
-    viewer, and the screenshot pages).
-
-    For convenience, extra data can be passed to this dictionary.
-    """
-    if review_request.repository:
-        upload_diff_form = UploadDiffForm(review_request, request=request)
-        scmtool = review_request.repository.get_scmtool()
-    else:
-        upload_diff_form = None
-        scmtool = None
-
-    return dict({
-        'review_request': review_request,
-        'upload_diff_form': upload_diff_form,
-        'upload_screenshot_form': UploadScreenshotForm(),
-        'file_attachment_form': UploadFileForm(),
-        'comment_file_form': CommentFileForm(),
-        'scmtool': scmtool,
-    }, **extra_context)
 
 
 def _build_id_map(objects):
@@ -710,7 +682,7 @@ def review_detail(request,
         if status in (ReviewRequest.DISCARDED, ReviewRequest.SUBMITTED):
             close_description = latest_changedesc.text
 
-    context_data = _make_review_request_context(request, review_request, {
+    context_data = make_review_request_context(request, review_request, {
         'draft': draft,
         'detail_hooks': ReviewRequestDetailHook.hooks,
         'review_request_details': review_request_details,
@@ -1032,7 +1004,7 @@ def diff(request,
 
     return view_diff(
          request, diffset, interdiffset, template_name=template_name,
-         extra_context=_make_review_request_context(request, review_request, {
+         extra_context=make_review_request_context(request, review_request, {
             'diffsets': diffsets,
             'latest_diffset': latest_diffset,
             'review': pending_review,

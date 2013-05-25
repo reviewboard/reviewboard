@@ -9,6 +9,7 @@ import mimeparse
 
 from reviewboard.attachments.mimetypes import score_match
 from reviewboard.diffviewer.models import DiffSet
+from reviewboard.reviews.context import make_review_request_context
 from reviewboard.reviews.models import FileAttachmentComment
 from reviewboard.site.urlresolvers import local_site_reverse
 
@@ -47,18 +48,22 @@ class ReviewUI(object):
 
         return render_to_response(
             self.template_name,
-            RequestContext(request, {
-                'base_template': base_template_name,
-                'caption': self.get_caption(draft),
-                'comments': self.get_comments(),
-                'draft': draft,
-                'has_diffs': (draft and draft.diffset) or diffset_count > 0,
-                'review_request_details': review_request_details,
-                'review_request': self.review_request,
-                'review': review,
-                'review_ui': self,
-                self.object_key: self.obj,
-            }, **self.get_extra_context(request)))
+            RequestContext(
+                request,
+                make_review_request_context(request, self.review_request, {
+                    'base_template': base_template_name,
+                    'caption': self.get_caption(draft),
+                    'comments': self.get_comments(),
+                    'draft': draft,
+                    'has_diffs': (draft and draft.diffset) or
+                                 diffset_count > 0,
+                    'review_request_details': review_request_details,
+                    'review_request': self.review_request,
+                    'review': review,
+                    'review_ui': self,
+                    self.object_key: self.obj,
+                }),
+                **self.get_extra_context(request)))
 
     def get_comments(self):
         return self.obj.get_comments()
