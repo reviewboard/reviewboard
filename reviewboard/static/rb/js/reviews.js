@@ -604,11 +604,20 @@ $.fn.commentIssue = function(review_id, comment_id, comment_type,
 
     self.update_issue_summary_table = function(new_status, old_status, timestamp) {
         var comment_id = self.comment_id,
-            entry = $('#summary-table-entry-' + comment_id);
+            entry = $('#summary-table-entry-' + comment_id),
+            buttonTop = self.offset().top;
 
         issueSummaryTableManager.updateStatus(entry, old_status, new_status);
         issueSummaryTableManager.updateCounters(old_status, new_status);
         issueSummaryTableManager.updateTimeStamp(entry, timestamp);
+
+        /*
+         * Update the scroll position to counteract the addition/deletion
+         * of the entry in the issue summary table, so the page doesn't
+         * appear to jump.
+         */
+        $(window).scrollTop($(window).scrollTop() + self.offset().top -
+                            buttonTop);
     }
 
     var open_state = {
