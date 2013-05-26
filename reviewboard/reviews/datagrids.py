@@ -703,9 +703,6 @@ class DashboardDataGrid(ReviewRequestDataGrid):
         else:
             raise Http404
 
-        # Pre-load all querysets for the sidebar.
-        self.counts = get_sidebar_counts(user, self.local_site)
-
         return False
 
 
@@ -790,9 +787,6 @@ class WatchedGroupDataGrid(GroupDataGrid):
 
         self.queryset = profile.starred_groups.all()
         self.queryset = self.queryset.filter(local_site=local_site)
-
-        # Pre-load all querysets for the sidebar.
-        self.counts = get_sidebar_counts(user, local_site)
 
     def link_to_object(self, group, value):
         return ".?view=to-group&group=%s" % group.name

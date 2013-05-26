@@ -45,7 +45,8 @@ from reviewboard.reviews.datagrids import DashboardDataGrid, \
                                           GroupDataGrid, \
                                           ReviewRequestDataGrid, \
                                           SubmitterDataGrid, \
-                                          WatchedGroupDataGrid
+                                          WatchedGroupDataGrid, \
+                                          get_sidebar_counts
 from reviewboard.reviews.errors import OwnershipError
 from reviewboard.reviews.forms import NewReviewRequestForm
 from reviewboard.reviews.models import Comment, \
@@ -809,6 +810,7 @@ def dashboard(request,
         * 'mine'
     """
     view = request.GET.get('view', None)
+    context = {}
 
     if local_site_name:
         local_site = get_object_or_404(LocalSite, name=local_site_name)
@@ -824,9 +826,13 @@ def dashboard(request,
     else:
         grid = DashboardDataGrid(request, local_site=local_site)
 
-    return grid.render_to_response(template_name, extra_context={
-        'sidebar_hooks': DashboardHook.hooks,
-    })
+    if not request.GET.get('gridonly', False):
+        context = {
+            'sidebar_counts': get_sidebar_counts(request.user, local_site),
+            'sidebar_hooks': DashboardHook.hooks,
+        }
+
+    return grid.render_to_response(template_name, extra_context=context)
 
 
 @check_login_required
