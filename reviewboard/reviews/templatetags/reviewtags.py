@@ -340,7 +340,7 @@ def dashboard_entry(context, level, text, view, param=None):
     :template:`reviews/dashboard_entry.html`.
     """
     user = context.get('user', None)
-    datagrid = context.get('datagrid', None)
+    sidebar_counts = context.get('sidebar_counts', None)
     starred = False
     show_count = True
     count = 0
@@ -349,13 +349,14 @@ def dashboard_entry(context, level, text, view, param=None):
 
     if view == 'to-group':
         group_name = param
-        count = datagrid.counts['groups'].get(group_name,
-            datagrid.counts['starred_groups'].get(group_name, 0))
+        count = sidebar_counts['groups'].get(
+            group_name,
+            sidebar_counts['starred_groups'].get(group_name, 0))
     elif view == 'watched-groups':
         starred = True
         show_count = False
-    elif view in datagrid.counts:
-        count = datagrid.counts[view]
+    elif view in sidebar_counts:
+        count = sidebar_counts[view]
 
         if view == 'starred':
             starred = True
@@ -363,8 +364,8 @@ def dashboard_entry(context, level, text, view, param=None):
         url = param
         show_count = False
     else:
-        raise template.TemplateSyntaxError, \
-            "Invalid view type '%s' passed to 'dashboard_entry' tag." % view
+        raise template.TemplateSyntaxError(
+            "Invalid view type '%s' passed to 'dashboard_entry' tag." % view)
 
     return {
         'level': level,
