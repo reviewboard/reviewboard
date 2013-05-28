@@ -9,7 +9,6 @@ RB.CommentIssueManager = Backbone.Model.extend({
     },
 
     initialize: function() {
-        this._callbacks = {};
         this._comments = {};
     },
 
@@ -25,21 +24,6 @@ RB.CommentIssueManager = Backbone.Model.extend({
     setCommentState: function(reviewID, commentID, commentType, state) {
         var comment = this._getComment(reviewID, commentID, commentType);
         this._requestState(comment, state);
-    },
-
-    /*
-     * registerCallback - allows clients to register callbacks to be
-     * notified when a particular comment state is updated.
-     * @param commentID the id of the comment to be notified about
-     * @param callback a function of the form:
-     *                 function(issue_state) {}
-     */
-    registerCallback: function(commentID, callback) {
-        if (!this._callbacks[commentID]) {
-            this._callbacks[commentID] = [];
-        }
-
-        this._callbacks[commentID].push(callback);
     },
 
     /*
@@ -89,10 +73,8 @@ RB.CommentIssueManager = Backbone.Model.extend({
                         var rspComment = (rsp.diff_comment ||
                                           rsp.file_attachment_comment ||
                                           rsp.screenshot_comment);
-                        self._notifyCallbacks(comment.get('id'),
-                                              comment.get('issueStatus'),
-                                              oldIssueStatus,
-                                              rspComment.timestamp);
+                        self.trigger('issueStatusUpdated', comment,
+                                     oldIssueStatus, rspComment.timestamp);
 
                         /*
                          * We don't want the current user to receive the
@@ -107,17 +89,6 @@ RB.CommentIssueManager = Backbone.Model.extend({
                     }
                 });
             }
-        });
-    },
-
-    /*
-     * Helper function that notifies all callbacks registered for
-     * a particular comment
-     */
-    _notifyCallbacks: function(commentID, issueStatus, oldIssueStatus,
-                               lastUpdated) {
-        _.each(this._callbacks[commentID], function(callback) {
-            callback(issueStatus, oldIssueStatus, lastUpdated);
         });
     }
 });

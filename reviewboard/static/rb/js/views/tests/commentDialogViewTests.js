@@ -1,20 +1,16 @@
 describe('views/CommentDialogView', function() {
-    var reviewRequest;
+    var reviewRequestEditor,
+        reviewRequest;
 
     beforeEach(function() {
         reviewRequest = new RB.ReviewRequest();
+        reviewRequestEditor = new RB.ReviewRequestEditor({
+            reviewRequest: reviewRequest
+        });
     });
 
     describe('Class methods', function() {
         describe('create', function() {
-            var reviewRequestEditor;
-
-            beforeEach(function() {
-                reviewRequestEditor = new RB.ReviewRequestEditor({
-                    reviewRequest: reviewRequest
-                });
-            });
-
             it('Without a comment', function() {
                 expect(function() {
                     RB.CommentDialogView.create({
@@ -77,12 +73,14 @@ describe('views/CommentDialogView', function() {
             editor = new RB.CommentEditor({
                 comment: new RB.DiffComment(),
                 canEdit: true,
-                reviewRequest: reviewRequest
+                reviewRequest: reviewRequest,
+                reviewRequestEditor: reviewRequestEditor
             });
 
             dlg = new RB.CommentDialogView({
                 animate: false,
-                model: editor
+                model: editor,
+                commentIssueManager: new RB.CommentIssueManager()
             });
 
             dlg.on('closed', function() {
@@ -305,8 +303,9 @@ describe('views/CommentDialogView', function() {
         describe('Height', function() {
             beforeEach(function() {
                 editor = new RB.CommentEditor({
-                comment: new RB.DiffComment(),
-                    reviewRequest: reviewRequest
+                    comment: new RB.DiffComment(),
+                    reviewRequest: reviewRequest,
+                    reviewRequestEditor: reviewRequestEditor
                 });
 
                 dlg = new RB.CommentDialogView({
@@ -380,6 +379,59 @@ describe('views/CommentDialogView', function() {
                     dlg.open();
                     editor.set('publishedComments', [comment])
                     expect($commentsList.children().length).toBe(1);
+                });
+            });
+
+            describe('Issue bar buttons', function() {
+                var comment;
+
+                beforeEach(function() {
+                    comment = new RB.DiffComment();
+                    comment.user = {
+                        'name': 'Teset User'
+                    };
+                    comment.url = 'http://example.com/';
+                    comment.comment_id = 1;
+                    comment.text = 'Sample comment.';
+                    comment.issue_opened = true;
+                    comment.issue_status = 'open';
+                });
+
+                it('When interactive', function() {
+                    var $buttons;
+
+                    reviewRequestEditor.set('editable', true);
+                    editor.set('publishedComments', [comment])
+
+                    dlg = new RB.CommentDialogView({
+                        animate: false,
+                        model: editor,
+                        commentIssueManager: new RB.CommentIssueManager()
+                    });
+                    dlg.render().$el.appendTo($testsScratch);
+                    dlg.open();
+
+                    $buttons = dlg.$el.find('.other-comments .issue-button');
+                    expect($buttons.length).toBe(3);
+                    expect($buttons.is(':visible')).toBe(true);
+                });
+
+                it('When not interactive', function() {
+                    var $buttons;
+
+                    reviewRequestEditor.set('editable', false);
+                    editor.set('publishedComments', [comment])
+
+                    dlg = new RB.CommentDialogView({
+                        animate: false,
+                        model: editor,
+                        commentIssueManager: new RB.CommentIssueManager()
+                    });
+                    dlg.render().$el.appendTo($testsScratch);
+                    dlg.open();
+
+                    $buttons = dlg.$el.find('.other-comments .issue-button');
+                    expect($buttons.length).toBe(0);
                 });
             });
         });
@@ -652,7 +704,8 @@ describe('views/CommentDialogView', function() {
                     RB.UserSession.instance.set('commentsOpenAnIssue', true);
 
                     editor = new RB.CommentEditor({
-                        reviewRequest: reviewRequest
+                        reviewRequest: reviewRequest,
+                        reviewRequestEditor: reviewRequestEditor
                     });
                     dlg = new RB.CommentDialogView({
                         animate: false,
@@ -669,7 +722,8 @@ describe('views/CommentDialogView', function() {
                     RB.UserSession.instance.set('commentsOpenAnIssue', false);
 
                     editor = new RB.CommentEditor({
-                        reviewRequest: reviewRequest
+                        reviewRequest: reviewRequest,
+                        reviewRequestEditor: reviewRequestEditor
                     });
                     dlg = new RB.CommentDialogView({
                         animate: false,
@@ -691,7 +745,8 @@ describe('views/CommentDialogView', function() {
                 dlg = new RB.CommentDialogView({
                     animate: false,
                     model: new RB.CommentEditor({
-                        reviewRequest: reviewRequest
+                        reviewRequest: reviewRequest,
+                        reviewRequestEditor: reviewRequestEditor
                     })
                 });
                 dlg.render();
@@ -705,7 +760,8 @@ describe('views/CommentDialogView', function() {
                 dlg = new RB.CommentDialogView({
                     animate: false,
                     model: new RB.CommentEditor({
-                        reviewRequest: reviewRequest
+                        reviewRequest: reviewRequest,
+                        reviewRequestEditor: reviewRequestEditor
                     })
                 });
                 dlg.render();
@@ -721,7 +777,8 @@ describe('views/CommentDialogView', function() {
                 dlg = new RB.CommentDialogView({
                     animate: false,
                     model: new RB.CommentEditor({
-                        reviewRequest: reviewRequest
+                        reviewRequest: reviewRequest,
+                        reviewRequestEditor: reviewRequestEditor
                     })
                 });
                 dlg.render();
@@ -736,7 +793,8 @@ describe('views/CommentDialogView', function() {
                 dlg = new RB.CommentDialogView({
                     animate: false,
                     model: new RB.CommentEditor({
-                        reviewRequest: reviewRequest
+                        reviewRequest: reviewRequest,
+                        reviewRequestEditor: reviewRequestEditor
                     })
                 });
                 dlg.render();

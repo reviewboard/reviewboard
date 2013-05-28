@@ -12,10 +12,16 @@
  </div>
 </div>
 <script language="javascript">
-  $(document).ready(function() {
-    $("#comment-{{comment.comment_type}}-{{comment.id}}-issue")
-        .commentIssue({{review.id}}, {{comment.id}}, "{{comment_type}}", "{{issue_status}}",
-                      {{interactive}});
+    $(document).ready(function() {
+        var issueBar = new RB.CommentIssueBarView({
+            el: $("#comment-{{comment.comment_type}}-{{comment.id}}-issue"),
+            reviewID: {{review.pk}},
+            commentID: {{comment.pk}},
+            commentType: '{{comment_type}}',
+            issueStatus: '{{issue_status}}',
+            interactive: {{interactive}}
+        });
+        issueBar.render();
   });
 </script>
 

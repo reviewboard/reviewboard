@@ -139,6 +139,11 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
         this._fieldEditors = [];
 
         _.each(this.defaultFields, this.registerField, this);
+
+        this.issueSummaryTableView = new RB.IssueSummaryTableView({
+            el: $('#issue-summary'),
+            model: this.model.get('commentIssueManager')
+        });
     },
 
     /*
@@ -209,6 +214,8 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
         this.dndUploader = new RB.DnDUploader({
             reviewRequestEditor: this.model
         });
+
+        this.issueSummaryTableView.render();
 
         this._setupActions();
 

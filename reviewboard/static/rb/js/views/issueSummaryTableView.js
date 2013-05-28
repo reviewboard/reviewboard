@@ -35,6 +35,10 @@ RB.IssueSummaryTableView = Backbone.View.extend({
         this._buildReviewerFilterMap();
         this._checkNoIssues();
         this._uncollapseTarget();
+
+        this.model.on('issueStatusUpdated', this._onIssueStatusChanged, this);
+
+        return this;
     },
 
     // Show or hide entry according to issue summary filter state.
@@ -206,5 +210,28 @@ RB.IssueSummaryTableView = Backbone.View.extend({
                 window.location = window.location;
             }
         }
+    },
+
+    /*
+     * Handler for when the issue status of a comment changes.
+     *
+     * Updates the display of the table to reflect the state of that issue.
+     */
+    _onIssueStatusChanged: function(comment, oldStatus, lastUpdated) {
+        var entry = $('#summary-table-entry-' + comment.id),
+            newStatus = comment.get('issueStatus'),
+            oldHeight = this.$el.height();
+
+        this.updateStatus(entry, oldStatus, newStatus);
+        this.updateCounters(oldStatus, newStatus);
+        this.updateTimeStamp(entry, lastUpdated);
+
+        /*
+         * Update the scroll position to counteract the addition/deletion
+         * of the entry in the issue summary table, so the page doesn't
+         * appear to jump.
+         */
+        $(window).scrollTop($(window).scrollTop() + this.$el.height() -
+                            oldHeight);
     }
 });

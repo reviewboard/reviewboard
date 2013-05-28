@@ -55,6 +55,7 @@
     });
 
     window.reviewRequestEditor = new RB.ReviewRequestEditor({
+        commentIssueManager: window.gCommentIssueManager,
         reviewRequest: reviewRequest,
         editable: {% if review_request.status == 'P' %}true{% else %}false{% endif %},
         fileAttachmentComments: {

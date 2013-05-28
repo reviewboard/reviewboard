@@ -61,7 +61,8 @@ describe('views/ReviewRequestEditorView', function() {
 
         editor = new RB.ReviewRequestEditor({
             editable: true,
-            reviewRequest: reviewRequest
+            reviewRequest: reviewRequest,
+            commentIssueManager: new RB.CommentIssueManager()
         });
 
         view = new RB.ReviewRequestEditorView({

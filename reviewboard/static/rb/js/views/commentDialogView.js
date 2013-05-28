@@ -29,6 +29,10 @@ var CommentsListView = Backbone.View.extend({
     setComments: function(comments, replyType) {
         var reviewRequestURL = this.options.reviewRequestURL,
             commentIssueManager = this.options.commentIssueManager,
+            interactive = this.options.issuesInteractive,
+            issueTemplateOpts = {
+                interactive: interactive
+            },
             odd = true,
             $items = $();
 
@@ -36,32 +40,39 @@ var CommentsListView = Backbone.View.extend({
             return;
         }
 
-        _.each(comments, function(comment) {
-            var $item = $(this.itemTemplate({
-                comment: comment,
-                itemClass: odd ? 'odd' : 'even',
-                reviewRequestURL: reviewRequestURL,
-                replyType: replyType
-            }));
+        _.each(comments, function(serializedComment) {
+            var commentID = serializedComment.comment_id,
+                $item = $(this.itemTemplate({
+                    comment: serializedComment,
+                    itemClass: odd ? 'odd' : 'even',
+                    reviewRequestURL: reviewRequestURL,
+                    replyType: replyType
+                })),
+                commentIssueBar;
 
-            if (comment.issue_opened) {
-                var interactive = window['gEditable'],
-                    $issue = $('<div/>').issueIndicator();
+            if (serializedComment.issue_opened) {
+                commentIssueBar = new RB.CommentIssueBarView({
+                    reviewID: serializedComment.review_id,
+                    commentID: commentID,
+                    commentType: replyType,
+                    issueStatus: serializedComment.issue_status,
+                    interactive: interactive,
+                    commentIssueManager: commentIssueManager
+                });
+                commentIssueBar.render().$el.appendTo($item);
 
-                if (interactive) {
-                    $issue.issueButtons();
-                }
-
-                $issue
-                    .commentIssue(comment.review_id, comment.comment_id,
-                                  replyType, comment.issue_status,
-                                  interactive)
-                    .appendTo($item);
-
-                commentIssueManager.registerCallback(comment.comment_id,
-                    function(issue_status) {
-                        comment.issue_status = issue_status;
-                    });
+                /*
+                 * Update the serialized comment's issue status whenever
+                 * the real comment's status is changed so we will
+                 * display it correctly the next time we render it.
+                 */
+                commentIssueManager.on('issueStatusUpdated',
+                                       function(comment) {
+                    if (comment.id === commentID) {
+                        serializedComment.issue_status =
+                            comment.get('issueStatus');
+                    }
+                });
             }
 
             $items = $items.add($item);
@@ -140,7 +151,8 @@ RB.CommentDialogView = Backbone.View.extend({
 
     render: function() {
         var userSession = RB.UserSession.instance,
-            reviewRequest = this.model.get('reviewRequest');
+            reviewRequest = this.model.get('reviewRequest'),
+            reviewRequestEditor = this.model.get('reviewRequestEditor');
 
         this.options.animate = (this.options.animate !== false);
 
@@ -192,7 +204,8 @@ RB.CommentDialogView = Backbone.View.extend({
         this._commentsList = new CommentsListView({
             el: this._$commentsPane.find('ul'),
             reviewRequestURL: this.options.reviewRequestURL,
-            commentIssueManager: this.options.commentIssueManager
+            commentIssueManager: this.options.commentIssueManager,
+            issuesInteractive: reviewRequestEditor.get('editable')
         });
 
         /*
