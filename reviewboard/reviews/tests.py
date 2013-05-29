@@ -683,29 +683,29 @@ class ViewTests(TestCase):
         response = self.client.get('/dashboard/')
         self.assertEqual(response.status_code, 200)
 
-        datagrid = self.getContextVar(response, 'datagrid')
+        counts = self.getContextVar(response, 'sidebar_counts')
         self.assertEqual(
-            datagrid.counts['outgoing'],
+            counts['outgoing'],
             ReviewRequest.objects.from_user(
                 user, user, local_site=local_site).count())
         self.assertEqual(
-            datagrid.counts['incoming'],
+            counts['incoming'],
             ReviewRequest.objects.to_user(user, local_site=local_site).count())
         self.assertEqual(
-            datagrid.counts['to-me'],
+            counts['to-me'],
             ReviewRequest.objects.to_user_directly(
                 user, local_site=local_site).count())
         self.assertEqual(
-            datagrid.counts['starred'],
+            counts['starred'],
             profile.starred_review_requests.public(
                 user, local_site=local_site).count())
-        self.assertEqual(datagrid.counts['mine'],
+        self.assertEqual(counts['mine'],
             ReviewRequest.objects.from_user(
                 user, user, None, local_site=local_site).count())
-        self.assertEqual(datagrid.counts['groups']['devgroup'],
+        self.assertEqual(counts['groups']['devgroup'],
             ReviewRequest.objects.to_group(
                 'devgroup', local_site=local_site).count())
-        self.assertEqual(datagrid.counts['groups']['privgroup'],
+        self.assertEqual(counts['groups']['privgroup'],
             ReviewRequest.objects.to_group(
                 'privgroup', local_site=local_site).count())
 
