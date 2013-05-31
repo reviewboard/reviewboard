@@ -143,3 +143,27 @@ class HookTests(TestCase):
 
         self.assertEqual(t.render(context).strip(),
                          '<li><a href="%(url)s">%(label)s</a></li>' % entry)
+
+    def test_navigation_bar_hooks_with_url_name(self):
+        "Testing navigation entry extension hooks with url names"""
+        entry = {
+            'label': 'Test Nav Entry',
+            'url_name': 'dashboard',
+        }
+
+        hook = NavigationBarHook(extension=self.extension, entries=[entry])
+
+        context = Context({})
+        entries = hook.get_entries(context)
+        self.assertEqual(len(entries), 1)
+        self.assertEqual(entries[0], entry)
+
+        t = Template(
+            "{% load rb_extensions %}"
+            "{% navigation_bar_hooks %}")
+
+        self.assertEqual(t.render(context).strip(),
+                         '<li><a href="%(url)s">%(label)s</a></li>' % {
+                             'label': entry['label'],
+                             'url': '/dashboard/',
+                         })
