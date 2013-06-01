@@ -6,7 +6,7 @@
 {{block.super}}
 {%  if request.user.is_authenticated %}
   var gUserURL = "{% url user request.user %}";
-  var gOpenAnIssue = {{user.get_profile.open_an_issue|lower}};
+  var gOpenAnIssue = {% if request.user.get_profile.open_an_issue %}true{% else %}false{% endif %};
 {%  endif %}
 {% endblock %}
 
