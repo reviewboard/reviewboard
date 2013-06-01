@@ -13,6 +13,7 @@ from djblets.siteconfig.views import site_settings as djblets_site_settings
 
 from reviewboard.admin.cache_stats import get_cache_stats
 from reviewboard.admin.forms import SSHSettingsForm
+from reviewboard.admin.support import get_support_url
 from reviewboard.admin.widgets import dynamic_activity_data, \
                                       primary_widgets, \
                                       secondary_widgets
@@ -137,3 +138,8 @@ def widget_activity(request):
 
     return HttpResponse(simplejson.dumps(activity_data),
                         mimetype="application/json")
+
+
+def support_redirect(request):
+    """Redirects to the Beanbag support page for Review Board."""
+    return HttpResponseRedirect(get_support_url(request))
