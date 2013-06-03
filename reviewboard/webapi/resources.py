@@ -4270,9 +4270,9 @@ class ReviewRequestDraftResource(WebAPIResource):
                            'change.',
         },
         'depends_on': {
-            'type': str,
-            'description': 'The new list of dependencies of this review '
-                           'request.',
+            'type': ['reviewboard.webapi.resources.ReviewRequestResource'],
+            'description': 'The list of review requests that this '
+                           'review request depends on.',
         },
         'changedescription': {
             'type': str,
@@ -6459,6 +6459,16 @@ class ReviewRequestResource(WebAPIResource):
         'id': {
             'type': int,
             'description': 'The numeric ID of the review request.',
+        },
+        'blocks': {
+            'type': ['reviewboard.webapi.resources.ReviewRequestResource'],
+            'description': 'The list of review requests that this '
+                           'review request is blocking.',
+        },
+        'depends_on': {
+            'type': ['reviewboard.webapi.resources.ReviewRequestResource'],
+            'description': 'The list of review requests that this '
+                           'review request depends on.',
         },
         'submitter': {
             'type': UserResource,
