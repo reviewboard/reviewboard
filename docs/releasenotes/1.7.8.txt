@@ -1,0 +1,169 @@
+================================
+Review Board 1.7.8 Release Notes
+================================
+
+**Release date**: June 2, 2013
+
+
+New Features
+============
+
+* Added Depends On and Blocks fields to review requests. (:bug:`281`)
+
+  Review requests can now indicate that they depend on another review
+  request. Reviewers can use this to gain some context on what the
+  review request is built upon, or to see what needs to be reviewed along
+  with it.
+
+  A review request listing another review request will appear in the
+  other review request's "Blocks" list.
+
+  Patch by Jon Demelo.
+
+* Added an improved support page.
+
+  Clicking :guilabel:`Get Support` will now take the user to our
+  official Support landing page. For most installs, this page will show
+  some handy links (knowledge base, documentation, bug tracker, and others),
+  and link to the administrator's configured e-mail address.
+
+  Companies that have a support contract with us will also have a contact
+  form on this page for one-on-one priority support.
+
+* Added the ability to set where :guilabel:`Get Support` takes users.
+
+  If your organization has their own support page (such as a wiki), you
+  can configure :guilabel:`Get Support` to point there instead of our page.
+  This is available through the new Support settings page in the
+  administration UI.
+
+* Added improved logging for many operations.
+
+  Operations such as generating diffs now show the user who performed
+  the operation. This can help with debugging and support.
+
+
+Performance Improvements
+========================
+
+* Reduced the upload time for many new diffs.
+
+  Review Board performs file existence checks when uploading diffs, which
+  end up fetching data from the server for each file.
+
+  We now cache the results of these checks in order to prevent subsequent
+  diffs from having to check again. We also take into account files already
+  fetched by the diff viewer. This makes it much faster to iterate on diffs.
+
+* The templates used for rendering the various pages are now cached after
+  the first render, speeding up the rendering for any future renders.
+  We've seen speedups of ~100-120ms for review request pages.
+
+  The cache is local to each web server thread/process, so the benefits
+  depend largely on your setup.
+
+
+Usability Improvements
+======================
+
+* The review request actions are now larger, making them more visible
+  and easier to hit, particularly on touch screens.
+
+* Clicking :guilabel:`Fixed`, :guilabel:`Drop` or :guilabel:`Re-open`
+  now keeps the page in the same scroll position. It would previously
+  scroll slightly due to the addition/removal of an entry in the issue
+  summary table.
+
+* The dashboard now reloads dynamically, without reloading the entire
+  page. If there's a server or connection issue when trying to load the
+  dashboard, it will just try again later, instead of showing an error page.
+
+* The comment dialog now tells you when you can't make a comment
+  (due to being logged out or reviewing something that's part of a draft).
+  This helps prevent confusion and silent errors when saving comments.
+
+
+API Changes
+===========
+
+* Fixed deleting pendign replies to comments. This would always return
+  Forbidden before.
+
+* Fixed some issues returning certain lists of data. It was possible that
+  data could change between the time of generating the API response and
+  returning it to the browser, but this is no longer possible.
+
+
+Extensibility Improvements
+==========================
+
+* Extensions can now customize their metadata directly in the Extension class.
+  Previously, we used the package metadata for things like the extension
+  name, author, version, etc., meaning that a package could have at most one
+  extension. They can now have as many as you choose.
+
+  This is customized by including a ``metadata`` dictinoary field on the
+  Extension class. The keys and values correspond to standard Python
+  egg metadata keys and values.
+
+* TemplateHooks can now render their own content by overriding
+  :py:func:`render_to_string`. They no longer need to take a
+  ``template`` parameter.
+
+* NavigationBarHook can now take a ``url_name`` parameter specifying the
+  URL name to link to.
+
+* Review UIs can now specify the link and link text for any comments on a
+  review by overriding :py:func:`get_comment_link_url` and
+  :py:func:`get_comment_link_text`.
+
+* Custom hosting services can now be registered/unregistered by extensions
+  by using :py:func:`register_hosting_service` and
+  :py:func:`unregister_hosting_service` (from
+  :py:mod:`reviewboard.hostingsvcs.service`).
+
+* Added the ability to more easily write hosting services support that works
+  for self-installable services. Right now, this is not used, but sets us
+  up for future hosting service additions.
+
+
+Bug Fixes
+=========
+
+* Added missing repository validation for Mercurial repositories.
+
+* Fixed replying to comments on file attachments that have since been
+  removed.
+
+* Fixed the display of the upload dialogs when viewing a file attachment.
+  They were appearing blank.
+
+* Comments on file attachments in e-mails now link to the correct review UI
+  handling the file.
+
+* Worked around rare issues where a reset of the Open An Issue default
+  for a user would cause pages to break.
+
+
+Misc. Changes
+=============
+
+* E-mails now show the user's full name instead of just their first name.
+  (:bug:`2965`)
+
+  Patch by Raja Venkataraman.
+
+* The New Review Request page now mentions RBTools instead of just
+  post-review.
+
+
+Contributors
+============
+
+* Christian Hammond
+* David Trowbridge
+* Jon Demelo
+* Raja Venkataraman
+
+
+.. comment: vim: ft=rst et

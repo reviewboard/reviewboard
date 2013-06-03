@@ -153,7 +153,7 @@
     RB.UserSession.create({
 {% if request.user.is_authenticated %}
         authenticated: true,
-        commentsOpenAnIssue: {{request.user.get_profile.open_an_issue|lower}},
+        commentsOpenAnIssue: {% if request.user.get_profile.open_an_issue %}true{% else %}false{% endif %},
         fullName: "{{request.user|user_displayname|escapejs}}",
         username: "{{request.user.username|escapejs}}",
         userPageURL: "{% url user request.user %}",
