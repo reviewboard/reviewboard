@@ -9,7 +9,7 @@ from reviewboard.site.models import LocalSite
 
 class HostingServiceAccount(models.Model):
     service_name = models.CharField(max_length=128)
-    hosting_url = models.CharField(max_length=256, blank=True, null=True)
+    hosting_url = models.CharField(max_length=255, blank=True, null=True)
     username = models.CharField(max_length=128)
     data = JSONField()
     visible = models.BooleanField(default=True)
