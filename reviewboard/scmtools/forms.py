@@ -965,9 +965,8 @@ class RepositoryForm(forms.ModelForm):
 
         hosting_type = self.cleaned_data['hosting_type']
         service = get_hosting_service(hosting_type)
-        assert service
 
-        if service.self_hosted:
+        if service and service.self_hosted:
             repository.extra_data['hosting_url'] = \
                 self.cleaned_data['hosting_url']
 
