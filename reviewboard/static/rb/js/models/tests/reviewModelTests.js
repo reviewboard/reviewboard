@@ -8,6 +8,31 @@ describe('models/Review', function() {
         });
     });
 
+    describe('createReply', function() {
+        it('Returns cached draft reply', function() {
+            var reviewReply,
+                reviewReply2;
+
+            expect(model.get('draftReply')).toBe(null);
+
+            reviewReply = model.createReply();
+            expect(model.get('draftReply')).toBe(reviewReply);
+
+            reviewReply2 = model.createReply();
+            expect(reviewReply).toBe(reviewReply2);
+        });
+
+        it('Cached draft reply resets on publish', function() {
+            var reviewReply;
+
+            reviewReply = model.createReply();
+            expect(model.get('draftReply')).toBe(reviewReply);
+
+            reviewReply.trigger('published');
+            expect(model.get('draftReply')).toBe(null);
+        });
+    });
+
     describe('parse', function() {
         beforeEach(function() {
             model.rspNamespace = 'my_review';

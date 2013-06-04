@@ -158,6 +158,7 @@
         username: "{{request.user.username|escapejs}}",
         userPageURL: "{% url user request.user %}",
         sessionURL: "{% url session-resource %}",
+        timezoneOffset: "{% now 'O' %}",
         watchedReviewGroupsURL: "{% url watched-review-groups-resource request.user %}",
         watchedReviewRequestsURL: "{% url watched-review-requests-resource request.user %}"
 {% else %}

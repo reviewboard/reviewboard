@@ -78,6 +78,10 @@ RB.Review = RB.BaseResource.extend({
                 parentObject: this
             });
             this.set('draftReply', draftReply);
+
+            draftReply.once('published', function() {
+                this.set('draftReply', null);
+            }, this);
         }
 
         return draftReply;

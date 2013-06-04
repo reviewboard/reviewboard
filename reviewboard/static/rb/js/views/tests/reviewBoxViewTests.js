@@ -13,7 +13,7 @@ describe('views/ReviewBoxView', function() {
             '       data-context-type="body_top">',
             '   <a class="add_comment_link"></a>',
             '   <ul class="reply-comments">',
-            '    <li id="yourcomment_foo" data-comment-id="456">',
+            '    <li class="draft" data-comment-id="456">',
             '     <pre class="reviewtext"></pre>',
             '    </li>',
             '   </ul>',
@@ -72,16 +72,16 @@ describe('views/ReviewBoxView', function() {
 
     describe('Reply editors', function() {
         it('Views created', function() {
-            expect(view._replyEditors.length).toBe(2);
+            expect(view._replyEditorViews.length).toBe(2);
         });
 
         it('Initial state populated', function() {
-            var model = view._replyEditors[0].model;
+            var model = view._replyEditorViews[0].model;
 
             expect(model.get('contextID')).toBe(123);
             expect(model.get('contextType')).toBe('body_top');
 
-            model = view._replyEditors[1].model;
+            model = view._replyEditorViews[1].model;
             expect(model.get('contextID')).toBe(124);
             expect(model.get('contextType')).toBe('body_bottom');
         });
@@ -89,12 +89,75 @@ describe('views/ReviewBoxView', function() {
         it('Draft banner when draft comment exists', function() {
             expect(view._showReplyDraftBanner).toHaveBeenCalled();
         });
+
+        describe('reviewReply changes on', function() {
+            it('Discard', function() {
+                spyOn(view, '_setupNewReply');
+
+                reviewReply.trigger('destroyed');
+                expect(view._setupNewReply).toHaveBeenCalled();
+            });
+
+            it('Publish', function() {
+                spyOn(view, '_setupNewReply');
+
+                /*
+                 * Don't let these do their thing. Otherwise they'll try to
+                 * discard and it'll end up performing ajax operations.
+                 */
+                _.each(view._replyEditors, function(editor) {
+                    spyOn(editor, '_resetState');
+                });
+
+                reviewReply.trigger('published');
+                expect(view._setupNewReply).toHaveBeenCalled();
+            });
+        });
+
+        describe('When reviewReply changes', function() {
+            it('Signals connected', function() {
+                var reviewReply = new RB.ReviewReply();
+
+                spyOn(reviewReply, 'on');
+
+                view._setupNewReply(reviewReply);
+
+                expect(reviewReply.on.calls[0].args[0])
+                    .toBe('destroyed published');
+            });
+
+            it('Signals disconnected from old reviewReply', function() {
+                spyOn(reviewReply, 'off');
+
+                view._setupNewReply();
+
+                expect(reviewReply.off).toHaveBeenCalledWith(null, null, view);
+            });
+
+            it('Draft banner hidden', function() {
+                spyOn(view, '_hideReplyDraftBanner');
+
+                view._setupNewReply();
+
+                expect(view._hideReplyDraftBanner).toHaveBeenCalled();
+            });
+
+            it('Editors updated', function() {
+                spyOn(view, '_hideReplyDraftBanner');
+
+                view._setupNewReply();
+
+                _.each(view._replyEditors, function(editor) {
+                    expect(editor.get('reviewReply')).toBe(view._reviewReply);
+                });
+            });
+        });
     });
 
     describe('Draft banner', function() {
         describe('Visibility', function() {
             it('Shown on hasDraft', function() {
-                var editor = view._replyEditors[1].model;
+                var editor = view._replyEditorViews[1].model;
 
                 view._showReplyDraftBanner.reset();
 

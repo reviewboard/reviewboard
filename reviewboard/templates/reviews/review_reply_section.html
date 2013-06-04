@@ -7,7 +7,7 @@
    </ol>
 {% if user.is_authenticated %}
    <ul class="controls">
-    <li><a href="#" id="add_{{entry.review.id}}_{{context_type}}{% if comment %}_{{comment.id}}{% endif %}" class="add_comment_link">{% trans "Add comment" %}</a></li>
+    <li><a href="#" class="add_comment_link">{% trans "Add comment" %}</a></li>
    </ul>
 {% endif %}
   </div>

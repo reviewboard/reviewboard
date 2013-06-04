@@ -23,17 +23,8 @@ RB.ReviewReplyEditor = Backbone.Model.extend({
     },
 
     initialize: function() {
-        var reviewReply = this.get('reviewReply');
-
-        this.listenTo(reviewReply, 'destroy', function() {
-            this.trigger('discarded');
-            this._resetState();
-        });
-
-        this.listenTo(reviewReply, 'published', function() {
-            this.trigger('published');
-            this._resetState();
-        });
+        this.on('change:reviewReply', this._setupReviewReply, this);
+        this._setupReviewReply();
     },
 
     /*
@@ -120,6 +111,34 @@ RB.ReviewReplyEditor = Backbone.Model.extend({
                 success: this._resetState
             }, this);
         }
+    },
+
+    /*
+     * Sets up a new ReviewReply for this editor.
+     *
+     * This will first stop listening to any events on an old reviewReply.
+     *
+     * It will then listen for "destroy" and "published" events on the new
+     * reply. If either triggers, the "discarded" or "published" signals
+     * (respectively) will be triggered, and the state of the editor will reset.
+     */
+    _setupReviewReply: function() {
+        var reviewReply = this.get('reviewReply'),
+            oldReviewReply = this.previous('reviewReply');
+
+        if (oldReviewReply) {
+            oldReviewReply.off(null, null, this);
+        }
+
+        this.listenTo(reviewReply, 'destroy', function() {
+            this.trigger('discarded');
+            this._resetState();
+        });
+
+        this.listenTo(reviewReply, 'published', function() {
+            this.trigger('published');
+            this._resetState();
+        });
     },
 
     /*

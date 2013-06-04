@@ -112,6 +112,7 @@ RB.UserSession = Backbone.Model.extend({
         username: null,
         userPageURL: null,
         sessionURL: null,
+        timezoneOffset: '0',
         watchedReviewGroupsURL: null,
         watchedReviewRequestsURL: null
     },

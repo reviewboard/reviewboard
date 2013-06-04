@@ -6,11 +6,13 @@
  */
 RB.ReviewBoxView = RB.CollapsableBoxView.extend({
     initialize: function() {
-        this._reviewReply = this.options.reviewReply ||
-                            this.model.createReply();
+        this._reviewReply = null;
         this._replyEditors = [];
+        this._replyEditorViews = [];
         this._draftBannerShown = false;
         this._$banners = null;
+
+        this._setupNewReply(this.options.reviewReply);
     },
 
     /*
@@ -32,7 +34,9 @@ RB.ReviewBoxView = RB.CollapsableBoxView.extend({
 
         this._$banners = this.$('.banners');
 
-        this._reviewReply.on('destroyed', this._hideReplyDraftBanner, this);
+        this._reviewReply.on('destroyed published', function() {
+            this._setupNewReply();
+        }, this);
 
         this.$('pre.reviewtext').each(function() {
             var $el = $(this);
@@ -62,7 +66,8 @@ RB.ReviewBoxView = RB.CollapsableBoxView.extend({
 
             view.render();
 
-            this._replyEditors.push(view);
+            this._replyEditors.push(editor);
+            this._replyEditorViews.push(view);
         }, this);
     },
 
@@ -91,5 +96,43 @@ RB.ReviewBoxView = RB.CollapsableBoxView.extend({
     _hideReplyDraftBanner: function() {
         this._$banners.children().remove();
         this._draftBannerShown = false;
+    },
+
+    /*
+     * Sets up a new ReviewReply for the editors.
+     *
+     * The new ReviewReply will be used for any new comments made on this
+     * review.
+     *
+     * A ReviewReply is set until it's either destroyed or published, at
+     * which point a new one is set.
+     *
+     * A ReviewReply can be provided to this function, and if not supplied,
+     * a new one will be created.
+     */
+    _setupNewReply: function(reviewReply) {
+        var hadReviewReply = (this._reviewReply !== null);
+
+        if (!reviewReply) {
+            reviewReply = this.model.createReply();
+        }
+
+        reviewReply.on('destroyed published', this._setupNewReply, this);
+
+        if (hadReviewReply) {
+            this._reviewReply.off(null, null, this);
+
+            /*
+             * We had one displayed before. Now it's time to clean up and
+             * reset all the editors so they're using the old one.
+             */
+            _.each(this._replyEditors, function(editor) {
+                editor.set('reviewReply', reviewReply);
+            }, this);
+
+            this._hideReplyDraftBanner();
+        }
+
+        this._reviewReply = reviewReply;
     }
 });

@@ -46,6 +46,14 @@ describe('views/ReviewReplyDraftBannerView', function() {
                     expect($buttons.prop('disabled')).toBe(true);
                 });
             });
+
+            describe('Enabled', function() {
+                it('When saved', function() {
+                    $buttons.prop('disabled', true);
+                    reviewReply.trigger('saved');
+                    expect($buttons.prop('disabled')).toBe(true);
+                });
+            });
         });
     });
 });
