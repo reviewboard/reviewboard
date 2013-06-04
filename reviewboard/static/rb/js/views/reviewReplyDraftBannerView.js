@@ -1,0 +1,53 @@
+/*
+ * A banner that represents a pending reply to a review.
+ *
+ * The banner offers actions for publishing and discarding the review.
+ */
+RB.ReviewReplyDraftBannerView = RB.FloatingBannerView.extend({
+    className: 'banner',
+
+    template: [
+        '<h1>This reply is a draft.</h1>',
+        ' Be sure to publish when finished.',
+        '<input type="button" value="Publish" class="publish-button" />',
+        '<input type="button" value="Discard" class="discard-button" />'
+    ].join(''),
+
+    events: {
+        'click .publish-button': '_onPublishClicked',
+        'click .discard-button': '_onDiscardClicked'
+    },
+
+    /*
+     * Renders the banner.
+     */
+    render: function() {
+        RB.FloatingBannerView.prototype.render.call(this);
+
+        this.$el.html(this.template);
+
+        this.model.on('saving destroying', function() {
+            this.$('input').prop('disabled', true);
+        }, this);
+
+        return this;
+    },
+
+    /*
+     * Handler for when Publish is clicked.
+     *
+     * Publishes the reply.
+     */
+    _onPublishClicked: function() {
+        this.model.publish();
+    },
+
+    /*
+     * Handler for when Discard is clicked.
+     *
+     * Discards the reply.
+     */
+    _onDiscardClicked: function() {
+        this.model.destroy();
+    }
+});

@@ -62,6 +62,10 @@ RB.ReviewReplyEditorView = Backbone.View.extend({
                 }, this));
             }
         }, this);
+
+        this.model.on('published discarded', function() {
+            window.location = gReviewRequestPath;
+        });
     },
 
     /*

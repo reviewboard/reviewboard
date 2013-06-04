@@ -37,6 +37,36 @@ RB.ReviewReply = RB.BaseResource.extend({
     },
 
     /*
+     * Publishes the reply.
+     *
+     * Before publishing, the "publishing" event will be triggered.
+     * After successfully publishing, "published" will be triggered.
+     */
+    publish: function(options, context) {
+        options = options || {};
+
+        this.trigger('publishing');
+
+        this.ready({
+            ready: function() {
+                this.set('public', true);
+                this.save({
+                    success: function() {
+                        this.trigger('published');
+
+                        if (_.isFunction(options.success)) {
+                            options.success.call(context);
+                        }
+                    },
+                    error: _.isFunction(options.error)
+                           ? _.bind(options.error, context)
+                           : undefined
+                }, this);
+            }
+        }, this);
+    },
+
+    /*
      * Discards the reply if it's empty.
      *
      * If the reply doesn't have any remaining comments on the server, then

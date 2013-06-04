@@ -9,6 +9,8 @@ RB.ReviewBoxView = RB.CollapsableBoxView.extend({
         this._reviewReply = this.options.reviewReply ||
                             this.model.createReply();
         this._replyEditors = [];
+        this._draftBannerShown = false;
+        this._$banners = null;
     },
 
     /*
@@ -29,15 +31,6 @@ RB.ReviewBoxView = RB.CollapsableBoxView.extend({
         RB.CollapsableBoxView.prototype.render.call(this);
 
         this._$banners = this.$('.banners');
-        this._$bannerButtons = this._$banners.find('input');
-
-        this._reviewReply.on('saving destroying', function() {
-            this._$bannerButtons.prop('disabled', true);
-        }, this);
-
-        this._reviewReply.on('saved', function() {
-            this._$bannerButtons.prop('disabled', false);
-        }, this);
 
         this._reviewReply.on('destroyed', this._hideReplyDraftBanner, this);
 
@@ -81,8 +74,13 @@ RB.ReviewBoxView = RB.CollapsableBoxView.extend({
      */
     _showReplyDraftBanner: function() {
         if (!this._draftBannerShown) {
-            this._$banners.append($.replyDraftBanner(this._reviewReply,
-                                                     this._$bannerButtons));
+            var banner = new RB.ReviewReplyDraftBannerView({
+                model: this._reviewReply,
+                $floatContainer: this.$('.box'),
+                noFloatContainerClass: 'collapsed'
+            });
+
+            banner.render().$el.appendTo(this._$banners);
             this._draftBannerShown = true;
         }
     },

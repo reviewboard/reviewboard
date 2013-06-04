@@ -92,36 +92,6 @@ describe('views/ReviewBoxView', function() {
     });
 
     describe('Draft banner', function() {
-        describe('Buttons', function() {
-            var $buttons;
-
-            beforeEach(function() {
-                $buttons = view._$bannerButtons;
-            });
-
-            describe('Disabled', function() {
-                it('When saving', function() {
-                    expect($buttons.prop('disabled')).toBe(false);
-                    reviewReply.trigger('saving');
-                    expect($buttons.prop('disabled')).toBe(true);
-                });
-
-                it('When destroying', function() {
-                    expect($buttons.prop('disabled')).toBe(false);
-                    reviewReply.trigger('destroying');
-                    expect($buttons.prop('disabled')).toBe(true);
-                });
-            });
-
-            describe('Enabled', function() {
-                it('When destroying', function() {
-                    $buttons.prop('disabled', true);
-                    reviewReply.trigger('saved');
-                    expect($buttons.prop('disabled')).toBe(false);
-                });
-            });
-        });
-
         describe('Visibility', function() {
             it('Shown on hasDraft', function() {
                 var editor = view._replyEditors[1].model;

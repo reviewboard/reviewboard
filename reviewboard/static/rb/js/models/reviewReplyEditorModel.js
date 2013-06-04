@@ -22,6 +22,20 @@ RB.ReviewReplyEditor = Backbone.Model.extend({
         file_attachment_comments: RB.FileAttachmentCommentReply
     },
 
+    initialize: function() {
+        var reviewReply = this.get('reviewReply');
+
+        this.listenTo(reviewReply, 'destroy', function() {
+            this.trigger('discarded');
+            this._resetState();
+        });
+
+        this.listenTo(reviewReply, 'published', function() {
+            this.trigger('published');
+            this._resetState();
+        });
+    },
+
     /*
      * Saves the current reply.
      *
