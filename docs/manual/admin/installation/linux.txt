@@ -43,9 +43,6 @@ And the following web servers:
 * lighttpd_ + fastcgi
 
 
-If you're running Fedora_, you may need to add the `Fedora Extras`_ repository
-to your yum configuration.
-
 The instructions below are assuming you're logged in as ``root`` or
 are using :command:`sudo`.
 
@@ -55,8 +52,6 @@ are using :command:`sudo`.
 .. _sqlite: http://www.sqlite.org/
 .. _Apache: http://www.apache.org/
 .. _lighttpd: http://www.lighttpd.net/
-
-.. _`Fedora Extras`: http://fedoraproject.org/wiki/Extras
 
 
 .. _linux-http-proxy:
@@ -72,6 +67,43 @@ environment variable to your proxy server before running
     $ sudo -s
     $ export http_proxy=http://proxy.example.com/
     $ easy_install ....
+
+
+If you're running Fedora
+------------------------
+
+Fedora provides Review Board packages that are released shortly after we
+perform new releases. To install Review Board and its dependencies on
+Fedora, simply run::
+
+    $ yum install ReviewBoard
+
+You can then skip the rest of this guide for the required components. You may
+still want to install optional components, such as
+:ref:`PyLucene <installing-pylucene>`.
+
+You will still need to install your site. See :ref:`creating-sites` for
+details.
+
+
+If you're running CentOS, Red Hat, etc.
+---------------------------------------
+
+CentOS, RedHat, Scientific Linux, and other Enterprise Linux distributions
+need to have the EPEL package repository added. Please see the
+`instructions <http://fedoraproject.org/wiki/EPEL>`_ on adding the EPEL
+package repositories to your system.
+
+Once added, you can install Review Board and its dependencies by running::
+
+    $ yum install ReviewBoard
+
+You can then skip the rest of this guide for the required components. You may
+still want to install optional components, such as
+:ref:`PyLucene <installing-pylucene>`.
+
+You will still need to install your site. See :ref:`creating-sites` for
+details.
 
 
 Installing Python Setuptools
