@@ -541,6 +541,10 @@ RB.BaseResource = Backbone.Model.extend({
             contentType = 'application/x-www-form-urlencoded';
         }
 
+        if (data === null || data === undefined) {
+            data = {};
+        }
+
         if (this.expandedFields.length > 0) {
             data.expand = this.expandedFields.join(',');
         }
