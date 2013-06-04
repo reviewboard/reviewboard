@@ -63,6 +63,16 @@ RB.ReviewBoxListView = Backbone.View.extend({
             this._boxes.push(box);
         }, this);
 
+        _.each(this.$('.changedesc'), function(changeBoxEl) {
+            var box = new RB.CollapsableBoxView({
+                el: changeBoxEl
+            });
+
+            box.render();
+
+            this._boxes.push(box);
+        }, this);
+
         this.diffFragmentQueue.loadFragments();
 
         return this;

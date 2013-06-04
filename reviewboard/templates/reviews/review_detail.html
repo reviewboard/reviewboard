@@ -215,52 +215,53 @@
 </div><!-- review{{entry.review.id}} -->
 {%  endif %}
 {%  if entry.changedesc %}
-<a name="changedesc{{entry.changedesc.id}}"></a>
+<div class="changedesc">
+ <a name="changedesc{{entry.changedesc.id}}"></a>
 {% definevar "boxclass" %}changedesc {{entry.class}}{% enddefinevar %}
 {% box boxclass %}
-<div class="main">
- <div class="header">
+ <div class="main">
+  <div class="header">
    <div class="collapse-button btn"><div class="ui-collapse-icon"></div></div>
    <div class="reviewer"><b>{% trans "Review request changed" %}</b></div>
    <div class="posted_time">{% localtime on %}{% blocktrans with entry.changedesc.timestamp as timestamp and entry.changedesc.timestamp|date:"c" as timestamp_raw %}Updated <time class="timesince" datetime="{{timestamp_raw}}">{{timestamp}}</time> ({{timestamp}}){% endblocktrans %}{% endlocaltime %}</div>
- </div>
- <div class="body">
-  <ul>
+  </div>
+  <div class="body">
+   <ul>
 {% for fieldinfo in entry.changeinfo %}
-   <li><label>{{fieldinfo.title}}</label>
+    <li><label>{{fieldinfo.title}}</label>
 {%  if fieldinfo.type == "changed" %}
 {%   if fieldinfo.multiline %}
-	  <p><label>{% trans "Changed from:" %}</label></p>
-      <pre>{{fieldinfo.info.old.0}}</pre>
-	  <p><label>{% trans "Changed to:" %}</label></p>
-	  <pre>{{fieldinfo.info.new.0}}</pre>
+     <p><label>{% trans "Changed from:" %}</label></p>
+     <pre>{{fieldinfo.info.old.0}}</pre>
+     <p><label>{% trans "Changed to:" %}</label></p>
+     <pre>{{fieldinfo.info.new.0}}</pre>
 {%   else %}
 {%    blocktrans with fieldinfo.info.old.0 as old_value and fieldinfo.info.new.0 as new_value %}changed from <i>{{old_value}}</i> to <i>{{new_value}}</i>{% endblocktrans %}
 {%   endif %}
 {%  endif %}
 {%  if fieldinfo.type == "add_remove" %}
-    <ul>
+     <ul>
 {%   if fieldinfo.info.removed %}
 {%    definevar "removed_values" %}
 {%     for item in fieldinfo.info.removed %}
 {%      if item.1 %}
-     <a href="{{item.1}}">{{item.0}}</a>
+      <a href="{{item.1}}">{{item.0}}</a>
 {%      else %}
-         {{item.0}}
+          {{item.0}}
 {%      endif %}
 {%      if not forloop.last %}, {% endif %}
 {%     endfor %}
 {%    enddefinevar %}
-     <li>{% blocktrans %}removed {{removed_values}}{% endblocktrans %}</li>
+      <li>{% blocktrans %}removed {{removed_values}}{% endblocktrans %}</li>
 {%   endif %}
 {%   if fieldinfo.info.added %}
 {%    definevar "added_values" %}
 {%     for item in fieldinfo.info.added %}
 {%      if item.1 %}
-     <a href="{{item.1}}">{{item.0}}</a>
+      <a href="{{item.1}}">{{item.0}}</a>
 {%       if fieldinfo.diff_revision %}
 {%        with fieldinfo.diff_revision|add:"-1" as past_revision and fieldinfo.diff_revision as current_revision %}
-     - <a href="{% url view-interdiff review_request.display_id past_revision current_revision %}">{% trans "Show changes" %}</a>
+      - <a href="{% url view-interdiff review_request.display_id past_revision current_revision %}">{% trans "Show changes" %}</a>
 {%        endwith %}
 {%       endif %}
 {%      else %}
@@ -269,24 +270,25 @@
 {%      if not forloop.last %}, {% endif %}
 {%     endfor %}
 {%    enddefinevar %}
-     <li>{% blocktrans %}added {{added_values}}{% endblocktrans %}</li>
+      <li>{% blocktrans %}added {{added_values}}{% endblocktrans %}</li>
 {%   endif %}
-    </ul>
+     </ul>
 {%  endif %}
 {%  if fieldinfo.type == "screenshot_captions" or fieldinfo.type == "file_captions" %}
-    <ul>
+     <ul>
 {%   for info in fieldinfo.info.values %}
-     <li>{% blocktrans with info.old.0 as old_value and info.new.0 as new_value %}changed from <i>{{old_value}}</i> to <i>{{new_value}}</i>{% endblocktrans %}</li>
+      <li>{% blocktrans with info.old.0 as old_value and info.new.0 as new_value %}changed from <i>{{old_value}}</i> to <i>{{new_value}}</i>{% endblocktrans %}</li>
 {%   endfor %}
-    </ul>
+     </ul>
 {%  endif %}
-   </li>
+    </li>
 {% endfor %}
-  </ul>
+   </ul>
 {% if entry.changedesc.text %}
-  <label>{% trans "Description:" %}</label>
-  <pre class="changedesc-text">{{entry.changedesc.text|escape}}</pre>
+   <label>{% trans "Description:" %}</label>
+   <pre class="changedesc-text">{{entry.changedesc.text|escape}}</pre>
 {% endif %}
+  </div>
  </div>
 </div>
 {%   endbox %}

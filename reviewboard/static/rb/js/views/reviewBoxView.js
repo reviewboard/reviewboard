@@ -4,11 +4,7 @@
  * Review boxes contain discussion on parts of a review request. This includes
  * comments, screenshots, and file attachments.
  */
-RB.ReviewBoxView = Backbone.View.extend({
-    events: {
-        'click .collapse-button': '_onToggleCollapseClicked'
-    },
-
+RB.ReviewBoxView = RB.CollapsableBoxView.extend({
     initialize: function() {
         this._reviewReply = this.options.reviewReply ||
                             this.model.createReply();
@@ -30,7 +26,8 @@ RB.ReviewBoxView = Backbone.View.extend({
             review = this.model,
             reviewID = review.id;
 
-        this._$box = this.$('.box');
+        RB.CollapsableBoxView.prototype.render.call(this);
+
         this._$banners = this.$('.banners');
         this._$bannerButtons = this._$banners.find('input');
 
@@ -77,20 +74,6 @@ RB.ReviewBoxView = Backbone.View.extend({
     },
 
     /*
-     * Expands the box.
-     */
-    expand: function() {
-        this._$box.removeClass('collapsed');
-    },
-
-    /*
-     * Collapses the box.
-     */
-    collapse: function() {
-        this._$box.addClass('collapsed');
-    },
-
-    /*
      * Shows the reply draft banner.
      *
      * This will be called in response to any new replies made on a review,
@@ -110,18 +93,5 @@ RB.ReviewBoxView = Backbone.View.extend({
     _hideReplyDraftBanner: function() {
         this._$banners.children().remove();
         this._draftBannerShown = false;
-    },
-
-    /*
-     * Handler for when the Expand/Collapse button is clicked.
-     *
-     * Toggles the collapsed state of the box.
-     */
-    _onToggleCollapseClicked: function() {
-        if (this._$box.hasClass('collapsed')) {
-            this.expand();
-        } else {
-            this.collapse();
-        }
     }
 });
