@@ -140,15 +140,16 @@
 
     $.fn.timesince = function(options) {
         var self = this,
+            timerCnx,
             refreshMs;
 
         options = $.extend(options, $.timesince.options);
         refreshMs = options.refreshMs;
 
         if (refreshMs > 0) {
-            setInterval(function() {
+            timerCnx = setInterval(function() {
                 self.each(function() {
-                    refresh($(this));
+                    refresh($(this), timerCnx);
                 });
             }, refreshMs);
         }
@@ -170,12 +171,14 @@
         });
     };
 
-    function refresh(el) {
+    function refresh(el, timerCnx) {
         var data = el.data('timesince');
 
-        if (!isNaN(data.datetime)) {
+        if (data) {
             el.text($.timesince.timeSince(
                 new Date().getTime() - data.datetime.getTime()));
+        } else {
+            clearInterval(timerCnx);
         }
 
         return el;
