@@ -10,11 +10,6 @@ urlpatterns = patterns('reviewboard.reviews.views',
     url(r'^(?P<review_request_id>[0-9]+)/$', 'review_detail',
         name="review-request-detail"),
 
-    # Reviews
-    (r'^(?P<review_request_id>[0-9]+)/reviews/draft/inline-form/$',
-     'review_draft_inline_form',
-     {'template_name': 'reviews/review_draft_inline_form.html'}),
-
     # Review request diffs
     url(r'^(?P<review_request_id>[0-9]+)/diff/$', 'diff', name="view_diff"),
     url(r'^(?P<review_request_id>[0-9]+)/diff/(?P<revision>[0-9]+)/$', 'diff',

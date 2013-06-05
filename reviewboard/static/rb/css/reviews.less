@@ -386,9 +386,11 @@
   }
 }
 
-.review .box {
-  background-color: #e9edf5;
-  background-image: url('../images/review_box_top_bg.png');
+.review {
+  .box {
+    background-color: #e9edf5;
+    background-image: url('../images/review_box_top_bg.png');
+  }
 
   .banner {
     margin-top: 10px;
@@ -441,9 +443,7 @@
 
   .comments {
     border: 0;
-  }
 
-  .diff-comments {
     dd {
       margin-bottom: 20px;
     }
@@ -717,23 +717,44 @@
     margin-top: 10px;
   }
 
-  pre.editable {
-    .pre-wrap;
-    background-color: #FFFFFF;
-    border: 1px #b8b5a0 solid;
-    margin: 10px 0;
-    padding: 10px;
+  .edit-field {
+    margin: 1em 0;
+
+    textarea {
+      background-color: #FFFFFF;
+      border: 1px #b8b5a0 solid;
+      font-size: 10pt;
+      margin: 5px 0 0 0;
+      padding: 10px;
+      width: 100%;
+      height: 1.5em;
+      .box-sizing(border-box);
+    }
   }
 
-  textarea {
-    border: 1px #b8b5a0 solid;
-    height: 1.5em;
-    overflow: hidden;
-    width: 100%;
+  .spinner {
+    background: url("../images/spinner.gif") no-repeat center center;
+    height: 16px;
+    margin: 3em auto;
   }
 
   #review-form-comments {
     background: none;
+
+    .comments {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+
+      li {
+        margin: 2em 0;
+        padding: 0;
+
+        .edit-fields {
+          margin-left: 4em;
+        }
+      }
+    }
   }
 }
 

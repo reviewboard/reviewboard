@@ -77,7 +77,9 @@ RB.DraftReviewBannerView = Backbone.View.extend({
      * Displays the review editor dialog.
      */
     _onEditReviewClicked: function() {
-        $.reviewForm(this.model);
+        RB.ReviewDialogView.create({
+            review: this.model
+        });
 
         return false;
     },

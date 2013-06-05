@@ -67,11 +67,13 @@ describe('views/DraftReviewBannerView', function() {
 
     describe('Button events', function() {
         it('Edit Review', function() {
-            spyOn($, 'reviewForm');
+            spyOn(RB.ReviewDialogView, 'create');
 
             view.$('#review-banner-edit').click();
 
-            expect($.reviewForm).toHaveBeenCalledWith(model);
+            expect(RB.ReviewDialogView.create).toHaveBeenCalled();
+            expect(RB.ReviewDialogView.create.calls[0].args[0].review)
+                .toBe(model);
         });
 
         it('Publish', function() {

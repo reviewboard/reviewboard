@@ -707,32 +707,6 @@ def review_detail(request,
     return response
 
 
-@login_required
-@cache_control(no_cache=True, no_store=True, max_age=0, must_revalidate=True)
-def review_draft_inline_form(request,
-                             review_request_id,
-                             template_name,
-                             local_site_name=None):
-    review_request, response = \
-        _find_review_request(request, review_request_id, local_site_name)
-
-    if not review_request:
-        return response
-
-    review = review_request.get_pending_review(request.user)
-
-    # This may be a brand new review. If so, we don't have a review object.
-    if review:
-        review.ordered_comments = \
-            review.comments.order_by('filediff', 'first_line')
-
-    return render_to_response(template_name, RequestContext(request, {
-        'review_request': review_request,
-        'review': review,
-        'PRE_CREATION': PRE_CREATION,
-    }))
-
-
 @check_login_required
 def all_review_requests(request,
                         local_site_name=None,
