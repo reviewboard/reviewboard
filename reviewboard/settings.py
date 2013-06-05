@@ -378,6 +378,7 @@ PIPELINE_JS = {
             'rb/js/models/screenshotReviewableModel.js',
             'rb/js/views/abstractCommentBlockView.js',
             'rb/js/views/abstractReviewableView.js',
+            'rb/js/views/collapsableBoxView.js',
             'rb/js/views/commentDialogView.js',
             'rb/js/views/commentIssueBarView.js',
             'rb/js/views/diffFragmentQueueView.js',
