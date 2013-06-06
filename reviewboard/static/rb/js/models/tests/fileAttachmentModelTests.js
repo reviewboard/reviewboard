@@ -47,6 +47,7 @@ describe('models/FileAttachment', function() {
     describe('parse', function() {
         it('API payloads', function() {
             var data = model.parse({
+                stat: 'ok',
                 file_attachment: {
                     id: 42,
                     caption: 'caption',

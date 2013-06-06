@@ -39,6 +39,7 @@ describe('models/BaseCommentReply', function() {
 
         it('API payloads', function() {
             var data = model.parse({
+                stat: 'ok',
                 my_comment: {
                     id: 42,
                     text: 'foo'

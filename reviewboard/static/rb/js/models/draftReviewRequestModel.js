@@ -81,22 +81,19 @@ RB.DraftReviewRequest = RB.BaseResource.extend(_.defaults({
         }
     },
 
-    parse: function(rsp) {
-        var result = RB.BaseResource.prototype.parse.call(this, rsp),
-            rspData = rsp[this.rspNamespace];
-
-        result.branch = rspData.branch;
-        result.bugsClosed = rspData.bugs_closed;
-        result.changeDescription = rspData.change_description;
-        result.dependsOn = rspData.depends_on;
-        result.description = rspData.description;
-        result.public = rspData.public;
-        result.summary = rspData.summary;
-        result.targetGroups = rspData.target_groups;
-        result.targetPeople = rspData.target_people;
-        result.testingDone = rspData.testing_done;
-
-        return result;
+    parseResourceData: function(rsp) {
+        return {
+            branch: rsp.branch,
+            bugsClosed: rsp.bugs_closed,
+            changeDescription: rsp.change_description,
+            dependsOn: rsp.depends_on,
+            description: rsp.description,
+            public: rsp.public,
+            summary: rsp.summary,
+            targetGroups: rsp.target_groups,
+            targetPeople: rsp.target_people,
+            testingDone: rsp.testing_done
+        };
     }
 }, RB.DraftResourceModelMixin),
 {

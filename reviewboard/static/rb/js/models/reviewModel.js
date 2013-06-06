@@ -29,16 +29,13 @@ RB.Review = RB.BaseResource.extend({
         return data;
     },
 
-    parse: function(rsp) {
-        var result = RB.BaseResource.prototype.parse.call(this, rsp),
-            rspData = rsp[this.rspNamespace];
-
-        result.shipIt = rspData.ship_it;
-        result.bodyTop = rspData.body_top;
-        result.bodyBottom = rspData.body_bottom;
-        result.public = rspData.public;
-
-        return result;
+    parseResourceData: function(rsp) {
+        return {
+            shipIt: rsp.ship_it,
+            bodyTop: rsp.body_top,
+            bodyBottom: rsp.body_bottom,
+            public: rsp.public
+        };
     },
 
     createDiffComment: function(id, filediff, interfilediff, beginLineNum,

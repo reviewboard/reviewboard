@@ -49,13 +49,10 @@ RB.BaseCommentReply = RB.BaseResource.extend({
      *
      * This must be overloaded by subclasses, and the parent version called.
      */
-    parse: function(rsp) {
-        var result = RB.BaseResource.prototype.parse.call(this, rsp),
-            rspData = rsp[this.rspNamespace];
-
-        result.text = rspData.text;
-
-        return result;
+    parseResourceData: function(rsp) {
+        return {
+            text: rsp.text
+        };
     },
 
     /*

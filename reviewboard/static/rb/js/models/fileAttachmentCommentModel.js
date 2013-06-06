@@ -29,11 +29,11 @@ RB.FileAttachmentComment = RB.BaseComment.extend({
     /*
      * Deserializes comment data from an API payload.
      */
-    parse: function(rsp) {
-        var result = RB.BaseComment.prototype.parse.call(this, rsp),
-            rspData = rsp[this.rspNamespace];
+    parseResourceData: function(rsp) {
+        var result = RB.BaseComment.prototype.parseResourceData.call(this,
+                                                                     rsp);
 
-        result.extraData = rspData.extra_data;
+        result.extraData = rsp.extra_data;
 
         return result;
     },

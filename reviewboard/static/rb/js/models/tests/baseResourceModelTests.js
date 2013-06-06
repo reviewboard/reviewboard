@@ -282,6 +282,7 @@ describe('models/BaseResource', function() {
 
                 spyOn($, 'ajax').andCallFake(function(request) {
                     request.success({
+                        stat: 'ok',
                         foo: {
                             id: 42,
                             links: {

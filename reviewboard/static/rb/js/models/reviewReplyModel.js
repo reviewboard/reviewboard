@@ -28,15 +28,12 @@ RB.ReviewReply = RB.BaseResource.extend({
         };
     },
 
-    parse: function(rsp) {
-        var result = RB.BaseResource.prototype.parse.call(this, rsp),
-            rspData = rsp[this.rspNamespace];
-
-        result.bodyTop = rspData.body_top;
-        result.bodyBottom = rspData.body_bottom;
-        result.public = rspData.public;
-
-        return result;
+    parseResourceData: function(rsp) {
+        return {
+            bodyTop: rsp.body_top,
+            bodyBottom: rsp.body_bottom,
+            public: rsp.public
+        };
     },
 
     /*

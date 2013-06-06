@@ -47,17 +47,14 @@ RB.FileAttachment = RB.BaseResource.extend({
     /*
      * Deserializes a file attachment data from an API payload.
      */
-    parse: function(rsp) {
-        var result = RB.BaseResource.prototype.parse.call(this, rsp),
-            rspData = rsp[this.rspNamespace];
-
-        result.caption = rspData.caption;
-        result.downloadURL = rspData.url;
-        result.filename = rspData.filename;
-        result.iconURL = rspData.icon_url;
-        result.reviewURL = rspData.review_url;
-        result.thumbnailHTML = rspData.thumbnail;
-
-        return result;
+    parseResourceData: function(rsp) {
+        return {
+            caption: rsp.caption,
+            downloadURL: rsp.url,
+            filename: rsp.filename,
+            iconURL: rsp.icon_url,
+            reviewURL: rsp.review_url,
+            thumbnailHTML: rsp.thumbnail
+        };
     }
 });

@@ -72,15 +72,12 @@ RB.BaseComment = RB.BaseResource.extend({
      *
      * This must be overloaded by subclasses, and the parent version called.
      */
-    parse: function(rsp) {
-        var result = RB.BaseResource.prototype.parse.call(this, rsp),
-            rspData = rsp[this.rspNamespace];
-
-        result.issueOpened = rspData.issue_opened;
-        result.issueStatus = rspData.issue_status;
-        result.text = rspData.text;
-
-        return result;
+    parseResourceData: function(rsp) {
+        return {
+            issueOpened: rsp.issue_opened,
+            issueStatus: rsp.issue_status,
+            text: rsp.text
+        };
     },
 
     /*

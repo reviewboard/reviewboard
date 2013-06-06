@@ -77,6 +77,7 @@ describe('models/DraftReviewRequest', function() {
 
     it('parse', function() {
         var data = draft.parse({
+            stat: 'ok',
             draft: {
                 id: 1,
                 branch: 'branch',

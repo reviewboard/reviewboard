@@ -15,6 +15,7 @@ describe('models/FileAttachmentComment', function() {
     describe('parse', function() {
         it('API payloads', function() {
             var data = model.parse({
+                stat: 'ok',
                 file_attachment_comment: {
                     id: 42,
                     issue_opened: true,

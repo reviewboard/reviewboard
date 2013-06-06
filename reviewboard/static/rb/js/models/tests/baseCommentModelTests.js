@@ -54,6 +54,7 @@ describe('models/BaseComment', function() {
 
         it('API payloads', function() {
             var data = model.parse({
+                stat: 'ok',
                 my_comment: {
                     id: 42,
                     issue_opened: true,

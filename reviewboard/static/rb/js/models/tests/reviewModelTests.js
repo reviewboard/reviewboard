@@ -15,6 +15,7 @@ describe('models/Review', function() {
 
         it('API payloads', function() {
             var data = model.parse({
+                stat: 'ok',
                 my_review: {
                     id: 42,
                     body_top: 'foo',

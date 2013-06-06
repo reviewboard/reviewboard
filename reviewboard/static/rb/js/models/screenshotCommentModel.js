@@ -39,14 +39,14 @@ RB.ScreenshotComment = RB.BaseComment.extend({
     /*
      * Deserializes comment data from an API payload.
      */
-    parse: function(rsp) {
-        var result = RB.BaseComment.prototype.parse.call(this, rsp),
-            rspData = rsp[this.rspNamespace];
+    parseResourceData: function(rsp) {
+        var result = RB.BaseComment.prototype.parseResourceData.call(this,
+                                                                     rsp);
 
-        result.x = rspData.x;
-        result.y = rspData.y;
-        result.width = rspData.w;
-        result.height = rspData.h;
+        result.x = rsp.x;
+        result.y = rsp.y;
+        result.width = rsp.w;
+        result.height = rsp.h;
 
         return result;
     },

@@ -23,6 +23,7 @@ describe('models/DiffComment', function() {
     describe('parse', function() {
         it('API payloads', function() {
             var data = model.parse({
+                stat: 'ok',
                 diff_comment: {
                     id: 42,
                     issue_opened: true,

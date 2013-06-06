@@ -475,18 +475,32 @@ RB.BaseResource = Backbone.Model.extend({
      * BaseResource.protoype.parse as well.
      */
     parse: function(rsp) {
-        var rspData;
-
         console.assert(this.rspNamespace,
                        'rspNamespace must be defined on the resource model');
 
-        rspData = rsp[this.rspNamespace];
+        if (rsp.stat !== undefined) {
+            /*
+             * This resource payload is inside an envelope from an API
+             * call. It's not model construction data or from a list
+             * resource.
+             */
+            rsp = rsp[this.rspNamespace];
+        }
 
-        return {
-            id: rspData.id,
-            links: rspData.links,
+        return _.defaults({
+            id: rsp.id,
+            links: rsp.links,
             loaded: true
-        };
+        }, this.parseResourceData(rsp));
+    },
+
+    /*
+     * Parses the resource data from a payload.
+     *
+     * This is meant to be overridden by subclasses.
+     */
+    parseResourceData: function(rsp) {
+        return {};
     },
 
     /*

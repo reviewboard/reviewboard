@@ -57,12 +57,12 @@ RB.DiffComment = RB.BaseComment.extend({
     /*
      * Deserializes comment data from an API payload.
      */
-    parse: function(rsp) {
-        var result = RB.BaseComment.prototype.parse.call(this, rsp),
-            rspData = rsp[this.rspNamespace];
+    parseResourceData: function(rsp) {
+        var result = RB.BaseComment.prototype.parseResourceData.call(this,
+                                                                     rsp);
 
-        result.beginLineNum = rspData.first_line;
-        result.endLineNum = rspData.num_lines + result.beginLineNum - 1;
+        result.beginLineNum = rsp.first_line;
+        result.endLineNum = rsp.num_lines + result.beginLineNum - 1;
 
         return result;
     },
