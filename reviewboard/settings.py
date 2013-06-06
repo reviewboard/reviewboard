@@ -283,7 +283,7 @@ PIPELINE_JS = {
     '3rdparty': {
         'source_filenames': (
             'lib/js/underscore-1.4.4.min.js',
-            'lib/js/backbone-0.9.10.min.js',
+            'lib/js/backbone-1.0.0.min.js',
             'lib/js/jquery.form.js',
             'lib/js/jquery.timesince.js',
             'lib/js/ui.autocomplete.js',
