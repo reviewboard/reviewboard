@@ -3,11 +3,13 @@
  */
 RB.Repository = RB.BaseResource.extend({
     defaults: {
+        filesOnly: false,
         localSitePrefix: null,
         name: null,
         requiresBasedir: false,
         requiresChangeNumber: false,
-        scmtoolName: null
+        scmtoolName: null,
+        supportsPostCommit: false
     },
 
     /*

@@ -49,13 +49,13 @@ from reviewboard.reviews.datagrids import DashboardDataGrid, \
                                           WatchedGroupDataGrid, \
                                           get_sidebar_counts
 from reviewboard.reviews.errors import OwnershipError
-from reviewboard.reviews.forms import NewReviewRequestForm
 from reviewboard.reviews.models import Comment, \
                                        FileAttachmentComment, \
                                        Group, ReviewRequest, Review, \
                                        Screenshot, ScreenshotComment
 from reviewboard.scmtools.core import PRE_CREATION
 from reviewboard.scmtools.errors import SCMError
+from reviewboard.scmtools.models import Repository
 from reviewboard.site.models import LocalSite
 from reviewboard.ssh.errors import SSHError
 from reviewboard.webapi.encoder import status_to_string
@@ -225,10 +225,10 @@ fields_changed_name_map = {
 def new_review_request(request,
                        local_site_name=None,
                        template_name='reviews/new_review_request.html'):
-    """
-    Displays a New Review Request form and handles the creation of a
-    review request based on either an existing changeset or the provided
-    information.
+    """Displays the New Review Request UI.
+
+    This handles the creation of a review request based on either an existing
+    changeset or the provided information.
     """
     if local_site_name:
         local_site = get_object_or_404(LocalSite, name=local_site_name)
@@ -237,26 +237,38 @@ def new_review_request(request,
     else:
         local_site = None
 
-    if request.method == 'POST':
-        form = NewReviewRequestForm(request, request.user, local_site,
-                                    request.POST, request.FILES)
+    valid_repos = []
+    repos = Repository.objects.accessible(request.user, local_site=local_site)
 
-        if form.is_valid():
-            try:
-                review_request = form.create(
-                    user=request.user,
-                    diff_file=request.FILES.get('diff_path'),
-                    parent_diff_file=request.FILES.get('parent_diff_path'),
-                    local_site=local_site)
-                return HttpResponseRedirect(review_request.get_absolute_url())
-            except (OwnershipError, SCMError, SSHError, ValueError):
-                pass
-    else:
-        form = NewReviewRequestForm(request, request.user, local_site)
+    for repo in repos.order_by('name'):
+        try:
+            scmtool = repo.get_scmtool()
+            valid_repos.append({
+                'id': repo.id,
+                'name': repo.name,
+                'scmtool_name': scmtool.name,
+                'supports_post_commit': repo.supports_post_commit,
+                'local_site_name': local_site_name or '',
+                'files_only': False,
+                'requires_change_number': scmtool.supports_pending_changesets,
+                'requires_basedir': not scmtool.get_diffs_use_absolute_paths(),
+            })
+        except Exception, e:
+            logging.error('Error loading SCMTool for repository '
+                          '%s (ID %d): %s' % (repo.name, repo.id, e),
+                          exc_info=1)
+
+    valid_repos.insert(0, {
+        'id': '',
+        'name': _('(None - File attachments only)'),
+        'scmtool_name': '',
+        'supports_post_commit': False,
+        'files_only': True,
+        'local_site_name': local_site_name or '',
+    })
 
     return render_to_response(template_name, RequestContext(request, {
-        'form': form,
-        'fields': simplejson.dumps(form.field_mapping),
+        'repos': valid_repos,
     }))
 
 

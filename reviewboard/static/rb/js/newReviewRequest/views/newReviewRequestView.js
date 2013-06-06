@@ -1,0 +1,215 @@
+(function() {
+
+
+var FilesOnlyPreCommitModel,
+    FilesOnlyPreCommitView;
+
+
+/*
+ * A simple model for creating file-attachment only review requests.
+ */
+FilesOnlyPreCommitModel = Backbone.Model.extend({
+    defaults: _.defaults({
+        repository: null
+    })
+});
+
+
+/*
+ * A simple view for creating file-attachment only review requests.
+ */
+FilesOnlyPreCommitView = Backbone.View.extend({
+    className: 'files-only',
+
+    template: _.template([
+        '<p>',
+        ' You won\'t be able to add any diffs to this review request.',
+        ' The review request will only be usable for reviewing graphics,',
+        ' screenshots and file attachments.',
+        '</p>',
+        '<input type="submit" class="primary large" id="files-only-create"',
+        '       value="Create Review Request" />'
+    ].join('')),
+
+    events: {
+        'click #files-only-create': '_onCreateClicked'
+    },
+
+    /*
+     * Render the view.
+     */
+    render: function() {
+        this.$el.html(this.template());
+        return this;
+    },
+
+    /*
+     * Callback for when the "Create Review Request" button is clicked.
+     *
+     * Creates a review request with the given localSitePrefix and nothing else,
+     * and redirects the browser to it.
+     */
+    _onCreateClicked: function() {
+        var repository = this.model.get('repository'),
+            reviewRequest = new RB.ReviewRequest({
+                localSitePrefix: repository.get('localSitePrefix')
+            });
+
+        reviewRequest.save({
+            success: function() {
+                window.location = reviewRequest.get('reviewURL');
+            },
+
+            error: function() {
+                // TODO: handle errors
+            }
+        });
+
+        return false;
+    }
+});
+
+
+/*
+ * The view for creating new review requests.
+ *
+ * This orchestrates several other objects to guide users through creating file
+ * attachment only, pre-commit, or post-commit review requests.
+ */
+RB.NewReviewRequestView = Backbone.View.extend({
+    el: '#new-review-request',
+
+    template: _.template([
+        '<div class="sidebar"></div>',
+        '<div class="main">',
+        ' <div class="hint">Select a repository</div>',
+        '</div>'
+    ].join('')),
+
+    /*
+     * Initialize the view.
+     */
+    initialize: function() {
+        this._repositorySelectionView = new RB.RepositorySelectionView({
+            collection: this.model.get('repositories')
+        });
+        this.listenTo(this._repositorySelectionView, 'selected',
+                      this._onRepositorySelected);
+
+        $(window).resize(_.bind(this._onResize, this));
+    },
+
+    /*
+     * Render the view.
+     */
+    render: function() {
+        this._rendered = true;
+
+        this.$el.html(this.template());
+        this._$sidebar = this.$('.sidebar');
+        this._$content = this.$('.main');
+        this._$hint = this.$('.hint');
+
+        this._$sidebar.append(this._repositorySelectionView.render().el);
+
+        if (this._preCommitView) {
+            this._$hint.hide();
+            this._$content.append(this._preCommitView.render().el);
+        }
+        if (this._postCommitView) {
+            this._$hint.hide();
+            this._$content.append(this._postCommitView.render().el);
+        }
+
+        this.$el.show();
+        this._onResize();
+
+        return this;
+    },
+
+    /*
+     * Callback for when the window is resized. Recomputes the size of the view
+     * to fit nicely on screen.
+     */
+    _onResize: function() {
+        var $window,
+            windowWidth,
+            windowHeight,
+            elTop,
+            height;
+
+        if (this._rendered) {
+            $window = $(window);
+            windowWidth = $window.width();
+            windowHeight = $window.height();
+            elTop = this.$el.offset().top;
+            height = (windowHeight - elTop - 14) + 'px';
+
+            this.$el.height(height);
+            this.$('.repository-selector, .main').height(height);
+            this.$('.hint').css({
+                height: height,
+                'line-height': height
+            });
+        }
+    },
+
+    /*
+     * Callback for when a repository is selected.
+     *
+     * If the "Files Only" entry is selected, this shows the special
+     * FilesOnlyPreCommitView in the right-hand pane.
+     *
+     * If a repository that supports fetching committed revisions is selected,
+     * this will show both the pre-commit and post-commit UIs stacked
+     * vertically. If the repository only supports pre-commit, only the
+     * pre-commit UI is shown.
+     */
+    _onRepositorySelected: function(repository) {
+        if (this._preCommitView) {
+            this._preCommitView.remove();
+            this._preCommitView = null;
+        }
+
+        if (this._postCommitView) {
+            this._postCommitView.remove();
+            this._postCommitView = null;
+        }
+
+        this.model.set('repository', repository);
+
+        if (repository.get('filesOnly')) {
+            this._preCommitView = new FilesOnlyPreCommitView({
+                model: new FilesOnlyPreCommitModel({
+                    repository: repository
+                })
+            });
+        } else {
+            this._preCommitView = new RB.PreCommitView({
+                model: new RB.PreCommitModel({
+                    repository: repository
+                })
+            });
+
+            if (repository.get('supportsPostCommit')) {
+                this._postCommitView = new RB.PostCommitView({
+                    model: new RB.PostCommitModel({
+                        repository: repository
+                    })
+                });
+            }
+        }
+
+        if (this._rendered) {
+            this._$hint.hide();
+            this._$content.append(this._preCommitView.render().el);
+
+            if (this._postCommitView) {
+                this._$content.append(this._postCommitView.render().el);
+            }
+        }
+    }
+});
+
+
+})();

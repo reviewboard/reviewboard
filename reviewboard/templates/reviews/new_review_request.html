@@ -1,114 +1,48 @@
 {% extends "base.html" %}
-{% load djblets_deco %}
+{% load djblets_deco compressed %}
 {% load i18n %}
 {% block title %}{% trans "New Review Request" %}{% endblock %}
 
-{% block scripts-post %}
-<script type="text/javascript">
-    var visible = {{fields|safe}};
-
-    function updateFormDisplay() {
-        var selection = $("#id_repository").get(0);
-        var selectedID = selection.options[selection.selectedIndex].value;
-
-        $("tr[class^=row_]").hide();
-        $(visible[selectedID]).each(function() {
-            $("tr.row_" + this).show();
-        });
-    }
-
-    $(document).ready(function() {
-        $("#id_repository")
-            .change(updateFormDisplay)
-            .triggerHandler("change");
-    });
-</script>
+{% block css %}
+{{block.super}}
+{%  compressed_css "newReviewRequest" %}
 {% endblock %}
 
 {% block content %}
-{% box "tip" %}
-<h1>{% trans "Tip: Use RBTools for new review requests" %}</h1>
-<p>
-{% blocktrans %}
- You can simplify creating and updating review requests by using
- <tt>rbt post</tt> from
- <a href="http://www.reviewboard.org/docs/rbtools/dev/">RBTools</a>.
-{% endblocktrans %}
-</p>
-<p>
-{% blocktrans %}
- <tt>rbt post</tt> is a command line tool that will create compatible
- diffs and upload them into new or existing review requests. It can even
- fill out the fields for you!
-{% endblocktrans %}
-</p>
-<p>
-{% blocktrans %}
- RBTools contains many other helpful tools as well. It's compatible
- with Windows, Linux, MacOS X, and other unix-like operating systems.
-{% endblocktrans %}
-</p>
-{% endbox %}
-
-<form method="post" action="." enctype="multipart/form-data">
-{% box "new-review-request" %}
- <h1 class="title">{% trans "New Review Request" %}</h1>
- <div class="main">
-  <table>
-   <tr>
-    <td><label for="id_repository">{% trans "Repository" %}:</label></td>
-	<td>{{form.repository}}</td>
-	<td>{{form.repository.errors}}</td>
-   </tr>
-   <tr class="row_no_repository_explanation">
-    <td></td>
-    <td class="help" colspan="2">
-     {% blocktrans %}
-     You won't be able to add any diffs to this review request. The review
-     request will only be usable for reviewing screenshots and other graphic
-     files.
-     {% endblocktrans %}
-    </td>
-   </tr>
-   <tr class="row_changenum">
-    <td><label for="id_changenum">{{form.changenum.label}}:</label></td>
-    <td>{{form.changenum}}</td>
-    <td>{{form.changenum.errors}}</td>
-   </tr>
-   <tr class="row_basedir">
-    <td><label for="id_basedir">{{form.basedir.label}}:</label></td>
-    <td>{{form.basedir}}</td>
-    <td>{{form.basedir.errors}}</td>
-   </tr>
-   <tr class="row_basedir">
-    <td></td>
-    <td class="help" colspan="2">{{form.basedir.help_text}}</td>
-   </tr>
-   <tr class="row_diff_path">
-    <td><label for="id_diff_path">{{form.diff_path.label}}:</label></td>
-    <td>{{form.diff_path}}</td>
-    <td>{{form.diff_path.errors}}</td>
-   </tr>
-   <tr class="row_diff_path">
-    <td></td>
-    <td class="help" colspan="2">{{form.diff_path.help_text}}</td>
-   </tr>
-   <tr class="row_parent_diff_path">
-    <td><label for="id_parent_diff_path">{{form.parent_diff_path.label}}:</label></td>
-    <td>{{form.parent_diff_path}}</td>
-    <td>{{form.parent_diff_path.errors}}</td>
-   </tr>
-   <tr class="row_parent_diff_path">
-    <td></td>
-    <td class="help" colspan="2">{{form.parent_diff_path.help_text}}</td>
-   </tr>
-  </table>
- </div>
-{% endbox %}
- <div class="prefsbuttons">
-  <input type="submit" class="primary large" value="{% trans "Create Review Request" %}" />
- </div>
-</form>
-
+<div id="new-review-request"></div>
 {% endblock %}
 
+{% block scripts-post %}
+{{block.super}}
+{%  compressed_js "newReviewRequest" %}
+<script type="text/javascript">
+$(function() {
+    var creator,
+        creatorView;
+
+    creator = new RB.NewReviewRequest({
+        repositories: new Backbone.Collection([
+{% for repo in repos %}
+            new RB.Repository({
+                name: '{{repo.name|escapejs}}',
+                {% if repo.id %}id: {{repo.id}},{% endif %}
+                filesOnly: {{repo.files_only|yesno:"true,false"}},
+                supportsPostCommit: {{repo.supports_post_commit|yesno:"true,false"}},
+                scmtoolName: '{{repo.scmtool_name|escapejs}}',
+                localSitePrefix: '{% if repo.local_site_name %}s/{{repo.local_site_name|escapejs}}/{% endif %}',
+                requiresChangeNumber: {{repo.requires_change_number|yesno:"true,false"}},
+                requiresBasedir: {{repo.requires_basedir|yesno:"true,false"}}
+            }){% if not forloop.last %},{% endif %}
+{% endfor %}
+        ], {
+            model: RB.Repository
+        })
+    });
+
+    creatorView = new RB.NewReviewRequestView({
+        model: creator
+    });
+    creatorView.render();
+})
+</script>
+{% endblock %}

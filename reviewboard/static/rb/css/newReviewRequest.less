@@ -1,0 +1,179 @@
+@import "defs.less";
+
+#new-review-request {
+  @default-height: 55em;
+
+  border: 1px solid @box-border-color;
+  width: 100%;
+  height: @default-height;
+  display: none;
+
+  .repository-selector {
+    float: left;
+    width: 20em;
+    height: @default-height;
+    border-right: 1px @grey solid;
+    background-color: @headerbar-bg;
+    color: white;
+    overflow: scroll;
+
+    h3 {
+      padding: 1em;
+      margin: 0;
+    }
+
+    .repository {
+      cursor: pointer;
+      width: 18em;
+      padding: 1em;
+
+      &.selected {
+        background-color: #444444;
+        #gradient > .vertical-three-colors(#444444, #555555, 15%, #444444);
+      }
+    }
+  }
+
+  .main {
+    height: @default-height;
+    overflow: scroll;
+    margin-left: 20em;
+    background-color: lighten(@light-grey, 4%);
+
+    .hint {
+      background-color: white;
+      height: @default-height;
+      line-height: @default-height;
+      width: 100%;
+      vertical-align: middle;
+      text-align: center;
+    }
+  }
+
+  .pre-commit {
+    background-color: lighten(@light-grey, 4%);
+
+    .tip {
+      margin: 2em 2em 1em 2em;
+      text-align: center;
+    }
+
+    #prompt-for-basedir,
+    #prompt-for-diff,
+    #prompt-for-change-number,
+    #processing-diff,
+    #uploading-diffs,
+    #error-indicator {
+      display: none;
+    }
+
+    #error-indicator {
+      line-height: 12pt;
+
+      #error-contents {
+        position: relative;
+        margin: 0 10em;
+
+        img {
+          margin-right: 5px;
+          vertical-align: sub;
+        }
+      }
+    }
+
+    #processing-diff,
+    #uploading-diffs {
+      background: url(../images/spinner.gif) center center no-repeat;
+    }
+
+    .input {
+      text-align: center;
+      vertical-align: middle;
+      height: 14em;
+      line-height: 14em;
+      margin: 2em 2em 6em 2em;
+      border: 1px solid @grey;
+      .border-radius(@box-border-radius);
+      background-color: lighten(@light-grey, 10%);
+      position: relative;
+
+      .startover {
+        position: absolute;
+        bottom: 0;
+        right: 5px;
+        line-height: 14pt;
+      }
+    }
+
+    .drag-hover {
+      border: 1px solid darken(@grey, 4%);
+      .box-shadow(inset @box-shadow);
+    }
+  }
+
+  .section-header {
+    padding: 0.5em;
+    border-bottom: 1px @grey solid;
+    font-size: 12pt;
+    text-align: center;
+    background-color: @light-blue;
+  }
+
+  .branches {
+    select {
+      vertical-align: top;
+    }
+  }
+
+  .commit {
+    border-bottom: 1px @grey solid;
+    position: relative;
+    padding: 1em;
+    cursor: pointer;
+
+    .summary {
+      font-size: 10pt;
+      font-weight: 600;
+      width: 52em;
+      padding-bottom: 2px;
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+    }
+
+    .progress {
+      display: none;
+      position: absolute;
+      width: 16px;
+      right: 1em;
+      top: 0;
+      height: 100%;
+      background: url(../images/spinner.gif) center center no-repeat;
+    }
+
+    &:nth-child(even) {
+      background-color: lighten(@light-grey, 2%);
+    }
+
+    &:nth-child(odd) {
+      background-color: darken(@light-grey, 2%);
+    }
+
+    &:hover {
+      background-color: lighten(@light-grey, 6%);
+    }
+  }
+
+  .post-commit {
+    border-bottom: 1px @grey solid;
+  }
+
+  .files-only {
+    margin: 14em;
+    text-align: center;
+
+    input {
+      margin-top: 2em;
+    }
+  }
+}

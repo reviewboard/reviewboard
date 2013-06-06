@@ -452,6 +452,7 @@ PIPELINE_JS = {
             'rb/js/resources/models/validateDiffModel.js',
             'rb/js/newReviewRequest/models/postCommitModel.js',
             'rb/js/newReviewRequest/models/preCommitModel.js',
+            'rb/js/newReviewRequest/models/newReviewRequestModel.js',
             'rb/js/views/collectionView.js',
             'rb/js/newReviewRequest/views/branchView.js',
             'rb/js/newReviewRequest/views/branchesView.js',
@@ -461,6 +462,7 @@ PIPELINE_JS = {
             'rb/js/newReviewRequest/views/repositorySelectionView.js',
             'rb/js/newReviewRequest/views/postCommitView.js',
             'rb/js/newReviewRequest/views/preCommitView.js',
+            'rb/js/newReviewRequest/views/newReviewRequestView.js',
         ),
         'output_filename': 'rb/js/newReviewRequest.min.js',
     },
@@ -509,6 +511,13 @@ PIPELINE_CSS = {
             'rb/css/syntax.css',
         ),
         'output_filename': 'rb/css/reviews.min.css',
+        'absolute_paths': False,
+    },
+    'newReviewRequest': {
+        'source_filenames': (
+            'rb/css/newReviewRequest.less',
+        ),
+        'output_filename': 'rb/css/newReviewRequest.min.css',
         'absolute_paths': False,
     },
     'admin': {
