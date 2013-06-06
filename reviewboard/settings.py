@@ -294,6 +294,7 @@ PIPELINE_JS = {
         'source_filenames': (
             'lib/js/jasmine-1.3.1.js',
             'lib/js/jasmine-html-1.3.1.js',
+            'rb/js/collections/tests/resourceCollectionTests.js',
             'rb/js/models/tests/baseCommentModelTests.js',
             'rb/js/models/tests/baseCommentReplyModelTests.js',
             'rb/js/models/tests/baseResourceModelTests.js',
@@ -358,6 +359,8 @@ PIPELINE_JS = {
             'rb/js/models/screenshotCommentModel.js',
             'rb/js/models/screenshotCommentReplyModel.js',
             'rb/js/models/userSessionModel.js',
+            'rb/js/collections/baseCollection.js',
+            'rb/js/collections/resourceCollection.js',
         ),
         'output_filename': 'rb/js/base.min.js',
     },
