@@ -4,6 +4,8 @@ describe('views/ReviewReplyEditorView', function() {
         view;
 
     beforeEach(function() {
+        var $container = $('<div/>').appendTo($testsScratch);
+
         reviewReply = new RB.ReviewReply();
 
         /* Some tests will invoke this, so just pretend it works. */
@@ -29,7 +31,7 @@ describe('views/ReviewReplyEditorView', function() {
         /* Necessary to do pre-render so we can use makeCommentElement. */
         view._$commentsList = $('<ul class="reply-comments"/>');
 
-        $testsScratch
+        $container
             .append(view._$commentsList)
             .append($('<a href="#" class="add_comment_link">Add Comment</a>'));
     });
@@ -109,6 +111,21 @@ describe('views/ReviewReplyEditorView', function() {
             expect(view._$draftComment).toBe(null);
             expect($.fn.user_infobox).toHaveBeenCalled();
             expect($.fn.timesince).toHaveBeenCalled();
+        });
+    });
+
+    describe('Methods', function() {
+        it('openCommentEditor', function() {
+            view.render();
+
+            expect(view._$addCommentLink.is(':visible')).toBe(true);
+            expect(view._$draftComment).toBe(null);
+
+            view.openCommentEditor();
+
+            expect(view._$addCommentLink.is(':visible')).toBe(false);
+            expect(view._$draftComment).not.toBe(null);
+            expect(view._$draftComment.hasClass('draft')).toBe(true);
         });
     });
 });

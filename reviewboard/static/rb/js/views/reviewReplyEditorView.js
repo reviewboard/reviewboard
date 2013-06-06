@@ -88,6 +88,14 @@ RB.ReviewReplyEditorView = Backbone.View.extend({
     },
 
     /*
+     * Opens the comment editor for a new comment.
+     */
+    openCommentEditor: function() {
+        this._createCommentEditor(this._makeCommentElement());
+        this._$editor.inlineEditor('startEdit');
+    },
+
+    /*
      * Creates a comment editor for an element.
      */
     _createCommentEditor: function($draftComment) {
@@ -174,8 +182,7 @@ RB.ReviewReplyEditorView = Backbone.View.extend({
         e.preventDefault();
         e.stopPropagation();
 
-        this._createCommentEditor(this._makeCommentElement());
-        this._$editor.inlineEditor('startEdit');
+        this.openCommentEditor();
     },
 
     /*

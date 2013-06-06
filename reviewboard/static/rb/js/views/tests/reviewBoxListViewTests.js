@@ -6,16 +6,27 @@ describe('views/ReviewBoxListView', function() {
             ' <div class="review" data-review-id="123" data-ship-it="true">',
             '  <div class="box">',
             '   <div class="body">',
-            '    <div class="body_top">Body Top</div>',
-            '    <div class="body_bottom">Body Bottom</div>',
+            '    <pre class="body_top">Body Top</pre>',
+            '    <div class="comment-section" data-context-type="body_top">',
+            '    </div>',
+            '    <div class="comment-section" data-context-id="123" ',
+            '         data-context-type="diff_comments">',
+            '    </div>',
+            '    <pre class="body_bottom">Body Bottom</pre>',
+            '    <div class="comment-section" data-context-type="body_bottom">',
+            '    </div>',
             '   </div>',
             ' </div>',
             ' </div>',
             ' <div class="review" data-review-id="124" data-ship-it="false">',
             '  <div class="box">',
             '   <div class="body">',
-            '    <div class="body_top">Body Top</div>',
-            '    <div class="body_bottom">Body Bottom</div>',
+            '    <pre class="body_top">Body Top</pre>',
+            '    <div class="comment-section" data-context-type="body_top">',
+            '    </div>',
+            '    <pre class="body_bottom">Body Bottom</pre>',
+            '    <div class="comment-section" data-context-type="body_bottom">',
+            '    </div>',
             '   </div>',
             '  </div>',
             ' </div>',
@@ -88,6 +99,49 @@ describe('views/ReviewBoxListView', function() {
         it('Ship It', function() {
             expect(box1.model.get('shipIt')).toBe(true);
             expect(box2.model.get('shipIt')).toBe(false);
+        });
+    });
+
+    describe('Methods', function() {
+        describe('openCommentEditor', function() {
+            beforeEach(function() {
+                spyOn(RB.ReviewReplyEditorView.prototype, 'openCommentEditor');
+                spyOn(box1, 'getReviewReplyEditorView').andCallThrough();
+                spyOn(box2, 'getReviewReplyEditorView').andCallThrough();
+            });
+
+            it('With body_top', function() {
+                view.openCommentEditor('body_top');
+
+                expect(box1.getReviewReplyEditorView).toHaveBeenCalled();
+                expect(RB.ReviewReplyEditorView.prototype.openCommentEditor)
+                    .toHaveBeenCalled();
+
+                /* We should have matched the first one. */
+                expect(box2.getReviewReplyEditorView).not.toHaveBeenCalled();
+            });
+
+            it('With body_bottom', function() {
+                view.openCommentEditor('body_bottom');
+
+                expect(box1.getReviewReplyEditorView).toHaveBeenCalled();
+                expect(RB.ReviewReplyEditorView.prototype.openCommentEditor)
+                    .toHaveBeenCalled();
+
+                /* We should have matched the first one. */
+                expect(box2.getReviewReplyEditorView).not.toHaveBeenCalled();
+            });
+
+            it('With comments', function() {
+                view.openCommentEditor('diff_comments', 123);
+
+                expect(box1.getReviewReplyEditorView).toHaveBeenCalled();
+                expect(RB.ReviewReplyEditorView.prototype.openCommentEditor)
+                    .toHaveBeenCalled();
+
+                /* We should have matched the first one. */
+                expect(box2.getReviewReplyEditorView).not.toHaveBeenCalled();
+            });
         });
     });
 });

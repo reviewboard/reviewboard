@@ -574,8 +574,7 @@ RB.ReviewDialogView = Backbone.View.extend({
      */
     create: function(options) {
         var instance = RB.ReviewDialogView._instance,
-            reviewRequestEditor = options.reviewRequestEditor ||
-                                  window.reviewRequestEditor,
+            reviewRequestEditor = options.reviewRequestEditor,
             dlg;
 
         options = options || {};

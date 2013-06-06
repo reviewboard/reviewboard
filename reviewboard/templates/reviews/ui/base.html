@@ -1,5 +1,5 @@
 {% extends "reviews/reviewable_base.html" %}
-{% load djblets_deco i18n reviewtags %}
+{% load djblets_deco i18n reviewtags tz %}
 
 {% block content %}
 <div id="review_request">
@@ -35,4 +35,17 @@
 
 {%  block review_ui_content %}
 {%  endblock %}
+{% endblock %}
+
+{% block scripts-post %}
+{{block.super}}
+
+<script>
+    RB.currentPage = new RB.ReviewablePageView({
+{%  localtime off %}
+        lastActivityTimestamp: '{{last_activity_time|date:"c"}}',
+{%  endlocaltime %}
+{%  include "reviews/reviewable_page_data.js" %}
+    });
+</script>
 {% endblock %}

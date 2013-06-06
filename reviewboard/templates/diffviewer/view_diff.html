@@ -33,16 +33,17 @@
 {% block scripts-post %}
 {{block.super}}
 
-{% if not specific_diff_requested %}
-{% localtime off %}
-<script type="text/javascript">
-  $(document).ready(function() {
-	  /* Listen for updates to this review request. */
-	  RB.registerForUpdates("{{last_activity_time|date:"c"}}", "diff");
-  });
+{%  if not specific_diff_requested %}
+<script>
+    RB.currentPage = new RB.DiffViewerPageView({
+        checkUpdatesType: 'diff',
+{%   localtime off %}
+        lastActivityTimestamp: '{{last_activity_time|date:"c"}}',
+{%   endlocaltime %}
+{%   include "reviews/reviewable_page_data.js" %}
+    });
 </script>
-{% endlocaltime %}
-{% endif %}
+{%  endif %}
 {% endblock %}
 
 {% block content %}
@@ -229,17 +230,19 @@
  </tbody>
 </table>
 {%  endif %}
-<script type="text/javascript">
-  $(document).ready(function() {
-  RB.loadFileDiff("{{base_url}}", "{{file.filediff.id}}", "{{file.filediff.diffset.revision}}",
+<script>
+    $(document).ready(function() {
+        RB.currentPage.queueLoadDiff(
+            "{{base_url}}", "{{file.filediff.id}}",
+            "{{file.filediff.diffset.revision}}",
 {% if file.interfilediff %}
-                  "{{file.interfilediff.id}}", "{{file.interfilediff.diffset.revision}}",
+            "{{file.interfilediff.id}}", "{{file.interfilediff.diffset.revision}}",
 {% else %}
-                  null, null,
+            null, null,
 {% endif %}
-                  "{{file.index}}",
-			      {% commentcounts file.filediff file.interfilediff %});
-});
+            "{{file.index}}",
+            {% commentcounts file.filediff file.interfilediff %});
+    });
 </script>
 {% endfor %}
 

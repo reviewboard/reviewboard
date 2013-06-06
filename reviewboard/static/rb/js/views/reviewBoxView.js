@@ -72,6 +72,22 @@ RB.ReviewBoxView = RB.CollapsableBoxView.extend({
     },
 
     /*
+     * Returns the ReviewReplyEditorView with the given context type and ID.
+     */
+    getReviewReplyEditorView: function(contextType, contextID) {
+        if (contextID === undefined) {
+            contextID = null;
+        }
+
+        return _.find(this._replyEditorViews, function(view) {
+            var editor = view.model;
+
+            return editor.get('contextID') === contextID &&
+                   editor.get('contextType') === contextType;
+        });
+    },
+
+    /*
      * Shows the reply draft banner.
      *
      * This will be called in response to any new replies made on a review,

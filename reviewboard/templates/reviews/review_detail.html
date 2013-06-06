@@ -185,9 +185,9 @@
 {% endif %}
      {% reply_section entry comment "diff_comments" "rc" %}
     </dd>
-    <script type="text/javascript">
+    <script>
       $(document).ready(function() {
-        reviewBoxListView.diffFragmentQueue.queueLoad(
+        RB.currentPage.queueLoadDiff(
           "{{comment.id}}",
 {% if comment.interfilediff %}
           "{{comment.filediff.id}}-{{comment.interfilediff.id}}"
@@ -294,29 +294,19 @@
 {% block scripts-post %}
 {{block.super}}
 
-<script type="text/javascript">
-    window.reviewBoxListView = new RB.ReviewBoxListView({
-        el: document.body,
-        pageEditState: reviewRequestEditor,
-        reviewRequest: reviewRequestEditor.get('reviewRequest')
+<script>
+    RB.currentPage = new RB.ReviewRequestPageView({
+{%  localtime off %}
+        lastActivityTimestamp: '{{last_activity_time|date:"c"}}',
+{%  endlocaltime %}
+{%  include "reviews/reviewable_page_data.js" %}
     });
 
+{%  if request.GET.reply_id and request.GET.reply_type %}
     $(document).ready(function() {
-{% localtime off %}
-        /* Listen for updates to this review request. */
-        RB.registerForUpdates("{{last_activity_time|date:"c"}}");
-{% endlocaltime %}
-
-        reviewBoxListView.render();
-
-{% if request.GET.reply_id and request.GET.reply_type %}
-        $.funcQueue("diff_comments").add(function() {
-            var link = $("#add_{{request.GET.reply_type}}_{{request.GET.reply_id}}");
-            $(window).scrollTop(link.offset().top);
-            link.click();
-            $.funcQueue("diff_comments").next();
-        });
-{% endif %}
+        RB.currentPage.openCommentEditor("{{request.GET.reply_type}}",
+                                         {{request.GET.reply_id}});
     });
+{%  endif %}
 </script>
 {% endblock %}

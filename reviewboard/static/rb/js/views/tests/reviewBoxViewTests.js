@@ -9,8 +9,7 @@ describe('views/ReviewBoxView', function() {
             '   <input type="button" value="Publish" />',
             '   <input type="button" value="Discard" />',
             '  </div>',
-            '  <div class="comment-section" data-context-id="123"',
-            '       data-context-type="body_top">',
+            '  <div class="comment-section" data-context-type="body_top">',
             '   <a class="add_comment_link"></a>',
             '   <ul class="reply-comments">',
             '    <li class="draft" data-comment-id="456">',
@@ -18,8 +17,12 @@ describe('views/ReviewBoxView', function() {
             '    </li>',
             '   </ul>',
             '  </div>',
-            '  <div class="comment-section" data-context-id="124"',
-            '       data-context-type="body_bottom">',
+            '  <div class="comment-section" data-context-id="123" ',
+            '       data-context-type="diff_comments">',
+            '   <a class="add_comment_link"></a>',
+            '   <ul class="reply-comments"></ul>',
+            '  </div>',
+            '  <div class="comment-section" data-context-type="body_bottom">',
             '   <a class="add_comment_link"></a>',
             '   <ul class="reply-comments"></ul>',
             '  </div>',
@@ -72,17 +75,21 @@ describe('views/ReviewBoxView', function() {
 
     describe('Reply editors', function() {
         it('Views created', function() {
-            expect(view._replyEditorViews.length).toBe(2);
+            expect(view._replyEditorViews.length).toBe(3);
         });
 
         it('Initial state populated', function() {
             var model = view._replyEditorViews[0].model;
 
-            expect(model.get('contextID')).toBe(123);
+            expect(model.get('contextID')).toBe(null);
             expect(model.get('contextType')).toBe('body_top');
 
             model = view._replyEditorViews[1].model;
-            expect(model.get('contextID')).toBe(124);
+            expect(model.get('contextID')).toBe(123);
+            expect(model.get('contextType')).toBe('diff_comments');
+
+            model = view._replyEditorViews[2].model;
+            expect(model.get('contextID')).toBe(null);
             expect(model.get('contextType')).toBe('body_bottom');
         });
 
@@ -182,6 +189,30 @@ describe('views/ReviewBoxView', function() {
             $box.addClass('collapsed');
             view.expand();
             expect($box.hasClass('collapsed')).toBe(false);
+        });
+
+        describe('getReviewReplyEditorView', function() {
+            it('With body_top', function() {
+                var editorView = view.getReviewReplyEditorView('body_top');
+
+                expect(editorView).not.toBe(undefined);
+                expect(editorView).toBe(view._replyEditorViews[0]);
+            });
+
+            it('With body_bottom', function() {
+                var editorView = view.getReviewReplyEditorView('body_bottom');
+
+                expect(editorView).not.toBe(undefined);
+                expect(editorView).toBe(view._replyEditorViews[2]);
+            });
+
+            it('With comments', function() {
+                var editorView = view.getReviewReplyEditorView('diff_comments',
+                                                               123);
+
+                expect(editorView).not.toBe(undefined);
+                expect(editorView).toBe(view._replyEditorViews[1]);
+            });
         });
     });
 });

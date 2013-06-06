@@ -79,6 +79,31 @@ RB.ReviewBoxListView = Backbone.View.extend({
     },
 
     /*
+     * Opens the comment editor for a comment with the given context type and
+     * ID.
+     *
+     * This will look through every review and try to find the correct
+     * comment editor. If found, it will open the editor.
+     */
+    openCommentEditor: function(contextType, contextID) {
+        this._boxes.every(function(box) {
+            var reviewReplyEditorView;
+
+            if (box.getReviewReplyEditorView) {
+                reviewReplyEditorView =
+                    box.getReviewReplyEditorView(contextType, contextID);
+
+                if (reviewReplyEditorView) {
+                    reviewReplyEditorView.openCommentEditor();
+                    return false;
+                }
+            }
+
+            return true;
+        });
+    },
+
+    /*
      * Handler for when the Collapse All button is pressed.
      *
      * Collapses each review box.
