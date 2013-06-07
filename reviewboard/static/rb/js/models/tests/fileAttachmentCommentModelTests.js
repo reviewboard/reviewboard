@@ -26,6 +26,13 @@ describe('models/FileAttachmentComment', function() {
                         my_bool: true,
                         my_str: 'strvalue',
                         my_null: null
+                    },
+                    link_text: 'my-link-text',
+                    thumbnail_html: '<blink>Boo</blink>',
+                    review_url: '/review-ui/',
+                    file_attachment: {
+                        id: 10,
+                        filename: 'file.txt'
                     }
                 }
             });
@@ -40,6 +47,13 @@ describe('models/FileAttachmentComment', function() {
             expect(data.extraData.my_bool).toBe(true);
             expect(data.extraData.my_str).toBe('strvalue');
             expect(data.extraData.my_null).toBe(null);
+            expect(data.linkText).toBe('my-link-text');
+            expect(data.thumbnailHTML).toBe('<blink>Boo</blink>');
+            expect(data.reviewURL).toBe('/review-ui/');
+            expect(data.fileAttachment).not.toBe(undefined);
+            expect(data.fileAttachment.id).toBe(10);
+            expect(data.fileAttachment.get('filename')).toBe('file.txt');
+            expect(data.fileAttachmentID).toBe(10);
         });
     });
 

@@ -4,10 +4,28 @@ RB.FileAttachmentComment = RB.BaseComment.extend({
         extraData: {},
 
         /* The ID of the file attachment the comment is on. */
-        fileAttachmentID: null
+        fileAttachmentID: null,
+
+        /* The file attachment the comment is on. */
+        fileAttachment: null,
+
+        /*
+         * The text used to describe a link to the file. This may differ
+         * depending on the comment.
+         */
+        linkText: null,
+
+        /*
+         * The URL for the review UI for the comment on this file attachment.
+         */
+        reviewURL: null,
+
+        /* The HTML representing a thumbnail, if any, for this comment. */
+        thumbnailHTML: null
     }, RB.BaseComment.prototype.defaults),
 
     rspNamespace: 'file_attachment_comment',
+    expandedFields: ['file_attachment'],
 
     /*
      * Serializes the comment to a payload that can be sent to the server.
@@ -34,6 +52,13 @@ RB.FileAttachmentComment = RB.BaseComment.extend({
                                                                      rsp);
 
         result.extraData = rsp.extra_data;
+        result.linkText = rsp.link_text;
+        result.thumbnailHTML = rsp.thumbnail_html;
+        result.reviewURL = rsp.review_url;
+        result.fileAttachment = new RB.FileAttachment(rsp.file_attachment, {
+            parse: true
+        });
+        result.fileAttachmentID = result.fileAttachment.id;
 
         return result;
     },

@@ -30,7 +30,15 @@ describe('models/DiffComment', function() {
                     issue_status: 'resolved',
                     text: 'foo',
                     first_line: 10,
-                    num_lines: 5
+                    num_lines: 5,
+                    filediff: {
+                        id: 1,
+                        source_file: 'my-file'
+                    },
+                    interfilediff: {
+                        id: 2,
+                        source_file: 'my-file'
+                    }
                 }
             });
 
@@ -41,6 +49,12 @@ describe('models/DiffComment', function() {
             expect(data.text).toBe('foo');
             expect(data.beginLineNum).toBe(10);
             expect(data.endLineNum).toBe(14);
+            expect(data.fileDiff).not.toBe(undefined);
+            expect(data.fileDiff.id).toBe(1);
+            expect(data.fileDiff.get('sourceFilename')).toBe('my-file');
+            expect(data.interFileDiff).not.toBe(undefined);
+            expect(data.interFileDiff.id).toBe(2);
+            expect(data.interFileDiff.get('sourceFilename')).toBe('my-file');
         });
     });
 

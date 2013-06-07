@@ -13,10 +13,17 @@ RB.ScreenshotComment = RB.BaseComment.extend({
         height: null,
 
         /* The ID of the screenshot the comment is on. */
-        screenshotID: null
+        screenshotID: null,
+
+        /* The screenshot the comment is on. */
+        screenshot: null,
+
+        /* The URL to an image depicting what was commented on. */
+        thumbnailURL: null
     }, RB.BaseComment.prototype.defaults),
 
     rspNamespace: 'screenshot_comment',
+    expandedFields: ['screenshot'],
 
     /*
      * Serializes the comment to a payload that can be sent to the server.
@@ -47,6 +54,11 @@ RB.ScreenshotComment = RB.BaseComment.extend({
         result.y = rsp.y;
         result.width = rsp.w;
         result.height = rsp.h;
+        result.thumbnailURL = rsp.thumbnail_url;
+        result.screenshot = new RB.Screenshot(rsp.screenshot, {
+            parse: true
+        });
+        result.screenshotID = result.screenshot.id;
 
         return result;
     },

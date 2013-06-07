@@ -12,8 +12,14 @@ RB.DiffComment = RB.BaseComment.extend({
         /* The last line number in the range (0-indexed). */
         endLineNum: 0,
 
+        /* The FileDiff the comment applies to. */
+        fileDiff: null,
+
         /* The ID of the FileDiff the comment is on. */
         fileDiffID: null,
+
+        /* The optional FileDiff at the end of an interdiff range. */
+        interFileDiff: null,
 
         /*
          * The ID of the optional FileDiff specifying the end of an
@@ -23,6 +29,7 @@ RB.DiffComment = RB.BaseComment.extend({
     }, RB.BaseComment.prototype.defaults),
 
     rspNamespace: 'diff_comment',
+    expandedFields: ['filediff', 'interfilediff'],
 
     /*
      * Returns the total number of lines the comment spans.
@@ -64,6 +71,16 @@ RB.DiffComment = RB.BaseComment.extend({
         result.beginLineNum = rsp.first_line;
         result.endLineNum = rsp.num_lines + result.beginLineNum - 1;
 
+        result.fileDiff = new RB.FileDiff(rsp.filediff, {
+            parse: true
+        });
+
+        if (rsp.interfilediff) {
+            result.interFileDiff = new RB.FileDiff(rsp.interfilediff, {
+                parse: true
+            });
+        }
+
         return result;
     },
 
@@ -78,12 +95,12 @@ RB.DiffComment = RB.BaseComment.extend({
             hasBeginLineNum,
             hasEndLineNum;
 
-	/*
-	 * XXX: Existing diff comments won't have the "fileDiffID" attribute
-	 * populated when we load the object from the API. Since we don't do
-	 * anything that needs that attribute unless we're trying to create a
-	 * new diff comment, only check it if isNew().
-	 */
+        /*
+         * XXX: Existing diff comments won't have the "fileDiffID" attribute
+         * populated when we load the object from the API. Since we don't do
+         * anything that needs that attribute unless we're trying to create a
+         * new diff comment, only check it if isNew().
+         */
         if (this.isNew() && _.has(attrs, 'fileDiffID') && !attrs.fileDiffID) {
             return strings.INVALID_FILEDIFF_ID;
         }

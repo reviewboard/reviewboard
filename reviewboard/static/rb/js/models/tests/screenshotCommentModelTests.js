@@ -28,7 +28,12 @@ describe('models/ScreenshotComment', function() {
                     x: 10,
                     y: 20,
                     w: 30,
-                    h: 40
+                    h: 40,
+                    thumbnail_url: '/thumbnail.png',
+                    screenshot: {
+                        id: 10,
+                        filename: 'image.png'
+                    }
                 }
             });
 
@@ -41,6 +46,11 @@ describe('models/ScreenshotComment', function() {
             expect(data.y).toBe(20);
             expect(data.width).toBe(30);
             expect(data.height).toBe(40);
+            expect(data.thumbnailURL).toBe('/thumbnail.png');
+            expect(data.screenshot).not.toBe(undefined);
+            expect(data.screenshot.id).toBe(10);
+            expect(data.screenshot.get('filename')).toBe('image.png');
+            expect(data.screenshotID).toBe(10);
         });
     });
 
