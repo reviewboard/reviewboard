@@ -97,19 +97,6 @@ RB.DraftReviewRequest = RB.BaseResource.extend(_.defaults({
         result.testingDone = rspData.testing_done;
 
         return result;
-    },
-
-    sync: function(method, model, options) {
-        /*
-         * Expand certain fields so that we can be sure that the values
-         * will be what we expect whether we're updating or getting.
-         */
-        options.data = _.defaults({
-            expand: this.expandedFields.join(',')
-        }, options.data);
-
-        return RB.BaseResource.prototype.sync.call(this, method, model,
-                                                   options);
     }
 }, RB.DraftResourceModelMixin),
 {

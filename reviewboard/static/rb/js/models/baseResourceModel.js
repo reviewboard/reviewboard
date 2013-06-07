@@ -23,6 +23,9 @@ RB.BaseResource = Backbone.Model.extend({
         return this.rspNamespace + 's';
     },
 
+    /* The list of fields to expand in resource payloads. */
+    expandedFields: [],
+
     /*
      * Returns the URL for this resource's instance.
      *
@@ -224,15 +227,12 @@ RB.BaseResource = Backbone.Model.extend({
 
         this.ready({
             ready: function() {
-                var parentObject = this.get('parentObject'),
-                    saveObject;
+                var parentObject = this.get('parentObject');
 
                 if (parentObject) {
-                    saveObject = _.bind(this._saveObject, this, options,
-                                        context);
-
                     parentObject.ensureCreated({
-                        success: saveObject,
+                        success: _.bind(this._saveObject, this, options,
+                                        context),
                         error: options.error
                     }, this);
                 } else {
@@ -525,6 +525,10 @@ RB.BaseResource = Backbone.Model.extend({
             data = options.form ? null
                                 : (options.attrs || model.toJSON(options));
             contentType = 'application/x-www-form-urlencoded';
+        }
+
+        if (this.expandedFields.length > 0) {
+            data.expand = this.expandedFields.join(',');
         }
 
         syncOptions = _.defaults({}, options, {
