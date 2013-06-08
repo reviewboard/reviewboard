@@ -71,10 +71,10 @@ def filter_interdiff_opcodes(opcodes, filediff_data, interfilediff_data):
         # See if the chunk we're looking at is in the range of the chunk in
         # one of the uploaded diffs. If so, allow it through.
         valid_chunk = (
-            (orig_range and
+            (orig_range is not None and
              (tag == 'delete' or i1 != i2) and
              (i1 >= orig_range[0] and i2 <= orig_range[1])) or
-            (new_range and
+            (new_range is not None and
              (tag == 'delete' or j1 != j2) and
              (j1 >= new_range[0] and j2 <= new_range[1]))
         )
@@ -89,7 +89,7 @@ def filter_interdiff_opcodes(opcodes, filediff_data, interfilediff_data):
             else:
                 orig_range = None
 
-        if new_range and j1 >= new_range[0]:
+        if new_range and j2 >= new_range[1]:
             # We've left the range of the current chunk to consider in the
             # new diff. Move on to the next one.
             new_range_i += 1

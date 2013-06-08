@@ -661,44 +661,12 @@ class ProcessorsTests(TestCase):
             ('insert', 40, 40, 40, 45),
         ]
 
-        orig_diff = (
-            '--- README\n'
-            '+++ README\n'
-            '@@ -22,7 +22,7 @@\n'
-            ' # line 22\n'
-            ' # line 23\n'
-            ' # line 24\n'
-            '-# line 25\n'
-            '+# line 25!\n'
-            ' # line 26\n'
-            ' # line 27\n'
-            ' # line 28\n'
-        )
-
+        # NOTE: Only the "@@" lines in the diff matter below for this
+        #       processor, so the rest can be left out.
+        orig_diff = '@@ -22,7 +22,7 @@\n'
         new_diff = (
-            '--- README\n'
-            '+++ README\n'
             '@@ -2,11 +2,6 @@\n'
-            ' # line 2\n'
-            ' # line 3\n'
-            ' # line 4\n'
-            '-# line 5\n'
-            '-# line 6\n'
-            '-# line 7\n'
-            '-# line 8\n'
-            '-# line 9\n'
-            ' # line 10\n'
-            ' # line 11\n'
-            ' # line 12\n'
             '@@ -22,7 +22,7 @@\n'
-            ' # line 22\n'
-            ' # line 23\n'
-            ' # line 24\n'
-            '-# line 25\n'
-            '+# line 25!\n'
-            ' # line 26\n'
-            ' # line 27\n'
-            ' # line 28\n'
         )
 
         new_opcodes = list(filter_interdiff_opcodes(opcodes, orig_diff,
@@ -712,6 +680,42 @@ class ProcessorsTests(TestCase):
             ('replace', 25, 26, 20, 26),
             ('equal', 26, 40, 26, 40),
             ('equal', 40, 40, 40, 45),
+        ])
+
+    def test_filter_interdiff_opcodes_with_inserts_right(self):
+        """Testing filter_interdiff_opcodes with inserts on the right"""
+        # These opcodes were taken from the r1-r2 interdiff at
+        # http://reviews.reviewboard.org/r/4221/
+        opcodes = [
+            ('equal', 0, 141, 0, 141),
+            ('replace', 141, 142, 141, 142),
+            ('insert', 142, 142, 142, 144),
+            ('equal', 142, 165, 144, 167),
+            ('replace', 165, 166, 167, 168),
+            ('insert', 166, 166, 168, 170),
+            ('equal', 166, 190, 170, 194),
+            ('insert', 190, 190, 194, 197),
+            ('equal', 190, 232, 197, 239),
+        ]
+
+        # NOTE: Only the "@@" lines in the diff matter below for this
+        #       processor, so the rest can be left out.
+        orig_diff = '@@ -0,0 +1,232 @@\n'
+        new_diff = '@@ -0,0 +1,239 @@\n'
+
+        new_opcodes = list(filter_interdiff_opcodes(opcodes, orig_diff,
+                                                    new_diff))
+
+        self.assertEqual(new_opcodes, [
+            ('equal', 0, 141, 0, 141),
+            ('replace', 141, 142, 141, 142),
+            ('insert', 142, 142, 142, 144),
+            ('equal', 142, 165, 144, 167),
+            ('replace', 165, 166, 167, 168),
+            ('insert', 166, 166, 168, 170),
+            ('equal', 166, 190, 170, 194),
+            ('insert', 190, 190, 194, 197),
+            ('equal', 190, 232, 197, 239),
         ])
 
     def test_merge_adjacent_chunks(self):
