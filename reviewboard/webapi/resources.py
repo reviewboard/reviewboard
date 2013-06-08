@@ -1,4 +1,5 @@
 import logging
+import os
 import re
 from time import time
 from urllib import quote as urllib_quote
@@ -384,6 +385,15 @@ class BaseDiffCommentResource(BaseCommentResource):
             if 'line' in request.GET:
                 q = q.filter(first_line=int(request.GET['line']))
 
+        order_by = kwargs.get('order-by', None)
+
+        if order_by:
+            q = q.order_by(*[
+                field
+                for field in order_by.split(',')
+                if '__' not in field  # Don't allow joins
+            ])
+
         return q
 
     def serialize_public_field(self, obj, **kwargs):
@@ -408,6 +418,10 @@ class BaseDiffCommentResource(BaseCommentResource):
                 'type': int,
                 'description': 'The line number that each comment must '
                                'start on.',
+            },
+            'order-by': {
+                'type': str,
+                'description': 'Comma-separated list of fields to order by',
             },
         },
         allow_unknown=True
@@ -3605,6 +3619,14 @@ class BaseScreenshotResource(WebAPIResource):
                            "relative to the media directory configured "
                            "on the Review Board server.",
         },
+        'filename': {
+            'type': str,
+            'description': "The base file name of the screenshot's image.",
+        },
+        'review_url': {
+            'type': str,
+            'description': 'The URL to the review UI for this screenshot.',
+        },
         'url': {
             'type': str,
             'description': "The URL of the screenshot file. If this is not "
@@ -3650,6 +3672,12 @@ class BaseScreenshotResource(WebAPIResource):
 
     def serialize_path_field(self, obj, **kwargs):
         return obj.image.name
+
+    def serialize_filename_field(self, obj, **kwargs):
+        return os.path.basename(obj.image.name)
+
+    def serialize_review_url_field(self, obj, **kwargs):
+        return obj.get_absolute_url()
 
     def serialize_url_field(self, obj, **kwargs):
         return obj.image.url
@@ -4726,6 +4754,11 @@ class BaseScreenshotCommentResource(BaseCommentResource):
             'description': 'The height of the comment region on the '
                            'screenshot.',
         },
+        'thumbnail_url': {
+            'type': str,
+            'description': 'The URL to an image showing what was commented '
+                           'on.',
+        },
     }, **BaseCommentResource.fields)
 
     uri_object_key = 'comment_id'
@@ -4747,6 +4780,9 @@ class BaseScreenshotCommentResource(BaseCommentResource):
 
     def serialize_user_field(self, obj, **kwargs):
         return obj.review.get().user
+
+    def serialize_thumbnail_url_field(self, obj, **kwargs):
+        return obj.get_image_url()
 
     @webapi_check_local_site
     @augment_method_from(WebAPIResource)
@@ -5205,6 +5241,21 @@ class BaseFileAttachmentCommentResource(BaseCommentResource):
             'description': 'Extra data as part of the comment. This depends '
                            'on the type of file being commented on.',
         },
+        'link_text': {
+            'type': str,
+            'description': 'The text used to describe a link to the file. '
+                           'This may differ depending on the comment.',
+        },
+        'review_url': {
+            'type': str,
+            'description': 'The URL to the review UI for the comment on this '
+                           'file attachment.',
+        },
+        'thumbnail_html': {
+            'type': str,
+            'description': 'The HTML representing a thumbnail, if any, for '
+                           'this comment.',
+        },
     }, **BaseCommentResource.fields)
 
     uri_object_key = 'comment_id'
@@ -5219,8 +5270,17 @@ class BaseFileAttachmentCommentResource(BaseCommentResource):
              Q(file_attachment__inactive_review_request=review_request)) &
             Q(review__isnull=False))
 
+    def serialize_link_text_field(self, obj, **kwargs):
+        return obj.get_link_text()
+
     def serialize_public_field(self, obj, **kwargs):
         return obj.review.get().public
+
+    def serialize_review_url_field(self, obj, **kwargs):
+        return obj.get_review_url()
+
+    def serialize_thumbnail_html_field(self, obj, **kwargs):
+        return obj.thumbnail
 
     def serialize_timesince_field(self, obj, **kwargs):
         return timesince(obj.timestamp)
