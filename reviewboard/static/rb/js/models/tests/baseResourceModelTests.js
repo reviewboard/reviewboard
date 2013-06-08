@@ -331,7 +331,7 @@ describe('models/BaseResource', function() {
                 it('No model data sent', function() {
                     spyOn(Backbone, 'sync')
                         .andCallFake(function(method, model, options) {
-                            expect(options.data).toBe(undefined);
+                            expect(_.isEmpty(options.data)).toBe(true);
                         });
 
                     model.toJSON = function() {
@@ -349,7 +349,7 @@ describe('models/BaseResource', function() {
                 it('Query attributes sent', function() {
                     spyOn(Backbone, 'sync')
                         .andCallFake(function(method, model, options) {
-                            expect(options.data).not.toBe(undefined);
+                            expect(_.isEmpty(options.data)).toBe(false);
                             expect(options.data.foo).toBe('bar');
                         });
 

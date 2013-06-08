@@ -534,18 +534,14 @@ RB.BaseResource = Backbone.Model.extend({
         options = options || {};
 
         if (method === 'read') {
-            data = options.data;
+            data = options.data || {};
         } else {
             data = options.form ? null
                                 : (options.attrs || model.toJSON(options));
             contentType = 'application/x-www-form-urlencoded';
         }
 
-        if (data === null || data === undefined) {
-            data = {};
-        }
-
-        if (this.expandedFields.length > 0) {
+        if (!options.form && this.expandedFields.length > 0) {
             data.expand = this.expandedFields.join(',');
         }
 
