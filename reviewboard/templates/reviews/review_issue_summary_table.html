@@ -44,7 +44,6 @@
   <table id="issue-summary-table">
    <thead>
     <tr>
-     <th class="comment-id-header">{% trans "Issue ID" %}</th>
      <th class="description-header">{% trans "Description" %}</th>
      <th class="from-header">{% trans "From" %}</th>
      <th class="last-updated-header">{% trans "Last Updated" %}</th>
@@ -58,8 +57,7 @@
 {%    for comment in comments %}
 {%     if comment.issue_opened %}
     <tr id="summary-table-entry-{{comment.id}}" reviewer="{{entry.review.user|user_displayname}}" class="issue {{comment.issue_status|pretty_print_issue_status}}{% if comment.issue_status != 'O' %} hidden{% endif %}">
-     <td class="comment-id"><a class="summary-anchor" issue-id="{{comment.id}}" href="#{{comment.anchor_prefix}}{{comment.id}}">{{comment.comment_type|capfirst}} {{comment.id}}</a></td>
-     <td class="summary-table-description"><a class="summary-anchor" issue-id="{{comment.id}}" href="#{{comment.anchor_prefix}}{{comment.id}}">{{comment}}</a></td>
+     <td class="summary-table-description"><a class="summary-anchor" issue-id="{{comment.id}}" href="#{{comment.anchor_prefix}}{{comment.id}}">{{comment|truncatewords:20}}</a></td>
      <td class="reviewer"><a href="{% url user entry.review.user %}" class="user">{{entry.review.user|user_displayname}}</a></td>
      <td class="last-updated" timestamp={{comment.timestamp|date:"U"}}>{{comment.timestamp}}</td>
      <td class="status">{{comment.issue_status|pretty_print_issue_status|capfirst}}</td>
