@@ -1344,9 +1344,15 @@
 
   tr {
     td {
-      border-width: 1px 0;
+      border-width: 0 0 1px 0;
       border-style: solid;
-      padding: 2px 5px;
+      padding: 5px 5px;
+      vertical-align: top;
+
+      a {
+        color: #0000CC;
+        text-decoration: none;
+      }
     }
 
     &.hidden {
@@ -1371,7 +1377,7 @@
       }
     }
 
-    .comment-id-header {
+    .description-header {
       border-left-width: 1px;
     }
 
@@ -1385,8 +1391,9 @@
       border-right-width: 1px;
     }
 
-    .comment-id {
+    .summary-table-description {
       border-left-width: 1px;
+      width: 100%;
     }
 
     &.open {
@@ -1406,7 +1413,7 @@
     &.resolved {
       td {
         background-color: #FFF;
-        border-color: #BBB;
+        border-color: #AAA;
       }
     }
 
