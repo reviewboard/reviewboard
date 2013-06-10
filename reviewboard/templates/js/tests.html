@@ -7,14 +7,6 @@
 {%  compressed_css "js-tests" %}
 {% endblock %}
 
-{% block jsconsts %}
-{{block.super}}
-  /* XXX Ideally, these should all be optional. */
-  var gReviewPending = false,
-      gReviewRequestPath = "{{SITE_ROOT}}/r/1/",
-      gReviewRequestSummary = '';
-{% endblock %}
-
 {% block scripts-post %}
 {%  compressed_js "reviews" %}
 {%  compressed_js "js-tests" %}

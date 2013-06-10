@@ -203,7 +203,7 @@ RB.CommentDialogView = Backbone.View.extend({
 
         this._commentsList = new CommentsListView({
             el: this._$commentsPane.find('ul'),
-            reviewRequestURL: this.options.reviewRequestURL,
+            reviewRequestURL: reviewRequest.get('reviewURL'),
             commentIssueManager: this.options.commentIssueManager,
             issuesInteractive: reviewRequestEditor.get('editable')
         });
@@ -586,7 +586,6 @@ RB.CommentDialogView = Backbone.View.extend({
         dlg = new RB.CommentDialogView({
             animate: options.animate,
             commentIssueManager: commentIssueManager,
-            reviewRequestURL: options.reviewRequestURL,
             model: new RB.CommentEditor({
                 comment: options.comment,
                 reviewRequest: reviewRequestEditor.get('reviewRequest'),

@@ -770,6 +770,6 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
     },
 
     _refreshPage: function() {
-        window.location = gReviewRequestPath;
+        window.location = this.model.get('reviewRequest').get('reviewURL');
     }
 });

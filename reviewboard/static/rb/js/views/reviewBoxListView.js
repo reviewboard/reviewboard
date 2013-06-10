@@ -18,7 +18,7 @@ RB.ReviewBoxListView = Backbone.View.extend({
      */
     initialize: function() {
         this.diffFragmentQueue = new RB.DiffFragmentQueueView({
-            reviewRequestPath: gReviewRequestPath,
+            reviewRequestPath: this.options.reviewRequest.get('reviewURL'),
             containerPrefix: 'comment_container',
             queueName: 'diff_fragments'
         });

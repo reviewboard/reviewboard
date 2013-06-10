@@ -22,6 +22,7 @@ RB.ReviewRequest = RB.BaseResource.extend({
         draftReview: null,
         localSitePrefix: null,
         public: null,
+        reviewURL: null,
         summary: null,
         targetGroups: [],
         targetPeople: [],

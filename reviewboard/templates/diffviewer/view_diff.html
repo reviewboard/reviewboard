@@ -12,7 +12,6 @@
 
 {% block jsconsts %}
 {{block.super}}
-{% include "reviews/review_flags.js" %}
   var gRevision = '{{diffset.revision}}';
 {% if interdiffset %}
   var gInterdiffRevision = '{{interdiffset.revision}}';

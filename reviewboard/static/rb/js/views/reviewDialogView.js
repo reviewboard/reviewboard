@@ -239,6 +239,8 @@ RB.ReviewDialogView = Backbone.View.extend({
      * Initializes the review dialog.
      */
     initialize: function() {
+        var reviewRequest = this.model.get('parentObject');
+
         this._$comments = null;
         this._$bodyBottom = null;
         this._$bodyTop = null;
@@ -251,7 +253,7 @@ RB.ReviewDialogView = Backbone.View.extend({
 
         this._diffQueue = new RB.DiffFragmentQueueView({
             containerPrefix: 'review_draft_comment_container',
-            reviewRequestPath: gReviewRequestPath,
+            reviewRequestPath: reviewRequest.get('reviewURL'),
             queueName: 'review_draft_diff_comments'
         });
 

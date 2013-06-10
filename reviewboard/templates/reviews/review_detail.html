@@ -10,11 +10,6 @@
 
 {% block title %}{{review_request_details.summary}} | {% trans "Review Request" %}{% endblock %}
 
-{% block jsconsts %}
-{{block.super}}
-{%  include "reviews/review_flags.js" %}
-{% endblock %}
-
 {% block css %}
 {{block.super}}
 

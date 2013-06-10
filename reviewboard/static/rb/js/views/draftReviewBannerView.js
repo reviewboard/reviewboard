@@ -67,7 +67,7 @@ RB.DraftReviewBannerView = Backbone.View.extend({
      */
     hideAndReload: function() {
         this.hide(function() {
-            window.location = gReviewRequestPath;
+            window.location = this.model.get('parentObject').get('reviewURL');
         }, this);
     },
 

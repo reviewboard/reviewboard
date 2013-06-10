@@ -25,6 +25,7 @@
         description: "{{review_request_details.description|escapejs}}",
         hasDraft: {% if draft %}true{% else %}false{% endif %},
         public: {% if review_request.public %}true{% else %}false{% endif %},
+        reviewURL: "{{review_request.get_absolute_url|escapejs}}",
         summary: "{{review_request_details.summary|escapejs}}",
         targetGroups: [{% spaceless %}
 {% for group in review_request_details.target_groups.all %}
