@@ -47,7 +47,7 @@ from reviewboard.diffviewer.diffutils import get_diff_files, \
                                              get_original_file, \
                                              get_patched_file, \
                                              populate_diff_chunks
-from reviewboard.diffviewer.forms import EmptyDiffError, DiffTooBigError
+from reviewboard.diffviewer.errors import EmptyDiffError, DiffTooBigError
 from reviewboard.extensions.base import get_extension_manager
 from reviewboard.hostingsvcs.errors import AuthorizationError
 from reviewboard.hostingsvcs.models import HostingServiceAccount

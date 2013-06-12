@@ -1,23 +1,8 @@
-import os
-
 from django import forms
 from django.utils.encoding import smart_unicode
 from django.utils.translation import ugettext as _
-from djblets.siteconfig.models import SiteConfiguration
 
-from reviewboard.diffviewer.differ import DEFAULT_DIFF_COMPAT_VERSION
 from reviewboard.diffviewer.models import DiffSet, FileDiff
-from reviewboard.scmtools.core import PRE_CREATION, UNKNOWN, FileNotFoundError
-
-
-class DiffTooBigError(ValueError):
-    def __init__(self, msg, max_diff_size):
-        ValueError.__init__(self, msg)
-        self.max_diff_size = max_diff_size
-
-
-class EmptyDiffError(ValueError):
-    pass
 
 
 class NoBaseDirError(ValueError):
@@ -39,11 +24,6 @@ class UploadDiffForm(forms.Form):
                     "systems (Git, Mercurial, etc.)."),
         required=False)
 
-    # Extensions used for intelligent sorting of header files
-    # before implementation files.
-    HEADER_EXTENSIONS = ["h", "H", "hh", "hpp", "hxx", "h++"]
-    IMPL_EXTENSIONS   = ["c", "C", "cc", "cpp", "cxx", "c++", "m", "mm", "M"]
-
     def __init__(self, repository, data=None, files=None, request=None,
                  *args, **kwargs):
         super(UploadDiffForm, self).__init__(data=data, files=files,
@@ -59,20 +39,6 @@ class UploadDiffForm(forms.Form):
     def create(self, diff_file, parent_diff_file=None, diffset_history=None):
         tool = self.repository.get_scmtool()
 
-        siteconfig = SiteConfiguration.objects.get_current()
-        max_diff_size = siteconfig.get('diffviewer_max_diff_size')
-
-        if max_diff_size > 0:
-            if diff_file.size > max_diff_size:
-                raise DiffTooBigError(
-                    _('The supplied diff file is too large'),
-                    max_diff_size=max_diff_size)
-
-            if parent_diff_file and parent_diff_file.size > max_diff_size:
-                raise DiffTooBigError(
-                    _('The supplied parent diff file is too large'),
-                    max_diff_size=max_diff_size)
-
         # Grab the base directory if there is one.
         if not tool.get_diffs_use_absolute_paths():
             try:
@@ -83,135 +49,6 @@ class UploadDiffForm(forms.Form):
         else:
             basedir = ''
 
-        # Parse the diff
-        files = list(self._process_files(
-            tool.get_parser(diff_file.read()),
-            basedir,
-            check_existance=(not parent_diff_file)))
-
-        if len(files) == 0:
-            raise EmptyDiffError(_("The diff file is empty"))
-
-        # Sort the files so that header files come before implementation.
-        files.sort(cmp=self._compare_files, key=lambda f: f.origFile)
-
-        # Parse the parent diff
-        parent_files = {}
-
-        # This is used only for tools like Mercurial that use atomic changeset
-        # IDs to identify all file versions but not individual file version
-        # IDs.
-        parent_commit_id = None
-
-        if parent_diff_file:
-            diff_filenames = set([f.origFile for f in files])
-
-            parent_parser = tool.get_parser(parent_diff_file.read())
-
-            # If the user supplied a base diff, we need to parse it and
-            # later apply each of the files that are in the main diff
-            for f in self._process_files(parent_parser, basedir,
-                                         check_existance=True,
-                                         limit_to=diff_filenames):
-                parent_files[f.origFile] = f
-
-            # This will return a non-None value only for tools that use
-            # commit IDs to identify file versions as opposed to file revision
-            # IDs.
-            parent_commit_id = parent_parser.get_orig_commit_id()
-
-        diffset = DiffSet(name=diff_file.name, revision=0,
-                          basedir=basedir,
-                          history=diffset_history,
-                          diffcompat=DEFAULT_DIFF_COMPAT_VERSION)
-        diffset.repository = self.repository
-        diffset.save()
-
-        for f in files:
-            if f.origFile in parent_files:
-                parent_file = parent_files[f.origFile]
-                parent_content = parent_file.data
-                source_rev = parent_file.origInfo
-            else:
-                parent_content = ""
-
-                if parent_commit_id and f.origInfo != PRE_CREATION:
-                    source_rev = parent_commit_id
-                else:
-                    source_rev = f.origInfo
-
-            dest_file = os.path.join(basedir, f.newFile).replace("\\", "/")
-
-            if f.deleted:
-                status = FileDiff.DELETED
-            elif f.moved:
-                status = FileDiff.MOVED
-            else:
-                status = FileDiff.MODIFIED
-
-            filediff = FileDiff(diffset=diffset,
-                                source_file=f.origFile,
-                                dest_file=dest_file,
-                                source_revision=smart_unicode(source_rev),
-                                dest_detail=f.newInfo,
-                                diff=f.data,
-                                parent_diff=parent_content,
-                                binary=f.binary,
-                                status=status)
-            filediff.save()
-
-        return diffset
-
-    def _process_files(self, parser, basedir, check_existance=False,
-                       limit_to=None):
-        tool = self.repository.get_scmtool()
-
-        for f in parser.parse():
-            f2, revision = tool.parse_diff_revision(f.origFile, f.origInfo,
-                                                    f.moved)
-
-            if f2.startswith("/"):
-                filename = f2
-            else:
-                filename = os.path.join(basedir, f2).replace("\\", "/")
-
-            if limit_to is not None and filename not in limit_to:
-                # This file isn't actually needed for the diff, so save
-                # ourselves a remote file existence check and some storage.
-                continue
-
-            # FIXME: this would be a good place to find permissions errors
-            if (revision != PRE_CREATION and
-                revision != UNKNOWN and
-                not f.binary and
-                not f.deleted and
-                not f.moved and
-                (check_existance and
-                 not self.repository.get_file_exists(filename, revision,
-                                                     self.request))):
-                raise FileNotFoundError(filename, revision)
-
-            f.origFile = filename
-            f.origInfo = revision
-
-            yield f
-
-    def _compare_files(self, filename1, filename2):
-        """
-        Compares two files, giving precedence to header files over source
-        files. This allows the resulting list of files to be more
-        intelligently sorted.
-        """
-        if filename1.find('.') != -1 and filename2.find('.') != -1:
-            basename1, ext1 = filename1.rsplit('.', 1)
-            basename2, ext2 = filename2.rsplit('.', 1)
-
-            if basename1 == basename2:
-                if ext1 in self.HEADER_EXTENSIONS and \
-                   ext2 in self.IMPL_EXTENSIONS:
-                    return -1
-                elif ext1 in self.IMPL_EXTENSIONS and \
-                     ext2 in self.HEADER_EXTENSIONS:
-                    return 1
-
-        return cmp(filename1, filename2)
+        return DiffSet.objects.create_from_upload(
+            self.repository, diff_file, parent_diff_file, diffset_history,
+            basedir, self.request)

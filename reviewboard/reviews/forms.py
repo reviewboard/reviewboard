@@ -6,6 +6,7 @@ from django.contrib.admin.widgets import FilteredSelectMultiple
 from django.utils.translation import ugettext as _
 
 from reviewboard.diffviewer import forms as diffviewer_forms
+from reviewboard.diffviewer.errors import EmptyDiffError
 from reviewboard.diffviewer.models import DiffSet
 from reviewboard.reviews.errors import OwnershipError
 from reviewboard.reviews.models import DefaultReviewer, Group, ReviewRequest, \
@@ -262,7 +263,7 @@ class NewReviewRequestForm(forms.Form):
             except SavedError:
                 review_request.delete()
                 raise
-            except diffviewer_forms.EmptyDiffError:
+            except EmptyDiffError:
                 review_request.delete()
                 self.errors['diff_path'] = forms.util.ErrorList([
                     'The selected file does not appear to be a diff.'])
