@@ -523,7 +523,7 @@ class DbTests(TestCase):
     fixtures = ['test_scmtools.json']
     PREFIX = os.path.join(os.path.dirname(__file__), 'testdata')
 
-    def testLongFilenames(self):
+    def test_long_filenames(self):
         """Testing using long filenames (1024 characters) in FileDiff."""
         long_filename = 'x' * 1024
 
@@ -539,7 +539,7 @@ class DbTests(TestCase):
         filediff = FileDiff.objects.get(pk=filediff.id)
         self.assertEquals(filediff.source_file, long_filename)
 
-    def testDiffHashes(self):
+    def test_diff_hashes(self):
         """
         Testing that uploading two of the same diff will result in only
         one database entry.
@@ -563,15 +563,87 @@ class DbTests(TestCase):
         self.assertEquals(filediff1.diff_hash, filediff2.diff_hash)
 
 
-class UploadDiffFormTests(TestCase):
+class DiffSetManagerTests(SpyAgency, TestCase):
+    """Unit tests for DiffSetManager."""
+    fixtures = ['test_scmtools']
+
+    def test_creating_with_diff_data(self):
+        """Test creating a DiffSet from diff file data"""
+        diff = (
+            'Index: README\n'
+            '==========================================================='
+            '========\n'
+            '--- README  (revision 123)\n'
+            '+++ README  (new)\n'
+            '@ -1,1 +1,1 @@\n'
+            '-blah..\n'
+            '+blah blah\n'
+        )
+
+        repository = Repository.objects.create(
+            name='Subversion SVN',
+            path='file://%s' % (os.path.join(os.path.dirname(__file__),
+                                             '..', 'scmtools', 'testdata',
+                                             'svn_repo')),
+            tool=Tool.objects.get(name='Subversion'))
+
+        self.spy_on(repository.get_file_exists,
+                    call_fake=lambda self, filename, revision, request: True)
+
+        diffset = DiffSet.objects.create_from_data(
+            repository, 'diff', diff, None, None, None, '/', None)
+
+        self.assertEqual(diffset.files.count(), 1)
+
+
+class UploadDiffFormTests(SpyAgency, TestCase):
     """Unit tests for UploadDiffForm."""
     fixtures = ['test_scmtools']
+
+    def test_creating_diffsets(self):
+        """Test creating a DiffSet from form data"""
+        diff = (
+            'Index: README\n'
+            '==========================================================='
+            '========\n'
+            '--- README  (revision 123)\n'
+            '+++ README  (new)\n'
+            '@ -1,1 +1,1 @@\n'
+            '-blah..\n'
+            '+blah blah\n'
+        )
+
+        diff_file = SimpleUploadedFile('diff', diff,
+                                       content_type='text/x-patch')
+
+        repository = Repository.objects.create(
+            name='Subversion SVN',
+            path='file://%s' % (os.path.join(os.path.dirname(__file__),
+                                             '..', 'scmtools', 'testdata',
+                                             'svn_repo')),
+            tool=Tool.objects.get(name='Subversion'))
+
+        self.spy_on(repository.get_file_exists,
+                    call_fake=lambda self, filename, revision, request: True)
+
+        form = UploadDiffForm(
+            repository=repository,
+            data={
+                'basedir': '/',
+            },
+            files={
+                'path': diff_file,
+            })
+        self.assertTrue(form.is_valid())
+
+        diffset = form.create(diff_file)
+        self.assertEqual(diffset.files.count(), 1)
 
     def test_parent_diff_filtering(self):
         """Testing UploadDiffForm and filtering parent diff files"""
         saw_file_exists = {}
 
-        def get_file_exists(filename, revision, request):
+        def get_file_exists(repository, filename, revision, request):
             saw_file_exists[(filename, revision)] = True
             return True
 
@@ -621,7 +693,7 @@ class UploadDiffFormTests(TestCase):
                                              '..', 'scmtools', 'testdata',
                                              'svn_repo')),
             tool=Tool.objects.get(name='Subversion'))
-        repository.get_file_exists = get_file_exists
+        self.spy_on(repository.get_file_exists, call_fake=get_file_exists)
 
         form = UploadDiffForm(
             repository=repository,
