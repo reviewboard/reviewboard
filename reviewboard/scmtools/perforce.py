@@ -240,6 +240,7 @@ class PerforceTool(SCMTool):
     uses_atomic_revisions = True
     supports_authentication = True
     supports_ticket_auth = True
+    supports_pending_changesets = True
     field_help_text = {
         'path': 'The Perforce port identifier (P4PORT) for the repository. If '
                 'your server is set up to use SSL (2012.1+), prefix the port '

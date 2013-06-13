@@ -389,8 +389,22 @@ class BaseReviewRequestDetails(models.Model):
         information will be pulled from the changeset associated with
         changenum.
         """
-        changeset = self.repository.get_scmtool().get_changeset(changenum)
+        scmtool = self.repository.get_scmtool()
+        if scmtool.supports_pending_changesets:
+            changeset = scmtool.get_changeset(changenum, allow_empty=True)
 
+            if changeset and changeset.pending:
+                self.update_from_pending_change(changenum, changeset)
+            else:
+                raise InvalidChangeNumberError()
+        else:
+            raise NotImplementedError()
+
+    def update_from_pending_change(self, changenum, changeset):
+        """Updates the data from a server-side pending changeset.
+
+        This will fetch the metadata from the server and update the fields on
+        the review request."""
         if not changeset:
             raise InvalidChangeNumberError()
 
@@ -718,7 +732,7 @@ class ReviewRequest(BaseReviewRequestDetails):
         request is pending under SCM.
         """
         changeset = None
-        if self.changenum:
+        if self.repository.supports_pending_changesets and self.changenum:
             changeset = self.repository.get_scmtool().get_changeset(
                 self.changenum, allow_empty=True)
 

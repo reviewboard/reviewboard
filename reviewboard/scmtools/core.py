@@ -56,6 +56,7 @@ class SCMTool(object):
     supports_authentication = False
     supports_raw_file_urls = False
     supports_ticket_auth = False
+    supports_pending_changesets = False
     field_help_text = {
         'path': 'The path to the repository. This will generally be the URL '
                 'you would use to check out the repository.',
