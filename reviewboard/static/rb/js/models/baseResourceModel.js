@@ -541,16 +541,16 @@ RB.BaseResource = Backbone.Model.extend({
             contentType = 'application/x-www-form-urlencoded';
         }
 
-        if (!options.form && this.expandedFields.length > 0) {
-            data.expand = this.expandedFields.join(',');
-        }
-
         syncOptions = _.defaults({}, options, {
             /* Use form data instead of a JSON payload. */
             contentType: contentType,
             data: data,
             processData: true
         });
+
+        if (!options.form && this.expandedFields.length > 0) {
+            syncOptions.data.expand = this.expandedFields.join(',');
+        }
 
         syncOptions.error = _.bind(function(model, xhr) {
             var rsp = null,
