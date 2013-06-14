@@ -69,7 +69,12 @@
                         width: 'auto',
                         height: 'auto'
                     });
-            $dashboardWrapper.load(window.location + ' #dashboard-wrapper');
+            $dashboardWrapper.load(window.location + ' #dashboard-wrapper',
+                                   function() {
+                $dashboardWrapper.find('time.timesince').timesince();
+                $dashboardWrapper.find('.datagrid-wrapper').datagrid();
+                $dashboardWrapper.find('.user').user_infobox();
+            });
         }, 5 * 60 * 1000);
     });
 </script>
