@@ -7,7 +7,7 @@ RB.FileAttachmentReviewable = RB.AbstractReviewable.extend({
         fileAttachmentID: null
     }, RB.AbstractReviewable.prototype.defaults),
 
-    reviewableIDField: 'fileAttachmentID',
+    defaultCommentBlockFields: ['fileAttachmentID'],
 
     /*
      * Adds comment blocks for the serialized comments passed to the

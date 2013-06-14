@@ -53,14 +53,24 @@ RB.AbstractReviewableView = Backbone.View.extend({
      * Creates a new comment in a comment block and opens it for editing.
      */
     createAndEditCommentBlock: function(opts) {
-        var idField = this.model.reviewableIDField;
+        var defaultCommentBlockFields =
+            _.result(this.model, 'defaultCommentBlockFields');
+
+        if (defaultCommentBlockFields.length === 0 &&
+            this.model.reviewableIDField) {
+            console.log('Deprecation notice: Reviewable subclass is missing ' +
+                        'defaultCommentBlockFields. Rename reviewableIDField ' +
+                        'to defaultCommentBlockFields, and make it a list.');
+            defaultCommentBlockFields = [this.model.reviewableIDField];
+        }
 
         /* As soon as we add the comment block, show the dialog. */
         this.once('commentBlockViewAdded', function(commentBlockView) {
             this.showCommentDlg(commentBlockView);
         }, this);
 
-        opts[idField] = this.model.get(idField);
+        _.extend(opts,
+                 _.pick(this.model.attributes, defaultCommentBlockFields));
         this.model.commentBlocks.add(opts);
     },
 

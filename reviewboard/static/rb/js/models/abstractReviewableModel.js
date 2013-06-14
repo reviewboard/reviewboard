@@ -17,7 +17,14 @@ RB.AbstractReviewable = Backbone.Model.extend({
      * blocks.
      */
     commentBlockModel: null,
-    reviewableIDField: null,
+
+    /*
+     * The list of fields from this model to populate in each new instance
+     * of a commentBlockModel.
+     *
+     * This can also be a function, if anything more custom is required.
+     */
+    defaultCommentBlockFields: [],
 
     /*
      * Initializes the reviewable.
