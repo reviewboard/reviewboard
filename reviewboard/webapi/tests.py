@@ -2758,6 +2758,32 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
                          review_request.summary)
         self.assertEqual(rsp['review_requests'][0]['changenum'],
                          review_request.changenum)
+        self.assertEqual(rsp['review_requests'][0]['commit_id'],
+                         review_request.commit)
+
+    def test_get_reviewrequest_with_repository_and_commit_id(self):
+        """Testing the GET review-requests/?repository=&commit_id= API with changenum backwards-compatibility"""
+        review_request = \
+            ReviewRequest.objects.filter(changenum__isnull=False)[0]
+
+        self.assertEqual(review_request.commit_id, None)
+
+        commit_id = str(review_request.changenum)
+
+        rsp = self.apiGet(self.get_list_url(), {
+            'repository': review_request.repository.id,
+            'commit_id': review_request.commit,
+        }, expected_mimetype=self.list_mimetype)
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(len(rsp['review_requests']), 1)
+        self.assertEqual(rsp['review_requests'][0]['id'],
+                         review_request.display_id)
+        self.assertEqual(rsp['review_requests'][0]['summary'],
+                         review_request.summary)
+        self.assertEqual(rsp['review_requests'][0]['changenum'],
+                         review_request.changenum)
+        self.assertEqual(rsp['review_requests'][0]['commit_id'],
+                         commit_id)
 
     def test_delete_reviewrequest(self):
         """Testing the DELETE review-requests/<id>/ API"""

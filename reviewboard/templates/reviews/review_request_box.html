@@ -78,10 +78,10 @@
     </span></td>
    </tr>
 
-{% if review_request.changenum %}
+{% if review_request.commit %}
    <tr>
-    <th class="label"><label for="changenum">{% trans "Change Number" %}:</label></th>
-    <td class="value"><span id="changenum">{{review_request.changenum}}{% if review_request.changeset_is_pending %} {% trans "(pending)" %} {% endif %}</span></td>
+    <th class="label"><label for="commit">{% trans "Change" %}:</label></th>
+    <td class="value"><span id="commit">{{review_request.commit}}{% if review_request.changeset_is_pending %} {% trans "(pending)" %} {% endif %}</span></td>
    </tr>
 {% endif %}
 

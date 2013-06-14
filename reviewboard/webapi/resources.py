@@ -6561,11 +6561,17 @@ class ReviewRequestResource(WebAPIResource):
         },
         'changenum': {
             'type': int,
-            'description': 'The change number that the review request is '
-                           'representing. These are server-side '
-                           'repository-specific change numbers, and are not '
-                           'supported by all types of repositories. This may '
-                           'be ``null``.',
+            'description': 'The change number that the review request '
+                           'represents. These are server-side repository-'
+                           'specific change numbers, and are not supported '
+                           'by all types of repositories. This may be '
+                           '``null``. This is deprecated in favor of the '
+                           '``commit_id`` field.',
+        },
+        'commit_id': {
+            'type': str,
+            'description': 'The commit that the review request represents. '
+                           'This obsoletes the ``changenum`` field.',
         },
         'repository': {
             'type': RepositoryResource,
@@ -6647,6 +6653,10 @@ class ReviewRequestResource(WebAPIResource):
                 against. This will only return one review request
                 per repository, and only works for repository
                 types that support server-side changesets.
+
+          * ``commit_id``
+              - The commit_id of review requests. This will only return one
+                review request per repository.
 
           * ``time-added-to``
               - The date/time that all review requests must be added before.
@@ -6747,8 +6757,19 @@ class ReviewRequestResource(WebAPIResource):
             if 'repository' in request.GET:
                 q = q & Q(repository=int(request.GET.get('repository')))
 
+            commit_q = Q()
             if 'changenum' in request.GET:
-                q = q & Q(changenum=int(request.GET.get('changenum')))
+                try:
+                    commit_q = Q(changenum=int(request.GET.get('changenum')))
+                except (TypeError, ValueError):
+                    pass
+
+            commit_id = request.GET.get('commit_id', None)
+            if commit_id is not None:
+                commit_q = commit_q | Q(commit_id=commit_id)
+
+            if commit_q:
+                q = q & commit_q
 
             if 'ship-it' in request.GET:
                 ship_it = request.GET.get('ship-it')
@@ -6814,6 +6835,9 @@ class ReviewRequestResource(WebAPIResource):
     def serialize_url_field(self, obj, **kwargs):
         return obj.get_absolute_url()
 
+    def serialize_commit_id_field(self, obj, **kwargs):
+        return obj.commit
+
     @webapi_check_local_site
     @webapi_login_required
     @webapi_response_errors(NOT_LOGGED_IN, PERMISSION_DENIED, INVALID_USER,
@@ -6828,7 +6852,14 @@ class ReviewRequestResource(WebAPIResource):
                 'description': 'The optional changenumber to look up for the '
                                'review request details. This only works with '
                                'repositories that support server-side '
-                               'changesets.',
+                               'changesets. This is deprecated in favor of '
+                               'the ``commit_id`` field.',
+            },
+            'commit_id': {
+                'type': str,
+                'description': 'The optional commit to create the review '
+                               'request for. This can be used in place of '
+                               'the ``changenum`` field.',
             },
             'repository': {
                 'type': str,
@@ -6845,15 +6876,15 @@ class ReviewRequestResource(WebAPIResource):
             },
         })
     def create(self, request, repository=None, submit_as=None, changenum=None,
-               local_site_name=None, *args, **kwargs):
+               commit_id=None, local_site_name=None, *args, **kwargs):
         """Creates a new review request.
 
         The new review request will start off as private and pending, and
-        will normally be blank. However, if ``changenum`` is passed and the
-        given repository both supports server-side changesets and has changeset
-        support in Review Board, some details (Summary, Description and Testing
-        Done sections, for instance) may be automatically filled in from the
-        server.
+        will normally be blank. However, if ``changenum`` or ``commit_id`` is
+        passed and the given repository both supports server-side changesets
+        and has changeset support in Review Board, some details (Summary,
+        Description and Testing Done sections, for instance) may be
+        automatically filled in from the server.
 
         Any new review request will have an associated draft (reachable
         through the ``draft`` link). All the details of the review request
@@ -6878,6 +6909,9 @@ class ReviewRequestResource(WebAPIResource):
         """
         user = request.user
         local_site = _get_local_site(local_site_name)
+
+        if changenum is not None and commit_id is None:
+            commit_id = str(changenum)
 
         if submit_as and user.username != submit_as:
             if not user.has_perm('reviews.can_submit_as_another_user'):
@@ -6909,8 +6943,8 @@ class ReviewRequestResource(WebAPIResource):
                 return _no_access_error(request.user)
 
         try:
-            review_request = ReviewRequest.objects.create(user, repository,
-                                                          changenum, local_site)
+            review_request = ReviewRequest.objects.create(
+                user, repository, commit_id, local_site)
 
             return 201, {
                 self.item_result_key: review_request
@@ -6955,7 +6989,18 @@ class ReviewRequestResource(WebAPIResource):
                                'with new information from the current '
                                'change number. This only works with '
                                'repositories that support server-side '
-                               'changesets.',
+                               'changesets. This is deprecated by the '
+                               '``commit_id`` field.',
+            },
+            'commit_id': {
+                'type': str,
+                'description': 'The commit to set or update. This can be used '
+                               'to re-associate with a new commit ID, or to '
+                               'create/update a draft with new information '
+                               'from the current change number. This only '
+                               'works with repositories that support server-'
+                               'side changesets. This field obsoletes the '
+                               '``changenum`` field.',
             },
             'description': {
                 'type': str,
@@ -6965,8 +7010,8 @@ class ReviewRequestResource(WebAPIResource):
             },
         },
     )
-    def update(self, request, status=None, changenum=None, description=None,
-               *args, **kwargs):
+    def update(self, request, status=None, changenum=None, commit_id=None,
+               description=None, *args, **kwargs):
         """Updates the status of the review request.
 
         The only supported update to a review request's resource is to change
@@ -7010,9 +7055,12 @@ class ReviewRequestResource(WebAPIResource):
             except PermissionError:
                 return _no_access_error(request.user)
 
-        if changenum is not None:
-            if changenum != review_request.changenum:
-                review_request.update_changenum(changenum, request.user)
+        if changenum is not None and commit_id is None:
+            commit_id = str(changenum)
+
+        if commit_id is not None:
+            if commit_id != review_request.commit:
+                review_request.update_commit_id(commit_id, request.user)
 
             try:
                 draft = ReviewRequestDraftResource.prepare_draft(
@@ -7021,7 +7069,7 @@ class ReviewRequestResource(WebAPIResource):
                 return PERMISSION_DENIED
 
             try:
-                draft.update_from_changenum(changenum)
+                draft.update_from_commit_id(commit_id)
             except InvalidChangeNumberError:
                 return INVALID_CHANGE_NUMBER
 
@@ -7053,12 +7101,20 @@ class ReviewRequestResource(WebAPIResource):
     @webapi_request_fields(
         optional={
             'changenum': {
-                'type': str,
+                'type': int,
                 'description': 'The change number the review requests must '
                                'have set. This will only return one review '
                                'request per repository, and only works for '
                                'repository types that support server-side '
-                               'changesets.',
+                               'changesets. This is deprecated in favor of '
+                               'the ``commit_id`` field.',
+            },
+            'commit_id': {
+                'type': str,
+                'description': 'The commit that review requests must have '
+                               'set. This will only return one review request '
+                               'per repository. This obsoletes the '
+                               '``changenum`` field.',
             },
             'time-added-to': {
                 'type': str,

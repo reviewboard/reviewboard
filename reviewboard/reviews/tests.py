@@ -7,9 +7,9 @@ from django.contrib.auth.models import AnonymousUser, User
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.core.urlresolvers import reverse
 from django.template import Context, Template
-from django.test import TestCase
-
 from djblets.siteconfig.models import SiteConfiguration
+from djblets.testing.decorators import add_fixtures
+from djblets.testing.testcases import TestCase
 
 from reviewboard.accounts.models import Profile, LocalSiteProfile
 from reviewboard.attachments.models import FileAttachment
@@ -879,7 +879,7 @@ class DraftTests(TestCase):
 
 class FieldTests(TestCase):
     # Bug #1352
-    def testLongBugNumbers(self):
+    def test_long_bug_numbers(self):
         """Testing review requests with very long bug numbers"""
         review_request = ReviewRequest()
         review_request.bugs_closed = \
@@ -892,11 +892,21 @@ class FieldTests(TestCase):
     # ugettext_lazy proxy object. We can use any stringfilter for this.
     #
     # Bug #1346
-    def testNoSummary(self):
+    def test_no_summary(self):
         """Testing review requests with no summary"""
         from django.template.defaultfilters import lower
         review_request = ReviewRequest()
         lower(unicode(review_request))
+
+    @add_fixtures(['test_users', 'test_reviewrequests'])
+    def test_commit_id(self):
+        """Testing commit_id migration"""
+        review_request = ReviewRequest.objects.filter(
+            changenum__isnull=False)[0]
+        self.assertEqual(review_request.commit_id, None)
+        self.assertEqual(review_request.commit,
+                         str(review_request.changenum))
+        self.assertNotEqual(review_request.commit_id, None)
 
 
 class ConcurrencyTests(TestCase):

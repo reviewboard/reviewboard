@@ -3,6 +3,7 @@ import re
 
 from django import forms
 from django.contrib.admin.widgets import FilteredSelectMultiple
+from django.db.models import Q
 from django.utils.translation import ugettext as _
 
 from reviewboard.diffviewer import forms as diffviewer_forms
@@ -220,9 +221,9 @@ class NewReviewRequestForm(forms.Form):
         except ChangeNumberInUseError:
             # The user is updating an existing review request, rather than
             # creating a new one.
-            review_request = ReviewRequest.objects.get(changenum=changenum,
-                                                       repository=repository)
-            review_request.update_from_changenum(changenum)
+            review_request = ReviewRequest.objects.get(
+                Q(changenum=changenum) | Q(commit_id=changenum))
+            review_request.update_from_commit_id(commit_id)
 
             if review_request.status == 'D':
                 # Act like we're creating a brand new review request if the

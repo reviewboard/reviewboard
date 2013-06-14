@@ -94,17 +94,25 @@ class ReviewRequestManager(ConcurrencyManager):
     def get_query_set(self):
         return ReviewRequestQuerySet(self.model)
 
-    def create(self, user, repository, changenum=None, local_site=None):
+    def create(self, user, repository, commit_id=None, local_site=None):
         """
         Creates a new review request, optionally filling in fields based off
         a change number.
         """
-        if changenum:
+        if commit_id:
+            # Try both the new commit_id and old changenum versions
             try:
-                review_request = self.get(changenum=changenum,
+                review_request = self.get(commit_id=commit_id,
                                           repository=repository)
                 raise ChangeNumberInUseError(review_request)
             except ObjectDoesNotExist:
+                pass
+
+            try:
+                review_request = self.get(changenum=int(commit_id),
+                                          repository=repository)
+                raise ChangeNumberInUseError(review_request)
+            except (ObjectDoesNotExist, TypeError, ValueError):
                 pass
 
         diffset_history = DiffSetHistory()
@@ -118,8 +126,8 @@ class ReviewRequestManager(ConcurrencyManager):
             diffset_history=diffset_history,
             local_site=local_site)
 
-        if changenum:
-            review_request.update_from_changenum(changenum)
+        if commit_id:
+            review_request.update_from_commit_id(commit_id)
 
         review_request.save()
 

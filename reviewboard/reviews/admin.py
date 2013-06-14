@@ -111,7 +111,7 @@ class ReviewRequestAdmin(admin.ModelAdmin):
             'fields': ('submitter', 'public', 'status',
                        'summary', 'description', 'testing_done',
                        'bugs_closed', 'repository', 'branch',
-                       'depends_on', 'changenum', 'time_added')
+                       'depends_on', 'commit_id', 'time_added')
         }),
         (_('Reviewers'), {
             'fields': ('target_people', 'target_groups'),

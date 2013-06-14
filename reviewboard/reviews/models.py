@@ -382,25 +382,25 @@ class BaseReviewRequestDetails(models.Model):
             if group not in existing_groups:
                 self.target_groups.add(group)
 
-    def update_from_changenum(self, changenum):
+    def update_from_commit_id(self, commit_id):
         """Updates the data from a server-side changeset.
 
         If changesets are supported on the repository, review request
         information will be pulled from the changeset associated with
-        changenum.
+        commit_id.
         """
         scmtool = self.repository.get_scmtool()
         if scmtool.supports_pending_changesets:
-            changeset = scmtool.get_changeset(changenum, allow_empty=True)
+            changeset = scmtool.get_changeset(commit_id, allow_empty=True)
 
             if changeset and changeset.pending:
-                self.update_from_pending_change(changenum, changeset)
+                self.update_from_pending_change(commit_id, changeset)
             else:
                 raise InvalidChangeNumberError()
         else:
             raise NotImplementedError()
 
-    def update_from_pending_change(self, changenum, changeset):
+    def update_from_pending_change(self, commit_id, changeset):
         """Updates the data from a server-side pending changeset.
 
         This will fetch the metadata from the server and update the fields on
@@ -413,7 +413,7 @@ class BaseReviewRequestDetails(models.Model):
         # specialized systems may support the other fields, but we don't want to
         # clobber the user-entered values if they don't.
         if hasattr(self, 'changenum'):
-            self.changenum = changenum
+            self.update_commit_id(commit_id)
 
         self.summary = changeset.summary
         self.description = changeset.description
@@ -483,6 +483,8 @@ class ReviewRequest(BaseReviewRequestDetails):
     public = models.BooleanField(_("public"), default=False)
     changenum = models.PositiveIntegerField(_("change number"), blank=True,
                                             null=True, db_index=True)
+    commit_id = models.CharField(_('commit ID'), max_length=64, blank=True,
+                                 null=True, db_index=True)
     repository = models.ForeignKey(Repository,
                                    related_name="review_requests",
                                    verbose_name=_("repository"),
@@ -558,6 +560,27 @@ class ReviewRequest(BaseReviewRequestDetails):
 
     # Set this up with the ReviewRequestManager
     objects = ReviewRequestManager()
+
+    def get_commit(self):
+        if self.commit_id is not None:
+            return self.commit_id
+        elif self.changenum is not None:
+            self.commit_id = str(self.changenum)
+            self.save()
+            return self.commit_id
+
+        return None
+
+    def set_commit(self, commit_id):
+        try:
+            self.changenum = int(commit_id)
+        except (TypeError, ValueError):
+            pass
+
+        self.commit_id = commit_id
+        self.save()
+
+    commit = property(get_commit, set_commit)
 
     def get_participants(self):
         """
@@ -732,9 +755,11 @@ class ReviewRequest(BaseReviewRequestDetails):
         request is pending under SCM.
         """
         changeset = None
-        if self.repository.supports_pending_changesets and self.changenum:
+        commit_id = self.commit
+        if (self.repository.supports_pending_changesets and
+            commit_id is not None):
             changeset = self.repository.get_scmtool().get_changeset(
-                self.changenum, allow_empty=True)
+                commit_id, allow_empty=True)
 
         return changeset and changeset.pending
 
@@ -893,12 +918,11 @@ class ReviewRequest(BaseReviewRequestDetails):
         review_request_reopened.send(sender=self.__class__, user=user,
                                      review_request=self)
 
-    def update_changenum(self,changenum, user=None):
+    def update_commit_id(self, commit_id, user=None):
         if (user and not self.is_mutable_by(user)):
             raise PermissionError
 
-        self.changenum = changenum
-        self.save()
+        self.commit = commit_id
 
     def publish(self, user):
         """
@@ -1037,7 +1061,8 @@ class ReviewRequest(BaseReviewRequestDetails):
 
     class Meta:
         ordering = ['-last_updated', 'submitter', 'summary']
-        unique_together = (('changenum', 'repository'),
+        unique_together = (('commit_id', 'repository'),
+                           ('changenum', 'repository'),
                            ('local_site', 'local_id'))
         permissions = (
             ("can_change_status", "Can change status"),

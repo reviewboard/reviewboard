@@ -58,6 +58,7 @@ class DeprecatedReviewBoardAPIEncoder(WebAPIEncoder):
                 'status': status_to_string(o.status),
                 'public': o.public,
                 'changenum': o.changenum,
+                'commit_id': o.commit,
                 'repository': o.repository,
                 'summary': o.summary,
                 'description': o.description,
