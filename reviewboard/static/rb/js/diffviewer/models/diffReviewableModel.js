@@ -1,16 +1,17 @@
 /*
  * Provides state and utility functions for loading and reviewing diffs.
- *
- * TODO: This should be made to use AbstractReviewable when we move the rest
- *       of the diff viewer onto it. That would require DiffCommentBlock and
- *       other functionality.
  */
-RB.DiffReviewable = Backbone.Model.extend({
-    defaults: {
+RB.DiffReviewable = RB.AbstractReviewable.extend({
+    defaults: _.defaults({
         reviewRequestURL: null,
+        fileDiffID: null,
+        interFileDiffID: null,
         revision: null,
         interdiffRevision: null
-    },
+    }, RB.AbstractReviewable.prototype.defaults),
+
+    commentBlockModel: RB.AbstractCommentBlock,
+    defaultCommentBlockFields: ['fileDiffID', 'interFileDiffID'],
 
     /*
      * Returns the rendered diff for a file.
@@ -60,8 +61,8 @@ RB.DiffReviewable = Backbone.Model.extend({
     _fetchFragment: function(options, callbacks, context) {
         RB.apiCall(_.defaults(
             {
-                type: "GET",
-                dataType: "html"
+                type: 'GET',
+                dataType: 'html'
             },
             options,
             _.bindCallbacks(callbacks, context)
@@ -74,26 +75,16 @@ RB.DiffReviewable = Backbone.Model.extend({
     _buildRenderedDiffURL: function(options) {
         var revisionStr,
             reviewRequestURL = options.reviewRequestURL ||
-                               this.get('reviewRequestURL');
+                               this.get('reviewRequestURL'),
+            interdiffRevision = this.get('interdiffRevision');
 
-        console.assert(_.has(options, 'fileDiffID'),
-                       'fileDiffID must be provided');
+        revisionStr = this.get('revision');
 
-        if (options.revision === undefined) {
-            options.revision = this.get('revision');
-        }
-
-        if (options.interdiffRevision === undefined) {
-            options.interdiffRevision = this.get('interdiffRevision');
-        }
-
-        revisionStr = options.revision;
-
-        if (options.interdiffRevision) {
-            revisionStr += '-' + options.interdiffRevision;
+        if (interdiffRevision) {
+            revisionStr += '-' + interdiffRevision;
         }
 
         return reviewRequestURL + 'diff/' + revisionStr + '/fragment/' +
-               options.fileDiffID + '/';
+               this.get('fileDiffID') + '/';
     }
 });

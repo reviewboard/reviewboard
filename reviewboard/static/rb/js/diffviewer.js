@@ -11,8 +11,7 @@ var ANCHOR_CHUNK = 4;
 
 
 // State
-var gDiffReviewable,
-    gCollapseButtons = [];
+var gCollapseButtons = [];
 
 
 /*
@@ -336,16 +335,15 @@ $.extend(DiffCommentBlock.prototype, {
  * This handles all mouse actions on the diff, comment range selection, and
  * populatation of comment flags.
  *
- * @param {array}  lines  The lines containing comments. See the
- *                        addCommentFlags documentation for the format.
- * @param {string} key    A unique ID identifying the file the comments
- *                        belong too (typically based on the filediff_id).
- *
  * @return {jQuery} The diff file element.
  */
-$.fn.diffFile = function(lines, key) {
+$.fn.diffFile = function(diffReviewable, lines, key) {
     return this.each(function() {
-        var self = $(this);
+        var self = $(this),
+            diffReviewableView = new RB.DiffReviewableView({
+                el: self,
+                model: diffReviewable
+            });
 
         /* State */
         var selection = {
@@ -370,6 +368,7 @@ $.fn.diffFile = function(lines, key) {
 
         var ghostCommentFlagCell = null;
 
+        self.data('diffReviewableView', diffReviewableView);
 
         /* Events */
         self
@@ -499,7 +498,7 @@ $.fn.diffFile = function(lines, key) {
             })
             .proxyTouchEvents("touchstart touchend");
 
-        addCommentFlags(self, lines, key);
+        addCommentFlags(diffReviewableView, self, lines, key);
 
         /*
          * Begins the selection of line numbers.
@@ -843,160 +842,12 @@ function gotoAnchor(name, scroll) {
 
 
 /*
- * Finds the row in a table matching the specified line number.
- *
- * @param {HTMLElement} table     The table element.
- * @param {int}         linenum   The line number to search for.
- * @param {int}         startRow  Optional start row to search.
- * @param {int}         endRow    Optional end row to search.
- *
- * @param {HTMLElement} The resulting row, or null if not found.
- */
-function findLineNumRow(table, linenum, startRow, endRow) {
-    var row = null;
-    var row_offset = 1; // Get past the headers.
-
-    if (table.rows.length - row_offset > linenum) {
-        row = table.rows[row_offset + linenum];
-
-        // Account for the "x lines hidden" row.
-        if (row != null && parseInt(row.getAttribute('line'), 10) == linenum) {
-            return row;
-        }
-    }
-
-    if (startRow) {
-        // startRow already includes the offset, so we need to remove it
-        startRow -= row_offset;
-    }
-
-    var low = startRow || 1;
-    var high = Math.min(endRow || table.rows.length, table.rows.length);
-
-    if (endRow != undefined && endRow < table.rows.length) {
-        /* See if we got lucky and found it in the last row. */
-        if (parseInt(table.rows[endRow].getAttribute('line'), 10) == linenum) {
-            return table.rows[endRow];
-        }
-    } else if (row != null) {
-        /*
-         * We collapsed the rows (unless someone mucked with the DB),
-         * so the desired row is less than the row number retrieved.
-         */
-        high = Math.min(high, row_offset + linenum);
-    }
-
-    /* Binary search for this cell. */
-    for (var i = Math.round((low + high) / 2); low < high - 1;) {
-        row = table.rows[row_offset + i];
-
-        if (!row) {
-            /*
-             * should not happen, unless we miscomputed high
-             */
-            high--;
-            /*
-             * will not do much if low + high is odd
-             * but we'll catch up on the next iteration
-             */
-            i = Math.round((low + high) / 2);
-            continue;
-        }
-
-        var value = parseInt(row.getAttribute('line'), 10);
-
-        if (!value) {
-            /*
-             * bad luck, let's look around.
-             * We'd expect to find a value on the first try
-             * but the following makes sure we explore all
-             * rows
-             */
-            var found = false;
-
-            for (var k = 1; k <= (high-low) / 2; k++) {
-                row = table.rows[row_offset + i + k];
-                if (row && parseInt(row.getAttribute('line'), 10)) {
-                    i = i + k;
-                    found = true;
-                    break;
-                } else {
-                    row = table.rows[row_offset + i - k];
-                    if (row && parseInt(row.getAttribute('line'), 10)) {
-                        i = i - k;
-                        found = true;
-                        break;
-                    }
-                }
-            }
-
-            if (found) {
-                value = parseInt(row.getAttribute('line'), 10);
-            } else {
-                return null;
-            }
-        }
-
-        /* See if we can use simple math to find the row quickly. */
-        var guessRowNum = linenum - value + row_offset + i;
-
-        if (guessRowNum >= 0 && guessRowNum < table.rows.length) {
-            var guessRow = table.rows[guessRowNum];
-
-            if (guessRow
-                && parseInt(guessRow.getAttribute('line'), 10) == linenum) {
-                /* We found it using maths! */
-                return guessRow;
-            }
-        }
-
-        var oldHigh = high;
-        var oldLow = low;
-
-        if (value > linenum) {
-            high = i;
-        } else if (value < linenum) {
-            low = i;
-        } else {
-            return row;
-        }
-
-        /*
-         * Make sure we don't get stuck in an infinite loop. This can happen
-         * when a comment is placed in a line that isn't being shown.
-         */
-        if (oldHigh == high && oldLow == low) {
-            break;
-        }
-
-        i = Math.round((low + high) / 2);
-    }
-
-    // Well.. damn. Ignore this then.
-    return null;
-}
-
-
-/*
  * Adds comment flags to a table.
  *
  * lines is an array of dictionaries grouping together comments on the
  * same line. The dictionaries contain the following keys:
- *
- *    text       - The text of the comment.
- *    line       - The first line number.
- *    num_lines  - The number of lines the comment spans.
- *    user       - A dictionary containing "username" and "name" keys
- *                 for the user.
- *    url        - The URL for the comment.
- *    localdraft - true if this is the current user's draft comment.
- *
- * @param {HTMLElement} table  The table to add flags to.
- * @param {object}      lines  The comment lines to add.
- * @param {string}      key    A unique ID identifying the file the comments
- *                             belong too (typically based on the filediff_id).
  */
-function addCommentFlags(table, lines, key) {
+function addCommentFlags(diffReviewableView, table, lines, key) {
     var remaining = {};
 
     var prevBeginRowIndex = undefined;
@@ -1007,17 +858,18 @@ function addCommentFlags(table, lines, key) {
 
         var beginLineNum = line.linenum;
         var endLineNum = beginLineNum + numLines - 1;
-        var beginRow = findLineNumRow(table[0], beginLineNum,
-                                      prevBeginRowIndex);
+        var beginRow = diffReviewableView.findLineNumRow(beginLineNum,
+                                                         prevBeginRowIndex);
 
         if (beginRow != null) {
             prevBeginRowIndex = beginRow.rowIndex;
 
             var endRow = (endLineNum == beginLineNum
                           ? beginRow
-                          : findLineNumRow(table[0], endLineNum,
-                                           prevBeginRowIndex,
-                                           prevBeginRowIndex + numLines - 1));
+                          : diffReviewableView.findLineNumRow(
+                              endLineNum,
+                              prevBeginRowIndex,
+                              prevBeginRowIndex + numLines - 1));
 
 
             /*
@@ -1052,7 +904,11 @@ function addCommentFlags(table, lines, key) {
 RB.expandChunk = function(review_base_url, fileid, filediff_id, revision,
                           interdiff_revision, file_index, chunk_index,
                           lines_of_context, link) {
-    gDiffReviewable.getRenderedDiffFragment({
+    var tbody = $(link).parents('tbody'),
+        table = tbody.parent(),
+        diffReviewableView = table.data('diffReviewableView');
+
+    diffReviewableView.model.getRenderedDiffFragment({
         reviewRequestURL: review_base_url,
         fileDiffID: filediff_id,
         revision: revision,
@@ -1062,9 +918,7 @@ RB.expandChunk = function(review_base_url, fileid, filediff_id, revision,
         linesOfContext: lines_of_context,
     }, {
         success: function(html) {
-            var tbody = $(link).parents('tbody'),
-                table = tbody.parent(),
-                key = 'file' + filediff_id,
+            var key = 'file' + filediff_id,
                 $scrollAnchor,
                 tbodyID,
                 scrollAnchorSel,
@@ -1112,7 +966,8 @@ RB.expandChunk = function(review_base_url, fileid, filediff_id, revision,
              * new header.
              */
             tbody.replaceWith(html);
-            addCommentFlags(table, gHiddenComments[key], key);
+            addCommentFlags(diffReviewableView, table, gHiddenComments[key],
+                            key);
 
             /* Get the new tbody for the header, if any, and try to center. */
             if (tbodyID) {
@@ -1337,17 +1192,21 @@ function updateAnchors(table) {
 RB.loadFileDiff = function(review_base_url, filediff_id, filediff_revision,
                            interfilediff_id, interfilediff_revision,
                            file_index, comment_counts) {
+    var diffReviewable = new RB.DiffReviewable({
+        reviewRequestURL: review_base_url,
+        fileDiffID: filediff_id,
+        interFileDiffID: interfilediff_id,
+        revision: filediff_revision,
+        interdiffRevision: interfilediff_revision
+    });
+
     if ($("#file" + filediff_id).length == 1) {
         /* We already have this one. This is probably a pre-loaded file. */
         setupFileDiff();
     } else {
         $.funcQueue("diff_files").add(function() {
-            gDiffReviewable.getRenderedDiff({
-                reviewRequestURL: review_base_url,
-                fileDiffID: filediff_id,
-                revision: filediff_revision,
-                interdiffRevision: interfilediff_revision,
-                fileIndex: file_index,
+            diffReviewable.getRenderedDiff({
+                fileIndex: file_index
             }, {
                 complete: onFileLoaded
             });
@@ -1376,7 +1235,7 @@ RB.loadFileDiff = function(review_base_url, filediff_id, filediff_revision,
         }
 
         var diffTable = $("#file" + filediff_id);
-        diffTable.diffFile(comment_counts, key);
+        diffTable.diffFile(diffReviewable, comment_counts, key);
 
         /* We must rebuild this every time. */
         updateAnchors(diffTable);
@@ -1502,11 +1361,6 @@ $(document).ready(function() {
         /* We're not running in the diff viewer. No need for setup. */
         return;
     }
-
-    gDiffReviewable = new RB.DiffReviewable({
-        revision: gRevision,
-        interdiffRevision: gInterdiffRevision
-    });
 
     $(document).keypress(function(evt) {
         if (evt.altKey || evt.ctrlKey || evt.metaKey) {
