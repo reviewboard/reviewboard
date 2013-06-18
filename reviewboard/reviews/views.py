@@ -994,8 +994,6 @@ def diff(request,
             'is_draft_interdiff': is_draft_interdiff,
             'num_diffs': num_diffs,
             'last_activity_time': last_activity_time,
-            'specific_diff_requested': revision is not None or
-                                       interdiff_revision is not None,
             'base_url': review_request.get_absolute_url(),
             'file_attachments': file_attachments,
             'screenshots': screenshots,

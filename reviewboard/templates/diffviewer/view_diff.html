@@ -33,7 +33,6 @@
 {% block scripts-post %}
 {{block.super}}
 
-{%  if not specific_diff_requested %}
 <script>
     RB.currentPage = new RB.DiffViewerPageView({
         checkUpdatesType: 'diff',
@@ -43,7 +42,6 @@
 {%   include "reviews/reviewable_page_data.js" %}
     });
 </script>
-{%  endif %}
 {% endblock %}
 
 {% block content %}
