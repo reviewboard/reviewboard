@@ -385,6 +385,7 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
     commentsListName: 'diff_comments',
 
     events: {
+        'click .moved-to, .moved-from': '_onMovedLineClicked',
         'mouseup': '_onMouseUp'
     },
 
@@ -563,7 +564,27 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
      * Sets the active anchor on the page, optionally scrolling to it.
      */
     _gotoAnchor: function(name, scroll) {
-        return RB.scrollToAnchor($("a[name='" + name + "']"), scroll || false);
+        return RB.scrollToAnchor($("a[name='" + name + "']"), scroll);
+    },
+
+    /*
+     * Handler for clicks on a "Moved to/from" flag.
+     *
+     * This will scroll to the location on the other end of the move,
+     * and briefly highlight the line.
+     */
+    _onMovedLineClicked: function(e) {
+        var $node = $(e.target),
+            dest = $node.attr('line'),
+            $anchor;
+
+        e.preventDefault();
+        e.stopPropagation();
+
+        $anchor = $node.parents('table').find('td a[target=' + dest + ']');
+        $anchor.parents('tr').children().effect('highlight', {}, 2000);
+
+        RB.scrollToAnchor($anchor);
     },
 
     /*
@@ -586,7 +607,7 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
             ($tbody.hasClass('delete') ||
              $tbody.hasClass('insert') ||
              $tbody.hasClass('replace'))) {
-            this._gotoAnchor($tbody.find('a:first').attr('name'), true);
+            this._gotoAnchor($tbody.find('a:first').attr('name'), false);
         }
     }
 });

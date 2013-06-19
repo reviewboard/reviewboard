@@ -1,90 +1,10 @@
-// Constants
-var BACKWARD = -1;
-var FORWARD  = 1;
-var INVALID  = -1;
-var DIFF_SCROLLDOWN_AMOUNT = 100;
-var VISIBLE_CONTEXT_SIZE = 5;
-
-var ANCHOR_COMMENT = 1;
-var ANCHOR_FILE = 2;
-var ANCHOR_CHUNK = 4;
-
-
 // State
 var gCollapseButtons = [];
 
 
-/*
- * A list of key bindings for the page.
- */
-var gActions = [
-    { // Previous file
-        keys: "aAKP<m",
-        onPress: function() {
-            scrollToAnchor(GetNextAnchor(BACKWARD, ANCHOR_FILE));
-        }
-    },
-
-    { // Next file
-        keys: "fFJN>",
-        onPress: function() {
-            scrollToAnchor(GetNextAnchor(FORWARD, ANCHOR_FILE));
-        }
-    },
-
-    { // Previous diff
-        keys: "sSkp,,",
-        onPress: function() {
-            scrollToAnchor(GetNextAnchor(BACKWARD, ANCHOR_CHUNK | ANCHOR_FILE));
-        }
-    },
-
-    { // Next diff
-        keys: "dDjn..",
-        onPress: function() {
-            scrollToAnchor(GetNextAnchor(FORWARD, ANCHOR_CHUNK | ANCHOR_FILE));
-        }
-    },
-
-    { // Recenter
-        keys: unescape("%0D"),
-        onPress: function() { scrollToAnchor($(gAnchors[gSelectedAnchor])); }
-    },
-
-    { // Previous comment
-        keys: "[x",
-        onPress: function() {
-            scrollToAnchor(GetNextAnchor(BACKWARD, ANCHOR_COMMENT));
-        }
-    },
-
-    { // Next comment
-        keys: "]c",
-        onPress: function() {
-            scrollToAnchor(GetNextAnchor(FORWARD, ANCHOR_COMMENT));
-        }
-    },
-
-    { // Go to header
-        keys: "gu;",
-        onPress: function() {}
-    },
-
-    { // Go to footer
-        keys: "GU:",
-        onPress: function() {}
-    }
-];
-
-
 // State variables
-var gSelectedAnchor = INVALID;
-var gFileAnchorToId = {};
-var gInterdiffFileAnchorToId = {};
-var gAnchors = $();
 var gHiddenComments = {};
 var gDiffHighlightBorder = null;
-var gStartAtAnchor = null;
 
 
 /*
@@ -330,31 +250,6 @@ $.extend(RB.DiffCommentBlock.prototype, {
 
 
 /*
- * Registers a section as being a diff file.
- *
- * This handles all mouse actions on the diff, comment range selection, and
- * populatation of comment flags.
- *
- * @return {jQuery} The diff file element.
- */
-$.fn.diffFile = function(diffReviewable, lines, key) {
-    return this.each(function() {
-        var self = $(this),
-            diffReviewableView = new RB.DiffReviewableView({
-                el: self,
-                model: diffReviewable
-            });
-
-        self.data('diffReviewableView', diffReviewableView);
-
-        addCommentFlags(diffReviewableView, self, lines, key);
-
-        diffReviewableView.render();
-    });
-};
-
-
-/*
  * Highlights a chunk of the diff.
  *
  * This will create and move four border elements around the chunk. We use
@@ -511,7 +406,7 @@ $.fn.highlightChunk = function() {
  * lines is an array of dictionaries grouping together comments on the
  * same line. The dictionaries contain the following keys:
  */
-function addCommentFlags(diffReviewableView, table, lines, key) {
+RB.addCommentFlags = function(diffReviewableView, table, lines, key) {
     var remaining = {};
 
     var prevBeginRowIndex = undefined;
@@ -630,8 +525,8 @@ RB.expandChunk = function(review_base_url, fileid, filediff_id, revision,
              * new header.
              */
             tbody.replaceWith(html);
-            addCommentFlags(diffReviewableView, table, gHiddenComments[key],
-                            key);
+            RB.addCommentFlags(diffReviewableView, table,
+                               gHiddenComments[key], key);
 
             /* Get the new tbody for the header, if any, and try to center. */
             if (tbodyID) {
@@ -756,172 +651,6 @@ function updateCollapseButtonPos() {
 
 
 /*
- * Scrolls to the anchor at a specified location.
- *
- * @param {jQuery} anchor    The anchor jQuery instance.
- * @param {bool}   noscroll  true if the page should not be scrolled.
- *
- * @return {bool} true if the anchor was found, or false if not.
- */
-function scrollToAnchor(anchor, noscroll) {
-    if (anchor.length == 0) {
-        return false;
-    }
-
-    if (anchor.parent().is(":hidden")) {
-        return false;
-    }
-
-    if (!noscroll) {
-        $(window).scrollTop(anchor.offset().top - DIFF_SCROLLDOWN_AMOUNT);
-    }
-
-    anchor.highlightChunk();
-
-    for (var i = 0; i < gAnchors.length; i++) {
-        if (gAnchors[i] == anchor[0]) {
-            gSelectedAnchor = i;
-            break;
-        }
-    }
-
-    return true;
-}
-
-RB.scrollToAnchor = scrollToAnchor;
-
-
-/*
- * Returns the next navigatable anchor in the specified direction.
- *
- * @param {int} dir         The direction (BACKWARD or FORWARD)
- * @param {int} anchorType  The type of the anchor as a bitmask
- *                          (ANCHOR_COMMENT, ANCHOR_FILE, ANCHOR_CHUNK)
- *
- * @return {jQuery} The found anchor jQuery instance, or INVALID.
- */
-function GetNextAnchor(dir, anchorType) {
-    for (var anchor = gSelectedAnchor + dir;
-         anchor >= 0 && anchor < gAnchors.length;
-         anchor = anchor + dir) {
-
-        var anchorEl = $(gAnchors[anchor]);
-
-        if (((anchorType & ANCHOR_COMMENT) &&
-             anchorEl.hasClass("comment-anchor")) ||
-            ((anchorType & ANCHOR_FILE) &&
-             anchorEl.hasClass("file-anchor")) ||
-            ((anchorType & ANCHOR_CHUNK) &&
-             anchorEl.hasClass("chunk-anchor"))) {
-            return anchorEl;
-        }
-    }
-
-    return $([]);
-}
-
-
-/*
- * Updates the list of known anchors based on named anchors in the specified
- * table. This is called after every part of the diff that we loaded.
- *
- * If no anchor is selected, we'll try to select the first one.
- *
- * @param {jQuery} table  The table to load anchors from.
- */
-function updateAnchors(table) {
-    gAnchors = gAnchors.add($("a[name]", table));
-
-    /* Skip over the change index to the first item */
-    if (gSelectedAnchor == -1 && gAnchors.length > 0) {
-      gSelectedAnchor = 0;
-      $(gAnchors[gSelectedAnchor]).highlightChunk();
-    }
-}
-
-
-/*
- * Progressively load a diff.
- *
- * When the diff is loaded, it will be placed into the appropriate location
- * in the diff viewer, rebuild the anchors, and move on to the next file.
- *
- * @param {string} review_base_url           The URL of the review request
- * @param {string} filediff_id               The filediff ID
- * @param {string} filediff_revision         The filediff revision
- * @param {string} interfilediff_id          The interfilediff ID (optional)
- * @param {string} interfilediff_revision    The interfilediff revision
- *                                           (optional)
- * @param {string} file_index                The file index
- * @param {dict}   comment_counts            The comments for this region
- */
-RB.loadFileDiff = function(review_base_url, filediff_id, filediff_revision,
-                           interfilediff_id, interfilediff_revision,
-                           file_index, comment_counts) {
-    var diffReviewable = new RB.DiffReviewable({
-        reviewRequestURL: review_base_url,
-        fileDiffID: filediff_id,
-        interFileDiffID: interfilediff_id,
-        revision: filediff_revision,
-        interdiffRevision: interfilediff_revision
-    });
-
-    if ($("#file" + filediff_id).length == 1) {
-        /* We already have this one. This is probably a pre-loaded file. */
-        setupFileDiff();
-    } else {
-        $.funcQueue("diff_files").add(function() {
-            diffReviewable.getRenderedDiff({
-                fileIndex: file_index
-            }, {
-                complete: onFileLoaded
-            });
-        });
-    }
-
-    function onFileLoaded(xhr) {
-        $("#file_container_" + filediff_id).replaceWith(xhr.responseText);
-
-        setupFileDiff();
-    }
-
-    function setupFileDiff() {
-        var key = "file" + filediff_id;
-
-        gFileAnchorToId[key] = {
-            'id': filediff_id,
-            'revision': filediff_revision
-        };
-
-        if (interfilediff_id) {
-            gInterdiffFileAnchorToId[key] = {
-                'id': interfilediff_id,
-                'revision': interfilediff_revision
-            };
-        }
-
-        var diffTable = $("#file" + filediff_id);
-        diffTable.diffFile(diffReviewable, comment_counts, key);
-
-        /* We must rebuild this every time. */
-        updateAnchors(diffTable);
-
-        if (gStartAtAnchor != null) {
-            /* See if we've loaded the anchor the user wants to start at. */
-            var anchor = $("a[name='" + gStartAtAnchor + "']");
-
-            if (anchor.length != 0) {
-                scrollToAnchor(anchor);
-                gStartAtAnchor = null;
-            }
-        }
-
-        $.funcQueue("diff_files").next();
-    }
-}
-
-
-/*
  * Toggles the display state of Whitespace chunks and lines.
  *
  * When a diff is loaded, by default, all whitespace only changes are shown.
@@ -1028,21 +757,6 @@ $(document).ready(function() {
         return;
     }
 
-    $(document).keypress(function(evt) {
-        if (evt.altKey || evt.ctrlKey || evt.metaKey) {
-            return;
-        }
-
-        var keyChar = String.fromCharCode(evt.which);
-
-        for (var i = 0; i < gActions.length; i++) {
-            if (gActions[i].keys.indexOf(keyChar) != -1) {
-                gActions[i].onPress();
-                return false;
-            }
-        }
-    });
-
     $(window).scroll(updateCollapseButtonPos);
     $(window).resize(updateCollapseButtonPos);
 
@@ -1064,25 +778,6 @@ $(document).ready(function() {
      */
     $("input, textarea").keypress(function(evt) {
         evt.stopPropagation();
-    });
-
-    /* Check to see if there's an anchor we need to scroll to. */
-    var url = document.location.toString();
-
-    if (url.match("#")) {
-        gStartAtAnchor = url.split("#")[1];
-    }
-
-    $.funcQueue("diff_files").start();
-
-    $("table.sidebyside tr td a.moved-to," +
-      "table.sidebyside tr td a.moved-from").click(function() {
-        var destination = $(this).attr("line");
-
-        return !scrollToAnchor(
-            $("td a[target=" + destination + "]", $(this).parents("table"))
-                .parent().siblings().andSelf()
-                    .effect("highlight", {}, 2000), false);
     });
 });
 
