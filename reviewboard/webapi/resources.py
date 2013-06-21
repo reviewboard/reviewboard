@@ -47,7 +47,9 @@ from reviewboard.diffviewer.diffutils import get_diff_files, \
                                              get_original_file, \
                                              get_patched_file, \
                                              populate_diff_chunks
-from reviewboard.diffviewer.errors import EmptyDiffError, DiffTooBigError
+from reviewboard.diffviewer.errors import DiffParserError, \
+                                          DiffTooBigError, \
+                                          EmptyDiffError
 from reviewboard.extensions.base import get_extension_manager
 from reviewboard.hostingsvcs.errors import AuthorizationError
 from reviewboard.hostingsvcs.models import HostingServiceAccount
@@ -81,6 +83,7 @@ from reviewboard.webapi.encoder import status_to_string, string_to_status
 from reviewboard.webapi.errors import BAD_HOST_KEY, \
                                       CHANGE_NUMBER_IN_USE, \
                                       DIFF_EMPTY, \
+                                      DIFF_PARSE_ERROR, \
                                       DIFF_TOO_BIG, \
                                       EMPTY_CHANGESET, \
                                       FILE_RETRIEVAL_ERROR, \
@@ -7344,6 +7347,128 @@ class SearchResource(WebAPIResource, DjbletsUserResource):
 search_resource = SearchResource()
 
 
+class ValidateDiffResource(DiffResource):
+    """Verifies whether a diff file will work.
+
+    This allows clients to validate whether a diff file (with optional parent
+    diff) can be parsed and displayed, without actually creating a review
+    request first.
+    """
+    singleton = True
+    name = 'diffs'
+    mimetype_item_resource_name = 'validate-diffs'
+    uri_object_key = None
+
+    allowed_methods = ('POST',)
+
+    @webapi_check_local_site
+    @webapi_login_required
+    @webapi_response_errors(DOES_NOT_EXIST, NOT_LOGGED_IN, PERMISSION_DENIED,
+                            REPO_FILE_NOT_FOUND, INVALID_FORM_DATA,
+                            INVALID_REPOSITORY, DIFF_EMPTY, DIFF_TOO_BIG)
+    @webapi_request_fields(
+        required={
+            'repository': {
+                'type': str,
+                'description': 'The path or ID of the repository.',
+            },
+            'path': {
+                'type': file,
+                'description': 'The main diff file.',
+            },
+        },
+        optional={
+            'basedir': {
+                'type': str,
+                'description': 'The base directory that will prepended to '
+                               'all paths in the diff. This is needed for '
+                               'some types of repositories. The directory '
+                               'must be between the root of the repository '
+                               'and the top directory referenced in the '
+                               'diff paths.',
+            },
+            'parent_diff_path': {
+                'type': file,
+                'description': 'The optional parent diff to upload.',
+            },
+        }
+    )
+    def create(self, request, repository, basedir=None, local_site_name=None,
+               *args, **kwargs):
+        local_site = _get_local_site(local_site_name)
+
+        path = request.FILES.get('path')
+        parent_diff_path = request.FILES.get('parent_diff_path')
+
+        try:
+            query = Q(pk=int(repository), local_site=local_site)
+        except ValueError:
+            query = (  Q(local_site=local_site)
+                     & (  Q(path=repository)
+                        | Q(mirror_path=repository)
+                        | Q(name=repository)))
+
+        try:
+            repository = Repository.objects.get(query)
+        except Repository.DoesNotExist:
+            return INVALID_REPOSITORY, {
+                'repository': repository
+            }
+
+        if (not repository.get_scmtool().get_diffs_use_absolute_paths() and
+            basedir is None):
+
+            return INVALID_FORM_DATA, {
+                'fields': {
+                    'basedir': 'Given repository requires a base directory',
+                },
+            }
+
+        try:
+            DiffSet.objects.create_from_upload(
+                repository, path, parent_diff_path, None, basedir, request,
+                save=False)
+        except FileNotFoundError, e:
+            return REPO_FILE_NOT_FOUND, {
+                'file': e.path,
+                'revision': unicode(e.revision),
+            }
+        except EmptyDiffError:
+            return DIFF_EMPTY
+        except DiffTooBigError, e:
+            return DIFF_TOO_BIG, {
+                'reason': str(e),
+                'max_size': e.max_diff_size,
+            }
+        except DiffParserError, e:
+            return DIFF_PARSE_ERROR, {
+                'reason': str(e),
+                'linenum': e.linenum,
+            }
+
+        return 200, {}
+
+    def _build_named_url(self, name):
+        """Builds a Django URL name from the provided name."""
+        return 'validate-diffs-resource'
+
+
+validate_diff_resource = ValidateDiffResource()
+
+
+class ValidationResource(DjbletsRootResource):
+    """Links to validation resources."""
+    name = 'validation'
+
+    def __init__(self, *args, **kwargs):
+        super(ValidationResource, self).__init__([
+            validate_diff_resource,
+        ], *args, **kwargs)
+
+
+validation_resource = ValidationResource()
+
+
 class ServerInfoResource(WebAPIResource):
     """Information on the Review Board server.
 
@@ -7479,6 +7604,7 @@ class RootResource(DjbletsRootResource):
             server_info_resource,
             session_resource,
             user_resource,
+            validation_resource,
         ], *args, **kwargs)
 
     @webapi_check_local_site

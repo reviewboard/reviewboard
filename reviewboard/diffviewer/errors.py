@@ -16,3 +16,9 @@ class DiffTooBigError(ValueError):
 
 class EmptyDiffError(ValueError):
     pass
+
+
+class DiffParserError(Exception):
+    def __init__(self, msg, linenum):
+        Exception.__init__(self, msg)
+        self.linenum = linenum

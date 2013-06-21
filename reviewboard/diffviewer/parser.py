@@ -1,6 +1,8 @@
 import logging
 import re
 
+from reviewboard.diffviewer.errors import DiffParserError
+
 
 class File(object):
     def __init__(self):
@@ -15,12 +17,6 @@ class File(object):
         self.moved = False
         self.insert_count = 0
         self.delete_count = 0
-
-
-class DiffParserError(Exception):
-    def __init__(self, msg, linenum):
-        Exception.__init__(self, msg)
-        self.linenum = linenum
 
 
 class DiffParser(object):

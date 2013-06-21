@@ -42,7 +42,7 @@ class DiffSetManager(models.Manager):
     IMPL_EXTENSIONS = ["c", "C", "cc", "cpp", "cxx", "c++", "m", "mm", "M"]
 
     def create_from_upload(self, repository, diff_file, parent_diff_file,
-                           diffset_history, basedir, request):
+                           diffset_history, basedir, request, save=True):
         """Create a DiffSet from a form upload.
 
         The diff_file and parent_diff_file parameters are django forms
@@ -76,11 +76,12 @@ class DiffSetManager(models.Manager):
                                      parent_diff_file_contents,
                                      diffset_history,
                                      basedir,
-                                     request)
+                                     request,
+                                     save=save)
 
     def create_from_data(self, repository, diff_file_name, diff_file_contents,
                          parent_diff_file_name, parent_diff_file_contents,
-                         diffset_history, basedir, request):
+                         diffset_history, basedir, request, save=True):
         """Create a DiffSet from raw diff data.
 
         The diff_file_contents and parent_diff_file_contents parameters are
@@ -131,7 +132,8 @@ class DiffSetManager(models.Manager):
             history=diffset_history,
             repository=repository,
             diffcompat=DEFAULT_DIFF_COMPAT_VERSION)
-        diffset.save()
+        if save:
+            diffset.save()
 
         for f in files:
             if f.origFile in parent_files:
@@ -167,7 +169,8 @@ class DiffSetManager(models.Manager):
                                 binary=f.binary,
                                 status=status)
             filediff.set_line_counts(f.insert_count, f.delete_count)
-            filediff.save()
+            if save:
+                filediff.save()
 
         return diffset
 

@@ -80,3 +80,6 @@ HOSTINGSVC_AUTH_ERROR     = WebAPIError(222, "There was an error authorizing "
 GROUP_ALREADY_EXISTS      = WebAPIError(223, "A group with this name already "
                                              "exists.",
                                         http_status=409) # 409 Conflict
+DIFF_PARSE_ERROR          = WebAPIError(224, "The specified diff file could "
+                                             "not be parsed.",
+                                        http_status=400) # 400 Bad Request
