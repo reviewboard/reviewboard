@@ -352,10 +352,12 @@ $.fn.reviewsAutoComplete = function(options) {
         $(this)
             .autocomplete({
                 formatItem: function(data) {
-                    var s = data[options.nameKey];
+                    var s = data[options.nameKey],
+                        desc;
 
                     if (options.descKey) {
-                        s += " <span>(" + data[options.descKey] + ")</span>";
+                        desc = $('<div/>').text(data[options.descKey]).html();
+                        s += " <span>(" + desc + ")</span>";
                     }
 
                     return s;
