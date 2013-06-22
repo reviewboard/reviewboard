@@ -270,7 +270,8 @@ $.fn.reviewsAutoComplete = function(options) {
                     var s = data[options.nameKey];
 
                     if (options.descKey && data[options.descKey]) {
-                        s += " <span>(" + data[options.descKey] + ")</span>";
+                        s += " <span>(" + _.escape(data[options.descKey]) +
+                             ")</span>";
                     }
 
                     return s;
