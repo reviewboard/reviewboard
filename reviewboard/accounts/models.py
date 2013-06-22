@@ -95,7 +95,7 @@ class Profile(models.Model):
 
     # Allows per-user timezone settings
     timezone = models.CharField(choices=TIMEZONE_CHOICES, default='UTC',
-                                max_length=20)
+                                max_length=30)
 
     extra_data = JSONField(null=True)
 
