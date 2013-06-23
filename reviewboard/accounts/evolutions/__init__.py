@@ -3,4 +3,5 @@ SEQUENCE = [
     'timezone',
     'open_an_issue',
     'extra_data',
+    'timezone_length_30',
 ]
