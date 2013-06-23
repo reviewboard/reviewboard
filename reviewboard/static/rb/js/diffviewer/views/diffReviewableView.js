@@ -100,8 +100,6 @@ CommentRowSelector = Backbone.View.extend({
         var $commentFlag,
             commentBlock;
 
-        $row.removeClass('selected');
-
         if (this._beginLineNum === this._endLineNum) {
             /* See if we have a comment flag on the selected row. */
             $commentFlag = $row.find('.commentflag');
@@ -131,47 +129,52 @@ CommentRowSelector = Backbone.View.extend({
      * will mark the new beginning or end of the selection.
      */
     _addRow: function($row) {
-        var $lineNumCell,
-            lineNum,
+        var lineNum,
             min,
             max,
             i;
 
-        if (this._$begin) {
-            /* We have an active selection. */
-            lineNum = getLineNum($row[0]);
+        /* We have an active selection. */
+        lineNum = getLineNum($row[0]);
 
-            if (lineNum < this._beginLineNum) {
-                this._$begin = $row;
-                this._beginLineNum = lineNum;
-            } else if (lineNum > this._beginLineNum) {
-                this._$end = $row;
-                this._endLineNum = lineNum;
-            }
-
-            min = Math.min(this._lastSeenIndex, $row[0].rowIndex);
-            max = Math.max(this._lastSeenIndex, $row[0].rowIndex);
-
-            for (i = min; i <= max; i++) {
-                $(this.el.rows[i]).addClass('selected');
-            }
-
-            this._lastSeenIndex = $row[0].rowIndex;
-        } else {
-            $lineNumCell = $($row[0].cells[0]);
-
-            /* See if we have a comment flag in here. */
-            if ($lineNumCell.find('.commentflag').length === 0) {
-                this._$ghostCommentFlag
-                    .css('top', $row.offset().top - 1)
-                    .show()
-                    .parent()
-                        .removeClass('selected');
-                this._$ghostCommentFlagCell = $lineNumCell;
-            }
-
-            $row.addClass('selected');
+        if (lineNum < this._beginLineNum) {
+            this._$begin = $row;
+            this._beginLineNum = lineNum;
+        } else if (lineNum > this._beginLineNum) {
+            this._$end = $row;
+            this._endLineNum = lineNum;
         }
+
+        min = Math.min(this._lastSeenIndex, $row[0].rowIndex);
+        max = Math.max(this._lastSeenIndex, $row[0].rowIndex);
+
+        for (i = min; i <= max; i++) {
+            $(this.el.rows[i]).addClass('selected');
+        }
+
+        this._lastSeenIndex = $row[0].rowIndex;
+    },
+
+    /*
+     * Highlights a row.
+     *
+     * This will highlight a row and show a ghost comment flag. This is done
+     * when the mouse hovers over the row.
+     */
+    _highlightRow: function($row) {
+        var $lineNumCell = $($row[0].cells[0]);
+
+        /* See if we have a comment flag in here. */
+        if ($lineNumCell.find('.commentflag').length === 0) {
+            this._$ghostCommentFlag
+                .css('top', $row.offset().top - 1)
+                .show()
+                .parent()
+                    .removeClass('selected');
+            this._$ghostCommentFlagCell = $lineNumCell;
+        }
+
+        $row.addClass('selected');
     },
 
     /*
@@ -180,13 +183,30 @@ CommentRowSelector = Backbone.View.extend({
      */
     _removeOldRows: function($row) {
         var destRowIndex = $row[0].rowIndex,
+            startIndex,
+            endIndex,
             i;
 
         if (destRowIndex >= this._$begin[0].rowIndex) {
-            for (i = this._lastSeenIndex;
-                 i > destRowIndex;
-                 i--) {
-                $(this.el.rows[i]).removeClass('selected');
+            if (   this._lastSeenIndex !== this._$end[0].rowIndex
+                && this._lastSeenIndex < destRowIndex) {
+                /*
+                 * We're removing from the top of the range. The beginning
+                 * location will need to be moved.
+                 */
+                this._removeSelectionClasses(this._lastSeenIndex, destRowIndex);
+                this._$begin = $row;
+                this._beginLineNum = getLineNum($row[0]);
+            } else {
+                /*
+                 * We're removing from the bottom of the selection. The end
+                 * location will need to be moved.
+                 */
+                this._removeSelectionClasses(destRowIndex,
+                                             this._lastSeenIndex);
+
+                this._$end = $row;
+                this._endLineNum = getLineNum($row[0]);
             }
 
             this._lastSeenIndex = destRowIndex;
@@ -197,18 +217,10 @@ CommentRowSelector = Backbone.View.extend({
      * Resets the selection information.
      */
     _reset: function() {
-        var rows,
-            i;
-
         if (this._$begin) {
             /* Reset the selection. */
-            rows = this.el.rows;
-
-            for (i = this._$begin[0].rowIndex;
-                 i <= this._$end[0].rowIndex;
-                 i++) {
-                $(rows[i]).removeClass('selected');
-            }
+            this._removeSelectionClasses(this._$begin[0].rowIndex,
+                                         this._$end[0].rowIndex);
 
             this._$begin = null;
             this._$end = null;
@@ -221,6 +233,17 @@ CommentRowSelector = Backbone.View.extend({
 
         /* Re-enable text selection on IE */
         this.$el.enableSelection();
+    },
+
+    /*
+     * Removes selection classes on a range of rows.
+     */
+    _removeSelectionClasses: function(startRowIndex, endRowIndex) {
+        var i;
+
+        for (i = startRowIndex; i <= endRowIndex; i++) {
+            $(this.el.rows[i]).removeClass('selected');
+        }
     },
 
     /*
@@ -307,7 +330,11 @@ CommentRowSelector = Backbone.View.extend({
             $row = $node.parent();
 
         if (this._isLineNumCell($node[0])) {
-            this._addRow($row);
+            if (this._$begin) {
+                this._addRow($row);
+            } else {
+                this._highlightRow($row);
+            }
         } else if (this._$ghostCommentFlagCell &&
                    $node[0] !== this._$ghostCommentFlagCell[0]) {
             $row.removeClass('selected');

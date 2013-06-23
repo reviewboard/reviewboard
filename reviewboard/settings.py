@@ -297,6 +297,7 @@ PIPELINE_JS = {
             'lib/js/jasmine-html-1.3.1.js',
             'rb/js/collections/tests/resourceCollectionTests.js',
             'rb/js/diffviewer/models/tests/diffReviewableModelTests.js',
+            'rb/js/diffviewer/views/tests/diffReviewableViewTests.js',
             'rb/js/models/tests/baseCommentModelTests.js',
             'rb/js/models/tests/baseCommentReplyModelTests.js',
             'rb/js/models/tests/baseResourceModelTests.js',
