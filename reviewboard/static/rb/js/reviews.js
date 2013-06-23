@@ -267,7 +267,8 @@ $.fn.reviewsAutoComplete = function(options) {
         $(this)
             .rbautocomplete({
                 formatItem: function(data) {
-                    var s = data[options.nameKey];
+                    var s = data[options.nameKey],
+                        desc;
 
                     if (options.descKey && data[options.descKey]) {
                         s += " <span>(" + _.escape(data[options.descKey]) +
