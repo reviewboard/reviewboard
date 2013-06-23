@@ -2,6 +2,7 @@
 Sphinx plugins for web API docs.
 """
 import inspect
+import logging
 import re
 import sys
 
@@ -872,7 +873,15 @@ def create_fake_resource_path(request, resource, child_keys, include_child):
             resource.model and
             resource.uri_object_key):
                 q = resource.get_queryset(request, **child_keys)
-                assert q.count() > 0
+
+                if q.count() == 0:
+                    logging.critical('Resource "%s" requires objects in the '
+                                     'database', resource.__class__)
+                    print child_keys
+
+                    # Do the assert so it shows up in the logs.
+                    assert q.count() > 0
+
                 obj = q[0]
                 value = getattr(obj, resource.model_object_key)
                 child_keys[resource.uri_object_key] = value
