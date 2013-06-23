@@ -877,7 +877,6 @@ def create_fake_resource_path(request, resource, child_keys, include_child):
                 if q.count() == 0:
                     logging.critical('Resource "%s" requires objects in the '
                                      'database', resource.__class__)
-                    print child_keys
 
                     # Do the assert so it shows up in the logs.
                     assert q.count() > 0
