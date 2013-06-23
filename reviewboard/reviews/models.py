@@ -566,7 +566,14 @@ class ReviewRequest(BaseReviewRequestDetails):
             return self.commit_id
         elif self.changenum is not None:
             self.commit_id = str(self.changenum)
-            self.save()
+
+            # Update the state in the database, but don't save this
+            # model, or we can end up with some state (if we haven't
+            # properly loaded everything yet). This affects docs.db
+            # generation, and may cause problems in the wild.
+            ReviewRequest.objects.filter(pk=self.pk).update(
+                commit_id=str(self.changenum))
+
             return self.commit_id
 
         return None
@@ -578,7 +585,6 @@ class ReviewRequest(BaseReviewRequestDetails):
             pass
 
         self.commit_id = commit_id
-        self.save()
 
     commit = property(get_commit, set_commit)
 
