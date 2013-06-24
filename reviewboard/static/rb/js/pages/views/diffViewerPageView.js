@@ -73,6 +73,7 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
                             fileIndex, serializedComments) {
         var diffReviewable = new RB.DiffReviewable({
             reviewRequestURL: reviewRequestURL,
+            fileIndex: fileIndex,
             fileDiffID: fileDiffID,
             interFileDiffID: interFileDiffID,
             revision: fileDiffRevision,
@@ -84,19 +85,14 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
             this._renderFileDiff(diffReviewable, serializedComments);
         } else {
             $.funcQueue('diff_files').add(function() {
-                diffReviewable.getRenderedDiff(
-                    {
-                        fileIndex: fileIndex
-                    },
-                    {
-                        complete: function(xhr) {
-                            $('#file_container_' + fileDiffID)
-                                .replaceWith(xhr.responseText);
-                            this._renderFileDiff(diffReviewable,
-                                                 serializedComments);
-                        }
-                    },
-                    this);
+                diffReviewable.getRenderedDiff({
+                    complete: function(xhr) {
+                        $('#file_container_' + fileDiffID)
+                            .replaceWith(xhr.responseText);
+                        this._renderFileDiff(diffReviewable,
+                                             serializedComments);
+                    }
+                }, this);
             }, this);
         }
     },
@@ -142,6 +138,11 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
 
         /* We must rebuild this every time. */
         this._updateAnchors($table);
+
+        this.listenTo(diffReviewableView, 'chunkExpansionChanged', function() {
+            /* The selection rectangle may not update -- bug #1353. */
+            $(this._$anchors[this._selectedAnchorIndex]).highlightChunk();
+        });
 
         if (this._startAtAnchorName) {
             /* See if we've loaded the anchor the user wants to start at. */

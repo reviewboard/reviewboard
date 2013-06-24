@@ -4,6 +4,7 @@
 RB.DiffReviewable = RB.AbstractReviewable.extend({
     defaults: _.defaults({
         reviewRequestURL: null,
+        fileIndex: null,
         fileDiffID: null,
         interFileDiffID: null,
         revision: null,
@@ -19,13 +20,10 @@ RB.DiffReviewable = RB.AbstractReviewable.extend({
      * The rendered file will be fetched from the server and eventually
      * returned as the argument to the success callback.
      */
-    getRenderedDiff: function(options, callbacks, context) {
-        console.assert(_.has(options, 'fileIndex'),
-                       'fileIndex must be provided');
-
+    getRenderedDiff: function(callbacks, context) {
         this._fetchFragment({
-            url: this._buildRenderedDiffURL(options) +
-                 '?index=' + options.fileIndex + '&' + AJAX_SERIAL,
+            url: this._buildRenderedDiffURL() +
+                 '?index=' + this.get('fileIndex') + '&' + AJAX_SERIAL,
             noActivityIndicator: true
         }, callbacks, context);
     },
@@ -37,17 +35,14 @@ RB.DiffReviewable = RB.AbstractReviewable.extend({
      * as the argument to the success callback.
      */
     getRenderedDiffFragment: function(options, callbacks, context) {
-        console.assert(_.has(options, 'fileIndex'),
-                       'fileIndex must be provided');
-        console.assert(_.has(options, 'chunkIndex'),
-                       'chunkIndex must be provided');
+        console.assert(options.chunkIndex, 'chunkIndex must be provided');
 
         this._fetchFragment({
-            url: this._buildRenderedDiffURL(options) + 'chunk/' +
+            url: this._buildRenderedDiffURL() + 'chunk/' +
                  options.chunkIndex + '/',
             data: {
-                'index': options.fileIndex,
-                'lines-of-context': options.linesOfContext || undefined
+                'index': this.get('fileIndex'),
+                'lines-of-context': options.linesOfContext
             }
         }, callbacks, context);
     },
@@ -72,10 +67,8 @@ RB.DiffReviewable = RB.AbstractReviewable.extend({
     /*
      * Builds a URL that forms the base of a diff fragment fetch.
      */
-    _buildRenderedDiffURL: function(options) {
+    _buildRenderedDiffURL: function() {
         var revisionStr,
-            reviewRequestURL = options.reviewRequestURL ||
-                               this.get('reviewRequestURL'),
             interdiffRevision = this.get('interdiffRevision');
 
         revisionStr = this.get('revision');
@@ -84,7 +77,7 @@ RB.DiffReviewable = RB.AbstractReviewable.extend({
             revisionStr += '-' + interdiffRevision;
         }
 
-        return reviewRequestURL + 'diff/' + revisionStr + '/fragment/' +
-               this.get('fileDiffID') + '/';
+        return this.get('reviewRequestURL') + 'diff/' + revisionStr +
+               '/fragment/' + this.get('fileDiffID') + '/';
     }
 });

@@ -17,6 +17,7 @@ describe('diffviewer/models/DiffReviewable', function() {
         it('Without interdiffs', function() {
             var diffReviewable = new RB.DiffReviewable({
                 fileDiffID: 3,
+                fileIndex: 4,
                 reviewRequestURL: '/r/1/',
                 revision: 2
             });
@@ -30,9 +31,7 @@ describe('diffviewer/models/DiffReviewable', function() {
                 request.complete('abc', 'success');
             });
 
-            diffReviewable.getRenderedDiff({
-                fileIndex: 4
-            }, callbacks);
+            diffReviewable.getRenderedDiff(callbacks);
 
             expect($.ajax).toHaveBeenCalled();
             expect(callbacks.success).toHaveBeenCalledWith('abc');
@@ -43,6 +42,7 @@ describe('diffviewer/models/DiffReviewable', function() {
         it('With interdiffs', function() {
             var diffReviewable = new RB.DiffReviewable({
                 fileDiffID: 3,
+                fileIndex: 4,
                 reviewRequestURL: '/r/1/',
                 revision: 2,
                 interdiffRevision: 3
@@ -57,9 +57,7 @@ describe('diffviewer/models/DiffReviewable', function() {
                 request.complete('abc', 'success');
             });
 
-            diffReviewable.getRenderedDiff({
-                fileIndex: 4
-            }, callbacks);
+            diffReviewable.getRenderedDiff(callbacks);
 
             expect($.ajax).toHaveBeenCalled();
             expect(callbacks.success).toHaveBeenCalledWith('abc');
@@ -72,6 +70,7 @@ describe('diffviewer/models/DiffReviewable', function() {
         it('Without interdiffs', function() {
             var diffReviewable = new RB.DiffReviewable({
                 fileDiffID: 3,
+                fileIndex: 5,
                 reviewRequestURL: '/r/1/',
                 revision: 2
             });
@@ -88,7 +87,6 @@ describe('diffviewer/models/DiffReviewable', function() {
 
             diffReviewable.getRenderedDiffFragment({
                 chunkIndex: 4,
-                fileIndex: 5,
                 linesOfContext: 6
             }, callbacks);
 
@@ -101,6 +99,7 @@ describe('diffviewer/models/DiffReviewable', function() {
         it('With interdiffs', function() {
             var diffReviewable = new RB.DiffReviewable({
                 fileDiffID: 3,
+                fileIndex: 5,
                 reviewRequestURL: '/r/1/',
                 revision: 2,
                 interdiffRevision: 3
@@ -118,7 +117,6 @@ describe('diffviewer/models/DiffReviewable', function() {
 
             diffReviewable.getRenderedDiffFragment({
                 chunkIndex: 4,
-                fileIndex: 5,
                 linesOfContext: 6
             }, callbacks);
 

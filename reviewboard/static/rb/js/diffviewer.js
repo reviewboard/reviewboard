@@ -1,10 +1,9 @@
-// State
-var gCollapseButtons = [];
-
-
 // State variables
 var gHiddenComments = {};
 var gDiffHighlightBorder = null;
+
+// XXX This is temporary
+window.gHiddenComments = gHiddenComments;
 
 
 /*
@@ -448,209 +447,6 @@ RB.addCommentFlags = function(diffReviewableView, table, lines, key) {
 
 
 /*
- * Expands a chunk of the diff.
- *
- * @param {string} review_base_url     The URL of the review request.
- * @param {string} fileid              The file ID.
- * @param {string} filediff_id         The FileDiff ID.
- * @param {string} revision            The revision of the file.
- * @param {string} interdiff_revision  The interdiff revision of the file.
- * @param {int}    chunk_index         The chunk index number.
- * @param {string} lines_of_context    The string-based tuple of lines of
- *                                     context to show.
- * @param {string} link                The link triggering this call.
- */
-RB.expandChunk = function(review_base_url, fileid, filediff_id, revision,
-                          interdiff_revision, file_index, chunk_index,
-                          lines_of_context, link) {
-    var tbody = $(link).parents('tbody'),
-        table = tbody.parent(),
-        diffReviewableView = table.data('diffReviewableView');
-
-    diffReviewableView.model.getRenderedDiffFragment({
-        reviewRequestURL: review_base_url,
-        fileDiffID: filediff_id,
-        revision: revision,
-        interdiffRevision: interdiff_revision,
-        fileIndex: file_index,
-        chunkIndex: chunk_index,
-        linesOfContext: lines_of_context,
-    }, {
-        success: function(html) {
-            var key = 'file' + filediff_id,
-                $scrollAnchor,
-                tbodyID,
-                scrollAnchorSel,
-                scrollOffsetTop;
-
-            /*
-             * We want to position the new chunk or collapse button at
-             * roughly the same position as the chunk or collapse button
-             * that the user pressed. Figure out what it is exactly and what
-             * the scroll offsets are so we can later reposition the scroll
-             * offset.
-             */
-            if ($(link).hasClass('diff-collapse-btn')) {
-                $scrollAnchor = $(link);
-            } else {
-                $scrollAnchor = tbody;
-
-                if (lines_of_context === 0) {
-                    /*
-                     * We've expanded the entire chunk, so we'll be looking
-                     * for the collapse button.
-                     */
-                    tbodyID = /collapsed-(.*)/.exec($scrollAnchor[0].id)[1];
-                    tbodySel = 'img.diff-collapse-btn';
-                } else {
-                    tbodyID = $scrollAnchor[0].id;
-                }
-            }
-
-            scrollOffsetTop = $scrollAnchor.offset().top -
-                              $(window).scrollTop();
-
-            /*
-             * If we already expanded, we may have one or two loaded chunks
-             * adjacent to the header. We want to remove those, since we'll
-             * be generating new ones that include that data.
-             */
-            tbody.prev('.diff-header').remove();
-            tbody.next('.diff-header').remove();
-            tbody.prev('.loaded').remove();
-            tbody.next('.loaded').remove();
-
-            /*
-             * Replace the header with the new HTML. This may also include a
-             * new header.
-             */
-            tbody.replaceWith(html);
-            RB.addCommentFlags(diffReviewableView, table,
-                               gHiddenComments[key], key);
-
-            /* Get the new tbody for the header, if any, and try to center. */
-            if (tbodyID) {
-                var el = document.getElementById(tbodyID);
-
-                if (el) {
-                    $scrollAnchor = $(el);
-
-                    if (scrollAnchorSel) {
-                        $scrollAnchor = $scrollAnchor.find(scrollAnchorSel);
-                    }
-
-                    if ($scrollAnchor.length > 0) {
-                        $(window).scrollTop($scrollAnchor.offset().top -
-                                            scrollOffsetTop);
-                    }
-                }
-            }
-
-            /* Recompute the list of buttons for later use. */
-            gCollapseButtons = $('table.sidebyside .diff-collapse-btn');
-            updateCollapseButtonPos();
-
-            /* The selection rectangle may not update -- bug #1353. */
-            $(gAnchors[gSelectedAnchor]).highlightChunk();
-        }
-    });
-}
-
-
-/*
- * Update the positions of the collapse buttons.
- *
- * This will attempt to position the collapse buttons such that they're
- * in the center of the exposed part of the expanded chunk in the current
- * viewport.
- *
- * As the user scrolls, they'll be able to see the button scroll along
- * with them. It will not, however, leave the confines of the expanded
- * chunk.
- */
-function updateCollapseButtonPos() {
-    var windowTop = $(window).scrollTop(),
-        windowHeight = $(window).height(),
-        len = gCollapseButtons.length,
-        i;
-
-    for (i = 0; i < len; i++) {
-        var button = $(gCollapseButtons[i]),
-            parentEl = button.parents('tbody'),
-            parentOffset = parentEl.offset(),
-            parentTop = parentOffset.top,
-            parentHeight = parentEl.height(),
-            btnRight = button.data('rb-orig-right');
-
-        if (btnRight === undefined) {
-            /*
-             * We need to do this because on Firefox, the computed "right"
-             * position will change when we move the element, causing things
-             * to jump. We're really just trying to look up what the
-             * default is, so do that once and cache.
-             */
-            btnRight = parseInt(button.css('right'), 10);
-            button.data('rb-orig-right', btnRight);
-        }
-
-        /*
-         * We're going to first try to limit our processing to expanded
-         * chunks that are currently on the screen. We'll skip over any
-         * before those chunks, and stop once we're sure we have no further
-         * ones we can show.
-         */
-        if (parentTop >= windowTop + windowHeight) {
-            /* We hit the last one, so we're done. */
-            break;
-        } else if (parentTop + parentHeight <= windowTop) {
-            /* We're not there yet. */
-        } else {
-            var buttonHeight = button.outerHeight();
-
-            /* Center the button in the view. */
-            if (windowTop >= parentTop &&
-                windowTop + windowHeight <= parentTop + parentHeight) {
-                var btnParent = button.parent(),
-                    parentLeft = btnParent.offset().left;
-
-                /*
-                 * Position this fixed in the center of the screen. It'll be
-                 * less jumpy.
-                 */
-                button.css({
-                    position: 'fixed',
-                    left: parentLeft + btnParent.innerWidth() +
-                          btnRight - parentOffset.left,
-                    top: Math.round((windowHeight - buttonHeight) / 2)
-                });
-
-                /*
-                 * Since the expanded chunk is taking up the whole screen,
-                 * we have nothing else to process, so break.
-                 */
-                break;
-            } else {
-                var y1 = Math.max(windowTop, parentTop),
-                    y2 = Math.min(windowTop + windowHeight,
-                                  parentTop + parentHeight);
-
-                /*
-                 * The area doesn't take up the entire height of the
-                 * view. Switch back to an absolute position.
-                 */
-                button.css({
-                    position: 'absolute',
-                    left: null,
-                    top: y1 - parentTop +
-                         Math.round((y2 - y1 - buttonHeight) / 2)
-                });
-            }
-        }
-    }
-}
-
-
-/*
  * Toggles the display state of Whitespace chunks and lines.
  *
  * When a diff is loaded, by default, all whitespace only changes are shown.
@@ -756,9 +552,6 @@ $(document).ready(function() {
         /* We're not running in the diff viewer. No need for setup. */
         return;
     }
-
-    $(window).scroll(updateCollapseButtonPos);
-    $(window).resize(updateCollapseButtonPos);
 
     $("ul.controls li a.toggleWhitespaceButton").click(function() {
         toggleWhitespaceChunks();

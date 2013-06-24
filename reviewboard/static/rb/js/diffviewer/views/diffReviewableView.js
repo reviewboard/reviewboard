@@ -413,6 +413,8 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
 
     events: {
         'click .moved-to, .moved-from': '_onMovedLineClicked',
+        'click .diff-collapse-btn': '_onCollapseChunkClicked',
+        'click .diff-expand-btn': '_onExpandChunkClicked',
         'mouseup': '_onMouseUp'
     },
 
@@ -422,9 +424,19 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
     initialize: function() {
         RB.AbstractReviewableView.prototype.initialize.call(this);
 
+        _.bindAll(this, '_updateCollapseButtonPos');
+
         this._selector = new CommentRowSelector({
             el: this.el
         });
+
+        this._$collapseButtons = $();
+
+        /*
+         * Wrap this only once so we don't have to re-wrap every time
+         * the page scrolls.
+         */
+        this._$window = $(window);
     },
 
     /*
@@ -432,6 +444,8 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
      */
     remove: function() {
         RB.AbstractReviewableView.prototype.remove.call(this);
+
+        this._$window.off('scroll resize', this._updateCollapseButtonPos);
 
         this._selector.remove();
     },
@@ -441,6 +455,8 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
      */
     render: function() {
         this._selector.render();
+
+        this._$window.on('scroll resize', this._updateCollapseButtonPos);
 
         return this;
     },
@@ -595,6 +611,206 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
     },
 
     /*
+     * Update the positions of the collapse buttons.
+     *
+     * This will attempt to position the collapse buttons such that they're
+     * in the center of the exposed part of the expanded chunk in the current
+     * viewport.
+     *
+     * As the user scrolls, they'll be able to see the button scroll along
+     * with them. It will not, however, leave the confines of the expanded
+     * chunk.
+     */
+    _updateCollapseButtonPos: function() {
+        var windowTop,
+            windowHeight,
+            len = this._$collapseButtons.length,
+            $button,
+            $tbody,
+            parentOffset,
+            parentTop,
+            parentHeight,
+            btnRight,
+            $btnParent,
+            parentLeft,
+            y1,
+            y2,
+            i;
+
+        if (len === 0) {
+            return;
+        }
+
+        windowTop = this._$window.scrollTop();
+        windowHeight = this._$window.height();
+
+        for (i = 0; i < len; i++) {
+            $button = $(this._$collapseButtons[i]);
+            $tbody = $button.parents('tbody');
+            parentOffset = $tbody.offset();
+            parentTop = parentOffset.top;
+            parentHeight = $tbody.height();
+            btnRight = $button.data('rb-orig-right');
+
+            if (btnRight === undefined) {
+                /*
+                 * We need to do this because on Firefox, the computed "right"
+                 * position will change when we move the element, causing things
+                 * to jump. We're really just trying to look up what the
+                 * default is, so do that once and cache.
+                 */
+                btnRight = parseInt($button.css('right'), 10);
+                $button.data('rb-orig-right', btnRight);
+            }
+
+            /*
+             * We're going to first try to limit our processing to expanded
+             * chunks that are currently on the screen. We'll skip over any
+             * before those chunks, and stop once we're sure we have no further
+             * ones we can show.
+             */
+            if (parentTop >= windowTop + windowHeight) {
+                /* We hit the last one, so we're done. */
+                break;
+            } else if (parentTop + parentHeight <= windowTop) {
+                /* We're not there yet. */
+            } else {
+                /* Center the button in the view. */
+                if (   windowTop >= parentTop
+                    && windowTop + windowHeight <= parentTop + parentHeight) {
+                    if ($button.css('position') !== 'fixed') {
+                        $btnParent = $button.parent();
+                        parentLeft = $btnParent.offset().left;
+
+                        /*
+                         * Position this fixed in the center of the screen.
+                         * It'll be less jumpy.
+                         */
+                        $button.css({
+                            position: 'fixed',
+                            left: $button.offset().left,
+                            top: Math.round((windowHeight -
+                                             $button.outerHeight()) / 2)
+                        });
+                    }
+
+                    /*
+                     * Since the expanded chunk is taking up the whole screen,
+                     * we have nothing else to process, so break.
+                     */
+                    break;
+                } else {
+                    y1 = Math.max(windowTop, parentTop);
+                    y2 = Math.min(windowTop + windowHeight,
+                                  parentTop + parentHeight);
+
+                    /*
+                     * The area doesn't take up the entire height of the
+                     * view. Switch back to an absolute position.
+                     */
+                    $button.css({
+                        position: 'absolute',
+                        left: '',
+                        top: y1 - parentTop +
+                             Math.round((y2 - y1 - $button.outerHeight()) / 2)
+                    });
+                }
+            }
+        }
+    },
+
+    /*
+     * Expands or collapses a chunk in a diff.
+     *
+     * This is called internally when an expand or collapse button is pressed
+     * for a chunk. It will fetch the diff and render it, displaying any
+     * contained comments, and setting up the resulting expand or collapse
+     * buttons.
+     */
+    _expandOrCollapse: function($btn, expanding) {
+        var chunkIndex = $btn.data('chunk-index'),
+            linesOfContext = $btn.data('lines-of-context');
+
+        this.model.getRenderedDiffFragment({
+            chunkIndex: chunkIndex,
+            linesOfContext: linesOfContext
+        }, {
+            success: function(html) {
+                var key = 'file' + this.model.get('fileDiffID'),
+                    $tbody = $btn.parents('tbody'),
+                    $scrollAnchor,
+                    tbodyID,
+                    scrollAnchorID,
+                    scrollOffsetTop,
+                    newEl;
+
+                /*
+                 * We want to position the new chunk or collapse button at
+                 * roughly the same position as the chunk or collapse button
+                 * that the user pressed. Figure out what it is exactly and what
+                 * the scroll offsets are so we can later reposition the scroll
+                 * offset.
+                 */
+                if (expanding) {
+                    $scrollAnchor = this.$el;
+                    scrollAnchorID = $scrollAnchor[0].id;
+
+                    if (linesOfContext === 0) {
+                        /*
+                         * We've expanded the entire chunk, so we'll be looking
+                         * for the collapse button.
+                         */
+                        tbodyID = /collapsed-(.*)/.exec(scrollAnchorID)[1];
+                    } else {
+                        tbodyID = scrollAnchorID;
+                    }
+                } else {
+                    $scrollAnchor = $btn;
+                }
+
+                scrollOffsetTop = $scrollAnchor.offset().top -
+                                  this._$window.scrollTop();
+
+                /*
+                 * If we already expanded, we may have one or two loaded chunks
+                 * adjacent to the header. We want to remove those, since we'll
+                 * be generating new ones that include that data.
+                 */
+                $tbody.prev('.diff-header, .loaded').remove();
+                $tbody.next('.diff-header, .loaded').remove();
+
+                /*
+                 * Replace the header with the new HTML. This may also include a
+                 * new header.
+                 */
+                $tbody.replaceWith(html);
+                RB.addCommentFlags(this, this.$el, gHiddenComments[key], key);
+
+                /* Get the new tbody for the header, if any, and try to center. */
+                if (tbodyID) {
+                    newEl = document.getElementById(tbodyID);
+
+                    if (newEl) {
+                        $scrollAnchor = $(newEl);
+
+                        if ($scrollAnchor.length > 0) {
+                            this._$window.scrollTop(
+                                $scrollAnchor.offset().top -
+                                scrollOffsetTop);
+                        }
+                    }
+                }
+
+                /* Recompute the list of buttons for later use. */
+                this._$collapseButtons = this.$('.diff-collapse-btn');
+                this._updateCollapseButtonPos();
+
+                this.trigger('chunkExpansionChanged');
+            }
+        }, this);
+    },
+
+    /*
      * Handler for clicks on a "Moved to/from" flag.
      *
      * This will scroll to the location on the other end of the move,
@@ -636,6 +852,36 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
              $tbody.hasClass('replace'))) {
             this._gotoAnchor($tbody.find('a:first').attr('name'), false);
         }
+    },
+
+    /*
+     * Handler for Expand buttons.
+     *
+     * The Expand buttons will expand a collapsed chunk, either entirely
+     * or by certain amounts. It will fetch the new chunk contents and
+     * inject it into the diff viewer.
+     */
+    _onExpandChunkClicked: function(e) {
+        var $target = $(e.target);
+
+        if (!$target.hasClass('diff-expand-btn')) {
+            /* We clicked an image inside the link. Find the parent. */
+            $target = $target.parents('.diff-expand-btn');
+        }
+
+        e.preventDefault();
+        this._expandOrCollapse($target, true);
+    },
+
+    /*
+     * Handler for the Collapse button.
+     *
+     * The fully collapsed representation of that chunk will be fetched
+     * and put into the diff viewer in place of the expanded chunk.
+     */
+    _onCollapseChunkClicked: function(e) {
+        e.preventDefault();
+        this._expandOrCollapse($(e.target), false);
     }
 });
 
