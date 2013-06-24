@@ -14,7 +14,6 @@ var DnDDropOverlayView = Backbone.View.extend({
         'dragleave': '_onDragLeave',
         'drop': '_onDrop',
         'dragover': '_onDragOver',
-        'dragleave': '_onDragLeave',
         'mouseenter': '_onMouseEnter'
     },
 
@@ -142,7 +141,9 @@ RB.DnDUploader = Backbone.View.extend({
      * any.
      */
     _onDragEnter: function(event) {
-        if (!this._dropOverlay) {
+        if (!this._dropOverlay &&
+            _.indexOf(event.originalEvent.dataTransfer.types, 'Files') !== -1) {
+
             this._dropOverlay = new DnDDropOverlayView();
             this._dropOverlay.render().$el.appendTo(document.body);
             this._dropOverlay.on('filesDropped', function(files) {
