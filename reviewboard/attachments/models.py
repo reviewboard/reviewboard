@@ -33,15 +33,15 @@ class FileAttachment(models.Model):
 
         return self._review_ui
 
-    @property
-    def thumbnail(self):
+    def _get_thumbnail(self):
         """Returns the thumbnail for display."""
         return self.mimetype_handler.get_thumbnail()
 
-    @thumbnail.setter
-    def thumbnail(self, data):
+    def _set_thumbnail(self, data):
         """Set the thumbnail."""
         self.mimetype_handler.set_thumbnail(data)
+
+    thumbnail = property(_get_thumbnail, _set_thumbnail)
 
     @property
     def filename(self):

@@ -35,6 +35,10 @@ if sys.hexversion < 0x02050000:
                      'upgrade\n')
     sys.stderr.write('Python to a newer 2.x version (preferably 2.7).\n')
     sys.exit(1)
+elif sys.hexversion < 0x02060000:
+    markdown_requirement = 'markdown==2.2.1'
+else:
+    markdown_requirement = 'markdown>=2.3.1'
 
 
 # Make sure we're actually in the directory containing setup.py.
@@ -168,7 +172,7 @@ setup(name=PACKAGE_NAME,
           'Djblets>=0.7.15,<0.7.16',
           'django-pipeline>=1.2.24,<1.3',
           'docutils',
-          'markdown>=2.2.1',
+          markdown_requirement,
           'mimeparse>=0.1.3',
           'paramiko>=1.9.0',
           'Pygments>=1.5',
