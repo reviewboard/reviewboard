@@ -27,7 +27,7 @@ RB.FileAttachment = RB.BaseResource.extend({
     }, RB.BaseResource.prototype.defaults),
 
     rspNamespace: 'file_attachment',
-    payloadFileKey: 'path',
+    payloadFileKeys: ['path'],
 
     /*
      * Serializes the changes to the file attachment to a payload.

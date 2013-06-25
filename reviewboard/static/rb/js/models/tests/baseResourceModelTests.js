@@ -707,7 +707,7 @@ describe('models/BaseResource', function() {
 
         describe('With file upload support', function() {
             beforeEach(function() {
-                model.payloadFileKey = 'file';
+                model.payloadFileKeys = ['file'];
                 model.url = '/api/foos/';
                 model.toJSON = function(options) {
                     return {
@@ -757,6 +757,83 @@ describe('models/BaseResource', function() {
                     });
 
                     model.set('file', blob);
+                    model.save({
+                        success: function() {
+                            seenComplete = true;
+                        },
+                        boundary: boundary
+                    });
+                });
+
+                waitsFor(function() {
+                    return seenComplete;
+                });
+
+                runs(function() {
+                    expect(Backbone.Model.prototype.save).toHaveBeenCalled();
+                    expect(RB.apiCall).toHaveBeenCalled();
+                    expect($.ajax).toHaveBeenCalled();
+                });
+            });
+
+            it('With multiple files', function() {
+                var seenComplete = false,
+                    boundary = '-----multipartformboundary';
+
+                runs(function() {
+                    var blob1 = new Blob(['Hello world!'], {
+                            type: 'text/plain'
+                        }),
+                        blob2 = new Blob(['Goodbye world!'], {
+                            type: 'text/plain'
+                        });
+
+                    blob1.name = 'myfile1';
+                    blob2.name = 'myfile2';
+
+                    model.payloadFileKeys = ['file1', 'file2'];
+                    model.toJSON = function(options) {
+                        return {
+                            file1: this.get('file1'),
+                            file2: this.get('file2'),
+                            myfield: 'myvalue'
+                        };
+                    };
+
+                    spyOn($, 'ajax').andCallFake(function(request) {
+                        expect(request.type).toBe('POST');
+                        expect(request.processData).toBe(false);
+                        expect(request.contentType.indexOf(
+                            'multipart/form-data; boundary=')).toBe(0);
+                        expect(request.data).toBe(
+                            '--' + boundary + '\r\n' +
+                            'Content-Disposition: form-data; name="file1"' +
+                            '; filename="myfile1"\r\n' +
+                            'Content-Type: text/plain\r\n\r\n' +
+                            'Hello world!' +
+                            '\r\n' +
+                            '--' + boundary + '\r\n' +
+                            'Content-Disposition: form-data; name="file2"' +
+                            '; filename="myfile2"\r\n' +
+                            'Content-Type: text/plain\r\n\r\n' +
+                            'Goodbye world!' +
+                            '\r\n' +
+                            '--' + boundary + '\r\n' +
+                            'Content-Disposition: form-data; ' +
+                            'name="myfield"\r\n\r\n' +
+                            'myvalue\r\n' +
+                            '--' + boundary + '--\r\n\r\n');
+
+                        request.success({
+                            stat: 'ok',
+                            foo: {
+                                id: 42
+                            }
+                        });
+                    });
+
+                    model.set('file1', blob1);
+                    model.set('file2', blob2);
                     model.save({
                         success: function() {
                             seenComplete = true;
@@ -853,7 +930,7 @@ describe('models/BaseResource', function() {
                     };
                 };
 
-                spyOn(model, '_saveWithFile').andCallThrough();
+                spyOn(model, '_saveWithFiles').andCallThrough();
                 spyOn(Backbone, 'sync').andCallThrough();
                 spyOn(RB, 'apiCall').andCallThrough();
                 spyOn($, 'ajax');
@@ -863,7 +940,7 @@ describe('models/BaseResource', function() {
                     form: form
                 });
 
-                expect(model._saveWithFile).not.toHaveBeenCalled();
+                expect(model._saveWithFiles).not.toHaveBeenCalled();
                 expect(RB.apiCall).toHaveBeenCalled();
                 expect(form.ajaxSubmit).toHaveBeenCalled();
                 expect($.ajax).not.toHaveBeenCalled();

@@ -253,8 +253,8 @@ RB.BaseResource = Backbone.Model.extend({
      */
     _saveObject: function(options, context) {
         var url = _.result(this, 'url'),
-            file,
-            reader,
+            files = [],
+            readers = [],
             saveOptions;
 
         if (!url) {
@@ -284,19 +284,32 @@ RB.BaseResource = Backbone.Model.extend({
         saveOptions.attrs = options.attrs || this.toJSON(options);
 
         if (!options.form) {
-            if (this.payloadFileKey && window.File) {
-                /* See if there's a file in the attributes we're using. */
-                file = saveOptions.attrs[this.payloadFileKey];
+            if (this.payloadFileKeys && window.File) {
+                /* See if there are files in the attributes we're using. */
+                _.each(this.payloadFileKeys, function(key) {
+                    var file = saveOptions.attrs[key];
+                    if (file) {
+                        files.push(file);
+                    }
+                });
             }
         }
 
-        if (file) {
-            reader = new FileReader();
-            reader.onloadend = _.bind(function() {
-                this._saveWithFile(file, reader.result, saveOptions);
-            }, this);
+        if (files.length > 0) {
+            _.each(files, function(file) {
+                var reader = new FileReader(),
+                    testDone = function(reader) {
+                        return reader.readyState === FileReader.DONE;
+                    };
 
-            reader.readAsBinaryString(file);
+                readers.push(reader);
+                reader.onloadend = _.bind(function() {
+                    if (_.every(readers, testDone)) {
+                        this._saveWithFiles(files, readers, saveOptions);
+                    }
+                }, this);
+                reader.readAsBinaryString(file);
+            }, this);
         } else {
             Backbone.Model.prototype.save.call(this, {}, saveOptions);
         }
@@ -310,22 +323,30 @@ RB.BaseResource = Backbone.Model.extend({
      * we're saving. We cna then call the standard save function with this
      * payload as our data.
      */
-    _saveWithFile: function(file, fileData, options) {
+    _saveWithFiles: function(files, fileReaders, options) {
         var boundary = options.boundary ||
                        ('-----multipartformboundary' + new Date().getTime()),
             blob = [];
 
-        blob.push('--' + boundary + '\r\n');
-        blob.push('Content-Disposition: form-data; name="' +
-                  this.payloadFileKey + '"; filename="' + file.name + '"\r\n');
-        blob.push('Content-Type: ' + file.type + '\r\n');
-        blob.push('\r\n');
-        blob.push(fileData);
-        blob.push('\r\n');
+        _.each(_.zip(this.payloadFileKeys, files, fileReaders), function(data) {
+            var key = data[0],
+                name = data[1].name,
+                type = data[1].type,
+                fileData = data[2].result;
+
+            blob.push('--' + boundary + '\r\n');
+            blob.push('Content-Disposition: form-data; name="' +
+                      key + '"; filename="' + name + '"\r\n');
+            blob.push('Content-Type: ' + type + '\r\n');
+            blob.push('\r\n');
+            blob.push(fileData);
+            blob.push('\r\n');
+        });
 
         _.each(options.attrs, function(value, key) {
-            if (key !== this.payloadFileKey && value !== undefined &&
-                value !== null) {
+            if (   !_.contains(this.payloadFileKeys, key)
+                && value !== undefined
+                && value !== null) {
                 blob.push('--' + boundary + '\r\n');
                 blob.push('Content-Disposition: form-data; name="' + key +
                           '"\r\n');
