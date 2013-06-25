@@ -330,16 +330,19 @@ RB.BaseResource = Backbone.Model.extend({
 
         _.each(_.zip(this.payloadFileKeys, files, fileReaders), function(data) {
             var key = data[0],
-                name = data[1].name,
-                type = data[1].type,
-                fileData = data[2].result;
+                file = data[1],
+                reader = data[2];
+
+            if (!file || !reader) {
+                return;
+            }
 
             blob.push('--' + boundary + '\r\n');
             blob.push('Content-Disposition: form-data; name="' +
-                      key + '"; filename="' + name + '"\r\n');
-            blob.push('Content-Type: ' + type + '\r\n');
+                      key + '"; filename="' + file.name + '"\r\n');
+            blob.push('Content-Type: ' + file.type + '\r\n');
             blob.push('\r\n');
-            blob.push(fileData);
+            blob.push(reader.result);
             blob.push('\r\n');
         });
 
