@@ -8020,7 +8020,7 @@ class DefaultReviewerResourceTests(BaseWebAPITestCase):
 class ValidateDiffResourceTests(BaseWebAPITestCase):
     """Testing the ValidateDiffResource APIs."""
     fixtures = ['test_users', 'test_scmtools']
-    mimetype = _build_mimetype('validate-diffs')
+    mimetype = _build_mimetype('diff-validation')
 
     def test_post_diff(self):
         """Testing the POST validation/diffs/ API"""

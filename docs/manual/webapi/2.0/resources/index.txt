@@ -68,6 +68,8 @@ Resources
    session
    user-list
    user
+   validate-diff
+   validation
    watched-review-group-list
    watched-review-group
    watched-review-request-list

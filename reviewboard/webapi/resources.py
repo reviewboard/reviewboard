@@ -7497,14 +7497,22 @@ class ValidateDiffResource(DiffResource):
     request first.
     """
     singleton = True
-    name = 'diffs'
-    mimetype_item_resource_name = 'validate-diffs'
+    name = 'diff_validation'
+    uri_name = 'diffs'
     uri_object_key = None
 
-    allowed_methods = ('POST',)
+    allowed_methods = ('GET', 'POST',)
 
     item_child_resources = []
     list_child_resources = []
+
+    @webapi_check_local_site
+    @webapi_check_login_required
+    def get(self, request, *args, **kwargs):
+        """Returns links for using this resource."""
+        return 200, {
+            'links': self.get_links(request=request, *args, **kwargs),
+        }
 
     @webapi_check_local_site
     @webapi_login_required
@@ -7616,7 +7624,12 @@ class ValidationResource(DjbletsRootResource):
     def __init__(self, *args, **kwargs):
         super(ValidationResource, self).__init__([
             validate_diff_resource,
-        ], *args, **kwargs)
+        ], include_uri_templates=False, *args, **kwargs)
+
+    @augment_method_from(DjbletsRootResource)
+    def get(self, request, *args, **kwargs):
+        """Retrieves links to all the validation resources."""
+        pass
 
 
 validation_resource = ValidationResource()
@@ -7763,11 +7776,7 @@ class RootResource(DjbletsRootResource):
     @webapi_check_local_site
     @augment_method_from(DjbletsRootResource)
     def get(self, request, *args, **kwargs):
-        """Retrieves the list of top-level resources and templates.
-
-        This is a specialization of djblets.webapi.RootResource which does a
-        permissions check on the LocalSite.
-        """
+        """Retrieves the list of top-level resources and templates."""
         pass
 
 root_resource = RootResource()

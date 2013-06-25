@@ -1,0 +1,6 @@
+.. webapi-resource::
+   :classname: reviewboard.webapi.resources.ValidateDiffResource
+   :is-list:
+
+
+.. comment: vim: ft=rst et ts=3

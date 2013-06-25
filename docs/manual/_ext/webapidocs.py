@@ -305,7 +305,7 @@ class ResourceDirective(Directive):
         append_detail_row(tbody, "Child Resources", tocnode)
 
         # Anonymous Access
-        if is_list:
+        if is_list and not resource.singleton:
             getter = resource.get_list
         else:
             getter = resource.get
@@ -525,7 +525,8 @@ class ResourceDirective(Directive):
             raise ResourceNotFound(self, classname)
 
     def get_http_method_func(self, resource, http_method):
-        if http_method == 'GET' and 'is-list' in self.options:
+        if (http_method == 'GET' and 'is-list' in self.options and
+            not resource.singleton):
             method_name = 'get_list'
         else:
             method_name = resource.method_mapping[http_method]
