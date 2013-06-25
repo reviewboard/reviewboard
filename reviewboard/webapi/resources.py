@@ -7361,6 +7361,9 @@ class ValidateDiffResource(DiffResource):
 
     allowed_methods = ('POST',)
 
+    item_child_resources = []
+    list_child_resources = []
+
     @webapi_check_local_site
     @webapi_login_required
     @webapi_response_errors(DOES_NOT_EXIST, NOT_LOGGED_IN, PERMISSION_DENIED,
