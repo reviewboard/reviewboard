@@ -11,7 +11,7 @@ Bug Fixes
 * Fixed compatibility with Python 2.5.
 
 * Fixed the drop-down arrow by Support and the account name on older
-  versions of Internet Explorer. (:bug:`3107`)
+  versions of Internet Explorer. (:bug:`3017`)
 
 
 Contributors
