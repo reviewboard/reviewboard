@@ -7365,7 +7365,8 @@ class ValidateDiffResource(DiffResource):
     @webapi_login_required
     @webapi_response_errors(DOES_NOT_EXIST, NOT_LOGGED_IN, PERMISSION_DENIED,
                             REPO_FILE_NOT_FOUND, INVALID_FORM_DATA,
-                            INVALID_REPOSITORY, DIFF_EMPTY, DIFF_TOO_BIG)
+                            INVALID_REPOSITORY, DIFF_EMPTY, DIFF_TOO_BIG,
+                            DIFF_PARSE_ERROR)
     @webapi_request_fields(
         required={
             'repository': {
