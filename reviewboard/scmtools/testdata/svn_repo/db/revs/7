@@ -1,0 +1,46 @@
+id: 1.1.r7/0
+type: dir
+pred: 1.0.r5/875
+count: 5
+text: 5 830 32 32 2e974c2264d4dc4b4e14780048bdbfec
+cpath: /branches/branch1
+copyfrom: 5 /trunk
+
+PLAIN
+K 7
+branch1
+V 12
+dir 1.1.r7/0
+END
+ENDREP
+id: a.0.r7/192
+type: dir
+pred: a.0.r6/0
+count: 1
+text: 7 145 34 34 d7c94c63adaf3b5fca9d556a80fbc1ed
+cpath: /branches
+copyroot: 0 /
+
+PLAIN
+K 8
+branches
+V 14
+dir a.0.r7/192
+K 5
+trunk
+V 14
+dir 1.0.r5/875
+END
+ENDREP
+id: 0.0.r7/404
+type: dir
+pred: 0.0.r6/142
+count: 7
+text: 7 324 67 67 50161381d292b93e5102d1bc3e8e1b4d
+cpath: /
+copyroot: 0 /
+
+1._0.t6-1 add false false /branches/branch1
+5 /trunk
+
+404 530
