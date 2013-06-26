@@ -318,6 +318,10 @@ PIPELINE_JS = {
             'rb/js/models/tests/reviewRequestModelTests.js',
             'rb/js/models/tests/userSessionModelTests.js',
             'rb/js/pages/views/tests/reviewablePageViewTests.js',
+            'rb/js/resources/collections/tests/repositoryBranchesCollectionTests.js',
+            'rb/js/resources/collections/tests/repositoryCommitsCollectionTests.js',
+            'rb/js/resources/models/tests/repositoryBranchModelTests.js',
+            'rb/js/resources/models/tests/repositoryCommitModelTests.js',
             'rb/js/utils/tests/keyBindingUtilsTests.js',
             'rb/js/utils/tests/linkifyUtilsTests.js',
             'rb/js/utils/tests/propertyUtilsTests.js',
@@ -419,6 +423,16 @@ PIPELINE_JS = {
             'rb/js/reviews.js',
         ),
         'output_filename': 'rb/js/reviews.min.js',
+    },
+    'newReviewRequest': {
+        'source_filenames': (
+            'rb/js/resources/models/repositoryBranchModel.js',
+            'rb/js/resources/models/repositoryCommitModel.js',
+            'rb/js/resources/collections/repositoryBranchesCollection.js',
+            'rb/js/resources/collections/repositoryCommitsCollection.js',
+            'rb/js/resources/models/repositoryModel.js',
+        ),
+        'output_filename': 'rb/js/newReviewRequest.min.js',
     },
     'admin': {
         'source_filenames': (
