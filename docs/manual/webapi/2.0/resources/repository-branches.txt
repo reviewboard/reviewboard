@@ -1,0 +1,4 @@
+.. webapi-resource::
+   :classname: reviewboard.webapi.resources.RepositoryBranchesResource
+
+.. comment: vim: ft=rst et ts=3

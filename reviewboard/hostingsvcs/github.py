@@ -13,6 +13,7 @@ from reviewboard.hostingsvcs.errors import AuthorizationError, \
                                            SSHKeyAssociationError
 from reviewboard.hostingsvcs.forms import HostingServiceForm
 from reviewboard.hostingsvcs.service import HostingService
+from reviewboard.scmtools.core import Branch, Commit
 from reviewboard.scmtools.errors import FileNotFoundError
 from reviewboard.site.urlresolvers import local_site_reverse
 
@@ -252,6 +253,45 @@ class GitHub(HostingService):
         except (urllib2.URLError, urllib2.HTTPError):
             return False
 
+    def get_branches(self, repository):
+        url = self._build_api_url(repository, 'git/refs/heads')
+        rsp = self._api_get(url)
+
+        results = []
+        for ref in rsp:
+            refname = ref['ref']
+
+            if not refname.startswith('refs/heads/'):
+                continue
+
+            name = refname.split('/')[-1]
+            results.append(Branch(name, ref['object']['sha'],
+                                  default=(name == 'master')))
+
+        return results
+
+    def get_commits(self, repository, start=None):
+        resource = 'commits'
+        url = self._build_api_url(repository, resource)
+        if start:
+            url += '&sha=%s' % start
+
+        rsp = self._api_get(url)
+
+        results = []
+        for item in rsp:
+            commit = Commit(
+                item['commit']['author']['name'],
+                item['sha'],
+                item['commit']['committer']['date'],
+                item['commit']['message'])
+            if item['parents']:
+                commit.parent = item['parents'][0]['sha']
+
+            results.append(commit)
+
+        return results
+
     def is_ssh_key_associated(self, repository, key):
         if not key:
             return False
@@ -384,3 +424,20 @@ class GitHub(HostingService):
             self.get_api_url(self.account.hosting_url),
             owner,
             self.get_plan_field(plan, repository.extra_data, 'repo_name'))
+
+    def _api_get(self, url):
+        try:
+            data, headers = self._http_get(url)
+            return simplejson.loads(data)
+        except (urllib2.URLError, urllib2.HTTPError), e:
+            data = e.read()
+
+            try:
+                rsp = simplejson.loads(data)
+            except:
+                rsp = None
+
+            if rsp and 'message' in rsp:
+                raise Exception(rsp['message'])
+            else:
+                raise Exception(str(e))

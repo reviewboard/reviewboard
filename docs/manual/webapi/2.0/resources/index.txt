@@ -28,6 +28,8 @@ Resources
    hosting-service-account
    original-file
    patched-file
+   repository-branches
+   repository-commits
    repository-info
    repository-list
    repository

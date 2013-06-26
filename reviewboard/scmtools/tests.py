@@ -33,7 +33,8 @@ from reviewboard.hostingsvcs.service import HostingService, \
                                             register_hosting_service, \
                                             unregister_hosting_service
 from reviewboard.reviews.models import Group
-from reviewboard.scmtools.core import HEAD, PRE_CREATION, ChangeSet, Revision
+from reviewboard.scmtools.core import Branch, ChangeSet, Commit, Revision, \
+                                      HEAD, PRE_CREATION
 from reviewboard.scmtools.errors import SCMError, FileNotFoundError, \
                                         RepositoryNotFoundError, \
                                         AuthenticationError
@@ -810,6 +811,37 @@ class SubversionTests(SCMTestCase):
         self.assertTrue(files[0].binary)
         self.assertEqual(files[0].insert_count, 0)
         self.assertEqual(files[0].delete_count, 0)
+
+    def test_get_branches(self):
+        """Testing SVNTool.get_branches"""
+        branches = self.tool.get_branches()
+
+        self.assertEqual(len(branches), 2)
+        self.assertEqual(branches[0], Branch('trunk', '5', True))
+        self.assertEqual(branches[1], Branch('branch1', '7', False))
+
+    def test_get_commits(self):
+        """Testing SVNTool.get_commits"""
+        commits = self.tool.get_commits('5')
+
+        self.assertEqual(len(commits), 5)
+        self.assertEqual(
+            commits[0],
+            Commit('chipx86',
+                   '5',
+                   '2010-05-21T09:33:40.893946',
+                   'Add an unterminated keyword for testing bug #1523\n',
+                   '4'))
+
+        commits = self.tool.get_commits('7')
+        self.assertEqual(len(commits), 7)
+        self.assertEqual(
+            commits[1],
+            Commit('david',
+                   '6',
+                   '2013-06-13T07:43:04.725088',
+                   'Add a branches directory',
+                   '5'))
 
 
 class PerforceTests(SCMTestCase):

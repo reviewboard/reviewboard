@@ -6,6 +6,7 @@ from django.utils import simplejson
 
 from reviewboard.hostingsvcs.models import HostingServiceAccount
 from reviewboard.hostingsvcs.service import get_hosting_service
+from reviewboard.scmtools.core import Branch, Commit
 from reviewboard.scmtools.models import Repository
 
 
@@ -468,6 +469,120 @@ class GitHubTests(ServiceTests):
         body = simplejson.loads(http_post_data['kwargs']['body'])
         self.assertEqual(body['client_id'], client_id)
         self.assertEqual(body['client_secret'], client_secret)
+
+    def test_get_branches(self):
+        """Testing GitHub get_branches implementation"""
+        branches_api_response = simplejson.dumps([
+            {
+                'ref': 'refs/heads/master',
+                'object': {
+                    'sha': '859d4e148ce3ce60bbda6622cdbe5c2c2f8d9817',
+                }
+            },
+            {
+                'ref': 'refs/heads/release-1.7.x',
+                'object': {
+                    'sha': '92463764015ef463b4b6d1a1825fee7aeec8cb15',
+                }
+            },
+            {
+                'ref': 'refs/tags/release-1.7.11',
+                'object': {
+                    'sha': 'f5a35f1d8a8dcefb336a8e3211334f1f50ea7792',
+                }
+            },
+        ])
+
+        def _http_get(self, *args, **kwargs):
+            return branches_api_response, None
+
+        self.service_class._http_get = _http_get
+
+        account = self._get_hosting_account()
+        account.data['authorization'] = {'token': 'abc123'}
+
+        repository = Repository(hosting_account=account)
+        repository.extra_data = {
+            'repository_plan': 'public',
+            'github_public_repo_name': 'myrepo',
+        }
+
+        service = account.service
+        branches = service.get_branches(repository)
+
+        self.assertEqual(len(branches), 2)
+        self.assertEqual(
+            branches,
+            [
+                Branch('master',
+                       '859d4e148ce3ce60bbda6622cdbe5c2c2f8d9817',
+                       True),
+                Branch('release-1.7.x',
+                       '92463764015ef463b4b6d1a1825fee7aeec8cb15',
+                       False),
+            ])
+
+    def test_get_commits(self):
+        """Testing GitHub get_commits implementation"""
+        commits_api_response = simplejson.dumps([
+            {
+                'commit': {
+                    'author': { 'name': 'Christian Hammond' },
+                    'committer': { 'date': '2013-06-25T23:31:22Z' },
+                    'message': 'Fixed the bug number for the blacktriangledown bug.',
+                },
+                'sha': '859d4e148ce3ce60bbda6622cdbe5c2c2f8d9817',
+                'parents': [ { 'sha': '92463764015ef463b4b6d1a1825fee7aeec8cb15' } ],
+            },
+            {
+                'commit': {
+                    'author': { 'name': 'Christian Hammond' },
+                    'committer': { 'date': '2013-06-25T23:30:59Z' },
+                    'message': "Merge branch 'release-1.7.x'",
+                },
+                'sha': '92463764015ef463b4b6d1a1825fee7aeec8cb15',
+                'parents': [
+                    { 'sha': 'f5a35f1d8a8dcefb336a8e3211334f1f50ea7792' },
+                    { 'sha': '6c5f3465da5ed03dca8128bb3dd03121bd2cddb2' },
+                ],
+            },
+            {
+                'commit': {
+                    'author': { 'name': 'David Trowbridge' },
+                    'committer': { 'date': '2013-06-25T22:41:09Z' },
+                    'message': 'Add DIFF_PARSE_ERROR to the ValidateDiffResource.create error list.',
+                },
+                'sha': 'f5a35f1d8a8dcefb336a8e3211334f1f50ea7792',
+                'parents': [],
+            }
+        ])
+
+        def _http_get(self, *args, **kwargs):
+            return commits_api_response, None
+
+        self.service_class._http_get = _http_get
+
+        account = self._get_hosting_account()
+        account.data['authorization'] = {'token': 'abc123'}
+
+        repository = Repository(hosting_account=account)
+        repository.extra_data = {
+            'repository_plan': 'public',
+            'github_public_repo_name': 'myrepo',
+        }
+
+        service = account.service
+        commits = service.get_commits(
+            repository, '859d4e148ce3ce60bbda6622cdbe5c2c2f8d9817')
+
+        self.assertEqual(len(commits), 3)
+        self.assertEqual(commits[0].parent, commits[1].id)
+        self.assertEqual(commits[1].parent, commits[2].id)
+        self.assertEqual(commits[0].date, '2013-06-25T23:31:22Z')
+        self.assertEqual(commits[1].id,
+                         '92463764015ef463b4b6d1a1825fee7aeec8cb15')
+        self.assertEqual(commits[2].author_name, 'David Trowbridge')
+        self.assertEqual(commits[2].parent, '')
 
     def _get_repo_api_url(self, plan, fields):
         account = self._get_hosting_account()

@@ -140,6 +140,9 @@ class Repository(models.Model):
 
     objects = RepositoryManager()
 
+    BRANCHES_CACHE_PERIOD = 60 * 5 # 5 minutes
+    COMMITS_CACHE_PERIOD = 60 * 60 * 24 # 1 day
+
     def get_scmtool(self):
         cls = self.tool.get_scmtool_class()
         return cls(self)
@@ -192,6 +195,49 @@ class Repository(models.Model):
             cache_memoize(key, lambda: '1')
 
         return exists
+
+    def get_branches(self):
+        """Returns a list of branches."""
+        hosting_service = self.hosting_service
+
+        cache_key = make_cache_key('repository-branches:%s' % self.pk)
+        if hosting_service:
+            branches_callable = lambda: hosting_service.get_branches(self)
+        else:
+            branches_callable = self.get_scmtool().get_branches
+
+        return cache_memoize(cache_key, branches_callable,
+                             self.BRANCHES_CACHE_PERIOD)
+
+    def get_commit_cache_key(self, commit):
+        return 'repository-commit:%s:%s' % (self.pk, commit)
+
+    def get_commits(self, start=None):
+        """Returns a list of commits.
+
+        This is paginated via the 'start' parameter. Any exceptions are
+        expected to be handled by the caller.
+        """
+        hosting_service = self.hosting_service
+
+        cache_key = make_cache_key('repository-commits:%s:%s' % (self.pk, start))
+        if hosting_service:
+            commits_callable = lambda: hosting_service.get_commits(self, start)
+        else:
+            commits_callable = lambda: self.get_scmtool().get_commits(start)
+
+        # We cache both the entire list for 'start', as well as each individual
+        # commit. This allows us to reduce API load when people are looking at
+        # the "new review request" page more frequently than they're pushing
+        # code, and will usually save 1 API request when they go to actually
+        # create a new review request.
+        commits = cache_memoize(cache_key, commits_callable)
+
+        for commit in commits:
+            cache.set(self.get_commit_cache_key(commit.id),
+                      commit, self.COMMITS_CACHE_PERIOD)
+
+        return commits
 
     def is_accessible_by(self, user):
         """Returns whether or not the user has access to the repository.

@@ -44,6 +44,34 @@ class Revision(object):
         return '<Revision: %s>' % self.name
 
 
+class Branch(object):
+    def __init__(self, name='', commit='', default=False):
+        self.name = name
+        self.commit = commit
+        self.default = default
+
+    def __eq__(self, other):
+        return (self.name == other.name and
+                self.commit == other.commit and
+                self.default == other.default)
+
+
+class Commit(object):
+    def __init__(self, author_name='', id='', date='', message='', parent=''):
+        self.author_name = author_name
+        self.id = id
+        self.date = date
+        self.message = message
+        self.parent = parent
+
+    def __eq__(self, other):
+        return (self.author_name == other.author_name and
+                self.id == other.id and
+                self.date == other.date and
+                self.message == other.message and
+                self.parent == other.parent)
+
+
 HEAD = Revision("HEAD")
 UNKNOWN = Revision('UNKNOWN')
 PRE_CREATION = Revision("PRE-CREATION")
@@ -100,6 +128,28 @@ class SCMTool(object):
         raise NotImplementedError
 
     def get_repository_info(self):
+        raise NotImplementedError
+
+    def get_branches(self):
+        """Get a list of all branches in the repositories.
+
+        This should be implemented by subclasses, and is expected to return a
+        list of Branch objects. One (and only one) of those objects should have
+        the "default" field set to True.
+        """
+        raise NotImplementedError
+
+    def get_commits(self, start):
+        """Get a list of commits backward in history from a given starting point.
+
+        This should be implemented by subclasses, and is expected to return a
+        list of Commit objects (usually 30, but this is flexible depending on
+        the limitations of the APIs provided.
+
+        This can be called multiple times in succession using the "parent" field
+        of the last entry as the start parameter in order to paginate through
+        the history of commits in the repository.
+        """
         raise NotImplementedError
 
     def get_fields(self):

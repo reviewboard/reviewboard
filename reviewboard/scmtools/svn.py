@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import datetime
 import logging
 import os
 import re
@@ -7,7 +8,8 @@ import urlparse
 import weakref
 
 try:
-    from pysvn import ClientError, Revision, opt_revision_kind
+    from pysvn import ClientError, Revision, opt_revision_kind, \
+                      SVN_DIRENT_CREATED_REV
 except ImportError:
     pass
 
@@ -15,7 +17,8 @@ from django.utils.translation import ugettext as _
 
 from reviewboard.diffviewer.parser import DiffParser
 from reviewboard.scmtools.certs import Certificate
-from reviewboard.scmtools.core import SCMTool, HEAD, PRE_CREATION, UNKNOWN
+from reviewboard.scmtools.core import Branch, Commit, SCMTool, \
+                                      HEAD, PRE_CREATION, UNKNOWN
 from reviewboard.scmtools.errors import AuthenticationError, \
                                         FileNotFoundError, \
                                         RepositoryNotFoundError, \
@@ -194,6 +197,69 @@ class SVNTool(SCMTool):
             return keywords.get(normpath)
 
         return self._do_on_path(get_file_keywords, path, revision)
+
+    def get_branches(self):
+        """Returns a list of branches.
+
+        This assumes the standard layout in the repository."""
+        results = []
+
+        trunk, unused = self.client.list(self.__normalize_path('trunk'),
+                                         dirent_fields=SVN_DIRENT_CREATED_REV,
+                                         recurse=False)[0]
+        results.append(Branch('trunk', str(trunk['created_rev'].number), True))
+
+        try:
+            branches = self.client.list(
+                self.__normalize_path('branches'),
+                dirent_fields=SVN_DIRENT_CREATED_REV)[1:]
+            for branch, unused in branches:
+                results.append(Branch(
+                    branch['path'].split('/')[-1],
+                    str(branch['created_rev'].number)))
+        except ClientError:
+            # It's possible there aren't any branches. Ignore errors for this
+            # part.
+            pass
+
+        return results
+
+    def get_commits(self, start):
+        """Return a list of commits."""
+        commits = self.client.log(
+            self.repopath,
+            revision_start=Revision(opt_revision_kind.number,
+                                    int(start)),
+            limit=31)
+
+        results = []
+
+        # We fetch one more commit than we care about, because the entries in
+        # the svn log don't include the parent revision.
+        for i in range(len(commits) - 1):
+            commit = commits[i]
+            parent = commits[i + 1]
+
+            date = datetime.datetime.utcfromtimestamp(commit['date'])
+            results.append(Commit(
+                commit['author'],
+                str(commit['revision'].number),
+                date.isoformat(),
+                commit['message'],
+                str(parent['revision'].number)))
+
+        # If there were fewer than 31 commits fetched, also include the last one
+        # in the list so we don't leave off the initial revision.
+        if len(commits) < 31:
+            commit = commits[-1]
+            date = datetime.datetime.utcfromtimestamp(commit['date'])
+            results.append(Commit(
+                commit['author'],
+                str(commit['revision'].number),
+                date.isoformat(),
+                commit['message']))
+
+        return results
 
     def normalize_patch(self, patch, filename, revision=HEAD):
         """

@@ -91,6 +91,28 @@ class HostingService(object):
 
         return repository.get_scmtool().file_exists(path, revision)
 
+    def get_branches(self, repository):
+        """Get a list of all branches in the repositories.
+
+        This should be implemented by subclasses, and is expected to return a
+        list of Branch objects. One (and only one) of those objects should have
+        the "default" field set to True.
+        """
+        raise NotImplementedError
+
+    def get_commits(self, repository, start=None):
+        """Get a list of commits backward in history from a given starting point.
+
+        This should be implemented by subclasses, and is expected to return a
+        list of Commit objects (usually 30, but this is flexible depending on
+        the limitations of the APIs provided.
+
+        This can be called multiple times in succession using the "parent" field
+        of the last entry as the start parameter in order to paginate through
+        the history of commits in the repository.
+        """
+        raise NotImplementedError
+
     @classmethod
     def get_repository_fields(cls, username, hosting_url, plan, tool_name,
                               field_vars):

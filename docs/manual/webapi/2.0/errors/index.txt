@@ -30,6 +30,7 @@ Errors
    221-file-retrieval-error.txt
    222-hosting-service-auth-error.txt
    223-group-already-exists.txt
+   224-diff-parse-error.txt
 
 
 .. comment: vim: ft=rst et ts=3

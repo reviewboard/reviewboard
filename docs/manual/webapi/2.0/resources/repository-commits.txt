@@ -1,0 +1,5 @@
+.. webapi-resource::
+   :classname: reviewboard.webapi.resources.RepositoryCommitsResource
+   :hide-examples:
+
+.. comment: vim: ft=rst et ts=3
