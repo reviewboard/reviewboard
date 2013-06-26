@@ -15,6 +15,8 @@ RB.AbstractCommentBlock = Backbone.Model.extend({
         hasDraft: false,
         canDelete: false,
         draftComment: null,
+        reviewRequest: null,
+        review: null,
         serializedComments: [],
         count: 0
     },
@@ -25,6 +27,11 @@ RB.AbstractCommentBlock = Backbone.Model.extend({
     initialize: function() {
         var comments = this.get('serializedComments'),
             newSerializedComments = [];
+
+        console.assert(this.get('reviewRequest'),
+                       'reviewRequest must be provided');
+        console.assert(this.get('review'),
+                       'review must be provided');
 
         /*
          * Find out if there's any draft comments, and filter them out of the

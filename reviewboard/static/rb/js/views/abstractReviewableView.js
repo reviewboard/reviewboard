@@ -71,7 +71,7 @@ RB.AbstractReviewableView = Backbone.View.extend({
 
         _.extend(opts,
                  _.pick(this.model.attributes, defaultCommentBlockFields));
-        this.model.commentBlocks.add(opts);
+        this.model.createCommentBlock(opts);
     },
 
     /*

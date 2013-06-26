@@ -14,7 +14,7 @@ RB.FileAttachmentReviewable = RB.AbstractReviewable.extend({
      * reviewable.
      */
     addCommentBlocks: function(serializedComments) {
-        this.commentBlocks.add(_.extend({
+        this.createCommentBlock(_.extend({
             fileAttachmentID: this.get('fileAttachmentID'),
             serializedComments: serializedComments || []
         }, this.commentBlockModel.prototype.parse(

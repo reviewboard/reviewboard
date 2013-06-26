@@ -68,11 +68,11 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
      * in the diff viewer. The anchors on the page will be rebuilt. This will
      * then trigger the loading of the next file.
      */
-    queueLoadDiff: function(reviewRequestURL, fileDiffID, fileDiffRevision,
+    queueLoadDiff: function(fileDiffID, fileDiffRevision,
                             interFileDiffID, interdiffRevision,
                             fileIndex, serializedComments) {
         var diffReviewable = new RB.DiffReviewable({
-            reviewRequestURL: reviewRequestURL,
+            reviewRequest: this.reviewRequest,
             fileIndex: fileIndex,
             fileDiffID: fileDiffID,
             interFileDiffID: interFileDiffID,

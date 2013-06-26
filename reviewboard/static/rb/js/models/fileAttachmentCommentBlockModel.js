@@ -23,9 +23,8 @@ RB.FileAttachmentCommentBlock = RB.AbstractCommentBlock.extend({
      * data to be stored along with the comment.
      */
     createComment: function(id) {
-        var review = gReviewRequest.createReview(),
-            comment = review.createFileAttachmentComment(
-                id, this.get('fileAttachmentID'));
+        var comment = this.get('review').createFileAttachmentComment(
+            id, this.get('fileAttachmentID'));
 
         _.extend(comment.get('extraData'),
                  _.pick(this.attributes, this.serializedFields));

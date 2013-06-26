@@ -3,7 +3,6 @@
  */
 RB.DiffReviewable = RB.AbstractReviewable.extend({
     defaults: _.defaults({
-        reviewRequestURL: null,
         fileIndex: null,
         fileDiffID: null,
         interFileDiffID: null,
@@ -77,7 +76,7 @@ RB.DiffReviewable = RB.AbstractReviewable.extend({
             revisionStr += '-' + interdiffRevision;
         }
 
-        return this.get('reviewRequestURL') + 'diff/' + revisionStr +
-               '/fragment/' + this.get('fileDiffID') + '/';
+        return this.get('reviewRequest').get('reviewURL') + 'diff/' +
+               revisionStr + '/fragment/' + this.get('fileDiffID') + '/';
     }
 });

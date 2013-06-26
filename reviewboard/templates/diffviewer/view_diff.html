@@ -231,8 +231,7 @@
 <script>
     $(document).ready(function() {
         RB.currentPage.queueLoadDiff(
-            "{{base_url}}", "{{file.filediff.id}}",
-            "{{file.filediff.diffset.revision}}",
+            "{{file.filediff.id}}", "{{file.filediff.diffset.revision}}",
 {% if file.interfilediff %}
             "{{file.interfilediff.id}}", "{{file.interfilediff.diffset.revision}}",
 {% else %}

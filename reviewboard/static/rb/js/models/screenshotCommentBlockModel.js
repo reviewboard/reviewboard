@@ -18,7 +18,7 @@ RB.ScreenshotCommentBlock = RB.AbstractCommentBlock.extend({
      * region.
      */
     createComment: function(id) {
-        return gReviewRequest.createReview().createScreenshotComment(
+        return this.get('review').createScreenshotComment(
             id, this.get('screenshotID'), this.get('x'), this.get('y'),
             this.get('width'), this.get('height'));
     }

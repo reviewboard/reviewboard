@@ -65,6 +65,7 @@ describe('diffviewer/views/DiffReviewableView', function() {
             ' <% }); %>',
             '</table>'
         ].join('')),
+        reviewRequest,
         $container,
         view;
 
@@ -79,6 +80,8 @@ describe('diffviewer/views/DiffReviewableView', function() {
 
     beforeEach(function() {
         $container = $('<div/>').appendTo($testsScratch);
+
+        reviewRequest = new RB.ReviewRequest();
     });
 
     afterEach(function() {
@@ -91,7 +94,9 @@ describe('diffviewer/views/DiffReviewableView', function() {
 
         beforeEach(function() {
             view = new RB.DiffReviewableView({
-                model: new RB.DiffReviewable(),
+                model: new RB.DiffReviewable({
+                    reviewRequest: reviewRequest
+                }),
                 el: $(diffTableTemplate({
                     chunks: [
                         {
@@ -555,6 +560,7 @@ describe('diffviewer/views/DiffReviewableView', function() {
 
         beforeEach(function() {
             model = new RB.DiffReviewable({
+                reviewRequest: reviewRequest,
                 fileIndex: 1,
                 fileDiffID: 10,
                 revision: 1

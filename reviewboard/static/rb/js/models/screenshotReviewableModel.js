@@ -16,7 +16,7 @@ RB.ScreenshotReviewable = RB.AbstractReviewable.extend({
      * reviewable.
      */
     addCommentBlocks: function(serializedComments) {
-        this.commentBlocks.add({
+        this.createCommentBlock({
             screenshotID: this.get('screenshotID'),
             x: serializedComments[0].x,
             y: serializedComments[0].y,

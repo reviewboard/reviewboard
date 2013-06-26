@@ -11,6 +11,7 @@
     $(document).ready(function() {
         var view = new RB.ImageReviewableView({
             model: new RB.ScreenshotReviewable({
+                reviewRequest: RB.currentPage.reviewRequest,
                 caption: '{{screenshot.caption}}',
                 imageURL: '{{screenshot.image.url}}',
                 screenshotID: '{{screenshot.id}}',

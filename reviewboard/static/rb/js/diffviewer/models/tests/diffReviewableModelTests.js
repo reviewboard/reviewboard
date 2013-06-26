@@ -1,5 +1,6 @@
 describe('diffviewer/models/DiffReviewable', function() {
-    var callbacks;
+    var callbacks,
+        reviewRequest;
 
     beforeEach(function() {
         callbacks = {
@@ -7,6 +8,10 @@ describe('diffviewer/models/DiffReviewable', function() {
             error: function() {},
             complete: function() {}
         };
+
+        reviewRequest = new RB.ReviewRequest({
+            reviewURL: '/r/1/'
+        });
 
         spyOn(callbacks, 'success');
         spyOn(callbacks, 'error');
@@ -16,9 +21,9 @@ describe('diffviewer/models/DiffReviewable', function() {
     describe('getRenderedDiff', function() {
         it('Without interdiffs', function() {
             var diffReviewable = new RB.DiffReviewable({
+                reviewRequest: reviewRequest,
                 fileDiffID: 3,
                 fileIndex: 4,
-                reviewRequestURL: '/r/1/',
                 revision: 2
             });
 
@@ -41,9 +46,9 @@ describe('diffviewer/models/DiffReviewable', function() {
 
         it('With interdiffs', function() {
             var diffReviewable = new RB.DiffReviewable({
+                reviewRequest: reviewRequest,
                 fileDiffID: 3,
                 fileIndex: 4,
-                reviewRequestURL: '/r/1/',
                 revision: 2,
                 interdiffRevision: 3
             });
@@ -69,9 +74,9 @@ describe('diffviewer/models/DiffReviewable', function() {
     describe('getRenderedDiffFragment', function() {
         it('Without interdiffs', function() {
             var diffReviewable = new RB.DiffReviewable({
+                reviewRequest: reviewRequest,
                 fileDiffID: 3,
                 fileIndex: 5,
-                reviewRequestURL: '/r/1/',
                 revision: 2
             });
 
@@ -98,9 +103,9 @@ describe('diffviewer/models/DiffReviewable', function() {
 
         it('With interdiffs', function() {
             var diffReviewable = new RB.DiffReviewable({
+                reviewRequest: reviewRequest,
                 fileDiffID: 3,
                 fileIndex: 5,
-                reviewRequestURL: '/r/1/',
                 revision: 2,
                 interdiffRevision: 3
             });
