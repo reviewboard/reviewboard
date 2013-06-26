@@ -114,11 +114,12 @@ CommentRowSelector = Backbone.View.extend({
          * Selection was finalized. Create the comment block
          * and show the comment dialog.
          */
-        commentBlock = new RB.DiffCommentBlock(this._$begin,
-                                               this._$end,
-                                               this._beginLineNum,
-                                               this._endLineNum);
-        commentBlock.showCommentDlg();
+        this.options.reviewableView.createAndEditCommentBlock({
+            beginLineNum: this._beginLineNum,
+            endLineNum: this._endLineNum,
+            $beginRow: this._$begin,
+            $endRow: this._$end
+        });
     },
 
     /*
@@ -408,7 +409,7 @@ CommentRowSelector = Backbone.View.extend({
 RB.DiffReviewableView = RB.AbstractReviewableView.extend({
     tagName: 'table',
 
-    commentBlockView: RB.AbstractCommentBlockView,
+    commentBlockView: RB.DiffCommentBlockView,
     commentsListName: 'diff_comments',
 
     events: {
@@ -422,14 +423,17 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
      * Initializes the reviewable for a file's diff.
      */
     initialize: function() {
-        RB.AbstractReviewableView.prototype.initialize.call(this);
+        _.super(this).initialize.call(this);
 
         _.bindAll(this, '_updateCollapseButtonPos');
 
         this._selector = new CommentRowSelector({
-            el: this.el
+            el: this.el,
+            reviewableView: this
         });
 
+        this._hiddenCommentBlockViews = [];
+        this._visibleCommentBlockViews = [];
         this._$collapseButtons = $();
 
         /*
@@ -437,6 +441,8 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
          * the page scrolls.
          */
         this._$window = $(window);
+
+        this.on('commentBlockViewAdded', this._placeCommentBlockView, this);
     },
 
     /*
@@ -454,6 +460,8 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
      * Renders the reviewable.
      */
     render: function() {
+        _.super(this).render.call(this);
+
         this._selector.render();
 
         this._$window.on('scroll resize', this._updateCollapseButtonPos);
@@ -468,7 +476,7 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
      * the matching line number. It will then return the row element,
      * if found.
      */
-    findLineNumRow: function(lineNum, startRow, endRow) {
+    _findLineNumRow: function(lineNum, startRow, endRow) {
         var row = null,
             table = this.el,
             rowOffset = 1, // Get past the headers.
@@ -608,6 +616,87 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
      */
     _gotoAnchor: function(name, scroll) {
         return RB.scrollToAnchor($("a[name='" + name + "']"), scroll);
+    },
+
+    /*
+     * Places a CommentBlockView on the page.
+     *
+     * This will compute the row range for the CommentBlockView and then
+     * render it to the screen, if the row range exists.
+     *
+     * If it doesn't exist yet, the CommentBlockView will be stored in the
+     * list of hidden comment blocks for later rendering.
+     */
+    _placeCommentBlockView: function(commentBlockView) {
+        var commentBlock = commentBlockView.model,
+            numLines = commentBlock.getNumLines(),
+            beginLineNum = commentBlock.get('beginLineNum'),
+            endLineNum = commentBlock.get('endLineNum'),
+            beginRowEl = this._findLineNumRow(beginLineNum,
+                                              prevBeginRowIndex),
+            prevBeginRowIndex,
+            endRowEl;
+
+        if (beginRowEl) {
+            prevBeginRowIndex = beginRowEl.rowIndex;
+
+            endRowEl = (endLineNum === beginLineNum
+                        ? beginRowEl
+                        : this._findLineNumRow(
+                            endLineNum,
+                            prevBeginRowIndex,
+                            prevBeginRowIndex + numLines - 1));
+
+            /*
+             * Note that endRow might be null if it exists in a collapsed
+             * region, so we can get away with just using beginRow if we
+             * need to.
+             */
+            commentBlockView.setRows($(beginRowEl), $(endRowEl || beginRowEl));
+            commentBlockView.$el.appendTo(
+                commentBlockView.$beginRow[0].cells[0]);
+            this._visibleCommentBlockViews.push(commentBlockView);
+        } else {
+            this._hiddenCommentBlockViews.push(commentBlockView);
+        }
+
+        return prevBeginRowIndex;
+    },
+
+    /*
+     * Places any hidden comment blocks onto the diff viewer.
+     */
+    _placeHiddenCommentBlockViews: function() {
+        var hiddenCommentBlockViews = this._hiddenCommentBlockViews,
+            prevBeginRowIndex;
+
+        this._hiddenCommentBlockViews = [];
+
+        _.each(hiddenCommentBlockViews, function(commentBlockView) {
+            prevBeginRowIndex = this._placeCommentBlockView(commentBlockView,
+                                                            prevBeginRowIndex);
+        }, this);
+    },
+
+    _hideRemovedCommentBlockViews: function() {
+        var visibleCommentBlockViews = this._visibleCommentBlockViews;
+
+        this._visibleCommentBlockViews = [];
+
+        _.each(visibleCommentBlockViews, function(commentBlockView) {
+            if (commentBlockView.$el.is(':visible')) {
+                this._visibleCommentBlockViews.push(commentBlockView);
+            } else {
+                this._hiddenCommentBlockViews.push(commentBlockView);
+            }
+        }, this);
+
+        /*
+         * Sort these by line number so we can efficiently place them later.
+         */
+        _.sortBy(this._hiddenCommentBlockViews, function(commentBlockView) {
+            return commentBlockView.model.get('beginLineNum');
+        });
     },
 
     /*
@@ -784,7 +873,12 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
                  * new header.
                  */
                 $tbody.replaceWith(html);
-                RB.addCommentFlags(this, this.$el, gHiddenComments[key], key);
+
+                if (expanding) {
+                    this._placeHiddenCommentBlockViews();
+                } else {
+                    this._hideRemovedCommentBlockViews();
+                }
 
                 /* Get the new tbody for the header, if any, and try to center. */
                 if (tbodyID) {

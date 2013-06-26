@@ -38,13 +38,13 @@ RB.Review = RB.BaseResource.extend({
         };
     },
 
-    createDiffComment: function(id, filediff, interfilediff, beginLineNum,
+    createDiffComment: function(id, fileDiffID, interFileDiffID, beginLineNum,
                                 endLineNum) {
         return new RB.DiffComment({
             parentObject: this,
             id: id,
-            fileDiffID: filediff ? filediff.id : null,
-            interFileDiffID: interfilediff ? interfilediff.id : null,
+            fileDiffID: fileDiffID,
+            interFileDiffID: interFileDiffID,
             beginLineNum: beginLineNum,
             endLineNum: endLineNum
         });

@@ -10,8 +10,25 @@ RB.DiffReviewable = RB.AbstractReviewable.extend({
         interdiffRevision: null
     }, RB.AbstractReviewable.prototype.defaults),
 
-    commentBlockModel: RB.AbstractCommentBlock,
+    commentBlockModel: RB.DiffCommentBlock,
     defaultCommentBlockFields: ['fileDiffID', 'interFileDiffID'],
+
+    /*
+     * Adds comment blocks for the serialized comments passed to the
+     * reviewable.
+     */
+    addCommentBlocks: function(serializedComments) {
+        this.createCommentBlock({
+            reviewRequest: this.get('reviewRequest'),
+            review: this.get('review'),
+            fileDiffID: this.get('fileDiffID'),
+            interFileDiffID: this.get('interFileDiffID'),
+            beginLineNum: serializedComments.linenum,
+            endLineNum: serializedComments.linenum +
+                        serializedComments.num_lines - 1,
+            serializedComments: serializedComments.comments || []
+        });
+    },
 
     /*
      * Returns the rendered diff for a file.
@@ -34,7 +51,8 @@ RB.DiffReviewable = RB.AbstractReviewable.extend({
      * as the argument to the success callback.
      */
     getRenderedDiffFragment: function(options, callbacks, context) {
-        console.assert(options.chunkIndex, 'chunkIndex must be provided');
+        console.assert(options.chunkIndex !== undefined,
+                       'chunkIndex must be provided');
 
         this._fetchFragment({
             url: this._buildRenderedDiffURL() + 'chunk/' +

@@ -3,6 +3,8 @@ RB.AbstractCommentBlockView = Backbone.View.extend({
         'click': '_onClicked'
     },
 
+    tooltipSides: 'lrbt',
+
     /*
      * Disposes the comment block.
      *
@@ -21,7 +23,7 @@ RB.AbstractCommentBlockView = Backbone.View.extend({
      */
     render: function() {
         this._$tooltip = $.tooltip(this.$el, {
-                side: 'lrbt'
+                side: this.tooltipSides
             })
             .addClass('comments');
 
@@ -49,20 +51,32 @@ RB.AbstractCommentBlockView = Backbone.View.extend({
     },
 
     /*
+     * Positions the notification bubble around the comment block.
+     *
+     * This can be overridden to change where the bubble will be displayed.
+     * By default, it is centered over the block.
+     */
+    positionNotifyBubble: function($bubble) {
+        $bubble.move(Math.round((this.$el.width()  - bubble.width())  / 2),
+                     Math.round((this.$el.height() - bubble.height()) / 2));
+    },
+
+    /*
      * Notifies the user of some update. This notification appears in the
      * comment area.
      */
     notify: function(text, cb, context) {
         var offset = this.$el.offset(),
-            bubble = $('<div/>')
+            $bubble = $('<div/>')
                 .addClass('bubble')
                 .appendTo(this.$el)
                 .text(text);
 
-        bubble
-            .css('opacity', 0)
-            .move(Math.round((this.$el.width()  - bubble.width())  / 2),
-                  Math.round((this.$el.height() - bubble.height()) / 2))
+        $bubble.css('opacity', 0);
+
+        this.positionNotifyBubble($bubble);
+
+        $bubble
             .animate({
                 top: '-=10px',
                 opacity: 0.8
@@ -72,7 +86,7 @@ RB.AbstractCommentBlockView = Backbone.View.extend({
                 top: '+=10px',
                 opacity: 0
             }, 350, 'swing', function() {
-                bubble.remove();
+                $bubble.remove();
 
                 if (_.isFunction(cb)) {
                     cb.call(context);

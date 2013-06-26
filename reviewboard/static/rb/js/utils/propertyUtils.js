@@ -70,7 +70,9 @@ $.fn.bindProperty = function(elPropName, model, modelPropName, options) {
 
             if (elPropName === 'text' || elPropName === 'html') {
                 if ($this[elPropName]() !== value) {
-                    $this[elPropName](value || '');
+                    $this[elPropName]((value === undefined ||
+                                       value === null)
+                                      ? '' : value);
                 }
             } else if ($this.prop(elPropName) !== value) {
                 $this.prop(elPropName, value);

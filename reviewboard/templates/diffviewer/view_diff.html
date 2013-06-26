@@ -13,11 +13,6 @@
 {% block jsconsts %}
 {{block.super}}
   var gRevision = '{{diffset.revision}}';
-{% if interdiffset %}
-  var gInterdiffRevision = '{{interdiffset.revision}}';
-{% else %}
-  var gInterdiffRevision = null;
-{% endif %}
 {% endblock %}
 
 {% block css %}

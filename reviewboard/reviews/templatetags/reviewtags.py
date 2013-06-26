@@ -115,7 +115,6 @@ def commentcounts(context, filediff, interfilediff=None):
                 'localdraft': review.user == user and \
                               not review.public,
                 'review_id': review.id,
-                'review_request_id': review.review_request.id,
                 'issue_opened': comment.issue_opened,
                 'issue_status': BaseComment
                                 .issue_status_to_string(comment.issue_status),
@@ -154,8 +153,6 @@ def screenshotcommentcounts(context, screenshot):
       w                  The width of the comment's region
       h                  The height of the comment's region
       review_id          The ID of the review this comment is associated with
-      review_request_id  The ID of the review request this comment is
-                         associated with
       ================== ====================================================
     """
     comments = {}
@@ -182,7 +179,6 @@ def screenshotcommentcounts(context, screenshot):
                 'w': comment.w,
                 'h': comment.h,
                 'review_id': review.id,
-                'review_request_id': review.review_request_id,
                 'issue_opened': comment.issue_opened,
                 'issue_status': BaseComment
                                 .issue_status_to_string(comment
@@ -213,7 +209,6 @@ def file_attachment_comments(context, file_attachment):
                 'url': comment.get_review_url(),
                 'localdraft': review.user == user and not review.public,
                 'review_id': review.id,
-                'review_request_id': review.review_request_id,
                 'issue_opened': comment.issue_opened,
                 'issue_status': BaseComment
                                 .issue_status_to_string(comment

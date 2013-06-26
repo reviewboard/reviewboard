@@ -125,10 +125,6 @@ describe('diffviewer/views/DiffReviewableView', function() {
             beforeEach(function() {
                 $startRow = $($rows[4]);
                 startCell = $startRow[0].cells[0];
-
-                // XXX Needed until DiffCommentBlock is restructured.
-                window.gFileAnchorToId = {};
-                window.gInterdiffFileAnchorToId = {};
             });
 
             it('Beginning selection', function() {
@@ -296,9 +292,7 @@ describe('diffviewer/views/DiffReviewableView', function() {
 
             describe('Finishing selection', function() {
                 beforeEach(function() {
-                    spyOn(RB, 'DiffCommentBlock').andReturn({
-                        showCommentDlg: function() {}
-                    });
+                    spyOn(view, 'createAndEditCommentBlock');
                 });
 
                 describe('With single line', function() {
@@ -329,7 +323,8 @@ describe('diffviewer/views/DiffReviewableView', function() {
                             stopImmediatePropagation: function() {}
                         });
 
-                        expect(RB.DiffCommentBlock).not.toHaveBeenCalled();
+                        expect(view.createAndEditCommentBlock)
+                            .not.toHaveBeenCalled();
                         expect(onClick).toHaveBeenCalled();
 
                         expect($row.hasClass('selected')).toBe(false);
@@ -354,8 +349,13 @@ describe('diffviewer/views/DiffReviewableView', function() {
                             stopImmediatePropagation: function() {}
                         });
 
-                        expect(RB.DiffCommentBlock)
-                            .toHaveBeenCalledWith($row, $row, 5, 5);
+                        expect(view.createAndEditCommentBlock)
+                            .toHaveBeenCalledWith({
+                                $beginRow: $row,
+                                $endRow: $row,
+                                beginLineNum: 5,
+                                endLineNum: 5
+                            });
 
                         expect($row.hasClass('selected')).toBe(false);
                         expect(selector._$begin).toBe(null);
@@ -409,8 +409,13 @@ describe('diffviewer/views/DiffReviewableView', function() {
                             stopImmediatePropagation: function() {}
                         });
 
-                        expect(RB.DiffCommentBlock)
-                            .toHaveBeenCalledWith($startRow, $endRow, 5, 6);
+                        expect(view.createAndEditCommentBlock)
+                            .toHaveBeenCalledWith({
+                                $beginRow: $startRow,
+                                $endRow: $endRow,
+                                beginLineNum: 5,
+                                endLineNum: 6
+                            });
 
                         expect(onClick).not.toHaveBeenCalled();
                         expect($startRow.hasClass('selected')).toBe(false);
@@ -447,8 +452,13 @@ describe('diffviewer/views/DiffReviewableView', function() {
                             stopImmediatePropagation: function() {}
                         });
 
-                        expect(RB.DiffCommentBlock)
-                            .toHaveBeenCalledWith($startRow, $endRow, 5, 6);
+                        expect(view.createAndEditCommentBlock)
+                            .toHaveBeenCalledWith({
+                                $beginRow: $startRow,
+                                $endRow: $endRow,
+                                beginLineNum: 5,
+                                endLineNum: 6
+                            });
 
                         expect($startRow.hasClass('selected')).toBe(false);
                         expect($endRow.hasClass('selected')).toBe(false);
@@ -870,6 +880,182 @@ describe('diffviewer/views/DiffReviewableView', function() {
                     expect(view.trigger).toHaveBeenCalledWith(
                         'chunkExpansionChanged');
                 });
+            });
+        });
+    });
+
+    describe('Comment flags', function() {
+        describe('Placing visible comments', function() {
+            var expandedDiffFragmentHTML = [
+                    '<tbody class="equal tests-new-chunk">',
+                    ' <tr line="11">',
+                    '  <th></th>',
+                    '  <td>',
+                    '   <div class="collapse-floater">',
+                    '    <img class="diff-collapse-btn"',
+                    '         data-chunk-index="1"',
+                    '         data-lines-of-context="0" />',
+                    '   </div>',
+                    '  </td>',
+                    '  <th></th>',
+                    '  <td></td>',
+                    ' </tr>',
+                    '</tbody>'
+                ].join(''),
+                $commentFlags,
+                $rows,
+                diffFragmentHTML;
+
+            beforeEach(function() {
+                view = new RB.DiffReviewableView({
+                    model: new RB.DiffReviewable({
+                        reviewRequest: reviewRequest,
+                        serializedComments: [
+                            {
+                                linenum: 2,
+                                num_lines: 2,
+                                comments: [{
+                                    issue_opened: false,
+                                    review_id: 1,
+                                    localdraft: false,
+                                    text: 'Comment 1',
+                                    comment_id: 1,
+                                    line: 2
+                                }]
+                            },
+                            {
+                                linenum: 4,
+                                num_lines: 1,
+                                comments: [
+                                    {
+                                        issue_opened: false,
+                                        review_id: 1,
+                                        localdraft: false,
+                                        text: 'Comment 2',
+                                        comment_id: 1,
+                                        line: 4
+                                    },
+                                    {
+                                        issue_opened: false,
+                                        review_id: 1,
+                                        localdraft: false,
+                                        text: 'Comment 3',
+                                        comment_id: 1,
+                                        line: 4
+                                    }
+                                ]
+                            },
+                            {
+                                /* This is in the collapsed area. */
+                                linenum: 11,
+                                num_lines: 1,
+                                comments: [{
+                                    issue_opened: false,
+                                    review_id: 1,
+                                    localdraft: false,
+                                    text: 'Comment 4',
+                                    comment_id: 1,
+                                    line: 12
+                                }]
+                            },
+                        ]
+                    }),
+                    el: $(diffTableTemplate({
+                        chunks: [
+                            {
+                                type: 'insert',
+                                startRow: 1,
+                                numRows: 10
+                            },
+                            {
+                                type: 'collapsed',
+                                expandHeaderLines: 7
+                            }
+                        ]
+                    }))
+                });
+                view.render().$el.appendTo($container);
+
+                diffFragmentHTML = expandedDiffFragmentHTML;
+
+                spyOn(view.model, 'getRenderedDiffFragment')
+                    .andCallFake(function(options, callbacks, context) {
+                        callbacks.success.call(context, diffFragmentHTML);
+                    });
+
+                $commentFlags = view.$('.commentflag');
+                $rows = view.$el.find('tbody tr');
+            });
+
+            it('On initial render', function() {
+                var $commentFlag;
+
+                expect($commentFlags.length).toBe(2);
+                expect($($commentFlags[0]).find('.commentflag-count').text())
+                    .toBe('1');
+                expect($($commentFlags[1]).find('.commentflag-count').text())
+                    .toBe('2');
+
+                $commentFlag = $($rows[1]).find('.commentflag');
+                expect($commentFlag.length).toBe(1);
+                expect($commentFlag[0]).toBe($commentFlags[0]);
+                expect($commentFlag.parents('tr').attr('line')).toBe('2');
+
+                $commentFlag = $($rows[3]).find('.commentflag');
+                expect($commentFlag.length).toBe(1);
+                expect($commentFlag[0]).toBe($commentFlags[1]);
+                expect($commentFlag.parents('tr').attr('line')).toBe('4');
+            });
+
+            it('On chunk expand', function() {
+                expect($commentFlags.length).toBe(2);
+
+                view.$('.tests-expand-chunk').click();
+
+                $commentFlags = view.$('.commentflag');
+                $rows = view.$el.find('tbody tr');
+
+                expect($commentFlags.length).toBe(3);
+                expect($($commentFlags[2]).find('.commentflag-count').text())
+                    .toBe('1');
+
+                $commentFlag = $($rows[10]).find('.commentflag');
+                expect($commentFlag.length).toBe(1);
+                expect($commentFlag[0]).toBe($commentFlags[2]);
+                expect($commentFlag.parents('tr').attr('line')).toBe('11');
+            });
+
+            it('On chunk re-expand (after collapsing)', function() {
+                var collapsedDiffFragmentHTML = [
+                    '<tbody class="diff-header">',
+                    $(view.$('tbody')[1]).html(),
+                    '</tbody>'
+                ].join('');
+
+                expect($commentFlags.length).toBe(2);
+
+                view.$('.tests-expand-chunk').click();
+                expect(view.$('.commentflag').length).toBe(3);
+
+                diffFragmentHTML = collapsedDiffFragmentHTML;
+                view.$('.diff-collapse-btn').click();
+                expect(view.$('.commentflag').length).toBe(2);
+
+                diffFragmentHTML = expandedDiffFragmentHTML;
+                view.$('.tests-expand-chunk').click();
+                expect(view.$('.commentflag').length).toBe(3);
+
+                $commentFlags = view.$('.commentflag');
+                $rows = view.$el.find('tbody tr');
+
+                expect($commentFlags.length).toBe(3);
+                expect($($commentFlags[2]).find('.commentflag-count').text())
+                    .toBe('1');
+
+                $commentFlag = $($rows[10]).find('.commentflag');
+                expect($commentFlag.length).toBe(1);
+                expect($commentFlag[0]).toBe($commentFlags[2]);
+                expect($commentFlag.parents('tr').attr('line')).toBe('11');
             });
         });
     });

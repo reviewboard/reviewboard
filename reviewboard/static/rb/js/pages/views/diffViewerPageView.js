@@ -35,13 +35,6 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
         this._selectedAnchorIndex = -1;
         this._$anchors = $();
 
-        this._fileAnchorToId = {};
-        this._interdiffFileAnchorToId = {};
-
-        /* XXX This is temporary until the DiffCommentBlock code moves. */
-        window.gFileAnchorToId = this._fileAnchorToId;
-        window.gInterdiffFileAnchorToId = this._interdiffFileAnchorToId;
-
         /* XXX This is temporary until scrolling is redone. */
         RB.scrollToAnchor = _.bind(this.selectAnchor, this);
 
@@ -77,7 +70,8 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
             fileDiffID: fileDiffID,
             interFileDiffID: interFileDiffID,
             revision: fileDiffRevision,
-            interdiffRevision: interdiffRevision
+            interdiffRevision: interdiffRevision,
+            serializedComments: serializedComments
         });
 
         if ($('#file' + fileDiffID).length === 1) {
@@ -116,23 +110,6 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
                 model: diffReviewable
             }),
             $anchor;
-
-        this._fileAnchorToId[tableID] = {
-            id: fileDiffID,
-            revision: diffReviewable.get('revision')
-        };
-
-        if (interFileDiffID) {
-            this._interdiffFileAnchorToId[tableID] = {
-                id: interFileDiffID,
-                revision: diffReviewable.get('interDiffRevision')
-            };
-        }
-
-        // XXX This is only until DiffCommentBlock moves.
-        $table.data('diffReviewableView', diffReviewableView);
-        RB.addCommentFlags(diffReviewableView, $table, serializedComments,
-                           tableID);
 
         diffReviewableView.render();
 
