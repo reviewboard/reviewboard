@@ -722,6 +722,7 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
             btnRight,
             $btnParent,
             parentLeft,
+            i,
             y1,
             y2,
             i;
