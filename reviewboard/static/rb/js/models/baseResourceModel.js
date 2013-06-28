@@ -320,7 +320,7 @@ RB.BaseResource = Backbone.Model.extend({
      *
      * When doing file uploads, we need to hand-structure a form-data payload
      * to the server. It will contain the file contents and the attributes
-     * we're saving. We cna then call the standard save function with this
+     * we're saving. We can then call the standard save function with this
      * payload as our data.
      */
     _saveWithFiles: function(files, fileReaders, options) {
