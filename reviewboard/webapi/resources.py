@@ -7428,6 +7428,13 @@ class ValidateDiffResource(DiffResource):
                 },
             }
 
+        if basedir is None:
+            # If we get here, the repository uses absolute paths. Deeper down
+            # (where we don't necessarily know about the details of the
+            # repository), we do an os.path.join() with the basedir value, which
+            # will choke if it's None.
+            basedir = ''
+
         try:
             DiffSet.objects.create_from_upload(
                 repository, path, parent_diff_path, None, basedir, request,
