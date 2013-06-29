@@ -530,7 +530,7 @@ def render_star(user, obj):
     if isinstance(obj, ReviewRequest):
         obj_info = {
             'type': 'reviewrequests',
-            'id': obj.id
+            'id': obj.display_id
         }
 
         if hasattr(obj, 'starred'):
