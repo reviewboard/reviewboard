@@ -2,7 +2,7 @@ import logging
 
 from django.contrib.auth.models import User
 from django.core.exceptions import ObjectDoesNotExist
-from django.db import connections, router
+from django.db import connections, router, transaction
 from django.db.models import Manager, Q
 from django.db.models.query import QuerySet
 
@@ -145,6 +145,7 @@ class ReviewRequestManager(ConcurrencyManager):
                     'local_site_id': local_site.pk,
                     'id': review_request.pk,
             })
+            transaction.commit()
 
             review_request = ReviewRequest.objects.get(pk=review_request.pk)
 
