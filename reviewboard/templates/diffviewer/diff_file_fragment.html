@@ -79,11 +79,11 @@
   </tr>
  </tbody>
 {%  elif file.whitespace_only %}
-    <tbody class="whitespace-file">
-     <tr>
-      <td colspan="4">{% trans "This file contains only whitespace changes." %}</td>
-     </tr>
-    </tbody>
+ <tbody class="whitespace-file">
+  <tr>
+   <td colspan="4">{% trans "This file contains only whitespace changes." %}</td>
+  </tr>
+ </tbody>
 {%  else %}
 {%   for chunk in file.chunks %}
 {%    if not chunk.collapsable or not collapseall %}

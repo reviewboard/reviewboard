@@ -107,6 +107,7 @@ var WatchedItems = RB.BaseResource.extend({
 RB.UserSession = Backbone.Model.extend({
     defaults: {
         authenticated: false,
+        diffsShowExtraWhitespace: false,
         fullName: null,
         loginURL: null,
         username: null,
@@ -125,6 +126,45 @@ RB.UserSession = Backbone.Model.extend({
         this.watchedReviewRequests = new WatchedItems({
             url: this.get('watchedReviewRequestsURL')
         });
+
+        this._bindCookie({
+            attr: 'diffsShowExtraWhitespace',
+            cookieName: 'show_ew',
+            deserialize: function(value) {
+                return value !== 'false'
+            }
+        });
+    },
+
+    /*
+     * Toggles a boolean attribute.
+     *
+     * The attribute will be the inverse of the prior value.
+     */
+    toggleAttr: function(attr) {
+        this.set(attr, !this.get(attr));
+    },
+
+    /*
+     * Binds a cookie to an attribute.
+     *
+     * The initial value of the attribute will be set to that of the cookie.
+     *
+     * When the attribute changes, the cookie will be updated.
+     */
+    _bindCookie: function(options) {
+        var deserialize = options.deserialize || _.identity,
+            serialize = options.serialize || function(value) {
+                return value.toString();
+            };
+
+        this.set(options.attr, deserialize($.cookie(options.cookieName)));
+
+        this.on('change:' + options.attr, function(model, value) {
+            $.cookie(options.cookieName, serialize(value), {
+                path: SITE_ROOT
+            });
+        }, this);
     }
 }, {
     instance: null,

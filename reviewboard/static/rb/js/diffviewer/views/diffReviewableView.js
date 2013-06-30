@@ -470,6 +470,42 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
     },
 
     /*
+     * Toggles the display of whitespace-only chunks.
+     */
+    toggleWhitespaceOnlyChunks: function() {
+        var $whitespaceFile;
+
+        this.$('tbody tr.whitespace-line').toggleClass('dimmed');
+
+        _.each(this.$el.children('tbody.whitespace-chunk'), function(chunk) {
+            var $chunk = $(chunk),
+                dimming = $chunk.hasClass('replace'),
+                chunkID = chunk.id.split('chunk')[1],
+                $children = $chunk.children();
+
+            $chunk.toggleClass('replace');
+
+            $($children[0]).toggleClass('first');
+            $($children[$children.length - 1]).toggleClass('last');
+
+            if (dimming) {
+                this.trigger('chunkDimmed', chunkID);
+            } else {
+                this.trigger('chunkUndimmed', chunkID);
+            }
+        }, this);
+
+        /*
+         * Swaps the visibility of the "This file has whitespace changes"
+         * tbody and the chunk siblings.
+         */
+        this.$el.children('tbody.whitespace-file')
+            .siblings('tbody')
+            .addBack()
+                .toggle();
+    },
+
+    /*
      * Finds the row in a table matching the specified line number.
      *
      * This will perform a binary search of the lines trying to find

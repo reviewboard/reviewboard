@@ -30,4 +30,64 @@ describe('models/UserSession', function() {
             expect(console.assert.calls[1].args[0]).toBeFalsy();
         });
     });
+
+    describe('Attributes', function() {
+        var session;
+
+        beforeEach(function() {
+            session = RB.UserSession.instance;
+        });
+
+        describe('diffsShowExtraWhitespace', function() {
+            describe('Loads from cookie', function() {
+                it('When "true"', function() {
+                    spyOn($, 'cookie').andReturn('true');
+
+                    RB.UserSession.instance = null;
+                    session = RB.UserSession.create({
+                        username: 'testuser'
+                    });
+
+                    expect($.cookie).toHaveBeenCalledWith('show_ew');
+                    expect(session.get('diffsShowExtraWhitespace')).toBe(true);
+                });
+
+                it('When "false"', function() {
+                    spyOn($, 'cookie').andReturn('false');
+
+                    RB.UserSession.instance = null;
+                    session = RB.UserSession.create({
+                        username: 'testuser'
+                    });
+
+                    expect($.cookie).toHaveBeenCalledWith('show_ew');
+                    expect(session.get('diffsShowExtraWhitespace')).toBe(false);
+                });
+            });
+
+            describe('Sets cookie', function() {
+                beforeEach(function() {
+                    spyOn($, 'cookie');
+                });
+
+                it('When true', function() {
+                    session.attributes.diffsShowExtraWhitespace = false;
+                    session.set('diffsShowExtraWhitespace', true);
+
+                    expect($.cookie).toHaveBeenCalledWith('show_ew', 'true', {
+                        path: SITE_ROOT
+                    });
+                });
+
+                it('When false', function() {
+                    session.attributes.diffsShowExtraWhitespace = true;
+                    session.set('diffsShowExtraWhitespace', false);
+
+                    expect($.cookie).toHaveBeenCalledWith('show_ew', 'false', {
+                        path: SITE_ROOT
+                    });
+                });
+            });
+        });
+    });
 });

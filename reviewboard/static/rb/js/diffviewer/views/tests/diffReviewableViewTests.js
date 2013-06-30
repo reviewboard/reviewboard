@@ -43,7 +43,9 @@ describe('diffviewer/views/DiffReviewableView', function() {
             '   </tbody>',
             '  <% } else { %>',
             '   <tbody class="<%= chunk.type %>',
-            '                 <% if (chunk.expanded) { %> loaded<% } %>">',
+            '                 <% if (chunk.expanded) { %>loaded<% } %>',
+            '                 <%= chunk.extraClass || "" %>"',
+            '          id="chunk0.<%= index %>">',
             '    <% for (var i = 0; i < chunk.numRows; i++) { %>',
             '     <tr line="<%= i + chunk.startRow %>">',
             '      <th></th>',
@@ -1056,6 +1058,121 @@ describe('diffviewer/views/DiffReviewableView', function() {
                 expect($commentFlag.length).toBe(1);
                 expect($commentFlag[0]).toBe($commentFlags[2]);
                 expect($commentFlag.parents('tr').attr('line')).toBe('11');
+            });
+        });
+    });
+
+    describe('Methods', function() {
+        describe('toggleWhitespaceOnlyChunks', function() {
+            beforeEach(function() {
+                view = new RB.DiffReviewableView({
+                    model: new RB.DiffReviewable({
+                        reviewRequest: reviewRequest
+                    }),
+                    el: $(diffTableTemplate({
+                        chunks: [
+                            {
+                                type: 'replace',
+                                startRow: 1,
+                                numRows: 5,
+                                extraClass: 'whitespace-chunk'
+                            }
+                        ]
+                    }))
+                });
+                view.render().$el.appendTo($container);
+            });
+
+            describe('Toggle on', function() {
+                it('Chunk classes', function() {
+                    var $tbodies,
+                        $tbody,
+                        $children;
+
+                    view.toggleWhitespaceOnlyChunks();
+
+                    $tbodies = view.$('tbody');
+                    $tbody = $($tbodies[0]);
+                    $children = $tbody.children();
+
+                    expect($tbody.hasClass('replace')).toBe(false);
+                    expect($($children[0]).hasClass('first')).toBe(true);
+                    expect($($children[$children.length - 1]).hasClass('last'))
+                        .toBe(true);
+                });
+
+                it('chunkDimmed event triggered', function() {
+                    spyOn(view, 'trigger');
+
+                    view.toggleWhitespaceOnlyChunks();
+
+                    expect(view.trigger)
+                        .toHaveBeenCalledWith('chunkDimmed', '0.0');
+                });
+
+                it('Whitespace-only file classes', function() {
+                    var $tbodies = view.$el.children('tbody'),
+                        $whitespaceChunk = $('<tbody/>')
+                            .addClass('whitespace-file')
+                            .hide()
+                            .appendTo(view.$el);
+
+                    expect($whitespaceChunk.is(':visible')).toBe(false);
+                    expect($tbodies.is(':visible')).toBe(true);
+
+                    view.toggleWhitespaceOnlyChunks();
+
+                    expect($whitespaceChunk.is(':visible')).toBe(true);
+                    expect($tbodies.is(':visible')).toBe(false);
+                });
+            });
+
+            describe('Toggle off', function() {
+                it('Chunk classes', function() {
+                    var $tbodies,
+                        $tbody,
+                        $children;
+
+                    view.toggleWhitespaceOnlyChunks();
+                    view.toggleWhitespaceOnlyChunks();
+
+                    $tbodies = view.$('tbody');
+                    $tbody = $($tbodies[0]);
+                    $children = $tbody.children();
+
+                    expect($tbody.hasClass('replace')).toBe(true);
+                    expect($($children[0]).hasClass('first')).toBe(false);
+                    expect($($children[$children.length - 1]).hasClass('last'))
+                        .toBe(false);
+                });
+
+                it('chunkDimmed event triggered', function() {
+                    view.toggleWhitespaceOnlyChunks();
+
+                    spyOn(view, 'trigger');
+
+                    view.toggleWhitespaceOnlyChunks();
+
+                    expect(view.trigger)
+                        .toHaveBeenCalledWith('chunkUndimmed', '0.0');
+                });
+
+                it('Whitespace-only file classes', function() {
+                    var $tbodies = view.$el.children('tbody'),
+                        $whitespaceChunk = $('<tbody/>')
+                            .addClass('whitespace-file')
+                            .hide()
+                            .appendTo(view.$el);
+
+                    expect($whitespaceChunk.is(':visible')).toBe(false);
+                    expect($tbodies.is(':visible')).toBe(true);
+
+                    view.toggleWhitespaceOnlyChunks();
+                    view.toggleWhitespaceOnlyChunks();
+
+                    expect($whitespaceChunk.is(':visible')).toBe(false);
+                    expect($tbodies.is(':visible')).toBe(true);
+                });
             });
         });
     });

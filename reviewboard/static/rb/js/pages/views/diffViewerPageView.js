@@ -24,6 +24,11 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
         '\x0d': '_recenterSelected'
     },
 
+    events: {
+        'click .toggle-whitespace-only-chunks': '_toggleWhitespaceOnlyChunks',
+        'click .toggle-show-whitespace': '_toggleShowExtraWhitespace'
+    },
+
     /*
      * Initializes the diff viewer page.
      */
@@ -34,6 +39,9 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
 
         this._selectedAnchorIndex = -1;
         this._$anchors = $();
+        this._$controls = null;
+        this._$indexes = null;
+        this._diffReviewableViews = [];
 
         /* XXX This is temporary until scrolling is redone. */
         RB.scrollToAnchor = _.bind(this.selectAnchor, this);
@@ -47,7 +55,17 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
      * Renders the page and begins loading all diffs.
      */
     render: function() {
+        var $reviewRequest;
+
         _.super(this).render.call(this);
+
+        $reviewRequest = this.$('.review-request');
+
+        this._$controls = $reviewRequest.find('ul.controls');
+        this._$indexes = $reviewRequest.find('ol.index');
+
+        $('#diffs').bindClass(RB.UserSession.instance,
+                              'diffsShowExtraWhitespace', 'ewhl');
 
         $.funcQueue("diff_files").start();
 
@@ -110,7 +128,14 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
             }),
             $anchor;
 
+        this._diffReviewableViews.push(diffReviewableView);
         diffReviewableView.render();
+
+        this.listenTo(diffReviewableView, 'chunkDimmed chunkUndimmed',
+                      function(chunkID) {
+            this._$indexes.find('a[href="#' + chunkID + '"]')
+                .toggleClass('dimmed');
+        });
 
         /* We must rebuild this every time. */
         this._updateAnchors($table);
@@ -267,6 +292,32 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
      */
     _recenterSelected: function() {
         this.selectAnchor($(this._$anchors[this._selectedAnchorIndex]));
+    },
+
+    /*
+     * Toggles the display of diff chunks that only contain whitespace changes.
+     */
+    _toggleWhitespaceOnlyChunks: function() {
+        _.each(this._diffReviewableViews, function(diffReviewableView) {
+            diffReviewableView.toggleWhitespaceOnlyChunks();
+        });
+
+        this._$controls.find('.ws').toggle();
+
+        return false;
+    },
+
+    /*
+     * Toggles the display of extra whitespace highlights on diffs.
+     *
+     * A cookie will be set to the new whitespace display setting, so that
+     * the new option will be the default when viewing diffs.
+     */
+    _toggleShowExtraWhitespace: function() {
+        this._$controls.find('.ew').toggle();
+        RB.UserSession.instance.toggleAttr('diffsShowExtraWhitespace');
+
+        return false;
     }
 });
 _.extend(RB.DiffViewerPageView.prototype, RB.KeyBindingsMixin);
