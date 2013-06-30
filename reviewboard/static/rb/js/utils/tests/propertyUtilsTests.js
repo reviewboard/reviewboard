@@ -5,6 +5,82 @@ describe('utils/propertyUtils', function() {
         model = new Backbone.Model();
     });
 
+    describe('$.fn.bindClass', function() {
+        var $el;
+
+        beforeEach(function() {
+            $el = $('<div/>').appendTo(document.body);
+        });
+
+        describe('Initial class value', function() {
+            it('Adds class when true', function() {
+                model.set('mybool', true);
+                $el.bindClass(model, 'mybool', 'myclass');
+                expect($el.hasClass('myclass')).toBe(true);
+            });
+
+            it('No class when false', function() {
+                model.set('mybool', false);
+                $el.bindClass(model, 'mybool', 'myclass');
+                expect($el.hasClass('myclass')).toBe(false);
+            });
+
+            describe('With inverse', function() {
+                it('No class when true', function() {
+                    model.set('mybool', true);
+                    $el.bindClass(model, 'mybool', 'myclass', {
+                        inverse: true
+                    });
+                    expect($el.hasClass('myclass')).toBe(false);
+                });
+
+                it('Adds class when false', function() {
+                    model.set('mybool', false);
+                    $el.bindClass(model, 'mybool', 'myclass', {
+                        inverse: true
+                    });
+                    expect($el.hasClass('myclass')).toBe(true);
+                });
+            });
+        });
+
+        describe('Model property changes', function() {
+            it('Removes class when true -> false', function() {
+                model.set('mybool', true);
+                $el.bindClass(model, 'mybool', 'myclass');
+                model.set('mybool', false);
+                expect($el.hasClass('myclass')).toBe(false);
+            });
+
+            it('Adds class when false -> true', function() {
+                model.set('mybool', false);
+                $el.bindClass(model, 'mybool', 'myclass');
+                model.set('mybool', true);
+                expect($el.hasClass('myclass')).toBe(true);
+            });
+
+            describe('With inverse', function() {
+                it('Adds class when true -> false', function() {
+                    model.set('mybool', true);
+                    $el.bindClass(model, 'mybool', 'myclass', {
+                        inverse: true
+                    });
+                    model.set('mybool', false);
+                    expect($el.hasClass('myclass')).toBe(true);
+                });
+
+                it('Removes class when false -> true', function() {
+                    model.set('mybool', false);
+                    $el.bindClass(model, 'mybool', 'myclass', {
+                        inverse: true
+                    });
+                    model.set('mybool', true);
+                    expect($el.hasClass('myclass')).toBe(false);
+                });
+            });
+        });
+    });
+
     describe('$.fn.bindProperty', function() {
         var $el;
 

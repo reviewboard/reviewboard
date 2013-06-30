@@ -1,4 +1,32 @@
 /*
+ * Binds setting a CSS class on an element to a model's property.
+ *
+ * The CSS class will be added when the property is true (or false, if
+ * options.inverse is set). Otherwise, it will be removed from the element.
+ */
+$.fn.bindClass = function(model, modelPropName, className, options) {
+    function updateClassName() {
+        var value = model.get(modelPropName);
+
+        if (options && options.inverse) {
+            value = !value;
+        }
+
+        if (value) {
+            this.addClass(className);
+        } else {
+            this.removeClass(className);
+        }
+    }
+
+    model.on('change:' + modelPropName, updateClassName, this);
+    updateClassName.call(this);
+
+    return this;
+};
+
+
+/*
  * Binds properties on an element and a model together.
  *
  * This can be used to ensure that a model and an element have properties in
@@ -24,7 +52,7 @@
  * properties.
  */
 $.fn.bindProperty = function(elPropName, model, modelPropName, options) {
-    var $this = $(this);
+    var $this = this;
 
     options = _.defaults(options || {}, {
         modelToElement: true,
@@ -83,8 +111,6 @@ $.fn.bindProperty = function(elPropName, model, modelPropName, options) {
  * in a model is "true", or show an element when the value is "false".
  */
 $.fn.bindVisibility = function(model, modelPropName, options) {
-    var $this = $(this);
-
     function updateVisibility() {
         var value = model.get(modelPropName);
 
@@ -92,11 +118,11 @@ $.fn.bindVisibility = function(model, modelPropName, options) {
             value = !value;
         }
 
-        $this.setVisible(value);
+        this.setVisible(value);
     }
 
-    model.on('change:' + modelPropName, updateVisibility);
-    updateVisibility();
+    model.on('change:' + modelPropName, updateVisibility, this);
+    updateVisibility.call(this);
 
-    return $this;
+    return this;
 };
