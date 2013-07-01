@@ -762,7 +762,7 @@ class ReviewRequest(BaseReviewRequestDetails):
         """
         changeset = None
         commit_id = self.commit
-        if (self.repository.supports_pending_changesets and
+        if (self.repository.get_scmtool().supports_pending_changesets and
             commit_id is not None):
             changeset = self.repository.get_scmtool().get_changeset(
                 commit_id, allow_empty=True)
