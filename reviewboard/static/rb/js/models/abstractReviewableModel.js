@@ -5,13 +5,13 @@
  * some form of content, such as a file attachment.
  *
  * All subclasses must provide a 'commentBlockModel' object type and an
- * addCommentBlocks() function.
+ * loadSerializedCommentBlock() function.
  */
 RB.AbstractReviewable = Backbone.Model.extend({
     defaults: {
         reviewRequest: null,
         review: null,
-        serializedComments: []
+        serializedCommentBlocks: []
     },
 
     /*
@@ -49,7 +49,9 @@ RB.AbstractReviewable = Backbone.Model.extend({
         this.commentBlocks.model = this.commentBlockModel;
 
         /* Add all existing comment regions to the page. */
-        _.each(this.get('serializedComments'), this.addCommentBlocks, this);
+        _.each(this.get('serializedCommentBlocks'),
+               this.loadSerializedCommentBlock,
+               this);
     },
 
     /*
@@ -65,14 +67,15 @@ RB.AbstractReviewable = Backbone.Model.extend({
     },
 
     /*
-     * Adds comment blocks for each serialized comment.
+     * Loads a serialized comment and adds comment blocks for it.
      *
-     * This should parse the serializedComment and add one or more
+     * This should parse the serializedCommentBlock and add one or more
      * comment blocks (using createCommentBlock).
      *
      * This must be implemented by subclasses.
      */
-    addCommentBlocks: function(serializedComment) {
-        console.assert(false, 'This must be implemented by a subclass');
+    loadSerializedCommentBlock: function(serializedCommentBlock) {
+        console.assert(false, 'loadSerializedCommentBlock must be ' +
+                              'implemented by a subclass');
     }
 });

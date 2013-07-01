@@ -12,17 +12,17 @@ RB.ScreenshotReviewable = RB.AbstractReviewable.extend({
     defaultCommentBlockFields: ['screenshotID'],
 
     /*
-     * Adds comment blocks for the serialized comments passed to the
+     * Adds comment blocks for the serialized comment block passed to the
      * reviewable.
      */
-    addCommentBlocks: function(serializedComments) {
+    loadSerializedCommentBlock: function(serializedCommentBlock) {
         this.createCommentBlock({
             screenshotID: this.get('screenshotID'),
-            x: serializedComments[0].x,
-            y: serializedComments[0].y,
-            width: serializedComments[0].w,
-            height: serializedComments[0].h,
-            serializedComments: serializedComments || []
+            x: serializedCommentBlock[0].x,
+            y: serializedCommentBlock[0].y,
+            width: serializedCommentBlock[0].w,
+            height: serializedCommentBlock[0].h,
+            serializedComments: serializedCommentBlock
         });
     }
 });

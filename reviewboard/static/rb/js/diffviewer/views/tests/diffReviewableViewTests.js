@@ -910,7 +910,7 @@ describe('diffviewer/views/DiffReviewableView', function() {
                 view = new RB.DiffReviewableView({
                     model: new RB.DiffReviewable({
                         reviewRequest: reviewRequest,
-                        serializedComments: [
+                        serializedCommentBlocks: [
                             {
                                 linenum: 2,
                                 num_lines: 2,

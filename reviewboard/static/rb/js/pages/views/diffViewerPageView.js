@@ -63,7 +63,7 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
      */
     queueLoadDiff: function(fileDiffID, fileDiffRevision,
                             interFileDiffID, interdiffRevision,
-                            fileIndex, serializedComments) {
+                            fileIndex, serializedCommentBlocks) {
         var diffReviewable = new RB.DiffReviewable({
             reviewRequest: this.reviewRequest,
             fileIndex: fileIndex,
@@ -71,20 +71,19 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
             interFileDiffID: interFileDiffID,
             revision: fileDiffRevision,
             interdiffRevision: interdiffRevision,
-            serializedComments: serializedComments
+            serializedCommentBlocks: serializedCommentBlocks
         });
 
         if ($('#file' + fileDiffID).length === 1) {
             /* We already have this one. This is probably a pre-loaded file. */
-            this._renderFileDiff(diffReviewable, serializedComments);
+            this._renderFileDiff(diffReviewable);
         } else {
             $.funcQueue('diff_files').add(function() {
                 diffReviewable.getRenderedDiff({
                     complete: function(xhr) {
                         $('#file_container_' + fileDiffID)
                             .replaceWith(xhr.responseText);
-                        this._renderFileDiff(diffReviewable,
-                                             serializedComments);
+                        this._renderFileDiff(diffReviewable);
                     }
                 }, this);
             }, this);
@@ -100,7 +99,7 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
      * Once rendered and set up, the next diff in the load queue will be
      * pulled from the server.
      */
-    _renderFileDiff: function(diffReviewable, serializedComments) {
+    _renderFileDiff: function(diffReviewable) {
         var fileDiffID = diffReviewable.get('fileDiffID'),
             interFileDiffID = diffReviewable.get('interFileDiffID'),
             tableID = 'file' + fileDiffID,

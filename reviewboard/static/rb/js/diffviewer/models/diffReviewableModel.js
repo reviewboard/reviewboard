@@ -14,19 +14,19 @@ RB.DiffReviewable = RB.AbstractReviewable.extend({
     defaultCommentBlockFields: ['fileDiffID', 'interFileDiffID'],
 
     /*
-     * Adds comment blocks for the serialized comments passed to the
+     * Adds comment blocks for the serialized comment blocks passed to the
      * reviewable.
      */
-    addCommentBlocks: function(serializedComments) {
+    loadSerializedCommentBlock: function(serializedCommentBlock) {
         this.createCommentBlock({
             reviewRequest: this.get('reviewRequest'),
             review: this.get('review'),
             fileDiffID: this.get('fileDiffID'),
             interFileDiffID: this.get('interFileDiffID'),
-            beginLineNum: serializedComments.linenum,
-            endLineNum: serializedComments.linenum +
-                        serializedComments.num_lines - 1,
-            serializedComments: serializedComments.comments || []
+            beginLineNum: serializedCommentBlock.linenum,
+            endLineNum: serializedCommentBlock.linenum +
+                        serializedCommentBlock.num_lines - 1,
+            serializedComments: serializedCommentBlock.comments || []
         });
     },
 
