@@ -182,4 +182,23 @@
 }
 
 
+/* !(*%!(&^ (see http://www.positioniseverything.net/easyclearing.html) */
+.clearfix {
+  display: inline-block;
+
+  &:after {
+    clear: both;
+    content: ".";
+    display: block;
+    height: 0;
+    visibility: hidden;
+  }
+}
+
+/* Hides from IE-mac \*/
+* html .clearfix {height: 1%;}
+.clearfix {display: block;}
+/* End hide from IE-mac */
+
+
 // vim: set et ts=2 sw=2:
