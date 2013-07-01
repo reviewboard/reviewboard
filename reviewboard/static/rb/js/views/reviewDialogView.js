@@ -332,7 +332,10 @@ RB.ReviewDialogView = Backbone.View.extend({
             ready: function() {
                 this._renderDialog();
 
-                if (!this.model.isNew()) {
+                if (this.model.isNew()) {
+                    this._$spinner.remove();
+                    this._$spinner = null;
+                } else {
                     this._$bodyBottom.text(this.model.get('bodyBottom') || '');
                     this._$bodyTop.text(this.model.get('bodyTop') || '');
                     this._$shipIt.prop('checked', this.model.get('shipIt'));
@@ -360,10 +363,10 @@ RB.ReviewDialogView = Backbone.View.extend({
         ];
 
         this._loadCommentsFromCollection(collections, function() {
-            if (this._commentViews.length > 0) {
-                this._$spinner.remove();
-                this._$spinner = null;
+            this._$spinner.remove();
+            this._$spinner = null;
 
+            if (this._commentViews.length > 0) {
                 /*
                  * We only display the bottom textarea if we have
                  * comments. Otherwise, it's weird to have both

@@ -174,6 +174,7 @@ describe('views/ReviewDialogView', function() {
                 expect(dlg._$bodyBottom.val()).toBe('');
                 expect(dlg._$shipIt.prop('checked')).toBe(false);
                 expect(dlg._$bodyBottom.is(':visible')).toBe(false);
+                expect(dlg._$spinner).toBe(null);
             });
 
             describe('With existing review', function() {
@@ -237,6 +238,7 @@ describe('views/ReviewDialogView', function() {
                     expect(dlg._$shipIt.prop('checked')).toBe(shipIt);
                     expect(dlg._$bodyBottom.is(':visible')).toBe(false);
                     expect(dlg._$comments.children().length).toBe(0);
+                    expect(dlg._$spinner).toBe(null);
                 });
 
                 it('Diff comments', function() {
@@ -263,6 +265,7 @@ describe('views/ReviewDialogView', function() {
                         .toBe(diffCommentPayload.issue_opened);
 
                     expect(dlg._$bodyBottom.is(':visible')).toBe(true);
+                    expect(dlg._$spinner).toBe(null);
                 });
 
                 it('File attachment comments', function() {
@@ -295,6 +298,7 @@ describe('views/ReviewDialogView', function() {
                         fileAttachmentCommentPayload.thumbnail_html);
 
                     expect(dlg._$bodyBottom.is(':visible')).toBe(true);
+                    expect(dlg._$spinner).toBe(null);
                 });
 
                 it('Screenshot comments', function() {
@@ -334,6 +338,7 @@ describe('views/ReviewDialogView', function() {
                         screenshotCommentPayload.screenshot.caption);
 
                     expect(dlg._$bodyBottom.is(':visible')).toBe(true);
+                    expect(dlg._$spinner).toBe(null);
                 });
             });
         });
