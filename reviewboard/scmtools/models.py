@@ -239,6 +239,18 @@ class Repository(models.Model):
 
         return commits
 
+    def get_change(self, revision):
+        """Get an individual change.
+
+        This returns a tuple of (commit message, diff).
+        """
+        hosting_service = self.hosting_service
+
+        if hosting_service:
+            return hosting_service.get_change(self, revision)
+        else:
+            return self.get_scmtool().get_change(revision)
+
     def is_accessible_by(self, user):
         """Returns whether or not the user has access to the repository.
 

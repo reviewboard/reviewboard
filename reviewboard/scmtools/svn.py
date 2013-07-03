@@ -6,6 +6,8 @@ import re
 import urllib
 import urlparse
 import weakref
+from shutil import rmtree
+from tempfile import mkdtemp
 
 try:
     from pysvn import ClientError, Revision, opt_revision_kind, \
@@ -13,6 +15,7 @@ try:
 except ImportError:
     pass
 
+from django.core.cache import cache
 from django.utils.translation import ugettext as _
 
 from reviewboard.diffviewer.parser import DiffParser
@@ -260,6 +263,48 @@ class SVNTool(SCMTool):
                 commit['message']))
 
         return results
+
+    def get_change(self, revision):
+        """Get an individual change.
+
+        This returns a tuple with the commit message and the diff contents.
+        """
+        cache_key = self.repository.get_commit_cache_key(revision)
+
+        revision = int(revision)
+        head_revision = Revision(opt_revision_kind.number, revision)
+        base_revision = Revision(opt_revision_kind.number, revision - 1)
+
+        commit = cache.get(cache_key)
+        if commit:
+            message = commit.message
+            author_name = commit.author_name
+            date = commit.date
+        else:
+            commit = self.client.log(
+                self.repopath,
+                revision_start=head_revision,
+                limit=1)[0]
+            message = commit['message']
+            author_name = commit['author']
+            date = datetime.datetime.utcfromtimestamp(commit['date']).\
+                isoformat()
+
+        tmpdir = mkdtemp(prefix='reviewboard-svn.')
+
+        diff = self.client.diff(
+            tmpdir,
+            self.repopath,
+            revision1=base_revision,
+            revision2=head_revision,
+            diff_options=['-u'])
+
+        rmtree(tmpdir)
+
+        commit = Commit(author_name, str(head_revision.number), date,
+                        message, str(base_revision.number))
+        commit.diff = diff
+        return commit
 
     def normalize_patch(self, patch, filename, revision=HEAD):
         """

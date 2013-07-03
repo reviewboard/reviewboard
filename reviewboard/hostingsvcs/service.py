@@ -113,6 +113,14 @@ class HostingService(object):
         """
         raise NotImplementedError
 
+    def get_change(self, repository, revision):
+        """Get an individual change.
+
+        This should be implemented by subclasses, and is expected to return a
+        tuple of (commit message, diff), both strings.
+        """
+        raise NotImplementedError
+
     @classmethod
     def get_repository_fields(cls, username, hosting_url, plan, tool_name,
                               field_vars):

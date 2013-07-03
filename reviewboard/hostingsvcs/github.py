@@ -5,6 +5,7 @@ import urllib2
 from django import forms
 from django.conf import settings
 from django.contrib.sites.models import Site
+from django.core.cache import cache
 from django.utils import simplejson
 from django.utils.translation import ugettext_lazy as _
 from djblets.siteconfig.models import SiteConfiguration
@@ -291,6 +292,87 @@ class GitHub(HostingService):
             results.append(commit)
 
         return results
+
+    def get_change(self, repository, revision):
+        # Step 1: fetch the commit itself that we want to review, to get
+        # the parent SHA and the commit message. Hopefully this information
+        # is still in cache so we don't have to fetch it again.
+        commit = cache.get(repository.get_commit_cache_key(revision))
+        if commit:
+            author_name = commit.author_name
+            date = commit.date
+            parent_revision = commit.parent
+            message = commit.message
+        else:
+            url = self._build_api_url(repository, 'commits')
+            url += '&sha=%s' % revision
+
+            commit = self._api_get(url)[0]
+
+            author_name = commit['commit']['author']['name']
+            date = commit['commit']['committer']['date'],
+            parent_revision = commit['parents'][0]['sha']
+            message = commit['commit']['message']
+
+        # Step 2: fetch the "compare two commits" API to get the diff.
+        url = self._build_api_url(
+            repository, 'compare/%s...%s' % (parent_revision, revision))
+        comparison = self._api_get(url)
+
+        tree_sha = comparison['base_commit']['commit']['tree']['sha']
+        files = comparison['files']
+
+        # Step 3: fetch the tree for the original commit, so that we can get
+        # full blob SHAs for each of the files in the diff.
+        url = self._build_api_url(repository, 'git/trees/%s' % tree_sha)
+        url += '&recursive=1'
+        tree = self._api_get(url)
+
+        file_shas = {}
+        for file in tree['tree']:
+            file_shas[file['path']] = file['sha']
+
+        diff = []
+
+        for file in files:
+            filename = file['filename']
+            status = file['status']
+            patch = file['patch']
+
+            diff.append('diff --git a/%s b/%s' % (filename, filename))
+
+            if status == 'modified':
+                old_sha = file_shas[filename]
+                new_sha = file['sha']
+                diff.append('index %s..%s 100644' % (old_sha, new_sha))
+                diff.append('--- a/%s' % filename)
+                diff.append('+++ b/%s' % filename)
+            elif status == 'added':
+                new_sha = file['sha']
+
+                diff.append('new file mode 100644')
+                diff.append('index %s..%s' % ('0' * 40, new_sha))
+                diff.append('--- /dev/null')
+                diff.append('+++ b/%s' % filename)
+            elif status == 'removed':
+                old_sha = file_shas[filename]
+
+                diff.append('deleted file mode 100644')
+                diff.append('index %s..%s' % (old_sha, '0' * 40))
+                diff.append('--- a/%s' % filename)
+                diff.append('+++ /dev/null')
+
+            diff.append(patch)
+
+        diff = '\n'.join(diff)
+
+        # Make sure there's a trailing newline
+        if not diff.endswith('\n'):
+            diff += '\n'
+
+        commit = Commit(author_name, revision, date, message, parent_revision)
+        commit.diff = diff
+        return commit
 
     def is_ssh_key_associated(self, repository, key):
         if not key:

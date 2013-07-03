@@ -843,6 +843,15 @@ class SubversionTests(SCMTestCase):
                    'Add a branches directory',
                    '5'))
 
+    def test_get_change(self):
+        """Testing SVNTool.get_change"""
+        commit = self.tool.get_change('5')
+
+        self.assertEqual(md5(commit.message).hexdigest(),
+                         '928336c082dd756e3f7af4cde4724ebf')
+        self.assertEqual(md5(commit.diff).hexdigest(),
+                         '56e50374056931c03a333f234fa63375')
+
 
 class PerforceTests(SCMTestCase):
     """Unit tests for perforce.

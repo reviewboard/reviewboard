@@ -64,6 +64,11 @@ class Commit(object):
         self.message = message
         self.parent = parent
 
+        # This field is only used when we're actually fetching the commit from
+        # the server to create a new review request, and isn't part of the
+        # equality test.
+        self.diff = None
+
     def __eq__(self, other):
         return (self.author_name == other.author_name and
                 self.id == other.id and
@@ -149,6 +154,14 @@ class SCMTool(object):
         This can be called multiple times in succession using the "parent" field
         of the last entry as the start parameter in order to paginate through
         the history of commits in the repository.
+        """
+        raise NotImplementedError
+
+    def get_change(self, repository, revision):
+        """Get an individual change.
+
+        This should be implemented by subclasses, and is expected to return a
+        tuple of (commit message, diff), both strings.
         """
         raise NotImplementedError
 

@@ -1,4 +1,10 @@
 from __future__ import with_statement
+from textwrap import dedent
+from urlparse import urlparse
+try:
+    from hashlib import md5
+except ImportError:
+    from md5 import md5
 
 from django.contrib.sites.models import Site
 from django.test import TestCase
@@ -583,6 +589,160 @@ class GitHubTests(ServiceTests):
                          '92463764015ef463b4b6d1a1825fee7aeec8cb15')
         self.assertEqual(commits[2].author_name, 'David Trowbridge')
         self.assertEqual(commits[2].parent, '')
+
+    def test_get_change(self):
+        """Testing GitHub get_change implementation"""
+        commit_sha = '1c44b461cebe5874a857c51a4a13a849a4d1e52d'
+        parent_sha = '44568f7d33647d286691517e6325fea5c7a21d5e'
+        tree_sha = '56e25e58380daf9b4dfe35677ae6043fe1743922'
+
+        commits_api_response = simplejson.dumps([
+            {
+                'commit': {
+                    'author': {'name': 'David Trowbridge'},
+                    'committer': {'date': '2013-06-25T23:31:22Z'},
+                    'message': 'Move .clearfix to defs.less',
+                },
+                'sha': commit_sha,
+                'parents': [{'sha': parent_sha}],
+            },
+        ])
+
+        compare_api_response = simplejson.dumps({
+            'base_commit': {
+                'commit': {
+                    'tree': {'sha': tree_sha},
+                },
+            },
+            'files': [
+                {
+                    'sha': '4344b3ad41b171ea606e88e9665c34cca602affb',
+                    'filename': 'reviewboard/static/rb/css/defs.less',
+                    'status': 'modified',
+                    'patch': dedent("""\
+                        @@ -182,4 +182,23 @@
+                         }
+
+
+                        +/* !(*%!(&^ (see http://www.positioniseverything.net/easyclearing.html) */
+                        +.clearfix {
+                        +  display: inline-block;
+                        +
+                        +  &:after {
+                        +    clear: both;
+                        +    content: \".\";
+                        +    display: block;
+                        +    height: 0;
+                        +    visibility: hidden;
+                        +  }
+                        +}
+                        +
+                        +/* Hides from IE-mac \\*/
+                        +* html .clearfix {height: 1%;}
+                        +.clearfix {display: block;}
+                        +/* End hide from IE-mac */
+                        +
+                        +
+                         // vim: set et ts=2 sw=2:"""),
+                },
+                {
+                    'sha': '8e3129277b018b169cb8d13771433fbcd165a17c',
+                    'filename': 'reviewboard/static/rb/css/reviews.less',
+                    'status': 'modified',
+                    'patch': dedent("""\
+                        @@ -1311,24 +1311,6 @@
+                           .border-radius(8px);
+                         }
+
+                        -/* !(*%!(&^ (see http://www.positioniseverything.net/easyclearing.html) */
+                        -.clearfix {
+                        -  display: inline-block;
+                        -
+                        -  &:after {
+                        -    clear: both;
+                        -    content: \".\";
+                        -    display: block;
+                        -    height: 0;
+                        -    visibility: hidden;
+                        -  }
+                        -}
+                        -
+                        -/* Hides from IE-mac \\*/
+                        -* html .clearfix {height: 1%;}
+                        -.clearfix {display: block;}
+                        -/* End hide from IE-mac */
+                        -
+
+                         /****************************************************************************
+                          * Issue Summary"""),
+                },
+            ]
+        })
+
+        trees_api_response = simplejson.dumps({
+            'tree': [
+                {
+                    'path': 'reviewboard/static/rb/css/defs.less',
+                    'sha': '830a40c3197223c6a0abb3355ea48891a1857bfd',
+                },
+                {
+                    'path': 'reviewboard/static/rb/css/reviews.less',
+                    'sha': '535cd2c4211038d1bb8ab6beaed504e0db9d7e62',
+                },
+            ],
+        })
+
+        # This has to be a list to avoid python's hinky treatment of scope of
+        # variables assigned within a closure.
+        step = [1]
+
+        def _http_get(service, url, *args, **kwargs):
+            parsed = urlparse(url)
+            if parsed.path == '/repos/myuser/myrepo/commits':
+                self.assertEqual(step[0], 1)
+                step[0] += 1
+
+                query = parsed.query.split('&')
+                self.assertTrue(('sha=%s' % commit_sha) in query)
+
+                return commits_api_response, None
+            elif parsed.path.startswith('/repos/myuser/myrepo/compare/'):
+                self.assertEqual(step[0], 2)
+                step[0] += 1
+
+                revs = parsed.path.split('/')[-1].split('...')
+                self.assertEqual(revs[0], parent_sha)
+                self.assertEqual(revs[1], commit_sha)
+
+                return compare_api_response, None
+            elif parsed.path.startswith('/repos/myuser/myrepo/git/trees/'):
+                self.assertEqual(step[0], 3)
+                step[0] += 1
+
+                self.assertEqual(parsed.path.split('/')[-1], tree_sha)
+
+                return trees_api_response, None
+            else:
+                print parsed
+                self.fail('Got an unexpected GET request')
+
+        self.service_class._http_get = _http_get
+
+        account = self._get_hosting_account()
+        account.data['authorization'] = {'token': 'abc123'}
+
+        repository = Repository(hosting_account=account)
+        repository.extra_data = {
+            'repository_plan': 'public',
+            'github_public_repo_name': 'myrepo',
+        }
+
+        service = account.service
+        change = service.get_change(repository, commit_sha)
+
+        self.assertEqual(change.message, 'Move .clearfix to defs.less')
+        self.assertEqual(md5(change.diff).hexdigest(),
+                         '5f63bd4f1cd8c4d8b46f2f72ea8d33bc')
 
     def _get_repo_api_url(self, plan, fields):
         account = self._get_hosting_account()
