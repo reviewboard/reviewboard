@@ -1,4 +1,4 @@
-describe('pages/views/reviewablePageViewTests.js', function() {
+describe('pages/views/ReviewablePageView', function() {
     var $editReview,
         $shipIt,
         pageView;
