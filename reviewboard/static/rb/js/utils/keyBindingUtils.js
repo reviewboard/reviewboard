@@ -15,13 +15,16 @@ RB.KeyBindingsMixin = {
      * by way of delegateEvents.
      */
     delegateKeyBindings: function() {
-        this.$el.on('keypress.keybindings' + this.cid, _.bind(function(evt) {
+        $(document).on('keypress.keybindings' + this.cid, _.bind(function(evt) {
             var keyChar,
                 keys,
                 func,
                 i;
 
-            if (evt.altKey || evt.ctrlKey || evt.metaKey) {
+            if (evt.altKey || evt.ctrlKey || evt.metaKey ||
+                evt.target.tagName === 'INPUT' ||
+                evt.target.tagName === 'TEXTAREA') {
+                /* These are all unsupported, and things we want to ignore. */
                 return;
             }
 
@@ -53,7 +56,7 @@ RB.KeyBindingsMixin = {
      * By default, this is called automatically when calling undelegateEvents.
      */
     undelegateKeyBindings: function() {
-        this.$el.off('keypress.keybindings' + this.cid);
+        $(document).off('keypress.keybindings' + this.cid);
     },
 
     /*
