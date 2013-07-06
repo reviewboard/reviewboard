@@ -48,7 +48,7 @@
   <col class="right" />
  </colgroup>
  <thead>
-  <tr onClick="gotoAnchor('{{file.index}}');">
+  <tr>
 {%   if file.dest_filename == file.depot_filename %}
    <th colspan="4"><a name="{{file.index}}" class="file-anchor"></a>{{ file.depot_filename }}</th>
 {%   else %}
@@ -132,7 +132,7 @@
 <script type="text/javascript">
   $(document).ready(function() {
     /* Add to the change index. */
-    $("li.change_file_{{file.index}}").html(
+    $("#change_file_{{file.index}}").html(
       {% include_as_string "diffviewer/changeindex_entry.html" %});
   });
 </script>
@@ -141,7 +141,7 @@
 {%  if not standalone %}
 <script type="text/javascript">
   $(document).ready(function() {
-    $("li.change_file_{{file.index}}").remove();
+    $("#change_file_{{file.index}}").remove();
   });
 </script>
 {%  endif %}{# not standalone #}

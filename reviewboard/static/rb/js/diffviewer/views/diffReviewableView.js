@@ -408,6 +408,7 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
     commentsListName: 'diff_comments',
 
     events: {
+        'click thead tr': '_onFileHeaderClicked',
         'click .moved-to, .moved-from': '_onMovedLineClicked',
         'click .diff-collapse-btn': '_onCollapseChunkClicked',
         'click .diff-expand-btn': '_onExpandChunkClicked',
@@ -638,13 +639,6 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
 
         // Well.. damn. Ignore this then.
         return null;
-    },
-
-    /*
-     * Sets the active anchor on the page, optionally scrolling to it.
-     */
-    _gotoAnchor: function(name, scroll) {
-        return RB.scrollToAnchor($("a[name='" + name + "']"), scroll);
     },
 
     /*
@@ -934,6 +928,17 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
     },
 
     /*
+     * Handler for when the file header is clicked.
+     *
+     * Highlights the file header.
+     */
+    _onFileHeaderClicked: function() {
+        this.trigger('fileClicked');
+
+        return false;
+    },
+
+    /*
      * Handler for clicks on a "Moved to/from" flag.
      *
      * This will scroll to the location on the other end of the move,
@@ -973,7 +978,7 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
             ($tbody.hasClass('delete') ||
              $tbody.hasClass('insert') ||
              $tbody.hasClass('replace'))) {
-            this._gotoAnchor($tbody.find('a:first').attr('name'), false);
+            this.trigger('chunkClicked', $tbody.find('a:first').attr('name'));
         }
     },
 

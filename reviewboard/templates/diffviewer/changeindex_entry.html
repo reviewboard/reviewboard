@@ -1,5 +1,5 @@
 {% load i18n %}
-<a href="#{{file.index}}" onclick="return !gotoAnchor('{{file.index}}');">{{file.dest_filename|force_escape|escapejs}}</a>
+<a href="#{{file.index}}">{{file.dest_filename|force_escape|escapejs}}</a>
 {% if file.dest_filename != file.depot_filename %}
  (was {{file.depot_filename}})
 {% endif %}
@@ -19,10 +19,10 @@
 {%  if file.chunks|length != 0 %}
  [
 {%   if file.chunks|length == 1 %}
-    <a href="#{{file.index}}.{{file.chunks.0.index}}" onClick="return !gotoAnchor('{{file.index}}.{{file.chunks.0.index}}');"> {% if file.chunks.0.change == "insert" %}new content{% elif file.chunks.0.change == "delete" %}deleted content{% endif %}</a>
+    <a href="#{{file.index}}.{{file.chunks.0.index}}"> {% if file.chunks.0.change == "insert" %}new content{% elif file.chunks.0.change == "delete" %}deleted content{% endif %}</a>
 {%   else %}
 {%    for chunk_index in file.changed_chunk_indexes %}
-     <a href="#{{file.index}}.{{chunk_index}}" onClick="return !gotoAnchor('{{file.index}}.{{chunk_index}}');">{{forloop.counter}}</a>
+     <a href="#{{file.index}}.{{chunk_index}}">{{forloop.counter}}</a>
 {%    endfor %}
 {%   endif %}
  ]

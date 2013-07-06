@@ -57,7 +57,7 @@
 {% if file %}
 <script type="text/javascript">
   /* Add to the change index. */
-  $("li.change_file_{{file.index}}").html(
+  $("#change_file_{{file.index}}").html(
     {% include_as_string "diffviewer/changeindex_entry.html" %});
 </script>
 {% endif %}

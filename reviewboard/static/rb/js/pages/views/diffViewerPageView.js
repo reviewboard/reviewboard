@@ -25,6 +25,7 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
     },
 
     events: {
+        'click .index a': '_onIndexClicked',
         'click .toggle-whitespace-only-chunks': '_toggleWhitespaceOnlyChunks',
         'click .toggle-show-whitespace': '_toggleShowExtraWhitespace'
     },
@@ -42,9 +43,6 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
         this._$controls = null;
         this._$indexes = null;
         this._diffReviewableViews = [];
-
-        /* XXX This is temporary until scrolling is redone. */
-        RB.scrollToAnchor = _.bind(this.selectAnchor, this);
 
         /* Check to see if there's an anchor we need to scroll to. */
         url = document.location.toString();
@@ -92,11 +90,13 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
             serializedCommentBlocks: serializedCommentBlocks
         });
 
-        if ($('#file' + fileDiffID).length === 1) {
-            /* We already have this one. This is probably a pre-loaded file. */
-            this._renderFileDiff(diffReviewable);
-        } else {
-            $.funcQueue('diff_files').add(function() {
+        $.funcQueue('diff_files').add(function() {
+            if ($('#file' + fileDiffID).length === 1) {
+                /*
+                 * We already have this one. This is probably a pre-loaded file.
+                 */
+                this._renderFileDiff(diffReviewable);
+            } else {
                 diffReviewable.getRenderedDiff({
                     complete: function(xhr) {
                         $('#file_container_' + fileDiffID)
@@ -104,8 +104,8 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
                         this._renderFileDiff(diffReviewable);
                     }
                 }, this);
-            }, this);
-        }
+            }
+        }, this);
     },
 
     /*
@@ -134,6 +134,14 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
                       function(chunkID) {
             this._$indexes.find('a[href="#' + chunkID + '"]')
                 .toggleClass('dimmed');
+        });
+
+        this.listenTo(diffReviewableView, 'fileClicked', function() {
+            this.selectAnchorByName(diffReviewable.get('fileIndex'));
+        });
+
+        this.listenTo(diffReviewableView, 'chunkClicked', function(name) {
+            this.selectAnchorByName(name, false);
         });
 
         /* We must rebuild this every time. */
@@ -186,6 +194,13 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
         }
 
         return true;
+    },
+
+    /*
+     * Selects an anchor by name.
+     */
+    selectAnchorByName: function(name, scroll) {
+        return this.selectAnchor($('a[name="' + name + '"]'), scroll);
     },
 
     /*
@@ -299,6 +314,17 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
      */
     _recenterSelected: function() {
         this.selectAnchor($(this._$anchors[this._selectedAnchorIndex]));
+    },
+
+    /*
+     * Handler for when a file/chunk index is clicked.
+     *
+     * Navigates to the proper file or chunk header for this anchor.
+     */
+    _onIndexClicked: function(e) {
+        this.selectAnchorByName(e.target.href.split('#')[1]);
+
+        return false;
     },
 
     /*
