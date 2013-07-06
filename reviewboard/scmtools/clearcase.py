@@ -14,6 +14,21 @@ if (sys.platform.startswith('win') or sys.platform.startswith('cygwin')):
 else:
     import posixpath as cpath
 
+# This is a workaround for buggy Python 2.7.x and Windows 7.
+# A console window would pop up every time popen is invoked unless shell=true.
+# Original issue was described at http://reviews.reviewboard.org/r/3804/
+# Note:
+#   - later versions of Windows may probably be impacted too
+#   - Python 2.7.x is the only one known to get this issue
+import platform
+
+if (sys.version_info[:2] == (2, 7) and
+    platform.system() == "Windows" and
+    platform.release() == "7"):
+    _popen_shell = True
+else:
+    _popen_shell = False
+
 
 class ClearCaseTool(SCMTool):
     name = 'ClearCase'
@@ -140,7 +155,7 @@ class ClearCaseTool(SCMTool):
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             cwd=repopath,
-            shell=True)
+            shell=_popen_shell)
 
         (res, error) = p.communicate()
         failure = p.poll()
@@ -165,7 +180,7 @@ class ClearCaseTool(SCMTool):
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             cwd=self.repopath,
-            shell=True)
+            shell=_popen_shell)
 
         (res, error) = p.communicate()
         failure = p.poll()
@@ -182,7 +197,7 @@ class ClearCaseTool(SCMTool):
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             cwd=self.repopath,
-            shell=True)
+            shell=_popen_shell)
 
         (res, error) = p.communicate()
         failure = p.poll()
@@ -203,7 +218,7 @@ class ClearCaseTool(SCMTool):
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             cwd=self.repopath,
-            shell=True)
+            shell=_popen_shell)
 
         (res, error) = p.communicate()
         failure = p.poll()
@@ -321,7 +336,7 @@ class ClearCaseDiffParser(DiffParser):
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             cwd=self.repopath,
-            shell=True)
+            shell=_popen_shell)
 
         (res, error) = p.communicate()
         failure = p.poll()
@@ -367,7 +382,7 @@ class ClearCaseSnapshotViewClient(object):
             cmdline,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
-            shell=True)
+            shell=_popen_shell)
 
         (res, error) = p.communicate()
         failure = p.poll()
