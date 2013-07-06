@@ -1,13 +1,10 @@
 # -*- coding: utf-8 -*-
-import errno
-import imp
 import os
-import socket
-import tempfile
-try:
-    from hashlib import md5
-except ImportError:
-    from md5 import md5
+from errno import ECONNREFUSED
+from hashlib import md5
+from imp import find_module
+from socket import error as SocketError
+from tempfile import mkdtemp
 
 from django import forms
 from django.contrib.auth.models import AnonymousUser, User
@@ -16,7 +13,7 @@ from django.test import TestCase as DjangoTestCase
 from djblets.util.filesystem import is_exe_in_path
 import nose
 try:
-    imp.find_module("P4")
+    find_module("P4")
 
     try:
         from P4 import P4Error
@@ -81,8 +78,8 @@ class SCMTestCase(SSHTestCase):
 
         try:
             tool.check_repository(repo_path)
-        except socket.error, e:
-            if e.errno == errno.ECONNREFUSED:
+        except SocketError, e:
+            if e.errno == ECONNREFUSED:
                 # This box likely isn't set up for this test.
                 SCMTestCase._can_test_ssh = False
                 raise nose.SkipTest(
@@ -103,7 +100,7 @@ class SCMTestCase(SSHTestCase):
         self.assertNotEqual(user_key, None)
 
         # Switch to a new SSH directory.
-        self.tempdir = tempfile.mkdtemp(prefix='rb-tests-home-')
+        self.tempdir = mkdtemp(prefix='rb-tests-home-')
         sshdir = os.path.join(self.tempdir, '.ssh')
         self._set_home(self.tempdir)
 

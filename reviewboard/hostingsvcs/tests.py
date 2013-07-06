@@ -1,10 +1,7 @@
 from __future__ import with_statement
+from hashlib import md5
 from textwrap import dedent
 from urlparse import urlparse
-try:
-    from hashlib import md5
-except ImportError:
-    from md5 import md5
 
 from django.contrib.sites.models import Site
 from django.test import TestCase
