@@ -141,7 +141,7 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
 
         this.listenTo(diffReviewableView, 'chunkExpansionChanged', function() {
             /* The selection rectangle may not update -- bug #1353. */
-            $(this._$anchors[this._selectedAnchorIndex]).highlightChunk();
+            this._highlightAnchor($(this._$anchors[this._selectedAnchorIndex]));
         });
 
         if (this._startAtAnchorName) {
@@ -176,7 +176,7 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
                                 this.DIFF_SCROLLDOWN_AMOUNT);
         }
 
-        $anchor.highlightChunk();
+        this._highlightAnchor($anchor);
 
         for (i = 0; i < this._$anchors.length; i++) {
             if (this._$anchors[i] === $anchor[0]) {
@@ -186,6 +186,14 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
         }
 
         return true;
+    },
+
+    /*
+     * Highlights a chunk bound to an anchor element.
+     */
+    _highlightAnchor: function($anchor) {
+        RB.ChunkHighlighterView.highlight(
+            $anchor.parents('tbody:first, thead:first'));
     },
 
     /*
@@ -201,7 +209,7 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
         /* Skip over the change index to the first item. */
         if (this._selectedAnchorIndex === -1 && this._$anchors.length > 0) {
             this._selectedAnchorIndex = 0;
-            $(this._$anchors[this._selectedAnchorIndex]).highlightChunk();
+            this._highlightAnchor($(this._$anchors[this._selectedAnchorIndex]));
         }
     },
 

@@ -421,6 +421,7 @@ PIPELINE_JS = {
             'rb/js/views/imageReviewableView.js',
             'rb/js/diffviewer/models/diffCommentBlockModel.js',
             'rb/js/diffviewer/models/diffReviewableModel.js',
+            'rb/js/diffviewer/views/chunkHighlighterView.js',
             'rb/js/diffviewer/views/diffCommentBlockView.js',
             'rb/js/diffviewer/views/diffReviewableView.js',
             'rb/js/diffviewer.js',
