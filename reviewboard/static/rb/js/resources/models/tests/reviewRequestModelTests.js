@@ -1,4 +1,4 @@
-describe('models/ReviewRequest', function() {
+describe('resources/models/ReviewRequest', function() {
     var reviewRequest,
         callbacks;
 

@@ -1,4 +1,4 @@
-describe('collections/ResourceCollection', function() {
+describe('resources/collections/ResourceCollection', function() {
     var collection,
         reviewRequest;
 

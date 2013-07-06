@@ -1,4 +1,4 @@
-describe('models/ScreenshotComment', function() {
+describe('resources/models/ScreenshotComment', function() {
     var strings = RB.ScreenshotComment.strings,
         model;
 

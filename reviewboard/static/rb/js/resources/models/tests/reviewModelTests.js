@@ -1,4 +1,4 @@
-describe('models/Review', function() {
+describe('resources/models/Review', function() {
     var model;
 
     beforeEach(function() {

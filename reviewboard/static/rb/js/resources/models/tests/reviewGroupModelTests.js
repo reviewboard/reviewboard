@@ -1,4 +1,4 @@
-describe('models/ReviewGroup', function() {
+describe('resources/models/ReviewGroup', function() {
     describe('setStarred', function() {
         var url = '/api/users/testuser/watched/groups/',
             callbacks,

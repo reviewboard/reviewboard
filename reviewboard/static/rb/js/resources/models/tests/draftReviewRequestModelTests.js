@@ -1,4 +1,4 @@
-describe('models/DraftReviewRequest', function() {
+describe('resources/models/DraftReviewRequest', function() {
     var draft,
         callbacks;
 

@@ -1,4 +1,4 @@
-describe('models/Screenshot', function() {
+describe('resources/models/Screenshot', function() {
     var parentObject,
         model;
 

@@ -1,4 +1,4 @@
-describe('models/BaseCommentReply', function() {
+describe('resources/models/BaseCommentReply', function() {
     var parentObject,
         model;
 

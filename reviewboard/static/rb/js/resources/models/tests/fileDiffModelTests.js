@@ -1,4 +1,4 @@
-describe('models/FileDiff', function() {
+describe('resources/models/FileDiff', function() {
     var model;
 
     beforeEach(function() {

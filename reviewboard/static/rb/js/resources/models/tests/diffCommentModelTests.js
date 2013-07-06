@@ -1,4 +1,4 @@
-describe('models/DiffComment', function() {
+describe('resources/models/DiffComment', function() {
     var model;
 
     beforeEach(function() {

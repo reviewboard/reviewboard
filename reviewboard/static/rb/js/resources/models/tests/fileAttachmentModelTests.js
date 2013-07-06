@@ -1,4 +1,4 @@
-describe('models/FileAttachment', function() {
+describe('resources/models/FileAttachment', function() {
     beforeEach(function() {
         parentObject = new RB.BaseResource({
             public: true

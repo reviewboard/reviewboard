@@ -1,4 +1,4 @@
-describe('models/FileAttachmentComment', function() {
+describe('resources/models/FileAttachmentComment', function() {
     var strings = RB.FileAttachmentComment.strings,
         model;
 
