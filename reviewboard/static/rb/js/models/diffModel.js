@@ -6,6 +6,14 @@
  * It is expected that parentObject will be set to a ReviewRequest instance.
  */
 RB.Diff = RB.BaseResource.extend({
+    defaults: {
+        diff: null,
+        parentDiff: null,
+        basedir: ''
+    },
+
+    payloadFileKeys: ['path', 'parent_diff_path'],
+
     rspNamespace: 'diff',
 
     getErrorString: function(rsp) {
@@ -15,5 +23,21 @@ RB.Diff = RB.BaseResource.extend({
         }
 
         return rsp.err.msg;
+    },
+
+    toJSON: function() {
+        var payload;
+
+        if (this.isNew()) {
+            payload = {
+                basedir: this.get('basedir'),
+                path: this.get('diff'),
+                parent_diff_path: this.get('parentDiff')
+            };
+        } else {
+            payload = RB.BaseResource.prototype.toJSON.apply(this, arguments);
+        }
+
+        return payload;
     }
 });
