@@ -1,7 +1,7 @@
 @import "defs.less";
 
 @diff-file-color: #F0F0F0;
-@diff-border-color: #C0C0C0;
+@diff-border-color: #A0A0A0;
 @diff-line-border-color: #D0D0D0;
 
 // Comment flags
@@ -21,27 +21,36 @@
 @diff-header-color: #e4d9cb;
 
 // Moved line information
-@diff-moved-bg-color: #66ccff;
-@diff-moved-border-color: #065a8a;
+@diff-moved-bg-color: #b0d0ff;
+@diff-moved-border-color: desaturate(darken(@diff-moved-bg-color, 20%), 35%);
 
 // Equals lines
 @diff-linenum-color: #F0F0F0;
 @diff-selected-color: #E2E2E2;
 
 // Delete lines
-@diff-delete-selected-color: #dfb1b1;
-@diff-delete-color: #ffc5ce;
-@diff-delete-linenum-color: #ebb1ba;
+@diff-delete-color: #ffd5de;
+@diff-delete-border-color: desaturate(darken(@diff-delete-color, 7%), 55%);
+@diff-delete-linenum-color: desaturate(darken(@diff-delete-color, 5%), 35%);
+@diff-delete-linenum-border-color:
+  desaturate(darken(@diff-delete-linenum-color, 7%), 55%);
+@diff-delete-selected-color: darken(@diff-delete-linenum-color, 4%);
 
 // Insert lines
-@diff-insert-selected-color: #9ae298;
-@diff-insert-color: #c5ffc4;
-@diff-insert-linenum-color: #b1ebb0;
+@diff-insert-color: #dfffd7;
+@diff-insert-border-color: desaturate(darken(@diff-insert-color, 7%), 55%);
+@diff-insert-linenum-color: desaturate(darken(@diff-insert-color, 7%), 35%);
+@diff-insert-linenum-border-color:
+  desaturate(darken(@diff-insert-linenum-color, 7%), 35%);
+@diff-insert-selected-color: darken(@diff-insert-linenum-color, 5%);
 
 // Replace lines
-@diff-replace-selected-color: #e2e179;
-@diff-replace-color: #fdfebc;
-@diff-replace-linenum-color: #e9eaa8;
+@diff-replace-color: #fdfecc;
+@diff-replace-border-color: desaturate(darken(@diff-replace-color, 20%), 30%);
+@diff-replace-linenum-color: desaturate(darken(@diff-replace-color, 7%), 25%);
+@diff-replace-linenum-border-color:
+  desaturate(darken(@diff-replace-linenum-color, 10%), 30%);
+@diff-replace-selected-color: darken(@diff-replace-linenum-color, 10%);
 
 // Revisions selector
 @revisions-border-color: #999999;
@@ -55,11 +64,16 @@
 @paginate-text-color: #f4f379;
 
 
+.diff-container {
+  .border-radius(@box-border-radius);
+  border: 1px @diff-border-color solid;
+  margin: 2px;
+  overflow: hidden;
+}
+
 .sidebyside {
   background: white;
-  border: 1px @diff-border-color solid;
   border-collapse: collapse;
-  margin: 2px;
   padding: 2px;
   width: 100%;
 
@@ -82,7 +96,6 @@
   &.newfile {
     col {
       &.left {
-        border-right: 1px @diff-border-color solid;
         width: 0%;
       }
 
@@ -99,7 +112,6 @@
 
   col {
     &.left {
-      border-right: 1px @diff-border-color solid;
       width: 50%;
     }
 
@@ -108,7 +120,6 @@
     }
 
     &.line {
-      border-right: 1px @diff-border-color solid;
       width: 1%; /* Make sure this doesn't stretch if the header stretches. */
     }
   }
@@ -118,26 +129,34 @@
     font-size: 8pt;
     line-height: 140%;
     margin: 0;
+    padding-left: 2px;
   }
 
   .moved-to, .moved-from {
-    background-color: @diff-moved-bg-color;
-    background-image: url("../images/moved_bg.png");
-    background-position: top left;
-    background-repeat: repeat-x;
+    background-color: @diff-moved-bg-color !important;
     border: 1px @diff-moved-border-color solid;
     display: block;
-    float: left;
-    padding: 0px 1em;
+    margin: -1px;
+    padding: 1px 0.5em;
+
+    span {
+      background-color: @diff-moved-bg-color !important;
+      display: block;
+      font-size: 7pt;
+      padding: 1px 0;
+    }
   }
 
   .moved-to {
-    float: right;
     .border-radius(8px, 0, 0, 8px);
+    float: right;
+    padding-left: 1em;
   }
 
   .moved-from {
     .border-radius(0px, 8px, 8px, 0);
+    float: left;
+    padding-right: 1em;
   }
 
   tbody {
@@ -190,9 +209,10 @@
       th {
         background: @diff-linenum-color;
         padding-left: 1em;
+        padding-right: 4px;
         text-align: right;
         vertical-align: top;
-	cursor: pointer;
+        cursor: pointer;
       }
     }
 
@@ -210,16 +230,32 @@
     &.delete {
       tr {
         &.selected * { background: @diff-delete-selected-color; }
-        td { background: @diff-delete-color; }
-        th { background: @diff-delete-linenum-color; }
+
+        td {
+          background: @diff-delete-color;
+          border-color: @diff-delete-border-color;
+        }
+
+        th {
+          background: @diff-delete-linenum-color;
+          border-color: @diff-delete-linenum-border-color;
+        }
       }
     }
 
     &.insert {
       tr {
         &.selected * { background: @diff-insert-selected-color; }
-        td { background: @diff-insert-color; }
-        th { background: @diff-insert-linenum-color; }
+
+        td {
+          background: @diff-insert-color;
+          border-color: @diff-insert-border-color;
+        }
+
+        th {
+          background: @diff-insert-linenum-color;
+          border-color: @diff-insert-linenum-border-color;
+        }
       }
     }
 
@@ -227,8 +263,15 @@
       tr {
         &.selected * { background: @diff-replace-selected-color; }
 
-        td { background: @diff-replace-color; }
-        th { background: @diff-replace-linenum-color; }
+        td {
+          background: @diff-replace-color;
+          border-color: @diff-replace-border-color;
+        }
+
+        th {
+          background: @diff-replace-linenum-color;
+          border-color: @diff-replace-linenum-border-color;
+        }
       }
 
       &.dimmed {
@@ -262,23 +305,42 @@
         text-align: center;
       }
 
-      th { background: @diff-header-color; }
+      th {
+        background: @diff-header-color;
+      }
+
+      tr {
+        &:first-child {
+          border-top: 1px darken(@diff-header-color, 10%) solid;
+        }
+
+        &:last-child {
+          border-bottom: 1px darken(@diff-header-color, 10%) solid;
+        }
+      }
     }
   }
 
   thead {
     th {
       background: @diff-file-color;
-      border-bottom: 1px @diff-border-color solid;
       font-size: 120%;
       font-weight: bold;
-      padding: 4px 8px;
       text-align: left;
       text-overflow: ellipsis;
+    }
 
-      &.rev {
-        font-size: 100%;
-      }
+    .filename-row th {
+      padding: 8px;
+
+      #gradient > .vertical-three-colors(#FFFFFF, @diff-file-color, 50%, @diff-file-color);
+    }
+
+    .revision-row th {
+      border-bottom: 1px darken(@diff-file-color, 15%) solid;
+      font-size: 100%;
+      font-weight: normal;
+      padding: 8px 4px;
     }
   }
 
@@ -382,7 +444,7 @@
     padding-left: 30px;
   }
 
-  .sidebyside {
+  .diff-container {
     margin-bottom: 20px;
   }
 

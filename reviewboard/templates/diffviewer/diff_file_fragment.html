@@ -35,7 +35,7 @@
 {% enddefinevar %}
 
 {% definevar 'moved_fmt' %}
- <a href="#" class="%(class)s" line="%(line)s" target="%(target)s">%(text)s</a>
+ <a href="#" class="%(class)s" line="%(line)s" target="%(target)s"><span>%(text)s</span></a>
 {% enddefinevar %}
 
 {% if file.changed_chunk_indexes or file.binary or file.deleted or file.moved %}
@@ -48,7 +48,7 @@
   <col class="right" />
  </colgroup>
  <thead>
-  <tr>
+  <tr class="filename-row">
 {%   if file.dest_filename == file.depot_filename %}
    <th colspan="4"><a name="{{file.index}}" class="file-anchor"></a>{{ file.depot_filename }}</th>
 {%   else %}
@@ -56,12 +56,14 @@
    <th colspan="2">{{ file.dest_filename }}{% if file.moved %}{% trans " (moved)" %}{% endif %}</th>
 {%   endif %}{# file.dest_filename == file.depot_filename #}
   </tr>
-  <tr>
+  <tr class="revision-row">
 {%   if file.moved and file.num_changes == 0 %}
-   <th colspan="4" class="rev">{% trans "No changes were made to this file." %}</th>
+   <th colspan="4">{% trans "No changes were made to this file." %}</th>
 {%   else %}
-   <th colspan="2" class="rev">{{file.revision}}</th>
-   <th colspan="2" class="rev">{{file.dest_revision}}</th>
+   <th></th>
+   <th>{{file.revision}}</th>
+   <th></th>
+   <th>{{file.dest_revision}}</th>
 {%   endif %}{# num_changes and moved #}
   </tr>
  </thead>

@@ -204,26 +204,27 @@
 
 <div id="diffs">
 {% for file in files %}
+<div class="diff-container">
 {%  if file.fragment %}
 {{file.fragment|safe}}
 {%  else %}
-<table class="sidebyside loading{% if file.newfile %} newfile{% endif %}"
-       id="file_container_{{file.filediff.id}}">
- <thead>
-  <tr>
-   <th colspan="2">{{file.depot_filename}}</th>
-  </tr>
-  <tr>
-   <th class="rev">{{file.revision}}</th>
-   <th class="rev">{{file.dest_revision}}</th>
-  </tr>
- </thead>
- <tbody>
-  <tr><td colspan="2"><pre>&nbsp;</pre></td></tr>
- </tbody>
-</table>
+ <table class="sidebyside loading{% if file.newfile %} newfile{% endif %}"
+        id="file_container_{{file.filediff.id}}">
+  <thead>
+   <tr class="filename-row">
+    <th colspan="2">{{file.depot_filename}}</th>
+   </tr>
+   <tr class="revision-row">
+    <th>{{file.revision}}</th>
+    <th>{{file.dest_revision}}</th>
+   </tr>
+  </thead>
+  <tbody>
+   <tr><td colspan="2"><pre>&nbsp;</pre></td></tr>
+  </tbody>
+ </table>
 {%  endif %}
-<script>
+ <script>
     $(document).ready(function() {
         RB.currentPage.queueLoadDiff(
             "{{file.filediff.id}}", "{{file.filediff.diffset.revision}}",
@@ -235,7 +236,8 @@
             "{{file.index}}",
             {% commentcounts file.filediff file.interfilediff %});
     });
-</script>
+ </script>
+</div>
 {% endfor %}
 
 <a name="index_footer"></a>

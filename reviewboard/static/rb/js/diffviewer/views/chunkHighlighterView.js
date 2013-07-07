@@ -103,7 +103,7 @@ RB.ChunkHighlighterView = Backbone.View.extend({
      * Updates the position of the borders, based on the chunk dimensions.
      */
     _updatePosition: function(e) {
-        var $table,
+        var $container,
             offset,
             left,
             top,
@@ -129,11 +129,11 @@ RB.ChunkHighlighterView = Backbone.View.extend({
             return;
         }
 
-        $table = this._$chunk.parent();
+        $container = this._$chunk.parents('.diff-container');
 
-        left = Math.floor($table.position().left);
+        left = Math.floor($container.position().left);
         top = Math.floor(offset.top);
-        width = $table.outerWidth();
+        width = $container.outerWidth();
         height = this._$chunk.outerHeight();
 
         if (left === this._oldLeft &&
