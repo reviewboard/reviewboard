@@ -1,0 +1,15 @@
+{
+    "curly": true,
+    "eqeqeq": true,
+    "es3": true,
+    "immed": true,
+    "latedef": true,
+    "laxbreak": true,
+    "newcap": true,
+    "noarg": true,
+    "nonew": true,
+    "onevar": true,
+    "proto": true,
+    "trailing": true,
+    "unused": true
+}

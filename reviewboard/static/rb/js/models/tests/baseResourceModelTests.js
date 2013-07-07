@@ -499,7 +499,7 @@ describe('models/BaseResource', function() {
                 beforeEach(function() {
                     spyOn(Backbone.Model.prototype, 'save').andCallThrough();
                     spyOn(RB, 'apiCall').andCallThrough();
-                    spyOn($, 'ajax').andCallFake(function(request) {});
+                    spyOn($, 'ajax').andCallFake(function() {});
                 });
 
                 it('With callbacks', function() {
@@ -661,7 +661,7 @@ describe('models/BaseResource', function() {
 
                 expect(model.isNew()).toBe(false);
 
-                spyOn(model, 'toJSON').andCallFake(function(rsp) {
+                spyOn(model, 'toJSON').andCallFake(function() {
                     return {
                         a: 10,
                         b: 20,
@@ -709,7 +709,7 @@ describe('models/BaseResource', function() {
             beforeEach(function() {
                 model.payloadFileKeys = ['file'];
                 model.url = '/api/foos/';
-                model.toJSON = function(options) {
+                model.toJSON = function() {
                     return {
                         file: this.get('file'),
                         myfield: 'myvalue'
@@ -792,7 +792,7 @@ describe('models/BaseResource', function() {
                     blob2.name = 'myfile2';
 
                     model.payloadFileKeys = ['file1', 'file2'];
-                    model.toJSON = function(options) {
+                    model.toJSON = function() {
                         return {
                             file1: this.get('file1'),
                             file2: this.get('file2'),
@@ -897,7 +897,7 @@ describe('models/BaseResource', function() {
                 var form = $('<form/>')
                     .append($('<input name="foo"/>'));
 
-                model.toJSON = function(options) {
+                model.toJSON = function() {
                     return {
                         myfield: 'myvalue'
                     };
@@ -924,7 +924,7 @@ describe('models/BaseResource', function() {
                     .append($('<input name="foo"/>'));
 
                 model.payloadFileKey = 'file';
-                model.toJSON = function(options) {
+                model.toJSON = function() {
                     return {
                         file: this.get('file')
                     };

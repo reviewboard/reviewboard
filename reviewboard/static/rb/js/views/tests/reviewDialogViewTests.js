@@ -5,19 +5,19 @@ describe('views/ReviewDialogView', function() {
             links: {}
         },
         emptyDiffCommentsPayload = _.defaults({
-            diff_comments: [],
+            diff_comments: []
         }, baseEmptyCommentListPayload),
         emptyFileAttachmentCommentsPayload = _.defaults({
-            file_attachment_comments: [],
+            file_attachment_comments: []
         }, baseEmptyCommentListPayload),
         emptyScreenshotCommentsPayload = _.defaults({
-            screenshot_comments: [],
+            screenshot_comments: []
         }, baseEmptyCommentListPayload),
         baseCommentPayload = {
             id: 1,
             issue_opened: true,
             issue_status: 'opened',
-            text: 'My comment',
+            text: 'My comment'
         },
         diffCommentPayload = _.defaults({
             first_line: 10,
@@ -159,8 +159,6 @@ describe('views/ReviewDialogView', function() {
         });
 
         describe('Loading', function() {
-            var commentView;
-
             it('With new review', function() {
                 expect(review.isNew()).toBe(true);
 
@@ -178,11 +176,9 @@ describe('views/ReviewDialogView', function() {
             });
 
             describe('With existing review', function() {
-                var commentText = 'My comment',
-                    bodyTopText = 'My body top',
+                var bodyTopText = 'My body top',
                     bodyBottomText = 'My body bottom',
                     shipIt = true,
-                    issueOpened = true,
                     fileAttachmentCommentsPayload,
                     diffCommentsPayload,
                     screenshotCommentsPayload,

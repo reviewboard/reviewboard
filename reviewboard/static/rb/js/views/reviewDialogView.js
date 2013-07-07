@@ -232,7 +232,7 @@ RB.ReviewDialogView = Backbone.View.extend({
         '<div class="spinner"></div>',
         '<div class="edit-field">',
         ' <textarea class="body-bottom"></textarea>',
-        '</div>',
+        '</div>'
     ].join('')),
 
     /*
@@ -439,14 +439,14 @@ RB.ReviewDialogView = Backbone.View.extend({
                 buttons: [
                     $('<input type="button"/>')
                         .val('Publish Review')
-                        .click(_.bind(function(e) {
+                        .click(_.bind(function() {
                             this._saveReview(true);
                             return false;
                         }, this)),
 
                     $('<input type="button"/>')
                         .val('Discard Review')
-                        .click(_.bind(function(e) {
+                        .click(_.bind(function() {
                             this.close();
                             this.model.destroy({
                                 success: function() {
@@ -523,7 +523,7 @@ RB.ReviewDialogView = Backbone.View.extend({
                         success: function() {
                             $.funcQueue('reviewForm').next();
                         }
-                    })
+                    });
                 });
             }
         });

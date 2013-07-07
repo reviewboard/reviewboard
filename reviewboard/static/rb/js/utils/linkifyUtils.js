@@ -71,4 +71,4 @@ RB.linkifyText = function(text, bugTrackerURL) {
     }
 
     return text;
-}
+};

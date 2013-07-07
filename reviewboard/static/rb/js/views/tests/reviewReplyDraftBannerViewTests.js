@@ -21,7 +21,7 @@ describe('views/ReviewReplyDraftBannerView', function() {
         it('Publish', function() {
             spyOn(reviewReply, 'publish');
             view.$('.publish-button').click();
-            expect(reviewReply.publish).toHaveBeenCalled()
+            expect(reviewReply.publish).toHaveBeenCalled();
         });
     });
 

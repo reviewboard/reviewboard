@@ -43,24 +43,27 @@ $.fn.formDlg = function(options) {
     }, options);
 
     return this.each(function() {
-        var self = $(this);
-
-        var errors = $("<div/>")
-            .addClass("error")
-            .hide();
-
-        var form = $("<form/>")
-            .attr("action", options.action)
-            .submit(function(e) {
-                send();
-                return false;
-            })
-            .append($("<table/>")
-                .append($("<colgroup/>")
-                    .append('<col/>')
-                    .append('<col/>')
-                    .append('<col width="100%"/>'))
-                .append($("<tbody/>")));
+        var self = $(this),
+            errors = $("<div/>")
+                .addClass("error")
+                .hide(),
+            form = $("<form/>")
+                .attr("action", options.action)
+                .submit(function() {
+                    send();
+                    return false;
+                })
+                .append($("<table/>")
+                    .append($("<colgroup/>")
+                        .append('<col/>')
+                        .append('<col/>')
+                        .append('<col width="100%"/>'))
+                    .append($("<tbody/>"))),
+            tbody = $("tbody", form),
+            fieldInfo = {},
+            field,
+            box,
+            i;
 
         if (options.upload) {
             form.attr({
@@ -69,12 +72,8 @@ $.fn.formDlg = function(options) {
             });
         }
 
-        var tbody = $("tbody", form);
-
-        var fieldInfo = {};
-
-        for (var i = 0; i < options.fields.length; i++) {
-            var field = options.fields[i];
+        for (i = 0; i < options.fields.length; i++) {
+            field = options.fields[i];
             fieldInfo[field.name] = {'field': field};
 
             if (field.hidden) {
@@ -110,7 +109,7 @@ $.fn.formDlg = function(options) {
             }
         }
 
-        var box = $("<div/>")
+        box = $("<div/>")
             .addClass("formdlg")
             .append(errors)
             .append(self)
@@ -161,7 +160,10 @@ $.fn.formDlg = function(options) {
          * @param {object} rsp  The server response.
          */
         function displayErrors(rsp) {
-            var errorStr;
+            var errorStr,
+                fieldName,
+                list,
+                i;
 
             if (_.isObject(rsp)) {
                 errorStr = rsp.err.msg;
@@ -179,15 +181,15 @@ $.fn.formDlg = function(options) {
 
             if (rsp.fields) {
                 /* Invalid form data */
-                for (var fieldName in rsp.fields) {
+                for (fieldName in rsp.fields) {
                     if (!fieldInfo[fieldName]) {
                         continue;
                     }
 
-                    var list = $(".errorlist", fieldInfo[fieldName].row)
+                    list = $(".errorlist", fieldInfo[fieldName].row)
                         .css("display", "block");
 
-                    for (var i = 0; i < rsp.fields[fieldName].length; i++) {
+                    for (i = 0; i < rsp.fields[fieldName].length; i++) {
                         $("<li/>")
                             .appendTo(list)
                             .html(rsp.fields[fieldName][i]);
@@ -217,19 +219,22 @@ function registerToggleStar() {
         STAR_OFF_IMG = STATIC_URLS["rb/images/star_off.png"];
 
     $(document).on('click', '.star', function() {
-        var self = $(this);
-
-        var obj = self.data("rb.obj");
+        var self = $(this),
+            obj = self.data("rb.obj"),
+            type,
+            objid,
+            on,
+            altTitle;
 
         if (!obj) {
-            var type = self.attr("data-object-type");
-            var objid = self.attr("data-object-id");
+            type = self.attr("data-object-type");
+            objid = self.attr("data-object-id");
 
-            if (type == "reviewrequests") {
+            if (type === "reviewrequests") {
                 obj = new RB.ReviewRequest({
                     id: objid
                 });
-            } else if (type == "groups") {
+            } else if (type === "groups") {
                 obj = new RB.ReviewGroup({
                     id: objid
                 });
@@ -239,19 +244,19 @@ function registerToggleStar() {
             }
         }
 
-        var on = (parseInt(self.attr("data-starred"), 10) == 1) ? 0 : 1;
+        on = (parseInt(self.attr("data-starred"), 10) === 1) ? 0 : 1;
         obj.setStarred(on);
         self.data("rb.obj", obj);
 
-        var alt_title = on ? "Starred" : "Click to star";
+        altTitle = on ? "Starred" : "Click to star";
         self.attr({
             src: (on ? STAR_ON_IMG : STAR_OFF_IMG),
             'data-starred': on,
-            alt: alt_title,
-            title: alt_title
+            alt: altTitle,
+            title: altTitle
         });
     });
-};
+}
 
 /*
  * The wrapper function of autocomplete for the search field.
@@ -301,15 +306,18 @@ $.fn.searchAutoComplete = function() {
                 parsed = [],
                 objects = ["users", "groups", "review_requests"],
                 values = ["username", "name", "summary"],
-                items;
+                value,
+                items,
+                i,
+                j;
 
-            for (var j = 0; j < objects.length; j++) {
+            for (j = 0; j < objects.length; j++) {
                 items = jsonDataSearch[objects[j]];
 
-                for (var i = 0; i < items.length; i++) {
-                    var value = items[i];
+                for (i = 0; i < items.length; i++) {
+                    value = items[i];
 
-                    if (j != 2) {
+                    if (j !== 2) {
                         parsed.push({
                             data: value,
                             value: value[values[j]],
@@ -330,7 +338,7 @@ $.fn.searchAutoComplete = function() {
             return parsed;
         },
         url: SITE_ROOT + "api/" + "search/"
-    })
+    });
 };
 
 var gUserInfoBoxCache = {};
@@ -341,41 +349,41 @@ var gUserInfoBoxCache = {};
  * The infobox is displayed after a 1 second delay.
  */
 $.fn.user_infobox = function() {
-    var POPUP_DELAY_MS = 1000;
-    var OFFSET_LEFT = -20;
-    var OFFSET_TOP = -30;
+    var POPUP_DELAY_MS = 1000,
+        OFFSET_LEFT = -20,
+        OFFSET_TOP = -30,
+        infobox = $("#user-infobox");
 
-    var infobox = $("#user-infobox");
-
-    if (infobox.length == 0) {
+    if (infobox.length === 0) {
         infobox = $("<div id='user-infobox'/>'").hide();
         $(document.body).append(infobox);
     }
 
     return this.each(function() {
-        var self = $(this);
-        var timeout = null;
-        var url = self.attr('href') + 'infobox/';
+        var self = $(this),
+            timeout = null,
+            url = self.attr('href') + 'infobox/';
 
         self.hover(
             function() {
                 timeout = setTimeout(function() {
+                    var offset;
+
                     if (!gUserInfoBoxCache[url]) {
                         infobox
                             .empty()
                             .addClass("loading")
-                            .load(url,
-                                  function(responseText, textStatus) {
-                                      gUserInfoBoxCache[url] = responseText;
-                                      infobox.removeClass("loading");
-                                      infobox.find('.gravatar').retinaGravatar();
-                                  });
+                            .load(url, function(responseText) {
+                                gUserInfoBoxCache[url] = responseText;
+                                infobox.removeClass("loading");
+                                infobox.find('.gravatar').retinaGravatar();
+                            });
                     } else {
                         infobox.html(gUserInfoBoxCache[url]);
                         infobox.find('.gravatar').retinaGravatar();
                     }
 
-                    var offset = self.offset();
+                    offset = self.offset();
 
                     infobox
                         .move(offset.left + OFFSET_LEFT,
@@ -389,7 +397,7 @@ $.fn.user_infobox = function() {
                 infobox.hide();
             });
     });
-}
+};
 
 
 $(document).ready(function() {

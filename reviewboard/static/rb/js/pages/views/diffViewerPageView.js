@@ -119,7 +119,6 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
      */
     _renderFileDiff: function(diffReviewable) {
         var fileDiffID = diffReviewable.get('fileDiffID'),
-            interFileDiffID = diffReviewable.get('interFileDiffID'),
             tableID = 'file' + fileDiffID,
             $table = $('#' + tableID),
             diffReviewableView = new RB.DiffReviewableView({

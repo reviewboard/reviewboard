@@ -33,7 +33,7 @@ var Item = RB.BaseResource.extend({
         };
     },
 
-    parse: function(rsp) {
+    parse: function(/* rsp */) {
     }
 });
 
@@ -78,7 +78,7 @@ var WatchedItems = RB.BaseResource.extend({
             item;
 
         if (url) {
-            var item = new Item({
+            item = new Item({
                 objectID: obj.id,
                 baseURL: url,
                 watched: true
@@ -131,7 +131,7 @@ RB.UserSession = Backbone.Model.extend({
             attr: 'diffsShowExtraWhitespace',
             cookieName: 'show_ew',
             deserialize: function(value) {
-                return value !== 'false'
+                return value !== 'false';
             }
         });
     },

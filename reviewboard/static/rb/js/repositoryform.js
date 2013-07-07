@@ -1,22 +1,11 @@
 var prevTypes = {},
     origRepoTypes = [];
 
-function forEachField(fields, wholeRows, func) {
-    var prefix = (wholeRows ? "#id_" : "#row-"),
-        id,
-        field;
-
-    for (id in fields) {
-        for (field in fields[id]) {
-            func($(prefix + fields[id][field]));
-        }
-    }
-}
-
 function updateFormDisplay(id, tools_info) {
     var type = $("#id_" + id)[0].value,
         oldInfo = tools_info[prevTypes[id]],
         newInfo = tools_info[type],
+        text,
         field,
         i;
 
@@ -34,11 +23,11 @@ function updateFormDisplay(id, tools_info) {
     }
 
     for (field in newInfo.help_text) {
-        var text = newInfo.help_text[field];
+        text = newInfo.help_text[field];
 
         $("#row-" + field)
             .append($('<p class="help"/>')
-                .text(text))
+                .text(text));
     }
 
 
@@ -48,6 +37,8 @@ function updateFormDisplay(id, tools_info) {
 function updatePlanEl(rowEl, planEl, serviceType) {
     var planTypes = HOSTING_SERVICES[serviceType].plans,
         selectedPlan = planEl.val(),
+        planType,
+        opt,
         i;
 
     planEl.empty();
@@ -56,11 +47,11 @@ function updatePlanEl(rowEl, planEl, serviceType) {
         rowEl.hide();
     } else {
         for (i = 0; i < planTypes.length; i++) {
-            var planType = planTypes[i],
-                opt = $('<option/>')
-                    .val(planType.type)
-                    .text(planType.label)
-                    .appendTo(planEl);
+            planType = planTypes[i];
+            opt = $('<option/>')
+                .val(planType.type)
+                .text(planType.label)
+                .appendTo(planEl);
 
             if (planType.type === selectedPlan) {
                 opt.attr('selected', 'selected');
@@ -82,7 +73,7 @@ function updateHostingForm(hostingTypeEl, formPrefix, planEl, formsEl) {
 }
 
 function hideAllToolsFields() {
-    var fields = TOOLS_INFO["none"].fields;
+    var fields = TOOLS_INFO.none.fields;
 
     for (i = 0; i < fields.length; i++) {
         $("#row-" + fields[i]).hide();
@@ -132,7 +123,8 @@ $(document).ready(function() {
             .addClass('errornote')
             .hide()
             .appendTo(hostingAccountRowEl),
-        associateSshKeyFieldsetEl = $("#row-associate_ssh_key").parent("fieldset"),
+        associateSshKeyFieldsetEl =
+            $("#row-associate_ssh_key").parent("fieldset"),
         associateSshKeyEl = $("#id_associate_ssh_key"),
         associateSshKeyElDisabled = associateSshKeyEl[0].disabled,
         bugTrackerUseHostingEl = $("#id_bug_tracker_use_hosting"),
@@ -152,12 +144,11 @@ $(document).ready(function() {
         toolEl = $("#id_tool"),
         publicKeyPopup = $("#ssh-public-key-popup"),
         repoForms = $(".repo-form"),
-        bugTrackerForms = $(".bug-tracker-form"),
-        service_id;
+        bugTrackerForms = $(".bug-tracker-form");
 
-    prevTypes['bug_tracker_type'] = "none";
-    prevTypes['hosting_type'] = "custom";
-    prevTypes['tool'] = "none";
+    prevTypes.bug_tracker_type = "none";
+    prevTypes.hosting_type = "custom";
+    prevTypes.tool = "none";
 
     toolEl.find("option").each(function() {
         origRepoTypes.push({value: $(this).val(), text: $(this).text()});
@@ -165,8 +156,6 @@ $(document).ready(function() {
 
     bugTrackerUseHostingEl
         .change(function() {
-            var checked = this.checked;
-
             if (this.checked) {
                 bugTrackerTypeRowEl.hide();
                 bugTrackerPlanRowEl.hide();
@@ -253,13 +242,17 @@ $(document).ready(function() {
 
     $([hostingTypeEl[0], hostingURLEl[0]])
         .change(function() {
-            var hostingType = hostingTypeEl[0].value;
+            var hostingType = hostingTypeEl[0].value,
+                accounts,
+                foundSelected,
+                selectedAccount,
+                account,
+                opt,
+                i;
 
             if (hostingType !== "custom") {
-                var accounts = HOSTING_SERVICES[hostingType].accounts,
-                    foundSelected = false,
-                    selectedAccount,
-                    i;
+                accounts = HOSTING_SERVICES[hostingType].accounts;
+                foundSelected = false;
 
                 /* Rebuild the list of accounts. */
                 selectedAccount = parseInt(hostingAccountEl.val(), 10);
@@ -267,10 +260,10 @@ $(document).ready(function() {
                 hostingAccountEl.find('option[value!=""]').remove();
 
                 for (i = 0; i < accounts.length; i++) {
-                    var account = accounts[i];
+                    account = accounts[i];
 
                     if (account.hosting_url === selectedURL) {
-                        var opt = $("<option/>")
+                        opt = $("<option/>")
                             .val(account.pk)
                             .text(account.username)
                             .data('account', account)
@@ -288,7 +281,9 @@ $(document).ready(function() {
 
     $([hostingTypeEl[0], hostingAccountEl[0]])
         .change(function() {
-            var hostingType = hostingTypeEl.val();
+            var hostingType = hostingTypeEl.val(),
+                selectedOption,
+                account;
 
             hostingAccountRelinkEl.hide();
 
@@ -313,10 +308,9 @@ $(document).ready(function() {
                         hostingAccountPassRowEl.hide();
                     }
                 } else {
-                    var selectedOption =
-                            $(hostingAccountEl[0].options[
-                                hostingAccountEl[0].selectedIndex]),
-                        account = selectedOption.data('account');
+                    selectedOption = $(hostingAccountEl[0].options[
+                        hostingAccountEl[0].selectedIndex]);
+                    account = selectedOption.data('account');
 
                     hostingAccountUserRowEl.hide();
 

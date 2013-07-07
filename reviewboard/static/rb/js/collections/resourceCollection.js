@@ -129,7 +129,8 @@ RB.ResourceCollection = RB.BaseCollection.extend({
 
             return true;
         } else {
-            return RB.BaseCollection.prototype.fetch.call(this, options, context);
+            return RB.BaseCollection.prototype.fetch.call(this, options,
+                                                          context);
         }
     },
 
@@ -207,7 +208,7 @@ RB.ResourceCollection = RB.BaseCollection.extend({
             fetchingAll: true,
             enforceHasNext: false,
             data: {
-                'max-results': 50,
+                'max-results': 50
             },
             success: function() {
                 if (this._links.next) {

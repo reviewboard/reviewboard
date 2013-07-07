@@ -43,15 +43,15 @@ RB.DiffComment = RB.BaseComment.extend({
      */
     toJSON: function() {
         var data = _.defaults({
-            first_line: this.get('beginLineNum'),
-            num_lines: this.getNumLines()
-        }, RB.BaseComment.prototype.toJSON.call(this));
+                first_line: this.get('beginLineNum'),
+                num_lines: this.getNumLines()
+            }, RB.BaseComment.prototype.toJSON.call(this)),
+            interFileDiffID;
 
         if (!this.get('loaded')) {
-            var fileDiffID = this.get('fileDiffID'),
-                interFileDiffID = this.get('interFileDiffID');
+            interFileDiffID = this.get('interFileDiffID');
 
-            data.filediff_id = fileDiffID
+            data.filediff_id = this.get('fileDiffID');
 
             if (interFileDiffID) {
                 data.interfilediff_id = interFileDiffID;

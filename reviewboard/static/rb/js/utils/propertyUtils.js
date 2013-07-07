@@ -52,6 +52,24 @@ $.fn.bindClass = function(model, modelPropName, className, options) {
  * properties.
  */
 $.fn.bindProperty = function(elPropName, model, modelPropName, options) {
+    function updateElementProp() {
+        var value = model.get(modelPropName);
+
+        if (options.inverse) {
+            value = !value;
+        }
+
+        if (elPropName === 'text' || elPropName === 'html') {
+            if ($this[elPropName]() !== value) {
+                $this[elPropName]((value === undefined ||
+                                   value === null)
+                                  ? '' : value);
+            }
+        } else if ($this.prop(elPropName) !== value) {
+            $this.prop(elPropName, value);
+        }
+    }
+
     var $this = this;
 
     options = _.defaults(options || {}, {
@@ -61,30 +79,12 @@ $.fn.bindProperty = function(elPropName, model, modelPropName, options) {
     });
 
     if (options.modelToElement) {
-        function updateElementProp() {
-            var value = model.get(modelPropName);
-
-            if (options.inverse) {
-                value = !value;
-            }
-
-            if (elPropName === 'text' || elPropName === 'html') {
-                if ($this[elPropName]() !== value) {
-                    $this[elPropName]((value === undefined ||
-                                       value === null)
-                                      ? '' : value);
-                }
-            } else if ($this.prop(elPropName) !== value) {
-                $this.prop(elPropName, value);
-            }
-        };
-
         model.on('change:' + modelPropName, updateElementProp);
         updateElementProp();
     }
 
     if (options.elementToModel) {
-        $this.on('change', function(value) {
+        $this.on('change', function() {
             var value = (elPropName === 'text' || elPropName === 'html')
                         ? $this[elPropName]()
                         : $this.prop(elPropName);

@@ -216,7 +216,7 @@ RB.ReviewRequestEditor = Backbone.Model.extend({
     /*
      * Performs validation on attributes.
      */
-    validate: function(attrs, options) {
+    validate: function(attrs) {
         var strings = RB.ReviewRequestEditor.strings;
 
         if (_.has(attrs, 'editCount') && attrs.editCount < 0) {

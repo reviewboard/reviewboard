@@ -68,7 +68,7 @@ describe('models/ReviewReply', function() {
                 expect(model._retrieveDraft).toHaveBeenCalled();
                 expect(Backbone.Model.prototype.fetch).toHaveBeenCalled();
                 expect(Backbone.Model.prototype.destroy).toHaveBeenCalled();
-            });;
+            });
         });
 
         describe('With isNew=false', function() {
@@ -209,7 +209,7 @@ describe('models/ReviewReply', function() {
             });
 
             it('With diff comment', function() {
-                commentsData['diff_comments'] = [{
+                commentsData.diff_comments = [{
                     id: 1
                 }];
 
@@ -220,7 +220,7 @@ describe('models/ReviewReply', function() {
             });
 
             it('With screenshot comment', function() {
-                commentsData['screenshot_comments'] = [{
+                commentsData.screenshot_comments = [{
                     id: 1
                 }];
 
@@ -231,7 +231,7 @@ describe('models/ReviewReply', function() {
             });
 
             it('With file attachment comment', function() {
-                commentsData['file_attachment_comments'] = [{
+                commentsData.file_attachment_comments = [{
                     id: 1
                 }];
 
@@ -287,7 +287,7 @@ describe('models/ReviewReply', function() {
                 expect(parentObject.ready).toHaveBeenCalled();
                 expect(model._retrieveDraft).toHaveBeenCalled();
                 expect(callbacks.ready).toHaveBeenCalled();
-            });;
+            });
         });
 
         describe('With isNew=false', function() {

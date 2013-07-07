@@ -22,37 +22,39 @@
  * @param {object} options  The options, listed above.
  */
 RB.apiCall = function(options) {
-    var prefix = options.prefix || "";
-    var url = options.url || (SITE_ROOT + prefix + "api" + options.path);
+    var prefix = options.prefix || "",
+        url = options.url || (SITE_ROOT + prefix + "api" + options.path);
 
     function doCall() {
+        var activityIndicator = $("#activity-indicator"),
+            data;
+
         if (options.buttons) {
             options.buttons.attr("disabled", true);
         }
 
-        var activityIndicator = $("#activity-indicator");
-
         if (RB.ajaxOptions.enableIndicator && !options.noActivityIndicator) {
             activityIndicator
                 .removeClass("error")
-                .text((options.type || options.type == "GET")
+                .text((options.type || options.type === "GET")
                       ? "Loading..." : "Saving...")
                 .show();
         }
 
-        var data = $.extend(true, {
+        data = $.extend(true, {
             url: url,
             data: options.data,
             dataType: options.dataType || "json",
             error: function(xhr, textStatus, errorThrown) {
-                var rsp = null;
+                var rsp = null,
+                    responseText;
 
                 try {
                     rsp = $.parseJSON(xhr.responseText);
                 } catch (e) {
                 }
 
-                if ((rsp && rsp.stat) || xhr.status == 204) {
+                if ((rsp && rsp.stat) || xhr.status === 204) {
                     if ($.isFunction(options.success)) {
                         options.success(rsp, xhr.status);
                     }
@@ -60,7 +62,7 @@ RB.apiCall = function(options) {
                     return;
                 }
 
-                var responseText = xhr.responseText;
+                responseText = xhr.responseText;
                 activityIndicator
                     .addClass("error")
                     .text("A server error occurred.")
@@ -108,8 +110,8 @@ RB.apiCall = function(options) {
             $.funcQueue("rbapicall").next();
         };
 
-        if (data.data == null || data.data == undefined ||
-            typeof data.data == "object") {
+        if (data.data === null || data.data === undefined ||
+            typeof data.data === 'object') {
             data.data = $.extend({
                 api_format: 'json'
             }, data.data || {});
@@ -124,15 +126,15 @@ RB.apiCall = function(options) {
 
     function showErrorPage(xhr, data) {
         var iframe = $('<iframe/>')
-            .width("100%");
-
-        var requestData = "(none)";
+                .width('100%'),
+            requestData = '(none)',
+            doc;
 
         if (options.data) {
             requestData = $.param(options.data);
         }
 
-        var errorBox = $('<div class="server-error-box"/>')
+        $('<div class="server-error-box"/>')
             .appendTo("body")
             .append('<p><b>Error Code:</b> ' + xhr.status + '</p>')
             .append('<p><b>Error Text:</b> ' + xhr.statusText + '</p>')
@@ -160,8 +162,7 @@ RB.apiCall = function(options) {
                 title: "Server Error Details"
             });
 
-        var doc = iframe[0].contentDocument ||
-                  iframe[0].contentWindow.document;
+        doc = iframe[0].contentDocument || iframe[0].contentWindow.document;
         doc.open();
         doc.write(data);
         doc.close();

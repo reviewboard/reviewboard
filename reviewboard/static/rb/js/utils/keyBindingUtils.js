@@ -18,8 +18,7 @@ RB.KeyBindingsMixin = {
         $(document).on('keypress.keybindings' + this.cid, _.bind(function(evt) {
             var keyChar,
                 keys,
-                func,
-                i;
+                func;
 
             if (evt.altKey || evt.ctrlKey || evt.metaKey ||
                 evt.target.tagName === 'INPUT' ||

@@ -71,15 +71,6 @@ describe('diffviewer/views/DiffReviewableView', function() {
         $container,
         view;
 
-    function sendMouseEvent($el, type, target) {
-        var evt = $.Event(type);
-        evt.target = target;
-        evt.pageX = $(target).offset().left;
-        evt.pageY = $(target).offset().top;
-
-        $el.trigger(evt);
-    }
-
     beforeEach(function() {
         $container = $('<div/>').appendTo($testsScratch);
 
@@ -307,10 +298,11 @@ describe('diffviewer/views/DiffReviewableView', function() {
                     });
 
                     it('And existing comment', function() {
-                        var onClick = jasmine.createSpy('onClick'),
-                            $comment = $('<a class="commentflag" />')
-                                .click(onClick)
-                                .appendTo(cell);
+                        var onClick = jasmine.createSpy('onClick');
+
+                        $('<a class="commentflag" />')
+                            .click(onClick)
+                            .appendTo(cell);
 
                         selector._onMouseOver({
                             target: cell
@@ -382,10 +374,11 @@ describe('diffviewer/views/DiffReviewableView', function() {
                     });
 
                     xit('And existing comment', function() {
-                        var onClick = jasmine.createSpy('onClick'),
-                            $comment = $('<a class="commentflag" />')
-                                .click(onClick)
-                                .appendTo(cell);
+                        var onClick = jasmine.createSpy('onClick');
+
+                        $('<a class="commentflag" />')
+                            .click(onClick)
+                            .appendTo(cell);
 
                         selector._onMouseOver({
                             target: startCell
@@ -525,8 +518,7 @@ describe('diffviewer/views/DiffReviewableView', function() {
 
             describe('Out of line', function() {
                 it('Contents cell', function() {
-                    var $row = $($rows[0]),
-                        cell;
+                    var $row = $($rows[0]);
 
                     selector._onMouseOver({
                         target: $row[0].cells[0]
@@ -544,8 +536,7 @@ describe('diffviewer/views/DiffReviewableView', function() {
                 });
 
                 it('Line number cell', function() {
-                    var $row = $($rows[0]),
-                        cell;
+                    var $row = $($rows[0]);
 
                     selector._onMouseOver({
                         target: $row[0].cells[0]
@@ -959,7 +950,7 @@ describe('diffviewer/views/DiffReviewableView', function() {
                                     comment_id: 1,
                                     line: 12
                                 }]
-                            },
+                            }
                         ]
                     }),
                     el: $(diffTableTemplate({

@@ -312,7 +312,7 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
      * By default, this will use the item as the URL and as the hyperlink text.
      * By overriding urlFunc and textFunc, the URL and text can be customized.
      */
-    urlizeList: function(list, urlFunc, textFunc, postProcessFunc) {
+    urlizeList: function(list, urlFunc, textFunc) {
         var str = '',
             len,
             item,

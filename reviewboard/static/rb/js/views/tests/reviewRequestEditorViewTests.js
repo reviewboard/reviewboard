@@ -108,7 +108,7 @@ describe('views/ReviewRequestEditorView', function() {
 
                             return $buttons;
                         }
-                    }
+                    };
                 });
 
                 $('#delete-review-request-link').click();
@@ -633,7 +633,8 @@ describe('views/ReviewRequestEditorView', function() {
                     fileAttachment = editor.fileAttachments.at(0);
                     expect(fileAttachment.id).toBe(42);
                     expect(fileAttachment.get('caption')).toBe('my caption');
-                    expect($filesContainer.find('.file-container').length).toBe(1);
+                    expect($filesContainer.find('.file-container').length)
+                        .toBe(1);
                 });
             });
         });
@@ -757,7 +758,7 @@ describe('views/ReviewRequestEditorView', function() {
                         expect(editor.get('editCount')).toBe(0);
 
                         $caption = $thumbnail.find('.screenshot-caption .edit')
-                            .inlineEditor('startEdit')
+                            .inlineEditor('startEdit');
                     });
 
                     it('On cancel', function() {

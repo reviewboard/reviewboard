@@ -54,8 +54,8 @@ describe('utils/linkifyUtils', function() {
 
                 it('<...>', function() {
                     expect(RB.linkifyText('<http://example.com/>')).toBe(
-                           '&lt;<a target="_blank" href="http://example.com/">' +
-                           'http://example.com/</a>&gt;');
+                           '&lt;<a target="_blank" href="' +
+                           'http://example.com/">http://example.com/</a>&gt;');
                 });
             });
         });
@@ -76,12 +76,14 @@ describe('utils/linkifyUtils', function() {
             describe('Diffs', function() {
                 it('/r/123/diff', function() {
                     expect(RB.linkifyText('/r/123/diff')).toBe(
-                        '<a target="_blank" href="/r/123/diff/">/r/123/diff</a>');
+                        '<a target="_blank" href="/r/123/diff/">' +
+                        '/r/123/diff</a>');
                 });
 
                 it('/r/123/diff/', function() {
                     expect(RB.linkifyText('/r/123/diff/')).toBe(
-                        '<a target="_blank" href="/r/123/diff/">/r/123/diff/</a>');
+                        '<a target="_blank" href="/r/123/diff/">' +
+                        '/r/123/diff/</a>');
                 });
             });
         });

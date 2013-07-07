@@ -32,7 +32,8 @@ describe('resources/collections/RepositoryCommits', function() {
                             author_name: "Christian Hammond",
                             date: "2013-06-25T23:30:59Z",
                             id: "92463764015ef463b4b6d1a1825fee7aeec8cb15",
-                            message: "Fixed the bug number for the blacktriangledown bug.",
+                            message: "Fixed the bug number for the " +
+                                     "blacktriangledown bug.",
                             parent: "f5a35f1d8a8dcefb336a8e3211334f1f50ea7792",
                             review_request_url: "http://example.com/r/18274/"
                         },
@@ -60,7 +61,8 @@ describe('resources/collections/RepositoryCommits', function() {
 
             expect($.ajax).toHaveBeenCalled();
             expect(collection.length).toBe(3);
-            expect(collection.at(0).get('authorName')).toBe('Christian Hammond');
+            expect(collection.at(0).get('authorName'))
+                .toBe('Christian Hammond');
             expect(collection.at(1).get('date').getUTCHours()).toBe(23);
             expect(collection.at(2).get('summary'))
                 .toBe("Don't expose child resources in ValidateDiffResource.");

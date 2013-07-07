@@ -425,8 +425,7 @@ RB.BaseResource = Backbone.Model.extend({
      * is ready, we'll finish destruction by calling _finishDestroy.
      */
     _destroyObject: function(options, context) {
-        var self = this,
-            url = _.result(this, 'url');
+        var url = _.result(this, 'url');
 
         options = options || {};
 
@@ -523,7 +522,7 @@ RB.BaseResource = Backbone.Model.extend({
      *
      * This is meant to be overridden by subclasses.
      */
-    parseResourceData: function(rsp) {
+    parseResourceData: function(/* rsp */) {
         return {};
     },
 

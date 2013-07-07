@@ -41,7 +41,7 @@ describe('views/ReviewBoxListView', function() {
         var reviewRequest = new RB.ReviewRequest(),
             editor = new RB.ReviewRequestEditor({
                 reviewRequest: reviewRequest
-            })
+            }),
             $el = $(template()).appendTo($testsScratch);
 
         view = new RB.ReviewBoxListView({

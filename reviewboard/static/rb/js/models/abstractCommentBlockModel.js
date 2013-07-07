@@ -75,7 +75,7 @@ RB.AbstractCommentBlock = Backbone.Model.extend({
      * This must be implemented by a subclass to return a Comment class
      * specific to the subclass.
      */
-    createComment: function(id) {
+    createComment: function(/* id */) {
         console.assert(false, 'This must be implemented by a subclass');
     },
 
@@ -88,8 +88,7 @@ RB.AbstractCommentBlock = Backbone.Model.extend({
      * The actual comment object is up to the subclass to create.
      */
     ensureDraftComment: function(id, text) {
-        var self = this,
-            comment;
+        var comment;
 
         if (this.has('draftComment')) {
             return;

@@ -30,9 +30,6 @@ var CommentsListView = Backbone.View.extend({
         var reviewRequestURL = this.options.reviewRequestURL,
             commentIssueManager = this.options.commentIssueManager,
             interactive = this.options.issuesInteractive,
-            issueTemplateOpts = {
-                interactive: interactive
-            },
             odd = true,
             $items = $();
 
@@ -130,7 +127,8 @@ RB.CommentDialogView = Backbone.View.extend({
         ' <div class="buttons">',
         '  <input type="button" class="save" value="Save" disabled="true" />',
         '  <input type="button" class="cancel" value="Cancel" />',
-        '  <input type="button" class="delete" value="Delete" disabled="true" />',
+        '  <input type="button" class="delete" value="Delete" ',
+        '         disabled="true" />',
         '  <input type="button" class="close" value="Close" />',
         ' </div>',
         '</form>'
@@ -152,7 +150,8 @@ RB.CommentDialogView = Backbone.View.extend({
     render: function() {
         var userSession = RB.UserSession.instance,
             reviewRequest = this.model.get('reviewRequest'),
-            reviewRequestEditor = this.model.get('reviewRequestEditor');
+            reviewRequestEditor = this.model.get('reviewRequestEditor'),
+            $grip;
 
         this.options.animate = (this.options.animate !== false);
 
@@ -234,7 +233,7 @@ RB.CommentDialogView = Backbone.View.extend({
             /*
              * resizable is pretty broken in IE 6/7.
              */
-            var grip = $("<img/>")
+            $grip = $("<img/>")
                 .addClass("ui-resizable-handle ui-resizable-grip")
                 .attr("src", STATIC_URLS["rb/images/resize-grip.png"])
                 .insertAfter(this._$buttons)
@@ -248,7 +247,7 @@ RB.CommentDialogView = Backbone.View.extend({
             });
 
             /* Reset the opacity, which resizable() changes. */
-            grip.css("opacity", 100);
+            $grip.css("opacity", 100);
         }
 
         if (!$.browser.msie || $.browser.version >= 7) {
@@ -280,7 +279,7 @@ RB.CommentDialogView = Backbone.View.extend({
     /*
      * Opens the comment dialog and focuses the text field.
      */
-    open: function(fromEl) {
+    open: function() {
         function openDialog() {
             this.$el.scrollIntoView();
             this._$textField.focus();
@@ -293,7 +292,7 @@ RB.CommentDialogView = Backbone.View.extend({
             })
             .show();
 
-        this._handleResize()
+        this._handleResize();
 
         if (this.model.get('canEdit')) {
             this.model.beginEdit();
@@ -323,7 +322,7 @@ RB.CommentDialogView = Backbone.View.extend({
 
             if (_.isFunction(onClosed)) {
                 onClosed.call(context);
-            };
+            }
         }
 
         if (this.options.animate && this.$el.is(":visible")) {
@@ -568,11 +567,14 @@ RB.CommentDialogView = Backbone.View.extend({
             commentIssueManager =
                 options.commentIssueManager ||
                 reviewRequestEditor.get('commentIssueManager'),
-            dlg;
+            beside,
+            dlg,
+            x,
+            y;
 
         function showCommentDlg() {
             try {
-                dlg.open(options.fromEl);
+                dlg.open();
             } catch(e) {
                 dlg.close();
                 throw e;
@@ -607,11 +609,11 @@ RB.CommentDialogView = Backbone.View.extend({
         if (_.isFunction(options.position)) {
             options.position(dlg);
         } else if (options.position.beside) {
-            var beside = options.position.beside;
+            beside = options.position.beside;
             dlg.positionBeside(beside.el, beside);
         } else {
-            var x = options.position.x,
-                y = options.position.y;
+            x = options.position.x;
+            y = options.position.y;
 
             if (x === undefined) {
                 /* Center it. */

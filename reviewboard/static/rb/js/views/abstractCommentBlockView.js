@@ -66,8 +66,7 @@ RB.AbstractCommentBlockView = Backbone.View.extend({
      * comment area.
      */
     notify: function(text, cb, context) {
-        var offset = this.$el.offset(),
-            $bubble = $('<div/>')
+        var $bubble = $('<div/>')
                 .addClass('bubble')
                 .appendTo(this.$el)
                 .text(text);
@@ -152,7 +151,7 @@ RB.AbstractCommentBlockView = Backbone.View.extend({
             this.notify('Comment Deleted', function() {
                 /* Discard the comment block if empty. */
                 if (this.model.isEmpty()) {
-                    $el.fadeOut(350, function() { self.dispose(); })
+                    $el.fadeOut(350, function() { self.dispose(); });
                 } else {
                     $el.removeClass('draft');
                     this._updateTooltip();

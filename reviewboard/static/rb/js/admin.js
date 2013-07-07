@@ -41,7 +41,7 @@ $(document).ready(function() {
             adminExtras.masonry('reload');
 
             if (widgetBox.hasClass("widget-hidden")) {
-                widgetBox.removeClass("widget-hidden")
+                widgetBox.removeClass("widget-hidden");
                 collapsed = 0;
                 widgetBox.trigger("widget-shown");
             } else {

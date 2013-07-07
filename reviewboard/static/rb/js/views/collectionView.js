@@ -25,7 +25,7 @@ RB.CollectionView = Backbone.View.extend({
         collection.on({
             add: this._add,
             remove: this._remove
-        }, this)
+        }, this);
     },
 
     /*

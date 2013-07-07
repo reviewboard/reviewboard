@@ -114,8 +114,8 @@ RB.IssueSummaryTableView = Backbone.View.extend({
         * '-issue' to find the comment's location. Then find the
         * closest box class and uncollapse it.
         */
-        var issueId = '#comment-' + $(event.srcElement).attr("comment-type") + '-' +
-                      $(event.srcElement).attr("issue-id") + '-issue';
+        var issueId = '#comment-' + $(event.srcElement).attr("comment-type") +
+                      '-' + $(event.srcElement).attr("issue-id") + '-issue';
         $(issueId).closest(".box").removeClass("collapsed");
     },
 
@@ -154,14 +154,16 @@ RB.IssueSummaryTableView = Backbone.View.extend({
             var firstElement = $(a).find('td:nth-child(' + colIndex + ')'),
                 secondElement = $(b).find('td:nth-child(' + colIndex + ')'),
                 firstElementText = firstElement.text().toLowerCase(),
-                secondElementText = secondElement.text().toLowerCase();
+                secondElementText = secondElement.text().toLowerCase(),
+                firstText,
+                secondText;
 
             if (firstElement.attr('timestamp')) {
                 return parseInt(firstElement.attr('timestamp'), 10) -
                        parseInt(secondElement.attr('timestamp'), 10);
             } else if (firstElement.hasClass('comment-id')) {
-                 var firstText = firstElementText.split(" "),
-                     secondText = secondElementText.split(" ");
+                 firstText = firstElementText.split(" ");
+                 secondText = secondElementText.split(" ");
 
                  if (firstText[0] > secondText[0]) {
                      return 1;
@@ -169,7 +171,7 @@ RB.IssueSummaryTableView = Backbone.View.extend({
                     return -1;
                  } else {
                      return parseInt(firstText[1], 10) -
-                            parseInt(secondText[1], 10)
+                            parseInt(secondText[1], 10);
                  }
             } else if (firstElementText > secondElementText) {
                 return 1;
@@ -198,14 +200,16 @@ RB.IssueSummaryTableView = Backbone.View.extend({
     },
 
     _uncollapseTarget: function() {
-        var hash = window.location.hash;
+        var hash = window.location.hash,
+            commentName,
+            targetBox;
 
         if (hash.indexOf("comment") > 0) {
-            var comment_name = hash.toString().substring(1),
-                target_box = $('a[name=' + comment_name + ']').closest(".box");
+            commentName = hash.toString().substring(1);
+            targetBox = $('a[name=' + commentName + ']').closest(".box");
 
-            if (target_box.hasClass('collapsed')) {
-                target_box.removeClass("collapsed");
+            if (targetBox.hasClass('collapsed')) {
+                targetBox.removeClass('collapsed');
                 // Scroll down to the targeted comment box
                 window.location = window.location;
             }

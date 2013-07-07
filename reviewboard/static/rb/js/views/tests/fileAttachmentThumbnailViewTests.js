@@ -46,7 +46,7 @@ describe('views/FileAttachmentThumbnail', function() {
             var $el = $('<div/>')
                 .addClass(RB.FileAttachmentThumbnail.prototype.className)
                 .html(RB.FileAttachmentThumbnail.prototype.template(_.extend({
-                    deleteImageURL: STATIC_URLS['rb/images/delete.png'],
+                    deleteImageURL: STATIC_URLS['rb/images/delete.png']
                  }, model.attributes)));
 
             view = new RB.FileAttachmentThumbnail({

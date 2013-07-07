@@ -87,7 +87,7 @@ RB.BaseComment = RB.BaseResource.extend({
      * overridden to provide additional validation, but the parent
      * function must be called.
      */
-    validate: function(attrs, options) {
+    validate: function(attrs) {
         if (_.has(attrs, 'parentObject') && !attrs.parentObject) {
             return RB.BaseResource.strings.UNSET_PARENT_OBJECT;
         }

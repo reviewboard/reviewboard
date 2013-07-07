@@ -7,15 +7,15 @@ if (typeof window.console === 'undefined') {
 _origAssert = console.assert;
 
 if (typeof console.log === 'undefined') {
-    console.log = function() {}
+    console.log = function() {};
 }
 
 if (typeof console.warn === 'undefined') {
-    console.warn = function() {}
+    console.warn = function() {};
 }
 
 if (typeof console.error === 'undefined') {
-    console.error = function() {}
+    console.error = function() {};
 }
 
 /*
@@ -30,6 +30,6 @@ console.assert = function(conditional, msg) {
 
     /* If the above assert never raised an exception, raise our own. */
     if (!conditional) {
-        throw Error(msg);
+        throw new Error(msg);
     }
-}
+};

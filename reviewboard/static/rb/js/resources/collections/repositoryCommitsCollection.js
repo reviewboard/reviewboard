@@ -22,5 +22,5 @@ RB.RepositoryCommits = Backbone.Collection.extend({
 
     url: function() {
         return this.options.urlBase + '?start=' + this.options.start;
-    },
+    }
 });

@@ -17,7 +17,7 @@ RB.Diff = RB.BaseResource.extend({
     rspNamespace: 'diff',
 
     getErrorString: function(rsp) {
-        if (rsp.err.code == 207) {
+        if (rsp.err.code === 207) {
             return 'The file "' + rsp.file + '" (revision ' + rsp.revision +
                     ') was not found in the repository';
         }

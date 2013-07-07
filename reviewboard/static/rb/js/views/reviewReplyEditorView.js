@@ -50,7 +50,7 @@ RB.ReviewReplyEditorView = Backbone.View.extend({
         this._$commentsList = this.$('.reply-comments');
 
         /* See if there's a draft comment to import from the page. */
-        $draftComment = this._$commentsList.children('.draft')
+        $draftComment = this._$commentsList.children('.draft');
 
         if ($draftComment.length !== 0) {
             $time = $draftComment.find('time');

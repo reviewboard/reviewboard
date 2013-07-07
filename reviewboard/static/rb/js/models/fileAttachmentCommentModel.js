@@ -70,7 +70,9 @@ RB.FileAttachmentComment = RB.BaseComment.extend({
      * along with the default comment validation.
      */
     validate: function(attrs, options) {
-        var strings = RB.FileAttachmentComment.strings;
+        var strings = RB.FileAttachmentComment.strings,
+            value,
+            key;
 
         if (_.has(attrs, 'fileAttachmentID') && !attrs.fileAttachmentID) {
             return strings.INVALID_FILE_ATTACHMENT_ID;
@@ -83,14 +85,14 @@ RB.FileAttachmentComment = RB.BaseComment.extend({
 
             for (key in attrs.extraData) {
                 if (attrs.extraData.hasOwnProperty(key)) {
-                    var value = attrs.extraData[key];
+                    value = attrs.extraData[key];
 
                     if (!_.isNull(value) &&
                         (!_.isNumber(value) || _.isNaN(value)) &&
                         !_.isBoolean(value) &&
                         !_.isString(value)) {
                         return strings.INVALID_EXTRADATA_VALUE_TYPE
-                            .replace('{key}', key)
+                            .replace('{key}', key);
                     }
                 }
             }

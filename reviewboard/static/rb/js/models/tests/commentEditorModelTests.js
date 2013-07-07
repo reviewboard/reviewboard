@@ -129,7 +129,7 @@ describe('models/CommentEditor', function() {
                     comment: comment
                 });
 
-                expect(function() { editor.beginEdit() }).toThrow();
+                expect(function() { editor.beginEdit(); }).toThrow();
                 expect(console.assert).toHaveBeenCalled();
                 expect(editor.get('canDelete')).toBe(false);
             });

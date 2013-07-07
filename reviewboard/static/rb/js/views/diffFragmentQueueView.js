@@ -44,7 +44,7 @@ RB.DiffFragmentQueueView = Backbone.View.extend({
                     '&container_prefix=' + this.options.containerPrefix +
                     '&' + AJAX_SERIAL;
 
-        _.each(this._queue, function(comments, key) {
+        _.each(this._queue, function(comments) {
             var url = urlPrefix + comments.join(',') + urlSuffix;
 
             $.funcQueue(queueName).add(_.bind(function() {

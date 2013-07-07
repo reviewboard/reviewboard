@@ -120,7 +120,7 @@ describe('models/DraftReviewRequest', function() {
                     }],
                     targetPeople: [{
                         username: 'myuser',
-                        url: '/users/myuser/',
+                        url: '/users/myuser/'
                     }],
                     summary: 'summary',
                     description: 'description'

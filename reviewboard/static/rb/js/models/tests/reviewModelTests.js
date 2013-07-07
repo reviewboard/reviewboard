@@ -1,6 +1,5 @@
 describe('models/Review', function() {
-    var parentObject,
-        model;
+    var model;
 
     beforeEach(function() {
         model = new RB.Review({

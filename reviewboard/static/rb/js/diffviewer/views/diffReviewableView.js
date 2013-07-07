@@ -97,15 +97,14 @@ CommentRowSelector = Backbone.View.extend({
      * Finalizes the selection and pops up a comment dialog.
      */
     _end: function($row) {
-        var $commentFlag,
-            commentBlock;
+        var $commentFlag;
 
         if (this._beginLineNum === this._endLineNum) {
             /* See if we have a comment flag on the selected row. */
             $commentFlag = $row.find('.commentflag');
 
             if ($commentFlag.length === 1) {
-                $commentFlag.click()
+                $commentFlag.click();
                 return;
             }
         }
@@ -183,10 +182,7 @@ CommentRowSelector = Backbone.View.extend({
      * row selected.
      */
     _removeOldRows: function($row) {
-        var destRowIndex = $row[0].rowIndex,
-            startIndex,
-            endIndex,
-            i;
+        var destRowIndex = $row[0].rowIndex;
 
         if (destRowIndex >= this._$begin[0].rowIndex) {
             if (   this._lastSeenIndex !== this._$end[0].rowIndex
@@ -303,8 +299,7 @@ CommentRowSelector = Backbone.View.extend({
      * This will create a new comment block and display the comment dialog.
      */
     _onMouseUp: function(e) {
-        var node = e.target,
-            $tbody;
+        var node = e.target;
 
         if (this._$ghostCommentFlagCell) {
             node = this._$ghostCommentFlagCell[0];
@@ -473,8 +468,6 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
      * Toggles the display of whitespace-only chunks.
      */
     toggleWhitespaceOnlyChunks: function() {
-        var $whitespaceFile;
-
         this.$('tbody tr.whitespace-line').toggleClass('dimmed');
 
         _.each(this.$el.children('tbody.whitespace-chunk'), function(chunk) {
@@ -668,8 +661,7 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
             numLines = commentBlock.getNumLines(),
             beginLineNum = commentBlock.get('beginLineNum'),
             endLineNum = commentBlock.get('endLineNum'),
-            beginRowEl = this._findLineNumRow(beginLineNum,
-                                              prevBeginRowIndex),
+            beginRowEl = this._findLineNumRow(beginLineNum),
             prevBeginRowIndex,
             endRowEl;
 
@@ -760,8 +752,7 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
             parentLeft,
             i,
             y1,
-            y2,
-            i;
+            y2;
 
         if (len === 0) {
             return;
@@ -862,8 +853,7 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
             linesOfContext: linesOfContext
         }, {
             success: function(html) {
-                var key = 'file' + this.model.get('fileDiffID'),
-                    $tbody = $btn.parents('tbody'),
+                var $tbody = $btn.parents('tbody'),
                     $scrollAnchor,
                     tbodyID,
                     scrollAnchorID,
@@ -917,7 +907,9 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
                     this._hideRemovedCommentBlockViews();
                 }
 
-                /* Get the new tbody for the header, if any, and try to center. */
+                /*
+                 * Get the new tbody for the header, if any, and try to center.
+                 */
                 if (tbodyID) {
                     newEl = document.getElementById(tbodyID);
 

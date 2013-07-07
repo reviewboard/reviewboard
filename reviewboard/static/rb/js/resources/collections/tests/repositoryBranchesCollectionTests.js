@@ -19,17 +19,17 @@ describe('resources/collections/RepositoryBranches', function() {
                         {
                             name: 'master',
                             commit: '859d4e148ce3ce60bbda6622cdbe5c2c2f8d9817',
-                            default: true
+                            'default': true
                         },
                         {
                             name: 'release-1.7.x',
                             commit: '92463764015ef463b4b6d1a1825fee7aeec8cb15',
-                            default: false
+                            'default': false
                         },
                         {
                             name: 'release-1.6.x',
                             commit: 'a15d0e635064a2e1929ce1bf3bc8d4aa65738b64',
-                            default: false
+                            'default': false
                         }
                     ]
                 });

@@ -24,7 +24,7 @@ RB.CommentEditor = Backbone.Model.extend({
             reviewRequest: null,
             statusText: '',
             text: ''
-        }
+        };
     },
 
     initialize: function() {

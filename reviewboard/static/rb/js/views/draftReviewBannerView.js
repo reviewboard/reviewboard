@@ -103,20 +103,21 @@ RB.DraftReviewBannerView = Backbone.View.extend({
      * If they confirm, the review will be discarded.
      */
     _onDiscardClicked: function() {
-        var model = this.model,
-            dlg = $('<p/>')
-                .text('If you discard this review, all related comments ' +
-                      'will be permanently deleted.')
-                .modalBox({
-                    title: 'Are you sure you want to discard this review?',
-                    buttons: [
-                        $('<input type="button" value="Cancel"/>'),
-                        $('<input type="button" value="Discard"/>')
-                            .click(function() {
-                                model.destroy();
-                            })
-                    ]
-                });
+        var model = this.model;
+
+        $('<p/>')
+            .text('If you discard this review, all related comments ' +
+                  'will be permanently deleted.')
+            .modalBox({
+                title: 'Are you sure you want to discard this review?',
+                buttons: [
+                    $('<input type="button" value="Cancel"/>'),
+                    $('<input type="button" value="Discard"/>')
+                        .click(function() {
+                            model.destroy();
+                        })
+                ]
+            });
 
         return false;
     }
@@ -127,13 +128,11 @@ RB.DraftReviewBannerView = Backbone.View.extend({
      * Creates the draft review banner singleton.
      */
     create: function(options) {
-        var cls = RB.DraftReviewBannerView;
-
-        if (!cls.instance) {
-            cls.instance = new cls(options);
-            cls.instance.render();
+        if (!this.instance) {
+            this.instance = new RB.DraftReviewBannerView(options);
+            this.instance.render();
         }
 
-        return cls.instance;
+        return this.instance;
     }
 });

@@ -70,11 +70,7 @@ RB.ScreenshotComment = RB.BaseComment.extend({
      * along with the default comment validation.
      */
     validate: function(attrs, options) {
-        var strings = RB.ScreenshotComment.strings,
-            hasX,
-            hasY,
-            hasWidth,
-            hasHeight;
+        var strings = RB.ScreenshotComment.strings;
 
         if (_.has(attrs, 'screenshotID') && !attrs.screenshotID) {
             return strings.INVALID_SCREENSHOT_ID;

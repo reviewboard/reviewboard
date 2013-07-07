@@ -66,7 +66,7 @@ describe('models/DraftReview', function() {
                     expect(parentObject.ready).toHaveBeenCalled();
                     expect(model._retrieveDraft).toHaveBeenCalled();
                     expect(callbacks.ready).toHaveBeenCalled();
-                });;
+                });
             });
 
             describe('With isNew=false', function() {

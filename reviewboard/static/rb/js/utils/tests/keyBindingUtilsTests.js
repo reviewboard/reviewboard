@@ -10,11 +10,11 @@ describe('utils/keyBindingUtils', function() {
 
             expect(evt.isDefaultPrevented()).toBe(handled);
             expect(evt.isPropagationStopped()).toBe(handled);
-        };
+        }
 
         it('Registered on create', function() {
             MyView = Backbone.View.extend({
-                keyBindings: {},
+                keyBindings: {}
             });
             _.extend(MyView.prototype, RB.KeyBindingsMixin);
 
@@ -26,7 +26,7 @@ describe('utils/keyBindingUtils', function() {
 
         it('Unregistered on undelegateEvents', function() {
             MyView = Backbone.View.extend({
-                keyBindings: {},
+                keyBindings: {}
             });
             _.extend(MyView.prototype, RB.KeyBindingsMixin);
 

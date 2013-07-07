@@ -44,7 +44,7 @@ RB.CommentIssueBarView = Backbone.View.extend({
         '         value="Re-open" />',
         ' </div>',
         '<% } %>',
-        '</div>',
+        '</div>'
     ].join('')),
 
     initialize: function() {

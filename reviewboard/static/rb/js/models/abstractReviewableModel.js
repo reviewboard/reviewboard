@@ -74,7 +74,7 @@ RB.AbstractReviewable = Backbone.Model.extend({
      *
      * This must be implemented by subclasses.
      */
-    loadSerializedCommentBlock: function(serializedCommentBlock) {
+    loadSerializedCommentBlock: function(/* serializedCommentBlock */) {
         console.assert(false, 'loadSerializedCommentBlock must be ' +
                               'implemented by a subclass');
     }

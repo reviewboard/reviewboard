@@ -20,7 +20,7 @@ describe('views/ReviewReplyEditorView', function() {
             }),
             reviewReply: reviewReply,
             contextType: 'rcbt',
-            contextID: '100',
+            contextID: '100'
         });
 
         view = new RB.ReviewReplyEditorView({
@@ -74,16 +74,20 @@ describe('views/ReviewReplyEditorView', function() {
     describe('Event handling', function() {
         it('Comment discarded', function() {
             var commentText = 'Test comment',
-                $draftEl = view._makeCommentElement({
-                    commentText: commentText
-                }),
                 $el;
 
+            view._makeCommentElement({
+                commentText: commentText
+            });
+
             view.render();
+
+            $el = view.$('.reply-comments li');
+            expect($el.length).toBe(1);
+
             reviewReply.trigger('destroy');
 
             $el = view.$('.reply-comments li');
-
             expect($el.length).toBe(0);
             expect(view._$draftComment).toBe(null);
         });

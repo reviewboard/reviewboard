@@ -54,7 +54,7 @@ RB.FileAttachmentThumbnail = Backbone.View.extend({
         '   <% if (caption) { %><%= caption %><% } else { %>No caption<% } %>',
         '  </a>',
         ' </div>',
-        '</div>',
+        '</div>'
     ].join('')),
 
     actionsTemplate: _.template([
@@ -285,7 +285,7 @@ RB.FileAttachmentThumbnail = Backbone.View.extend({
     _renderContents: function() {
         this.$el
             .html(this.template(_.extend({
-                deleteImageURL: STATIC_URLS['rb/images/delete.png'],
+                deleteImageURL: STATIC_URLS['rb/images/delete.png']
             }, this.model.attributes)))
             .addClass(this.className);
     },

@@ -35,7 +35,6 @@ RB.ReviewReplyEditor = Backbone.Model.extend({
      */
     save: function() {
         var contextType = this.get('contextType'),
-            reviewRequest = this.get('review').get('parentObject'),
             reviewReply = this.get('reviewReply'),
             valueAttr,
             ReplyClass,

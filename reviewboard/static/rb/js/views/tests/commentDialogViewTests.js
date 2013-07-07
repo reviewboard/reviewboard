@@ -363,21 +363,21 @@ describe('views/CommentDialogView', function() {
 
                 describe('Visible pane', function() {
                     it('Setting list before opening dialog', function() {
-                        editor.set('publishedComments', [comment])
+                        editor.set('publishedComments', [comment]);
                         dlg.open();
                         expect($commentsPane.is(':visible')).toBe(true);
                     });
 
                     it('Setting list after opening dialog', function() {
                         dlg.open();
-                        editor.set('publishedComments', [comment])
+                        editor.set('publishedComments', [comment]);
                         expect($commentsPane.is(':visible')).toBe(true);
                     });
                 });
 
                 it('List items added', function() {
                     dlg.open();
-                    editor.set('publishedComments', [comment])
+                    editor.set('publishedComments', [comment]);
                     expect($commentsList.children().length).toBe(1);
                 });
             });
@@ -401,7 +401,7 @@ describe('views/CommentDialogView', function() {
                     var $buttons;
 
                     reviewRequestEditor.set('editable', true);
-                    editor.set('publishedComments', [comment])
+                    editor.set('publishedComments', [comment]);
 
                     dlg = new RB.CommentDialogView({
                         animate: false,
@@ -420,7 +420,7 @@ describe('views/CommentDialogView', function() {
                     var $buttons;
 
                     reviewRequestEditor.set('editable', false);
-                    editor.set('publishedComments', [comment])
+                    editor.set('publishedComments', [comment]);
 
                     dlg = new RB.CommentDialogView({
                         animate: false,
@@ -565,7 +565,7 @@ describe('views/CommentDialogView', function() {
                     $checkbox.prop('checked', startState);
                     editor.set('openIssue', startState);
 
-                    simulateKeyPress(73, true, false);
+                    simulateKeyPress(keyCode.charCodeAt(0), true, false);
 
                     expect($checkbox.prop('checked')).toBe(!startState);
                     expect(editor.get('openIssue')).toBe(!startState);
@@ -630,13 +630,14 @@ describe('views/CommentDialogView', function() {
                 var $textarea;
 
                 function simulateTyping(text) {
-                    var i;
+                    var i,
+                        c,
+                        e;
 
                     $textarea.focus();
 
                     for (i = 0; i < text.length; i++) {
-                        var c = text.charCodeAt(i),
-                            e;
+                        c = text.charCodeAt(i);
 
                         e = $.Event('keydown');
                         e.which = c;

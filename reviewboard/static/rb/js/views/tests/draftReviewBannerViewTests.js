@@ -100,7 +100,7 @@ describe('views/DraftReviewBannerView', function() {
 
                         return $buttons;
                     }
-                }
+                };
             });
 
             view.$('#review-banner-discard').click();

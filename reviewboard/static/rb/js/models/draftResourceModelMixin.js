@@ -37,7 +37,7 @@ RB.DraftResourceModelMixin = {
                 _.defaults({
                     ready: function() {
                         self._retrieveDraft(options, context);
-                    },
+                    }
                 }, options),
                 context);
         } else {

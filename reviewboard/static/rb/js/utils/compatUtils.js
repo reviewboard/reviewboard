@@ -11,11 +11,11 @@ if (!Object.getPrototypeOf) {
         Object.getPrototypeOf = function(obj) {
             checkIfObject(obj);
             return obj.__proto__;
-        }
+        };
     } else {
         Object.getPrototypeOf = function(obj) {
             checkIfObject(obj);
             return obj.constructor.prototype;
-        }
+        };
     }
 }
