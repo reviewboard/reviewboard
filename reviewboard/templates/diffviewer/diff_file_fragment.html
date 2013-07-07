@@ -78,13 +78,14 @@
    <td colspan="4">{% trans "This file was deleted. The content cannot be displayed." %}</td>
   </tr>
  </tbody>
-{%  elif file.whitespace_only %}
+{%  else %}
+{%   if file.whitespace_only %}
     <tbody class="whitespace-file">
      <tr>
       <td colspan="4">{% trans "This file contains only whitespace changes." %}</td>
      </tr>
     </tbody>
-{%  else %}
+{%   endif %}
 {%   for chunk in file.chunks %}
 {%    if not chunk.collapsable or not collapseall %}
  <tbody id="chunk{{file.index}}.{{chunk.index}}"{% attr "class" %}{% if chunk.change != "equal" %}{{chunk.change}}{% if chunk.meta.whitespace_chunk%} whitespace-chunk{% endif %}{% else %}{% if chunk.collapsable %} collapsable{% endif %}{% endif %}{% if standalone %} loaded{% endif %}{% endattr %}>
