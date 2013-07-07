@@ -350,6 +350,7 @@ PIPELINE_JS = {
             'rb/js/utils/propertyUtils.js',
             'rb/js/utils/underscoreUtils.js',
             'rb/js/common.js',
+            'rb/js/utils/apiErrors.js',
             'rb/js/utils/apiUtils.js',
             'rb/js/utils/linkifyUtils.js',
             'rb/js/utils/keyBindingUtils.js',
