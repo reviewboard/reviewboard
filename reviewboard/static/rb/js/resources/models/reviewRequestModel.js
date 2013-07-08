@@ -16,12 +16,14 @@ RB.ReviewRequest = RB.BaseResource.extend({
         branch: null,
         bugTrackerURL: null,
         bugsClosed: null,
+        commitID: null,
         changeDescription: null,
         dependsOn: [],
         description: null,
         draftReview: null,
         localSitePrefix: null,
         public: null,
+        repository: null,
         reviewURL: null,
         summary: null,
         targetGroups: [],
@@ -57,10 +59,10 @@ RB.ReviewRequest = RB.BaseResource.extend({
                   'api/review-requests/';
 
         if (!this.isNew()) {
-            url += this.id;
+            url += this.id + '/';
         }
 
-        return url + '/';
+        return url;
     },
 
     /*
@@ -256,6 +258,45 @@ RB.ReviewRequest = RB.BaseResource.extend({
                            RB.ReviewRequest.CHECK_UPDATES_MSECS);
             }, this)
         });
+    },
+
+    /*
+     * Serialize for sending to the server.
+     */
+    toJSON: function() {
+        var commitID = this.get('commitID'),
+            repository = this.get('repository'),
+            result = {};
+
+        if (this.isNew()) {
+            if (commitID) {
+                result.commit_id = commitID;
+            }
+            if (repository) {
+                result.repository = repository;
+            }
+            return result;
+        } else {
+            return _.super(this).toJSON.apply(this, arguments);
+        }
+    },
+
+    /*
+     * Deserialize the response from the server.
+     */
+    parseResourceData: function(rsp) {
+        return {
+            branch: rsp.branch,
+            bugsClosed: rsp.bugs_closed,
+            dependsOn: rsp.depends_on,
+            description: rsp.description,
+            public: rsp.public,
+            reviewURL: rsp.url,
+            summary: rsp.summary,
+            targetGroups: rsp.target_groups,
+            targetPeople: rsp.target_people,
+            testingDone: rsp.testing_done
+        }
     }
 }, {
     CHECK_UPDATES_MSECS: 5 * 60 * 1000, // Every 5 minutes

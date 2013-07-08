@@ -9,12 +9,14 @@ RB.Diff = RB.BaseResource.extend({
     defaults: {
         diff: null,
         parentDiff: null,
-        basedir: ''
+        basedir: null
     },
 
     payloadFileKeys: ['path', 'parent_diff_path'],
 
     rspNamespace: 'diff',
+
+    listKey: 'diffs',
 
     getErrorString: function(rsp) {
         if (rsp.err.code === RB.APIErrors.REPO_FILE_NOT_FOUND) {
