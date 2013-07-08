@@ -41,9 +41,9 @@ RB.ChunkHighlighterView = Backbone.View.extend({
         this._$left = $border.clone().appendTo(this.$el);
         this._$right = $border.clone().appendTo(this.$el);
 
-        this._borderWidth = this._$left.width(),
-        this._borderHeight = this._$top.height(),
-        this._borderOffsetX = this._borderWidth / 2,
+        this._borderWidth = this._$left.width();
+        this._borderHeight = this._$top.height();
+        this._borderOffsetX = this._borderWidth / 2;
         this._borderOffsetY = this._borderHeight / 2;
 
         if ($.browser.msie) {
