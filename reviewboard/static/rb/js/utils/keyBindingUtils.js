@@ -15,7 +15,8 @@ RB.KeyBindingsMixin = {
      * by way of delegateEvents.
      */
     delegateKeyBindings: function() {
-        $(document).on('keypress.keybindings' + this.cid, _.bind(function(evt) {
+        $(document.body).on('keypress.keybindings' + this.cid,
+                            _.bind(function(evt) {
             var keyChar,
                 keys,
                 func;
@@ -55,7 +56,7 @@ RB.KeyBindingsMixin = {
      * By default, this is called automatically when calling undelegateEvents.
      */
     undelegateKeyBindings: function() {
-        $(document).off('keypress.keybindings' + this.cid);
+        $(document.body).off('keypress.keybindings' + this.cid);
     },
 
     /*
