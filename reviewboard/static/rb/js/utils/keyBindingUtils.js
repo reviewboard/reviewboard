@@ -15,8 +15,7 @@ RB.KeyBindingsMixin = {
      * by way of delegateEvents.
      */
     delegateKeyBindings: function() {
-        $(document.body).on('keypress.keybindings' + this.cid,
-                            _.bind(function(evt) {
+        this.$el.on('keypress.keybindings' + this.cid, _.bind(function(evt) {
             var keyChar,
                 keys,
                 func;
@@ -56,7 +55,7 @@ RB.KeyBindingsMixin = {
      * By default, this is called automatically when calling undelegateEvents.
      */
     undelegateKeyBindings: function() {
-        $(document.body).off('keypress.keybindings' + this.cid);
+        this.$el.off('keypress.keybindings' + this.cid);
     },
 
     /*
@@ -66,9 +65,11 @@ RB.KeyBindingsMixin = {
      * call delegateKeyBindings.
      */
     delegateEvents: function(events) {
+        var result = Backbone.View.prototype.delegateEvents.call(this, events);
+
         this.delegateKeyBindings();
 
-        return Backbone.View.prototype.delegateEvents.call(this, events);
+        return result;
     },
 
     /*
@@ -78,8 +79,10 @@ RB.KeyBindingsMixin = {
      * automatically call undelegateKeyBindings.
      */
     undelegateEvents: function() {
+        var result = Backbone.View.prototype.undelegateEvents.call(this);
+
         this.undelegateKeyBindings();
 
-        return Backbone.View.prototype.undelegateEvents.call(this);
+        return result;
     }
 };
