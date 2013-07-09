@@ -154,6 +154,21 @@ class Repository(models.Model):
 
         return None
 
+    @property
+    def supports_post_commit(self):
+        """Whether or not this repository supports post-commit creation.
+
+        If this is True, the get_branches and get_commits methods will be
+        implemented to fetch information about the committed revisions, and
+        get_change will be implemented to fetch the actual diff. This is used
+        by ReviewRequest.update_from_commit_id.
+        """
+        hosting_service = self.hosting_service
+        if hosting_service:
+            return hosting_service.supports_post_commit
+        else:
+            return self.get_scmtool().supports_post_commit
+
     def get_file(self, path, revision, request=None):
         """Returns a file from the repository.
 

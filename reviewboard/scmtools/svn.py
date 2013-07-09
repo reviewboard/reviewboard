@@ -51,6 +51,7 @@ class SVNTool(SCMTool):
     name = "Subversion"
     uses_atomic_revisions = True
     supports_authentication = True
+    supports_post_commit = True
     dependencies = {
         'modules': ['pysvn'],
     }

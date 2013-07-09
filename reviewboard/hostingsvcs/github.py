@@ -149,8 +149,9 @@ class GitHub(HostingService):
     ]
 
     needs_authorization = True
-    supports_repositories = True
     supports_bug_trackers = True
+    supports_post_commit = True
+    supports_repositories = True
     supports_ssh_key_association = True
     supported_scmtools = ['Git']
 

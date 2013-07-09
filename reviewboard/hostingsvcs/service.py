@@ -27,6 +27,7 @@ class HostingService(object):
     name = None
     plans = None
     supports_bug_trackers = False
+    supports_post_commit = False
     supports_repositories = False
     supports_ssh_key_association = False
     self_hosted = False
