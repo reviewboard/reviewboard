@@ -10,6 +10,7 @@ from django.template import Context, Template
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.testing.decorators import add_fixtures
 from djblets.testing.testcases import TestCase
+from kgb import SpyAgency
 
 from reviewboard.accounts.models import Profile, LocalSiteProfile
 from reviewboard.attachments.models import FileAttachment
@@ -21,6 +22,7 @@ from reviewboard.reviews.models import Comment, \
                                        ReviewRequestDraft, \
                                        Review, \
                                        Screenshot
+from reviewboard.scmtools.core import Commit
 from reviewboard.scmtools.models import Repository, Tool
 from reviewboard.site.models import LocalSite
 from reviewboard.site.urlresolvers import local_site_reverse
@@ -907,6 +909,76 @@ class FieldTests(TestCase):
         self.assertEqual(review_request.commit,
                          str(review_request.changenum))
         self.assertNotEqual(review_request.commit_id, None)
+
+
+class PostCommitTests(SpyAgency, TestCase):
+    fixtures = ['test_users', 'test_reviewrequests', 'test_scmtools']
+
+    def setUp(self):
+        self.user = User.objects.create(username='testuser', password='')
+        self.profile, is_new = Profile.objects.get_or_create(user=self.user)
+        self.profile.save()
+
+        self.testdata_dir = os.path.join(
+            os.path.dirname(os.path.dirname(__file__)),
+            'scmtools', 'testdata')
+
+        svn_repo_path = os.path.join(self.testdata_dir, 'svn_repo')
+        self.repository = Repository(name='Subversion SVN',
+                                     path='file://' + svn_repo_path,
+                                     tool=Tool.objects.get(name='Subversion'))
+        self.repository.save()
+
+    def test_update_from_committed_change(self):
+        """Testing post-commit update"""
+        commit_id = '4'
+
+        def get_change(repository, commit_to_get):
+            self.assertEqual(commit_id, commit_to_get)
+
+            commit = Commit()
+            commit.message = \
+                'This is my commit message\n\nWith a summary line too.'
+            diff_filename = os.path.join(self.testdata_dir,
+                                         'svn_makefile.diff')
+            f = open(diff_filename, 'r')
+            commit.diff = f.read()
+            f.close()
+
+            return commit
+
+        def get_file_exists(repository, path, revision, request=None):
+            return (path, revision) in [('/doc/misc-docs/Makefile', '4')]
+
+        self.spy_on(self.repository.get_change, call_fake=get_change)
+        self.spy_on(self.repository.get_file_exists, call_fake=get_file_exists)
+
+        review_request = ReviewRequest.objects.create(self.user,
+                                                      self.repository)
+        review_request.update_from_commit_id(commit_id)
+
+        self.assertEqual(review_request.summary, 'This is my commit message')
+        self.assertEqual(review_request.description,
+                         'With a summary line too.')
+
+        self.assertEqual(review_request.diffset_history.diffsets.count(), 1)
+
+        diffset = review_request.diffset_history.diffsets.get()
+        self.assertEqual(diffset.files.count(), 1)
+
+        fileDiff = diffset.files.get()
+        self.assertEqual(fileDiff.source_file, '/doc/misc-docs/Makefile')
+        self.assertEqual(fileDiff.source_revision, '4')
+
+    def test_update_from_committed_change_without_repository_support(self):
+        """Testing post-commit update failure conditions"""
+        self.spy_on(self.repository.__class__.supports_post_commit.fget,
+                    call_fake=lambda self: False)
+        review_request = ReviewRequest.objects.create(self.user,
+                                                      self.repository)
+
+        self.assertRaises(NotImplementedError,
+                          lambda: review_request.update_from_commit_id('4'))
 
 
 class ConcurrencyTests(TestCase):

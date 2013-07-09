@@ -385,20 +385,28 @@ class BaseReviewRequestDetails(models.Model):
     def update_from_commit_id(self, commit_id):
         """Updates the data from a server-side changeset.
 
-        If changesets are supported on the repository, review request
-        information will be pulled from the changeset associated with
-        commit_id.
-        """
+        If the commit ID refers to a pending changeset on an SCM which stores
+        such things server-side (like perforce), the details like the summary
+        and description will be updated with the latest information.
+
+        If the change number is the commit ID of a change which exists on the
+        server, the summary and description will be set from the commit's
+        message, and the diff will be fetched from the SCM."""
         scmtool = self.repository.get_scmtool()
+
+        changeset = None
         if scmtool.supports_pending_changesets:
             changeset = scmtool.get_changeset(commit_id, allow_empty=True)
 
-            if changeset and changeset.pending:
-                self.update_from_pending_change(commit_id, changeset)
-            else:
-                raise InvalidChangeNumberError()
+        if changeset and changeset.pending:
+            self.update_from_pending_change(commit_id, changeset)
+        elif self.repository.supports_post_commit:
+            self.update_from_committed_change(commit_id)
         else:
-            raise NotImplementedError()
+            if changeset:
+                raise InvalidChangeNumberError()
+            else:
+                raise NotImplementedError()
 
     def update_from_pending_change(self, commit_id, changeset):
         """Updates the data from a server-side pending changeset.
@@ -426,6 +434,31 @@ class BaseReviewRequestDetails(models.Model):
 
         if changeset.bugs_closed:
             self.bugs_closed = ','.join(changeset.bugs_closed)
+
+    def update_from_committed_change(self, commit_id):
+        """Updates from a committed change present on the server.
+
+        Fetches the commit message and diff from the repository and sets the
+        relevant fields.
+        """
+        commit = self.repository.get_change(commit_id)
+        summary, message = commit.split_message()
+
+        if hasattr(self, 'commit_id'):
+            self.commit = commit_id
+
+        self.summary = summary.strip()
+        self.description = message.strip()
+
+        DiffSet.objects.create_from_data(
+            repository=self.repository,
+            diff_file_name='diff',
+            diff_file_contents=commit.diff,
+            parent_diff_file_name=None,
+            parent_diff_file_contents=None,
+            diffset_history=self.diffset_history,
+            basedir='/',
+            request=None)
 
     def save(self, **kwargs):
         self.bugs_closed = self.bugs_closed.strip()

@@ -76,6 +76,25 @@ class Commit(object):
                 self.message == other.message and
                 self.parent == other.parent)
 
+    def split_message(self):
+        """Get a split version of the commit message.
+
+        This will return a tuple of (summary, message). If the commit message
+        is only a single line, both will be that line.
+        """
+        message = self.message
+        parts = message.split('\n', 1)
+        summary = parts[0]
+        try:
+            message = parts[1]
+        except IndexError:
+            # If the description is only one line long, pass through--'message'
+            # will still be set to what we got from get_change, and will show
+            # up as being the same thing as the summary.
+            pass
+
+        return summary, message
+
 
 HEAD = Revision("HEAD")
 UNKNOWN = Revision('UNKNOWN')
