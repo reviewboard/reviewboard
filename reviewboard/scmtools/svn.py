@@ -274,22 +274,29 @@ class SVNTool(SCMTool):
 
         revision = int(revision)
         head_revision = Revision(opt_revision_kind.number, revision)
-        base_revision = Revision(opt_revision_kind.number, revision - 1)
 
         commit = cache.get(cache_key)
         if commit:
             message = commit.message
             author_name = commit.author_name
             date = commit.date
+            base_revision = Revision(opt_revision_kind.number, commit.parent)
         else:
-            commit = self.client.log(
+            commits = self.client.log(
                 self.repopath,
                 revision_start=head_revision,
-                limit=1)[0]
+                limit=2)
+            commit = commits[0]
             message = commit['message']
             author_name = commit['author']
             date = datetime.datetime.utcfromtimestamp(commit['date']).\
                 isoformat()
+
+            try:
+                commit = commits[1]
+                base_revision = commit['revision']
+            except IndexError:
+                base_revision = Revision(opt_revision_kind.number, 0)
 
         tmpdir = mkdtemp(prefix='reviewboard-svn.')
 
