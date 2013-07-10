@@ -214,6 +214,12 @@ class DiffRenderer(object):
                     else:
                         self.diff_file['chunks'].remove(chunk)
 
+        equal_lines = 0
+
+        for chunk in self.diff_file['chunks']:
+            if chunk['change'] == 'equal':
+                equal_lines += chunk['numlines']
+
         context.update({
             'collapseall': self.collapse_all,
             'file': self.diff_file,
@@ -221,6 +227,7 @@ class DiffRenderer(object):
                            not self.diff_file['interfilediff'] and
                            not self.diff_file['filediff'].parent_diff,
             'lines_of_context': self.lines_of_context or (0, 0),
+            'equal_lines': equal_lines,
             'standalone': self.chunk_index is not None,
         })
 

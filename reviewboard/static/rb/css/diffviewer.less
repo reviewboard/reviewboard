@@ -22,6 +22,7 @@
 @diff-delete-linenum-border-color:
   desaturate(darken(@diff-delete-linenum-color, 7%), 55%);
 @diff-delete-selected-color: darken(@diff-delete-linenum-color, 4%);
+@diff-delete-dot-color: desaturate(darken(@diff-delete-color, 30%), 35%);
 
 // Insert lines
 @diff-insert-color: #dfffd7;
@@ -30,6 +31,7 @@
 @diff-insert-linenum-border-color:
   desaturate(darken(@diff-insert-linenum-color, 7%), 35%);
 @diff-insert-selected-color: darken(@diff-insert-linenum-color, 5%);
+@diff-insert-dot-color: desaturate(darken(@diff-insert-color, 35%), 35%);
 
 // Replace lines
 @diff-replace-color: #fdfecc;
@@ -38,6 +40,7 @@
 @diff-replace-linenum-border-color:
   desaturate(darken(@diff-replace-linenum-color, 10%), 30%);
 @diff-replace-selected-color: darken(@diff-replace-linenum-color, 10%);
+@diff-replace-dot-color: darken(@diff-replace-color, 50%);
 
 // Revisions selector
 @revisions-border-color: #999999;
@@ -49,6 +52,19 @@
 @paginate-border-color: #DDDDDD;
 @paginate-bg-color: #417690;
 @paginate-text-color: #f4f379;
+
+
+.diff-changes-icon-insert {
+  color: @diff-insert-dot-color;
+}
+
+.diff-changes-icon-replace {
+  color: @diff-replace-dot-color;
+}
+
+.diff-changes-icon-delete {
+  color: @diff-delete-dot-color;
+}
 
 
 .diff-container {
@@ -445,11 +461,111 @@
   }
 }
 
-ol.index li {
-  padding: 2px 0;
+#diff_index {
+  border: 1px #BBB solid;
+  margin: 1em 1em 2em 1em;
 
-  a.dimmed {
-    color: #ABABAB;
+  table {
+    padding: 0;
+    border-collapse: collapse;
+    width: 100%;
+
+    tr {
+      min-height: 2.5em;
+
+      &:first-child td {
+        border-top: 0;
+      }
+
+      &.loading .diff-file-icon {
+        background-image: url("../images/spinner.gif");
+        background-position: center center;
+        background-repeat: no-repeat;
+        padding: 12px;
+      }
+
+      &.renamed-file .diff-file-info .diff-file-extra {
+        display: block;
+        padding: 1em 0 0 0;
+      }
+    }
+
+    td {
+      background: #FDFDFD;
+      padding: 0.6em;
+      margin: 0;
+      border-top: 1px #DDD solid;
+      vertical-align: top;
+
+      &.diff-chunks-cell {
+        color: #888;
+        text-align: right;
+        width: 70%;
+      }
+
+      &.diff-file-icon {
+        padding: 2px;
+
+        .rb-icon {
+          margin: 2px;
+          width: 16px;
+          height: 16px;
+        }
+      }
+
+      &.diff-file-info {
+        padding-left: 0.3em;
+        white-space: nowrap;
+        width: 30%;
+
+        .diff-file-rename {
+          color: #888;
+          display: block;
+          font-size: 90%;
+          font-style: italic;
+          padding: 1em 0 0 0;
+        }
+      }
+
+      a {
+        color: blue;
+        text-decoration: none;
+
+        &:hover {
+          text-decoration: underline;
+        }
+
+        &.dimmed {
+          color: #ABABAB;
+        }
+      }
+
+      .diff-chunks {
+        max-height: 2.5em;
+        overflow: hidden;
+        text-align: right;
+
+        a {
+          display: inline-block;
+          margin: 3px 2px;
+          width: 8px;
+          height: 8px;
+          .border-radius(50%);
+
+          &.insert {
+            background-color: @diff-insert-dot-color;
+          }
+
+          &.delete {
+            background-color: @diff-delete-dot-color;
+          }
+
+          &.replace {
+            background-color: @diff-replace-dot-color;
+          }
+        }
+      }
+    }
   }
 }
 
@@ -461,6 +577,10 @@ ol.index li {
   border-spacing: 8px;
   border-top: 1px #c2c1b0 solid;
   margin-top: 20px;
+
+  .main h1 {
+    margin: 1em;
+  }
 }
 
 .revision-selector {

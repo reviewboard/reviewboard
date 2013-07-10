@@ -46,7 +46,13 @@
 
 {% if file.changed_chunk_indexes or file.binary or file.deleted or file.moved %}
 {%  if not standalone %}
-<table class="sidebyside{% if is_new_file %} newfile{% endif %}" id="file{{file.filediff.id}}"{% if not file.interfilediff %} data-lines-added="{{file.filediff.insert_count}}" data-lines-removed="{{file.filediff.delete_count}}"{% endif %}>
+<table id="file{{file.filediff.id}}" class="{% spaceless %}
+  sidebyside
+  {% if is_new_file %}newfile{% endif %}
+  {% if file.binary %}diff-binary{% endif %}
+  {% if file.deleted %}diff-deleted{% endif %}
+  {% endspaceless %}"
+       data-lines-equal="{{equal_lines}}">
  <colgroup>
 {% if not is_new_file %}
   <col class="line" />
@@ -145,20 +151,5 @@
 {%     endif %}{# file deleted, binary and whitespace_only #}
 {%  if not standalone %}
 </table>
-<script type="text/javascript">
-  $(document).ready(function() {
-    /* Add to the change index. */
-    $("#change_file_{{file.index}}").html(
-      {% include_as_string "diffviewer/changeindex_entry.html" %});
-  });
-</script>
-{%  endif %}{# not standalone #}
-{% else %}{# No changed chunks and not a binary file #}
-{%  if not standalone %}
-<script type="text/javascript">
-  $(document).ready(function() {
-    $("#change_file_{{file.index}}").remove();
-  });
-</script>
 {%  endif %}{# not standalone #}
 {% endif %}{# No changed chunks and not a binary file #}

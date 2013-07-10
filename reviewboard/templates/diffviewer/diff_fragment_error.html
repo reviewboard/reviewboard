@@ -2,7 +2,7 @@
 {% load i18n %}
 
 <table class="sidebyside diff-error{% if file.newfile %} newfile{% endif %}"
-       id="file_container_{{file.filediff.id}}">
+       id="file{{file.filediff.id}}">
  <thead>
   <tr class="filename-row">
 {% if comment %}
@@ -54,10 +54,3 @@
 {% endif %}
  </tbody>
 </table>
-{% if file %}
-<script type="text/javascript">
-  /* Add to the change index. */
-  $("#change_file_{{file.index}}").html(
-    {% include_as_string "diffviewer/changeindex_entry.html" %});
-</script>
-{% endif %}

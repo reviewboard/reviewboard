@@ -284,6 +284,10 @@ LOGIN_URL = SITE_ROOT + 'account/login/'
 PIPELINE_JS = {
     '3rdparty': {
         'source_filenames': (
+            'lib/js/flot/jquery.flot.min.js',
+            'lib/js/flot/jquery.flot.pie.min.js',
+            'lib/js/flot/jquery.flot.selection.min.js',
+            'lib/js/flot/jquery.flot.time.min.js',
             'lib/js/underscore-1.4.4.min.js',
             'lib/js/backbone-1.0.0.min.js',
             'lib/js/jquery.cookie-1.3.1.js',
@@ -472,10 +476,6 @@ PIPELINE_JS = {
     },
     'admin': {
         'source_filenames': (
-            'lib/js/flot/jquery.flot.min.js',
-            'lib/js/flot/jquery.flot.pie.min.js',
-            'lib/js/flot/jquery.flot.selection.min.js',
-            'lib/js/flot/jquery.flot.time.min.js',
             'lib/js/jquery.masonry.js',
             'rb/js/admin.js',
         ),

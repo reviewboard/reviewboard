@@ -160,7 +160,6 @@
  </table>
 {% endif %}
 
- <p><label>{% trans "Files Changed:" %}</label></p>
 {% include "diffviewer/changeindex.html" %}
   </div>
  </div>
@@ -207,7 +206,19 @@
 {%  endif %}
 </div>
 {% endfor %}
-</div>
+
+{% if is_paginated %}
+ {% blocktrans %}This diff has been split across {{ pages }} pages:{% endblocktrans %}
+ {% if has_previous %}<span class="paginate-previous"><a href="?page={{ previous_page }}" title="{% trans "Previous Page" %}">&lt;</a></span>{% endif %}
+ {% for num in page_numbers %}
+  {% if num == page %}
+   <span class="paginate-current" title="{% trans "Current Page" %}">{{ num }}</span>
+  {% else %}
+   <span class="paginate-link"><a href="?page={{ num }}" title="{% blocktrans %}Page {{ num }} {% endblocktrans %}">{{ num }}</a></span>
+  {% endif %}
+ {% endfor %}
+ {% if has_next %}<span class="paginate-next"><a href="?page={{ next_page }}" title="{% trans "Next Page" %}">&gt;</a></span>{% endif %}
+{% endif %}
 </div>
 
 {% endif %}{# !error #}
