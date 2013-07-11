@@ -42,7 +42,8 @@ class DiffSetManager(models.Manager):
     IMPL_EXTENSIONS = ["c", "C", "cc", "cpp", "cxx", "c++", "m", "mm", "M"]
 
     def create_from_upload(self, repository, diff_file, parent_diff_file,
-                           diffset_history, basedir, request, save=True):
+                           diffset_history, basedir, request,
+                           base_commit_id=None, save=True):
         """Create a DiffSet from a form upload.
 
         The diff_file and parent_diff_file parameters are django forms
@@ -77,11 +78,13 @@ class DiffSetManager(models.Manager):
                                      diffset_history,
                                      basedir,
                                      request,
+                                     base_commit_id=base_commit_id,
                                      save=save)
 
     def create_from_data(self, repository, diff_file_name, diff_file_contents,
                          parent_diff_file_name, parent_diff_file_contents,
-                         diffset_history, basedir, request, save=True):
+                         diffset_history, basedir, request,
+                         base_commit_id=None, save=True):
         """Create a DiffSet from raw diff data.
 
         The diff_file_contents and parent_diff_file_contents parameters are
@@ -136,7 +139,8 @@ class DiffSetManager(models.Manager):
             basedir=basedir,
             history=diffset_history,
             repository=repository,
-            diffcompat=DEFAULT_DIFF_COMPAT_VERSION)
+            diffcompat=DEFAULT_DIFF_COMPAT_VERSION,
+            base_commit_id=base_commit_id)
 
         if save:
             diffset.save()

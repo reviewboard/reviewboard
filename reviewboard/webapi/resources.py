@@ -1859,6 +1859,14 @@ class DiffResource(WebAPIResource):
                                'and the top directory referenced in the '
                                'diff paths.',
         },
+        'base_commit_id': {
+            'type': str,
+            'description': 'The ID/revision this change is built upon. '
+                           'If using a parent diff, then this is the base '
+                           'for that diff. This may not be provided for all '
+                           'diffs or repository types, depending on how the '
+                           'diff was uploaded.',
+        },
     }
     item_child_resources = [filediff_resource]
 
@@ -1982,6 +1990,14 @@ class DiffResource(WebAPIResource):
             'parent_diff_path': {
                 'type': file,
                 'description': 'The optional parent diff to upload.',
+            },
+            'base_commit_id': {
+                'type': str,
+                'description': 'The ID/revision this change is built upon. '
+                               'If using a parent diff, then this is the base '
+                               'for that diff. This may not be provided for '
+                               'all diffs or repository types, depending on '
+                               'how the diff was uploaded.',
             },
         }
     )
@@ -7320,6 +7336,7 @@ class ServerInfoResource(WebAPIResource):
                 },
                 'capabilities': {
                     'diffs': {
+                        'base_commit_ids': True,
                         'moved_files': True,
                     },
                     'scmtools': {

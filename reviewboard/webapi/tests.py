@@ -561,6 +561,7 @@ class ServerInfoResourceTests(BaseWebAPITestCase):
 
         diffs_caps = caps.get('diffs')
         self.assertTrue(diffs_caps.get('moved_files', False))
+        self.assertTrue(diffs_caps.get('base_commit_ids', False))
 
     @add_fixtures(['test_users', 'test_site'])
     def test_get_server_info_with_site(self):
@@ -5073,11 +5074,18 @@ class DiffResourceTests(BaseWebAPITestCase):
         f = open(diff_filename, "r")
         rsp = self.apiPost(rsp['review_request']['links']['diffs']['href'], {
             'path': f,
-            'basedir': "/trunk",
+            'basedir': '/trunk',
+            'base_commit_id': '1234',
         }, expected_mimetype=self.item_mimetype)
         f.close()
 
         self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(rsp['diff']['basedir'], '/trunk')
+        self.assertEqual(rsp['diff']['base_commit_id'], '1234')
+
+        diffset = DiffSet.objects.get(pk=rsp['diff']['id'])
+        self.assertEqual(diffset.basedir, '/trunk')
+        self.assertEqual(diffset.base_commit_id, '1234')
 
     def test_post_diffs_with_missing_data(self):
         """Testing the POST review-requests/<id>/diffs/ API with Invalid Form Data"""

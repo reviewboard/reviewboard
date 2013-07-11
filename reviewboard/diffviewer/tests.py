@@ -498,6 +498,7 @@ class UploadDiffFormTests(SpyAgency, TestCase):
             repository=repository,
             data={
                 'basedir': '/',
+                'base_commit_id': '1234',
             },
             files={
                 'path': diff_file,
@@ -506,6 +507,8 @@ class UploadDiffFormTests(SpyAgency, TestCase):
 
         diffset = form.create(diff_file)
         self.assertEqual(diffset.files.count(), 1)
+        self.assertEqual(diffset.basedir, '/')
+        self.assertEqual(diffset.base_commit_id, '1234')
 
     def test_parent_diff_filtering(self):
         """Testing UploadDiffForm and filtering parent diff files"""
