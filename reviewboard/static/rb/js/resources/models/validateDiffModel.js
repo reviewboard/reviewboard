@@ -31,7 +31,7 @@ RB.ValidateDiffModel = RB.Diff.extend({
         return payload;
     },
 
-    parse: function(rsp) {
+    parse: function(/* response */) {
         // Do nothing
     }
 });
