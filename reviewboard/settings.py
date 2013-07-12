@@ -443,6 +443,8 @@ PIPELINE_JS = {
             'rb/js/views/collectionView.js',
             'rb/js/newReviewRequest/views/branchView.js',
             'rb/js/newReviewRequest/views/branchesView.js',
+            'rb/js/newReviewRequest/views/commitView.js',
+            'rb/js/newReviewRequest/views/commitsView.js',
         ),
         'output_filename': 'rb/js/newReviewRequest.min.js',
     },
