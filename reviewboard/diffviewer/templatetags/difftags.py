@@ -2,6 +2,7 @@ import re
 
 from django import template
 from django.template.loader import render_to_string
+from django.utils.html import escape
 from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext as _
 from djblets.util.decorators import basictag
@@ -210,7 +211,7 @@ def diff_chunk_header(context, header):
         expandable = False
 
     return _diff_expand_link(context, expandable,
-                             '<code>%s</code>' % header['text'],
+                             '<code>%s</code>' % escape(header['text']),
                              _('Expand to header'),
                              (lines_of_context[0],
                               expand_offset + lines_of_context[1]),
