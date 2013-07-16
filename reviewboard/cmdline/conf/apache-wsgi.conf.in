@@ -14,6 +14,16 @@
 		Allow from all
 	</Directory>
 
+	# Prevent the server from processing or allowing the rendering of
+	# certain file types.
+	<Location "@siteroot@media/uploaded">
+		SetHandler None
+		Options None
+
+		AddType text/plain .html .htm .shtml .php .php3 .php4 .php5
+		AddType text/plain .pl .py .cgi .phtml .phtm
+	</Location>
+
 	# Alias static media requests to filesystem
 	Alias @siteroot@media "@sitedir@/htdocs/media"
 	Alias @siteroot@errordocs "@sitedir@/htdocs/errordocs"
