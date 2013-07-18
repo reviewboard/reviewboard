@@ -1,4 +1,6 @@
 from datetime import datetime
+from uuid import uuid4
+import os
 
 from django import forms
 
@@ -15,12 +17,15 @@ class UploadFileForm(forms.Form):
     path = forms.FileField(required=True)
 
     def create(self, file, review_request):
-        caption = self.cleaned_data['caption']
+        caption = self.cleaned_data['caption'] or file.name
+        filename = '%s__%s' % (uuid4(), file.name)
 
-        file_attachment = FileAttachment(caption='',
-                                         draft_caption=caption,
-                                         mimetype=file.content_type)
-        file_attachment.file.save(file.name, file, save=True)
+        file_attachment = FileAttachment(
+            caption='',
+            draft_caption=caption,
+            orig_filename=os.path.basename(file.name),
+            mimetype=file.content_type)
+        file_attachment.file.save(filename, file, save=True)
 
         draft = ReviewRequestDraft.create(review_request)
         draft.file_attachments.add(file_attachment)
