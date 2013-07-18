@@ -279,7 +279,7 @@ def get_can_enable_dns():
 def get_can_use_amazon_s3():
     """Checks whether django-storages (with the Amazon S3 backend) is installed."""
     try:
-        from storages.backends.s3 import S3Storage
+        from storages.backends.s3boto import S3BotoStorage
         return (True, None)
     except ImportError:
         return (False, _(
