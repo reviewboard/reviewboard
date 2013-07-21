@@ -933,6 +933,9 @@ class DiffRendererTests(SpyAgency, TestCase):
     def test_make_context_with_chunk_index(self):
         """Testing DiffRenderer.make_context with chunk_index"""
         diff_file = {
+            'newfile': True,
+            'interfilediff': None,
+            'filediff': FileDiff(),
             'chunks': [
                 {
                     'lines': [],
