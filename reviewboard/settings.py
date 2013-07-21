@@ -471,6 +471,7 @@ PIPELINE_CSS = {
         'source_filenames': (
             'rb/css/common.less',
             'rb/css/dashboard.less',
+            'rb/css/icons.less',
             'rb/css/search.less',
         ),
         'output_filename': 'rb/css/common.min.css',

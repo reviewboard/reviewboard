@@ -36,9 +36,7 @@ class StarColumn(Column):
     """
     def __init__(self, *args, **kwargs):
         Column.__init__(self, *args, **kwargs)
-        self.image_url = static("rb/images/star_on.png")
-        self.image_width = 16
-        self.image_height = 15
+        self.image_class = 'rb-icon rb-icon-star-on'
         self.image_alt = _("Starred")
         self.detailed_label = _("Starred")
         self.shrink = True
@@ -110,9 +108,7 @@ class ShipItColumn(Column):
     """
     def __init__(self, *args, **kwargs):
         Column.__init__(self, *args, **kwargs)
-        self.image_url = static("rb/images/shipit.png")
-        self.image_width = 16
-        self.image_height = 16
+        self.image_class = 'rb-icon rb-icon-shipit'
         self.image_alt = _("Ship It!")
         self.detailed_label = _("Ship It!")
         self.db_field = "shipit_count"
@@ -122,11 +118,10 @@ class ShipItColumn(Column):
     def render_data(self, review_request):
         if review_request.shipit_count > 0:
             return u'<span class="shipit-count">' \
-                    u'<img src="%s" width="9" height="8" alt="%s" ' \
-                         u'title="%s" /> %s' \
+                   u' <div class="rb-icon rb-icon-shipit-checkmark"' \
+                   u'      title="%s"></div> %s' \
                    u'</span>' % \
-                (static("rb/images/shipit_checkmark.png"),
-                 self.image_alt, self.image_alt, review_request.shipit_count)
+                (self.image_alt, review_request.shipit_count)
 
         return ""
 
@@ -138,9 +133,7 @@ class MyCommentsColumn(Column):
     """
     def __init__(self, *args, **kwargs):
         Column.__init__(self, *args, **kwargs)
-        self.image_url = static("rb/images/comment-draft-small.png")
-        self.image_width = 16
-        self.image_height = 16
+        self.image_class = 'rb-icon rb-icon-datagrid-comment-draft'
         self.image_alt = _("My Comments")
         self.detailed_label = _("My Comments")
         self.shrink = True
@@ -190,29 +183,24 @@ class MyCommentsColumn(Column):
         if user.is_anonymous() or review_request.mycomments_my_reviews == 0:
             return ""
 
-        image_url = None
-        image_alt = None
-
         # Priority is ranked in the following order:
         #
         # 1) Non-public (draft) reviews
         # 2) Public reviews marked "Ship It"
         # 3) Public reviews not marked "Ship It"
         if review_request.mycomments_private_reviews > 0:
-            image_url = self.image_url
+            icon_class = 'rb-icon-datagrid-comment-draft'
             image_alt = _("Comments drafted")
         else:
             if review_request.mycomments_shipit_reviews > 0:
-                image_url = static("rb/images/comment-shipit-small.png")
+                icon_class = 'rb-icon-datagrid-comment-shipit'
                 image_alt = _("Comments published. Ship it!")
             else:
-                image_url = static("rb/images/comment-small.png")
+                icon_class = 'rb-icon-datagrid-comment'
                 image_alt = _("Comments published")
 
-        return u'<img src="%s" width="%s" height="%s" alt="%s" ' \
-               u'title="%s" />' % \
-                (image_url, self.image_width, self.image_height,
-                 image_alt, image_alt)
+        return u'<div class="rb-icon %s" title="%s"></div>' % \
+               (icon_class, image_alt)
 
 
 class ToMeColumn(Column):
@@ -243,19 +231,15 @@ class NewUpdatesColumn(Column):
     """
     def __init__(self, *args, **kwargs):
         Column.__init__(self, *args, **kwargs)
-        self.image_url = static("rb/images/convo.png")
-        self.image_width = 18
-        self.image_height = 16
+        self.image_class = 'rb-icon rb-icon-datagrid-new-updates'
         self.image_alt = "New Updates"
         self.detailed_label = "New Updates"
         self.shrink = True
 
     def render_data(self, review_request):
         if review_request.new_review_count > 0:
-            return u'<img src="%s" width="%s" height="%s" alt="%s" ' \
-                    u'title="%s" />' % \
-                (self.image_url, self.image_width, self.image_height,
-                 self.image_alt, self.image_alt)
+            return u'<div class="%s" title="%s" />' % \
+                   (self.image_class, self.image_alt)
 
         return ""
 

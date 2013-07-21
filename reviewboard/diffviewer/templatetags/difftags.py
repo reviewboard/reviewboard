@@ -139,8 +139,7 @@ showextrawhitespace.is_safe = True
 
 
 def _diff_expand_link(context, expandable, text, tooltip,
-                      expand_pos, image, image_alt='[+]',
-                      image_width=14, image_height=14):
+                      expand_pos, image_class):
     """Utility function to render a diff expansion link.
 
     This is used internally by other template tags to provide a diff
@@ -154,10 +153,7 @@ def _diff_expand_link(context, expandable, text, tooltip,
         'chunk': context['chunk'],
         'file': context['file'],
         'expand_pos': expand_pos,
-        'image': image,
-        'image_width': image_width,
-        'image_height': image_height,
-        'image_alt': image_alt,
+        'image_class': image_class,
         'expandable': expandable,
     })
 
@@ -173,21 +169,17 @@ def diff_expand_link(context, expanding, tooltip,
     'expanding' is expected to be one of 'all', 'above', or 'below'.
     """
     if expanding == 'all':
-        image = 'rb/images/diff-expand-all.png'
+        image_class = 'rb-icon-diff-expand-all'
         expand_pos = None
-        image_alt = '[20]'
-        image_width = 14
     else:
         lines_of_context = context['lines_of_context']
         expand_pos = (lines_of_context[0] + expand_pos_1,
                       lines_of_context[1] + expand_pos_2)
-        image = 'rb/images/diff-expand-%s.png' % expanding
-        image_width = 28
-        image_alt = '[+20]'
+        image_class = 'rb-icon-diff-expand-%s' % expanding
 
 
     return _diff_expand_link(context, True, text, tooltip, expand_pos,
-                             image, image_alt, image_width)
+                             image_class)
 
 @register.tag
 @basictag(takes_context=True)
@@ -215,7 +207,7 @@ def diff_chunk_header(context, header):
                              _('Expand to header'),
                              (lines_of_context[0],
                               expand_offset + lines_of_context[1]),
-                             'rb/images/diff-expand-header.png')
+                             'rb-icon-diff-expand-header')
 
 
 @register.simple_tag

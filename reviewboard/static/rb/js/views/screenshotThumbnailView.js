@@ -38,7 +38,7 @@ RB.ScreenshotThumbnail = Backbone.View.extend({
 
         this.$caption = this.$el.find('a.edit')
             .inlineEditor({
-                editIconPath: STATIC_URLS['rb/images/edit.png'],
+                editIconClass: 'rb-icon rb-icon-edit',
                 showButtons: false
             })
             .on({

@@ -214,10 +214,6 @@ $.fn.formDlg = function(options) {
  * @param {bool}   starred      The default value.
  */
 function registerToggleStar() {
-    // Constants
-    var STAR_ON_IMG = STATIC_URLS["rb/images/star_on.png"],
-        STAR_OFF_IMG = STATIC_URLS["rb/images/star_off.png"];
-
     $(document).on('click', '.star', function() {
         var self = $(this),
             obj = self.data("rb.obj"),
@@ -249,10 +245,19 @@ function registerToggleStar() {
         self.data("rb.obj", obj);
 
         altTitle = on ? "Starred" : "Click to star";
+
+        if (on) {
+            self
+                .removeClass('rb-icon-star-off')
+                .addClass('rb-icon-star-on');
+        } else {
+            self
+                .removeClass('rb-icon-star-on')
+                .addClass('rb-icon-star-off');
+        }
+
         self.attr({
-            src: (on ? STAR_ON_IMG : STAR_OFF_IMG),
             'data-starred': on,
-            alt: altTitle,
             title: altTitle
         });
     });

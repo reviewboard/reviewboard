@@ -44,7 +44,6 @@ class Widget(object):
 
     # Configuration
     title = None
-    icon = None
     size = SMALL
     template = None
     actions = []
@@ -226,7 +225,6 @@ class ReviewGroupsWidget(Widget):
 
     title = 'Review Groups'
     template = 'admin/widgets/w-groups.html'
-    icon = 'rb/images/admin/set-auth.png'
     actions = [
         {
             'url': 'db/reviews/group/',
@@ -252,7 +250,6 @@ class ServerCacheWidget(Widget):
     """
     title = 'Server Cache'
     template = 'admin/widgets/w-server-cache.html'
-    icon = 'rb/images/admin/set-storage.png'
     cache_data = False
 
     def generate_data(self, request):
@@ -284,7 +281,6 @@ class NewsWidget(Widget):
     """
     title = 'Review Board News'
     template = 'admin/widgets/w-news.html'
-    icon = 'rb/images/rss.png'
     actions = [
         {
             'url': 'http://www.reviewboard.org/news/',

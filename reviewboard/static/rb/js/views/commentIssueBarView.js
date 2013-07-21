@@ -33,15 +33,18 @@ RB.CommentIssueBarView = Backbone.View.extend({
 
     template: _.template([
         '<div class="issue-state">',
-        ' <span class="issue-message"></span>',
+        ' <div class="issue-container">',
+        '  <span class="rb-icon"></span>',
+        '  <span class="issue-message"></span>',
         '<% if (interactive) { %>',
-        ' <div class="buttons">',
-        '  <input type="button" class="issue-button resolve" ',
-        '         value="Fixed" />',
-        '  <input type="button" class="issue-button drop" ',
-        '         value="Drop" />',
-        '  <input type="button" class="issue-button reopen" ',
-        '         value="Re-open" />',
+        '  <div class="buttons">',
+        '   <input type="button" class="issue-button resolve" ',
+        '          value="Fixed" />',
+        '   <input type="button" class="issue-button drop" ',
+        '          value="Drop" />',
+        '   <input type="button" class="issue-button reopen" ',
+        '          value="Re-open" />',
+        '  </div>',
         ' </div>',
         '<% } %>',
         '</div>'
@@ -54,6 +57,7 @@ RB.CommentIssueBarView = Backbone.View.extend({
         this._issueStatus = this.options.issueStatus;
         this._$buttons = null;
         this._$state = null;
+        this._$icon = null;
         this._$message = null;
     },
 
@@ -69,6 +73,7 @@ RB.CommentIssueBarView = Backbone.View.extend({
 
         this._$buttons = this.$('.issue-button');
         this._$state = this.$('.issue-state');
+        this._$icon = this.$('.rb-icon');
         this._$message = this.$('.issue-message');
 
         this._manager.on('issueStatusUpdated',
@@ -104,6 +109,10 @@ RB.CommentIssueBarView = Backbone.View.extend({
         this._$state
             .removeClass(prevStatus)
             .addClass(issueStatus);
+
+        this._$icon
+            .removeClass('rb-icon-issue-' + prevStatus)
+            .addClass('rb-icon-issue-' + issueStatus);
 
         this._$buttons.hide();
         this._$message.text(statusInfo.text);

@@ -3,14 +3,13 @@
 {% load i18n %}
 {% load log %}
 {% load rbadmintags %}
-{% load staticfiles %}
 
 {% definevar "enabled_img" %}
-<img src="{% static "rb/images/shipit.png" %}" alt="{% trans 'Enabled' %}" title="{% trans 'Enabled' %}"/>
+<div class="rb-icon rb-icon-admin-enabled" title="{% trans 'Enabled' %}"></div>
 {% enddefinevar %}
 
 {% definevar "disabled_img" %}
-    <img src="{% static "rb/images/disabled.png" %}" alt="{% trans 'Disabled' %}" title="{% trans 'Disabled' %}"/>
+<div class="rb-icon rb-icon-admin-disabled" title="{% trans 'Disabled' %}"></div>
 {% enddefinevar %}
 
 {% if show_sidebar %}
@@ -38,22 +37,22 @@
     <tr>
      <th scope="row"><a href="{{SITE_ROOT}}admin/db/auth/user/">{% trans "Users" %}</a></th>
      <td class="count">{{count_users}}</td>
-     <td width="40" class="td-right"><a class="addlink" href="{{SITE_ROOT}}admin/db/auth/user/add/">{% trans "Add" %}</a></td>
+     <td width="40" class="td-right"><a class="addlink" href="{{SITE_ROOT}}admin/db/auth/user/add/">{% trans "Add" %} <div class="rb-icon rb-icon-admin-add"></div></a></td>
     </tr>
     <tr>
       <th scope="row"><a href="{{SITE_ROOT}}admin/db/reviews/group/">{% trans "Review Groups" %}</a></th>
       <td class="count">{{count_review_groups}}</td>
-      <td class="td-right"><a class="addlink" href="{{SITE_ROOT}}admin/db/reviews/group/add/">{% trans "Add" %}</a></td>
+      <td class="td-right"><a class="addlink" href="{{SITE_ROOT}}admin/db/reviews/group/add/">{% trans "Add" %} <div class="rb-icon rb-icon-admin-add"></div></a></td>
     </tr>
     <tr>
       <th scope="row"><a href="{{SITE_ROOT}}admin/db/reviews/defaultreviewer/">{% trans "Default Reviewers" %}</a></th>
       <td class="count">{{count_default_reviewers}}</td>
-      <td class="td-right"><a class="addlink" href="{{SITE_ROOT}}admin/db/reviews/defaultreviewer/add/">{% trans "Add" %}</a></td>
+      <td class="td-right"><a class="addlink" href="{{SITE_ROOT}}admin/db/reviews/defaultreviewer/add/">{% trans "Add" %} <div class="rb-icon rb-icon-admin-add"></div></a></td>
     </tr>
     <tr>
        <th scope="row"><a href="{{SITE_ROOT}}admin/db/scmtools/repository/">{% trans "Repositories" %}</a></th>
        <td class="count">{{count_repository}}</td>
-       <td class="td-right"><a class="addlink" href="{{SITE_ROOT}}admin/db/scmtools/repository/add/">{% trans "Add" %}</a></td>
+       <td class="td-right"><a class="addlink" href="{{SITE_ROOT}}admin/db/scmtools/repository/add/">{% trans "Add" %} <div class="rb-icon rb-icon-admin-add"></div></a></td>
     </tr>
    </tbody>
   </table>

@@ -33,7 +33,8 @@ $(document).ready(function() {
     // Heading Toggle
     $("#dashboard-view .widget-heading").click(function() {
         var widgetBox = $(this).parent(),
-            widgetBoxId = widgetBox.attr('id');
+            widgetBoxId = widgetBox.attr('id'),
+            $stateIcon = widgetBox.find('.btn-state');
 
         widgetBox.find(".widget-content").slideToggle('fast', function() {
             var collapsed;
@@ -44,10 +45,16 @@ $(document).ready(function() {
                 widgetBox.removeClass("widget-hidden");
                 collapsed = 0;
                 widgetBox.trigger("widget-shown");
+                $stateIcon
+                    .removeClass('rb-icon-admin-expand')
+                    .addClass('rb-icon-admin-collapse');
             } else {
                 widgetBox.addClass("widget-hidden");
                 widgetBox.trigger("widget-hidden");
                 collapsed = 1;
+                $stateIcon
+                    .removeClass('rb-icon-admin-collapse')
+                    .addClass('rb-icon-admin-expand');
             }
 
             $.post("widget-toggle/?widget=" + widgetBoxId +

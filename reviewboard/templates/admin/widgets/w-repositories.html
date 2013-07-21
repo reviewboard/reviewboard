@@ -16,11 +16,9 @@
    <td>{{repository.tool}}</td>
    <td class="visible-column">
 {%   if repository.visible %}
-    <img src="{% static "rb/images/shipit.png" %}" alt="Visible"
-         title="Visible" />
+    <div class="rb-icon rb-icon-admin-enabled" title="Visible"></div>
 {%   else %}
-    <img src="{% static "rb/images/disabled.png" %}" alt="Invisible"
-         title="Invisible" />
+    <div class="rb-icon rb-icon-admin-disabled" title="Invisible"></div>
 {%   endif %}
    </td>
   </tr>

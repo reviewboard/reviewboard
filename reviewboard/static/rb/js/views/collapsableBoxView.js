@@ -11,6 +11,13 @@ RB.CollapsableBoxView = Backbone.View.extend({
      */
     render: function() {
         this._$box = this.$('.box');
+        this._$expandCollapseButton = this.$('.collapse-button .rb-icon');
+
+        if (this._$box.hasClass('collapsed')) {
+            this._$expandCollapseButton.addClass('rb-icon-expand-review');
+        } else {
+            this._$expandCollapseButton.addClass('rb-icon-collapse-review');
+        }
 
         return this;
     },
@@ -20,6 +27,9 @@ RB.CollapsableBoxView = Backbone.View.extend({
      */
     expand: function() {
         this._$box.removeClass('collapsed');
+        this._$expandCollapseButton
+            .removeClass('rb-icon-expand-review')
+            .addClass('rb-icon-collapse-review');
     },
 
     /*
@@ -27,6 +37,9 @@ RB.CollapsableBoxView = Backbone.View.extend({
      */
     collapse: function() {
         this._$box.addClass('collapsed');
+        this._$expandCollapseButton
+            .removeClass('rb-icon-collapse-review')
+            .addClass('rb-icon-expand-review');
     },
 
     /*

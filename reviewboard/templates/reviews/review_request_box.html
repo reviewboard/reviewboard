@@ -176,7 +176,7 @@
     <div class="screenshot-caption">
      <a href="{{image.get_absolute_url}}" class="edit">{% if draft %}{{image.draft_caption|default:image.caption}}{% else %}{{image.caption}}{% endif %}</a>
      {% if request.user.pk == review_request.submitter_id or perms.reviews.delete_screenshot %}
-      <a href="#" class="delete"><img src="{% static "rb/images/delete.png" %}" alt="{% trans "Delete Screenshot" %}" /></a>
+      <a href="#" class="delete rb-icon rb-icon-delete" title="{% trans "Delete Screenshot" %}"></a>
      {% endif %}
     </div>
    </div>
@@ -205,9 +205,7 @@
        <span class="filename">{{file.filename}}</span>
       </a>
 {%  if request.user.pk == review_request.submitter_id or perms.reviews.delete_file %}
-      <a href="#" class="delete">
-       <img src="{% static "rb/images/delete.png" %}" alt="{% trans "Delete File" %}" />
-      </a>
+      <a href="#" class="delete rb-icon rb-icon-delete" title="{% trans "Delete FIle" %}"></a>
 {%  endif %}
      </div>
      <div class="file-thumbnail-container">
