@@ -25,6 +25,7 @@ class CommentAdmin(admin.ModelAdmin):
         return truncatechars(obj.text, 60)
     truncated_text.short_description = _('Comment Text')
 
+
 class DefaultReviewerAdmin(admin.ModelAdmin):
     form = DefaultReviewerForm
     filter_horizontal = ('repository', 'groups', 'people',)
@@ -104,7 +105,8 @@ class ReviewRequestAdmin(admin.ModelAdmin):
                    'repository')
     search_fields = ['summary']
     raw_id_fields = ('submitter', 'diffset_history', 'screenshots',
-                     'inactive_screenshots', 'changedescs', 'local_site')
+                     'inactive_screenshots', 'changedescs', 'local_site',
+                     'depends_on', 'repository')
     filter_horizontal = ('target_people', 'target_groups')
     fieldsets = (
         (_('General Information'), {
