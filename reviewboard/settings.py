@@ -304,6 +304,7 @@ PIPELINE_JS = {
             'rb/js/models/tests/reviewRequestEditorModelTests.js',
             'rb/js/models/tests/userSessionModelTests.js',
             'rb/js/newReviewRequest/views/tests/branchesViewTests.js',
+            'rb/js/newReviewRequest/views/tests/postCommitViewTests.js',
             'rb/js/newReviewRequest/views/tests/repositorySelectionViewTests.js',
             'rb/js/pages/views/tests/reviewablePageViewTests.js',
             'rb/js/resources/collections/tests/repositoryBranchesCollectionTests.js',
@@ -435,12 +436,14 @@ PIPELINE_JS = {
     },
     'newReviewRequest': {
         'source_filenames': (
+            # Note: These are roughly in dependency order.
             'rb/js/resources/models/repositoryBranchModel.js',
             'rb/js/resources/models/repositoryCommitModel.js',
             'rb/js/resources/collections/repositoryBranchesCollection.js',
             'rb/js/resources/collections/repositoryCommitsCollection.js',
             'rb/js/resources/models/repositoryModel.js',
             'rb/js/resources/models/validateDiffModel.js',
+            'rb/js/newReviewRequest/models/postCommitModel.js',
             'rb/js/views/collectionView.js',
             'rb/js/newReviewRequest/views/branchView.js',
             'rb/js/newReviewRequest/views/branchesView.js',
@@ -448,6 +451,7 @@ PIPELINE_JS = {
             'rb/js/newReviewRequest/views/commitsView.js',
             'rb/js/newReviewRequest/views/repositoryView.js',
             'rb/js/newReviewRequest/views/repositorySelectionView.js',
+            'rb/js/newReviewRequest/views/postCommitView.js',
         ),
         'output_filename': 'rb/js/newReviewRequest.min.js',
     },
