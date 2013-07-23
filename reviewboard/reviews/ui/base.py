@@ -128,10 +128,13 @@ class ReviewUI(object):
         representations, such as comments grouped by an identifier or region.
         These representations must be serializable into JSON.
         """
-        return [
-            self.serialize_comment(comment)
-            for comment in comments
-        ]
+        user = self.request.user
+
+        for comment in comments:
+            review = comment.get_review()
+
+            if review and (review.public or review.user == user):
+                yield self.serialize_comment(comment)
 
     def serialize_comment(self, comment):
         """Serializes a comment.

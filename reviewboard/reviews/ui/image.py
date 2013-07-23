@@ -11,11 +11,13 @@ class ImageReviewUI(FileAttachmentReviewUI):
 
     def serialize_comments(self, comments):
         result = {}
+        serialized_comments = \
+            super(ImageReviewUI, self).serialize_comments(comments)
 
-        for comment in comments:
+        for serialized_comment in serialized_comments:
             try:
                 position = '%(x)sx%(y)s+%(width)s+%(height)s' \
-                           % comment.extra_data
+                           % serialized_comment
             except KeyError:
                 # It's possible this comment was made before the review UI
                 # was provided, meaning it has no data. If this is the case,
@@ -23,8 +25,7 @@ class ImageReviewUI(FileAttachmentReviewUI):
                 # region.
                 continue
 
-            result.setdefault(position, []).append(
-                self.serialize_comment(comment))
+            result.setdefault(position, []).append(serialized_comment)
 
         return result
 
