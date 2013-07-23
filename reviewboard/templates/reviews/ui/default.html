@@ -1,0 +1,43 @@
+{% extends base_template %}
+{% load djblets_js i18n reviewtags %}
+
+{% block title %}
+ {{review_ui.name}}{% if caption %}: {{caption}}{% endif %}
+{% endblock %}
+
+{% block scripts-post %}
+{{block.super}}
+
+{%  for js_file in review_ui.js_files %}
+<script src="{{js_file}}"></script>
+{%  endfor %}
+
+<script>
+    $(document).ready(function() {
+{%  block review_ui_setup %}
+        var view = new {{review_ui.js_view_class}}({
+{%   for key, value in review_ui.get_js_view_data.items %}
+            {{key|json_dumps}}: {{value|json_dumps}},
+{%   endfor %}
+            model: new {{review_ui.js_model_class}}({
+{%   for key, value in review_ui.get_js_model_data.items %}
+                {{key|json_dumps}}: {{value|json_dumps}},
+{%   endfor %}
+                caption: '{{caption}}',
+                reviewRequest: RB.currentPage.reviewRequest,
+                serializedCommentBlocks: {{review_ui.get_comments_json}}
+            })
+        });
+
+{%   block review_ui_render %}
+        view.render();
+        $('#review_ui_{{review_ui_uuid}}').append(view.$el);
+{%   endblock %}
+{%  endblock %}
+    });
+</script>
+{% endblock %}
+
+{% block review_ui_content %}
+<div id="review_ui_{{review_ui_uuid}}"></div>
+{% endblock %}

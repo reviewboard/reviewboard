@@ -1,11 +1,12 @@
 import logging
+from uuid import uuid4
 
+import mimeparse
 from django.shortcuts import render_to_response
 from django.template.context import RequestContext
 from django.utils import simplejson
 from django.utils.html import escape
 from django.utils.safestring import mark_safe
-import mimeparse
 
 from reviewboard.attachments.mimetypes import score_match
 from reviewboard.diffviewer.models import DiffSet
@@ -18,11 +19,16 @@ _file_attachment_review_uis = []
 
 
 class ReviewUI(object):
+    name = None
     model = None
     comment_model = None
     allow_inline = False
-    template_name = None
+    template_name = 'reviews/ui/default.html'
     object_key = 'obj'
+
+    js_files = []
+    js_model_class = None
+    js_view_class = None
 
     def __init__(self, review_request, obj):
         self.review_request = review_request
@@ -61,6 +67,7 @@ class ReviewUI(object):
                     'review_request': self.review_request,
                     'review': review,
                     'review_ui': self,
+                    'review_ui_uuid': str(uuid4()),
                     self.object_key: self.obj,
                 }),
                 **self.get_extra_context(request)))
@@ -88,7 +95,8 @@ class ReviewUI(object):
 
         This will normally just link to the review UI itself, but some may want
         to specialize the URL to link to a specific location within the
-        file."""
+        file.
+        """
         local_site_name = None
         if self.review_request.local_site:
             local_site_name = self.review_request.local_site.name
@@ -105,10 +113,27 @@ class ReviewUI(object):
         """Returns the text to link to a comment.
 
         This will normally just return the filename, but some may want to
-        specialize to list things like page numbers or sections."""
+        specialize to list things like page numbers or sections.
+        """
         return self.obj.filename
 
     def get_extra_context(self, request):
+        return {}
+
+    def get_js_model_data(self):
+        """Returns data to pass to the JavaScript Model during instantiation.
+
+        This data will be passed as attributes to the reviewable model
+        when constructed.
+        """
+        return {}
+
+    def get_js_view_data(self):
+        """Returns data to pass to the JavaScript View during instantiation.
+
+        This data will be passed as options to the reviewable view
+        when constructed.
+        """
         return {}
 
     def get_comments_json(self):

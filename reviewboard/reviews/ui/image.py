@@ -5,9 +5,17 @@ from reviewboard.reviews.ui.base import FileAttachmentReviewUI
 
 
 class ImageReviewUI(FileAttachmentReviewUI):
+    name = 'Image'
     supported_mimetypes = ['image/*']
-    template_name = 'reviews/ui/image.html'
-    object_key = 'image'
+
+    js_model_class = 'RB.ImageReviewable'
+    js_view_class = 'RB.ImageReviewableView'
+
+    def get_js_model_data(self):
+        return {
+            'imageURL': self.obj.file.url,
+            'fileAttachmentID': self.obj.id,
+        }
 
     def serialize_comments(self, comments):
         result = {}
