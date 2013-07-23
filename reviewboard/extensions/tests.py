@@ -88,7 +88,7 @@ class HookTests(TestCase):
         content = t.render(context).strip()
 
         self.assertTrue(('id="%s"' % action['id']) in content)
-        self.assertTrue((">%s<img" % action['label']) in content)
+        self.assertTrue((">%s &#9662;" % action['label']) in content)
         self.assertTrue(self._build_action_template(action['items'][0]) in
                         content)
 
