@@ -221,6 +221,7 @@ def send_review_mail(user, review_request, subject, in_reply_to,
 
     headers = {
         'X-ReviewBoard-URL': base_url,
+        'X-ReviewRequest-Repository': review_request.repository.name,
         'X-ReviewRequest-URL': base_url + review_request.get_absolute_url(),
         'X-ReviewGroup': ', '.join(group.name for group in \
                                     review_request.target_groups.all())
