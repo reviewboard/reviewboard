@@ -5,6 +5,17 @@ RB.RepositoryBranch = Backbone.Model.extend({
     defaults: {
         name: null,
         commit: null,
-        'default': false
+        isDefault: false
+    },
+
+    /*
+     * Parse the result from the server.
+     */
+    parse: function(response) {
+        return {
+            name: response.name,
+            commit: response.commit,
+            isDefault: response['default']
+        };
     }
 });

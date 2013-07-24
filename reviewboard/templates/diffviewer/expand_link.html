@@ -1,8 +1,12 @@
 {% load static %}
 {% if expandable %}
-<a href="#" title="{{tooltip}}" class="diff-expand-btn" data-chunk-index="{{chunk.index}}" {% if expand_pos %}data-lines-of-context="{{expand_pos.0}},{{expand_pos.1}}"{% endif %}>
- <img src="{% static image %}" width="{{image_width}}" height="{{image_height}}" alt="{{image_alt}}" />
-{% endif %}
+<a href="#" title="{{tooltip}}" class="diff-expand-btn"
+   data-chunk-index="{{chunk.index}}"
+{%  if expand_pos %}
+   data-lines-of-context="{{expand_pos.0}},{{expand_pos.1}}"
+{%  endif %}
+{% endif %}>
+ <div class="rb-icon {{image_class}}"></div>
 {% if text %}{{text|safe}}{% endif %}
 {% if expandable %}
 </a>

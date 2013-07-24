@@ -45,9 +45,8 @@ describe('views/FileAttachmentThumbnail', function() {
         it('Using existing elements', function() {
             var $el = $('<div/>')
                 .addClass(RB.FileAttachmentThumbnail.prototype.className)
-                .html(RB.FileAttachmentThumbnail.prototype.template(_.extend({
-                    deleteImageURL: STATIC_URLS['rb/images/delete.png']
-                 }, model.attributes)));
+                .html(RB.FileAttachmentThumbnail.prototype.template(
+                     model.attributes));
 
             view = new RB.FileAttachmentThumbnail({
                 reviewRequest: reviewRequest,

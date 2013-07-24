@@ -504,7 +504,7 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
         $el
             .inlineEditor({
                 cls: id + '-editor',
-                editIconPath: STATIC_URLS['rb/images/edit.png'],
+                editIconClass: 'rb-icon rb-icon-edit',
                 multiline: el.tagName === 'PRE',
                 showButtons: !$el.hasClass('screenshot-editable'),
                 startOpen: fieldOptions.startOpen,

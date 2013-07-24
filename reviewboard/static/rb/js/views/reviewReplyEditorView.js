@@ -106,7 +106,7 @@ RB.ReviewReplyEditorView = Backbone.View.extend({
         this._$editor = $draftComment.find('pre.reviewtext')
             .inlineEditor({
                 cls: 'inline-comment-editor',
-                editIconPath: STATIC_URLS['rb/images/edit.png'],
+                editIconClass: 'rb-icon rb-icon-edit',
                 notifyUnchangedCompletion: true,
                 multiline: true
             })

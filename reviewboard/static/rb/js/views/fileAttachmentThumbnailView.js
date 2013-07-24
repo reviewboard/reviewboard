@@ -43,9 +43,8 @@ RB.FileAttachmentThumbnail = Backbone.View.extend({
         '   <img class="icon" src="<%= iconURL %>" />',
         '   <span class="filename"><%= filename %></span>',
         '  </a>',
-        '  <a class="delete" href="#">',
-        '   <img src="<%= deleteImageURL %>" alt="Delete File" />',
-        '  </a>',
+        '  <a href="#" class="delete rb-icon rb-icon-delete"',
+        '     title="Delete File"></a>',
         ' </div>',
         ' <div class="file-thumbnail-container" />',
         ' <div class="file-caption">',
@@ -147,7 +146,7 @@ RB.FileAttachmentThumbnail = Backbone.View.extend({
 
         this._$caption
             .inlineEditor({
-                editIconPath: STATIC_URLS["rb/images/edit.png"],
+                editIconClass: 'rb-icon rb-icon-edit',
                 showButtons: false
             })
             .on({
@@ -284,9 +283,7 @@ RB.FileAttachmentThumbnail = Backbone.View.extend({
      */
     _renderContents: function() {
         this.$el
-            .html(this.template(_.extend({
-                deleteImageURL: STATIC_URLS['rb/images/delete.png']
-            }, this.model.attributes)))
+            .html(this.template(this.model.attributes))
             .addClass(this.className);
     },
 

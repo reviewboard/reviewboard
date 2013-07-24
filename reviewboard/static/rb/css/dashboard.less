@@ -6,7 +6,7 @@
  ****************************************************************************/
 #dashboard-main {
   background: white;
-  border-left: 1px black solid;
+  border-left: 1px @box-border-color solid;
   vertical-align: top;
   margin-left: 18em;
   .border-radius(0 @box-inner-border-radius @box-inner-border-radius 0);
@@ -45,13 +45,13 @@
     padding: 5px 8px;
     word-break: break-all;
 
-    img {
-      vertical-align: bottom;
-    }
-
     label {
       color: #575012;
       font-weight: bold;
+    }
+
+    .rb-icon {
+      vertical-align: bottom;
     }
   }
 

@@ -42,10 +42,10 @@ describe('resources/collections/RepositoryBranches', function() {
             expect(collection.at(0).get('name')).toBe('master');
             expect(collection.at(1).get('commit'))
                 .toBe('92463764015ef463b4b6d1a1825fee7aeec8cb15');
-            expect(collection.at(2).get('default')).toBe(false);
+            expect(collection.at(2).get('isDefault')).toBe(false);
 
             expect(collection.reduce(function(memo, item) {
-                return memo + item.get('default') ? 1 : 0;
+                return memo + item.get('isDefault') ? 1 : 0;
             }, 0)).toBe(1);
         });
     });

@@ -24,11 +24,11 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
         '\x0d': '_recenterSelected'
     },
 
-    events: {
+    events: _.extend({
         'click .index a': '_onIndexClicked',
         'click .toggle-whitespace-only-chunks': '_toggleWhitespaceOnlyChunks',
         'click .toggle-show-whitespace': '_toggleShowExtraWhitespace'
-    },
+    }, RB.ReviewablePageView.prototype.events),
 
     /*
      * Initializes the diff viewer page.

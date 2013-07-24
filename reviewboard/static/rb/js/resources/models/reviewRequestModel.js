@@ -296,7 +296,7 @@ RB.ReviewRequest = RB.BaseResource.extend({
             targetGroups: rsp.target_groups,
             targetPeople: rsp.target_people,
             testingDone: rsp.testing_done
-        }
+        };
     }
 }, {
     CHECK_UPDATES_MSECS: 5 * 60 * 1000, // Every 5 minutes

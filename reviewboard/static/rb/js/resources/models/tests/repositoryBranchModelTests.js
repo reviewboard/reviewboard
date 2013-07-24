@@ -17,7 +17,7 @@ describe('resources/models/RepositoryBranch', function() {
             expect(data.name).toBe('master');
             expect(data.commit)
                 .toBe('c8ffef025488802a77f499d7f0d24579d858b07e');
-            expect(data['default']).toBe(true);
+            expect(data.isDefault).toBe(true);
         });
     });
 });

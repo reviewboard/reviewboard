@@ -9,12 +9,14 @@
 
 {% definevar 'line_fmt' %}
   <tr line="%(linenum_row)s"%(class_attr)s>
+{%  if not is_new_file %}
    <th>%(anchor_html)s%(linenum1)s</th>
    <td>%(moved_from_html)s
     %(begin_collapse_html)s
     <pre>%(line1)s</pre>
     %(end_collapse_html)s
    </td>
+{%  endif %}
    <th>%(linenum2)s</th>
    <td>%(moved_to_html)s
     <pre>%(line2)s</pre>
@@ -27,7 +29,11 @@
 {% enddefinevar %}
 
 {% definevar 'begin_collapse_fmt' %}
- <div class="collapse-floater"><img src="{% static "rb/images/diff-collapse.png" %}" width="14" height="14" alt="{% trans "Collapse lines" %}" title="{% trans "Collapse lines" %}" class="diff-collapse-btn" data-chunk-index="%(chunk_index)s" data-lines-of-context="0" />
+ <div class="collapse-floater">
+  <div class="diff-collapse-btn" title="{% trans "Collapse lines" %}"
+       data-chunk-index="%(chunk_index)s" data-lines-of-context="0">
+   <div class="rb-icon rb-icon-diff-collapse-chunk"></div>
+  </div>
 {% enddefinevar %}
 
 {% definevar 'end_collapse_fmt' %}
@@ -40,10 +46,12 @@
 
 {% if file.changed_chunk_indexes or file.binary or file.deleted or file.moved %}
 {%  if not standalone %}
-<table class="sidebyside{% if not file.interfilediff and file.newfile and not file.filediff.parent_diff %} newfile{% endif %}" id="file{{file.filediff.id}}">
+<table class="sidebyside{% if is_new_file %} newfile{% endif %}" id="file{{file.filediff.id}}"{% if not file.interfilediff %} data-lines-added="{{file.filediff.insert_count}}" data-lines-removed="{{file.filediff.delete_count}}"{% endif %}>
  <colgroup>
+{% if not is_new_file %}
   <col class="line" />
   <col class="left" />
+{% endif %}
   <col class="line" />
   <col class="right" />
  </colgroup>
@@ -52,7 +60,9 @@
 {%   if file.dest_filename == file.depot_filename %}
    <th colspan="4"><a name="{{file.index}}" class="file-anchor"></a>{{ file.depot_filename }}</th>
 {%   else %}
+{%    if not is_new_file %}
    <th colspan="2"><a name="{{file.index}}" class="file-anchor"></a>{{ file.depot_filename }}</th>
+{%    endif %}
    <th colspan="2">{{ file.dest_filename }}{% if file.moved %}{% trans " (moved)" %}{% endif %}</th>
 {%   endif %}{# file.dest_filename == file.depot_filename #}
   </tr>
@@ -60,8 +70,10 @@
 {%   if file.moved and file.num_changes == 0 %}
    <th colspan="4">{% trans "No changes were made to this file." %}</th>
 {%   else %}
+{%    if not is_new_file %}
    <th></th>
    <th>{{file.revision}}</th>
+{%    endif %}
    <th></th>
    <th>{{file.dest_revision}}</th>
 {%   endif %}{# num_changes and moved #}
@@ -71,7 +83,9 @@
 {%  if file.binary %}
  <tbody class="binary">
   <tr>
-   <td colspan="4">{% trans "This is a binary file. The content cannot be displayed." %}</td>
+   <td colspan="{% if is_new_file %}2{% else %}4{% endif %}">
+    {% trans "This is a binary file. The content cannot be displayed." %}
+   </td>
   </tr>
  </tbody>
 {%  elif file.deleted %}

@@ -1008,8 +1008,15 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
      * and put into the diff viewer in place of the expanded chunk.
      */
     _onCollapseChunkClicked: function(e) {
+        var $target = $(e.target);
+
+        if (!$target.hasClass('diff-collapse-btn')) {
+            /* We clicked an image inside the link. Find the parent. */
+            $target = $target.parents('.diff-collapse-btn');
+        }
+
         e.preventDefault();
-        this._expandOrCollapse($(e.target), false);
+        this._expandOrCollapse($target, false);
     }
 });
 

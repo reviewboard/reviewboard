@@ -157,10 +157,6 @@
   &.widget-hidden {
     .widget-heading {
       .border-radius(@box-inner-border-radius);
-
-      .btn-state {
-        background: url("../images/admin/wid-max.png") 0px 3px no-repeat;
-      }
     }
 
     &.widget-has-actions .widget-heading {
@@ -200,9 +196,6 @@
 
     .btn-state {
       float: right;
-      background: url("../images/admin/wid-min.png") 0px 3px no-repeat;
-      width: @widget-actions-padding;
-      height: @widget-header-icon-height;
     }
   }
 
@@ -427,16 +420,19 @@
   }
 
   .addlink {
-    background: url("../images/db-add.png") 27px 0 no-repeat;
     display: block;
-    padding: 0 21px 5px 0;
-    width: 23px;
+    padding: 0;
+    white-space: nowrap;
+
+    .rb-icon {
+      margin-left: 2px;
+    }
   }
 }
 
 /* System Information sidebar widget */
 #widget-system-info {
-  img {
+  .rb-icon {
     float: right;
 
     .admin-version {

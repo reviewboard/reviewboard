@@ -108,13 +108,13 @@
       }
     }
 
-    img {
-      vertical-align: bottom;
-    }
-
     li {
       display: inline;
       padding-left: 8px;
+    }
+
+    .rb-icon {
+      vertical-align: bottom;
     }
   }
 
@@ -200,8 +200,8 @@
       margin-right: 0.5em;
     }
 
-    img {
-      vertical-align: middle;
+    .rb-icon-edit {
+      vertical-align: text-bottom;
     }
 
     #summary {
@@ -277,12 +277,6 @@
       }
     }
 
-    .menu-title {
-      background: url("../images/dropdown.png") no-repeat 100% 60%;
-      margin-right: 0.6em;
-      padding-right: 1.2em;
-    }
-
     .menu {
       background: @review-request-action-menu-bg;
       border: 1px @review-request-action-menu-border-color solid;
@@ -356,12 +350,6 @@
 
 .box {
   &.collapsed {
-    .collapse-button {
-      .ui-collapse-icon {
-        background-image: url('../images/expand-review.png');
-      }
-    }
-
     .body {
       display: none;
     }
@@ -377,12 +365,6 @@
     float: left;
     margin-right: 0.5em;
     padding: 0;
-
-    .ui-collapse-icon {
-      background: url('../images/collapse-review.png') no-repeat;
-      width: 18px;
-      height: 18px;
-    }
   }
 }
 
@@ -1141,7 +1123,7 @@
   font-weight: bold;
   line-height: @issue-state-height;
   min-height: @issue-state-height;
-  padding: 0.3em 0.6em 0.3em 2.5em;
+  padding: 0.3em 0.6em 0.3em 0.6em;
   position: relative;
 
   input, .back-to-issue-summary {
@@ -1151,14 +1133,19 @@
      * off-center.
      */
     margin: 2px 2px 2px 0.2em;
+    vertical-align: middle;
   }
 
   .issue-container {
     position: relative;
   }
 
+  .rb-icon {
+    margin: 0 0.2em;
+  }
+
   &.dropped {
-    background: url('../images/closed_issue.png') @issue-discarded-bg no-repeat 5px 50%;
+    background: @issue-discarded-bg;
     border: 1px solid @issue-discarded-border-color;
 
     .back-to-issue-summary, .back-to-issue-summary:visited {
@@ -1167,7 +1154,7 @@
   }
 
   &.open {
-    background: url('../images/open_issue.png') @issue-opened-bg no-repeat 5px 50%;
+    background: @issue-opened-bg;
     border: 1px solid @issue-opened-border-color;
 
     .back-to-issue-summary, .back-to-issue-summary:visited {
@@ -1176,7 +1163,7 @@
   }
 
   &.resolved {
-    background: url('../images/tick.png') @issue-resolved-bg no-repeat 5px 50%;
+    background: @issue-resolved-bg;
     border: 1px solid @issue-resolved-border-color;
 
     .back-to-issue-summary, .back-to-issue-summary:visited {
@@ -1201,6 +1188,7 @@
 
   .issue-message {
     margin-right: 0.5em;
+    vertical-align: middle;
   }
 }
 

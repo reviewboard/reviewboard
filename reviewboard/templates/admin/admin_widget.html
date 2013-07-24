@@ -5,7 +5,8 @@
 {% if widget.icon %}
   <img src="{% static widget.icon %}" alt="{{widget.title}}" width="14" height="14" />
 {% endif %}
-  {{widget.title}}<span class="btn-state"></span>
+  {{widget.title}}
+  <span class="btn-state rb-icon rb-icon-admin-{% if widget.collapsed %}expand{% else %}collapse{% endif %}"></span>
  </h1>
  <div class="widget-content">
   {% if widget.template %}
