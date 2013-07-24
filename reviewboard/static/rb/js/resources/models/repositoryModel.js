@@ -3,10 +3,16 @@
  */
 RB.Repository = RB.BaseResource.extend({
     defaults: {
+        localSitePrefix: null,
         name: null,
-        localSitePrefix: null
+        requiresBasedir: false,
+        requiresChangeNumber: false,
+        scmtoolName: null
     },
 
+    /*
+     * Initialize the model.
+     */
     initialize: function() {
         RB.BaseResource.prototype.initialize.apply(this, arguments);
 
@@ -14,6 +20,9 @@ RB.Repository = RB.BaseResource.extend({
         this.branches.url = _.result(this, 'url') + 'branches/';
     },
 
+    /*
+     * Get a collection of commits from a given starting point.
+     */
     getCommits: function(startCommit) {
         return new RB.RepositoryCommits([], {
             urlBase: _.result(this, 'url') + 'commits/',
@@ -21,6 +30,9 @@ RB.Repository = RB.BaseResource.extend({
         });
     },
 
+    /*
+     * Override for BaseResource.url.
+     */
     url: function() {
         var url = SITE_ROOT + (this.get('localSitePrefix') || '') +
                   'api/repositories/';
