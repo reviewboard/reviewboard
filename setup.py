@@ -38,7 +38,7 @@ if sys.hexversion < 0x02050000:
 elif sys.hexversion < 0x02060000:
     markdown_requirement = 'markdown==2.2.1'
 else:
-    markdown_requirement = 'markdown>=2.3.1'
+    markdown_requirement = 'markdown>=2.2.1'
 
 
 # Make sure we're actually in the directory containing setup.py.
