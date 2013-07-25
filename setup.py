@@ -38,7 +38,7 @@ if sys.hexversion < 0x02050000:
 elif sys.hexversion < 0x02060000:
     markdown_requirement = 'markdown==2.2.1'
 else:
-    markdown_requirement = 'markdown>=2.3.1'
+    markdown_requirement = 'markdown>=2.2.1'
 
 
 # Make sure we're actually in the directory containing setup.py.
@@ -167,15 +167,11 @@ setup(name=PACKAGE_NAME,
       },
       cmdclass=cmdclasses,
       install_requires=[
-          'Django>=1.4.5,<1.5',
+          'Django>=1.3.7,<1.4',
           'django_evolution>=0.6.9',
-          'Djblets>=0.7.15,<0.7.16',
-          'django-pipeline>=1.2.24,<1.3',
-          'docutils',
-          markdown_requirement,
-          'mimeparse>=0.1.3',
-          'paramiko>=1.9.0',
-          'Pygments>=1.5',
+          'Djblets==0.6.28',
+          'Pygments>=1.4',
+          'paramiko>=1.7.6',
           'python-dateutil==1.5',
           'python-memcached',
           'pytz>=2012h',

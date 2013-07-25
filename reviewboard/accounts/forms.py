@@ -115,9 +115,9 @@ class RegistrationForm(DjbletsRegistrationForm):
         siteconfig = SiteConfiguration.objects.get_current()
 
         if siteconfig.get('site_domain_method') == 'https':
-            self.recaptcha_url = 'https://api-secure.recaptcha.net'
+            self.recaptcha_url = 'https://www.google.com/recaptcha/api'
         else:
-            self.recaptcha_url = 'http://api.recaptcha.net'
+            self.recaptcha_url = 'http://www.google.com/recaptcha/api'
 
     def clean(self):
         siteconfig = SiteConfiguration.objects.get_current()
