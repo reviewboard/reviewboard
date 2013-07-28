@@ -7,6 +7,7 @@ from docutils import nodes, utils
 def setup(app):
     app.add_config_value('bugtracker_url', '', True)
     app.add_role('bug', bug_role)
+    app.add_role('cve', cve_role)
 
 
 def bug_role(role, rawtext, text, linenum, inliner, options={}, content=[]):
@@ -32,6 +33,14 @@ def bug_role(role, rawtext, text, linenum, inliner, options={}, content=[]):
 
     ref = bugtracker_url % bugnum
     node = nodes.reference(rawtext, 'Bug #' + utils.unescape(text),
+                           refuri=ref, **options)
+
+    return [node], []
+
+
+def cve_role(role, rawtext, text, linenum, inliner, options={}, content=[]):
+    ref = 'http://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-%s' % text
+    node = nodes.reference(rawtext, 'CVE-' + utils.unescape(text),
                            refuri=ref, **options)
 
     return [node], []
