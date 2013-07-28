@@ -17,6 +17,10 @@ recommend upgrading immediately.
 * Function names in diff headers are no longer rendered as HTML.
   Patch by Damian Johnson. (:bug:`2612`)
 
+* If a user's full name contained HTML, the Submitters list would render
+  it as HTML, without escaping it. This was an XSS vulnerability.
+  (:cve:`2013-4795`)
+
 * The default Apache configuration is now more strict with how it serves
   up file attachments. This does not apply to older installations.
   To update your configuration, and to read best practices, read our
