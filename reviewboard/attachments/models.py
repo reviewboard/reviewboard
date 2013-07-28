@@ -16,6 +16,8 @@ class FileAttachment(models.Model):
     caption = models.CharField(_("caption"), max_length=256, blank=True)
     draft_caption = models.CharField(_("draft caption"),
                                      max_length=256, blank=True)
+    orig_filename = models.CharField(_('original filename'),
+                                     max_length=256, blank=True, null=True)
     file = models.FileField(_("file"),
                               upload_to=os.path.join('uploaded', 'files',
                                                      '%Y', '%m', '%d'))
@@ -46,7 +48,10 @@ class FileAttachment(models.Model):
     @property
     def filename(self):
         """Returns the filename for display purposes."""
-        return os.path.basename(self.file.name)
+        # Older versions of Review Board didn't store the original filename,
+        # instead just using the FileField's name. Newer versions have
+        # a dedicated filename field.
+        return self.orig_filename or os.path.basename(self.file.name)
 
     @property
     def display_name(self):

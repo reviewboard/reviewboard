@@ -32,8 +32,8 @@ class FileAttachmentTests(TestCase):
 
         review_request = ReviewRequest.objects.get(pk=1)
         file_attachment = form.create(file, review_request)
-        self.assertEqual(os.path.basename(file_attachment.file.name),
-                         'trophy.png')
+        self.assertTrue(os.path.basename(file_attachment.file.name).endswith(
+            '__trophy.png'))
         self.assertEqual(file_attachment.mimetype, 'image/png')
 
 
