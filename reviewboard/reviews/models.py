@@ -186,7 +186,9 @@ class Screenshot(models.Model):
         output embedding the thumbnail.
         """
         url = self.get_thumbnail_url()
-        return mark_safe('<img src="%s" alt="%s" />' % (url, self.caption))
+        return mark_safe('<img src="%s" data-at2x="%s" alt="%s" />' %
+                         (url, thumbnail(self.image, '800x200'),
+                          self.caption))
     thumb.allow_tags = True
 
     def __unicode__(self):

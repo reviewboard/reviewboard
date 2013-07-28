@@ -198,8 +198,10 @@ class ImageMimetype(MimetypeHandler):
 
     def get_thumbnail(self):
         """Returns a thumbnail of the image."""
-        return mark_safe('<img src="%s" class="file-thumbnail" alt="%s" />'
+        return mark_safe('<img src="%s" data-at2x="%s" '
+                         'class="file-thumbnail" alt="%s" />'
                          % (thumbnail(self.attachment.file),
+                            thumbnail(self.attachment.file, '800x200'),
                             self.attachment.caption))
 
 
