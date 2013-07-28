@@ -1,10 +1,15 @@
+@import "retina.less";
+
+
 .rb-icon {
   background-repeat: no-repeat;
-  background-image: url('../images/icons.png');
   display: inline-block;
   overflow: hidden;
   text-indent: -99999px;
   vertical-align: middle;
+
+  background-image: url("../images/icons.png");
+  .at2x('../images/icons.png', 155px, 109px);
 
   // For IE7
   zoom: 1;
@@ -34,7 +39,7 @@
 .icon(datagrid-comment, 66px, 28px);
 .icon(shipit-checkmark, 87px, 28px, 9px, 10px);
 .icon(datagrid-new-updates, 101px, 28px, 18px, 16px);
-.icon(edit, 124px, 28px, 20px, 14px);
+.icon(edit, 124px, 28px, 20px, 16px);
 .icon(delete, 5px, 49px, 12px, 12px);
 .icon(diff-collapse-chunk, 22px, 49px, 14px, 14px);
 .icon(diff-expand-above, 41px, 49px, 28px, 14px);
