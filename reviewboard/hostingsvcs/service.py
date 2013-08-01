@@ -9,6 +9,24 @@ from django.utils.translation import ugettext_lazy as _
 from pkg_resources import iter_entry_points
 
 
+class HTTPErrorProcessor(urllib2.HTTPErrorProcessor):
+    """Processes HTTP error codes.
+
+    Python 2.6+ gets HTTP error code processing right, but 2.5 only accepts
+    HTTP 200 and 206 as success codes. This handler ensures that anything
+    in the 200 range is a success.
+    """
+    def http_response(self, request, response):
+        if not (200 <= response.code < 300):
+            response = self.parent.error('http', request, response,
+                                         response.code, response.msg,
+                                         response.info())
+
+        return response
+
+    https_response = http_response
+
+
 class HostingService(object):
     """An interface to a hosting service for repositories and bug trackers.
 
@@ -185,9 +203,7 @@ class HostingService(object):
         return simplejson.loads(data), headers
 
     def _http_get(self, url, *args, **kwargs):
-        r = self._build_request(url, *args, **kwargs)
-        u = urllib2.urlopen(r)
-        return u.read(), u.headers
+        return self._http_request(url, **kwargs)
 
     def _http_post(self, url, body=None, fields={}, files={},
                    content_type=None, headers={}, *args, **kwargs):
@@ -204,9 +220,7 @@ class HostingService(object):
 
         headers['Content-Length'] = str(len(body))
 
-        r = self._build_request(url, body, headers, **kwargs)
-        u = urllib2.urlopen(r)
-        return u.read(), u.headers
+        return self._http_request(url, body, headers, **kwargs)
 
     def _build_request(self, url, body=None, headers={}, username=None,
                        password=None):
@@ -218,6 +232,13 @@ class HostingService(object):
                                                        password))
 
         return r
+
+    def _http_request(self, url, body=None, headers=None, **kwargs):
+        r = self._build_request(url, body, headers, **kwargs)
+        opener = urllib2.build_opener(HTTPErrorProcessor())
+        u = opener.open(r)
+
+        return u.read(), u.headers
 
     def _build_form_data(self, fields, files):
         """Encodes data for use in an HTTP POST."""
