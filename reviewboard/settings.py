@@ -461,6 +461,7 @@ PIPELINE_JS = {
             'lib/js/flot/jquery.flot.min.js',
             'lib/js/flot/jquery.flot.pie.min.js',
             'lib/js/flot/jquery.flot.selection.min.js',
+            'lib/js/flot/jquery.flot.time.min.js',
             'lib/js/jquery.masonry.js',
             'rb/js/admin.js',
         ),
