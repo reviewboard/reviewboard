@@ -364,6 +364,7 @@
     cursor: pointer;
     float: left;
     margin-right: 0.5em;
+    margin-top: -1px;
     padding: 0;
   }
 }
@@ -406,6 +407,7 @@
 
   .box-inner {
     background-image: url('../images/review_box_bottom_bg.png') !important;
+    min-height: 32px;
   }
 
   .controls {
@@ -600,8 +602,10 @@
 }
 
 .changedesc {
-  background-color: #fefadf;
-  background-image: url('../images/review_request_box_top_bg.png');
+  &.box {
+    background-color: #fefadf;
+    background-image: url('../images/review_request_box_top_bg.png');
+  }
 
   .body {
     background-color: #FAFAFA;
@@ -635,6 +639,7 @@
 
   .box-inner {
     background-image: url('../images/review_request_box_bottom_bg.png') !important;
+    min-height: 32px;
   }
 
   .header {
