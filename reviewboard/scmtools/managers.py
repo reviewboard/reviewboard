@@ -49,7 +49,10 @@ class RepositoryManager(Manager):
     def accessible(self, user, visible_only=True, local_site=None):
         """Returns repositories that are accessible by the given user."""
         if user.is_superuser:
-            qs = self.all()
+            if visible_only:
+                qs = self.filter(visible=True).distinct()
+            else:
+                qs = self.all()
         else:
             q = Q(public=True)
 

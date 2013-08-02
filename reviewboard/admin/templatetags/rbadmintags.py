@@ -64,7 +64,8 @@ def admin_actions(context):
             'count_review_groups': Group.objects.count(),
             'count_default_reviewers': DefaultReviewer.objects.count(),
             'count_repository':
-                Repository.objects.accessible(request.user).count(),
+                Repository.objects.accessible(request.user,
+                                              visible_only=False).count(),
             'has_cache_stats': get_has_cache_stats(),
             'version': get_version_string(),
         }
