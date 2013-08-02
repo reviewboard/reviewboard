@@ -114,17 +114,25 @@
             "tool": 1, 
             "users": []
         }
-    },
-	{
-		"pk": "5",
-		"model": "scmtools.repository",
-		"fields": {
-			"username": "",
-			"name": "Test HG",
-			"tool": 4,
-			"bug_tracker": "",
-			"path": "scmtools/testdata/hg_repo",
-			"password": ""
-		}
-	}
+    }, 
+    {
+        "pk": "5", 
+        "model": "scmtools.repository", 
+        "fields": {
+            "username": "", 
+            "name": "Test HG", 
+            "review_groups": [], 
+            "encoding": "", 
+            "mirror_path": "", 
+            "local_site": null, 
+            "public": true, 
+            "visible": false, 
+            "raw_file_url": "", 
+            "bug_tracker": "", 
+            "path": "scmtools/testdata/hg_repo", 
+            "password": "", 
+            "tool": 4, 
+            "users": []
+        }
+    }
 ]

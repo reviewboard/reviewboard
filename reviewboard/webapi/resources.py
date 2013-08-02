@@ -3275,6 +3275,11 @@ class RepositoryResource(WebAPIResource):
                            'for communicating with the repository and '
                            'accessing files.',
         },
+        'visible': {
+            'type': bool,
+            'description': 'Whether or not this repository is visible (admin '
+                           'only).',
+        },
         'tool': {
             'type': str,
             'description': 'The name of the internal repository '
@@ -3292,10 +3297,12 @@ class RepositoryResource(WebAPIResource):
     allowed_methods = ('GET', 'POST', 'PUT', 'DELETE')
 
     @webapi_check_login_required
-    def get_queryset(self, request, local_site_name=None, *args, **kwargs):
+    def get_queryset(self, request, local_site_name=None, show_invisible=False,
+                     *args, **kwargs):
+        """Returns a queryset for Repository models."""
         local_site = _get_local_site(local_site_name)
         return self.model.objects.accessible(request.user,
-                                             visible_only=True,
+                                             visible_only=not show_invisible,
                                              local_site=local_site)
 
     def serialize_tool_field(self, obj, **kwargs):
@@ -3311,14 +3318,26 @@ class RepositoryResource(WebAPIResource):
         return repository.is_mutable_by(request.user)
 
     @webapi_check_local_site
-    @augment_method_from(WebAPIResource)
+    @webapi_request_fields(
+        optional=dict({
+            'show-invisible': {
+                'type': bool,
+                'description': 'Whether to list only visible repositories or '
+                               'all repositories.',
+            },
+        }, **WebAPIResource.get_list.optional_fields),
+        required=WebAPIResource.get_list.required_fields,
+        allow_unknown=True
+    )
     def get_list(self, request, *args, **kwargs):
         """Retrieves the list of repositories on the server.
 
         This will only list visible repositories. Any repository that the
         administrator has hidden will be excluded from the list.
         """
-        pass
+        show_invisible = request.GET.get('show-invisible', False)
+        return super(RepositoryResource, self).get_list(
+            request, show_invisible=show_invisible, *args, **kwargs)
 
     @webapi_check_local_site
     @augment_method_from(WebAPIResource)
@@ -3401,12 +3420,16 @@ class RepositoryResource(WebAPIResource):
                 'type': str,
                 'description': 'The username used to access the repository.',
             },
+            'visible': {
+                'type': bool,
+                'description': 'Whether the repository is visible.',
+            },
         },
     )
     def create(self, request, name, path, tool, trust_host=False,
                bug_tracker=None, encoding=None, mirror_path=None,
                password=None, public=None, raw_file_url=None, username=None,
-               local_site_name=None, *args, **kwargs):
+               visible=True, local_site_name=None, *args, **kwargs):
         """Creates a repository.
 
         This will create a new repository that can immediately be used for
@@ -3461,6 +3484,7 @@ class RepositoryResource(WebAPIResource):
             bug_tracker=bug_tracker or '',
             encoding=encoding or '',
             public=public,
+            visible=visible,
             local_site=local_site)
 
         if cert:
@@ -3544,6 +3568,10 @@ class RepositoryResource(WebAPIResource):
                                "(probably) won't conflict with any future "
                                "repository names.",
             },
+            'visible': {
+                'type': bool,
+                'description': 'Whether the repository is visible.',
+            },
         },
     )
     def update(self, request, trust_host=False, *args, **kwargs):
@@ -3568,7 +3596,7 @@ class RepositoryResource(WebAPIResource):
 
         for field in ('bug_tracker', 'encoding', 'mirror_path', 'name',
                       'password', 'path', 'public', 'raw_file_url',
-                      'username'):
+                      'username', 'visible'):
             value = kwargs.get(field, None)
 
             if value is not None:

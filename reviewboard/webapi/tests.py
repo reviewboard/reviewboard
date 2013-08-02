@@ -677,6 +677,17 @@ class RepositoryResourceTests(BaseWebAPITestCase):
                              local_site__name=self.local_site_name).count())
 
     @add_fixtures(['test_site'])
+    def test_get_repositories_with_show_visible(self):
+        """Testing the GET repositories/ API with show_invisible=True"""
+        rsp = self.apiGet(self.get_list_url(),
+                          query={'show-invisible': True},
+                          expected_mimetype=self.list_mimetype)
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(len(rsp['repositories']),
+                         Repository.objects.accessible(
+                             self.user, visible_only=False).count())
+
+    @add_fixtures(['test_site'])
     def test_get_repositories_with_site_no_access(self):
         """Testing the GET repositories/ API with a local site and Permission Denied error"""
         self.apiGet(self.get_list_url(self.local_site_name),
@@ -686,6 +697,12 @@ class RepositoryResourceTests(BaseWebAPITestCase):
         """Testing the POST repositories/ API"""
         self._login_user(admin=True)
         self._post_repository(False)
+
+    def test_post_repository_with_visible_False(self):
+        """Testing the POST repositories/ API with visible=False"""
+        self._login_user(admin=True)
+        rsp = self._post_repository(False, data={'visible': False})
+        self.assertEqual(rsp['repository']['visible'], False)
 
     def test_post_repository_with_bad_host_key(self):
         """Testing the POST repositories/ API with Bad Host Key error"""
