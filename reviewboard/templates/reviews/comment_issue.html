@@ -2,7 +2,11 @@
 {% load reviewtags %}
 {% load staticfiles %}
 
-<div class="issue-state">
+<div class="issue-state"
+     data-comment-id="{{comment.pk}}"
+     data-comment-type="{{comment_type}}"
+     data-issue-status="{{issue_status}}"
+     data-interactive="{{interactive}}">
  <div class="issue-container">
   <span class="rb-icon"></span>
   <span class="issue-message"></span>
@@ -12,17 +16,3 @@
   <a class="back-to-issue-summary" href="#issue-summary">{% trans "Show all issues" %}</a>
  </div>
 </div>
-<script language="javascript">
-    $(document).ready(function() {
-        var issueBar = new RB.CommentIssueBarView({
-            el: $("#comment-{{comment.comment_type}}-{{comment.id}}-issue"),
-            reviewID: {{review.pk}},
-            commentID: {{comment.pk}},
-            commentType: '{{comment_type}}',
-            issueStatus: '{{issue_status}}',
-            interactive: {{interactive}}
-        });
-        issueBar.render();
-  });
-</script>
-

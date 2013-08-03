@@ -43,6 +43,27 @@ RB.ReviewBoxView = RB.CollapsableBoxView.extend({
             $el.html(RB.linkifyText($el.text(), bugTrackerURL));
         });
 
+        _.each(this.$('.review-comments .issue-indicator'), function(el) {
+            var $issueState = $('.issue-state', el);
+
+            /*
+             * Not all issue-indicator divs have an issue-state div for
+             * the issue bar.
+             */
+            if ($issueState.length > 0) {
+                var issueBar = new RB.CommentIssueBarView({
+                    el: el,
+                    reviewID: this.model.id,
+                    commentID: $issueState.data('comment-id'),
+                    commentType: $issueState.data('comment-type'),
+                    issueStatus: $issueState.data('issue-status'),
+                    interactive: $issueState.data('interactive')
+                });
+
+                issueBar.render();
+            }
+        }, this);
+
         _.each(this.$('.comment-section'), function(el) {
             var $el = $(el),
                 editor = new RB.ReviewReplyEditor({
