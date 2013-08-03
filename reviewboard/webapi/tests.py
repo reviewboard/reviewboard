@@ -3963,30 +3963,9 @@ class ReviewCommentResourceTests(BaseWebAPITestCase):
 
     def test_post_diff_comments_with_issue(self):
         """Testing the POST review-requests/<id>/reviews/<id>/diff-comments/ API with an issue"""
-        diff_comment_text = "Test diff comment with an opened issue"
-
-        # Post the review request
-        rsp = self._postNewReviewRequest()
-        review_request = ReviewRequest.objects.get(
-            pk=rsp['review_request']['id'])
-
-        # Post the diff.
-        rsp = self._postNewDiff(review_request)
-        DiffSet.objects.get(pk=rsp['diff']['id'])
-
-        # Make these public.
-        review_request.publish(self.user)
-
-        rsp = self.apiPost(ReviewResourceTests.get_list_url(review_request),
-                           expected_mimetype=ReviewResourceTests.item_mimetype)
-        self.assertEqual(rsp['stat'], 'ok')
-        self.assertTrue('review' in rsp)
-        review_id = rsp['review']['id']
-
-        self._postNewDiffComment(review_request, review_id, diff_comment_text,
-                                 issue_opened=True)
-
-        review = Review.objects.get(pk=review_id)
+        diff_comment_text = 'Test diff comment with an opened issue'
+        rsp, review, review_request = self._create_diff_review_with_issue(
+            publish=False, comment_text=diff_comment_text)
 
         rsp = self.apiGet(self.get_list_url(review),
                           expected_mimetype=self.list_mimetype)
@@ -3997,27 +3976,8 @@ class ReviewCommentResourceTests(BaseWebAPITestCase):
         self.assertTrue(rsp['diff_comments'][0]['issue_opened'])
 
     def test_update_diff_comment_with_issue(self):
-        """Testing the PUT review-requests/<id>/reviews/<id>/diff-comments/<id> API with an issue"""
-        diff_comment_text = "Test diff comment with an opened issue"
-
-        # Post the review request
-        rsp = self._postNewReviewRequest()
-        review_request = ReviewRequest.objects.get(
-            pk=rsp['review_request']['id'])
-
-        # Post the diff.
-        rsp = self._postNewDiff(review_request)
-        DiffSet.objects.get(pk=rsp['diff']['id'])
-
-        # Make these public.
-        review_request.publish(self.user)
-
-        rsp = self.apiPost(ReviewResourceTests.get_list_url(review_request),
-                           expected_mimetype=ReviewResourceTests.item_mimetype)
-        review_id = rsp['review']['id']
-
-        rsp = self._postNewDiffComment(review_request, review_id,
-                                       diff_comment_text, issue_opened=True)
+        """Testing the PUT review-requests/<id>/reviews/<id>/diff-comments/<id>/ API, removing issue_opened"""
+        rsp, review, review_request = self._create_diff_review_with_issue()
 
         rsp = self.apiPut(rsp['diff_comment']['links']['self']['href'], {
             'issue_opened': False,
@@ -4025,45 +3985,24 @@ class ReviewCommentResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['stat'], 'ok')
         self.assertFalse(rsp['diff_comment']['issue_opened'])
 
-    def test_update_diff_comment_issue_status(self):
-        """Testing the PUT review-requests/<id>/reviews/<id>/diff-comments/<id> API with an issue"""
-        diff_comment_text = "Test diff comment with an opened issue"
+    def test_update_diff_comment_issue_status_before_publish(self):
+        """Testing the PUT review-requests/<id>/reviews/<id>/diff-comments/<id>/ API with an issue, before review is published"""
+        rsp, review, review_request = self._create_diff_review_with_issue()
 
-        # Post the review request
-        rsp = self._postNewReviewRequest()
-        review_request = ReviewRequest.objects.get(
-            pk=rsp['review_request']['id'])
-
-        # Post the diff.
-        rsp = self._postNewDiff(review_request)
-        DiffSet.objects.get(pk=rsp['diff']['id'])
-
-        # Make these public.
-        review_request.publish(self.user)
-
-        rsp = self.apiPost(ReviewResourceTests.get_list_url(review_request),
-                           expected_mimetype=ReviewResourceTests.item_mimetype)
-        review_id = rsp['review']['id']
-        review = Review.objects.get(pk=review_id)
-
-        rsp = self._postNewDiffComment(review_request, review_id,
-                                       diff_comment_text, issue_opened=True)
-
-        # First, let's ensure that the user that has created the comment
-        # cannot alter the issue_status while the review is unpublished.
-
+        # The issue_status should not be able to be changed while the review is
+        # unpublished.
         rsp = self.apiPut(rsp['diff_comment']['links']['self']['href'], {
             'issue_status': 'resolved',
         }, expected_mimetype=self.item_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
+
         # The issue_status should still be "open"
         self.assertEqual(rsp['diff_comment']['issue_status'], 'open')
 
-        # Next, let's publish the review, and try altering the issue_status.
-        # This should be allowed, since the review request was made by the
-        # current user.
-        review.public = True
-        review.save()
+    def test_update_diff_comment_issue_status_after_publish(self):
+        """Testing the PUT review-requests/<id>/reviews/<id>/diff-comments/<id>/ API with an issue, after review is published"""
+        rsp, review, review_request = self._create_diff_review_with_issue(
+            publish=True)
 
         rsp = self.apiPut(rsp['diff_comment']['links']['self']['href'], {
             'issue_status': 'resolved',
@@ -4071,10 +4010,36 @@ class ReviewCommentResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(rsp['diff_comment']['issue_status'], 'resolved')
 
-        # Finally, let's make sure that this user cannot alter the issue_status
-        # on a diff-comment for a review request that they didn't make.
+    def test_update_diff_comment_issue_status_by_issue_creator(self):
+        """Testing the PUT review-requests/<id>/reviews/<id>/diff-comments/<id>/ API permissions for issue creator"""
+        rsp, review, review_request = self._create_diff_review_with_issue(
+            publish=True)
+
+        # Change the owner of the review request so that it's not owned by
+        # self.user.
         review_request.submitter = User.objects.get(username='doc')
         review_request.save()
+
+        # The review/comment (and therefore issue) is still owned by self.user,
+        # so we should be able to change the issue status.
+        rsp = self.apiPut(rsp['diff_comment']['links']['self']['href'], {
+            'issue_status': 'dropped',
+        }, expected_mimetype=self.item_mimetype)
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(rsp['diff_comment']['issue_status'], 'dropped')
+
+    def test_update_diff_comment_issue_status_by_uninvolved_user(self):
+        """Testing the PUT review-requests/<id>/reviews/<id>/diff-comments/<id>/ API permissions for an uninvolved user"""
+        rsp, review, review_request = self._create_diff_review_with_issue(
+            publish=True)
+
+        # Change the owner of the review request and review so that they're
+        # not owned by self.user.
+        new_owner = User.objects.get(username='doc')
+        review_request.submitter = new_owner
+        review_request.save()
+        review.user = new_owner
+        review.save()
 
         rsp = self.apiPut(rsp['diff_comment']['links']['self']['href'], {
             'issue_status': 'dropped',
@@ -4112,6 +4077,48 @@ class ReviewCommentResourceTests(BaseWebAPITestCase):
                                        interfilediff_id=interfilediff.id)
 
         return rsp, review_request.id, review_id, interdiffset.revision
+
+    def _create_diff_review_with_issue(self, publish=False, comment_text=None):
+        """Sets up a review for a diff that includes a comment with an issue.
+
+        If `publish` is True, the review is published. The review request is
+        always published.
+
+        Returns the response from posting the comment, the review object, and the
+        review request object.
+        """
+        if not comment_text:
+            comment_text = 'Test diff comment with an opened issue'
+
+        # Post the review request
+        rsp = self._postNewReviewRequest()
+        review_request = ReviewRequest.objects.get(
+            pk=rsp['review_request']['id'])
+
+        # Post the diff
+        rsp = self._postNewDiff(review_request)
+        DiffSet.objects.get(pk=rsp['diff']['id'])
+
+        # Make these public
+        review_request.publish(self.user)
+
+        # Create a review
+        rsp = self.apiPost(ReviewResourceTests.get_list_url(review_request),
+                           expected_mimetype=ReviewResourceTests.item_mimetype)
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertTrue('review' in rsp)
+        review_id = rsp['review']['id']
+        review = Review.objects.get(pk=review_id)
+
+        # Create a diff comment
+        rsp = self._postNewDiffComment(review_request, review_id,
+                                       comment_text, issue_opened=True)
+
+        if publish:
+            review.public = True
+            review.save()
+
+        return rsp, review, review_request
 
     @classmethod
     def get_list_url(cls, review, local_site_name=None):
@@ -6301,31 +6308,9 @@ class ReviewScreenshotCommentResourceTests(BaseWebAPITestCase):
     def test_post_screenshot_comment_with_issue(self):
         """Testing the POST review-requests/<id>/reviews/<id>/screenshot-comments/ API with an issue"""
         comment_text = "Test screenshot comment with an opened issue"
-        x, y, w, h = (2, 2, 10, 10)
-
-        # Post the review request
-        rsp = self._postNewReviewRequest()
-        review_request = ReviewRequest.objects.get(
-            pk=rsp['review_request']['id'])
-
-        # Post the screenshot.
-        rsp = self._postNewScreenshot(review_request)
-        screenshot = Screenshot.objects.get(pk=rsp['screenshot']['id'])
-
-        # Make these public.
-        review_request.publish(self.user)
-
-        rsp = self.apiPost(ReviewResourceTests.get_list_url(review_request),
-                           expected_mimetype=ReviewResourceTests.item_mimetype)
-        self.assertEqual(rsp['stat'], 'ok')
-        self.assertTrue('review' in rsp)
-        review_id = rsp['review']['id']
-
-        rsp = self._postNewScreenshotComment(review_request, review_id,
-                                             screenshot, comment_text, x,
-                                             y, w, h, issue_opened=True)
-
-        review = Review.objects.get(pk=review_id)
+        rsp, review, review_request = \
+            self._create_screenshot_review_with_issue(
+                publish=False, comment_text=comment_text)
 
         rsp = self.apiGet(
             self.get_list_url(review),
@@ -6337,30 +6322,9 @@ class ReviewScreenshotCommentResourceTests(BaseWebAPITestCase):
         self.assertTrue(rsp['screenshot_comments'][0]['issue_opened'])
 
     def test_update_screenshot_comment_with_issue(self):
-        """Testing the PUT review-requests/<id>/reviews/<id>/screenshot-comments/<id> API with an issue"""
-        comment_text = "Test screenshot comment with an opened issue"
-        x, y, w, h = (2, 2, 10, 10)
-
-        # Post the review request
-        rsp = self._postNewReviewRequest()
-        review_request = ReviewRequest.objects.get(
-            pk=rsp['review_request']['id'])
-
-        # Post the screenshot.
-        rsp = self._postNewScreenshot(review_request)
-        screenshot = Screenshot.objects.get(pk=rsp['screenshot']['id'])
-
-        # Make these public.
-        review_request.publish(self.user)
-
-        rsp = self.apiPost(ReviewResourceTests.get_list_url(review_request),
-                           expected_mimetype=ReviewResourceTests.item_mimetype)
-        review_id = rsp['review']['id']
-        Review.objects.get(pk=review_id)
-
-        rsp = self._postNewScreenshotComment(review_request, review_id,
-                                             screenshot, comment_text,
-                                             x, y, w, h, issue_opened=True)
+        """Testing the PUT review-requests/<id>/reviews/<id>/screenshot-comments/<id>/ API, issue, removing issue_opened"""
+        rsp, review, review_request = \
+            self._create_screenshot_review_with_issue()
 
         rsp = self.apiPut(rsp['screenshot_comment']['links']['self']['href'], {
             'issue_opened': False,
@@ -6368,34 +6332,13 @@ class ReviewScreenshotCommentResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['stat'], 'ok')
         self.assertFalse(rsp['screenshot_comment']['issue_opened'])
 
-    def test_update_screenshot_comment_issue_status(self):
-        """Testing the PUT review-requests/<id>/reviews/<id>/screenshot-comments/<id> API with an issue"""
-        comment_text = "Test screenshot comment with an opened issue"
-        x, y, w, h = (2, 2, 10, 10)
+    def test_update_screenshot_comment_issue_status_before_publish(self):
+        """Testing the PUT review-requests/<id>/reviews/<id>/screenshot-comments/<id>l API with an issue, before review is published"""
+        rsp, review, review_request = \
+            self._create_screenshot_review_with_issue()
 
-        # Post the review request
-        rsp = self._postNewReviewRequest()
-        review_request = ReviewRequest.objects.get(
-            pk=rsp['review_request']['id'])
-
-        # Post the screenshot.
-        rsp = self._postNewScreenshot(review_request)
-        screenshot = Screenshot.objects.get(pk=rsp['screenshot']['id'])
-
-        # Make these public.
-        review_request.publish(self.user)
-
-        rsp = self.apiPost(ReviewResourceTests.get_list_url(review_request),
-                           expected_mimetype=ReviewResourceTests.item_mimetype)
-        review_id = rsp['review']['id']
-        review = Review.objects.get(pk=review_id)
-
-        rsp = self._postNewScreenshotComment(review_request, review_id,
-                                             screenshot, comment_text,
-                                             x, y, w, h, issue_opened=True)
-
-        # First, let's ensure that the user that has created the comment
-        # cannot alter the issue_status while the review is unpublished.
+        # The issue_status should not be able to be changed while the review is
+        # unpublished.
         rsp = self.apiPut(rsp['screenshot_comment']['links']['self']['href'], {
             'issue_status': 'resolved',
         }, expected_mimetype=ScreenshotCommentResourceTests.item_mimetype)
@@ -6405,11 +6348,10 @@ class ReviewScreenshotCommentResourceTests(BaseWebAPITestCase):
         # The issue_status should still be "open"
         self.assertEqual(rsp['screenshot_comment']['issue_status'], 'open')
 
-        # Next, let's publish the review, and try altering the issue_status.
-        # This should be allowed, since the review request was made by the
-        # current user.
-        review.public = True
-        review.save()
+    def test_update_screenshot_comment_issue_status_after_publish(self):
+        """Testing the PUT review-requests/<id>/reviews/<id>/screenshot-comments/<id>/ API with an issue, after review is published"""
+        rsp, review, review_request = \
+            self._create_screenshot_review_with_issue(publish=True)
 
         rsp = self.apiPut(rsp['screenshot_comment']['links']['self']['href'], {
             'issue_status': 'resolved',
@@ -6417,10 +6359,36 @@ class ReviewScreenshotCommentResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(rsp['screenshot_comment']['issue_status'], 'resolved')
 
-        # Finally, let's make sure that this user cannot alter the issue_status
-        # on a screenshot-comment for a review request that they didn't make.
+    def test_update_screenshot_comment_issue_status_by_issue_creator(self):
+        """Testing the PUT review-requests/<id>/reviews/<id>/screenshot-comments/<id>/ API permissions for issue creator"""
+        rsp, review, review_request = \
+            self._create_screenshot_review_with_issue(publish=True)
+
+        # Change the owner of the review request so that it's not owned by
+        # self.user
         review_request.submitter = User.objects.get(username='doc')
         review_request.save()
+
+        # The review/comment (and therefore issue) is still owned by self.user,
+        # so we should be able to change the issue status.
+        rsp = self.apiPut(rsp['screenshot_comment']['links']['self']['href'], {
+            'issue_status': 'dropped',
+        }, expected_mimetype=ScreenshotCommentResourceTests.item_mimetype)
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(rsp['screenshot_comment']['issue_status'], 'dropped')
+
+    def test_update_screenshot_comment_issue_status_by_uninvolved_user(self):
+        """Testing the PUT review-requests/<id>/reviews/<id>/screenshot-comments/<id>/ API permissions for an uninvolved user"""
+        rsp, review, review_request = \
+            self._create_screenshot_review_with_issue(publish=True)
+
+        # Change the owner of the review request and review so that they're not
+        # owned by self.user.
+        new_owner = User.objects.get(username='doc')
+        review_request.submitter = new_owner
+        review_request.save()
+        review.user = new_owner
+        review.save()
 
         rsp = self.apiPut(rsp['screenshot_comment']['links']['self']['href'], {
             'issue_status': 'dropped',
@@ -6489,6 +6457,53 @@ class ReviewScreenshotCommentResourceTests(BaseWebAPITestCase):
         }, expected_mimetype=ScreenshotCommentResourceTests.item_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(rsp['screenshot_comment']['issue_status'], 'open')
+
+    def _create_screenshot_review_with_issue(self, publish=False,
+                                             comment_text=None):
+        """Sets up a review for a screenshot that includes a comment with an issue.
+
+        If `publish` is True, the review is published. The review request is
+        always published.
+
+        Returns the response from posting the comment, the review object, and
+        the review request object.
+        """
+        if not comment_text:
+            comment_text = 'Test screenshot comment with an opened issue'
+
+        # Post the review request
+        rsp = self._postNewReviewRequest()
+        review_request = ReviewRequest.objects.get(
+            pk=rsp['review_request']['id'])
+
+        # Post the screenshot
+        rsp = self._postNewScreenshot(review_request)
+        screenshot = Screenshot.objects.get(pk=rsp['screenshot']['id'])
+
+        # Make these public
+        review_request.publish(self.user)
+
+        # Create the review
+        rsp = self.apiPost(ReviewResourceTests.get_list_url(review_request),
+                           expected_mimetype=ReviewResourceTests.item_mimetype)
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertTrue('review' in rsp)
+
+        review_id = rsp['review']['id']
+        review = Review.objects.get(pk=review_id)
+
+        # Create the comment
+        x, y, w, h = (2, 2, 10, 10)
+        rsp = self._postNewScreenshotComment(review_request, review_id,
+                                             screenshot, comment_text,
+                                             x, y, w, h, issue_opened=True)
+        self.assertEqual(rsp['stat'], 'ok')
+
+        if publish:
+            review.public = True
+            review.save()
+
+        return rsp, review, review_request
 
     @classmethod
     def get_list_url(cls, review, local_site_name=None):

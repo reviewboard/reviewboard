@@ -6,7 +6,7 @@
      data-comment-id="{{comment.pk}}"
      data-comment-type="{{comment_type}}"
      data-issue-status="{{issue_status}}"
-     data-interactive="{{interactive}}">
+     data-interactive="{{interactive|yesno:"true,false"}}">
  <div class="issue-container">
   <span class="rb-icon"></span>
   <span class="issue-message"></span>

@@ -1533,6 +1533,19 @@ class BaseComment(models.Model):
         else:
             return self.replies.filter(review__public=True)
 
+    def can_change_issue_status(self, user):
+        """Returns whether the user can change the issue status.
+
+        Currently, this is allowed for:
+        - The user who owns the review request.
+        - The user who opened the issue (posted the comment).
+        """
+        if not (user and user.is_authenticated()):
+            return False
+
+        return (self.get_review_request().is_mutable_by(user) or
+                user == self.get_review().user)
+
     def save(self, **kwargs):
         self.timestamp = timezone.now()
 

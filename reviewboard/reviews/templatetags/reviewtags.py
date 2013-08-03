@@ -573,16 +573,12 @@ def comment_issue(context, review_request, comment, comment_type):
     user = context.get('user', None)
     interactive = 'false'
 
-    if user and user.is_authenticated() and \
-        user == review_request.submitter:
-        interactive = 'true'
-
     return {
         'comment': comment,
         'comment_type': comment_type,
         'issue_status': issue_status,
         'review': comment.get_review(),
-        'interactive': interactive,
+        'interactive': comment.can_change_issue_status(user),
     }
 
 

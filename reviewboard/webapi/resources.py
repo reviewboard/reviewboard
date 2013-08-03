@@ -257,10 +257,8 @@ class BaseCommentResource(WebAPIResource):
         except ObjectDoesNotExist:
             return DOES_NOT_EXIST
 
-        # We want to ensure that the user that is trying to modify the state
-        # of an issue is the user who created the review request.
-        if not review_request_resource.has_modify_permissions(request,
-                                                              review_request):
+        # Check permissions to change the issue status
+        if not comment.can_change_issue_status(request.user):
             return _no_access_error(request.user)
 
         # We can only update the status of an issue if an issue has been
