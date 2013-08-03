@@ -185,20 +185,6 @@
 {% endif %}
      {% reply_section entry comment "diff_comments" "rc" %}
     </dd>
-    <script>
-        $(document).ready(function() {
-            RB.PageManager.beforeRender(function(page) {
-                page.queueLoadDiff(
-                    "{{comment.id}}",
-{% if comment.interfilediff %}
-                    "{{comment.filediff.id}}-{{comment.interfilediff.id}}"
-{% else %}
-                    "{{comment.filediff.id}}"
-{% endif %}
-                );
-            });
-        });
-    </script>
 {% endfor %}
    </dl>
 {% endif %}
@@ -297,17 +283,32 @@
 {{block.super}}
 
 <script>
-    var page = new RB.ReviewRequestPageView({
+    RB.PageManager.setPage(new RB.ReviewRequestPageView({
 {%  localtime off %}
         lastActivityTimestamp: '{{last_activity_time|date:"c"}}',
 {%  endlocaltime %}
 {%  include "reviews/reviewable_page_data.js" %}
+    }));
+
+    RB.PageManager.beforeRender(function(page) {
+{%  for entry in entries %}
+{%   if entry.review %}
+{%    for comment in entry.comments.diff_comments %}
+        page.queueLoadDiff(
+            "{{comment.id}}",
+{%     if comment.interfilediff %}
+            "{{comment.filediff.id}}-{{comment.interfilediff.id}}"
+{%     else %}
+            "{{comment.filediff.id}}"
+{%     endif %}
+        );
+{%    endfor %}
+{%   endif %}
+{%  endfor %}
     });
 
-    RB.PageManager.setPage(page);
-
 {%  if request.GET.reply_id and request.GET.reply_type %}
-    $(document).ready(function() {
+    RB.PageManager.ready(function(page) {
         page.openCommentEditor("{{request.GET.reply_type}}",
                                {{request.GET.reply_id}});
     });

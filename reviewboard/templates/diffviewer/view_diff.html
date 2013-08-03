@@ -20,20 +20,6 @@
 {% endif %}
 {% endblock %}
 
-{% block scripts-post %}
-{{block.super}}
-
-<script>
-    RB.PageManager.setPage(new RB.DiffViewerPageView({
-        checkUpdatesType: 'diff',
-{%   localtime off %}
-        lastActivityTimestamp: '{{last_activity_time|date:"c"}}',
-{%   endlocaltime %}
-{%   include "reviews/reviewable_page_data.js" %}
-    }));
-</script>
-{% endblock %}
-
 {% block content %}
 {% if error %}
 {%  errorbox %}
@@ -204,7 +190,7 @@
 {{file.fragment|safe}}
 {%  else %}
  <table class="sidebyside loading{% if file.newfile %} newfile{% endif %}"
-        id="file_container_{{file.filediff.id}}">
+        id="file_container_{{file.filediff.pk}}">
   <thead>
    <tr class="filename-row">
     <th colspan="2">{{file.depot_filename}}</th>
@@ -219,29 +205,39 @@
   </tbody>
  </table>
 {%  endif %}
- <script>
-    $(document).ready(function() {
-        RB.PageManager.beforeRender(function(page) {
-            page.queueLoadDiff(
-                "{{file.filediff.id}}", "{{file.filediff.diffset.revision}}",
-{% if file.interfilediff %}
-                "{{file.interfilediff.id}}",
-                "{{file.interfilediff.diffset.revision}}",
-{% else %}
-                null, null,
-{% endif %}
-                "{{file.index}}",
-                {% commentcounts file.filediff file.interfilediff %});
-        });
-    });
- </script>
 </div>
 {% endfor %}
-
-<a name="index_footer"></a>
-{% include "diffviewer/changeindex.html" %}
 </div>
 </div>
 
 {% endif %}{# !error #}
+{% endblock %}
+
+{% block scripts-post %}
+{{block.super}}
+
+<script>
+    RB.PageManager.setPage(new RB.DiffViewerPageView({
+        checkUpdatesType: 'diff',
+{%   localtime off %}
+        lastActivityTimestamp: '{{last_activity_time|date:"c"}}',
+{%   endlocaltime %}
+{%   include "reviews/reviewable_page_data.js" %}
+    }));
+
+    RB.PageManager.beforeRender(function(page) {
+{% for file in files %}
+        page.queueLoadDiff(
+            "{{file.filediff.id}}", "{{file.filediff.diffset.revision}}",
+{% if file.interfilediff %}
+            "{{file.interfilediff.id}}",
+            "{{file.interfilediff.diffset.revision}}",
+{% else %}
+            null, null,
+{% endif %}
+            "{{file.index}}",
+            {% commentcounts file.filediff file.interfilediff %});
+{% endfor %}
+    });
+</script>
 {% endblock %}
