@@ -13,7 +13,7 @@
 {%  endfor %}
 
 <script>
-    $(document).ready(function() {
+    RB.PageManager.ready(function(page) {
 {%  block review_ui_setup %}
         var view = new {{review_ui.js_view_class}}({
 {%   for key, value in review_ui.get_js_view_data.items %}
@@ -24,7 +24,7 @@
                 {{key|json_dumps}}: {{value|json_dumps}},
 {%   endfor %}
                 caption: '{{caption}}',
-                reviewRequest: RB.currentPage.reviewRequest,
+                reviewRequest: page.reviewRequest,
                 serializedCommentBlocks: {{review_ui.get_comments_json}}
             })
         });

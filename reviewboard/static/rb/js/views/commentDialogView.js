@@ -563,7 +563,7 @@ RB.CommentDialogView = Backbone.View.extend({
         var instance = RB.CommentDialogView._instance,
             reviewRequestEditor =
                 options.reviewRequestEditor ||
-                RB.currentPage.reviewRequestEditor,
+                RB.PageManager.getPage().reviewRequestEditor,
             commentIssueManager =
                 options.commentIssueManager ||
                 reviewRequestEditor.get('commentIssueManager'),

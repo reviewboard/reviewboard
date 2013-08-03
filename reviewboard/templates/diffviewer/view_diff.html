@@ -10,11 +10,6 @@
 
 {% block title %}{{review_request_details.summary}} | {% trans "Diff Viewer" %}{% endblock %}
 
-{% block jsconsts %}
-{{block.super}}
-  var gRevision = '{{diffset.revision}}';
-{% endblock %}
-
 {% block css %}
 {{block.super}}
 
@@ -29,13 +24,13 @@
 {{block.super}}
 
 <script>
-    RB.currentPage = new RB.DiffViewerPageView({
+    RB.PageManager.setPage(new RB.DiffViewerPageView({
         checkUpdatesType: 'diff',
 {%   localtime off %}
         lastActivityTimestamp: '{{last_activity_time|date:"c"}}',
 {%   endlocaltime %}
 {%   include "reviews/reviewable_page_data.js" %}
-    });
+    }));
 </script>
 {% endblock %}
 
@@ -226,15 +221,18 @@
 {%  endif %}
  <script>
     $(document).ready(function() {
-        RB.currentPage.queueLoadDiff(
-            "{{file.filediff.id}}", "{{file.filediff.diffset.revision}}",
+        RB.PageManager.beforeRender(function(page) {
+            page.queueLoadDiff(
+                "{{file.filediff.id}}", "{{file.filediff.diffset.revision}}",
 {% if file.interfilediff %}
-            "{{file.interfilediff.id}}", "{{file.interfilediff.diffset.revision}}",
+                "{{file.interfilediff.id}}",
+                "{{file.interfilediff.diffset.revision}}",
 {% else %}
-            null, null,
+                null, null,
 {% endif %}
-            "{{file.index}}",
-            {% commentcounts file.filediff file.interfilediff %});
+                "{{file.index}}",
+                {% commentcounts file.filediff file.interfilediff %});
+        });
     });
  </script>
 </div>

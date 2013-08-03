@@ -41,11 +41,11 @@
 {{block.super}}
 
 <script>
-    RB.currentPage = new RB.ReviewablePageView({
+    RB.PageManager.setPage(new RB.ReviewablePageView({
 {%  localtime off %}
         lastActivityTimestamp: '{{last_activity_time|date:"c"}}',
 {%  endlocaltime %}
 {%  include "reviews/reviewable_page_data.js" %}
-    });
+    }));
 </script>
 {% endblock %}

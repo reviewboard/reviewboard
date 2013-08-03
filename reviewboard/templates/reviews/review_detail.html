@@ -186,16 +186,18 @@
      {% reply_section entry comment "diff_comments" "rc" %}
     </dd>
     <script>
-      $(document).ready(function() {
-        RB.currentPage.queueLoadDiff(
-          "{{comment.id}}",
+        $(document).ready(function() {
+            RB.PageManager.beforeRender(function(page) {
+                page.queueLoadDiff(
+                    "{{comment.id}}",
 {% if comment.interfilediff %}
-          "{{comment.filediff.id}}-{{comment.interfilediff.id}}"
+                    "{{comment.filediff.id}}-{{comment.interfilediff.id}}"
 {% else %}
-          "{{comment.filediff.id}}"
+                    "{{comment.filediff.id}}"
 {% endif %}
-        );
-      });
+                );
+            });
+        });
     </script>
 {% endfor %}
    </dl>
@@ -295,17 +297,19 @@
 {{block.super}}
 
 <script>
-    RB.currentPage = new RB.ReviewRequestPageView({
+    var page = new RB.ReviewRequestPageView({
 {%  localtime off %}
         lastActivityTimestamp: '{{last_activity_time|date:"c"}}',
 {%  endlocaltime %}
 {%  include "reviews/reviewable_page_data.js" %}
     });
 
+    RB.PageManager.setPage(page);
+
 {%  if request.GET.reply_id and request.GET.reply_type %}
     $(document).ready(function() {
-        RB.currentPage.openCommentEditor("{{request.GET.reply_type}}",
-                                         {{request.GET.reply_id}});
+        page.openCommentEditor("{{request.GET.reply_type}}",
+                               {{request.GET.reply_id}});
     });
 {%  endif %}
 </script>
