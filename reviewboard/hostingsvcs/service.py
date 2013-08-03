@@ -216,9 +216,7 @@ class HostingService(object):
         return simplejson.loads(data), headers
 
     def _http_get(self, url, *args, **kwargs):
-        r = self._build_request(url, *args, **kwargs)
-        u = urllib2.urlopen(r)
-        return u.read(), u.headers
+        return self._http_request(url, **kwargs)
 
     def _http_post(self, url, body=None, fields={}, files={},
                    content_type=None, headers={}, *args, **kwargs):
@@ -235,9 +233,7 @@ class HostingService(object):
 
         headers['Content-Length'] = str(len(body))
 
-        r = self._build_request(url, body, headers, **kwargs)
-        u = urllib2.urlopen(r)
-        return u.read(), u.headers
+        return self._http_request(url, body, headers, **kwargs)
 
     def _build_request(self, url, body=None, headers={}, username=None,
                        password=None):
@@ -249,6 +245,12 @@ class HostingService(object):
                                                        password))
 
         return r
+
+    def _http_request(self, url, body=None, headers=None, **kwargs):
+        r = self._build_request(url, body, headers, **kwargs)
+        u = urllib2.urlopen(r)
+
+        return u.read(), u.headers
 
     def _build_form_data(self, fields, files):
         """Encodes data for use in an HTTP POST."""
