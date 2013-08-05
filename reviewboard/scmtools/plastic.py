@@ -16,6 +16,7 @@ from reviewboard.diffviewer.parser import DiffParser
 class PlasticTool(SCMTool):
     name = "Plastic SCM"
     supports_authentication = True
+    supports_pending_changesets = True
     uses_atomic_revisions = True
     field_help_text = {
         'path': 'The Plastic repository spec in the form of '
