@@ -20,8 +20,9 @@ class FileAttachment(models.Model):
     orig_filename = models.CharField(_('original filename'),
                                      max_length=256, blank=True, null=True)
     file = models.FileField(_("file"),
-                              upload_to=os.path.join('uploaded', 'files',
-                                                     '%Y', '%m', '%d'))
+                            max_length=512,
+                            upload_to=os.path.join('uploaded', 'files',
+                                                   '%Y', '%m', '%d'))
     mimetype = models.CharField(_('mimetype'), max_length=256, blank=True)
 
     @property
