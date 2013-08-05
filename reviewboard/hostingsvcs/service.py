@@ -233,7 +233,7 @@ class HostingService(object):
 
         return r
 
-    def _http_request(self, url, body=None, headers=None, **kwargs):
+    def _http_request(self, url, body=None, headers={}, **kwargs):
         r = self._build_request(url, body, headers, **kwargs)
         opener = urllib2.build_opener(HTTPErrorProcessor())
         u = opener.open(r)
