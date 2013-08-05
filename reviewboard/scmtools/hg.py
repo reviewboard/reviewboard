@@ -32,7 +32,6 @@ class HgTool(SCMTool):
             self.client = HgClient(repository.path, repository.local_site)
 
         self.uses_atomic_revisions = True
-        self.diff_uses_changeset_ids = True
 
     def get_file(self, path, revision=HEAD):
         return self.client.cat_file(path, str(revision))
@@ -170,6 +169,9 @@ class HgDiffParser(DiffParser):
                     break
 
         return linenum
+
+    def get_orig_commit_id(self):
+        return self.origChangesetId
 
     def _check_file_diff_start(self, linenum, info):
         if linenum + 1 < len(self.lines) and \

@@ -199,3 +199,11 @@ class DiffParser(object):
         The returned diff as composed of all FileDiffs in the provided diffset.
         """
         return ''.join([filediff.diff for filediff in diffset.files.all()])
+
+    def get_orig_commit_id(self):
+        """Returns the commit ID of the original revision for the diff.
+
+        This is overridden by tools that only use commit IDs, not file
+        revision IDs.
+        """
+        return None

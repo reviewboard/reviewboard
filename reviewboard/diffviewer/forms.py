@@ -85,7 +85,9 @@ class UploadDiffForm(forms.Form):
 
         # Parse the diff
         files = list(self._process_files(
-            diff_file, basedir, check_existance=(not parent_diff_file)))
+            tool.get_parser(diff_file.read()),
+            basedir,
+            check_existance=(not parent_diff_file)))
 
         if len(files) == 0:
             raise EmptyDiffError(_("The diff file is empty"))
@@ -99,22 +101,24 @@ class UploadDiffForm(forms.Form):
         # This is used only for tools like Mercurial that use atomic changeset
         # IDs to identify all file versions but not individual file version
         # IDs.
-        parent_changeset_id = None
+        parent_commit_id = None
 
         if parent_diff_file:
             diff_filenames = set([f.origFile for f in files])
 
+            parent_parser = tool.get_parser(parent_diff_file.read())
+
             # If the user supplied a base diff, we need to parse it and
             # later apply each of the files that are in the main diff
-            for f in self._process_files(parent_diff_file, basedir,
+            for f in self._process_files(parent_parser, basedir,
                                          check_existance=True,
                                          limit_to=diff_filenames):
                 parent_files[f.origFile] = f
 
-                # Store the original changeset ID if we have it; this should
-                # be the same for all files.
-                if f.origChangesetId:
-                    parent_changeset_id = f.origChangesetId
+            # This will return a non-None value only for tools that use
+            # commit IDs to identify file versions as opposed to file revision
+            # IDs.
+            parent_commit_id = parent_parser.get_orig_commit_id()
 
         diffset = DiffSet(name=diff_file.name, revision=0,
                           basedir=basedir,
@@ -131,10 +135,8 @@ class UploadDiffForm(forms.Form):
             else:
                 parent_content = ""
 
-                if (tool.diff_uses_changeset_ids and
-                    parent_changeset_id and
-                    f.origInfo != PRE_CREATION):
-                    source_rev = parent_changeset_id
+                if parent_commit_id and f.origInfo != PRE_CREATION:
+                    source_rev = parent_commit_id
                 else:
                     source_rev = f.origInfo
 
@@ -160,11 +162,11 @@ class UploadDiffForm(forms.Form):
 
         return diffset
 
-    def _process_files(self, file, basedir, check_existance=False,
+    def _process_files(self, parser, basedir, check_existance=False,
                        limit_to=None):
         tool = self.repository.get_scmtool()
 
-        for f in tool.get_parser(file.read()).parse():
+        for f in parser.parse():
             f2, revision = tool.parse_diff_revision(f.origFile, f.origInfo,
                                                     f.moved)
 

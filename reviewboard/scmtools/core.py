@@ -52,7 +52,6 @@ PRE_CREATION = Revision("PRE-CREATION")
 class SCMTool(object):
     name = None
     uses_atomic_revisions = False
-    diff_uses_changeset_ids = False
     supports_authentication = False
     supports_raw_file_urls = False
     supports_ticket_auth = False
