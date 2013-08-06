@@ -146,7 +146,7 @@ listed will depend on the requirements of the hosting service.
     * **cgit**:
       ``http://git.gnome.org/browse/gtk+/blob/<filename>?id=<revision>``
     * **Gitweb**:
-      ``http://git.kernel.org/?p=bluetooth/bluez-gnome.git;a=blob_plain;f=<filename>;hb=<revision>``
+      ``http://git.kernel.org/?p=bluetooth/bluez-gnome.git;a=blob_plain;f=<filename>;h=<revision>``
 
     This is only shown when `Hosting service`_ is set to
     :guilabel:`(None - Custom Repository)` and `Repository type`_ is set to
