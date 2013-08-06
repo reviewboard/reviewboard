@@ -183,8 +183,9 @@ class ActiveDirectorySettingsForm(SiteSettingsForm):
 
     auth_ad_domain_controller = forms.CharField(
         label=_("Domain controller"),
-        help_text=_("If not using DNS to find the DC specify the domain "
-                    "controller here"),
+        help_text=_("If not using DNS to find the DC, specify the domain "
+                    "controller(s) here "
+                    "(eg. ctrl1.example.com ctrl2.example.com:389)"),
         required=False,
         widget=forms.TextInput(attrs={'size': '40'}))
 
