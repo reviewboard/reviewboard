@@ -1027,6 +1027,11 @@ class ReviewDiffCommentResource(BaseDiffCommentResource):
         if not diff_comment.issue_opened and kwargs.get('issue_opened', False):
             diff_comment.issue_status = BaseComment.OPEN
 
+        # If we've updated the comment from having an issue opened to having
+        # no issue opened, set the issue status back to null.
+        if diff_comment.issue_opened and not kwargs.get('issue_opened', True):
+            diff_comment.issue_status = None
+
         for field in ('text', 'first_line', 'num_lines', 'issue_opened'):
             value = kwargs.get(field, None)
 

@@ -4047,6 +4047,18 @@ class ReviewCommentResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
+    def test_remove_issue_opened(self):
+        """Testing the PUT review-requests/<id>/reviews/<id>/diff-comments/<id>/ API, removing the issue_opened state"""
+        rsp, review, review_request = self._create_diff_review_with_issue()
+
+        self.assertEqual(rsp['diff_comment']['issue_status'], 'open')
+
+        rsp = self.apiPut(rsp['diff_comment']['links']['self']['href'], {
+            'issue_opened': False
+        }, expected_mimetype=self.item_mimetype)
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(rsp['diff_comment']['issue_status'], '')
+
     def _common_post_interdiff_comments(self, comment_text):
         # Post the review request
         rsp = self._postNewReviewRequest()
