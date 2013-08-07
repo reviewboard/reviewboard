@@ -1,3 +1,4 @@
+import logging
 import socket
 
 try:
@@ -50,9 +51,13 @@ def get_cache_stats():
     all_stats = []
 
     for hostname in hostnames:
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        host, port = hostname.split(":")
+        try:
+            host, port = hostname.split(":")
+        except ValueError:
+            logging.error('Invalid cache hostname "%s"' % hostname)
+            continue
 
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         try:
             s.connect((host, int(port)))
         except socket.error:
