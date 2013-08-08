@@ -456,7 +456,7 @@ class DiffSetManagerTests(SpyAgency, TestCase):
             tool=Tool.objects.get(name='Subversion'))
 
         self.spy_on(repository.get_file_exists,
-                    call_fake=lambda self, filename, revision, request: True)
+                    call_fake=lambda *args, **kwargs: True)
 
         diffset = DiffSet.objects.create_from_data(
             repository, 'diff', diff, None, None, None, '/', None)
@@ -492,7 +492,7 @@ class UploadDiffFormTests(SpyAgency, TestCase):
             tool=Tool.objects.get(name='Subversion'))
 
         self.spy_on(repository.get_file_exists,
-                    call_fake=lambda self, filename, revision, request: True)
+                    call_fake=lambda *args, **kwargs: True)
 
         form = UploadDiffForm(
             repository=repository,
@@ -514,7 +514,7 @@ class UploadDiffFormTests(SpyAgency, TestCase):
         """Testing UploadDiffForm and filtering parent diff files"""
         saw_file_exists = {}
 
-        def get_file_exists(repository, filename, revision, request):
+        def get_file_exists(repository, filename, revision, *args, **kwargs):
             saw_file_exists[(filename, revision)] = True
             return True
 

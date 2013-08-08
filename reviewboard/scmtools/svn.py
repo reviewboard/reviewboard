@@ -159,7 +159,7 @@ class SVNTool(SCMTool):
         except ClientError, e:
             stre = str(e)
             if 'File not found' in stre or 'path not found' in stre:
-                raise FileNotFoundError(path, revision, str(e))
+                raise FileNotFoundError(path, revision, detail=str(e))
             elif 'callback_ssl_server_trust_prompt required' in stre:
                 raise SCMError(
                     'HTTPS certificate not accepted.  Please ensure that '

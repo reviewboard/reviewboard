@@ -45,19 +45,26 @@ class InvalidRevisionFormatError(SCMError):
 
 
 class FileNotFoundError(SCMError):
-    def __init__(self, path, revision=None, detail=None):
+    def __init__(self, path, revision=None, detail=None, base_commit_id=None):
         from reviewboard.scmtools.core import HEAD
 
-        if revision == None or revision == HEAD:
+        if revision is None or revision == HEAD and base_commit_id is None:
             msg = "The file '%s' could not be found in the repository" % path
+        elif base_commit_id is not None and base_commit_id != revision:
+            msg = ("The file '%s' (r%s, commit %s) could not be found in "
+                   "the repository"
+                   % (path, revision))
         else:
             msg = "The file '%s' (r%s) could not be found in the repository" \
                 % (path, revision)
+
         if detail:
             msg += ': ' + detail
+
         Exception.__init__(self, msg)
 
         self.revision = revision
+        self.base_commit_id = base_commit_id
         self.path = path
         self.detail = detail
 
@@ -87,5 +94,3 @@ class UnverifiedCertificateError(SCMError):
         SCMError.__init__(self, _('A verified SSL certificate is required '
                                   'to connect to this repository.'))
         self.certificate = certificate
-
-

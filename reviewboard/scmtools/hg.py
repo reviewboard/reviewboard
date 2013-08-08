@@ -287,4 +287,4 @@ class HgClient(object):
         except Exception, e:
             # LookupError moves from repo to revlog in hg v0.9.4, so we
             # catch the more general Exception to avoid the dependency.
-            raise FileNotFoundError(path, rev, str(e))
+            raise FileNotFoundError(path, rev, detail=str(e))

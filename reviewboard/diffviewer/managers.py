@@ -98,6 +98,7 @@ class DiffSetManager(models.Manager):
             tool.get_parser(diff_file_contents),
             basedir,
             repository,
+            base_commit_id,
             request,
             check_existence=(not parent_diff_file_contents)))
 
@@ -124,7 +125,7 @@ class DiffSetManager(models.Manager):
             # If the user supplied a base diff, we need to parse it and
             # later apply each of the files that are in the main diff
             for f in self._process_files(parent_parser, basedir,
-                                         repository, request,
+                                         repository, base_commit_id, request,
                                          check_existence=True,
                                          limit_to=diff_filenames):
                 parent_files[f.origFile] = f
@@ -182,8 +183,8 @@ class DiffSetManager(models.Manager):
 
         return diffset
 
-    def _process_files(self, parser, basedir, repository, request,
-                       check_existence=False, limit_to=None):
+    def _process_files(self, parser, basedir, repository, base_commit_id,
+                       request, check_existence=False, limit_to=None):
         tool = repository.get_scmtool()
 
         for f in parser.parse():
@@ -207,8 +208,10 @@ class DiffSetManager(models.Manager):
                 not f.deleted and
                 not f.moved and
                 (check_existence and
-                 not repository.get_file_exists(filename, revision, request))):
-                raise FileNotFoundError(filename, revision)
+                 not repository.get_file_exists(filename, revision,
+                                                base_commit_id=base_commit_id,
+                                                request=request))):
+                raise FileNotFoundError(filename, revision, base_commit_id)
 
             f.origFile = filename
             f.origInfo = revision
