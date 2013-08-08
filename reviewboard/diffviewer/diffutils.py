@@ -70,7 +70,7 @@ def patch(diff, file, filename, request=None):
 
     process = subprocess.Popen(['patch', '-o', newfile, oldfile],
                                stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-                               stderr=subprocess.STDOUT)
+                               stderr=subprocess.STDOUT, cwd=tempdir)
 
     with controlled_subprocess("patch", process) as p:
         p.stdin.write(diff)
