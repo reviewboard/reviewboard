@@ -73,7 +73,7 @@ RB.CollectionView = Backbone.View.extend({
             return view.model === item ? 'toRemove' : 'toKeep';
         });
 
-        this.views = grouped.toKeep;
+        this.views = grouped.toKeep || [];
 
         if (this._rendered) {
             _.each(grouped.toRemove, function(view) {

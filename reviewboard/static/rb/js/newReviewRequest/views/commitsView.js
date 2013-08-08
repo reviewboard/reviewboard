@@ -10,6 +10,20 @@ RB.CommitsView = RB.CollectionView.extend({
     itemViewType: RB.CommitView,
 
     /*
+     * Override for CollectionView.render.
+     *
+     * Delegates the hard work to the parent class, and sets up the scroll
+     * handler.
+     */
+    render: function() {
+        _.super(this).render.call(this);
+
+        $('#new-review-request .main').scroll(_.bind(this._onScroll, this));
+
+        return this;
+    },
+
+    /*
      * Set a given commit "pending".
      *
      * This is used while creating a new review request, and will ask the
@@ -32,5 +46,18 @@ RB.CommitsView = RB.CollectionView.extend({
         _.each(this.views, function(view) {
             view.cancelProgress();
         });
+    },
+
+    /*
+     * Scroll handler. If we get within 50px of the bottom, try to fetch the
+     * next page of commits.
+     */
+    _onScroll: function(ev) {
+        var scrollThresholdPx = 50;
+
+        if ((ev.target.scrollTop + ev.target.offsetHeight) >
+                (ev.target.scrollHeight - scrollThresholdPx)) {
+            this.collection.fetchNext();
+        }
     }
 });
