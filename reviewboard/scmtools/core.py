@@ -104,7 +104,6 @@ PRE_CREATION = Revision("PRE-CREATION")
 class SCMTool(object):
     name = None
     uses_atomic_revisions = False
-    diff_uses_changeset_ids = False
     supports_authentication = False
     supports_pending_changesets = False
     supports_post_commit = False
