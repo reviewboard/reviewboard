@@ -38,7 +38,8 @@ from reviewboard.diffviewer.models import DiffSet
 from reviewboard.diffviewer.views import view_diff, view_diff_fragment, \
                                          exception_traceback_string
 from reviewboard.extensions.hooks import DashboardHook, \
-                                         ReviewRequestDetailHook
+                                         ReviewRequestDetailHook, \
+                                         UserPageSidebarHook
 from reviewboard.reviews.ui.screenshot import LegacyScreenshotReviewUI
 from reviewboard.reviews.context import make_review_request_context
 from reviewboard.reviews.datagrids import DashboardDataGrid, \
@@ -902,6 +903,7 @@ def submitter(request,
 
     return datagrid.render_to_response(template_name, extra_context={
         'show_profile': user.is_profile_visible(request.user),
+        'sidebar_hooks': UserPageSidebarHook.hooks,
         'viewing_user': user,
     })
 

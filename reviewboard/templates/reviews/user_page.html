@@ -45,6 +45,22 @@
 {% endfor %}
     </td>
    </tr>
+ {% for hook in sidebar_hooks %}
+  {%  for main_entry in hook.entries %}
+   <tr>
+    <td class="summary main-item">
+     <a href="{{main_entry.url}}">{{main_entry.label}}</a>
+    </td>
+   </tr>
+   {%   for sub_entry in main_entry.subitems %}
+   <tr>
+    <td class="summary sub-item">
+     <a href="{{sub_entry.url}}">{{sub_entry.label}}</a>
+    </td>
+   </tr>
+   {%   endfor %}
+  {%  endfor %}
+ {% endfor %}
 {% endif %}
   </tbody>
  </table>

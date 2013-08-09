@@ -14,6 +14,29 @@ class DashboardHook(ExtensionHook):
         self.entries = entries
 
 
+class UserPageSidebarHook(ExtensionHook):
+    """A Hook for adding entries to sidebar of /users/<user> page.
+
+    This takes a list of entries. Each entry represents something on the
+    user page and is a dictionary with the following keys:
+
+        * ``label``:    The label to display.
+        * ``url``:      The URL to point to.
+        * ``subitems``: Dictionary for storing second level entries.
+
+    ``subitems`` is another dictionary that will be indented to show a
+    hierarchy of items. Each subitem is a dictionary with the following keys:
+
+        * ``label``:    The label for the sub-entry.
+        * ``url``:      The URL that the sub-entry points to.
+    """
+    __metaclass__ = ExtensionHookPoint
+
+    def __init__(self, extension, entries=[], *args, **kwargs):
+        super(UserPageSidebarHook, self).__init__(extension)
+        self.entries = entries
+
+
 class NavigationBarHook(ExtensionHook):
     """A hook for adding entries to the main navigation bar.
 

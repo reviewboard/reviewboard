@@ -6,7 +6,8 @@ from reviewboard.extensions.base import Extension
 from reviewboard.extensions.hooks import DashboardHook, DiffViewerActionHook, \
                                          NavigationBarHook, \
                                          ReviewRequestActionHook, \
-                                         ReviewRequestDropdownActionHook
+                                         ReviewRequestDropdownActionHook, \
+                                         UserPageSidebarHook
 
 
 class DummyExtension(Extension):
@@ -46,6 +47,45 @@ class HookTests(TestCase):
 
         self.assertEqual(t.render(context).strip(),
                          '%(label)s - %(url)s' % entry)
+
+    def test_userpage_hook(self):
+        """Testing UserPage sidebar extension hooks"""
+        subentry = {
+            'label': 'Sub Hook',
+            'url': 'sub-foo-url'
+        }
+        entry = {
+            'label': 'User Hook',
+            'url': 'foo-url',
+            'subitems': [subentry]
+        }
+
+        hook = UserPageSidebarHook(extension=self.extension, entries=[entry])
+        context = Context({
+            'userpage_hook': hook,
+        })
+
+        entries = hook.entries
+        self.assertEqual(len(entries), 1)
+        self.assertEqual(entries[0], entry)
+        self.assertEqual(len(entries[0]['subitems']), 1)
+        self.assertEqual(entries[0]['subitems'][0], subentry)
+
+        t = Template(
+            "{% load rb_extensions %}"
+            "{% for hook in userpage_hook.entries %}"
+            "{{hook.label}} - {{hook.url}}"
+            "{% for subhook in hook.subitems %}"
+            " -- {{subhook.label}} - {{subhook.url}}"
+            "{% endfor %}"
+            "{% endfor %}")
+
+        self.assertEqual(t.render(context).strip(),
+                         '%s - %s -- %s - %s' % (
+                         entry['label'],
+                         entry['url'],
+                         entry['subitems'][0]['label'],
+                         entry['subitems'][0]['url']))
 
     def test_diffviewer_action_hook(self):
         """Testing diff viewer action extension hooks"""
