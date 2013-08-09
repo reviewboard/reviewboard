@@ -33,7 +33,9 @@ from reviewboard.admin import forms
 
 NEWS_FEED = "http://www.reviewboard.org/news/feed/"
 
-settings_urlpatterns = patterns('reviewboard.admin.views',
+settings_urlpatterns = patterns(
+    'reviewboard.admin.views',
+
     url(r'^general/$', 'site_settings',
         {'form_class': forms.GeneralSettingsForm,
          'template_name': 'admin/general_settings.html'},
@@ -65,15 +67,19 @@ settings_urlpatterns = patterns('reviewboard.admin.views',
         name="settings-support"),
 )
 
-urlpatterns = patterns('reviewboard.admin.views',
+urlpatterns = patterns(
+    'reviewboard.admin.views',
+
     (r'^$', 'dashboard'),
     url(r'^cache/$', 'cache_stats', name='admin-server-cache'),
     (r'^settings/', include(settings_urlpatterns)),
     (r'^widget-toggle/', 'widget_toggle'),
-    (r'^widget-activity/','widget_activity'),
+    (r'^widget-activity/', 'widget_activity'),
 )
 
-urlpatterns += patterns('',
+urlpatterns += patterns(
+    '',
+
     (r'^log/', include('djblets.log.urls')),
 
     ('^db/', include(admin.site.urls)),

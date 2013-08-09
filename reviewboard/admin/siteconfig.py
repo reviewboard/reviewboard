@@ -1,6 +1,6 @@
 #
-# reviewboard/admin/siteconfig.py -- Siteconfig definitions for the admin app in
-#                                    Review Board. This expands on
+# reviewboard/admin/siteconfig.py -- Siteconfig definitions for the admin app
+#                                    in Review Board. This expands on
 #                                    djblets.siteconfig to let administrators
 #                                    configure special authentication and
 #                                    storage methods, as well as all our
@@ -35,14 +35,14 @@ import os.path
 from django.conf import settings, global_settings
 from django.core.exceptions import ImproperlyConfigured
 from djblets.log import siteconfig as log_siteconfig
-from djblets.siteconfig.django_settings import apply_django_settings, \
-                                               get_django_defaults, \
-                                               get_django_settings_map
+from djblets.siteconfig.django_settings import (apply_django_settings,
+                                                get_django_defaults,
+                                                get_django_settings_map)
 from djblets.siteconfig.models import SiteConfiguration
 
 from reviewboard.accounts.backends import get_registered_auth_backends
-from reviewboard.admin.checks import get_can_enable_search, \
-                                     get_can_enable_syntax_highlighting
+from reviewboard.admin.checks import (get_can_enable_search,
+                                      get_can_enable_syntax_highlighting)
 
 
 # A mapping of our supported storage backend names to backend class paths.
@@ -165,18 +165,16 @@ def load_site_config():
         elif default:
             setattr(settings, settings_key, default)
 
-
     try:
         siteconfig = SiteConfiguration.objects.get_current()
     except SiteConfiguration.DoesNotExist:
-        raise ImproperlyConfigured, \
-            "The site configuration entry does not exist in the database. " \
-            "Re-run `./manage.py` syncdb to fix this."
+        raise ImproperlyConfigured(
+            "The site configuration entry does not exist in the database. "
+            "Re-run `./manage.py` syncdb to fix this.")
     except:
         # We got something else. Likely, this doesn't exist yet and we're
         # doing a syncdb or something, so silently ignore.
         return
-
 
     # Populate defaults if they weren't already set.
     if not siteconfig.get_defaults():
@@ -190,10 +188,9 @@ def load_site_config():
                                 global_settings.DEFAULT_FROM_EMAIL)
 
     if (not mail_default_from or
-        mail_default_from == global_settings.DEFAULT_FROM_EMAIL):
+            mail_default_from == global_settings.DEFAULT_FROM_EMAIL):
         domain = siteconfig.site.domain.split(':')[0]
         siteconfig.set('mail_default_from', 'noreply@' + domain)
-
 
     # STATIC_* and MEDIA_* must be different paths, and differ in meaning.
     # If site_static_* is empty or equal to media_static_*, we're probably
@@ -210,10 +207,8 @@ def load_site_config():
     if site_static_url == '' or site_static_url == site_media_url:
         siteconfig.set('site_static_url', settings.STATIC_URL)
 
-
     # Populate the settings object with anything relevant from the siteconfig.
     apply_django_settings(siteconfig, settings_map)
-
 
     # Now for some more complicated stuff...
 
@@ -224,7 +219,6 @@ def load_site_config():
     if not get_can_enable_syntax_highlighting()[0]:
         siteconfig.set('diffviewer_syntax_highlighting', False)
 
-
     # Site administrator settings
     apply_setting("ADMINS", None, (
         (siteconfig.get("site_admin_name", ""),
@@ -233,10 +227,8 @@ def load_site_config():
 
     apply_setting("MANAGERS", None, settings.ADMINS)
 
-
     # Explicitly base this off the STATIC_URL
     apply_setting("ADMIN_MEDIA_PREFIX", None, settings.STATIC_URL + "admin/")
-
 
     # Set the auth backends
     auth_backend_map = dict(get_registered_auth_backends())

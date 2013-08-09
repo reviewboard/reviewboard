@@ -96,14 +96,13 @@ def migrate_settings(siteconfig):
 
         siteconfig.set(siteconfig_key, value)
 
-
     # This may be a tuple in a tuple, or it may just be a tuple.
     if type(settings.ADMINS[0]) == tuple:
         admin = settings.ADMINS[0]
     else:
         admin = settings.ADMINS
 
-    siteconfig.set('site_admin_name',  admin[0])
+    siteconfig.set('site_admin_name', admin[0])
     siteconfig.set('site_admin_email', admin[1])
 
     # Try to transform the authentication backend

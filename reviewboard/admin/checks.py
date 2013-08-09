@@ -102,7 +102,6 @@ def check_updates_required():
                 siteconfig.set("site_media_root", new_media_root)
                 settings.STATIC_ROOT = new_media_root
 
-
         # Check if the user has any pending static media configuration
         # changes they need to make.
         if siteconfig and 'manual-updates' in siteconfig.settings:
@@ -117,7 +116,6 @@ def check_updates_required():
                     }
                 ))
 
-
         # Check if there's a media/uploaded/images directory. If not, this is
         # either a new install or is using the old-style media setup and needs
         # to be manually upgraded.
@@ -131,7 +129,6 @@ def check_updates_required():
                 }
             ))
 
-
         try:
             username = getpass.getuser()
         except ImportError:
@@ -144,8 +141,8 @@ def check_updates_required():
         data_dir = os.environ.get('HOME', '')
 
         if (not data_dir or
-            not os.path.isdir(data_dir) or
-            not os.access(data_dir, os.W_OK)):
+                not os.path.isdir(data_dir) or
+                not os.access(data_dir, os.W_OK)):
             try:
                 username = getpass.getuser()
             except ImportError:
@@ -162,7 +159,6 @@ def check_updates_required():
                     'expected_data_dir': os.path.join(site_dir, 'data'),
                 }
             ))
-
 
         # Check if the htdocs/media/ext directory is writable by us.
         ext_dir = settings.EXTENSIONS_STATIC_ROOT
@@ -190,14 +186,11 @@ def check_updates_required():
                 }
             ))
 
-
         #
         # NOTE: Add new checks above this.
         #
 
-
         _install_fine = not updates_required
-
 
     return updates_required
 
@@ -273,7 +266,7 @@ def get_can_enable_dns():
         return (False, _(
             'PyDNS, which is required to find the domain controller, '
             'is not installed.'
-            ))
+        ))
 
 
 def get_can_use_amazon_s3():

@@ -14,13 +14,13 @@ from reviewboard.admin.cache_stats import get_cache_stats
 from reviewboard.attachments.models import FileAttachment
 from reviewboard.changedescs.models import ChangeDescription
 from reviewboard.diffviewer.models import DiffSet
-from reviewboard.reviews.models import ReviewRequest, Group, \
-                                       Comment, Review, Screenshot, \
-                                       ReviewRequestDraft
+from reviewboard.reviews.models import (ReviewRequest, Group,
+                                        Comment, Review, Screenshot,
+                                        ReviewRequestDraft)
 from reviewboard.scmtools.models import Repository
 
 
-DAYS_TOTAL = 30 # Set the number of days to display in date browsing widgets
+DAYS_TOTAL = 30  # Set the number of days to display in date browsing widgets
 
 NAME_TRANSFORM_RE = re.compile('([A-Z])')
 
@@ -71,8 +71,8 @@ class Widget(object):
 
         return render_to_string('admin/admin_widget.html',
                                 RequestContext(request, {
-            'widget': self,
-        }))
+                                    'widget': self,
+                                }))
 
     def generate_data(self, request):
         """Generates data for the widget.
@@ -266,7 +266,7 @@ class ServerCacheWidget(Widget):
                     uptime['unit'] = _("hours")
                 else:
                     uptime['value'] = stats['uptime'] / 60
-                    uptime['unit'] =  _("minutes")
+                    uptime['unit'] = _("minutes")
 
         return {
             'cache_stats': cache_stats,

@@ -40,28 +40,34 @@ class Profile(models.Model):
     # This will redirect new users to the account settings page the first time
     # they log in (or immediately after creating an account).  This allows
     # people to fix their real name and join groups.
-    first_time_setup_done = models.BooleanField(default=False,
+    first_time_setup_done = models.BooleanField(
+        default=False,
         verbose_name=_("first time setup done"),
         help_text=_("Indicates whether the user has already gone through "
                     "the first time setup process by saving their user "
                     "preferences."))
 
-    collapsed_diffs = models.BooleanField(default=True,
+    collapsed_diffs = models.BooleanField(
+        default=True,
         verbose_name=_("collapsed diffs"),
         help_text=_("Indicates whether diffs should be shown in their "
                     "collapsed state by default."))
-    wordwrapped_diffs = models.BooleanField(default=True,
+    wordwrapped_diffs = models.BooleanField(
+        default=True,
         help_text=_("This field is unused and will be removed in a future "
                     "version."))
-    syntax_highlighting = models.BooleanField(default=True,
+    syntax_highlighting = models.BooleanField(
+        default=True,
         verbose_name=_("syntax highlighting"),
         help_text=_("Indicates whether the user wishes to see "
                     "syntax highlighting in the diffs."))
-    is_private = models.BooleanField(default=False,
+    is_private = models.BooleanField(
+        default=False,
         verbose_name=_("profile private"),
-        help_text=_("Indicates whether the user wishes to keep his/her profile "
-                    "private."))
-    open_an_issue = models.BooleanField(default=True,
+        help_text=_("Indicates whether the user wishes to keep his/her "
+                    "profile private."))
+    open_an_issue = models.BooleanField(
+        default=True,
         verbose_name=_("opens an issue"),
         help_text=_("Indicates whether the user wishes to default "
                     "to opening an issue or not."))
@@ -99,7 +105,6 @@ class Profile(models.Model):
 
     extra_data = JSONField(null=True)
 
-
     def star_review_request(self, review_request):
         """Marks a review request as starred.
 
@@ -109,7 +114,7 @@ class Profile(models.Model):
         self.starred_review_requests.add(review_request)
 
         if (review_request.public and
-            review_request.status == ReviewRequest.PENDING_REVIEW):
+                review_request.status == ReviewRequest.PENDING_REVIEW):
             site_profile, is_new = LocalSiteProfile.objects.get_or_create(
                 user=self.user,
                 local_site=review_request.local_site,
@@ -134,7 +139,7 @@ class Profile(models.Model):
             self.starred_review_requests.remove(review_request)
 
         if (review_request.public and
-            review_request.status == ReviewRequest.PENDING_REVIEW):
+                review_request.status == ReviewRequest.PENDING_REVIEW):
             site_profile, is_new = LocalSiteProfile.objects.get_or_create(
                 user=self.user,
                 local_site=review_request.local_site,
@@ -181,24 +186,20 @@ class LocalSiteProfile(models.Model):
     # and starred (public).
     direct_incoming_request_count = CounterField(
         _('direct incoming review request count'),
-        initializer=
-            lambda p: ReviewRequest.objects.to_user_directly(
-                p.user, local_site=p.local_site).count())
+        initializer=lambda p: ReviewRequest.objects.to_user_directly(
+            p.user, local_site=p.local_site).count())
     total_incoming_request_count = CounterField(
         _('total incoming review request count'),
-        initializer=
-            lambda p: ReviewRequest.objects.to_user(
-                p.user, local_site=p.local_site).count())
+        initializer=lambda p: ReviewRequest.objects.to_user(
+            p.user, local_site=p.local_site).count())
     pending_outgoing_request_count = CounterField(
         _('pending outgoing review request count'),
-        initializer=
-            lambda p: ReviewRequest.objects.from_user(
-                p.user, p.user, local_site=p.local_site).count())
+        initializer=lambda p: ReviewRequest.objects.from_user(
+            p.user, p.user, local_site=p.local_site).count())
     total_outgoing_request_count = CounterField(
         _('total outgoing review request count'),
-        initializer=
-            lambda p: ReviewRequest.objects.from_user(
-                p.user, p.user, None, local_site=p.local_site).count())
+        initializer=lambda p: ReviewRequest.objects.from_user(
+            p.user, p.user, None, local_site=p.local_site).count())
     starred_public_request_count = CounterField(
         _('starred public review request count'),
         initializer=lambda p: (p.pk and

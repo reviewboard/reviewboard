@@ -14,9 +14,9 @@ from djblets.siteconfig.views import site_settings as djblets_site_settings
 from reviewboard.admin.cache_stats import get_cache_stats
 from reviewboard.admin.forms import SSHSettingsForm
 from reviewboard.admin.support import get_support_url
-from reviewboard.admin.widgets import dynamic_activity_data, \
-                                      primary_widgets, \
-                                      secondary_widgets
+from reviewboard.admin.widgets import (dynamic_activity_data,
+                                       primary_widgets,
+                                       secondary_widgets)
 from reviewboard.ssh.client import SSHClient
 from reviewboard.ssh.utils import humanize_key
 
@@ -97,8 +97,9 @@ def ssh_settings(request, template_name='admin/ssh_settings.html'):
     }))
 
 
-def manual_updates_required(request, updates,
-                            template_name="admin/manual_updates_required.html"):
+def manual_updates_required(
+        request, updates,
+        template_name="admin/manual_updates_required.html"):
     """
     Checks for required manual updates and displays informational pages on
     performing the necessary updates.

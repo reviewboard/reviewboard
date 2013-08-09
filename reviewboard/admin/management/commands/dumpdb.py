@@ -34,11 +34,11 @@ class Command(NoArgsCommand):
             j = 0
 
             while j < count:
-                for obj in model.objects.all()[j:j+OBJECT_LIMIT].iterator():
+                for obj in model.objects.all()[j:j + OBJECT_LIMIT].iterator():
                     value = serializer.serialize([obj])
 
                     if value != "[]":
-                        print value[1:-1] # Skip the "[" and "]"
+                        print value[1:-1]  # Skip the "[" and "]"
 
                     i += 1
                     pct = i * 100 / totalobjs

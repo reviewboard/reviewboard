@@ -33,8 +33,7 @@ import urlparse
 from django import forms
 from django.contrib.sites.models import Site
 from django.conf import settings
-from django.core.cache import parse_backend_uri, InvalidCacheBackendError, \
-                              DEFAULT_CACHE_ALIAS
+from django.core.cache import DEFAULT_CACHE_ALIAS
 from django.utils.translation import ugettext as _
 from djblets.log import restart_logging
 from djblets.siteconfig.forms import SiteSettingsForm
@@ -42,10 +41,10 @@ from djblets.util.cache import normalize_cache_backend
 from djblets.util.forms import TimeZoneField
 
 from reviewboard.accounts.forms import LegacyAuthModuleSettingsForm
-from reviewboard.admin.checks import get_can_enable_search, \
-                                     get_can_enable_syntax_highlighting, \
-                                     get_can_use_amazon_s3, \
-                                     get_can_use_couchdb
+from reviewboard.admin.checks import (get_can_enable_search,
+                                      get_can_enable_syntax_highlighting,
+                                      get_can_use_amazon_s3,
+                                      get_can_use_couchdb)
 from reviewboard.admin.siteconfig import load_site_config
 from reviewboard.admin.support import get_install_key
 from reviewboard.ssh.client import SSHClient
@@ -264,14 +263,13 @@ class GeneralSettingsForm(SiteSettingsForm):
                     _("The search index path must be absolute."))
 
             if (os.path.exists(index_file) and
-                not os.access(index_file, os.W_OK)):
+                    not os.access(index_file, os.W_OK)):
                 raise forms.ValidationError(
                     _('The search index path is not writable. Make sure the '
                       'web server has write access to it and its parent '
                       'directory.'))
 
         return index_file
-
 
     class Meta:
         title = _("General Settings")
@@ -280,11 +278,11 @@ class GeneralSettingsForm(SiteSettingsForm):
         fieldsets = (
             {
                 'classes': ('wide',),
-                'title':   _("Site Settings"),
-                'fields':  ('server', 'site_media_url',
-                            'site_admin_name',
-                            'site_admin_email',
-                            'locale_timezone'),
+                'title': _("Site Settings"),
+                'fields': ('server', 'site_media_url',
+                           'site_admin_name',
+                           'site_admin_email',
+                           'locale_timezone'),
             },
             {
                 'classes': ('wide',),
@@ -293,8 +291,8 @@ class GeneralSettingsForm(SiteSettingsForm):
             },
             {
                 'classes': ('wide',),
-                'title':   _("Search"),
-                'fields':  ('search_enable', 'search_index_file'),
+                'title': _("Search"),
+                'fields': ('search_enable', 'search_index_file'),
             },
         )
 
@@ -302,7 +300,6 @@ class GeneralSettingsForm(SiteSettingsForm):
 class AuthenticationSettingsForm(SiteSettingsForm):
     CUSTOM_AUTH_ID = 'custom'
     CUSTOM_AUTH_CHOICE = (CUSTOM_AUTH_ID, _('Legacy Authentication Module'))
-
 
     auth_anonymous_access = forms.BooleanField(
         label=_("Allow anonymous read-only access"),
@@ -373,7 +370,6 @@ class AuthenticationSettingsForm(SiteSettingsForm):
         self.fields['auth_anonymous_access'].initial = \
             not self.siteconfig.get("auth_require_sitewide_login")
 
-
     def save(self):
         self.siteconfig.set("auth_require_sitewide_login",
                             not self.cleaned_data['auth_anonymous_access'])
@@ -405,8 +401,8 @@ class AuthenticationSettingsForm(SiteSettingsForm):
         if self.data:
             # Note that this isn't validated yet, but that's okay given our
             # usage. It's a bit of a hack though.
-            auth_backend = self['auth_backend'].data or \
-                           self.fields['auth_backend'].initial
+            auth_backend = (self['auth_backend'].data or
+                            self.fields['auth_backend'].initial)
 
             if auth_backend in self.auth_backend_forms:
                 self.auth_backend_forms[auth_backend].full_clean()
@@ -421,8 +417,7 @@ class AuthenticationSettingsForm(SiteSettingsForm):
         fieldsets = (
             {
                 'classes': ('wide',),
-                'fields':  ('auth_anonymous_access',
-                            'auth_backend'),
+                'fields': ('auth_anonymous_access', 'auth_backend'),
             },
         )
 
@@ -476,7 +471,6 @@ class EMailSettingsForm(SiteSettingsForm):
 
         # Reload any important changes into the Django settings.
         load_site_config()
-
 
     class Meta:
         title = _("E-Mail Settings")
@@ -552,13 +546,12 @@ class DiffSettingsForm(SiteSettingsForm):
         self.fields['include_space_patterns'].initial = \
             ', '.join(self.siteconfig.get('diffviewer_include_space_patterns'))
 
-
     def save(self):
-        self.siteconfig.set('diffviewer_include_space_patterns',
+        self.siteconfig.set(
+            'diffviewer_include_space_patterns',
             re.split(r",\s*", self.cleaned_data['include_space_patterns']))
 
         super(DiffSettingsForm, self).save()
-
 
     class Meta:
         title = _("Diff Viewer Settings")
@@ -649,20 +642,19 @@ class LoggingSettingsForm(SiteSettingsForm):
         load_site_config()
         restart_logging()
 
-
     class Meta:
         title = _("Logging Settings")
         fieldsets = (
             {
                 'classes': ('wide',),
-                'fields':  ('logging_enabled',
-                            'logging_directory',
-                            'logging_level'),
+                'fields': ('logging_enabled',
+                           'logging_directory',
+                           'logging_level'),
             },
             {
-                'title':   _('Advanced'),
+                'title': _('Advanced'),
                 'classes': ('wide',),
-                'fields':  ('logging_allow_profiling',),
+                'fields': ('logging_allow_profiling',),
             }
         )
 
@@ -733,9 +725,9 @@ class StorageSettingsForm(SiteSettingsForm):
         label=_('File storage method'),
         choices=(
             ('filesystem', _('Host file system')),
-            ('s3',         _('Amazon S3')),
+            ('s3', _('Amazon S3')),
             # TODO: I haven't tested CouchDB at all, so it's turned off
-            #('couchdb',    _('CouchDB')),
+            #('couchdb', _('CouchDB')),
         ),
         help_text=_('Storage method and location for uploaded files, such as '
                     'screenshots and file attachments.'),
@@ -768,7 +760,7 @@ class StorageSettingsForm(SiteSettingsForm):
             (2, 'Subdomain'),
             (3, 'Vanity'),
         ),
-        help_text=_('Calling format for AWS requests.'), # FIXME: what do these mean?
+        help_text=_('Calling format for AWS requests.'),
         required=True)
 
     # TODO: these items are consumed in the S3Storage backend, but I'm not
@@ -787,8 +779,8 @@ class StorageSettingsForm(SiteSettingsForm):
         help_text=_('For example, "http://couchdb.local:5984"'),
         required=True)
 
-    # TODO: this is consumed in the CouchDBStorage backend, but I'm not sure how
-    # to let users set it via siteconfig, since it's a dictionary. Since I
+    # TODO: this is consumed in the CouchDBStorage backend, but I'm not sure
+    # how to let users set it via siteconfig, since it's a dictionary. Since I
     # haven't tested the CouchDB backend at all, it'll just sit here for now.
     #
     #'couchdb_storage_options': 'COUCHDB_STORAGE_OPTIONS',
@@ -823,8 +815,8 @@ class StorageSettingsForm(SiteSettingsForm):
         if self.data:
             # Note that this isn't validated yet, but that's okay given our
             # usage. It's a bit of a hack though.
-            storage_backend = self['storage_backend'].data or \
-                              self.fields['storage_backend'].initial
+            storage_backend = (self['storage_backend'].data or
+                               self.fields['storage_backend'].initial)
 
             if storage_backend != 's3':
                 set_fieldset_required('storage_s3', False)
@@ -840,22 +832,22 @@ class StorageSettingsForm(SiteSettingsForm):
         fieldsets = (
             {
                 'classes': ('wide',),
-                'fields':  ('storage_backend',),
+                'fields': ('storage_backend',),
             },
             {
-                'id':      'storage_s3',
+                'id': 'storage_s3',
                 'classes': ('wide', 'hidden'),
-                'title':   _('Amazon S3 Settings'),
-                'fields':  ('aws_access_key_id',
-                            'aws_secret_access_key',
-                            'aws_s3_bucket_name',
-                            'aws_calling_format'),
+                'title': _('Amazon S3 Settings'),
+                'fields': ('aws_access_key_id',
+                           'aws_secret_access_key',
+                           'aws_s3_bucket_name',
+                           'aws_calling_format'),
             },
             {
-                'id':      'storage_couchdb',
+                'id': 'storage_couchdb',
                 'classes': ('wide', 'hidden'),
-                'title':   _('CouchDB Settings'),
-                'fields':  ('couchdb_default_server',),
+                'title': _('CouchDB Settings'),
+                'fields': ('couchdb_default_server',),
             },
         )
 
@@ -889,14 +881,13 @@ class SupportSettingsForm(SiteSettingsForm):
         save_blacklist = ('install_key',)
         fieldsets = ({
             'classes': ('wide',),
-            'description':
+            'description': (
                 '<p>For fast one-on-one support, plus other benefits, '
                 'purchase a <a href="'
                 'http://www.beanbaginc.com/support/contracts/">'
                 'support contract</a>.</p>'
                 '<p>You can also customize where your users will go for '
-                'support by changing the Custom Support URL below. If '
-                'left blank, they will be taken to our support '
-                'channel.</p>',
+                'support by changing the Custom Support URL below. If left '
+                'blank, they will be taken to our support channel.</p>'),
             'fields': ('install_key', 'support_url'),
         },)

@@ -61,7 +61,7 @@ class CheckUpdatesRequiredMiddleware(object):
         updates_required = check_updates_required()
 
         if (updates_required and
-            not path_info.startswith(settings.STATIC_URL)):
+                not path_info.startswith(settings.STATIC_URL)):
             return manual_updates_required(request, updates_required)
 
         # Let another handler handle this.
@@ -81,7 +81,7 @@ class X509AuthMiddleware(object):
     """
     def process_request(self, request):
         if ('reviewboard.accounts.backends.X509Backend'
-            not in settings.AUTHENTICATION_BACKENDS):
+                not in settings.AUTHENTICATION_BACKENDS):
             return None
 
         if not request.is_secure():

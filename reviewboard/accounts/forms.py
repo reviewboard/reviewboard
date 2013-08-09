@@ -11,8 +11,7 @@ from djblets.siteconfig.models import SiteConfiguration
 from djblets.util.forms import TimeZoneField
 from recaptcha.client import captcha
 
-from reviewboard.admin.checks import get_can_enable_dns, \
-                                     get_can_enable_ldap
+from reviewboard.admin.checks import get_can_enable_dns, get_can_enable_ldap
 from reviewboard.reviews.models import Group
 
 
@@ -20,11 +19,14 @@ class PreferencesForm(forms.Form):
     redirect_to = forms.CharField(required=False, widget=forms.HiddenInput)
     groups = forms.MultipleChoiceField(widget=forms.CheckboxSelectMultiple,
                                        required=False)
-    syntax_highlighting = forms.BooleanField(required=False,
+    syntax_highlighting = forms.BooleanField(
+        required=False,
         label=_("Enable syntax highlighting in the diff viewer"))
-    profile_private = forms.BooleanField(required=False,
+    profile_private = forms.BooleanField(
+        required=False,
         label=_("Keep your user profile private"))
-    open_an_issue = forms.BooleanField(required=False,
+    open_an_issue = forms.BooleanField(
+        required=False,
         label=_("Always open an issue when comment box opens"))
     first_name = forms.CharField(required=False)
     last_name = forms.CharField(required=False)
@@ -49,7 +51,7 @@ class PreferencesForm(forms.Form):
 
         for site in user.local_site.all().order_by('name'):
             for g in Group.objects.accessible(
-                user=user, local_site=site).order_by('display_name'):
+                    user=user, local_site=site).order_by('display_name'):
                 display_name = '%s / %s' % (g.local_site.name, g.display_name)
                 choices.append((g.id, display_name))
 
@@ -123,7 +125,8 @@ class RegistrationForm(DjbletsRegistrationForm):
         siteconfig = SiteConfiguration.objects.get_current()
 
         if siteconfig.get('auth_registration_show_captcha'):
-            challenge = self.cleaned_data.get('recaptcha_challenge_field', None)
+            challenge = self.cleaned_data.get('recaptcha_challenge_field',
+                                              None)
             response = self.cleaned_data.get('recaptcha_response_field', None)
 
             if challenge and response:
@@ -167,8 +170,9 @@ class RegistrationForm(DjbletsRegistrationForm):
 class ActiveDirectorySettingsForm(SiteSettingsForm):
     auth_ad_domain_name = forms.CharField(
         label=_("Domain name"),
-        help_text=_("Enter the domain name to use, (ie. example.com). This will be "
-                    "used to query for LDAP servers and to bind to the domain."),
+        help_text=_("Enter the domain name to use, (ie. example.com). This "
+                    "will be used to query for LDAP servers and to bind to "
+                    "the domain."),
         required=True,
         widget=forms.TextInput(attrs={'size': '40'}))
 
@@ -252,11 +256,12 @@ class StandardAuthSettingsForm(SiteSettingsForm):
         help_text=mark_safe(
             _('Displays a captcha using <a href="%(recaptcha_url)s">'
               'reCAPTCHA</a> on the registration page. To enable this, you '
-              'will need to go <a href="%(register_url)s">here</A> to register '
-              'an account and type in your new keys below.') % {
-                  'recaptcha_url': 'http://www.recaptcha.net/',
-                  'register_url': 'https://admin.recaptcha.net/recaptcha'
-                                  '/createsite/',
+              'will need to go <a href="%(register_url)s">here</A> to '
+              'register an account and type in your new keys below.')
+            % {
+                'recaptcha_url': 'http://www.recaptcha.net/',
+                'register_url': 'https://admin.recaptcha.net/recaptcha'
+                                '/createsite/',
             }),
         required=False)
 
@@ -352,8 +357,7 @@ class LDAPSettingsForm(SiteSettingsForm):
         help_text=_("The string representing the user. Use \"%(varname)s\" "
                     "where the username would normally go. For example: "
                     "(uid=%(varname)s) or (sAMAccountName=%(varname)s) "
-                    "[for active directory LDAP]") %
-                  {'varname': '%s'},
+                    "[for active directory LDAP]") % {'varname': '%s'},
         widget=forms.TextInput(attrs={'size': '40'}))
 
     auth_ldap_anon_bind_uid = forms.CharField(
@@ -407,7 +411,8 @@ class LegacyAuthModuleSettingsForm(SiteSettingsForm):
         super(LegacyAuthModuleSettingsForm, self).load()
 
     def save(self):
-        self.siteconfig.set('auth_custom_backends',
+        self.siteconfig.set(
+            'auth_custom_backends',
             re.split(r',\s*', self.cleaned_data['custom_backends']))
 
         super(LegacyAuthModuleSettingsForm, self).save()
@@ -432,9 +437,9 @@ class X509SettingsForm(SiteSettingsForm):
         choices=(
             # Note: These names correspond to environment variables set by
             #       mod_ssl.
-            ("SSL_CLIENT_S_DN",        _("DN (Distinguished Name)")),
-            ("SSL_CLIENT_S_DN_CN",     _("CN (Common Name)")),
-            ("SSL_CLIENT_S_DN_Email",  _("Email address")),
+            ("SSL_CLIENT_S_DN", _("DN (Distinguished Name)")),
+            ("SSL_CLIENT_S_DN_CN", _("CN (Common Name)")),
+            ("SSL_CLIENT_S_DN_Email", _("Email address")),
         ),
         help_text=_("The X.509 certificate field from which the Review Board "
                     "username will be extracted."),

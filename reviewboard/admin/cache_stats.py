@@ -22,7 +22,7 @@ def get_memcached_hosts():
     locations = cache_info.get('LOCATION', [])
 
     if (not backend.startswith('django.core.cache.backends.memcached') or
-        not locations):
+            not locations):
         return []
 
     if not isinstance(locations, list):
@@ -35,7 +35,7 @@ def get_has_cache_stats():
     """
     Returns whether or not cache stats are supported.
     """
-    return get_memcached_hosts() != None
+    return get_memcached_hosts() is not None
 
 
 def get_cache_stats():

@@ -13,11 +13,11 @@ from django.contrib.auth import hashers
 from django.utils.translation import ugettext as _
 from djblets.util.misc import get_object_or_none
 
-from reviewboard.accounts.forms import ActiveDirectorySettingsForm, \
-                                       LDAPSettingsForm, \
-                                       NISSettingsForm, \
-                                       StandardAuthSettingsForm, \
-                                       X509SettingsForm
+from reviewboard.accounts.forms import (ActiveDirectorySettingsForm,
+                                        LDAPSettingsForm,
+                                        NISSettingsForm,
+                                        StandardAuthSettingsForm,
+                                        X509SettingsForm)
 
 
 _auth_backends = []
@@ -101,6 +101,7 @@ class StandardAuthBackend(AuthBackend, ModelBackend):
     def update_password(self, user, password):
         user.password = hashers.make_password(password)
 
+
 class NISBackend(AuthBackend):
     """Authenticate against a user on an NIS server."""
     name = _('NIS')
@@ -120,8 +121,9 @@ class NISBackend(AuthBackend):
             if original_crypted == new_crypted:
                 return self.get_or_create_user(username, passwd)
         except nis.error:
-            # FIXME I'm not sure under what situations this would fail (maybe if
-            # their NIS server is down), but it'd be nice to inform the user.
+            # FIXME I'm not sure under what situations this would fail (maybe
+            # if their NIS server is down), but it'd be nice to inform the
+            # user.
             pass
 
         return None
@@ -142,7 +144,7 @@ class NISBackend(AuthBackend):
                 first_name = names[0]
                 last_name = None
                 if len(names) > 1:
-                  last_name = names[1]
+                    last_name = names[1]
 
                 email = u'%s@%s' % (username, settings.NIS_EMAIL_DOMAIN)
 
@@ -189,23 +191,24 @@ class LDAPBackend(AuthBackend):
                 # Log in as the anonymous user before searching.
                 ldapo.simple_bind_s(settings.LDAP_ANON_BIND_UID,
                                     settings.LDAP_ANON_BIND_PASSWD)
-                search = ldapo.search_s(settings.LDAP_BASE_DN, ldap.SCOPE_SUBTREE,
+                search = ldapo.search_s(settings.LDAP_BASE_DN,
+                                        ldap.SCOPE_SUBTREE,
                                         uid)
                 if not search:
                     # No such a user, return early, no need for bind attempts
-                    logging.warning("LDAP error: The specified object does not "
-                                    "exist in the Directory: %s" %
-                                    uid)
+                    logging.warning("LDAP error: The specified object does "
+                                    "not exist in the Directory: %s" % uid)
                     return None
                 else:
-                    # Having found the user anonymously, attempt bind with the password
+                    # Having found the user anonymously, attempt bind with the
+                    # password
                     ldapo.bind_s(search[0][0], password)
 
-            else :
+            else:
                 # Attempt to bind using the given uid and password. It may be
                 # that we really need a setting for how the DN in this is
                 # constructed; this way is correct for my system
-                userbinding=','.join([uid,settings.LDAP_BASE_DN])
+                userbinding = ','.join([uid, settings.LDAP_BASE_DN])
                 ldapo.bind_s(userbinding, password)
 
             return self.get_or_create_user(username, ldapo)
@@ -213,9 +216,9 @@ class LDAPBackend(AuthBackend):
         except ImportError:
             pass
         except ldap.INVALID_CREDENTIALS:
-            logging.warning("LDAP error: The specified object does not "
-                            "exist in the Directory or provided invalid credentials: %s" %
-                            uid)
+            logging.warning("LDAP error: The specified object does not exist "
+                            "in the Directory or provided invalid "
+                            "credentials: %s" % uid)
         except ldap.LDAPError, e:
             logging.warning("LDAP error: %s" % e)
         except:
@@ -236,16 +239,18 @@ class LDAPBackend(AuthBackend):
         except User.DoesNotExist:
             try:
                 import ldap
-                search_result = ldapo.search_s(settings.LDAP_BASE_DN,
-                                               ldap.SCOPE_SUBTREE,
-                                               "(%s)" % settings.LDAP_UID_MASK % username)
+                search_result = ldapo.search_s(
+                    settings.LDAP_BASE_DN,
+                    ldap.SCOPE_SUBTREE,
+                    "(%s)" % settings.LDAP_UID_MASK % username)
                 user_info = search_result[0][1]
 
-                given_name_attr = getattr(settings, 'LDAP_GIVEN_NAME_ATTRIBUTE',
-                                          'givenName')
+                given_name_attr = getattr(
+                    settings, 'LDAP_GIVEN_NAME_ATTRIBUTE', 'givenName')
                 first_name = user_info.get(given_name_attr, [username])[0]
 
-                surname_attr = getattr(settings, 'LDAP_SURNAME_ATTRIBUTE', 'sn')
+                surname_attr = getattr(
+                    settings, 'LDAP_SURNAME_ATTRIBUTE', 'sn')
                 last_name = user_info.get(surname_attr, [''])[0]
 
                 # If a single ldap attribute is used to hold the full name of
@@ -323,18 +328,19 @@ class ActiveDirectoryBackend(AuthBackend):
         import ldap
         search_root = self.get_ldap_search_root(userdomain)
         logging.debug('Search root ' + search_root)
-        return con.search_s(search_root, scope=ldap.SCOPE_SUBTREE, filterstr=filterstr)
+        return con.search_s(search_root, scope=ldap.SCOPE_SUBTREE,
+                            filterstr=filterstr)
 
     def find_domain_controllers_from_dns(self, userdomain=None):
         import DNS
         DNS.Base.DiscoverNameServers()
         q = '_ldap._tcp.%s' % (userdomain or self.get_domain_name())
-        req = DNS.Base.DnsRequest(q, qtype = 'SRV').req()
+        req = DNS.Base.DnsRequest(q, qtype='SRV').req()
         return [x['data'][-2:] for x in req.answers]
 
     def can_recurse(self, depth):
         return (settings.AD_RECURSION_DEPTH == -1 or
-                        depth <= settings.AD_RECURSION_DEPTH)
+                depth <= settings.AD_RECURSION_DEPTH)
 
     def get_member_of(self, con, search_results, seen=None, depth=0):
         depth += 1
@@ -432,11 +438,14 @@ class ActiveDirectoryBackend(AuthBackend):
                         group_names = self.get_member_of(con, user_data)
                     except Exception, e:
                         logging.error("Active Directory error: failed getting"
-                                      "groups for user '%s': %s" % (username, e))
+                                      "groups for user '%s': %s" %
+                                      (username, e))
                         return None
 
                     if required_group not in group_names:
-                        logging.warning("Active Directory: User %s is not in required group %s" % (username, required_group))
+                        logging.warning("Active Directory: User %s is not in "
+                                        "required group %s" %
+                                        (username, required_group))
                         return None
 
                 return self.get_or_create_user(username, user_data)
@@ -444,10 +453,12 @@ class ActiveDirectoryBackend(AuthBackend):
                 logging.warning('Active Directory: Domain controller is down')
                 continue
             except ldap.INVALID_CREDENTIALS:
-                logging.warning('Active Directory: Failed login for user %s' % username)
+                logging.warning('Active Directory: Failed login for user %s' %
+                                username)
                 return None
 
-        logging.error('Active Directory error: Could not contact any domain controller servers')
+        logging.error('Active Directory error: Could not contact any domain '
+                      'controller servers')
         return None
 
     def get_or_create_user(self, username, ad_user_data):
@@ -462,7 +473,8 @@ class ActiveDirectoryBackend(AuthBackend):
 
                 first_name = user_info.get('givenName', [username])[0]
                 last_name = user_info.get('sn', [""])[0]
-                email = user_info.get('mail',
+                email = user_info.get(
+                    'mail',
                     [u'%s@%s' % (username, settings.AD_DOMAIN_NAME)])[0]
 
                 user = User(username=username,
@@ -558,7 +570,7 @@ def get_auth_backends():
     global _auth_backend_setting
 
     if (not _auth_backends or
-        _auth_backend_setting != settings.AUTHENTICATION_BACKENDS):
+            _auth_backend_setting != settings.AUTHENTICATION_BACKENDS):
         _auth_backends = []
         for backend in get_backends():
             if not isinstance(backend, AuthBackend):

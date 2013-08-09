@@ -23,12 +23,13 @@ def admin_subnav(context, url_name, name, icon=""):
     request = context.get('request')
     url = local_site_reverse(url_name, request=request)
 
-    return RequestContext(request, {
-        'url': url,
-        'name': name,
-        'current': url == request.path,
-        'icon': icon,
-     })
+    return RequestContext(
+        request, {
+            'url': url,
+            'name': name,
+            'current': url == request.path,
+            'icon': icon,
+        })
 
 
 @register.tag
@@ -63,9 +64,8 @@ def admin_actions(context):
             'count_users': User.objects.count(),
             'count_review_groups': Group.objects.count(),
             'count_default_reviewers': DefaultReviewer.objects.count(),
-            'count_repository':
-                Repository.objects.accessible(request.user,
-                                              visible_only=False).count(),
+            'count_repository': Repository.objects.accessible(
+                request.user, visible_only=False).count(),
             'has_cache_stats': get_has_cache_stats(),
             'version': get_version_string(),
         }
