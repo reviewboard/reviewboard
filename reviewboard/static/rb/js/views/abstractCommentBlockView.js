@@ -57,8 +57,8 @@ RB.AbstractCommentBlockView = Backbone.View.extend({
      * By default, it is centered over the block.
      */
     positionNotifyBubble: function($bubble) {
-        $bubble.move(Math.round((this.$el.width()  - bubble.width())  / 2),
-                     Math.round((this.$el.height() - bubble.height()) / 2));
+        $bubble.move(Math.round((this.$el.width()  - $bubble.width())  / 2),
+                     Math.round((this.$el.height() - $bubble.height()) / 2));
     },
 
     /*
