@@ -29,8 +29,9 @@ their documentation on how to set them up and configure them.
 .. admonition:: We recommend mod_wsgi and memcached
 
    If you're using Apache, we highly recommend using mod_wsgi. fastcgi
-   has been known to have memory leak issues with Review Board, and
-   mod_python is no longer developed or shipped with Apache.
+   has been known to have several issues (including memory leaks and problems
+   when using the LDAP authentication backend), and mod_python is no longer
+   developed or shipped with Apache.
 
    We also strongly recommend installing and using memcached. This will
    greatly improve performance of your Review Board installation. If
