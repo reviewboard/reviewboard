@@ -1,4 +1,5 @@
 import logging
+import os
 from uuid import uuid4
 
 import mimeparse
@@ -8,7 +9,7 @@ from django.utils import simplejson
 from django.utils.html import escape
 from django.utils.safestring import mark_safe
 
-from reviewboard.attachments.mimetypes import score_match
+from reviewboard.attachments.mimetypes import MIMETYPE_EXTENSIONS, score_match
 from reviewboard.diffviewer.models import DiffSet
 from reviewboard.reviews.context import make_review_request_context
 from reviewboard.reviews.models import FileAttachmentComment
@@ -225,6 +226,14 @@ class FileAttachmentReviewUI(ReviewUI):
         """Returns the handler that is the best fit for provided mimetype."""
         if attachment.mimetype:
             mimetype = mimeparse.parse_mime_type(attachment.mimetype)
+
+            # Override the mimetype if mimeparse is known to misinterpret this
+            # type of file as 'octet-stream'
+            extension = os.path.splitext(attachment.filename)[1]
+
+            if extension in MIMETYPE_EXTENSIONS:
+                mimetype = MIMETYPE_EXTENSIONS[extension]
+
             score, handler = cls.get_best_handler(mimetype)
 
             if handler:
