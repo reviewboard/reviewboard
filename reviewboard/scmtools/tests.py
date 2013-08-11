@@ -669,6 +669,10 @@ class SubversionTests(SCMTestCase):
         self.assertEqual(self.tool.parse_diff_revision('',
             '2007-06-06 15:32:23 UTC (rev 10958)')[1], '10958')
 
+        # Fix for bug 2632
+        self.assertEqual(self.tool.parse_diff_revision('', '(revision )')[1],
+                         PRE_CREATION)
+
         self.assertRaises(SCMError,
                           lambda: self.tool.parse_diff_revision('', 'hello'))
 
