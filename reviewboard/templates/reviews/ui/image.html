@@ -11,8 +11,8 @@
     $(document).ready(function() {
         var view = new RB.ImageReviewableView({
             model: new RB.ImageReviewable({
-                caption: '{{caption}}',
-                imageURL: '{{image.file.url}}',
+                caption: '{{caption|escapejs}}',
+                imageURL: '{{image.file.url|escapejs}}',
                 fileAttachmentID: '{{image.id}}',
                 serializedComments: {{review_ui.get_comments_json}}
             })

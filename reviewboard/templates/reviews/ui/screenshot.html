@@ -11,8 +11,8 @@
     $(document).ready(function() {
         var view = new RB.ImageReviewableView({
             model: new RB.ScreenshotReviewable({
-                caption: '{{screenshot.caption}}',
-                imageURL: '{{screenshot.image.url}}',
+                caption: '{{screenshot.caption|escapejs}}',
+                imageURL: '{{screenshot.image.url|escapejs}}',
                 screenshotID: '{{screenshot.id}}',
                 serializedComments: {% screenshotcommentcounts screenshot %}
             })
