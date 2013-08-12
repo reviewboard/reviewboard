@@ -18,8 +18,10 @@ class ChangeDescTests(TestCase):
         self.assert_("new" in changedesc.fields_changed["test"])
         self.assert_("added" not in changedesc.fields_changed["test"])
         self.assert_("removed" not in changedesc.fields_changed["test"])
-        self.assertEqual(changedesc.fields_changed["test"]["old"], (old_value,))
-        self.assertEqual(changedesc.fields_changed["test"]["new"], (new_value,))
+        self.assertEqual(changedesc.fields_changed["test"]["old"],
+                         (old_value,))
+        self.assertEqual(changedesc.fields_changed["test"]["new"],
+                         (new_value,))
 
     def testRecordList(self):
         """Testing record_field_change with a list value"""

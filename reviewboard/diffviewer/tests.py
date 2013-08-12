@@ -17,8 +17,8 @@ from reviewboard.diffviewer.models import DiffSet, FileDiff
 from reviewboard.diffviewer.myersdiff import MyersDiffer
 from reviewboard.diffviewer.opcode_generator import get_diff_opcode_generator
 from reviewboard.diffviewer.renderers import DiffRenderer
-from reviewboard.diffviewer.processors import filter_interdiff_opcodes, \
-                                              merge_adjacent_chunks
+from reviewboard.diffviewer.processors import (filter_interdiff_opcodes,
+                                               merge_adjacent_chunks)
 from reviewboard.diffviewer.templatetags.difftags import highlightregion
 from reviewboard.scmtools.models import Repository, Tool
 
@@ -37,14 +37,14 @@ class MyersDifferTest(TestCase):
         self.__test_diff("1\n2\n3\n",
                          "0\n1\n2\n3\n",
                          [("insert", 0, 0, 0, 2),
-                          ("equal",  0, 6, 2, 8)])
+                          ("equal", 0, 6, 2, 8)])
 
         self.__test_diff("1\n2\n3\n7\n",
                          "1\n2\n4\n5\n6\n7\n",
-                         [("equal",   0, 4, 0, 4),
+                         [("equal", 0, 4, 0, 4),
                           ("replace", 4, 5, 4, 5),
-                          ("insert",  5, 5, 5, 9),
-                          ("equal",   5, 8, 9, 12)])
+                          ("insert", 5, 5, 5, 9),
+                          ("equal", 5, 8, 9, 12)])
 
     def __test_diff(self, a, b, expected):
         opcodes = list(MyersDiffer(a, b).get_opcodes())
@@ -467,10 +467,10 @@ class HighlightRegionTest(TestCase):
         self.assertEquals(highlightregion("abc", None), "abc")
 
         self.assertEquals(highlightregion("abc", [(0, 3)]),
-                                          '<span class="hl">abc</span>')
+                          '<span class="hl">abc</span>')
 
         self.assertEquals(highlightregion("abc", [(0, 1)]),
-                                          '<span class="hl">a</span>bc')
+                          '<span class="hl">a</span>bc')
 
         self.assertEquals(highlightregion(
             '<span class="xy">a</span>bc',

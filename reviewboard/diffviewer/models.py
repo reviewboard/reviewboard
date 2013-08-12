@@ -172,7 +172,7 @@ class FileDiff(models.Model):
             self._migrate_diff_data(False)
 
         if (self.diff_hash.insert_count is not None and
-            self.diff_hash.insert_count != insert_count):
+                self.diff_hash.insert_count != insert_count):
             logging.warning('Attempting to override insert count on '
                             'FileDiffData %s from %s to %s (FileDiff %s)'
                             % (self.diff_hash.pk,
@@ -181,7 +181,7 @@ class FileDiff(models.Model):
                                self.pk))
 
         if (self.diff_hash.delete_count is not None and
-            self.diff_hash.delete_count != delete_count):
+                self.diff_hash.delete_count != delete_count):
             logging.warning('Attempting to override delete count on '
                             'FileDiffData %s from %s to %s (FileDiff %s)'
                             % (self.diff_hash.pk,
@@ -270,7 +270,7 @@ class DiffSet(models.Model):
         in the history, and will set it to on more than the most recent
         diffset otherwise.
         """
-        if self.revision == 0 and self.history != None:
+        if self.revision == 0 and self.history is not None:
             if self.history.diffsets.count() == 0:
                 # Start on revision 1. It's more human-grokable.
                 self.revision = 1

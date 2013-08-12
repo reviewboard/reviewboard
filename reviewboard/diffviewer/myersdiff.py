@@ -78,17 +78,17 @@ class MyersDiffer(Differ):
                 # Count every old line that's been modified, and the
                 # remainder of old lines if we've reached the end of the new
                 # file.
-                while a_line < self.a_data.length and \
-                      (b_line >= self.b_data.length or \
-                       self.a_data.modified.get(a_line, False)):
+                while (a_line < self.a_data.length and
+                       (b_line >= self.b_data.length or
+                        self.a_data.modified.get(a_line, False))):
                     a_line += 1
 
                 # Count every new line that's been modified, and the
                 # remainder of new lines if we've reached the end of the old
                 # file.
-                while b_line < self.b_data.length and \
-                      (a_line >= self.a_data.length or \
-                       self.b_data.modified.get(b_line, False)):
+                while (b_line < self.b_data.length and
+                       (a_line >= self.a_data.length or
+                        self.b_data.modified.get(b_line, False))):
                     b_line += 1
 
                 a_changed = a_line - a_start
@@ -123,9 +123,9 @@ class MyersDiffer(Differ):
                 last_group = (tag, a_start, a_start + a_changed,
                               b_start, b_start + b_changed)
 
-
         if not last_group:
-            last_group = ("equal", 0, self.a_data.length, 0, self.b_data.length)
+            last_group = ("equal", 0, self.a_data.length,
+                          0, self.b_data.length)
 
         yield last_group
 
@@ -142,11 +142,11 @@ class MyersDiffer(Differ):
 
         self._discard_confusing_lines()
 
-        self.max_lines = self.a_data.undiscarded_lines + \
-                         self.b_data.undiscarded_lines + 3
+        self.max_lines = (self.a_data.undiscarded_lines +
+                          self.b_data.undiscarded_lines + 3)
 
-        vector_size = self.a_data.undiscarded_lines + \
-                      self.b_data.undiscarded_lines + 3
+        vector_size = (self.a_data.undiscarded_lines +
+                       self.b_data.undiscarded_lines + 3)
         self.fdiag = [0] * vector_size
         self.bdiag = [0] * vector_size
         self.downoff = self.upoff = self.b_data.undiscarded_lines + 1
@@ -218,11 +218,11 @@ class MyersDiffer(Differ):
         """
         Finds the Shortest Middle Snake.
         """
-        down_vector = self.fdiag # The vector for the (0, 0) to (x, y) search
-        up_vector   = self.bdiag # The vector for the (u, v) to (N, M) search
+        down_vector = self.fdiag  # The vector for the (0, 0) to (x, y) search
+        up_vector = self.bdiag    # The vector for the (u, v) to (N, M) search
 
-        down_k = a_lower - b_lower # The k-line to start the forward search
-        up_k   = a_upper - b_upper # The k-line to start the reverse search
+        down_k = a_lower - b_lower  # The k-line to start the forward search
+        up_k = a_upper - b_upper    # The k-line to start the reverse search
         odd_delta = (down_k - up_k) % 2 != 0
 
         down_vector[self.downoff + down_k] = a_lower
@@ -232,7 +232,7 @@ class MyersDiffer(Differ):
         dmax = a_upper - b_lower
 
         down_min = down_max = down_k
-        up_min   = up_max   = up_k
+        up_min = up_max = up_k
 
         cost = 0
         max_cost = max(256, self._very_approx_sqrt(self.max_lines * 4))
@@ -268,8 +268,9 @@ class MyersDiffer(Differ):
 
                 # Find the end of the furthest reaching forward D-path in
                 # diagonal k
-                while x < a_upper and y < b_upper and \
-                      self.a_data.undiscarded[x] == self.b_data.undiscarded[y]:
+                while (x < a_upper and y < b_upper and
+                       (self.a_data.undiscarded[x] ==
+                        self.b_data.undiscarded[y])):
                     x += 1
                     y += 1
 
@@ -307,14 +308,14 @@ class MyersDiffer(Differ):
                 y = x - k
                 old_x = x
 
-                while x > a_lower and y > b_lower and \
-                      self.a_data.undiscarded[x - 1] == \
-                      self.b_data.undiscarded[y - 1]:
+                while (x > a_lower and y > b_lower and
+                       (self.a_data.undiscarded[x - 1] ==
+                        self.b_data.undiscarded[y - 1])):
                     x -= 1
                     y -= 1
 
-                if not odd_delta and down_min <= k <= down_max and \
-                   x <= down_vector[self.downoff + k]:
+                if (not odd_delta and down_min <= k <= down_max and
+                        x <= down_vector[self.downoff + k]):
                     return x, y, True, True
 
                 if old_x - x > self.SNAKE_LIMIT:
@@ -336,35 +337,31 @@ class MyersDiffer(Differ):
             # closer to that of GNU diff, which more people would expect.
 
             if cost > 200 and big_snake:
-                ret_x, ret_y, best = \
-                    self._find_diagonal(down_min, down_max, down_k, 0,
-                                        self.downoff, down_vector,
-                                        lambda x: x - a_lower,
-                                        lambda x: a_lower + self.SNAKE_LIMIT <=
-                                                  x < a_upper,
-                                        lambda y: b_lower + self.SNAKE_LIMIT <=
-                                                  y < b_upper,
-                                        lambda i,k: i - k,
-                                        1, cost)
+                ret_x, ret_y, best = self._find_diagonal(
+                    down_min, down_max, down_k, 0,
+                    self.downoff, down_vector,
+                    lambda x: x - a_lower,
+                    lambda x: a_lower + self.SNAKE_LIMIT <= x < a_upper,
+                    lambda y: b_lower + self.SNAKE_LIMIT <= y < b_upper,
+                    lambda i, k: i - k,
+                    1, cost)
 
                 if best > 0:
                     return ret_x, ret_y, True, False
 
-                ret_x, ret_y, best = \
-                    self._find_diagonal(up_min, up_max, up_k, best, self.upoff,
-                                        up_vector,
-                                        lambda x: a_upper - x,
-                                        lambda x: a_lower < x <= a_upper -
-                                                  self.SNAKE_LIMIT,
-                                        lambda y: b_lower < y <= b_upper -
-                                                  self.SNAKE_LIMIT,
-                                        lambda i,k: i + k,
-                                        0, cost)
+                ret_x, ret_y, best = self._find_diagonal(
+                    up_min, up_max, up_k, best, self.upoff,
+                    up_vector,
+                    lambda x: a_upper - x,
+                    lambda x: a_lower < x <= a_upper - self.SNAKE_LIMIT,
+                    lambda y: b_lower < y <= b_upper - self.SNAKE_LIMIT,
+                    lambda i, k: i + k,
+                    0, cost)
 
                 if best > 0:
                     return ret_x, ret_y, False, True
 
-            continue # XXX
+            continue  # XXX
 
             # If we've reached or gone past the max cost, just give up now
             # and report the halfway point between our best results.
@@ -406,7 +403,6 @@ class MyersDiffer(Differ):
                 else:
                     return bx_best, bxy_best - bx_best, False, True
 
-
         raise Exception("The function should not have reached here.")
 
     def _find_diagonal(self, minimum, maximum, k, best, diagoff, vector,
@@ -426,8 +422,8 @@ class MyersDiffer(Differ):
                     x_index = discard_index(x, k)
                     y_index = discard_index(y, k)
 
-                    while self.a_data.undiscarded[x_index] == \
-                          self.b_data.undiscarded[y_index]:
+                    while (self.a_data.undiscarded[x_index] ==
+                           self.b_data.undiscarded[y_index]):
                         if k == self.SNAKE_LIMIT - 1 + k_offset:
                             return x, y, v
 
@@ -440,15 +436,15 @@ class MyersDiffer(Differ):
         Subsequence (LCS) algorithm.
         """
         # Fast walkthrough equal lines at the start
-        while a_lower < a_upper and b_lower < b_upper and \
-              self.a_data.undiscarded[a_lower] == \
-              self.b_data.undiscarded[b_lower]:
+        while (a_lower < a_upper and b_lower < b_upper and
+               (self.a_data.undiscarded[a_lower] ==
+                self.b_data.undiscarded[b_lower])):
             a_lower += 1
             b_lower += 1
 
-        while a_upper > a_lower and b_upper > b_lower and \
-              self.a_data.undiscarded[a_upper - 1] == \
-              self.b_data.undiscarded[b_upper - 1]:
+        while (a_upper > a_lower and b_upper > b_lower and
+               (self.a_data.undiscarded[a_upper - 1] ==
+                self.b_data.undiscarded[b_upper - 1])):
             a_upper -= 1
             b_upper -= 1
 
@@ -496,7 +492,7 @@ class MyersDiffer(Differ):
                     j += 1
 
             if i == i_end:
-                return;
+                return
 
             start = i
 
@@ -658,9 +654,9 @@ class MyersDiffer(Differ):
 
                             j += 1
 
-                        scan_run(discards, i, length, lambda x,y: x + y)
+                        scan_run(discards, i, length, lambda x, y: x + y)
                         i += length - 1
-                        scan_run(discards, i, length, lambda x,y: x - y)
+                        scan_run(discards, i, length, lambda x, y: x - y)
 
                 i += 1
 
@@ -675,7 +671,6 @@ class MyersDiffer(Differ):
                     data.modified[i] = True
 
             data.undiscarded_lines = j
-
 
         self.a_data.undiscarded = [0] * self.a_data.length
         self.b_data.undiscarded = [0] * self.b_data.length
@@ -700,7 +695,6 @@ class MyersDiffer(Differ):
 
         discard_lines(self.a_data, a_discarded)
         discard_lines(self.b_data, b_discarded)
-
 
     def _very_approx_sqrt(self, i):
         result = 1

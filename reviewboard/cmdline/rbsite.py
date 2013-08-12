@@ -108,7 +108,7 @@ class Dependencies(object):
 
             if missing_deps:
                 if (dep_info['required'] and
-                    len(missing_deps) == len(dep_info['dependencies'])):
+                        len(missing_deps) == len(dep_info['dependencies'])):
                     fatal = True
                     text = "%s (required)" % dep_info['title']
                 else:
@@ -197,9 +197,10 @@ class Site(object):
         self.mkdir(os.path.join(media_dir, "uploaded", "images"))
         self.mkdir(os.path.join(media_dir, "ext"))
 
-        self.link_pkg_dir("reviewboard",
-                          "htdocs/errordocs",
-                          os.path.join(self.install_dir, "htdocs", "errordocs"))
+        self.link_pkg_dir(
+            "reviewboard",
+            "htdocs/errordocs",
+            os.path.join(self.install_dir, "htdocs", "errordocs"))
 
         rb_djblets_src = "htdocs/static/djblets"
         rb_djblets_dest = os.path.join(static_dir, "djblets")
@@ -231,22 +232,29 @@ class Site(object):
 
         # Generate .htaccess files that enable compression and
         # never expires various file types.
-        htaccess  = '<IfModule mod_expires.c>\n'
-        htaccess += '  <FilesMatch "\.(jpg|gif|png|css|js|htc)">\n'
-        htaccess += '    ExpiresActive on\n'
-        htaccess += '    ExpiresDefault "access plus 1 year"\n'
-        htaccess += '  </FilesMatch>\n'
-        htaccess += '</IfModule>\n'
-        htaccess += '\n'
-        htaccess += '<IfModule mod_deflate.c>\n'
-
-        for mimetype in ["text/html", "text/plain", "text/xml",
-                         "text/css", "text/javascript",
-                         "application/javascript",
-                         "application/x-javascript"]:
-            htaccess += "  AddOutputFilterByType DEFLATE %s\n" % mimetype
-
-        htaccess += '</IfModule>\n'
+        htaccess = '\n'.join([
+            '<IfModule mod_expires.c>',
+            '  <FilesMatch "\.(jpg|gif|png|css|js|htc)">',
+            '    ExpiresActive on',
+            '    ExpiresDefault "access plus 1 year"',
+            '  </FilesMatch>',
+            '</IfModule>',
+            '',
+            '<IfModule mod_deflate.c>',
+        ] + [
+            '  AddOutputFilterByType DEFLATE %s' % mimetype
+            for mimetype in [
+                'text/html',
+                'text/plain',
+                'text/xml',
+                'text/css',
+                'text/javascript',
+                'application/javascript',
+                'application/x-javascript',
+            ]
+        ] + [
+            '</IfModule>',
+        ])
 
         for dirname in (static_dir, media_dir):
             fp = open(os.path.join(dirname, '.htaccess'), 'w')
@@ -322,7 +330,8 @@ class Site(object):
         fp.write("DATABASES = {\n")
         fp.write("    'default': {\n")
         fp.write("        'ENGINE': 'django.db.backends.%s',\n" % db_engine)
-        fp.write("        'NAME': '%s',\n" % self.db_name.replace("\\", "\\\\"))
+        fp.write("        'NAME': '%s',\n"
+                 % self.db_name.replace("\\", "\\\\"))
 
         if self.db_type != "sqlite3":
             if ':' in self.db_host:
@@ -385,8 +394,8 @@ class Site(object):
         resolved_update = manual_updates.get('static-media', False)
 
         return (not resolved_update and
-                pkg_resources.parse_version(siteconfig.version) <
-                    pkg_resources.parse_version("1.7"))
+                (pkg_resources.parse_version(siteconfig.version) <
+                 pkg_resources.parse_version("1.7")))
 
     def get_settings_upgrade_needed(self):
         """Determines whether or not a settings upgrade is needed."""
@@ -394,7 +403,7 @@ class Site(object):
             import settings_local
 
             if (hasattr(settings_local, 'DATABASE_ENGINE') or
-                hasattr(settings_local, 'CACHE_BACKEND')):
+                    hasattr(settings_local, 'CACHE_BACKEND')):
                 return True
 
             if hasattr(settings_local, 'DATABASES'):
@@ -418,8 +427,8 @@ class Site(object):
         database_keys = ('ENGINE', 'NAME', 'USER', 'PASSWORD', 'HOST', 'PORT')
         backend_info = {}
 
-        from django.core.cache import parse_backend_uri, \
-                                      InvalidCacheBackendError
+        from django.core.cache import (parse_backend_uri,
+                                       InvalidCacheBackendError)
 
         try:
             import settings_local
@@ -604,9 +613,9 @@ class Site(object):
         sitedir = os.path.abspath(self.install_dir).replace("\\", "/")
 
         # Check if this is a .exe.
-        if (hasattr(sys, "frozen") or    # new py2exe
-            hasattr(sys, "importers") or # new py2exe
-            imp.is_frozen("__main__")):  # tools/freeze
+        if (hasattr(sys, "frozen") or         # new py2exe
+                hasattr(sys, "importers") or  # new py2exe
+                imp.is_frozen("__main__")):   # tools/freeze
             rbsite_path = sys.executable
         else:
             rbsite_path = '"%s" "%s"' % (sys.executable, sys.argv[0])
@@ -1036,8 +1045,9 @@ class GtkUI(UIToolkit):
         hbox.connect(
             'expose-event',
             lambda w, e: w.get_window().draw_rectangle(
-                             w.get_style().base_gc[w.state], True,
-                             *w.get_allocation()))
+                w.get_style().base_gc[w.state],
+                True,
+                *w.get_allocation()))
 
         # Add the logo
         logo_file = pkg_resources.resource_filename(
@@ -1114,7 +1124,8 @@ class GtkUI(UIToolkit):
         if password:
             entry.set_visibility(False)
             if not save_var.startswith('reenter'):
-                page['validators'].append(lambda: self.confirm_reentry(site, save_var))
+                page['validators'].append(
+                    lambda: self.confirm_reentry(site, save_var))
 
         if default:
             entry.set_text(default)
@@ -1364,7 +1375,8 @@ class InstallCommand(Command):
                          help="port that the web server should listen on",
                          default='80')
         group.add_option("--python-loader",
-                         help="python loader for apache (modpython, fastcgi or wsgi)")
+                         help="python loader for apache (modpython, fastcgi "
+                              "or wsgi)")
         group.add_option("--admin-user", default="admin",
                          help="the site administrator's username")
         group.add_option("--admin-password",
@@ -1443,7 +1455,8 @@ class InstallCommand(Command):
             # Likely a permission error.
             ui.error("Unable to create the %s directory. Make sure "
                      "you're running as an administrator and that the "
-                     "directory does not contain any files." % site.install_dir,
+                     "directory does not contain any files."
+                     % site.install_dir,
                      done_func=lambda: sys.exit(1))
             return False
 
@@ -1479,7 +1492,6 @@ class InstallCommand(Command):
                 ui.itemized_list(page, group['title'], group['dependencies'])
 
         return fatal
-
 
     def ask_domain(self):
         page = ui.page("What's the host name for this site?")
@@ -1535,13 +1547,15 @@ class InstallCommand(Command):
     def ask_database_type(self):
         page = ui.page("What database type will you be using?")
 
-        ui.prompt_choice(page, "Database Type",
-                         [("mysql", Dependencies.get_support_mysql()),
-                          ("postgresql", Dependencies.get_support_postgresql()),
-                          ("sqlite3",
-                           "(not supported for production use)",
-                           Dependencies.get_support_sqlite())],
-                         save_obj=site, save_var="db_type")
+        ui.prompt_choice(
+            page, "Database Type",
+            [
+                ("mysql", Dependencies.get_support_mysql()),
+                ("postgresql", Dependencies.get_support_postgresql()),
+                ("sqlite3", "(not supported for production use)",
+                 Dependencies.get_support_sqlite())
+            ],
+            save_obj=site, save_var="db_type")
 
     def ask_database_name(self):
         def determine_sqlite_path():
@@ -1597,8 +1611,9 @@ class InstallCommand(Command):
                         save_obj=site, save_var="db_user")
         ui.prompt_input(page, "Database Password", site.db_pass, password=True,
                         save_obj=site, save_var="db_pass")
-        ui.prompt_input(page, "Confirm Database Password", site.db_pass, password=True,
-                        save_obj=site, save_var="reenter_db_pass")
+        ui.prompt_input(page, "Confirm Database Password", site.db_pass,
+                        password=True, save_obj=site,
+                        save_var="reenter_db_pass")
 
     def ask_cache_type(self):
         page = ui.page("What cache mechanism should be used?")
@@ -1639,16 +1654,17 @@ class InstallCommand(Command):
 
     def ask_python_loader(self):
         page = ui.page("What Python loader module will you be using?",
-                       is_visible_func=lambda: site.web_server_type == "apache")
+                       is_visible_func=lambda: (site.web_server_type ==
+                                                "apache"))
 
         ui.text(page, "Based on our experiences, we recommend using "
                       "wsgi with Review Board.")
 
         ui.prompt_choice(page, "Python Loader",
                          [
-                          ("wsgi", "(recommended)", True),
-                          "fastcgi",
-                          ("modpython", "(no longer supported)", True),
+                             ("wsgi", "(recommended)", True),
+                             "fastcgi",
+                             ("modpython", "(no longer supported)", True),
                          ],
                          save_obj=site, save_var="python_loader")
 
@@ -1669,8 +1685,9 @@ class InstallCommand(Command):
                         save_obj=site, save_var="admin_user")
         ui.prompt_input(page, "Password", site.admin_password, password=True,
                         save_obj=site, save_var="admin_password")
-        ui.prompt_input(page, "Confirm Password", site.admin_password, password=True,
-                        save_obj=site, save_var="reenter_admin_password")
+        ui.prompt_input(page, "Confirm Password", site.admin_password,
+                        password=True, save_obj=site,
+                        save_var="reenter_admin_password")
         ui.prompt_input(page, "E-Mail Address", site.admin_email,
                         save_obj=site, save_var="admin_email")
 
@@ -1760,7 +1777,8 @@ class UpgradeCommand(Command):
         site.setup_settings()
 
         static_media_upgrade_needed = site.get_static_media_upgrade_needed()
-        data_dir_exists = os.path.exists(os.path.join(site.install_dir, "data"))
+        data_dir_exists = os.path.exists(
+            os.path.join(site.install_dir, "data"))
 
         print "Rebuilding directory structure"
         site.rebuild_site_directory()
@@ -1891,14 +1909,12 @@ def parse_options(args):
                       action="store_true", dest="debug", default=DEBUG,
                       help="display debug output")
 
-
     sorted_commands = list(COMMANDS.keys())
     sorted_commands.sort()
 
     for cmd_name in sorted_commands:
         command = COMMANDS[cmd_name]
         command.add_options(parser)
-
 
     (options, args) = parser.parse_args(args)
 

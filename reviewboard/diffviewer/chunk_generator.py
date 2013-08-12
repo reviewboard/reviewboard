@@ -13,8 +13,8 @@ from pygments.lexers import get_lexer_for_filename
 from pygments.formatters import HtmlFormatter
 
 from reviewboard.diffviewer.differ import get_differ
-from reviewboard.diffviewer.diffutils import get_original_file, \
-                                             get_patched_file
+from reviewboard.diffviewer.diffutils import (get_original_file,
+                                              get_patched_file)
 from reviewboard.diffviewer.opcode_generator import get_diff_opcode_generator
 
 
@@ -128,8 +128,8 @@ class DiffChunkGenerator(object):
         and returned.
         """
         if (self.filediff.binary or
-            self.filediff.deleted or
-            self.filediff.source_revision == ''):
+                self.filediff.deleted or
+                self.filediff.source_revision == ''):
             return []
 
         return cache_memoize(self.make_cache_key(),
@@ -288,7 +288,7 @@ class DiffChunkGenerator(object):
         # Very long files, especially XML files, can take a long time to
         # highlight. For files over a certain size, don't highlight them.
         if (len(old) > self.STYLED_MAX_LIMIT_BYTES or
-            len(new) > self.STYLED_MAX_LIMIT_BYTES):
+                len(new) > self.STYLED_MAX_LIMIT_BYTES):
             return False
 
         # Don't style the file if we have any *really* long lines.
@@ -312,9 +312,9 @@ class DiffChunkGenerator(object):
         and other metadata.
         """
         if (old_line and new_line and
-            len(old_line) <= self.STYLED_MAX_LINE_LEN and
-            len(new_line) <= self.STYLED_MAX_LINE_LEN and
-            old_line != new_line):
+                len(old_line) <= self.STYLED_MAX_LINE_LEN and
+                len(new_line) <= self.STYLED_MAX_LINE_LEN and
+                old_line != new_line):
             old_region, new_region = self._get_line_changed_regions(old_line,
                                                                     new_line)
         else:
@@ -365,7 +365,7 @@ class DiffChunkGenerator(object):
         compute_chunk_last_header(lines, num_lines, meta, self._last_header)
 
         if (collapsable and end < len(all_lines) and
-            (self._last_header[0] or self._last_header[1])):
+                (self._last_header[0] or self._last_header[1])):
             meta['headers'] = list(self._last_header)
 
         chunk = {

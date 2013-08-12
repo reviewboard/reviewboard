@@ -222,7 +222,8 @@ class TextMimetype(MimetypeHandler):
         preview_lines = data_string.splitlines()[:self.TEXT_CROP_NUM_HEIGHT]
 
         for i in range(min(self.TEXT_CROP_NUM_HEIGHT, len(preview_lines))):
-            preview_lines[i] = escape(preview_lines[i][:self.TEXT_CROP_NUM_LENGTH])
+            preview_lines[i] = \
+                escape(preview_lines[i][:self.TEXT_CROP_NUM_LENGTH])
 
         return '<br />'.join(preview_lines)
 

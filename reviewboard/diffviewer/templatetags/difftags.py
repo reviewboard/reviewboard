@@ -23,8 +23,8 @@ def revision_link_list(history, current_pair):
     for diffset in history.diffsets.all():
         yield {
             'revision': diffset.revision,
-            'is_current': current_pair[0] == diffset and
-                          current_pair[1] == None
+            'is_current': (current_pair[0] == diffset and
+                           current_pair[1] is None)
         }
 
 
@@ -43,8 +43,8 @@ def interdiff_link_list(history, current_pair):
         yield {
             'revision': diffset.revision,
             'path': path,
-            'is_current': current_pair[0] == diffset or
-                          current_pair[1] == diffset
+            'is_current': (current_pair[0] == diffset or
+                           current_pair[1] == diffset)
         }
 
 
@@ -124,6 +124,7 @@ highlightregion.is_safe = True
 
 extraWhitespace = re.compile(r'(\s+(</span>)?$| +\t)')
 
+
 @register.filter
 def showextrawhitespace(value):
     """
@@ -157,6 +158,7 @@ def _diff_expand_link(context, expandable, text, tooltip,
         'expandable': expandable,
     })
 
+
 @register.tag
 @basictag(takes_context=True)
 def diff_expand_link(context, expanding, tooltip,
@@ -177,9 +179,9 @@ def diff_expand_link(context, expanding, tooltip,
                       lines_of_context[1] + expand_pos_2)
         image_class = 'rb-icon-diff-expand-%s' % expanding
 
-
     return _diff_expand_link(context, True, text, tooltip, expand_pos,
                              image_class)
+
 
 @register.tag
 @basictag(takes_context=True)
@@ -269,11 +271,11 @@ def diff_lines(file, chunk, standalone, line_fmt, anchor_fmt,
             show_collapse = (i == 0 and standalone)
 
         if (not is_insert and
-            len(line1) < DiffChunkGenerator.STYLED_MAX_LINE_LEN):
+                len(line1) < DiffChunkGenerator.STYLED_MAX_LINE_LEN):
             line1 = showextrawhitespace(line1)
 
         if (not is_delete and
-            len(line2) < DiffChunkGenerator.STYLED_MAX_LINE_LEN):
+                len(line2) < DiffChunkGenerator.STYLED_MAX_LINE_LEN):
             line2 = showextrawhitespace(line2)
 
         moved_from = {}

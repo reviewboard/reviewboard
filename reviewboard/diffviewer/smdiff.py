@@ -43,8 +43,8 @@ class SMDiffer(Differ):
 
                     if new_tag != tag:
                         if i > i_start or j > j_start:
-                            yield tag, i1 + i_start, i1 + i, \
-                                       j1 + j_start, j1 + j
+                            yield (tag, i1 + i_start, i1 + i,
+                                   j1 + j_start, j1 + j)
 
                         tag = new_tag
                         i_start, j_start = i, j
@@ -63,7 +63,7 @@ class SMDiffer(Differ):
                     elif len(oldlines) < len(newlines):
                         tag = "insert"
 
-                    if tag != None:
+                    if tag is not None:
                         yield tag, i1 + i_start, i2, j1 + j_start, j2
             else:
                 yield tag, i1, i2, j1, j2

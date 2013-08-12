@@ -211,7 +211,7 @@ def get_diff_files(diffset, filediff=None, interdiffset=None, request=None):
     if interdiffset:
         for interfilediff in interdiffset.files.all():
             if (not filediff or
-                filediff.source_file == interfilediff.source_file):
+                    filediff.source_file == interfilediff.source_file):
                 interdiff_map[interfilediff.source_file] = interfilediff
 
     # In order to support interdiffs properly, we need to display diffs
@@ -258,7 +258,7 @@ def get_diff_files(diffset, filediff=None, interdiffset=None, request=None):
             # We only process if there's a difference in files.
 
             if (filediff and interfilediff and
-                filediff.diff == interfilediff.diff):
+                    filediff.diff == interfilediff.diff):
                 continue
 
             source_revision = "Diff Revision %s" % diffset.revision
@@ -443,7 +443,7 @@ def get_file_chunks_in_range(context, filediff, interfilediff,
 
     for chunk in files[0]['chunks']:
         if ('headers' in chunk['meta'] and
-            (chunk['meta']['headers'][0] or chunk['meta']['headers'][1])):
+                (chunk['meta']['headers'][0] or chunk['meta']['headers'][1])):
             last_header = chunk['meta']['headers']
 
         lines = chunk['lines']

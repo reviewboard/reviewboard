@@ -1,7 +1,7 @@
 import re
 
-from reviewboard.diffviewer.processors import filter_interdiff_opcodes, \
-                                              merge_adjacent_chunks
+from reviewboard.diffviewer.processors import (filter_interdiff_opcodes,
+                                               merge_adjacent_chunks)
 
 
 class DiffOpcodeGenerator(object):
@@ -65,7 +65,7 @@ class DiffOpcodeGenerator(object):
 
                 for i, j in zip(xrange(i1, i2), xrange(j1, j2)):
                     if (self.WHITESPACE_RE.sub('', self.differ.a[i]) ==
-                        self.WHITESPACE_RE.sub('', self.differ.b[j])):
+                            self.WHITESPACE_RE.sub('', self.differ.b[j])):
                         # Both original lines are equal when removing all
                         # whitespace, so include their original line number in
                         # the meta dict.
@@ -128,7 +128,7 @@ class DiffOpcodeGenerator(object):
         # the inserted lines, so we can assemble ranges later.
         i_move_cur = ij1
         i_move_range = (i_move_cur, i_move_cur)
-        r_move_ranges = {} # key -> [(start, end, group)]
+        r_move_ranges = {}  # key -> [(start, end, group)]
 
         # Loop through every location from ij1 through ij2 until we've
         # reached the end.
@@ -187,7 +187,7 @@ class DiffOpcodeGenerator(object):
                     # enough to display. For example, a small portion of a
                     # comment, or whitespace-only changes.
                     if (r_move_range and
-                        self._is_valid_move_range(r_move_range)):
+                            self._is_valid_move_range(r_move_range)):
                         # Rebuild the insert and remove ranges based on where
                         # we are now and which range we won.
                         #

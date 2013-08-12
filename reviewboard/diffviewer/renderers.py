@@ -179,7 +179,7 @@ class DiffRenderer(object):
                     new_lines += lines[collapse_i:chunk2_i]
 
                     if (self.chunk_index < self.num_chunks - 1 and
-                        chunk2_i + self.lines_of_context[1] <= num_lines):
+                            chunk2_i + self.lines_of_context[1] <= num_lines):
                         # The chunk of context after the header.
                         self.diff_file['chunks'].append({
                             'change': chunk['change'],
@@ -223,9 +223,9 @@ class DiffRenderer(object):
         context.update({
             'collapseall': self.collapse_all,
             'file': self.diff_file,
-            'is_new_file': self.diff_file['newfile'] and
-                           not self.diff_file['interfilediff'] and
-                           not self.diff_file['filediff'].parent_diff,
+            'is_new_file': (self.diff_file['newfile'] and
+                            not self.diff_file['interfilediff'] and
+                            not self.diff_file['filediff'].parent_diff),
             'lines_of_context': self.lines_of_context or (0, 0),
             'equal_lines': equal_lines,
             'standalone': self.chunk_index is not None,

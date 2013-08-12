@@ -8,7 +8,8 @@ from django.utils import timezone
 from djblets.util.filesystem import is_exe_in_path
 
 from reviewboard.attachments.models import FileAttachment
-from reviewboard.reviews.models import ReviewRequestDraft, FileAttachmentComment
+from reviewboard.reviews.models import (ReviewRequestDraft,
+                                        FileAttachmentComment)
 
 
 class UploadFileForm(forms.Form):
@@ -80,8 +81,10 @@ class UploadFileForm(forms.Form):
 
 class CommentFileForm(forms.Form):
     """A form that handles commenting on a file."""
-    review = forms.CharField(
-        widget=forms.Textarea(attrs={'rows': '8','cols': '70'}))
+    review = forms.CharField(widget=forms.Textarea(attrs={
+        'rows': '8',
+        'cols': '70'
+    }))
 
     def create(self, file_attachment, review_request):
         comment = FileAttachmentComment(text=self.cleaned_data['review'],

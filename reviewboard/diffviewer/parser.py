@@ -96,7 +96,7 @@ class DiffParser(object):
         # If we have enough information to represent a header, build the
         # file to return.
         if ('origFile' in info and 'newFile' in info and
-            'origInfo' in info and 'newInfo' in info):
+                'origInfo' in info and 'newInfo' in info):
             if linenum < len(self.lines):
                 linenum = self.parse_after_headers(linenum, info)
 
@@ -104,13 +104,13 @@ class DiffParser(object):
                     return linenum, None
 
             file = File()
-            file.binary   = info.get('binary', False)
-            file.deleted  = info.get('deleted', False)
-            file.moved    = info.get('moved', False)
-            file.origFile = info.get('origFile')
-            file.newFile  = info.get('newFile')
-            file.origInfo = info.get('origInfo')
-            file.newInfo  = info.get('newInfo')
+            file.binary          = info.get('binary', False)
+            file.deleted         = info.get('deleted', False)
+            file.moved           = info.get('moved', False)
+            file.origFile        = info.get('origFile')
+            file.newFile         = info.get('newFile')
+            file.origInfo        = info.get('origInfo')
+            file.newInfo         = info.get('newInfo')
             file.origChangesetId = info.get('origChangesetId')
 
             # The header is part of the diff, so make sure it gets in the

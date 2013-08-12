@@ -297,8 +297,9 @@ def main():
 
     while True:
         try:
-            client.connect(hostname, port, username=username, password=password,
-                           pkey=key, allow_agent=options.allow_agent)
+            client.connect(hostname, port, username=username,
+                           password=password, pkey=key,
+                           allow_agent=options.allow_agent)
             break
         except paramiko.AuthenticationException, e:
             if attempts == 3 or not sys.stdin.isatty():

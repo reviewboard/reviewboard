@@ -1,8 +1,8 @@
 import os
 
 from reviewboard.diffviewer.errors import DiffCompatError
-from reviewboard.diffviewer.filetypes import HEADER_REGEXES, \
-                                             HEADER_REGEX_ALIASES
+from reviewboard.diffviewer.filetypes import (HEADER_REGEXES,
+                                              HEADER_REGEX_ALIASES)
 
 
 DEFAULT_DIFF_COMPAT_VERSION = 1

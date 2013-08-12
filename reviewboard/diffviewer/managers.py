@@ -231,7 +231,7 @@ class DiffSetManager(models.Manager):
 
             if basename1 == basename2:
                 if (ext1 in self.HEADER_EXTENSIONS and
-                    ext2 in self.IMPL_EXTENSIONS):
+                        ext2 in self.IMPL_EXTENSIONS):
                     return -1
                 elif (ext1 in self.IMPL_EXTENSIONS and
                       ext2 in self.HEADER_EXTENSIONS):

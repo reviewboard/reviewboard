@@ -6,9 +6,9 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
 
 from reviewboard.attachments.forms import UploadFileForm
-from reviewboard.attachments.mimetypes import MimetypeHandler, \
-                                              register_mimetype_handler, \
-                                              unregister_mimetype_handler
+from reviewboard.attachments.mimetypes import (MimetypeHandler,
+                                               register_mimetype_handler,
+                                               unregister_mimetype_handler)
 from reviewboard.reviews.models import ReviewRequest
 
 

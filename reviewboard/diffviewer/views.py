@@ -9,13 +9,13 @@ from django.template.loader import render_to_string
 from django.utils.translation import ugettext as _
 from djblets.siteconfig.models import SiteConfiguration
 
-from reviewboard.diffviewer.diffutils import get_diff_files, \
-                                             populate_diff_chunks, \
-                                             get_enable_highlighting
+from reviewboard.diffviewer.diffutils import (get_diff_files,
+                                              populate_diff_chunks,
+                                              get_enable_highlighting)
 from reviewboard.diffviewer.errors import UserVisibleError
 from reviewboard.diffviewer.models import DiffSet, FileDiff
-from reviewboard.diffviewer.renderers import get_diff_renderer, \
-                                             get_diff_renderer_class
+from reviewboard.diffviewer.renderers import (get_diff_renderer,
+                                              get_diff_renderer_class)
 
 
 def get_collapse_diff(request):
@@ -23,7 +23,7 @@ def get_collapse_diff(request):
         return False
     elif request.GET.get('collapse', False):
         return True
-    elif request.COOKIES.has_key('collapsediffs'):
+    elif 'collapsediffs' in request.COOKIES:
         return (request.COOKIES['collapsediffs'] == "True")
     else:
         return True
@@ -118,10 +118,9 @@ def view_diff(request, diffset, interdiffset=None, extra_context={},
                 except Exception, e:
                     file_temp = temp_files[0]
                     file_temp['index'] = first_file['index']
-                    first_file['fragment'] = \
-                        exception_traceback(request, e,
-                                            'diffviewer/diff_fragment_error.html',
-                                            extra_context={'file': file_temp})
+                    first_file['fragment'] = exception_traceback(
+                        request, e, 'diffviewer/diff_fragment_error.html',
+                        extra_context={'file': file_temp})
                 else:
                     file_temp = temp_files[0]
                     file_temp['index'] = first_file['index']
@@ -153,14 +152,14 @@ def view_diff(request, diffset, interdiffset=None, extra_context={},
 
 
 def view_diff_fragment(
-    request,
-    diffset_or_id,
-    filediff_id,
-    base_url,
-    interdiffset_or_id=None,
-    chunkindex=None,
-    template_name='diffviewer/diff_file_fragment.html',
-    error_template_name='diffviewer/diff_fragment_error.html'):
+        request,
+        diffset_or_id,
+        filediff_id,
+        base_url,
+        interdiffset_or_id=None,
+        chunkindex=None,
+        template_name='diffviewer/diff_file_fragment.html',
+        error_template_name='diffviewer/diff_fragment_error.html'):
     """View which renders a specific fragment from a diff."""
 
     def get_requested_diff_file(get_chunks=True):
@@ -265,8 +264,8 @@ def view_diff_fragment(
             return renderer.render_to_response()
 
         raise UserVisibleError(
-            _(u"Internal error. Unable to locate file record for filediff %s") % \
-            filediff.id)
+            _(u"Internal error. Unable to locate file record for filediff %s")
+            % filediff.id)
     except Exception, e:
         return exception_traceback(
             request, e, error_template_name,
@@ -274,7 +273,7 @@ def view_diff_fragment(
 
 
 def exception_traceback_string(request, e, template_name, extra_context={}):
-    context = { 'error': e }
+    context = {'error': e}
     context.update(extra_context)
     if e.__class__ is not UserVisibleError:
         context['trace'] = traceback.format_exc()
