@@ -169,7 +169,7 @@ class Repository(models.Model):
         else:
             return self.get_scmtool().supports_post_commit
 
-    def get_file(self, path, revision, request=None):
+    def get_file(self, path, revision, base_commit_id=None, request=None):
         """Returns a file from the repository.
 
         This will attempt to retrieve the file from the repository. If the
@@ -185,11 +185,13 @@ class Repository(models.Model):
         # Basically, this fixes the massive regressions introduced by the
         # Django unicode changes.
         return cache_memoize(
-            self._make_file_cache_key(path, revision),
-            lambda: [self._get_file_uncached(path, revision, request)],
+            self._make_file_cache_key(path, revision, base_commit_id),
+            lambda: [self._get_file_uncached(path, revision, base_commit_id,
+                                             request)],
             large_data=True)[0]
 
-    def get_file_exists(self, path, revision, request=None):
+    def get_file_exists(self, path, revision, base_commit_id=None,
+                        request=None):
         """Returns whether or not a file exists in the repository.
 
         If the repository is backed by a hosting service, this will go
@@ -199,12 +201,13 @@ class Repository(models.Model):
         The result of this call will be cached, making future lookups
         of this path and revision on this repository faster.
         """
-        key = self._make_file_exists_cache_key(path, revision)
+        key = self._make_file_exists_cache_key(path, revision, base_commit_id)
 
         if cache.get(make_cache_key(key)) == '1':
             return True
 
-        exists = self._get_file_exists_uncached(path, revision, request)
+        exists = self._get_file_exists_uncached(path, revision,
+                                                base_commit_id, request)
 
         if exists:
             cache_memoize(key, lambda: '1')
@@ -294,16 +297,19 @@ class Repository(models.Model):
     def __unicode__(self):
         return self.name
 
-    def _make_file_cache_key(self, path, revision):
+    def _make_file_cache_key(self, path, revision, base_commit_id):
         """Makes a cache key for fetched files."""
-        return "file:%s:%s:%s" % (self.pk, urlquote(path), urlquote(revision))
+        return "file:%s:%s:%s:%s" % (self.pk, urlquote(path),
+                                     urlquote(revision),
+                                     urlquote(base_commit_id or ''))
 
-    def _make_file_exists_cache_key(self, path, revision):
+    def _make_file_exists_cache_key(self, path, revision, base_commit_id):
         """Makes a cache key for file existence checks."""
-        return "file-exists:%s:%s:%s" % (self.pk, urlquote(path),
-                                         urlquote(revision))
+        return "file-exists:%s:%s:%s:%s" % (self.pk, urlquote(path),
+                                            urlquote(revision),
+                                            urlquote(base_commit_id or ''))
 
-    def _get_file_uncached(self, path, revision, request):
+    def _get_file_uncached(self, path, revision, base_commit_id, request):
         """Internal function for fetching an uncached file.
 
         This is called by get_file if the file isn't already in the cache.
@@ -311,16 +317,26 @@ class Repository(models.Model):
         fetching_file.send(sender=self,
                            path=path,
                            revision=revision,
+                           base_commit_id=base_commit_id,
                            request=request)
 
-        log_timer = log_timed("Fetching file '%s' r%s from %s" %
-                              (path, revision, self),
-                              request=request)
+        if base_commit_id:
+            timer_msg = "Fetching file '%s' r%s (base commit ID %s) from %s" \
+                        % (path, revision, base_commit_id, self)
+        else:
+            timer_msg = "Fetching file '%s' r%s from %s" \
+                        % (path, revision, self)
+
+        log_timer = log_timed(timer_msg, request=request)
 
         hosting_service = self.hosting_service
 
         if hosting_service:
-            data = hosting_service.get_file(self, path, revision)
+            data = hosting_service.get_file(
+                self,
+                path,
+                revision,
+                base_commit_id=base_commit_id)
         else:
             data = self.get_scmtool().get_file(path, revision)
 
@@ -329,12 +345,14 @@ class Repository(models.Model):
         fetched_file.send(sender=self,
                           path=path,
                           revision=revision,
+                          base_commit_id=base_commit_id,
                           request=request,
                           data=data)
 
         return data
 
-    def _get_file_exists_uncached(self, path, revision, request):
+    def _get_file_exists_uncached(self, path, revision, base_commit_id,
+                                  request):
         """Internal function for checking that a file exists.
 
         This is called by get_file_eixsts if the file isn't already in the
@@ -346,7 +364,7 @@ class Repository(models.Model):
         # First we check to see if we've fetched the file before. If so,
         # it's in there and we can just return that we have it.
         file_cache_key = make_cache_key(
-            self._make_file_cache_key(path, revision))
+            self._make_file_cache_key(path, revision, base_commit_id))
 
         if cache.has_key(file_cache_key):
             exists = True
@@ -355,18 +373,24 @@ class Repository(models.Model):
             checking_file_exists.send(sender=self,
                                       path=path,
                                       revision=revision,
+                                      base_commit_id=base_commit_id,
                                       request=request)
 
             hosting_service = self.hosting_service
 
             if hosting_service:
-                exists = hosting_service.get_file_exists(self, path, revision)
+                exists = hosting_service.get_file_exists(
+                    self,
+                    path,
+                    revision,
+                    base_commit_id=base_commit_id)
             else:
                 exists = self.get_scmtool().file_exists(path, revision)
 
             checked_file_exists.send(sender=self,
                                      path=path,
                                      revision=revision,
+                                     base_commit_id=base_commit_id,
                                      request=request,
                                      exists=exists)
 

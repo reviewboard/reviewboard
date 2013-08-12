@@ -24,6 +24,11 @@ class UploadDiffForm(forms.Form):
                     "systems (Git, Mercurial, etc.)."),
         required=False)
 
+    base_commit_id = forms.CharField(
+        label=_('Base Commit ID'),
+        help_text=_('The ID/revision this change is built upon.'),
+        required=False)
+
     def __init__(self, repository, data=None, files=None, request=None,
                  *args, **kwargs):
         super(UploadDiffForm, self).__init__(data=data, files=files,
@@ -35,6 +40,9 @@ class UploadDiffForm(forms.Form):
             # This SCMTool uses absolute paths, so there's no need to ask
             # the user for the base directory.
             del(self.fields['basedir'])
+
+    def clean_base_commit_id(self):
+        return self.cleaned_data['base_commit_id'].strip() or None
 
     def create(self, diff_file, parent_diff_file=None, diffset_history=None):
         tool = self.repository.get_scmtool()
@@ -50,5 +58,10 @@ class UploadDiffForm(forms.Form):
             basedir = ''
 
         return DiffSet.objects.create_from_upload(
-            self.repository, diff_file, parent_diff_file, diffset_history,
-            basedir, self.request)
+            repository=self.repository,
+            diff_file=diff_file,
+            parent_diff_file=parent_diff_file,
+            diffset_history=diffset_history,
+            basedir=basedir,
+            base_commit_id=self.cleaned_data['base_commit_id'],
+            request=self.request)

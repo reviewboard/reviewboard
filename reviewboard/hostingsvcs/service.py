@@ -80,6 +80,22 @@ class HostingService(object):
                   *args, **kwargs):
         raise NotImplementedError
 
+    def check_repository(self, path, username, password, scmtool_class,
+                         local_site_name, *args, **kwargs):
+        """Checks the validity of a repository configuration.
+
+        This performs a check against the hosting service or repository
+        to ensure that the information provided by the user represents
+        a valid repository.
+
+        This is passed in the repository details, such as the path and
+        raw credentials, as well as the SCMTool class being used, the
+        LocalSite's name (if any), and all field data from the
+        HostingServiceForm as keyword arguments.
+        """
+        return scmtool_class.check_repository(path, username, password,
+                                              local_site_name)
+
     def get_file(self, repository, path, revision, *args, **kwargs):
         if not self.supports_repositories:
             raise NotImplementedError

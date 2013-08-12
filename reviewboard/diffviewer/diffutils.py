@@ -118,9 +118,11 @@ def get_original_file(filediff, request=None):
 
     if filediff.source_revision != PRE_CREATION:
         repository = filediff.diffset.repository
-        data = repository.get_file(filediff.source_file,
-                                   filediff.source_revision,
-                                   request)
+        data = repository.get_file(
+            filediff.source_file,
+            filediff.source_revision,
+            base_commit_id=filediff.diffset.base_commit_id,
+            request=request)
 
         # Repository.get_file doesn't know or care about how we need line
         # endings to work. So, we'll just transform every time.

@@ -947,7 +947,8 @@ class PostCommitTests(SpyAgency, TestCase):
 
             return commit
 
-        def get_file_exists(repository, path, revision, request=None):
+        def get_file_exists(repository, path, revision, base_commit_id=None,
+                            request=None):
             return (path, revision) in [('/doc/misc-docs/Makefile', '4')]
 
         self.spy_on(self.repository.get_change, call_fake=get_change)

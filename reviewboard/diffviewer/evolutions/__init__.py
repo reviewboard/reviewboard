@@ -6,4 +6,5 @@ SEQUENCE = [
     'add_diff_hash',
     'diffsethistory_diff_updated',
     'filediffdata_line_counts',
+    'diffset_base_commit_id',
 ]

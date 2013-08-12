@@ -256,6 +256,10 @@ class DiffSet(models.Model):
         help_text=_("The diff generator compatibility version to use. "
                     "This can and should be ignored."))
 
+    base_commit_id = models.CharField(
+        _('commit ID'), max_length=64, blank=True, null=True, db_index=True,
+        help_text=_('The ID/revision this change is built upon.'))
+
     objects = DiffSetManager()
 
     def save(self, **kwargs):

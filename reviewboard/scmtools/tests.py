@@ -194,8 +194,8 @@ class RepositoryTests(DjangoTestCase):
 
         self.scmtool_cls.get_file = get_file
 
-        data1 = self.repository.get_file(path, revision, request)
-        data2 = self.repository.get_file(path, revision, request)
+        data1 = self.repository.get_file(path, revision, request=request)
+        data2 = self.repository.get_file(path, revision, request=request)
 
         self.assertEqual(data1, 'file data')
         self.assertEqual(data1, data2)
@@ -218,7 +218,7 @@ class RepositoryTests(DjangoTestCase):
         revision = 'e965047'
         request = {}
 
-        self.repository.get_file(path, revision, request)
+        self.repository.get_file(path, revision, request=request)
 
         self.assertEqual(len(found_signals), 2)
         self.assertEqual(found_signals[0],
@@ -242,8 +242,10 @@ class RepositoryTests(DjangoTestCase):
 
         self.scmtool_cls.file_exists = file_exists
 
-        exists1 = self.repository.get_file_exists(path, revision, request)
-        exists2 = self.repository.get_file_exists(path, revision, request)
+        exists1 = self.repository.get_file_exists(path, revision,
+                                                  request=request)
+        exists2 = self.repository.get_file_exists(path, revision,
+                                                  request=request)
 
         self.assertTrue(exists1)
         self.assertTrue(exists2)
@@ -265,8 +267,10 @@ class RepositoryTests(DjangoTestCase):
 
         self.scmtool_cls.file_exists = file_exists
 
-        exists1 = self.repository.get_file_exists(path, revision, request)
-        exists2 = self.repository.get_file_exists(path, revision, request)
+        exists1 = self.repository.get_file_exists(path, revision,
+                                                  request=request)
+        exists2 = self.repository.get_file_exists(path, revision,
+                                                  request=request)
 
         self.assertFalse(exists1)
         self.assertFalse(exists2)
@@ -294,9 +298,11 @@ class RepositoryTests(DjangoTestCase):
         self.scmtool_cls.get_file = get_file
         self.scmtool_cls.file_exists = file_exists
 
-        data = self.repository.get_file(path, revision, request)
-        exists1 = self.repository.get_file_exists(path, revision, request)
-        exists2 = self.repository.get_file_exists(path, revision, request)
+        self.repository.get_file(path, revision, request=request)
+        exists1 = self.repository.get_file_exists(path, revision,
+                                                  request=request)
+        exists2 = self.repository.get_file_exists(path, revision,
+                                                  request=request)
 
         self.assertTrue(exists1)
         self.assertTrue(exists2)
@@ -322,7 +328,7 @@ class RepositoryTests(DjangoTestCase):
         revision = 'e965047'
         request = {}
 
-        self.repository.get_file_exists(path, revision, request)
+        self.repository.get_file_exists(path, revision, request=request)
 
         self.assertEqual(len(found_signals), 2)
         self.assertEqual(found_signals[0],

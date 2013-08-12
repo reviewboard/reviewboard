@@ -22,7 +22,7 @@ class LocalFileTool(SCMTool):
             fp.close()
             return data
         except IOError, e:
-            raise FileNotFoundError(path, revision, str(e))
+            raise FileNotFoundError(path, revision, detail=str(e))
 
     def parse_diff_revision(self, file_str, revision_str, *args, **kwargs):
         return file_str, HEAD
