@@ -89,10 +89,16 @@ def patch(diff, file, filename, request=None):
         # FIXME: This doesn't provide any useful error report on why the patch
         # failed to apply, which makes it hard to debug.  We might also want to
         # have it clean up if DEBUG=False
-        raise Exception(_("The patch to '%s' didn't apply cleanly. The temporary " +
-                          "files have been left in '%s' for debugging purposes.\n" +
-                          "`patch` returned: %s") %
-                        (filename, tempdir, patch_output))
+        raise Exception(
+            _("The patch to '%(filename)s' didn't apply cleanly. The "
+              "temporary files have been left in '%(tempdir)s' for debugging "
+              "purposes.\n"
+              "`patch` returned: %(output)s")
+            % {
+                'filename': filename,
+                'tempdir': tempdir,
+                'output': patch_output,
+            })
 
     f = open(newfile, "r")
     data = f.read()

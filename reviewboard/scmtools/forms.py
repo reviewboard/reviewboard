@@ -143,10 +143,14 @@ class RepositoryForm(forms.ModelForm):
         max_length=256,
         required=False,
         widget=forms.TextInput(attrs={'size': '60'}),
-        help_text=_("The optional path to the bug tracker for this "
-                    "repository. The path should resemble: "
-                    "http://www.example.com/issues?id=%s, where %s will be the "
-                    "bug number."),
+        help_text=(
+            _("The optional path to the bug tracker for this repository. The "
+              "path should resemble: http://www.example.com/issues?id=%%s, "
+              "where %%s will be the bug number.")
+            % ()),  # We do this wacky formatting trick because otherwise
+                    # xgettext gets upset that it sees a format string with
+                    # positional arguments and will abort when trying to
+                    # extract the message catalog.
         validators=[validate_bug_tracker])
 
     # Perforce-specific fields

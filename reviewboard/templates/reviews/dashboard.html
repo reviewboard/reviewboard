@@ -24,20 +24,20 @@
    <col class="count" />
   </colgroup>
   <tbody>
-{% dashboard_entry "main-item" "Starred Reviews"  "starred" %}
-{% dashboard_entry "main-item" "Outgoing Reviews" "outgoing" %}
-{% dashboard_entry "main-item" "Incoming Reviews" "incoming" %}
-{% dashboard_entry "sub-item"  "To Me"            "to-me" %}
+{% dashboard_entry "main-item" _("Starred Reviews")  "starred" %}
+{% dashboard_entry "main-item" _("Outgoing Reviews") "outgoing" %}
+{% dashboard_entry "main-item" _("Incoming Reviews") "incoming" %}
+{% dashboard_entry "sub-item"  _("To Me")            "to-me" %}
 {% for name, value in sidebar_counts.groups.items %}
 {%  dashboard_entry "sub-item" name "to-group" name %}
 {% endfor %}
 {% if sidebar_counts.starred_groups %}
-{%  dashboard_entry "main-item" "Watched Groups" "watched-groups" %}
+{%  dashboard_entry "main-item" _("Watched Groups") "watched-groups" %}
 {%  for name, value in sidebar_counts.starred_groups.items %}
 {%   dashboard_entry "sub-item" name "to-group" name %}
 {%  endfor %}
 {% endif %}
-{% dashboard_entry "main-item" "All My Requests" "mine" %}
+{% dashboard_entry "main-item" _("All My Requests") "mine" %}
 {% for hook in sidebar_hooks %}
 {%  for main_entry in hook.entries %}
 {%   dashboard_entry "main-item" main_entry.label "url" main_entry.url %}
