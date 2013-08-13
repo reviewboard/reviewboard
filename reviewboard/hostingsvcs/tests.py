@@ -292,28 +292,200 @@ class BitbucketTests(ServiceTests):
     fixtures = ['test_scmtools.json']
 
     def test_service_support(self):
-        """Testing the Bitbucket service support capabilities"""
+        """Testing Bitbucket service support capabilities"""
         self.assertTrue(self.service_class.supports_bug_trackers)
         self.assertTrue(self.service_class.supports_repositories)
 
-    def test_repo_field_values(self):
-        """Testing the Bitbucket repository field values"""
+    def test_repo_field_values_git(self):
+        """Testing Bitbucket repository field values for Git"""
+        fields = self._get_repository_fields('Git', fields={
+            'bitbucket_repo_name': 'myrepo',
+        })
+        self.assertEqual(fields['path'],
+                         'git@bitbucket.org:myuser/myrepo.git')
+        self.assertEqual(fields['mirror_path'],
+                         'https://myuser@bitbucket.org/myuser/myrepo.git')
+
+    def test_repo_field_values_mercurial(self):
+        """Testing Bitbucket repository field values for Mercurial"""
         fields = self._get_repository_fields('Mercurial', fields={
             'bitbucket_repo_name': 'myrepo',
         })
-        self.assertEqual(fields['path'], 'http://bitbucket.org/myuser/myrepo/')
+        self.assertEqual(fields['path'],
+                         'https://myuser@bitbucket.org/myuser/myrepo')
         self.assertEqual(fields['mirror_path'],
-                         'ssh://hg@bitbucket.org/myuser/myrepo/')
+                         'ssh://hg@bitbucket.org/myuser/myrepo')
 
     def test_bug_tracker_field(self):
-        """Testing the Bitbucket bug tracker field value"""
+        """Testing Bitbucket bug tracker field values"""
         self.assertTrue(self.service_class.get_bug_tracker_requires_username())
         self.assertEqual(
             self.service_class.get_bug_tracker_field(None, {
                 'bitbucket_repo_name': 'myrepo',
                 'hosting_account_username': 'myuser',
             }),
-            'http://bitbucket.org/myuser/myrepo/issue/%s/')
+            'https://bitbucket.org/myuser/myrepo/issue/%s/')
+
+    def test_authorize(self):
+        """Testing Bitbucket authorization password storage"""
+        account = self._get_hosting_account()
+        service = account.service
+
+        self.assertFalse(service.is_authorized())
+
+        service.authorize('myuser', 'abc123', None)
+
+        self.assertTrue('password' in account.data)
+        self.assertNotEqual(account.data['password'], 'abc123')
+        self.assertTrue(service.is_authorized())
+
+    def test_check_repository(self):
+        """Testing Bitbucket check_repository"""
+        def _http_get(service, url, *args, **kwargs):
+            self.assertEqual(
+                url,
+                'https://bitbucket.org/api/1.0/repositories/myuser/myrepo')
+            return '{}', {}
+
+        account = self._get_hosting_account()
+        service = account.service
+
+        service.authorize('myuser', 'abc123', None)
+
+        self.spy_on(service._http_get, call_fake=_http_get)
+
+        service.check_repository(bitbucket_repo_name='myrepo')
+        self.assertTrue(service._http_get.called)
+
+    def test_get_file_with_mercurial_and_base_commit_id(self):
+        """Testing Bitbucket get_file with Mercurial and base commit ID"""
+        self._test_get_file(
+            tool_name='Mercurial',
+            revision='123',
+            base_commit_id='456',
+            expected_revision='456')
+
+    def test_get_file_with_mercurial_and_revision(self):
+        """Testing Bitbucket get_file with Mercurial and revision"""
+        self._test_get_file(
+            tool_name='Mercurial',
+            revision='123',
+            base_commit_id=None,
+            expected_revision='123')
+
+    def test_get_file_with_git_and_base_commit_id(self):
+        """Testing Bitbucket get_file with Git and base commit ID"""
+        self._test_get_file(
+            tool_name='Git',
+            revision='123',
+            base_commit_id='456',
+            expected_revision='456')
+
+    def test_get_file_with_git_and_revision(self):
+        """Testing Bitbucket get_file with Git and revision"""
+        self.assertRaises(
+            FileNotFoundError,
+            self._test_get_file,
+            tool_name='Git',
+            revision='123',
+            base_commit_id=None,
+            expected_revision='123')
+
+    def test_get_file_exists_with_mercurial_and_base_commit_id(self):
+        """Testing Bitbucket get_file_exists with Mercurial and base commit ID"""
+        self._test_get_file_exists(
+            tool_name='Mercurial',
+            revision='123',
+            base_commit_id='456',
+            expected_revision='456',
+            expected_found=True)
+
+    def test_get_file_exists_with_mercurial_and_revision(self):
+        """Testing Bitbucket get_file_exists with Mercurial and revision"""
+        self._test_get_file_exists(
+            tool_name='Mercurial',
+            revision='123',
+            base_commit_id=None,
+            expected_revision='123',
+            expected_found=True)
+
+    def test_get_file_exists_with_git_and_base_commit_id(self):
+        """Testing Bitbucket get_file_exists with Git and base commit ID"""
+        self._test_get_file_exists(
+            tool_name='Git',
+            revision='123',
+            base_commit_id='456',
+            expected_revision='456',
+            expected_found=True)
+
+    def test_get_file_exists_with_git_and_revision(self):
+        """Testing Bitbucket get_file_exists with Git and revision"""
+        self._test_get_file_exists(
+            tool_name='Git',
+            revision='123',
+            base_commit_id=None,
+            expected_revision='123',
+            expected_found=False,
+            expected_http_called=False)
+
+    def _test_get_file(self, tool_name, revision, base_commit_id,
+                       expected_revision):
+        def _http_get(service, url, *args, **kwargs):
+            self.assertEqual(
+                url,
+                'https://bitbucket.org/api/1.0/repositories/'
+                'myuser/myrepo/raw/%s/path'
+                % expected_revision)
+            return 'My data', {}
+
+        account = self._get_hosting_account()
+        service = account.service
+        repository = Repository(hosting_account=account,
+                                tool=Tool.objects.get(name=tool_name))
+        repository.extra_data = {
+            'bitbucket_repo_name': 'myrepo',
+        }
+
+        service.authorize('myuser', 'abc123', None)
+
+        self.spy_on(service._http_get, call_fake=_http_get)
+
+        result = service.get_file(repository, 'path', revision,
+                                  base_commit_id)
+        self.assertTrue(service._http_get.called)
+        self.assertEqual(result, 'My data')
+
+    def _test_get_file_exists(self, tool_name, revision, base_commit_id,
+                              expected_revision, expected_found,
+                              expected_http_called=True):
+        def _http_get(service, url, *args, **kwargs):
+            self.assertEqual(
+                url,
+                'https://bitbucket.org/api/1.0/repositories/'
+                'myuser/myrepo/raw/%s/path'
+                % expected_revision)
+
+            if expected_found:
+                return '{}', {}
+            else:
+                raise HTTPError()
+
+        account = self._get_hosting_account()
+        service = account.service
+        repository = Repository(hosting_account=account,
+                                tool=Tool.objects.get(name=tool_name))
+        repository.extra_data = {
+            'bitbucket_repo_name': 'myrepo',
+        }
+
+        service.authorize('myuser', 'abc123', None)
+
+        self.spy_on(service._http_get, call_fake=_http_get)
+
+        result = service.get_file_exists(repository, 'path', revision,
+                                         base_commit_id)
+        self.assertEqual(service._http_get.called, expected_http_called)
+        self.assertEqual(result, expected_found)
 
 
 class BugzillaTests(ServiceTests):
