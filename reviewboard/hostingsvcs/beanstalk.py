@@ -1,3 +1,4 @@
+import os
 from urllib import quote
 from urllib2 import HTTPError, URLError
 
@@ -89,13 +90,9 @@ class Beanstalk(HostingService):
 
         If using Git, this will expect a base commit ID to be provided.
         """
-        revision = self._normalize_revision(repository, path, revision,
-                                            base_commit_id)
-
         try:
-            node_data = self._api_get_node(repository, path, revision,
-                                           contents=True)
-            return node_data['contents']
+            return self._api_get_node(repository, path, revision,
+                                      base_commit_id, contents=True)
         except (HTTPError, URLError):
             raise FileNotFoundError(path, revision)
 
@@ -108,27 +105,11 @@ class Beanstalk(HostingService):
         If using Git, this will expect a base commit ID to be provided.
         """
         try:
-            revision = self._normalize_revision(repository, path, revision,
-                                                base_commit_id)
-
-            self._api_get_node(repository, path, revision)
+            self._api_get_node(repository, path, revision, base_commit_id)
 
             return True
         except (HTTPError, URLError, FileNotFoundError):
             return False
-
-    def _normalize_revision(self, repository, path, revision, base_commit_id):
-        if base_commit_id:
-            revision = base_commit_id
-        elif repository.tool.name == 'Git':
-            raise FileNotFoundError(
-                path,
-                revision,
-                detail='The necessary revision information needed to find '
-                       'this file was not provided. Use RBTools 0.5.2 or '
-                       'newer.')
-
-        return revision
 
     def _api_get_repository(self, account_domain, repository_name):
         url = self._build_api_url(account_domain,
@@ -136,19 +117,28 @@ class Beanstalk(HostingService):
 
         return self._api_get(url)
 
-    def _api_get_node(self, repository, path, revision, contents=False):
-        if contents:
-            contents_str = '1'
+    def _api_get_node(self, repository, path, revision, base_commit_id,
+                      contents=False):
+        # Unless we're fetching raw content, we optimistically want to
+        # grab the metadata for the file. That's going to be a lot smaller
+        # than the file contents in most cases. However, we can only do that
+        # with a base_commit_id. If we don't have that, we fall back on
+        # fetching the full file contents.
+        raw_content = (contents or not base_commit_id)
+
+        if raw_content:
+            url_path = ('blob?id=%s&name=%s'
+                        % (quote(revision), quote(os.path.basename(path))))
         else:
-            contents_str = '0'
+            url_path = ('node.json?path=%s&revision=%s&contents=0'
+                        % (quote(path), quote(base_commit_id)))
 
         url = self._build_api_url(
             self._get_repository_account_domain(repository),
-            'repositories/%s/node.json?path=%s&revision=%s&contents=%s'
-            % (repository.extra_data['beanstalk_repo_name'],
-               quote(path), quote(revision), contents_str))
+            'repositories/%s/%s'
+            % (repository.extra_data['beanstalk_repo_name'], url_path))
 
-        return self._api_get(url)
+        return self._api_get(url, raw_content=True)
 
     def _build_api_url(self, account_domain, url):
         return 'https://%s.beanstalkapp.com/api/%s' % (account_domain, url)
@@ -156,13 +146,17 @@ class Beanstalk(HostingService):
     def _get_repository_account_domain(self, repository):
         return repository.extra_data['beanstalk_account_domain']
 
-    def _api_get(self, url):
+    def _api_get(self, url, raw_content=False):
         try:
             data, headers = self._http_get(
                 url,
                 username=self.account.username,
                 password=decrypt_password(self.account.data['password']))
-            return simplejson.loads(data)
+
+            if raw_content:
+                return data
+            else:
+                return simplejson.loads(data)
         except HTTPError, e:
             data = e.read()
 
