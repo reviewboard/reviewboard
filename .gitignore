@@ -23,6 +23,9 @@ reviewboard/settings_local.py
 reviewboard.log
 settings_local.py
 
+# Generated locale files
+django.mo
+
 # Generated media files
 reviewboard/static/rb/css/*.css
 reviewboard/htdocs/static/

@@ -48,6 +48,8 @@ EMAIL_SUBJECT_PREFIX = "[Review Board] "
 USE_I18N = False
 LANGUAGES = (
     ('en', _('English')),
+    ('it', _('Italian')),
+    ('zh-tw', _('Traditional Chinese')),
     )
 
 # List of callables that know how to import templates from various sources.
