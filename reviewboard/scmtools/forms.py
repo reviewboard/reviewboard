@@ -1041,6 +1041,7 @@ class RepositoryForm(forms.ModelForm):
 
         hosting_type = self.cleaned_data['hosting_type']
         hosting_service_cls = get_hosting_service(hosting_type)
+        hosting_service = None
         repository_extra_data = {}
 
         if hosting_service_cls:
