@@ -62,7 +62,3 @@ class HostingServiceAccount(models.Model):
         """
         return (user.has_perm('hostingsvcs.change_hostingserviceaccount') or
                 (self.local_site and self.local_site.is_mutable_by(user)))
-
-    class Meta:
-        unique_together = ('service_name', 'hosting_url',
-                           'username', 'local_site')

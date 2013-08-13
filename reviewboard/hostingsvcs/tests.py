@@ -159,7 +159,7 @@ class BeanstalkTests(ServiceTests):
             tool_name='Subversion',
             revision='123',
             base_commit_id='456',
-            expected_revision='456')
+            expected_revision='123')
 
     def test_get_file_with_svn_and_revision(self):
         """Testing Beanstalk get_file with Subversion and revision"""
@@ -175,13 +175,11 @@ class BeanstalkTests(ServiceTests):
             tool_name='Git',
             revision='123',
             base_commit_id='456',
-            expected_revision='456')
+            expected_revision='123')
 
     def test_get_file_with_git_and_revision(self):
-        """Testing Beanstalk get_file with Git and revision raises error"""
-        self.assertRaises(
-            FileNotFoundError,
-            self._test_get_file,
+        """Testing Beanstalk get_file with Git and revision"""
+        self._test_get_file(
             tool_name='Git',
             revision='123',
             base_commit_id=None,
@@ -215,14 +213,13 @@ class BeanstalkTests(ServiceTests):
             expected_found=True)
 
     def test_get_file_exists_with_git_and_revision(self):
-        """Testing Beanstalk get_file_exists with Git and revision raises error"""
+        """Testing Beanstalk get_file_exists with Git and revision"""
         self._test_get_file_exists(
             tool_name='Git',
             revision='123',
             base_commit_id=None,
-            expected_revision='456',
-            expected_found=False,
-            expected_http_called=False)
+            expected_revision='123',
+            expected_found=True)
 
     def _test_get_file(self, tool_name, revision, base_commit_id,
                        expected_revision):
@@ -230,9 +227,9 @@ class BeanstalkTests(ServiceTests):
             self.assertEqual(
                 url,
                 'https://mydomain.beanstalkapp.com/api/repositories/'
-                'myrepo/node.json?path=/path&revision=%s&contents=1'
+                'myrepo/blob?id=%s&name=path'
                 % expected_revision)
-            return '{"contents": "My data"}', {}
+            return 'My data', {}
 
         account = self._get_hosting_account()
         service = account.service
@@ -256,11 +253,16 @@ class BeanstalkTests(ServiceTests):
                               expected_revision, expected_found,
                               expected_http_called=True):
         def _http_get(service, url, *args, **kwargs):
-            self.assertEqual(
-                url,
-                'https://mydomain.beanstalkapp.com/api/repositories/'
-                'myrepo/node.json?path=/path&revision=%s&contents=0'
-                % (expected_revision))
+            expected_url = ('https://mydomain.beanstalkapp.com/api/'
+                            'repositories/myrepo/')
+
+            if base_commit_id:
+                expected_url += ('node.json?path=/path&revision=%s&contents=0'
+                                 % expected_revision)
+            else:
+                expected_url += 'blob?id=%s&name=path' % expected_revision
+
+            self.assertEqual(url, expected_url)
 
             if expected_found:
                 return '{}', {}
@@ -282,7 +284,7 @@ class BeanstalkTests(ServiceTests):
 
         result = service.get_file_exists(repository, '/path', revision,
                                          base_commit_id)
-        self.assertEqual(service._http_get.called, expected_http_called)
+        self.assertTrue(service._http_get.called)
         self.assertEqual(result, expected_found)
 
 
@@ -456,8 +458,7 @@ class BitbucketTests(ServiceTests):
         self.assertEqual(result, 'My data')
 
     def _test_get_file_exists(self, tool_name, revision, base_commit_id,
-                              expected_revision, expected_found,
-                              expected_http_called=True):
+                              expected_revision, expected_found):
         def _http_get(service, url, *args, **kwargs):
             self.assertEqual(
                 url,
