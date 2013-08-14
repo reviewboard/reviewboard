@@ -6,12 +6,12 @@
 RB.ReviewReplyDraftBannerView = RB.FloatingBannerView.extend({
     className: 'banner',
 
-    template: [
-        '<h1>This reply is a draft.</h1>',
+    template: _.template([
+        '<h1><%- draftText %></h1>',
         ' Be sure to publish when finished.',
         '<input type="button" value="Publish" class="publish-button" />',
         '<input type="button" value="Discard" class="discard-button" />'
-    ].join(''),
+    ].join('')),
 
     events: {
         'click .publish-button': '_onPublishClicked',
@@ -24,7 +24,9 @@ RB.ReviewReplyDraftBannerView = RB.FloatingBannerView.extend({
     render: function() {
         RB.FloatingBannerView.prototype.render.call(this);
 
-        this.$el.html(this.template);
+        this.$el.html(this.template({
+            draftText: gettext('This reply is a draft.')
+        }));
 
         this.model.on('saving destroying', function() {
             this.$('input').prop('disabled', true);

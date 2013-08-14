@@ -98,9 +98,8 @@ RB.DraftReviewRequest = RB.BaseResource.extend(_.defaults({
 }, RB.DraftResourceModelMixin),
 {
     strings: {
-        DESCRIPTION_REQUIRED: 'The draft must have a description.',
-        REVIEWERS_REQUIRED: 'There must be at least one reviewer before this ' +
-                            'review request can be published.',
-        SUMMARY_REQUIRED: 'The draft must have a summary.'
+        DESCRIPTION_REQUIRED: gettext('The draft must have a description.'),
+        REVIEWERS_REQUIRED: gettext('There must be at least one reviewer before this review request can be published.'),
+        SUMMARY_REQUIRED: gettext('The draft must have a summary.')
     }
 });

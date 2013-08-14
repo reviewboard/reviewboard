@@ -54,7 +54,7 @@ RB.CommentEditor = Backbone.Model.extend({
             }
 
             this.set('statusText',
-                     dirty ? 'This comment has unsaved changes.' : '');
+                     dirty ? gettext('This comment has unsaved changes.') : '');
         }, this);
 
         this.on('change:openIssue change:text', function() {

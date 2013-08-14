@@ -37,7 +37,7 @@ RB.apiCall = function(options) {
             activityIndicator
                 .removeClass("error")
                 .text((options.type || options.type === "GET")
-                      ? "Loading..." : "Saving...")
+                      ? gettext("Loading...") : gettext("Saving..."))
                 .show();
         }
 
@@ -65,10 +65,10 @@ RB.apiCall = function(options) {
                 responseText = xhr.responseText;
                 activityIndicator
                     .addClass("error")
-                    .text("A server error occurred.")
+                    .text(gettext("A server error occurred."))
                     .append(
                         $("<a/>")
-                            .text("Show Details")
+                            .text(gettext("Show Details"))
                             .attr("href", "#")
                             .click(function() {
                                 showErrorPage(xhr, responseText);
@@ -76,7 +76,7 @@ RB.apiCall = function(options) {
                     )
                     .append(
                         $("<a/>")
-                            .text("Dismiss")
+                            .text(gettext("Dismiss"))
                             .attr("href", "#")
                             .click(function() {
                                 activityIndicator.fadeOut("fast");
@@ -136,22 +136,13 @@ RB.apiCall = function(options) {
 
         $('<div class="server-error-box"/>')
             .appendTo("body")
-            .append('<p><b>Error Code:</b> ' + xhr.status + '</p>')
-            .append('<p><b>Error Text:</b> ' + xhr.statusText + '</p>')
-            .append('<p><b>Request URL:</b> ' + url + '</p>')
-            .append('<p><b>Request Data:</b> ' + requestData + '</p>')
-            .append('<p class="response-data"><b>Response Data:</b></p>')
-            .append(
-                '<p>There may be useful error details below. The following ' +
-                'error page may be useful to your system administrator or ' +
-                'when <a href="http://www.reviewboard.org/bugs/new/">' +
-                'reporting a bug</a>. To save the page, right-click the ' +
-                'error below and choose "Save Page As," if available, ' +
-                'or "View Source" and save the result as a ' +
-                '<tt>.html</tt> file.</p>')
-            .append('<p><b>Warning:</b> Be sure to remove any sensitive ' +
-                    'material that may exist in the error page before ' +
-                    'reporting a bug!</p>')
+            .append('<p><b>' + gettext('Error Code:') + '</b> ' + xhr.status + '</p>')
+            .append('<p><b>' + gettext('Error Text:') + '</b> ' + xhr.statusText + '</p>')
+            .append('<p><b>' + gettext('Request URL:') + '</b> ' + url + '</p>')
+            .append('<p><b>' + gettext('Request Data:') + '</b> ' + requestData + '</p>')
+            .append('<p class="response-data"><b>' + gettext('Response Data:') + '</b></p>')
+            .append(gettext('<p>There may be useful error details below. The following error page may be useful to your system administrator or when <a href="http://www.reviewboard.org/bugs/new/">reporting a bug</a>. To save the page, right-click the error below and choose "Save Page As," if available, or "View Source" and save the result as a <tt>.html</tt> file.</p>'))
+            .append(gettext('<p><b>Warning:</b> Be sure to remove any sensitive material that may exist in the error page before reporting a bug!</p>'))
             .append(iframe)
             .on("resize", function() {
                 iframe.height($(this).height() - iframe.position().top);
@@ -159,7 +150,7 @@ RB.apiCall = function(options) {
             .modalBox({
                 stretchX: true,
                 stretchY: true,
-                title: "Server Error Details"
+                title: gettext("Server Error Details")
             });
 
         doc = iframe[0].contentDocument || iframe[0].contentWindow.document;

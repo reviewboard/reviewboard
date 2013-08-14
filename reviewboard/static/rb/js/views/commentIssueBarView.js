@@ -19,15 +19,15 @@ RB.CommentIssueBarView = Backbone.View.extend({
     statusInfo: {
         open: {
             visibleButtons: ['.drop', '.resolve'],
-            text: 'An issue was opened.'
+            text: gettext('An issue was opened.')
         },
         resolved: {
             visibleButtons: ['.reopen'],
-            text: 'The issue has been resolved.'
+            text: gettext('The issue has been resolved.')
         },
         dropped: {
             visibleButtons: ['.reopen'],
-            text: 'The issue has been dropped.'
+            text: gettext('The issue has been dropped.')
         }
     },
 
@@ -39,11 +39,11 @@ RB.CommentIssueBarView = Backbone.View.extend({
         '<% if (interactive) { %>',
         '  <div class="buttons">',
         '   <input type="button" class="issue-button resolve" ',
-        '          value="Fixed" />',
+        '          value="<%- fixedLabel %>" />',
         '   <input type="button" class="issue-button drop" ',
-        '          value="Drop" />',
+        '          value="<%- dropLabel %>" />',
         '   <input type="button" class="issue-button reopen" ',
-        '          value="Re-open" />',
+        '          value="<%- reopenLabel %>" />',
         '  </div>',
         ' </div>',
         '<% } %>',
@@ -67,7 +67,10 @@ RB.CommentIssueBarView = Backbone.View.extend({
     render: function() {
         if (this.$el.children().length === 0) {
             this.$el.append(this.template({
-                interactive: this.options.interactive
+                interactive: this.options.interactive,
+                fixedLabel: gettext('Fixed'),
+                dropLabel: gettext('Drop'),
+                reopenLabel: gettext('Re-open')
             }));
         }
 

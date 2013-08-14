@@ -20,8 +20,13 @@ RB.Diff = RB.BaseResource.extend({
 
     getErrorString: function(rsp) {
         if (rsp.err.code === RB.APIErrors.REPO_FILE_NOT_FOUND) {
-            return 'The file "' + rsp.file + '" (revision ' + rsp.revision +
-                    ') was not found in the repository';
+            return interpolate(
+                gettext('The file "%(file)s" (revision %(revision)s) was not found in the repository'),
+                {
+                    file: rsp.file,
+                    revision: rsp.revision
+                },
+                true);
         }
 
         return rsp.err.msg;

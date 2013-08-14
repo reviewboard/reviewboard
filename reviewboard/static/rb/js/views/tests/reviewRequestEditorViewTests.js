@@ -594,7 +594,9 @@ describe('views/ReviewRequestEditorView', function() {
                                 iconURL: '',
                                 deleteImageURL: '',
                                 filename: '',
-                                caption: ''
+                                caption: '',
+                                deleteFileText: 'Delete File',
+                                noCaptionText: 'No caption'
                             }))
                         .appendTo($filesContainer);
 

@@ -46,7 +46,10 @@ describe('views/FileAttachmentThumbnail', function() {
             var $el = $('<div/>')
                 .addClass(RB.FileAttachmentThumbnail.prototype.className)
                 .html(RB.FileAttachmentThumbnail.prototype.template(
-                     model.attributes));
+                    _.defaults({
+                        deleteFileText: 'Delete File',
+                        noCaptionText: 'No caption'
+                    }, model.attributes)));
 
             view = new RB.FileAttachmentThumbnail({
                 reviewRequest: reviewRequest,

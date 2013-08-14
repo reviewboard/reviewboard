@@ -293,9 +293,7 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
                  * On Chrome, it must be returned as a string, but you
                  * can't set it on evt.returnValue (it just ignores it).
                  */
-                var msg = "You have unsaved changes that will " +
-                          "be lost if you navigate away from " +
-                          "this page.";
+                var msg = gettext("You have unsaved changes that will be lost if you navigate away from this page.");
                 evt = evt || window.event;
 
                 evt.returnValue = msg;
@@ -611,7 +609,7 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
                 if (resultsPane.length > 0) {
                     $('<div/>')
                         .addClass('ui-autocomplete-footer')
-                        .text('Press Tab to auto-complete.')
+                        .text(gettext('Press Tab to auto-complete.'))
                         .appendTo(resultsPane);
                 }
             });
@@ -723,10 +721,7 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
         var submit = true;
 
         if ($("#draft-banner").is(":visible")) {
-            submit = confirm("You have an unpublished draft. If you close " +
-                             "this review request, the draft will be " +
-                             "discarded. Are you sure you want to close " +
-                             "the review request?");
+            submit = confirm(gettext("You have an unpublished draft. If you close this review request, the draft will be discarded. Are you sure you want to close the review request?"));
         }
 
         if (submit) {
@@ -748,13 +743,12 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
      */
     _onDeleteReviewRequestClicked: function() {
         var dlg = $("<p/>")
-            .text("This deletion cannot be undone. All diffs and reviews " +
-                  "will be deleted as well.")
+            .text(gettext("This deletion cannot be undone. All diffs and reviews will be deleted as well."))
             .modalBox({
-                title: "Are you sure you want to delete this review request?",
+                title: gettext("Are you sure you want to delete this review request?"),
                 buttons: [
-                    $('<input type="button" value="Cancel"/>'),
-                    $('<input type="button" value="Delete"/>')
+                    $('<input type="button" value="' + gettext('Cancel') + '"/>'),
+                    $('<input type="button" value="' + gettext('Delete') + '"/>')
                         .click(_.bind(function() {
                             this.model.get('reviewRequest').destroy({
                                 buttons: this.$draftBannerButtons.add(

@@ -126,7 +126,7 @@ RB.DraftResourceModelMixin = {
         if (!RB.UserSession.instance.get('authenticated')) {
             if (options.error) {
                 options.error.call(context, {
-                    errorText: 'You must be logged in to retrieve the draft.'
+                    errorText: gettext('You must be logged in to retrieve the draft.')
                 });
             }
 

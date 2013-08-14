@@ -124,24 +124,24 @@ RB.ReviewRequestEditor = Backbone.Model.extend({
                         }
                     });
 
-                    if (fieldValue.length === 1) {
-                        if (fieldName === "targetGroups") {
-                            message = "Group " + message + " does not exist.";
-                        } else if (fieldName === "targetPeople") {
-                            message = "User " + message + " does not exist.";
-                        } else if (fieldName === "dependsOn") {
-                            message = "Review request " + message +
-                                      " does not exist.";
-                        }
-                    } else {
-                        if (fieldName === "targetGroups") {
-                            message = "Groups " + message + " do not exist.";
-                        } else if (fieldName === "targetPeople") {
-                            message = "Users " + message + " do not exist.";
-                        } else if (fieldName === "dependsOn") {
-                            message = "Review requests " + message +
-                                      " do not exist.";
-                        }
+                    if (fieldName === "targetGroups") {
+                        message = interpolate(
+                            ngettext('Group %s does not exist.',
+                                     'Groups %s do not exist.',
+                                     fieldValue.length),
+                            [message]);
+                    } else if (fieldName === "targetPeople") {
+                        message = interpolate(
+                            ngettext('User %s does not exist.',
+                                     'Users %s do not exist.',
+                                     fieldValue.length),
+                            [message]);
+                    } else if (fieldName === "dependsOn") {
+                        message = interpolate(
+                            ngettext('Review Request %s does not exist.',
+                                     'Review Requests %s do not exist.',
+                                     fieldValue.length),
+                            [message]);
                     }
 
                     options.error.call(context, {
@@ -242,6 +242,6 @@ RB.ReviewRequestEditor = Backbone.Model.extend({
 }, {
     strings: {
         UNBALANCED_EDIT_COUNT:
-            'There is an internal error balancing the edit count'
+            gettext('There is an internal error balancing the edit count')
     }
 });

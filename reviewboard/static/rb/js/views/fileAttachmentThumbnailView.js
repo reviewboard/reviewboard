@@ -44,13 +44,13 @@ RB.FileAttachmentThumbnail = Backbone.View.extend({
         '   <span class="filename"><%= filename %></span>',
         '  </a>',
         '  <a href="#" class="delete rb-icon rb-icon-delete"',
-        '     title="Delete File"></a>',
+        '     title="<%- deleteFileText %>"></a>',
         ' </div>',
         ' <div class="file-thumbnail-container" />',
         ' <div class="file-caption">',
         '  <a href="<%= downloadURL %>" "',
         '     class="edit <% if (!caption) { %>empty-caption<% } %>">',
-        '   <% if (caption) { %><%= caption %><% } else { %>No caption<% } %>',
+        '   <% if (caption) { %><%= caption %><% } else { %><%- noCaptionText %><% } %>',
         '  </a>',
         ' </div>',
         '</div>'
@@ -59,9 +59,9 @@ RB.FileAttachmentThumbnail = Backbone.View.extend({
     actionsTemplate: _.template([
         '<% if (loaded) { %>',
         '<%   if (reviewURL) { %>',
-        ' <li class="file-review"><a href="<%= reviewURL %>">Review</a></li>',
+        ' <li class="file-review"><a href="<%= reviewURL %>"><%- reviewText %></a></li>',
         '<%   } else { %>',
-        ' <li class="file-add-comment"><a href="#">Add Comment</a></li>',
+        ' <li class="file-add-comment"><a href="#"><%- addCommentText %></a></li>',
         '<%   } %>',
         '<% } %>'
     ].join('')),
@@ -283,7 +283,10 @@ RB.FileAttachmentThumbnail = Backbone.View.extend({
      */
     _renderContents: function() {
         this.$el
-            .html(this.template(this.model.attributes))
+            .html(this.template(_.defaults({
+                deleteFileText: gettext('Delete File'),
+                noCaptionText: gettext('No caption')
+            }, this.model.attributes)))
             .addClass(this.className);
     },
 
@@ -316,7 +319,10 @@ RB.FileAttachmentThumbnail = Backbone.View.extend({
             this._$captionContainer.css('visibility', 'hidden');
         }
 
-        this._$actions.html(this.actionsTemplate(this.model.attributes));
+        this._$actions.html(this.actionsTemplate(_.defaults({
+            reviewText: gettext('Review'),
+            addCommentText: gettext('Add Comment')
+        }, this.model.attributes)));
     },
 
     /*
@@ -334,7 +340,7 @@ RB.FileAttachmentThumbnail = Backbone.View.extend({
                 .removeClass('empty-caption');
         } else {
             this._$caption
-                .text('No caption')
+                .text(gettext('No caption'))
                 .addClass('empty-caption');
         }
     },

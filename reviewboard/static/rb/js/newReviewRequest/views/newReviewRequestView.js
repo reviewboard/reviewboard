@@ -22,13 +22,10 @@ FilesOnlyPreCommitView = Backbone.View.extend({
     className: 'files-only',
 
     template: _.template([
-        '<p>',
-        ' You won\'t be able to add any diffs to this review request.',
-        ' The review request will only be usable for reviewing graphics,',
-        ' screenshots and file attachments.',
+        '<p><%- description %></p>',
         '</p>',
         '<input type="submit" class="primary large" id="files-only-create"',
-        '       value="Create Review Request" />'
+        '       value="<%- buttonText %>" />'
     ].join('')),
 
     events: {
@@ -39,7 +36,10 @@ FilesOnlyPreCommitView = Backbone.View.extend({
      * Render the view.
      */
     render: function() {
-        this.$el.html(this.template());
+        this.$el.html(this.template({
+            description: gettext('You won\'t be able to add any diffs to this review request. The review request will only be usable for reviewing graphics, screenshots and file attachments.'),
+            buttonText: gettext('Create Review Request')
+        }));
         return this;
     },
 
@@ -82,7 +82,7 @@ RB.NewReviewRequestView = Backbone.View.extend({
     template: _.template([
         '<div class="sidebar"></div>',
         '<div class="main">',
-        ' <div class="hint">Select a repository</div>',
+        ' <div class="hint"><%- hint %></div>',
         '</div>'
     ].join('')),
 
@@ -105,7 +105,9 @@ RB.NewReviewRequestView = Backbone.View.extend({
     render: function() {
         this._rendered = true;
 
-        this.$el.html(this.template());
+        this.$el.html(this.template({
+            hint: gettext('Select a repository')
+        }));
         this._$sidebar = this.$('.sidebar');
         this._$content = this.$('.main');
         this._$hint = this.$('.hint');

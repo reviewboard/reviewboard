@@ -126,7 +126,7 @@ $.fn.formDlg = function(options) {
             title: options.title,
             buttons: [
                 $('<input type="button"/>')
-                    .val("Cancel"),
+                    .val(gettext("Cancel")),
                 $('<input type="button"/>')
                     .val(options.confirmLabel)
                     .click(function() {
@@ -244,7 +244,7 @@ function registerToggleStar() {
         obj.setStarred(on);
         self.data("rb.obj", obj);
 
-        altTitle = on ? "Starred" : "Click to star";
+        altTitle = on ? gettext("Starred") : gettext("Click to star");
 
         if (on) {
             self
@@ -407,7 +407,7 @@ $.fn.user_infobox = function() {
 
 $(document).ready(function() {
     $('<div id="activity-indicator" />')
-        .text("Loading...")
+        .text(gettext("Loading..."))
         .hide()
         .appendTo("body");
 

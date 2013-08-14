@@ -14,7 +14,7 @@ var CommentsListView = Backbone.View.extend({
          '<h2>',
           '<%- comment.user.name %>',
           '<span class="actions">',
-           '<a href="<%= comment.url %>">View</a>',
+           '<a href="<%= comment.url %>"><%- viewText %></a>',
            '<a href="<%= reviewRequestURL %>',
                     '?reply_id=<%= comment.comment_id %>',
                     '&reply_type=<%= replyType %>">Reply</a>',
@@ -43,7 +43,8 @@ var CommentsListView = Backbone.View.extend({
                     comment: serializedComment,
                     itemClass: odd ? 'odd' : 'even',
                     reviewRequestURL: reviewRequestURL,
-                    replyType: replyType
+                    replyType: replyType,
+                    viewText: gettext('View')
                 })),
                 commentIssueBar;
 
@@ -102,34 +103,31 @@ RB.CommentDialogView = Backbone.View.extend({
     className: 'comment-dlg',
     template: _.template([
         '<div class="other-comments">',
-        ' <h1 class="title">Other reviews</h1>',
+        ' <h1 class="title"><%- otherReviewsText %></h1>',
         ' <ul></ul>',
         '</div>',
         '<form method="post">',
-        ' <h1 class="title">Your comment</h1>',
+        ' <h1 class="title"><%- yourCommentText %></h1>',
         '<% if (!authenticated) { %>',
         ' <p class="login-text">',
-        '  You must <a href="<%= loginURL %>">log in</a> to post a comment.',
+        '  <%- loginText %>',
         ' </p>',
         '<% } else if (hasDraft) { %>',
-        ' <p class="draft-warning">',
-        '  The review request\'s current ',
-        '  <a href="{{reviewRequestURL}}">draft</a> needs to be published ',
-        '  before you can comment.',
-        ' </p>',
+        ' <p class="draft-warning"><%- draftWarning %></p>',
         '<% } %>',
         ' <textarea name="text" rows="6" cols="30"></textarea>',
         ' <div class="comment-issue-options">',
         '  <input type="checkbox" name="comment_issue" />',
-        '  <label for="comment_issue">Open an <u>i</u>ssue</label>',
+        '  <label for="comment_issue"><%- openAnIssueText %></label>',
         ' </div>',
         ' <div class="status"></div>',
         ' <div class="buttons">',
-        '  <input type="button" class="save" value="Save" disabled="true" />',
-        '  <input type="button" class="cancel" value="Cancel" />',
-        '  <input type="button" class="delete" value="Delete" ',
+        '  <input type="button" class="save" value="<%- saveButton %>" ',
         '         disabled="true" />',
-        '  <input type="button" class="close" value="Close" />',
+        '  <input type="button" class="cancel" value="<%- cancelButton %>" />',
+        '  <input type="button" class="delete" value="<%- deleteButton %>" ',
+        '         disabled="true" />',
+        '  <input type="button" class="close" value="<%- closeButton %>" />',
         ' </div>',
         '</form>'
     ].join('')),
@@ -161,7 +159,16 @@ RB.CommentDialogView = Backbone.View.extend({
                 authenticated: userSession.get('authenticated'),
                 hasDraft: reviewRequest.get('hasDraft'),
                 loginURL: userSession.get('loginURL'),
-                reviewRequestURL: this.options.reviewRequestURL
+                reviewRequestURL: this.options.reviewRequestURL,
+                otherReviewsText: gettext('Other reviews'),
+                yourCommentText: gettext('Your comment'),
+                loginText: gettext('You must <a href="<%= loginURL %>">log in</a> to post a comment.'),
+                draftWarning: gettext('The review request\'s current <a href="{{reviewRequestURL}}">draft</a> needs to be published before you can comment.'),
+                openAnIssueText: gettext('Open an <u>i</u>ssue'),
+                saveButton: gettext('Save'),
+                cancelButton: gettext('Cancel'),
+                deleteButton: gettext('Delete'),
+                closeButton: gettext('Close')
             }));
 
         this._$draftForm    = this.$el.find('form');
@@ -464,7 +471,7 @@ RB.CommentDialogView = Backbone.View.extend({
         if (this.model.get('canSave')) {
             this.model.save({
                 error: function(model, xhr) {
-                    alert('Error saving comment: ' + xhr.errorText);
+                    alert(gettext('Error saving comment: ') + xhr.errorText);
                 }
             }, this);
             this.close();

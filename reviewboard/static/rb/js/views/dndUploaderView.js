@@ -24,7 +24,7 @@ var DnDDropOverlayView = Backbone.View.extend({
             .width($(window).width())
             .height(height)
             .css('line-height', height + 'px')
-            .text('Drop to Upload');
+            .text(gettext('Drop to Upload'));
 
         return this;
     },

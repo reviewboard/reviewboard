@@ -125,10 +125,30 @@ RB.IssueSummaryTableView = Backbone.View.extend({
         this._$thead.show();
 
         if (this._$tbody.find('tr.issue:visible').length === 0) {
-            var text = "There are no " + this.statusFilterState + " issues";
+            var text;
 
-            if (this.reviewerFilterState !== "all") {
-                text += " from " + this.reviewerFilterState;
+            if (this.reviewerFilterState !== 'all') {
+                if (this.statusFilterState === "open") {
+                    text = interpolate(
+                        gettext('There are no open issues from %s'),
+                        [this.reviewerFilterState]);
+                } else if (this.statusFilterState === 'dropped') {
+                    text = interpolate(
+                        gettext('There are no dropped issues from %s'),
+                        [this.reviewerFilterState]);
+                } else if (this.statusFilterState === 'resolved') {
+                    text = interpolate(
+                        gettext('There are no resolved issues'),
+                        [this.reviewerFilterState]);
+                }
+            } else {
+                if (this.statusFilterState === "open") {
+                    text = gettext('There are no open issues');
+                } else if (this.statusFilterState === 'dropped') {
+                    text = gettext('There are no dropped issues');
+                } else if (this.statusFilterState === 'resolved') {
+                    text = gettext('There are no resolved issues');
+                }
             }
 
             this._$thead.hide();

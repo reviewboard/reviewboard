@@ -22,7 +22,7 @@ RB.RepositorySelectionView = RB.CollectionView.extend({
     render: function() {
         _.super(this).render.apply(this, arguments);
 
-        $('<h3>').text('Repositories').prependTo(this.$el);
+        $('<h3>').text(gettext('Repositories')).prependTo(this.$el);
         return this;
     },
 

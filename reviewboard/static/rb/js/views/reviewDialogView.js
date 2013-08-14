@@ -23,7 +23,7 @@ BaseCommentView = Backbone.View.extend({
         ' <div class="edit-field">',
         '  <input class="issue-opened" id="<%= issueOpenedID %>" ',
         '         type="checkbox" />',
-        '  <label for="<%= issueOpenedID %>">Open an issue</label>',
+        '  <label for="<%= issueOpenedID %>"><%- openAnIssueText %></label>',
         ' </div>',
         '</div>'
     ].join('')),
@@ -71,7 +71,8 @@ BaseCommentView = Backbone.View.extend({
             .append(this.renderThumbnail())
             .append($(this.editorTemplate({
                 text: this.model.get('text'),
-                issueOpenedID: _.uniqueId('issue-opened')
+                issueOpenedID: _.uniqueId('issue-opened'),
+                openAnIssueText: gettext('Open an issue')
             })));
 
         this.$textarea = this.$('textarea')
@@ -223,7 +224,7 @@ RB.ReviewDialogView = Backbone.View.extend({
     template: _.template([
         '<div class="edit-field">',
         ' <input id="id_shipit" type="checkbox" />',
-        ' <label for="id_shipit">Ship It</label>',
+        ' <label for="id_shipit"><%- shipItText %></label>',
         '</div>',
         '<div class="edit-field">',
         ' <textarea class="body-top"></textarea>',
@@ -320,7 +321,9 @@ RB.ReviewDialogView = Backbone.View.extend({
      * the server will begin loading and rendering.
      */
     render: function() {
-        this.$el.html(this.template());
+        this.$el.html(this.template({
+            shipItText: gettext('Ship It')
+        }));
 
         this._$bodyBottom = this.$('.body-bottom').hide();
         this._$bodyTop = this.$('.body-top');
@@ -433,19 +436,19 @@ RB.ReviewDialogView = Backbone.View.extend({
             .modalBox({
                 container: this.options.container || 'body',
                 boxID: 'review-form-modalbox',
-                title: 'Review for: ' + reviewRequest.get('summary'),
+                title: gettext('Review for: ') + reviewRequest.get('summary'),
                 stretchX: true,
                 stretchY: true,
                 buttons: [
                     $('<input type="button"/>')
-                        .val('Publish Review')
+                        .val(gettext('Publish Review'))
                         .click(_.bind(function() {
                             this._saveReview(true);
                             return false;
                         }, this)),
 
                     $('<input type="button"/>')
-                        .val('Discard Review')
+                        .val(gettext('Discard Review'))
                         .click(_.bind(function() {
                             this.close();
                             this.model.destroy({
@@ -459,14 +462,14 @@ RB.ReviewDialogView = Backbone.View.extend({
                         }, this)),
 
                     $('<input type="button"/>')
-                        .val('Cancel')
+                        .val(gettext('Cancel'))
                         .click(_.bind(function() {
                             this.close();
                             return false;
                         }, this)),
 
                     $('<input type="button"/>')
-                        .val('Save')
+                        .val(gettext('Save'))
                         .click(_.bind(function() {
                             this._saveReview();
                             return false;

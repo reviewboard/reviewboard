@@ -8,42 +8,37 @@ RB.PreCommitView = Backbone.View.extend({
     className: 'pre-commit',
 
     template: _.template([
-        '<div class="section-header">',
-        ' New Review Request for Pending Change',
-        '</div>',
+        '<div class="section-header"><%- pendingChangeHeader %></div>',
         '<div class="tip">',
-        ' <strong>Tip:</strong>',
-        ' We recommend using <code>rbt post</code> from',
-        ' <a href="http://www.reviewboard.org/docs/rbtools/dev/">RBTools</a>',
-        ' to create and update review requests.',
+        ' <strong><%- tipHeader %></strong>',
+        ' <%- tip %>',
         '</div>',
         '<div class="input dnd" id="prompt-for-diff">',
         ' <form>',
-        '  <input type="button" id="select-diff-file" value="Select">',
-        '  or drag and drop a diff file to begin.',
+        '  <%- selectDiff %>',
         ' </form>',
         '</div>',
         '<div class="input" id="prompt-for-basedir">',
         ' <form id="basedir-form">',
-        ' What is the base directory for this diff?',
+        '  <%- baseDir %>',
         '  <input id="basedir-input" />',
-        '  <input type="submit" value="OK" />',
+        '  <input type="submit" value="<%- ok %>" />',
         ' </form>',
-        ' <a href="#" class="startover">Start over</a>',
+        ' <a href="#" class="startover"><%- startOver %></a>',
         '</div>',
         '<div class="input" id="prompt-for-change-number">',
         ' <form id="changenum-form">',
-        ' What is the change number for this diff?',
+        '  <%- changeNum %>',
         '  <input type="number" step="1" id="changenum-input" />',
-        '  <input type="submit" value="OK" />',
+        '  <input type="submit" value="<%- ok %>" />',
         ' </form>',
-        ' <a href="#" class="startover">Start over</a>',
+        ' <a href="#" class="startover"><%- startOver %></a>',
         '</div>',
         '<div class="input" id="processing-diff"></div>',
         '<div class="input" id="uploading-diffs"></div>',
         '<div class="input" id="error-indicator">',
         ' <div id="error-contents" />',
-        ' <a href="#" class="startover">Start over</a>',
+        ' <a href="#" class="startover"><%- startOver %></a>',
         '</div>'
     ].join('')),
 
@@ -63,7 +58,16 @@ RB.PreCommitView = Backbone.View.extend({
     render: function() {
         var self = this;
 
-        this.$el.html(this.template());
+        this.$el.html(this.template({
+            pendingChangeHeader: gettext('New Review Request for Pending Change'),
+            tipHeader: gettext('Tip:'),
+            tip: gettext('We recommend using <code>rbt post</code> from <a href="http://www.reviewboard.org/docs/rbtools/dev/">RBTools</a> to create and update review requests.'),
+            selectDiff: gettext('<input type="button" id="select-diff-file" value="Select"> or drag and drop a diff file to begin.'),
+            baseDir: gettext('What is the base directory for this diff?'),
+            changeNum: gettext('What is the change number for this diff?'),
+            startOver: gettext('Start Over'),
+            ok: gettext('OK')
+        }));
         this._$fileInput = $('<input type="file" />')
             .hide()
             .appendTo(this.$el)

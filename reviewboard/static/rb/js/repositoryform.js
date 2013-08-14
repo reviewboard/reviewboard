@@ -379,11 +379,11 @@ $(document).ready(function() {
         .triggerHandler("change");
 
     $("#show-ssh-key-link").toggle(function() {
-        $(this).text("Hide SSH Public Key");
+        $(this).text(gettext("Hide SSH Public Key"));
         publicKeyPopup.show();
         return false;
     }, function() {
-        $(this).text("Show SSH Public Key");
+        $(this).text(gettext("Show SSH Public Key"));
         publicKeyPopup.hide();
         return false;
     });

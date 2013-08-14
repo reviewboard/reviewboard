@@ -166,16 +166,11 @@ RB.PreCommitModel = Backbone.Model.extend({
             case RB.APIErrors.REPO_FILE_NOT_FOUND:
                 if (   this.get('repository').get('scmtoolName') === 'Git'
                     && rsp.revision.length !== 40) {
-                    error = 'The uploaded diff uses short revisions, but ' +
-                            'Review Board requires full revisions.<br />' +
-                            'Please generate a new diff using the <code>' +
-                            '--full-index</code> paramater.';
+                    error = gettext('The uploaded diff uses short revisions, but Review Board requires full revisions.<br />Please generate a new diff using the <code>--full-index</code> paramater.');
                 } else {
-                    error = 'The file "' + rsp.file + '" (revision ' +
-                            rsp.revision + ') was not found in the ' +
-                            'repository. If you want to use a parent diff, ' +
-                            'please create the review request with ' +
-                            '<code>rbt post</code>.';
+                    error = interpolate(
+                        gettext('The file "%s" (revision %s) was not found in the repository. If you want to use a parent diff, please create the review request with <code>rbt post</code>.'),
+                        [rsp.file, rsp.revision]);
                 }
 
                 // TODO: allow users to add a parent diff

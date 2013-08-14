@@ -148,7 +148,7 @@ RB.AbstractCommentBlockView = Backbone.View.extend({
         comment.on('change:text', this._updateTooltip, this);
 
         comment.on('destroy', function() {
-            this.notify('Comment Deleted', function() {
+            this.notify(gettext('Comment Deleted'), function() {
                 /* Discard the comment block if empty. */
                 if (this.model.isEmpty()) {
                     $el.fadeOut(350, function() { self.dispose(); });
@@ -161,7 +161,7 @@ RB.AbstractCommentBlockView = Backbone.View.extend({
 
         comment.on('saved', function() {
             this._updateTooltip();
-            this.notify('Comment Saved');
+            this.notify(gettext('Comment Saved'));
             RB.DraftReviewBannerView.instance.show();
         }, this);
 

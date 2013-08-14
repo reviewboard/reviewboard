@@ -106,13 +106,12 @@ RB.DraftReviewBannerView = Backbone.View.extend({
         var model = this.model;
 
         $('<p/>')
-            .text('If you discard this review, all related comments ' +
-                  'will be permanently deleted.')
+            .text(gettext('If you discard this review, all related comments will be permanently deleted.'))
             .modalBox({
-                title: 'Are you sure you want to discard this review?',
+                title: gettext('Are you sure you want to discard this review?'),
                 buttons: [
-                    $('<input type="button" value="Cancel"/>'),
-                    $('<input type="button" value="Discard"/>')
+                    $('<input type="button" value="' + gettext('Cancel') + '"/>'),
+                    $('<input type="button" value="' + gettext('Discard') + '"/>')
                         .click(function() {
                             model.destroy();
                         })

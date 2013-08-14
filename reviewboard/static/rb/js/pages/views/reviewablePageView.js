@@ -14,9 +14,9 @@ var UpdatesBubbleView = Backbone.View.extend({
         '<%= user.fullname || user.username %>',
         '</a>',
         '<span id="updates-bubble-buttons">',
-        ' <a href="#" class="update-page">Update Page</a>',
+        ' <a href="#" class="update-page"><%- updatePageText %></a>',
         ' | ',
-        ' <a href="#" class="ignore">Ignore</a>'
+        ' <a href="#" class="ignore"><%- ignoreText %></a>'
     ].join('')),
 
     events: {
@@ -31,7 +31,10 @@ var UpdatesBubbleView = Backbone.View.extend({
      */
     render: function() {
         this.$el
-            .html(this.template(this.options.updateInfo))
+            .html(this.template(_.defaults({
+                updatePageText: gettext('Update Page'),
+                ignoreText: gettext('Ignore')
+            }, this.options.updateInfo)))
             .hide();
 
         return this;
@@ -255,12 +258,12 @@ RB.ReviewablePageView = Backbone.View.extend({
      * and reloads the page.
      */
     _onShipItClicked: function() {
-        if (confirm('Are you sure you want to post this review?')) {
+        if (confirm(gettext('Are you sure you want to post this review?'))) {
             this.pendingReview.ready({
                 ready: function() {
                     this.pendingReview.set({
                         shipIt: true,
-                        bodyTop: 'Ship It!'
+                        bodyTop: gettext('Ship It!')
                     });
                     this.pendingReview.publish();
                 }
