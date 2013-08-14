@@ -1984,24 +1984,25 @@ class PolicyTests(DjangoTestCase):
         self.assertFalse(form.is_valid())
 
 
-class SelfHostedTestForm(HostingServiceForm):
+class TestServiceForm(HostingServiceForm):
     test_repo_name = forms.CharField(
         label='Repository name',
         max_length=64,
         required=True)
 
 
-class SelfHostedTestService(HostingService):
-    name = 'Self-Hosted Test'
-    form = SelfHostedTestForm
-    self_hosted = True
+class TestService(HostingService):
+    name = 'Test Service'
+    form = TestServiceForm
+    needs_authorization = True
     supports_repositories = True
     supports_bug_trackers = True
     supported_scmtools = ['Git']
-    bug_tracker_field = '%(hosting_url)s/%(test_repo_name)s/issue/%%s'
+    bug_tracker_field = ('http://example.com/%(hosting_account_username)s/'
+                         '%(test_repo_name)s/issue/%%s')
     repository_fields = {
         'Git': {
-            'path': '%(hosting_url)s/%(test_repo_name)s/',
+            'path': 'http://example.com/%(test_repo_name)s/',
         },
     }
 
@@ -2014,6 +2015,23 @@ class SelfHostedTestService(HostingService):
             'local_site_name': local_site_name,
         }
 
+    def is_authorized(self):
+        return True
+
+    def check_repository(self, *args, **kwargs):
+        pass
+
+
+class SelfHostedTestService(TestService):
+    name = 'Self-Hosted Test'
+    self_hosted = True
+    bug_tracker_field = '%(hosting_url)s/%(test_repo_name)s/issue/%%s'
+    repository_fields = {
+        'Git': {
+            'path': '%(hosting_url)s/%(test_repo_name)s/',
+        },
+    }
+
 
 class RepositoryFormTests(DjangoTestCase):
     fixtures = ['test_scmtools']
@@ -2021,27 +2039,26 @@ class RepositoryFormTests(DjangoTestCase):
     def setUp(self):
         super(RepositoryFormTests, self).setUp()
 
+        register_hosting_service('test', TestService)
         register_hosting_service('self_hosted_test', SelfHostedTestService)
+
+        self.git_tool_id = Tool.objects.get(name='Git').pk
 
     def tearDown(self):
         super(RepositoryFormTests, self).tearDown()
 
         unregister_hosting_service('self_hosted_test')
+        unregister_hosting_service('test')
 
     def test_with_hosting_service_new_account(self):
         """Testing RepositoryForm with a hosting service and new account"""
-        try:
-            import mercurial
-        except ImportError:
-            raise nose.SkipTest('Hg is not installed')
-
         form = RepositoryForm({
             'name': 'test',
-            'hosting_type': 'bitbucket',
+            'hosting_type': 'test',
             'hosting_account_username': 'testuser',
             'hosting_account_password': 'testpass',
-            'tool': Tool.objects.get(name='Mercurial').pk,
-            'bitbucket_repo_name': 'testrepo',
+            'tool': self.git_tool_id,
+            'test_repo_name': 'testrepo',
             'bug_tracker_type': 'none',
         })
 
@@ -2050,7 +2067,7 @@ class RepositoryFormTests(DjangoTestCase):
         repository = form.save()
         self.assertEqual(repository.name, 'test')
         self.assertEqual(repository.hosting_account.username, 'testuser')
-        self.assertEqual(repository.hosting_account.service_name, 'bitbucket')
+        self.assertEqual(repository.hosting_account.service_name, 'test')
         self.assertEqual(repository.hosting_account.local_site, None)
         self.assertEqual(repository.extra_data['repository_plan'], '')
 
@@ -2063,7 +2080,7 @@ class RepositoryFormTests(DjangoTestCase):
             'hosting_account_username': 'testuser',
             'hosting_account_password': 'testpass',
             'test_repo_name': 'myrepo',
-            'tool': Tool.objects.get(name='Git').pk,
+            'tool': self.git_tool_id,
             'bug_tracker_type': 'none',
         })
         form.validate_repository = False
@@ -2091,7 +2108,7 @@ class RepositoryFormTests(DjangoTestCase):
             'hosting_account_username': 'testuser',
             'hosting_account_password': 'testpass',
             'test_repo_name': 'myrepo',
-            'tool': Tool.objects.get(name='Git').pk,
+            'tool': self.git_tool_id,
             'bug_tracker_type': 'none',
         })
         form.validate_repository = False
@@ -2102,18 +2119,13 @@ class RepositoryFormTests(DjangoTestCase):
         """Testing RepositoryForm with a hosting service, new account and LocalSite"""
         local_site = LocalSite.objects.create(name='testsite')
 
-        try:
-            import mercurial
-        except ImportError:
-            raise nose.SkipTest('Hg is not installed')
-
         form = RepositoryForm({
             'name': 'test',
-            'hosting_type': 'bitbucket',
+            'hosting_type': 'test',
             'hosting_account_username': 'testuser',
             'hosting_account_password': 'testpass',
-            'tool': Tool.objects.get(name='Mercurial').pk,
-            'bitbucket_repo_name': 'testrepo',
+            'tool': self.git_tool_id,
+            'test_repo_name': 'testrepo',
             'bug_tracker_type': 'none',
             'local_site': local_site.pk,
         })
@@ -2124,26 +2136,21 @@ class RepositoryFormTests(DjangoTestCase):
         self.assertEqual(repository.name, 'test')
         self.assertEqual(repository.local_site, local_site)
         self.assertEqual(repository.hosting_account.username, 'testuser')
-        self.assertEqual(repository.hosting_account.service_name, 'bitbucket')
+        self.assertEqual(repository.hosting_account.service_name, 'test')
         self.assertEqual(repository.hosting_account.local_site, local_site)
         self.assertEqual(repository.extra_data['repository_plan'], '')
 
     def test_with_hosting_service_existing_account(self):
         """Testing RepositoryForm with a hosting service and existing account"""
-        try:
-            import mercurial
-        except ImportError:
-            raise nose.SkipTest('Hg is not installed')
-
         account = HostingServiceAccount.objects.create(username='testuser',
-                                                       service_name='bitbucket')
+                                                       service_name='test')
 
         form = RepositoryForm({
             'name': 'test',
-            'hosting_type': 'bitbucket',
+            'hosting_type': 'test',
             'hosting_account': account.pk,
-            'tool': Tool.objects.get(name='Mercurial').pk,
-            'bitbucket_repo_name': 'testrepo',
+            'tool': self.git_tool_id,
+            'test_repo_name': 'testrepo',
             'bug_tracker_type': 'none',
         })
 
@@ -2166,7 +2173,7 @@ class RepositoryFormTests(DjangoTestCase):
             'hosting_type': 'self_hosted_test',
             'hosting_url': 'https://example.com',
             'hosting_account': account.pk,
-            'tool': Tool.objects.get(name='Git').pk,
+            'tool': self.git_tool_id,
             'test_repo_name': 'myrepo',
             'bug_tracker_type': 'none',
         })
@@ -2192,7 +2199,7 @@ class RepositoryFormTests(DjangoTestCase):
             'hosting_type': 'self_hosted_test',
             'hosting_url': 'https://example2.com',
             'hosting_account': account.pk,
-            'tool': Tool.objects.get(name='Git').pk,
+            'tool': self.git_tool_id,
             'test_repo_name': 'myrepo',
             'bug_tracker_type': 'none',
         })
@@ -2202,20 +2209,15 @@ class RepositoryFormTests(DjangoTestCase):
 
     def test_with_hosting_service_custom_bug_tracker(self):
         """Testing RepositoryForm with a custom bug tracker"""
-        try:
-            import mercurial
-        except ImportError:
-            raise nose.SkipTest('Hg is not installed')
-
         account = HostingServiceAccount.objects.create(username='testuser',
-                                                       service_name='bitbucket')
+                                                       service_name='test')
 
         form = RepositoryForm({
             'name': 'test',
-            'hosting_type': 'bitbucket',
+            'hosting_type': 'test',
             'hosting_account': account.pk,
-            'tool': Tool.objects.get(name='Mercurial').pk,
-            'bitbucket_repo_name': 'testrepo',
+            'tool': self.git_tool_id,
+            'test_repo_name': 'testrepo',
             'bug_tracker_type': 'custom',
             'bug_tracker': 'http://example.com/issue/%s',
         })
@@ -2229,23 +2231,18 @@ class RepositoryFormTests(DjangoTestCase):
 
     def test_with_hosting_service_bug_tracker_service(self):
         """Testing RepositoryForm with a bug tracker service"""
-        try:
-            import mercurial
-        except ImportError:
-            raise nose.SkipTest('Hg is not installed')
-
         account = HostingServiceAccount.objects.create(username='testuser',
-                                                       service_name='bitbucket')
+                                                       service_name='test')
 
         form = RepositoryForm({
             'name': 'test',
-            'hosting_type': 'bitbucket',
+            'hosting_type': 'test',
             'hosting_account': account.pk,
-            'tool': Tool.objects.get(name='Mercurial').pk,
-            'bitbucket_repo_name': 'testrepo',
-            'bug_tracker_type': 'bitbucket',
+            'tool': self.git_tool_id,
+            'test_repo_name': 'testrepo',
+            'bug_tracker_type': 'test',
             'bug_tracker_hosting_account_username': 'testuser',
-            'bug_tracker-bitbucket_repo_name': 'testrepo',
+            'bug_tracker-test_repo_name': 'testrepo',
         })
 
         self.assertTrue(form.is_valid())
@@ -2253,11 +2250,11 @@ class RepositoryFormTests(DjangoTestCase):
         repository = form.save()
         self.assertFalse(repository.extra_data['bug_tracker_use_hosting'])
         self.assertEqual(repository.bug_tracker,
-                         'http://bitbucket.org/testuser/testrepo/issue/%s/')
+                         'http://example.com/testuser/testrepo/issue/%s')
         self.assertEqual(repository.extra_data['bug_tracker_type'],
-                         'bitbucket')
+                         'test')
         self.assertEqual(
-            repository.extra_data['bug_tracker-bitbucket_repo_name'],
+            repository.extra_data['bug_tracker-test_repo_name'],
             'testrepo')
         self.assertEqual(
             repository.extra_data['bug_tracker-hosting_account_username'],
@@ -2275,7 +2272,7 @@ class RepositoryFormTests(DjangoTestCase):
             'hosting_type': 'self_hosted_test',
             'hosting_url': 'https://example.com',
             'hosting_account': account.pk,
-            'tool': Tool.objects.get(name='Git').pk,
+            'tool': self.git_tool_id,
             'test_repo_name': 'testrepo',
             'bug_tracker_type': 'self_hosted_test',
             'bug_tracker_hosting_url': 'https://example.com',
@@ -2301,19 +2298,14 @@ class RepositoryFormTests(DjangoTestCase):
     def test_with_hosting_service_with_hosting_bug_tracker(self):
         """Testing RepositoryForm with hosting service's bug tracker"""
         account = HostingServiceAccount.objects.create(username='testuser',
-                                                       service_name='github')
-        account.data['authorization'] = {
-            'token': '1234',
-        }
-        account.save()
+                                                       service_name='test')
 
         form = RepositoryForm({
             'name': 'test',
-            'hosting_type': 'github',
+            'hosting_type': 'test',
             'hosting_account': account.pk,
-            'tool': Tool.objects.get(name='Git').pk,
-            'repository_plan': 'public',
-            'github_public_repo_name': 'testrepo',
+            'tool': self.git_tool_id,
+            'test_repo_name': 'testrepo',
             'bug_tracker_use_hosting': True,
             'bug_tracker_type': 'googlecode',
         })
@@ -2324,9 +2316,9 @@ class RepositoryFormTests(DjangoTestCase):
         repository = form.save()
         self.assertTrue(repository.extra_data['bug_tracker_use_hosting'])
         self.assertEqual(repository.bug_tracker,
-                         'http://github.com/testuser/testrepo/issues#issue/%s')
+                         'http://example.com/testuser/testrepo/issue/%s')
         self.assertFalse('bug_tracker_type' in repository.extra_data)
-        self.assertFalse('bug_tracker-github_public_repo_name'
+        self.assertFalse('bug_tracker-test_repo_name'
                          in repository.extra_data)
         self.assertFalse('bug_tracker-hosting_account_username'
                          in repository.extra_data)
@@ -2348,7 +2340,7 @@ class RepositoryFormTests(DjangoTestCase):
             'hosting_type': 'self_hosted_test',
             'hosting_url': 'https://example.com',
             'hosting_account': account.pk,
-            'tool': Tool.objects.get(name='Git').pk,
+            'tool': self.git_tool_id,
             'test_repo_name': 'testrepo',
             'bug_tracker_use_hosting': True,
             'bug_tracker_type': 'googlecode',
@@ -2369,20 +2361,15 @@ class RepositoryFormTests(DjangoTestCase):
 
     def test_with_hosting_service_no_bug_tracker(self):
         """Testing RepositoryForm with no bug tracker"""
-        try:
-            import mercurial
-        except ImportError:
-            raise nose.SkipTest('Hg is not installed')
-
         account = HostingServiceAccount.objects.create(username='testuser',
-                                                       service_name='bitbucket')
+                                                       service_name='test')
 
         form = RepositoryForm({
             'name': 'test',
-            'hosting_type': 'bitbucket',
+            'hosting_type': 'test',
             'hosting_account': account.pk,
-            'tool': Tool.objects.get(name='Mercurial').pk,
-            'bitbucket_repo_name': 'testrepo',
+            'tool': self.git_tool_id,
+            'test_repo_name': 'testrepo',
             'bug_tracker_type': 'none',
         })
 
@@ -2407,33 +2394,33 @@ class RepositoryFormTests(DjangoTestCase):
     def test_with_hosting_service_with_existing_bug_tracker_service(self):
         """Testing RepositoryForm with existing bug tracker service"""
         repository = Repository(name='test')
-        repository.extra_data['bug_tracker_type'] = 'bitbucket'
-        repository.extra_data['bug_tracker-bitbucket_repo_name'] = 'testrepo'
+        repository.extra_data['bug_tracker_type'] = 'test'
+        repository.extra_data['bug_tracker-test_repo_name'] = 'testrepo'
         repository.extra_data['bug_tracker-hosting_account_username'] = \
             'testuser'
 
         form = RepositoryForm(instance=repository)
         self.assertFalse(form._get_field_data('bug_tracker_use_hosting'))
-        self.assertEqual(form._get_field_data('bug_tracker_type'), 'bitbucket')
+        self.assertEqual(form._get_field_data('bug_tracker_type'), 'test')
         self.assertEqual(
             form._get_field_data('bug_tracker_hosting_account_username'),
             'testuser')
 
-        self.assertTrue('bitbucket' in form.bug_tracker_forms)
-        self.assertTrue('default' in form.bug_tracker_forms['bitbucket'])
-        bitbucket_form = form.bug_tracker_forms['bitbucket']['default']
+        self.assertTrue('test' in form.bug_tracker_forms)
+        self.assertTrue('default' in form.bug_tracker_forms['test'])
+        bitbucket_form = form.bug_tracker_forms['test']['default']
         self.assertEqual(
-            bitbucket_form.fields['bitbucket_repo_name'].initial,
+            bitbucket_form.fields['test_repo_name'].initial,
             'testrepo')
 
     def test_with_hosting_service_with_existing_bug_tracker_using_hosting(self):
         """Testing RepositoryForm with existing bug tracker using hosting service"""
         account = HostingServiceAccount.objects.create(username='testuser',
-                                                       service_name='bitbucket')
+                                                       service_name='test')
         repository = Repository(name='test',
                                 hosting_account=account)
         repository.extra_data['bug_tracker_use_hosting'] = True
-        repository.extra_data['bitbucket_repo_name'] = 'testrepo'
+        repository.extra_data['test_repo_name'] = 'testrepo'
 
         form = RepositoryForm(instance=repository)
         self.assertTrue(form._get_field_data('bug_tracker_use_hosting'))
