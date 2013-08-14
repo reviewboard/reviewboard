@@ -3,7 +3,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2013-08-13 14:27-0700\n"
+"POT-Creation-Date: 2013-08-14 17:56-0700\n"
 "PO-Revision-Date: 2012-05-12 08:00+0800\n"
 "Last-Translator: Po-Chien Lin <linpc@cs.nctu.edu.tw>\n"
 "Language-Team: Po-Chien Lin <linpc@cs.nctu.edu.tw>\n"
@@ -1187,7 +1187,7 @@ msgstr "已修改"
 msgid "Moved"
 msgstr "已移動"
 
-#: diffviewer/models.py:65
+#: diffviewer/models.py:65 templates/diffviewer/changeindex.html:25
 msgid "Deleted"
 msgstr "已刪除"
 
@@ -1215,7 +1215,7 @@ msgstr "destination file 詳情"
 msgid "diff"
 msgstr "diff 檔"
 
-#: diffviewer/models.py:80 templates/diffviewer/changeindex_entry.html:10
+#: diffviewer/models.py:80
 msgid "binary file"
 msgstr "二進位檔"
 
@@ -1271,35 +1271,35 @@ msgstr "最後更新時間"
 msgid "Invalid chunk index %s specified."
 msgstr ""
 
-#: diffviewer/views.py:268
+#: diffviewer/views.py:267
 #, python-format
 msgid "Internal error. Unable to locate file record for filediff %s"
 msgstr "發生內部錯誤。無法找到檔案差異 %s 的檔案記錄"
 
-#: diffviewer/templatetags/difftags.py:207
+#: diffviewer/templatetags/difftags.py:209
 #, fuzzy
 msgid "Expand to header"
 msgstr "展開更改"
 
-#: diffviewer/templatetags/difftags.py:288
+#: diffviewer/templatetags/difftags.py:290
 #, fuzzy, python-format
 msgid "Moved from %s"
 msgstr "移動自"
 
-#: diffviewer/templatetags/difftags.py:296
+#: diffviewer/templatetags/difftags.py:298
 #, fuzzy, python-format
 msgid "Moved to %s"
 msgstr "移動至"
 
-#: hostingsvcs/beanstalk.py:16
+#: hostingsvcs/beanstalk.py:17
 msgid "Beanstalk account domain"
 msgstr ""
 
-#: hostingsvcs/beanstalk.py:20
+#: hostingsvcs/beanstalk.py:21
 msgid "This is the <tt>domain</tt> part of <tt>domain.beanstalkapp.com</tt>"
 msgstr ""
 
-#: hostingsvcs/beanstalk.py:24 hostingsvcs/bitbucket.py:16
+#: hostingsvcs/beanstalk.py:25 hostingsvcs/bitbucket.py:16
 #: hostingsvcs/fedorahosted.py:10 hostingsvcs/github.py:24
 #: hostingsvcs/github.py:35 hostingsvcs/github.py:55 hostingsvcs/github.py:75
 #: hostingsvcs/gitorious.py:16
@@ -3408,7 +3408,6 @@ msgid "No Groups Available."
 msgstr "尚無可用的群組。"
 
 #: templates/admin/widgets/w-news.html:6
-#: templates/diffviewer/changeindex.html:7
 msgid "Loading..."
 msgstr "載入中..."
 
@@ -3484,89 +3483,52 @@ msgstr "您是目前唯一登入的使用者..."
 msgid "Add Users +"
 msgstr "新增使用者 +"
 
-#: templates/diffviewer/changeindex.html:12
-#, python-format
-msgid "This diff has been split across %(pages)s pages:"
-msgstr "這個 diff 檔被分開顯示在 %(pages)s 頁："
-
-#: templates/diffviewer/changeindex.html:13
-msgid "Previous Page"
-msgstr "前一頁"
-
-#: templates/diffviewer/changeindex.html:16
-msgid "Current Page"
-msgstr "當前頁"
-
-#: templates/diffviewer/changeindex.html:18
-#, python-format
-msgid "Page %(num)s "
-msgstr "第 %(num)s 頁"
-
-#: templates/diffviewer/changeindex.html:21
-msgid "Next Page"
-msgstr "下一頁"
-
-#: templates/diffviewer/changeindex_entry.html:8
-#: templates/diffviewer/diff_fragment_error.html:35
-msgid "Diff currently unavailable."
-msgstr "目前無法使用 Diff 檔"
-
-#: templates/diffviewer/changeindex_entry.html:12
-msgid "deleted"
-msgstr "已刪除"
-
-#: templates/diffviewer/changeindex_entry.html:14
-#, python-format
-msgid ""
-"\n"
-" 1  change\n"
-msgid_plural ""
-"\n"
-" %(counter)s changes\n"
-msgstr[0] ""
-"\n"
-" 1 個變更\n"
-msgstr[1] ""
-"\n"
-" %(counter)s 個變更\n"
+#: templates/diffviewer/changeindex.html:23
+#, fuzzy
+msgid "Binary file"
+msgstr "二進位檔"
 
 #: templates/diffviewer/diff_file_fragment.html:33
 #, fuzzy
 msgid "Collapse lines"
 msgstr "收併更改"
 
-#: templates/diffviewer/diff_file_fragment.html:66
+#: templates/diffviewer/diff_file_fragment.html:72
 msgid " (moved)"
 msgstr " （已被移動）"
 
-#: templates/diffviewer/diff_file_fragment.html:71
+#: templates/diffviewer/diff_file_fragment.html:77
 msgid "No changes were made to this file."
 msgstr "這個檔案沒有任何變更。"
 
-#: templates/diffviewer/diff_file_fragment.html:87
+#: templates/diffviewer/diff_file_fragment.html:93
 msgid "This is a binary file. The content cannot be displayed."
 msgstr "這是一個二進位檔，無法顯示內容"
 
-#: templates/diffviewer/diff_file_fragment.html:94
+#: templates/diffviewer/diff_file_fragment.html:100
 msgid "This file was deleted. The content cannot be displayed."
 msgstr "這個檔案已被刪除，無法顯示內容。"
 
-#: templates/diffviewer/diff_file_fragment.html:101
+#: templates/diffviewer/diff_file_fragment.html:107
 msgid "This file contains only whitespace changes."
 msgstr "這個檔案只包含空白符的變更"
 
-#: templates/diffviewer/diff_file_fragment.html:115
+#: templates/diffviewer/diff_file_fragment.html:121
 msgid "Show 20 more lines above"
 msgstr ""
 
-#: templates/diffviewer/diff_file_fragment.html:120
+#: templates/diffviewer/diff_file_fragment.html:126
 #, fuzzy
 msgid "Show all lines"
 msgstr "在哪些類型檔案顯示所有的空白符"
 
-#: templates/diffviewer/diff_file_fragment.html:125
+#: templates/diffviewer/diff_file_fragment.html:131
 msgid "Show 20 more lines below"
 msgstr ""
+
+#: templates/diffviewer/diff_fragment_error.html:35
+msgid "Diff currently unavailable."
+msgstr "目前無法使用 Diff 檔"
 
 #: templates/diffviewer/diff_fragment_error.html:39
 msgid "Error:"
@@ -3644,33 +3606,51 @@ msgstr "跳至特定的版本"
 msgid "Changes between r%(revision)s and:"
 msgstr "比較修改的變更：第 %(revision)s 版與"
 
-#: templates/diffviewer/view_diff.html:163
-msgid "Files Changed:"
-msgstr "修改的檔案："
-
-#: templates/diffviewer/view_diff.html:171
+#: templates/diffviewer/view_diff.html:170
 msgid "Expand changes"
 msgstr "展開更改"
 
-#: templates/diffviewer/view_diff.html:173
+#: templates/diffviewer/view_diff.html:172
 msgid "Collapse changes"
 msgstr "收併更改"
 
-#: templates/diffviewer/view_diff.html:176
+#: templates/diffviewer/view_diff.html:175
 msgid "Hide Extra Whitespace"
 msgstr "隱藏額外空白符"
 
-#: templates/diffviewer/view_diff.html:177
+#: templates/diffviewer/view_diff.html:176
 msgid "Show Extra Whitespace"
 msgstr "顯示額外空白符"
 
-#: templates/diffviewer/view_diff.html:179
+#: templates/diffviewer/view_diff.html:178
 msgid "Hide Whitespace changes"
 msgstr "隱藏空白符變更"
 
-#: templates/diffviewer/view_diff.html:180
+#: templates/diffviewer/view_diff.html:179
 msgid "Show Whitespace changes"
 msgstr "顯示空白符變更"
+
+#: templates/diffviewer/view_diff.html:211
+#, python-format
+msgid "This diff has been split across %(pages)s pages:"
+msgstr "這個 diff 檔被分開顯示在 %(pages)s 頁："
+
+#: templates/diffviewer/view_diff.html:212
+msgid "Previous Page"
+msgstr "前一頁"
+
+#: templates/diffviewer/view_diff.html:215
+msgid "Current Page"
+msgstr "當前頁"
+
+#: templates/diffviewer/view_diff.html:217
+#, python-format
+msgid "Page %(num)s "
+msgstr "第 %(num)s 頁"
+
+#: templates/diffviewer/view_diff.html:220
+msgid "Next Page"
+msgstr "下一頁"
 
 #: templates/reviews/comment_issue.html:16
 #, fuzzy
@@ -4100,6 +4080,25 @@ msgstr "新的回覆"
 #: webapi/resources.py:6690
 msgid "New review"
 msgstr "新的審查"
+
+#~ msgid "deleted"
+#~ msgstr "已刪除"
+
+#~ msgid ""
+#~ "\n"
+#~ " 1  change\n"
+#~ msgid_plural ""
+#~ "\n"
+#~ " %(counter)s changes\n"
+#~ msgstr[0] ""
+#~ "\n"
+#~ " 1 個變更\n"
+#~ msgstr[1] ""
+#~ "\n"
+#~ " %(counter)s 個變更\n"
+
+#~ msgid "Files Changed:"
+#~ msgstr "修改的檔案："
 
 #~ msgid ""
 #~ "The path to the cache backend.Example: 'memcached://127.0.0.1:11211/'"

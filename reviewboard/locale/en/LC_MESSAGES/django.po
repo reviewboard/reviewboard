@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2013-08-13 14:27-0700\n"
+"POT-Creation-Date: 2013-08-14 17:56-0700\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -1152,7 +1152,7 @@ msgstr ""
 msgid "Moved"
 msgstr ""
 
-#: diffviewer/models.py:65
+#: diffviewer/models.py:65 templates/diffviewer/changeindex.html:25
 msgid "Deleted"
 msgstr ""
 
@@ -1180,7 +1180,7 @@ msgstr ""
 msgid "diff"
 msgstr ""
 
-#: diffviewer/models.py:80 templates/diffviewer/changeindex_entry.html:10
+#: diffviewer/models.py:80
 msgid "binary file"
 msgstr ""
 
@@ -1236,34 +1236,34 @@ msgstr ""
 msgid "Invalid chunk index %s specified."
 msgstr ""
 
-#: diffviewer/views.py:268
+#: diffviewer/views.py:267
 #, python-format
 msgid "Internal error. Unable to locate file record for filediff %s"
 msgstr ""
 
-#: diffviewer/templatetags/difftags.py:207
+#: diffviewer/templatetags/difftags.py:209
 msgid "Expand to header"
 msgstr ""
 
-#: diffviewer/templatetags/difftags.py:288
+#: diffviewer/templatetags/difftags.py:290
 #, python-format
 msgid "Moved from %s"
 msgstr ""
 
-#: diffviewer/templatetags/difftags.py:296
+#: diffviewer/templatetags/difftags.py:298
 #, python-format
 msgid "Moved to %s"
 msgstr ""
 
-#: hostingsvcs/beanstalk.py:16
+#: hostingsvcs/beanstalk.py:17
 msgid "Beanstalk account domain"
 msgstr ""
 
-#: hostingsvcs/beanstalk.py:20
+#: hostingsvcs/beanstalk.py:21
 msgid "This is the <tt>domain</tt> part of <tt>domain.beanstalkapp.com</tt>"
 msgstr ""
 
-#: hostingsvcs/beanstalk.py:24 hostingsvcs/bitbucket.py:16
+#: hostingsvcs/beanstalk.py:25 hostingsvcs/bitbucket.py:16
 #: hostingsvcs/fedorahosted.py:10 hostingsvcs/github.py:24
 #: hostingsvcs/github.py:35 hostingsvcs/github.py:55 hostingsvcs/github.py:75
 #: hostingsvcs/gitorious.py:16
@@ -3286,7 +3286,6 @@ msgid "No Groups Available."
 msgstr ""
 
 #: templates/admin/widgets/w-news.html:6
-#: templates/diffviewer/changeindex.html:7
 msgid "Loading..."
 msgstr ""
 
@@ -3362,82 +3361,48 @@ msgstr ""
 msgid "Add Users +"
 msgstr ""
 
-#: templates/diffviewer/changeindex.html:12
-#, python-format
-msgid "This diff has been split across %(pages)s pages:"
+#: templates/diffviewer/changeindex.html:23
+msgid "Binary file"
 msgstr ""
-
-#: templates/diffviewer/changeindex.html:13
-msgid "Previous Page"
-msgstr ""
-
-#: templates/diffviewer/changeindex.html:16
-msgid "Current Page"
-msgstr ""
-
-#: templates/diffviewer/changeindex.html:18
-#, python-format
-msgid "Page %(num)s "
-msgstr ""
-
-#: templates/diffviewer/changeindex.html:21
-msgid "Next Page"
-msgstr ""
-
-#: templates/diffviewer/changeindex_entry.html:8
-#: templates/diffviewer/diff_fragment_error.html:35
-msgid "Diff currently unavailable."
-msgstr ""
-
-#: templates/diffviewer/changeindex_entry.html:12
-msgid "deleted"
-msgstr ""
-
-#: templates/diffviewer/changeindex_entry.html:14
-#, python-format
-msgid ""
-"\n"
-" 1  change\n"
-msgid_plural ""
-"\n"
-" %(counter)s changes\n"
-msgstr[0] ""
-msgstr[1] ""
 
 #: templates/diffviewer/diff_file_fragment.html:33
 msgid "Collapse lines"
 msgstr ""
 
-#: templates/diffviewer/diff_file_fragment.html:66
+#: templates/diffviewer/diff_file_fragment.html:72
 msgid " (moved)"
 msgstr ""
 
-#: templates/diffviewer/diff_file_fragment.html:71
+#: templates/diffviewer/diff_file_fragment.html:77
 msgid "No changes were made to this file."
 msgstr ""
 
-#: templates/diffviewer/diff_file_fragment.html:87
+#: templates/diffviewer/diff_file_fragment.html:93
 msgid "This is a binary file. The content cannot be displayed."
 msgstr ""
 
-#: templates/diffviewer/diff_file_fragment.html:94
+#: templates/diffviewer/diff_file_fragment.html:100
 msgid "This file was deleted. The content cannot be displayed."
 msgstr ""
 
-#: templates/diffviewer/diff_file_fragment.html:101
+#: templates/diffviewer/diff_file_fragment.html:107
 msgid "This file contains only whitespace changes."
 msgstr ""
 
-#: templates/diffviewer/diff_file_fragment.html:115
+#: templates/diffviewer/diff_file_fragment.html:121
 msgid "Show 20 more lines above"
 msgstr ""
 
-#: templates/diffviewer/diff_file_fragment.html:120
+#: templates/diffviewer/diff_file_fragment.html:126
 msgid "Show all lines"
 msgstr ""
 
-#: templates/diffviewer/diff_file_fragment.html:125
+#: templates/diffviewer/diff_file_fragment.html:131
 msgid "Show 20 more lines below"
+msgstr ""
+
+#: templates/diffviewer/diff_fragment_error.html:35
+msgid "Diff currently unavailable."
 msgstr ""
 
 #: templates/diffviewer/diff_fragment_error.html:39
@@ -3507,32 +3472,50 @@ msgstr ""
 msgid "Changes between r%(revision)s and:"
 msgstr ""
 
-#: templates/diffviewer/view_diff.html:163
-msgid "Files Changed:"
-msgstr ""
-
-#: templates/diffviewer/view_diff.html:171
+#: templates/diffviewer/view_diff.html:170
 msgid "Expand changes"
 msgstr ""
 
-#: templates/diffviewer/view_diff.html:173
+#: templates/diffviewer/view_diff.html:172
 msgid "Collapse changes"
 msgstr ""
 
-#: templates/diffviewer/view_diff.html:176
+#: templates/diffviewer/view_diff.html:175
 msgid "Hide Extra Whitespace"
 msgstr ""
 
-#: templates/diffviewer/view_diff.html:177
+#: templates/diffviewer/view_diff.html:176
 msgid "Show Extra Whitespace"
 msgstr ""
 
-#: templates/diffviewer/view_diff.html:179
+#: templates/diffviewer/view_diff.html:178
 msgid "Hide Whitespace changes"
 msgstr ""
 
-#: templates/diffviewer/view_diff.html:180
+#: templates/diffviewer/view_diff.html:179
 msgid "Show Whitespace changes"
+msgstr ""
+
+#: templates/diffviewer/view_diff.html:211
+#, python-format
+msgid "This diff has been split across %(pages)s pages:"
+msgstr ""
+
+#: templates/diffviewer/view_diff.html:212
+msgid "Previous Page"
+msgstr ""
+
+#: templates/diffviewer/view_diff.html:215
+msgid "Current Page"
+msgstr ""
+
+#: templates/diffviewer/view_diff.html:217
+#, python-format
+msgid "Page %(num)s "
+msgstr ""
+
+#: templates/diffviewer/view_diff.html:220
+msgid "Next Page"
 msgstr ""
 
 #: templates/reviews/comment_issue.html:16

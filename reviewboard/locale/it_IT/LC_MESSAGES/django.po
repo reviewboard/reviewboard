@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2013-08-13 14:27-0700\n"
+"POT-Creation-Date: 2013-08-14 17:56-0700\n"
 "PO-Revision-Date: 2013-07-06 10:40+0200\n"
 "Last-Translator: Alessandro Menti <alessandro.menti@hotmail.it>\n"
 "Language: it-IT\n"
@@ -1285,7 +1285,7 @@ msgstr "Modificato"
 msgid "Moved"
 msgstr "Spostato"
 
-#: diffviewer/models.py:65
+#: diffviewer/models.py:65 templates/diffviewer/changeindex.html:25
 msgid "Deleted"
 msgstr "Eliminato"
 
@@ -1313,7 +1313,7 @@ msgstr "revisione file destinazione"
 msgid "diff"
 msgstr "diff"
 
-#: diffviewer/models.py:80 templates/diffviewer/changeindex_entry.html:10
+#: diffviewer/models.py:80
 msgid "binary file"
 msgstr "file binario"
 
@@ -1371,36 +1371,36 @@ msgstr "ultimo aggiornamento"
 msgid "Invalid chunk index %s specified."
 msgstr "Specificato indice chunk %s non valido."
 
-#: diffviewer/views.py:268
+#: diffviewer/views.py:267
 #, python-format
 msgid "Internal error. Unable to locate file record for filediff %s"
 msgstr ""
 "Errore interno. Impossibile trovare il record del file per il diff file %s"
 
-#: diffviewer/templatetags/difftags.py:207
+#: diffviewer/templatetags/difftags.py:209
 #, fuzzy
 msgid "Expand to header"
 msgstr "Espandi fino all'header"
 
-#: diffviewer/templatetags/difftags.py:288
+#: diffviewer/templatetags/difftags.py:290
 #, python-format
 msgid "Moved from %s"
 msgstr "Spostato da %s"
 
-#: diffviewer/templatetags/difftags.py:296
+#: diffviewer/templatetags/difftags.py:298
 #, python-format
 msgid "Moved to %s"
 msgstr "Spostato in %s"
 
-#: hostingsvcs/beanstalk.py:16
+#: hostingsvcs/beanstalk.py:17
 msgid "Beanstalk account domain"
 msgstr ""
 
-#: hostingsvcs/beanstalk.py:20
+#: hostingsvcs/beanstalk.py:21
 msgid "This is the <tt>domain</tt> part of <tt>domain.beanstalkapp.com</tt>"
 msgstr ""
 
-#: hostingsvcs/beanstalk.py:24 hostingsvcs/bitbucket.py:16
+#: hostingsvcs/beanstalk.py:25 hostingsvcs/bitbucket.py:16
 #: hostingsvcs/fedorahosted.py:10 hostingsvcs/github.py:24
 #: hostingsvcs/github.py:35 hostingsvcs/github.py:55 hostingsvcs/github.py:75
 #: hostingsvcs/gitorious.py:16
@@ -3720,7 +3720,6 @@ msgid "No Groups Available."
 msgstr "Nessun gruppo disponibile."
 
 #: templates/admin/widgets/w-news.html:6
-#: templates/diffviewer/changeindex.html:7
 msgid "Loading..."
 msgstr "Caricamento in corso..."
 
@@ -3796,89 +3795,52 @@ msgstr "Sei l'unico che ha eseguito l'accesso finora..."
 msgid "Add Users +"
 msgstr "Aggiungi utenti +"
 
-#: templates/diffviewer/changeindex.html:12
-#, python-format
-msgid "This diff has been split across %(pages)s pages:"
-msgstr "Questo diff è stato diviso in %(pages)s pagine:"
-
-#: templates/diffviewer/changeindex.html:13
-msgid "Previous Page"
-msgstr "Pagina precedente"
-
-#: templates/diffviewer/changeindex.html:16
-msgid "Current Page"
-msgstr "Pagina corrente"
-
-#: templates/diffviewer/changeindex.html:18
-#, python-format
-msgid "Page %(num)s "
-msgstr "Pagina %(num)s "
-
-#: templates/diffviewer/changeindex.html:21
-msgid "Next Page"
-msgstr "Pagina successiva"
-
-#: templates/diffviewer/changeindex_entry.html:8
-#: templates/diffviewer/diff_fragment_error.html:35
-msgid "Diff currently unavailable."
-msgstr "Diff attualmente non disponibile."
-
-#: templates/diffviewer/changeindex_entry.html:12
-msgid "deleted"
-msgstr "eliminato"
-
-#: templates/diffviewer/changeindex_entry.html:14
-#, python-format
-msgid ""
-"\n"
-" 1  change\n"
-msgid_plural ""
-"\n"
-" %(counter)s changes\n"
-msgstr[0] ""
-"\n"
-" 1 modifica\n"
-msgstr[1] ""
-"\n"
-" %(counter)s modifiche\n"
+#: templates/diffviewer/changeindex.html:23
+#, fuzzy
+msgid "Binary file"
+msgstr "file binario"
 
 #: templates/diffviewer/diff_file_fragment.html:33
 msgid "Collapse lines"
 msgstr "Contrai linee"
 
-#: templates/diffviewer/diff_file_fragment.html:66
+#: templates/diffviewer/diff_file_fragment.html:72
 msgid " (moved)"
 msgstr " (spostato)"
 
-#: templates/diffviewer/diff_file_fragment.html:71
+#: templates/diffviewer/diff_file_fragment.html:77
 msgid "No changes were made to this file."
 msgstr "Nessun cambiamento è stato apportato a questo file."
 
-#: templates/diffviewer/diff_file_fragment.html:87
+#: templates/diffviewer/diff_file_fragment.html:93
 msgid "This is a binary file. The content cannot be displayed."
 msgstr ""
 "Questo è un file binario. Il suo contenuto non può essere visualizzato."
 
-#: templates/diffviewer/diff_file_fragment.html:94
+#: templates/diffviewer/diff_file_fragment.html:100
 msgid "This file was deleted. The content cannot be displayed."
 msgstr ""
 "Questo file è stato eliminato. Il suo contenuto non può essere visualizzato."
 
-#: templates/diffviewer/diff_file_fragment.html:101
+#: templates/diffviewer/diff_file_fragment.html:107
 msgid "This file contains only whitespace changes."
 msgstr "Questo file contiene solo modifiche agli spazi bianchi."
 
-#: templates/diffviewer/diff_file_fragment.html:115
+#: templates/diffviewer/diff_file_fragment.html:121
 msgid "Show 20 more lines above"
 msgstr "Visualizza altre 20 linee in alto"
 
-#: templates/diffviewer/diff_file_fragment.html:120
+#: templates/diffviewer/diff_file_fragment.html:126
 msgid "Show all lines"
 msgstr "Visualizza tutte le linee"
 
-#: templates/diffviewer/diff_file_fragment.html:125
+#: templates/diffviewer/diff_file_fragment.html:131
 msgid "Show 20 more lines below"
 msgstr "Visualizza altre 20 linee in basso"
+
+#: templates/diffviewer/diff_fragment_error.html:35
+msgid "Diff currently unavailable."
+msgstr "Diff attualmente non disponibile."
 
 #: templates/diffviewer/diff_fragment_error.html:39
 msgid "Error:"
@@ -3957,33 +3919,51 @@ msgstr "Vai alla revisione:"
 msgid "Changes between r%(revision)s and:"
 msgstr "Modifiche fra r%(revision)s e:"
 
-#: templates/diffviewer/view_diff.html:163
-msgid "Files Changed:"
-msgstr "File modificati:"
-
-#: templates/diffviewer/view_diff.html:171
+#: templates/diffviewer/view_diff.html:170
 msgid "Expand changes"
 msgstr "Espandi modifiche"
 
-#: templates/diffviewer/view_diff.html:173
+#: templates/diffviewer/view_diff.html:172
 msgid "Collapse changes"
 msgstr "Contrai modifiche"
 
-#: templates/diffviewer/view_diff.html:176
+#: templates/diffviewer/view_diff.html:175
 msgid "Hide Extra Whitespace"
 msgstr "Nascondi spazi bianchi aggiuntivi"
 
-#: templates/diffviewer/view_diff.html:177
+#: templates/diffviewer/view_diff.html:176
 msgid "Show Extra Whitespace"
 msgstr "Visualizza spazi bianchi aggiuntivi"
 
-#: templates/diffviewer/view_diff.html:179
+#: templates/diffviewer/view_diff.html:178
 msgid "Hide Whitespace changes"
 msgstr "Nascondi modifiche agli spazi bianchi"
 
-#: templates/diffviewer/view_diff.html:180
+#: templates/diffviewer/view_diff.html:179
 msgid "Show Whitespace changes"
 msgstr "Visualizza modifiche agli spazi bianchi"
+
+#: templates/diffviewer/view_diff.html:211
+#, python-format
+msgid "This diff has been split across %(pages)s pages:"
+msgstr "Questo diff è stato diviso in %(pages)s pagine:"
+
+#: templates/diffviewer/view_diff.html:212
+msgid "Previous Page"
+msgstr "Pagina precedente"
+
+#: templates/diffviewer/view_diff.html:215
+msgid "Current Page"
+msgstr "Pagina corrente"
+
+#: templates/diffviewer/view_diff.html:217
+#, python-format
+msgid "Page %(num)s "
+msgstr "Pagina %(num)s "
+
+#: templates/diffviewer/view_diff.html:220
+msgid "Next Page"
+msgstr "Pagina successiva"
 
 #: templates/reviews/comment_issue.html:16
 msgid "Show all issues"
@@ -4430,6 +4410,25 @@ msgstr "Nuova risposta"
 #: webapi/resources.py:6690
 msgid "New review"
 msgstr "Nuova revisione"
+
+#~ msgid "deleted"
+#~ msgstr "eliminato"
+
+#~ msgid ""
+#~ "\n"
+#~ " 1  change\n"
+#~ msgid_plural ""
+#~ "\n"
+#~ " %(counter)s changes\n"
+#~ msgstr[0] ""
+#~ "\n"
+#~ " 1 modifica\n"
+#~ msgstr[1] ""
+#~ "\n"
+#~ " %(counter)s modifiche\n"
+
+#~ msgid "Files Changed:"
+#~ msgstr "File modificati:"
 
 #~ msgid "Change Number"
 #~ msgstr "Numero modifica"
