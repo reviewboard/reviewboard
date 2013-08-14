@@ -2,7 +2,7 @@ from django.conf import settings
 from django.http import HttpResponse
 from django.template import Context
 from django.template.loader import render_to_string
-from django.utils.translation import ugettext as _
+from django.utils.translation import ugettext as _, get_language
 from djblets.util.misc import cache_memoize
 
 from reviewboard.diffviewer.chunk_generator import compute_chunk_last_header
@@ -116,7 +116,7 @@ class DiffRenderer(object):
         if self.highlighting:
             key += '-highlighting'
 
-        key += '-%s' % settings.AJAX_SERIAL
+        key += '-%s-%s' % (get_language(), settings.AJAX_SERIAL)
 
         return key
 

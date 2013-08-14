@@ -14,9 +14,6 @@ from reviewboard.admin.checks import get_can_enable_syntax_highlighting
 from reviewboard.scmtools.core import PRE_CREATION, HEAD
 
 
-NEW_FILE_STR = _("New File")
-NEW_CHANGE_STR = _("New Change")
-
 NEWLINE_CONVERSION_RE = re.compile(r'\r(\r?\n)?')
 
 ALPHANUM_RE = re.compile(r'\w')
@@ -163,7 +160,7 @@ def get_revision_str(revision):
     elif revision == PRE_CREATION:
         return ""
     else:
-        return "Revision %s" % revision
+        return _("Revision %s") % revision
 
 
 def get_diff_files(diffset, filediff=None, interdiffset=None, request=None):
@@ -261,20 +258,20 @@ def get_diff_files(diffset, filediff=None, interdiffset=None, request=None):
                     filediff.diff == interfilediff.diff):
                 continue
 
-            source_revision = "Diff Revision %s" % diffset.revision
+            source_revision = _("Diff Revision %s") % diffset.revision
 
             if not interfilediff and force_interdiff:
-                dest_revision = "Diff Revision %s - File Reverted" % \
+                dest_revision = _("Diff Revision %s - File Reverted") % \
                                 interdiffset.revision
             else:
-                dest_revision = "Diff Revision %s" % interdiffset.revision
+                dest_revision = _("Diff Revision %s") % interdiffset.revision
         else:
             source_revision = get_revision_str(filediff.source_revision)
 
             if newfile:
-                dest_revision = NEW_FILE_STR
+                dest_revision = _("New File")
             else:
-                dest_revision = NEW_CHANGE_STR
+                dest_revision = _("New Change")
 
         i = filediff.source_file.rfind('/')
 

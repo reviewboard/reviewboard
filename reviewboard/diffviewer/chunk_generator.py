@@ -4,7 +4,7 @@ from difflib import SequenceMatcher
 
 from django.utils.html import escape
 from django.utils.safestring import mark_safe
-from django.utils.translation import ugettext as _
+from django.utils.translation import ugettext as _, get_language
 from djblets.log import log_timed
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.util.misc import cache_memoize
@@ -114,6 +114,8 @@ class DiffChunkGenerator(object):
                                         self.interfilediff.pk)
         else:
             key += 'interdiff-%s-none' % self.filediff.pk
+
+        key += '-%s' % get_language()
 
         return key
 

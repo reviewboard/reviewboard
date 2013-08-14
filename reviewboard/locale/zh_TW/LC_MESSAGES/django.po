@@ -3,7 +3,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2013-08-14 17:56-0700\n"
+"POT-Creation-Date: 2013-08-14 17:59-0700\n"
 "PO-Revision-Date: 2012-05-12 08:00+0800\n"
 "Last-Translator: Po-Chien Lin <linpc@cs.nctu.edu.tw>\n"
 "Language-Team: Po-Chien Lin <linpc@cs.nctu.edu.tw>\n"
@@ -1101,27 +1101,42 @@ msgstr "Diff 檔"
 msgid "Parent diff"
 msgstr "父送交"
 
-#: diffviewer/chunk_generator.py:464
+#: diffviewer/chunk_generator.py:466
 #, python-format
 msgid ""
 "Diff content couldn't be converted to UTF-8 using the following encodings: %s"
 msgstr "Diff 檔內容無法透過下面 %s 的編碼方式轉換至 UTF-8"
 
-#: diffviewer/diffutils.py:17
-msgid "New File"
-msgstr "新的檔案"
-
-#: diffviewer/diffutils.py:18
-msgid "New Change"
-msgstr "新的變更"
-
-#: diffviewer/diffutils.py:93
+#: diffviewer/diffutils.py:90
 #, python-format
 msgid ""
 "The patch to '%(filename)s' didn't apply cleanly. The temporary files have "
 "been left in '%(tempdir)s' for debugging purposes.\n"
 "`patch` returned: %(output)s"
 msgstr ""
+
+#: diffviewer/diffutils.py:163
+#, fuzzy, python-format
+msgid "Revision %s"
+msgstr "版本"
+
+#: diffviewer/diffutils.py:261 diffviewer/diffutils.py:267
+#, fuzzy, python-format
+msgid "Diff Revision %s"
+msgstr "Diff 檔案第 %(revision)s 版"
+
+#: diffviewer/diffutils.py:264
+#, python-format
+msgid "Diff Revision %s - File Reverted"
+msgstr ""
+
+#: diffviewer/diffutils.py:272
+msgid "New File"
+msgstr "新的檔案"
+
+#: diffviewer/diffutils.py:274
+msgid "New Change"
+msgstr "新的變更"
 
 #: diffviewer/forms.py:14
 msgid "Base Directory"
@@ -3516,6 +3531,12 @@ msgstr "這個檔案只包含空白符的變更"
 #: templates/diffviewer/diff_file_fragment.html:121
 msgid "Show 20 more lines above"
 msgstr ""
+
+#: templates/diffviewer/diff_file_fragment.html:125
+#, python-format
+msgid "%(lines)s line"
+msgid_plural "%(lines)s lines"
+msgstr[0] ""
 
 #: templates/diffviewer/diff_file_fragment.html:126
 #, fuzzy

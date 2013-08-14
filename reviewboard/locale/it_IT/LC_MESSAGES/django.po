@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2013-08-14 17:56-0700\n"
+"POT-Creation-Date: 2013-08-14 17:59-0700\n"
 "PO-Revision-Date: 2013-07-06 10:40+0200\n"
 "Last-Translator: Alessandro Menti <alessandro.menti@hotmail.it>\n"
 "Language: it-IT\n"
@@ -1192,7 +1192,7 @@ msgstr "Diff"
 msgid "Parent diff"
 msgstr "Diff genitore"
 
-#: diffviewer/chunk_generator.py:464
+#: diffviewer/chunk_generator.py:466
 #, python-format
 msgid ""
 "Diff content couldn't be converted to UTF-8 using the following encodings: %s"
@@ -1200,15 +1200,7 @@ msgstr ""
 "Non è stato possibile convertire il contenuto del diff in UTF-8 utilizzando "
 "le codifiche seguenti: %s"
 
-#: diffviewer/diffutils.py:17
-msgid "New File"
-msgstr "Nuovo file"
-
-#: diffviewer/diffutils.py:18
-msgid "New Change"
-msgstr "Nuova modifica"
-
-#: diffviewer/diffutils.py:93
+#: diffviewer/diffutils.py:90
 #, fuzzy, python-format
 msgid ""
 "The patch to '%(filename)s' didn't apply cleanly. The temporary files have "
@@ -1218,6 +1210,29 @@ msgstr ""
 "La patch per '%s' non è stata applicata in modo pulito. I file temporanei "
 "sono stati mantenuti in '%s' per il debug.\n"
 "`patch` ha restituito: %s"
+
+#: diffviewer/diffutils.py:163
+#, fuzzy, python-format
+msgid "Revision %s"
+msgstr "revisione"
+
+#: diffviewer/diffutils.py:261 diffviewer/diffutils.py:267
+#, fuzzy, python-format
+msgid "Diff Revision %s"
+msgstr "Revisione diff %(revision)s"
+
+#: diffviewer/diffutils.py:264
+#, python-format
+msgid "Diff Revision %s - File Reverted"
+msgstr ""
+
+#: diffviewer/diffutils.py:272
+msgid "New File"
+msgstr "Nuovo file"
+
+#: diffviewer/diffutils.py:274
+msgid "New Change"
+msgstr "Nuova modifica"
 
 #: diffviewer/forms.py:14
 msgid "Base Directory"
@@ -3829,6 +3844,13 @@ msgstr "Questo file contiene solo modifiche agli spazi bianchi."
 #: templates/diffviewer/diff_file_fragment.html:121
 msgid "Show 20 more lines above"
 msgstr "Visualizza altre 20 linee in alto"
+
+#: templates/diffviewer/diff_file_fragment.html:125
+#, python-format
+msgid "%(lines)s line"
+msgid_plural "%(lines)s lines"
+msgstr[0] ""
+msgstr[1] ""
 
 #: templates/diffviewer/diff_file_fragment.html:126
 msgid "Show all lines"

@@ -122,7 +122,7 @@
 {% endif %}
    </th>
    <td colspan="3">
-    {% definevar 'expand_text' %}{{chunk.numlines}} line{{chunk.numlines|pluralize}}{% enddefinevar %}
+    {% definevar 'expand_text' %}{% blocktrans count lines=chunk.numlines %}{{lines}} line{% plural %}{{lines}} lines{% endblocktrans %}{% enddefinevar %}
     {% diff_expand_link 'all' _('Show all lines') 0 0 expand_text %}
    </td>
   </tr>
