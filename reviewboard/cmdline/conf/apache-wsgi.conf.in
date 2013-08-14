@@ -20,8 +20,12 @@
 		SetHandler None
 		Options None
 
-		AddType text/plain .html .htm .shtml .php .php3 .php4 .php5
-		AddType text/plain .pl .py .cgi .phtml .phtm
+		AddType text/plain .html .htm .shtml .php .php3 .php4 .php5 .phps .asp
+		AddType text/plain .pl .py .fcgi .cgi .phtml .phtm .pht .jsp .sh .rb
+
+		<IfModule mod_php5.c>
+			php_flag engine off
+		</IfModule>
 	</Location>
 
 	# Alias static media requests to filesystem
