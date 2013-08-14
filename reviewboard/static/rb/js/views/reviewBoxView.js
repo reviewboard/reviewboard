@@ -44,14 +44,15 @@ RB.ReviewBoxView = RB.CollapsableBoxView.extend({
         });
 
         _.each(this.$('.review-comments .issue-indicator'), function(el) {
-            var $issueState = $('.issue-state', el);
+            var $issueState = $('.issue-state', el),
+                issueBar;
 
             /*
              * Not all issue-indicator divs have an issue-state div for
              * the issue bar.
              */
             if ($issueState.length > 0) {
-                var issueBar = new RB.CommentIssueBarView({
+                issueBar = new RB.CommentIssueBarView({
                     el: el,
                     reviewID: this.model.id,
                     commentID: $issueState.data('comment-id'),

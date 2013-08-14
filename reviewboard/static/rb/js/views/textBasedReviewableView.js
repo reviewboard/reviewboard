@@ -41,12 +41,11 @@ RB.TextBasedReviewableView = RB.FileAttachmentReviewableView.extend({
      * auto-incremented id to distinguish the child element from other elements.
      */
     _applyCommentWrapper: function() {
-        var self = this,
-            child_id = 0,
+        var child_id = 0,
             wrapped_elements = $('<div/>');
 
         this._$rendered.each(function() {
-            var wrapper = $('<div />')
+            $('<div />')
                 .attr('class', 'text-review-ui-container')
                 .attr('data-child-id', child_id++)
                 .append($(this))
@@ -71,10 +70,11 @@ RB.TextBasedReviewableView = RB.FileAttachmentReviewableView.extend({
      * has no comments so far.
      */
     _onClick: function(evt) {
-        var wrapper = $(evt.target).closest('.text-review-ui-container');
+        var wrapper = $(evt.target).closest('.text-review-ui-container'),
+            child_id;
 
-        if (wrapper.has('.commentflag').length == 0) {
-            var child_id = wrapper.data('child-id');
+        if (wrapper.has('.commentflag').length === 0) {
+            child_id = wrapper.data('child-id');
 
             this.createAndEditCommentBlock({
                 child_id: child_id
