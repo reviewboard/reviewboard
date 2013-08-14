@@ -246,8 +246,7 @@ class BeanstalkTests(ServiceTests):
         self.assertEqual(result, 'My data')
 
     def _test_get_file_exists(self, tool_name, revision, base_commit_id,
-                              expected_revision, expected_found,
-                              expected_http_called=True):
+                              expected_revision, expected_found):
         def _http_get(service, url, *args, **kwargs):
             expected_url = ('https://mydomain.beanstalkapp.com/api/'
                             'repositories/myrepo/')
@@ -454,7 +453,8 @@ class BitbucketTests(ServiceTests):
         self.assertEqual(result, 'My data')
 
     def _test_get_file_exists(self, tool_name, revision, base_commit_id,
-                              expected_revision, expected_found):
+                              expected_revision, expected_found,
+                              expected_http_called=True):
         def _http_get(service, url, *args, **kwargs):
             self.assertEqual(
                 url,
