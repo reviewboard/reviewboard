@@ -29,6 +29,14 @@ urlpatterns = patterns('',
     (r'^admin/', include('reviewboard.admin.urls')),
 )
 
+
+urlpatterns += patterns(
+    '',
+    url(r'^jsi18n/', 'djblets.util.views.cached_javascript_catalog',
+        {'packages': ('reviewboard',)}, name='js-catalog')
+)
+
+
 urlpatterns += extension_manager.get_url_patterns()
 
 # Add static media if running in DEBUG mode

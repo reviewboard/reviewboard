@@ -141,11 +141,12 @@
     </div>
    </div>
   </div>
+  <script src="{% url js-catalog %}"></script>
   {% include "js/jquery-ui.html" %}
   {% compressed_js "3rdparty" %}
-  <script type="text/javascript" src="{% static "djblets/js/jquery.gravy.js" %}"></script>
+  <script src="{% static "djblets/js/jquery.gravy.js" %}"></script>
   {% compressed_js "common" %}
-  <script type="text/javascript">
+  <script>
     RB.UserSession.create({
 {% if request.user.is_authenticated %}
         authenticated: true,

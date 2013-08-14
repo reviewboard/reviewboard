@@ -148,6 +148,7 @@ RB_BUILTIN_APPS = [
     'djblets.util',
     'djblets.webapi',
     'pipeline', # Must be after djblets.pipeline
+    'reviewboard',
     'reviewboard.accounts',
     'reviewboard.admin',
     'reviewboard.attachments',

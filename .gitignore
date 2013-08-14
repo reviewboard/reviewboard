@@ -25,6 +25,7 @@ settings_local.py
 
 # Generated locale files
 django.mo
+djangojs.mo
 
 # Generated media files
 reviewboard/static/rb/css/*.css
