@@ -10,6 +10,7 @@ Authentication Settings
 * :ref:`ldap-authentication-settings`
 * :ref:`nis-authentication-settings`
 * :ref:`legacy-authentication-settings`
+* :ref:`fixing-a-broken-authentication-setup`
 
 
 .. _auth-general-settings:
@@ -210,6 +211,18 @@ This is available if `Authentication Method`_ is set to
     you're doing.
 
     This setting is required.
+
+
+.. _fixing-a-broken-authentication-setup
+
+Fixing a Broken Authentication Setup
+====================================
+
+Misconfiguring authentication can leave you unable to log in to your Review
+Board server to fix it. In this case, you can reset the authentication backend
+back to the builtin database method with the :command:`rb-site` command:
+
+    $ rb-site manage /path/to/site set-siteconfig -- --key=auth_backend --value=builtin
 
 
 .. comment: vim: ft=rst et
