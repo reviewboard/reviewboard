@@ -168,7 +168,7 @@ setup(name=PACKAGE_NAME,
       },
       cmdclass=cmdclasses,
       install_requires=[
-          'Django>=1.4.5,<1.5',
+          'Django>=1.4.6,<1.5',
           'django_evolution>=0.6.9',
           'Djblets>=0.7.16,<0.7.17',
           'django-pipeline>=1.2.24,<1.3',

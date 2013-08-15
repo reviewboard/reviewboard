@@ -90,6 +90,7 @@ settings_map.update({
     'aws_headers':             'AWS_HEADERS',
     'aws_calling_format':      'AWS_CALLING_FORMAT',
     'aws_default_acl':         'AWS_DEFAULT_ACL',
+    'aws_querystring_auth':    'AWS_QUERYSTRING_AUTH',
     'aws_querystring_active':  'AWS_QUERYSTRING_ACTIVE',
     'aws_querystring_expire':  'AWS_QUERYSTRING_EXPIRE',
     'aws_s3_secure_urls':      'AWS_S3_SECURE_URLS',
@@ -143,6 +144,7 @@ defaults.update({
     'aws_headers':             {},
     'aws_calling_format':      2,
     'aws_default_acl':         'public-read',
+    'aws_querystring_auth':    False,
     'aws_querystring_active':  False,
     'aws_querystring_expire':  60,
     'aws_s3_secure_urls':      False,
@@ -267,6 +269,7 @@ def load_site_config():
         settings.DEFAULT_FILE_STORAGE = storage_backend_map['builtin']
 
     # These blow up if they're not the perfectly right types
+    settings.AWS_QUERYSTRING_AUTH = siteconfig.get('aws_querystring_auth')
     settings.AWS_ACCESS_KEY_ID = str(siteconfig.get('aws_access_key_id'))
     settings.AWS_SECRET_ACCESS_KEY = str(siteconfig.get('aws_secret_access_key'))
     settings.AWS_STORAGE_BUCKET_NAME = str(siteconfig.get('aws_s3_bucket_name'))
