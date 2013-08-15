@@ -41,8 +41,8 @@ New Features
 * Add easier site upgrading to :command:`rb-site`.
 
   New site installations are now recorded in :file:`/etc/reviewboard/sites`.
-  When upgrading, you can now run ``rb-site --all-sites`` to upgrade all
-  known sites.
+  When upgrading, you can now run ``rb-site upgrade --all-sites`` to
+  upgrade all known sites.
 
   If you're running an existing installation, you can just add the path
   of your site directory to :file:`/etc/reviewboard/sites`.
