@@ -18,6 +18,8 @@ from reviewboard import get_version_string
 
 DOCS_BASE = "http://www.reviewboard.org/docs/manual/dev/"
 
+SITELIST_FILE_UNIX = "/etc/reviewboard/sites"
+
 
 # See if GTK is a possibility.
 try:
@@ -628,6 +630,58 @@ class Site(object):
         fp = open(dest_filename, "w")
         fp.write(template)
         fp.close()
+
+
+class SiteList(object):
+    """Maintains the list of sites installed on the system."""
+    def __init__(self, path):
+        self.path = path
+
+        # Read the list in as a unique set.
+        # This way, we can easily eliminate duplicates.
+        self.sites = set()
+
+        if os.path.exists(self.path):
+            f = open(self.path, 'r')
+
+            for line in f:
+                site = line.strip()
+
+                # Verify that this path exists on the system
+                # And add it to the dictionary.
+                if os.path.exists(site):
+                    self.sites.add(site)
+
+            f.close()
+
+    def add_site(self, site_path):
+        self.sites.add(site_path)
+
+        # Write all of the sites back to the file.
+        # Sort keys to ensure consistent order.
+        ordered_sites = list(self.sites)
+        ordered_sites.sort()
+
+        # Create the parent directory of the site
+        # if it doesn't already exist
+        if not os.path.exists(os.path.dirname(self.path)):
+            # Create the parent directory with read-write
+            # permissions for user but read and execute
+            # only for others.
+            try:
+                os.makedirs(os.path.dirname(self.path), 0755)
+            except:
+                # We shouldn't consider this an abort-worthy error
+                # We'll warn the user and just complete setup
+                print "WARNING: Could not save site to sitelist %s" % self.path
+                return
+
+        f = open(self.path, "w")
+
+        for site in ordered_sites:
+            f.write("%s\n" % site)
+
+        f.close()
 
 
 class UIToolkit(object):
@@ -1321,12 +1375,13 @@ class InstallCommand(Command):
     needs_ui = True
 
     def add_options(self, parser):
-        isWin = (platform.system() == "Windows")
+        is_windows = platform.system() == "Windows"
 
         group = OptionGroup(parser, "'install' command",
                             self.__doc__.strip())
         group.add_option("--copy-media", action="store_true",
-                         dest="copy_media", default=isWin,
+                         dest="copy_media",
+                         default=is_windows,
                          help="copy media files instead of symlinking")
 
         group.add_option("--noinput", action="store_true", default=False,
@@ -1372,6 +1427,13 @@ class InstallCommand(Command):
         group.add_option("--admin-email",
                          help="the site administrator's e-mail address")
 
+        # UNIX-specific arguments
+        if not is_windows:
+            group.add_option("--sitelist",
+                             default=SITELIST_FILE_UNIX,
+                             help="the path to a file storing a list of "
+                                  "installed sites")
+
         parser.add_option_group(group)
 
     def run(self):
@@ -1401,6 +1463,7 @@ class InstallCommand(Command):
             self.ask_web_server_type()
             self.ask_python_loader()
             self.ask_admin_user()
+            # Do not ask for sitelist file, it should not be common.
 
         self.show_install_status()
         self.show_finished()
@@ -1742,6 +1805,15 @@ class InstallCommand(Command):
         siteconfig.set("site_admin_email", site.admin_email)
         siteconfig.save()
 
+        if platform.system() != 'Windows':
+            abs_sitelist = os.path.abspath(site.sitelist)
+
+            # Add the site to the sitelist file.
+            print "Saving site %s to the sitelist %s\n" % (
+                  site.install_dir, abs_sitelist)
+            sitelist = SiteList(abs_sitelist)
+            sitelist.add_site(site.install_dir)
+
 
 class UpgradeCommand(Command):
     """
@@ -1754,6 +1826,9 @@ class UpgradeCommand(Command):
         group.add_option("--no-db-upgrade", action="store_false",
                          dest="upgrade_db", default=True,
                          help="don't upgrade the database")
+        group.add_option("--all-sites", action="store_true",
+                         dest="all_sites", default=False,
+                         help="Upgrade all installed sites")
         parser.add_option_group(group)
 
     def run(self):
@@ -1905,28 +1980,38 @@ def parse_options(args):
     if options.noinput:
         options.force_console = True
 
-    # We expect at least two args (command and install path)
-    if len(args) < 2 or args[0] not in COMMANDS.keys():
+    if len(args) < 1:
         parser.print_help()
         sys.exit(1)
 
     command = args[0]
-    install_dir = args[1]
+
+    # Check whether we've been asked to upgrade all installed sites
+    # by 'rb-site upgrade' with no path specified.
+    if command == 'upgrade' and options.all_sites:
+        sitelist = SiteList(options.sitelist)
+        site_paths = sitelist.sites
+
+        if len(site_paths) == 0:
+            print "No Review Board sites listed in %s" % sitelist.path
+            sys.exit(1)
+    elif len(args) >= 2 and command in COMMANDS:
+        site_paths = [args[1]]
+    else:
+        parser.print_help()
+        sys.exit(1)
 
     globals()["args"] = args[2:]
 
-    return (command, install_dir)
+    return (command, site_paths)
 
 
 def main():
     global site
     global ui
 
-    command_name, install_dir = parse_options(sys.argv[1:])
+    command_name, site_paths = parse_options(sys.argv[1:])
     command = COMMANDS[command_name]
-    site = Site(install_dir, options)
-
-    os.putenv('HOME', os.path.join(site.install_dir, "data"))
 
     if command.needs_ui and can_use_gtk and not options.force_console:
         ui = GtkUI()
@@ -1934,8 +2019,13 @@ def main():
     if not ui:
         ui = ConsoleUI()
 
-    command.run()
-    ui.run()
+    for install_dir in site_paths:
+        site = Site(install_dir, options)
+
+        os.putenv('HOME', os.path.join(site.install_dir, "data"))
+
+        command.run()
+        ui.run()
 
 
 if __name__ == "__main__":
