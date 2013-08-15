@@ -54,6 +54,10 @@
 @paginate-text-color: #f4f379;
 
 
+/*
+ * The .diff-changes-* rules are used only within JavaScript code to
+ * figure out the colors used to display the file complexity icons.
+ */
 .diff-changes-icon-insert {
   color: @diff-insert-dot-color;
 }
@@ -83,16 +87,36 @@
   &.diff-error {
     td {
       background: #fff6a6;
-      padding: 6px;
+      padding: 1em;
 
       a {
         color: blue;
         font-weight: bold;
       }
+
+      h2 {
+        font-size: 10pt;
+        margin: 0em 0 2em 0;
+        padding: 0;
+
+        .rb-icon {
+          vertical-align: text-bottom;
+        }
+      }
     }
 
     .error-details {
       display: none;
+
+      pre {
+        background: white;
+        border: 1px #999 solid;
+        padding: 1em;
+      }
+    }
+
+    .revision-row th {
+      padding-left: 4em;
     }
   }
 
@@ -223,11 +247,23 @@
       display: none;
     }
 
-    &.binary td,
-    &.deleted td,
-    &.whitespace-file td {
+    &.binary td {
       background: #dbebff;
-      padding: 4px;
+      padding: 1em;
+    }
+
+    &.whitespace-file td {
+      background: @diff-replace-color;
+      padding: 1em;
+    }
+
+    &.deleted td {
+      background: @diff-delete-color;
+      padding: 1em;
+    }
+
+    &.no-changes td {
+      padding: 1em;
     }
 
     &.delete {
@@ -463,7 +499,7 @@
 
 #diff_index {
   border: 1px #BBB solid;
-  margin: 1em 1em 2em 1em;
+  margin: 1em 0;
 
   table {
     padding: 0;
@@ -481,12 +517,8 @@
         background-image: url("../images/spinner.gif");
         background-position: center center;
         background-repeat: no-repeat;
-        padding: 12px;
-      }
-
-      &.renamed-file .diff-file-info .diff-file-extra {
-        display: block;
-        padding: 1em 0 0 0;
+        width: 20px;
+        height: 24px;
       }
     }
 
@@ -504,12 +536,12 @@
       }
 
       &.diff-file-icon {
-        padding: 2px;
+        padding: 2px 0 0 2px;
 
         .rb-icon {
           margin: 2px;
           width: 16px;
-          height: 16px;
+          height: 20px;
         }
       }
 
@@ -578,8 +610,13 @@
   border-top: 1px #c2c1b0 solid;
   margin-top: 20px;
 
-  .main h1 {
-    margin: 1em;
+  .main {
+    padding: 1em;
+
+    h1, p {
+      margin: 1em 0;
+      padding: 0;
+    }
   }
 }
 

@@ -3,6 +3,10 @@
 
 <table class="sidebyside diff-error{% if file.newfile %} newfile{% endif %}"
        id="file{{file.filediff.id}}">
+ <colgroup>
+  <col class="left" />
+  <col class="right" />
+ </colgroup>
  <thead>
   <tr class="filename-row">
 {% if comment %}
@@ -10,9 +14,13 @@
     <a href="{{comment.get_absolute_url}}">{{comment.filediff.dest_file_display}}</a>
     <span class="diffrevision">
 {% if comment.interfilediff %}
-     (Diff revisions {{comment.filediff.diffset.revision}} - {{comment.interfilediff.diffset.revision}})
+{%  blocktrans with comment.filediff.diffset.revision as revision1 and comment.interfilediff.diffset.revision as revision2 %}
+     (Diff revisions {{revision1}} - {{revision2}})
+{%  endblocktrans %}
 {% else %}
-     (Diff revision {{comment.filediff.diffset.revision}})
+{%  blocktrans with comment.filediff.diffset.revision as revision %}
+     (Diff revision {{revision}})
+{%  endblocktrans %}
 {% endif %}
     </span>
 {% else %}
@@ -32,18 +40,34 @@
  </thead>
  <tbody>
   <tr>
-   <td colspan="2">{% trans "Diff currently unavailable." %}</td>
-  </tr>
+   <td colspan="2">
+    <h2>
+     <div class="rb-icon rb-icon-warning"></div>
+     {% trans "There was an error displaying this diff." %}
+    </h2>
 {% if error %}
-  <tr>
-   <td colspan="2"><b>{% trans "Error:" %}</b> {{error}}</td>
-  </tr>
+    <p>{{error}}</p>
 {% endif %}
+    <p>
+{% blocktrans %}
+     This may be a bug in the software, a temporary outage, or an issue
+     with the format of your diff.
+{% endblocktrans %}
+    </p>
+    <p>
+{% url support as support_url %}
+{% blocktrans %}
+     Please try again, and if you still have trouble,
+     <a href="{{support_url}}">contact support</a>.
+{% endblocktrans %}
+    </p>
+   </td>
+  </tr>
 {% if trace %}
   <tr>
    <td colspan="2">
     <a id="diff-error-link-{{file.filediff.id}}" href="#"
-          onclick="$('#diff-error-details-{{file.filediff.id}}').toggle(); return false;">Details</a>
+       onclick="$('#diff-error-details-{{file.filediff.id}}').toggle(); return false;">{% trans "Details" %}</a>
    </td>
   </tr>
   <tr class="error-details" id="diff-error-details-{{file.filediff.id}}">

@@ -150,25 +150,25 @@ RB.ChunkHighlighterView = Backbone.View.extend({
         outerTop    = top - this._borderOffsetY;
 
         this._$left.css({
-            left: outerLeft,
+            left: left,
             top: outerTop,
             height: outerHeight
         });
 
         this._$top.css({
-            left: outerLeft,
+            left: left,
             top: outerTop,
             width: outerWidth
         });
 
         this._$right.css({
-            left: outerLeft + outerWidth,
+            left: left + outerWidth,
             top: outerTop,
             height: outerHeight
         });
 
         this._$bottom.css({
-            left: outerLeft,
+            left: left,
             top: outerTop + outerHeight,
             width: outerWidth + this._borderWidth
         });
