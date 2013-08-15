@@ -52,6 +52,10 @@ New Features
   Patch by Stephen Gallagher.
 
 
+.. _Beanstalk: http://www.beanstalkapp.com/
+.. _Bitbucket: http://bitbucket.org/
+
+
 Bug Fixes
 =========
 
