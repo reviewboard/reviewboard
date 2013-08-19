@@ -34,6 +34,7 @@ import os
 import sys
 
 from django.conf import settings
+from django.core.exceptions import ImproperlyConfigured
 from django.db import DatabaseError
 from django.utils.translation import gettext as _
 from djblets.util.filesystem import is_exe_in_path
@@ -281,6 +282,8 @@ def get_can_use_amazon_s3():
     try:
         from storages.backends.s3boto import S3BotoStorage
         return (True, None)
+    except ImproperlyConfigured, e:
+        return (False, _('Amazon S3 backend failed to load: %s') % e)
     except ImportError:
         return (False, _(
             'Amazon S3 depends on django-storages, which is not installed'
