@@ -1,13 +1,7 @@
 {% extends base_template %}
-{% load djblets_js i18n reviewtags %}
+{% load djblets_js %}
 
-{% block title %}
- {{review_ui.name}}{% if caption %}: {{caption}}{% endif %}
-{% endblock %}
-
-{% block scripts-post %}
-{{block.super}}
-
+{% block review_ui_scripts %}
 {%  for js_file in review_ui.js_files %}
 <script src="{{js_file}}"></script>
 {%  endfor %}

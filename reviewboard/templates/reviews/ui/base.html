@@ -1,6 +1,10 @@
 {% extends "reviews/reviewable_base.html" %}
 {% load djblets_deco i18n reviewtags tz %}
 
+{% block title %}
+ {{review_ui.name}}{% if caption %}: {{caption}}{% endif %}
+{% endblock %}
+
 {% block content %}
 <div id="review_request">
 {%  box "review-request" %}
@@ -48,4 +52,6 @@
 {%  include "reviews/reviewable_page_data.js" %}
     }));
 </script>
+
+{%  block review_ui_scripts %}{% endblock %}
 {% endblock %}

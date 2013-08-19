@@ -3,8 +3,10 @@ import os
 from uuid import uuid4
 
 import mimeparse
+from django.http import HttpResponse
 from django.shortcuts import render_to_response
 from django.template.context import RequestContext
+from django.template.loader import render_to_string
 from django.utils import simplejson
 from django.utils.html import escape
 from django.utils.safestring import mark_safe
@@ -36,41 +38,62 @@ class ReviewUI(object):
         self.obj = obj
 
     def render_to_response(self, request):
-        if request.GET.get('inline', False):
-            base_template_name = 'reviews/ui/base_inline.html'
-        else:
-            base_template_name = 'reviews/ui/base.html'
+        """Renders the review UI to an HttpResponse.
 
+        This is used to render a page dedicated to the review UI, complete
+        with the standard Review Board chrome.
+        """
+        return HttpResponse(
+            self.render_to_string(request, request.GET.get('inline', False)))
+
+    def render_to_string(self, request, inline=True):
+        """Renders the review UI to an HTML string.
+
+        This renders the review UI to a string for use in embedding into
+        either an existing page or a new page.
+
+        If inline is True, the rendered review UI will be embeddable into
+        an existing page.
+
+        If inline is False, it will be rendered for use as a full, standalone
+        page, compelte with Review Board chrome.
+        """
         self.request = request
 
         draft = self.review_request.get_draft(request.user)
         review_request_details = draft or self.review_request
-        review = self.review_request.get_pending_review(request.user)
+        context = {
+            'caption': self.get_caption(draft),
+            'comments': self.get_comments(),
+            'draft': draft,
+            'review_request_details': review_request_details,
+            'review_request': self.review_request,
+            'review_ui': self,
+            'review_ui_uuid': str(uuid4()),
+            self.object_key: self.obj,
+        }
 
-        if self.review_request.repository_id:
-            diffset_count = DiffSet.objects.filter(
-                history__pk=self.review_request.diffset_history_id).count()
+        if inline:
+            context['base_template'] = 'reviews/ui/base_inline.html'
         else:
-            diffset_count = 0
+            if self.review_request.repository_id:
+                diffset_count = DiffSet.objects.filter(
+                    history__pk=self.review_request.diffset_history_id).count()
+            else:
+                diffset_count = 0
 
-        return render_to_response(
+            context.update({
+                'base_template': 'reviews/ui/base.html',
+                'has_diffs': (draft and draft.diffset) or diffset_count > 0,
+                'review': self.review_request.get_pending_review(request.user),
+            })
+
+        return render_to_string(
             self.template_name,
             RequestContext(
                 request,
-                make_review_request_context(request, self.review_request, {
-                    'base_template': base_template_name,
-                    'caption': self.get_caption(draft),
-                    'comments': self.get_comments(),
-                    'draft': draft,
-                    'has_diffs': (draft and draft.diffset) or
-                                 diffset_count > 0,
-                    'review_request_details': review_request_details,
-                    'review_request': self.review_request,
-                    'review': review,
-                    'review_ui': self,
-                    'review_ui_uuid': str(uuid4()),
-                    self.object_key: self.obj,
-                }),
+                make_review_request_context(request, self.review_request,
+                                            context),
                 **self.get_extra_context(request)))
 
     def get_comments(self):
