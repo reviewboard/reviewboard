@@ -12,6 +12,10 @@ from django.contrib.auth import get_backends
 from django.contrib.auth import hashers
 from django.utils.translation import ugettext as _
 from djblets.util.misc import get_object_or_none
+try:
+    from ldap.filter import filter_format
+except ImportError:
+    pass
 
 from reviewboard.accounts.forms import (ActiveDirectorySettingsForm,
                                         LDAPSettingsForm,
@@ -366,7 +370,9 @@ class ActiveDirectoryBackend(AuthBackend):
                     # correct when the values differ (e.g. if a
                     # "pre-Windows 2000" group name is set in AD)
                     group_data = self.search_ad(
-                        con, '(&(objectClass=group)(cn=%s))' % group)
+                        con,
+                        filter_format('(&(objectClass=group)(cn=%s))',
+                                      (group,)))
                     seen.update(self.get_member_of(con, group_data,
                                                    seen=seen, depth=depth))
             else:
@@ -427,7 +433,8 @@ class ActiveDirectoryBackend(AuthBackend):
                 con.simple_bind_s(bind_username, password)
                 user_data = self.search_ad(
                     con,
-                    '(&(objectClass=user)(sAMAccountName=%s))' % username,
+                    filter_format('(&(objectClass=user)(sAMAccountName=%s))',
+                                  (username,)),
                     userdomain)
 
                 if not user_data:
