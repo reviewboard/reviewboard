@@ -4720,7 +4720,7 @@ class ReviewRequestDraftResource(WebAPIResource):
                 field_result, field_modified_objects, invalid = \
                     self._set_draft_field_data(draft, field_name,
                                                kwargs[field_name],
-                                               local_site_name)
+                                               local_site_name, request)
 
                 if invalid:
                     invalid_fields[field_name] = invalid
@@ -4781,7 +4781,8 @@ class ReviewRequestDraftResource(WebAPIResource):
         """Returns the current draft of a review request."""
         pass
 
-    def _set_draft_field_data(self, draft, field_name, data, local_site_name):
+    def _set_draft_field_data(self, draft, field_name, data, local_site_name,
+                              request):
         """Sets a field on a draft.
 
         This will update a draft's field based on the provided data.
@@ -4823,7 +4824,8 @@ class ReviewRequestDraftResource(WebAPIResource):
                                                 Q(local_site=local_site))
                     elif field_name == "target_people":
                         obj = self._find_user(username=value,
-                                              local_site=local_site)
+                                              local_site=local_site,
+                                              request=request)
                     elif field_name == "depends_on":
                         obj = ReviewRequest.objects.for_id(value, local_site)
 
@@ -4866,7 +4868,7 @@ class ReviewRequestDraftResource(WebAPIResource):
 
                 yield bug
 
-    def _find_user(self, username, local_site):
+    def _find_user(self, username, local_site, request):
         """Finds a User object matching ``username``.
 
         This will search all authentication backends, and may create the
@@ -4882,7 +4884,7 @@ class ReviewRequestDraftResource(WebAPIResource):
         except User.DoesNotExist:
             for backend in auth.get_backends():
                 try:
-                    user = backend.get_or_create_user(username)
+                    user = backend.get_or_create_user(username, request)
                 except:
                     pass
 

@@ -38,7 +38,7 @@ class AuthBackend(object):
     def authenticate(self, username, password):
         raise NotImplementedError
 
-    def get_or_create_user(self, username):
+    def get_or_create_user(self, username, request):
         raise NotImplementedError
 
     def get_user(self, user_id):
@@ -95,8 +95,8 @@ class StandardAuthBackend(AuthBackend, ModelBackend):
     def authenticate(self, username, password):
         return ModelBackend.authenticate(self, username, password)
 
-    def get_or_create_user(self, username):
-        return ModelBackend.get_or_create_user(self, username)
+    def get_or_create_user(self, username, request):
+        return ModelBackend.get_or_create_user(self, username, request)
 
     def update_password(self, user, password):
         user.password = hashers.make_password(password)
@@ -119,7 +119,7 @@ class NISBackend(AuthBackend):
             new_crypted = crypt.crypt(password, original_crypted)
 
             if original_crypted == new_crypted:
-                return self.get_or_create_user(username, passwd)
+                return self.get_or_create_user(username, None, passwd)
         except nis.error:
             # FIXME I'm not sure under what situations this would fail (maybe
             # if their NIS server is down), but it'd be nice to inform the
@@ -128,7 +128,7 @@ class NISBackend(AuthBackend):
 
         return None
 
-    def get_or_create_user(self, username, passwd=None):
+    def get_or_create_user(self, username, request, passwd=None):
         import nis
 
         username = username.strip()
@@ -211,7 +211,7 @@ class LDAPBackend(AuthBackend):
                 userbinding = ','.join([uid, settings.LDAP_BASE_DN])
                 ldapo.bind_s(userbinding, password)
 
-            return self.get_or_create_user(username, ldapo)
+            return self.get_or_create_user(username, None, ldapo)
 
         except ImportError:
             pass
@@ -230,7 +230,7 @@ class LDAPBackend(AuthBackend):
 
         return None
 
-    def get_or_create_user(self, username, ldapo):
+    def get_or_create_user(self, username, request, ldapo):
         username = username.strip()
 
         try:
@@ -448,7 +448,7 @@ class ActiveDirectoryBackend(AuthBackend):
                                         (username, required_group))
                         return None
 
-                return self.get_or_create_user(username, user_data)
+                return self.get_or_create_user(username, None, user_data)
             except ldap.SERVER_DOWN:
                 logging.warning('Active Directory: Domain controller is down')
                 continue
@@ -461,7 +461,7 @@ class ActiveDirectoryBackend(AuthBackend):
                       'controller servers')
         return None
 
-    def get_or_create_user(self, username, ad_user_data):
+    def get_or_create_user(self, username, request, ad_user_data):
         username = username.strip()
 
         try:
@@ -503,7 +503,7 @@ class X509Backend(AuthBackend):
 
     def authenticate(self, x509_field=""):
         username = self.clean_username(x509_field)
-        return self.get_or_create_user(username)
+        return self.get_or_create_user(username, None)
 
     def clean_username(self, username):
         username = username.strip()
@@ -521,7 +521,7 @@ class X509Backend(AuthBackend):
 
         return username
 
-    def get_or_create_user(self, username):
+    def get_or_create_user(self, username, request):
         user = None
         username = username.strip()
 
