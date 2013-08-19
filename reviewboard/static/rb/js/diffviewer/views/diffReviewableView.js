@@ -460,6 +460,20 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
 
         this._selector.render();
 
+        _.each(this.$el.children('tbody.binary'), function(thumbnailEl) {
+            var $thumbnail = $(thumbnailEl),
+                id = $thumbnail.data('file-id'),
+                $caption = $thumbnail.find('.file-caption .edit'),
+                reviewRequest = this.model.get('reviewRequest'),
+                fileAttachment = reviewRequest.createFileAttachment({
+                    id: id
+                });
+
+            if (!$caption.hasClass('empty-caption')) {
+                fileAttachment.set('caption', $caption.text());
+            }
+        }, this);
+
         this._$window.on('scroll resize', this._updateCollapseButtonPos);
 
         return this;

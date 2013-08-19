@@ -94,6 +94,8 @@ var DiffFileIndexView = Backbone.View.extend({
             numInserts = 1;
         } else if (fileDeleted) {
             numDeletes = 1;
+        } else if ($item.hasClass('binary-file')) {
+            numReplaces = 1;
         } else {
             _.each($table.children('tbody'), function(chunk) {
                 var numRows = chunk.rows.length,

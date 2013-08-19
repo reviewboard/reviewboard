@@ -9,6 +9,7 @@ class FileAttachmentAdmin(admin.ModelAdmin):
                     'review_request_id')
     list_display_links = ('file', 'caption')
     search_fields = ('caption', 'mimetype')
+    raw_id_fields = ('added_in_filediff',)
 
     def review_request_id(self, obj):
         return obj.review_request.get().id

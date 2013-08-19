@@ -4,7 +4,10 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
 
+from reviewboard.attachments.managers import FileAttachmentManager
 from reviewboard.attachments.mimetypes import MimetypeHandler
+from reviewboard.diffviewer.models import FileDiff
+from reviewboard.scmtools.models import Repository
 
 
 class FileAttachment(models.Model):
@@ -24,9 +27,38 @@ class FileAttachment(models.Model):
                                                    '%Y', '%m', '%d'))
     mimetype = models.CharField(_('mimetype'), max_length=256, blank=True)
 
+    # repo_path, repo_revision, and repository are used to identify
+    # FileAttachments associated with committed binary files in a source tree.
+    # They are not used for new files that don't yet have a revision.
+    #
+    # For new files, the added_in_filediff association is used.
+    repo_path = models.CharField(_('repository file path'),
+                                 max_length=1024,
+                                 blank=True,
+                                 null=True,
+                                 db_index=True)
+    repo_revision = models.CharField(_('repository file revision'),
+                                     max_length=512,
+                                     blank=True,
+                                     null=True,
+                                     db_index=True)
+    repository = models.ForeignKey(Repository,
+                                   blank=True,
+                                   null=True,
+                                   related_name='file_attachments')
+    added_in_filediff = models.ForeignKey(FileDiff,
+                                          blank=True,
+                                          null=True,
+                                          related_name='added_attachments')
+
+    objects = FileAttachmentManager()
+
     @property
     def mimetype_handler(self):
-        return MimetypeHandler.for_type(self)
+        if not hasattr(self, '_thumbnail'):
+            self._thumbnail = MimetypeHandler.for_type(self)
+
+        return self._thumbnail
 
     @property
     def review_ui(self):
@@ -66,6 +98,12 @@ class FileAttachment(models.Model):
     def icon_url(self):
         """Returns the icon URL for this file."""
         return self.mimetype_handler.get_icon_url()
+
+    @property
+    def is_from_diff(self):
+        """Returns if this file attachment is associated with a diff."""
+        return (self.repository_id is not None or
+                self.added_in_filediff_id is not None)
 
     def __unicode__(self):
         return self.caption

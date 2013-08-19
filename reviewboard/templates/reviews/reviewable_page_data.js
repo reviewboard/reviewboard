@@ -33,8 +33,8 @@
         editorData: {
             editable: {% if review_request.status == 'P' %}true{% else %}false{% endif %},
             fileAttachmentComments: {
-{% if file_attachments %}
-{%  for file_attachment in file_attachments %}
+{% if all_file_attachments %}
+{%  for file_attachment in all_file_attachments %}
                 {{file_attachment.id}}: {% file_attachment_comments file_attachment %}{% if not forloop.last %},{% endif %}
 {%  endfor %}
 {% endif %}

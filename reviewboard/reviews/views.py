@@ -710,7 +710,10 @@ def review_detail(request,
         'PRE_CREATION': PRE_CREATION,
         'issues': issues,
         'has_diffs': (draft and draft.diffset) or len(diffsets) > 0,
-        'file_attachments': file_attachments,
+        'file_attachments': [file_attachment
+                             for file_attachment in file_attachments
+                             if not file_attachment.is_from_diff],
+        'all_file_attachments': file_attachments,
         'screenshots': screenshots,
     })
 
@@ -1037,7 +1040,10 @@ class ReviewsDiffViewerView(DiffViewerView):
             'is_draft_interdiff': is_draft_interdiff,
             'num_diffs': num_diffs,
             'last_activity_time': last_activity_time,
-            'file_attachments': file_attachments,
+            'file_attachments': [file_attachment
+                                 for file_attachment in file_attachments
+                                 if not file_attachment.is_from_diff],
+            'all_file_attachments': file_attachments,
             'screenshots': screenshots,
             'comments': comments,
         })

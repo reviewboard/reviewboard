@@ -248,6 +248,9 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
         _.each(this._$attachments.find('.file-container'),
                this._importFileAttachmentThumbnail,
                this);
+        _.each($('.binary'),
+               this._importFileAttachmentThumbnail,
+               this);
 
         /*
          * Set up editors for every registered field.

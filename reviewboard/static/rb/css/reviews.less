@@ -2,6 +2,113 @@
 
 
 /****************************************************************************
+ * Actions
+ ****************************************************************************/
+.actions-container {
+  background: @review-request-actions-bg;
+  border-bottom: 1px @review-request-actions-border-color solid;
+  float: right;
+  width: 100%;
+  .border-radius(@box-inner-border-radius @box-inner-border-radius 0 0);
+
+  &>ul {
+    min-height: 2em;
+  }
+}
+
+
+.actions {
+  float: right;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  white-space: nowrap;
+
+  a {
+    color: black;
+    cursor: pointer;
+    display: block;
+    text-decoration: none;
+    padding: 6px 10px;
+
+    border-left: 1px @review-request-action-border-color solid;
+  }
+
+  img {
+    vertical-align: middle;
+  }
+
+  li {
+    float: left;
+    margin: 0;
+    padding: 0;
+
+    &:hover {
+      background-color: @review-request-action-hover-bg;
+    }
+
+    &:active {
+      background-color: @review-request-action-active-bg;
+    }
+
+    &.primary {
+      background-color: @review-request-action-primary-bg;
+    }
+
+    &.primary:hover {
+      background-color: @review-request-action-primary-hover-bg;
+    }
+
+    &.primary:active {
+      background-color: @review-request-action-primary-active-bg;
+    }
+  }
+
+  .menu {
+    background: @review-request-action-menu-bg;
+    border: 1px @review-request-action-menu-border-color solid;
+    float: none;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    position: absolute;
+    z-index: @z-index-menu;
+    .border-radius(0 0 @box-border-radius @box-border-radius);
+    .box-shadow(@box-shadow);
+
+    li {
+      background: @review-request-action-bg;
+      border: 0;
+      float: none;
+      margin: 0;
+      padding: 0;
+
+      &:last-child {
+        .border-radius(0 0 @box-border-radius @box-border-radius);
+      }
+
+      &:hover {
+        background-color: @review-request-action-menu-item-hover-bg;
+      }
+
+      a {
+        color: black;
+        border: 0;
+        display: block;
+        margin: 0;
+        padding: 8px 10px;
+        text-decoration: none;
+      }
+    }
+  }
+}
+
+.actions>li:last-child {
+  .border-radius(0 @box-inner-border-radius 0 0);
+}
+
+
+/****************************************************************************
  * Review Request Box
  ****************************************************************************/
 .inline-editor-form {
@@ -215,109 +322,9 @@
   }
 
   .actions-container {
-    background: @review-request-actions-bg;
-    border-bottom: 1px @review-request-actions-border-color solid;
-    float: right;
-    width: 100%;
-    .border-radius(@box-inner-border-radius @box-inner-border-radius 0 0);
-
     .star {
       margin: 5px 0 0 5px;
     }
-
-    &>ul {
-      min-height: 2em;
-    }
-  }
-
-  .actions {
-    float: right;
-    list-style: none;
-    margin: 0;
-    padding: 0;
-    white-space: nowrap;
-
-    a {
-      color: black;
-      cursor: pointer;
-      display: block;
-      text-decoration: none;
-      padding: 6px 10px;
-
-      border-left: 1px @review-request-action-border-color solid;
-    }
-
-    img {
-      vertical-align: middle;
-    }
-
-    li {
-      float: left;
-      margin: 0;
-      padding: 0;
-
-      &:hover {
-        background-color: @review-request-action-hover-bg;
-      }
-
-      &:active {
-        background-color: @review-request-action-active-bg;
-      }
-
-      &.primary {
-        background-color: @review-request-action-primary-bg;
-      }
-
-      &.primary:hover {
-        background-color: @review-request-action-primary-hover-bg;
-      }
-
-      &.primary:active {
-        background-color: @review-request-action-primary-active-bg;
-      }
-    }
-
-    .menu {
-      background: @review-request-action-menu-bg;
-      border: 1px @review-request-action-menu-border-color solid;
-      float: none;
-      list-style: none;
-      margin: 0;
-      padding: 0;
-      position: absolute;
-      z-index: @z-index-menu;
-      .border-radius(0 0 @box-border-radius @box-border-radius);
-      .box-shadow(@box-shadow);
-
-      li {
-        background: @review-request-action-bg;
-        border: 0;
-        float: none;
-        margin: 0;
-        padding: 0;
-
-        &:last-child {
-          .border-radius(0 0 @box-border-radius @box-border-radius);
-        }
-
-        &:hover {
-          background-color: @review-request-action-menu-item-hover-bg;
-        }
-
-        a {
-          color: black;
-          border: 0;
-          display: block;
-          margin: 0;
-          padding: 8px 10px;
-          text-decoration: none;
-        }
-      }
-    }
-  }
-
-  .actions>li:last-child {
-    .border-radius(0 @box-inner-border-radius 0 0);
   }
 
   #updated_time, #created_time {
