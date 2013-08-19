@@ -192,9 +192,6 @@ class GitDiffParser(DiffParser):
         # a deleted file with no content
         # then skip
 
-        empty_change = self._is_empty_change(linenum)
-        empty_change_linenum = linenum + GIT_DIFF_EMPTY_CHANGESET_SIZE
-
         # Now we have a diff we are going to use so get the filenames + commits
         file_info = File()
         file_info.data = self.lines[linenum] + "\n"
@@ -231,11 +228,13 @@ class GitDiffParser(DiffParser):
             linenum += 3
             file_info.moved = True
 
-        # Only show interesting empty changes. Basically, deletions.
-        # It's likely a binary file if we're at this point, and so we want
-        # to process the rest of it.
-        if empty_change and not file_info.deleted:
-            return empty_change_linenum, None
+        # Check to make sure we haven't reached the end of the diff.
+        if linenum >= len(self.lines):
+            return linenum, None
+
+        # Assume by default that the change is empty. If we find content
+        # later, we'll clear this.
+        empty_change = True
 
         if self._is_index_range_line(linenum):
             index_range = self.lines[linenum].split(None, 2)[1]
@@ -252,11 +251,13 @@ class GitDiffParser(DiffParser):
         # Get the changes
         while linenum < len(self.lines):
             if self._is_git_diff(linenum):
-                return linenum, file_info
+                break
             elif self._is_binary_patch(linenum):
                 file_info.binary = True
                 file_info.data += self.lines[linenum] + "\n"
-                return linenum + 1, file_info
+                empty_change = False
+                linenum += 1
+                break
             elif self._is_diff_fromfile_line(linenum):
                 if self.lines[linenum].split()[1] == "/dev/null":
                     file_info.origInfo = PRE_CREATION
@@ -265,22 +266,19 @@ class GitDiffParser(DiffParser):
                 file_info.data += self.lines[linenum + 1] + '\n'
                 linenum += 2
             else:
+                empty_change = False
                 linenum = self.parse_diff_line(linenum, file_info)
 
+        if empty_change:
+            # We didn't find any interesting content, so leave out this
+            # file's info.
+            #
+            # Note that we may want to change this in the future to preserve
+            # data like mode changes, but that will require filtering out
+            # empty changes at the diff viewer level in a sane way.
+            file_info = None
+
         return linenum, file_info
-
-    def _is_empty_change(self, linenum):
-        next_diff_start_linenum = linenum + GIT_DIFF_EMPTY_CHANGESET_SIZE
-
-        if next_diff_start_linenum >= len(self.lines):
-            return True
-
-        next_diff_start = self.lines[next_diff_start_linenum]
-        next_line = self.lines[linenum + 1]
-        return ((next_line.startswith("new file mode") or
-                 next_line.startswith("old mode") or
-                 next_line.startswith("deleted file mode"))
-                and next_diff_start.startswith("diff --git"))
 
     def _is_new_file(self, linenum):
         return self.lines[linenum].startswith("new file mode")
