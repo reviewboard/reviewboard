@@ -103,6 +103,8 @@ RB.NewReviewRequestView = Backbone.View.extend({
      * Render the view.
      */
     render: function() {
+        var repositories = this.model.get('repositories').models;
+
         this._rendered = true;
 
         this.$el.html(this.template({
@@ -125,6 +127,16 @@ RB.NewReviewRequestView = Backbone.View.extend({
 
         this.$el.show();
         this._onResize();
+
+        /*
+         * If the only two options are the "None - File attachments only"
+         * pseudo-repository and one real one, pre-select the real one to speed
+         * up the 80% case. Otherwise, we'll leave it at the "Select a
+         * repository" screen.
+         */
+        if (repositories.length === 2) {
+            repositories[1].trigger('selected', repositories[1]);
+        }
 
         return this;
     },
