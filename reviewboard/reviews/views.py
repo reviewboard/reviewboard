@@ -14,6 +14,7 @@ from django.shortcuts import (get_object_or_404, get_list_or_404,
 from django.template.context import RequestContext
 from django.template.loader import render_to_string
 from django.utils import simplejson, timezone
+from django.utils.decorators import method_decorator
 from django.utils.http import http_date
 from django.utils.safestring import mark_safe
 from django.utils.timezone import utc
@@ -24,6 +25,7 @@ from django.views.generic.list_detail import object_list
 from djblets.auth.util import login_required
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.util.dates import get_latest_timestamp
+from djblets.util.decorators import augment_method_from
 from djblets.util.http import (set_last_modified, get_modified_since,
                                set_etag, etag_if_none_match)
 from djblets.util.misc import get_object_or_none
@@ -35,7 +37,7 @@ from reviewboard.attachments.models import FileAttachment
 from reviewboard.changedescs.models import ChangeDescription
 from reviewboard.diffviewer.diffutils import get_file_chunks_in_range
 from reviewboard.diffviewer.models import DiffSet
-from reviewboard.diffviewer.views import (view_diff, view_diff_fragment,
+from reviewboard.diffviewer.views import (DiffFragmentView, DiffViewerView,
                                           exception_traceback_string)
 from reviewboard.extensions.hooks import (DashboardHook,
                                           ReviewRequestDetailHook,
@@ -917,99 +919,132 @@ def submitter(request,
     })
 
 
-@check_login_required
-def diff(request,
-         review_request_id,
-         revision=None,
-         interdiff_revision=None,
-         local_site_name=None,
-         template_name='diffviewer/view_diff.html'):
+class ReviewsDiffViewerView(DiffViewerView):
+    """Renders the diff viewer for a review request.
+
+    This wraps the base DiffViewerView to display a diff for the given
+    review request and the given diff revision or range.
+
+    The view expects the following parameters to be provided:
+
+        * review_request_id
+          - The ID of the ReviewRequest containing the diff to render.
+
+    The following may also be provided:
+
+        * revision
+          - The DiffSet revision to render.
+
+        * interdiff_revision
+          - The second DiffSet revision in an interdiff revision range.
+
+        * local_site_name
+          - The name of the LocalSite for the ReviewRequest must be on.
+
+    See DiffViewerView's documentation for the accepted query parameters.
     """
-    A wrapper around diffviewer.views.view_diff that handles querying for
-    diffs owned by a review request,taking into account interdiffs and
-    providing the user's current review of the diff if it exists.
-    """
-    review_request, response = _find_review_request(
-        request, review_request_id, local_site_name)
+    @method_decorator(check_login_required)
+    @augment_method_from(DiffViewerView)
+    def dispatch(self, *args, **kwargs):
+        pass
 
-    if not review_request:
-        return response
+    def get(self, request, review_request_id, revision=None,
+            interdiff_revision=None, local_site_name=None):
+        """Handles GET requests for this view.
 
-    draft = review_request.get_draft(request.user)
-    diffset = _query_for_diff(review_request, request.user, revision, draft)
+        This will look up the review request and DiffSets, given the
+        provided information, and pass them to the parent class for rendering.
+        """
+        review_request, response = \
+            _find_review_request(request, review_request_id, local_site_name)
 
-    interdiffset = None
-    review = None
+        if not review_request:
+            return response
 
-    if interdiff_revision and interdiff_revision != revision:
-        # An interdiff revision was specified. Try to find a matching
-        # diffset.
-        interdiffset = _query_for_diff(review_request, request.user,
-                                       interdiff_revision, draft)
+        self.review_request = review_request
+        self.draft = review_request.get_draft(request.user)
+        self.diffset = _query_for_diff(review_request, request.user,
+                                       revision, self.draft)
+        self.interdiffset = None
 
-    # Try to find an existing pending review of this diff from the
-    # current user.
-    pending_review = review_request.get_pending_review(request.user)
+        if interdiff_revision and interdiff_revision != revision:
+            # An interdiff revision was specified. Try to find a matching
+            # diffset.
+            self.interdiffset = _query_for_diff(review_request, request.user,
+                                                interdiff_revision, self.draft)
 
-    has_draft_diff = draft and draft.diffset
-    is_draft_diff = has_draft_diff and draft.diffset == diffset
-    is_draft_interdiff = (has_draft_diff and interdiffset and
-                          draft.diffset == interdiffset)
+        return super(ReviewsDiffViewerView, self).get(
+            request, self.diffset, self.interdiffset)
 
-    # Get the list of diffsets. We only want to calculate this once.
-    diffsets = review_request.get_diffsets()
-    num_diffs = len(diffsets)
+    def get_context_data(self, *args, **kwargs):
+        """Calculates additional context data for rendering.
 
-    if num_diffs > 0:
-        latest_diffset = diffsets[-1]
-    else:
-        latest_diffset = None
+        This provides some additional data used for rendering the diff
+        viewer. This data is more specific to the reviewing functionality,
+        as opposed to the data calculated by DiffViewerView.get_context_data,
+        which is more focused on the actual diff.
+        """
+        # Try to find an existing pending review of this diff from the
+        # current user.
+        pending_review = \
+            self.review_request.get_pending_review(self.request.user)
 
-    if draft and draft.diffset:
-        num_diffs += 1
+        has_draft_diff = self.draft and self.draft.diffset
+        is_draft_diff = has_draft_diff and self.draft.diffset == self.diffset
+        is_draft_interdiff = (has_draft_diff and self.interdiffset and
+                              self.draft.diffset == self.interdiffset)
 
-    last_activity_time, updated_object = \
-        review_request.get_last_activity(diffsets)
+        # Get the list of diffsets. We only want to calculate this once.
+        diffsets = self.review_request.get_diffsets()
+        num_diffs = len(diffsets)
 
-    file_attachments = list(review_request.get_file_attachments())
-    screenshots = list(review_request.get_screenshots())
-
-    # Compute the lists of comments based on filediffs and interfilediffs.
-    # We do this using the 'through' table so that we can select_related
-    # the reviews and comments.
-    comments = {}
-    q = Comment.review.related.field.rel.through.objects.filter(
-        review__review_request=review_request)
-    q = q.select_related()
-
-    for obj in q:
-        comment = obj.comment
-        review = obj.review
-        comment._review = review
-        key = (comment.filediff_id, comment.interfilediff_id)
-
-        if key in comments:
-            comments[key].append(comment)
+        if num_diffs > 0:
+            latest_diffset = diffsets[-1]
         else:
-            comments[key] = [comment]
+            latest_diffset = None
 
-    return view_diff(
-        request, diffset, interdiffset, template_name=template_name,
-        extra_context=make_review_request_context(request, review_request, {
+        if self.draft and self.draft.diffset:
+            num_diffs += 1
+
+        last_activity_time, updated_object = \
+            self.review_request.get_last_activity(diffsets)
+
+        file_attachments = list(self.review_request.get_file_attachments())
+        screenshots = list(self.review_request.get_screenshots())
+
+        # Compute the lists of comments based on filediffs and interfilediffs.
+        # We do this using the 'through' table so that we can select_related
+        # the reviews and comments.
+        comments = {}
+        q = Comment.review.related.field.rel.through.objects.filter(
+            review__review_request=self.review_request)
+        q = q.select_related()
+
+        for obj in q:
+            comment = obj.comment
+            comment._review = obj.review
+            key = (comment.filediff_id, comment.interfilediff_id)
+            comments.setdefault(key, []).append(comment)
+
+        context = make_review_request_context(self.request,
+                                              self.review_request, {
             'diffsets': diffsets,
             'latest_diffset': latest_diffset,
             'review': pending_review,
-            'review_request_details': draft or review_request,
-            'draft': draft,
+            'review_request_details': self.draft or self.review_request,
+            'draft': self.draft,
             'is_draft_diff': is_draft_diff,
             'is_draft_interdiff': is_draft_interdiff,
             'num_diffs': num_diffs,
             'last_activity_time': last_activity_time,
-            'base_url': review_request.get_absolute_url(),
+            'base_url': self.review_request.get_absolute_url(),
             'file_attachments': file_attachments,
             'screenshots': screenshots,
             'comments': comments,
-        }))
+        })
+
+        return super(ReviewsDiffViewerView, self).get_context_data(
+            extra_context=context, *args, **kwargs)
 
 
 @check_login_required
@@ -1099,42 +1134,74 @@ def comment_diff_fragments(
     return response
 
 
-@check_login_required
-def diff_fragment(request,
-                  review_request_id,
-                  revision,
-                  filediff_id,
-                  interdiff_revision=None,
-                  chunkindex=None,
-                  template_name='diffviewer/diff_file_fragment.html',
-                  local_site_name=None):
-    """
-    Wrapper around diffviewer.views.view_diff_fragment that takes a review
-    request.
+class ReviewsDiffFragmentView(DiffFragmentView):
+    """Renders a fragment from a file in the diff viewer.
 
     Displays just a fragment of a diff or interdiff owned by the given
     review request. The fragment is identified by the chunk index in the
     diff.
+
+    The view expects the following parameters to be provided:
+
+        * review_request_id
+          - The ID of the ReviewRequest containing the diff to render.
+
+        * revision
+          - The DiffSet revision to render.
+
+        * filediff_id
+          - The ID of the FileDiff within the DiffSet.
+
+    The following may also be provided:
+
+        * interdiff_revision
+          - The second DiffSet revision in an interdiff revision range.
+
+        * chunkindex
+          - The index (0-based) of the chunk to render. If left out, the
+            entire file will be rendered.
+
+        * local_site_name
+          - The name of the LocalSite for the ReviewRequest must be on.
+
+    See DiffFragmentView's documentation for the accepted query parameters.
     """
-    review_request, response = \
-        _find_review_request(request, review_request_id, local_site_name)
+    @method_decorator(check_login_required)
+    @augment_method_from(DiffFragmentView)
+    def dispatch(self, *args, **kwargs):
+        pass
 
-    if not review_request:
-        return response
+    def get(self, request, review_request_id, revision, filediff_id,
+            interdiff_revision=None, chunkindex=None,
+            local_site_name=None, *args, **kwargs):
+        """Handles GET requests for this view.
 
-    draft = review_request.get_draft(request.user)
+        This will look up the review request and DiffSets, given the
+        provided information, and pass them to the parent class for rendering.
+        """
+        review_request, response = \
+            _find_review_request(request, review_request_id, local_site_name)
 
-    if interdiff_revision is not None:
-        interdiffset = _query_for_diff(review_request, request.user,
-                                       interdiff_revision, draft)
-    else:
-        interdiffset = None
+        if not review_request:
+            return response
 
-    diffset = _query_for_diff(review_request, request.user, revision, draft)
+        draft = review_request.get_draft(request.user)
 
-    return view_diff_fragment(request, diffset, filediff_id,
-                              review_request.get_absolute_url(),
-                              interdiffset, chunkindex, template_name)
+        if interdiff_revision is not None:
+            interdiffset = _query_for_diff(review_request, request.user,
+                                           interdiff_revision, draft)
+        else:
+            interdiffset = None
+
+        diffset = _query_for_diff(review_request, request.user, revision, draft)
+
+        return super(ReviewsDiffFragmentView, self).get(
+            request,
+            diffset_or_id=diffset,
+            filediff_id=filediff_id,
+            base_url=review_request.get_absolute_url(),
+            interdiffset_or_id=interdiffset,
+            chunkindex=chunkindex)
 
 
 @check_login_required

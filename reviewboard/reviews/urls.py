@@ -1,5 +1,9 @@
 from django.conf.urls.defaults import patterns, url
 
+from reviewboard.reviews.views import (ReviewsDiffFragmentView,
+                                       ReviewsDiffViewerView)
+
+
 urlpatterns = patterns(
     'reviewboard.reviews.views',
 
@@ -13,8 +17,11 @@ urlpatterns = patterns(
         name="review-request-detail"),
 
     # Review request diffs
-    url(r'^(?P<review_request_id>[0-9]+)/diff/$', 'diff', name="view_diff"),
-    url(r'^(?P<review_request_id>[0-9]+)/diff/(?P<revision>[0-9]+)/$', 'diff',
+    url(r'^(?P<review_request_id>[0-9]+)/diff/$',
+        ReviewsDiffViewerView.as_view(),
+        name="view_diff"),
+    url(r'^(?P<review_request_id>[0-9]+)/diff/(?P<revision>[0-9]+)/$',
+        ReviewsDiffViewerView.as_view(),
         name="view_diff_revision"),
 
     url(r'^(?P<review_request_id>[0-9]+)/diff/raw/$', 'raw_diff',
@@ -23,9 +30,9 @@ urlpatterns = patterns(
      'raw_diff'),
 
     (r'^(?P<review_request_id>[0-9]+)/diff/(?P<revision>[0-9]+)/fragment/(?P<filediff_id>[0-9]+)/$',
-     'diff_fragment'),
+     ReviewsDiffFragmentView.as_view()),
     (r'^(?P<review_request_id>[0-9]+)/diff/(?P<revision>[0-9]+)/fragment/(?P<filediff_id>[0-9]+)/chunk/(?P<chunkindex>[0-9]+)/$',
-     'diff_fragment'),
+     ReviewsDiffFragmentView.as_view()),
 
     # Fragments
     (r'^(?P<review_request_id>[0-9]+)/fragments/diff-comments/(?P<comment_ids>[0-9,]+)/$',
@@ -33,11 +40,12 @@ urlpatterns = patterns(
 
     # Review request interdiffs
     url(r'^(?P<review_request_id>[0-9]+)/diff/(?P<revision>[0-9]+)-(?P<interdiff_revision>[0-9]+)/$',
-        'diff', name="view-interdiff"),
+        ReviewsDiffViewerView.as_view(),
+        name="view-interdiff"),
     (r'^(?P<review_request_id>[0-9]+)/diff/(?P<revision>[0-9]+)-(?P<interdiff_revision>[0-9]+)/fragment/(?P<filediff_id>[0-9]+)/$',
-     'diff_fragment'),
+     ReviewsDiffFragmentView.as_view()),
     (r'^(?P<review_request_id>[0-9]+)/diff/(?P<revision>[0-9]+)-(?P<interdiff_revision>[0-9]+)/fragment/(?P<filediff_id>[0-9]+)/chunk/(?P<chunkindex>[0-9]+)/$',
-     'diff_fragment'),
+     ReviewsDiffFragmentView.as_view()),
 
     # File attachments
     url(r'^(?P<review_request_id>[0-9]+)/file/(?P<file_attachment_id>[0-9]+)/$',
