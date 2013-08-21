@@ -10,7 +10,12 @@ RB.CommitView = Backbone.View.extend({
 
     template: _.template([
         '<div class="progress"></div>',
-        '<div class="summary"><%- summary %></div>',
+        '<div class="summary">',
+        ' <%- summary %>',
+        '  <% if (reviewRequestURL) { %>',
+        '   <div class="rb-icon rb-icon-jump-to jump-to-commit"/>',
+        '  <% } %>',
+        '</div>',
         '<div>',
         ' by <span class="author"><%- authorName %></span>, ',
         ' <time class="timesince" datetime="<%- date.toISOString() %>"></time>',
