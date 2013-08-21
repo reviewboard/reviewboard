@@ -1037,7 +1037,6 @@ class ReviewsDiffViewerView(DiffViewerView):
             'is_draft_interdiff': is_draft_interdiff,
             'num_diffs': num_diffs,
             'last_activity_time': last_activity_time,
-            'base_url': self.review_request.get_absolute_url(),
             'file_attachments': file_attachments,
             'screenshots': screenshots,
             'comments': comments,
@@ -1199,7 +1198,6 @@ class ReviewsDiffFragmentView(DiffFragmentView):
             request,
             diffset_or_id=diffset,
             filediff_id=filediff_id,
-            base_url=review_request.get_absolute_url(),
             interdiffset_or_id=interdiffset,
             chunkindex=chunkindex)
 

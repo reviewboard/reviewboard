@@ -239,9 +239,6 @@ class DiffFragmentView(View):
         * filediff_id
           - The ID of a FileDiff within the DiffSet.
 
-        * base_url
-          - Deprecated, and soon removed.
-
     The following may also be provided:
 
         * interdiffset_or_id
@@ -378,15 +375,13 @@ class DiffFragmentView(View):
             extra_context=context,
             template_name=self.template_name)
 
-    def get_context_data(self, base_url=None, *args, **kwargs):
+    def get_context_data(self, *args, **kwargs):
         """Returns context data used for rendering the view.
 
         This can be overridden by subclasses to provide additional data for the
         view.
         """
-        return {
-            'base_url': base_url,
-        }
+        return {}
 
     def _get_requested_diff_file(self, get_chunks=True):
         """Fetches information on the requested diff.

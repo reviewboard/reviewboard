@@ -150,7 +150,6 @@ def _diff_expand_link(context, expandable, text, tooltip,
     return render_to_string('diffviewer/expand_link.html', {
         'tooltip': tooltip,
         'text': text,
-        'base_url': context['base_url'],
         'chunk': context['chunk'],
         'file': context['file'],
         'expand_pos': expand_pos,
