@@ -10,9 +10,9 @@ from djblets.siteconfig.models import SiteConfiguration
 
 from reviewboard.accounts.signals import user_registered
 from reviewboard.reviews.models import ReviewRequest, Review
-from reviewboard.reviews.signals import review_request_published, \
-                                        review_published, reply_published, \
-                                        review_request_closed
+from reviewboard.reviews.signals import (review_request_published,
+                                         review_published, reply_published,
+                                         review_request_closed)
 from reviewboard.reviews.views import build_diff_comment_fragments
 
 
@@ -396,7 +396,8 @@ def mail_new_user(user):
         'user_url': reverse('admin:auth_user_change', args=(user.id,))
     }
 
-    text_message = render_to_string('notifications/new_user_email.txt', context)
+    text_message = render_to_string('notifications/new_user_email.txt',
+                                    context)
     html_message = render_to_string('notifications/new_user_email.html',
                                     context)
 

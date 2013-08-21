@@ -6,9 +6,9 @@ from djblets.siteconfig.models import SiteConfiguration
 
 from reviewboard import initialize
 from reviewboard.admin.siteconfig import load_site_config
-from reviewboard.notifications.email import build_email_address, \
-                                            get_email_address_for_user, \
-                                            get_email_addresses_for_group
+from reviewboard.notifications.email import (build_email_address,
+                                             get_email_address_for_user,
+                                             get_email_addresses_for_group)
 from reviewboard.reviews.models import Group, Review, ReviewRequest
 
 
@@ -18,14 +18,15 @@ class EmailTestHelper(object):
         self.assertEqual(len(recipient_list), len(user_list) + len(group_list))
 
         for user in user_list:
-            self.assert_(get_email_address_for_user(
+            self.assertTrue(get_email_address_for_user(
                 User.objects.get(username=user)) in recipient_list,
                 u"user %s was not found in the recipient list" % user)
 
         groups = Group.objects.filter(name__in=group_list, local_site=None)
         for group in groups:
             for address in get_email_addresses_for_group(group):
-                self.assert_(address in recipient_list,
+                self.assertTrue(
+                    address in recipient_list,
                     u"group %s was not found in the recipient list" % address)
 
 
@@ -55,7 +56,7 @@ class UserEmailTests(TestCase, EmailTestHelper):
             'email': 'newuser@example.com',
             'first_name': 'New',
             'last_name': 'User'
-            }
+        }
 
         # Registration request have to be sent twice since djblets need to
         # validate cookies on the second request.
@@ -227,7 +228,8 @@ class ReviewRequestEmailTests(TestCase, EmailTestHelper):
         self.assertEqual(mail.outbox[0].from_email, self.sender)
         self.assertEqual(mail.outbox[0].extra_headers['From'], from_email)
         self.assertEqual(mail.outbox[0].subject,
-                         "Re: Review Request 2: Update for cleaned_data changes")
+                         "Re: Review Request 2: Update for cleaned_data "
+                         "changes")
         self.assertValidRecipients(["dopey", "doc"], ["devgroup"])
 
         message = mail.outbox[0].message()

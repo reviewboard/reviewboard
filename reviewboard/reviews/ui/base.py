@@ -209,8 +209,8 @@ class ReviewUI(object):
             'review_id': review.pk,
             'review_request_id': review.review_request_id,
             'issue_opened': comment.issue_opened,
-            'issue_status':
-                comment.issue_status_to_string(comment.issue_status),
+            'issue_status': comment.issue_status_to_string(
+                comment.issue_status),
         }
 
 

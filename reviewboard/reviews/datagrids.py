@@ -139,7 +139,8 @@ class MyCommentsColumn(Column):
         self.shrink = True
 
         # XXX It'd be nice to be able to sort on this, but datagrids currently
-        # can only sort based on stored (in the DB) values, not computed values.
+        # can only sort based on stored (in the DB) values, not computed
+        # values.
 
     def augment_queryset(self, queryset):
         user = self.datagrid.request.user
@@ -220,8 +221,8 @@ class ToMeColumn(Column):
         user = self.datagrid.request.user
         if (user.is_authenticated() and
             review_request.target_people.filter(pk=user.pk).exists()):
-            return u'<div title="%s"><b>&raquo;</b></div>' % \
-                     (self.detailed_label)
+            return (u'<div title="%s"><b>&raquo;</b></div>'
+                    % (self.detailed_label))
 
         return ""
 
@@ -285,7 +286,7 @@ class SummaryColumn(Column):
 
             if review_request.draft_summary is not None:
                 summary = conditional_escape(review_request.draft_summary)
-                labels.update({_('Draft'):  'label-draft'})
+                labels.update({_('Draft'): 'label-draft'})
             elif (not review_request.public and
                   review_request.status == ReviewRequest.PENDING_REVIEW):
                 labels.update({_('Draft'): 'label-draft'})
@@ -298,8 +299,8 @@ class SummaryColumn(Column):
         display_data = ''
 
         for label in labels:
-           display_data += u'<span class="%s">[%s] </span>' % (
-               labels[label], label)
+            display_data += u'<span class="%s">[%s] </span>' % (
+                labels[label], label)
         display_data += u'%s' % summary
         return display_data
 
@@ -502,21 +503,23 @@ class ReviewRequestDataGrid(DataGrid):
     This datagrid accepts the show_submitted parameter in the URL, allowing
     submitted review requests to be filtered out or displayed.
     """
-    my_comments  = MyCommentsColumn()
-    star         = ReviewRequestStarColumn()
-    ship_it      = ShipItColumn()
-    summary      = SummaryColumn(expand=True, link=True, css_class="summary")
-    submitter    = SubmitterColumn()
+    my_comments = MyCommentsColumn()
+    star = ReviewRequestStarColumn()
+    ship_it = ShipItColumn()
+    summary = SummaryColumn(expand=True, link=True, css_class="summary")
+    submitter = SubmitterColumn()
 
-    branch       = Column(_("Branch"), db_field="branch",
-                          shrink=True, sortable=True, link=False)
-    bugs_closed  = BugsColumn()
-    repository   = RepositoryColumn()
-    time_added   = DateTimeColumn(_("Posted"),
+    branch = Column(_("Branch"), db_field="branch",
+                    shrink=True, sortable=True, link=False)
+    bugs_closed = BugsColumn()
+    repository = RepositoryColumn()
+    time_added = DateTimeColumn(
+        _("Posted"),
         detailed_label=_("Posted Time"),
         format="F jS, Y, P", shrink=True,
         css_class=lambda r: ageid(r.time_added))
-    last_updated = DateTimeColumn(_("Last Updated"),
+    last_updated = DateTimeColumn(
+        _("Last Updated"),
         format="F jS, Y, P", shrink=True,
         db_field="last_updated",
         field_name="last_updated",
@@ -524,11 +527,13 @@ class ReviewRequestDataGrid(DataGrid):
     diff_updated = DiffUpdatedColumn(
         format="F jS, Y, P", shrink=True,
         css_class=lambda r: ageid(r.diffset_history.last_diff_updated))
-    time_added_since = DateTimeSinceColumn(_("Posted"),
+    time_added_since = DateTimeSinceColumn(
+        _("Posted"),
         detailed_label=_("Posted Time (Relative)"),
         field_name="time_added", shrink=True,
         css_class=lambda r: ageid(r.time_added))
-    last_updated_since = DateTimeSinceColumn(_("Last Updated"),
+    last_updated_since = DateTimeSinceColumn(
+        _("Last Updated"),
         detailed_label=_("Last Updated (Relative)"), shrink=True,
         db_field="last_updated",
         field_name="last_updated",
@@ -584,9 +589,10 @@ class ReviewRequestDataGrid(DataGrid):
             self.show_submitted = profile.show_submitted
 
         try:
-            self.show_submitted = \
+            self.show_submitted = (
                 int(self.request.GET.get('show_submitted',
-                                     self.show_submitted)) != 0
+                                         self.show_submitted))
+                != 0)
         except ValueError:
             # do nothing
             pass
@@ -711,9 +717,9 @@ class DashboardDataGrid(ReviewRequestDataGrid):
 
 class SubmitterDataGrid(DataGrid):
     """A datagrid showing a list of users registered on Review Board."""
-    username      = Column(_("Username"), link=True, sortable=True)
-    fullname      = Column(_("Full Name"), field_name="get_full_name",
-                           link=True, expand=True)
+    username = Column(_("Username"), link=True, sortable=True)
+    fullname = Column(_("Full Name"), field_name="get_full_name",
+                      link=True, expand=True)
     pending_count = PendingCountColumn(_("Pending Reviews"),
                                        field_name="directed_review_requests",
                                        shrink=True)
@@ -743,21 +749,22 @@ class SubmitterDataGrid(DataGrid):
 
 class GroupDataGrid(DataGrid):
     """A datagrid showing a list of review groups accessible by the user."""
-    star          = ReviewGroupStarColumn()
-    name          = Column(_("Group ID"), link=True, sortable=True)
-    displayname   = Column(_("Group Name"), field_name="display_name",
-                           link=True, expand=True)
+    star = ReviewGroupStarColumn()
+    name = Column(_("Group ID"), link=True, sortable=True)
+    displayname = Column(_("Group Name"), field_name="display_name",
+                         link=True, expand=True)
     pending_count = PendingCountColumn(_("Pending Reviews"),
                                        field_name="review_requests",
                                        link=True,
                                        shrink=True)
-    member_count  = GroupMemberCountColumn(_("Members"),
-                                           field_name="members",
-                                           shrink=True)
+    member_count = GroupMemberCountColumn(_("Members"),
+                                          field_name="members",
+                                          shrink=True)
 
     def __init__(self, request, title=_("All groups"), *args, **kwargs):
         local_site = kwargs.pop('local_site', None)
-        queryset = Group.objects.accessible(request.user, local_site=local_site)
+        queryset = Group.objects.accessible(request.user,
+                                            local_site=local_site)
 
         super(GroupDataGrid, self).__init__(request, queryset=queryset,
                                             title=title, *args, **kwargs)

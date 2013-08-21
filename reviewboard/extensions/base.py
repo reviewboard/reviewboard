@@ -6,6 +6,7 @@ __all__ = ['ExtensionManager', 'Extension', 'get_extension_manager']
 
 _extension_manager = None
 
+
 def get_extension_manager():
     global _extension_manager
 

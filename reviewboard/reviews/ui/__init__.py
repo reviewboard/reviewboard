@@ -7,7 +7,6 @@ def _register_review_uis(**kwargs):
     from reviewboard.reviews.ui.image import ImageReviewUI
     from reviewboard.reviews.ui.markdownui import MarkdownReviewUI
 
-
     register_ui(ImageReviewUI)
     register_ui(MarkdownReviewUI)
 

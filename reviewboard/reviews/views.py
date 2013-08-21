@@ -7,10 +7,10 @@ from django.contrib.auth.models import User
 from django.contrib.sites.models import Site
 from django.core.urlresolvers import reverse
 from django.db.models import Q
-from django.http import HttpResponse, HttpResponseRedirect, Http404, \
-                        HttpResponseNotModified, HttpResponseServerError
-from django.shortcuts import get_object_or_404, get_list_or_404, \
-                             render_to_response
+from django.http import (HttpResponse, HttpResponseRedirect, Http404,
+                         HttpResponseNotModified, HttpResponseServerError)
+from django.shortcuts import (get_object_or_404, get_list_or_404,
+                              render_to_response)
 from django.template.context import RequestContext
 from django.template.loader import render_to_string
 from django.utils import simplejson, timezone
@@ -24,35 +24,35 @@ from django.views.generic.list_detail import object_list
 from djblets.auth.util import login_required
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.util.dates import get_latest_timestamp
-from djblets.util.http import set_last_modified, get_modified_since, \
-                              set_etag, etag_if_none_match
+from djblets.util.http import (set_last_modified, get_modified_since,
+                               set_etag, etag_if_none_match)
 from djblets.util.misc import get_object_or_none
 
-from reviewboard.accounts.decorators import check_login_required, \
-                                            valid_prefs_required
+from reviewboard.accounts.decorators import (check_login_required,
+                                             valid_prefs_required)
 from reviewboard.accounts.models import ReviewRequestVisit, Profile
 from reviewboard.attachments.models import FileAttachment
 from reviewboard.changedescs.models import ChangeDescription
 from reviewboard.diffviewer.diffutils import get_file_chunks_in_range
 from reviewboard.diffviewer.models import DiffSet
-from reviewboard.diffviewer.views import view_diff, view_diff_fragment, \
-                                         exception_traceback_string
-from reviewboard.extensions.hooks import DashboardHook, \
-                                         ReviewRequestDetailHook, \
-                                         UserPageSidebarHook
+from reviewboard.diffviewer.views import (view_diff, view_diff_fragment,
+                                          exception_traceback_string)
+from reviewboard.extensions.hooks import (DashboardHook,
+                                          ReviewRequestDetailHook,
+                                          UserPageSidebarHook)
 from reviewboard.reviews.ui.screenshot import LegacyScreenshotReviewUI
 from reviewboard.reviews.context import make_review_request_context
-from reviewboard.reviews.datagrids import DashboardDataGrid, \
-                                          GroupDataGrid, \
-                                          ReviewRequestDataGrid, \
-                                          SubmitterDataGrid, \
-                                          WatchedGroupDataGrid, \
-                                          get_sidebar_counts
+from reviewboard.reviews.datagrids import (DashboardDataGrid,
+                                           GroupDataGrid,
+                                           ReviewRequestDataGrid,
+                                           SubmitterDataGrid,
+                                           WatchedGroupDataGrid,
+                                           get_sidebar_counts)
 from reviewboard.reviews.errors import OwnershipError
-from reviewboard.reviews.models import Comment, \
-                                       FileAttachmentComment, \
-                                       Group, ReviewRequest, Review, \
-                                       Screenshot, ScreenshotComment
+from reviewboard.reviews.models import (Comment,
+                                        FileAttachmentComment,
+                                        Group, ReviewRequest, Review,
+                                        Screenshot, ScreenshotComment)
 from reviewboard.scmtools.core import PRE_CREATION
 from reviewboard.scmtools.errors import SCMError
 from reviewboard.scmtools.models import Repository
@@ -563,8 +563,8 @@ def review_detail(request,
                     comment.screenshot = screenshot
                     screenshot._comments.append(comment)
             elif isinstance(comment, FileAttachmentComment):
-                if (comment.file_attachment_id not in file_attachment_id_map and
-                    not has_inactive_file_attachments):
+                if (comment.file_attachment_id not in file_attachment_id_map
+                    and not has_inactive_file_attachments):
                     inactive_file_attachments = list(
                         review_request_details.get_inactive_file_attachments())
 
@@ -603,7 +603,6 @@ def review_detail(request,
                         comment.issue_status_to_string(comment.issue_status)
                     issues[status_key] += 1
                     issues['total'] += 1
-
 
     # Sort all the reviews and ChangeDescriptions into a single list, for
     # display.
@@ -724,16 +723,16 @@ def review_detail(request,
 def all_review_requests(request,
                         local_site_name=None,
                         template_name='reviews/datagrid.html'):
-    """
-    Displays a list of all review requests.
-    """
+    """Displays a list of all review requests."""
     if local_site_name:
         local_site = get_object_or_404(LocalSite, name=local_site_name)
         if not local_site.is_accessible_by(request.user):
             return _render_permission_denied(request)
     else:
         local_site = None
-    datagrid = ReviewRequestDataGrid(request,
+
+    datagrid = ReviewRequestDataGrid(
+        request,
         ReviewRequest.objects.public(request.user,
                                      status=None,
                                      local_site=local_site,
@@ -747,9 +746,7 @@ def all_review_requests(request,
 def submitter_list(request,
                    local_site_name=None,
                    template_name='reviews/datagrid.html'):
-    """
-    Displays a list of all users.
-    """
+    """Displays a list of all users."""
     if local_site_name:
         local_site = get_object_or_404(LocalSite, name=local_site_name)
         if not local_site.is_accessible_by(request.user):
@@ -764,9 +761,7 @@ def submitter_list(request,
 def group_list(request,
                local_site_name=None,
                template_name='reviews/datagrid.html'):
-    """
-    Displays a list of all review groups.
-    """
+    """Displays a list of all review groups."""
     if local_site_name:
         local_site = get_object_or_404(LocalSite, name=local_site_name)
         if not local_site.is_accessible_by(request.user):
@@ -843,7 +838,8 @@ def group(request,
         return _render_permission_denied(
             request, 'reviews/group_permission_denied.html')
 
-    datagrid = ReviewRequestDataGrid(request,
+    datagrid = ReviewRequestDataGrid(
+        request,
         ReviewRequest.objects.to_group(name, local_site, status=None,
                                        with_counts=True),
         _("Review requests for %s") % name)
@@ -906,7 +902,8 @@ def submitter(request,
     else:
         user = get_object_or_404(User, username=username)
 
-    datagrid = ReviewRequestDataGrid(request,
+    datagrid = ReviewRequestDataGrid(
+        request,
         ReviewRequest.objects.from_user(username, status=None,
                                         with_counts=True,
                                         local_site=local_site),
@@ -932,8 +929,8 @@ def diff(request,
     diffs owned by a review request,taking into account interdiffs and
     providing the user's current review of the diff if it exists.
     """
-    review_request, response = \
-        _find_review_request(request, review_request_id, local_site_name)
+    review_request, response = _find_review_request(
+        request, review_request_id, local_site_name)
 
     if not review_request:
         return response
@@ -956,8 +953,8 @@ def diff(request,
 
     has_draft_diff = draft and draft.diffset
     is_draft_diff = has_draft_diff and draft.diffset == diffset
-    is_draft_interdiff = has_draft_diff and interdiffset and \
-                         draft.diffset == interdiffset
+    is_draft_interdiff = (has_draft_diff and interdiffset and
+                          draft.diffset == interdiffset)
 
     # Get the list of diffsets. We only want to calculate this once.
     diffsets = review_request.get_diffsets()
@@ -997,8 +994,8 @@ def diff(request,
             comments[key] = [comment]
 
     return view_diff(
-         request, diffset, interdiffset, template_name=template_name,
-         extra_context=make_review_request_context(request, review_request, {
+        request, diffset, interdiffset, template_name=template_name,
+        extra_context=make_review_request_context(request, review_request, {
             'diffsets': diffsets,
             'latest_diffset': latest_diffset,
             'review': pending_review,
@@ -1098,7 +1095,7 @@ def comment_diff_fragments(
 
     response = HttpResponse(page_content)
     set_last_modified(response, comment.timestamp)
-    response['Expires'] = http_date(time.time() + 60 * 60 * 24 * 365) # 1 year
+    response['Expires'] = http_date(time.time() + 60 * 60 * 24 * 365)  # 1 year
     return response
 
 
@@ -1179,7 +1176,8 @@ def preview_review_request_email(
     else:
         raise Http404
 
-    return HttpResponse(render_to_string(template_name,
+    return HttpResponse(render_to_string(
+        template_name,
         RequestContext(request, dict({
             'review_request': review_request,
             'user': request.user,
@@ -1358,7 +1356,8 @@ def search(request,
     if query.isdigit():
         query_review_request = get_object_or_none(ReviewRequest, pk=query)
         if query_review_request:
-            return HttpResponseRedirect(query_review_request.get_absolute_url())
+            return HttpResponseRedirect(
+                query_review_request.get_absolute_url())
 
     import lucene
     lv = [int(x) for x in lucene.VERSION.split('.')]
@@ -1387,13 +1386,17 @@ def search(request,
 
     if lucene_is_2x:
         parser = lucene.QueryParser('text', lucene.StandardAnalyzer())
-        result_ids = [int(lucene.Hit.cast_(hit).getDocument().get('id')) \
+        result_ids = [int(lucene.Hit.cast_(hit).getDocument().get('id'))
                       for hit in searcher.search(parser.parse(query))]
     elif lucene_is_3x:
-        parser = lucene.QueryParser(lucene.Version.LUCENE_CURRENT, 'text',
+        parser = lucene.QueryParser(
+            lucene.Version.LUCENE_CURRENT, 'text',
             lucene.StandardAnalyzer(lucene.Version.LUCENE_CURRENT))
-        result_ids = [searcher.doc(hit.doc).get('id') \
-                      for hit in searcher.search(parser.parse(query), 100).scoreDocs]
+
+        result_ids = [
+            searcher.doc(hit.doc).get('id')
+            for hit in searcher.search(parser.parse(query), 100).scoreDocs
+        ]
 
     searcher.close()
 
@@ -1404,9 +1407,10 @@ def search(request,
                        queryset=results,
                        paginate_by=10,
                        template_name=template_name,
-                       extra_context={'query': query,
-                                      'extra_query': 'q=%s' % query,
-                                     })
+                       extra_context={
+                           'query': query,
+                           'extra_query': 'q=%s' % query,
+                       })
 
 
 @check_login_required

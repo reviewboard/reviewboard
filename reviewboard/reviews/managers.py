@@ -133,9 +133,9 @@ class ReviewRequestManager(ConcurrencyManager):
 
         if local_site:
             # We want to atomically set the local_id to be a monotonically
-            # increasing ID unique to the local_site. This isn't really possible
-            # in django's DB layer, so we have to drop back to pure SQL and then
-            # reload the model.
+            # increasing ID unique to the local_site. This isn't really
+            # possible in django's DB layer, so we have to drop back to pure
+            # SQL and then reload the model.
             from reviewboard.reviews.models import ReviewRequest
             db = router.db_for_write(ReviewRequest)
             cursor = connections[db].cursor()
@@ -152,7 +152,7 @@ class ReviewRequestManager(ConcurrencyManager):
                     'table': ReviewRequest._meta.db_table,
                     'local_site_id': local_site.pk,
                     'id': review_request.pk,
-            })
+                })
             transaction.commit()
 
             review_request = ReviewRequest.objects.get(pk=review_request.pk)
@@ -213,8 +213,7 @@ class ReviewRequestManager(ConcurrencyManager):
         query_user = self._get_query_user(user_or_username)
         groups = list(query_user.review_groups.values_list('pk', flat=True))
 
-        query = Q(target_people=query_user) | \
-                Q(target_groups__in=groups)
+        query = Q(target_people=query_user) | Q(target_groups__in=groups)
 
         try:
             profile = query_user.get_profile()

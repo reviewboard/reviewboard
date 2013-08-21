@@ -2,10 +2,10 @@ from django import template
 from django.template.loader import render_to_string
 from djblets.util.decorators import basictag
 
-from reviewboard.extensions.hooks import DiffViewerActionHook, \
-                                         NavigationBarHook, \
-                                         ReviewRequestActionHook, \
-                                         ReviewRequestDropdownActionHook
+from reviewboard.extensions.hooks import (DiffViewerActionHook,
+                                          NavigationBarHook,
+                                          ReviewRequestActionHook,
+                                          ReviewRequestDropdownActionHook)
 from reviewboard.site.urlresolvers import local_site_reverse
 
 

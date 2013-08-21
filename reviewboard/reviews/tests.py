@@ -15,13 +15,13 @@ from kgb import SpyAgency
 from reviewboard.accounts.models import Profile, LocalSiteProfile
 from reviewboard.attachments.models import FileAttachment
 from reviewboard.reviews.forms import DefaultReviewerForm, GroupForm
-from reviewboard.reviews.models import Comment, \
-                                       DefaultReviewer, \
-                                       Group, \
-                                       ReviewRequest, \
-                                       ReviewRequestDraft, \
-                                       Review, \
-                                       Screenshot
+from reviewboard.reviews.models import (Comment,
+                                        DefaultReviewer,
+                                        Group,
+                                        ReviewRequest,
+                                        ReviewRequestDraft,
+                                        Review,
+                                        Screenshot)
 from reviewboard.scmtools.core import Commit
 from reviewboard.scmtools.models import Repository, Tool
 from reviewboard.site.models import LocalSite
@@ -38,35 +38,35 @@ class DbQueryTests(TestCase):
         self.assertValidSummaries(
             ReviewRequest.objects.public(
                 User.objects.get(username="doc")), [
-            "Comments Improvements",
-            "Update for cleaned_data changes",
-            "Add permission checking for JSON API",
-            "Made e-mail improvements",
-            "Error dialog",
-            "Interdiff Revision Test",
-        ])
+                    "Comments Improvements",
+                    "Update for cleaned_data changes",
+                    "Add permission checking for JSON API",
+                    "Made e-mail improvements",
+                    "Error dialog",
+                    "Interdiff Revision Test",
+                ])
 
         self.assertValidSummaries(
             ReviewRequest.objects.public(status=None), [
-            "Update for cleaned_data changes",
-            "Add permission checking for JSON API",
-            "Made e-mail improvements",
-            "Error dialog",
-            "Improved login form",
-            "Interdiff Revision Test",
-        ])
+                "Update for cleaned_data changes",
+                "Add permission checking for JSON API",
+                "Made e-mail improvements",
+                "Error dialog",
+                "Improved login form",
+                "Interdiff Revision Test",
+            ])
 
         self.assertValidSummaries(
             ReviewRequest.objects.public(
                 User.objects.get(username="doc"), status=None), [
-            "Comments Improvements",
-            "Update for cleaned_data changes",
-            "Add permission checking for JSON API",
-            "Made e-mail improvements",
-            "Error dialog",
-            "Improved login form",
-            "Interdiff Revision Test",
-        ])
+                    "Comments Improvements",
+                    "Update for cleaned_data changes",
+                    "Add permission checking for JSON API",
+                    "Made e-mail improvements",
+                    "Error dialog",
+                    "Improved login form",
+                    "Interdiff Revision Test",
+                ])
 
     def testReviewRequestsToGroup(self):
         """Testing get_review_requests_to_group"""
@@ -82,28 +82,36 @@ class DbQueryTests(TestCase):
         """Testing get_review_requests_to_user_groups"""
         self.assertValidSummaries(
             ReviewRequest.objects.to_user_groups("doc", local_site=None),
-            ["Update for cleaned_data changes",
-             "Add permission checking for JSON API"])
+            [
+                "Update for cleaned_data changes",
+                "Add permission checking for JSON API"
+            ])
 
         self.assertValidSummaries(
-            ReviewRequest.objects.to_user_groups("doc", status=None,
-                local_site=None),
-            ["Update for cleaned_data changes",
-             "Add permission checking for JSON API"])
+            ReviewRequest.objects.to_user_groups(
+                "doc", status=None, local_site=None),
+            [
+                "Update for cleaned_data changes",
+                "Add permission checking for JSON API"
+            ])
 
         self.assertValidSummaries(
-            ReviewRequest.objects.to_user_groups("doc",
-                User.objects.get(username="doc"), local_site=None),
-            ["Comments Improvements",
-             "Update for cleaned_data changes",
-             "Add permission checking for JSON API"])
+            ReviewRequest.objects.to_user_groups(
+                "doc", User.objects.get(username="doc"), local_site=None),
+            [
+                "Comments Improvements",
+                "Update for cleaned_data changes",
+                "Add permission checking for JSON API"
+            ])
 
     def testReviewRequestsToUserDirectly(self):
         """Testing get_review_requests_to_user_directly"""
         self.assertValidSummaries(
             ReviewRequest.objects.to_user_directly("doc", local_site=None),
-            ["Add permission checking for JSON API",
-             "Made e-mail improvements"])
+            [
+                "Add permission checking for JSON API",
+                "Made e-mail improvements"
+            ])
 
         self.assertValidSummaries(
             ReviewRequest.objects.to_user_directly("doc", status=None),
@@ -112,11 +120,14 @@ class DbQueryTests(TestCase):
              "Improved login form"])
 
         self.assertValidSummaries(
-            ReviewRequest.objects.to_user_directly("doc",
-                User.objects.get(username="doc"), status=None, local_site=None),
-            ["Add permission checking for JSON API",
-             "Made e-mail improvements",
-             "Improved login form"])
+            ReviewRequest.objects.to_user_directly(
+                "doc", User.objects.get(username="doc"), status=None,
+                local_site=None),
+            [
+                "Add permission checking for JSON API",
+                "Made e-mail improvements",
+                "Improved login form"
+            ])
 
     def testReviewRequestsFromUser(self):
         """Testing get_review_requests_from_user"""
@@ -124,43 +135,50 @@ class DbQueryTests(TestCase):
             ReviewRequest.objects.from_user("doc", local_site=None), [])
 
         self.assertValidSummaries(
-            ReviewRequest.objects.from_user("doc", status=None, local_site=None),
+            ReviewRequest.objects.from_user("doc", status=None,
+                                            local_site=None),
             ["Improved login form"])
 
         self.assertValidSummaries(
-            ReviewRequest.objects.from_user("doc",
-                user=User.objects.get(username="doc"), status=None,
+            ReviewRequest.objects.from_user(
+                "doc", user=User.objects.get(username="doc"), status=None,
                 local_site=None),
-            ["Comments Improvements",
-             "Improved login form"])
+            [
+                "Comments Improvements",
+                "Improved login form"
+            ])
 
     def testReviewRequestsToUser(self):
         """Testing get_review_requests_to_user"""
         self.assertValidSummaries(
-            ReviewRequest.objects.to_user("doc", local_site=None), [
-            "Update for cleaned_data changes",
-            "Add permission checking for JSON API",
-            "Made e-mail improvements"
-        ])
+            ReviewRequest.objects.to_user("doc", local_site=None),
+            [
+                "Update for cleaned_data changes",
+                "Add permission checking for JSON API",
+                "Made e-mail improvements"
+            ])
 
         self.assertValidSummaries(
-            ReviewRequest.objects.to_user("doc", status=None, local_site=None), [
-
-            "Update for cleaned_data changes",
-            "Add permission checking for JSON API",
-            "Made e-mail improvements",
-            "Improved login form"
-        ])
+            ReviewRequest.objects.to_user("doc", status=None,
+                                          local_site=None),
+            [
+                "Update for cleaned_data changes",
+                "Add permission checking for JSON API",
+                "Made e-mail improvements",
+                "Improved login form"
+            ])
 
         self.assertValidSummaries(
-            ReviewRequest.objects.to_user("doc",
-                User.objects.get(username="doc"), status=None, local_site=None), [
-            "Comments Improvements",
-            "Update for cleaned_data changes",
-            "Add permission checking for JSON API",
-            "Made e-mail improvements",
-            "Improved login form"
-        ])
+            ReviewRequest.objects.to_user(
+                "doc", User.objects.get(username="doc"), status=None,
+                local_site=None),
+            [
+                "Comments Improvements",
+                "Update for cleaned_data changes",
+                "Add permission checking for JSON API",
+                "Made e-mail improvements",
+                "Improved login form"
+            ])
 
     def assertValidSummaries(self, review_requests, summaries):
         print review_requests
@@ -219,9 +237,11 @@ class ViewTests(TestCase):
 
         request = self.getContextVar(response, 'review_request')
         self.assertEqual(request.submitter.username, 'admin')
-        self.assertEqual(request.summary, 'Add permission checking for JSON API')
+        self.assertEqual(request.summary,
+                         'Add permission checking for JSON API')
         self.assertEqual(request.description,
-                         'Added some user permissions checking for JSON API functions.')
+                         'Added some user permissions checking for JSON API '
+                         'functions.')
         self.assertEqual(request.testing_done, 'Tested some functions.')
 
         self.assertEqual(request.target_people.count(), 2)
@@ -267,11 +287,11 @@ class ViewTests(TestCase):
         main_review.publish()
 
         # First reply
-        reply1 = Review.objects.create(review_request=review_request,
-                                       user=user1,
-                                       base_reply_to=main_review,
-                                       timestamp=main_review.timestamp +
-                                                 timedelta(days=1))
+        reply1 = Review.objects.create(
+            review_request=review_request,
+            user=user1,
+            base_reply_to=main_review,
+            timestamp=(main_review.timestamp + timedelta(days=1)))
         reply1.comments.create(filediff=filediff,
                                first_line=1,
                                num_lines=1,
@@ -279,11 +299,11 @@ class ViewTests(TestCase):
                                reply_to=main_comment)
 
         # Second reply
-        reply2 = Review.objects.create(review_request=review_request,
-                                       user=user2,
-                                       base_reply_to=main_review,
-                                       timestamp=main_review.timestamp +
-                                                 timedelta(days=2))
+        reply2 = Review.objects.create(
+            review_request=review_request,
+            user=user2,
+            base_reply_to=main_review,
+            timestamp=(main_review.timestamp + timedelta(days=2)))
         reply2.comments.create(filediff=filediff,
                                first_line=1,
                                num_lines=1,
@@ -666,13 +686,16 @@ class ViewTests(TestCase):
             counts['starred'],
             profile.starred_review_requests.public(
                 user, local_site=local_site).count())
-        self.assertEqual(counts['mine'],
+        self.assertEqual(
+            counts['mine'],
             ReviewRequest.objects.from_user(
                 user, user, None, local_site=local_site).count())
-        self.assertEqual(counts['groups']['devgroup'],
+        self.assertEqual(
+            counts['groups']['devgroup'],
             ReviewRequest.objects.to_group(
                 'devgroup', local_site=local_site).count())
-        self.assertEqual(counts['groups']['privgroup'],
+        self.assertEqual(
+            counts['groups']['privgroup'],
             ReviewRequest.objects.to_group(
                 'privgroup', local_site=local_site).count())
 
@@ -1052,7 +1075,8 @@ class DefaultReviewerTests(TestCase):
         default_reviewer2 = DefaultReviewer(name='Test 2', file_regex='.*')
         default_reviewer2.save()
 
-        default_reviewers = DefaultReviewer.objects.for_repository(None, test_site)
+        default_reviewers = DefaultReviewer.objects.for_repository(
+            None, test_site)
         self.assert_(len(default_reviewers) == 1)
         self.assert_(default_reviewer1 in default_reviewers)
 

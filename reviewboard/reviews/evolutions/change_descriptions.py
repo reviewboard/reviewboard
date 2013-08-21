@@ -10,4 +10,3 @@ MUTATIONS = [
              initial=None, null=True,
              related_model='changedescs.ChangeDescription')
 ]
-

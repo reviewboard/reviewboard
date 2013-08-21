@@ -124,9 +124,9 @@ class HostingService(object):
         list of Commit objects (usually 30, but this is flexible depending on
         the limitations of the APIs provided.
 
-        This can be called multiple times in succession using the "parent" field
-        of the last entry as the start parameter in order to paginate through
-        the history of commits in the repository.
+        This can be called multiple times in succession using the "parent"
+        field of the last entry as the start parameter in order to paginate
+        through the history of commits in the repository.
         """
         raise NotImplementedError
 
@@ -310,8 +310,9 @@ def _populate_hosting_services():
             try:
                 _hosting_services[entry.name] = entry.load()
             except Exception, e:
-                logging.error('Unable to load repository hosting service %s: %s' %
-                              (entry, e))
+                logging.error(
+                    'Unable to load repository hosting service %s: %s'
+                    % (entry, e))
 
 
 def get_hosting_services():

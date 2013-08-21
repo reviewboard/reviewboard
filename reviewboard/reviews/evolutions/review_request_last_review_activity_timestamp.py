@@ -6,4 +6,3 @@ MUTATIONS = [
                 'last_review_activity_timestamp',
                 db_column='last_review_timestamp'),
 ]
-

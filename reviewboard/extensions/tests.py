@@ -3,11 +3,11 @@ from django.test import TestCase
 from djblets.extensions.base import ExtensionManager, RegisteredExtension
 
 from reviewboard.extensions.base import Extension
-from reviewboard.extensions.hooks import DashboardHook, DiffViewerActionHook, \
-                                         NavigationBarHook, \
-                                         ReviewRequestActionHook, \
-                                         ReviewRequestDropdownActionHook, \
-                                         UserPageSidebarHook
+from reviewboard.extensions.hooks import (DashboardHook, DiffViewerActionHook,
+                                          NavigationBarHook,
+                                          ReviewRequestActionHook,
+                                          ReviewRequestDropdownActionHook,
+                                          UserPageSidebarHook)
 
 
 class DummyExtension(Extension):
@@ -132,7 +132,6 @@ class HookTests(TestCase):
         self.assertTrue(self._build_action_template(action['items'][0]) in
                         content)
 
-
     def _test_action_hook(self, template_tag_name, hook_cls):
         action = {
             'label': 'Test Action',
@@ -158,10 +157,10 @@ class HookTests(TestCase):
                          self._build_action_template(action))
 
     def _build_action_template(self, action):
-        return '<li><a id="%(id)s" href="%(url)s">' \
-              '<img src="%(image)s" width="%(image_width)s" ' \
-              'height="%(image_height)s" border="0" alt="" />' \
-              '%(label)s</a></li>' % action
+        return ('<li><a id="%(id)s" href="%(url)s">'
+                '<img src="%(image)s" width="%(image_width)s" '
+                'height="%(image_height)s" border="0" alt="" />'
+                '%(label)s</a></li>' % action)
 
     def test_navigation_bar_hooks(self):
         """Testing navigation entry extension hooks"""

@@ -10,4 +10,3 @@ MUTATIONS = [
     AddField('ScreenshotComment', 'issue_status', models.CharField,
              initial='', max_length=1, null=True, db_index=True)
 ]
-

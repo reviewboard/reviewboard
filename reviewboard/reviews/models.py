@@ -9,8 +9,8 @@ from django.utils.html import escape
 from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext_lazy as _
 from djblets.util.db import ConcurrencyManager
-from djblets.util.fields import CounterField, JSONField, \
-                                ModificationTimestampField
+from djblets.util.fields import (CounterField, JSONField,
+                                 ModificationTimestampField)
 from djblets.util.misc import get_object_or_none
 from djblets.util.templatetags.djblets_images import crop_image, thumbnail
 
@@ -18,14 +18,14 @@ from reviewboard.changedescs.models import ChangeDescription
 from reviewboard.diffviewer.models import DiffSet, DiffSetHistory, FileDiff
 from reviewboard.attachments.models import FileAttachment
 from reviewboard.reviews.errors import PermissionError
-from reviewboard.reviews.managers import DefaultReviewerManager, \
-                                         ReviewGroupManager, \
-                                         ReviewRequestManager, \
-                                         ReviewManager
-from reviewboard.reviews.signals import review_request_published, \
-                                        review_request_reopened, \
-                                        review_request_closed, \
-                                        reply_published, review_published
+from reviewboard.reviews.managers import (DefaultReviewerManager,
+                                          ReviewGroupManager,
+                                          ReviewRequestManager,
+                                          ReviewManager)
+from reviewboard.reviews.signals import (review_request_published,
+                                         review_request_reopened,
+                                         review_request_closed,
+                                         reply_published, review_published)
 from reviewboard.scmtools.errors import InvalidChangeNumberError
 from reviewboard.scmtools.models import Repository
 from reviewboard.site.models import LocalSite
@@ -43,7 +43,9 @@ class Group(models.Model):
     """
     name = models.SlugField(_("name"), max_length=64, blank=False)
     display_name = models.CharField(_("display name"), max_length=64)
-    mailing_list = models.EmailField(_("mailing list"), blank=True,
+    mailing_list = models.EmailField(
+        _("mailing list"),
+        blank=True,
         help_text=_("The mailing list review requests and discussions "
                     "are sent to."))
     users = models.ManyToManyField(User, blank=True,
@@ -116,7 +118,9 @@ class DefaultReviewer(models.Model):
     Note that this is keyed off the same LocalSite as its "repository" member.
     """
     name = models.CharField(_("name"), max_length=64)
-    file_regex = models.CharField(_("file regex"), max_length=256,
+    file_regex = models.CharField(
+        _("file regex"),
+        max_length=256,
         help_text=_("File paths are matched against this regular expression "
                     "to determine if these reviewers should be added."))
     repository = models.ManyToManyField(Repository, blank=True)
@@ -420,8 +424,8 @@ class BaseReviewRequestDetails(models.Model):
 
         # If the SCM supports changesets, they should always include a number,
         # summary and description, parsed from the changeset description. Some
-        # specialized systems may support the other fields, but we don't want to
-        # clobber the user-entered values if they don't.
+        # specialized systems may support the other fields, but we don't want
+        # to clobber the user-entered values if they don't.
         if hasattr(self, 'changenum'):
             self.update_commit_id(commit_id)
 
@@ -549,7 +553,8 @@ class ReviewRequest(BaseReviewRequestDetails):
         related_name="review_request",
         verbose_name=_("screenshots"),
         blank=True)
-    inactive_screenshots = models.ManyToManyField(Screenshot,
+    inactive_screenshots = models.ManyToManyField(
+        Screenshot,
         verbose_name=_("inactive screenshots"),
         help_text=_("A list of screenshots that used to be but are no "
                     "longer associated with this review request."),
@@ -561,14 +566,16 @@ class ReviewRequest(BaseReviewRequestDetails):
         related_name="review_request",
         verbose_name=_("file attachments"),
         blank=True)
-    inactive_file_attachments = models.ManyToManyField(FileAttachment,
+    inactive_file_attachments = models.ManyToManyField(
+        FileAttachment,
         verbose_name=_("inactive file attachments"),
         help_text=_("A list of file attachments that used to be but are no "
                     "longer associated with this review request."),
         related_name="inactive_review_request",
         blank=True)
 
-    changedescs = models.ManyToManyField(ChangeDescription,
+    changedescs = models.ManyToManyField(
+        ChangeDescription,
         verbose_name=_("change descriptions"),
         related_name="review_request",
         blank=True)
@@ -631,7 +638,7 @@ class ReviewRequest(BaseReviewRequestDetails):
         # See the comment in Review.get_participants for this list
         # comprehension.
         return [u for review in self.reviews.all()
-                  for u in review.participants]
+                for u in review.participants]
 
     participants = property(get_participants)
 
@@ -655,7 +662,6 @@ class ReviewRequest(BaseReviewRequestDetails):
                 except IndexError:
                     # This visit doesn't exist, so bail.
                     pass
-
 
         return self.reviews.get_empty_query_set()
 
@@ -728,8 +734,8 @@ class ReviewRequest(BaseReviewRequestDetails):
 
     def is_mutable_by(self, user):
         "Returns true if the user can modify this review request"
-        return self.submitter == user or \
-               user.has_perm('reviews.can_edit_reviewrequest')
+        return (self.submitter == user or
+                user.has_perm('reviews.can_edit_reviewrequest'))
 
     def get_draft(self, user=None):
         """
@@ -810,9 +816,10 @@ class ReviewRequest(BaseReviewRequestDetails):
         else:
             local_site_name = None
 
-        return local_site_reverse('review-request-detail',
-                                  local_site_name=local_site_name,
-                                  kwargs={'review_request_id': self.display_id})
+        return local_site_reverse(
+            'review-request-detail',
+            local_site_name=local_site_name,
+            kwargs={'review_request_id': self.display_id})
 
     def get_diffsets(self):
         """Returns a list of all diffsets on this review request."""
@@ -985,19 +992,18 @@ class ReviewRequest(BaseReviewRequestDetails):
         if self.public:
             Group.incoming_request_count.decrement(self.target_groups.all())
             LocalSiteProfile.direct_incoming_request_count.decrement(
-                    LocalSiteProfile.objects.filter(
-                        user__in=self.target_people.all(),
-                        local_site=self.local_site))
+                LocalSiteProfile.objects.filter(
+                    user__in=self.target_people.all(),
+                    local_site=self.local_site))
             LocalSiteProfile.total_incoming_request_count.decrement(
-                    LocalSiteProfile.objects.filter(
-                        Q(local_site=self.local_site) &
-                        Q(Q(user__review_groups__in= \
-                            self.target_groups.all()) |
-                          Q(user__in=self.target_people.all()))))
+                LocalSiteProfile.objects.filter(
+                    Q(local_site=self.local_site) &
+                    Q(Q(user__review_groups__in=self.target_groups.all()) |
+                      Q(user__in=self.target_people.all()))))
             LocalSiteProfile.starred_public_request_count.decrement(
-                    LocalSiteProfile.objects.filter(
-                        profile__starred_review_requests=self,
-                        local_site=self.local_site))
+                LocalSiteProfile.objects.filter(
+                    profile__starred_review_requests=self,
+                    local_site=self.local_site))
 
         draft = get_object_or_none(self.draft)
         if draft is not None:
@@ -1030,9 +1036,10 @@ class ReviewRequest(BaseReviewRequestDetails):
 
         local_site = self.local_site
         site_profile, site_profile_is_new = \
-            LocalSiteProfile.objects.get_or_create(user=self.submitter,
-                                              profile=profile,
-                                              local_site=local_site)
+            LocalSiteProfile.objects.get_or_create(
+                user=self.submitter,
+                profile=profile,
+                local_site=local_site)
 
         if site_profile_is_new:
             site_profile.save()
@@ -1144,7 +1151,8 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
                                          related_name="drafts",
                                          verbose_name=_("screenshots"),
                                          blank=True)
-    inactive_screenshots = models.ManyToManyField(Screenshot,
+    inactive_screenshots = models.ManyToManyField(
+        Screenshot,
         verbose_name=_("inactive screenshots"),
         related_name="inactive_drafts",
         blank=True)
@@ -1224,7 +1232,7 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
                 attachment.save()
                 draft.inactive_file_attachments.add(attachment)
 
-            draft.save();
+            draft.save()
 
         return draft
 
@@ -1328,9 +1336,8 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
                 self.changedesc.record_field_change('bugs_closed',
                                                     old_bugs, new_bugs)
 
-
-        # Screenshots are a bit special.  The list of associated screenshots can
-        # change, but so can captions within each screenshot.
+        # Screenshots are a bit special.  The list of associated screenshots
+        # can change, but so can captions within each screenshot.
         screenshots = self.screenshots.all()
         caption_changes = {}
 
@@ -1604,10 +1611,10 @@ class Comment(BaseComment):
         if self.interfilediff:
             revision_path += "-%s" % self.interfilediff.diffset.revision
 
-        return "%sdiff/%s/?file=%s#file%sline%s" % \
-             (self.get_review_request().get_absolute_url(),
-              revision_path, self.filediff.id, self.filediff.id,
-              self.first_line)
+        return "%sdiff/%s/?file=%s#file%sline%s" % (
+            self.get_review_request().get_absolute_url(),
+            revision_path, self.filediff.id, self.filediff.id,
+            self.first_line)
 
 
 class ScreenshotComment(BaseComment):
@@ -1630,7 +1637,8 @@ class ScreenshotComment(BaseComment):
         """
         Returns the URL for the thumbnail, creating it if necessary.
         """
-        return crop_image(self.screenshot.image, self.x, self.y, self.w, self.h)
+        return crop_image(self.screenshot.image, self.x, self.y,
+                          self.w, self.h)
 
     def image(self):
         """
@@ -1693,11 +1701,15 @@ class Review(models.Model):
                              related_name="reviews")
     timestamp = models.DateTimeField(_('timestamp'), default=timezone.now)
     public = models.BooleanField(_("public"), default=False)
-    ship_it = models.BooleanField(_("ship it"), default=False,
+    ship_it = models.BooleanField(
+        _("ship it"),
+        default=False,
         help_text=_("Indicates whether the reviewer thinks this code is "
                     "ready to ship."))
     base_reply_to = models.ForeignKey(
-        "self", blank=True, null=True,
+        "self",
+        blank=True,
+        null=True,
         related_name="replies",
         verbose_name=_("Base reply to"),
         help_text=_("The top-most review in the discussion thread for "
@@ -1707,10 +1719,14 @@ class Review(models.Model):
     time_emailed = models.DateTimeField(_("time e-mailed"), null=True,
                                         default=None, blank=True)
 
-    body_top = models.TextField(_("body (top)"), blank=True,
+    body_top = models.TextField(
+        _("body (top)"),
+        blank=True,
         help_text=_("The review text shown above the diff and screenshot "
                     "comments."))
-    body_bottom = models.TextField(_("body (bottom)"), blank=True,
+    body_bottom = models.TextField(
+        _("body (bottom)"),
+        blank=True,
         help_text=_("The review text shown below the diff and screenshot "
                     "comments."))
 
@@ -1763,7 +1779,7 @@ class Review(models.Model):
         # loop and concetenate the list, but this is more fun.
         return [self.user] + \
                [u for reply in self.replies.all()
-                  for u in reply.participants]
+                for u in reply.participants]
 
     participants = property(get_participants)
 
@@ -1884,7 +1900,8 @@ class Review(models.Model):
         super(Review, self).delete()
 
     def get_absolute_url(self):
-        return "%s#review%s" % (self.review_request.get_absolute_url(), self.id)
+        return "%s#review%s" % (self.review_request.get_absolute_url(),
+                                self.pk)
 
     def get_all_comments(self, **kwargs):
         """Return a list of all contained comments of all types."""

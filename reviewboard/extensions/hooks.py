@@ -1,8 +1,8 @@
 from djblets.extensions.base import ExtensionHook, ExtensionHookPoint
 import djblets.extensions.hooks as djblets_hooks
 
-from reviewboard.attachments.mimetypes import register_mimetype_handler, \
-                                              unregister_mimetype_handler
+from reviewboard.attachments.mimetypes import (register_mimetype_handler,
+                                               unregister_mimetype_handler)
 from reviewboard.reviews.ui.base import register_ui, unregister_ui
 
 

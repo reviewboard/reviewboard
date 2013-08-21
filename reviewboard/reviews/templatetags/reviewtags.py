@@ -13,9 +13,9 @@ from djblets.util.humanize import humanize_list
 
 from reviewboard.accounts.models import Profile
 from reviewboard.diffviewer.models import DiffSet
-from reviewboard.reviews.models import BaseComment, Group, \
-                                       ReviewRequest, ScreenshotComment, \
-                                       FileAttachmentComment
+from reviewboard.reviews.models import (BaseComment, Group,
+                                        ReviewRequest, ScreenshotComment,
+                                        FileAttachmentComment)
 
 
 register = template.Library()
@@ -32,7 +32,7 @@ def ifneatnumber(context, nodelist, rid):
     If the number is a neat number, the contained content is rendered,
     and two variables, ``milestone`` and ``palindrome`` are defined.
     """
-    if rid == None or rid < 1000:
+    if rid is None or rid < 1000:
         return ""
 
     ridstr = str(rid)
@@ -109,15 +109,16 @@ def commentcounts(context, filediff, interfilediff=None):
                 'num_lines': comment.num_lines,
                 'user': {
                     'username': review.user.username,
-                    'name': review.user.get_full_name() or review.user.username,
+                    'name': (review.user.get_full_name() or
+                             review.user.username),
                 },
                 'url': comment.get_review_url(),
-                'localdraft': review.user == user and \
-                              not review.public,
+                'localdraft': (review.user == user and
+                               not review.public),
                 'review_id': review.id,
                 'issue_opened': comment.issue_opened,
-                'issue_status': BaseComment
-                                .issue_status_to_string(comment.issue_status),
+                'issue_status': BaseComment.issue_status_to_string(
+                    comment.issue_status),
             })
 
     comments_array = []
@@ -129,8 +130,9 @@ def commentcounts(context, filediff, interfilediff=None):
             'comments': value,
         })
 
-    comments_array.sort(cmp=lambda x, y: cmp(x['linenum'], y['linenum'] or
-                                         cmp(x['num_lines'], y['num_lines'])))
+    comments_array.sort(
+        cmp=lambda x, y: (cmp(x['linenum'], y['linenum'] or
+                          cmp(x['num_lines'], y['num_lines']))))
 
     return simplejson.dumps(comments_array)
 
@@ -162,7 +164,7 @@ def screenshotcommentcounts(context, screenshot):
         review = comment.get_review()
 
         if review and (review.public or review.user == user):
-            position = '%dx%d+%d+%d' % (comment.w, comment.h, \
+            position = '%dx%d+%d+%d' % (comment.w, comment.h,
                                         comment.x, comment.y)
 
             comments.setdefault(position, []).append({
@@ -170,7 +172,8 @@ def screenshotcommentcounts(context, screenshot):
                 'text': escape(comment.text),
                 'user': {
                     'username': review.user.username,
-                    'name': review.user.get_full_name() or review.user.username,
+                    'name': (review.user.get_full_name() or
+                             review.user.username),
                 },
                 'url': comment.get_review_url(),
                 'localdraft': review.user == user and not review.public,
@@ -180,9 +183,8 @@ def screenshotcommentcounts(context, screenshot):
                 'h': comment.h,
                 'review_id': review.id,
                 'issue_opened': comment.issue_opened,
-                'issue_status': BaseComment
-                                .issue_status_to_string(comment
-                                                        .issue_status),
+                'issue_status': BaseComment.issue_status_to_string(
+                    comment.issue_status),
             })
 
     return simplejson.dumps(comments)
@@ -204,15 +206,15 @@ def file_attachment_comments(context, file_attachment):
                 'text': escape(comment.text),
                 'user': {
                     'username': review.user.username,
-                    'name': review.user.get_full_name() or review.user.username,
+                    'name': (review.user.get_full_name() or
+                             review.user.username),
                 },
                 'url': comment.get_review_url(),
                 'localdraft': review.user == user and not review.public,
                 'review_id': review.id,
                 'issue_opened': comment.issue_opened,
-                'issue_status': BaseComment
-                                .issue_status_to_string(comment
-                                                        .issue_status),
+                'issue_status': BaseComment.issue_status_to_string(
+                    comment.issue_status),
             })
 
     return simplejson.dumps(comments)
@@ -291,7 +293,7 @@ def reply_list(context, entry, comment, context_type, context_id):
 
         return s
     else:
-        raise TemplateSyntaxError, "Invalid context type passed"
+        raise TemplateSyntaxError("Invalid context type passed")
 
     return s
 
@@ -372,9 +374,9 @@ def dashboard_entry(context, level, text, view, param=None):
         'show_count': show_count,
         'user': user,
         'starred': starred,
-        'selected': context.get('view', None) == view and \
-                    (not group_name or
-                     context.get('group', None) == group_name),
+        'selected': (context.get('view', None) == view and
+                     (not group_name or
+                      context.get('group', None) == group_name)),
         'local_site_name': context.get('local_site_name'),
     }
 
@@ -384,10 +386,10 @@ def reviewer_list(review_request):
     """
     Returns a humanized list of target reviewers in a review request.
     """
-    return humanize_list([group.display_name or group.name \
-                          for group in review_request.target_groups.all()] + \
-                         [user.get_full_name() or user.username \
-                          for user  in review_request.target_people.all()])
+    return humanize_list([group.display_name or group.name
+                          for group in review_request.target_groups.all()] +
+                         [user.get_full_name() or user.username
+                          for user in review_request.target_people.all()])
 
 
 @register.filter
@@ -426,8 +428,8 @@ def diffsets_with_comments(review, current_pair):
     for diffset in diffsets:
         yield {
             'diffset': diffset,
-            'is_current': current_pair[0] == diffset and
-                          current_pair[1] == None,
+            'is_current': (current_pair[0] == diffset and
+                           current_pair[1] is None),
         }
 
 
@@ -451,8 +453,8 @@ def interdiffs_with_comments(review, current_pair):
             yield {
                 'diffset': diffset,
                 'interdiff': interdiff,
-                'is_current': current_pair[0] == diffset and
-                              current_pair[1] == interdiff,
+                'is_current': (current_pair[0] == diffset and
+                               current_pair[1] == interdiff),
             }
 
 

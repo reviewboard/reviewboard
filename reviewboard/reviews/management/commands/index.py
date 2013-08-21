@@ -33,7 +33,7 @@ class Command(NoArgsCommand):
         optparse.make_option('--full', action='store_false',
                              dest='incremental', default=True,
                              help='Do a full (level-0) index of the database'),
-        )
+    )
     help = "Creates a search index of review requests"
     requires_model_validation = True
 
@@ -48,7 +48,8 @@ class Command(NoArgsCommand):
             sys.exit(1)
 
         if not have_lucene:
-            sys.stderr.write('PyLucene is required to build the search index.\n')
+            sys.stderr.write('PyLucene is required to build the search '
+                             'index.\n')
             sys.exit(1)
 
         incremental = options.get('incremental', True)
@@ -63,8 +64,9 @@ class Command(NoArgsCommand):
             try:
                 f = open(timestamp_file, 'r')
                 if timezone and settings.USE_TZ:
-                    timestamp = timezone.make_aware(datetime.utcfromtimestamp(int(f.read())),
-                                                    timezone.get_default_timezone())
+                    timestamp = timezone.make_aware(
+                        datetime.utcfromtimestamp(int(f.read())),
+                        timezone.get_default_timezone())
                 else:
                     timestamp = datetime.utcfromtimestamp(int(f.read()))
                 f.close()
@@ -82,7 +84,8 @@ class Command(NoArgsCommand):
                                         not incremental)
         elif lucene_is_3x:
             store = lucene.FSDirectory.open(lucene.File(store_dir))
-            writer = lucene.IndexWriter(store,
+            writer = lucene.IndexWriter(
+                store,
                 lucene.StandardAnalyzer(lucene.Version.LUCENE_CURRENT),
                 not incremental,
                 lucene.IndexWriter.MaxFieldLength.LIMITED)
@@ -121,8 +124,8 @@ class Command(NoArgsCommand):
                         prev_pct = pct
 
             except Exception, e:
-                sys.stderr.write('Error indexing ReviewRequest #%d: %s\n' % \
-                                 (request.id, e))
+                sys.stderr.write('Error indexing ReviewRequest #%d: %s\n'
+                                 % (request.id, e))
 
         if sys.stdout.isatty():
             print 'Optimizing Index'

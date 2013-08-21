@@ -3,10 +3,11 @@ from django.template.defaultfilters import truncatechars
 from django.utils.translation import ugettext_lazy as _
 
 from reviewboard.reviews.forms import DefaultReviewerForm, GroupForm
-from reviewboard.reviews.models import Comment, DefaultReviewer, Group, \
-                                       Review, ReviewRequest, \
-                                       ReviewRequestDraft, Screenshot, \
-                                       ScreenshotComment, FileAttachmentComment
+from reviewboard.reviews.models import (Comment, DefaultReviewer, Group,
+                                        Review, ReviewRequest,
+                                        ReviewRequestDraft, Screenshot,
+                                        ScreenshotComment,
+                                        FileAttachmentComment)
 
 
 class CommentAdmin(admin.ModelAdmin):
@@ -226,7 +227,8 @@ class ScreenshotCommentAdmin(admin.ModelAdmin):
 
 
 class FileAttachmentCommentAdmin(admin.ModelAdmin):
-    list_display = ('text', 'file_attachment', 'review_request_id', 'timestamp')
+    list_display = ('text', 'file_attachment', 'review_request_id',
+                    'timestamp')
     list_filter = ('timestamp',)
     search_fields = ['caption']
     raw_id_fields = ('file_attachment', 'reply_to')

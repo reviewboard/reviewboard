@@ -10,8 +10,8 @@ from django.utils import simplejson
 from django.utils.translation import ugettext_lazy as _
 from djblets.siteconfig.models import SiteConfiguration
 
-from reviewboard.hostingsvcs.errors import AuthorizationError, \
-                                           SSHKeyAssociationError
+from reviewboard.hostingsvcs.errors import (AuthorizationError,
+                                            SSHKeyAssociationError)
 from reviewboard.hostingsvcs.forms import HostingServiceForm
 from reviewboard.hostingsvcs.service import HostingService
 from reviewboard.scmtools.core import Branch, Commit
@@ -98,7 +98,8 @@ class GitHub(HostingService):
             },
             'bug_tracker_field': 'http://github.com/'
                                  '%(hosting_account_username)s/'
-                                 '%(github_public_repo_name)s/issues#issue/%%s',
+                                 '%(github_public_repo_name)s/'
+                                 'issues#issue/%%s',
         }),
         ('public-org', {
             'name': _('Public Organization'),

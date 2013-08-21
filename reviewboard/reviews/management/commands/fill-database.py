@@ -7,8 +7,8 @@ from optparse import make_option
 from django import db
 from django.contrib.auth.models import User
 from django.core.files.uploadedfile import UploadedFile
-from django.core.management.base import (
-    BaseCommand, CommandError, NoArgsCommand )
+from django.core.management.base import (BaseCommand, CommandError,
+                                         NoArgsCommand)
 from django.db import transaction
 
 from reviewboard.accounts.models import Profile
@@ -20,8 +20,8 @@ from reviewboard.scmtools.models import Repository, Tool
 NORMAL = 1
 DESCRIPTION_SIZE = 100
 SUMMARY_SIZE = 6
-LOREM_VOCAB = \
-    ['Lorem', 'ipsum', 'dolor', 'sit', 'amet', 'consectetur',
+LOREM_VOCAB = [
+    'Lorem', 'ipsum', 'dolor', 'sit', 'amet', 'consectetur',
     'Nullam', 'quis', 'erat', 'libero.', 'Ut', 'vel', 'velit', 'augue, ',
     'risus.', 'Curabitur', 'dignissim', 'luctus', 'dui, ', 'et',
     'tristique', 'id.', 'Etiam', 'blandit', 'adipiscing', 'molestie.',
@@ -55,10 +55,11 @@ LOREM_VOCAB = \
     'Suspendisse', 'ipsum', 'dui, ', 'accumsan', 'eget', 'imperdiet',
     'est.', 'Integer', 'porta, ', 'ante', 'ac', 'commodo', 'faucibus',
     'molestie', 'risus, ', 'a', 'imperdiet', 'eros', 'neque', 'ac',
-    'nisi', 'leo', 'pretium', 'congue', 'eget', 'quis', 'arcu.', 'Cras']
+    'nisi', 'leo', 'pretium', 'congue', 'eget', 'quis', 'arcu.', 'Cras'
+]
 
-NAMES = \
-    ['Aaron', 'Abbey', 'Adan', 'Adelle', 'Agustin','Alan', 'Aleshia',
+NAMES = [
+    'Aaron', 'Abbey', 'Adan', 'Adelle', 'Agustin', 'Alan', 'Aleshia',
     'Alexia', 'Anderson', 'Ashely', 'Barbara', 'Belen', 'Bernardo',
     'Bernie', 'Bethanie', 'Bev', 'Boyd', 'Brad', 'Bret', 'Caleb',
     'Cammy', 'Candace', 'Carrol', 'Charlette', 'Charlie', 'Chelsea',
@@ -85,7 +86,8 @@ NAMES = \
     'Solinski', 'Swisher', 'Talladino', 'Tatham', 'Thornhill',
     'Ulabarro', 'Welander', 'Xander', 'Xavier', 'Xayas', 'Yagecic',
     'Yagerita', 'Yamat', 'Ying', 'Yurek', 'Zaborski', 'Zeccardi',
-    'Zecchini', 'Zimerman', 'Zitzow', 'Zoroiwchak', 'Zullinger', 'Zyskowski']
+    'Zecchini', 'Zimerman', 'Zitzow', 'Zoroiwchak', 'Zullinger', 'Zyskowski'
+]
 
 
 class Command(NoArgsCommand):
@@ -93,18 +95,19 @@ class Command(NoArgsCommand):
 
     option_list = BaseCommand.option_list + (
         make_option('-u', '--users', type="int", default=None, dest='users',
-            help='The number of users to add'),
+                    help='The number of users to add'),
         make_option('--review-requests', default=None, dest='review_requests',
-            help='The number of review requests per user [min:max]'),
+                    help='The number of review requests per user [min:max]'),
         make_option('--diffs', default=None, dest='diffs',
-            help='The number of diff per review request [min:max]'),
+                    help='The number of diff per review request [min:max]'),
         make_option('--reviews', default=None, dest='reviews',
-            help='The number of reviews per diff [min:max]'),
+                    help='The number of reviews per diff [min:max]'),
         make_option('--diff-comments', default=None, dest='diff_comments',
-            help='The number of comments per diff [min:max]'),
+                    help='The number of comments per diff [min:max]'),
         make_option('-p', '--password', type="string", default=None,
-            dest='password', help='The login password for users created')
-        )
+                    dest='password',
+                    help='The login password for users created')
+    )
 
     @transaction.commit_on_success
     def handle_noargs(self, users=None, review_requests=None, diffs=None,
@@ -121,8 +124,9 @@ class Command(NoArgsCommand):
                                                 review_requests)
 
             # Setup repository.
-            repo_dir = os.path.abspath(os.path.join(sys.argv[0], "..",
-                "scmtools", "testdata", "git_repo"))
+            repo_dir = os.path.abspath(
+                os.path.join(sys.argv[0], "..", "scmtools", "testdata",
+                             "git_repo"))
 
             # Throw exception on error so transaction reverts.
             if not os.path.exists(repo_dir):
@@ -130,15 +134,15 @@ class Command(NoArgsCommand):
 
             self.repository = Repository.objects.create(
                 name="Test Repository", path=repo_dir,
-                tool=Tool.objects.get(name="Git")
-                )
+                tool=Tool.objects.get(name="Git"))
 
         if diffs:
             num_of_diffs = self.parseCommand("diffs", diffs)
 
             # Create the diff directory locations.
-            diff_dir_tmp = os.path.abspath(os.path.join((sys.argv[0]),
-                "..", "reviews", "management", "commands", "diffs"))
+            diff_dir_tmp = os.path.abspath(
+                os.path.join(sys.argv[0], "..", "reviews", "management",
+                             "commands", "diffs"))
 
             # Throw exception on error so transaction reverts.
             if not os.path.exists(diff_dir_tmp):
@@ -262,7 +266,8 @@ class Command(NoArgsCommand):
                                 file_diff = cur_diff.files.order_by('id')[0]
 
                             # Choose random lines to comment.
-                            # Max lines: should be mod'd in future to read diff.
+                            # Max lines: should be mod'd in future to read
+                            # diff.
                             max_lines = 220
                             first_line = random.randrange(1, max_lines - 1)
                             remain_lines = max_lines - first_line

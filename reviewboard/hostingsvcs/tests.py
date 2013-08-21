@@ -501,7 +501,8 @@ class BugzillaTests(ServiceTests):
 
     def test_bug_tracker_field(self):
         """Testing the Bugzilla bug tracker field value"""
-        self.assertFalse(self.service_class.get_bug_tracker_requires_username())
+        self.assertFalse(
+            self.service_class.get_bug_tracker_requires_username())
         self.assertEqual(
             self.service_class.get_bug_tracker_field(None, {
                 'bugzilla_url': 'http://bugzilla.example.com',
@@ -530,7 +531,7 @@ class CodebaseHQTests(ServiceTests):
         self.assertEqual(fields['username'], 'myapiuser')
         self.assertEqual(fields['password'], 'myapikey')
         self.assertEqual(fields['path'],
-                        'git@codebasehq.com:mygroup/myproj/myrepo.git')
+                         'git@codebasehq.com:mygroup/myproj/myrepo.git')
         self.assertEqual(fields['raw_file_url'],
                          'https://api3.codebasehq.com/myproj/myrepo/blob/'
                          '<revision>')
@@ -551,7 +552,7 @@ class FedoraHosted(ServiceTests):
             'fedorahosted_repo_name': 'myrepo',
         })
         self.assertEqual(fields['path'],
-                        'git://git.fedorahosted.org/git/myrepo.git')
+                         'git://git.fedorahosted.org/git/myrepo.git')
         self.assertEqual(fields['raw_file_url'],
                          'http://git.fedorahosted.org/cgit/myrepo.git/'
                          'blob/<filename>?id=<revision>')
@@ -562,9 +563,9 @@ class FedoraHosted(ServiceTests):
             'fedorahosted_repo_name': 'myrepo',
         })
         self.assertEqual(fields['path'],
-                        'http://hg.fedorahosted.org/hg/myrepo/')
+                         'http://hg.fedorahosted.org/hg/myrepo/')
         self.assertEqual(fields['mirror_path'],
-                        'https://hg.fedorahosted.org/hg/myrepo/')
+                         'https://hg.fedorahosted.org/hg/myrepo/')
 
     def test_repo_field_values_svn(self):
         """Testing the Fedora Hosted repository field values for Subversion"""
@@ -572,9 +573,9 @@ class FedoraHosted(ServiceTests):
             'fedorahosted_repo_name': 'myrepo',
         })
         self.assertEqual(fields['path'],
-                        'http://svn.fedorahosted.org/svn/myrepo/')
+                         'http://svn.fedorahosted.org/svn/myrepo/')
         self.assertEqual(fields['mirror_path'],
-                        'https://svn.fedorahosted.org/svn/myrepo/')
+                         'https://svn.fedorahosted.org/svn/myrepo/')
 
     def test_bug_tracker_field(self):
         """Testing the Fedora Hosted bug tracker field value"""
@@ -688,10 +689,11 @@ class GitHubTests(ServiceTests):
 
     def test_private_org_field_values(self):
         """Testing the GitHub private-org plan repository field values"""
-        fields = self._get_repository_fields('Git', plan='private-org', fields={
-            'github_private_org_repo_name': 'myrepo',
-            'github_private_org_name': 'myorg',
-        })
+        fields = self._get_repository_fields(
+            'Git', plan='private-org', fields={
+                'github_private_org_repo_name': 'myrepo',
+                'github_private_org_name': 'myorg',
+            })
         self.assertEqual(fields['path'], 'git@github.com:myorg/myrepo.git')
         self.assertEqual(fields['mirror_path'], '')
 
@@ -909,29 +911,29 @@ class GitHubTests(ServiceTests):
         commits_api_response = simplejson.dumps([
             {
                 'commit': {
-                    'author': { 'name': 'Christian Hammond' },
-                    'committer': { 'date': '2013-06-25T23:31:22Z' },
+                    'author': {'name': 'Christian Hammond'},
+                    'committer': {'date': '2013-06-25T23:31:22Z'},
                     'message': 'Fixed the bug number for the blacktriangledown bug.',
                 },
                 'sha': '859d4e148ce3ce60bbda6622cdbe5c2c2f8d9817',
-                'parents': [ { 'sha': '92463764015ef463b4b6d1a1825fee7aeec8cb15' } ],
+                'parents': [{'sha': '92463764015ef463b4b6d1a1825fee7aeec8cb15'}],
             },
             {
                 'commit': {
-                    'author': { 'name': 'Christian Hammond' },
-                    'committer': { 'date': '2013-06-25T23:30:59Z' },
+                    'author': {'name': 'Christian Hammond'},
+                    'committer': {'date': '2013-06-25T23:30:59Z'},
                     'message': "Merge branch 'release-1.7.x'",
                 },
                 'sha': '92463764015ef463b4b6d1a1825fee7aeec8cb15',
                 'parents': [
-                    { 'sha': 'f5a35f1d8a8dcefb336a8e3211334f1f50ea7792' },
-                    { 'sha': '6c5f3465da5ed03dca8128bb3dd03121bd2cddb2' },
+                    {'sha': 'f5a35f1d8a8dcefb336a8e3211334f1f50ea7792'},
+                    {'sha': '6c5f3465da5ed03dca8128bb3dd03121bd2cddb2'},
                 ],
             },
             {
                 'commit': {
-                    'author': { 'name': 'David Trowbridge' },
-                    'committer': { 'date': '2013-06-25T22:41:09Z' },
+                    'author': {'name': 'David Trowbridge'},
+                    'committer': {'date': '2013-06-25T22:41:09Z'},
                     'message': 'Add DIFF_PARSE_ERROR to the ValidateDiffResource.create error list.',
                 },
                 'sha': 'f5a35f1d8a8dcefb336a8e3211334f1f50ea7792',
