@@ -589,13 +589,3 @@ def comment_issue(context, review_request, comment, comment_type):
 def pretty_print_issue_status(status):
     """Turns an issue status code into a human-readable status string."""
     return BaseComment.issue_status_to_string(status)
-
-
-@register.tag
-@basictag(takes_context=True)
-def render_review_ui(context, file_attachment):
-    """Renders the review UI inline for a file attachment."""
-    review_ui = file_attachment.review_ui
-    assert review_ui
-
-    return review_ui.render_to_string(context['request'])

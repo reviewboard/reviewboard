@@ -29,6 +29,7 @@ class DiffRenderer(object):
     """
     def __init__(self, diff_file, chunk_index=None, highlighting=False,
                  collapse_all=True, lines_of_context=None, extra_context=None,
+                 allow_caching=True,
                  template_name='diffviewer/diff_file_fragment.html'):
         self.diff_file = diff_file
         self.chunk_index = chunk_index
@@ -36,6 +37,7 @@ class DiffRenderer(object):
         self.collapse_all = collapse_all
         self.lines_of_context = lines_of_context
         self.extra_context = extra_context or {}
+        self.allow_caching = allow_caching
         self.template_name = template_name
 
         if self.lines_of_context and len(self.lines_of_context) == 1:
@@ -66,7 +68,7 @@ class DiffRenderer(object):
         If operating with a cache, and the diff doesn't exist in the cache,
         it will be stored after render.
         """
-        cache = not self.lines_of_context
+        cache = self.allow_caching and not self.lines_of_context
 
         if cache:
             return cache_memoize(self.make_cache_key(),
@@ -219,9 +221,6 @@ class DiffRenderer(object):
         context.update({
             'collapseall': self.collapse_all,
             'file': self.diff_file,
-            'is_new_file': (self.diff_file['newfile'] and
-                            not self.diff_file['interfilediff'] and
-                            not self.diff_file['filediff'].parent_diff),
             'lines_of_context': self.lines_of_context or (0, 0),
             'equal_lines': equal_lines,
             'standalone': self.chunk_index is not None,

@@ -7,27 +7,29 @@
 {%  endfor %}
 
 <script>
-    RB.PageManager.ready(function(page) {
+    $(document).ready(function() {
+        RB.PageManager.ready(function(page) {
 {%  block review_ui_setup %}
-        var view = new {{review_ui.js_view_class}}({
+            var view = new {{review_ui.js_view_class}}({
 {%   for key, value in review_ui.get_js_view_data.items %}
-            {{key|json_dumps}}: {{value|json_dumps}},
-{%   endfor %}
-            model: new {{review_ui.js_model_class}}({
-{%   for key, value in review_ui.get_js_model_data.items %}
                 {{key|json_dumps}}: {{value|json_dumps}},
 {%   endfor %}
-                caption: '{{caption}}',
-                reviewRequest: page.reviewRequest,
-                serializedCommentBlocks: {{review_ui.get_comments_json}}
-            })
-        });
+                model: new {{review_ui.js_model_class}}({
+{%   for key, value in review_ui.get_js_model_data.items %}
+                    {{key|json_dumps}}: {{value|json_dumps}},
+{%   endfor %}
+                    caption: '{{caption}}',
+                    reviewRequest: page.reviewRequest,
+                    serializedCommentBlocks: {{review_ui.get_comments_json}}
+                })
+            });
 
 {%   block review_ui_render %}
-        view.render();
-        $('#review_ui_{{review_ui_uuid}}').append(view.$el);
+            view.render();
+            $('#review_ui_{{review_ui_uuid}}').append(view.$el);
 {%   endblock %}
 {%  endblock %}
+        });
     });
 </script>
 {% endblock %}

@@ -7,6 +7,7 @@ from reviewboard.reviews.ui.base import FileAttachmentReviewUI
 class ImageReviewUI(FileAttachmentReviewUI):
     name = 'Image'
     supported_mimetypes = ['image/*']
+    allow_inline = True
 
     js_model_class = 'RB.ImageReviewable'
     js_view_class = 'RB.ImageReviewableView'

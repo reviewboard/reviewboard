@@ -302,6 +302,8 @@ def get_diff_files(diffset, filediff=None, interdiffset=None, request=None):
             'newfile': newfile,
             'index': len(files),
             'chunks_loaded': False,
+            'is_new_file': (newfile and not interfilediff and
+                            not filediff.parent_diff),
         })
 
     def cmp_file(x, y):

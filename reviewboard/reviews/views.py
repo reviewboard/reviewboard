@@ -5,6 +5,7 @@ import time
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.contrib.sites.models import Site
+from django.core.exceptions import MultipleObjectsReturned, ObjectDoesNotExist
 from django.core.urlresolvers import reverse
 from django.db.models import Q
 from django.http import (HttpResponse, HttpResponseRedirect, Http404,
@@ -1206,6 +1207,103 @@ class ReviewsDiffFragmentView(DiffFragmentView):
             filediff_id=filediff_id,
             interdiffset_or_id=interdiffset,
             chunkindex=chunkindex)
+
+    def create_renderer(self, *args, **kwargs):
+        """Creates the DiffRenderer for this fragment.
+
+        This will augment the renderer for binary files by looking up
+        file attachments, if review UIs are involved, disabling caching.
+        """
+        renderer = super(ReviewsDiffFragmentView, self).create_renderer(
+            *args, **kwargs)
+
+        if self.diff_file['binary']:
+            # Determine the file attachments to display in the diff viewer,
+            # if any.
+            filediff = self.diff_file['filediff']
+            interfilediff = self.diff_file['interfilediff']
+
+            orig_attachment = None
+            modified_attachment = None
+
+            if self.diff_file['force_interdiff']:
+                orig_attachment = self._get_diff_file_attachment(filediff)
+                modified_attachment = \
+                    self._get_diff_file_attachment(interfilediff)
+            else:
+                modified_attachment = self._get_diff_file_attachment(filediff)
+
+                if not self.diff_file['is_new_file']:
+                    orig_attachment = \
+                        self._get_diff_file_attachment(filediff, False)
+
+            # Grab the review UIs and render them.
+            orig_review_ui_html = \
+                self._render_review_ui(orig_attachment)
+            modified_review_ui_html = \
+                self._render_review_ui(modified_attachment)
+
+            if orig_review_ui_html or modified_review_ui_html:
+                # Don't cache the view, because the Review UI may care about
+                # state that we can't anticipate. At the least, it may have
+                # comments or other data that change between renders, and we
+                # don't want that to go stale.
+                renderer.allow_caching = False
+
+            renderer.extra_context.update({
+                'orig_diff_file_attachment': orig_attachment,
+                'modified_diff_file_attachment': modified_attachment,
+                'orig_attachment_review_ui_html': orig_review_ui_html,
+                'modified_attachment_review_ui_html': modified_review_ui_html,
+            })
+
+        return renderer
+
+    def _render_review_ui(self, attachment):
+        """Renders the review UI for a file attachment.
+
+        If the provided FileAttachment has a review UI capable of being
+        rendered inline, it will be rendered to a string for inclusion in the
+        diff viewer. Otherwise, this will return None.
+        """
+        if attachment:
+            review_ui = attachment.review_ui
+
+            if review_ui and review_ui.allow_inline:
+                return mark_safe(review_ui.render_to_string(self.request))
+
+        return None
+
+    def _get_diff_file_attachment(self, filediff, use_modified=True):
+        """Fetch the FileAttachment associated with a FileDiff.
+
+        This will query for the FileAttachment based on the provided filediff,
+        and set the retrieved diff file attachment to a variable whose name is
+        provided as an argument to this tag.
+
+        If 'use_modified' is True, the FileAttachment returned will be from the
+        modified version of the new file. Otherwise, it's the original file
+        that's being modified.
+
+        If no matching FileAttachment is found or if there is more than one
+        FileAttachment associated with one FileDiff, None is returned. An error
+        is logged in the latter case.
+        """
+        if not filediff:
+            return None
+
+        try:
+            return FileAttachment.objects.get_for_filediff(filediff,
+                                                           use_modified)
+        except ObjectDoesNotExist:
+            return None
+        except MultipleObjectsReturned:
+            # Only one FileAttachment should be associated with a FileDiff
+            logging.error('More than one FileAttachments associated with '
+                          'FileDiff %s',
+                          filediff.pk,
+                          exc_info=1)
+            return None
 
 
 @check_login_required

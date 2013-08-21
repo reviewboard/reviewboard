@@ -54,6 +54,7 @@ RB.ImageReviewableView = RB.FileAttachmentReviewableView.extend({
 
         this._$selectionArea = $('<div/>')
             .addClass('selection-container')
+            .hide()
             .proxyTouchEvents();
 
         this._$selectionRect = $('<div/>')
@@ -70,6 +71,7 @@ RB.ImageReviewableView = RB.FileAttachmentReviewableView.extend({
             .hover(
                 function() {
                     self._$selectionArea.show();
+                    self._adjustPos();
                 },
                 function() {
                     if (self._$selectionRect.is(':hidden') &&

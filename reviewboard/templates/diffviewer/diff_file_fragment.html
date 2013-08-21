@@ -7,7 +7,7 @@
 
 {% definevar 'line_fmt' %}
   <tr line="%(linenum_row)s"%(class_attr)s>
-{%  if not is_new_file %}
+{%  if not file.is_new_file %}
    <th>%(anchor_html)s%(linenum1)s</th>
    <td>%(moved_from_html)s
     %(begin_collapse_html)s
@@ -43,27 +43,16 @@
 {% enddefinevar %}
 
 {% if file.changed_chunk_indexes or file.binary or file.deleted or file.moved %}
-{%  if file.binary %}
-{%   if file.force_interdiff %}
-{%    get_diff_file_attachment file.interfilediff as modified_diff_file_attachment %}
-{%    get_diff_file_attachment file.filediff as orig_diff_file_attachment %}
-{%   else %}
-{%    if not is_new_file %}
-{%     get_diff_file_attachment file.filediff False as orig_diff_file_attachment %}
-{%    endif %}
-{%    get_diff_file_attachment file.filediff as modified_diff_file_attachment %}
-{%   endif %}
-{%  endif %}
 {%  if not standalone %}
 <table id="file{{file.filediff.id}}" class="{% spaceless %}
   sidebyside
-  {% if is_new_file %}newfile{% endif %}
+  {% if file.is_new_file %}newfile{% endif %}
   {% if file.binary %}diff-binary{% endif %}
   {% if file.deleted %}diff-deleted{% endif %}
   {% endspaceless %}"
        data-lines-equal="{{equal_lines}}">
  <colgroup>
-{% if not is_new_file %}
+{% if not file.is_new_file %}
   <col class="line" />
   <col class="left" />
 {% endif %}
@@ -85,7 +74,7 @@
     {{file.depot_filename}}
   </th>
 {%   else %}
-{%    if not is_new_file %}
+{%    if not file.is_new_file %}
    <th colspan="2"><a name="{{file.index}}" class="file-anchor"></a>{{ file.depot_filename }}</th>
 {%    endif %}
    <th colspan="2">{{ file.dest_filename }}{% if file.moved %}{% trans " (moved)" %}{% endif %}</th>
@@ -95,7 +84,7 @@
 {%   if file.moved and file.num_changes == 0 %}
    <th colspan="4"></th>
 {%   else %}
-{%    if not is_new_file %}
+{%    if not file.is_new_file %}
    <th></th>
    <th>{{file.revision}}</th>
 {%    endif %}
@@ -127,10 +116,12 @@
      <ul class="actions inline-actions-right">
 {%   if modified_diff_file_attachment %}
       <li><a href="{{modified_diff_file_attachment.get_absolute_url}}">{% trans "Download" %}</a></li>
-{%    if modified_diff_file_attachment.review_ui %}
-      <li class="{% if file.review_ui.allow_inline %}file-review-inline %}{% else %}file-review{% endif %}"><a href="{% url file_attachment modified_diff_file_attachment.get_review_request.display_id modified_diff_file_attachment.pk %}">{% trans "Review" %}</a></li>
-{%    else %}
+{%    if not modified_attachment_review_ui_html %}
+{%     if modified_diff_file_attachment.review_ui %}
+      <li class="file-review"><a href="{% url file_attachment modified_diff_file_attachment.get_review_request.display_id modified_diff_file_attachment.pk %}">{% trans "Review" %}</a></li>
+{%     else %}
       <li class="file-add-comment"><a href="#">{% trans "Add Comment" %}</a></li>
+{%     endif %}
 {%    endif %}
 {%   endif %}
      </ul>
@@ -144,6 +135,8 @@
    <td colspan="2">
 {%    if not orig_diff_file_attachment %}
 {%     trans "This is a binary file. The content cannot be displayed." %}
+{%    elif orig_attachment_review_ui_html %}
+{{     orig_attachment_review_ui_html}}
 {%    elif orig_diff_file_attachment.thumbnail %}
     <div class="file-thumbnail-container">{{orig_diff_file_attachment.thumbnail}}</div>
 {%    else %}
@@ -154,6 +147,8 @@
 {%   endif %}
 {%   if not modified_diff_file_attachment %}
 {%    trans "This is a binary file. The content cannot be displayed." %}
+{%   elif modified_attachment_review_ui_html %}
+{{    modified_attachment_review_ui_html}}
 {%   elif modified_diff_file_attachment.thumbnail %}
     <div class="file-thumbnail-container">{{modified_diff_file_attachment.thumbnail}}</div>
 {%   else %}

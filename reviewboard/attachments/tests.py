@@ -349,7 +349,7 @@ class DiffViewerFileAttachmentTests(BaseFileAttachmentTestCase):
 
         # The file attachment should appear as the right-hand side
         # file attachment in the diff viewer.
-        self.assertFalse('orig_diff_file_attachment' in response.context)
+        self.assertEqual(response.context['orig_diff_file_attachment'], None)
         self.assertEqual(response.context['modified_diff_file_attachment'],
                          diff_file_attachment)
 
