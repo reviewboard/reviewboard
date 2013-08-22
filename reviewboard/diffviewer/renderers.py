@@ -27,10 +27,6 @@ class DiffRenderer(object):
     DiffRenderer. It will alter the state of the renderer, possibly
     disrupting future render calls.
     """
-    # Pre-load and render the first file in the diff viewer, instead of
-    # asynchronously loading it.
-    preload_first_file = True
-
     def __init__(self, diff_file, chunk_index=None, highlighting=False,
                  collapse_all=True, lines_of_context=None, extra_context=None,
                  template_name='diffviewer/diff_file_fragment.html'):

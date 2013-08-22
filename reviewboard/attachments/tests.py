@@ -343,12 +343,9 @@ class DiffViewerFileAttachmentTests(BaseFileAttachmentTestCase):
 
         # Load the diff viewer.
         self.client.login(username='doc', password='doc')
-        response = self.client.get('/r/%d/diff/' % review_request.pk)
+        response = self.client.get('/r/%d/diff/1/fragment/%s/'
+                                   % (review_request.pk, filediff.pk))
         self.assertEqual(response.status_code, 200)
-
-        # This file attachment should not appear in the list of standard
-        # file attachments.
-        self.assertEqual(len(response.context['file_attachments']), 0)
 
         # The file attachment should appear as the right-hand side
         # file attachment in the diff viewer.
@@ -386,12 +383,9 @@ class DiffViewerFileAttachmentTests(BaseFileAttachmentTestCase):
 
         # Load the diff viewer.
         self.client.login(username='doc', password='doc')
-        response = self.client.get('/r/%d/diff/' % review_request.pk)
+        response = self.client.get('/r/%d/diff/1/fragment/%s/'
+                                   % (review_request.pk, filediff.pk))
         self.assertEqual(response.status_code, 200)
-
-        # This file attachment should not appear in the list of standard
-        # file attachments.
-        self.assertEqual(len(response.context['file_attachments']), 0)
 
         # The file attachment should appear as the right-hand side
         # file attachment in the diff viewer.

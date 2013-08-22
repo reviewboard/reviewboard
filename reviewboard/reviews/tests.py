@@ -721,13 +721,11 @@ class ViewTests(TestCase):
 
         self.assertEqual(files[0]['depot_filename'],
                          '/trunk/reviewboard/TESTING')
-        self.assert_('fragment' in files[0])
-        self.assert_('interfilediff' in files[0])
+        self.assertTrue('interfilediff' in files[0])
 
         self.assertEqual(files[1]['depot_filename'],
                          '/trunk/reviewboard/settings_local.py.tmpl')
-        self.assert_('fragment' not in files[1])
-        self.assert_('interfilediff' in files[1])
+        self.assertTrue('interfilediff' in files[1])
 
     # Bug 847
     def testInterdiffNewFile(self):
@@ -749,8 +747,7 @@ class ViewTests(TestCase):
 
         self.assertEqual(files[0]['depot_filename'],
                          '/trunk/reviewboard/NEW_FILE')
-        self.assert_('fragment' in files[0])
-        self.assert_('interfilediff' in files[0])
+        self.assertTrue('interfilediff' in files[0])
 
     def testDashboard5(self):
         """Testing dashboard view (mine)"""

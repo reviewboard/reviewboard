@@ -152,7 +152,7 @@ class DiffViewerView(TemplateView):
 
         page = paginator.page(page_num)
 
-        context = {
+        return dict({
             'diffset': diffset,
             'interdiffset': interdiffset,
             'diffset_pair': (diffset, interdiffset),
@@ -169,59 +169,7 @@ class DiffViewerView(TemplateView):
             'has_previous': page.has_previous(),
             'previous_page': page.previous_page_number(),
             'page_start_index': page.start_index(),
-        }
-        context.update(extra_context)
-
-        renderer_class = get_diff_renderer_class()
-
-        if renderer_class.preload_first_file and page.object_list:
-            # Attempt to preload the first file before rendering any part of
-            # the page. This helps to remove the perception that the diff
-            # viewer takes longer to load now that we have progressive diffs.
-            # Users were seeing the page itself load quickly, but didn't see
-            # that first diff immediately and instead saw a spinner, making
-            # them feel it was taking longer than it used to to load a page.
-            # We just trick the user by providing that first file.
-            first_file = page.object_list[0]
-        else:
-            first_file = None
-
-        if first_file:
-            filediff = first_file['filediff']
-
-            if filediff.diffset == interdiffset:
-                temp_files = get_diff_files(interdiffset, filediff,
-                                            None, request=self.request)
-            else:
-                temp_files = get_diff_files(diffset, filediff,
-                                            interdiffset,
-                                            request=self.request)
-
-            if temp_files:
-                highlighting = get_enable_highlighting(self.request.user)
-
-                try:
-                    populate_diff_chunks(temp_files, highlighting,
-                                         request=self.request)
-                except Exception, e:
-                    file_temp = temp_files[0]
-                    file_temp['index'] = first_file['index']
-                    first_file['fragment'] = exception_traceback(
-                        self.request, e, self.fragment_error_template_name,
-                        extra_context={'file': file_temp})
-                else:
-                    file_temp = temp_files[0]
-                    file_temp['index'] = first_file['index']
-
-                    renderer = renderer_class(
-                        file_temp,
-                        highlighting=highlighting,
-                        collapse_all=self.collapse_diffs,
-                        extra_context=context)
-
-                    first_file['fragment'] = renderer.render_to_string()
-
-        return context
+        }, **extra_context)
 
 
 class DiffFragmentView(View):
