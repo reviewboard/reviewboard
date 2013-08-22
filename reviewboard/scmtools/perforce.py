@@ -16,12 +16,12 @@ except ImportError:
 
 from reviewboard.diffviewer.parser import DiffParser
 from reviewboard.scmtools.certs import Certificate
-from reviewboard.scmtools.core import SCMTool, ChangeSet, \
-                                      HEAD, PRE_CREATION
-from reviewboard.scmtools.errors import SCMError, EmptyChangeSetError, \
-                                        AuthenticationError, \
-                                        RepositoryNotFoundError, \
-                                        UnverifiedCertificateError
+from reviewboard.scmtools.core import (SCMTool, ChangeSet,
+                                       HEAD, PRE_CREATION)
+from reviewboard.scmtools.errors import (SCMError, EmptyChangeSetError,
+                                         AuthenticationError,
+                                         RepositoryNotFoundError,
+                                         UnverifiedCertificateError)
 
 
 STUNNEL_SERVER, STUNNEL_CLIENT = (0, 1)
@@ -177,7 +177,7 @@ class PerforceClient(object):
             self._disconnect()
             self._convert_p4exception_to_scmexception(e)
         except:
-            self._disconnect();
+            self._disconnect()
             raise
 
         return result

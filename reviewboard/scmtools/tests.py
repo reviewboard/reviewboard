@@ -26,22 +26,22 @@ from reviewboard.diffviewer.diffutils import patch
 from reviewboard.diffviewer.parser import DiffParserError
 from reviewboard.hostingsvcs.forms import HostingServiceForm
 from reviewboard.hostingsvcs.models import HostingServiceAccount
-from reviewboard.hostingsvcs.service import HostingService, \
-                                            register_hosting_service, \
-                                            unregister_hosting_service
+from reviewboard.hostingsvcs.service import (HostingService,
+                                             register_hosting_service,
+                                             unregister_hosting_service)
 from reviewboard.reviews.models import Group
-from reviewboard.scmtools.core import Branch, ChangeSet, Commit, Revision, \
-                                      HEAD, PRE_CREATION
-from reviewboard.scmtools.errors import SCMError, FileNotFoundError, \
-                                        RepositoryNotFoundError, \
-                                        AuthenticationError
+from reviewboard.scmtools.core import (Branch, ChangeSet, Commit, Revision,
+                                       HEAD, PRE_CREATION)
+from reviewboard.scmtools.errors import (SCMError, FileNotFoundError,
+                                         RepositoryNotFoundError,
+                                         AuthenticationError)
 from reviewboard.scmtools.forms import RepositoryForm
 from reviewboard.scmtools.git import ShortSHA1Error
 from reviewboard.scmtools.models import Repository, Tool
 from reviewboard.scmtools.perforce import STunnelProxy, STUNNEL_SERVER
-from reviewboard.scmtools.signals import checked_file_exists, \
-                                         checking_file_exists, \
-                                         fetched_file, fetching_file
+from reviewboard.scmtools.signals import (checked_file_exists,
+                                          checking_file_exists,
+                                          fetched_file, fetching_file)
 from reviewboard.site.models import LocalSite
 from reviewboard.ssh.client import SSHClient
 from reviewboard.ssh.tests import SSHTestCase
@@ -119,7 +119,7 @@ class SCMTestCase(SSHTestCase):
 
         if filename:
             self.assertRaises(SCMError,
-                              lambda: tool.get_file(filename, HEAD));
+                              lambda: tool.get_file(filename, HEAD))
 
         for local_site_name in ('site-1',):
             local_site = LocalSite(name=local_site_name)
@@ -154,8 +154,8 @@ class CoreTests(DjangoTestCase):
         self.assertEqual(cs.summary, '')
         self.assertEqual(cs.description, '')
         self.assertEqual(cs.branch, '')
-        self.assert_(len(cs.bugs_closed) == 0)
-        self.assert_(len(cs.files) == 0)
+        self.assertTrue(len(cs.bugs_closed) == 0)
+        self.assertTrue(len(cs.files) == 0)
 
 
 class RepositoryTests(DjangoTestCase):
@@ -346,10 +346,10 @@ class BZRTests(SCMTestCase):
 
         self.bzr_repo_path = os.path.join(os.path.dirname(__file__),
                                           'testdata', 'bzr_repo')
-        self.bzr_ssh_path = 'bzr+ssh://localhost/%s' % \
-                            self.bzr_repo_path.replace('\\', '/')
-        self.bzr_sftp_path = 'sftp://localhost/%s' % \
-                             self.bzr_repo_path.replace('\\', '/')
+        self.bzr_ssh_path = ('bzr+ssh://localhost/%s'
+                             % self.bzr_repo_path.replace('\\', '/'))
+        self.bzr_sftp_path = ('sftp://localhost/%s'
+                              % self.bzr_repo_path.replace('\\', '/'))
         self.repository = Repository(name='Bazaar',
                                      path='file://' + self.bzr_repo_path,
                                      tool=Tool.objects.get(name='Bazaar'))
@@ -381,8 +381,8 @@ class CVSTests(SCMTestCase):
 
         self.cvs_repo_path = os.path.join(os.path.dirname(__file__),
                                           'testdata/cvs_repo')
-        self.cvs_ssh_path = ':ext:localhost:%s' % \
-                            self.cvs_repo_path.replace('\\', '/')
+        self.cvs_ssh_path = (':ext:localhost:%s'
+                             % self.cvs_repo_path.replace('\\', '/'))
         self.repository = Repository(name='CVS',
                                      path=self.cvs_repo_path,
                                      tool=Tool.objects.get(name='CVS'))
@@ -428,15 +428,15 @@ class CVSTests(SCMTestCase):
         self.assertEqual(self.tool.get_file(self.tool.repopath + '/' +
                                             file + ",v", rev), expected)
 
-        self.assert_(self.tool.file_exists('test/testfile'))
-        self.assert_(self.tool.file_exists(self.tool.repopath +
-                                           '/test/testfile'))
-        self.assert_(self.tool.file_exists('test/testfile,v'))
-        self.assert_(not self.tool.file_exists('test/testfile2'))
-        self.assert_(not self.tool.file_exists(self.tool.repopath +
-                                               '/test/testfile2'))
-        self.assert_(not self.tool.file_exists('test/testfile2,v'))
-        self.assert_(not self.tool.file_exists('test/testfile', badrev))
+        self.assertTrue(self.tool.file_exists('test/testfile'))
+        self.assertTrue(self.tool.file_exists(
+            self.tool.repopath + '/test/testfile'))
+        self.assertTrue(self.tool.file_exists('test/testfile,v'))
+        self.assertTrue(not self.tool.file_exists('test/testfile2'))
+        self.assertTrue(not self.tool.file_exists(
+            self.tool.repopath + '/test/testfile2'))
+        self.assertTrue(not self.tool.file_exists('test/testfile2,v'))
+        self.assertTrue(not self.tool.file_exists('test/testfile', badrev))
 
         self.assertRaises(FileNotFoundError,
                           lambda: self.tool.get_file(''))
@@ -476,7 +476,8 @@ class CVSTests(SCMTestCase):
 
         file = self.tool.get_parser(diff).parse()[0]
         self.assertEqual(file.origFile, 'test/testfile')
-        self.assertEqual(file.origInfo, '26 Jul 2007 08:50:30 -0000      1.1.1.1')
+        self.assertEqual(file.origInfo,
+                         '26 Jul 2007 08:50:30 -0000      1.1.1.1')
         self.assertEqual(file.newFile, 'testfile')
         self.assertEqual(file.newInfo, '26 Jul 2007 10:20:20 -0000')
         self.assertEqual(file.data, diff)
@@ -497,7 +498,7 @@ class CVSTests(SCMTestCase):
 
         file = self.tool.get_parser(diff).parse()[0]
         f2, revision = self.tool.parse_diff_revision(file.origFile, file.origInfo,
-                                                    file.moved)
+                                                     file.moved)
         self.assertEqual(f2, 'test/testfile')
         self.assertEqual(revision, '1.5.2.1')
         self.assertEqual(file.newFile, 'test/testfile')
@@ -606,8 +607,8 @@ class SubversionTests(SCMTestCase):
 
         self.svn_repo_path = os.path.join(os.path.dirname(__file__),
                                           'testdata/svn_repo')
-        self.svn_ssh_path = 'svn+ssh://localhost/%s' % \
-                            self.svn_repo_path.replace('\\', '/')
+        self.svn_ssh_path = ('svn+ssh://localhost/%s'
+                             % self.svn_repo_path.replace('\\', '/'))
         self.repository = Repository(name='Subversion SVN',
                                      path='file://' + self.svn_repo_path,
                                      tool=Tool.objects.get(name='Subversion'))
@@ -628,10 +629,11 @@ class SubversionTests(SCMTestCase):
 
     def test_get_file(self):
         """Testing SVNTool.get_file"""
-        expected = 'include ../tools/Makefile.base-vars\nNAME = misc-docs\n' + \
-                   'OUTNAME = svn-misc-docs\nINSTALL_DIR = $(DESTDIR)/usr/s' + \
-                   'hare/doc/subversion\ninclude ../tools/Makefile.base-rul' + \
-                   'es\n'
+        expected = ('include ../tools/Makefile.base-vars\n'
+                    'NAME = misc-docs\n'
+                    'OUTNAME = svn-misc-docs\n'
+                    'INSTALL_DIR = $(DESTDIR)/usr/share/doc/subversion\n'
+                    'include ../tools/Makefile.base-rules\n')
 
         # There are 3 versions of this test in order to get 100% coverage of
         # the svn module.
@@ -645,9 +647,9 @@ class SubversionTests(SCMTestCase):
         self.assertEqual(self.tool.get_file(self.repository.path + '/' + file, rev),
                          expected)
 
-
-        self.assert_(self.tool.file_exists('trunk/doc/misc-docs/Makefile'))
-        self.assert_(not self.tool.file_exists('trunk/doc/misc-docs/Makefile2'))
+        self.assertTrue(self.tool.file_exists('trunk/doc/misc-docs/Makefile'))
+        self.assertTrue(
+            not self.tool.file_exists('trunk/doc/misc-docs/Makefile2'))
 
         self.assertRaises(FileNotFoundError,
                           lambda: self.tool.get_file(''))
@@ -672,8 +674,10 @@ class SubversionTests(SCMTestCase):
         self.assertEqual(self.tool.parse_diff_revision('', '\t(revision 4)')[1],
                          '4')
 
-        self.assertEqual(self.tool.parse_diff_revision('',
-            '2007-06-06 15:32:23 UTC (rev 10958)')[1], '10958')
+        self.assertEqual(
+            self.tool.parse_diff_revision(
+                '', '2007-06-06 15:32:23 UTC (rev 10958)')[1],
+            '10958')
 
         # Fix for bug 2632
         self.assertEqual(self.tool.parse_diff_revision('', '(revision )')[1],
@@ -702,9 +706,11 @@ class SubversionTests(SCMTestCase):
 
     def test_binary_diff(self):
         """Testing parsing SVN diff with binary file"""
-        diff = "Index: binfile\n===========================================" + \
-               "========================\nCannot display: file marked as a " + \
-               "binary type.\nsvn:mime-type = application/octet-stream\n"
+        diff = ('Index: binfile\n'
+                '============================================================'
+                '=======\n'
+                'Cannot display: file marked as a binary type.\n'
+                'svn:mime-type = application/octet-stream\n')
 
         file = self.tool.get_parser(diff).parse()[0]
         self.assertEqual(file.origFile, 'binfile')
@@ -715,19 +721,19 @@ class SubversionTests(SCMTestCase):
         # 'svn cat' will expand special variables in svn:keywords,
         # but 'svn diff' doesn't expand anything.  This causes the
         # patch to fail if those variables appear in the patch context.
-        diff = "Index: Makefile\n" \
-               "===========================================================" \
-               "========\n" \
-               "--- Makefile    (revision 4)\n" \
-               "+++ Makefile    (working copy)\n" \
-               "@@ -1,6 +1,7 @@\n" \
-               " # $Id$\n" \
-               " # $Rev$\n" \
-               " # $Revision::     $\n" \
-               "+# foo\n" \
-               " include ../tools/Makefile.base-vars\n" \
-               " NAME = misc-docs\n" \
-               " OUTNAME = svn-misc-docs\n"
+        diff = ("Index: Makefile\n"
+                "==========================================================="
+                "========\n"
+                "--- Makefile    (revision 4)\n"
+                "+++ Makefile    (working copy)\n"
+                "@@ -1,6 +1,7 @@\n"
+                " # $Id$\n"
+                " # $Rev$\n"
+                " # $Revision::     $\n"
+                "+# foo\n"
+                " include ../tools/Makefile.base-vars\n"
+                " NAME = misc-docs\n"
+                " OUTNAME = svn-misc-docs\n")
 
         filename = 'trunk/doc/misc-docs/Makefile'
         rev = Revision('4')
@@ -736,20 +742,20 @@ class SubversionTests(SCMTestCase):
 
     def test_unterminated_keyword_diff(self):
         """Testing parsing SVN diff with unterminated keywords"""
-        diff = "Index: Makefile\n" \
-               "===========================================================" \
-               "========\n" \
-               "--- Makefile    (revision 4)\n" \
-               "+++ Makefile    (working copy)\n" \
-               "@@ -1,6 +1,7 @@\n" \
-               " # $Id$\n" \
-               " # $Id:\n" \
-               " # $Rev$\n" \
-               " # $Revision::     $\n" \
-               "+# foo\n" \
-               " include ../tools/Makefile.base-vars\n" \
-               " NAME = misc-docs\n" \
-               " OUTNAME = svn-misc-docs\n"
+        diff = ("Index: Makefile\n"
+                "==========================================================="
+                "========\n"
+                "--- Makefile    (revision 4)\n"
+                "+++ Makefile    (working copy)\n"
+                "@@ -1,6 +1,7 @@\n"
+                " # $Id$\n"
+                " # $Id:\n"
+                " # $Rev$\n"
+                " # $Revision::     $\n"
+                "+# foo\n"
+                " include ../tools/Makefile.base-vars\n"
+                " NAME = misc-docs\n"
+                " OUTNAME = svn-misc-docs\n")
 
         filename = 'trunk/doc/misc-docs/Makefile'
         rev = Revision('5')
@@ -992,8 +998,8 @@ class PerforceTests(SCMTestCase):
 
     def test_binary_diff(self):
         """Testing Perforce binary diff parsing"""
-        diff = "==== //depot/foo/proj/test.png#1 ==A== /src/proj/test.png " + \
-               "====\nBinary files /tmp/foo and /src/proj/test.png differ\n"
+        diff = ("==== //depot/foo/proj/test.png#1 ==A== /src/proj/test.png "
+                "====\nBinary files /tmp/foo and /src/proj/test.png differ\n")
 
         file = self.tool.get_parser(diff).parse()[0]
         self.assertEqual(file.origFile, '//depot/foo/proj/test.png')
@@ -1009,8 +1015,8 @@ class PerforceTests(SCMTestCase):
 
     def test_deleted_diff(self):
         """Testing Perforce deleted diff parsing"""
-        diff = "==== //depot/foo/proj/test.png#1 ==D== /src/proj/test.png " + \
-               "====\n"
+        diff = ("==== //depot/foo/proj/test.png#1 ==D== /src/proj/test.png "
+                "====\n")
 
         file = self.tool.get_parser(diff).parse()[0]
         self.assertEqual(file.origFile, '//depot/foo/proj/test.png')
@@ -1052,8 +1058,8 @@ class PerforceTests(SCMTestCase):
 
     def test_moved_file_diff_no_changes(self):
         """Testing Perforce moved file diff parsing without changes"""
-        diff = "==== //depot/foo/proj/test.png#5 ==MV== " \
-               "//depot/foo/proj/test2.png ====\n"
+        diff = ("==== //depot/foo/proj/test.png#5 ==MV== "
+                "//depot/foo/proj/test2.png ====\n")
 
         file = self.tool.get_parser(diff).parse()[0]
         self.assertEqual(file.origFile, '//depot/foo/proj/test.png')
@@ -1069,14 +1075,14 @@ class PerforceTests(SCMTestCase):
 
     def test_empty_and_normal_diffs(self):
         """Testing Perforce empty and normal diff parsing"""
-        diff1_text = "==== //depot/foo/proj/test.png#1 ==A== " + \
-                     "/src/proj/test.png ====\n"
-        diff2_text = "--- test.c  //depot/foo/proj/test.c#2\n" + \
-                     "+++ test.c  01-02-03 04:05:06\n" + \
-                     "@@ -1 +1,2 @@\n" + \
-                     "-test content\n" + \
-                     "+updated test content\n" + \
-                     "+added info\n"
+        diff1_text = ("==== //depot/foo/proj/test.png#1 ==A== "
+                      "/src/proj/test.png ====\n")
+        diff2_text = ("--- test.c  //depot/foo/proj/test.c#2\n"
+                      "+++ test.c  01-02-03 04:05:06\n"
+                      "@@ -1 +1,2 @@\n"
+                      "-test content\n"
+                      "+updated test content\n"
+                      "+added info\n")
         diff = diff1_text + diff2_text
 
         files = self.tool.get_parser(diff).parse()
@@ -1142,7 +1148,6 @@ class PerforceStunnelTests(SCMTestCase):
             self.tool.use_stunnel = True
         except ImportError:
             raise nose.SkipTest('perforce/p4python is not installed')
-
 
     def tearDown(self):
         self.proxy.shutdown()
@@ -1293,15 +1298,16 @@ class MercurialTests(SCMTestCase):
     def test_patch_creates_new_file(self):
         """Testing HgTool with a patch that creates a new file"""
 
-        self.assertEqual(PRE_CREATION,
+        self.assertEqual(
+            PRE_CREATION,
             self.tool.parse_diff_revision("/dev/null", "bf544ea505f8")[1])
 
     def test_diff_parser_new_file(self):
         """Testing HgDiffParser with a diff that creates a new file"""
 
-        diffContents = 'diff -r bf544ea505f8 readme\n' + \
-                       '--- /dev/null\n' + \
-                       '+++ b/readme\n'
+        diffContents = ('diff -r bf544ea505f8 readme\n'
+                        '--- /dev/null\n'
+                        '+++ b/readme\n')
 
         file = self._first_file_in_diff(diffContents)
         self.assertEqual(file.origFile, "readme")
@@ -1309,9 +1315,9 @@ class MercurialTests(SCMTestCase):
     def test_diff_parser_uncommitted(self):
         """Testing HgDiffParser with a diff with an uncommitted change"""
 
-        diffContents = 'diff -r bf544ea505f8 readme\n' + \
-                       '--- a/readme\n' + \
-                       '+++ b/readme\n'
+        diffContents = ('diff -r bf544ea505f8 readme\n'
+                        '--- a/readme\n'
+                        '+++ b/readme\n')
 
         file = self._first_file_in_diff(diffContents)
         self.assertEqual(file.origInfo, "bf544ea505f8")
@@ -1322,9 +1328,9 @@ class MercurialTests(SCMTestCase):
     def test_diff_parser_committed(self):
         """Testing HgDiffParser with a diff between committed revisions"""
 
-        diffContents = 'diff -r 356a6127ef19 -r 4960455a8e88 readme\n' + \
-                       '--- a/readme\n' + \
-                       '+++ b/readme\n'
+        diffContents = ('diff -r 356a6127ef19 -r 4960455a8e88 readme\n'
+                        '--- a/readme\n'
+                        '+++ b/readme\n')
 
         file = self._first_file_in_diff(diffContents)
         self.assertEqual(file.origInfo, "356a6127ef19")
@@ -1335,17 +1341,17 @@ class MercurialTests(SCMTestCase):
     def test_diff_parser_with_preamble_junk(self):
         """Testing HgDiffParser with a diff that contains non-diff junk test as a preamble"""
 
-        diffContents = 'changeset:   60:3613c58ad1d5\n' + \
-                       'user:        Michael Rowe <mrowe@mojain.com>\n' + \
-                       'date:        Fri Jul 27 11:44:37 2007 +1000\n' + \
-                       'files:       readme\n' + \
-                       'description:\n' + \
-                       'Update the readme file\n' + \
-                       '\n' + \
-                       '\n' + \
-                       'diff -r 356a6127ef19 -r 4960455a8e88 readme\n' + \
-                       '--- a/readme\n' + \
-                       '+++ b/readme\n'
+        diffContents = ('changeset:   60:3613c58ad1d5\n'
+                        'user:        Michael Rowe <mrowe@mojain.com>\n'
+                        'date:        Fri Jul 27 11:44:37 2007 +1000\n'
+                        'files:       readme\n'
+                        'description:\n'
+                        'Update the readme file\n'
+                        '\n'
+                        '\n'
+                        'diff -r 356a6127ef19 -r 4960455a8e88 readme\n'
+                        '--- a/readme\n'
+                        '+++ b/readme\n')
 
         file = self._first_file_in_diff(diffContents)
         self.assertEqual(file.origInfo, "356a6127ef19")
@@ -1356,12 +1362,12 @@ class MercurialTests(SCMTestCase):
     def test_git_diff_parsing(self):
         """Testing HgDiffParser git diff support"""
 
-        diffContents = '# Node ID 4960455a8e88\n' + \
-                       '# Parent bf544ea505f8\n' + \
-                       'diff --git a/path/to file/readme.txt ' + \
-                       'b/new/path to/readme.txt\n' + \
-                       '--- a/path/to file/readme.txt\n' + \
-                       '+++ b/new/path to/readme.txt\n'
+        diffContents = ('# Node ID 4960455a8e88\n'
+                        '# Parent bf544ea505f8\n'
+                        'diff --git a/path/to file/readme.txt '
+                        'b/new/path to/readme.txt\n'
+                        '--- a/path/to file/readme.txt\n'
+                        '+++ b/new/path to/readme.txt\n')
 
         file = self._first_file_in_diff(diffContents)
         self.assertEqual(file.origInfo, "bf544ea505f8")
@@ -1390,8 +1396,8 @@ class MercurialTests(SCMTestCase):
 
         self.assertEqual(self.tool.get_file(file, rev), 'Hello\n\ngoodbye\n')
 
-        self.assert_(self.tool.file_exists('doc/readme'))
-        self.assert_(not self.tool.file_exists('doc/readme2'))
+        self.assertTrue(self.tool.file_exists('doc/readme'))
+        self.assertTrue(not self.tool.file_exists('doc/readme2'))
 
         self.assertRaises(FileNotFoundError, lambda: self.tool.get_file(''))
 
@@ -1400,7 +1406,7 @@ class MercurialTests(SCMTestCase):
 
     def test_interface(self):
         """Testing basic HgTool API"""
-        self.assert_(self.tool.get_diffs_use_absolute_paths())
+        self.assertTrue(self.tool.get_diffs_use_absolute_paths())
 
         self.assertRaises(NotImplementedError,
                           lambda: self.tool.get_changeset(1))
@@ -1420,8 +1426,8 @@ class MercurialTests(SCMTestCase):
 
         rev = Revision('877cf1960916')
 
-        self.assert_(tool.file_exists('TODO.rst', rev))
-        self.assert_(not tool.file_exists('TODO.rstNotFound', rev))
+        self.assertTrue(tool.file_exists('TODO.rst', rev))
+        self.assertTrue(not tool.file_exists('TODO.rstNotFound', rev))
 
 
 class GitTests(SCMTestCase):
@@ -1434,13 +1440,12 @@ class GitTests(SCMTestCase):
         tool = Tool.objects.get(name='Git')
 
         self.local_repo_path = os.path.join(os.path.dirname(__file__),
-                                           'testdata', 'git_repo')
-        self.git_ssh_path = 'localhost:%s' % \
-                            self.local_repo_path.replace('\\', '/')
+                                            'testdata', 'git_repo')
+        self.git_ssh_path = ('localhost:%s'
+                             % self.local_repo_path.replace('\\', '/'))
         remote_repo_path = 'git@github.com:reviewboard/reviewboard.git'
-        remote_repo_raw_url = 'http://github.com/api/v2/yaml/blob/show/' \
-                              'reviewboard/reviewboard/<revision>'
-
+        remote_repo_raw_url = ('http://github.com/api/v2/yaml/blob/show/'
+                               'reviewboard/reviewboard/<revision>')
 
         self.repository = Repository(name='Git test repo',
                                      path=self.local_repo_path,
@@ -1457,8 +1462,8 @@ class GitTests(SCMTestCase):
             raise nose.SkipTest('git binary not found')
 
     def _read_fixture(self, filename):
-        return open( \
-            os.path.join(os.path.dirname(__file__), 'testdata', filename), \
+        return open(
+            os.path.join(os.path.dirname(__file__), 'testdata', filename),
             'r').read()
 
     def _get_file_in_diff(self, diff, filenum=0):
@@ -1515,7 +1520,7 @@ class GitTests(SCMTestCase):
         self.assertEqual(file.origInfo, 'cc18ec8')
         self.assertEqual(file.newInfo, '5e70b73')
         self.assertEqual(file.data.splitlines()[0],
-                        "diff --git a/cfg/testcase.ini b/cfg/testcase.ini")
+                         "diff --git a/cfg/testcase.ini b/cfg/testcase.ini")
         self.assertEqual(file.data.splitlines()[-1], '+db = pyunit')
         self.assertEqual(file.insert_count, 2)
         self.assertEqual(file.delete_count, 1)
@@ -1573,7 +1578,7 @@ class GitTests(SCMTestCase):
         self.assertEqual(file.origInfo, 'cc18ec8')
         self.assertEqual(file.newInfo, '5e70b73')
         self.assertEqual(file.data.splitlines()[0],
-                        "diff --git a/cfg/testcase.ini b/cfg/testcase.ini")
+                         "diff --git a/cfg/testcase.ini b/cfg/testcase.ini")
         self.assertEqual(file.data.splitlines()[-1], '+db = pyunit')
         self.assertEqual(file.insert_count, 2)
         self.assertEqual(file.delete_count, 1)
@@ -1708,17 +1713,17 @@ class GitTests(SCMTestCase):
 
     def test_parse_diff_with_index_range(self):
         """Testing Git diff parsing with an index range"""
-        diff = "diff --git a/foo/bar b/foo/bar2\n" + \
-               "similarity index 88%\n" + \
-               "rename from foo/bar\n" + \
-               "rename to foo/bar2\n" + \
-               "index 612544e4343bf04967eb5ea80257f6c64d6f42c7.." + \
-               "e88b7f15c03d141d0bb38c8e49bb6c411ebfe1f1 100644\n" + \
-               "--- a/foo/bar\n" + \
-               "+++ b/foo/bar2\n" + \
-               "@ -1,1 +1,1 @@\n" + \
-               "-blah blah\n" + \
-               "+blah\n"
+        diff = ("diff --git a/foo/bar b/foo/bar2\n"
+                "similarity index 88%\n"
+                "rename from foo/bar\n"
+                "rename to foo/bar2\n"
+                "index 612544e4343bf04967eb5ea80257f6c64d6f42c7.."
+                "e88b7f15c03d141d0bb38c8e49bb6c411ebfe1f1 100644\n"
+                "--- a/foo/bar\n"
+                "+++ b/foo/bar2\n"
+                "@ -1,1 +1,1 @@\n"
+                "-blah blah\n"
+                "+blah\n")
         files = self.tool.get_parser(diff).parse()
         self.assertEqual(len(files), 1)
         self.assertEqual(files[0].origFile, 'foo/bar')
@@ -1732,12 +1737,12 @@ class GitTests(SCMTestCase):
 
     def test_parse_diff_with_deleted_binary_files(self):
         """Testing Git diff parsing with deleted binary files"""
-        diff = "diff --git a/foo.bin b/foo.bin\n" \
-               "deleted file mode 100644\n" \
-               "Binary file foo.bin has changed\n" \
-               "diff --git a/bar.bin b/bar.bin\n" \
-               "deleted file mode 100644\n" \
-               "Binary file bar.bin has changed\n"
+        diff = ("diff --git a/foo.bin b/foo.bin\n"
+                "deleted file mode 100644\n"
+                "Binary file foo.bin has changed\n"
+                "diff --git a/bar.bin b/bar.bin\n"
+                "deleted file mode 100644\n"
+                "Binary file bar.bin has changed\n")
         files = self.tool.get_parser(diff).parse()
         self.assertEqual(len(files), 2)
         self.assertEqual(files[0].origFile, 'foo.bin')
@@ -1827,16 +1832,16 @@ class GitTests(SCMTestCase):
     def test_file_exists(self):
         """Testing GitTool.file_exists"""
 
-        self.assert_(self.tool.file_exists("readme", "e965047"))
-        self.assert_(self.tool.file_exists("readme", "d6613f5"))
+        self.assertTrue(self.tool.file_exists("readme", "e965047"))
+        self.assertTrue(self.tool.file_exists("readme", "d6613f5"))
 
-        self.assert_(not self.tool.file_exists("readme", PRE_CREATION))
-        self.assert_(not self.tool.file_exists("readme", "fffffff"))
-        self.assert_(not self.tool.file_exists("readme2", "fffffff"))
+        self.assertTrue(not self.tool.file_exists("readme", PRE_CREATION))
+        self.assertTrue(not self.tool.file_exists("readme", "fffffff"))
+        self.assertTrue(not self.tool.file_exists("readme2", "fffffff"))
 
         # these sha's are valid, but commit and tree objects, not blobs
-        self.assert_(not self.tool.file_exists("readme", "a62df6c"))
-        self.assert_(not self.tool.file_exists("readme2", "ccffbb4"))
+        self.assertTrue(not self.tool.file_exists("readme", "a62df6c"))
+        self.assertTrue(not self.tool.file_exists("readme2", "ccffbb4"))
 
     def test_get_file(self):
         """Testing GitTool.get_file"""

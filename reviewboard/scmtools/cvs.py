@@ -6,10 +6,10 @@ import urlparse
 from djblets.util.filesystem import is_exe_in_path
 
 from reviewboard.scmtools.core import SCMTool, HEAD, PRE_CREATION
-from reviewboard.scmtools.errors import AuthenticationError, \
-                                        SCMError, \
-                                        FileNotFoundError, \
-                                        RepositoryNotFoundError
+from reviewboard.scmtools.errors import (AuthenticationError,
+                                         SCMError,
+                                         FileNotFoundError,
+                                         RepositoryNotFoundError)
 from reviewboard.diffviewer.parser import DiffParser, DiffParserError
 from reviewboard.ssh import utils as sshutils
 from reviewboard.ssh.errors import SSHAuthenticationError, SSHError
@@ -68,8 +68,7 @@ class CVSTool(SCMTool):
                 raise SCMError("Unable to parse diff revision header "
                                "(file_str='%s', revision_str='%s')"
                                % (file_str, revision_str))
-            return file_str[:colon_idx], file_str[colon_idx+1:]
-
+            return file_str[:colon_idx], file_str[colon_idx + 1:]
 
     def get_diffs_use_absolute_paths(self):
         return True
@@ -157,7 +156,7 @@ class CVSTool(SCMTool):
     @classmethod
     def parse_hostname(cls, path):
         """Parses a hostname from a repository path."""
-        return urlparse.urlparse(path)[1] # netloc
+        return urlparse.urlparse(path)[1]  # netloc
 
 
 class CVSDiffParser(DiffParser):

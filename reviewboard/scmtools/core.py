@@ -7,9 +7,9 @@ import urllib2
 import urlparse
 
 import reviewboard.diffviewer.parser as diffparser
-from reviewboard.scmtools.errors import AuthenticationError, \
-                                        FileNotFoundError, \
-                                        SCMError
+from reviewboard.scmtools.errors import (AuthenticationError,
+                                         FileNotFoundError,
+                                         SCMError)
 from reviewboard.ssh import utils as sshutils
 from reviewboard.ssh.errors import SSHAuthenticationError
 
@@ -241,8 +241,8 @@ class SCMTool(object):
         if sshutils.is_ssh_uri(path):
             username, hostname = SCMTool.get_auth_from_uri(path, username)
             logging.debug(
-                "%s: Attempting ssh connection with host: %s, username: %s" % \
-                (cls.__name__, hostname, username))
+                "%s: Attempting ssh connection with host: %s, username: %s"
+                % (cls.__name__, hostname, username))
 
             try:
                 sshutils.check_host(hostname, username, password,

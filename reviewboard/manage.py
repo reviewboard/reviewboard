@@ -26,7 +26,6 @@ def check_dependencies(settings):
 
     dependency_error = settings.dependency_error
 
-
     # Python 2.4
     if sys.version_info[0] < 2 or \
        (sys.version_info[0] == 2 and sys.version_info[1] < 4):

@@ -35,7 +35,7 @@ class BasicTests(TestCase):
         self.assertEqual(local_site_reverse('user', args=['sample-user']),
                          '/users/sample-user/')
         self.assertEqual(
-            local_site_reverse('user', kwargs={'username': 'sample-user' }),
+            local_site_reverse('user', kwargs={'username': 'sample-user'}),
             '/users/sample-user/')
 
     def test_local_site_reverse_with_local_site(self):
@@ -49,7 +49,7 @@ class BasicTests(TestCase):
                                             request=request),
                          '/users/sample-user/')
         self.assertEqual(
-            local_site_reverse('user', kwargs={'username': 'sample-user' },
+            local_site_reverse('user', kwargs={'username': 'sample-user'},
                                request=request),
             '/users/sample-user/')
 

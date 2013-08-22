@@ -205,7 +205,7 @@ class ClearCaseTool(SCMTool):
         if failure:
             raise SCMError(error)
 
-        for line  in res.splitlines(True):
+        for line in res.splitlines(True):
             if line.startswith('Vob family uuid:'):
                 return line.split(' ')[-1].rstrip()
 
@@ -268,7 +268,7 @@ class ClearCaseTool(SCMTool):
         if extended_path.endswith(os.path.join(os.sep, 'main', '0')):
             revision = PRE_CREATION
         elif (extended_path.endswith('CHECKEDOUT')
-            or not '@@' in extended_path):
+              or not '@@' in extended_path):
             revision = HEAD
         else:
             revision = extended_path.rsplit('@@', 1)[1]
@@ -350,6 +350,7 @@ class ClearCaseDiffParser(DiffParser):
 
         return ClearCaseTool.relpath(res, self.repopath)
 
+
 class ClearCaseDynamicViewClient(object):
     def __init__(self, path):
         self.path = path
@@ -365,6 +366,7 @@ class ClearCaseDynamicViewClient(object):
             '%s\n' % s
             for s in sorted(os.listdir(path))
         ])
+
 
 class ClearCaseSnapshotViewClient(object):
     def __init__(self, path):

@@ -10,8 +10,8 @@ from django.utils import simplejson, timezone
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.testing.decorators import add_fixtures
 from djblets.testing.testcases import TestCase
-from djblets.webapi.errors import DOES_NOT_EXIST, INVALID_FORM_DATA, \
-                                  PERMISSION_DENIED
+from djblets.webapi.errors import (DOES_NOT_EXIST, INVALID_FORM_DATA,
+                                   PERMISSION_DENIED)
 import paramiko
 
 from reviewboard import initialize
@@ -19,33 +19,32 @@ from reviewboard.attachments.models import FileAttachment
 from reviewboard.changedescs.models import ChangeDescription
 from reviewboard.diffviewer.models import DiffSet
 from reviewboard.notifications.tests import EmailTestHelper
-from reviewboard.reviews.models import DefaultReviewer, \
-                                       FileAttachmentComment, Group, \
-                                       ReviewRequest, ReviewRequestDraft, \
-                                       Review, Comment, Screenshot, \
-                                       ScreenshotComment
-from reviewboard.scmtools.errors import AuthenticationError, \
-                                        UnverifiedCertificateError
+from reviewboard.reviews.models import (DefaultReviewer,
+                                        FileAttachmentComment, Group,
+                                        ReviewRequest, ReviewRequestDraft,
+                                        Review, Comment, Screenshot,
+                                        ScreenshotComment)
+from reviewboard.scmtools.errors import (AuthenticationError,
+                                         UnverifiedCertificateError)
 from reviewboard.scmtools.models import Repository, Tool
 from reviewboard.scmtools.svn import SVNTool
 from reviewboard.site.urlresolvers import local_site_reverse
 from reviewboard.site.models import LocalSite
 from reviewboard.ssh.client import SSHClient
-from reviewboard.ssh.errors import BadHostKeyError, \
-                                   UnknownHostKeyError
-from reviewboard.webapi.errors import BAD_HOST_KEY, \
-                                      DIFF_EMPTY, \
-                                      DIFF_TOO_BIG, \
-                                      DIFF_PARSE_ERROR, \
-                                      GROUP_ALREADY_EXISTS, \
-                                      INVALID_REPOSITORY, \
-                                      INVALID_USER, \
-                                      MISSING_USER_KEY, \
-                                      REPO_AUTHENTICATION_ERROR, \
-                                      REPO_FILE_NOT_FOUND, \
-                                      REPO_NOT_IMPLEMENTED, \
-                                      UNVERIFIED_HOST_CERT, \
-                                      UNVERIFIED_HOST_KEY
+from reviewboard.ssh.errors import (BadHostKeyError,
+                                    UnknownHostKeyError)
+from reviewboard.webapi.errors import (BAD_HOST_KEY,
+                                       DIFF_TOO_BIG,
+                                       DIFF_PARSE_ERROR,
+                                       GROUP_ALREADY_EXISTS,
+                                       INVALID_REPOSITORY,
+                                       INVALID_USER,
+                                       MISSING_USER_KEY,
+                                       REPO_AUTHENTICATION_ERROR,
+                                       REPO_FILE_NOT_FOUND,
+                                       REPO_NOT_IMPLEMENTED,
+                                       UNVERIFIED_HOST_CERT,
+                                       UNVERIFIED_HOST_KEY)
 
 
 # A couple classes need keys to test with, so generate them only once.
@@ -275,7 +274,7 @@ class BaseWebAPITestCase(TestCase, EmailTestHelper):
             repository = self.repository
         rsp = self.apiPost(
             ReviewRequestResourceTests.get_list_url(local_site_name),
-            { 'repository': repository.path, },
+            {'repository': repository.path},
             expected_mimetype=ReviewRequestResourceTests.item_mimetype)
 
         self.assertEqual(rsp['stat'], 'ok')
@@ -300,10 +299,10 @@ class BaseWebAPITestCase(TestCase, EmailTestHelper):
             'body_bottom': body_bottom,
         }
 
-        rsp = self.apiPost(ReviewResourceTests.get_list_url(review_request,
-                                                            local_site_name),
-                           post_data,
-                           expected_mimetype=ReviewResourceTests.item_mimetype)
+        rsp = self.apiPost(
+            ReviewResourceTests.get_list_url(review_request, local_site_name),
+            post_data,
+            expected_mimetype=ReviewResourceTests.item_mimetype)
 
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(rsp['review']['body_top'], body_top)
@@ -422,10 +421,8 @@ class BaseWebAPITestCase(TestCase, EmailTestHelper):
         else:
             local_site_name = None
 
-        self.apiDelete(
-            ScreenshotResourceTests.get_list_url(review_request,
-                                                 local_site_name) +
-                                                 str(screenshot.id) + '/')
+        self.apiDelete(ScreenshotResourceTests.get_list_url(
+            review_request, local_site_name) + str(screenshot.id) + '/')
 
     def _postNewFileAttachmentComment(self, review_request, review_id,
                                       file_attachment, comment_text,
@@ -494,10 +491,13 @@ class BaseWebAPITestCase(TestCase, EmailTestHelper):
             "scmtools", "testdata", "svn_makefile.diff")
 
         f = open(diff_filename, "r")
-        rsp = self.apiPost(DiffResourceTests.get_list_url(review_request), {
-            'path': f,
-            'basedir': "/trunk",
-        }, expected_mimetype=DiffResourceTests.item_mimetype)
+        rsp = self.apiPost(
+            DiffResourceTests.get_list_url(review_request),
+            {
+                'path': f,
+                'basedir': "/trunk",
+            },
+            expected_mimetype=DiffResourceTests.item_mimetype)
         f.close()
 
         self.assertEqual(rsp['stat'], 'ok')
@@ -1032,7 +1032,9 @@ class RepositoryResourceTests(BaseWebAPITestCase):
         else:
             expected_mimetype = None
 
-        rsp = self.apiPost(self.get_list_url(local_site_name), dict({
+        rsp = self.apiPost(
+            self.get_list_url(local_site_name),
+            dict({
                 'name': repo_name,
                 'path': repo_path,
                 'tool': 'Subversion',
@@ -1060,13 +1062,14 @@ class RepositoryResourceTests(BaseWebAPITestCase):
         repo_id = Repository.objects.filter(local_site=local_site,
                                             tool__name='Subversion')[0].pk
 
-
         if 200 <= expected_status < 300:
             expected_mimetype = self.item_mimetype
         else:
             expected_mimetype = None
 
-        rsp = self.apiPut(self.get_item_url(repo_id, local_site_name), dict({
+        rsp = self.apiPut(
+            self.get_item_url(repo_id, local_site_name),
+            dict({
                 'name': repo_name,
                 'path': repo_path,
             }, **data),
@@ -1191,8 +1194,8 @@ class RepositoryBranchesResourceTests(BaseWebAPITestCase):
         self.assertEqual(
             rsp['branches'],
             [
-                { 'name': 'trunk', 'commit': '5', 'default': True, },
-                { 'name': 'branch1', 'commit': '7', 'default': False, },
+                {'name': 'trunk', 'commit': '5', 'default': True},
+                {'name': 'branch1', 'commit': '7', 'default': False},
             ])
 
     @add_fixtures(['test_site'])
@@ -1209,8 +1212,8 @@ class RepositoryBranchesResourceTests(BaseWebAPITestCase):
         self.assertEqual(
             rsp['branches'],
             [
-                { 'name': 'trunk', 'commit': '5', 'default': True, },
-                { 'name': 'branch1', 'commit': '7', 'default': False, },
+                {'name': 'trunk', 'commit': '5', 'default': True},
+                {'name': 'branch1', 'commit': '7', 'default': False},
             ])
 
     @add_fixtures(['test_site'])
@@ -1254,7 +1257,7 @@ class RepositoryCommitsResourceTests(BaseWebAPITestCase):
     def test_get_repository_commits(self):
         """Testing the GET repositories/<id>/commits/ API"""
         rsp = self.apiGet(self.get_url(self.repository),
-                          query={ 'start': 5 },
+                          query={'start': 5},
                           expected_mimetype=self.item_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(len(rsp['commits']), 5)
@@ -1279,7 +1282,7 @@ class RepositoryCommitsResourceTests(BaseWebAPITestCase):
         self.repository.save()
 
         rsp = self.apiGet(self.get_url(self.repository, self.local_site_name),
-                          query={ 'start': 7 },
+                          query={'start': 7},
                           expected_mimetype=self.item_mimetype)
         self.assertEqual(len(rsp['commits']), 7)
         self.assertEqual(rsp['stat'], 'ok')
@@ -1306,7 +1309,7 @@ class RepositoryCommitsResourceTests(BaseWebAPITestCase):
         repository.save()
 
         rsp = self.apiGet(self.get_url(repository),
-                          query={ 'start': '' },
+                          query={'start': ''},
                           expected_status=501)
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], REPO_NOT_IMPLEMENTED.code)
@@ -1336,13 +1339,16 @@ class ReviewGroupResourceTests(BaseWebAPITestCase):
 
         self._login_user(admin=True)
 
-        rsp = self.apiPost(self.get_list_url(local_site), {
-            'name': name,
-            'display_name': display_name,
-            'mailing_list': mailing_list,
-            'visible': visible,
-            'invite_only': invite_only,
-        }, expected_mimetype=self.item_mimetype)
+        rsp = self.apiPost(
+            self.get_list_url(local_site),
+            {
+                'name': name,
+                'display_name': display_name,
+                'mailing_list': mailing_list,
+                'visible': visible,
+                'invite_only': invite_only,
+            },
+            expected_mimetype=self.item_mimetype)
 
         self.assertEqual(rsp['stat'], 'ok')
 
@@ -1367,10 +1373,13 @@ class ReviewGroupResourceTests(BaseWebAPITestCase):
 
         self._login_user(admin=True)
 
-        rsp = self.apiPost(self.get_list_url(), {
-            'name': name,
-            'display_name': display_name,
-        }, expected_mimetype=self.item_mimetype)
+        rsp = self.apiPost(
+            self.get_list_url(),
+            {
+                'name': name,
+                'display_name': display_name,
+            },
+            expected_mimetype=self.item_mimetype)
 
         self.assertEqual(rsp['stat'], 'ok')
 
@@ -1385,21 +1394,27 @@ class ReviewGroupResourceTests(BaseWebAPITestCase):
         self._login_user(local_site=True, admin=True)
         local_site = LocalSite.objects.get(name=self.local_site_name)
 
-        rsp = self.apiPost(self.get_list_url(local_site), {
-            'name': 'mygroup',
-            'display_name': 'My Group',
-            'mailing_list': 'mygroup@example.com',
-        }, expected_mimetype=self.item_mimetype)
+        rsp = self.apiPost(
+            self.get_list_url(local_site),
+            {
+                'name': 'mygroup',
+                'display_name': 'My Group',
+                'mailing_list': 'mygroup@example.com',
+            },
+            expected_mimetype=self.item_mimetype)
 
         self.assertEqual(rsp['stat'], 'ok')
 
     def test_post_group_with_no_access(self, local_site=None):
         """Testing the POST groups/ API with no access"""
-        rsp = self.apiPost(self.get_list_url(local_site), {
-            'name': 'mygroup',
-            'display_name': 'My Group',
-            'mailing_list': 'mygroup@example.com',
-        }, expected_status=403)
+        rsp = self.apiPost(
+            self.get_list_url(local_site),
+            {
+                'name': 'mygroup',
+                'display_name': 'My Group',
+                'mailing_list': 'mygroup@example.com',
+            },
+            expected_status=403)
 
         self.assertEqual(rsp['stat'], 'fail')
 
@@ -1414,10 +1429,13 @@ class ReviewGroupResourceTests(BaseWebAPITestCase):
         self._login_user(admin=True)
         group = Group.objects.get(pk=1)
 
-        rsp = self.apiPost(self.get_list_url(), {
-            'name': group.name,
-            'display_name': 'My Group',
-        }, expected_status=409)
+        rsp = self.apiPost(
+            self.get_list_url(),
+            {
+                'name': group.name,
+                'display_name': 'My Group',
+            },
+            expected_status=409)
 
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], GROUP_ALREADY_EXISTS.code)
@@ -1434,11 +1452,14 @@ class ReviewGroupResourceTests(BaseWebAPITestCase):
         group.save()
 
         self._login_user(admin=True)
-        rsp = self.apiPut(self.get_item_url(group.name, local_site), {
-            'name': name,
-            'display_name': display_name,
-            'mailing_list': mailing_list,
-        }, expected_mimetype=self.item_mimetype)
+        rsp = self.apiPut(
+            self.get_item_url(group.name, local_site),
+            {
+                'name': name,
+                'display_name': display_name,
+                'mailing_list': mailing_list,
+            },
+            expected_mimetype=self.item_mimetype)
 
         self.assertEqual(rsp['stat'], 'ok')
 
@@ -1459,11 +1480,14 @@ class ReviewGroupResourceTests(BaseWebAPITestCase):
         group.local_site = local_site
         group.save()
 
-        rsp = self.apiPut(self.get_item_url(group.name, local_site), {
-            'name': 'mygroup',
-            'display_name': 'My Group',
-            'mailing_list': 'mygroup@example.com',
-        }, expected_status=403)
+        rsp = self.apiPut(
+            self.get_item_url(group.name, local_site),
+            {
+                'name': 'mygroup',
+                'display_name': 'My Group',
+                'mailing_list': 'mygroup@example.com',
+            },
+            expected_status=403)
 
         self.assertEqual(rsp['stat'], 'fail')
 
@@ -1479,9 +1503,10 @@ class ReviewGroupResourceTests(BaseWebAPITestCase):
         group2 = Group.objects.get(pk=2)
 
         self._login_user(admin=True)
-        rsp = self.apiPut(self.get_item_url(group.name), {
-            'name': group2.name,
-        }, expected_status=409)
+        rsp = self.apiPut(
+            self.get_item_url(group.name),
+            {'name': group2.name},
+            expected_status=409)
 
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], GROUP_ALREADY_EXISTS.code)
@@ -1520,7 +1545,7 @@ class ReviewGroupResourceTests(BaseWebAPITestCase):
         rsp = self.apiGet(self.get_list_url(), {'q': 'dev'},
                           expected_mimetype=self.list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(len(rsp['groups']), 1) #devgroup
+        self.assertEqual(len(rsp['groups']), 1)  # devgroup
 
     def test_get_group_public(self):
         """Testing the GET groups/<id>/ API"""
@@ -1655,9 +1680,10 @@ class ReviewGroupUserResourceTests(BaseWebAPITestCase):
 
         user = User.objects.get(pk=1)
 
-        rsp = self.apiPost(self.get_list_url(group.name, local_site), {
-            'username': user.username,
-        }, expected_mimetype=self.item_mimetype)
+        rsp = self.apiPost(
+            self.get_list_url(group.name, local_site),
+            {'username': user.username},
+            expected_mimetype=self.item_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
 
         self.assertEqual(group.users.count(), 1)
@@ -1673,9 +1699,10 @@ class ReviewGroupUserResourceTests(BaseWebAPITestCase):
         group = Group.objects.get(pk=1)
         user = User.objects.get(pk=1)
 
-        rsp = self.apiPost(self.get_list_url(group.name, local_site), {
-            'username': user.username,
-        }, expected_status=403)
+        rsp = self.apiPost(
+            self.get_list_url(group.name, local_site),
+            {'username': user.username},
+            expected_status=403)
         self.assertEqual(rsp['stat'], 'fail')
 
     @add_fixtures(['test_site'])
@@ -1692,9 +1719,10 @@ class ReviewGroupUserResourceTests(BaseWebAPITestCase):
         group.users = []
         group.save()
 
-        rsp = self.apiPost(self.get_list_url(group.name), {
-            'username': 'grabl',
-        }, expected_status=400)
+        rsp = self.apiPost(
+            self.get_list_url(group.name),
+            {'username': 'grabl'},
+            expected_status=400)
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], INVALID_USER.code)
 
@@ -1789,7 +1817,7 @@ class UserResourceTests(BaseWebAPITestCase):
         rsp = self.apiGet(self.get_list_url(), {'q': 'gru'},
                           expected_mimetype=self.list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(len(rsp['users']), 1) # grumpy
+        self.assertEqual(len(rsp['users']), 1)  # grumpy
 
     @add_fixtures(['test_site'])
     def test_get_users_with_site(self):
@@ -1903,18 +1931,20 @@ class WatchedReviewRequestResourceTests(BaseWebAPITestCase):
     def test_post_watched_review_request(self):
         """Testing the POST users/<username>/watched/review-request/ API"""
         review_request = ReviewRequest.objects.public()[0]
-        rsp = self.apiPost(self.get_list_url(self.user.username), {
-            'object_id': review_request.display_id,
-        }, expected_mimetype=self.item_mimetype)
+        rsp = self.apiPost(
+            self.get_list_url(self.user.username),
+            {'object_id': review_request.display_id},
+            expected_mimetype=self.item_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
         self.assert_(review_request in
                      self.user.get_profile().starred_review_requests.all())
 
     def test_post_watched_review_request_with_does_not_exist_error(self):
         """Testing the POST users/<username>/watched/review_request/ with Does Not Exist error"""
-        rsp = self.apiPost(self.get_list_url(self.user.username), {
-            'object_id': 999,
-        }, expected_status=404)
+        rsp = self.apiPost(
+            self.get_list_url(self.user.username),
+            {'object_id': 999},
+            expected_status=404)
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], DOES_NOT_EXIST.code)
 
@@ -1928,9 +1958,10 @@ class WatchedReviewRequestResourceTests(BaseWebAPITestCase):
         local_site = LocalSite.objects.get(name=self.local_site_name)
         review_request = ReviewRequest.objects.public(local_site=local_site)[0]
 
-        rsp = self.apiPost(self.get_list_url(username, self.local_site_name),
-                           { 'object_id': review_request.display_id, },
-                           expected_mimetype=self.item_mimetype)
+        rsp = self.apiPost(
+            self.get_list_url(username, self.local_site_name),
+            {'object_id': review_request.display_id},
+            expected_mimetype=self.item_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
         self.assertTrue(review_request in
                         user.get_profile().starred_review_requests.all())
@@ -1938,17 +1969,19 @@ class WatchedReviewRequestResourceTests(BaseWebAPITestCase):
     def test_post_watched_review_request_with_site_does_not_exist_error(self):
         """Testing the POST users/<username>/watched/review_request/ API with a local site and Does Not Exist error"""
         self._login_user(local_site=True)
-        rsp = self.apiPost(self.get_list_url('doc', self.local_site_name),
-                           { 'object_id': 10, },
-                           expected_status=404)
+        rsp = self.apiPost(
+            self.get_list_url('doc', self.local_site_name),
+            {'object_id': 10},
+            expected_status=404)
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], DOES_NOT_EXIST.code)
 
     def test_post_watched_review_request_with_site_no_access(self):
         """Testing the POST users/<username>/watched/review_request/ API with a local site and Permission Denied error"""
-        rsp = self.apiPost(self.get_list_url('doc', self.local_site_name),
-                           { 'object_id': 10, },
-                           expected_status=403)
+        rsp = self.apiPost(
+            self.get_list_url('doc', self.local_site_name),
+            {'object_id': 10},
+            expected_status=403)
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
@@ -1959,7 +1992,7 @@ class WatchedReviewRequestResourceTests(BaseWebAPITestCase):
 
         review_request = ReviewRequest.objects.public()[0]
         self.apiDelete(self.get_item_url(self.user.username,
-                                          review_request.display_id))
+                                         review_request.display_id))
         self.assertTrue(review_request not in
                         self.user.get_profile().starred_review_requests.all())
 
@@ -1979,15 +2012,15 @@ class WatchedReviewRequestResourceTests(BaseWebAPITestCase):
             local_id=1, local_site__name=self.local_site_name)
 
         self.apiDelete(self.get_item_url(user.username,
-                                          review_request.display_id,
-                                          self.local_site_name))
+                                         review_request.display_id,
+                                         self.local_site_name))
         self.assertTrue(review_request not in
                         user.get_profile().starred_review_requests.all())
 
     def test_delete_watched_review_request_with_site_no_access(self):
         """Testing the DELETE users/<username>/watched/review_request/ API with a local site and Permission Denied error"""
         rsp = self.apiDelete(self.get_item_url(self.user.username, 1,
-                                                self.local_site_name),
+                                               self.local_site_name),
                              expected_status=403)
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
@@ -2034,7 +2067,7 @@ class WatchedReviewRequestResourceTests(BaseWebAPITestCase):
     def test_get_watched_review_requests_with_site_no_access(self):
         """Testing the GET users/<username>/watched/review_request/ API with a local site and Permission Denied error"""
         rsp = self.apiGet(self.get_list_url(self.user.username,
-                                             self.local_site_name),
+                                            self.local_site_name),
                           expected_status=403)
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
@@ -2043,7 +2076,7 @@ class WatchedReviewRequestResourceTests(BaseWebAPITestCase):
         """Testing the GET users/<username>/watched/review_request/ API with a local site and Does Not Exist error"""
         self._login_user(local_site=True)
         rsp = self.apiGet(self.get_list_url(self.user.username,
-                                             self.local_site_name),
+                                            self.local_site_name),
                           expected_status=404)
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], DOES_NOT_EXIST.code)
@@ -2075,17 +2108,19 @@ class WatchedReviewGroupResourceTests(BaseWebAPITestCase):
         """Testing the POST users/<username>/watched/review-groups/ API"""
         group = Group.objects.get(name='devgroup', local_site=None)
 
-        rsp = self.apiPost(self.get_list_url(self.user.username), {
-            'object_id': group.name,
-        }, expected_mimetype=self.item_mimetype)
+        rsp = self.apiPost(
+            self.get_list_url(self.user.username),
+            {'object_id': group.name},
+            expected_mimetype=self.item_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
         self.assert_(group in self.user.get_profile().starred_groups.all())
 
     def test_post_watched_review_group_with_does_not_exist_error(self):
         """Testing the POST users/<username>/watched/review-groups/ API with Does Not Exist error"""
-        rsp = self.apiPost(self.get_list_url(self.user.username), {
-            'object_id': 'invalidgroup',
-        }, expected_status=404)
+        rsp = self.apiPost(
+            self.get_list_url(self.user.username),
+            {'object_id': 'invalidgroup'},
+            expected_status=404)
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], DOES_NOT_EXIST.code)
 
@@ -2099,9 +2134,10 @@ class WatchedReviewGroupResourceTests(BaseWebAPITestCase):
         group = Group.objects.get(name='sitegroup',
                                   local_site__name=self.local_site_name)
 
-        rsp = self.apiPost(self.get_list_url(username, self.local_site_name),
-                           { 'object_id': group.name, },
-                           expected_mimetype=self.item_mimetype)
+        rsp = self.apiPost(
+            self.get_list_url(username, self.local_site_name),
+            {'object_id': group.name},
+            expected_mimetype=self.item_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
         self.assertTrue(group in user.get_profile().starred_groups.all())
 
@@ -2111,22 +2147,22 @@ class WatchedReviewGroupResourceTests(BaseWebAPITestCase):
         username = 'doc'
 
         self._login_user(local_site=True)
-        rsp = self.apiPost(self.get_list_url(username, self.local_site_name),
-                           { 'object_id': 'devgroup', },
-                           expected_status=404)
+        rsp = self.apiPost(
+            self.get_list_url(username, self.local_site_name),
+            {'object_id': 'devgroup'},
+            expected_status=404)
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], DOES_NOT_EXIST.code)
 
     @add_fixtures(['test_site'])
     def test_post_watched_review_group_with_site_no_access(self):
         """Testing the POST users/<username>/watched/review-groups/ API with a local site and Permission Denied error"""
-        rsp = self.apiPost(self.get_list_url(self.user.username,
-                                              self.local_site_name),
-                           { 'object_id': 'devgroup', },
-                           expected_status=403)
+        rsp = self.apiPost(
+            self.get_list_url(self.user.username, self.local_site_name),
+            {'object_id': 'devgroup'},
+            expected_status=403)
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
-
 
     def test_delete_watched_review_group(self):
         """Testing the DELETE users/<username>/watched/review-groups/<id>/ API"""
@@ -2141,9 +2177,9 @@ class WatchedReviewGroupResourceTests(BaseWebAPITestCase):
 
     def test_delete_watched_review_group_with_does_not_exist_error(self):
         """Testing the DELETE users/<username>/watched/review-groups/<id>/ API with Does Not Exist error"""
-        rsp = self.apiDelete(self.get_item_url(self.user.username,
-                                                'invalidgroup'),
-                             expected_status=404)
+        rsp = self.apiDelete(
+            self.get_item_url(self.user.username, 'invalidgroup'),
+            expected_status=404)
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], DOES_NOT_EXIST.code)
 
@@ -2157,14 +2193,14 @@ class WatchedReviewGroupResourceTests(BaseWebAPITestCase):
                                   local_site__name=self.local_site_name)
 
         self.apiDelete(self.get_item_url(user.username, group.name,
-                                          self.local_site_name))
+                                         self.local_site_name))
         self.assertFalse(group in user.get_profile().starred_groups.all())
 
     @add_fixtures(['test_site'])
     def test_delete_watched_review_group_with_site_no_access(self):
         """Testing the DELETE users/<username>/watched/review-groups/<id>/ API with a local site and Permission Denied error"""
         rsp = self.apiDelete(self.get_item_url(self.user.username, 'group',
-                                                self.local_site_name),
+                                               self.local_site_name),
                              expected_status=403)
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
@@ -2314,7 +2350,8 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
             'to-groups': 'devgroup',
         }, expected_mimetype=self.list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(len(rsp['review_requests']),
+        self.assertEqual(
+            len(rsp['review_requests']),
             ReviewRequest.objects.to_group("devgroup", None,
                                            status='S').count())
 
@@ -2323,7 +2360,8 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
             'to-groups': 'devgroup',
         }, expected_mimetype=self.list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(len(rsp['review_requests']),
+        self.assertEqual(
+            len(rsp['review_requests']),
             ReviewRequest.objects.to_group("devgroup", None,
                                            status='D').count())
 
@@ -2357,7 +2395,8 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
         }, expected_mimetype=self.list_mimetype)
 
         self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(len(rsp['review_requests']),
+        self.assertEqual(
+            len(rsp['review_requests']),
             ReviewRequest.objects.to_user("grumpy", status='S').count())
 
         rsp = self.apiGet(url, {
@@ -2365,7 +2404,8 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
             'to-users': 'grumpy',
         }, expected_mimetype=self.list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(len(rsp['review_requests']),
+        self.assertEqual(
+            len(rsp['review_requests']),
             ReviewRequest.objects.to_user("grumpy", status='D').count())
 
     def test_get_reviewrequests_with_to_users_and_counts_only(self):
@@ -2397,7 +2437,8 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
             'to-users-directly': 'doc'
         }, expected_mimetype=self.list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(len(rsp['review_requests']),
+        self.assertEqual(
+            len(rsp['review_requests']),
             ReviewRequest.objects.to_user_directly("doc", status='S').count())
 
         rsp = self.apiGet(url, {
@@ -2405,7 +2446,8 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
             'to-users-directly': 'doc'
         }, expected_mimetype=self.list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(len(rsp['review_requests']),
+        self.assertEqual(
+            len(rsp['review_requests']),
             ReviewRequest.objects.to_user_directly("doc", status='D').count())
 
     def test_get_reviewrequests_with_to_users_directly_and_counts_only(self):
@@ -2436,7 +2478,8 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
             'from-user': 'grumpy',
         }, expected_mimetype=self.list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(len(rsp['review_requests']),
+        self.assertEqual(
+            len(rsp['review_requests']),
             ReviewRequest.objects.from_user("grumpy", status='S').count())
 
         rsp = self.apiGet(url, {
@@ -2444,7 +2487,8 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
             'from-user': 'grumpy',
         }, expected_mimetype=self.list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(len(rsp['review_requests']),
+        self.assertEqual(
+            len(rsp['review_requests']),
             ReviewRequest.objects.from_user("grumpy", status='D').count())
 
     def test_get_reviewrequests_with_from_user_and_counts_only(self):
@@ -2465,7 +2509,6 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
         }, expected_mimetype=self.list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
         self.assertNotEqual(len(rsp['review_requests']), 0)
-
 
         q = ReviewRequest.objects.public(user=self.user,
                                          status='P',
@@ -2505,7 +2548,7 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
                          public_review_requests.count() - start_index)
         self.assertEqual(rsp['count'],
                          public_review_requests.filter(
-                            time_added__gte=r.time_added).count())
+                             time_added__gte=r.time_added).count())
 
     @add_fixtures(['test_site'])
     def test_get_reviewrequests_with_time_added_to(self):
@@ -2579,9 +2622,10 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
 
     def test_post_reviewrequests(self):
         """Testing the POST review-requests/ API"""
-        rsp = self.apiPost(self.get_list_url(), {
-            'repository': self.repository.path,
-        }, expected_mimetype=self.item_mimetype)
+        rsp = self.apiPost(
+            self.get_list_url(),
+            {'repository': self.repository.path},
+            expected_mimetype=self.item_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(
             rsp['review_request']['links']['repository']['href'],
@@ -2594,9 +2638,10 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
 
     def test_post_reviewrequests_with_repository_name(self):
         """Testing the POST review-requests/ API with a repository name"""
-        rsp = self.apiPost(self.get_list_url(), {
-            'repository': self.repository.name,
-        }, expected_mimetype=self.item_mimetype)
+        rsp = self.apiPost(
+            self.get_list_url(),
+            {'repository': self.repository.name},
+            expected_mimetype=self.item_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(
             rsp['review_request']['links']['repository']['href'],
@@ -2609,8 +2654,9 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
 
     def test_post_reviewrequests_with_no_repository(self):
         """Testing the POST review-requests/ API with no repository"""
-        rsp = self.apiPost(self.get_list_url(),
-                           expected_mimetype=self.item_mimetype)
+        rsp = self.apiPost(
+            self.get_list_url(),
+            expected_mimetype=self.item_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
 
         self.assertFalse('repository' in rsp['review_request']['links'])
@@ -2629,9 +2675,10 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
         repository = Repository.objects.filter(
             local_site__name=self.local_site_name)[0]
 
-        rsp = self.apiPost(self.get_list_url(self.local_site_name),
-                           { 'repository': repository.path, },
-                           expected_mimetype=self.item_mimetype)
+        rsp = self.apiPost(
+            self.get_list_url(self.local_site_name),
+            {'repository': repository.path},
+            expected_mimetype=self.item_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(rsp['review_request']['links']['repository']['title'],
                          repository.name)
@@ -2642,25 +2689,28 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
         repository = Repository.objects.filter(
             local_site__name=self.local_site_name)[0]
 
-        self.apiPost(self.get_list_url(self.local_site_name),
-                     { 'repository': repository.path, },
-                     expected_status=403)
+        self.apiPost(
+            self.get_list_url(self.local_site_name),
+            {'repository': repository.path},
+            expected_status=403)
 
     @add_fixtures(['test_site'])
     def test_post_reviewrequests_with_site_invalid_repository_error(self):
         """Testing the POST review-requests/ API with a local site and Invalid Repository error"""
         self._login_user(local_site=True)
-        rsp = self.apiPost(self.get_list_url(self.local_site_name),
-                           { 'repository': self.repository.path, },
-                           expected_status=400)
+        rsp = self.apiPost(
+            self.get_list_url(self.local_site_name),
+            {'repository': self.repository.path},
+            expected_status=400)
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], INVALID_REPOSITORY.code)
 
     def test_post_reviewrequests_with_invalid_repository_error(self):
         """Testing the POST review-requests/ API with Invalid Repository error"""
-        rsp = self.apiPost(self.get_list_url(), {
-            'repository': 'gobbledygook',
-        }, expected_status=400)
+        rsp = self.apiPost(
+            self.get_list_url(),
+            {'repository': 'gobbledygook'},
+            expected_status=400)
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], INVALID_REPOSITORY.code)
 
@@ -2670,9 +2720,10 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
         repository = Repository.objects.filter(
             local_site__name=self.local_site_name)[0]
 
-        rsp = self.apiPost(self.get_list_url(), {
-            'repository': repository.path,
-        }, expected_status=400)
+        rsp = self.apiPost(
+            self.get_list_url(),
+            {'repository': repository.path},
+            expected_status=400)
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], INVALID_REPOSITORY.code)
 
@@ -2681,10 +2732,13 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
         self.user.is_superuser = True
         self.user.save()
 
-        rsp = self.apiPost(self.get_list_url(), {
-            'repository': self.repository.path,
-            'submit_as': 'doc',
-        }, expected_mimetype=self.item_mimetype)
+        rsp = self.apiPost(
+            self.get_list_url(),
+            {
+                'repository': self.repository.path,
+                'submit_as': 'doc',
+            },
+            expected_mimetype=self.item_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(
             rsp['review_request']['links']['repository']['href'],
@@ -2699,10 +2753,13 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
 
     def test_post_reviewrequests_with_submit_as_and_permission_denied_error(self):
         """Testing the POST review-requests/?submit_as= API with Permission Denied error"""
-        rsp = self.apiPost(self.get_list_url(), {
-            'repository': self.repository.path,
-            'submit_as': 'doc',
-        }, expected_status=403)
+        rsp = self.apiPost(
+            self.get_list_url(),
+            {
+                'repository': self.repository.path,
+                'submit_as': 'doc',
+            },
+            expected_status=403)
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
@@ -2711,10 +2768,13 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
         r = ReviewRequest.objects.filter(public=True, status='P',
                                          submitter=self.user)[0]
 
-        rsp = self.apiPut(self.get_item_url(r.display_id), {
-            'status': 'discarded',
-            'description': 'comment',
-        }, expected_mimetype=self.item_mimetype)
+        rsp = self.apiPut(
+            self.get_item_url(r.display_id),
+            {
+                'status': 'discarded',
+                'description': 'comment',
+            },
+            expected_mimetype=self.item_mimetype)
 
         self.assertEqual(rsp['stat'], 'ok')
 
@@ -2733,9 +2793,10 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
         q = ReviewRequest.objects.filter(public=True, status='P')
         r = q.exclude(submitter=self.user)[0]
 
-        rsp = self.apiPut(self.get_item_url(r.display_id), {
-            'status': 'discarded',
-        }, expected_status=403)
+        rsp = self.apiPut(
+            self.get_item_url(r.display_id),
+            {'status': 'discarded'},
+            expected_status=403)
 
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
@@ -2747,9 +2808,10 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
         r.close(ReviewRequest.SUBMITTED)
         r.save()
 
-        rsp = self.apiPut(self.get_item_url(r.display_id), {
-            'status': 'pending',
-        }, expected_mimetype=self.item_mimetype)
+        rsp = self.apiPut(
+            self.get_item_url(r.display_id),
+            {'status': 'pending'},
+            expected_mimetype=self.item_mimetype)
 
         self.assertEqual(rsp['stat'], 'ok')
 
@@ -2761,10 +2823,13 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
         r = ReviewRequest.objects.filter(public=True, status='P',
                                          submitter=self.user)[0]
 
-        rsp = self.apiPut(self.get_item_url(r.display_id), {
-            'status': 'submitted',
-            'description': 'comment',
-        }, expected_mimetype=self.item_mimetype)
+        rsp = self.apiPut(
+            self.get_item_url(r.display_id),
+            {
+                'status': 'submitted',
+                'description': 'comment',
+            },
+            expected_mimetype=self.item_mimetype)
 
         self.assertEqual(rsp['stat'], 'ok')
 
@@ -2786,13 +2851,13 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
                                          submitter__username='doc',
                                          local_site__name=self.local_site_name)[0]
 
-        rsp = self.apiPut(self.get_item_url(r.display_id,
-                                            self.local_site_name),
-                          {
-                              'status': 'submitted',
-                              'description': 'comment'
-                          },
-                          expected_mimetype=self.item_mimetype)
+        rsp = self.apiPut(
+            self.get_item_url(r.display_id, self.local_site_name),
+            {
+                'status': 'submitted',
+                'description': 'comment'
+            },
+            expected_mimetype=self.item_mimetype)
 
         self.assertEqual(rsp['stat'], 'ok')
 
@@ -2813,9 +2878,10 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
                                          submitter__username='doc',
                                          local_site__name=self.local_site_name)[0]
 
-        self.apiPut(self.get_item_url(r.display_id, self.local_site_name),
-                    { 'status': 'submitted' },
-                    expected_status=403)
+        self.apiPut(
+            self.get_item_url(r.display_id, self.local_site_name),
+            {'status': 'submitted'},
+            expected_status=403)
 
     @add_fixtures(['test_site'])
     def test_get_reviewrequest(self):
@@ -2857,8 +2923,8 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
 
     def test_get_reviewrequest_with_non_public_and_permission_denied_error(self):
         """Testing the GET review-requests/<id>/ API with non-public and Permission Denied error"""
-        review_request = ReviewRequest.objects.filter(public=False,
-            local_site=None).exclude(submitter=self.user)[0]
+        review_request = ReviewRequest.objects.filter(
+            public=False, local_site=None).exclude(submitter=self.user)[0]
 
         rsp = self.apiGet(self.get_item_url(review_request.display_id),
                           expected_status=403)
@@ -2867,8 +2933,8 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
 
     def test_get_reviewrequest_with_invite_only_group_and_permission_denied_error(self):
         """Testing the GET review-requests/<id>/ API with invite-only group and Permission Denied error"""
-        review_request = ReviewRequest.objects.filter(public=True,
-            local_site=None).exclude(submitter=self.user)[0]
+        review_request = ReviewRequest.objects.filter(
+            public=True, local_site=None).exclude(submitter=self.user)[0]
         review_request.target_groups.clear()
         review_request.target_people.clear()
 
@@ -2886,8 +2952,8 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
     @add_fixtures(['test_site'])
     def test_get_reviewrequest_with_invite_only_group_and_target_user(self):
         """Testing the GET review-requests/<id>/ API with invite-only group and target user"""
-        review_request = ReviewRequest.objects.filter(public=True,
-            local_site=None).exclude(submitter=self.user)[0]
+        review_request = ReviewRequest.objects.filter(
+            public=True, local_site=None).exclude(submitter=self.user)[0]
         review_request.target_groups.clear()
         review_request.target_people.clear()
 
@@ -2995,11 +3061,11 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
 
         self._login_user(local_site=True)
         local_site = LocalSite.objects.get(name=self.local_site_name)
-        review_request = ReviewRequest.objects.filter(local_site=local_site,
-            submitter__username='doc')[0]
+        review_request = ReviewRequest.objects.filter(
+            local_site=local_site, submitter__username='doc')[0]
 
         rsp = self.apiDelete(self.get_item_url(review_request.display_id,
-                                                self.local_site_name))
+                                               self.local_site_name))
         self.assertEqual(rsp, None)
         self.assertRaises(ReviewRequest.DoesNotExist,
                           ReviewRequest.objects.get, pk=review_request.pk)
@@ -3078,7 +3144,8 @@ class ReviewRequestDraftResourceTests(BaseWebAPITestCase):
             self._login_user(local_site=True)
 
         if review_request is None:
-            review_request = ReviewRequest.objects.from_user('doc',
+            review_request = ReviewRequest.objects.from_user(
+                'doc',
                 local_site=LocalSite.objects.get(name=self.local_site_name))[0]
 
         return self._create_update_review_request(
@@ -3125,9 +3192,10 @@ class ReviewRequestDraftResourceTests(BaseWebAPITestCase):
                                                       self.repository)
         review_request.publish(self.user)
 
-        rsp = self.apiPost(self.get_url(review_request), {
-            'changedescription': changedesc,
-        }, expected_mimetype=self.item_mimetype)
+        rsp = self.apiPost(
+            self.get_url(review_request),
+            {'changedescription': changedesc},
+            expected_mimetype=self.item_mimetype)
 
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(rsp['draft']['changedescription'], changedesc)
@@ -3142,9 +3210,10 @@ class ReviewRequestDraftResourceTests(BaseWebAPITestCase):
                                                       self.repository)
         review_request.publish(self.user)
 
-        rsp = self.apiPut(self.get_url(review_request), {
-            'depends_on': '1, 3',
-        }, expected_mimetype=self.item_mimetype)
+        rsp = self.apiPut(
+            self.get_url(review_request),
+            {'depends_on': '1, 3'},
+            expected_mimetype=self.item_mimetype)
 
         self.assertEqual(rsp['stat'], 'ok')
 
@@ -3182,9 +3251,10 @@ class ReviewRequestDraftResourceTests(BaseWebAPITestCase):
         # This isn't the review request we want to match.
         bad_depends = ReviewRequest.objects.get(pk=3)
 
-        rsp = self.apiPut(self.get_url(review_request, self.local_site_name), {
-            'depends_on': '3',
-        }, expected_mimetype=self.item_mimetype)
+        rsp = self.apiPut(
+            self.get_url(review_request, self.local_site_name),
+            {'depends_on': '3'},
+            expected_mimetype=self.item_mimetype)
 
         self.assertEqual(rsp['stat'], 'ok')
 
@@ -3206,9 +3276,10 @@ class ReviewRequestDraftResourceTests(BaseWebAPITestCase):
                                                       self.repository)
         review_request.publish(self.user)
 
-        rsp = self.apiPut(self.get_url(review_request), {
-            'depends_on': '10000',
-        }, expected_status=400)
+        rsp = self.apiPut(
+            self.get_url(review_request),
+            {'depends_on': '10000'},
+            expected_status=400)
 
         self.assertEqual(rsp['stat'], 'fail')
 
@@ -3219,9 +3290,10 @@ class ReviewRequestDraftResourceTests(BaseWebAPITestCase):
         """Testing the PUT review-requests/<id>/draft/ API with Invalid Form Data error"""
         review_request = ReviewRequest.objects.from_user(self.user.username)[0]
 
-        rsp = self.apiPut(self.get_url(review_request), {
-            'foobar': 'foo',
-        }, 400)
+        rsp = self.apiPut(
+            self.get_url(review_request),
+            {'foobar': 'foo'},
+            expected_status=400)
 
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], INVALID_FORM_DATA.code)
@@ -3232,9 +3304,10 @@ class ReviewRequestDraftResourceTests(BaseWebAPITestCase):
         bugs_closed = '123,456'
         review_request = ReviewRequest.objects.from_user('admin')[0]
 
-        rsp = self.apiPut(self.get_url(review_request), {
-            'bugs_closed': bugs_closed,
-        }, 403)
+        rsp = self.apiPut(
+            self.get_url(review_request),
+            {'bugs_closed': bugs_closed},
+            expected_status=403)
 
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
@@ -3246,9 +3319,10 @@ class ReviewRequestDraftResourceTests(BaseWebAPITestCase):
 
         review_request = ReviewRequest.objects.from_user(self.user.username)[0]
 
-        rsp = self.apiPut(self.get_url(review_request), {
-            'public': True,
-        }, expected_mimetype=self.item_mimetype)
+        rsp = self.apiPut(
+            self.get_url(review_request),
+            {'public': True},
+            expected_mimetype=self.item_mimetype)
 
         self.assertEqual(rsp['stat'], 'ok')
 
@@ -3275,9 +3349,10 @@ class ReviewRequestDraftResourceTests(BaseWebAPITestCase):
 
         self._create_update_review_request(self.apiPut, 200, review_request)
 
-        rsp = self.apiPut(self.get_url(review_request), {
-            'public': True,
-        }, expected_mimetype=self.item_mimetype)
+        rsp = self.apiPut(
+            self.get_url(review_request),
+            {'public': True},
+            expected_mimetype=self.item_mimetype)
 
         self.assertEqual(rsp['stat'], 'ok')
 
@@ -3310,7 +3385,8 @@ class ReviewRequestDraftResourceTests(BaseWebAPITestCase):
     @add_fixtures(['test_site'])
     def test_delete_reviewrequestdraft_with_site(self):
         """Testing the DELETE review-requests/<id>/draft/ API with a local site"""
-        review_request = ReviewRequest.objects.from_user('doc',
+        review_request = ReviewRequest.objects.from_user(
+            'doc',
             local_site=LocalSite.objects.get(name=self.local_site_name))[0]
         summary = review_request.summary
         description = review_request.description
@@ -3326,7 +3402,8 @@ class ReviewRequestDraftResourceTests(BaseWebAPITestCase):
     @add_fixtures(['test_site'])
     def test_delete_reviewrequestdraft_with_site_no_access(self):
         """Testing the DELETE review-requests/<id>/draft/ API with a local site and Permission Denied error"""
-        review_request = ReviewRequest.objects.from_user('doc',
+        review_request = ReviewRequest.objects.from_user(
+            'doc',
             local_site=LocalSite.objects.get(name=self.local_site_name))[0]
         rsp = self.apiDelete(
             self.get_url(review_request, self.local_site_name),
@@ -3494,9 +3571,9 @@ class ReviewResourceTests(BaseWebAPITestCase):
         local_site = LocalSite.objects.get(name=self.local_site_name)
         review_request = ReviewRequest.objects.public(local_site=local_site)[0]
 
-        rsp = self.apiPost(self.get_list_url(review_request,
-                                             self.local_site_name),
-                           expected_status=403)
+        rsp = self.apiPost(
+            self.get_list_url(review_request, self.local_site_name),
+            expected_status=403)
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
@@ -3522,11 +3599,14 @@ class ReviewResourceTests(BaseWebAPITestCase):
 
         review_url = response['Location']
 
-        rsp = self.apiPut(review_url, {
-            'ship_it': ship_it,
-            'body_top': body_top,
-            'body_bottom': body_bottom,
-        }, expected_mimetype=self.item_mimetype)
+        rsp = self.apiPut(
+            review_url,
+            {
+                'ship_it': ship_it,
+                'body_top': body_top,
+                'body_bottom': body_bottom,
+            },
+            expected_mimetype=self.item_mimetype)
 
         reviews = review_request.reviews.filter(user=self.user)
         self.assertEqual(len(reviews), 1)
@@ -3567,11 +3647,14 @@ class ReviewResourceTests(BaseWebAPITestCase):
 
         review_url = response['Location']
 
-        rsp = self.apiPut(review_url, {
-            'ship_it': ship_it,
-            'body_top': body_top,
-            'body_bottom': body_bottom,
-        }, expected_mimetype=self.item_mimetype)
+        rsp = self.apiPut(
+            review_url,
+            {
+                'ship_it': ship_it,
+                'body_top': body_top,
+                'body_bottom': body_bottom,
+            },
+            expected_mimetype=self.item_mimetype)
 
         reviews = review_request.reviews.filter(user__username='doc')
         self.assertEqual(len(reviews), 1)
@@ -3597,10 +3680,11 @@ class ReviewResourceTests(BaseWebAPITestCase):
         review.user = User.objects.get(username='doc')
         review.save()
 
-        rsp = self.apiPut(self.get_item_url(review_request, review.id,
-                                            self.local_site_name),
-                          { 'ship_it': True, },
-                          expected_status=403)
+        rsp = self.apiPut(
+            self.get_item_url(review_request, review.id,
+                              self.local_site_name),
+            {'ship_it': True},
+            expected_status=403)
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
@@ -3609,9 +3693,10 @@ class ReviewResourceTests(BaseWebAPITestCase):
         review = Review.objects.filter(user=self.user, public=True,
                                        base_reply_to__isnull=True)[0]
 
-        self.apiPut(self.get_item_url(review.review_request, review.id), {
-            'ship_it': True,
-        }, expected_status=403)
+        self.apiPut(
+            self.get_item_url(review.review_request, review.id),
+            {'ship_it': True},
+            expected_status=403)
 
     @add_fixtures(['test_site'])
     def test_put_review_publish(self):
@@ -3635,12 +3720,15 @@ class ReviewResourceTests(BaseWebAPITestCase):
 
         review_url = response['Location']
 
-        rsp = self.apiPut(review_url, {
-            'public': True,
-            'ship_it': ship_it,
-            'body_top': body_top,
-            'body_bottom': body_bottom,
-        }, expected_mimetype=self.item_mimetype)
+        rsp = self.apiPut(
+            review_url,
+            {
+                'public': True,
+                'ship_it': ship_it,
+                'body_top': body_top,
+                'body_bottom': body_bottom,
+            },
+            expected_mimetype=self.item_mimetype)
 
         reviews = review_request.reviews.filter(user=self.user)
         self.assertEqual(len(reviews), 1)
@@ -3709,7 +3797,7 @@ class ReviewResourceTests(BaseWebAPITestCase):
         review_request = ReviewRequest.objects.public(local_site=local_site)[0]
 
         self.apiDelete(self.get_item_url(review_request, review.id,
-                                          self.local_site_name))
+                                         self.local_site_name))
         self.assertEqual(review_request.reviews.count(), 0)
 
     @add_fixtures(['test_site'])
@@ -3723,7 +3811,7 @@ class ReviewResourceTests(BaseWebAPITestCase):
         review.save()
 
         rsp = self.apiDelete(self.get_item_url(review_request, review.id,
-                                                self.local_site_name),
+                                               self.local_site_name),
                              expected_status=403)
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
@@ -3980,9 +4068,10 @@ class ReviewCommentResourceTests(BaseWebAPITestCase):
         """Testing the PUT review-requests/<id>/reviews/<id>/diff-comments/<id>/ API, removing issue_opened"""
         rsp, review, review_request = self._create_diff_review_with_issue()
 
-        rsp = self.apiPut(rsp['diff_comment']['links']['self']['href'], {
-            'issue_opened': False,
-        }, expected_mimetype=self.item_mimetype)
+        rsp = self.apiPut(
+            rsp['diff_comment']['links']['self']['href'],
+            {'issue_opened': False},
+            expected_mimetype=self.item_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
         self.assertFalse(rsp['diff_comment']['issue_opened'])
 
@@ -3992,9 +4081,10 @@ class ReviewCommentResourceTests(BaseWebAPITestCase):
 
         # The issue_status should not be able to be changed while the review is
         # unpublished.
-        rsp = self.apiPut(rsp['diff_comment']['links']['self']['href'], {
-            'issue_status': 'resolved',
-        }, expected_mimetype=self.item_mimetype)
+        rsp = self.apiPut(
+            rsp['diff_comment']['links']['self']['href'],
+            {'issue_status': 'resolved'},
+            expected_mimetype=self.item_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
 
         # The issue_status should still be "open"
@@ -4005,9 +4095,10 @@ class ReviewCommentResourceTests(BaseWebAPITestCase):
         rsp, review, review_request = self._create_diff_review_with_issue(
             publish=True)
 
-        rsp = self.apiPut(rsp['diff_comment']['links']['self']['href'], {
-            'issue_status': 'resolved',
-        }, expected_mimetype=self.item_mimetype)
+        rsp = self.apiPut(
+            rsp['diff_comment']['links']['self']['href'],
+            {'issue_status': 'resolved'},
+            expected_mimetype=self.item_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(rsp['diff_comment']['issue_status'], 'resolved')
 
@@ -4023,9 +4114,10 @@ class ReviewCommentResourceTests(BaseWebAPITestCase):
 
         # The review/comment (and therefore issue) is still owned by self.user,
         # so we should be able to change the issue status.
-        rsp = self.apiPut(rsp['diff_comment']['links']['self']['href'], {
-            'issue_status': 'dropped',
-        }, expected_mimetype=self.item_mimetype)
+        rsp = self.apiPut(
+            rsp['diff_comment']['links']['self']['href'],
+            {'issue_status': 'dropped'},
+            expected_mimetype=self.item_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(rsp['diff_comment']['issue_status'], 'dropped')
 
@@ -4042,9 +4134,10 @@ class ReviewCommentResourceTests(BaseWebAPITestCase):
         review.user = new_owner
         review.save()
 
-        rsp = self.apiPut(rsp['diff_comment']['links']['self']['href'], {
-            'issue_status': 'dropped',
-        }, expected_status=403)
+        rsp = self.apiPut(
+            rsp['diff_comment']['links']['self']['href'],
+            {'issue_status': 'dropped'},
+            expected_status=403)
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
@@ -4054,9 +4147,10 @@ class ReviewCommentResourceTests(BaseWebAPITestCase):
 
         self.assertEqual(rsp['diff_comment']['issue_status'], 'open')
 
-        rsp = self.apiPut(rsp['diff_comment']['links']['self']['href'], {
-            'issue_opened': False
-        }, expected_mimetype=self.item_mimetype)
+        rsp = self.apiPut(
+            rsp['diff_comment']['links']['self']['href'],
+            {'issue_opened': False},
+            expected_mimetype=self.item_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(rsp['diff_comment']['issue_status'], '')
 
@@ -4354,9 +4448,10 @@ class ReviewReplyResourceTests(BaseWebAPITestCase):
         review = \
             Review.objects.filter(base_reply_to__isnull=True, public=True)[0]
 
-        rsp = self.apiPost(self.get_list_url(review), {
-            'body_top': 'Test',
-        }, expected_mimetype=self.item_mimetype)
+        rsp = self.apiPost(
+            self.get_list_url(review),
+            {'body_top': 'Test'},
+            expected_mimetype=self.item_mimetype)
 
         self.assertEqual(rsp['stat'], 'ok')
 
@@ -4376,9 +4471,10 @@ class ReviewReplyResourceTests(BaseWebAPITestCase):
 
         self._login_user(local_site=True)
 
-        rsp = self.apiPost(self.get_list_url(review, self.local_site_name),
-                           { 'body_top': 'Test', },
-                           expected_mimetype=self.item_mimetype)
+        rsp = self.apiPost(
+            self.get_list_url(review, self.local_site_name),
+            {'body_top': 'Test'},
+            expected_mimetype=self.item_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(len(mail.outbox), 0)
 
@@ -4394,9 +4490,10 @@ class ReviewReplyResourceTests(BaseWebAPITestCase):
         review.public = True
         review.save()
 
-        rsp = self.apiPost(self.get_list_url(review, self.local_site_name),
-                           { 'body_top': 'Test', },
-                           expected_status=403)
+        rsp = self.apiPost(
+            self.get_list_url(review, self.local_site_name),
+            {'body_top': 'Test'},
+            expected_status=403)
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
@@ -4407,9 +4504,10 @@ class ReviewReplyResourceTests(BaseWebAPITestCase):
         review = \
             Review.objects.filter(base_reply_to__isnull=True, public=True)[0]
 
-        rsp = self.apiPost(self.get_list_url(review), {
-            'body_top': body_top,
-        }, expected_mimetype=self.item_mimetype)
+        rsp = self.apiPost(
+            self.get_list_url(review),
+            {'body_top': body_top},
+            expected_mimetype=self.item_mimetype)
 
         self.assertEqual(rsp['stat'], 'ok')
 
@@ -4423,9 +4521,10 @@ class ReviewReplyResourceTests(BaseWebAPITestCase):
         review = \
             Review.objects.filter(base_reply_to__isnull=True, public=True)[0]
 
-        rsp = self.apiPost(self.get_list_url(review), {
-            'body_bottom': body_bottom,
-        }, expected_mimetype=self.item_mimetype)
+        rsp = self.apiPost(
+            self.get_list_url(review),
+            {'body_bottom': body_bottom},
+            expected_mimetype=self.item_mimetype)
 
         self.assertEqual(rsp['stat'], 'ok')
 
@@ -4445,9 +4544,10 @@ class ReviewReplyResourceTests(BaseWebAPITestCase):
         self.assertTrue('stat' in rsp)
         self.assertEqual(rsp['stat'], 'ok')
 
-        rsp = self.apiPut(response['Location'], {
-            'body_top': 'Test',
-        }, expected_mimetype=self.item_mimetype)
+        rsp = self.apiPut(
+            response['Location'],
+            {'body_top': 'Test'},
+            expected_mimetype=self.item_mimetype)
 
         self.assertEqual(rsp['stat'], 'ok')
 
@@ -4472,9 +4572,10 @@ class ReviewReplyResourceTests(BaseWebAPITestCase):
         self.assertTrue('stat' in rsp)
         self.assertEqual(rsp['stat'], 'ok')
 
-        rsp = self.apiPut(response['Location'],
-                          { 'body_top': 'Test', },
-                          expected_mimetype=self.item_mimetype)
+        rsp = self.apiPut(
+            response['Location'],
+            {'body_top': 'Test'},
+            expected_mimetype=self.item_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
 
     @add_fixtures(['test_site'])
@@ -4496,9 +4597,9 @@ class ReviewReplyResourceTests(BaseWebAPITestCase):
         reply.base_reply_to = review
         reply.save()
 
-        rsp = self.apiPut(self.get_item_url(review, reply.id,
-                                            self.local_site_name),
-                          expected_status=403)
+        rsp = self.apiPut(
+            self.get_item_url(review, reply.id, self.local_site_name),
+            expected_status=403)
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
@@ -4515,10 +4616,13 @@ class ReviewReplyResourceTests(BaseWebAPITestCase):
         self.assertTrue('stat' in rsp)
         self.assertEqual(rsp['stat'], 'ok')
 
-        rsp = self.apiPut(response['Location'], {
-            'body_top': 'Test',
-            'public': True,
-        }, expected_mimetype=self.item_mimetype)
+        rsp = self.apiPut(
+            response['Location'],
+            {
+                'body_top': 'Test',
+                'public': True,
+            },
+            expected_mimetype=self.item_mimetype)
 
         self.assertEqual(rsp['stat'], 'ok')
 
@@ -4532,9 +4636,10 @@ class ReviewReplyResourceTests(BaseWebAPITestCase):
         review = \
             Review.objects.filter(base_reply_to__isnull=True, public=True)[0]
 
-        rsp = self.apiPost(self.get_list_url(review), {
-            'body_top': 'Test',
-        }, expected_mimetype=self.item_mimetype)
+        rsp = self.apiPost(
+            self.get_list_url(review),
+            {'body_top': 'Test'},
+            expected_mimetype=self.item_mimetype)
 
         self.assertEqual(rsp['stat'], 'ok')
 
@@ -4639,10 +4744,13 @@ class ReviewReplyDiffCommentResourceTests(BaseWebAPITestCase):
         self.assertTrue('diff_comments' in rsp['reply']['links'])
         diff_comments_url = rsp['reply']['links']['diff_comments']['href']
 
-        rsp = self.apiPost(diff_comments_url, {
-            'reply_to_id': comment.id,
-            'text': comment_text,
-        }, expected_mimetype=self.item_mimetype)
+        rsp = self.apiPost(
+            diff_comments_url,
+            {
+                'reply_to_id': comment.id,
+                'text': comment_text,
+            },
+            expected_mimetype=self.item_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
 
         reply_comment = Comment.objects.get(pk=rsp['diff_comment']['id'])
@@ -4721,7 +4829,9 @@ class ReviewReplyDiffCommentResourceTests(BaseWebAPITestCase):
         rsp, comment, comments_url = self.test_post_reply_with_diff_comment()
 
         # Now do it again.
-        rsp = self.apiPost(comments_url, {
+        rsp = self.apiPost(
+            comments_url,
+            {
                 'reply_to_id': comment.pk,
                 'text': comment_text
             },
@@ -4742,9 +4852,10 @@ class ReviewReplyDiffCommentResourceTests(BaseWebAPITestCase):
 
         reply_comment = Comment.objects.get(pk=rsp['diff_comment']['id'])
 
-        rsp = self.apiPut(rsp['diff_comment']['links']['self']['href'], {
-            'text': new_comment_text,
-        }, expected_mimetype=self.item_mimetype)
+        rsp = self.apiPut(
+            rsp['diff_comment']['links']['self']['href'],
+            {'text': new_comment_text},
+            expected_mimetype=self.item_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
 
         reply_comment = Comment.objects.get(pk=rsp['diff_comment']['id'])
@@ -4759,9 +4870,10 @@ class ReviewReplyDiffCommentResourceTests(BaseWebAPITestCase):
 
         reply_comment = Comment.objects.get(pk=rsp['diff_comment']['id'])
 
-        rsp = self.apiPut(rsp['diff_comment']['links']['self']['href'],
-                          { 'text': new_comment_text, },
-                          expected_mimetype=self.item_mimetype)
+        rsp = self.apiPut(
+            rsp['diff_comment']['links']['self']['href'],
+            {'text': new_comment_text},
+            expected_mimetype=self.item_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
 
         reply_comment = Comment.objects.get(pk=rsp['diff_comment']['id'])
@@ -4775,9 +4887,10 @@ class ReviewReplyDiffCommentResourceTests(BaseWebAPITestCase):
         rsp = self.test_post_reply_with_diff_comment_and_local_site()[0]
 
         self._login_user()
-        rsp = self.apiPut(rsp['diff_comment']['links']['self']['href'],
-                          { 'text': new_comment_text, },
-                          expected_status=403)
+        rsp = self.apiPut(
+            rsp['diff_comment']['links']['self']['href'],
+            {'text': new_comment_text},
+            expected_status=403)
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
@@ -4883,10 +4996,13 @@ class ReviewReplyScreenshotCommentResourceTests(BaseWebAPITestCase):
         screenshot_comments_url = \
             rsp['reply']['links']['screenshot_comments']['href']
 
-        rsp = self.apiPost(screenshot_comments_url, {
-            'reply_to_id': comment.id,
-            'text': comment_text,
-        }, expected_mimetype=self.item_mimetype)
+        rsp = self.apiPost(
+            screenshot_comments_url,
+            {
+                'reply_to_id': comment.id,
+                'text': comment_text,
+            },
+            expected_mimetype=self.item_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
 
         reply_comment = ScreenshotComment.objects.get(
@@ -4960,12 +5076,13 @@ class ReviewReplyScreenshotCommentResourceTests(BaseWebAPITestCase):
         """Testing the POST review-requests/<id>/reviews/<id>/replies/<id>/screenshot-comments/ API"""
         comment_text = "My Comment Text"
 
-
         rsp, comment, comments_url = \
             self.test_post_reply_with_screenshot_comment()
 
         # Now do it again.
-        rsp = self.apiPost(comments_url, {
+        rsp = self.apiPost(
+            comments_url,
+            {
                 'reply_to_id': comment.pk,
                 'text': comment_text
             },
@@ -5280,11 +5397,14 @@ class DiffResourceTests(BaseWebAPITestCase):
             os.path.dirname(os.path.dirname(__file__)),
             "scmtools", "testdata", "svn_makefile.diff")
         f = open(diff_filename, "r")
-        rsp = self.apiPost(rsp['review_request']['links']['diffs']['href'], {
-            'path': f,
-            'basedir': '/trunk',
-            'base_commit_id': '1234',
-        }, expected_mimetype=self.item_mimetype)
+        rsp = self.apiPost(
+            rsp['review_request']['links']['diffs']['href'],
+            {
+                'path': f,
+                'basedir': '/trunk',
+                'base_commit_id': '1234',
+            },
+            expected_mimetype=self.item_mimetype)
         f.close()
 
         self.assertEqual(rsp['stat'], 'ok')
@@ -5319,9 +5439,10 @@ class DiffResourceTests(BaseWebAPITestCase):
             os.path.dirname(os.path.dirname(__file__)),
             "scmtools", "testdata", "svn_makefile.diff")
         f = open(diff_filename, "r")
-        rsp = self.apiPost(rsp['review_request']['links']['diffs']['href'], {
-            'path': f,
-        }, expected_status=400)
+        rsp = self.apiPost(
+            rsp['review_request']['links']['diffs']['href'],
+            {'path': f},
+            expected_status=400)
         f.close()
 
         self.assertEqual(rsp['stat'], 'fail')
@@ -5342,10 +5463,13 @@ class DiffResourceTests(BaseWebAPITestCase):
             "scmtools", "testdata", "svn_makefile.diff")
         f = open(diff_filename, "r")
 
-        rsp = self.apiPost(rsp['review_request']['links']['diffs']['href'], {
-            'path': f,
-            'basedir': "/trunk",
-        }, expected_status=400)
+        rsp = self.apiPost(
+            rsp['review_request']['links']['diffs']['href'],
+            {
+                'path': f,
+                'basedir': "/trunk",
+            },
+            expected_status=400)
 
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], DIFF_TOO_BIG.code)
@@ -5373,10 +5497,13 @@ class DiffResourceTests(BaseWebAPITestCase):
             os.path.dirname(os.path.dirname(__file__)),
             'scmtools', 'testdata', 'svn_makefile.diff')
         f = open(diff_filename, 'r')
-        rsp = self.apiPost(rsp['review_request']['links']['diffs']['href'], {
-            'path': f,
-            'basedir': '/trunk',
-        }, expected_mimetype=self.item_mimetype)
+        rsp = self.apiPost(
+            rsp['review_request']['links']['diffs']['href'],
+            {
+                'path': f,
+                'basedir': '/trunk',
+            },
+            expected_mimetype=self.item_mimetype)
         f.close()
 
         self.assertEqual(rsp['stat'], 'ok')
@@ -5497,9 +5624,10 @@ class ScreenshotDraftResourceTests(BaseWebAPITestCase):
 
         f = open(self._getTrophyFilename(), "r")
         self.assertNotEqual(f, None)
-        rsp = self.apiPost(screenshots_url, {
-            'path': f,
-        }, expected_mimetype=ScreenshotResourceTests.item_mimetype)
+        rsp = self.apiPost(
+            screenshots_url,
+            {'path': f},
+            expected_mimetype=ScreenshotResourceTests.item_mimetype)
         f.close()
 
         self.assertEqual(rsp['stat'], 'ok')
@@ -5507,15 +5635,18 @@ class ScreenshotDraftResourceTests(BaseWebAPITestCase):
     @add_fixtures(['test_reviewrequests'])
     def test_post_screenshots_with_permission_denied_error(self):
         """Testing the POST review-requests/<id>/draft/screenshots/ API with Permission Denied error"""
-        review_request = ReviewRequest.objects.filter(public=True,
-            local_site=None).exclude(submitter=self.user)[0]
+        review_request = ReviewRequest.objects.filter(
+            public=True, local_site=None).exclude(submitter=self.user)[0]
 
         f = open(self._getTrophyFilename(), "r")
         self.assert_(f)
-        rsp = self.apiPost(self.get_list_url(review_request), {
-            'caption': 'Trophy',
-            'path': f,
-        }, expected_status=403)
+        rsp = self.apiPost(
+            self.get_list_url(review_request),
+            {
+                'caption': 'Trophy',
+                'path': f,
+            },
+            expected_status=403)
         f.close()
 
         self.assertEqual(rsp['stat'], 'fail')
@@ -5564,10 +5695,10 @@ class ScreenshotDraftResourceTests(BaseWebAPITestCase):
 
         f = open(self._getTrophyFilename(), 'r')
         self.assertNotEqual(f, None)
-        rsp = self.apiPost(self.get_list_url(review_request,
-                                             self.local_site_name),
-                           { 'path': f, },
-                           expected_status=403)
+        rsp = self.apiPost(
+            self.get_list_url(review_request, self.local_site_name),
+            {'path': f},
+            expected_status=403)
         f.close()
 
         self.assertEqual(rsp['stat'], 'fail')
@@ -5584,19 +5715,23 @@ class ScreenshotDraftResourceTests(BaseWebAPITestCase):
 
         f = open(self._getTrophyFilename(), "r")
         self.assert_(f)
-        rsp = self.apiPost(self.get_list_url(review_request), {
-            'caption': 'Trophy',
-            'path': f,
-        }, expected_mimetype=self.item_mimetype)
+        rsp = self.apiPost(
+            self.get_list_url(review_request),
+            {
+                'caption': 'Trophy',
+                'path': f,
+            },
+            expected_mimetype=self.item_mimetype)
         f.close()
         review_request.publish(self.user)
 
         screenshot = Screenshot.objects.get(pk=rsp['draft_screenshot']['id'])
 
         # Now modify the caption.
-        rsp = self.apiPut(self.get_item_url(review_request, screenshot.id), {
-            'caption': draft_caption,
-        }, expected_mimetype=self.item_mimetype)
+        rsp = self.apiPut(
+            self.get_item_url(review_request, screenshot.id),
+            {'caption': draft_caption},
+            expected_mimetype=self.item_mimetype)
 
         self.assertEqual(rsp['stat'], 'ok')
 
@@ -5615,10 +5750,11 @@ class ScreenshotDraftResourceTests(BaseWebAPITestCase):
         review_request, screenshot_id = self.test_post_screenshots_with_site()
         review_request.publish(user)
 
-        rsp = self.apiPut(self.get_item_url(review_request, screenshot_id,
-                                            self.local_site_name),
-                          { 'caption': draft_caption, },
-                          expected_mimetype=self.item_mimetype)
+        rsp = self.apiPut(
+            self.get_item_url(review_request, screenshot_id,
+                              self.local_site_name),
+            {'caption': draft_caption},
+            expected_mimetype=self.item_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
 
         draft = review_request.get_draft(user)
@@ -5635,10 +5771,11 @@ class ScreenshotDraftResourceTests(BaseWebAPITestCase):
 
         self._login_user()
 
-        rsp = self.apiPut(self.get_item_url(review_request, screenshot_id,
-                                            self.local_site_name),
-                          { 'caption': 'test', },
-                          expected_status=403)
+        rsp = self.apiPut(
+            self.get_item_url(review_request, screenshot_id,
+                              self.local_site_name),
+            {'caption': 'test'},
+            expected_status=403)
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
@@ -5689,9 +5826,10 @@ class ScreenshotResourceTests(BaseWebAPITestCase):
 
         f = open(self._getTrophyFilename(), "r")
         self.assertNotEqual(f, None)
-        rsp = self.apiPost(screenshots_url, {
-            'path': f,
-        }, expected_mimetype=self.item_mimetype)
+        rsp = self.apiPost(
+            screenshots_url,
+            {'path': f},
+            expected_mimetype=self.item_mimetype)
         f.close()
 
         self.assertEqual(rsp['stat'], 'ok')
@@ -5699,15 +5837,18 @@ class ScreenshotResourceTests(BaseWebAPITestCase):
     @add_fixtures(['test_reviewrequests'])
     def test_post_screenshots_with_permission_denied_error(self):
         """Testing the POST review-requests/<id>/screenshots/ API with Permission Denied error"""
-        review_request = ReviewRequest.objects.filter(public=True,
-            local_site=None).exclude(submitter=self.user)[0]
+        review_request = ReviewRequest.objects.filter(
+            public=True, local_site=None).exclude(submitter=self.user)[0]
 
         f = open(self._getTrophyFilename(), "r")
         self.assert_(f)
-        rsp = self.apiPost(self.get_list_url(review_request), {
-            'caption': 'Trophy',
-            'path': f,
-        }, expected_status=403)
+        rsp = self.apiPost(
+            self.get_list_url(review_request),
+            {
+                'caption': 'Trophy',
+                'path': f,
+            },
+            expected_status=403)
         f.close()
 
         self.assertEqual(rsp['stat'], 'fail')
@@ -5730,8 +5871,10 @@ class ScreenshotResourceTests(BaseWebAPITestCase):
 
         f = open(self._getTrophyFilename(), 'r')
         self.assertNotEqual(f, None)
-        rsp = self.apiPost(screenshots_url, { 'path': f, },
-                           expected_mimetype=self.item_mimetype)
+        rsp = self.apiPost(
+            screenshots_url,
+            {'path': f},
+            expected_mimetype=self.item_mimetype)
         f.close()
 
         self.assertEqual(rsp['stat'], 'ok')
@@ -5744,9 +5887,10 @@ class ScreenshotResourceTests(BaseWebAPITestCase):
 
         f = open(self._getTrophyFilename(), 'r')
         self.assertNotEqual(f, None)
-        rsp = self.apiPost(screenshots_url,
-                           { 'path': f, },
-                           expected_status=403)
+        rsp = self.apiPost(
+            screenshots_url,
+            {'path': f},
+            expected_status=403)
         f.close()
 
         self.assertEqual(rsp['stat'], 'fail')
@@ -5966,7 +6110,7 @@ class ScreenshotCommentResourceTests(BaseWebAPITestCase):
         review = Review.objects.get(pk=rsp['review']['id'])
 
         self._postNewScreenshotComment(review_request, review.id, screenshot,
-                                      comment_text, x, y, w, h)
+                                       comment_text, x, y, w, h)
 
         rsp = self.apiGet(comments_url,
                           expected_mimetype=self.list_mimetype)
@@ -6178,9 +6322,10 @@ class ReviewScreenshotCommentResourceTests(BaseWebAPITestCase):
 
         self._login_user()
 
-        rsp = self.apiPost(self.get_list_url(review, self.local_site_name),
-                           { 'screenshot_id': screenshot.id, },
-                           expected_status=403)
+        rsp = self.apiPost(
+            self.get_list_url(review, self.local_site_name),
+            {'screenshot_id': screenshot.id},
+            expected_status=403)
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
@@ -6346,9 +6491,10 @@ class ReviewScreenshotCommentResourceTests(BaseWebAPITestCase):
         rsp, review, review_request = \
             self._create_screenshot_review_with_issue()
 
-        rsp = self.apiPut(rsp['screenshot_comment']['links']['self']['href'], {
-            'issue_opened': False,
-        }, expected_mimetype=ScreenshotCommentResourceTests.item_mimetype)
+        rsp = self.apiPut(
+            rsp['screenshot_comment']['links']['self']['href'],
+            {'issue_opened': False},
+            expected_mimetype=ScreenshotCommentResourceTests.item_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
         self.assertFalse(rsp['screenshot_comment']['issue_opened'])
 
@@ -6359,9 +6505,10 @@ class ReviewScreenshotCommentResourceTests(BaseWebAPITestCase):
 
         # The issue_status should not be able to be changed while the review is
         # unpublished.
-        rsp = self.apiPut(rsp['screenshot_comment']['links']['self']['href'], {
-            'issue_status': 'resolved',
-        }, expected_mimetype=ScreenshotCommentResourceTests.item_mimetype)
+        rsp = self.apiPut(
+            rsp['screenshot_comment']['links']['self']['href'],
+            {'issue_status': 'resolved'},
+            expected_mimetype=ScreenshotCommentResourceTests.item_mimetype)
 
         self.assertEqual(rsp['stat'], 'ok')
 
@@ -6373,9 +6520,10 @@ class ReviewScreenshotCommentResourceTests(BaseWebAPITestCase):
         rsp, review, review_request = \
             self._create_screenshot_review_with_issue(publish=True)
 
-        rsp = self.apiPut(rsp['screenshot_comment']['links']['self']['href'], {
-            'issue_status': 'resolved',
-        }, expected_mimetype=ScreenshotCommentResourceTests.item_mimetype)
+        rsp = self.apiPut(
+            rsp['screenshot_comment']['links']['self']['href'],
+            {'issue_status': 'resolved'},
+            expected_mimetype=ScreenshotCommentResourceTests.item_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(rsp['screenshot_comment']['issue_status'], 'resolved')
 
@@ -6391,9 +6539,10 @@ class ReviewScreenshotCommentResourceTests(BaseWebAPITestCase):
 
         # The review/comment (and therefore issue) is still owned by self.user,
         # so we should be able to change the issue status.
-        rsp = self.apiPut(rsp['screenshot_comment']['links']['self']['href'], {
-            'issue_status': 'dropped',
-        }, expected_mimetype=ScreenshotCommentResourceTests.item_mimetype)
+        rsp = self.apiPut(
+            rsp['screenshot_comment']['links']['self']['href'],
+            {'issue_status': 'dropped'},
+            expected_mimetype=ScreenshotCommentResourceTests.item_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(rsp['screenshot_comment']['issue_status'], 'dropped')
 
@@ -6410,9 +6559,10 @@ class ReviewScreenshotCommentResourceTests(BaseWebAPITestCase):
         review.user = new_owner
         review.save()
 
-        rsp = self.apiPut(rsp['screenshot_comment']['links']['self']['href'], {
-            'issue_status': 'dropped',
-        }, expected_status=403)
+        rsp = self.apiPut(
+            rsp['screenshot_comment']['links']['self']['href'],
+            {'issue_status': 'dropped'},
+            expected_status=403)
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
@@ -6446,9 +6596,10 @@ class ReviewScreenshotCommentResourceTests(BaseWebAPITestCase):
 
         # First, let's ensure that the user that has created the comment
         # cannot alter the issue_status while the review is unpublished.
-        rsp = self.apiPut(rsp['screenshot_comment']['links']['self']['href'], {
-            'issue_status': 'resolved',
-        }, expected_mimetype=ScreenshotCommentResourceTests.item_mimetype)
+        rsp = self.apiPut(
+            rsp['screenshot_comment']['links']['self']['href'],
+            {'issue_status': 'resolved'},
+            expected_mimetype=ScreenshotCommentResourceTests.item_mimetype)
 
         self.assertEqual(rsp['stat'], 'ok')
 
@@ -6461,9 +6612,10 @@ class ReviewScreenshotCommentResourceTests(BaseWebAPITestCase):
         review.public = True
         review.save()
 
-        rsp = self.apiPut(rsp['screenshot_comment']['links']['self']['href'], {
-            'issue_status': 'resolved',
-        }, expected_mimetype=ScreenshotCommentResourceTests.item_mimetype)
+        rsp = self.apiPut(
+            rsp['screenshot_comment']['links']['self']['href'],
+            {'issue_status': 'resolved'},
+            expected_mimetype=ScreenshotCommentResourceTests.item_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(rsp['screenshot_comment']['issue_status'], 'resolved')
 
@@ -6472,9 +6624,10 @@ class ReviewScreenshotCommentResourceTests(BaseWebAPITestCase):
         review_request.publish(review_request.submitter)
 
         # Try altering the issue_status. This should be allowed.
-        rsp = self.apiPut(rsp['screenshot_comment']['links']['self']['href'], {
-            'issue_status': 'open',
-        }, expected_mimetype=ScreenshotCommentResourceTests.item_mimetype)
+        rsp = self.apiPut(
+            rsp['screenshot_comment']['links']['self']['href'],
+            {'issue_status': 'open'},
+            expected_mimetype=ScreenshotCommentResourceTests.item_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(rsp['screenshot_comment']['issue_status'], 'open')
 
@@ -6573,9 +6726,10 @@ class FileAttachmentResourceTests(BaseWebAPITestCase):
 
         f = open(self._getTrophyFilename(), "r")
         self.assertNotEqual(f, None)
-        rsp = self.apiPost(file_attachments_url, {
-            'path': f,
-        }, expected_mimetype=self.item_mimetype)
+        rsp = self.apiPost(
+            file_attachments_url,
+            {'path': f},
+            expected_mimetype=self.item_mimetype)
         f.close()
 
         self.assertEqual(rsp['stat'], 'ok')
@@ -6585,15 +6739,18 @@ class FileAttachmentResourceTests(BaseWebAPITestCase):
     @add_fixtures(['test_reviewrequests'])
     def test_post_file_attachments_with_permission_denied_error(self):
         """Testing the POST review-requests/<id>/file-attachments/ API with Permission Denied error"""
-        review_request = ReviewRequest.objects.filter(public=True,
-            local_site=None).exclude(submitter=self.user)[0]
+        review_request = ReviewRequest.objects.filter(
+            public=True, local_site=None).exclude(submitter=self.user)[0]
 
         f = open(self._getTrophyFilename(), "r")
         self.assert_(f)
-        rsp = self.apiPost(self.get_list_url(review_request), {
-            'caption': 'Trophy',
-            'path': f,
-        }, expected_status=403)
+        rsp = self.apiPost(
+            self.get_list_url(review_request),
+            {
+                'caption': 'Trophy',
+                'path': f,
+            },
+            expected_status=403)
         f.close()
 
         self.assertEqual(rsp['stat'], 'fail')
@@ -6616,8 +6773,10 @@ class FileAttachmentResourceTests(BaseWebAPITestCase):
 
         f = open(self._getTrophyFilename(), 'r')
         self.assertNotEqual(f, None)
-        rsp = self.apiPost(file_attachments_url, { 'path': f, },
-                           expected_mimetype=self.item_mimetype)
+        rsp = self.apiPost(
+            file_attachments_url,
+            {'path': f},
+            expected_mimetype=self.item_mimetype)
         f.close()
 
         self.assertEqual(rsp['stat'], 'ok')
@@ -6630,9 +6789,10 @@ class FileAttachmentResourceTests(BaseWebAPITestCase):
 
         f = open(self._getTrophyFilename(), 'r')
         self.assertNotEqual(f, None)
-        rsp = self.apiPost(file_attachments_url,
-                           { 'path': f, },
-                           expected_status=403)
+        rsp = self.apiPost(
+            file_attachments_url,
+            {'path': f},
+            expected_status=403)
         f.close()
 
         self.assertEqual(rsp['stat'], 'fail')
@@ -6676,9 +6836,10 @@ class FileAttachmentDraftResourceTests(BaseWebAPITestCase):
 
         f = open(self._getTrophyFilename(), "r")
         self.assertNotEqual(f, None)
-        rsp = self.apiPost(file_attachments_url, {
-            'path': f,
-        }, expected_mimetype=FileAttachmentResourceTests.item_mimetype)
+        rsp = self.apiPost(
+            file_attachments_url,
+            {'path': f},
+            expected_mimetype=FileAttachmentResourceTests.item_mimetype)
         f.close()
 
         self.assertEqual(rsp['stat'], 'ok')
@@ -6686,15 +6847,18 @@ class FileAttachmentDraftResourceTests(BaseWebAPITestCase):
     @add_fixtures(['test_reviewrequests'])
     def test_post_file_attachments_with_permission_denied_error(self):
         """Testing the POST review-requests/<id>/draft/file-attachments/ API with Permission Denied error"""
-        review_request = ReviewRequest.objects.filter(public=True,
-            local_site=None).exclude(submitter=self.user)[0]
+        review_request = ReviewRequest.objects.filter(
+            public=True, local_site=None).exclude(submitter=self.user)[0]
 
         f = open(self._getTrophyFilename(), "r")
         self.assert_(f)
-        rsp = self.apiPost(self.get_list_url(review_request), {
-            'caption': 'Trophy',
-            'path': f,
-        }, expected_status=403)
+        rsp = self.apiPost(
+            self.get_list_url(review_request),
+            {
+                'caption': 'Trophy',
+                'path': f,
+            },
+            expected_status=403)
         f.close()
 
         self.assertEqual(rsp['stat'], 'fail')
@@ -6721,10 +6885,10 @@ class FileAttachmentDraftResourceTests(BaseWebAPITestCase):
             'caption': 'Trophy',
         }
 
-        rsp = self.apiPost(self.get_list_url(review_request,
-                                             self.local_site_name),
-                           post_data,
-                           expected_mimetype=self.item_mimetype)
+        rsp = self.apiPost(
+            self.get_list_url(review_request, self.local_site_name),
+            post_data,
+            expected_mimetype=self.item_mimetype)
         f.close()
 
         self.assertEqual(rsp['stat'], 'ok')
@@ -6743,10 +6907,10 @@ class FileAttachmentDraftResourceTests(BaseWebAPITestCase):
 
         f = open(self._getTrophyFilename(), 'r')
         self.assertNotEqual(f, None)
-        rsp = self.apiPost(self.get_list_url(review_request,
-                                             self.local_site_name),
-                           { 'path': f, },
-                           expected_status=403)
+        rsp = self.apiPost(
+            self.get_list_url(review_request, self.local_site_name),
+            {'path': f},
+            expected_status=403)
         f.close()
 
         self.assertEqual(rsp['stat'], 'fail')
@@ -6763,20 +6927,23 @@ class FileAttachmentDraftResourceTests(BaseWebAPITestCase):
 
         f = open(self._getTrophyFilename(), "r")
         self.assert_(f)
-        rsp = self.apiPost(self.get_list_url(review_request), {
-            'caption': 'Trophy',
-            'path': f,
-        }, expected_mimetype=self.item_mimetype)
+        rsp = self.apiPost(
+            self.get_list_url(review_request),
+            {
+                'caption': 'Trophy',
+                'path': f,
+            },
+            expected_mimetype=self.item_mimetype)
         f.close()
         review_request.publish(self.user)
 
         file_attachment = FileAttachment.objects.get(pk=rsp['draft_file_attachment']['id'])
 
         # Now modify the caption.
-        rsp = self.apiPut(self.get_item_url(review_request,
-                                            file_attachment.id), {
-            'caption': draft_caption,
-        }, expected_mimetype=self.item_mimetype)
+        rsp = self.apiPut(
+            self.get_item_url(review_request, file_attachment.id),
+            {'caption': draft_caption},
+            expected_mimetype=self.item_mimetype)
 
         self.assertEqual(rsp['stat'], 'ok')
 
@@ -6796,10 +6963,11 @@ class FileAttachmentDraftResourceTests(BaseWebAPITestCase):
             self.test_post_file_attachments_with_site()
         review_request.publish(user)
 
-        rsp = self.apiPut(self.get_item_url(review_request, file_attachment_id,
-                                            self.local_site_name),
-                          { 'caption': draft_caption, },
-                          expected_mimetype=self.item_mimetype)
+        rsp = self.apiPut(
+            self.get_item_url(review_request, file_attachment_id,
+                              self.local_site_name),
+            {'caption': draft_caption},
+            expected_mimetype=self.item_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
 
         draft = review_request.get_draft(user)
@@ -6817,10 +6985,11 @@ class FileAttachmentDraftResourceTests(BaseWebAPITestCase):
 
         self._login_user()
 
-        rsp = self.apiPut(self.get_item_url(review_request, file_attachment_id,
-                                            self.local_site_name),
-                          { 'caption': 'test', },
-                          expected_status=403)
+        rsp = self.apiPut(
+            self.get_item_url(review_request, file_attachment_id,
+                              self.local_site_name),
+            {'caption': 'test'},
+            expected_status=403)
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
@@ -7181,10 +7350,13 @@ class ReviewReplyFileAttachmentCommentResourceTests(BaseWebAPITestCase):
         self.assertTrue('diff_comments' in rsp['reply']['links'])
         comments_url = rsp['reply']['links']['file_attachment_comments']['href']
 
-        rsp = self.apiPost(comments_url, {
-            'reply_to_id': comment.id,
-            'text': comment_text,
-        }, expected_mimetype=self.item_mimetype)
+        rsp = self.apiPost(
+            comments_url,
+            {
+                'reply_to_id': comment.id,
+                'text': comment_text,
+            },
+            expected_mimetype=self.item_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
 
         reply_comment = FileAttachmentComment.objects.get(
@@ -7225,10 +7397,13 @@ class ReviewReplyFileAttachmentCommentResourceTests(BaseWebAPITestCase):
         self.assertTrue('diff_comments' in rsp['reply']['links'])
         comments_url = rsp['reply']['links']['file_attachment_comments']['href']
 
-        rsp = self.apiPost(comments_url, {
-            'reply_to_id': comment.id,
-            'text': comment_text,
-        }, expected_mimetype=self.item_mimetype)
+        rsp = self.apiPost(
+            comments_url,
+            {
+                'reply_to_id': comment.id,
+                'text': comment_text,
+            },
+            expected_mimetype=self.item_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
 
         reply_comment = FileAttachmentComment.objects.get(
@@ -7264,10 +7439,13 @@ class ReviewReplyFileAttachmentCommentResourceTests(BaseWebAPITestCase):
         review_request.file_attachments.remove(file_attachment)
 
         # Now make the reply.
-        rsp = self.apiPost(comments_url, {
-            'reply_to_id': comment.id,
-            'text': comment_text,
-        }, expected_mimetype=self.item_mimetype)
+        rsp = self.apiPost(
+            comments_url,
+            {
+                'reply_to_id': comment.id,
+                'text': comment_text,
+            },
+            expected_mimetype=self.item_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
 
         reply_comment = FileAttachmentComment.objects.get(
@@ -7284,7 +7462,9 @@ class ReviewReplyFileAttachmentCommentResourceTests(BaseWebAPITestCase):
             self.test_post_reply_with_file_attachment_comment()
 
         # Now do it again.
-        rsp = self.apiPost(comments_url, {
+        rsp = self.apiPost(
+            comments_url,
+            {
                 'reply_to_id': comment.pk,
                 'text': comment_text
             },
@@ -7308,9 +7488,8 @@ class ReviewReplyFileAttachmentCommentResourceTests(BaseWebAPITestCase):
             pk=rsp['file_attachment_comment']['id'])
 
         rsp = self.apiPut(
-            rsp['file_attachment_comment']['links']['self']['href'], {
-                'text': new_comment_text,
-            },
+            rsp['file_attachment_comment']['links']['self']['href'],
+            {'text': new_comment_text},
             expected_mimetype=self.item_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
 
@@ -7400,13 +7579,16 @@ class DefaultReviewerResourceTests(BaseWebAPITestCase):
         repo1.save()
         repo2.save()
 
-        rsp = self.apiPost(self.get_list_url(local_site), {
-            'name': name,
-            'file_regex': file_regex,
-            'users': ','.join([user1.username, user2.username]),
-            'groups': ','.join([group1.name, group2.name]),
-            'repositories': ','.join([str(repo1.pk), str(repo2.pk)]),
-        }, expected_mimetype=self.item_mimetype)
+        rsp = self.apiPost(
+            self.get_list_url(local_site),
+            {
+                'name': name,
+                'file_regex': file_regex,
+                'users': ','.join([user1.username, user2.username]),
+                'groups': ','.join([group1.name, group2.name]),
+                'repositories': ','.join([str(repo1.pk), str(repo2.pk)]),
+            },
+            expected_mimetype=self.item_mimetype)
 
         self.assertEqual(rsp['stat'], 'ok')
 
@@ -7439,10 +7621,13 @@ class DefaultReviewerResourceTests(BaseWebAPITestCase):
         name = 'default1'
         file_regex = '.*'
 
-        rsp = self.apiPost(self.get_list_url(), {
-            'name': name,
-            'file_regex': file_regex,
-        }, expected_mimetype=self.item_mimetype)
+        rsp = self.apiPost(
+            self.get_list_url(),
+            {
+                'name': name,
+                'file_regex': file_regex,
+            },
+            expected_mimetype=self.item_mimetype)
 
         self.assertEqual(rsp['stat'], 'ok')
 
@@ -7457,31 +7642,40 @@ class DefaultReviewerResourceTests(BaseWebAPITestCase):
         """Testing the POST default-reviewers/ API with Permission Denied error"""
         self._login_user()
 
-        self.apiPost(self.get_list_url(), {
-            'name': 'default1',
-            'file_regex': '.*',
-        }, expected_status=403)
+        self.apiPost(
+            self.get_list_url(),
+            {
+                'name': 'default1',
+                'file_regex': '.*',
+            },
+            expected_status=403)
 
     @add_fixtures(['test_users', 'test_site'])
     def test_post_default_reviewer_with_permission_denied(self):
         """Testing the POST default-reviewers/ API with a local site and Permission Denied error"""
         self._login_user()
 
-        self.apiPost(self.get_list_url(self.local_site_name), {
-            'name': 'default1',
-            'file_regex': '.*',
-        }, expected_status=403)
+        self.apiPost(
+            self.get_list_url(self.local_site_name),
+            {
+                'name': 'default1',
+                'file_regex': '.*',
+            },
+            expected_status=403)
 
     @add_fixtures(['test_users'])
     def test_post_default_reviewer_with_invalid_username(self):
         """Testing the POST default-reviewers/ API with invalid username"""
         self._login_user(admin=True)
 
-        rsp = self.apiPost(self.get_list_url(), {
-            'name': 'default1',
-            'file_regex': '.*',
-            'users': 'foo'
-        }, expected_status=400)
+        rsp = self.apiPost(
+            self.get_list_url(),
+            {
+                'name': 'default1',
+                'file_regex': '.*',
+                'users': 'foo'
+            },
+            expected_status=400)
 
         self.assertTrue('fields' in rsp)
         self.assertTrue('users' in rsp['fields'])
@@ -7493,11 +7687,14 @@ class DefaultReviewerResourceTests(BaseWebAPITestCase):
 
         local_site = LocalSite.objects.get(name=self.local_site_name)
 
-        rsp = self.apiPost(self.get_list_url(local_site), {
-            'name': 'default1',
-            'file_regex': '.*',
-            'users': 'grumpy'
-        }, expected_status=400)
+        rsp = self.apiPost(
+            self.get_list_url(local_site),
+            {
+                'name': 'default1',
+                'file_regex': '.*',
+                'users': 'grumpy'
+            },
+            expected_status=400)
 
         self.assertTrue('fields' in rsp)
         self.assertTrue('users' in rsp['fields'])
@@ -7507,11 +7704,14 @@ class DefaultReviewerResourceTests(BaseWebAPITestCase):
         """Testing the POST default-reviewers/ API with invalid group"""
         self._login_user(admin=True)
 
-        rsp = self.apiPost(self.get_list_url(), {
-            'name': 'default1',
-            'file_regex': '.*',
-            'groups': 'foo'
-        }, expected_status=400)
+        rsp = self.apiPost(
+            self.get_list_url(),
+            {
+                'name': 'default1',
+                'file_regex': '.*',
+                'groups': 'foo'
+            },
+            expected_status=400)
 
         self.assertTrue('fields' in rsp)
         self.assertTrue('groups' in rsp['fields'])
@@ -7524,11 +7724,14 @@ class DefaultReviewerResourceTests(BaseWebAPITestCase):
         local_site = LocalSite.objects.get(name=self.local_site_name)
         Group.objects.create(name='group1', local_site=local_site)
 
-        rsp = self.apiPost(self.get_list_url(), {
-            'name': 'default1',
-            'file_regex': '.*',
-            'groups': 'group1'
-        }, expected_status=400)
+        rsp = self.apiPost(
+            self.get_list_url(),
+            {
+                'name': 'default1',
+                'file_regex': '.*',
+                'groups': 'group1'
+            },
+            expected_status=400)
 
         self.assertTrue('fields' in rsp)
         self.assertTrue('groups' in rsp['fields'])
@@ -7538,11 +7741,14 @@ class DefaultReviewerResourceTests(BaseWebAPITestCase):
         """Testing the POST default-reviewers/ API with invalid repository"""
         self._login_user(admin=True)
 
-        rsp = self.apiPost(self.get_list_url(), {
-            'name': 'default1',
-            'file_regex': '.*',
-            'repositories': '12345'
-        }, expected_status=400)
+        rsp = self.apiPost(
+            self.get_list_url(),
+            {
+                'name': 'default1',
+                'file_regex': '.*',
+                'repositories': '12345'
+            },
+            expected_status=400)
 
         self.assertTrue('fields' in rsp)
         self.assertTrue('repositories' in rsp['fields'])
@@ -7554,11 +7760,14 @@ class DefaultReviewerResourceTests(BaseWebAPITestCase):
 
         self._login_user(admin=True)
 
-        rsp = self.apiPost(self.get_list_url(), {
-            'name': 'default1',
-            'file_regex': '.*',
-            'repositories': str(repository.pk),
-        }, expected_status=400)
+        rsp = self.apiPost(
+            self.get_list_url(),
+            {
+                'name': 'default1',
+                'file_regex': '.*',
+                'repositories': str(repository.pk),
+            },
+            expected_status=400)
 
         self.assertTrue('fields' in rsp)
         self.assertTrue('repositories' in rsp['fields'])
@@ -7608,13 +7817,16 @@ class DefaultReviewerResourceTests(BaseWebAPITestCase):
         default_reviewer.people.add(old_user)
 
         self._login_user(admin=True)
-        rsp = self.apiPut(self.get_item_url(default_reviewer.pk, local_site), {
-            'name': name,
-            'file_regex': file_regex,
-            'users': ','.join([user1.username, user2.username]),
-            'groups': ','.join([group1.name, group2.name]),
-            'repositories': ','.join([str(repo1.pk), str(repo2.pk)]),
-        }, expected_mimetype=self.item_mimetype)
+        rsp = self.apiPut(
+            self.get_item_url(default_reviewer.pk, local_site),
+            {
+                'name': name,
+                'file_regex': file_regex,
+                'users': ','.join([user1.username, user2.username]),
+                'groups': ','.join([group1.name, group2.name]),
+                'repositories': ','.join([str(repo1.pk), str(repo2.pk)]),
+            },
+            expected_mimetype=self.item_mimetype)
 
         self.assertEqual(rsp['stat'], 'ok')
 
@@ -7652,9 +7864,10 @@ class DefaultReviewerResourceTests(BaseWebAPITestCase):
         default_reviewer = DefaultReviewer.objects.create(
             name='default1', file_regex='.*')
 
-        self.apiPut(self.get_item_url(default_reviewer.pk), {
-            'name': 'default2',
-        }, expected_status=403)
+        self.apiPut(
+            self.get_item_url(default_reviewer.pk),
+            {'name': 'default2'},
+            expected_status=403)
 
     @add_fixtures(['test_users', 'test_site'])
     def test_put_default_reviewer_with_permission_denied(self):
@@ -7665,10 +7878,10 @@ class DefaultReviewerResourceTests(BaseWebAPITestCase):
         default_reviewer = DefaultReviewer.objects.create(
             name='default1', file_regex='.*', local_site=local_site)
 
-        self.apiPut(self.get_item_url(default_reviewer.pk,
-                                      self.local_site_name), {
-            'name': 'default2',
-        }, expected_status=403)
+        self.apiPut(
+            self.get_item_url(default_reviewer.pk, self.local_site_name),
+            {'name': 'default2'},
+            expected_status=403)
 
     @add_fixtures(['test_users'])
     def test_put_default_reviewer_with_invalid_username(self):
@@ -7678,9 +7891,10 @@ class DefaultReviewerResourceTests(BaseWebAPITestCase):
         default_reviewer = DefaultReviewer.objects.create(
             name='default1', file_regex='.*')
 
-        rsp = self.apiPut(self.get_item_url(default_reviewer.pk), {
-            'users': 'foo'
-        }, expected_status=400)
+        rsp = self.apiPut(
+            self.get_item_url(default_reviewer.pk),
+            {'users': 'foo'},
+            expected_status=400)
 
         self.assertTrue('fields' in rsp)
         self.assertTrue('users' in rsp['fields'])
@@ -7694,10 +7908,10 @@ class DefaultReviewerResourceTests(BaseWebAPITestCase):
         default_reviewer = DefaultReviewer.objects.create(
             name='default1', file_regex='.*', local_site=local_site)
 
-        rsp = self.apiPut(self.get_item_url(default_reviewer.pk,
-                                            self.local_site_name), {
-            'users': 'grumpy'
-        }, expected_status=400)
+        rsp = self.apiPut(
+            self.get_item_url(default_reviewer.pk, self.local_site_name),
+            {'users': 'grumpy'},
+            expected_status=400)
 
         self.assertTrue('fields' in rsp)
         self.assertTrue('users' in rsp['fields'])
@@ -7710,9 +7924,10 @@ class DefaultReviewerResourceTests(BaseWebAPITestCase):
         default_reviewer = DefaultReviewer.objects.create(
             name='default1', file_regex='.*')
 
-        rsp = self.apiPut(self.get_item_url(default_reviewer.pk), {
-            'groups': 'foo'
-        }, expected_status=400)
+        rsp = self.apiPut(
+            self.get_item_url(default_reviewer.pk),
+            {'groups': 'foo'},
+            expected_status=400)
 
         self.assertTrue('fields' in rsp)
         self.assertTrue('groups' in rsp['fields'])
@@ -7727,9 +7942,10 @@ class DefaultReviewerResourceTests(BaseWebAPITestCase):
             name='default1', file_regex='.*')
         Group.objects.create(name='group1', local_site=local_site)
 
-        rsp = self.apiPut(self.get_item_url(default_reviewer.pk), {
-            'groups': 'group1'
-        }, expected_status=400)
+        rsp = self.apiPut(
+            self.get_item_url(default_reviewer.pk),
+            {'groups': 'group1'},
+            expected_status=400)
 
         self.assertTrue('fields' in rsp)
         self.assertTrue('groups' in rsp['fields'])
@@ -7742,9 +7958,10 @@ class DefaultReviewerResourceTests(BaseWebAPITestCase):
         default_reviewer = DefaultReviewer.objects.create(
             name='default1', file_regex='.*')
 
-        rsp = self.apiPut(self.get_item_url(default_reviewer.pk), {
-            'repositories': '12345'
-        }, expected_status=400)
+        rsp = self.apiPut(
+            self.get_item_url(default_reviewer.pk),
+            {'repositories': '12345'},
+            expected_status=400)
 
         self.assertTrue('fields' in rsp)
         self.assertTrue('repositories' in rsp['fields'])
@@ -7759,9 +7976,10 @@ class DefaultReviewerResourceTests(BaseWebAPITestCase):
 
         self._login_user(admin=True)
 
-        rsp = self.apiPut(self.get_item_url(default_reviewer.pk), {
-            'repositories': str(repository.pk),
-        }, expected_status=400)
+        rsp = self.apiPut(
+            self.get_item_url(default_reviewer.pk),
+            {'repositories': str(repository.pk)},
+            expected_status=400)
 
         self.assertTrue('fields' in rsp)
         self.assertTrue('repositories' in rsp['fields'])

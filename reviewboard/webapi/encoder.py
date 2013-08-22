@@ -2,9 +2,9 @@ from django.template.defaultfilters import timesince
 from djblets.webapi.core import WebAPIEncoder
 
 from reviewboard.diffviewer.models import FileDiff, DiffSet
-from reviewboard.reviews.models import ReviewRequest, Review, Group, Comment, \
-                                       ReviewRequestDraft, Screenshot, \
-                                       ScreenshotComment
+from reviewboard.reviews.models import (ReviewRequest, Review, Group, Comment,
+                                        ReviewRequestDraft, Screenshot,
+                                        ScreenshotComment)
 from reviewboard.scmtools.models import Repository
 
 
@@ -15,7 +15,7 @@ def status_to_string(status):
         return "submitted"
     elif status == "D":
         return "discarded"
-    elif status == None:
+    elif status is None:
         return "all"
     else:
         raise Exception("Invalid status '%s'" % status)

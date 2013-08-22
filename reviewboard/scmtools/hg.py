@@ -111,7 +111,7 @@ class HgDiffParser(DiffParser):
             except ValueError:
                 raise DiffParserError("The diff file is missing revision "
                                       "information", linenum)
-            linenum += 1;
+            linenum += 1
 
         elif self.lines[linenum].startswith("diff --git") and \
             self.origChangesetId:
@@ -127,8 +127,8 @@ class HgDiffParser(DiffParser):
             else:
                 info['newInfo'] = self.newChangesetId
             lineMatch = re.search(
-                    r' a/(.*?) b/(.*?)( (copy|rename) from .*)?$',
-                    self.lines[linenum])
+                r' a/(.*?) b/(.*?)( (copy|rename) from .*)?$',
+                self.lines[linenum])
             info['origFile'] = lineMatch.group(1)
             info['newFile'] = lineMatch.group(2)
             linenum += 1
@@ -147,22 +147,22 @@ class HgDiffParser(DiffParser):
 
         else:
             while linenum < len(self.lines):
-                if self._check_file_diff_start(linenum, info ):
+                if self._check_file_diff_start(linenum, info):
                     self.isGitDiff = False
                     linenum += 2
                     return linenum
 
                 line = self.lines[linenum]
-                if line.startswith("Binary file") or \
-                   line.startswith("GIT binary"):
+                if (line.startswith("Binary file") or
+                    line.startswith("GIT binary")):
                     info['binary'] = True
                     linenum += 1
-                elif line.startswith("copy") or \
-                   line.startswith("rename") or \
-                   line.startswith("new") or \
-                   line.startswith("old") or \
-                   line.startswith("deleted") or \
-                   line.startswith("index"):
+                elif (line.startswith("copy") or
+                      line.startswith("rename") or
+                      line.startswith("new") or
+                      line.startswith("old") or
+                      line.startswith("deleted") or
+                      line.startswith("index")):
                     # Not interested, just pass over this one
                     linenum += 1
                 else:
@@ -174,9 +174,9 @@ class HgDiffParser(DiffParser):
         return self.origChangesetId
 
     def _check_file_diff_start(self, linenum, info):
-        if linenum + 1 < len(self.lines) and \
-           (self.lines[linenum].startswith('--- ') and \
-             self.lines[linenum + 1].startswith('+++ ')):
+        if (linenum + 1 < len(self.lines) and
+            (self.lines[linenum].startswith('--- ') and
+             self.lines[linenum + 1].startswith('+++ '))):
             # check if we're a new file
             if self.lines[linenum].split()[1] == "/dev/null":
                 info['origInfo'] = PRE_CREATION

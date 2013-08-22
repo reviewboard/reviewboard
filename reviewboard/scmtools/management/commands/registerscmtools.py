@@ -26,8 +26,8 @@ class Command(NoArgsCommand):
 
             if class_name not in registered_tools:
                 registered_tools[class_name] = True
-                name = scmtool_class.name or \
-                       scmtool_class.__name__.replace("Tool", "")
+                name = (scmtool_class.name or
+                        scmtool_class.__name__.replace("Tool", ""))
 
                 print "Registering new SCM Tool %s (%s) in database" % \
                       (name, class_name)

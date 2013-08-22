@@ -11,13 +11,11 @@ class SSHError(Exception):
 
 class MakeSSHDirError(IOError, SSHError):
     def __init__(self, dirname):
-        IOError.__init__(_("Unable to create directory %(dirname)s, which is "
-                           "needed for the SSH host keys. Create this "
-                           "directory, set the web server's user as the "
-                           "the owner, and make it writable only by that "
-                           "user.") % {
-            'dirname': dirname,
-        })
+        IOError.__init__(
+            _("Unable to create directory %(dirname)s, which is needed for "
+              "the SSH host keys. Create this directory, set the web "
+              "server's user as the the owner, and make it writable only by "
+              "that user.") % {'dirname': dirname})
 
 
 class SSHAuthenticationError(SSHError):
@@ -33,8 +31,8 @@ class SSHAuthenticationError(SSHError):
             msg = _('Unable to authenticate against this repository using one '
                     'of the supported authentication types '
                     '(%(allowed_types)s).') % {
-                'allowed_types': humanize_list(allowed_types),
-            }
+                        'allowed_types': humanize_list(allowed_types),
+                    }
         elif not msg:
             msg = _('Unable to authenticate against this repository using one '
                     'of the supported authentication types.')
@@ -91,7 +89,7 @@ class UnknownHostKeyError(SSHKeyError):
             self, hostname, key,
             _("The authenticity of the host '%(hostname)s (%(ip)s)' "
               "couldn't be determined.") % {
-                'hostname': hostname,
-                'ip': socket.gethostbyname(hostname),
-            }
+                  'hostname': hostname,
+                  'ip': socket.gethostbyname(hostname),
+              }
         )

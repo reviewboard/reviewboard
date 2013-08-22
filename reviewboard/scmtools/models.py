@@ -10,9 +10,9 @@ from djblets.util.misc import cache_memoize, make_cache_key
 
 from reviewboard.hostingsvcs.models import HostingServiceAccount
 from reviewboard.scmtools.managers import RepositoryManager, ToolManager
-from reviewboard.scmtools.signals import checked_file_exists, \
-                                         checking_file_exists, \
-                                         fetched_file, fetching_file
+from reviewboard.scmtools.signals import (checked_file_exists,
+                                          checking_file_exists,
+                                          fetched_file, fetching_file)
 from reviewboard.site.models import LocalSite
 
 
@@ -43,20 +43,20 @@ class Tool(models.Model):
         if not hasattr(self, '_scmtool_class'):
             path = self.class_name
             i = path.rfind('.')
-            module, attr = path[:i], path[i+1:]
+            module, attr = path[:i], path[i + 1:]
 
             try:
                 mod = __import__(module, {}, {}, [attr])
             except ImportError, e:
-                raise ImproperlyConfigured, \
-                    'Error importing SCM Tool %s: "%s"' % (module, e)
+                raise ImproperlyConfigured(
+                    'Error importing SCM Tool %s: "%s"' % (module, e))
 
             try:
                 self._scmtool_class = getattr(mod, attr)
             except AttributeError:
-                raise ImproperlyConfigured, \
-                    'Module "%s" does not define a "%s" SCM Tool' \
-                    % (module, attr)
+                raise ImproperlyConfigured(
+                    'Module "%s" does not define a "%s" SCM Tool'
+                    % (module, attr))
 
         return self._scmtool_class
     scmtool_class = property(get_scmtool_class)
@@ -140,8 +140,8 @@ class Repository(models.Model):
 
     objects = RepositoryManager()
 
-    BRANCHES_CACHE_PERIOD = 60 * 5 # 5 minutes
-    COMMITS_CACHE_PERIOD = 60 * 60 * 24 # 1 day
+    BRANCHES_CACHE_PERIOD = 60 * 5  # 5 minutes
+    COMMITS_CACHE_PERIOD = 60 * 60 * 24  # 1 day
 
     def get_scmtool(self):
         cls = self.tool.get_scmtool_class()

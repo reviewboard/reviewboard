@@ -11,8 +11,8 @@ from django.contrib.auth.models import User
 from django.contrib.sites.models import Site
 from django.core.exceptions import PermissionDenied, ObjectDoesNotExist
 from django.db.models import Q
-from django.http import HttpResponseRedirect, HttpResponse, \
-                        HttpResponseNotModified
+from django.http import (HttpResponseRedirect, HttpResponse,
+                         HttpResponseNotModified)
 from django.template.defaultfilters import timesince
 from django.utils.encoding import force_unicode
 from django.utils.formats import localize
@@ -22,85 +22,85 @@ from djblets.extensions.resources import ExtensionResource
 from djblets.gravatars import get_gravatar_url
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.util.decorators import augment_method_from
-from djblets.util.http import get_http_requested_mimetype, \
-                              get_modified_since, \
-                              set_last_modified, http_date
-from djblets.webapi.core import WebAPIResponsePaginated, \
-                                WebAPIResponse
-from djblets.webapi.decorators import webapi_login_required, \
-                                      webapi_response_errors, \
-                                      webapi_request_fields
-from djblets.webapi.errors import DOES_NOT_EXIST, INVALID_FORM_DATA, \
-                                  NOT_LOGGED_IN, PERMISSION_DENIED
-from djblets.webapi.resources import WebAPIResource as DjbletsWebAPIResource, \
-                                     UserResource as DjbletsUserResource, \
-                                     RootResource as DjbletsRootResource, \
-                                     register_resource_for_model, \
-                                     get_resource_for_object
+from djblets.util.http import (get_http_requested_mimetype,
+                               get_modified_since,
+                               set_last_modified, http_date)
+from djblets.webapi.core import (WebAPIResponsePaginated,
+                                 WebAPIResponse)
+from djblets.webapi.decorators import (webapi_login_required,
+                                       webapi_response_errors,
+                                       webapi_request_fields)
+from djblets.webapi.errors import (DOES_NOT_EXIST, INVALID_FORM_DATA,
+                                   NOT_LOGGED_IN, PERMISSION_DENIED)
+from djblets.webapi.resources import (WebAPIResource as DjbletsWebAPIResource,
+                                      UserResource as DjbletsUserResource,
+                                      RootResource as DjbletsRootResource,
+                                      register_resource_for_model,
+                                      get_resource_for_object)
 
 from reviewboard import get_version_string, get_package_version, is_release
 from reviewboard.accounts.models import Profile
 from reviewboard.attachments.forms import UploadFileForm
 from reviewboard.attachments.models import FileAttachment
 from reviewboard.changedescs.models import ChangeDescription
-from reviewboard.diffviewer.diffutils import get_diff_files, \
-                                             get_original_file, \
-                                             get_patched_file, \
-                                             populate_diff_chunks
-from reviewboard.diffviewer.errors import DiffParserError, \
-                                          DiffTooBigError, \
-                                          EmptyDiffError
+from reviewboard.diffviewer.diffutils import (get_diff_files,
+                                              get_original_file,
+                                              get_patched_file,
+                                              populate_diff_chunks)
+from reviewboard.diffviewer.errors import (DiffParserError,
+                                           DiffTooBigError,
+                                           EmptyDiffError)
 from reviewboard.extensions.base import get_extension_manager
 from reviewboard.hostingsvcs.errors import AuthorizationError
 from reviewboard.hostingsvcs.models import HostingServiceAccount
 from reviewboard.hostingsvcs.service import get_hosting_service
 from reviewboard.reviews.errors import PermissionError
-from reviewboard.reviews.forms import DefaultReviewerForm, UploadDiffForm, \
-                                      UploadScreenshotForm
-from reviewboard.reviews.models import BaseComment, Comment, DefaultReviewer, \
-                                       DiffSet, FileDiff, Group, Repository, \
-                                       ReviewRequest, ReviewRequestDraft, \
-                                       Review, ScreenshotComment, Screenshot, \
-                                       FileAttachmentComment
-from reviewboard.scmtools.errors import AuthenticationError, \
-                                        ChangeNumberInUseError, \
-                                        EmptyChangeSetError, \
-                                        FileNotFoundError, \
-                                        InvalidChangeNumberError, \
-                                        SCMError, \
-                                        RepositoryNotFoundError, \
-                                        UnverifiedCertificateError
+from reviewboard.reviews.forms import (DefaultReviewerForm, UploadDiffForm,
+                                       UploadScreenshotForm)
+from reviewboard.reviews.models import (BaseComment, Comment, DefaultReviewer,
+                                        DiffSet, FileDiff, Group, Repository,
+                                        ReviewRequest, ReviewRequestDraft,
+                                        Review, ScreenshotComment, Screenshot,
+                                        FileAttachmentComment)
+from reviewboard.scmtools.errors import (AuthenticationError,
+                                         ChangeNumberInUseError,
+                                         EmptyChangeSetError,
+                                         FileNotFoundError,
+                                         InvalidChangeNumberError,
+                                         SCMError,
+                                         RepositoryNotFoundError,
+                                         UnverifiedCertificateError)
 from reviewboard.scmtools.models import Tool
 from reviewboard.site.models import LocalSite
 from reviewboard.site.urlresolvers import local_site_reverse
 from reviewboard.ssh.client import SSHClient
-from reviewboard.ssh.errors import SSHError, \
-                                   BadHostKeyError, \
-                                   UnknownHostKeyError
-from reviewboard.webapi.decorators import webapi_check_login_required, \
-                                          webapi_check_local_site
+from reviewboard.ssh.errors import (SSHError,
+                                    BadHostKeyError,
+                                    UnknownHostKeyError)
+from reviewboard.webapi.decorators import (webapi_check_login_required,
+                                           webapi_check_local_site)
 from reviewboard.webapi.encoder import status_to_string, string_to_status
-from reviewboard.webapi.errors import BAD_HOST_KEY, \
-                                      CHANGE_NUMBER_IN_USE, \
-                                      DIFF_EMPTY, \
-                                      DIFF_PARSE_ERROR, \
-                                      DIFF_TOO_BIG, \
-                                      EMPTY_CHANGESET, \
-                                      FILE_RETRIEVAL_ERROR, \
-                                      GROUP_ALREADY_EXISTS, \
-                                      HOSTINGSVC_AUTH_ERROR, \
-                                      INVALID_CHANGE_NUMBER, \
-                                      INVALID_REPOSITORY, \
-                                      INVALID_USER, \
-                                      MISSING_REPOSITORY, \
-                                      MISSING_USER_KEY, \
-                                      REPO_AUTHENTICATION_ERROR, \
-                                      REPO_FILE_NOT_FOUND, \
-                                      REPO_INFO_ERROR, \
-                                      REPO_NOT_IMPLEMENTED, \
-                                      SERVER_CONFIG_ERROR, \
-                                      UNVERIFIED_HOST_CERT, \
-                                      UNVERIFIED_HOST_KEY
+from reviewboard.webapi.errors import (BAD_HOST_KEY,
+                                       CHANGE_NUMBER_IN_USE,
+                                       DIFF_EMPTY,
+                                       DIFF_PARSE_ERROR,
+                                       DIFF_TOO_BIG,
+                                       EMPTY_CHANGESET,
+                                       FILE_RETRIEVAL_ERROR,
+                                       GROUP_ALREADY_EXISTS,
+                                       HOSTINGSVC_AUTH_ERROR,
+                                       INVALID_CHANGE_NUMBER,
+                                       INVALID_REPOSITORY,
+                                       INVALID_USER,
+                                       MISSING_REPOSITORY,
+                                       MISSING_USER_KEY,
+                                       REPO_AUTHENTICATION_ERROR,
+                                       REPO_FILE_NOT_FOUND,
+                                       REPO_INFO_ERROR,
+                                       REPO_NOT_IMPLEMENTED,
+                                       SERVER_CONFIG_ERROR,
+                                       UNVERIFIED_HOST_CERT,
+                                       UNVERIFIED_HOST_KEY)
 
 
 CUSTOM_MIMETYPE_BASE = 'application/vnd.reviewboard.org'
@@ -136,6 +136,7 @@ def _no_access_error(user):
 
 
 EXTRA_DATA_LEN = len('extra_data.')
+
 
 def _import_extra_data(extra_data, fields):
     for key, value in fields.iteritems():
@@ -433,8 +434,8 @@ class BaseDiffCommentResource(BaseCommentResource):
             review_request_resource.get_object(request, *args, **kwargs)
 
             if review_id:
-                review_resource.get_object(request,
-                    review_id=review_id, *args, **kwargs)
+                review_resource.get_object(
+                    request, review_id=review_id, *args, **kwargs)
 
             return super(BaseDiffCommentResource, self).get_list(
                 request, review_id=review_id, *args, **kwargs)
@@ -838,8 +839,8 @@ class FileDiffCommentResource(BaseDiffCommentResource):
         the second revision in the range using ``?interdiff-revision=``.
         """
         try:
-            filediff_resource.get_object(request,
-                diff_revision=diff_revision, *args, **kwargs)
+            filediff_resource.get_object(
+                request, diff_revision=diff_revision, *args, **kwargs)
 
             return super(FileDiffCommentResource, self).get_list(
                 request, diff_revision=diff_revision, *args, **kwargs)
@@ -873,7 +874,7 @@ class ReviewDiffCommentResource(BaseDiffCommentResource):
     @webapi_response_errors(DOES_NOT_EXIST, INVALID_FORM_DATA,
                             NOT_LOGGED_IN, PERMISSION_DENIED)
     @webapi_request_fields(
-        required = {
+        required={
             'filediff_id': {
                 'type': int,
                 'description': 'The ID of the file diff the comment is on.',
@@ -891,7 +892,7 @@ class ReviewDiffCommentResource(BaseDiffCommentResource):
                 'description': 'The comment text.',
             },
         },
-        optional = {
+        optional={
             'interfilediff_id': {
                 'type': int,
                 'description': 'The ID of the second file diff in the '
@@ -976,7 +977,7 @@ class ReviewDiffCommentResource(BaseDiffCommentResource):
     @webapi_login_required
     @webapi_response_errors(DOES_NOT_EXIST, NOT_LOGGED_IN, PERMISSION_DENIED)
     @webapi_request_fields(
-        optional = {
+        optional={
             'first_line': {
                 'type': int,
                 'description': 'The line number the comment starts at.',
@@ -1108,7 +1109,7 @@ class ReviewReplyDiffCommentResource(BaseDiffCommentResource):
     @webapi_response_errors(DOES_NOT_EXIST, INVALID_FORM_DATA,
                             NOT_LOGGED_IN, PERMISSION_DENIED)
     @webapi_request_fields(
-        required = {
+        required={
             'reply_to_id': {
                 'type': int,
                 'description': 'The ID of the comment being replied to.',
@@ -1184,7 +1185,7 @@ class ReviewReplyDiffCommentResource(BaseDiffCommentResource):
     @webapi_login_required
     @webapi_response_errors(DOES_NOT_EXIST, NOT_LOGGED_IN, PERMISSION_DENIED)
     @webapi_request_fields(
-        required = {
+        required={
             'text': {
                 'type': str,
                 'description': 'The new comment text.',
@@ -1857,13 +1858,12 @@ class DiffResource(WebAPIResource):
             'description': 'The repository that the diff is applied against.',
         },
         'basedir': {
-                'type': str,
-                'description': 'The base directory that will prepended to '
-                               'all paths in the diff. This is needed for '
-                               'some types of repositories. The directory '
-                               'must be between the root of the repository '
-                               'and the top directory referenced in the '
-                               'diff paths.',
+            'type': str,
+            'description': 'The base directory that will prepended to all '
+                           'paths in the diff. This is needed for some types '
+                           'of repositories. The directory must be between '
+                           'the root of the repository and the top directory '
+                           'referenced in the diff paths.',
         },
         'base_commit_id': {
             'type': str,
@@ -2102,7 +2102,7 @@ class DiffResource(WebAPIResource):
 
         # We only want to add default reviewers the first time.  Was bug 318.
         if review_request.diffset_history.diffsets.count() == 0:
-            draft.add_default_reviewers();
+            draft.add_default_reviewers()
 
         draft.save()
 
@@ -2143,7 +2143,7 @@ class BaseWatchedObjectResource(WebAPIResource):
                 profile = Profile.objects.get(user__username=username)
 
             q = self.watched_resource.get_queryset(
-                    request, local_site_name=local_site_name, *args, **kwargs)
+                request, local_site_name=local_site_name, *args, **kwargs)
             q = q.filter(starred_by=profile)
             return q
         except Profile.DoesNotExist:
@@ -2219,7 +2219,7 @@ class BaseWatchedObjectResource(WebAPIResource):
             return DOES_NOT_EXIST
 
         if not user_resource.has_modify_permissions(request, user,
-                                                   *args, **kwargs):
+                                                    *args, **kwargs):
             return _no_access_error(request.user)
 
         profile, profile_is_new = \
@@ -4096,9 +4096,8 @@ class DraftScreenshotResource(BaseScreenshotResource):
             queryset=self.get_queryset(request, is_list=True,
                                        *args, **kwargs),
             results_key=self.list_result_key,
-            serialize_object_func=
-                lambda obj: self.serialize_object(obj, request=request,
-                                                  *args, **kwargs),
+            serialize_object_func=lambda obj: self.serialize_object(
+                obj, request=request, *args, **kwargs),
             extra_data={
                 'links': self.get_links(self.list_child_resources,
                                         request=request, *args, **kwargs),
@@ -4429,9 +4428,8 @@ class DraftFileAttachmentResource(BaseFileAttachmentResource):
             queryset=self.get_queryset(request, is_list=True,
                                        *args, **kwargs),
             results_key=self.list_result_key,
-            serialize_object_func=
-                lambda obj: self.serialize_object(obj, request=request,
-                                                  *args, **kwargs),
+            serialize_object_func=lambda obj: self.serialize_object(
+                obj, request=request, *args, **kwargs),
             extra_data={
                 'links': self.get_links(self.list_child_resources,
                                         request=request, *args, **kwargs),
@@ -4542,7 +4540,7 @@ class ReviewRequestDraftResource(WebAPIResource):
     def prepare_draft(self, request, review_request):
         """Creates a draft, if the user has permission to."""
         if not review_request.is_mutable_by(request.user):
-           raise PermissionDenied
+            raise PermissionDenied
 
         return ReviewRequestDraft.create(review_request)
 
@@ -4701,7 +4699,7 @@ class ReviewRequestDraftResource(WebAPIResource):
         then be deleted.
         """
         try:
-            review_request =  review_request_resource.get_object(
+            review_request = review_request_resource.get_object(
                 request, local_site_name=local_site_name, *args, **kwargs)
         except ReviewRequest.DoesNotExist:
             return DOES_NOT_EXIST
@@ -5040,7 +5038,7 @@ class ReviewScreenshotCommentResource(BaseScreenshotCommentResource):
     @webapi_check_local_site
     @webapi_login_required
     @webapi_request_fields(
-        required = {
+        required={
             'screenshot_id': {
                 'type': int,
                 'description': 'The ID of the screenshot being commented on.',
@@ -5066,7 +5064,7 @@ class ReviewScreenshotCommentResource(BaseScreenshotCommentResource):
                 'description': 'The comment text.',
             },
         },
-        optional = {
+        optional={
             'issue_opened': {
                 'type': bool,
                 'description': 'Whether or not the comment opens an issue.',
@@ -5122,7 +5120,7 @@ class ReviewScreenshotCommentResource(BaseScreenshotCommentResource):
     @webapi_login_required
     @webapi_response_errors(DOES_NOT_EXIST, NOT_LOGGED_IN, PERMISSION_DENIED)
     @webapi_request_fields(
-        optional = {
+        optional={
             'x': {
                 'type': int,
                 'description': 'The X location for the comment.',
@@ -5249,7 +5247,7 @@ class ReviewReplyScreenshotCommentResource(BaseScreenshotCommentResource):
     @webapi_response_errors(DOES_NOT_EXIST, INVALID_FORM_DATA,
                             NOT_LOGGED_IN, PERMISSION_DENIED)
     @webapi_request_fields(
-        required = {
+        required={
             'reply_to_id': {
                 'type': int,
                 'description': 'The ID of the comment being replied to.',
@@ -5328,7 +5326,7 @@ class ReviewReplyScreenshotCommentResource(BaseScreenshotCommentResource):
     @webapi_login_required
     @webapi_response_errors(DOES_NOT_EXIST, NOT_LOGGED_IN, PERMISSION_DENIED)
     @webapi_request_fields(
-        required = {
+        required={
             'text': {
                 'type': str,
                 'description': 'The new comment text.',
@@ -5544,7 +5542,7 @@ class ReviewFileAttachmentCommentResource(BaseFileAttachmentCommentResource):
     @webapi_response_errors(DOES_NOT_EXIST, INVALID_FORM_DATA,
                             PERMISSION_DENIED, NOT_LOGGED_IN)
     @webapi_request_fields(
-        required = {
+        required={
             'file_attachment_id': {
                 'type': int,
                 'description': 'The ID of the file attachment being '
@@ -5555,7 +5553,7 @@ class ReviewFileAttachmentCommentResource(BaseFileAttachmentCommentResource):
                 'description': 'The comment text.',
             },
         },
-        optional = {
+        optional={
             'issue_opened': {
                 'type': bool,
                 'description': 'Whether the comment opens an issue.',
@@ -5617,7 +5615,7 @@ class ReviewFileAttachmentCommentResource(BaseFileAttachmentCommentResource):
     @webapi_login_required
     @webapi_response_errors(DOES_NOT_EXIST, NOT_LOGGED_IN, PERMISSION_DENIED)
     @webapi_request_fields(
-        optional = {
+        optional={
             'text': {
                 'type': str,
                 'description': 'The comment text.',
@@ -5732,7 +5730,7 @@ class ReviewReplyFileAttachmentCommentResource(BaseFileAttachmentCommentResource
     @webapi_response_errors(DOES_NOT_EXIST, INVALID_FORM_DATA,
                             NOT_LOGGED_IN, PERMISSION_DENIED)
     @webapi_request_fields(
-        required = {
+        required={
             'reply_to_id': {
                 'type': int,
                 'description': 'The ID of the comment being replied to.',
@@ -5806,7 +5804,7 @@ class ReviewReplyFileAttachmentCommentResource(BaseFileAttachmentCommentResource
     @webapi_login_required
     @webapi_response_errors(DOES_NOT_EXIST, NOT_LOGGED_IN, PERMISSION_DENIED)
     @webapi_request_fields(
-        required = {
+        required={
             'text': {
                 'type': str,
                 'description': 'The new comment text.',
@@ -5945,7 +5943,7 @@ class BaseReviewResource(WebAPIResource):
     @webapi_login_required
     @webapi_response_errors(DOES_NOT_EXIST, NOT_LOGGED_IN, PERMISSION_DENIED)
     @webapi_request_fields(
-        optional = {
+        optional={
             'ship_it': {
                 'type': bool,
                 'description': 'Whether or not to mark the review "Ship It!"',
@@ -5997,11 +5995,11 @@ class BaseReviewResource(WebAPIResource):
             **self.get_base_reply_to_field(*args, **kwargs))
 
         if is_new:
-            status_code = 201 # Created
+            status_code = 201  # Created
         else:
             # This already exists. Go ahead and update, but we're going to
             # redirect the user to the right place.
-            status_code = 303 # See Other
+            status_code = 303  # See Other
 
         result = self._update_review(request, review, *args, **kwargs)
 
@@ -6016,7 +6014,7 @@ class BaseReviewResource(WebAPIResource):
     @webapi_login_required
     @webapi_response_errors(DOES_NOT_EXIST, NOT_LOGGED_IN, PERMISSION_DENIED)
     @webapi_request_fields(
-        optional = {
+        optional={
             'ship_it': {
                 'type': bool,
                 'description': 'Whether or not to mark the review "Ship It!"',
@@ -6211,7 +6209,7 @@ class ReviewReplyResource(BaseReviewResource):
     @webapi_login_required
     @webapi_response_errors(DOES_NOT_EXIST, NOT_LOGGED_IN, PERMISSION_DENIED)
     @webapi_request_fields(
-        optional = {
+        optional={
             'body_top': {
                 'type': str,
                 'description': 'The response to the review content above '
@@ -6262,11 +6260,11 @@ class ReviewReplyResource(BaseReviewResource):
             base_reply_to=review)
 
         if is_new:
-            status_code = 201 # Created
+            status_code = 201  # Created
         else:
             # This already exists. Go ahead and update, but we're going to
             # redirect the user to the right place.
-            status_code = 303 # See Other
+            status_code = 303  # See Other
 
         result = self._update_reply(request, reply, *args, **kwargs)
 
@@ -6281,7 +6279,7 @@ class ReviewReplyResource(BaseReviewResource):
     @webapi_login_required
     @webapi_response_errors(DOES_NOT_EXIST, NOT_LOGGED_IN, PERMISSION_DENIED)
     @webapi_request_fields(
-        optional = {
+        optional={
             'body_top': {
                 'type': str,
                 'description': 'The response to the review content above '
@@ -7508,7 +7506,7 @@ class SearchResource(WebAPIResource, DjbletsUserResource):
 
         if search_q:
             q = (Q(name__istartswith=search_q) |
-                  Q(display_name__istartswith=search_q))
+                 Q(display_name__istartswith=search_q))
 
             if request.GET.get('displayname', None):
                 q = q | Q(display_name__istartswith=search_q)
@@ -7520,7 +7518,7 @@ class SearchResource(WebAPIResource, DjbletsUserResource):
 
         if search_q:
             q = (Q(id__istartswith=search_q) |
-                  Q(summary__icontains=search_q))
+                 Q(summary__icontains=search_q))
 
             if request.GET.get('id', None):
                 q = q | Q(id__istartswith=search_q)
@@ -7835,9 +7833,9 @@ root_resource = RootResource()
 register_resource_for_model(ChangeDescription, change_resource)
 register_resource_for_model(
     Comment,
-    lambda obj: obj.review.get().is_reply() and
-                review_reply_diff_comment_resource or
-                review_diff_comment_resource)
+    lambda obj: (obj.review.get().is_reply() and
+                 review_reply_diff_comment_resource or
+                 review_diff_comment_resource))
 register_resource_for_model(DefaultReviewer, default_reviewer_resource)
 register_resource_for_model(DiffSet, diffset_resource)
 register_resource_for_model(FileDiff, filediff_resource)
@@ -7855,12 +7853,12 @@ register_resource_for_model(Screenshot, screenshot_resource)
 register_resource_for_model(FileAttachment, file_attachment_resource)
 register_resource_for_model(
     ScreenshotComment,
-    lambda obj: obj.review.get().is_reply() and
-                review_reply_screenshot_comment_resource or
-                review_screenshot_comment_resource)
+    lambda obj: (obj.review.get().is_reply() and
+                 review_reply_screenshot_comment_resource or
+                 review_screenshot_comment_resource))
 register_resource_for_model(
     FileAttachmentComment,
-    lambda obj: obj.review.get().is_reply() and
-                review_reply_file_comment_resource or
-                review_file_comment_resource)
+    lambda obj: (obj.review.get().is_reply() and
+                 review_reply_file_comment_resource or
+                 review_file_comment_resource))
 register_resource_for_model(User, user_resource)

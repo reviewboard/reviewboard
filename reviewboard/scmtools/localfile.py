@@ -1,5 +1,6 @@
 from scmtools.core import FileNotFoundError, SCMTool, HEAD
 
+
 class LocalFileTool(SCMTool):
     name = "Local File"
 
@@ -10,7 +11,6 @@ class LocalFileTool(SCMTool):
             self.repopath = self.repopath[:-1]
 
         SCMTool.__init__(self, repository)
-
 
     def get_file(self, path, revision=HEAD):
         if not path or revision != HEAD:

@@ -10,8 +10,8 @@ from shutil import rmtree
 from tempfile import mkdtemp
 
 try:
-    from pysvn import ClientError, Revision, opt_revision_kind, \
-                      SVN_DIRENT_CREATED_REV
+    from pysvn import (ClientError, Revision, opt_revision_kind,
+                       SVN_DIRENT_CREATED_REV)
 except ImportError:
     pass
 
@@ -20,13 +20,13 @@ from django.utils.translation import ugettext as _
 
 from reviewboard.diffviewer.parser import DiffParser
 from reviewboard.scmtools.certs import Certificate
-from reviewboard.scmtools.core import Branch, Commit, SCMTool, \
-                                      HEAD, PRE_CREATION, UNKNOWN
-from reviewboard.scmtools.errors import AuthenticationError, \
-                                        FileNotFoundError, \
-                                        RepositoryNotFoundError, \
-                                        SCMError, \
-                                        UnverifiedCertificateError
+from reviewboard.scmtools.core import (Branch, Commit, SCMTool,
+                                       HEAD, PRE_CREATION, UNKNOWN)
+from reviewboard.scmtools.errors import (AuthenticationError,
+                                         FileNotFoundError,
+                                         RepositoryNotFoundError,
+                                         SCMError,
+                                         UnverifiedCertificateError)
 from reviewboard.ssh import utils as sshutils
 
 
@@ -158,7 +158,7 @@ class SVNTool(SCMTool):
                 normpath = urlparse.urlunsplit((pathtuple[0],
                                                 pathtuple[1],
                                                 urllib.quote(path),
-                                                '',''))
+                                                '', ''))
 
             normrev = self.__normalize_revision(revision)
             return cb(normpath, normrev)
@@ -316,16 +316,16 @@ class SVNTool(SCMTool):
 
     def normalize_patch(self, patch, filename, revision=HEAD):
         """
-	If using Subversion, we need not only contract keywords in file, but
+        If using Subversion, we need not only contract keywords in file, but
         also in the patch. Otherwise, if a file with expanded keyword somehow
-	ends up in the repository (e.g. by first checking in a file without
-	svn:keywords and then setting svn:keywords in the repository), RB
-	won't be able to apply a patch to such file.
-	"""
+        ends up in the repository (e.g. by first checking in a file without
+        svn:keywords and then setting svn:keywords in the repository), RB
+        won't be able to apply a patch to such file.
+        """
         if revision != PRE_CREATION:
             keywords = self.get_keywords(filename, revision)
 
-	    if keywords:
+            if keywords:
                 return self.collapse_keywords(patch, keywords)
 
         return patch
@@ -358,7 +358,6 @@ class SVNTool(SCMTool):
 
         return re.sub(r"\$(%s):(:?)([^\$\n\r]*)\$" % '|'.join(keywords),
                       repl, data)
-
 
     def parse_diff_revision(self, file_str, revision_str, *args, **kwargs):
         # Some diffs have additional tabs between the parts of the file
@@ -401,7 +400,6 @@ class SVNTool(SCMTool):
 
         return file_str, revision
 
-
     def get_filenames_in_revision(self, revision):
         r = self.__normalize_revision(revision)
         logs = self.client.log(self.repopath, r, r, True)
@@ -415,7 +413,7 @@ class SVNTool(SCMTool):
 
     def get_repository_info(self):
         try:
-            info = self.client.info2( self.repopath, recurse=False )
+            info = self.client.info2(self.repopath, recurse=False)
         except ClientError, e:
             raise SCMError(e)
 
@@ -581,12 +579,11 @@ class SVNTool(SCMTool):
         try:
             os.mkdir(config_dir, 0700)
         except OSError:
-            raise IOError(_("Unable to create directory %(dirname)s, "
-                            "which is needed for the Subversion "
-                            "configuration. Create this directory and set "
-                            "the web server's user as the the owner.") % {
-                'dirname': config_dir,
-            })
+            raise IOError(
+                _("Unable to create directory %(dirname)s, which is needed "
+                  "for the Subversion configuration. Create this directory "
+                  "and set the web server's user as the the owner.")
+                % {'dirname': config_dir})
 
     @classmethod
     def _prepare_local_site_config_dir(cls, local_site_name):

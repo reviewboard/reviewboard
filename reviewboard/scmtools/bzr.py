@@ -9,8 +9,8 @@ try:
     from bzrlib.errors import BzrError, NotBranchError
     from bzrlib.transport import register_lazy_transport
     from bzrlib.transport.remote import RemoteSSHTransport
-    from bzrlib.transport.ssh import SubprocessVendor, register_ssh_vendor, \
-                                     register_default_ssh_vendor
+    from bzrlib.transport.ssh import (SubprocessVendor, register_ssh_vendor,
+                                      register_default_ssh_vendor)
     has_bzrlib = True
 except ImportError:
     has_bzrlib = False
@@ -83,9 +83,9 @@ if has_bzrlib:
     register_lazy_transport('bzr+ssh://', 'reviewboard.scmtools.bzr',
                             'RBRemoteSSHTransport')
 
-# BZRTool: An interface to Bazaar SCM Tool (http://bazaar-vcs.org/)
 
 class BZRTool(SCMTool):
+    """An interface to the Bazaar SCM (http://bazaar-vcs.org/)"""
     name = "Bazaar"
     dependencies = {
         'modules': ['bzrlib'],

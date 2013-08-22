@@ -4,8 +4,8 @@ import urlparse
 import paramiko
 
 from reviewboard.ssh.client import SSHClient
-from reviewboard.ssh.errors import BadHostKeyError, SSHAuthenticationError, \
-                                   SSHError
+from reviewboard.ssh.errors import (BadHostKeyError, SSHAuthenticationError,
+                                    SSHError)
 from reviewboard.ssh.policy import RaiseUnknownHostKeyPolicy
 
 

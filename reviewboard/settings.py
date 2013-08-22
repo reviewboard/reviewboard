@@ -50,7 +50,7 @@ LANGUAGES = (
     ('en', _('English')),
     ('it', _('Italian')),
     ('zh-tw', _('Traditional Chinese')),
-    )
+)
 
 # List of callables that know how to import templates from various sources.
 TEMPLATE_LOADERS = (
@@ -147,7 +147,7 @@ RB_BUILTIN_APPS = [
     'djblets.siteconfig',
     'djblets.util',
     'djblets.webapi',
-    'pipeline', # Must be after djblets.pipeline
+    'pipeline',  # Must be after djblets.pipeline
     'reviewboard',
     'reviewboard.accounts',
     'reviewboard.admin',
@@ -188,7 +188,7 @@ AUTH_PROFILE_MODULE = "accounts.Profile"
 
 # Default expiration time for the cache.  Note that this has no effect unless
 # CACHE_BACKEND is specified in settings_local.py
-CACHE_EXPIRATION_TIME = 60 * 60 * 24 * 30 # 1 month
+CACHE_EXPIRATION_TIME = 60 * 60 * 24 * 30  # 1 month
 
 # Custom test runner, which uses nose to find tests and execute them.  This
 # gives us a somewhat more comprehensive test execution than django's built-in
@@ -202,6 +202,8 @@ install_help = '''
 Please see http://www.reviewboard.org/docs/manual/dev/admin/
 for help setting up Review Board.
 '''
+
+
 def dependency_error(string):
     sys.stderr.write('%s\n' % string)
     sys.stderr.write(install_help)
@@ -216,7 +218,7 @@ PRODUCTION = True
 # Cookie settings
 LANGUAGE_COOKIE_NAME = "rblanguage"
 SESSION_COOKIE_NAME = "rbsessionid"
-SESSION_COOKIE_AGE = 365 * 24 * 60 * 60 # 1 year
+SESSION_COOKIE_AGE = 365 * 24 * 60 * 60  # 1 year
 
 # Default support settings
 DEFAULT_SUPPORT_URL = 'http://www.beanbaginc.com/support/reviewboard/' \

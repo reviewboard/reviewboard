@@ -6,10 +6,10 @@ from tempfile import mkstemp
 
 from djblets.util.filesystem import is_exe_in_path
 
-from reviewboard.scmtools.core import SCMTool, ChangeSet, \
-                                      HEAD, PRE_CREATION
-from reviewboard.scmtools.errors import SCMError, FileNotFoundError, \
-                                        RepositoryNotFoundError
+from reviewboard.scmtools.core import (SCMTool, ChangeSet,
+                                       HEAD, PRE_CREATION)
+from reviewboard.scmtools.errors import (SCMError, FileNotFoundError,
+                                         RepositoryNotFoundError)
 from reviewboard.diffviewer.parser import DiffParser
 
 
@@ -36,7 +36,7 @@ class PlasticTool(SCMTool):
         super(PlasticTool, self).__init__(repository)
 
         self.reponame, self.hostname, self.port = \
-                       self.parse_repository(repository.path)
+            self.parse_repository(repository.path)
         self.client = PlasticClient(repository.path, self.reponame,
                                     self.hostname, self.port)
 
@@ -232,10 +232,10 @@ class PlasticClient(object):
         fd, tmpfile = mkstemp()
         os.close(fd)
 
-        p = subprocess.Popen(['cm', 'cat', revision + '@' + repo,
-                              '--file=' + tmpfile],
-                              stderr=subprocess.PIPE, stdout=subprocess.PIPE,
-                              close_fds=(os.name != 'nt'))
+        p = subprocess.Popen(
+            ['cm', 'cat', revision + '@' + repo, '--file=' + tmpfile],
+            stderr=subprocess.PIPE, stdout=subprocess.PIPE,
+            close_fds=(os.name != 'nt'))
         errmsg = p.stderr.read()
         failure = p.wait()
 

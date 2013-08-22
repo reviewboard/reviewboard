@@ -23,7 +23,9 @@ if not admin.site._registry:
 
 
 # URLs global to all modes
-urlpatterns = patterns('',
+urlpatterns = patterns(
+    '',
+
     (r'^admin/extensions/', include('djblets.extensions.urls'),
      {'extension_manager': extension_manager}),
     (r'^admin/', include('reviewboard.admin.urls')),
@@ -32,6 +34,7 @@ urlpatterns = patterns('',
 
 urlpatterns += patterns(
     '',
+
     url(r'^jsi18n/', 'djblets.util.views.cached_javascript_catalog',
         {'packages': ('reviewboard',)}, name='js-catalog')
 )
@@ -73,12 +76,16 @@ if settings.DEBUG or getattr(settings, 'RUNNING_TEST', False):
                           document_root=settings.MEDIA_ROOT,
                           show_indexes=True)
 
-    urlpatterns += patterns('',
+    urlpatterns += patterns(
+        '',
+
         url(r'^js-tests/$',
             TemplateView.as_view(template_name='js/tests.html')),
     )
 
-localsite_urlpatterns = patterns('',
+localsite_urlpatterns = patterns(
+    '',
+
     url(r'^$', 'django.views.generic.simple.redirect_to',
         {'url': 'dashboard/'},
         name="root"),
@@ -113,7 +120,9 @@ localsite_urlpatterns = patterns('',
 
 
 # Main includes
-urlpatterns += patterns('',
+urlpatterns += patterns(
+    '',
+
     (r'^account/', include('reviewboard.accounts.urls')),
 
     (r'^s/(?P<local_site_name>[A-Za-z0-9\-_.]+)/',
@@ -124,7 +133,9 @@ urlpatterns += localsite_urlpatterns
 
 
 # django.contrib
-urlpatterns += patterns('django.contrib',
+urlpatterns += patterns(
+    'django.contrib',
+
     url(r'^account/logout/$', 'auth.views.logout',
         {'next_page': settings.LOGIN_URL}, name="logout")
 )

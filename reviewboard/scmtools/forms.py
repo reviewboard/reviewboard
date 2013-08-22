@@ -8,20 +8,20 @@ from django.utils.translation import ugettext_lazy as _
 from djblets.util.filesystem import is_exe_in_path
 
 from reviewboard.admin.validation import validate_bug_tracker
-from reviewboard.hostingsvcs.errors import AuthorizationError, \
-                                           SSHKeyAssociationError
+from reviewboard.hostingsvcs.errors import (AuthorizationError,
+                                            SSHKeyAssociationError)
 from reviewboard.hostingsvcs.models import HostingServiceAccount
-from reviewboard.hostingsvcs.service import get_hosting_services, \
-                                            get_hosting_service
-from reviewboard.scmtools.errors import AuthenticationError, \
-                                        UnverifiedCertificateError
+from reviewboard.hostingsvcs.service import (get_hosting_services,
+                                             get_hosting_service)
+from reviewboard.scmtools.errors import (AuthenticationError,
+                                         UnverifiedCertificateError)
 from reviewboard.scmtools.models import Repository, Tool
 from reviewboard.site.models import LocalSite
 from reviewboard.site.urlresolvers import local_site_reverse
 from reviewboard.site.validation import validate_review_groups, validate_users
 from reviewboard.ssh.client import SSHClient
-from reviewboard.ssh.errors import BadHostKeyError, \
-                                   UnknownHostKeyError
+from reviewboard.ssh.errors import (BadHostKeyError,
+                                    UnknownHostKeyError)
 
 
 class RepositoryForm(forms.ModelForm):
@@ -297,7 +297,8 @@ class RepositoryForm(forms.ModelForm):
         # If no SSH key has been created, disable the key association field.
         if not self.public_key:
             self.fields['associate_ssh_key'].help_text = \
-                self.NO_KEY_HELP_FMT % local_site_reverse('settings-ssh',
+                self.NO_KEY_HELP_FMT % local_site_reverse(
+                    'settings-ssh',
                     local_site_name=self.local_site_name)
             self.fields['associate_ssh_key'].widget.attrs['disabled'] = \
                 'disabled'
@@ -715,7 +716,7 @@ class RepositoryForm(forms.ModelForm):
                 (not bug_tracker_use_hosting and
                  bug_tracker_service and
                  bug_tracker_service.get_bug_tracker_requires_username(
-                    bug_tracker_plan))
+                     bug_tracker_plan))
 
             # Only require a URL if the bug tracker is self-hosted and
             # we're not using the hosting service's bug tracker.
@@ -845,11 +846,12 @@ class RepositoryForm(forms.ModelForm):
         except SSHKeyAssociationError, e:
             logging.warning('SSHKeyAssociationError for repository "%s" (%s)'
                             % (repository, e.message))
-            raise forms.ValidationError([_('Unable to associate SSH key with '
-                'your hosting service. This is most often the result of a '
-                'problem communicating with the hosting service. Please try '
-                'again later or manually upload the SSH key to your hosting '
-                'service.')])
+            raise forms.ValidationError([
+                _('Unable to associate SSH key with your hosting service. '
+                  'This is most often the result of a problem communicating '
+                  'with the hosting service. Please try again later or '
+                  'manually upload the SSH key to your hosting service.')
+            ])
 
     def clean_path(self):
         return self.cleaned_data['path'].strip()

@@ -2,6 +2,7 @@ import re
 
 from reviewboard.scmtools.perforce import PerforceTool
 
+
 class VMwarePerforceTool(PerforceTool):
     """Specialization of PerforceTool which knows about VMware's change format.
 
