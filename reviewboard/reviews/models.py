@@ -1653,9 +1653,17 @@ class FileAttachmentComment(BaseComment):
     """A comment on a file attachment."""
     anchor_prefix = "fcomment"
     comment_type = "file"
-    file_attachment = models.ForeignKey(FileAttachment,
-                                        verbose_name=_('file_attachment'),
-                                        related_name="comments")
+
+    file_attachment = models.ForeignKey(
+        FileAttachment,
+        verbose_name=_('file attachment'),
+        related_name="comments")
+    diff_against_file_attachment = models.ForeignKey(
+        FileAttachment,
+        verbose_name=_('diff against file attachment'),
+        related_name="diffed_against_comments",
+        null=True)
+
     extra_data = JSONField(null=True)
 
     @property

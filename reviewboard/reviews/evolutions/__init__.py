@@ -15,4 +15,5 @@ SEQUENCE = [
     'review_request_last_review_activity_timestamp',
     'review_request_depends_on',
     'commit_id',
+    'file_attachment_comment_diff_id',
 ]

@@ -7,7 +7,8 @@
  */
 RB.FileAttachmentCommentBlock = RB.AbstractCommentBlock.extend({
     defaults: _.defaults({
-        fileAttachmentID: null
+        fileAttachmentID: null,
+        diffAgainstFileAttachmentID: null
     }, RB.AbstractCommentBlock.prototype.defaults),
 
     /*
@@ -24,7 +25,9 @@ RB.FileAttachmentCommentBlock = RB.AbstractCommentBlock.extend({
      */
     createComment: function(id) {
         var comment = this.get('review').createFileAttachmentComment(
-            id, this.get('fileAttachmentID'));
+                id,
+                this.get('fileAttachmentID'),
+                this.get('diffAgainstFileAttachmentID'));
 
         _.extend(comment.get('extraData'),
                  _.pick(this.attributes, this.serializedFields));

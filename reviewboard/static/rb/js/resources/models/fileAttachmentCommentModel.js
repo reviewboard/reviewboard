@@ -1,5 +1,11 @@
 RB.FileAttachmentComment = RB.BaseComment.extend({
     defaults: _.defaults({
+        /*
+         * The ID of the file attachment that fileAttachmentID is diffed
+         * against.
+         */
+        diffAgainstFileAttachmentID: null,
+
         /* Any extra custom data stored along with the comment. */
         extraData: {},
 
@@ -25,7 +31,7 @@ RB.FileAttachmentComment = RB.BaseComment.extend({
     }, RB.BaseComment.prototype.defaults),
 
     rspNamespace: 'file_attachment_comment',
-    expandedFields: ['file_attachment'],
+    expandedFields: ['diff_against_file_attachment', 'file_attachment'],
 
     /*
      * Serializes the comment to a payload that can be sent to the server.
@@ -39,6 +45,8 @@ RB.FileAttachmentComment = RB.BaseComment.extend({
 
         if (!this.get('loaded')) {
             data.file_attachment_id = this.get('fileAttachmentID');
+            data.diff_against_file_attachment_id =
+                this.get('diffAgainstFileAttachmentID') || undefined;
         }
 
         return data;
@@ -59,6 +67,16 @@ RB.FileAttachmentComment = RB.BaseComment.extend({
             parse: true
         });
         result.fileAttachmentID = result.fileAttachment.id;
+
+        if (rsp.diff_against_file_attachment) {
+            result.diffAgainstFileAttachment = new RB.FileAttachment(
+                rsp.diff_against_file_attachment, {
+                    parse: true
+                });
+
+            result.diffAgainstFileAttachmentID =
+                result.diffAgainstFileAttachment.id;
+        }
 
         return result;
     },

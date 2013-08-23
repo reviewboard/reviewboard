@@ -115,7 +115,7 @@
      <ul class="actions inline-actions-right">
 {%   if modified_diff_file_attachment %}
       <li><a href="{{modified_diff_file_attachment.get_absolute_url}}">{% trans "Download" %}</a></li>
-{%    if not modified_attachment_review_ui_html %}
+{%    if not modified_attachment_review_ui_html and not diff_attachment_review_ui_html %}
 {%     if modified_diff_file_attachment.review_ui %}
       <li class="file-review"><a href="{% url file_attachment modified_diff_file_attachment.get_review_request.display_id modified_diff_file_attachment.pk %}">{% trans "Review" %}</a></li>
 {%     else %}
@@ -128,30 +128,34 @@
   </tr>
 {%   endif %}
   <tr class="inline-files-container">
-{%   if file.moved and file.num_changes == 0 or file.newfile and not orig_diff_file_attachment %}
-   <td colspan="4">
+{%   if diff_attachment_review_ui_html %}
+  <td colspan="4" class="diff-review-ui">{{diff_attachment_review_ui_html}}</td>
 {%   else %}
+{%    if file.moved and file.num_changes == 0 or file.newfile and not orig_diff_file_attachment %}
+   <td colspan="4">
+{%    else %}
    <td colspan="2">
-{%    if not orig_diff_file_attachment %}
-{%     trans "This is a binary file. The content cannot be displayed." %}
-{%    elif orig_attachment_review_ui_html %}
-{{     orig_attachment_review_ui_html}}
-{%    elif orig_diff_file_attachment.thumbnail %}
+{%     if not orig_diff_file_attachment %}
+{%      trans "This is a binary file. The content cannot be displayed." %}
+{%     elif orig_attachment_review_ui_html %}
+{{      orig_attachment_review_ui_html}}
+{%     elif orig_diff_file_attachment.thumbnail %}
     <div class="file-thumbnail-container">{{orig_diff_file_attachment.thumbnail}}</div>
+{%     else %}
+{%      trans "No preview available." %}
+{%     endif %}
+   </td>
+   <td colspan="2">
+{%    endif %}
+{%    if not modified_diff_file_attachment %}
+{%     trans "This is a binary file. The content cannot be displayed." %}
+{%    elif modified_attachment_review_ui_html %}
+{{     modified_attachment_review_ui_html}}
+{%    elif modified_diff_file_attachment.thumbnail %}
+    <div class="file-thumbnail-container">{{modified_diff_file_attachment.thumbnail}}</div>
 {%    else %}
 {%     trans "No preview available." %}
 {%    endif %}
-   </td>
-   <td colspan="2">
-{%   endif %}
-{%   if not modified_diff_file_attachment %}
-{%    trans "This is a binary file. The content cannot be displayed." %}
-{%   elif modified_attachment_review_ui_html %}
-{{    modified_attachment_review_ui_html}}
-{%   elif modified_diff_file_attachment.thumbnail %}
-    <div class="file-thumbnail-container">{{modified_diff_file_attachment.thumbnail}}</div>
-{%   else %}
-{%    trans "No preview available." %}
 {%   endif %}
    </td>
   </tr>

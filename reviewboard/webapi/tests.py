@@ -7197,6 +7197,55 @@ class FileAttachmentCommentResourceTests(BaseWebAPITestCase):
 
         return rsp
 
+    def test_post_file_attachment_comments_with_diff(self):
+        """Testing the POST review-requests/<id>/file-attachments/<id>/comments/ API with diffed file attachments"""
+        comment_text = "This is a test comment."
+
+        rsp = self._postNewReviewRequest()
+        review_request = ReviewRequest.objects.get(
+            pk=rsp['review_request']['id'])
+
+        # Post the first file_attachment.
+        rsp = self._postNewFileAttachment(review_request)
+        file_attachment1 = FileAttachment.objects.get(
+            pk=rsp['file_attachment']['id'])
+        self.assertTrue('links' in rsp['file_attachment'])
+        self.assertTrue('file_attachment_comments' in
+                        rsp['file_attachment']['links'])
+
+        # Post the second file_attachment.
+        rsp = self._postNewFileAttachment(review_request)
+        file_attachment2 = FileAttachment.objects.get(
+            pk=rsp['file_attachment']['id'])
+        self.assertTrue('links' in rsp['file_attachment'])
+        self.assertTrue('file_attachment_comments' in
+                        rsp['file_attachment']['links'])
+
+        # Make these public.
+        review_request.publish(self.user)
+
+        # Post the review.
+        rsp = self._postNewReview(review_request)
+        review = Review.objects.get(pk=rsp['review']['id'])
+
+        extra_fields = {
+            'diff_against_file_attachment_id': file_attachment1.pk,
+        }
+
+        rsp = self._postNewFileAttachmentComment(review_request, review.id,
+                                                 file_attachment2,
+                                                 comment_text,
+                                                 extra_fields=extra_fields)
+
+        comment = FileAttachmentComment.objects.get(
+            pk=rsp['file_attachment_comment']['id'])
+
+        self.assertEqual(comment.file_attachment_id, file_attachment2.pk)
+        self.assertEqual(comment.diff_against_file_attachment_id,
+                         file_attachment1.pk)
+
+        return rsp
+
     def test_put_file_attachment_comments_with_extra_fields(self):
         """Testing the PUT review-requests/<id>/file-attachments/<id>/comments/<id>/ API with extra fields"""
         extra_fields = {

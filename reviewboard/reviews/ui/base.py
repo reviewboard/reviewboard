@@ -24,10 +24,12 @@ _file_attachment_review_uis = []
 class ReviewUI(object):
     name = None
     model = None
-    comment_model = None
-    allow_inline = False
     template_name = 'reviews/ui/default.html'
     object_key = 'obj'
+    diff_object_key = 'diff_against_obj'
+
+    allow_inline = False
+    supports_diffing = False
 
     js_files = []
     js_model_class = None
@@ -36,6 +38,17 @@ class ReviewUI(object):
     def __init__(self, review_request, obj):
         self.review_request = review_request
         self.obj = obj
+        self.diff_against_obj = None
+
+    def set_diff_against(self, obj):
+        """Sets the object to generate a diff against.
+
+        This can only be called on review UIs that support diffing,
+        and must be called before rendering.
+        """
+        assert self.supports_diffing
+
+        self.diff_against_obj = obj
 
     def render_to_response(self, request):
         """Renders the review UI to an HttpResponse.
@@ -71,6 +84,7 @@ class ReviewUI(object):
             'review_ui': self,
             'review_ui_uuid': str(uuid4()),
             self.object_key: self.obj,
+            self.diff_object_key: self.diff_against_obj,
         }
 
         if inline:
@@ -215,13 +229,59 @@ class ReviewUI(object):
 
 
 class FileAttachmentReviewUI(ReviewUI):
-    comment_class = FileAttachmentComment
+    """Base class for Review UIs for file attachments.
+
+    Review UIs that deal with FileAttachment objects can subclass this
+    to provide the common functionality for their review UI.
+
+    This class handles fetching and serializing comments, locating a correct
+    FileAttachmentReviewUI subclass for a given mimetype, and feeding
+    data to the JavaScript AbstractReviewable model.
+
+    This also handles much of the work for diffing FileAttachments.
+    """
     object_key = 'file'
+    diff_object_key = 'diff_against_file'
     supported_mimetypes = []
+
+    def get_comments(self):
+        """Returns a list of comments made on the FileAttachment.
+
+        If this review UI is showing a diff between two FileAttachments,
+        the comments returned will be specific to that diff.
+        """
+        comments = FileAttachmentComment.objects.filter(
+            file_attachment_id=self.obj.pk)
+
+        if self.diff_against_obj:
+            comments = comments.filter(
+                diff_against_file_attachment_id=self.diff_against_obj.pk)
+        else:
+            comments = comments.filter(
+                diff_against_file_attachment_id__isnull=True)
+
+        return comments
 
     def serialize_comment(self, comment):
         data = super(FileAttachmentReviewUI, self).serialize_comment(comment)
         data.update(comment.extra_data)
+        return data
+
+    def get_js_model_data(self):
+        """Returns model data for the JavaScript AbstractReviewable subclass.
+
+        This will provide the fileAttachmentID and, if diffing, the
+        diffAgainstFileAttachmentID.
+
+        Subclasses can override this to return additional data.
+        """
+        data = {
+            'fileAttachmentID': self.obj.pk,
+        }
+
+        if self.diff_against_obj:
+            data['diffAgainstFileAttachmentID'] = self.diff_against_obj.pk
+
         return data
 
     @classmethod

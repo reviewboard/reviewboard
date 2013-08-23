@@ -62,11 +62,13 @@ RB.Review = RB.BaseResource.extend({
         });
     },
 
-    createFileAttachmentComment: function(id, file_attachment_id) {
+    createFileAttachmentComment: function(id, fileAttachmentID,
+                                          diffAgainstFileAttachmentID) {
         return new RB.FileAttachmentComment({
             parentObject: this,
             id: id,
-            fileAttachmentID: file_attachment_id
+            fileAttachmentID: fileAttachmentID,
+            diffAgainstFileAttachmentID: diffAgainstFileAttachmentID
         });
     },
 

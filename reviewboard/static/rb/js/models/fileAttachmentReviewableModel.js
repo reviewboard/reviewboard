@@ -4,10 +4,14 @@
 RB.FileAttachmentReviewable = RB.AbstractReviewable.extend({
     defaults: _.defaults({
         caption: '',
-        fileAttachmentID: null
+        fileAttachmentID: null,
+        diffAgainstFileAttachmentID: null
     }, RB.AbstractReviewable.prototype.defaults),
 
-    defaultCommentBlockFields: ['fileAttachmentID'],
+    defaultCommentBlockFields: [
+        'fileAttachmentID',
+        'diffAgainstFileAttachmentID'
+    ],
 
     /*
      * Adds comment blocks for the serialized comment block passed to the
@@ -16,6 +20,8 @@ RB.FileAttachmentReviewable = RB.AbstractReviewable.extend({
     loadSerializedCommentBlock: function(serializedCommentBlock) {
         this.createCommentBlock(_.extend({
             fileAttachmentID: this.get('fileAttachmentID'),
+            diffAgainstFileAttachmentID:
+                this.get('diffAgainstFileAttachmentID'),
             serializedComments: serializedCommentBlock
         }, this.commentBlockModel.prototype.parse(
             _.pick(serializedCommentBlock[0],

@@ -1237,13 +1237,40 @@ class ReviewsDiffFragmentView(DiffFragmentView):
                     orig_attachment = \
                         self._get_diff_file_attachment(filediff, False)
 
-            # Grab the review UIs and render them.
-            orig_review_ui_html = \
-                self._render_review_ui(orig_attachment)
-            modified_review_ui_html = \
-                self._render_review_ui(modified_attachment)
+            diff_review_ui = None
+            diff_review_ui_html = None
+            orig_review_ui = None
+            orig_review_ui_html = None
+            modified_review_ui = None
+            modified_review_ui_html = None
 
-            if orig_review_ui_html or modified_review_ui_html:
+            if orig_attachment:
+                orig_review_ui = orig_attachment.review_ui
+
+            if modified_attachment:
+                modified_review_ui = modified_attachment.review_ui
+
+            # See if we're able to generate a diff review UI for these files.
+            if (orig_review_ui and modified_review_ui and
+                orig_review_ui.__class__ is modified_review_ui.__class__ and
+                modified_review_ui.supports_diffing):
+                # Both files are able to be diffed by this review UI.
+                # We'll display a special diff review UI instead of two
+                # side-by-side review UIs.
+                diff_review_ui = modified_review_ui
+                diff_review_ui.set_diff_against(orig_attachment)
+                diff_review_ui_html = \
+                    self._render_review_ui(diff_review_ui, False)
+            else:
+                # We won't be showing a diff of these files. Instead, just
+                # grab the review UIs and render them.
+                orig_review_ui_html = \
+                    self._render_review_ui(orig_review_ui)
+                modified_review_ui_html = \
+                    self._render_review_ui(modified_review_ui)
+
+            if (diff_review_ui_html or orig_review_ui_html or
+                modified_review_ui_html):
                 # Don't cache the view, because the Review UI may care about
                 # state that we can't anticipate. At the least, it may have
                 # comments or other data that change between renders, and we
@@ -1255,22 +1282,15 @@ class ReviewsDiffFragmentView(DiffFragmentView):
                 'modified_diff_file_attachment': modified_attachment,
                 'orig_attachment_review_ui_html': orig_review_ui_html,
                 'modified_attachment_review_ui_html': modified_review_ui_html,
+                'diff_attachment_review_ui_html': diff_review_ui_html,
             })
 
         return renderer
 
-    def _render_review_ui(self, attachment):
-        """Renders the review UI for a file attachment.
-
-        If the provided FileAttachment has a review UI capable of being
-        rendered inline, it will be rendered to a string for inclusion in the
-        diff viewer. Otherwise, this will return None.
-        """
-        if attachment:
-            review_ui = attachment.review_ui
-
-            if review_ui and review_ui.allow_inline:
-                return mark_safe(review_ui.render_to_string(self.request))
+    def _render_review_ui(self, review_ui, inline_only=True):
+        """Renders the review UI for a file attachment."""
+        if review_ui and (not inline_only or review_ui.allow_inline):
+            return mark_safe(review_ui.render_to_string(self.request))
 
         return None
 

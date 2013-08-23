@@ -5406,6 +5406,10 @@ class BaseFileAttachmentCommentResource(BaseCommentResource):
             'type': int,
             'description': 'The numeric ID of the comment.',
         },
+        'diff_against_file_attachment': {
+            'type': 'reviewboard.webapi.resources.FileAttachmentResource',
+            'description': 'The file changes were made against in a diff.',
+        },
         'file_attachment': {
             'type': 'reviewboard.webapi.resources.FileAttachmentResource',
             'description': 'The file the comment was made on.',
@@ -5554,6 +5558,13 @@ class ReviewFileAttachmentCommentResource(BaseFileAttachmentCommentResource):
             },
         },
         optional={
+            'diff_against_file_attachment_id': {
+                'type': int,
+                'description': 'The ID of the file attachment that '
+                               'file_attachment_id is diffed. The comment '
+                               'applies to the diff between these two '
+                               'attachments.',
+            },
             'issue_opened': {
                 'type': bool,
                 'description': 'Whether the comment opens an issue.',
@@ -5561,7 +5572,8 @@ class ReviewFileAttachmentCommentResource(BaseFileAttachmentCommentResource):
         },
         allow_unknown=True
     )
-    def create(self, request, file_attachment_id=None, text=None,
+    def create(self, request, file_attachment_id=None,
+               diff_against_file_attachment_id=None, text=None,
                issue_opened=False, extra_fields={}, *args, **kwargs):
         """Creates a file comment on a review.
 
@@ -5591,9 +5603,27 @@ class ReviewFileAttachmentCommentResource(BaseFileAttachmentCommentResource):
                 }
             }
 
-        new_comment = self.model(file_attachment=file_attachment,
-                                 text=text,
-                                 issue_opened=bool(issue_opened))
+        diff_against_file_attachment = None
+
+        if diff_against_file_attachment_id:
+            try:
+                diff_against_file_attachment = FileAttachment.objects.get(
+                    pk=diff_against_file_attachment_id,
+                    review_request=review_request)
+            except ObjectDoesNotExist:
+                return INVALID_FORM_DATA, {
+                    'fields': {
+                        'diff_against_file_attachment_id': [
+                            'This is not a valid file attachment ID'
+                        ],
+                    }
+                }
+
+        new_comment = self.model(
+            file_attachment=file_attachment,
+            diff_against_file_attachment=diff_against_file_attachment,
+            text=text,
+            issue_opened=bool(issue_opened))
 
         _import_extra_data(new_comment.extra_data, extra_fields)
 
