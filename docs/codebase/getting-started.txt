@@ -64,6 +64,7 @@ install, at a minimum, the following packages:
 * patch
 * Python Setuptools
 * Sphinx
+* gettext
 
 Also install any dependencies for search (if needed) and for repository types
 that you may want to use.
@@ -83,6 +84,9 @@ up for this.
 memcached can be handy, so install that if you want to, but by default we're
 going to use the built-in local memory cache. This is a temporary cache that
 will persist only as long as the development web server is running.
+
+Sphinx and gettext are handy if you're going to be building the documentation
+or packages. On OS X, gettext is available through homebrew or fink.
 
 .. _`Administration Guide`: http://www.reviewboard.org/docs/manual/dev/admin/
 

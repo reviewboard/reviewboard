@@ -77,6 +77,7 @@ class BuildEggInfo(egg_info):
             'bdist_egg' in sys.argv or
             'install' in sys.argv):
             self.run_command('build_media')
+            self.run_command('build_i18n')
 
         egg_info.run(self)
 
@@ -97,10 +98,38 @@ class BuildMedia(Command):
             raise RuntimeError('Failed to build media files')
 
 
+class BuildI18n(Command):
+    description = 'Compile message catalogs to .mo'
+    user_options = []
+
+    def initialize_options(self):
+        pass
+
+    def finalize_options(self):
+        pass
+
+    def run(self):
+        import os
+        import sys
+
+        from django.core.management.commands.compilemessages import \
+            compile_messages
+        from djblets.util.filesystem import is_exe_in_path
+
+        if not is_exe_in_path('msgfmt'):
+            raise RuntimeError('Could not find the "msgfmt" binary.')
+
+        cwd = os.getcwd()
+        os.chdir(os.path.realpath('reviewboard'))
+        compile_messages(stderr=sys.stderr)
+        os.chdir(cwd)
+
+
 cmdclasses = {
     'install_data': install_data,
     'egg_info': BuildEggInfo,
     'build_media': BuildMedia,
+    'build_i18n': BuildI18n,
 }
 
 
@@ -128,7 +157,7 @@ setup(name=PACKAGE_NAME,
       author_email="reviewboard@googlegroups.com",
       maintainer="Christian Hammond",
       maintainer_email="chipx86@chipx86.com",
-      packages=find_packages(),
+      packages=find_packages(exclude=['webtests']),
       entry_points = {
           'console_scripts': [
               'rb-site = reviewboard.cmdline.rbsite:main',
