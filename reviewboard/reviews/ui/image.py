@@ -7,16 +7,21 @@ from reviewboard.reviews.ui.base import FileAttachmentReviewUI
 class ImageReviewUI(FileAttachmentReviewUI):
     name = 'Image'
     supported_mimetypes = ['image/*']
+
     allow_inline = True
+    supports_diffing = True
 
     js_model_class = 'RB.ImageReviewable'
     js_view_class = 'RB.ImageReviewableView'
 
     def get_js_model_data(self):
-        return {
-            'imageURL': self.obj.file.url,
-            'fileAttachmentID': self.obj.id,
-        }
+        data = super(ImageReviewUI, self).get_js_model_data()
+        data['imageURL'] = self.obj.file.url
+
+        if self.diff_against_obj:
+            data['diffAgainstImageURL'] = self.diff_against_obj.file.url
+
+        return data
 
     def serialize_comments(self, comments):
         result = {}
@@ -51,6 +56,23 @@ class ImageReviewUI(FileAttachmentReviewUI):
 
         image_url = crop_image(comment.file_attachment.file,
                                x, y, width, height)
+        image_html = (
+            u'<img class="modified-image" src="%s" width="%s" height="%s" '
+            u'alt="%s" />'
+            % (image_url, width, height, escape(comment.text)))
 
-        return u'<img src="%s" width="%s" height="%s" alt="%s" />' % \
-               (image_url, width, height, escape(comment.text))
+        if comment.diff_against_file_attachment_id:
+            diff_against_image_url = crop_image(
+                comment.diff_against_file_attachment.file,
+                x, y, width, height)
+
+            diff_against_image_html = (
+                u'<img class="orig-image" src="%s" width="%s" '
+                u'height="%s" alt="%s" />'
+                % (diff_against_image_url, width, height,
+                   escape(comment.text)))
+
+            return ('<div class="image-review-ui-diff-thumbnail">%s%s</div>'
+                    % (diff_against_image_html, image_html))
+        else:
+            return image_html

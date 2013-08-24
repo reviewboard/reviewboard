@@ -314,7 +314,8 @@ describe('diffviewer/views/DiffReviewableView', function() {
 
                         selector._onMouseUp({
                             target: cell,
-                            stopImmediatePropagation: function() {}
+                            stopImmediatePropagation: function() {},
+                            preventDefault: function() {}
                         });
 
                         expect(view.createAndEditCommentBlock)
@@ -340,7 +341,8 @@ describe('diffviewer/views/DiffReviewableView', function() {
 
                         selector._onMouseUp({
                             target: cell,
-                            stopImmediatePropagation: function() {}
+                            stopImmediatePropagation: function() {},
+                            preventDefault: function() {}
                         });
 
                         expect(view.createAndEditCommentBlock)
@@ -401,7 +403,8 @@ describe('diffviewer/views/DiffReviewableView', function() {
 
                         selector._onMouseUp({
                             target: endCell,
-                            stopImmediatePropagation: function() {}
+                            stopImmediatePropagation: function() {},
+                            preventDefault: function() {}
                         });
 
                         expect(view.createAndEditCommentBlock)
@@ -444,7 +447,8 @@ describe('diffviewer/views/DiffReviewableView', function() {
 
                         selector._onMouseUp({
                             target: endCell,
-                            stopImmediatePropagation: function() {}
+                            stopImmediatePropagation: function() {},
+                            preventDefault: function() {}
                         });
 
                         expect(view.createAndEditCommentBlock)

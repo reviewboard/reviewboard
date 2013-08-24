@@ -301,6 +301,8 @@ CommentRowSelector = Backbone.View.extend({
     _onMouseUp: function(e) {
         var node = e.target;
 
+        e.preventDefault();
+
         if (this._$ghostCommentFlagCell) {
             node = this._$ghostCommentFlagCell[0];
         }
@@ -311,8 +313,6 @@ CommentRowSelector = Backbone.View.extend({
         }
 
         this._reset();
-
-        return false;
     },
 
     /*

@@ -495,6 +495,7 @@ PIPELINE_JS = {
 PIPELINE_CSS = {
     'common': {
         'source_filenames': (
+            'lib/css/jquery-ui-1.8.24.min.css',
             'rb/css/common.less',
             'rb/css/dashboard.less',
             'rb/css/icons.less',
@@ -514,6 +515,7 @@ PIPELINE_CSS = {
         'source_filenames': (
             'rb/css/diffviewer.less',
             'rb/css/dndUploader.less',
+            'rb/css/image-review-ui.less',
             'rb/css/reviews.less',
             'rb/css/syntax.css',
         ),

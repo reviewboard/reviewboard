@@ -3,7 +3,8 @@
  */
 RB.ImageReviewable = RB.FileAttachmentReviewable.extend({
     defaults: _.defaults({
-        imageURL: ''
+        imageURL: '',
+        diffAgainstImageURL: ''
     }, RB.FileAttachmentReviewable.prototype.defaults),
 
     commentBlockModel: RB.RegionCommentBlock

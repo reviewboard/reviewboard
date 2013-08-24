@@ -304,8 +304,14 @@
       }
 
       .inline-files-container {
-        td:first-child {
-          border-right: 1px @diff-line-border-color solid;
+        td {
+          &:first-child {
+            border-right: 1px @diff-line-border-color solid;
+          }
+
+          &.diff-review-ui {
+            padding: 0;
+          }
         }
       }
 
