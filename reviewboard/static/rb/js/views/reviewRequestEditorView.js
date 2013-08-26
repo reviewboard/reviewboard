@@ -346,13 +346,14 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
      * Linkifies a block of text, turning URLs, /r/#/ paths, and bug numbers
      * into clickable links.
      *
-     * This is a wrapper around RB.linkifyText that handles passing in
+     * This is a wrapper around RB.LinkifyUtils.linkifyText that handles passing in
      * the bug tracker.
      */
     linkifyText: function(text) {
         var reviewRequest = this.model.get('reviewRequest');
 
-        return RB.linkifyText(text || '', reviewRequest.get('bugTrackerURL'));
+        return RB.LinkifyUtils.linkifyText(
+            text || '', reviewRequest.get('bugTrackerURL'));
     },
 
     /*

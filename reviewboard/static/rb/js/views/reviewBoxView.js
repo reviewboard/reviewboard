@@ -40,7 +40,7 @@ RB.ReviewBoxView = RB.CollapsableBoxView.extend({
         this.$('pre.reviewtext').each(function() {
             var $el = $(this);
 
-            $el.html(RB.linkifyText($el.text(), bugTrackerURL));
+            $el.html(RB.LinkifyUtils.linkifyText($el.text(), bugTrackerURL));
         });
 
         _.each(this.$('.review-comments .issue-indicator'), function(el) {

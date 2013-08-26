@@ -69,7 +69,7 @@ RB.ReviewReplyEditorView = Backbone.View.extend({
 
             if (this._$editor) {
                 this._$editor.html(
-                    RB.linkifyText(text, reviewRequest.get('bugTrackerURL')));
+                    RB.LinkifyUtils.linkifyText(text, reviewRequest.get('bugTrackerURL')));
             }
         }, this);
 
