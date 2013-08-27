@@ -31,13 +31,14 @@ RB.LinkifyUtils = {
     },
 
     /* Linkify /r/#/ review request numbers */
-    linkifyReviewRequests: function(text) {
+    linkifyReviewRequests: function(text, markdown) {
         return text.replace(
             /(^|\s|&lt;|\(|\[|{)\/(r\/\d+(\/[\-A-Za-z0-9+&@#\/%?=~_()|!:,.;]*[\-A-Za-z0-9+&@#\/%=~_()|]*)?)/g,
             function(text, m1, m2) {
                 var extra = '',
                     url = m2,
-                    parts = url.match(/^(.*)(&[a-z]+;|\))$/);
+                    parts = url.match(/^(.*)(&[a-z]+;|\))$/),
+                    href;
 
                 if (parts !== null) {
                     /* We caught an entity. Set it free. */
@@ -45,27 +46,34 @@ RB.LinkifyUtils = {
                     extra = parts[2];
                 }
 
-                return m1 + '<a target="_blank" href="' + SITE_ROOT + url +
-                       (url.substr(-1) === '/' ? '' : '/') +
-                       '">/' + url + '</a>' + extra;
+                href = SITE_ROOT + url + (url.substr(-1) === '/' ? '' : '/');
+
+                if (markdown) {
+                    return m1 + '[/' + url + '](' + href + ')' + extra;
+                } else {
+                    return m1 + '<a target="_blank" href="' + href + '">/' + url + '</a>' + extra;
+                }
             });
     },
 
     /* Bug numbers */
-    linkifyBugs: function(text, bugTrackerURL) {
+    linkifyBugs: function(text, bugTrackerURL, markdown) {
         if (bugTrackerURL) {
             return text.replace(
-                /\b(bug|issue) (#([^.\s]+)|#?(\d+))/gi,
+                /\b(bug|issue) (#([^.,\s]+)|#?(\d+))/gi,
                 function(text, m2, m3, bugnum1, bugnum2) {
                     /*
                      * The bug number can appear in either of those groups,
                      * depending on how this was typed, so try both.
                      */
-                    var bugnum = bugnum1 || bugnum2;
+                    var bugnum = bugnum1 || bugnum2,
+                        href = bugTrackerURL.replace("%s", bugnum);
 
-                    return '<a target="_blank" href="' +
-                           bugTrackerURL.replace("%s", bugnum) +
-                           '">' + text + '</a>';
+                    if (markdown) {
+                        return '[' + text + '](' + href + ')';
+                    } else {
+                        return '<a target="_blank" href="' + href + '">' + text + '</a>';
+                    }
                 });
         } else {
             return text;

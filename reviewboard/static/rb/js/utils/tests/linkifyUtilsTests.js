@@ -71,6 +71,11 @@ describe('utils/linkifyUtils', function() {
                     expect(RB.LinkifyUtils.linkifyText('/r/123/')).toBe(
                         '<a target="_blank" href="/r/123/">/r/123/</a>');
                 });
+
+                it('/r/123/ in MD format', function() {
+                    expect(RB.LinkifyUtils.linkifyReviewRequests('/r/123/', true)).toBe(
+                        '[/r/123/](/r/123/)');
+                });
             });
 
             describe('Diffs', function() {
@@ -84,6 +89,11 @@ describe('utils/linkifyUtils', function() {
                     expect(RB.LinkifyUtils.linkifyText('/r/123/diff/')).toBe(
                         '<a target="_blank" href="/r/123/diff/">' +
                         '/r/123/diff/</a>');
+                });
+
+                it('/r/123/diff/ in MD format', function() {
+                    expect(RB.LinkifyUtils.linkifyReviewRequests('/r/123/diff/', true)).toBe(
+                        '[/r/123/diff/](/r/123/diff/)');
                 });
             });
         });
@@ -153,6 +163,18 @@ describe('utils/linkifyUtils', function() {
                 expect(RB.LinkifyUtils.linkifyText('issue #abc', bugTrackerURL)).toBe(
                     '<a target="_blank" href="http://issues/?id=abc">' +
                     'issue #abc</a>');
+            });
+
+            it('issue #abc, issue 2', function() {
+                expect(RB.LinkifyUtils.linkifyText('issue #abc, issue 2', bugTrackerURL)).toBe(
+                    '<a target="_blank" href="http://issues/?id=abc">' +
+                    'issue #abc</a>, <a target="_blank" ' +
+                    'href="http://issues/?id=2">issue 2</a>');
+            });
+
+            it('issue #abc in MD format', function() {
+                expect(RB.LinkifyUtils.linkifyBugs('issue #abc', bugTrackerURL, true)).toBe(
+                    '[issue #abc](http://issues/?id=abc)');
             });
         });
 
