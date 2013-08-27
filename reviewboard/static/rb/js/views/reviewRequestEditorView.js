@@ -21,19 +21,19 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
             jsonFieldName: 'bugs_closed',
             selector: '#bugs_closed',
             useEditIconOnly: true,
-            formatter: function(view, data) {
+            formatter: function(view, data, $el) {
                 var reviewRequest = view.model.get('reviewRequest'),
                     bugTrackerURL = reviewRequest.get('bugTrackerURL');
 
                 data = data || [];
 
-                if (!bugTrackerURL) {
-                    return data.join(", ");
+                if (bugTrackerURL) {
+                    $el.html(view.urlizeList(data, function(item) {
+                        return bugTrackerURL.replace('%s', item);
+                    }));
+                } else {
+                    $el.html(data.join(", "));
                 }
-
-                return view.urlizeList(data, function(item) {
-                    return bugTrackerURL.replace('%s', item);
-                });
             }
         },
         {
@@ -62,18 +62,18 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
             selector: '#depends_on',
             jsonFieldName: 'depends_on',
             useEditIconOnly: true,
-            formatter: function(view, data) {
-                return view.urlizeList(
+            formatter: function(view, data, $el) {
+                $el.html(view.urlizeList(
                     data,
                     function(item) { return item.url; },
                     function(item) { return item.id; }
-                );
+                ));
             }
         },
         {
             fieldName: 'description',
-            formatter: function(view, data) {
-                return view.linkifyText(data);
+            formatter: function(view, data, $el) {
+                $el.html(view.linkifyText(data));
             }
         },
         {
@@ -92,12 +92,12 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
                     displayname: 1
                 }
             },
-            formatter: function(view, data) {
-                return view.urlizeList(
+            formatter: function(view, data, $el) {
+                $el.html(view.urlizeList(
                     data,
                     function(item) { return item.url; },
                     function(item) { return item.name; }
-                );
+                ));
             }
         },
         {
@@ -113,24 +113,25 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
                     fullname: 1
                 }
             },
-            formatter: function(view, data) {
+            formatter: function(view, data, $el) {
                 var $list = $(view.urlizeList(
                     data,
                     function(item) { return item.url; },
                     function(item) { return item.username; }
                 ));
 
-                return $list
-                    .addClass("user")
-                    .user_infobox();
+                $el.html(
+                    $list
+                        .addClass("user")
+                        .user_infobox());
             }
         },
         {
             fieldName: 'testingDone',
             selector: '#testing_done',
             jsonFieldName: 'testing_done',
-            formatter: function(view, data) {
-                return view.linkifyText(data);
+            formatter: function(view, data, $el) {
+                $el.html(view.linkifyText(data));
             }
         }
     ],
@@ -632,7 +633,7 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
             value = reviewRequest.draft.get(fieldOptions.fieldName);
 
         if (_.isFunction(formatter)) {
-            $el.html(formatter.call(fieldOptions.context || this, this, value));
+            formatter.call(fieldOptions.context || this, this, value, $el);
         } else {
             $el.text(value);
         }
