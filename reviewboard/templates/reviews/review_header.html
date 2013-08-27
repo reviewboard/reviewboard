@@ -8,9 +8,9 @@
  <input type="submit" id="btn-review-request-reopen"
   value="{% trans "Reopen for Review" %}" />
  <p><label for="changedescription">{% trans "Describe the submission (optional):" %}</label></p>
- <pre id="changedescription" class="editable">{{close_description}}</pre>
+ <pre id="changedescription" class="editable" data-rich-text="{{close_description_rich_text|yesno:'true,false'}}">{{close_description}}</pre>
 {% elif close_description %}
- <pre id="changedescription">{{close_description}}</pre>
+ <pre id="changedescription" data-rich-text="{{close_description_rich_text|yesno:'true,false'}}">{{close_description}}</pre>
 {% endif %}
 </div>
 {% elif review_request.status == 'D' %}
@@ -22,9 +22,9 @@
 {% endif %}
 {% if request.user.pk == review_request.submitter_id or perms.reviews.can_change_status %}
  <p><label for="changedescription">{% trans "Describe the reason it's discarded (optional):" %}</label></p>
- <pre id="changedescription" class="editable">{{close_description}}</pre>
+ <pre id="changedescription" class="editable" data-rich-text="{{close_description_rich_text|yesno:'true,false'}}">{{close_description}}</pre>
 {% elif close_description %}
- <pre id="changedescription">{{close_description}}</pre>
+ <pre id="changedescription" data-rich-text="{{close_description_rich_text|yesno:'true,false'}}">{{close_description}}</pre>
 {% endif %}
 </div>
 {% else %}{# pending review #}
@@ -38,7 +38,11 @@
  <input type="button" id="btn-draft-discard"
   value="{% trans "Discard Draft" %}" />
  <p><label for="changedescription">{% trans "Describe your changes (optional):" %}</label></p>
- <pre id="changedescription" class="editable">{% if draft.changedesc %}{{draft.changedesc.text}}{% endif %}</pre>
+{% if draft.changedesc %}
+ <pre id="changedescription" class="editable" data-rich-text="{{draft.changedesc.rich_text|yesno:'true,false'}}">{{draft.changedesc.text}}</pre>
+{% else %}
+ <pre id="changedescription" class="editable" data-rich-text="true"></pre>
+{% endif %}
 {%   else %}
  <h1>{% trans "This review request is not yet public." %}</h1>
  {% trans "Be sure to publish when finished." %}

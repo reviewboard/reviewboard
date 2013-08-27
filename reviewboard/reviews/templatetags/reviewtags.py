@@ -242,7 +242,8 @@ def reply_list(context, entry, comment, context_type, context_id):
     The ``context_id`` parameter has to do with the internal IDs used by
     the JavaScript code for storing and categorizing the comments.
     """
-    def generate_reply_html(reply, timestamp, text, comment_id=None):
+    def generate_reply_html(reply, timestamp, text, rich_text,
+                            comment_id=None):
         new_context = context
         new_context.update({
             'context_id': context_id,
@@ -253,6 +254,7 @@ def reply_list(context, entry, comment, context_type, context_id):
             'reply_user': reply.user,
             'draft': not reply.public,
             'comment_id': comment_id,
+            'rich_text': rich_text,
         })
         return render_to_string('reviews/review_reply.html', new_context)
 
@@ -283,13 +285,15 @@ def reply_list(context, entry, comment, context_type, context_id):
             s += generate_reply_html(reply_comment.get_review(),
                                      reply_comment.timestamp,
                                      reply_comment.text,
+                                     reply_comment.rich_text,
                                      reply_comment.pk)
     elif context_type == "body_top" or context_type == "body_bottom":
         replies = getattr(review, "public_%s_replies" % context_type)()
 
         for reply in replies:
             s += generate_reply_html(reply, reply.timestamp,
-                                     getattr(reply, context_type))
+                                     getattr(reply, context_type),
+                                     reply.rich_text)
 
         return s
     else:

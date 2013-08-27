@@ -16,4 +16,5 @@ SEQUENCE = [
     'review_request_depends_on',
     'commit_id',
     'file_attachment_comment_diff_id',
+    'rich_text',
 ]

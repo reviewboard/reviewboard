@@ -299,6 +299,8 @@ PIPELINE_JS = {
             'lib/js/moment-2.0.0.min.js',
             'lib/js/retina.js',
             'lib/js/ui.autocomplete.js',
+            'lib/js/google-code-prettify/prettify.js',
+            'lib/js/marked.js',
         ),
         'output_filename': 'lib/js/3rdparty.min.js',
     },
@@ -417,6 +419,7 @@ PIPELINE_JS = {
             'rb/js/pages/views/reviewablePageView.js',
             'rb/js/pages/views/reviewRequestPageView.js',
             'rb/js/pages/views/diffViewerPageView.js',
+            'rb/js/utils/textUtils.js',
             'rb/js/views/abstractCommentBlockView.js',
             'rb/js/views/abstractReviewableView.js',
             'rb/js/views/collapsableBoxView.js',
@@ -513,6 +516,7 @@ PIPELINE_CSS = {
     },
     'reviews': {
         'source_filenames': (
+            'lib/css/prettify.css',
             'rb/css/diffviewer.less',
             'rb/css/dndUploader.less',
             'rb/css/image-review-ui.less',

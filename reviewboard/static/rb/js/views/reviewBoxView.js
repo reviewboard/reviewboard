@@ -37,12 +37,6 @@ RB.ReviewBoxView = RB.CollapsableBoxView.extend({
             this._setupNewReply();
         }, this);
 
-        this.$('pre.reviewtext').each(function() {
-            var $el = $(this);
-
-            $el.html(RB.LinkifyUtils.linkifyText($el.text(), bugTrackerURL));
-        });
-
         _.each(this.$('.review-comments .issue-indicator'), function(el) {
             var $issueState = $('.issue-state', el),
                 issueBar;
@@ -90,6 +84,16 @@ RB.ReviewBoxView = RB.CollapsableBoxView.extend({
             this._replyEditors.push(editor);
             this._replyEditorViews.push(view);
         }, this);
+
+        /*
+         * Do this last, after ReviewReplyEditorView has already set up the
+         * inline editors.
+         */
+        this.$('pre.reviewtext').each(function() {
+            var $el = $(this);
+
+            RB.formatText($el, $el.text(), bugTrackerURL);
+        });
     },
 
     /*

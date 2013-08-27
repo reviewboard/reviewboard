@@ -64,9 +64,13 @@ RB.ReviewBoxListView = Backbone.View.extend({
         }, this);
 
         _.each(this.$el.children('.changedesc'), function(changeBoxEl) {
-            var box = new RB.CollapsableBoxView({
-                    el: changeBoxEl
+            var $changebox = $(changeBoxEl),
+                $text = $changebox.find('.changedesc-text'),
+                box = new RB.CollapsableBoxView({
+                    el: $changebox
                 });
+
+            RB.formatText($text, $text.text());
 
             box.render();
 

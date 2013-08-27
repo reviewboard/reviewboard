@@ -691,12 +691,14 @@ def review_detail(request,
     entries.sort(key=lambda item: item['timestamp'])
 
     close_description = ''
+    close_description_rich_text = False
 
     if latest_changedesc and 'status' in latest_changedesc.fields_changed:
         status = latest_changedesc.fields_changed['status']['new'][0]
 
         if status in (ReviewRequest.DISCARDED, ReviewRequest.SUBMITTED):
             close_description = latest_changedesc.text
+            close_description_rich_text = latest_changedesc.rich_text
 
     context_data = make_review_request_context(request, review_request, {
         'draft': draft,
@@ -708,6 +710,7 @@ def review_detail(request,
         'request': request,
         'latest_changedesc': latest_changedesc,
         'close_description': close_description,
+        'close_description_rich_text': close_description_rich_text,
         'PRE_CREATION': PRE_CREATION,
         'issues': issues,
         'has_diffs': (draft and draft.diffset) or len(diffsets) > 0,

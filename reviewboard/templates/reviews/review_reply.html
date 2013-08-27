@@ -9,6 +9,6 @@
       <span class="timestamp">{% localtime on %}{% blocktrans with timestamp as timestamp and timestamp|date:"c" as timestamp_raw %}<time class="timesince" datetime="{{timestamp_raw}}">{{timestamp}}</time> ({{timestamp}}){% endblocktrans %}{% endlocaltime %}</span>
       </label>
      </dt>
-     <dd><pre id="{% if draft %}draft{% endif %}comment_{{context_id}}-{{id}}" class="reviewtext">{{text|escape}}</pre></dd>
+     <dd><pre id="{% if draft %}draft{% endif %}comment_{{context_id}}-{{id}}" data-rich-text="{{rich_text|yesno:'true,false'}}" class="reviewtext">{{text|escape}}</pre></dd>
     </dl>
    </li>

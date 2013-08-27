@@ -257,6 +257,7 @@ class BaseReviewRequestDetails(models.Model):
     testing_done = models.TextField(_("testing done"), blank=True)
     bugs_closed = models.CharField(_("bugs"), max_length=300, blank=True)
     branch = models.CharField(_("branch"), max_length=300, blank=True)
+    rich_text = models.BooleanField(_("rich text"), default=True)
 
     def _get_review_request(self):
         raise NotImplementedError
@@ -1478,6 +1479,7 @@ class BaseComment(models.Model):
                                  verbose_name=_("reply to"))
     timestamp = models.DateTimeField(_('timestamp'), default=timezone.now)
     text = models.TextField(_("comment text"))
+    rich_text = models.BooleanField(_("rich text"), default=True)
 
     # Set this up with a ConcurrencyManager to help prevent race conditions.
     objects = ConcurrencyManager()
@@ -1761,6 +1763,8 @@ class Review(models.Model):
         verbose_name=_("file attachment comments"),
         related_name="review",
         blank=True)
+
+    rich_text = models.BooleanField(_("rich text"), default=True)
 
     # XXX Deprecated. This will be removed in a future release.
     reviewed_diffset = models.ForeignKey(

@@ -40,21 +40,30 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
             fieldName: 'changeDescription',
             selector: '#draft-banner #changedescription',
             jsonFieldName: 'changedescription',
-            elementOptional: true
+            elementOptional: true,
+            formatter: function(view, data, $el) {
+                view.formatText($el, data);
+            }
         },
         {
             fieldName: 'changeDescription',
             selector: '#submitted-banner #changedescription',
             jsonFieldName: 'changedescription',
             elementOptional: true,
-            closeType: RB.ReviewRequest.CLOSE_SUBMITTED
+            closeType: RB.ReviewRequest.CLOSE_SUBMITTED,
+            formatter: function(view, data, $el) {
+                view.formatText($el, data);
+            }
         },
         {
             fieldName: 'changeDescription',
             selector: '#discard-banner #changedescription',
             jsonFieldName: 'changedescription',
             elementOptional: true,
-            closeType: RB.ReviewRequest.CLOSE_DISCARDED
+            closeType: RB.ReviewRequest.CLOSE_DISCARDED,
+            formatter: function(view, data, $el) {
+                view.formatText($el, data);
+            }
         },
         {
             fieldName: 'dependsOn',
@@ -72,7 +81,7 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
         {
             fieldName: 'description',
             formatter: function(view, data, $el) {
-                $el.html(view.linkifyText(data));
+                view.formatText($el, data);
             }
         },
         {
@@ -130,7 +139,7 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
             selector: '#testing_done',
             jsonFieldName: 'testing_done',
             formatter: function(view, data, $el) {
-                $el.html(view.linkifyText(data));
+                view.formatText($el, data);
             }
         }
     ],
@@ -267,11 +276,14 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
                      _.bind(this._formatField, this, fieldOptions));
         }, this);
 
-        /* Linkify any text in the description and testing done. */
-        _.each($("#description, #testing_done"), function(el) {
+        /*
+         * Linkify any text in the description, testing done, and change
+         * description fields.
+         */
+        _.each($("#description, #testing_done, #changedescription"), function(el) {
             var $el = $(el);
 
-            $el.html(this.linkifyText($el.text()));
+            this.formatText($el, $el.text());
         }, this);
 
         this.model.on('change:editable', this._onEditableChanged, this);
@@ -341,14 +353,13 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
      * Linkifies a block of text, turning URLs, /r/#/ paths, and bug numbers
      * into clickable links.
      *
-     * This is a wrapper around RB.LinkifyUtils.linkifyText that handles passing in
-     * the bug tracker.
+     * This is a wrapper around RB.formatText that handles passing in the bug
+     * tracker.
      */
-    linkifyText: function(text) {
+    formatText: function($el, text) {
         var reviewRequest = this.model.get('reviewRequest');
 
-        return RB.LinkifyUtils.linkifyText(
-            text || '', reviewRequest.get('bugTrackerURL'));
+        RB.formatText($el, text || '', reviewRequest.get('bugTrackerURL'));
     },
 
     /*

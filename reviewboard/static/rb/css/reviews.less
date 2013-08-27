@@ -1432,4 +1432,58 @@
   }
 }
 
+
+/****************************************************************************
+ * Rich text
+ ****************************************************************************/
+
+.rich-text {
+  * {
+    margin: 0;
+    padding: 0;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-size: 100%;
+  }
+
+  ul, ol {
+    padding: 0 0 0 2.5em;
+    line-height: 0;
+  }
+
+  li {
+    line-height: 10pt;
+  }
+
+  table {
+    th, td {
+      border-bottom: 1px solid #bbb;
+      padding: 0.2em 1em;
+    }
+  }
+
+  code {
+    background-color: #f8f8ff;
+    color: #444;
+    border: 1px solid #dedede;
+  }
+
+  pre code {
+    background-color: #eee;
+    border: none;
+  }
+
+  blockquote {
+    border-left: 1px solid #bbb;
+    padding-left: 1em;
+    margin-left: 0.5em;
+  }
+
+  hr {
+    border: 1px solid #ddd;
+  }
+}
+
+
 // vim: set et ts=2 sw=2:

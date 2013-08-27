@@ -68,8 +68,7 @@ RB.ReviewReplyEditorView = Backbone.View.extend({
             var reviewRequest = this.model.get('review').get('parentObject');
 
             if (this._$editor) {
-                this._$editor.html(
-                    RB.LinkifyUtils.linkifyText(text, reviewRequest.get('bugTrackerURL')));
+                RB.formatText(this._$editor, text, reviewRequest.get('bugTrackerURL'));
             }
         }, this);
 

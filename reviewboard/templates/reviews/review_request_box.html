@@ -158,11 +158,11 @@
 
  <div class="content" id="description-value-cell">
   <label for="description">{% trans "Description" %}:</label>
-  <pre id="description" class="editable required">{{review_request_details.description|escape}}</pre>
+  <pre id="description" class="editable required" data-rich-text="{{review_request_details.rich_text|yesno:'true,false'}}">{{review_request_details.description|escape}}</pre>
  </div>
  <div class="content" id="testing-done-value-cell">
   <label for="testing_done">{% trans "Testing Done" %}:</label>
-  <pre id="testing_done" class="editable">{{review_request_details.testing_done|escape}}</pre>
+  <pre id="testing_done" class="editable" data-rich-text="{{review_request_details.rich_text|yesno:'true,false'}}">{{review_request_details.testing_done|escape}}</pre>
  </div>
 {% if request.user.pk == review_request.submitter_id or perms.reviews.can_edit_reviewrequest %}
  <div class="content" id="required-field-legend"><span class="required-flag">*</span> {% trans "Required Field" %}</div>

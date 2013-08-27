@@ -33,6 +33,7 @@ class ChangeDescription(models.Model):
     timestamp = models.DateTimeField(_('timestamp'), default=timezone.now)
     public = models.BooleanField(_("public"), default=False)
     text = models.TextField(_("change text"), blank=True)
+    rich_text = models.BooleanField(_("rich text"), default=True)
     fields_changed = JSONField(_("fields changed"))
 
     def record_field_change(self, field, old_value, new_value,
