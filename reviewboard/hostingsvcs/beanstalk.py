@@ -8,7 +8,8 @@ from django.utils.translation import ugettext_lazy as _
 
 from reviewboard.hostingsvcs.forms import HostingServiceForm
 from reviewboard.hostingsvcs.service import HostingService
-from reviewboard.scmtools.crypto import decrypt_password, encrypt_password
+from reviewboard.scmtools.crypto_utils import (decrypt_password,
+                                               encrypt_password)
 from reviewboard.scmtools.errors import FileNotFoundError
 
 
