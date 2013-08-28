@@ -75,13 +75,6 @@
 }
 
 
-.diff-container {
-  .border-radius(@box-border-radius);
-  border: 1px @diff-border-color solid;
-  overflow: hidden;
-  .box-shadow(@box-shadow);
-}
-
 .sidebyside {
   background: white;
   border-collapse: collapse;
@@ -552,7 +545,25 @@
   }
 
   .diff-container {
-    margin-bottom: 20px;
+    margin-bottom: 1em;
+    position: relative;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
+
+  .diff-box {
+    .border-radius(@box-border-radius);
+    border: 1px @diff-border-color solid;
+    overflow: hidden;
+    .box-shadow(@box-shadow);
+  }
+
+  .diff-highlight {
+    position: absolute;
+    left: 0;
+    top: 0;
   }
 
   .diff-highlight-border {

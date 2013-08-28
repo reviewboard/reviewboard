@@ -9,6 +9,8 @@
  * In practice, there's only ever one highlighter on a page at a time.
  */
 RB.ChunkHighlighterView = Backbone.View.extend({
+    className: 'diff-highlight',
+
     /*
      * Initializes the highlighter.
      */
@@ -93,7 +95,6 @@ RB.ChunkHighlighterView = Backbone.View.extend({
      */
     _resetState: function() {
         this._$chunk = null;
-        this._oldLeft = null;
         this._oldTop = null;
         this._oldWidth = null;
         this._oldHeight = null;
@@ -111,7 +112,6 @@ RB.ChunkHighlighterView = Backbone.View.extend({
             height,
             outerHeight,
             outerWidth,
-            outerLeft,
             outerTop;
 
         if (e && e.target && e.target !== window &&
@@ -131,13 +131,19 @@ RB.ChunkHighlighterView = Backbone.View.extend({
 
         $container = this._$chunk.parents('.diff-container');
 
-        left = Math.floor($container.position().left);
+        /*
+         * Attach the element to the container, so it'll move along with
+         * the container if anything above moves.
+         */
+        this.$el
+            .remove()
+            .appendTo($container);
+
         top = Math.floor(offset.top);
         width = $container.outerWidth();
         height = this._$chunk.outerHeight();
 
-        if (left === this._oldLeft &&
-            top === this._oldTop &&
+        if (top === this._oldTop &&
             width === this._oldWidth &&
             height === this._oldHeight) {
             /* The position and size haven't actually changed. */
@@ -146,34 +152,32 @@ RB.ChunkHighlighterView = Backbone.View.extend({
 
         outerHeight = height + this._borderOffsetX;
         outerWidth  = width - this._borderWidth;
-        outerLeft   = left + this._borderWidth;
         outerTop    = top - this._borderOffsetY;
 
         this._$left.css({
-            left: left,
+            left: 0,
             top: outerTop,
             height: outerHeight
         });
 
         this._$top.css({
-            left: left,
+            left: 0,
             top: outerTop,
             width: outerWidth
         });
 
         this._$right.css({
-            left: left + outerWidth,
+            left: outerWidth,
             top: outerTop,
             height: outerHeight
         });
 
         this._$bottom.css({
-            left: left,
+            left: 0,
             top: outerTop + outerHeight,
             width: outerWidth + this._borderWidth
         });
 
-        this._oldLeft = left;
         this._oldTop = top;
         this._oldWidth = width;
         this._oldHeight = height;
@@ -198,10 +202,19 @@ RB.ChunkHighlighterView = Backbone.View.extend({
      * If a highlighter isn't already created, this will create one.
      */
     highlight: function($chunk) {
+        if (!$chunk || $chunk.length === 0) {
+            return;
+        }
+
         if (!this._instance) {
-            this._instance = new RB.ChunkHighlighterView({
-                el: $('#diffs')
-            });
+            this._instance = new RB.ChunkHighlighterView();
+
+            /*
+             * This placement is temporary, in order to calculate the
+             * sizes and offsets. It will be moved in the highlight call
+             * below.
+             */
+            this._instance.$el.appendTo($('#diffs'));
             this._instance.render();
         }
 
