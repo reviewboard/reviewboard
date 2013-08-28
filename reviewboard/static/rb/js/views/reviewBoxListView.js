@@ -40,7 +40,7 @@ RB.ReviewBoxListView = Backbone.View.extend({
         var pageEditState = this.options.pageEditState,
             reviewRequest = this.options.reviewRequest;
 
-        _.each(this.$('.review'), function(reviewEl) {
+        _.each(this.$el.children('.review'), function(reviewEl) {
             var $review = $(reviewEl),
                 $body = $review.find('.body'),
                 reviewID = $review.data('review-id'),
@@ -63,10 +63,10 @@ RB.ReviewBoxListView = Backbone.View.extend({
             this._boxes.push(box);
         }, this);
 
-        _.each(this.$('.changedesc'), function(changeBoxEl) {
+        _.each(this.$el.children('.changedesc'), function(changeBoxEl) {
             var box = new RB.CollapsableBoxView({
-                el: changeBoxEl
-            });
+                    el: changeBoxEl
+                });
 
             box.render();
 
