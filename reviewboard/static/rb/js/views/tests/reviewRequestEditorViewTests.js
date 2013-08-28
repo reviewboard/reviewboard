@@ -412,31 +412,7 @@ describe('views/ReviewRequestEditorView', function() {
                 hasEditorTest();
                 savingTest();
 
-                it('Starts opened', function() {
-                    expect($input.is(':visible')).toBe(true);
-                });
-
-                describe('Edit counts', function() {
-                    /*
-                     * Unlike the rest of the fields, this one starts open,
-                     * without an edit count. Verify all that.
-                     */
-                    it('Initial value when starting opened', function() {
-                        expect($input.is(':visible')).toBe(true);
-                        expect(editor.get('editCount')).toBe(0);
-                    });
-
-                    it('When closed', function() {
-                        $field.inlineEditor('cancel');
-                        expect(editor.get('editCount')).toBe(0);
-                    });
-
-                    it('When re-opened', function() {
-                        $field.inlineEditor('cancel');
-                        $field.inlineEditor('startEdit');
-                        expect(editor.get('editCount')).toBe(1);
-                    });
-                });
+                editCountTests();
             });
 
             describe('Submitted review requests', function() {
