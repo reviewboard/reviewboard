@@ -85,7 +85,7 @@ RB.DraftReviewRequest = RB.BaseResource.extend(_.defaults({
         return {
             branch: rsp.branch,
             bugsClosed: rsp.bugs_closed,
-            changeDescription: rsp.change_description,
+            changeDescription: rsp.changedescription,
             dependsOn: rsp.depends_on,
             description: rsp.description,
             public: rsp.public,

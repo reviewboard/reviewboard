@@ -82,7 +82,7 @@ describe('resources/models/DraftReviewRequest', function() {
                 id: 1,
                 branch: 'branch',
                 bugs_closed: 'bugsClosed',
-                change_description: 'changeDescription',
+                changedescription: 'changeDescription',
                 description: 'description',
                 public: 'public',
                 summary: 'summary',
