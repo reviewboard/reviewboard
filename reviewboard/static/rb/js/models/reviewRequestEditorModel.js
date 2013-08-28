@@ -86,6 +86,12 @@ RB.ReviewRequestEditor = Backbone.Model.extend({
                 description: value
             });
 
+            reviewRequest.draft.set(fieldName, value);
+
+            if (_.isFunction(options.success)) {
+                options.success.call(context);
+            }
+
             return;
         }
 
