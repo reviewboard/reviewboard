@@ -109,20 +109,10 @@ class BuildI18n(Command):
         pass
 
     def run(self):
-        import os
-        import sys
+        retcode = subprocess.call(['./contrib/internal/build-i18n.py'])
 
-        from django.core.management.commands.compilemessages import \
-            compile_messages
-        from djblets.util.filesystem import is_exe_in_path
-
-        if not is_exe_in_path('msgfmt'):
-            raise RuntimeError('Could not find the "msgfmt" binary.')
-
-        cwd = os.getcwd()
-        os.chdir(os.path.realpath('reviewboard'))
-        compile_messages(stderr=sys.stderr)
-        os.chdir(cwd)
+        if retcode != 0:
+            raise RuntimeError('Failed to build i18n files')
 
 
 cmdclasses = {
