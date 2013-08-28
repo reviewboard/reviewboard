@@ -296,7 +296,7 @@ class DiffFragmentView(View):
 
         if lines_of_context:
             collapseall = True
-        elif chunkindex:
+        elif chunkindex is not None:
             # If we're currently expanding part of a chunk, we want to render
             # the entire chunk without any lines collapsed. In the case of showing
             # a range of lines, we're going to get all chunks and then only show
