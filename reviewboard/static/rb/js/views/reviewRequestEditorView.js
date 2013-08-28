@@ -40,8 +40,7 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
             fieldName: 'changeDescription',
             selector: '#draft-banner #changedescription',
             jsonFieldName: 'changedescription',
-            elementOptional: true,
-            startOpen: true
+            elementOptional: true
         },
         {
             fieldName: 'changeDescription',
@@ -173,10 +172,6 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
      *       - The jQuery selector for the element in the DOM.
      *         Defaults to '#' + fieldName.
      *
-     *     * startOpen
-     *       - Field starts opened in edit mode.
-     *         Defaults to false.
-     *
      *     * useEditIconOnly
      *       - If true, only clicking the edit icon will begin editing.
      *         Defaults to false.
@@ -189,7 +184,6 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
             elementOptional: false,
             formatter: null,
             jsonFieldName: options.fieldName,
-            startOpen: false,
             useEditIconOnly: false
         }, options));
     },
@@ -510,7 +504,6 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
                 editIconClass: 'rb-icon rb-icon-edit',
                 multiline: el.tagName === 'PRE',
                 showButtons: !$el.hasClass('screenshot-editable'),
-                startOpen: fieldOptions.startOpen,
                 useEditIconOnly: fieldOptions.useEditIconOnly,
                 showRequiredFlag: $el.hasClass('required')
             })
