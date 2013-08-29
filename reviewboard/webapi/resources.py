@@ -14,7 +14,6 @@ from django.db.models import Q
 from django.http import (HttpResponseRedirect, HttpResponse,
                          HttpResponseNotModified)
 from django.template.defaultfilters import timesince
-from django.utils.encoding import force_unicode
 from django.utils.formats import localize
 from django.utils.translation import ugettext as _
 from djblets.extensions.base import RegisteredExtension
@@ -32,8 +31,7 @@ from djblets.webapi.decorators import (webapi_login_required,
                                        webapi_request_fields)
 from djblets.webapi.errors import (DOES_NOT_EXIST, INVALID_FORM_DATA,
                                    NOT_LOGGED_IN, PERMISSION_DENIED)
-from djblets.webapi.resources import (WebAPIResource as DjbletsWebAPIResource,
-                                      UserResource as DjbletsUserResource,
+from djblets.webapi.resources import (UserResource as DjbletsUserResource,
                                       RootResource as DjbletsRootResource,
                                       register_resource_for_model,
                                       get_resource_for_object)
@@ -71,12 +69,12 @@ from reviewboard.scmtools.errors import (AuthenticationError,
                                          RepositoryNotFoundError,
                                          UnverifiedCertificateError)
 from reviewboard.scmtools.models import Tool
-from reviewboard.site.models import LocalSite
 from reviewboard.site.urlresolvers import local_site_reverse
 from reviewboard.ssh.client import SSHClient
 from reviewboard.ssh.errors import (SSHError,
                                     BadHostKeyError,
                                     UnknownHostKeyError)
+from reviewboard.webapi.base import CUSTOM_MIMETYPE_BASE, WebAPIResource
 from reviewboard.webapi.decorators import (webapi_check_login_required,
                                            webapi_check_local_site)
 from reviewboard.webapi.encoder import status_to_string, string_to_status
@@ -101,128 +99,6 @@ from reviewboard.webapi.errors import (BAD_HOST_KEY,
                                        SERVER_CONFIG_ERROR,
                                        UNVERIFIED_HOST_CERT,
                                        UNVERIFIED_HOST_KEY)
-
-
-CUSTOM_MIMETYPE_BASE = 'application/vnd.reviewboard.org'
-
-
-def _get_local_site(local_site_name):
-    if local_site_name:
-        return LocalSite.objects.get(name=local_site_name)
-    else:
-        return None
-
-
-def _get_form_errors(form):
-    fields = {}
-
-    for field in form.errors:
-        fields[field] = [force_unicode(e) for e in form.errors[field]]
-
-    return fields
-
-
-def _no_access_error(user):
-    """Returns a WebAPIError indicating the user has no access.
-
-    Which error this returns depends on whether or not the user is logged in.
-    If logged in, this will return _no_access_error(request.user). Otherwise, it will
-    return NOT_LOGGED_IN.
-    """
-    if user.is_authenticated():
-        return PERMISSION_DENIED
-    else:
-        return NOT_LOGGED_IN
-
-
-EXTRA_DATA_LEN = len('extra_data.')
-
-
-def _import_extra_data(extra_data, fields):
-    for key, value in fields.iteritems():
-        if key.startswith('extra_data.'):
-            key = key[EXTRA_DATA_LEN:]
-
-            if value != '':
-                extra_data[key] = value
-            elif key in extra_data:
-                del extra_data[key]
-
-
-class WebAPIResource(DjbletsWebAPIResource):
-    """A specialization of the Djblets WebAPIResource for Review Board."""
-
-    mimetype_vendor = 'reviewboard.org'
-
-    @webapi_check_login_required
-    @augment_method_from(DjbletsWebAPIResource)
-    def get(self, *args, **kwargs):
-        """Returns the serialized object for the resource.
-
-        This will require login if anonymous access isn't enabled on the
-        site.
-        """
-        pass
-
-    @webapi_check_login_required
-    @webapi_request_fields(
-        optional=dict({
-            'counts-only': {
-                'type': bool,
-                'description': 'If specified, a single ``count`` field is '
-                               'returned with the number of results, instead '
-                               'of the results themselves.',
-            },
-        }, **DjbletsWebAPIResource.get_list.optional_fields),
-        required=DjbletsWebAPIResource.get_list.required_fields,
-        allow_unknown=True
-    )
-    def get_list(self, request, *args, **kwargs):
-        """Returns a list of objects.
-
-        This will require login if anonymous access isn't enabled on the
-        site.
-
-        If ``?counts-only=1`` is passed on the URL, then this will return
-        only a ``count`` field with the number of entries, instead of the
-        serialized objects.
-        """
-        if self.model and request.GET.get('counts-only', False):
-            return 200, {
-                'count': self.get_queryset(request, is_list=True,
-                                           *args, **kwargs).count()
-            }
-        else:
-            return self._get_list_impl(request, *args, **kwargs)
-
-    def _get_list_impl(self, request, *args, **kwargs):
-        """Actual implementation to return the list of results.
-
-        This by default calls the parent WebAPIResource.get_list, but this
-        can be overridden by subclasses to provide a more custom
-        implementation while still retaining the ?counts-only=1 functionality.
-        """
-        return super(WebAPIResource, self).get_list(request, *args, **kwargs)
-
-    def get_href(self, obj, request, *args, **kwargs):
-        """Returns the URL for this object.
-
-        This is an override of djblets.webapi.resources.WebAPIResource.get_href,
-        which takes into account our local_site_name namespacing in order to get
-        the right prefix on URLs.
-        """
-        if not self.uri_object_key:
-            return None
-
-        href_kwargs = {
-            self.uri_object_key: getattr(obj, self.model_object_key),
-        }
-        href_kwargs.update(self.get_href_parent_ids(obj))
-
-        return request.build_absolute_uri(
-            local_site_reverse(self._build_named_url(self.name),
-                               request=request,
-                               kwargs=href_kwargs))
 
 
 class BaseCommentResource(WebAPIResource):
@@ -260,7 +136,7 @@ class BaseCommentResource(WebAPIResource):
 
         # Check permissions to change the issue status
         if not comment.can_change_issue_status(request.user):
-            return _no_access_error(request.user)
+            return self._no_access_error(request.user)
 
         # We can only update the status of an issue if an issue has been
         # opened
@@ -523,7 +399,7 @@ class DefaultReviewerResource(WebAPIResource):
         resources, then it can be further filtered by one or more of the
         arguments listed in get_list.
         """
-        local_site = _get_local_site(local_site_name)
+        local_site = self._get_local_site(local_site_name)
         queryset = self.model.objects.filter(local_site=local_site)
 
         if is_list:
@@ -626,10 +502,10 @@ class DefaultReviewerResource(WebAPIResource):
         requests on all repositories, unless one or more repositories are
         provided in the default reviewer's list.
         """
-        local_site = _get_local_site(local_site_name)
+        local_site = self._get_local_site(local_site_name)
 
         if not self.model.objects.can_create(request.user, local_site):
-            return _no_access_error(request.user)
+            return self._no_access_error(request.user)
 
         code, data = self._create_or_update(local_site, **kwargs)
 
@@ -680,9 +556,9 @@ class DefaultReviewerResource(WebAPIResource):
             return DOES_NOT_EXIST
 
         if not self.has_modify_permissions(request, default_reviewer):
-            return _no_access_error(request.user)
+            return self._no_access_error(request.user)
 
-        local_site = _get_local_site(local_site_name)
+        local_site = self._get_local_site(local_site_name)
 
         return self._create_or_update(local_site, default_reviewer, **kwargs)
 
@@ -761,7 +637,7 @@ class DefaultReviewerResource(WebAPIResource):
         if not form.is_valid():
             # The form uses "people" and "repository", but we expose these
             # as "users" and "repositories", so transmogrify the errors a bit.
-            field_errors = _get_form_errors(form)
+            field_errors = self._get_form_errors(form)
 
             if 'people' in field_errors:
                 field_errors['users'] = field_errors.pop('people')
@@ -920,7 +796,7 @@ class ReviewDiffCommentResource(BaseDiffCommentResource):
             return DOES_NOT_EXIST
 
         if not review_resource.has_modify_permissions(request, review):
-            return _no_access_error(request.user)
+            return self._no_access_error(request.user)
 
         filediff = None
         interfilediff = None
@@ -1020,7 +896,7 @@ class ReviewDiffCommentResource(BaseDiffCommentResource):
                                                              *args, **kwargs)
 
         if not review_resource.has_modify_permissions(request, review):
-            return _no_access_error(request.user)
+            return self._no_access_error(request.user)
 
         # If we've updated the comment from having no issue opened,
         # to having an issue opened, we need to set the issue status
@@ -1133,7 +1009,7 @@ class ReviewReplyDiffCommentResource(BaseDiffCommentResource):
             return DOES_NOT_EXIST
 
         if not review_reply_resource.has_modify_permissions(request, reply):
-            return _no_access_error(request.user)
+            return self._no_access_error(request.user)
 
         try:
             comment = \
@@ -1206,7 +1082,7 @@ class ReviewReplyDiffCommentResource(BaseDiffCommentResource):
             return DOES_NOT_EXIST
 
         if not review_reply_resource.has_modify_permissions(request, reply):
-            return _no_access_error(request.user)
+            return self._no_access_error(request.user)
 
         for field in ('text',):
             value = kwargs.get(field, None)
@@ -2046,7 +1922,7 @@ class DiffResource(WebAPIResource):
             return DOES_NOT_EXIST
 
         if not review_request.is_mutable_by(request.user):
-            return _no_access_error(request.user)
+            return self._no_access_error(request.user)
 
         form_data = request.POST.copy()
         form = UploadDiffForm(review_request, form_data, request.FILES,
@@ -2054,7 +1930,7 @@ class DiffResource(WebAPIResource):
 
         if not form.is_valid():
             return INVALID_FORM_DATA, {
-                'fields': _get_form_errors(form),
+                'fields': self._get_form_errors(form),
             }
 
         try:
@@ -2096,7 +1972,7 @@ class DiffResource(WebAPIResource):
                 draft = ReviewRequestDraftResource.prepare_draft(
                     request, review_request)
             except PermissionDenied:
-                return _no_access_error(request.user)
+                return self._no_access_error(request.user)
 
         draft.diffset = diffset
 
@@ -2135,7 +2011,7 @@ class BaseWatchedObjectResource(WebAPIResource):
     def get_queryset(self, request, username, local_site_name=None,
                      *args, **kwargs):
         try:
-            local_site = _get_local_site(local_site_name)
+            local_site = self._get_local_site(local_site_name)
             if local_site:
                 user = local_site.users.get(username=username)
                 profile = user.get_profile()
@@ -2196,7 +2072,7 @@ class BaseWatchedObjectResource(WebAPIResource):
 
         if not user_resource.has_modify_permissions(request, user,
                                                     *args, **kwargs):
-            return _no_access_error(request.user)
+            return self._no_access_error(request.user)
 
         profile, profile_is_new = \
             Profile.objects.get_or_create(user=request.user)
@@ -2220,7 +2096,7 @@ class BaseWatchedObjectResource(WebAPIResource):
 
         if not user_resource.has_modify_permissions(request, user,
                                                     *args, **kwargs):
-            return _no_access_error(request.user)
+            return self._no_access_error(request.user)
 
         profile, profile_is_new = \
             Profile.objects.get_or_create(user=request.user)
@@ -2457,7 +2333,7 @@ class UserResource(WebAPIResource, DjbletsUserResource):
     def get_queryset(self, request, local_site_name=None, *args, **kwargs):
         search_q = request.GET.get('q', None)
 
-        local_site = _get_local_site(local_site_name)
+        local_site = self._get_local_site(local_site_name)
         if local_site:
             query = local_site.users.filter(is_active=True)
         else:
@@ -2580,9 +2456,9 @@ class ReviewGroupUserResource(UserResource):
             return DOES_NOT_EXIST
 
         if not review_group_resource.has_modify_permissions(request, group):
-            return _no_access_error(request.user)
+            return self._no_access_error(request.user)
 
-        local_site = _get_local_site(kwargs.get('local_site_name', None))
+        local_site = self._get_local_site(kwargs.get('local_site_name', None))
 
         try:
             user = User.objects.get(username=username, local_site=local_site)
@@ -2608,7 +2484,7 @@ class ReviewGroupUserResource(UserResource):
             return DOES_NOT_EXIST
 
         if not review_group_resource.has_modify_permissions(request, group):
-            return _no_access_error(request.user)
+            return self._no_access_error(request.user)
 
         group.users.remove(user)
 
@@ -2714,7 +2590,7 @@ class ReviewGroupResource(WebAPIResource):
     def get_queryset(self, request, is_list=False, local_site_name=None,
                      *args, **kwargs):
         search_q = request.GET.get('q', None)
-        local_site = _get_local_site(local_site_name)
+        local_site = self._get_local_site(local_site_name)
 
         if is_list:
             query = self.model.objects.accessible(request.user,
@@ -2831,10 +2707,10 @@ class ReviewGroupResource(WebAPIResource):
         and display name. The group will be public by default, unless
         specified otherwise.
         """
-        local_site = _get_local_site(local_site_name)
+        local_site = self._get_local_site(local_site_name)
 
         if not self.model.objects.can_create(request.user, local_site):
-            return _no_access_error(request.user)
+            return self._no_access_error(request.user)
 
         group, is_new = self.model.objects.get_or_create(
             name=name,
@@ -2896,12 +2772,12 @@ class ReviewGroupResource(WebAPIResource):
             return DOES_NOT_EXIST
 
         if not self.has_modify_permissions(request, group):
-            return _no_access_error(request.user)
+            return self._no_access_error(request.user)
 
         if name is not None and name != group.name:
             # If we're changing the group name, make sure that group doesn't
             # exist.
-            local_site = _get_local_site(kwargs.get('local_site_name', None))
+            local_site = self._get_local_site(kwargs.get('local_site_name'))
 
             if self.model.objects.filter(name=name,
                                          local_site=local_site).count():
@@ -2940,7 +2816,7 @@ class ReviewGroupResource(WebAPIResource):
             return DOES_NOT_EXIST
 
         if not self.has_delete_permissions(request, group):
-            return _no_access_error(request.user)
+            return self._no_access_error(request.user)
 
         group.delete()
 
@@ -2978,7 +2854,7 @@ class HostingServiceAccountResource(WebAPIResource):
 
     @webapi_check_login_required
     def get_queryset(self, request, local_site_name=None, *args, **kwargs):
-        local_site = _get_local_site(local_site_name)
+        local_site = self._get_local_site(local_site_name)
         return self.model.objects.accessible(visible_only=True,
                                              local_site=local_site)
 
@@ -3044,11 +2920,11 @@ class HostingServiceAccountResource(WebAPIResource):
     )
     def create(self, request, username, service_id, password=None,
                hosting_url=None, local_site_name=None, *args, **kwargs):
-        local_site = _get_local_site(local_site_name)
+        local_site = self._get_local_site(local_site_name)
 
         if not HostingServiceAccount.objects.can_create(request.user,
                                                         local_site):
-            return _no_access_error(request.user)
+            return self._no_access_error(request.user)
 
         # Validate the service.
         service = get_hosting_service(service_id)
@@ -3319,7 +3195,7 @@ class RepositoryResource(WebAPIResource):
     def get_queryset(self, request, local_site_name=None, show_invisible=False,
                      *args, **kwargs):
         """Returns a queryset for Repository models."""
-        local_site = _get_local_site(local_site_name)
+        local_site = self._get_local_site(local_site_name)
         return self.model.objects.accessible(request.user,
                                              visible_only=not show_invisible,
                                              local_site=local_site)
@@ -3466,10 +3342,10 @@ class RepositoryResource(WebAPIResource):
         returned and the repository information won't be updated. Pass
         ``trust_host=1`` to approve bad/unknown SSH keys or certificates.
         """
-        local_site = _get_local_site(local_site_name)
+        local_site = self._get_local_site(local_site_name)
 
         if not Repository.objects.can_create(request.user, local_site):
-            return _no_access_error(request.user)
+            return self._no_access_error(request.user)
 
         try:
             scmtool = Tool.objects.get(name=tool)
@@ -3611,7 +3487,7 @@ class RepositoryResource(WebAPIResource):
             return DOES_NOT_EXIST
 
         if not self.has_modify_permissions(request, repository):
-            return _no_access_error(request.user)
+            return self._no_access_error(request.user)
 
         for field in ('bug_tracker', 'encoding', 'mirror_path', 'name',
                       'password', 'path', 'public', 'raw_file_url',
@@ -3674,7 +3550,7 @@ class RepositoryResource(WebAPIResource):
             return DOES_NOT_EXIST
 
         if not self.has_delete_permissions(request, repository):
-            return _no_access_error(request.user)
+            return self._no_access_error(request.user)
 
         if not repository.review_requests.exists():
             repository.delete()
@@ -3927,14 +3803,14 @@ class BaseScreenshotResource(WebAPIResource):
             return DOES_NOT_EXIST
 
         if not review_request.is_mutable_by(request.user):
-            return _no_access_error(request.user)
+            return self._no_access_error(request.user)
 
         form_data = request.POST.copy()
         form = UploadScreenshotForm(form_data, request.FILES)
 
         if not form.is_valid():
             return INVALID_FORM_DATA, {
-                'fields': _get_form_errors(form),
+                'fields': self._get_form_errors(form),
             }
 
         try:
@@ -3976,13 +3852,13 @@ class BaseScreenshotResource(WebAPIResource):
             return DOES_NOT_EXIST
 
         if not review_request.is_mutable_by(request.user):
-            return _no_access_error(request.user)
+            return self._no_access_error(request.user)
 
         try:
             review_request_draft_resource.prepare_draft(request,
                                                         review_request)
         except PermissionDenied:
-            return _no_access_error(request.user)
+            return self._no_access_error(request.user)
 
         screenshot.draft_caption = caption
         screenshot.save()
@@ -4007,7 +3883,7 @@ class BaseScreenshotResource(WebAPIResource):
             draft = review_request_draft_resource.prepare_draft(request,
                                                                 review_request)
         except PermissionDenied:
-            return _no_access_error(request.user)
+            return self._no_access_error(request.user)
 
         draft.screenshots.remove(screenshot)
         draft.inactive_screenshots.add(screenshot)
@@ -4248,14 +4124,14 @@ class BaseFileAttachmentResource(WebAPIResource):
             return DOES_NOT_EXIST
 
         if not review_request.is_mutable_by(request.user):
-            return _no_access_error(request.user)
+            return self._no_access_error(request.user)
 
         form_data = request.POST.copy()
         form = UploadFileForm(form_data, request.FILES)
 
         if not form.is_valid():
             return INVALID_FORM_DATA, {
-                'fields': _get_form_errors(form),
+                'fields': self._get_form_errors(form),
             }
 
         try:
@@ -4307,7 +4183,7 @@ class BaseFileAttachmentResource(WebAPIResource):
                 review_request_draft_resource.prepare_draft(request,
                                                             review_request)
             except PermissionDenied:
-                return _no_access_error(request.user)
+                return self._no_access_error(request.user)
 
             file.draft_caption = caption
             file.save()
@@ -4345,7 +4221,7 @@ class BaseFileAttachmentResource(WebAPIResource):
             draft = review_request_draft_resource.prepare_draft(request,
                                                                 review_request)
         except PermissionDenied:
-            return _no_access_error(request.user)
+            return self._no_access_error(request.user)
 
         draft.file_attachments.remove(file_attachment)
         draft.inactive_file_attachments.add(file_attachment)
@@ -4713,7 +4589,7 @@ class ReviewRequestDraftResource(WebAPIResource):
         try:
             draft = self.prepare_draft(request, review_request)
         except PermissionDenied:
-            return _no_access_error(request.user)
+            return self._no_access_error(request.user)
 
         modified_objects = []
         invalid_fields = {}
@@ -4772,7 +4648,7 @@ class ReviewRequestDraftResource(WebAPIResource):
             return DOES_NOT_EXIST
 
         if not self.has_delete_permissions(request, draft, *args, **kwargs):
-            return _no_access_error(request.user)
+            return self._no_access_error(request.user)
 
         draft.delete()
 
@@ -4813,7 +4689,7 @@ class ReviewRequestDraftResource(WebAPIResource):
             target = getattr(draft, field_name)
             target.clear()
 
-            local_site = _get_local_site(local_site_name)
+            local_site = self._get_local_site(local_site_name)
 
             for value in values:
                 # Prevent problems if the user leaves a trailing comma,
@@ -5093,7 +4969,7 @@ class ReviewScreenshotCommentResource(BaseScreenshotCommentResource):
             return DOES_NOT_EXIST
 
         if not review_resource.has_modify_permissions(request, review):
-            return _no_access_error(request.user)
+            return self._no_access_error(request.user)
 
         try:
             screenshot = Screenshot.objects.get(pk=screenshot_id,
@@ -5178,7 +5054,7 @@ class ReviewScreenshotCommentResource(BaseScreenshotCommentResource):
                                                              *args, **kwargs)
 
         if not review_resource.has_modify_permissions(request, review):
-            return _no_access_error(request.user)
+            return self._no_access_error(request.user)
 
         # If we've changed the screenshot comment from having no issue
         # opened, to having an issue opened, we should update the issue
@@ -5278,7 +5154,7 @@ class ReviewReplyScreenshotCommentResource(BaseScreenshotCommentResource):
             return DOES_NOT_EXIST
 
         if not review_reply_resource.has_modify_permissions(request, reply):
-            return _no_access_error(request.user)
+            return self._no_access_error(request.user)
 
         try:
             comment = review_screenshot_comment_resource.get_object(
@@ -5353,7 +5229,7 @@ class ReviewReplyScreenshotCommentResource(BaseScreenshotCommentResource):
             return DOES_NOT_EXIST
 
         if not review_reply_resource.has_modify_permissions(request, reply):
-            return _no_access_error(request.user)
+            return self._no_access_error(request.user)
 
         for field in ('text',):
             value = kwargs.get(field, None)
@@ -5595,7 +5471,7 @@ class ReviewFileAttachmentCommentResource(BaseFileAttachmentCommentResource):
             return DOES_NOT_EXIST
 
         if not review_resource.has_modify_permissions(request, review):
-            return _no_access_error(request.user)
+            return self._no_access_error(request.user)
 
         try:
             file_attachment = \
@@ -5631,7 +5507,7 @@ class ReviewFileAttachmentCommentResource(BaseFileAttachmentCommentResource):
             text=text,
             issue_opened=bool(issue_opened))
 
-        _import_extra_data(new_comment.extra_data, extra_fields)
+        self._import_extra_data(new_comment.extra_data, extra_fields)
 
         if issue_opened:
             new_comment.issue_status = BaseComment.OPEN
@@ -5688,7 +5564,7 @@ class ReviewFileAttachmentCommentResource(BaseFileAttachmentCommentResource):
                                                              *args, **kwargs)
 
         if not review_resource.has_modify_permissions(request, review):
-            return _no_access_error(request.user)
+            return self._no_access_error(request.user)
 
         # If we've updated the comment from having no issue opened,
         # to having an issue opened, we need to set the issue status
@@ -5702,7 +5578,7 @@ class ReviewFileAttachmentCommentResource(BaseFileAttachmentCommentResource):
             if value is not None:
                 setattr(file_comment, field, value)
 
-        _import_extra_data(file_comment.extra_data, extra_fields)
+        self._import_extra_data(file_comment.extra_data, extra_fields)
         file_comment.save()
 
         return 200, {
@@ -5791,7 +5667,7 @@ class ReviewReplyFileAttachmentCommentResource(BaseFileAttachmentCommentResource
             return DOES_NOT_EXIST
 
         if not review_reply_resource.has_modify_permissions(request, reply):
-            return _no_access_error(request.user)
+            return self._no_access_error(request.user)
 
         try:
             comment = review_file_comment_resource.get_object(
@@ -5861,7 +5737,7 @@ class ReviewReplyFileAttachmentCommentResource(BaseFileAttachmentCommentResource
             return DOES_NOT_EXIST
 
         if not review_reply_resource.has_modify_permissions(request, reply):
-            return _no_access_error(request.user)
+            return self._no_access_error(request.user)
 
         for field in ('text',):
             value = kwargs.get(field, None)
@@ -6122,7 +5998,7 @@ class BaseReviewResource(WebAPIResource):
         if not self.has_modify_permissions(request, review):
             # Can't modify published reviews or those not belonging
             # to the user.
-            return _no_access_error(request.user)
+            return self._no_access_error(request.user)
 
         for field in ('ship_it', 'body_top', 'body_bottom'):
             value = kwargs.get(field, None)
@@ -6378,7 +6254,7 @@ class ReviewReplyResource(BaseReviewResource):
         if not self.has_modify_permissions(request, reply):
             # Can't modify published replies or those not belonging
             # to the user.
-            return _no_access_error(request.user)
+            return self._no_access_error(request.user)
 
         for field in ('body_top', 'body_bottom'):
             value = kwargs.get(field, None)
@@ -6691,7 +6567,7 @@ class ReviewRequestLastUpdateResource(WebAPIResource):
 
         if not review_request_resource.has_access_permissions(request,
                                                               review_request):
-            return _no_access_error(request.user)
+            return self._no_access_error(request.user)
 
         timestamp, updated_object = review_request.get_last_activity()
 
@@ -6954,7 +6830,7 @@ class ReviewRequestResource(WebAPIResource):
             * ``2010-06-27T16:26:30``
             * ``2010-06-27T16:26:30-08:00``
         """
-        local_site = _get_local_site(local_site_name)
+        local_site = self._get_local_site(local_site_name)
 
         if is_list:
             q = Q()
@@ -7136,14 +7012,14 @@ class ReviewRequestResource(WebAPIResource):
         that need to create review requests for another user.
         """
         user = request.user
-        local_site = _get_local_site(local_site_name)
+        local_site = self._get_local_site(local_site_name)
 
         if changenum is not None and commit_id is None:
             commit_id = str(changenum)
 
         if submit_as and user.username != submit_as:
             if not user.has_perm('reviews.can_submit_as_another_user'):
-                return _no_access_error(request.user)
+                return self._no_access_error(request.user)
 
             try:
                 user = User.objects.get(username=submit_as)
@@ -7168,7 +7044,7 @@ class ReviewRequestResource(WebAPIResource):
                 }
 
             if not repository.is_accessible_by(request.user):
-                return _no_access_error(request.user)
+                return self._no_access_error(request.user)
 
         try:
             review_request = ReviewRequest.objects.create(
@@ -7266,7 +7142,7 @@ class ReviewRequestResource(WebAPIResource):
             return DOES_NOT_EXIST
 
         if not self.has_modify_permissions(request, review_request):
-            return _no_access_error(request.user)
+            return self._no_access_error(request.user)
 
         if (status is not None and
             (review_request.status != string_to_status(status) or
@@ -7281,7 +7157,7 @@ class ReviewRequestResource(WebAPIResource):
                     raise AssertionError("Code path for invalid status '%s' "
                                          "should never be reached." % status)
             except PermissionError:
-                return _no_access_error(request.user)
+                return self._no_access_error(request.user)
 
         if changenum is not None and commit_id is None:
             commit_id = str(changenum)
@@ -7519,7 +7395,7 @@ class SearchResource(WebAPIResource, DjbletsUserResource):
         summary.
         """
         search_q = request.GET.get('q', None)
-        local_site = _get_local_site(local_site_name)
+        local_site = self._get_local_site(local_site_name)
         if local_site:
             query = local_site.users.filter(is_active=True)
         else:
@@ -7537,7 +7413,7 @@ class SearchResource(WebAPIResource, DjbletsUserResource):
             query = query.filter(q)
 
         search_q = request.GET.get('q', None)
-        local_site = _get_local_site(local_site_name)
+        local_site = self._get_local_site(local_site_name)
         query_groups = Group.objects.filter(local_site=local_site)
 
         if search_q:
@@ -7632,7 +7508,7 @@ class ValidateDiffResource(DiffResource):
     )
     def create(self, request, repository, basedir=None, local_site_name=None,
                *args, **kwargs):
-        local_site = _get_local_site(local_site_name)
+        local_site = self._get_local_site(local_site_name)
 
         path = request.FILES.get('path')
         parent_diff_path = request.FILES.get('parent_diff_path')
