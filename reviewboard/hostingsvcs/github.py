@@ -257,10 +257,16 @@ class GitHub(HostingService):
             return False
 
     def get_branches(self, repository):
-        url = self._build_api_url(repository, 'git/refs/heads')
-        rsp = self._api_get(url)
-
         results = []
+
+        url = self._build_api_url(repository, 'git/refs/heads')
+        try:
+            rsp = self._api_get(url)
+        except Exception, e:
+            logging.warning('Failed to fetch commits from %s: %s',
+                            url, e)
+            return results
+
         for ref in rsp:
             refname = ref['ref']
 
@@ -274,14 +280,20 @@ class GitHub(HostingService):
         return results
 
     def get_commits(self, repository, start=None):
+        results = []
+
         resource = 'commits'
         url = self._build_api_url(repository, resource)
         if start:
             url += '&sha=%s' % start
 
-        rsp = self._api_get(url)
+        try:
+            rsp = self._api_get(url)
+        except Exception, e:
+            logging.warning('Failed to fetch commits from %s: %s',
+                            url, e)
+            return results
 
-        results = []
         for item in rsp:
             commit = Commit(
                 item['commit']['author']['name'],
