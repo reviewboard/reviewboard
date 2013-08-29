@@ -4134,6 +4134,10 @@ class BaseFileAttachmentResource(WebAPIResource):
             'type': str,
             'description': 'The URL to a 24x24 icon representing this file.'
         },
+        'mimetype': {
+            'type': str,
+            'description': 'The mimetype for the file.',
+        },
         'thumbnail': {
             'type': str,
             'description': 'A thumbnail representing this file.',
@@ -4152,7 +4156,9 @@ class BaseFileAttachmentResource(WebAPIResource):
         review_request = review_request_resource.get_object(
             request, review_request_id, *args, **kwargs)
 
-        q = Q(review_request=review_request)
+        q = (Q(review_request=review_request) &
+             Q(added_in_filediff__isnull=True) &
+             Q(repository__isnull=True))
 
         if not is_list:
             q = q | Q(inactive_review_request=review_request)

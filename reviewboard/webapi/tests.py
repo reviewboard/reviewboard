@@ -17,7 +17,7 @@ import paramiko
 from reviewboard import initialize
 from reviewboard.attachments.models import FileAttachment
 from reviewboard.changedescs.models import ChangeDescription
-from reviewboard.diffviewer.models import DiffSet
+from reviewboard.diffviewer.models import DiffSet, FileDiff
 from reviewboard.notifications.tests import EmailTestHelper
 from reviewboard.reviews.models import (DefaultReviewer,
                                         FileAttachmentComment, Group,
@@ -6705,6 +6705,72 @@ class FileAttachmentResourceTests(BaseWebAPITestCase):
 
     list_mimetype = _build_mimetype('file-attachments')
     item_mimetype = _build_mimetype('file-attachment')
+
+    def test_get_file_attachments(self):
+        """Testing the GET review-requests/<id>/file-attachments/ API"""
+        rsp = self._postNewReviewRequest()
+        self.assertEqual(rsp['stat'], 'ok')
+        review_request = \
+            ReviewRequest.objects.get(pk=rsp['review_request']['id'])
+
+        trophy_filename = self._getTrophyFilename()
+
+        # This is the file attachment that should be returned.
+        f = open(trophy_filename, "r")
+        file_attachment = FileAttachment.objects.create(
+            orig_filename='trophy1.png',
+            mimetype='image/png')
+        file_attachment.file.save('trophy.png', File(f), save=True)
+        f.close()
+        review_request.file_attachments.add(file_attachment)
+
+        # This attachment shouldn't be shown in the results. It represents
+        # a file to be shown in the diff viewer.
+        f = open(trophy_filename, "r")
+        file_attachment = FileAttachment.objects.create(
+            orig_filename='trophy2.png',
+            mimetype='image/png',
+            repo_path='/trophy.png',
+            repo_revision='123',
+            repository=review_request.repository)
+        file_attachment.file.save('trophy.png', File(f), save=True)
+        f.close()
+        review_request.file_attachments.add(file_attachment)
+
+        # This attachment shouldn't be shown either, for the same
+        # reasons.
+        diffset = DiffSet.objects.create(
+            name='diffset',
+            revision=1,
+            history=review_request.diffset_history,
+            repository=review_request.repository)
+        filediff = FileDiff.objects.create(
+            diffset=diffset,
+            source_file='/trophy3.png',
+            dest_file='/trophy3.png',
+            source_revision='123',
+            dest_detail='124',
+            status=FileDiff.MODIFIED)
+
+        f = open(trophy_filename, "r")
+        file_attachment = FileAttachment.objects.create(
+            orig_filename='trophy3.png',
+            mimetype='image/png',
+            added_in_filediff=filediff)
+        file_attachment.file.save('trophy.png', File(f), save=True)
+        f.close()
+        review_request.file_attachments.add(file_attachment)
+
+        review_request.publish(review_request.submitter)
+
+        rsp = self.apiGet(
+            self.get_list_url(review_request),
+            expected_mimetype=self.list_mimetype)
+        self.assertEqual(rsp['stat'], 'ok')
+
+        file_attachments = rsp['file_attachments']
+        self.assertEqual(len(file_attachments), 1)
+        self.assertEqual(file_attachments[0]['filename'], 'trophy1.png')
 
     def test_get_file_attachment_not_modified(self):
         """Testing the GET review-requests/<id>/file-attachments/<id>/ API with Not Modified response"""
