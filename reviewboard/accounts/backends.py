@@ -202,10 +202,15 @@ class LDAPBackend(AuthBackend):
                     ldapo.bind_s(search[0][0], password)
 
             else :
-                # Attempt to bind using the given uid and password. It may be
-                # that we really need a setting for how the DN in this is
-                # constructed; this way is correct for my system
-                userbinding=','.join([uid,settings.LDAP_BASE_DN])
+                # Bind anonymously to the server, then search for the user with
+                # the given base DN and uid. If the user is found, a fully
+                # qualified DN is returned. Authentication is then done with
+                # bind using this fully qualified DN.
+                ldapo.simple_bind_s()
+                search = ldapo.search_s(settings.LDAP_BASE_DN,
+                                        ldap.SCOPE_SUBTREE,
+                                        uid)
+                userbinding = search[0][0]
                 ldapo.bind_s(userbinding, password)
 
             return self.get_or_create_user(username, None, ldapo)
