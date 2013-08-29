@@ -577,7 +577,6 @@ def comment_issue(context, review_request, comment, comment_type):
 
     issue_status = BaseComment.issue_status_to_string(comment.issue_status)
     user = context.get('user', None)
-    interactive = 'false'
 
     return {
         'comment': comment,

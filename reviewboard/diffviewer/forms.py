@@ -2,7 +2,7 @@ from django import forms
 from django.utils.encoding import smart_unicode
 from django.utils.translation import ugettext as _
 
-from reviewboard.diffviewer.models import DiffSet, FileDiff
+from reviewboard.diffviewer.models import DiffSet
 
 
 class NoBaseDirError(ValueError):

@@ -2,7 +2,6 @@ import pytz
 import logging
 
 from django.contrib.auth.models import User
-from django.contrib.staticfiles.templatetags.staticfiles import static
 from django.http import Http404
 from django.template.defaultfilters import date
 from django.utils.datastructures import SortedDict

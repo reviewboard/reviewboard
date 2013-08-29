@@ -11,7 +11,7 @@ from kgb import SpyAgency
 
 from reviewboard.hostingsvcs.models import HostingServiceAccount
 from reviewboard.hostingsvcs.service import get_hosting_service
-from reviewboard.scmtools.core import Branch, Commit
+from reviewboard.scmtools.core import Branch
 from reviewboard.scmtools.errors import FileNotFoundError
 from reviewboard.scmtools.models import Repository, Tool
 

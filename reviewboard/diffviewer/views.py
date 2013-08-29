@@ -3,7 +3,7 @@ import traceback
 
 from django.core.paginator import Paginator
 from django.http import HttpResponseServerError, Http404
-from django.shortcuts import get_object_or_404, render_to_response
+from django.shortcuts import get_object_or_404
 from django.template import RequestContext
 from django.template.loader import render_to_string
 from django.utils.translation import ugettext as _
@@ -15,8 +15,7 @@ from reviewboard.diffviewer.diffutils import (get_diff_files,
                                               get_enable_highlighting)
 from reviewboard.diffviewer.errors import UserVisibleError
 from reviewboard.diffviewer.models import DiffSet, FileDiff
-from reviewboard.diffviewer.renderers import (get_diff_renderer,
-                                              get_diff_renderer_class)
+from reviewboard.diffviewer.renderers import get_diff_renderer
 
 
 def get_collapse_diff(request):

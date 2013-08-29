@@ -14,13 +14,12 @@ from django.shortcuts import (get_object_or_404, get_list_or_404,
                               render_to_response)
 from django.template.context import RequestContext
 from django.template.loader import render_to_string
-from django.utils import simplejson, timezone
+from django.utils import timezone
 from django.utils.decorators import method_decorator
 from django.utils.http import http_date
 from django.utils.safestring import mark_safe
 from django.utils.timezone import utc
 from django.utils.translation import ugettext as _
-from django.views.decorators.cache import cache_control
 from django.views.generic.list_detail import object_list
 
 from djblets.auth.util import login_required
@@ -51,16 +50,13 @@ from reviewboard.reviews.datagrids import (DashboardDataGrid,
                                            SubmitterDataGrid,
                                            WatchedGroupDataGrid,
                                            get_sidebar_counts)
-from reviewboard.reviews.errors import OwnershipError
 from reviewboard.reviews.models import (Comment,
                                         FileAttachmentComment,
                                         Group, ReviewRequest, Review,
                                         Screenshot, ScreenshotComment)
 from reviewboard.scmtools.core import PRE_CREATION
-from reviewboard.scmtools.errors import SCMError
 from reviewboard.scmtools.models import Repository
 from reviewboard.site.models import LocalSite
-from reviewboard.ssh.errors import SSHError
 from reviewboard.webapi.encoder import status_to_string
 
 

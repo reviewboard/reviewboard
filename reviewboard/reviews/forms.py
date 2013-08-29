@@ -1,20 +1,15 @@
-import logging
 import re
 
 from django import forms
 from django.contrib.admin.widgets import FilteredSelectMultiple
-from django.db.models import Q
 from django.utils.translation import ugettext as _
 
 from reviewboard.diffviewer import forms as diffviewer_forms
-from reviewboard.diffviewer.errors import EmptyDiffError
 from reviewboard.diffviewer.models import DiffSet
-from reviewboard.reviews.errors import OwnershipError
 from reviewboard.reviews.models import (DefaultReviewer, Group,
                                         ReviewRequestDraft, Screenshot)
 from reviewboard.scmtools.models import Repository
 from reviewboard.site.validation import validate_review_groups, validate_users
-from reviewboard.ssh.errors import SSHError
 
 
 class DefaultReviewerForm(forms.ModelForm):

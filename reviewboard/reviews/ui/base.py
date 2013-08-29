@@ -4,7 +4,6 @@ from uuid import uuid4
 
 import mimeparse
 from django.http import HttpResponse
-from django.shortcuts import render_to_response
 from django.template.context import RequestContext
 from django.template.loader import render_to_string
 from django.utils import simplejson
