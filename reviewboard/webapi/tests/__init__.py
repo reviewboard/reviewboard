@@ -14,7 +14,7 @@ from djblets.webapi.errors import (DOES_NOT_EXIST, INVALID_FORM_DATA,
                                    PERMISSION_DENIED)
 import paramiko
 
-from reviewboard import initialize
+from reviewboard import initialize, scmtools
 from reviewboard.attachments.models import FileAttachment
 from reviewboard.changedescs.models import ChangeDescription
 from reviewboard.diffviewer.models import DiffSet, FileDiff
@@ -75,8 +75,8 @@ class BaseWebAPITestCase(TestCase, EmailTestHelper):
         fixtures = getattr(self, 'fixtures', [])
 
         if 'test_scmtools' in fixtures:
-            svn_repo_path = os.path.join(os.path.dirname(__file__),
-                                         '../scmtools/testdata/svn_repo')
+            svn_repo_path = os.path.join(os.path.dirname(scmtools.__file__),
+                                         'testdata', 'svn_repo')
             tool = Tool.objects.get(name='Subversion')
             self.repository = Repository(name='Subversion SVN',
                                          path='file://' + svn_repo_path,
@@ -486,9 +486,8 @@ class BaseWebAPITestCase(TestCase, EmailTestHelper):
 
     def _postNewDiff(self, review_request):
         """Creates a diff and returns the payload response."""
-        diff_filename = os.path.join(
-            os.path.dirname(os.path.dirname(__file__)),
-            "scmtools", "testdata", "svn_makefile.diff")
+        diff_filename = os.path.join(os.path.dirname(scmtools.__file__),
+                                     'testdata', 'svn_makefile.diff')
 
         f = open(diff_filename, "r")
         rsp = self.apiPost(
@@ -1022,8 +1021,8 @@ class RepositoryResourceTests(BaseWebAPITestCase):
     def _post_repository(self, use_local_site, data={}, expected_status=201):
         repo_name = 'Test Repository'
         repo_path = 'file://' + os.path.abspath(
-            os.path.join(os.path.dirname(__file__),
-                         '../scmtools/testdata/svn_repo'))
+            os.path.join(os.path.dirname(scmtools.__file__),
+                         'testdata', 'svn_repo'))
 
         local_site_name = self._get_local_site_info(use_local_site)[1]
 
@@ -1055,8 +1054,8 @@ class RepositoryResourceTests(BaseWebAPITestCase):
     def _put_repository(self, use_local_site, data={}, expected_status=200):
         repo_name = 'New Test Repository'
         repo_path = 'file://' + os.path.abspath(
-            os.path.join(os.path.dirname(__file__),
-                         '../scmtools/testdata/svn_repo'))
+            os.path.join(os.path.dirname(scmtools.__file__),
+                         'testdata', 'svn_repo'))
 
         local_site, local_site_name = self._get_local_site_info(use_local_site)
         repo_id = Repository.objects.filter(local_site=local_site,
@@ -1228,8 +1227,8 @@ class RepositoryBranchesResourceTests(BaseWebAPITestCase):
 
     def test_get_repository_branches_with_no_support(self):
         """Testing the GET repositories/<id>/branches/ API with a repository that does not implement it"""
-        hg_repo_path = os.path.join(os.path.dirname(__file__),
-                                    '../scmtools/testdata/hg_repo.bundle')
+        hg_repo_path = os.path.join(os.path.dirname(scmtools.__file__),
+                                    'testdata', 'hg_repo.bundle')
         repository = Repository(name='Test HG',
                                 path=hg_repo_path,
                                 tool=Tool.objects.get(name='Mercurial'))
@@ -1301,8 +1300,8 @@ class RepositoryCommitsResourceTests(BaseWebAPITestCase):
 
     def test_get_repository_commits_with_no_support(self):
         """Testing the GET repositories/<id>/commits/ API with a repository that does not implement it"""
-        hg_repo_path = os.path.join(os.path.dirname(__file__),
-                                    '../scmtools/testdata/hg_repo.bundle')
+        hg_repo_path = os.path.join(os.path.dirname(scmtools.__file__),
+                                    'testdata', 'hg_repo.bundle')
         repository = Repository(name='Test HG',
                                 path=hg_repo_path,
                                 tool=Tool.objects.get(name='Mercurial'))
@@ -5393,9 +5392,8 @@ class DiffResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['stat'], 'ok')
         ReviewRequest.objects.get(pk=rsp['review_request']['id'])
 
-        diff_filename = os.path.join(
-            os.path.dirname(os.path.dirname(__file__)),
-            "scmtools", "testdata", "svn_makefile.diff")
+        diff_filename = os.path.join(os.path.dirname(scmtools.__file__),
+                                     'testdata', 'svn_makefile.diff')
         f = open(diff_filename, "r")
         rsp = self.apiPost(
             rsp['review_request']['links']['diffs']['href'],
@@ -5435,9 +5433,8 @@ class DiffResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['stat'], 'ok')
         ReviewRequest.objects.get(pk=rsp['review_request']['id'])
 
-        diff_filename = os.path.join(
-            os.path.dirname(os.path.dirname(__file__)),
-            "scmtools", "testdata", "svn_makefile.diff")
+        diff_filename = os.path.join(os.path.dirname(scmtools.__file__),
+                                     'testdata', 'svn_makefile.diff')
         f = open(diff_filename, "r")
         rsp = self.apiPost(
             rsp['review_request']['links']['diffs']['href'],
@@ -5458,9 +5455,8 @@ class DiffResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['stat'], 'ok')
         ReviewRequest.objects.get(pk=rsp['review_request']['id'])
 
-        diff_filename = os.path.join(
-            os.path.dirname(os.path.dirname(__file__)),
-            "scmtools", "testdata", "svn_makefile.diff")
+        diff_filename = os.path.join(os.path.dirname(scmtools.__file__),
+                                     'testdata', 'svn_makefile.diff')
         f = open(diff_filename, "r")
 
         rsp = self.apiPost(
@@ -5493,9 +5489,8 @@ class DiffResourceTests(BaseWebAPITestCase):
 
         self.assertEqual(rsp['stat'], 'ok')
 
-        diff_filename = os.path.join(
-            os.path.dirname(os.path.dirname(__file__)),
-            'scmtools', 'testdata', 'svn_makefile.diff')
+        diff_filename = os.path.join(os.path.dirname(scmtools.__file__),
+                                     'testdata', 'svn_makefile.diff')
         f = open(diff_filename, 'r')
         rsp = self.apiPost(
             rsp['review_request']['links']['diffs']['href'],
@@ -8409,9 +8404,8 @@ class ValidateDiffResourceTests(BaseWebAPITestCase):
 
     def test_post_diff(self):
         """Testing the POST validation/diffs/ API"""
-        diff_filename = os.path.join(
-            os.path.dirname(os.path.dirname(__file__)),
-            "scmtools", "testdata", "svn_makefile.diff")
+        diff_filename = os.path.join(os.path.dirname(scmtools.__file__),
+                                     'testdata', 'svn_makefile.diff')
         f = open(diff_filename, "r")
 
         self.apiPost(
@@ -8428,9 +8422,8 @@ class ValidateDiffResourceTests(BaseWebAPITestCase):
 
     def test_post_diff_with_missing_basedir(self):
         """Testing the POST validations/diffs/ API with a missing basedir"""
-        diff_filename = os.path.join(
-            os.path.dirname(os.path.dirname(__file__)),
-            'scmtools', 'testdata', 'svn_makefile.diff')
+        diff_filename = os.path.join(os.path.dirname(scmtools.__file__),
+                                     'testdata', 'svn_makefile.diff')
         f = open(diff_filename, 'r')
 
         rsp = self.apiPost(
@@ -8448,9 +8441,8 @@ class ValidateDiffResourceTests(BaseWebAPITestCase):
 
     def test_post_diff_with_files_not_found(self):
         """Testing the POST validation/diffs/ API with source files not found"""
-        diff_filename = os.path.join(
-            os.path.dirname(os.path.dirname(__file__)),
-            'scmtools', 'testdata', 'svn_file_not_found.diff')
+        diff_filename = os.path.join(os.path.dirname(scmtools.__file__),
+                                     'testdata', 'svn_file_not_found.diff')
         f = open(diff_filename, 'r')
 
         rsp = self.apiPost(
@@ -8471,9 +8463,8 @@ class ValidateDiffResourceTests(BaseWebAPITestCase):
     def test_post_diff_with_parse_error(self):
         """Testing the POST validation/diffs/ API with a malformed diff file"""
         # Post a git diff against the svn repository
-        diff_filename = os.path.join(
-            os.path.dirname(os.path.dirname(__file__)),
-            'scmtools', 'testdata', 'git_complex.diff')
+        diff_filename = os.path.join(os.path.dirname(scmtools.__file__),
+                                     'testdata', 'git_complex.diff')
         f = open(diff_filename, 'r')
         rsp = self.apiPost(
             self.get_url(),
