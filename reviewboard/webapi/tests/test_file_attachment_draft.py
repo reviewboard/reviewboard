@@ -4,19 +4,18 @@ from djblets.webapi.errors import PERMISSION_DENIED
 
 from reviewboard.attachments.models import FileAttachment
 from reviewboard.reviews.models import ReviewRequest
-from reviewboard.site.urlresolvers import local_site_reverse
 from reviewboard.scmtools.models import Repository
-from reviewboard.webapi.tests.base import BaseWebAPITestCase, _build_mimetype
-from reviewboard.webapi.tests.test_file_attachment import \
-    FileAttachmentResourceTests
+from reviewboard.webapi.tests.base import BaseWebAPITestCase
+from reviewboard.webapi.tests.mimetypes import (
+    draft_file_attachment_item_mimetype,
+    file_attachment_item_mimetype)
+from reviewboard.webapi.tests.urls import (get_draft_file_attachment_item_url,
+                                           get_draft_file_attachment_list_url)
 
 
 class FileAttachmentDraftResourceTests(BaseWebAPITestCase):
     """Testing the FileAttachmentDraftResource APIs."""
     fixtures = ['test_users', 'test_scmtools']
-
-    list_mimetype = _build_mimetype('draft-file-attachments')
-    item_mimetype = _build_mimetype('draft-file-attachment')
 
     def test_post_file_attachments(self):
         """Testing the POST review-requests/<id>/draft/file-attachments/ API"""
@@ -32,7 +31,7 @@ class FileAttachmentDraftResourceTests(BaseWebAPITestCase):
         rsp = self.apiPost(
             file_attachments_url,
             {'path': f},
-            expected_mimetype=FileAttachmentResourceTests.item_mimetype)
+            expected_mimetype=file_attachment_item_mimetype)
         f.close()
 
         self.assertEqual(rsp['stat'], 'ok')
@@ -46,7 +45,7 @@ class FileAttachmentDraftResourceTests(BaseWebAPITestCase):
         f = open(self._getTrophyFilename(), "r")
         self.assert_(f)
         rsp = self.apiPost(
-            self.get_list_url(review_request),
+            get_draft_file_attachment_list_url(review_request),
             {
                 'caption': 'Trophy',
                 'path': f,
@@ -79,9 +78,10 @@ class FileAttachmentDraftResourceTests(BaseWebAPITestCase):
         }
 
         rsp = self.apiPost(
-            self.get_list_url(review_request, self.local_site_name),
+            get_draft_file_attachment_list_url(review_request,
+                                               self.local_site_name),
             post_data,
-            expected_mimetype=self.item_mimetype)
+            expected_mimetype=draft_file_attachment_item_mimetype)
         f.close()
 
         self.assertEqual(rsp['stat'], 'ok')
@@ -101,7 +101,8 @@ class FileAttachmentDraftResourceTests(BaseWebAPITestCase):
         f = open(self._getTrophyFilename(), 'r')
         self.assertNotEqual(f, None)
         rsp = self.apiPost(
-            self.get_list_url(review_request, self.local_site_name),
+            get_draft_file_attachment_list_url(review_request,
+                                               self.local_site_name),
             {'path': f},
             expected_status=403)
         f.close()
@@ -121,12 +122,12 @@ class FileAttachmentDraftResourceTests(BaseWebAPITestCase):
         f = open(self._getTrophyFilename(), "r")
         self.assert_(f)
         rsp = self.apiPost(
-            self.get_list_url(review_request),
+            get_draft_file_attachment_list_url(review_request),
             {
                 'caption': 'Trophy',
                 'path': f,
             },
-            expected_mimetype=self.item_mimetype)
+            expected_mimetype=draft_file_attachment_item_mimetype)
         f.close()
         review_request.publish(self.user)
 
@@ -134,9 +135,10 @@ class FileAttachmentDraftResourceTests(BaseWebAPITestCase):
 
         # Now modify the caption.
         rsp = self.apiPut(
-            self.get_item_url(review_request, file_attachment.id),
+            get_draft_file_attachment_item_url(review_request,
+                                               file_attachment.id),
             {'caption': draft_caption},
-            expected_mimetype=self.item_mimetype)
+            expected_mimetype=draft_file_attachment_item_mimetype)
 
         self.assertEqual(rsp['stat'], 'ok')
 
@@ -157,10 +159,11 @@ class FileAttachmentDraftResourceTests(BaseWebAPITestCase):
         review_request.publish(user)
 
         rsp = self.apiPut(
-            self.get_item_url(review_request, file_attachment_id,
-                              self.local_site_name),
+            get_draft_file_attachment_item_url(review_request,
+                                               file_attachment_id,
+                                               self.local_site_name),
             {'caption': draft_caption},
-            expected_mimetype=self.item_mimetype)
+            expected_mimetype=draft_file_attachment_item_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
 
         draft = review_request.get_draft(user)
@@ -179,27 +182,10 @@ class FileAttachmentDraftResourceTests(BaseWebAPITestCase):
         self._login_user()
 
         rsp = self.apiPut(
-            self.get_item_url(review_request, file_attachment_id,
-                              self.local_site_name),
+            get_draft_file_attachment_item_url(review_request,
+                                               file_attachment_id,
+                                               self.local_site_name),
             {'caption': 'test'},
             expected_status=403)
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
-
-    def get_list_url(self, review_request, local_site_name=None):
-        return local_site_reverse(
-            'draft-file-attachments-resource',
-            local_site_name=local_site_name,
-            kwargs={
-                'review_request_id': review_request.display_id,
-            })
-
-    def get_item_url(self, review_request, file_attachment_id,
-                     local_site_name=None):
-        return local_site_reverse(
-            'draft-file-attachment-resource',
-            local_site_name=local_site_name,
-            kwargs={
-                'review_request_id': review_request.display_id,
-                'file_attachment_id': file_attachment_id,
-            })

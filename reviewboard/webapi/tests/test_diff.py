@@ -7,17 +7,17 @@ from reviewboard import scmtools
 from reviewboard.diffviewer.models import DiffSet
 from reviewboard.reviews.models import ReviewRequest
 from reviewboard.site.models import LocalSite
-from reviewboard.site.urlresolvers import local_site_reverse
 from reviewboard.webapi.errors import DIFF_TOO_BIG
-from reviewboard.webapi.tests.base import BaseWebAPITestCase, _build_mimetype
+from reviewboard.webapi.tests.base import BaseWebAPITestCase
+from reviewboard.webapi.tests.mimetypes import (diff_item_mimetype,
+                                                diff_list_mimetype)
+from reviewboard.webapi.tests.urls import (get_diff_item_url,
+                                           get_diff_list_url)
 
 
 class DiffResourceTests(BaseWebAPITestCase):
     """Testing the DiffResource APIs."""
     fixtures = ['test_users', 'test_scmtools']
-
-    list_mimetype = _build_mimetype('diffs')
-    item_mimetype = _build_mimetype('diff')
 
     def test_post_diffs(self):
         """Testing the POST review-requests/<id>/diffs/ API"""
@@ -35,7 +35,7 @@ class DiffResourceTests(BaseWebAPITestCase):
                 'basedir': '/trunk',
                 'base_commit_id': '1234',
             },
-            expected_mimetype=self.item_mimetype)
+            expected_mimetype=diff_item_mimetype)
         f.close()
 
         self.assertEqual(rsp['stat'], 'ok')
@@ -131,7 +131,7 @@ class DiffResourceTests(BaseWebAPITestCase):
                 'path': f,
                 'basedir': '/trunk',
             },
-            expected_mimetype=self.item_mimetype)
+            expected_mimetype=diff_item_mimetype)
         f.close()
 
         self.assertEqual(rsp['stat'], 'ok')
@@ -142,8 +142,8 @@ class DiffResourceTests(BaseWebAPITestCase):
     def test_get_diffs(self):
         """Testing the GET review-requests/<id>/diffs/ API"""
         review_request = ReviewRequest.objects.get(pk=2)
-        rsp = self.apiGet(self.get_list_url(review_request),
-                          expected_mimetype=self.list_mimetype)
+        rsp = self.apiGet(get_diff_list_url(review_request),
+                          expected_mimetype=diff_list_mimetype)
 
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(rsp['diffs'][0]['id'], 2)
@@ -156,9 +156,9 @@ class DiffResourceTests(BaseWebAPITestCase):
             local_site__name=self.local_site_name)[0]
         self._login_user(local_site=True)
 
-        rsp = self.apiGet(self.get_list_url(review_request,
+        rsp = self.apiGet(get_diff_list_url(review_request,
                                             self.local_site_name),
-                          expected_mimetype=self.list_mimetype)
+                          expected_mimetype=diff_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(rsp['diffs'][0]['id'],
                          review_request.diffset_history.diffsets.latest().id)
@@ -170,15 +170,15 @@ class DiffResourceTests(BaseWebAPITestCase):
         """Testing the GET review-requests/<id>/diffs API with a local site and Permission Denied error"""
         review_request = ReviewRequest.objects.filter(
             local_site__name=self.local_site_name)[0]
-        self.apiGet(self.get_list_url(review_request, self.local_site_name),
+        self.apiGet(get_diff_list_url(review_request, self.local_site_name),
                     expected_status=403)
 
     @add_fixtures(['test_reviewrequests'])
     def test_get_diff(self):
         """Testing the GET review-requests/<id>/diffs/<revision>/ API"""
         review_request = ReviewRequest.objects.get(pk=2)
-        rsp = self.apiGet(self.get_item_url(review_request, 1),
-                          expected_mimetype=self.item_mimetype)
+        rsp = self.apiGet(get_diff_item_url(review_request, 1),
+                          expected_mimetype=diff_item_mimetype)
 
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(rsp['diff']['id'], 2)
@@ -192,9 +192,9 @@ class DiffResourceTests(BaseWebAPITestCase):
         diff = review_request.diffset_history.diffsets.latest()
         self._login_user(local_site=True)
 
-        rsp = self.apiGet(self.get_item_url(review_request, diff.revision,
+        rsp = self.apiGet(get_diff_item_url(review_request, diff.revision,
                                             self.local_site_name),
-                          expected_mimetype=self.item_mimetype)
+                          expected_mimetype=diff_item_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(rsp['diff']['id'], diff.id)
         self.assertEqual(rsp['diff']['name'], diff.name)
@@ -203,7 +203,7 @@ class DiffResourceTests(BaseWebAPITestCase):
     def test_get_diff_not_modified(self):
         """Testing the GET review-requests/<id>/diffs/<revision>/ API with Not Modified response"""
         review_request = ReviewRequest.objects.get(pk=2)
-        self._testHttpCaching(self.get_item_url(review_request, 1),
+        self._testHttpCaching(get_diff_item_url(review_request, 1),
                               check_last_modified=True)
 
     @add_fixtures(['test_reviewrequests', 'test_site'])
@@ -212,24 +212,6 @@ class DiffResourceTests(BaseWebAPITestCase):
         review_request = ReviewRequest.objects.filter(
             local_site__name=self.local_site_name)[0]
         diff = review_request.diffset_history.diffsets.latest()
-        self.apiGet(self.get_item_url(review_request, diff.revision,
+        self.apiGet(get_diff_item_url(review_request, diff.revision,
                                       self.local_site_name),
                     expected_status=403)
-
-    @classmethod
-    def get_list_url(cls, review_request, local_site_name=None):
-        return local_site_reverse(
-            'diffs-resource',
-            local_site_name=local_site_name,
-            kwargs={
-                'review_request_id': review_request.display_id,
-            })
-
-    def get_item_url(self, review_request, diff_revision, local_site_name=None):
-        return local_site_reverse(
-            'diff-resource',
-            local_site_name=local_site_name,
-            kwargs={
-                'review_request_id': review_request.display_id,
-                'diff_revision': diff_revision,
-            })

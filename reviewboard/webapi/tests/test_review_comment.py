@@ -4,25 +4,28 @@ from djblets.webapi.errors import PERMISSION_DENIED
 
 from reviewboard.diffviewer.models import DiffSet
 from reviewboard.reviews.models import Comment, Review, ReviewRequest
-from reviewboard.site.urlresolvers import local_site_reverse
-from reviewboard.webapi.tests.base import BaseWebAPITestCase, _build_mimetype
-from reviewboard.webapi.tests.test_review import ReviewResourceTests
+from reviewboard.webapi.tests.base import BaseWebAPITestCase
+from reviewboard.webapi.tests.mimetypes import (
+    review_item_mimetype,
+    review_diff_comment_item_mimetype,
+    review_diff_comment_list_mimetype)
+from reviewboard.webapi.tests.urls import (
+    get_review_list_url,
+    get_review_diff_comment_item_url,
+    get_review_diff_comment_list_url)
 
 
 class ReviewCommentResourceTests(BaseWebAPITestCase):
     """Testing the ReviewCommentResource APIs."""
     fixtures = ['test_users', 'test_scmtools']
 
-    list_mimetype = _build_mimetype('review-diff-comments')
-    item_mimetype = _build_mimetype('review-diff-comment')
-
     @add_fixtures(['test_reviewrequests'])
     def test_get_diff_comments(self):
         """Testing the GET review-requests/<id>/reviews/<id>/diff-comments/ API"""
         review = Review.objects.filter(comments__pk__gt=0)[0]
 
-        rsp = self.apiGet(self.get_list_url(review),
-                          expected_mimetype=self.list_mimetype)
+        rsp = self.apiGet(get_review_diff_comment_list_url(review),
+                          expected_mimetype=review_diff_comment_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(len(rsp['diff_comments']), review.comments.count())
 
@@ -31,9 +34,9 @@ class ReviewCommentResourceTests(BaseWebAPITestCase):
         """Testing the GET review-requests/<id>/reviews/<id>/diff-comments/?counts-only=1 API"""
         review = Review.objects.filter(comments__pk__gt=0)[0]
 
-        rsp = self.apiGet(self.get_list_url(review), {
+        rsp = self.apiGet(get_review_diff_comment_list_url(review), {
             'counts-only': 1,
-        }, expected_mimetype=self.list_mimetype)
+        }, expected_mimetype=review_diff_comment_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(rsp['count'], review.comments.count())
 
@@ -43,8 +46,9 @@ class ReviewCommentResourceTests(BaseWebAPITestCase):
         review_id = self.test_post_diff_comments_with_site()
         review = Review.objects.get(pk=review_id)
 
-        rsp = self.apiGet(self.get_list_url(review, self.local_site_name),
-                          expected_mimetype=self.list_mimetype)
+        rsp = self.apiGet(
+            get_review_diff_comment_list_url(review, self.local_site_name),
+            expected_mimetype=review_diff_comment_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(len(rsp['diff_comments']), review.comments.count())
 
@@ -56,8 +60,9 @@ class ReviewCommentResourceTests(BaseWebAPITestCase):
 
         self._login_user()
 
-        rsp = self.apiGet(self.get_list_url(review, self.local_site_name),
-                          expected_status=403)
+        rsp = self.apiGet(
+            get_review_diff_comment_list_url(review, self.local_site_name),
+            expected_status=403)
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
@@ -66,7 +71,7 @@ class ReviewCommentResourceTests(BaseWebAPITestCase):
         """Testing the GET review-requests/<id>/reviews/<id>/diff-comments/<id>/ API with Not Modified response"""
         comment = Comment.objects.all()[0]
         self._testHttpCaching(
-            self.get_item_url(comment.review.get(), comment.id),
+            get_review_diff_comment_item_url(comment.review.get(), comment.id),
             check_last_modified=True)
 
     def test_post_diff_comments(self):
@@ -85,8 +90,8 @@ class ReviewCommentResourceTests(BaseWebAPITestCase):
         # Make these public.
         review_request.publish(self.user)
 
-        rsp = self.apiPost(ReviewResourceTests.get_list_url(review_request),
-                           expected_mimetype=ReviewResourceTests.item_mimetype)
+        rsp = self.apiPost(get_review_list_url(review_request),
+                           expected_mimetype=review_item_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
         self.assertTrue('review' in rsp)
         review_id = rsp['review']['id']
@@ -94,8 +99,8 @@ class ReviewCommentResourceTests(BaseWebAPITestCase):
         self._postNewDiffComment(review_request, review_id, diff_comment_text)
         review = Review.objects.get(pk=review_id)
 
-        rsp = self.apiGet(self.get_list_url(review),
-                          expected_mimetype=self.list_mimetype)
+        rsp = self.apiGet(get_review_diff_comment_list_url(review),
+                          expected_mimetype=review_diff_comment_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
         self.assertTrue('diff_comments' in rsp)
         self.assertEqual(len(rsp['diff_comments']), 1)
@@ -111,9 +116,9 @@ class ReviewCommentResourceTests(BaseWebAPITestCase):
         self._login_user(local_site=True)
 
         rsp = self.apiPost(
-            ReviewResourceTests.get_list_url(review_request,
+            get_review_list_url(review_request,
                                              self.local_site_name),
-            expected_mimetype=ReviewResourceTests.item_mimetype)
+            expected_mimetype=review_item_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
         self.assertTrue('review' in rsp)
         review_id = rsp['review']['id']
@@ -121,8 +126,9 @@ class ReviewCommentResourceTests(BaseWebAPITestCase):
         self._postNewDiffComment(review_request, review_id, diff_comment_text)
         review = Review.objects.get(pk=review_id)
 
-        rsp = self.apiGet(self.get_list_url(review, self.local_site_name),
-                          expected_mimetype=self.list_mimetype)
+        rsp = self.apiGet(
+            get_review_diff_comment_list_url(review, self.local_site_name),
+            expected_mimetype=review_diff_comment_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
         self.assertTrue('diff_comments' in rsp)
         self.assertEqual(len(rsp['diff_comments']), 1)
@@ -141,9 +147,10 @@ class ReviewCommentResourceTests(BaseWebAPITestCase):
         review.user = User.objects.get(username='doc')
         review.save()
 
-        rsp = self.apiPost(self.get_list_url(review, self.local_site_name),
-                           {},
-                           expected_status=403)
+        rsp = self.apiPost(
+            get_review_diff_comment_list_url(review, self.local_site_name),
+            {},
+            expected_status=403)
         self.assertEqual(rsp['stat'], 'fail')
 
     def test_post_diff_comments_with_interdiff(self):
@@ -155,8 +162,8 @@ class ReviewCommentResourceTests(BaseWebAPITestCase):
 
         review = Review.objects.get(pk=review_id)
 
-        rsp = self.apiGet(self.get_list_url(review),
-                          expected_mimetype=self.list_mimetype)
+        rsp = self.apiGet(get_review_diff_comment_list_url(review),
+                          expected_mimetype=review_diff_comment_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
         self.assertTrue('diff_comments' in rsp)
         self.assertEqual(len(rsp['diff_comments']), 1)
@@ -171,9 +178,9 @@ class ReviewCommentResourceTests(BaseWebAPITestCase):
 
         review = Review.objects.get(pk=review_id)
 
-        rsp = self.apiGet(self.get_list_url(review), {
+        rsp = self.apiGet(get_review_diff_comment_list_url(review), {
             'interdiff-revision': interdiff_revision,
-        }, expected_mimetype=self.list_mimetype)
+        }, expected_mimetype=review_diff_comment_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
         self.assertTrue('diff_comments' in rsp)
         self.assertEqual(len(rsp['diff_comments']), 1)
@@ -190,8 +197,8 @@ class ReviewCommentResourceTests(BaseWebAPITestCase):
 
         review = Review.objects.get(pk=review_id)
 
-        rsp = self.apiGet(self.get_list_url(review),
-                          expected_mimetype=self.list_mimetype)
+        rsp = self.apiGet(get_review_diff_comment_list_url(review),
+                          expected_mimetype=review_diff_comment_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
         self.assertTrue('diff_comments' in rsp)
         self.assertEqual(len(rsp['diff_comments']), 0)
@@ -204,8 +211,8 @@ class ReviewCommentResourceTests(BaseWebAPITestCase):
         comment = review.comments.all()[0]
         comment_count = review.comments.count()
 
-        self.apiDelete(self.get_item_url(review, comment.id,
-                                         self.local_site_name))
+        self.apiDelete(get_review_diff_comment_item_url(review, comment.id,
+                                                        self.local_site_name))
 
         self.assertEqual(review.comments.count(), comment_count - 1)
 
@@ -219,7 +226,8 @@ class ReviewCommentResourceTests(BaseWebAPITestCase):
         self._login_user()
 
         rsp = self.apiDelete(
-            self.get_item_url(review, comment.id, self.local_site_name),
+            get_review_diff_comment_item_url(review, comment.id,
+                                             self.local_site_name),
             expected_status=403)
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
@@ -230,8 +238,8 @@ class ReviewCommentResourceTests(BaseWebAPITestCase):
         rsp, review, review_request = self._create_diff_review_with_issue(
             publish=False, comment_text=diff_comment_text)
 
-        rsp = self.apiGet(self.get_list_url(review),
-                          expected_mimetype=self.list_mimetype)
+        rsp = self.apiGet(get_review_diff_comment_list_url(review),
+                          expected_mimetype=review_diff_comment_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
         self.assertTrue('diff_comments' in rsp)
         self.assertEqual(len(rsp['diff_comments']), 1)
@@ -245,7 +253,7 @@ class ReviewCommentResourceTests(BaseWebAPITestCase):
         rsp = self.apiPut(
             rsp['diff_comment']['links']['self']['href'],
             {'issue_opened': False},
-            expected_mimetype=self.item_mimetype)
+            expected_mimetype=review_diff_comment_item_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
         self.assertFalse(rsp['diff_comment']['issue_opened'])
 
@@ -258,7 +266,7 @@ class ReviewCommentResourceTests(BaseWebAPITestCase):
         rsp = self.apiPut(
             rsp['diff_comment']['links']['self']['href'],
             {'issue_status': 'resolved'},
-            expected_mimetype=self.item_mimetype)
+            expected_mimetype=review_diff_comment_item_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
 
         # The issue_status should still be "open"
@@ -272,7 +280,7 @@ class ReviewCommentResourceTests(BaseWebAPITestCase):
         rsp = self.apiPut(
             rsp['diff_comment']['links']['self']['href'],
             {'issue_status': 'resolved'},
-            expected_mimetype=self.item_mimetype)
+            expected_mimetype=review_diff_comment_item_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(rsp['diff_comment']['issue_status'], 'resolved')
 
@@ -291,7 +299,7 @@ class ReviewCommentResourceTests(BaseWebAPITestCase):
         rsp = self.apiPut(
             rsp['diff_comment']['links']['self']['href'],
             {'issue_status': 'dropped'},
-            expected_mimetype=self.item_mimetype)
+            expected_mimetype=review_diff_comment_item_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(rsp['diff_comment']['issue_status'], 'dropped')
 
@@ -324,7 +332,7 @@ class ReviewCommentResourceTests(BaseWebAPITestCase):
         rsp = self.apiPut(
             rsp['diff_comment']['links']['self']['href'],
             {'issue_opened': False},
-            expected_mimetype=self.item_mimetype)
+            expected_mimetype=review_diff_comment_item_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(rsp['diff_comment']['issue_status'], '')
 
@@ -346,8 +354,8 @@ class ReviewCommentResourceTests(BaseWebAPITestCase):
         interdiffset = DiffSet.objects.get(pk=rsp['diff']['id'])
         interfilediff = interdiffset.files.all()[0]
 
-        rsp = self.apiPost(ReviewResourceTests.get_list_url(review_request),
-                           expected_mimetype=ReviewResourceTests.item_mimetype)
+        rsp = self.apiPost(get_review_list_url(review_request),
+                           expected_mimetype=review_item_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
         self.assertTrue('review' in rsp)
         review_id = rsp['review']['id']
@@ -384,8 +392,8 @@ class ReviewCommentResourceTests(BaseWebAPITestCase):
         review_request.publish(self.user)
 
         # Create a review
-        rsp = self.apiPost(ReviewResourceTests.get_list_url(review_request),
-                           expected_mimetype=ReviewResourceTests.item_mimetype)
+        rsp = self.apiPost(get_review_list_url(review_request),
+                           expected_mimetype=review_item_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
         self.assertTrue('review' in rsp)
         review_id = rsp['review']['id']
@@ -400,23 +408,3 @@ class ReviewCommentResourceTests(BaseWebAPITestCase):
             review.save()
 
         return rsp, review, review_request
-
-    @classmethod
-    def get_list_url(cls, review, local_site_name=None):
-        return local_site_reverse(
-            'diff-comments-resource',
-            local_site_name=local_site_name,
-            kwargs={
-                'review_request_id': review.review_request.display_id,
-                'review_id': review.pk,
-            })
-
-    def get_item_url(self, review, comment_id, local_site_name=None):
-        return local_site_reverse(
-            'diff-comment-resource',
-            local_site_name=local_site_name,
-            kwargs={
-                'review_request_id': review.review_request.display_id,
-                'review_id': review.pk,
-                'comment_id': comment_id,
-            })

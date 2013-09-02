@@ -4,17 +4,16 @@ from djblets.webapi.errors import PERMISSION_DENIED
 
 from reviewboard.reviews.models import ReviewRequest, Screenshot
 from reviewboard.scmtools.models import Repository
-from reviewboard.site.urlresolvers import local_site_reverse
-from reviewboard.webapi.tests.base import BaseWebAPITestCase, _build_mimetype
-from reviewboard.webapi.tests.test_screenshot import ScreenshotResourceTests
+from reviewboard.webapi.tests.base import BaseWebAPITestCase
+from reviewboard.webapi.tests.mimetypes import (screenshot_item_mimetype,
+                                                screenshot_draft_item_mimetype)
+from reviewboard.webapi.tests.urls import (get_screenshot_draft_item_url,
+                                           get_screenshot_draft_list_url)
 
 
 class ScreenshotDraftResourceTests(BaseWebAPITestCase):
     """Testing the ScreenshotDraftResource APIs."""
     fixtures = ['test_users', 'test_scmtools']
-
-    item_mimetype = _build_mimetype('draft-screenshot')
-    list_mimetype = _build_mimetype('draft-screenshots')
 
     def test_post_screenshots(self):
         """Testing the POST review-requests/<id>/draft/screenshots/ API"""
@@ -29,7 +28,7 @@ class ScreenshotDraftResourceTests(BaseWebAPITestCase):
         rsp = self.apiPost(
             screenshots_url,
             {'path': f},
-            expected_mimetype=ScreenshotResourceTests.item_mimetype)
+            expected_mimetype=screenshot_item_mimetype)
         f.close()
 
         self.assertEqual(rsp['stat'], 'ok')
@@ -43,7 +42,7 @@ class ScreenshotDraftResourceTests(BaseWebAPITestCase):
         f = open(self._getTrophyFilename(), "r")
         self.assert_(f)
         rsp = self.apiPost(
-            self.get_list_url(review_request),
+            get_screenshot_draft_list_url(review_request),
             {
                 'caption': 'Trophy',
                 'path': f,
@@ -75,10 +74,11 @@ class ScreenshotDraftResourceTests(BaseWebAPITestCase):
             'caption': 'Trophy',
         }
 
-        rsp = self.apiPost(self.get_list_url(review_request,
-                                             self.local_site_name),
-                           post_data,
-                           expected_mimetype=self.item_mimetype)
+        rsp = self.apiPost(
+            get_screenshot_draft_list_url(review_request,
+                                          self.local_site_name),
+            post_data,
+            expected_mimetype=screenshot_draft_item_mimetype)
         f.close()
 
         self.assertEqual(rsp['stat'], 'ok')
@@ -98,7 +98,8 @@ class ScreenshotDraftResourceTests(BaseWebAPITestCase):
         f = open(self._getTrophyFilename(), 'r')
         self.assertNotEqual(f, None)
         rsp = self.apiPost(
-            self.get_list_url(review_request, self.local_site_name),
+            get_screenshot_draft_list_url(review_request,
+                                          self.local_site_name),
             {'path': f},
             expected_status=403)
         f.close()
@@ -118,12 +119,12 @@ class ScreenshotDraftResourceTests(BaseWebAPITestCase):
         f = open(self._getTrophyFilename(), "r")
         self.assert_(f)
         rsp = self.apiPost(
-            self.get_list_url(review_request),
+            get_screenshot_draft_list_url(review_request),
             {
                 'caption': 'Trophy',
                 'path': f,
             },
-            expected_mimetype=self.item_mimetype)
+            expected_mimetype=screenshot_draft_item_mimetype)
         f.close()
         review_request.publish(self.user)
 
@@ -131,9 +132,9 @@ class ScreenshotDraftResourceTests(BaseWebAPITestCase):
 
         # Now modify the caption.
         rsp = self.apiPut(
-            self.get_item_url(review_request, screenshot.id),
+            get_screenshot_draft_item_url(review_request, screenshot.id),
             {'caption': draft_caption},
-            expected_mimetype=self.item_mimetype)
+            expected_mimetype=screenshot_draft_item_mimetype)
 
         self.assertEqual(rsp['stat'], 'ok')
 
@@ -153,10 +154,10 @@ class ScreenshotDraftResourceTests(BaseWebAPITestCase):
         review_request.publish(user)
 
         rsp = self.apiPut(
-            self.get_item_url(review_request, screenshot_id,
-                              self.local_site_name),
+            get_screenshot_draft_item_url(review_request, screenshot_id,
+                                          self.local_site_name),
             {'caption': draft_caption},
-            expected_mimetype=self.item_mimetype)
+            expected_mimetype=screenshot_draft_item_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
 
         draft = review_request.get_draft(user)
@@ -174,26 +175,9 @@ class ScreenshotDraftResourceTests(BaseWebAPITestCase):
         self._login_user()
 
         rsp = self.apiPut(
-            self.get_item_url(review_request, screenshot_id,
-                              self.local_site_name),
+            get_screenshot_draft_item_url(review_request, screenshot_id,
+                                          self.local_site_name),
             {'caption': 'test'},
             expected_status=403)
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
-
-    def get_list_url(self, review_request, local_site_name=None):
-        return local_site_reverse(
-            'draft-screenshots-resource',
-            local_site_name=local_site_name,
-            kwargs={
-                'review_request_id': review_request.display_id,
-            })
-
-    def get_item_url(self, review_request, screenshot_id, local_site_name=None):
-        return local_site_reverse(
-            'draft-screenshot-resource',
-            local_site_name=local_site_name,
-            kwargs={
-                'review_request_id': review_request.display_id,
-                'screenshot_id': screenshot_id,
-            })

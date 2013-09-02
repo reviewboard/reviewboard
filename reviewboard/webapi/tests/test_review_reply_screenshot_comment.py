@@ -4,16 +4,16 @@ from djblets.testing.decorators import add_fixtures
 from reviewboard.reviews.models import (Screenshot, ScreenshotComment,
                                         Review, ReviewRequest)
 from reviewboard.site.models import LocalSite
-from reviewboard.webapi.tests.base import BaseWebAPITestCase, _build_mimetype
-from reviewboard.webapi.tests.test_review_reply import ReviewReplyResourceTests
+from reviewboard.webapi.tests.base import BaseWebAPITestCase
+from reviewboard.webapi.tests.mimetypes import (
+    review_reply_item_mimetype,
+    review_reply_screenshot_comment_item_mimetype,
+    review_reply_screenshot_comment_list_mimetype)
 
 
 class ReviewReplyScreenshotCommentResourceTests(BaseWebAPITestCase):
     """Testing the ReviewReplyScreenshotCommentResource APIs."""
     fixtures = ['test_users', 'test_scmtools']
-
-    list_mimetype = _build_mimetype('review-reply-screenshot-comments')
-    item_mimetype = _build_mimetype('review-reply-screenshot-comment')
 
     def test_post_reply_with_screenshot_comment(self):
         """Testing the POST review-requests/<id>/reviews/<id>/replies/<id>/screenshot-comments/ API"""
@@ -48,7 +48,7 @@ class ReviewReplyScreenshotCommentResourceTests(BaseWebAPITestCase):
 
         rsp = self.apiPost(
             replies_url,
-            expected_mimetype=ReviewReplyResourceTests.item_mimetype)
+            expected_mimetype=review_reply_item_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
         self.assertTrue('reply' in rsp)
         self.assertNotEqual(rsp['reply'], None)
@@ -64,7 +64,7 @@ class ReviewReplyScreenshotCommentResourceTests(BaseWebAPITestCase):
                 'reply_to_id': comment.id,
                 'text': comment_text,
             },
-            expected_mimetype=self.item_mimetype)
+            expected_mimetype=review_reply_screenshot_comment_item_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
 
         reply_comment = ScreenshotComment.objects.get(
@@ -109,7 +109,7 @@ class ReviewReplyScreenshotCommentResourceTests(BaseWebAPITestCase):
 
         rsp = self.apiPost(
             replies_url,
-            expected_mimetype=ReviewReplyResourceTests.item_mimetype)
+            expected_mimetype=review_reply_item_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
         self.assertTrue('reply' in rsp)
         self.assertNotEqual(rsp['reply'], None)
@@ -124,8 +124,9 @@ class ReviewReplyScreenshotCommentResourceTests(BaseWebAPITestCase):
             'text': comment_text,
         }
 
-        rsp = self.apiPost(screenshot_comments_url, post_data,
-                           expected_mimetype=self.item_mimetype)
+        rsp = self.apiPost(
+            screenshot_comments_url, post_data,
+            expected_mimetype=review_reply_screenshot_comment_item_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
 
         reply_comment = ScreenshotComment.objects.get(
@@ -149,7 +150,7 @@ class ReviewReplyScreenshotCommentResourceTests(BaseWebAPITestCase):
                 'text': comment_text
             },
             expected_status=303,
-            expected_mimetype=self.item_mimetype)
+            expected_mimetype=review_reply_screenshot_comment_item_mimetype)
 
         self.assertEqual(rsp['stat'], 'ok')
 
@@ -164,8 +165,9 @@ class ReviewReplyScreenshotCommentResourceTests(BaseWebAPITestCase):
 
         self.apiDelete(rsp['screenshot_comment']['links']['self']['href'])
 
-        rsp = self.apiGet(screenshot_comments_url,
-                          expected_mimetype=self.list_mimetype)
+        rsp = self.apiGet(
+            screenshot_comments_url,
+            expected_mimetype=review_reply_screenshot_comment_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
         self.assertTrue('screenshot_comments' in rsp)
         self.assertEqual(len(rsp['screenshot_comments']), 0)
@@ -178,8 +180,9 @@ class ReviewReplyScreenshotCommentResourceTests(BaseWebAPITestCase):
 
         self.apiDelete(rsp['screenshot_comment']['links']['self']['href'])
 
-        rsp = self.apiGet(screenshot_comments_url,
-                          expected_mimetype=self.list_mimetype)
+        rsp = self.apiGet(
+            screenshot_comments_url,
+            expected_mimetype=review_reply_screenshot_comment_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
         self.assertTrue('screenshot_comments' in rsp)
         self.assertEqual(len(rsp['screenshot_comments']), 0)

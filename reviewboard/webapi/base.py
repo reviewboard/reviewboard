@@ -83,9 +83,31 @@ class WebAPIResource(DjbletsWebAPIResource):
         href_kwargs.update(self.get_href_parent_ids(obj))
 
         return request.build_absolute_uri(
-            local_site_reverse(self._build_named_url(self.name),
-                               request=request,
-                               kwargs=href_kwargs))
+            self.get_item_url(request=request, **href_kwargs))
+
+    def get_list_url(self, **kwargs):
+        """Returns the URL to the list version of this resource.
+
+        This will generate a URL for the resource, given the provided
+        arguments for the URL pattern.
+        """
+        return self._get_resource_url(self.name_plural, **kwargs)
+
+    def get_item_url(self, **kwargs):
+        """Returns the URL to the item version of this resource.
+
+        This will generate a URL for the resource, given the provided
+        arguments for the URL pattern.
+        """
+        return self._get_resource_url(self.name, **kwargs)
+
+    def _get_resource_url(self, name, local_site_name=None, request=None,
+                          **kwargs):
+        return local_site_reverse(
+            self._build_named_url(name),
+            local_site_name=local_site_name,
+            request=request,
+            kwargs=kwargs)
 
     def _get_local_site(self, local_site_name):
         if local_site_name:

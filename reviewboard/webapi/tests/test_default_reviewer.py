@@ -4,14 +4,15 @@ from djblets.testing.decorators import add_fixtures
 from reviewboard.reviews.models import DefaultReviewer, Group
 from reviewboard.scmtools.models import Repository
 from reviewboard.site.models import LocalSite
-from reviewboard.site.urlresolvers import local_site_reverse
-from reviewboard.webapi.tests.base import BaseWebAPITestCase, _build_mimetype
+from reviewboard.webapi.tests.base import BaseWebAPITestCase
+from reviewboard.webapi.tests.mimetypes import (default_reviewer_item_mimetype,
+                                                default_reviewer_list_mimetype)
+from reviewboard.webapi.tests.urls import (get_default_reviewer_item_url,
+                                           get_default_reviewer_list_url)
 
 
 class DefaultReviewerResourceTests(BaseWebAPITestCase):
     """Testing the DefaultReviewerResource APIs."""
-    list_mimetype = _build_mimetype('default-reviewers')
-    item_mimetype = _build_mimetype('default-reviewer')
 
     @add_fixtures(['test_users', 'test_scmtools'])
     def test_post_default_reviewer(self, local_site=None):
@@ -39,7 +40,7 @@ class DefaultReviewerResourceTests(BaseWebAPITestCase):
         repo2.save()
 
         rsp = self.apiPost(
-            self.get_list_url(local_site),
+            get_default_reviewer_list_url(local_site),
             {
                 'name': name,
                 'file_regex': file_regex,
@@ -47,7 +48,7 @@ class DefaultReviewerResourceTests(BaseWebAPITestCase):
                 'groups': ','.join([group1.name, group2.name]),
                 'repositories': ','.join([str(repo1.pk), str(repo2.pk)]),
             },
-            expected_mimetype=self.item_mimetype)
+            expected_mimetype=default_reviewer_item_mimetype)
 
         self.assertEqual(rsp['stat'], 'ok')
 
@@ -81,12 +82,12 @@ class DefaultReviewerResourceTests(BaseWebAPITestCase):
         file_regex = '.*'
 
         rsp = self.apiPost(
-            self.get_list_url(),
+            get_default_reviewer_list_url(),
             {
                 'name': name,
                 'file_regex': file_regex,
             },
-            expected_mimetype=self.item_mimetype)
+            expected_mimetype=default_reviewer_item_mimetype)
 
         self.assertEqual(rsp['stat'], 'ok')
 
@@ -102,7 +103,7 @@ class DefaultReviewerResourceTests(BaseWebAPITestCase):
         self._login_user()
 
         self.apiPost(
-            self.get_list_url(),
+            get_default_reviewer_list_url(),
             {
                 'name': 'default1',
                 'file_regex': '.*',
@@ -115,7 +116,7 @@ class DefaultReviewerResourceTests(BaseWebAPITestCase):
         self._login_user()
 
         self.apiPost(
-            self.get_list_url(self.local_site_name),
+            get_default_reviewer_list_url(self.local_site_name),
             {
                 'name': 'default1',
                 'file_regex': '.*',
@@ -128,7 +129,7 @@ class DefaultReviewerResourceTests(BaseWebAPITestCase):
         self._login_user(admin=True)
 
         rsp = self.apiPost(
-            self.get_list_url(),
+            get_default_reviewer_list_url(),
             {
                 'name': 'default1',
                 'file_regex': '.*',
@@ -147,7 +148,7 @@ class DefaultReviewerResourceTests(BaseWebAPITestCase):
         local_site = LocalSite.objects.get(name=self.local_site_name)
 
         rsp = self.apiPost(
-            self.get_list_url(local_site),
+            get_default_reviewer_list_url(local_site),
             {
                 'name': 'default1',
                 'file_regex': '.*',
@@ -164,7 +165,7 @@ class DefaultReviewerResourceTests(BaseWebAPITestCase):
         self._login_user(admin=True)
 
         rsp = self.apiPost(
-            self.get_list_url(),
+            get_default_reviewer_list_url(),
             {
                 'name': 'default1',
                 'file_regex': '.*',
@@ -184,7 +185,7 @@ class DefaultReviewerResourceTests(BaseWebAPITestCase):
         Group.objects.create(name='group1', local_site=local_site)
 
         rsp = self.apiPost(
-            self.get_list_url(),
+            get_default_reviewer_list_url(),
             {
                 'name': 'default1',
                 'file_regex': '.*',
@@ -201,7 +202,7 @@ class DefaultReviewerResourceTests(BaseWebAPITestCase):
         self._login_user(admin=True)
 
         rsp = self.apiPost(
-            self.get_list_url(),
+            get_default_reviewer_list_url(),
             {
                 'name': 'default1',
                 'file_regex': '.*',
@@ -220,7 +221,7 @@ class DefaultReviewerResourceTests(BaseWebAPITestCase):
         self._login_user(admin=True)
 
         rsp = self.apiPost(
-            self.get_list_url(),
+            get_default_reviewer_list_url(),
             {
                 'name': 'default1',
                 'file_regex': '.*',
@@ -277,7 +278,7 @@ class DefaultReviewerResourceTests(BaseWebAPITestCase):
 
         self._login_user(admin=True)
         rsp = self.apiPut(
-            self.get_item_url(default_reviewer.pk, local_site),
+            get_default_reviewer_item_url(default_reviewer.pk, local_site),
             {
                 'name': name,
                 'file_regex': file_regex,
@@ -285,7 +286,7 @@ class DefaultReviewerResourceTests(BaseWebAPITestCase):
                 'groups': ','.join([group1.name, group2.name]),
                 'repositories': ','.join([str(repo1.pk), str(repo2.pk)]),
             },
-            expected_mimetype=self.item_mimetype)
+            expected_mimetype=default_reviewer_item_mimetype)
 
         self.assertEqual(rsp['stat'], 'ok')
 
@@ -324,7 +325,7 @@ class DefaultReviewerResourceTests(BaseWebAPITestCase):
             name='default1', file_regex='.*')
 
         self.apiPut(
-            self.get_item_url(default_reviewer.pk),
+            get_default_reviewer_item_url(default_reviewer.pk),
             {'name': 'default2'},
             expected_status=403)
 
@@ -338,7 +339,8 @@ class DefaultReviewerResourceTests(BaseWebAPITestCase):
             name='default1', file_regex='.*', local_site=local_site)
 
         self.apiPut(
-            self.get_item_url(default_reviewer.pk, self.local_site_name),
+            get_default_reviewer_item_url(default_reviewer.pk,
+                                          self.local_site_name),
             {'name': 'default2'},
             expected_status=403)
 
@@ -351,7 +353,7 @@ class DefaultReviewerResourceTests(BaseWebAPITestCase):
             name='default1', file_regex='.*')
 
         rsp = self.apiPut(
-            self.get_item_url(default_reviewer.pk),
+            get_default_reviewer_item_url(default_reviewer.pk),
             {'users': 'foo'},
             expected_status=400)
 
@@ -368,7 +370,8 @@ class DefaultReviewerResourceTests(BaseWebAPITestCase):
             name='default1', file_regex='.*', local_site=local_site)
 
         rsp = self.apiPut(
-            self.get_item_url(default_reviewer.pk, self.local_site_name),
+            get_default_reviewer_item_url(default_reviewer.pk,
+                                          self.local_site_name),
             {'users': 'grumpy'},
             expected_status=400)
 
@@ -384,7 +387,7 @@ class DefaultReviewerResourceTests(BaseWebAPITestCase):
             name='default1', file_regex='.*')
 
         rsp = self.apiPut(
-            self.get_item_url(default_reviewer.pk),
+            get_default_reviewer_item_url(default_reviewer.pk),
             {'groups': 'foo'},
             expected_status=400)
 
@@ -402,7 +405,7 @@ class DefaultReviewerResourceTests(BaseWebAPITestCase):
         Group.objects.create(name='group1', local_site=local_site)
 
         rsp = self.apiPut(
-            self.get_item_url(default_reviewer.pk),
+            get_default_reviewer_item_url(default_reviewer.pk),
             {'groups': 'group1'},
             expected_status=400)
 
@@ -418,7 +421,7 @@ class DefaultReviewerResourceTests(BaseWebAPITestCase):
             name='default1', file_regex='.*')
 
         rsp = self.apiPut(
-            self.get_item_url(default_reviewer.pk),
+            get_default_reviewer_item_url(default_reviewer.pk),
             {'repositories': '12345'},
             expected_status=400)
 
@@ -436,7 +439,7 @@ class DefaultReviewerResourceTests(BaseWebAPITestCase):
         self._login_user(admin=True)
 
         rsp = self.apiPut(
-            self.get_item_url(default_reviewer.pk),
+            get_default_reviewer_item_url(default_reviewer.pk),
             {'repositories': str(repository.pk)},
             expected_status=400)
 
@@ -458,8 +461,8 @@ class DefaultReviewerResourceTests(BaseWebAPITestCase):
         default_reviewer.groups.add(group)
         default_reviewer.repository.add(repository)
 
-        rsp = self.apiGet(self.get_list_url(),
-                          expected_mimetype=self.list_mimetype)
+        rsp = self.apiGet(get_default_reviewer_list_url(),
+                          expected_mimetype=default_reviewer_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
 
         default_reviewers = rsp['default_reviewers']
@@ -490,8 +493,8 @@ class DefaultReviewerResourceTests(BaseWebAPITestCase):
         DefaultReviewer.objects.create(name='default2', file_regex='/foo')
 
         # Test for non-LocalSite ones.
-        rsp = self.apiGet(self.get_list_url(),
-                          expected_mimetype=self.list_mimetype)
+        rsp = self.apiGet(get_default_reviewer_list_url(),
+                          expected_mimetype=default_reviewer_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
 
         default_reviewers = rsp['default_reviewers']
@@ -501,8 +504,8 @@ class DefaultReviewerResourceTests(BaseWebAPITestCase):
 
         # Now test for the ones in the LocalSite.
         self._login_user(local_site=True)
-        rsp = self.apiGet(self.get_list_url(self.local_site_name),
-                          expected_mimetype=self.list_mimetype)
+        rsp = self.apiGet(get_default_reviewer_list_url(self.local_site_name),
+                          expected_mimetype=default_reviewer_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
 
         default_reviewers = rsp['default_reviewers']
@@ -513,7 +516,7 @@ class DefaultReviewerResourceTests(BaseWebAPITestCase):
     @add_fixtures(['test_users', 'test_site'])
     def test_get_default_reviewers_with_site_no_access(self):
         """Testing the GET default-reviewers/ API with a local site and Permission Denied error"""
-        self.apiGet(self.get_list_url(self.local_site_name),
+        self.apiGet(get_default_reviewer_list_url(self.local_site_name),
                     expected_status=403)
 
     @add_fixtures(['test_users', 'test_scmtools'])
@@ -534,8 +537,8 @@ class DefaultReviewerResourceTests(BaseWebAPITestCase):
 
         # Test singling out one repository.
         rsp = self.apiGet('%s?repositories=%s'
-                          % (self.get_list_url(), repository2.pk),
-                          expected_mimetype=self.list_mimetype)
+                          % (get_default_reviewer_list_url(), repository2.pk),
+                          expected_mimetype=default_reviewer_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
         default_reviewers = rsp['default_reviewers']
         self.assertEqual(len(default_reviewers), 2)
@@ -544,9 +547,9 @@ class DefaultReviewerResourceTests(BaseWebAPITestCase):
 
         # Test requiring more than one.
         rsp = self.apiGet('%s?repositories=%s,%s'
-                          % (self.get_list_url(), repository1.pk,
+                          % (get_default_reviewer_list_url(), repository1.pk,
                              repository2.pk),
-                          expected_mimetype=self.list_mimetype)
+                          expected_mimetype=default_reviewer_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
         default_reviewers = rsp['default_reviewers']
         self.assertEqual(len(default_reviewers), 1)
@@ -568,8 +571,8 @@ class DefaultReviewerResourceTests(BaseWebAPITestCase):
         default_reviewer.people.add(user2)
 
         # Test singling out one user.
-        rsp = self.apiGet('%s?users=dopey' % self.get_list_url(),
-                          expected_mimetype=self.list_mimetype)
+        rsp = self.apiGet('%s?users=dopey' % get_default_reviewer_list_url(),
+                          expected_mimetype=default_reviewer_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
         default_reviewers = rsp['default_reviewers']
         self.assertEqual(len(default_reviewers), 2)
@@ -577,8 +580,9 @@ class DefaultReviewerResourceTests(BaseWebAPITestCase):
         self.assertEqual(default_reviewers[1]['name'], 'default2')
 
         # Test requiring more than one.
-        rsp = self.apiGet('%s?users=doc,dopey' % self.get_list_url(),
-                          expected_mimetype=self.list_mimetype)
+        rsp = self.apiGet(
+            '%s?users=doc,dopey' % get_default_reviewer_list_url(),
+            expected_mimetype=default_reviewer_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
         default_reviewers = rsp['default_reviewers']
         self.assertEqual(len(default_reviewers), 1)
@@ -599,8 +603,9 @@ class DefaultReviewerResourceTests(BaseWebAPITestCase):
         default_reviewer.groups.add(group2)
 
         # Test singling out one group.
-        rsp = self.apiGet('%s?groups=group2' % self.get_list_url(),
-                          expected_mimetype=self.list_mimetype)
+        rsp = self.apiGet(
+            '%s?groups=group2' % get_default_reviewer_list_url(),
+            expected_mimetype=default_reviewer_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
         default_reviewers = rsp['default_reviewers']
         self.assertEqual(len(default_reviewers), 2)
@@ -608,8 +613,9 @@ class DefaultReviewerResourceTests(BaseWebAPITestCase):
         self.assertEqual(default_reviewers[1]['name'], 'default2')
 
         # Test requiring more than one.
-        rsp = self.apiGet('%s?groups=group1,group2' % self.get_list_url(),
-                          expected_mimetype=self.list_mimetype)
+        rsp = self.apiGet(
+            '%s?groups=group1,group2' % get_default_reviewer_list_url(),
+            expected_mimetype=default_reviewer_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
         default_reviewers = rsp['default_reviewers']
         self.assertEqual(len(default_reviewers), 1)
@@ -628,8 +634,8 @@ class DefaultReviewerResourceTests(BaseWebAPITestCase):
         default_reviewer.groups.add(group)
         default_reviewer.repository.add(repository)
 
-        rsp = self.apiGet(self.get_item_url(default_reviewer.pk),
-                          expected_mimetype=self.item_mimetype)
+        rsp = self.apiGet(get_default_reviewer_item_url(default_reviewer.pk),
+                          expected_mimetype=default_reviewer_item_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(rsp['default_reviewer']['name'], 'default1')
         self.assertEqual(rsp['default_reviewer']['file_regex'], '.*')
@@ -655,9 +661,9 @@ class DefaultReviewerResourceTests(BaseWebAPITestCase):
         default_reviewer = DefaultReviewer.objects.create(
             name='default1', file_regex='.*', local_site=local_site)
 
-        rsp = self.apiGet(self.get_item_url(default_reviewer.pk,
-                                            self.local_site_name),
-                          expected_mimetype=self.item_mimetype)
+        rsp = self.apiGet(get_default_reviewer_item_url(default_reviewer.pk,
+                                                        self.local_site_name),
+                          expected_mimetype=default_reviewer_item_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(rsp['default_reviewer']['name'], 'default1')
         self.assertEqual(rsp['default_reviewer']['file_regex'], '.*')
@@ -669,8 +675,8 @@ class DefaultReviewerResourceTests(BaseWebAPITestCase):
         default_reviewer = DefaultReviewer.objects.create(
             name='default1', file_regex='.*', local_site=local_site)
 
-        self.apiGet(self.get_item_url(default_reviewer.pk,
-                                      self.local_site_name),
+        self.apiGet(get_default_reviewer_item_url(default_reviewer.pk,
+                                                  self.local_site_name),
                     expected_status=403)
 
     def test_get_default_reviewer_not_modified(self):
@@ -678,8 +684,9 @@ class DefaultReviewerResourceTests(BaseWebAPITestCase):
         default_reviewer = DefaultReviewer.objects.create(
             name='default1', file_regex='.*')
 
-        self._testHttpCaching(self.get_item_url(default_reviewer.pk),
-                              check_etags=True)
+        self._testHttpCaching(
+            get_default_reviewer_item_url(default_reviewer.pk),
+            check_etags=True)
 
     @add_fixtures(['test_users'])
     def test_delete_default_reviewer(self):
@@ -688,7 +695,7 @@ class DefaultReviewerResourceTests(BaseWebAPITestCase):
         default_reviewer = DefaultReviewer.objects.create(
             name='default1', file_regex='.*')
 
-        self.apiDelete(self.get_item_url(default_reviewer.pk),
+        self.apiDelete(get_default_reviewer_item_url(default_reviewer.pk),
                        expected_status=204)
         self.assertFalse(
             DefaultReviewer.objects.filter(name='default1').exists())
@@ -699,7 +706,7 @@ class DefaultReviewerResourceTests(BaseWebAPITestCase):
         default_reviewer = DefaultReviewer.objects.create(
             name='default1', file_regex='.*')
 
-        self.apiDelete(self.get_item_url(default_reviewer.pk),
+        self.apiDelete(get_default_reviewer_item_url(default_reviewer.pk),
                        expected_status=403)
         self.assertTrue(
             DefaultReviewer.objects.filter(name='default1').exists())
@@ -713,8 +720,8 @@ class DefaultReviewerResourceTests(BaseWebAPITestCase):
         default_reviewer = DefaultReviewer.objects.create(
             name='default1', file_regex='.*', local_site=local_site)
 
-        self.apiDelete(self.get_item_url(default_reviewer.pk,
-                                         self.local_site_name),
+        self.apiDelete(get_default_reviewer_item_url(default_reviewer.pk,
+                                                     self.local_site_name),
                        expected_status=204)
         self.assertFalse(
             DefaultReviewer.objects.filter(name='default1').exists())
@@ -726,21 +733,8 @@ class DefaultReviewerResourceTests(BaseWebAPITestCase):
         default_reviewer = DefaultReviewer.objects.create(
             name='default1', file_regex='.*', local_site=local_site)
 
-        self.apiDelete(self.get_item_url(default_reviewer.pk,
-                                         self.local_site_name),
+        self.apiDelete(get_default_reviewer_item_url(default_reviewer.pk,
+                                                     self.local_site_name),
                        expected_status=403)
         self.assertTrue(
             DefaultReviewer.objects.filter(name='default1').exists())
-
-    def get_list_url(self, local_site_name=None):
-        return local_site_reverse(
-            'default-reviewers-resource',
-            local_site_name=local_site_name)
-
-    def get_item_url(self, default_reviewer_id, local_site_name=None):
-        return local_site_reverse(
-            'default-reviewer-resource',
-            local_site_name=local_site_name,
-            kwargs={
-                'default_reviewer_id': default_reviewer_id,
-            })

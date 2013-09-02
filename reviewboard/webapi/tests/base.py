@@ -12,16 +12,30 @@ from reviewboard.notifications.tests import EmailTestHelper
 from reviewboard.reviews.models import Review
 from reviewboard.scmtools.models import Repository, Tool
 from reviewboard.site.models import LocalSite
-
-
-def _build_mimetype(resource_name, fmt='json'):
-    return 'application/vnd.reviewboard.org.%s+%s' % (resource_name, fmt)
+from reviewboard.webapi.tests.mimetypes import (
+    diff_item_mimetype,
+    screenshot_comment_item_mimetype,
+    error_mimetype,
+    file_attachment_comment_item_mimetype,
+    file_attachment_item_mimetype,
+    review_diff_comment_item_mimetype,
+    review_request_item_mimetype,
+    review_item_mimetype,
+    screenshot_item_mimetype)
+from reviewboard.webapi.tests.urls import (
+    get_diff_list_url,
+    get_file_attachment_comment_list_url,
+    get_file_attachment_list_url,
+    get_repository_item_url,
+    get_review_diff_comment_list_url,
+    get_review_list_url,
+    get_review_request_list_url,
+    get_screenshot_comment_list_url,
+    get_screenshot_list_url)
 
 
 class BaseWebAPITestCase(TestCase, EmailTestHelper):
     local_site_name = 'local-site-1'
-
-    error_mimetype = _build_mimetype('error')
 
     def setUp(self):
         initialize()
@@ -66,7 +80,7 @@ class BaseWebAPITestCase(TestCase, EmailTestHelper):
 
         if expected_status >= 400:
             self.assertEqual(expected_mimetype, None)
-            self.assertEqual(response['Content-Type'], self.error_mimetype)
+            self.assertEqual(response['Content-Type'], error_mimetype)
         else:
             self.assertNotEqual(expected_mimetype, None)
             self.assertEqual(response['Content-Type'], expected_mimetype)
@@ -116,7 +130,7 @@ class BaseWebAPITestCase(TestCase, EmailTestHelper):
 
         if expected_status >= 400:
             self.assertEqual(expected_mimetype, None)
-            self.assertEqual(response['Content-Type'], self.error_mimetype)
+            self.assertEqual(response['Content-Type'], error_mimetype)
         else:
             self.assertNotEqual(expected_mimetype, None)
             self.assertEqual(response['Content-Type'], expected_mimetype)
@@ -232,33 +246,25 @@ class BaseWebAPITestCase(TestCase, EmailTestHelper):
     def _postNewReviewRequest(self, local_site_name=None,
                               repository=None):
         """Creates a review request and returns the payload response."""
-        from reviewboard.webapi.tests.test_repository import \
-            RepositoryResourceTests
-        from reviewboard.webapi.tests.test_review_request import \
-            ReviewRequestResourceTests
-
         if not repository:
             repository = self.repository
 
         rsp = self.apiPost(
-            ReviewRequestResourceTests.get_list_url(local_site_name),
+            get_review_request_list_url(local_site_name),
             {'repository': repository.path},
-            expected_mimetype=ReviewRequestResourceTests.item_mimetype)
+            expected_mimetype=review_request_item_mimetype)
 
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(
             rsp['review_request']['links']['repository']['href'],
-            self.base_url +
-            RepositoryResourceTests.get_item_url(repository.id,
-                                                 local_site_name))
+            self.base_url + get_repository_item_url(repository,
+                                                    local_site_name))
 
         return rsp
 
     def _postNewReview(self, review_request, body_top="",
                        body_bottom=""):
         """Creates a review and returns the payload response."""
-        from reviewboard.webapi.tests.test_review import ReviewResourceTests
-
         if review_request.local_site:
             local_site_name = review_request.local_site.name
         else:
@@ -270,9 +276,9 @@ class BaseWebAPITestCase(TestCase, EmailTestHelper):
         }
 
         rsp = self.apiPost(
-            ReviewResourceTests.get_list_url(review_request, local_site_name),
+            get_review_list_url(review_request, local_site_name),
             post_data,
-            expected_mimetype=ReviewResourceTests.item_mimetype)
+            expected_mimetype=review_item_mimetype)
 
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(rsp['review']['body_top'], body_top)
@@ -285,9 +291,6 @@ class BaseWebAPITestCase(TestCase, EmailTestHelper):
                             first_line=10, num_lines=5, issue_opened=None,
                             issue_status=None):
         """Creates a diff comment and returns the payload response."""
-        from reviewboard.webapi.tests.test_review_comment import \
-            ReviewCommentResourceTests
-
         if filediff_id is None:
             diffset = review_request.diffset_history.diffsets.latest()
             filediff = diffset.files.all()[0]
@@ -317,9 +320,9 @@ class BaseWebAPITestCase(TestCase, EmailTestHelper):
         review = Review.objects.get(pk=review_id)
 
         rsp = self.apiPost(
-            ReviewCommentResourceTests.get_list_url(review, local_site_name),
+            get_review_diff_comment_list_url(review, local_site_name),
             data,
-            expected_mimetype=ReviewCommentResourceTests.item_mimetype)
+            expected_mimetype=review_diff_comment_item_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
 
         return rsp
@@ -328,9 +331,6 @@ class BaseWebAPITestCase(TestCase, EmailTestHelper):
                                   comment_text, x, y, w, h, issue_opened=None,
                                   issue_status=None):
         """Creates a screenshot comment and returns the payload response."""
-        from reviewboard.webapi.tests.test_draft_review_screenshot_comment \
-            import DraftReviewScreenshotCommentResourceTests
-
         if review_request.local_site:
             local_site_name = review_request.local_site.name
         else:
@@ -353,11 +353,9 @@ class BaseWebAPITestCase(TestCase, EmailTestHelper):
 
         review = Review.objects.get(pk=review_id)
         rsp = self.apiPost(
-            DraftReviewScreenshotCommentResourceTests.get_list_url(
-                review, local_site_name),
+            get_screenshot_comment_list_url(review, local_site_name),
             post_data,
-            expected_mimetype=
-                DraftReviewScreenshotCommentResourceTests.item_mimetype)
+            expected_mimetype=screenshot_comment_item_mimetype)
 
         self.assertEqual(rsp['stat'], 'ok')
 
@@ -365,9 +363,6 @@ class BaseWebAPITestCase(TestCase, EmailTestHelper):
 
     def _postNewScreenshot(self, review_request):
         """Creates a screenshot and returns the payload response."""
-        from reviewboard.webapi.tests.test_screenshot import \
-            ScreenshotResourceTests
-
         if review_request.local_site:
             local_site_name = review_request.local_site.name
         else:
@@ -381,10 +376,9 @@ class BaseWebAPITestCase(TestCase, EmailTestHelper):
         }
 
         rsp = self.apiPost(
-            ScreenshotResourceTests.get_list_url(review_request,
-                                                 local_site_name),
+            get_screenshot_list_url(review_request, local_site_name),
             post_data,
-            expected_mimetype=ScreenshotResourceTests.item_mimetype)
+            expected_mimetype=screenshot_item_mimetype)
         f.close()
 
         self.assertEqual(rsp['stat'], 'ok')
@@ -395,16 +389,14 @@ class BaseWebAPITestCase(TestCase, EmailTestHelper):
         """Deletes a screenshot but does not return, as deletes don't return a
         payload response.
         """
-        from reviewboard.webapi.tests.test_screenshot import \
-            ScreenshotResourceTests
-
         if review_request.local_site:
             local_site_name = review_request.local_site.name
         else:
             local_site_name = None
 
-        self.apiDelete(ScreenshotResourceTests.get_list_url(
-            review_request, local_site_name) + str(screenshot.id) + '/')
+        self.apiDelete(
+            get_screenshot_list_url(review_request, local_site_name) +
+            str(screenshot.id) + '/')
 
     def _postNewFileAttachmentComment(self, review_request, review_id,
                                       file_attachment, comment_text,
@@ -412,9 +404,6 @@ class BaseWebAPITestCase(TestCase, EmailTestHelper):
                                       issue_status=None,
                                       extra_fields={}):
         """Creates a file attachment comment and returns the payload response."""
-        from reviewboard.webapi.tests.test_draft_review_file_attachment_comment \
-            import DraftReviewFileAttachmentCommentResourceTests
-
         if review_request.local_site:
             local_site_name = review_request.local_site.name
         else:
@@ -434,11 +423,9 @@ class BaseWebAPITestCase(TestCase, EmailTestHelper):
 
         review = Review.objects.get(pk=review_id)
         rsp = self.apiPost(
-            DraftReviewFileAttachmentCommentResourceTests.get_list_url(
-                review, local_site_name),
+            get_file_attachment_comment_list_url(review, local_site_name),
             post_data,
-            expected_mimetype=
-                DraftReviewFileAttachmentCommentResourceTests.item_mimetype)
+            expected_mimetype=file_attachment_comment_item_mimetype)
 
         self.assertEqual(rsp['stat'], 'ok')
 
@@ -446,9 +433,6 @@ class BaseWebAPITestCase(TestCase, EmailTestHelper):
 
     def _postNewFileAttachment(self, review_request):
         """Creates a file_attachment and returns the payload response."""
-        from reviewboard.webapi.tests.test_file_attachment import \
-            FileAttachmentResourceTests
-
         if review_request.local_site:
             local_site_name = review_request.local_site.name
         else:
@@ -462,10 +446,9 @@ class BaseWebAPITestCase(TestCase, EmailTestHelper):
         }
 
         rsp = self.apiPost(
-            FileAttachmentResourceTests.get_list_url(review_request,
-                                                     local_site_name),
+            get_file_attachment_list_url(review_request, local_site_name),
             post_data,
-            expected_mimetype=FileAttachmentResourceTests.item_mimetype)
+            expected_mimetype=file_attachment_item_mimetype)
         f.close()
 
         self.assertEqual(rsp['stat'], 'ok')
@@ -474,20 +457,18 @@ class BaseWebAPITestCase(TestCase, EmailTestHelper):
 
     def _postNewDiff(self, review_request):
         """Creates a diff and returns the payload response."""
-        from reviewboard.webapi.tests.test_diff import DiffResourceTests
-
         diff_filename = os.path.join(
             os.path.dirname(scmtools.__file__),
             'testdata', 'svn_makefile.diff')
 
         f = open(diff_filename, "r")
         rsp = self.apiPost(
-            DiffResourceTests.get_list_url(review_request),
+            get_diff_list_url(review_request),
             {
                 'path': f,
                 'basedir': "/trunk",
             },
-            expected_mimetype=DiffResourceTests.item_mimetype)
+            expected_mimetype=diff_item_mimetype)
         f.close()
 
         self.assertEqual(rsp['stat'], 'ok')

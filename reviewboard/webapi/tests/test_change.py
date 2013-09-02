@@ -9,16 +9,15 @@ from reviewboard.changedescs.models import ChangeDescription
 from reviewboard.diffviewer.models import DiffSet
 from reviewboard.reviews.models import (Group, ReviewRequest,
                                         ReviewRequestDraft, Screenshot)
-from reviewboard.site.urlresolvers import local_site_reverse
-from reviewboard.webapi.tests.base import BaseWebAPITestCase, _build_mimetype
+from reviewboard.webapi.tests.base import BaseWebAPITestCase
+from reviewboard.webapi.tests.mimetypes import (change_item_mimetype,
+                                                change_list_mimetype)
+from reviewboard.webapi.tests.urls import get_change_item_url
 
 
 class ChangeResourceTests(BaseWebAPITestCase):
     """Testing the ChangeResourceAPIs."""
     fixtures = ['test_users', 'test_scmtools', 'test_reviewrequests']
-
-    list_mimetype = _build_mimetype('review-request-changes')
-    item_mimetype = _build_mimetype('review-request-change')
 
     def test_get_changes(self):
         """Testing the GET review-requests/<id>/changes/ API"""
@@ -41,7 +40,7 @@ class ChangeResourceTests(BaseWebAPITestCase):
         r.changedescs.add(change2)
 
         rsp = self.apiGet(rsp['review_request']['links']['changes']['href'],
-                          expected_mimetype=self.list_mimetype)
+                          expected_mimetype=change_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(len(rsp['changes']), 2)
 
@@ -166,13 +165,13 @@ class ChangeResourceTests(BaseWebAPITestCase):
 
         # Now confirm with the API
         rsp = self.apiGet(rsp['review_request']['links']['changes']['href'],
-                          expected_mimetype=self.list_mimetype)
+                          expected_mimetype=change_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(len(rsp['changes']), 1)
 
         self.assertEqual(rsp['changes'][0]['id'], change.pk)
         rsp = self.apiGet(rsp['changes'][0]['links']['self']['href'],
-                          expected_mimetype=self.item_mimetype)
+                          expected_mimetype=change_item_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(rsp['change']['text'], changedesc_text)
 
@@ -233,14 +232,5 @@ class ChangeResourceTests(BaseWebAPITestCase):
         changedesc.save()
         review_request.changedescs.add(changedesc)
 
-        self._testHttpCaching(self.get_item_url(changedesc),
+        self._testHttpCaching(get_change_item_url(changedesc),
                               check_last_modified=True)
-
-    def get_item_url(self, changedesc, local_site_name=None):
-        return local_site_reverse(
-            'change-resource',
-            local_site_name=local_site_name,
-            kwargs={
-                'review_request_id': changedesc.review_request.get().display_id,
-                'change_id': changedesc.id,
-            })

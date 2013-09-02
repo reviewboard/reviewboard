@@ -6,16 +6,16 @@ from reviewboard.attachments.models import FileAttachment
 from reviewboard.diffviewer.models import DiffSet, FileDiff
 from reviewboard.reviews.models import ReviewRequest
 from reviewboard.scmtools.models import Repository
-from reviewboard.site.urlresolvers import local_site_reverse
-from reviewboard.webapi.tests.base import BaseWebAPITestCase, _build_mimetype
+from reviewboard.webapi.tests.base import BaseWebAPITestCase
+from reviewboard.webapi.tests.mimetypes import (file_attachment_item_mimetype,
+                                                file_attachment_list_mimetype)
+from reviewboard.webapi.tests.urls import (get_file_attachment_item_url,
+                                           get_file_attachment_list_url)
 
 
 class FileAttachmentResourceTests(BaseWebAPITestCase):
     """Testing the FileAttachmentResource APIs."""
     fixtures = ['test_users', 'test_scmtools']
-
-    list_mimetype = _build_mimetype('file-attachments')
-    item_mimetype = _build_mimetype('file-attachment')
 
     def test_get_file_attachments(self):
         """Testing the GET review-requests/<id>/file-attachments/ API"""
@@ -75,8 +75,8 @@ class FileAttachmentResourceTests(BaseWebAPITestCase):
         review_request.publish(review_request.submitter)
 
         rsp = self.apiGet(
-            self.get_list_url(review_request),
-            expected_mimetype=self.list_mimetype)
+            get_file_attachment_list_url(review_request),
+            expected_mimetype=file_attachment_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
 
         file_attachments = rsp['file_attachments']
@@ -88,7 +88,7 @@ class FileAttachmentResourceTests(BaseWebAPITestCase):
         self.test_post_file_attachments()
 
         file_attachment = FileAttachment.objects.all()[0]
-        self._testHttpCaching(self.get_item_url(file_attachment),
+        self._testHttpCaching(get_file_attachment_item_url(file_attachment),
                               check_etags=True)
 
     def test_post_file_attachments(self):
@@ -106,7 +106,7 @@ class FileAttachmentResourceTests(BaseWebAPITestCase):
         rsp = self.apiPost(
             file_attachments_url,
             {'path': f},
-            expected_mimetype=self.item_mimetype)
+            expected_mimetype=file_attachment_item_mimetype)
         f.close()
 
         self.assertEqual(rsp['stat'], 'ok')
@@ -122,7 +122,7 @@ class FileAttachmentResourceTests(BaseWebAPITestCase):
         f = open(self._getTrophyFilename(), "r")
         self.assert_(f)
         rsp = self.apiPost(
-            self.get_list_url(review_request),
+            get_file_attachment_list_url(review_request),
             {
                 'caption': 'Trophy',
                 'path': f,
@@ -153,7 +153,7 @@ class FileAttachmentResourceTests(BaseWebAPITestCase):
         rsp = self.apiPost(
             file_attachments_url,
             {'path': f},
-            expected_mimetype=self.item_mimetype)
+            expected_mimetype=file_attachment_item_mimetype)
         f.close()
 
         self.assertEqual(rsp['stat'], 'ok')
@@ -174,22 +174,3 @@ class FileAttachmentResourceTests(BaseWebAPITestCase):
 
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
-
-    @classmethod
-    def get_list_url(cls, review_request, local_site_name=None):
-        return local_site_reverse(
-            'file-attachments-resource',
-            local_site_name=local_site_name,
-            kwargs={
-                'review_request_id': review_request.display_id,
-            })
-
-    def get_item_url(self, file_attachment, local_site_name=None):
-        return local_site_reverse(
-            'file-attachment-resource',
-            local_site_name=local_site_name,
-            kwargs={
-                'file_attachment_id': file_attachment.id,
-                'review_request_id':
-                    file_attachment.review_request.get().display_id,
-            })

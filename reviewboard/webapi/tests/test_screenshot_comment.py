@@ -5,15 +5,13 @@ from djblets.webapi.errors import PERMISSION_DENIED
 from reviewboard.reviews.models import (Review, ReviewRequest, Screenshot,
                                         ScreenshotComment)
 from reviewboard.scmtools.models import Repository
-from reviewboard.webapi.tests.base import BaseWebAPITestCase, _build_mimetype
+from reviewboard.webapi.tests.base import BaseWebAPITestCase
+from reviewboard.webapi.tests.mimetypes import screenshot_comment_list_mimetype
 
 
 class ScreenshotCommentResourceTests(BaseWebAPITestCase):
     """Testing the ScreenshotCommentResource APIs."""
     fixtures = ['test_users', 'test_scmtools']
-
-    list_mimetype = _build_mimetype('screenshot-comments')
-    item_mimetype = _build_mimetype('screenshot-comment')
 
     def test_get_screenshot_comments(self):
         """Testing the GET review-requests/<id>/screenshots/<id>/comments/ API"""
@@ -43,7 +41,7 @@ class ScreenshotCommentResourceTests(BaseWebAPITestCase):
                                        comment_text, x, y, w, h)
 
         rsp = self.apiGet(comments_url,
-                          expected_mimetype=self.list_mimetype)
+                          expected_mimetype=screenshot_comment_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
 
         comments = ScreenshotComment.objects.filter(screenshot=screenshot)
@@ -92,7 +90,7 @@ class ScreenshotCommentResourceTests(BaseWebAPITestCase):
                                        comment_text, x, y, w, h)
 
         rsp = self.apiGet(comments_url,
-                          expected_mimetype=self.list_mimetype)
+                          expected_mimetype=screenshot_comment_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
 
         comments = ScreenshotComment.objects.filter(screenshot=screenshot)

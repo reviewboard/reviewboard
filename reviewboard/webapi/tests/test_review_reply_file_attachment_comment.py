@@ -3,16 +3,17 @@ from djblets.testing.decorators import add_fixtures
 
 from reviewboard.reviews.models import FileAttachmentComment
 from reviewboard.site.models import LocalSite
-from reviewboard.webapi.tests.base import BaseWebAPITestCase, _build_mimetype
-from reviewboard.webapi.tests.test_review_reply import ReviewReplyResourceTests
+from reviewboard.webapi.tests.base import BaseWebAPITestCase
+from reviewboard.webapi.tests.mimetypes import (
+    review_reply_file_attachment_comment_item_mimetype,
+    review_reply_file_attachment_comment_list_mimetype,
+    review_reply_item_mimetype)
+from reviewboard.webapi.tests.urls import get_review_reply_list_url
 
 
 class ReviewReplyFileAttachmentCommentResourceTests(BaseWebAPITestCase):
     """Testing the ReviewReplyFileAttachmentCommentResource APIs."""
     fixtures = ['test_users', 'test_scmtools', 'test_reviewrequests']
-
-    list_mimetype = _build_mimetype('review-reply-file-attachment-comments')
-    item_mimetype = _build_mimetype('review-reply-file-attachment-comment')
 
     def test_post_reply_with_file_attachment_comment(self):
         """Testing the POST review-requests/<id>/reviews/<id>/replies/<id>/file-attachment-comments/ API"""
@@ -23,15 +24,16 @@ class ReviewReplyFileAttachmentCommentResourceTests(BaseWebAPITestCase):
 
         # Create the reply
         rsp = self.apiPost(
-            ReviewReplyResourceTests.get_list_url(review),
-            expected_mimetype=ReviewReplyResourceTests.item_mimetype)
+            get_review_reply_list_url(review),
+            expected_mimetype=review_reply_item_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
 
         self.assertTrue('reply' in rsp)
         self.assertNotEqual(rsp['reply'], None)
         self.assertTrue('links' in rsp['reply'])
         self.assertTrue('diff_comments' in rsp['reply']['links'])
-        comments_url = rsp['reply']['links']['file_attachment_comments']['href']
+        comments_url = \
+            rsp['reply']['links']['file_attachment_comments']['href']
 
         rsp = self.apiPost(
             comments_url,
@@ -39,7 +41,8 @@ class ReviewReplyFileAttachmentCommentResourceTests(BaseWebAPITestCase):
                 'reply_to_id': comment.id,
                 'text': comment_text,
             },
-            expected_mimetype=self.item_mimetype)
+            expected_mimetype=(
+                review_reply_file_attachment_comment_item_mimetype))
         self.assertEqual(rsp['stat'], 'ok')
 
         reply_comment = FileAttachmentComment.objects.get(
@@ -69,16 +72,16 @@ class ReviewReplyFileAttachmentCommentResourceTests(BaseWebAPITestCase):
 
         # Create the reply
         rsp = self.apiPost(
-            ReviewReplyResourceTests.get_list_url(review,
-                                                  self.local_site_name),
-            expected_mimetype=ReviewReplyResourceTests.item_mimetype)
+            get_review_reply_list_url(review, self.local_site_name),
+            expected_mimetype=review_reply_item_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
 
         self.assertTrue('reply' in rsp)
         self.assertNotEqual(rsp['reply'], None)
         self.assertTrue('links' in rsp['reply'])
         self.assertTrue('diff_comments' in rsp['reply']['links'])
-        comments_url = rsp['reply']['links']['file_attachment_comments']['href']
+        comments_url = \
+            rsp['reply']['links']['file_attachment_comments']['href']
 
         rsp = self.apiPost(
             comments_url,
@@ -86,7 +89,8 @@ class ReviewReplyFileAttachmentCommentResourceTests(BaseWebAPITestCase):
                 'reply_to_id': comment.id,
                 'text': comment_text,
             },
-            expected_mimetype=self.item_mimetype)
+            expected_mimetype=(
+                review_reply_file_attachment_comment_item_mimetype))
         self.assertEqual(rsp['stat'], 'ok')
 
         reply_comment = FileAttachmentComment.objects.get(
@@ -104,8 +108,8 @@ class ReviewReplyFileAttachmentCommentResourceTests(BaseWebAPITestCase):
 
         # Create the reply
         rsp = self.apiPost(
-            ReviewReplyResourceTests.get_list_url(review),
-            expected_mimetype=ReviewReplyResourceTests.item_mimetype)
+            get_review_reply_list_url(review),
+            expected_mimetype=review_reply_item_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
 
         self.assertTrue('reply' in rsp)
@@ -128,7 +132,8 @@ class ReviewReplyFileAttachmentCommentResourceTests(BaseWebAPITestCase):
                 'reply_to_id': comment.id,
                 'text': comment_text,
             },
-            expected_mimetype=self.item_mimetype)
+            expected_mimetype=(
+                review_reply_file_attachment_comment_item_mimetype))
         self.assertEqual(rsp['stat'], 'ok')
 
         reply_comment = FileAttachmentComment.objects.get(
@@ -152,7 +157,8 @@ class ReviewReplyFileAttachmentCommentResourceTests(BaseWebAPITestCase):
                 'text': comment_text
             },
             expected_status=303,
-            expected_mimetype=self.item_mimetype)
+            expected_mimetype=(
+                review_reply_file_attachment_comment_item_mimetype))
 
         self.assertEqual(rsp['stat'], 'ok')
 
@@ -173,7 +179,8 @@ class ReviewReplyFileAttachmentCommentResourceTests(BaseWebAPITestCase):
         rsp = self.apiPut(
             rsp['file_attachment_comment']['links']['self']['href'],
             {'text': new_comment_text},
-            expected_mimetype=self.item_mimetype)
+            expected_mimetype=(
+                review_reply_file_attachment_comment_item_mimetype))
         self.assertEqual(rsp['stat'], 'ok')
 
         reply_comment = FileAttachmentComment.objects.get(
@@ -187,8 +194,10 @@ class ReviewReplyFileAttachmentCommentResourceTests(BaseWebAPITestCase):
 
         self.apiDelete(rsp['file_attachment_comment']['links']['self']['href'])
 
-        rsp = self.apiGet(file_attachment_comments_url,
-                          expected_mimetype=self.list_mimetype)
+        rsp = self.apiGet(
+            file_attachment_comments_url,
+            expected_mimetype=(
+                review_reply_file_attachment_comment_list_mimetype))
         self.assertEqual(rsp['stat'], 'ok')
         self.assertTrue('file_attachment_comments' in rsp)
         self.assertEqual(len(rsp['file_attachment_comments']), 0)
@@ -201,8 +210,10 @@ class ReviewReplyFileAttachmentCommentResourceTests(BaseWebAPITestCase):
 
         self.apiDelete(rsp['file_attachment_comment']['links']['self']['href'])
 
-        rsp = self.apiGet(file_attachment_comments_url,
-                          expected_mimetype=self.list_mimetype)
+        rsp = self.apiGet(
+            file_attachment_comments_url,
+            expected_mimetype=(
+                review_reply_file_attachment_comment_list_mimetype))
         self.assertEqual(rsp['stat'], 'ok')
         self.assertTrue('file_attachment_comments' in rsp)
         self.assertEqual(len(rsp['file_attachment_comments']), 0)

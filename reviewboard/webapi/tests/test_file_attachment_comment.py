@@ -6,15 +6,15 @@ from reviewboard.attachments.models import FileAttachment
 from reviewboard.reviews.models import (FileAttachmentComment, ReviewRequest,
                                         Review)
 from reviewboard.scmtools.models import Repository
-from reviewboard.webapi.tests.base import BaseWebAPITestCase, _build_mimetype
+from reviewboard.webapi.tests.base import BaseWebAPITestCase
+from reviewboard.webapi.tests.mimetypes import (
+    file_attachment_comment_item_mimetype,
+    file_attachment_comment_list_mimetype)
 
 
 class FileAttachmentCommentResourceTests(BaseWebAPITestCase):
     """Testing the FileAttachmentCommentResource APIs."""
     fixtures = ['test_users', 'test_scmtools']
-
-    list_mimetype = _build_mimetype('file-attachment-comments')
-    item_mimetype = _build_mimetype('file-attachment-comment')
 
     def test_get_file_attachment_comments(self):
         """Testing the GET review-requests/<id>/file-attachments/<id>/comments/ API"""
@@ -45,8 +45,9 @@ class FileAttachmentCommentResourceTests(BaseWebAPITestCase):
         self._postNewFileAttachmentComment(review_request, review.id,
                                            file_attachment, comment_text)
 
-        rsp = self.apiGet(comments_url,
-                          expected_mimetype=self.list_mimetype)
+        rsp = self.apiGet(
+            comments_url,
+            expected_mimetype=file_attachment_comment_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
 
         comments = FileAttachmentComment.objects.filter(
@@ -93,8 +94,9 @@ class FileAttachmentCommentResourceTests(BaseWebAPITestCase):
         self._postNewFileAttachmentComment(review_request, review.id,
                                            file_attachment, comment_text)
 
-        rsp = self.apiGet(comments_url,
-                          expected_mimetype=self.list_mimetype)
+        rsp = self.apiGet(
+            comments_url,
+            expected_mimetype=file_attachment_comment_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
 
         comments = FileAttachmentComment.objects.filter(
@@ -256,7 +258,7 @@ class FileAttachmentCommentResourceTests(BaseWebAPITestCase):
         rsp = self.apiPut(
             rsp['file_attachment_comment']['links']['self']['href'],
             extra_fields,
-            expected_mimetype=self.item_mimetype)
+            expected_mimetype=file_attachment_comment_item_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
 
         comment = FileAttachmentComment.objects.get(
@@ -268,4 +270,3 @@ class FileAttachmentCommentResourceTests(BaseWebAPITestCase):
         self.assertEqual(len(comment.extra_data.keys()), 1)
         self.assertEqual(comment.extra_data['foo'],
                          extra_fields['extra_data.foo'])
-

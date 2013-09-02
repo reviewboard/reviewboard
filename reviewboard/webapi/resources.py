@@ -7357,9 +7357,7 @@ class ReviewRequestResource(WebAPIResource):
         href_kwargs.update(self.get_href_parent_ids(obj))
 
         return request.build_absolute_uri(
-            local_site_reverse(self._build_named_url(self.name),
-                               kwargs=href_kwargs,
-                               local_site_name=local_site_name))
+            self.get_item_url(local_site_name=local_site_name, **href_kwargs))
 
     def _parse_date(self, timestamp_str):
         try:

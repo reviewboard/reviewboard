@@ -1,20 +1,19 @@
 from djblets.testing.decorators import add_fixtures
 
 from reviewboard.site.models import LocalSite
-from reviewboard.site.urlresolvers import local_site_reverse
-from reviewboard.webapi.tests.base import BaseWebAPITestCase, _build_mimetype
+from reviewboard.webapi.tests.base import BaseWebAPITestCase
+from reviewboard.webapi.tests.mimetypes import repository_info_item_mimetype
+from reviewboard.webapi.tests.urls import get_repository_info_url
 
 
 class RepositoryInfoResourceTests(BaseWebAPITestCase):
     """Testing the RepositoryInfoResource APIs."""
     fixtures = ['test_users', 'test_scmtools']
 
-    item_mimetype = _build_mimetype('repository-info')
-
     def test_get_repository_info(self):
         """Testing the GET repositories/<id>/info API"""
-        rsp = self.apiGet(self.get_url(self.repository),
-                          expected_mimetype=self.item_mimetype)
+        rsp = self.apiGet(get_repository_info_url(self.repository),
+                          expected_mimetype=repository_info_item_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(rsp['info'],
                          self.repository.get_scmtool().get_repository_info())
@@ -27,8 +26,9 @@ class RepositoryInfoResourceTests(BaseWebAPITestCase):
             LocalSite.objects.get(name=self.local_site_name)
         self.repository.save()
 
-        rsp = self.apiGet(self.get_url(self.repository, self.local_site_name),
-                          expected_mimetype=self.item_mimetype)
+        rsp = self.apiGet(
+            get_repository_info_url(self.repository, self.local_site_name),
+            expected_mimetype=repository_info_item_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(rsp['info'],
                          self.repository.get_scmtool().get_repository_info())
@@ -40,12 +40,6 @@ class RepositoryInfoResourceTests(BaseWebAPITestCase):
             LocalSite.objects.get(name=self.local_site_name)
         self.repository.save()
 
-        self.apiGet(self.get_url(self.repository, self.local_site_name),
-                    expected_status=403)
-
-    def get_url(self, repository, local_site_name=None):
-        return local_site_reverse('info-resource',
-                                  local_site_name=local_site_name,
-                                  kwargs={
-                                      'repository_id': repository.pk,
-                                  })
+        self.apiGet(
+            get_repository_info_url(self.repository, self.local_site_name),
+            expected_status=403)

@@ -3,25 +3,18 @@ from djblets.webapi.errors import PERMISSION_DENIED
 
 from reviewboard.reviews.models import ReviewRequest
 from reviewboard.scmtools.models import Repository
-from reviewboard.site.urlresolvers import local_site_reverse
-from reviewboard.webapi.tests.base import BaseWebAPITestCase, _build_mimetype
+from reviewboard.webapi.tests.base import BaseWebAPITestCase
+from reviewboard.webapi.tests.mimetypes import screenshot_item_mimetype
+from reviewboard.webapi.tests.urls import get_screenshot_list_url
 
 
 class ScreenshotResourceTests(BaseWebAPITestCase):
     """Testing the ScreenshotResource APIs."""
     fixtures = ['test_users', 'test_scmtools']
 
-    list_mimetype = _build_mimetype('screenshots')
-    item_mimetype = _build_mimetype('screenshot')
-
     def test_get_screenshots_with_invalid_review_request_id(self):
         """Testing the GET review-requests/<id>/screenshots/ API with an invalid review request ID"""
-        screenshot_invalid_id_url = local_site_reverse(
-            'screenshots-resource',
-            kwargs={
-                'review_request_id': 999999,
-            })
-
+        screenshot_invalid_id_url = get_screenshot_list_url(999999)
         rsp = self.apiGet(screenshot_invalid_id_url, expected_status=404)
 
         self.assertEqual(rsp['stat'], 'fail')
@@ -39,7 +32,7 @@ class ScreenshotResourceTests(BaseWebAPITestCase):
         rsp = self.apiPost(
             screenshots_url,
             {'path': f},
-            expected_mimetype=self.item_mimetype)
+            expected_mimetype=screenshot_item_mimetype)
         f.close()
 
         self.assertEqual(rsp['stat'], 'ok')
@@ -53,7 +46,7 @@ class ScreenshotResourceTests(BaseWebAPITestCase):
         f = open(self._getTrophyFilename(), "r")
         self.assert_(f)
         rsp = self.apiPost(
-            self.get_list_url(review_request),
+            get_screenshot_list_url(review_request),
             {
                 'caption': 'Trophy',
                 'path': f,
@@ -84,7 +77,7 @@ class ScreenshotResourceTests(BaseWebAPITestCase):
         rsp = self.apiPost(
             screenshots_url,
             {'path': f},
-            expected_mimetype=self.item_mimetype)
+            expected_mimetype=screenshot_item_mimetype)
         f.close()
 
         self.assertEqual(rsp['stat'], 'ok')
@@ -105,12 +98,3 @@ class ScreenshotResourceTests(BaseWebAPITestCase):
 
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
-
-    @classmethod
-    def get_list_url(cls, review_request, local_site_name=None):
-        return local_site_reverse(
-            'screenshots-resource',
-            local_site_name=local_site_name,
-            kwargs={
-                'review_request_id': review_request.display_id,
-            })

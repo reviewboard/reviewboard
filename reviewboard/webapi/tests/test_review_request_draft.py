@@ -5,15 +5,15 @@ from djblets.webapi.errors import INVALID_FORM_DATA, PERMISSION_DENIED
 
 from reviewboard.reviews.models import ReviewRequest, ReviewRequestDraft
 from reviewboard.site.models import LocalSite
-from reviewboard.site.urlresolvers import local_site_reverse
-from reviewboard.webapi.tests.base import BaseWebAPITestCase, _build_mimetype
+from reviewboard.webapi.tests.base import BaseWebAPITestCase
+from reviewboard.webapi.tests.mimetypes import \
+    review_request_draft_item_mimetype
+from reviewboard.webapi.tests.urls import get_review_request_draft_url
 
 
 class ReviewRequestDraftResourceTests(BaseWebAPITestCase):
     """Testing the ReviewRequestDraftResource API tests."""
     fixtures = ['test_users', 'test_scmtools', 'test_reviewrequests']
-
-    item_mimetype = _build_mimetype('review-request-draft')
 
     def _create_update_review_request(self, apiFunc, expected_status,
                                       review_request=None,
@@ -39,12 +39,13 @@ class ReviewRequestDraftResourceTests(BaseWebAPITestCase):
         if expected_status >= 400:
             expected_mimetype = None
         else:
-            expected_mimetype = self.item_mimetype
+            expected_mimetype = review_request_draft_item_mimetype
 
-        rsp = apiFunc(self.get_url(review_request, local_site_name),
-                      func_kwargs,
-                      expected_status=expected_status,
-                      expected_mimetype=expected_mimetype)
+        rsp = apiFunc(
+            get_review_request_draft_url(review_request, local_site_name),
+            func_kwargs,
+            expected_status=expected_status,
+            expected_mimetype=expected_mimetype)
 
         if expected_status >= 200 and expected_status < 300:
             self.assertEqual(rsp['stat'], 'ok')
@@ -119,9 +120,9 @@ class ReviewRequestDraftResourceTests(BaseWebAPITestCase):
         review_request.publish(self.user)
 
         rsp = self.apiPost(
-            self.get_url(review_request),
+            get_review_request_draft_url(review_request),
             {'changedescription': changedesc},
-            expected_mimetype=self.item_mimetype)
+            expected_mimetype=review_request_draft_item_mimetype)
 
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(rsp['draft']['changedescription'], changedesc)
@@ -137,9 +138,9 @@ class ReviewRequestDraftResourceTests(BaseWebAPITestCase):
         review_request.publish(self.user)
 
         rsp = self.apiPut(
-            self.get_url(review_request),
+            get_review_request_draft_url(review_request),
             {'depends_on': '1, 3'},
-            expected_mimetype=self.item_mimetype)
+            expected_mimetype=review_request_draft_item_mimetype)
 
         self.assertEqual(rsp['stat'], 'ok')
 
@@ -178,9 +179,9 @@ class ReviewRequestDraftResourceTests(BaseWebAPITestCase):
         bad_depends = ReviewRequest.objects.get(pk=3)
 
         rsp = self.apiPut(
-            self.get_url(review_request, self.local_site_name),
+            get_review_request_draft_url(review_request, self.local_site_name),
             {'depends_on': '3'},
-            expected_mimetype=self.item_mimetype)
+            expected_mimetype=review_request_draft_item_mimetype)
 
         self.assertEqual(rsp['stat'], 'ok')
 
@@ -203,7 +204,7 @@ class ReviewRequestDraftResourceTests(BaseWebAPITestCase):
         review_request.publish(self.user)
 
         rsp = self.apiPut(
-            self.get_url(review_request),
+            get_review_request_draft_url(review_request),
             {'depends_on': '10000'},
             expected_status=400)
 
@@ -217,7 +218,7 @@ class ReviewRequestDraftResourceTests(BaseWebAPITestCase):
         review_request = ReviewRequest.objects.from_user(self.user.username)[0]
 
         rsp = self.apiPut(
-            self.get_url(review_request),
+            get_review_request_draft_url(review_request),
             {'foobar': 'foo'},
             expected_status=400)
 
@@ -231,7 +232,7 @@ class ReviewRequestDraftResourceTests(BaseWebAPITestCase):
         review_request = ReviewRequest.objects.from_user('admin')[0]
 
         rsp = self.apiPut(
-            self.get_url(review_request),
+            get_review_request_draft_url(review_request),
             {'bugs_closed': bugs_closed},
             expected_status=403)
 
@@ -246,9 +247,9 @@ class ReviewRequestDraftResourceTests(BaseWebAPITestCase):
         review_request = ReviewRequest.objects.from_user(self.user.username)[0]
 
         rsp = self.apiPut(
-            self.get_url(review_request),
+            get_review_request_draft_url(review_request),
             {'public': True},
-            expected_mimetype=self.item_mimetype)
+            expected_mimetype=review_request_draft_item_mimetype)
 
         self.assertEqual(rsp['stat'], 'ok')
 
@@ -276,9 +277,9 @@ class ReviewRequestDraftResourceTests(BaseWebAPITestCase):
         self._create_update_review_request(self.apiPut, 200, review_request)
 
         rsp = self.apiPut(
-            self.get_url(review_request),
+            get_review_request_draft_url(review_request),
             {'public': True},
-            expected_mimetype=self.item_mimetype)
+            expected_mimetype=review_request_draft_item_mimetype)
 
         self.assertEqual(rsp['stat'], 'ok')
 
@@ -302,7 +303,7 @@ class ReviewRequestDraftResourceTests(BaseWebAPITestCase):
         # Set some data.
         self.test_put_reviewrequestdraft()
 
-        self.apiDelete(self.get_url(review_request))
+        self.apiDelete(get_review_request_draft_url(review_request))
 
         review_request = ReviewRequest.objects.get(pk=review_request.id)
         self.assertEqual(review_request.summary, summary)
@@ -319,7 +320,8 @@ class ReviewRequestDraftResourceTests(BaseWebAPITestCase):
 
         self.test_put_reviewrequestdraft_with_site()
 
-        self.apiDelete(self.get_url(review_request, self.local_site_name))
+        self.apiDelete(get_review_request_draft_url(review_request,
+                                                    self.local_site_name))
 
         review_request = ReviewRequest.objects.get(pk=review_request.id)
         self.assertEqual(review_request.summary, summary)
@@ -332,15 +334,7 @@ class ReviewRequestDraftResourceTests(BaseWebAPITestCase):
             'doc',
             local_site=LocalSite.objects.get(name=self.local_site_name))[0]
         rsp = self.apiDelete(
-            self.get_url(review_request, self.local_site_name),
+            get_review_request_draft_url(review_request, self.local_site_name),
             expected_status=403)
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
-
-    def get_url(self, review_request, local_site_name=None):
-        return local_site_reverse(
-            'draft-resource',
-            local_site_name=local_site_name,
-            kwargs={
-                'review_request_id': review_request.display_id,
-            })

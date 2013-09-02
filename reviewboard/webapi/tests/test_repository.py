@@ -10,7 +10,6 @@ from reviewboard.scmtools.errors import (AuthenticationError,
 from reviewboard.scmtools.models import Repository
 from reviewboard.scmtools.svn import SVNTool
 from reviewboard.site.models import LocalSite
-from reviewboard.site.urlresolvers import local_site_reverse
 from reviewboard.ssh.client import SSHClient
 from reviewboard.ssh.errors import (BadHostKeyError,
                                     UnknownHostKeyError)
@@ -19,7 +18,11 @@ from reviewboard.webapi.errors import (BAD_HOST_KEY,
                                        REPO_AUTHENTICATION_ERROR,
                                        UNVERIFIED_HOST_CERT,
                                        UNVERIFIED_HOST_KEY)
-from reviewboard.webapi.tests.base import BaseWebAPITestCase, _build_mimetype
+from reviewboard.webapi.tests.base import BaseWebAPITestCase
+from reviewboard.webapi.tests.mimetypes import (repository_item_mimetype,
+                                                repository_list_mimetype)
+from reviewboard.webapi.tests.urls import (get_repository_item_url,
+                                           get_repository_list_url)
 
 
 # Only generate these keys once.
@@ -30,9 +33,6 @@ key2 = paramiko.RSAKey.generate(1024)
 class RepositoryResourceTests(BaseWebAPITestCase):
     """Testing the RepositoryResource APIs."""
     fixtures = ['test_users', 'test_scmtools']
-
-    list_mimetype = _build_mimetype('repositories')
-    item_mimetype = _build_mimetype('repository')
 
     def setUp(self):
         super(RepositoryResourceTests, self).setUp()
@@ -54,8 +54,8 @@ class RepositoryResourceTests(BaseWebAPITestCase):
 
     def test_get_repositories(self):
         """Testing the GET repositories/ API"""
-        rsp = self.apiGet(self.get_list_url(),
-                          expected_mimetype=self.list_mimetype)
+        rsp = self.apiGet(get_repository_list_url(),
+                          expected_mimetype=repository_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(len(rsp['repositories']),
                          Repository.objects.accessible(self.user).count())
@@ -64,8 +64,8 @@ class RepositoryResourceTests(BaseWebAPITestCase):
     def test_get_repositories_with_site(self):
         """Testing the GET repositories/ API with a local site"""
         self._login_user(local_site=True)
-        rsp = self.apiGet(self.get_list_url(self.local_site_name),
-                          expected_mimetype=self.list_mimetype)
+        rsp = self.apiGet(get_repository_list_url(self.local_site_name),
+                          expected_mimetype=repository_list_mimetype)
         self.assertEqual(len(rsp['repositories']),
                          Repository.objects.filter(
                              local_site__name=self.local_site_name).count())
@@ -73,9 +73,9 @@ class RepositoryResourceTests(BaseWebAPITestCase):
     @add_fixtures(['test_site'])
     def test_get_repositories_with_show_visible(self):
         """Testing the GET repositories/ API with show_invisible=True"""
-        rsp = self.apiGet(self.get_list_url(),
+        rsp = self.apiGet(get_repository_list_url(),
                           query={'show-invisible': True},
-                          expected_mimetype=self.list_mimetype)
+                          expected_mimetype=repository_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(len(rsp['repositories']),
                          Repository.objects.accessible(
@@ -84,7 +84,7 @@ class RepositoryResourceTests(BaseWebAPITestCase):
     @add_fixtures(['test_site'])
     def test_get_repositories_with_site_no_access(self):
         """Testing the GET repositories/ API with a local site and Permission Denied error"""
-        self.apiGet(self.get_list_url(self.local_site_name),
+        self.apiGet(get_repository_list_url(self.local_site_name),
                     expected_status=403)
 
     def test_post_repository(self):
@@ -422,12 +422,12 @@ class RepositoryResourceTests(BaseWebAPITestCase):
         local_site_name = self._get_local_site_info(use_local_site)[1]
 
         if 200 <= expected_status < 300:
-            expected_mimetype = self.item_mimetype
+            expected_mimetype = repository_item_mimetype
         else:
             expected_mimetype = None
 
         rsp = self.apiPost(
-            self.get_list_url(local_site_name),
+            get_repository_list_url(local_site_name),
             dict({
                 'name': repo_name,
                 'path': repo_path,
@@ -441,8 +441,9 @@ class RepositoryResourceTests(BaseWebAPITestCase):
 
             self.assertEqual(
                 rsp['repository']['links']['self']['href'],
-                self.base_url + self.get_item_url(rsp['repository']['id'],
-                                                  local_site_name))
+                self.base_url +
+                get_repository_item_url(rsp['repository']['id'],
+                                        local_site_name))
 
         return rsp
 
@@ -453,16 +454,16 @@ class RepositoryResourceTests(BaseWebAPITestCase):
                          'svn_repo'))
 
         local_site, local_site_name = self._get_local_site_info(use_local_site)
-        repo_id = Repository.objects.filter(local_site=local_site,
-                                            tool__name='Subversion')[0].pk
+        repo = Repository.objects.filter(local_site=local_site,
+                                         tool__name='Subversion')[0]
 
         if 200 <= expected_status < 300:
-            expected_mimetype = self.item_mimetype
+            expected_mimetype = repository_item_mimetype
         else:
             expected_mimetype = None
 
         rsp = self.apiPut(
-            self.get_item_url(repo_id, local_site_name),
+            get_repository_item_url(repo, local_site_name),
             dict({
                 'name': repo_name,
                 'path': repo_path,
@@ -473,23 +474,21 @@ class RepositoryResourceTests(BaseWebAPITestCase):
         if 200 <= expected_status < 300:
             self._verify_repository_info(rsp, repo_name, repo_path, data)
 
-        return repo_id
+        return repo.pk
 
     def _delete_repository(self, use_local_site, expected_status=204,
                            with_review_request=False):
         local_site, local_site_name = self._get_local_site_info(use_local_site)
         repo = Repository.objects.filter(local_site=local_site,
                                          tool__name='Subversion')[0]
-        repo_id = repo.pk
-
         if with_review_request:
             request = ReviewRequest.objects.create(self.user, repo)
             request.save()
 
-        self.apiDelete(self.get_item_url(repo_id, local_site_name),
+        self.apiDelete(get_repository_item_url(repo, local_site_name),
                        expected_status=expected_status)
 
-        return repo_id
+        return repo.pk
 
     def _get_local_site_info(self, use_local_site):
         if use_local_site:
@@ -514,15 +513,3 @@ class RepositoryResourceTests(BaseWebAPITestCase):
         for key, value in data.iteritems():
             if hasattr(repository, key):
                 self.assertEqual(getattr(repository, key), value)
-
-    def get_list_url(self, local_site_name=None):
-        return local_site_reverse('repositories-resource',
-                                  local_site_name=local_site_name)
-
-    @classmethod
-    def get_item_url(cls, repository_id, local_site_name=None):
-        return local_site_reverse('repository-resource',
-                                  local_site_name=local_site_name,
-                                  kwargs={
-                                      'repository_id': repository_id,
-                                  })

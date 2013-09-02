@@ -3,17 +3,18 @@ from djblets.testing.decorators import add_fixtures
 
 from reviewboard.attachments.models import FileAttachment
 from reviewboard.reviews.models import ReviewRequest, Review
-from reviewboard.site.urlresolvers import local_site_reverse
-from reviewboard.webapi.tests.base import BaseWebAPITestCase, _build_mimetype
-from reviewboard.webapi.tests.test_review import ReviewResourceTests
+from reviewboard.webapi.tests.base import BaseWebAPITestCase
+from reviewboard.webapi.tests.mimetypes import (
+    file_attachment_comment_list_mimetype,
+    review_item_mimetype)
+from reviewboard.webapi.tests.urls import (
+    get_file_attachment_comment_list_url,
+    get_review_list_url)
 
 
 class DraftReviewFileAttachmentCommentResourceTests(BaseWebAPITestCase):
     """Testing the ReviewFileAttachmentCommentResource APIs."""
     fixtures = ['test_users', 'test_scmtools']
-
-    list_mimetype = _build_mimetype('file-attachment-comments')
-    item_mimetype = _build_mimetype('file-attachment-comment')
 
     def test_get_review_file_attachment_comments(self):
         """Testing the GET review-requests/<id>/reviews/draft/file-attachment-comments/ API"""
@@ -32,8 +33,8 @@ class DraftReviewFileAttachmentCommentResourceTests(BaseWebAPITestCase):
         # Make these public.
         review_request.publish(self.user)
 
-        rsp = self.apiPost(ReviewResourceTests.get_list_url(review_request),
-                           expected_mimetype=ReviewResourceTests.item_mimetype)
+        rsp = self.apiPost(get_review_list_url(review_request),
+                           expected_mimetype=review_item_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
         self.assertTrue('review' in rsp)
         review_id = rsp['review']['id']
@@ -43,8 +44,9 @@ class DraftReviewFileAttachmentCommentResourceTests(BaseWebAPITestCase):
                                            file_attachment,
                                            file_attachment_comment_text)
 
-        rsp = self.apiGet(self.get_list_url(review),
-                          expected_mimetype=self.list_mimetype)
+        rsp = self.apiGet(
+            get_file_attachment_comment_list_url(review),
+            expected_mimetype=file_attachment_comment_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
         self.assertTrue('file_attachment_comments' in rsp)
         self.assertEqual(len(rsp['file_attachment_comments']), 1)
@@ -67,9 +69,8 @@ class DraftReviewFileAttachmentCommentResourceTests(BaseWebAPITestCase):
         review_request.publish(User.objects.get(username='doc'))
 
         rsp = self.apiPost(
-            ReviewResourceTests.get_list_url(review_request,
-                                             self.local_site_name),
-            expected_mimetype=ReviewResourceTests.item_mimetype)
+            get_review_list_url(review_request, self.local_site_name),
+            expected_mimetype=review_item_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
         self.assertTrue('review' in rsp)
         review_id = rsp['review']['id']
@@ -79,30 +80,12 @@ class DraftReviewFileAttachmentCommentResourceTests(BaseWebAPITestCase):
                                            file_attachment,
                                            file_attachment_comment_text)
 
-        rsp = self.apiGet(self.get_list_url(review, self.local_site_name),
-                          expected_mimetype=self.list_mimetype)
+        rsp = self.apiGet(
+            get_file_attachment_comment_list_url(review,
+                                                 self.local_site_name),
+            expected_mimetype=file_attachment_comment_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
         self.assertTrue('file_attachment_comments' in rsp)
         self.assertEqual(len(rsp['file_attachment_comments']), 1)
         self.assertEqual(rsp['file_attachment_comments'][0]['text'],
                          file_attachment_comment_text)
-
-    @classmethod
-    def get_list_url(self, review, local_site_name=None):
-        return local_site_reverse(
-            'file-attachment-comments-resource',
-            local_site_name=local_site_name,
-            kwargs={
-                'review_request_id': review.review_request.display_id,
-                'review_id': review.pk,
-            })
-
-    def get_item_url(self, review, comment_id, local_site_name=None):
-        return local_site_reverse(
-            'file-attachment-comment-resource',
-            local_site_name=local_site_name,
-            kwargs={
-                'review_request_id': review.review_request.display_id,
-                'review_id': review.pk,
-                'comment_id': comment_id,
-            })

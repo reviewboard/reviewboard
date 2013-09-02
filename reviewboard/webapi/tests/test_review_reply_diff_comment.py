@@ -4,16 +4,17 @@ from djblets.webapi.errors import PERMISSION_DENIED
 
 from reviewboard.reviews.models import Comment, Review, ReviewRequest
 from reviewboard.site.models import LocalSite
-from reviewboard.webapi.tests.base import BaseWebAPITestCase, _build_mimetype
-from reviewboard.webapi.tests.test_review_reply import ReviewReplyResourceTests
+from reviewboard.webapi.tests.base import BaseWebAPITestCase
+from reviewboard.webapi.tests.mimetypes import (
+    review_reply_diff_comment_item_mimetype,
+    review_reply_diff_comment_list_mimetype,
+    review_reply_item_mimetype)
+from reviewboard.webapi.tests.urls import get_review_reply_list_url
 
 
 class ReviewReplyDiffCommentResourceTests(BaseWebAPITestCase):
     """Testing the ReviewReplyDiffCommentResource APIs."""
     fixtures = ['test_users', 'test_scmtools', 'test_reviewrequests']
-
-    list_mimetype = _build_mimetype('review-reply-diff-comments')
-    item_mimetype = _build_mimetype('review-reply-diff-comment')
 
     def test_post_reply_with_diff_comment(self):
         """Testing the POST review-requests/<id>/reviews/<id>/replies/<id>/diff-comments/ API"""
@@ -24,8 +25,8 @@ class ReviewReplyDiffCommentResourceTests(BaseWebAPITestCase):
 
         # Create the reply
         rsp = self.apiPost(
-            ReviewReplyResourceTests.get_list_url(review),
-            expected_mimetype=ReviewReplyResourceTests.item_mimetype)
+            get_review_reply_list_url(review),
+            expected_mimetype=review_reply_item_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
 
         self.assertTrue('reply' in rsp)
@@ -40,7 +41,7 @@ class ReviewReplyDiffCommentResourceTests(BaseWebAPITestCase):
                 'reply_to_id': comment.id,
                 'text': comment_text,
             },
-            expected_mimetype=self.item_mimetype)
+            expected_mimetype=review_reply_diff_comment_item_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
 
         reply_comment = Comment.objects.get(pk=rsp['diff_comment']['id'])
@@ -74,8 +75,8 @@ class ReviewReplyDiffCommentResourceTests(BaseWebAPITestCase):
         comment = Comment.objects.get(pk=comment_id)
 
         rsp = self.apiPost(
-            ReviewReplyResourceTests.get_list_url(review, self.local_site_name),
-            expected_mimetype=ReviewReplyResourceTests.item_mimetype)
+            get_review_reply_list_url(review, self.local_site_name),
+            expected_mimetype=review_reply_item_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
 
         self.assertTrue('reply' in rsp)
@@ -97,9 +98,10 @@ class ReviewReplyDiffCommentResourceTests(BaseWebAPITestCase):
             self.assertEqual(rsp['stat'], 'fail')
             self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
         else:
-            rsp = self.apiPost(diff_comments_url,
-                               post_data,
-                               expected_mimetype=self.item_mimetype)
+            rsp = self.apiPost(
+                diff_comments_url,
+                post_data,
+                expected_mimetype=review_reply_diff_comment_item_mimetype)
             self.assertEqual(rsp['stat'], 'ok')
 
             reply_comment = Comment.objects.get(pk=rsp['diff_comment']['id'])
@@ -126,7 +128,7 @@ class ReviewReplyDiffCommentResourceTests(BaseWebAPITestCase):
                 'text': comment_text
             },
             expected_status=303,
-            expected_mimetype=self.item_mimetype)
+            expected_mimetype=review_reply_diff_comment_item_mimetype)
 
         self.assertEqual(rsp['stat'], 'ok')
 
@@ -145,7 +147,7 @@ class ReviewReplyDiffCommentResourceTests(BaseWebAPITestCase):
         rsp = self.apiPut(
             rsp['diff_comment']['links']['self']['href'],
             {'text': new_comment_text},
-            expected_mimetype=self.item_mimetype)
+            expected_mimetype=review_reply_diff_comment_item_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
 
         reply_comment = Comment.objects.get(pk=rsp['diff_comment']['id'])
@@ -163,7 +165,7 @@ class ReviewReplyDiffCommentResourceTests(BaseWebAPITestCase):
         rsp = self.apiPut(
             rsp['diff_comment']['links']['self']['href'],
             {'text': new_comment_text},
-            expected_mimetype=self.item_mimetype)
+            expected_mimetype=review_reply_diff_comment_item_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
 
         reply_comment = Comment.objects.get(pk=rsp['diff_comment']['id'])
@@ -191,8 +193,9 @@ class ReviewReplyDiffCommentResourceTests(BaseWebAPITestCase):
 
         self.apiDelete(rsp['diff_comment']['links']['self']['href'])
 
-        rsp = self.apiGet(diff_comments_url,
-                          expected_mimetype=self.list_mimetype)
+        rsp = self.apiGet(
+            diff_comments_url,
+            expected_mimetype=review_reply_diff_comment_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
         self.assertTrue('diff_comments' in rsp)
         self.assertEqual(len(rsp['diff_comments']), 0)
@@ -205,8 +208,9 @@ class ReviewReplyDiffCommentResourceTests(BaseWebAPITestCase):
 
         self.apiDelete(rsp['diff_comment']['links']['self']['href'])
 
-        rsp = self.apiGet(diff_comments_url,
-                          expected_mimetype=self.list_mimetype)
+        rsp = self.apiGet(
+            diff_comments_url,
+            expected_mimetype=review_reply_diff_comment_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
         self.assertTrue('diff_comments' in rsp)
         self.assertEqual(len(rsp['diff_comments']), 0)

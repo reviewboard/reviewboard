@@ -3,15 +3,15 @@ import os
 from djblets.webapi.errors import INVALID_FORM_DATA
 
 from reviewboard import scmtools
-from reviewboard.site.urlresolvers import local_site_reverse
 from reviewboard.webapi.errors import DIFF_PARSE_ERROR, REPO_FILE_NOT_FOUND
-from reviewboard.webapi.tests.base import BaseWebAPITestCase, _build_mimetype
+from reviewboard.webapi.tests.base import BaseWebAPITestCase
+from reviewboard.webapi.tests.mimetypes import validate_diff_mimetype
+from reviewboard.webapi.tests.urls import get_validate_diff_url
 
 
 class ValidateDiffResourceTests(BaseWebAPITestCase):
     """Testing the ValidateDiffResource APIs."""
     fixtures = ['test_users', 'test_scmtools']
-    mimetype = _build_mimetype('diff-validation')
 
     def test_post_diff(self):
         """Testing the POST validation/diffs/ API"""
@@ -20,14 +20,14 @@ class ValidateDiffResourceTests(BaseWebAPITestCase):
         f = open(diff_filename, "r")
 
         self.apiPost(
-            self.get_url(),
+            get_validate_diff_url(),
             {
                 'repository': self.repository.pk,
                 'path': f,
                 'basedir': '/trunk',
             },
             expected_status=200,
-            expected_mimetype=ValidateDiffResourceTests.mimetype)
+            expected_mimetype=validate_diff_mimetype)
 
         f.close()
 
@@ -38,7 +38,7 @@ class ValidateDiffResourceTests(BaseWebAPITestCase):
         f = open(diff_filename, 'r')
 
         rsp = self.apiPost(
-            self.get_url(),
+            get_validate_diff_url(),
             {
                 'repository': self.repository.pk,
                 'path': f,
@@ -57,7 +57,7 @@ class ValidateDiffResourceTests(BaseWebAPITestCase):
         f = open(diff_filename, 'r')
 
         rsp = self.apiPost(
-            self.get_url(),
+            get_validate_diff_url(),
             {
                 'repository': self.repository.pk,
                 'path': f,
@@ -78,7 +78,7 @@ class ValidateDiffResourceTests(BaseWebAPITestCase):
                                      'testdata', 'git_complex.diff')
         f = open(diff_filename, 'r')
         rsp = self.apiPost(
-            self.get_url(),
+            get_validate_diff_url(),
             {
                 'repository': self.repository.pk,
                 'path': f,
@@ -93,7 +93,3 @@ class ValidateDiffResourceTests(BaseWebAPITestCase):
             rsp['reason'],
             'No valid separator after the filename was found in the diff header')
         self.assertEqual(rsp['linenum'], 2)
-
-    def get_url(self, local_site_name=None):
-        return local_site_reverse('validate-diffs-resource',
-                                  local_site_name=local_site_name)
