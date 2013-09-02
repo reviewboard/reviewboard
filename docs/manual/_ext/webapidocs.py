@@ -21,7 +21,7 @@ from docutils import nodes
 from docutils.parsers.rst import directives
 from docutils.statemachine import ViewList
 from reviewboard import initialize
-from reviewboard.webapi.resources import root_resource
+from reviewboard.webapi.resources import resources
 from sphinx import addnodes
 from sphinx.util import docname_join
 from sphinx.util.compat import Directive
@@ -40,16 +40,21 @@ initialize()
 
 
 # Build the list of parents.
-root_resource.get_url_patterns()
+resources.root.get_url_patterns()
 
 
 class ResourceNotFound(Exception):
     def __init__(self, directive, classname):
+        self.classname = classname
         self.error_node = [
             directive.state_machine.reporter.error(
-                'Unable to import the web API resource class "%s"' % classname,
+                str(self),
                 line=directive.lineno)
         ]
+
+    def __str__(self):
+        return ('Unable to import the web API resource class "%s"'
+                % self.classname)
 
 
 class ErrorNotFound(Exception):
@@ -560,7 +565,7 @@ class ResourceTreeDirective(Directive):
 
     def run(self):
         bullet_list = nodes.bullet_list()
-        self._output_resource(root_resource, bullet_list, True)
+        self._output_resource(resources.root, bullet_list, True)
 
         return [bullet_list]
 

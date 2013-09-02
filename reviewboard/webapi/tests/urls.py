@@ -1,39 +1,12 @@
 from reviewboard.site.urlresolvers import local_site_reverse
-from reviewboard.webapi.resources import (
-    change_resource,
-    default_reviewer_resource,
-    diffset_resource,
-    draft_file_attachment_resource,
-    draft_screenshot_resource,
-    file_attachment_resource,
-    filediff_comment_resource,
-    repository_branches_resource,
-    repository_commits_resource,
-    repository_info_resource,
-    repository_resource,
-    review_diff_comment_resource,
-    review_file_comment_resource,
-    review_group_resource,
-    review_reply_resource,
-    review_request_draft_resource,
-    review_request_resource,
-    review_resource,
-    review_screenshot_comment_resource,
-    screenshot_comment_resource,
-    screenshot_resource,
-    server_info_resource,
-    session_resource,
-    user_resource,
-    validate_diff_resource,
-    watched_review_group_resource,
-    watched_review_request_resource)
+from reviewboard.webapi.resources import resources
 
 
 #
 # ChangeResource
 #
 def get_change_item_url(changedesc, local_site_name=None):
-    return change_resource.get_item_url(
+    return resources.change.get_item_url(
         local_site_name=local_site_name,
         review_request_id=changedesc.review_request.get().display_id,
         change_id=changedesc.pk)
@@ -43,12 +16,12 @@ def get_change_item_url(changedesc, local_site_name=None):
 # DefaultReviewerResource
 #
 def get_default_reviewer_list_url(local_site_name=None):
-    return default_reviewer_resource.get_list_url(
+    return resources.default_reviewer.get_list_url(
         local_site_name=local_site_name)
 
 
 def get_default_reviewer_item_url(default_reviewer_id, local_site_name=None):
-    return default_reviewer_resource.get_item_url(
+    return resources.default_reviewer.get_item_url(
         local_site_name=local_site_name,
         default_reviewer_id=default_reviewer_id)
 
@@ -57,13 +30,13 @@ def get_default_reviewer_item_url(default_reviewer_id, local_site_name=None):
 # DiffResource
 #
 def get_diff_list_url(review_request, local_site_name=None):
-    return diffset_resource.get_list_url(
+    return resources.diff.get_list_url(
         local_site_name=local_site_name,
         review_request_id=review_request.display_id)
 
 
 def get_diff_item_url(review_request, diff_revision, local_site_name=None):
-    return diffset_resource.get_item_url(
+    return resources.diff.get_item_url(
         local_site_name=local_site_name,
         review_request_id=review_request.display_id,
         diff_revision=diff_revision)
@@ -73,14 +46,14 @@ def get_diff_item_url(review_request, diff_revision, local_site_name=None):
 # DraftFileAttachmentResource
 #
 def get_draft_file_attachment_list_url(review_request, local_site_name=None):
-    return draft_file_attachment_resource.get_list_url(
+    return resources.draft_file_attachment.get_list_url(
         local_site_name=local_site_name,
         review_request_id=review_request.display_id)
 
 
 def get_draft_file_attachment_item_url(review_request, file_attachment_id,
                                        local_site_name=None):
-    return draft_file_attachment_resource.get_item_url(
+    return resources.draft_file_attachment.get_item_url(
         local_site_name=local_site_name,
         review_request_id=review_request.display_id,
         file_attachment_id=file_attachment_id)
@@ -90,13 +63,13 @@ def get_draft_file_attachment_item_url(review_request, file_attachment_id,
 # FileAttachmentResource
 #
 def get_file_attachment_list_url(review_request, local_site_name=None):
-    return file_attachment_resource.get_list_url(
+    return resources.file_attachment.get_list_url(
         local_site_name=local_site_name,
         review_request_id=review_request.display_id)
 
 
 def get_file_attachment_item_url(file_attachment, local_site_name=None):
-    return file_attachment_resource.get_item_url(
+    return resources.file_attachment.get_item_url(
         local_site_name=local_site_name,
         file_attachment_id=file_attachment.id,
         review_request_id=file_attachment.review_request.get().display_id)
@@ -106,7 +79,7 @@ def get_file_attachment_item_url(file_attachment, local_site_name=None):
 # FileAttachmentCommentResource
 #
 def get_file_attachment_comment_list_url(review, local_site_name=None):
-    return review_file_comment_resource.get_list_url(
+    return resources.review_file_attachment_comment.get_list_url(
         local_site_name=local_site_name,
         review_request_id=review.review_request.display_id,
         review_id=review.pk)
@@ -114,7 +87,7 @@ def get_file_attachment_comment_list_url(review, local_site_name=None):
 
 def get_file_attachment_comment_item_url(review, comment_id,
                                          local_site_name=None):
-    return review_file_comment_resource.get_item_url(
+    return resources.review_file_attachment_comment.get_item_url(
         local_site_name=local_site_name,
         review_request_id=review.review_request.display_id,
         review_id=review.pk,
@@ -128,7 +101,7 @@ def get_filediff_comment_list_url(filediff, local_site_name=None):
     diffset = filediff.diffset
     review_request = diffset.history.review_request.get()
 
-    return filediff_comment_resource.get_list_url(
+    return resources.filediff_comment.get_list_url(
         local_site_name=local_site_name,
         review_request_id=review_request.display_id,
         diff_revision=filediff.diffset.revision,
@@ -139,7 +112,7 @@ def get_filediff_comment_list_url(filediff, local_site_name=None):
 # RepositoryResource
 #
 def get_repository_list_url(local_site_name=None):
-    return repository_resource.get_list_url(
+    return resources.repository.get_list_url(
         local_site_name=local_site_name)
 
 
@@ -149,7 +122,7 @@ def get_repository_item_url(repository_or_id, local_site_name=None):
     else:
         repository_id = repository_or_id.pk
 
-    return repository_resource.get_item_url(
+    return resources.repository.get_item_url(
         local_site_name=local_site_name,
         repository_id=repository_id)
 
@@ -158,7 +131,7 @@ def get_repository_item_url(repository_or_id, local_site_name=None):
 # RepositoryBranchesResource
 #
 def get_repository_branches_url(repository, local_site_name=None):
-    return repository_branches_resource.get_list_url(
+    return resources.repository_branches.get_list_url(
         local_site_name=local_site_name,
         repository_id=repository.pk)
 
@@ -167,7 +140,7 @@ def get_repository_branches_url(repository, local_site_name=None):
 # RepositoryCommitsResource
 #
 def get_repository_commits_url(repository, local_site_name=None):
-    return repository_commits_resource.get_list_url(
+    return resources.repository_commits.get_list_url(
         local_site_name=local_site_name,
         repository_id=repository.pk)
 
@@ -176,7 +149,7 @@ def get_repository_commits_url(repository, local_site_name=None):
 # RepositoryInfoResource
 #
 def get_repository_info_url(repository, local_site_name=None):
-    return repository_info_resource.get_list_url(
+    return resources.repository_info.get_list_url(
         local_site_name=local_site_name,
         repository_id=repository.pk)
 
@@ -185,13 +158,13 @@ def get_repository_info_url(repository, local_site_name=None):
 # ReviewResource
 #
 def get_review_list_url(review_request, local_site_name=None):
-    return review_resource.get_list_url(
+    return resources.review.get_list_url(
         local_site_name=local_site_name,
         review_request_id=review_request.display_id)
 
 
 def get_review_item_url(review_request, review_id, local_site_name=None):
-    return review_resource.get_item_url(
+    return resources.review.get_item_url(
         local_site_name=local_site_name,
         review_request_id=review_request.display_id,
         review_id=review_id)
@@ -201,14 +174,14 @@ def get_review_item_url(review_request, review_id, local_site_name=None):
 # ReviewDiffCommentResource
 #
 def get_review_diff_comment_list_url(review, local_site_name=None):
-    return review_diff_comment_resource.get_list_url(
+    return resources.review_diff_comment.get_list_url(
         local_site_name=local_site_name,
         review_request_id=review.review_request.display_id,
         review_id=review.pk)
 
 
 def get_review_diff_comment_item_url(review, comment_id, local_site_name=None):
-    return review_diff_comment_resource.get_item_url(
+    return resources.review_diff_comment.get_item_url(
         local_site_name=local_site_name,
         review_request_id=review.review_request.display_id,
         review_id=review.pk,
@@ -219,12 +192,12 @@ def get_review_diff_comment_item_url(review, comment_id, local_site_name=None):
 # ReviewGroupResource
 #
 def get_review_group_list_url(local_site_name=None):
-    return review_group_resource.get_list_url(
+    return resources.review_group.get_list_url(
         local_site_name=local_site_name)
 
 
 def get_review_group_item_url(group_name, local_site_name=None):
-    return review_group_resource.get_item_url(
+    return resources.review_group.get_item_url(
         local_site_name=local_site_name,
         group_name=group_name)
 
@@ -233,13 +206,13 @@ def get_review_group_item_url(group_name, local_site_name=None):
 # ReviewGroupUserResource
 #
 def get_review_group_user_list_url(group_name, local_site_name=None):
-    return user_resource.get_list_url(
+    return resources.user.get_list_url(
         local_site_name=local_site_name,
         group_name=group_name)
 
 
 def get_review_group_user_item_url(group_name, username, local_site_name=None):
-    return user_resource.get_item_url(
+    return resources.user.get_item_url(
         local_site_name=local_site_name,
         group_name=group_name,
         username=username)
@@ -249,14 +222,14 @@ def get_review_group_user_item_url(group_name, username, local_site_name=None):
 # ReviewReplyResource
 #
 def get_review_reply_list_url(review, local_site_name=None):
-    return review_reply_resource.get_list_url(
+    return resources.review_reply.get_list_url(
         local_site_name=local_site_name,
         review_request_id=review.review_request.display_id,
         review_id=review.pk)
 
 
 def get_review_reply_item_url(review, reply_id, local_site_name=None):
-    return review_reply_resource.get_item_url(
+    return resources.review_reply.get_item_url(
         local_site_name=local_site_name,
         review_request_id=review.review_request.display_id,
         review_id=review.pk,
@@ -267,12 +240,12 @@ def get_review_reply_item_url(review, reply_id, local_site_name=None):
 # ReviewRequestResource
 #
 def get_review_request_list_url(local_site_name=None):
-    return review_request_resource.get_list_url(
+    return resources.review_request.get_list_url(
         local_site_name=local_site_name)
 
 
 def get_review_request_item_url(review_request_id, local_site_name=None):
-    return review_request_resource.get_item_url(
+    return resources.review_request.get_item_url(
         local_site_name=local_site_name,
         review_request_id=review_request_id)
 
@@ -281,7 +254,7 @@ def get_review_request_item_url(review_request_id, local_site_name=None):
 # ReviewRequestDraftResource
 #
 def get_review_request_draft_url(review_request, local_site_name=None):
-    return review_request_draft_resource.get_item_url(
+    return resources.review_request_draft.get_item_url(
         local_site_name=local_site_name,
         review_request_id=review_request.display_id)
 
@@ -290,7 +263,7 @@ def get_review_request_draft_url(review_request, local_site_name=None):
 # ReviewScreenshotCommentResource
 #
 def get_review_screenshot_comment_list_url(review, local_site_name=None):
-    return review_screenshot_comment_resource.get_list_url(
+    return resources.review_screenshot_comment.get_list_url(
         local_site_name=local_site_name,
         review_request_id=review.review_request.display_id,
         review_id=review.pk)
@@ -298,7 +271,7 @@ def get_review_screenshot_comment_list_url(review, local_site_name=None):
 
 def get_review_screenshot_comment_item_url(review, comment_id,
                                            local_site_name=None):
-    return review_screenshot_comment_resource.get_item_url(
+    return resources.review_screenshot_comment.get_item_url(
         local_site_name=local_site_name,
         review_request_id=review.review_request.display_id,
         review_id=review.pk,
@@ -322,7 +295,7 @@ def get_screenshot_list_url(review_request_or_id, local_site_name=None):
     else:
         review_request_id = review_request_or_id.display_id
 
-    return screenshot_resource.get_list_url(
+    return resources.screenshot.get_list_url(
         local_site_name=local_site_name,
         review_request_id=review_request_id)
 
@@ -331,14 +304,14 @@ def get_screenshot_list_url(review_request_or_id, local_site_name=None):
 # ScreenshotCommentResource
 #
 def get_screenshot_comment_list_url(review, local_site_name=None):
-    return screenshot_comment_resource.get_list_url(
+    return resources.screenshot_comment.get_list_url(
         local_site_name=local_site_name,
         review_request_id=review.review_request.display_id,
         review_id=review.pk)
 
 
 def get_screenshot_comment_item_url(review, comment_id, local_site_name=None):
-    return screenshot_comment_resource.get_item_url(
+    return resources.screenshot_comment.get_item_url(
         local_site_name=local_site_name,
         review_request_id=review.review_request.display_id,
         review_id=review.pk,
@@ -349,14 +322,14 @@ def get_screenshot_comment_item_url(review, comment_id, local_site_name=None):
 # ScreenshotDraftResource
 #
 def get_screenshot_draft_list_url(review_request, local_site_name=None):
-    return draft_screenshot_resource.get_list_url(
+    return resources.draft_screenshot.get_list_url(
         local_site_name=local_site_name,
         review_request_id=review_request.display_id)
 
 
 def get_screenshot_draft_item_url(review_request, screenshot_id,
                                   local_site_name=None):
-    return draft_screenshot_resource.get_item_url(
+    return resources.draft_screenshot.get_item_url(
         local_site_name=local_site_name,
         review_request_id=review_request.display_id,
         screenshot_id=screenshot_id)
@@ -366,26 +339,26 @@ def get_screenshot_draft_item_url(review_request, screenshot_id,
 # ServerInfoResource
 #
 def get_server_info_url(local_site_name=None):
-    return server_info_resource.get_item_url(local_site_name=local_site_name)
+    return resources.server_info.get_item_url(local_site_name=local_site_name)
 
 
 #
 # SessionResource
 #
 def get_session_url(local_site_name=None):
-    return session_resource.get_list_url(local_site_name=local_site_name)
+    return resources.session.get_list_url(local_site_name=local_site_name)
 
 
 #
 # UserResource
 #
 def get_user_list_url(local_site_name=None):
-    return user_resource.get_list_url(
+    return resources.user.get_list_url(
         local_site_name=local_site_name)
 
 
 def get_user_item_url(username, local_site_name=None):
-    return user_resource.get_item_url(
+    return resources.user.get_item_url(
         local_site_name=local_site_name,
         username=username)
 
@@ -394,7 +367,7 @@ def get_user_item_url(username, local_site_name=None):
 # ValidateDiffResource
 #
 def get_validate_diff_url(local_site_name=None):
-    return validate_diff_resource.get_item_url(
+    return resources.validate_diff.get_item_url(
         local_site_name=local_site_name)
 
 
@@ -402,14 +375,14 @@ def get_validate_diff_url(local_site_name=None):
 # WatchedReviewGroupResource
 #
 def get_watched_review_group_list_url(username, local_site_name=None):
-    return watched_review_group_resource.get_list_url(
+    return resources.watched_review_group.get_list_url(
         local_site_name=local_site_name,
         username=username)
 
 
 def get_watched_review_group_item_url(username, object_id,
                                       local_site_name=None):
-    return watched_review_group_resource.get_item_url(
+    return resources.watched_review_group.get_item_url(
         local_site_name=local_site_name,
         username=username,
         watched_obj_id=object_id)
@@ -419,14 +392,14 @@ def get_watched_review_group_item_url(username, object_id,
 # WatchedReviewRequestResource
 #
 def get_watched_review_request_list_url(username, local_site_name=None):
-    return watched_review_request_resource.get_list_url(
+    return resources.watched_review_request.get_list_url(
         local_site_name=local_site_name,
         username=username)
 
 
 def get_watched_review_request_item_url(username, object_id,
                                         local_site_name=None):
-    return watched_review_request_resource.get_item_url(
+    return resources.watched_review_request.get_item_url(
         local_site_name=local_site_name,
         username=username,
         watched_obj_id=object_id)

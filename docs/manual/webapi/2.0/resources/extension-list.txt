@@ -1,5 +1,5 @@
 .. webapi-resource::
-   :classname: reviewboard.webapi.resources.ExtensionResource
+   :classname: djblets.extensions.resources.ExtensionResource
    :is-list:
 
 .. comment: vim: ft=rst et ts=3

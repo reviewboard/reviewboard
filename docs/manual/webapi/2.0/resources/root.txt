@@ -1,5 +1,5 @@
 .. webapi-resource::
-   :classname: reviewboard.webapi.resources.RootResource
+   :classname: reviewboard.webapi.resources.root.RootResource
    :is-list:
 
 

@@ -7,7 +7,7 @@ from django.contrib import admin
 from django.views.generic import TemplateView
 
 from reviewboard.extensions.base import get_extension_manager
-from reviewboard.webapi.resources import root_resource
+from reviewboard.webapi.resources import resources
 
 
 extension_manager = get_extension_manager()
@@ -90,7 +90,7 @@ localsite_urlpatterns = patterns(
         {'url': 'dashboard/'},
         name="root"),
 
-    (r'^api/', include(root_resource.get_url_patterns())),
+    (r'^api/', include(resources.root.get_url_patterns())),
     (r'^r/', include('reviewboard.reviews.urls')),
 
     # Dashboard

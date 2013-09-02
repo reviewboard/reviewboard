@@ -1,5 +1,5 @@
 .. webapi-resource::
-   :classname: reviewboard.webapi.resources.ValidationResource
+   :classname: reviewboard.webapi.resources.validation.ValidationResource
    :is-list:
 
 

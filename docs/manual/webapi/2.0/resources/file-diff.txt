@@ -1,4 +1,4 @@
 .. webapi-resource::
-   :classname: reviewboard.webapi.resources.FileDiffResource
+   :classname: reviewboard.webapi.resources.filediff.FileDiffResource
 
 .. comment: vim: ft=rst et ts=3
