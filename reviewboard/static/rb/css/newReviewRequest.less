@@ -16,6 +16,7 @@
     background-color: @headerbar-bg;
     color: white;
     overflow: scroll;
+    position: relative;
 
     h3 {
       padding: 1em;
@@ -31,6 +32,31 @@
         background-color: #444444;
         #gradient > .vertical-three-colors(#444444, #555555, 15%, #444444);
       }
+    }
+
+    .search-icon-wrapper {
+      position: absolute;
+      right: 0;
+      top: 0;
+      background-color: @headerbar-bg;
+      z-index: @z-index-banner;
+    }
+
+    .repository-search-icon {
+      margin: 0.75em;
+    }
+
+    .repository-search {
+      position: absolute;
+      right: 1em;
+      top: 0.75em;
+      width: 0;
+      visibility: hidden;
+      background-color: lighten(@headerbar-bg, 10%);
+      border: 1px solid #999;
+      color: #ccc;
+      .box-shadow(none);
+      padding: 2px;
     }
   }
 
