@@ -72,7 +72,8 @@ class BaseWebAPITestCase(TestCase, EmailTestHelper):
                          follow_redirects, expected_redirects,
                          expected_mimetype, content_type='', extra={}):
         response = api_func(path, query, follow=follow_redirects,
-                            content_type=content_type, extra=extra)
+                            content_type=content_type, extra=extra,
+                            HTTP_X_REQUESTED_WITH='XMLHttpRequest')
 
         print "Raw response: %s" % response.content
 
@@ -109,8 +110,6 @@ class BaseWebAPITestCase(TestCase, EmailTestHelper):
             self.client.get, path, query, expected_status, follow_redirects,
             expected_redirects, expected_mimetype,
             content_type='text/html; charset=utf-8')
-
-        print "Raw response: %s" % response.content
 
         for header, value in expected_headers.iteritems():
             self.assertTrue(header in response)
@@ -165,7 +164,6 @@ class BaseWebAPITestCase(TestCase, EmailTestHelper):
                                          expected_status, follow_redirects,
                                          expected_redirects, expected_mimetype,
                                          content_type=MULTIPART_CONTENT)
-        print "Raw response: %s" % response.content
 
         return self._get_result(response, expected_status)
 

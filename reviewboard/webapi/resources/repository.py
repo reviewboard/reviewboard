@@ -72,22 +72,27 @@ class RepositoryResource(WebAPIResource):
     }
     uri_object_key = 'repository_id'
     item_child_resources = [
-        resources.repository_info,
+        resources.diff_file_attachment,
         resources.repository_branches,
         resources.repository_commits,
+        resources.repository_info,
     ]
     autogenerate_etags = True
 
     allowed_methods = ('GET', 'POST', 'PUT', 'DELETE')
 
     @webapi_check_login_required
-    def get_queryset(self, request, local_site_name=None, show_invisible=False,
-                     *args, **kwargs):
+    def get_queryset(self, request, is_list=False, local_site_name=None,
+                     show_invisible=False, *args, **kwargs):
         """Returns a queryset for Repository models."""
         local_site = self._get_local_site(local_site_name)
-        return self.model.objects.accessible(request.user,
-                                             visible_only=not show_invisible,
-                                             local_site=local_site)
+
+        if is_list:
+            return self.model.objects.accessible(request.user,
+                                                 visible_only=not show_invisible,
+                                                 local_site=local_site)
+        else:
+            return self.model.objects.filter(local_site=local_site)
 
     def serialize_tool_field(self, obj, **kwargs):
         return obj.tool.name

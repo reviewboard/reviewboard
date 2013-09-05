@@ -31,6 +31,8 @@ Diffs
    diff-context
    diff-list
    diff
+   diff-file-attachment-list
+   diff-file-attachment
    original-file
    patched-file
 

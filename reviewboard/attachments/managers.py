@@ -1,4 +1,4 @@
-from django.db.models import Manager
+from django.db.models import Manager, Q
 
 
 class FileAttachmentManager(Manager):
@@ -7,7 +7,8 @@ class FileAttachmentManager(Manager):
     Adds utility functions for looking up FileAttachments based on other
     objects.
     """
-    def create_from_filediff(self, filediff, from_modified=True, **kwargs):
+    def create_from_filediff(self, filediff, from_modified=True, save=True,
+                             **kwargs):
         """Creates a new FileAttachment for a FileDiff.
 
         FileAttachments created from a FileDiff are used to represent changes
@@ -23,17 +24,28 @@ class FileAttachmentManager(Manager):
         if filediff.is_new:
             assert from_modified
 
-            return self.create(added_in_filediff=filediff, **kwargs)
+            attachment = self.model(added_in_filediff=filediff, **kwargs)
         elif from_modified:
-            return self.create(repo_path=filediff.dest_file,
-                               repo_revision=filediff.dest_detail,
-                               repository=filediff.diffset.repository,
-                               **kwargs)
+            attachment = self.model(repo_path=filediff.dest_file,
+                                    repo_revision=filediff.dest_detail,
+                                    repository=filediff.diffset.repository,
+                                    **kwargs)
         else:
-            return self.create(repo_path=filediff.source_file,
-                               repo_revision=filediff.source_revision,
-                               repository=filediff.diffset.repository,
-                               **kwargs)
+            attachment = self.model(repo_path=filediff.source_file,
+                                    repo_revision=filediff.source_revision,
+                                    repository=filediff.diffset.repository,
+                                    **kwargs)
+
+        if save:
+            attachment.save()
+
+        return attachment
+
+    def filter_for_repository(self, repository):
+        """Filters results for those on a given repository."""
+        return self.filter(
+            Q(repository=repository) |
+            Q(added_in_filediff__diffset__repository=repository))
 
     def get_for_filediff(self, filediff, modified=True):
         """Returns the FileAttachment matching a DiffSet.

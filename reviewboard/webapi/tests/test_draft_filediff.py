@@ -1,9 +1,18 @@
+import os
+
+from djblets.webapi.errors import INVALID_FORM_DATA
+
+from reviewboard import scmtools
+from reviewboard.attachments.models import FileAttachment
+from reviewboard.diffviewer.models import DiffSet
 from reviewboard.webapi.resources import resources
 from reviewboard.webapi.tests.base import BaseWebAPITestCase
-from reviewboard.webapi.tests.mimetypes import (filediff_item_mimetype,
+from reviewboard.webapi.tests.mimetypes import (diff_item_mimetype,
+                                                filediff_item_mimetype,
                                                 filediff_list_mimetype)
 from reviewboard.webapi.tests.mixins import BasicTestsMetaclass
-from reviewboard.webapi.tests.urls import (get_draft_filediff_item_url,
+from reviewboard.webapi.tests.urls import (get_diff_list_url,
+                                           get_draft_filediff_item_url,
                                            get_draft_filediff_list_url)
 
 
@@ -115,3 +124,155 @@ class ResourceItemTests(BaseWebAPITestCase):
         self.apiGet(
             get_draft_filediff_item_url(filediff, review_request),
             expected_status=403)
+
+    #
+    # HTTP PUT tests
+    #
+
+    def test_put_with_new_file_and_dest_attachment_file(self):
+        """Testing the PUT review-requests/<id>/diffs/<id>/files/<id>/ API
+        with new file and dest_attachment_file
+        """
+        review_request = self.create_review_request(create_repository=True,
+                                                    submitter=self.user)
+
+        diff_filename = os.path.join(os.path.dirname(scmtools.__file__),
+                                     'testdata', 'git_binary_image_new.diff')
+
+        with open(diff_filename, 'r') as f:
+            rsp = self.apiPost(
+                get_diff_list_url(review_request),
+                {
+                    'path': f,
+                    'base_commit_id': '1234',
+                },
+                expected_mimetype=diff_item_mimetype)
+
+        self.assertEqual(rsp['stat'], 'ok')
+
+        diffset = DiffSet.objects.get(pk=rsp['diff']['id'])
+        filediffs = diffset.files.all()
+
+        self.assertEqual(len(filediffs), 1)
+        filediff = filediffs[0]
+        self.assertEqual(filediff.source_file, 'trophy.png')
+
+        with open(self._getTrophyFilename(), 'r') as f:
+            rsp = self.apiPut(
+                get_draft_filediff_item_url(filediff, review_request) +
+                '?expand=dest_attachment',
+                {
+                    'dest_attachment_file': f,
+                },
+                expected_mimetype=filediff_item_mimetype)
+
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertTrue('dest_attachment' in rsp['file'])
+
+        attachment = FileAttachment.objects.get(
+            pk=rsp['file']['dest_attachment']['id'])
+
+        self.assertTrue(attachment.is_from_diff)
+        self.assertEqual(attachment.orig_filename, 'trophy.png')
+        self.assertEqual(attachment.added_in_filediff, filediff)
+        self.assertEqual(attachment.repo_path, None)
+        self.assertEqual(attachment.repo_revision, None)
+        self.assertEqual(attachment.repository, None)
+
+    def test_put_with_modified_file_and_dest_attachment_file(self):
+        """Testing the PUT review-requests/<id>/diffs/<id>/files/<id>/ API
+        with modified file and dest_attachment_file
+        """
+        review_request = self.create_review_request(create_repository=True,
+                                                    submitter=self.user)
+
+        diff_filename = os.path.join(os.path.dirname(scmtools.__file__),
+                                     'testdata',
+                                     'git_binary_image_modified.diff')
+
+        with open(diff_filename, 'r') as f:
+            rsp = self.apiPost(
+                get_diff_list_url(review_request),
+                {
+                    'path': f,
+                    'base_commit_id': '1234',
+                },
+                expected_mimetype=diff_item_mimetype)
+
+        self.assertEqual(rsp['stat'], 'ok')
+
+        diffset = DiffSet.objects.get(pk=rsp['diff']['id'])
+        filediffs = diffset.files.all()
+
+        self.assertEqual(len(filediffs), 1)
+        filediff = filediffs[0]
+        self.assertEqual(filediff.source_file, 'trophy.png')
+
+        with open(self._getTrophyFilename(), 'r') as f:
+            rsp = self.apiPut(
+                get_draft_filediff_item_url(filediff, review_request) +
+                '?expand=dest_attachment',
+                {
+                    'dest_attachment_file': f,
+                },
+                expected_mimetype=filediff_item_mimetype)
+
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertTrue('dest_attachment' in rsp['file'])
+
+        attachment = FileAttachment.objects.get(
+            pk=rsp['file']['dest_attachment']['id'])
+
+        self.assertTrue(attachment.is_from_diff)
+        self.assertEqual(attachment.orig_filename, 'trophy.png')
+        self.assertEqual(attachment.added_in_filediff, None)
+        self.assertEqual(attachment.repo_path, 'trophy.png')
+        self.assertEqual(attachment.repo_revision, '86b520d')
+        self.assertEqual(attachment.repository, review_request.repository)
+
+    def test_put_second_dest_attachment_file_disallowed(self):
+        """Testing the PUT review-requests/<id>/diffs/<id>/files/<id>/ API
+        disallows setting dest_attachment_file twice
+        """
+        review_request = self.create_review_request(create_repository=True,
+                                                    submitter=self.user)
+
+        diff_filename = os.path.join(os.path.dirname(scmtools.__file__),
+                                     'testdata',
+                                     'git_binary_image_modified.diff')
+
+        with open(diff_filename, 'r') as f:
+            rsp = self.apiPost(
+                get_diff_list_url(review_request),
+                {
+                    'path': f,
+                    'base_commit_id': '1234',
+                },
+                expected_mimetype=diff_item_mimetype)
+
+        diffset = DiffSet.objects.get(pk=rsp['diff']['id'])
+        filediff = diffset.files.all()[0]
+
+        url = get_draft_filediff_item_url(filediff, review_request)
+        trophy_filename = self._getTrophyFilename()
+
+        with open(trophy_filename, 'r') as f:
+            self.apiPut(
+                url,
+                {
+                    'dest_attachment_file': f,
+                },
+                expected_mimetype=filediff_item_mimetype)
+
+        with open(trophy_filename, 'r') as f:
+            rsp = self.apiPut(
+                url,
+                {
+                    'dest_attachment_file': f,
+                },
+                expected_status=400)
+
+            self.assertEqual(rsp['stat'], 'fail')
+            self.assertEqual(rsp['err']['code'], INVALID_FORM_DATA.code)
+            self.assertTrue('fields' in rsp)
+            self.assertTrue('dest_attachment_file' in rsp['fields'])

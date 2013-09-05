@@ -64,6 +64,36 @@ class TestCase(DjbletsTestCase):
 
         return doc
 
+    def create_diff_file_attachment(self, filediff, from_modified=True,
+                                    review_request=None,
+                                    orig_filename='filename.png',
+                                    caption='My Caption',
+                                    mimetype='image/png',
+                                    **kwargs):
+        """Creates a diff-based FileAttachment for testing.
+
+        The FileAttachment is tied to the given FileDiff. It's populated
+        with default data that can be overridden by the caller.
+        """
+        file_attachment = FileAttachment.objects.create_from_filediff(
+            filediff=filediff,
+            from_modified=from_modified,
+            caption=caption,
+            orig_filename=orig_filename,
+            mimetype=mimetype,
+            **kwargs)
+
+        filename = os.path.join(settings.STATIC_ROOT, 'rb', 'images',
+                                'trophy.png')
+
+        with open(filename, 'r') as f:
+            file_attachment.file.save(filename, File(f), save=True)
+
+        if review_request:
+            review_request.file_attachments.add(file_attachment)
+
+        return file_attachment
+
     def create_diffset(self, review_request=None, revision=1, repository=None,
                        draft=False, name='diffset'):
         """Creates a DiffSet for testing.

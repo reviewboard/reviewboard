@@ -22,16 +22,26 @@ class UploadFileForm(forms.Form):
     caption = forms.CharField(required=False)
     path = forms.FileField(required=True)
 
-    def create(self, file, review_request):
+    def create(self, file, review_request, filediff=None):
         caption = self.cleaned_data['caption'] or file.name
         mimetype = file.content_type or self._guess_mimetype(file)
         filename = '%s__%s' % (uuid4(), file.name)
 
-        file_attachment = FileAttachment(
-            caption='',
-            draft_caption=caption,
-            orig_filename=os.path.basename(file.name),
-            mimetype=mimetype)
+        attachment_kwargs = {
+            'caption': '',
+            'draft_caption': caption,
+            'orig_filename': os.path.basename(file.name),
+            'mimetype': mimetype,
+        }
+
+        if filediff:
+            file_attachment = FileAttachment.objects.create_from_filediff(
+                filediff,
+                save=False,
+                **attachment_kwargs)
+        else:
+            file_attachment = FileAttachment(**attachment_kwargs)
+
         file_attachment.file.save(filename, file, save=True)
 
         draft = ReviewRequestDraft.create(review_request)

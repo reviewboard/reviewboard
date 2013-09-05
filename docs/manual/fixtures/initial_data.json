@@ -1448,15 +1448,60 @@
         "pk": 1,
         "model": "attachments.fileattachment",
         "fields": {
-            "orig_filename": null,
+            "orig_filename": "screenshot1.png",
             "mimetype": "image/png",
             "repository": null,
-            "repo_revision": null,
+            "repo_revision": "",
             "draft_caption": "",
             "caption": "Example Attachment",
             "file": "uploaded/images/2010/08/13/screenshot1.png",
             "added_in_filediff": null,
-            "repo_path": null
+            "repo_path": ""
+        }
+    },
+    {
+        "pk": 2,
+        "model": "attachments.fileattachment",
+        "fields": {
+            "orig_filename": "spritesheet.png",
+            "mimetype": "image/png",
+            "repository": 1,
+            "repo_revision": "123",
+            "draft_caption": "",
+            "caption": "Sprite Sheet",
+            "file": "uploaded/files/2013/09/06/98e2a2c1-2c97-4d65-af27-d426ca6ae2d3__image1.png",
+            "added_in_filediff": null,
+            "repo_path": "/images/spritesheet.png"
+        }
+    },
+    {
+        "pk": 3,
+        "model": "attachments.fileattachment",
+        "fields": {
+            "orig_filename": "spritesheet.png",
+            "mimetype": "image/png",
+            "repository": 1,
+            "repo_revision": "124",
+            "draft_caption": "",
+            "caption": "Sprite Sheet",
+            "file": "uploaded/files/2013/09/06/ddbd9f36-541c-4ee5-8c9d-94566cd83ec0__image1.png",
+            "added_in_filediff": null,
+            "repo_path": "/images/spritesheet.png"
+        }
+    },
+    {
+        "pk": 4,
+        "model": "attachments.fileattachment",
+        "fields": {
+            "orig_filename": "logo.png",
+            "mimetype": "image/png",
+            "repository": null,
+            "repo_revision": "",
+            "draft_caption": "",
+            "caption": "Logo",
+            "file": "uploaded/files/2013/09/06/Logo.png",
+            "added_in_filediff": 43,
+            "repo_path": ""
         }
     },
     {
@@ -1475,7 +1520,7 @@
         "model": "changedescs.changedescription",
         "fields": {
             "fields_changed": "{\"diff\": {\"added\": [[\"Diff r3\", \"/r/8/diff/3/\", 11]]}}",
-            "timestamp": "2009-02-25T22:32:13Z",
+            "timestamp": "2013-08-07T22:32:13Z",
             "rich_text": false,
             "public": true,
             "text": "Added a diff containing a new file."
@@ -1486,7 +1531,7 @@
         "model": "changedescs.changedescription",
         "fields": {
             "fields_changed": "{\"diff\": {\"added\": [[\"Diff r2\", \"/r/8/diff/2/\", 10]]}}",
-            "timestamp": "2009-02-25T02:03:18Z",
+            "timestamp": "2013-08-07T02:03:18Z",
             "rich_text": false,
             "public": true,
             "text": "Added a second diff for the interdiff test."
@@ -1508,6 +1553,15 @@
             "binary": "SW5kZXg6IFRFU1RJTkcNCj09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09\nPT09PT09PT09PT09PT09PT09PT09PT09PT0NCi0tLSBURVNUSU5HCShyZXZpc2lvbiAwKQ0KKysr\nIFRFU1RJTkcJKHJldmlzaW9uIDApDQpAQCAtMCwwICsxIEBADQorVGhpcyBpcyBhIHRlc3QhDQo=\n",
             "insert_count": 1,
             "delete_count": 0
+        }
+    },
+    {
+        "pk": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
+        "model": "diffviewer.filediffdata",
+        "fields": {
+            "binary": "",
+            "insert_count": null,
+            "delete_count": null
         }
     },
     {
@@ -2123,6 +2177,40 @@
         }
     },
     {
+        "pk": 42,
+        "model": "diffviewer.filediff",
+        "fields": {
+            "status": "M",
+            "diff_hash": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
+            "binary": true,
+            "diffset": 12,
+            "dest_detail": "124",
+            "diff64": "",
+            "source_revision": "123",
+            "source_file": "/images/spritesheet.png",
+            "dest_file": "/images/spritesheet.png",
+            "parent_diff64": "",
+            "parent_diff_hash": null
+        }
+    },
+    {
+        "pk": 43,
+        "model": "diffviewer.filediff",
+        "fields": {
+            "status": "M",
+            "diff_hash": null,
+            "binary": true,
+            "diffset": 12,
+            "dest_detail": "1",
+            "diff64": "",
+            "source_revision": "PRE-CREATION",
+            "source_file": "/images/logo.png",
+            "dest_file": "/images/logo.png",
+            "parent_diff64": "",
+            "parent_diff_hash": null
+        }
+    },
+    {
         "pk": 1,
         "model": "diffviewer.diffset",
         "fields": {
@@ -2232,6 +2320,20 @@
             "diffcompat": 1,
             "revision": 1,
             "history": 8
+        }
+    },
+    {
+        "pk": 12,
+        "model": "diffviewer.diffset",
+        "fields": {
+            "base_commit_id": "",
+            "name": "diff",
+            "repository": 1,
+            "timestamp": "2013-09-06T19:39:45Z",
+            "basedir": "",
+            "diffcompat": 1,
+            "revision": 1,
+            "history": 9
         }
     },
     {
@@ -2357,6 +2459,15 @@
         }
     },
     {
+        "pk": 9,
+        "model": "diffviewer.diffsethistory",
+        "fields": {
+            "timestamp": "2013-09-06T19:38:51Z",
+            "last_diff_updated": "2013-09-06T19:39:45Z",
+            "name": "History"
+        }
+    },
+    {
         "pk": 1,
         "model": "hostingsvcs.hostingserviceaccount",
         "fields": {
@@ -2466,11 +2577,52 @@
         }
     },
     {
+        "pk": 9,
+        "model": "reviews.reviewrequest",
+        "fields": {
+            "commit_id": "",
+            "last_updated": "2013-09-06T20:19:34.632Z",
+            "target_people": [],
+            "changedescs": [],
+            "inactive_screenshots": [],
+            "email_message_id": "",
+            "last_review_activity_timestamp": null,
+            "diffset_history": 9,
+            "screenshots": [],
+            "bugs_closed": "",
+            "testing_done": "",
+            "branch": "",
+            "depends_on": [],
+            "time_added": "2013-09-06T19:38:35Z",
+            "public": true,
+            "status": "P",
+            "shipit_count": 0,
+            "description": "Just some tests for diff file attachments",
+            "repository": 1,
+            "inactive_file_attachments": [],
+            "local_site": null,
+            "target_groups": [
+                1
+            ],
+            "summary": "Diff file attachments test",
+            "changenum": null,
+            "local_id": null,
+            "submitter": 2,
+            "time_emailed": null,
+            "rich_text": true,
+            "file_attachments": [
+                2,
+                3,
+                4
+            ]
+        }
+    },
+    {
         "pk": 8,
         "model": "reviews.reviewrequest",
         "fields": {
             "commit_id": null,
-            "last_updated": "2010-08-28T02:26:18.474Z",
+            "last_updated": "2013-09-07T02:26:18.474Z",
             "target_people": [
                 4
             ],
@@ -2480,7 +2632,7 @@
             ],
             "inactive_screenshots": [],
             "email_message_id": null,
-            "last_review_activity_timestamp": "2010-08-28T02:26:18.444Z",
+            "last_review_activity_timestamp": "2013-08-07T02:26:18.444Z",
             "diffset_history": 8,
             "screenshots": [
                 1
@@ -2489,7 +2641,7 @@
             "testing_done": "",
             "branch": "trunk",
             "depends_on": [],
-            "time_added": "2009-02-25T02:01:21Z",
+            "time_added": "2013-08-07T02:01:21Z",
             "public": true,
             "status": "P",
             "shipit_count": 0,
