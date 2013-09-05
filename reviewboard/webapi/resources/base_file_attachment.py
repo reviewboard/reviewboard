@@ -90,11 +90,12 @@ class BaseFileAttachmentResource(WebAPIResource):
         return obj.get_absolute_url()
 
     def serialize_caption_field(self, obj, **kwargs):
-        # We prefer 'caption' here, because when creating a new screenshot, it
-        # won't be full of data yet (and since we're posting to screenshots/,
-        # it doesn't hit DraftFileAttachmentResource).
+        # We prefer 'caption' here, because when creating a new file
+        # attachment, it won't be full of data yet (and since we're posting
+        # to file-attachments/, it doesn't hit DraftFileAttachmentResource).
         # DraftFileAttachmentResource will prefer draft_caption, in case people
         # are changing an existing one.
+
         return obj.caption or obj.draft_caption
 
     def serialize_review_url_field(self, obj, **kwargs):

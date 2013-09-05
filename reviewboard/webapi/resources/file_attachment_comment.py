@@ -25,7 +25,7 @@ class FileAttachmentCommentResource(BaseFileAttachmentCommentResource):
     @webapi_check_local_site
     @augment_method_from(BaseFileAttachmentCommentResource)
     def get_list(self, *args, **kwargs):
-        """Returns the list of screenshot comments on a file.
+        """Returns the list of comments on a file attachment.
 
         This list of comments will cover all comments made on this
         file from all reviews.

@@ -8,7 +8,7 @@ from reviewboard.webapi.resources.base_file_attachment import \
 
 
 class FileAttachmentResource(BaseFileAttachmentResource):
-    """A resource representing a screenshot on a review request."""
+    """A resource representing a file attachment on a review request."""
     model_parent_key = 'review_request'
 
     item_child_resources = [
@@ -27,8 +27,8 @@ class FileAttachmentResource(BaseFileAttachmentResource):
     def get_list(self, *args, **kwargs):
         """Returns a list of file attachments on the review request.
 
-        Each screenshot in this list is a file attachment attachment that is
-        shown on the review request.
+        Each item in this list is a file attachment attachment that is shown on
+        the review request.
         """
         pass
 
@@ -59,14 +59,13 @@ class FileAttachmentResource(BaseFileAttachmentResource):
 
     @augment_method_from(BaseFileAttachmentResource)
     def update(self, request, caption=None, *args, **kwargs):
-        """Updates the screenshot's data.
+        """Updates the file attachment's data.
 
-        This allows updating the screenshot. The caption, currently,
-        is the only thing that can be updated.
+        This allows updating information on the file attachment.
 
-        Updating a screenshot will automatically create a new review request
-        draft, if one doesn't already exist. The updates won't be public
-        until the review request draft is published.
+        Updating a file attachment will automatically create a new review
+        request draft, if one doesn't already exist. The updates won't be
+        public until the review request draft is published.
         """
         pass
 
@@ -74,7 +73,7 @@ class FileAttachmentResource(BaseFileAttachmentResource):
     @webapi_login_required
     @augment_method_from(BaseFileAttachmentResource)
     def delete(self, *args, **kwargs):
-        """Deletes the file attachment
+        """Deletes the file attachment.
 
         This will remove the file attachment from the draft review request.
         This cannot be undone.
