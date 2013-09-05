@@ -106,7 +106,6 @@ RB.ChunkHighlighterView = Backbone.View.extend({
     _updatePosition: function(e) {
         var $container,
             offset,
-            left,
             top,
             width,
             height,

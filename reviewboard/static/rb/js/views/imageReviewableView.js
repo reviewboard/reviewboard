@@ -445,7 +445,6 @@ ImageSplitDiffView = BaseImageView.extend({
             origHeight = this._$origImage.height(),
             modifiedWidth = this._$modifiedImage.outerWidth(),
             modifiedHeight = this._$modifiedImage.height(),
-            maxWidth = Math.max(origWidth, modifiedWidth),
             maxHeight = Math.max(origHeight, modifiedHeight),
             maxOuterHeight = maxHeight +
                              $origImageContainer.getExtents('b', 'tb');
