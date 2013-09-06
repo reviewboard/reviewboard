@@ -28,13 +28,20 @@ help:
 clean:
 	-rm -rf $(BUILDDIR)/*
 
-html:
+docs.db: fixtures/initial_data.json
+	@echo Building docs.db
+	@rm -f docs.db
+	@./docsmanage.py syncdb --noinput -v 0
+	@./docsmanage.py reset --noinput scmtools -v 0
+	@./docsmanage.py loaddata fixtures/initial_data.json -v 0
+
+html: docs.db
 	mkdir -p $(BUILDDIR)/html $(BUILDDIR)/doctrees
 	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) $(BUILDDIR)/html
 	@echo
 	@echo "Build finished. The HTML pages are in $(BUILDDIR)/html."
 
-pickle:
+pickle: docs.db
 	mkdir -p $(BUILDDIR)/pickle $(BUILDDIR)/doctrees
 	$(SPHINXBUILD) -b pickle $(ALLSPHINXOPTS) $(BUILDDIR)/pickle
 	@echo
@@ -42,20 +49,20 @@ pickle:
 
 web: pickle
 
-json:
+json: docs.db
 	mkdir -p $(BUILDDIR)/json $(BUILDDIR)/doctrees
 	$(SPHINXBUILD) -b json $(ALLSPHINXOPTS) $(BUILDDIR)/json
 	@echo
 	@echo "Build finished; now you can process the JSON files."
 
-htmlhelp:
+htmlhelp: docs.db
 	mkdir -p $(BUILDDIR)/htmlhelp $(BUILDDIR)/doctrees
 	$(SPHINXBUILD) -b htmlhelp $(ALLSPHINXOPTS) $(BUILDDIR)/htmlhelp
 	@echo
 	@echo "Build finished; now you can run HTML Help Workshop with the" \
 	      ".hhp project file in $(BUILDDIR)/htmlhelp."
 
-latex:
+latex: docs.db
 	mkdir -p $(BUILDDIR)/latex $(BUILDDIR)/doctrees
 	$(SPHINXBUILD) -b latex $(ALLSPHINXOPTS) $(BUILDDIR)/latex
 	@echo
@@ -63,13 +70,13 @@ latex:
 	@echo "Run \`make all-pdf' or \`make all-ps' in that directory to" \
 	      "run these through (pdf)latex."
 
-changes:
+changes: docs.db
 	mkdir -p $(BUILDDIR)/changes $(BUILDDIR)/doctrees
 	$(SPHINXBUILD) -b changes $(ALLSPHINXOPTS) $(BUILDDIR)/changes
 	@echo
 	@echo "The overview file is in $(BUILDDIR)/changes."
 
-linkcheck:
+linkcheck: docs.db
 	mkdir -p $(BUILDDIR)/linkcheck $(BUILDDIR)/doctrees
 	$(SPHINXBUILD) -b linkcheck $(ALLSPHINXOPTS) $(BUILDDIR)/linkcheck
 	@echo
