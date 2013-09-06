@@ -76,11 +76,11 @@ class FileDiff(models.Model):
     dest_detail = models.CharField(_("destination file details"),
                                    max_length=512)
     diff64 = Base64Field(_("diff"), db_column="diff_base64", blank=True)
-    diff_hash = models.ForeignKey('FileDiffData', null=True)
+    diff_hash = models.ForeignKey('FileDiffData', null=True, blank=True)
     binary = models.BooleanField(_("binary file"), default=False)
     parent_diff64 = Base64Field(_("parent diff"),
                                 db_column="parent_diff_base64", blank=True)
-    parent_diff_hash = models.ForeignKey('FileDiffData', null=True,
+    parent_diff_hash = models.ForeignKey('FileDiffData', null=True, blank=True,
                                          related_name='parent_filediff_set')
     status = models.CharField(_("status"), max_length=1, choices=STATUSES)
 

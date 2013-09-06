@@ -106,7 +106,8 @@ class ReviewRequestAdmin(admin.ModelAdmin):
                    'repository')
     search_fields = ['summary']
     raw_id_fields = ('submitter', 'diffset_history', 'screenshots',
-                     'inactive_screenshots', 'changedescs', 'local_site',
+                     'inactive_screenshots', 'file_attachments',
+                     'inactive_file_attachments', 'changedescs', 'local_site',
                      'depends_on', 'repository')
     filter_horizontal = ('target_people', 'target_groups')
     fieldsets = (
@@ -120,8 +121,9 @@ class ReviewRequestAdmin(admin.ModelAdmin):
             'fields': ('target_people', 'target_groups'),
         }),
         (_('Related Objects'), {
-            'fields': ('screenshots', 'inactive_screenshots', 'changedescs',
-                       'diffset_history', 'local_site'),
+            'fields': ('screenshots', 'inactive_screenshots',
+                       'file_attachments', 'inactive_file_attachments',
+                       'changedescs', 'diffset_history', 'local_site'),
             'classes': ['collapse'],
         }),
         (_('State'), {

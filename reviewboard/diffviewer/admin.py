@@ -20,7 +20,7 @@ class FileDiffAdmin(admin.ModelAdmin):
     )
     list_display = ('source_file', 'source_revision',
                     'dest_file', 'dest_detail')
-    raw_id_fields = ('diffset',)
+    raw_id_fields = ('diffset', 'diff_hash', 'parent_diff_hash')
     readonly_fields = ('diff', 'parent_diff', 'insert_count', 'delete_count')
 
     def diff(self, filediff):
@@ -44,6 +44,7 @@ class FileDiffAdmin(admin.ModelAdmin):
 class FileDiffInline(admin.StackedInline):
     model = FileDiff
     extra = 0
+    raw_id_fields = ('diff_hash', 'parent_diff_hash')
 
 
 class DiffSetAdmin(admin.ModelAdmin):
