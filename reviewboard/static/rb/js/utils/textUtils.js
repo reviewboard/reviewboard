@@ -48,6 +48,13 @@ RB.formatText = function($el, text, bugTrackerURL) {
         markedUp = RB.LinkifyUtils.linkifyBugs(markedUp, bugTrackerURL, true);
         markedUp = marked(markedUp);
 
+        /*
+         * markup() adds newlines to each directive, resulting in a trailing
+         * newline for the contents. Since this may be formatted inside a
+         * <pre>, we want to make sure we don't have that extra newline.
+         */
+        markedUp = markedUp.trim();
+
         $el
             .empty()
             .append(markedUp)
