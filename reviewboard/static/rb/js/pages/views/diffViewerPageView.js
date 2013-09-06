@@ -305,6 +305,28 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
         /* Check to see if there's an anchor we need to scroll to. */
         url = document.location.toString();
         this._startAtAnchorName = (url.match('#') ? url.split('#')[1] : null);
+
+        this.router = new Backbone.Router({
+            routes: {
+                ':revision/': 'revision'
+            }
+        });
+        this.listenTo(this.router, 'route:revision', function(revision) {
+            var parts;
+
+            if (revision.indexOf('-') === -1) {
+                this._loadRevision(0, parseInt(revision, 10));
+            } else {
+                parts = revision.split('-', 2);
+                this._loadRevision(parseInt(parts[0], 10),
+                                   parseInt(parts[1], 10));
+            }
+        });
+        Backbone.history.start({
+            pushState: true,
+            root: this.options.reviewRequestData.reviewURL + 'diff/',
+            silent: true
+        });
     },
 
     /*
@@ -699,24 +721,49 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
     },
 
     /*
-     * Callback when a revision is selected.
+     * Callback for when a new revision is selected.
      *
-     * Navigates to the selected revision of the diff. If `base` is 0, this
-     * will show the single diff revision given in `tip`. Otherwise, this will
-     * show an interdiff between `base` and `tip`.
-     *
-     * TODO: this should show the new revision without reloading the page.
+     * This supports both single revisions and interdiffs. If `base` is 0, a
+     * single revision is selected. If not, the interdiff between `base` and
+     * `tip` will be shown.
      */
     _onRevisionSelected: function(base, tip) {
-        var url = this.reviewRequest.get('reviewURL');
+        if (base === 0) {
+            this.router.navigate(tip + '/', {trigger: true});
+        } else {
+            this.router.navigate(base + '-' + tip + '/', {trigger: true});
+        }
+    },
+
+    /*
+     * Load a given revision.
+     *
+     * This supports both single revisions and interdiffs. If `base` is 0, a
+     * single revision is selected. If not, the interdiff between `base` and
+     * `tip` will be shown.
+     */
+    _loadRevision: function(base, tip) {
+        var reviewRequestURL = _.result(this.reviewRequest, 'url'),
+            contextURL = reviewRequestURL + 'diff-context/';
 
         if (base === 0) {
-            url += 'diff/' + tip + '/#index_header';
+            contextURL += '?revision=' + tip;
         } else {
-            url += 'diff/' + base + '-' + tip + '/#index_header';
+            contextURL += '?revision=' + base + '&interdiff_revision=' + tip;
         }
 
-        window.location = url;
+        $.ajax(contextURL).done(_.bind(function(rsp) {
+            var context = rsp.diff_context,
+                files,
+                url;
+
+            _.each(this._diffReviewableViews, function(diffReviewableView) {
+                diffReviewableView.remove();
+            });
+            this._diffReviewableViews = [];
+
+            this.model.set(this.model.parse(context));
+        }, this));
     }
 });
 _.extend(RB.DiffViewerPageView.prototype, RB.KeyBindingsMixin);

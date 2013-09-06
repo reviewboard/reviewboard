@@ -149,6 +149,7 @@ class ReviewRequestResource(WebAPIResource):
     item_child_resources = [
         resources.change,
         resources.diff,
+        resources.diff_context,
         resources.review_request_draft,
         resources.review_request_last_update,
         resources.review,
