@@ -15,6 +15,8 @@ class ValidateDiffResourceTests(BaseWebAPITestCase):
 
     def test_post_diff(self):
         """Testing the POST validation/diffs/ API"""
+        repository = self.create_repository(tool_name='Subversion')
+
         diff_filename = os.path.join(os.path.dirname(scmtools.__file__),
                                      'testdata', 'svn_makefile.diff')
         f = open(diff_filename, "r")
@@ -22,7 +24,7 @@ class ValidateDiffResourceTests(BaseWebAPITestCase):
         self.apiPost(
             get_validate_diff_url(),
             {
-                'repository': self.repository.pk,
+                'repository': repository.pk,
                 'path': f,
                 'basedir': '/trunk',
             },
@@ -33,6 +35,8 @@ class ValidateDiffResourceTests(BaseWebAPITestCase):
 
     def test_post_diff_with_missing_basedir(self):
         """Testing the POST validations/diffs/ API with a missing basedir"""
+        repository = self.create_repository(tool_name='Subversion')
+
         diff_filename = os.path.join(os.path.dirname(scmtools.__file__),
                                      'testdata', 'svn_makefile.diff')
         f = open(diff_filename, 'r')
@@ -40,7 +44,7 @@ class ValidateDiffResourceTests(BaseWebAPITestCase):
         rsp = self.apiPost(
             get_validate_diff_url(),
             {
-                'repository': self.repository.pk,
+                'repository': repository.pk,
                 'path': f,
             },
             expected_status=400)
@@ -52,6 +56,8 @@ class ValidateDiffResourceTests(BaseWebAPITestCase):
 
     def test_post_diff_with_files_not_found(self):
         """Testing the POST validation/diffs/ API with source files not found"""
+        repository = self.create_repository(tool_name='Subversion')
+
         diff_filename = os.path.join(os.path.dirname(scmtools.__file__),
                                      'testdata', 'svn_file_not_found.diff')
         f = open(diff_filename, 'r')
@@ -59,7 +65,7 @@ class ValidateDiffResourceTests(BaseWebAPITestCase):
         rsp = self.apiPost(
             get_validate_diff_url(),
             {
-                'repository': self.repository.pk,
+                'repository': repository.pk,
                 'path': f,
                 'basedir': '/trunk',
             },
@@ -74,13 +80,15 @@ class ValidateDiffResourceTests(BaseWebAPITestCase):
     def test_post_diff_with_parse_error(self):
         """Testing the POST validation/diffs/ API with a malformed diff file"""
         # Post a git diff against the svn repository
+        repository = self.create_repository(tool_name='Subversion')
+
         diff_filename = os.path.join(os.path.dirname(scmtools.__file__),
                                      'testdata', 'git_complex.diff')
         f = open(diff_filename, 'r')
         rsp = self.apiPost(
             get_validate_diff_url(),
             {
-                'repository': self.repository.pk,
+                'repository': repository.pk,
                 'path': f,
                 'basedir': '/trunk',
             },

@@ -2,7 +2,6 @@ from django.contrib.auth.models import User
 from djblets.testing.decorators import add_fixtures
 from djblets.webapi.errors import DOES_NOT_EXIST, PERMISSION_DENIED
 
-from reviewboard.reviews.models import Group
 from reviewboard.webapi.tests.base import BaseWebAPITestCase
 from reviewboard.webapi.tests.mimetypes import (
     watched_review_group_item_mimetype,
@@ -14,11 +13,11 @@ from reviewboard.webapi.tests.urls import (
 
 class WatchedReviewGroupResourceTests(BaseWebAPITestCase):
     """Testing the WatchedReviewGroupResource API tests."""
-    fixtures = ['test_users', 'test_scmtools', 'test_reviewrequests']
+    fixtures = ['test_users']
 
     def test_post_watched_review_group(self):
         """Testing the POST users/<username>/watched/review-groups/ API"""
-        group = Group.objects.get(name='devgroup', local_site=None)
+        group = self.create_review_group()
 
         rsp = self.apiPost(
             get_watched_review_group_list_url(self.user.username),
@@ -26,6 +25,8 @@ class WatchedReviewGroupResourceTests(BaseWebAPITestCase):
             expected_mimetype=watched_review_group_item_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
         self.assert_(group in self.user.get_profile().starred_groups.all())
+
+        return group
 
     def test_post_watched_review_group_with_does_not_exist_error(self):
         """Testing the POST users/<username>/watched/review-groups/ API with Does Not Exist error"""
@@ -43,8 +44,7 @@ class WatchedReviewGroupResourceTests(BaseWebAPITestCase):
 
         username = 'doc'
         user = User.objects.get(username=username)
-        group = Group.objects.get(name='sitegroup',
-                                  local_site__name=self.local_site_name)
+        group = self.create_review_group(with_local_site=True)
 
         rsp = self.apiPost(
             get_watched_review_group_list_url(username, self.local_site_name),
@@ -52,6 +52,8 @@ class WatchedReviewGroupResourceTests(BaseWebAPITestCase):
             expected_mimetype=watched_review_group_item_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
         self.assertTrue(group in user.get_profile().starred_groups.all())
+
+        return group
 
     @add_fixtures(['test_site'])
     def test_post_watched_review_group_with_site_does_not_exist_error(self):
@@ -80,9 +82,7 @@ class WatchedReviewGroupResourceTests(BaseWebAPITestCase):
     def test_delete_watched_review_group(self):
         """Testing the DELETE users/<username>/watched/review-groups/<id>/ API"""
         # First, star it.
-        self.test_post_watched_review_group()
-
-        group = Group.objects.get(name='devgroup', local_site=None)
+        group = self.test_post_watched_review_group()
 
         self.apiDelete(
             get_watched_review_group_item_url(self.user.username, group.name))
@@ -101,11 +101,8 @@ class WatchedReviewGroupResourceTests(BaseWebAPITestCase):
     @add_fixtures(['test_site'])
     def test_delete_watched_review_group_with_site(self):
         """Testing the DELETE users/<username>/watched/review-groups/<id>/ API with a local site"""
-        self.test_post_watched_review_group_with_site()
-
+        group = self.test_post_watched_review_group_with_site()
         user = User.objects.get(username='doc')
-        group = Group.objects.get(name='sitegroup',
-                                  local_site__name=self.local_site_name)
 
         self.apiDelete(
             get_watched_review_group_item_url(user.username, group.name,

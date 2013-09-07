@@ -9,7 +9,6 @@ from reviewboard.scmtools.errors import (AuthenticationError,
                                          UnverifiedCertificateError)
 from reviewboard.scmtools.models import Repository
 from reviewboard.scmtools.svn import SVNTool
-from reviewboard.site.models import LocalSite
 from reviewboard.ssh.client import SSHClient
 from reviewboard.ssh.errors import (BadHostKeyError,
                                     UnknownHostKeyError)
@@ -419,12 +418,15 @@ class RepositoryResourceTests(BaseWebAPITestCase):
             os.path.join(os.path.dirname(scmtools.__file__), 'testdata',
                          'svn_repo'))
 
-        local_site_name = self._get_local_site_info(use_local_site)[1]
-
         if 200 <= expected_status < 300:
             expected_mimetype = repository_item_mimetype
         else:
             expected_mimetype = None
+
+        if use_local_site:
+            local_site_name = self.local_site_name
+        else:
+            local_site_name = None
 
         rsp = self.apiPost(
             get_repository_list_url(local_site_name),
@@ -451,11 +453,14 @@ class RepositoryResourceTests(BaseWebAPITestCase):
         repo_name = 'New Test Repository'
         repo_path = 'file://' + os.path.abspath(
             os.path.join(os.path.dirname(scmtools.__file__), 'testdata',
-                         'svn_repo'))
+                         'git_repo'))
 
-        local_site, local_site_name = self._get_local_site_info(use_local_site)
-        repo = Repository.objects.filter(local_site=local_site,
-                                         tool__name='Subversion')[0]
+        repo = self.create_repository(with_local_site=use_local_site)
+
+        if use_local_site:
+            local_site_name = self.local_site_name
+        else:
+            local_site_name = None
 
         if 200 <= expected_status < 300:
             expected_mimetype = repository_item_mimetype
@@ -478,9 +483,13 @@ class RepositoryResourceTests(BaseWebAPITestCase):
 
     def _delete_repository(self, use_local_site, expected_status=204,
                            with_review_request=False):
-        local_site, local_site_name = self._get_local_site_info(use_local_site)
-        repo = Repository.objects.filter(local_site=local_site,
-                                         tool__name='Subversion')[0]
+        repo = self.create_repository(with_local_site=use_local_site)
+
+        if use_local_site:
+            local_site_name = self.local_site_name
+        else:
+            local_site_name = None
+
         if with_review_request:
             request = ReviewRequest.objects.create(self.user, repo)
             request.save()
@@ -489,13 +498,6 @@ class RepositoryResourceTests(BaseWebAPITestCase):
                        expected_status=expected_status)
 
         return repo.pk
-
-    def _get_local_site_info(self, use_local_site):
-        if use_local_site:
-            return (LocalSite.objects.get(name=self.local_site_name),
-                    self.local_site_name)
-        else:
-            return None, None
 
     def _verify_repository_info(self, rsp, repo_name, repo_path, data):
         self.assertEqual(rsp['stat'], 'ok')

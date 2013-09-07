@@ -4,8 +4,6 @@ from djblets.testing.decorators import add_fixtures
 from djblets.webapi.errors import DOES_NOT_EXIST, PERMISSION_DENIED
 
 from reviewboard.reviews.models import Group, ReviewRequest
-from reviewboard.scmtools.models import Repository
-from reviewboard.site.models import LocalSite
 from reviewboard.webapi.errors import INVALID_REPOSITORY
 from reviewboard.webapi.tests.base import BaseWebAPITestCase
 from reviewboard.webapi.tests.mimetypes import (review_request_item_mimetype,
@@ -18,29 +16,34 @@ from reviewboard.webapi.tests.urls import (get_repository_item_url,
 
 class ReviewRequestResourceTests(BaseWebAPITestCase):
     """Testing the ReviewRequestResource API tests."""
-    fixtures = ['test_users', 'test_scmtools', 'test_reviewrequests']
+    fixtures = ['test_users']
 
     @add_fixtures(['test_site'])
     def test_get_reviewrequests(self):
         """Testing the GET review-requests/ API"""
+        self.create_review_request(publish=True)
+        self.create_review_request(publish=True)
+        self.create_review_request(publish=True, with_local_site=True)
+
         rsp = self.apiGet(get_review_request_list_url(),
                           expected_mimetype=review_request_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(len(rsp['review_requests']),
-                         ReviewRequest.objects.public().count())
+        self.assertEqual(len(rsp['review_requests']), 2)
 
     @add_fixtures(['test_site'])
     def test_get_reviewrequests_with_site(self):
         """Testing the GET review-requests/ API with a local site"""
         self._login_user(local_site=True)
-        local_site = LocalSite.objects.get(name=self.local_site_name)
+
+        self.create_review_request(publish=True, with_local_site=True)
+        self.create_review_request(publish=True, with_local_site=True,
+                                   local_id=1002)
+        self.create_review_request(publish=True)
 
         rsp = self.apiGet(get_review_request_list_url(self.local_site_name),
                           expected_mimetype=review_request_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(len(rsp['review_requests']),
-                         ReviewRequest.objects.public(
-                             local_site=local_site).count())
+        self.assertEqual(len(rsp['review_requests']), 2)
 
     @add_fixtures(['test_site'])
     def test_get_reviewrequests_with_site_no_access(self):
@@ -51,46 +54,72 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
     @add_fixtures(['test_site'])
     def test_get_reviewrequests_with_status(self):
         """Testing the GET review-requests/?status= API"""
+        self.create_review_request(publish=True, status='S')
+        self.create_review_request(publish=True, status='S')
+        self.create_review_request(publish=True, status='D')
+        self.create_review_request(publish=True, status='P')
+        self.create_review_request(publish=True, status='P')
+        self.create_review_request(publish=True, status='P')
+
         url = get_review_request_list_url()
 
         rsp = self.apiGet(url, {'status': 'submitted'},
                           expected_mimetype=review_request_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(len(rsp['review_requests']),
-                         ReviewRequest.objects.public(status='S').count())
+        self.assertEqual(len(rsp['review_requests']), 2)
 
         rsp = self.apiGet(url, {'status': 'discarded'},
                           expected_mimetype=review_request_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(len(rsp['review_requests']),
-                         ReviewRequest.objects.public(status='D').count())
+        self.assertEqual(len(rsp['review_requests']), 1)
 
         rsp = self.apiGet(url, {'status': 'all'},
                           expected_mimetype=review_request_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(len(rsp['review_requests']),
-                         ReviewRequest.objects.public(status=None).count())
+        self.assertEqual(len(rsp['review_requests']), 6)
 
     def test_get_reviewrequests_with_counts_only(self):
         """Testing the GET review-requests/?counts-only=1 API"""
+        self.create_review_request(publish=True)
+        self.create_review_request(publish=True)
+
         rsp = self.apiGet(get_review_request_list_url(), {
             'counts-only': 1,
         }, expected_mimetype=review_request_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(rsp['count'], ReviewRequest.objects.public().count())
+        self.assertEqual(rsp['count'], 2)
 
     def test_get_reviewrequests_with_to_groups(self):
         """Testing the GET review-requests/?to-groups= API"""
+        group = self.create_review_group(name='devgroup')
+
+        self.create_review_request(publish=True)
+
+        review_request = self.create_review_request(publish=True)
+        review_request.target_groups.add(group)
+
         rsp = self.apiGet(get_review_request_list_url(), {
             'to-groups': 'devgroup',
         }, expected_mimetype=review_request_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(len(rsp['review_requests']),
-                         ReviewRequest.objects.to_group("devgroup",
-                                                        None).count())
+        self.assertEqual(len(rsp['review_requests']), 1)
 
     def test_get_reviewrequests_with_to_groups_and_status(self):
         """Testing the GET review-requests/?to-groups=&status= API"""
+        group = self.create_review_group(name='devgroup')
+
+        review_request = self.create_review_request(publish=True)
+        review_request.target_groups.add(group)
+
+        review_request = self.create_review_request(publish=True, status='S')
+        review_request.target_groups.add(group)
+
+        review_request = self.create_review_request(publish=True, status='D')
+        review_request.target_groups.add(group)
+
+        review_request = self.create_review_request(publish=True, status='D')
+        review_request.target_groups.add(group)
+
         url = get_review_request_list_url()
 
         rsp = self.apiGet(url, {
@@ -98,43 +127,65 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
             'to-groups': 'devgroup',
         }, expected_mimetype=review_request_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(
-            len(rsp['review_requests']),
-            ReviewRequest.objects.to_group("devgroup", None,
-                                           status='S').count())
+        self.assertEqual(len(rsp['review_requests']), 1)
 
         rsp = self.apiGet(url, {
             'status': 'discarded',
             'to-groups': 'devgroup',
         }, expected_mimetype=review_request_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(
-            len(rsp['review_requests']),
-            ReviewRequest.objects.to_group("devgroup", None,
-                                           status='D').count())
+        self.assertEqual(len(rsp['review_requests']), 2)
 
     def test_get_reviewrequests_with_to_groups_and_counts_only(self):
         """Testing the GET review-requests/?to-groups=&counts-only=1 API"""
+        group = self.create_review_group(name='devgroup')
+
+        review_request = self.create_review_request(publish=True)
+        review_request.target_groups.add(group)
+
+        review_request = self.create_review_request(publish=True)
+        review_request.target_groups.add(group)
+
         rsp = self.apiGet(get_review_request_list_url(), {
             'to-groups': 'devgroup',
             'counts-only': 1,
         }, expected_mimetype=review_request_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(rsp['count'],
-                         ReviewRequest.objects.to_group("devgroup",
-                                                        None).count())
+        self.assertEqual(rsp['count'], 2)
 
     def test_get_reviewrequests_with_to_users(self):
         """Testing the GET review-requests/?to-users= API"""
+        grumpy = User.objects.get(username='grumpy')
+
+        self.create_review_request(publish=True)
+
+        review_request = self.create_review_request(publish=True)
+        review_request.target_people.add(grumpy)
+
+        review_request = self.create_review_request(publish=True)
+        review_request.target_people.add(grumpy)
+
         rsp = self.apiGet(get_review_request_list_url(), {
             'to-users': 'grumpy',
         }, expected_mimetype=review_request_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(len(rsp['review_requests']),
-                         ReviewRequest.objects.to_user("grumpy").count())
+        self.assertEqual(len(rsp['review_requests']), 2)
 
     def test_get_reviewrequests_with_to_users_and_status(self):
         """Testing the GET review-requests/?to-users=&status= API"""
+        grumpy = User.objects.get(username='grumpy')
+
+        self.create_review_request(publish=True)
+
+        review_request = self.create_review_request(publish=True, status='S')
+        review_request.target_people.add(grumpy)
+
+        review_request = self.create_review_request(publish=True, status='D')
+        review_request.target_people.add(grumpy)
+
+        review_request = self.create_review_request(publish=True, status='D')
+        review_request.target_people.add(grumpy)
+
         url = get_review_request_list_url()
 
         rsp = self.apiGet(url, {
@@ -143,28 +194,33 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
         }, expected_mimetype=review_request_list_mimetype)
 
         self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(
-            len(rsp['review_requests']),
-            ReviewRequest.objects.to_user("grumpy", status='S').count())
+        self.assertEqual(len(rsp['review_requests']), 1)
 
         rsp = self.apiGet(url, {
             'status': 'discarded',
             'to-users': 'grumpy',
         }, expected_mimetype=review_request_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(
-            len(rsp['review_requests']),
-            ReviewRequest.objects.to_user("grumpy", status='D').count())
+        self.assertEqual(len(rsp['review_requests']), 2)
 
     def test_get_reviewrequests_with_to_users_and_counts_only(self):
         """Testing the GET review-requests/?to-users=&counts-only=1 API"""
+        grumpy = User.objects.get(username='grumpy')
+
+        self.create_review_request(publish=True)
+
+        review_request = self.create_review_request(publish=True)
+        review_request.target_people.add(grumpy)
+
+        review_request = self.create_review_request(publish=True)
+        review_request.target_people.add(grumpy)
+
         rsp = self.apiGet(get_review_request_list_url(), {
             'to-users': 'grumpy',
             'counts-only': 1,
         }, expected_mimetype=review_request_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(rsp['count'],
-                         ReviewRequest.objects.to_user("grumpy").count())
+        self.assertEqual(rsp['count'], 2)
 
     @add_fixtures(['test_site'])
     def test_get_reviewrequests_with_to_users_directly(self):
@@ -252,11 +308,16 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
     @add_fixtures(['test_site'])
     def test_get_reviewrequests_with_ship_it_0(self):
         """Testing the GET review-requests/?ship-it=0 API"""
+        self.create_review_request(publish=True)
+
+        review_request = self.create_review_request(publish=True)
+        self.create_review(review_request, ship_it=True, publish=True)
+
         rsp = self.apiGet(get_review_request_list_url(), {
             'ship-it': 0,
         }, expected_mimetype=review_request_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
-        self.assertNotEqual(len(rsp['review_requests']), 0)
+        self.assertEqual(len(rsp['review_requests']), 1)
 
         q = ReviewRequest.objects.public(user=self.user,
                                          status='P',
@@ -266,11 +327,16 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
     @add_fixtures(['test_site'])
     def test_get_reviewrequests_with_ship_it_1(self):
         """Testing the GET review-requests/?ship-it=1 API"""
+        self.create_review_request(publish=True)
+
+        review_request = self.create_review_request(publish=True)
+        self.create_review(review_request, ship_it=True, publish=True)
+
         rsp = self.apiGet(get_review_request_list_url(), {
             'ship-it': 1,
         }, expected_mimetype=review_request_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
-        self.assertNotEqual(len(rsp['review_requests']), 0)
+        self.assertEqual(len(rsp['review_requests']), 1)
 
         q = ReviewRequest.objects.public(user=self.user,
                                          status='P',
@@ -282,8 +348,14 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
         """Testing the GET review-requests/?time-added-from= API"""
         start_index = 3
 
-        public_review_requests = \
-            ReviewRequest.objects.public().order_by('time_added')
+        public_review_requests = [
+            self.create_review_request(publish=True),
+            self.create_review_request(publish=True),
+            self.create_review_request(publish=True),
+            self.create_review_request(publish=True),
+            self.create_review_request(publish=True),
+        ]
+
         r = public_review_requests[start_index]
         timestamp = r.time_added.isoformat()
 
@@ -293,18 +365,26 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
         }, expected_mimetype=review_request_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(rsp['count'],
-                         public_review_requests.count() - start_index)
-        self.assertEqual(rsp['count'],
-                         public_review_requests.filter(
-                             time_added__gte=r.time_added).count())
+                         len(public_review_requests) - start_index)
+        self.assertEqual(
+            rsp['count'],
+            ReviewRequest.objects.filter(
+                public=True, status='P',
+                time_added__gte=r.time_added).count())
 
     @add_fixtures(['test_site'])
     def test_get_reviewrequests_with_time_added_to(self):
         """Testing the GET review-requests/?time-added-to= API"""
         start_index = 3
 
-        public_review_requests = \
-            ReviewRequest.objects.public().order_by('time_added')
+        public_review_requests = [
+            self.create_review_request(publish=True),
+            self.create_review_request(publish=True),
+            self.create_review_request(publish=True),
+            self.create_review_request(publish=True),
+            self.create_review_request(publish=True),
+        ]
+
         r = public_review_requests[start_index]
         timestamp = r.time_added.isoformat()
 
@@ -314,17 +394,24 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
         }, expected_mimetype=review_request_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(rsp['count'],
-                         public_review_requests.count() - start_index + 1)
-        self.assertEqual(rsp['count'],
-                         public_review_requests.filter(
-                             time_added__lt=r.time_added).count())
+                         len(public_review_requests) - start_index + 1)
+        self.assertEqual(
+            rsp['count'],
+            ReviewRequest.objects.filter(
+                public=True, status='P',
+                time_added__lt=r.time_added).count())
 
     def test_get_reviewrequests_with_last_updated_from(self):
         """Testing the GET review-requests/?last-updated-from= API"""
         start_index = 3
+        public_review_requests = [
+            self.create_review_request(publish=True),
+            self.create_review_request(publish=True),
+            self.create_review_request(publish=True),
+            self.create_review_request(publish=True),
+            self.create_review_request(publish=True),
+        ]
 
-        public_review_requests = \
-            ReviewRequest.objects.public().order_by('last_updated')
         r = public_review_requests[start_index]
         timestamp = r.last_updated.isoformat()
 
@@ -334,18 +421,25 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
         }, expected_mimetype=review_request_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(rsp['count'],
-                         public_review_requests.count() - start_index)
-        self.assertEqual(rsp['count'],
-                         public_review_requests.filter(
-                             last_updated__gte=r.last_updated).count())
+                         len(public_review_requests) - start_index)
+        self.assertEqual(
+            rsp['count'],
+            ReviewRequest.objects.filter(
+                public=True, status='P',
+                last_updated__gte=r.last_updated).count())
 
     @add_fixtures(['test_site'])
     def test_get_reviewrequests_with_last_updated_to(self):
         """Testing the GET review-requests/?last-updated-to= API"""
         start_index = 3
+        public_review_requests = [
+            self.create_review_request(publish=True),
+            self.create_review_request(publish=True),
+            self.create_review_request(publish=True),
+            self.create_review_request(publish=True),
+            self.create_review_request(publish=True),
+        ]
 
-        public_review_requests = \
-            ReviewRequest.objects.public().order_by('last_updated')
         r = public_review_requests[start_index]
         timestamp = r.last_updated.isoformat()
 
@@ -355,49 +449,58 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
         }, expected_mimetype=review_request_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(rsp['count'],
-                         public_review_requests.count() - start_index + 1)
-        self.assertEqual(rsp['count'],
-                         public_review_requests.filter(
-                             last_updated__lt=r.last_updated).count())
+                         len(public_review_requests) - start_index + 1)
+        self.assertEqual(
+            rsp['count'],
+            ReviewRequest.objects.filter(
+                public=True, status='P',
+                last_updated__lt=r.last_updated).count())
 
     @add_fixtures(['test_site'])
     def test_get_reviewrequest_not_modified(self):
         """Testing the GET review-requests/<id>/ API with Not Modified response"""
-        review_request = ReviewRequest.objects.public()[0]
+        review_request = self.create_review_request(publish=True)
 
         self._testHttpCaching(get_review_request_item_url(review_request.id),
                               check_last_modified=True)
 
+    @add_fixtures(['test_scmtools'])
     def test_post_reviewrequests(self):
         """Testing the POST review-requests/ API"""
+        repository = self.create_repository()
+
         rsp = self.apiPost(
             get_review_request_list_url(),
-            {'repository': self.repository.path},
+            {'repository': repository.path},
             expected_mimetype=review_request_item_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(
             rsp['review_request']['links']['repository']['href'],
-            self.base_url + get_repository_item_url(self.repository))
+            self.base_url + get_repository_item_url(repository))
 
         # See if we can fetch this. Also return it for use in other
         # unit tests.
         return ReviewRequest.objects.get(pk=rsp['review_request']['id'])
 
+    @add_fixtures(['test_scmtools'])
     def test_post_reviewrequests_with_repository_name(self):
         """Testing the POST review-requests/ API with a repository name"""
+        repository = self.create_repository()
+
         rsp = self.apiPost(
             get_review_request_list_url(),
-            {'repository': self.repository.name},
+            {'repository': repository.name},
             expected_mimetype=review_request_item_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(
             rsp['review_request']['links']['repository']['href'],
-            self.base_url + get_repository_item_url(self.repository))
+            self.base_url + get_repository_item_url(repository))
 
         # See if we can fetch this. Also return it for use in other
         # unit tests.
         return ReviewRequest.objects.get(pk=rsp['review_request']['id'])
 
+    @add_fixtures(['test_scmtools'])
     def test_post_reviewrequests_with_no_repository(self):
         """Testing the POST review-requests/ API with no repository"""
         rsp = self.apiPost(
@@ -413,13 +516,12 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
             pk=rsp['review_request']['id'])
         self.assertEqual(review_request.repository, None)
 
-    @add_fixtures(['test_site'])
+    @add_fixtures(['test_site', 'test_scmtools'])
     def test_post_reviewrequests_with_site(self):
         """Testing the POST review-requests/ API with a local site"""
         self._login_user(local_site=True)
 
-        repository = Repository.objects.filter(
-            local_site__name=self.local_site_name)[0]
+        repository = self.create_repository(with_local_site=True)
 
         rsp = self.apiPost(
             get_review_request_list_url(self.local_site_name),
@@ -429,24 +531,25 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['review_request']['links']['repository']['title'],
                          repository.name)
 
-    @add_fixtures(['test_site'])
+    @add_fixtures(['test_site', 'test_scmtools'])
     def test_post_reviewrequests_with_site_no_access(self):
         """Testing the POST review-requests/ API with a local site and Permission Denied error"""
-        repository = Repository.objects.filter(
-            local_site__name=self.local_site_name)[0]
+        repository = self.create_repository(with_local_site=True)
 
         self.apiPost(
             get_review_request_list_url(self.local_site_name),
             {'repository': repository.path},
             expected_status=403)
 
-    @add_fixtures(['test_site'])
+    @add_fixtures(['test_site', 'test_scmtools'])
     def test_post_reviewrequests_with_site_invalid_repository_error(self):
         """Testing the POST review-requests/ API with a local site and Invalid Repository error"""
+        repository = self.create_repository()
+
         self._login_user(local_site=True)
         rsp = self.apiPost(
             get_review_request_list_url(self.local_site_name),
-            {'repository': self.repository.path},
+            {'repository': repository.path},
             expected_status=400)
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], INVALID_REPOSITORY.code)
@@ -460,11 +563,10 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], INVALID_REPOSITORY.code)
 
-    @add_fixtures(['test_site'])
+    @add_fixtures(['test_site', 'test_scmtools'])
     def test_post_reviewrequests_with_no_site_invalid_repository_error(self):
         """Testing the POST review-requests/ API with Invalid Repository error from a site-local repository"""
-        repository = Repository.objects.filter(
-            local_site__name=self.local_site_name)[0]
+        repository = self.create_repository(with_local_site=True)
 
         rsp = self.apiPost(
             get_review_request_list_url(),
@@ -473,34 +575,40 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], INVALID_REPOSITORY.code)
 
+    @add_fixtures(['test_scmtools'])
     def test_post_reviewrequests_with_submit_as(self):
         """Testing the POST review-requests/?submit_as= API"""
         self.user.is_superuser = True
         self.user.save()
 
+        repository = self.create_repository()
+
         rsp = self.apiPost(
             get_review_request_list_url(),
             {
-                'repository': self.repository.path,
+                'repository': repository.path,
                 'submit_as': 'doc',
             },
             expected_mimetype=review_request_item_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(
             rsp['review_request']['links']['repository']['href'],
-            self.base_url + get_repository_item_url(self.repository))
+            self.base_url + get_repository_item_url(repository))
         self.assertEqual(
             rsp['review_request']['links']['submitter']['href'],
             self.base_url + get_user_item_url('doc'))
 
         ReviewRequest.objects.get(pk=rsp['review_request']['id'])
 
+    @add_fixtures(['test_scmtools'])
     def test_post_reviewrequests_with_submit_as_and_permission_denied_error(self):
         """Testing the POST review-requests/?submit_as= API with Permission Denied error"""
+        repository = self.create_repository()
+
         rsp = self.apiPost(
             get_review_request_list_url(),
             {
-                'repository': self.repository.path,
+                'repository': repository.path,
                 'submit_as': 'doc',
             },
             expected_status=403)
@@ -509,8 +617,7 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
 
     def test_put_reviewrequest_status_discarded(self):
         """Testing the PUT review-requests/<id>/?status=discarded API"""
-        r = ReviewRequest.objects.filter(public=True, status='P',
-                                         submitter=self.user)[0]
+        r = self.create_review_request(submitter=self.user, publish=True)
 
         rsp = self.apiPut(
             get_review_request_item_url(r.display_id),
@@ -534,8 +641,8 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
 
     def test_put_reviewrequest_status_discarded_with_permission_denied(self):
         """Testing the PUT review-requests/<id>/?status=discarded API with Permission Denied"""
-        q = ReviewRequest.objects.filter(public=True, status='P')
-        r = q.exclude(submitter=self.user)[0]
+        r = self.create_review_request()
+        self.assertNotEqual(r.submitter, self.user)
 
         rsp = self.apiPut(
             get_review_request_item_url(r.display_id),
@@ -547,8 +654,7 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
 
     def test_put_reviewrequest_status_pending(self):
         """Testing the PUT review-requests/<id>/?status=pending API"""
-        r = ReviewRequest.objects.filter(public=True, status='P',
-                                         submitter=self.user)[0]
+        r = self.create_review_request(submitter=self.user, publish=True)
         r.close(ReviewRequest.SUBMITTED)
         r.save()
 
@@ -564,8 +670,7 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
 
     def test_put_reviewrequest_status_submitted(self):
         """Testing the PUT review-requests/<id>/?status=submitted API"""
-        r = ReviewRequest.objects.filter(public=True, status='P',
-                                         submitter=self.user)[0]
+        r = self.create_review_request(submitter=self.user, publish=True)
 
         rsp = self.apiPut(
             get_review_request_item_url(r.display_id),
@@ -591,9 +696,8 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
     def test_put_reviewrequest_status_submitted_with_site(self):
         """Testing the PUT review-requests/<id>/?status=submitted API with a local site"""
         self._login_user(local_site=True)
-        r = ReviewRequest.objects.filter(public=True, status='P',
-                                         submitter__username='doc',
-                                         local_site__name=self.local_site_name)[0]
+        r = self.create_review_request(submitter='doc', with_local_site=True,
+                                       publish=True)
 
         rsp = self.apiPut(
             get_review_request_item_url(r.display_id, self.local_site_name),
@@ -618,9 +722,8 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
     @add_fixtures(['test_site'])
     def test_put_reviewrequest_status_submitted_with_site_no_access(self):
         """Testing the PUT review-requests/<id>/?status=submitted API with a local site and Permission Denied error"""
-        r = ReviewRequest.objects.filter(public=True, status='P',
-                                         submitter__username='doc',
-                                         local_site__name=self.local_site_name)[0]
+        r = self.create_review_request(submitter='doc', with_local_site=True,
+                                       publish=True)
 
         self.apiPut(
             get_review_request_item_url(r.display_id, self.local_site_name),
@@ -630,7 +733,7 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
     @add_fixtures(['test_site'])
     def test_get_reviewrequest(self):
         """Testing the GET review-requests/<id>/ API"""
-        review_request = ReviewRequest.objects.public()[0]
+        review_request = self.create_review_request(publish=True)
 
         rsp = self.apiGet(
             get_review_request_item_url(review_request.display_id),
@@ -644,8 +747,8 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
     def test_get_reviewrequest_with_site(self):
         """Testing the GET review-requests/<id>/ API with a local site"""
         self._login_user(local_site=True)
-        local_site = LocalSite.objects.get(name=self.local_site_name)
-        review_request = ReviewRequest.objects.public(local_site=local_site)[0]
+        review_request = self.create_review_request(publish=True,
+                                                    with_local_site=True)
 
         rsp = self.apiGet(
             get_review_request_item_url(review_request.display_id,
@@ -660,8 +763,10 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
     @add_fixtures(['test_site'])
     def test_get_reviewrequest_with_site_no_access(self):
         """Testing the GET review-requests/<id>/ API with a local site and Permission Denied error"""
-        local_site = LocalSite.objects.get(name=self.local_site_name)
-        review_request = ReviewRequest.objects.public(local_site=local_site)[0]
+        group = self.create_review_group(with_local_site=True)
+        review_request = self.create_review_request(with_local_site=True,
+                                                    publish=True)
+        review_request.target_groups.add(group)
 
         self.apiGet(get_review_request_item_url(review_request.display_id,
                                                 self.local_site_name),
@@ -669,8 +774,8 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
 
     def test_get_reviewrequest_with_non_public_and_permission_denied_error(self):
         """Testing the GET review-requests/<id>/ API with non-public and Permission Denied error"""
-        review_request = ReviewRequest.objects.filter(
-            public=False, local_site=None).exclude(submitter=self.user)[0]
+        review_request = self.create_review_request(public=False)
+        self.assertNotEqual(review_request.submitter, self.user)
 
         rsp = self.apiGet(
             get_review_request_item_url(review_request.display_id),
@@ -680,10 +785,8 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
 
     def test_get_reviewrequest_with_invite_only_group_and_permission_denied_error(self):
         """Testing the GET review-requests/<id>/ API with invite-only group and Permission Denied error"""
-        review_request = ReviewRequest.objects.filter(
-            public=True, local_site=None).exclude(submitter=self.user)[0]
-        review_request.target_groups.clear()
-        review_request.target_people.clear()
+        review_request = self.create_review_request(publish=True)
+        self.assertNotEqual(review_request.submitter, self.user)
 
         group = Group(name='test-group', invite_only=True)
         group.save()
@@ -700,10 +803,8 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
     @add_fixtures(['test_site'])
     def test_get_reviewrequest_with_invite_only_group_and_target_user(self):
         """Testing the GET review-requests/<id>/ API with invite-only group and target user"""
-        review_request = ReviewRequest.objects.filter(
-            public=True, local_site=None).exclude(submitter=self.user)[0]
-        review_request.target_groups.clear()
-        review_request.target_people.clear()
+        review_request = self.create_review_request(publish=True)
+        self.assertNotEqual(review_request.submitter, self.user)
 
         group = Group(name='test-group', invite_only=True)
         group.save()
@@ -720,10 +821,13 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['review_request']['summary'],
                          review_request.summary)
 
+    @add_fixtures(['test_scmtools'])
     def test_get_reviewrequest_with_repository_and_changenum(self):
         """Testing the GET review-requests/?repository=&changenum= API"""
-        review_request = \
-            ReviewRequest.objects.filter(changenum__isnull=False)[0]
+        review_request = self.create_review_request(create_repository=True,
+                                                    publish=True)
+        review_request.changenum = 1234
+        review_request.save()
 
         rsp = self.apiGet(get_review_request_list_url(), {
             'repository': review_request.repository.id,
@@ -740,10 +844,13 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['review_requests'][0]['commit_id'],
                          review_request.commit)
 
+    @add_fixtures(['test_scmtools'])
     def test_get_reviewrequest_with_repository_and_commit_id(self):
         """Testing the GET review-requests/?repository=&commit_id= API with changenum backwards-compatibility"""
-        review_request = \
-            ReviewRequest.objects.filter(changenum__isnull=False)[0]
+        review_request = self.create_review_request(create_repository=True,
+                                                    publish=True)
+        review_request.changenum = 1234
+        review_request.save()
 
         self.assertEqual(review_request.commit_id, None)
 
@@ -771,7 +878,8 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
         self.user.save()
         self.assert_(self.user.has_perm('reviews.delete_reviewrequest'))
 
-        review_request = ReviewRequest.objects.from_user(self.user.username)[0]
+        review_request = self.create_review_request(submitter=self.user,
+                                                    publish=True)
 
         rsp = self.apiDelete(
             get_review_request_item_url(review_request.display_id))
@@ -782,8 +890,8 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
 
     def test_delete_reviewrequest_with_permission_denied_error(self):
         """Testing the DELETE review-requests/<id>/ API with Permission Denied error"""
-        review_request = ReviewRequest.objects.filter(
-            local_site=None).exclude(submitter=self.user)[0]
+        review_request = self.create_review_request(publish=True)
+        self.assertNotEqual(review_request.submitter, self.user)
 
         rsp = self.apiDelete(
             get_review_request_item_url(review_request.display_id),
@@ -812,9 +920,7 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
         user.save()
 
         self._login_user(local_site=True)
-        local_site = LocalSite.objects.get(name=self.local_site_name)
-        review_request = ReviewRequest.objects.filter(
-            local_site=local_site, submitter__username='doc')[0]
+        review_request = self.create_review_request(with_local_site=True)
 
         rsp = self.apiDelete(
             get_review_request_item_url(review_request.display_id,

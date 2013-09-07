@@ -2,7 +2,7 @@ from django.contrib.auth.models import User
 from djblets.testing.decorators import add_fixtures
 
 from reviewboard.reviews.models import DefaultReviewer, Group
-from reviewboard.scmtools.models import Repository
+from reviewboard.scmtools.models import Repository, Tool
 from reviewboard.site.models import LocalSite
 from reviewboard.webapi.tests.base import BaseWebAPITestCase
 from reviewboard.webapi.tests.mimetypes import (default_reviewer_item_mimetype,
@@ -21,23 +21,25 @@ class DefaultReviewerResourceTests(BaseWebAPITestCase):
 
         name = 'default1'
         file_regex = '.*'
+        git_tool = Tool.objects.get(name='Git')
 
         user1 = User.objects.get(username='doc')
         user2 = User.objects.get(username='dopey')
         group1 = Group.objects.create(name='group1', local_site=local_site)
         group2 = Group.objects.create(name='group2', local_site=local_site)
-        repo1 = Repository.objects.get(name='Review Board SVN')
-        repo2 = Repository.objects.get(name='Review Board Git')
+        repo1 = Repository.objects.create(name='Test Repo 1',
+                                          local_site=local_site,
+                                          path='test-repo-1',
+                                          tool=git_tool)
+        repo2 = Repository.objects.create(name='Test Repo 2',
+                                          local_site=local_site,
+                                          path='test-repo-2',
+                                          tool=git_tool)
 
         # For the tests, make sure these are what we expect.
         if local_site:
             local_site.users.add(user1)
             local_site.users.add(user2)
-
-        repo1.local_site = local_site
-        repo2.local_site = local_site
-        repo1.save()
-        repo2.save()
 
         rsp = self.apiPost(
             get_default_reviewer_list_url(local_site),
@@ -216,7 +218,7 @@ class DefaultReviewerResourceTests(BaseWebAPITestCase):
     @add_fixtures(['test_users', 'test_site', 'test_scmtools'])
     def test_post_default_reviewer_with_repository_invalid_site(self):
         """Testing the POST default-reviewers/ API with repository and invalid site"""
-        repository = Repository.objects.filter(local_site__pk__gt=0)[0]
+        repository = self.create_repository(with_local_site=True)
 
         self._login_user(admin=True)
 
@@ -243,32 +245,33 @@ class DefaultReviewerResourceTests(BaseWebAPITestCase):
         """Testing the PUT default-reviewers/<id>/ API"""
         name = 'my-default-reviewer'
         file_regex = '/foo/'
+        git_tool = Tool.objects.get(name='Git')
 
         old_user = User.objects.get(username='admin')
         old_group = Group.objects.create(name='group3', local_site=local_site)
-        old_repo = Repository.objects.get(name='Test HG')
+        old_repo = Repository.objects.create(name='Old Repo',
+                                             local_site=local_site,
+                                             path='old-repo',
+                                             tool=git_tool)
 
         user1 = User.objects.get(username='doc')
         user2 = User.objects.get(username='dopey')
         group1 = Group.objects.create(name='group1', local_site=local_site)
         group2 = Group.objects.create(name='group2', local_site=local_site)
-        repo1 = Repository.objects.get(name='Review Board SVN')
-        repo2 = Repository.objects.get(name='Review Board Git')
+        repo1 = Repository.objects.create(name='Test Repo 1',
+                                          local_site=local_site,
+                                          path='test-repo-1',
+                                          tool=git_tool)
+        repo2 = Repository.objects.create(name='Test Repo 2',
+                                          local_site=local_site,
+                                          path='test-repo-2',
+                                          tool=git_tool)
 
         # For the tests, make sure these are what we expect.
         if local_site:
             local_site.users.add(user1)
             local_site.users.add(user2)
             local_site.users.add(old_user)
-
-        old_repo.local_site = local_site
-        old_repo.save()
-
-        repo1.local_site = local_site
-        repo1.save()
-
-        repo2.local_site = local_site
-        repo2.save()
 
         default_reviewer = DefaultReviewer.objects.create(
             name='default1', file_regex='.*', local_site=local_site)
@@ -431,7 +434,7 @@ class DefaultReviewerResourceTests(BaseWebAPITestCase):
     @add_fixtures(['test_users', 'test_site', 'test_scmtools'])
     def test_put_default_reviewer_with_repository_invalid_site(self):
         """Testing the PUT default-reviewers/<id>/ API with repository and invalid site"""
-        repository = Repository.objects.filter(local_site__pk__gt=0)[0]
+        repository = self.create_repository(with_local_site=True)
 
         default_reviewer = DefaultReviewer.objects.create(
             name='default1', file_regex='.*')
@@ -451,7 +454,7 @@ class DefaultReviewerResourceTests(BaseWebAPITestCase):
         """Testing the GET default-reviewers/ API"""
         user = User.objects.get(username='doc')
         group = Group.objects.create(name='group1')
-        repository = Repository.objects.get(pk=1)
+        repository = self.create_repository()
 
         DefaultReviewer.objects.create(name='default1', file_regex='.*')
 
@@ -522,9 +525,8 @@ class DefaultReviewerResourceTests(BaseWebAPITestCase):
     @add_fixtures(['test_users', 'test_scmtools'])
     def test_get_default_reviewers_with_repositories(self):
         """Testing the GET default-reviewers/?repositories= API"""
-        repositories = list(Repository.objects.all())
-        repository1 = repositories[0]
-        repository2 = repositories[1]
+        repository1 = self.create_repository(name='repo 1')
+        repository2 = self.create_repository(name='repo 2')
 
         default_reviewer = DefaultReviewer.objects.create(
             name='default1', file_regex='.*')
@@ -626,7 +628,7 @@ class DefaultReviewerResourceTests(BaseWebAPITestCase):
         """Testing the GET default-reviewers/<id>/ API"""
         user = User.objects.get(username='doc')
         group = Group.objects.create(name='group1')
-        repository = Repository.objects.get(pk=1)
+        repository = self.create_repository()
 
         default_reviewer = DefaultReviewer.objects.create(
             name='default1', file_regex='.*')

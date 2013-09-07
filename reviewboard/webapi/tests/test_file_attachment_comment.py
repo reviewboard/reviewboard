@@ -1,15 +1,12 @@
-from django.contrib.auth.models import User
 from djblets.testing.decorators import add_fixtures
 from djblets.webapi.errors import PERMISSION_DENIED
 
-from reviewboard.attachments.models import FileAttachment
-from reviewboard.reviews.models import (FileAttachmentComment, ReviewRequest,
-                                        Review)
-from reviewboard.scmtools.models import Repository
+from reviewboard.reviews.models import FileAttachmentComment
 from reviewboard.webapi.tests.base import BaseWebAPITestCase
 from reviewboard.webapi.tests.mimetypes import (
     file_attachment_comment_item_mimetype,
     file_attachment_comment_list_mimetype)
+from reviewboard.webapi.tests.urls import get_file_attachment_comment_list_url
 
 
 class FileAttachmentCommentResourceTests(BaseWebAPITestCase):
@@ -20,33 +17,20 @@ class FileAttachmentCommentResourceTests(BaseWebAPITestCase):
         """Testing the GET review-requests/<id>/file-attachments/<id>/comments/ API"""
         comment_text = "This is a test comment."
 
-        # Post the review request
-        rsp = self._postNewReviewRequest()
-        review_request = ReviewRequest.objects.get(
-            pk=rsp['review_request']['id'])
-
-        # Post the file_attachment.
-        rsp = self._postNewFileAttachment(review_request)
-        file_attachment = FileAttachment.objects.get(
-            pk=rsp['file_attachment']['id'])
-        self.assertTrue('links' in rsp['file_attachment'])
-        self.assertTrue('file_attachment_comments' in
-                        rsp['file_attachment']['links'])
-        comments_url = \
-            rsp['file_attachment']['links']['file_attachment_comments']['href']
-
-        # Make these public.
-        review_request.publish(self.user)
+        # Post the review request.
+        review_request = self.create_review_request(create_repository=True,
+                                                    submitter=self.user,
+                                                    publish=True)
+        file_attachment = self.create_file_attachment(review_request)
 
         # Post the review.
-        rsp = self._postNewReview(review_request)
-        review = Review.objects.get(pk=rsp['review']['id'])
+        review = self.create_review(review_request, user=self.user)
 
         self._postNewFileAttachmentComment(review_request, review.id,
                                            file_attachment, comment_text)
 
         rsp = self.apiGet(
-            comments_url,
+            get_file_attachment_comment_list_url(file_attachment),
             expected_mimetype=file_attachment_comment_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
 
@@ -61,91 +45,52 @@ class FileAttachmentCommentResourceTests(BaseWebAPITestCase):
     @add_fixtures(['test_site'])
     def test_get_file_attachment_comments_with_site(self):
         """Testing the GET review-requests/<id>/file-attachments/<id>/comments/ API with a local site"""
-        comment_text = 'This is a test comment.'
-
-        self._login_user(local_site=True)
+        user = self._login_user(local_site=True)
 
         # Post the review request.
-        repo = Repository.objects.get(name='Review Board Git')
-        rsp = self._postNewReviewRequest(local_site_name=self.local_site_name,
-                                         repository=repo)
-        self.assertEqual(rsp['stat'], 'ok')
-        review_request = ReviewRequest.objects.get(
-            local_site__name=self.local_site_name,
-            local_id=rsp['review_request']['id'])
-
-        # Post the file_attachment.
-        rsp = self._postNewFileAttachment(review_request)
-        file_attachment = FileAttachment.objects.get(
-            pk=rsp['file_attachment']['id'])
-        self.assertTrue('links' in rsp['file_attachment'])
-        self.assertTrue('file_attachment_comments' in
-                        rsp['file_attachment']['links'])
-        comments_url = \
-            rsp['file_attachment']['links']['file_attachment_comments']['href']
-
-        # Make these public.
-        review_request.publish(User.objects.get(username='doc'))
+        review_request = self.create_review_request(create_repository=True,
+                                                    submitter=user,
+                                                    with_local_site=True,
+                                                    publish=True)
+        file_attachment = self.create_file_attachment(review_request)
 
         # Post the review.
-        rsp = self._postNewReview(review_request)
-        review = Review.objects.get(pk=rsp['review']['id'])
-
-        self._postNewFileAttachmentComment(review_request, review.id,
-                                           file_attachment, comment_text)
+        review = self.create_review(review_request, user=user, publish=True)
+        comment = self.create_file_attachment_comment(review, file_attachment)
 
         rsp = self.apiGet(
-            comments_url,
+            get_file_attachment_comment_list_url(file_attachment,
+                                                 self.local_site_name),
             expected_mimetype=file_attachment_comment_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
 
-        comments = FileAttachmentComment.objects.filter(
-            file_attachment=file_attachment)
         rsp_comments = rsp['file_attachment_comments']
-        self.assertEqual(len(rsp_comments), comments.count())
-
-        for i in range(0, len(comments)):
-            self.assertEqual(rsp_comments[i]['text'], comments[i].text)
+        self.assertEqual(len(rsp_comments), 1)
+        self.assertEqual(rsp_comments[0]['text'], comment.text)
 
     @add_fixtures(['test_site'])
     def test_get_file_attachment_comments_with_site_no_access(self):
         """Testing the GET review-requests/<id>/file-attachments/<id>/comments/ API with a local site and Permission Denied error"""
-        comment_text = 'This is a test comment.'
-
-        self._login_user(local_site=True)
+        user = self._login_user(local_site=True)
 
         # Post the review request.
-        repo = Repository.objects.get(name='Review Board Git')
-        rsp = self._postNewReviewRequest(local_site_name=self.local_site_name,
-                                         repository=repo)
-        self.assertEqual(rsp['stat'], 'ok')
-        review_request = ReviewRequest.objects.get(
-            local_site__name=self.local_site_name,
-            local_id=rsp['review_request']['id'])
-
-        # Post the file_attachment.
-        rsp = self._postNewFileAttachment(review_request)
-        file_attachment = FileAttachment.objects.get(
-            pk=rsp['file_attachment']['id'])
-        self.assertTrue('links' in rsp['file_attachment'])
-        self.assertTrue('file_attachment_comments' in
-                        rsp['file_attachment']['links'])
-        comments_url = \
-            rsp['file_attachment']['links']['file_attachment_comments']['href']
-
-        # Make these public.
-        review_request.publish(User.objects.get(username='doc'))
+        review_request = self.create_review_request(create_repository=True,
+                                                    submitter=user,
+                                                    with_local_site=True,
+                                                    publish=True)
+        file_attachment = self.create_file_attachment(review_request)
 
         # Post the review.
-        rsp = self._postNewReview(review_request)
-        review = Review.objects.get(pk=rsp['review']['id'])
+        review = self.create_review(review_request, user=user)
+        self.create_file_attachment_comment(review, file_attachment)
 
-        self._postNewFileAttachmentComment(review_request, review.id,
-                                           file_attachment, comment_text)
-
+        # Switch users.
         self._login_user()
 
-        rsp = self.apiGet(comments_url, expected_status=403)
+        rsp = self.apiGet(
+            get_file_attachment_comment_list_url(file_attachment,
+                                                 self.local_site_name),
+            expected_status=403)
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
@@ -159,24 +104,14 @@ class FileAttachmentCommentResourceTests(BaseWebAPITestCase):
             'ignored': 'foo',
         }
 
-        rsp = self._postNewReviewRequest()
-        review_request = ReviewRequest.objects.get(
-            pk=rsp['review_request']['id'])
-
-        # Post the file_attachment.
-        rsp = self._postNewFileAttachment(review_request)
-        file_attachment = FileAttachment.objects.get(
-            pk=rsp['file_attachment']['id'])
-        self.assertTrue('links' in rsp['file_attachment'])
-        self.assertTrue('file_attachment_comments' in
-                        rsp['file_attachment']['links'])
-
-        # Make these public.
-        review_request.publish(self.user)
+        # Post the review request.
+        review_request = self.create_review_request(create_repository=True,
+                                                    submitter=self.user,
+                                                    publish=True)
+        file_attachment = self.create_file_attachment(review_request)
 
         # Post the review.
-        rsp = self._postNewReview(review_request)
-        review = Review.objects.get(pk=rsp['review']['id'])
+        review = self.create_review(review_request, user=self.user)
 
         rsp = self._postNewFileAttachmentComment(review_request, review.id,
                                                  file_attachment, comment_text,
@@ -200,32 +135,15 @@ class FileAttachmentCommentResourceTests(BaseWebAPITestCase):
         """Testing the POST review-requests/<id>/file-attachments/<id>/comments/ API with diffed file attachments"""
         comment_text = "This is a test comment."
 
-        rsp = self._postNewReviewRequest()
-        review_request = ReviewRequest.objects.get(
-            pk=rsp['review_request']['id'])
-
-        # Post the first file_attachment.
-        rsp = self._postNewFileAttachment(review_request)
-        file_attachment1 = FileAttachment.objects.get(
-            pk=rsp['file_attachment']['id'])
-        self.assertTrue('links' in rsp['file_attachment'])
-        self.assertTrue('file_attachment_comments' in
-                        rsp['file_attachment']['links'])
-
-        # Post the second file_attachment.
-        rsp = self._postNewFileAttachment(review_request)
-        file_attachment2 = FileAttachment.objects.get(
-            pk=rsp['file_attachment']['id'])
-        self.assertTrue('links' in rsp['file_attachment'])
-        self.assertTrue('file_attachment_comments' in
-                        rsp['file_attachment']['links'])
-
-        # Make these public.
-        review_request.publish(self.user)
+        # Post the review request.
+        review_request = self.create_review_request(create_repository=True,
+                                                    submitter=self.user,
+                                                    publish=True)
+        file_attachment1 = self.create_file_attachment(review_request)
+        file_attachment2 = self.create_file_attachment(review_request)
 
         # Post the review.
-        rsp = self._postNewReview(review_request)
-        review = Review.objects.get(pk=rsp['review']['id'])
+        review = self.create_review(review_request, user=self.user)
 
         extra_fields = {
             'diff_against_file_attachment_id': file_attachment1.pk,

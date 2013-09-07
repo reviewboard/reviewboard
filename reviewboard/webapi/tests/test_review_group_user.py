@@ -1,7 +1,6 @@
 from django.contrib.auth.models import User
 from djblets.testing.decorators import add_fixtures
 
-from reviewboard.reviews.models import Group
 from reviewboard.site.models import LocalSite
 from reviewboard.webapi.errors import INVALID_USER
 from reviewboard.webapi.tests.base import BaseWebAPITestCase
@@ -13,17 +12,14 @@ from reviewboard.webapi.tests.urls import (get_review_group_user_item_url,
 
 class ReviewGroupUserResourceTests(BaseWebAPITestCase):
     """Testing the ReviewGroupUserResource API tests."""
-    fixtures = ['test_users', 'test_scmtools', 'test_reviewrequests']
+    fixtures = ['test_users']
 
     def test_create_user(self, local_site=None):
         """Testing the POST groups/<name>/users/ API"""
         self._login_user(admin=True, local_site=local_site)
 
-        group = Group.objects.get(pk=1)
-        group.local_site = local_site
-        group.users = []
-        group.save()
-
+        group = self.create_review_group(
+            with_local_site=(local_site is not None))
         user = User.objects.get(pk=1)
 
         rsp = self.apiPost(
@@ -42,7 +38,7 @@ class ReviewGroupUserResourceTests(BaseWebAPITestCase):
 
     def test_create_user_with_no_access(self, local_site=None):
         """Testing the POST groups/<name>/users/ API with Permission Denied"""
-        group = Group.objects.get(pk=1)
+        group = self.create_review_group()
         user = User.objects.get(pk=1)
 
         rsp = self.apiPost(
@@ -61,9 +57,7 @@ class ReviewGroupUserResourceTests(BaseWebAPITestCase):
         """Testing the POST groups/<name>/users/ API with invalid user"""
         self._login_user(admin=True)
 
-        group = Group.objects.get(pk=1)
-        group.users = []
-        group.save()
+        group = self.create_review_group()
 
         rsp = self.apiPost(
             get_review_group_user_list_url(group.name),
@@ -78,19 +72,18 @@ class ReviewGroupUserResourceTests(BaseWebAPITestCase):
         """Testing the DELETE groups/<name>/users/<username>/ API"""
         self._login_user(admin=True, local_site=local_site)
 
-        group = Group.objects.get(pk=1)
-        group.local_site = local_site
-        group.save()
+        user = User.objects.get(username='grumpy')
 
-        old_count = group.users.count()
-        user = group.users.all()[0]
+        group = self.create_review_group(
+            with_local_site=(local_site is not None))
+        group.users.add(user)
 
         self.apiDelete(
             get_review_group_user_item_url(group.name, user.username,
                                            local_site),
             expected_status=204)
 
-        self.assertEqual(group.users.count(), old_count - 1)
+        self.assertEqual(group.users.count(), 0)
 
     @add_fixtures(['test_site'])
     def test_delete_user_with_site(self):
@@ -99,8 +92,10 @@ class ReviewGroupUserResourceTests(BaseWebAPITestCase):
 
     def test_delete_user_with_no_access(self, local_site=None):
         """Testing the DELETE groups/<name>/users/<username>/ API with Permission Denied"""
-        group = Group.objects.get(pk=1)
-        user = group.users.all()[0]
+        user = User.objects.get(username='grumpy')
+
+        group = self.create_review_group()
+        group.users.add(user)
 
         self.apiDelete(
             get_review_group_user_item_url(group.name, user.username,
@@ -115,15 +110,16 @@ class ReviewGroupUserResourceTests(BaseWebAPITestCase):
 
     def test_get_users(self, local_site=None):
         """Testing the GET groups/<name>/users/ API"""
-        group = Group.objects.get(pk=1)
-        group.local_site = local_site
-        group.save()
+        group = self.create_review_group(
+            with_local_site=(local_site is not None))
+        group.users.add(User.objects.get(username='grumpy'))
+        group.users.add(User.objects.get(username='doc'))
 
         rsp = self.apiGet(
             get_review_group_user_list_url(group.name, local_site),
             expected_mimetype=user_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(len(rsp['users']), group.users.count())
+        self.assertEqual(len(rsp['users']), 2)
 
     @add_fixtures(['test_site'])
     def test_get_users_with_site(self):

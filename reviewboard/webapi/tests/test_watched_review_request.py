@@ -1,8 +1,7 @@
 from django.contrib.auth.models import User
+from djblets.testing.decorators import add_fixtures
 from djblets.webapi.errors import DOES_NOT_EXIST, PERMISSION_DENIED
 
-from reviewboard.reviews.models import ReviewRequest
-from reviewboard.site.models import LocalSite
 from reviewboard.webapi.tests.base import BaseWebAPITestCase
 from reviewboard.webapi.tests.mimetypes import (
     watched_review_request_item_mimetype,
@@ -14,12 +13,11 @@ from reviewboard.webapi.tests.urls import (
 
 class WatchedReviewRequestResourceTests(BaseWebAPITestCase):
     """Testing the WatchedReviewRequestResource API tests."""
-    fixtures = ['test_users', 'test_scmtools', 'test_reviewrequests',
-                'test_site']
+    fixtures = ['test_users']
 
     def test_post_watched_review_request(self):
         """Testing the POST users/<username>/watched/review-request/ API"""
-        review_request = ReviewRequest.objects.public()[0]
+        review_request = self.create_review_request(publish=True)
         rsp = self.apiPost(
             get_watched_review_request_list_url(self.user.username),
             {'object_id': review_request.display_id},
@@ -37,15 +35,15 @@ class WatchedReviewRequestResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], DOES_NOT_EXIST.code)
 
+    @add_fixtures(['test_site'])
     def test_post_watched_review_request_with_site(self):
         """Testing the POST users/<username>/watched/review_request/ API with a local site"""
         self._login_user(local_site=True)
 
         username = 'doc'
         user = User.objects.get(username=username)
-
-        local_site = LocalSite.objects.get(name=self.local_site_name)
-        review_request = ReviewRequest.objects.public(local_site=local_site)[0]
+        review_request = self.create_review_request(with_local_site=True,
+                                                    publish=True)
 
         rsp = self.apiPost(
             get_watched_review_request_list_url(username,
@@ -56,6 +54,9 @@ class WatchedReviewRequestResourceTests(BaseWebAPITestCase):
         self.assertTrue(review_request in
                         user.get_profile().starred_review_requests.all())
 
+        return review_request
+
+    @add_fixtures(['test_site'])
     def test_post_watched_review_request_with_site_does_not_exist_error(self):
         """Testing the POST users/<username>/watched/review_request/ API with a local site and Does Not Exist error"""
         self._login_user(local_site=True)
@@ -66,6 +67,7 @@ class WatchedReviewRequestResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], DOES_NOT_EXIST.code)
 
+    @add_fixtures(['test_site'])
     def test_post_watched_review_request_with_site_no_access(self):
         """Testing the POST users/<username>/watched/review_request/ API with a local site and Permission Denied error"""
         rsp = self.apiPost(
@@ -80,7 +82,7 @@ class WatchedReviewRequestResourceTests(BaseWebAPITestCase):
         # First, star it.
         self.test_post_watched_review_request()
 
-        review_request = ReviewRequest.objects.public()[0]
+        review_request = self.create_review_request(publish=True)
         self.apiDelete(
             get_watched_review_request_item_url(self.user.username,
                                                 review_request.display_id))
@@ -95,19 +97,19 @@ class WatchedReviewRequestResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], DOES_NOT_EXIST.code)
 
+    @add_fixtures(['test_site'])
     def test_delete_watched_review_request_with_site(self):
         """Testing the DELETE users/<username>/watched/review_request/ API with a local site"""
-        self.test_post_watched_review_request_with_site()
+        review_request = self.test_post_watched_review_request_with_site()
 
         user = User.objects.get(username='doc')
-        review_request = ReviewRequest.objects.get(
-            local_id=1, local_site__name=self.local_site_name)
 
         self.apiDelete(get_watched_review_request_item_url(
             user.username, review_request.display_id, self.local_site_name))
         self.assertTrue(review_request not in
                         user.get_profile().starred_review_requests.all())
 
+    @add_fixtures(['test_site'])
     def test_delete_watched_review_request_with_site_no_access(self):
         """Testing the DELETE users/<username>/watched/review_request/ API with a local site and Permission Denied error"""
         rsp = self.apiDelete(
@@ -130,6 +132,7 @@ class WatchedReviewRequestResourceTests(BaseWebAPITestCase):
         apiwatched = rsp['watched_review_requests']
 
         self.assertEqual(len(watched), len(apiwatched))
+
         for i in range(len(watched)):
             self.assertEqual(watched[i].id,
                              apiwatched[i]['watched_review_request']['id'])
@@ -137,6 +140,7 @@ class WatchedReviewRequestResourceTests(BaseWebAPITestCase):
                 watched[i].summary,
                 apiwatched[i]['watched_review_request']['summary'])
 
+    @add_fixtures(['test_site'])
     def test_get_watched_review_requests_with_site(self):
         """Testing the GET users/<username>/watched/review_request/ API with a local site"""
         username = 'doc'
@@ -161,6 +165,7 @@ class WatchedReviewRequestResourceTests(BaseWebAPITestCase):
                 watched[i].summary,
                 apiwatched[i]['watched_review_request']['summary'])
 
+    @add_fixtures(['test_site'])
     def test_get_watched_review_requests_with_site_no_access(self):
         """Testing the GET users/<username>/watched/review_request/ API with a local site and Permission Denied error"""
         rsp = self.apiGet(
@@ -170,6 +175,7 @@ class WatchedReviewRequestResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
+    @add_fixtures(['test_site'])
     def test_get_watched_review_requests_with_site_does_not_exist(self):
         """Testing the GET users/<username>/watched/review_request/ API with a local site and Does Not Exist error"""
         self._login_user(local_site=True)

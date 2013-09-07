@@ -5,43 +5,32 @@ from django.contrib.auth.models import User
 from django.core import mail
 from django.utils import simplejson
 from djblets.siteconfig.models import SiteConfiguration
-from djblets.testing.testcases import TestCase
 
-from reviewboard import initialize, scmtools
+from reviewboard import initialize
 from reviewboard.notifications.tests import EmailTestHelper
 from reviewboard.reviews.models import Review
-from reviewboard.scmtools.models import Repository, Tool
 from reviewboard.site.models import LocalSite
+from reviewboard.testing import TestCase
 from reviewboard.webapi.tests.mimetypes import (
-    diff_item_mimetype,
     screenshot_comment_item_mimetype,
     error_mimetype,
     file_attachment_comment_item_mimetype,
-    file_attachment_item_mimetype,
-    review_diff_comment_item_mimetype,
-    review_request_item_mimetype,
-    review_item_mimetype,
-    screenshot_item_mimetype)
+    review_diff_comment_item_mimetype)
 from reviewboard.webapi.tests.urls import (
-    get_diff_list_url,
-    get_file_attachment_comment_list_url,
-    get_file_attachment_list_url,
-    get_repository_item_url,
     get_review_diff_comment_list_url,
-    get_review_list_url,
-    get_review_request_list_url,
+    get_review_file_attachment_comment_list_url,
     get_screenshot_comment_list_url,
     get_screenshot_list_url)
 
 
 class BaseWebAPITestCase(TestCase, EmailTestHelper):
-    local_site_name = 'local-site-1'
-
     def setUp(self):
+        super(BaseWebAPITestCase, self).setUp()
+
         initialize()
 
         self.siteconfig = SiteConfiguration.objects.get_current()
-        self.siteconfig.set("mail_send_review_mail", True)
+        self.siteconfig.set("mail_send_review_mail", False)
         self.siteconfig.set("auth_require_sitewide_login", False)
         self.siteconfig.save()
         self._saved_siteconfig_settings = self.siteconfig.settings.copy()
@@ -50,15 +39,6 @@ class BaseWebAPITestCase(TestCase, EmailTestHelper):
 
         fixtures = getattr(self, 'fixtures', [])
 
-        if 'test_scmtools' in fixtures:
-            svn_repo_path = os.path.join(os.path.dirname(scmtools.__file__),
-                                         'testdata', 'svn_repo')
-            tool = Tool.objects.get(name='Subversion')
-            self.repository = Repository(name='Subversion SVN',
-                                         path='file://' + svn_repo_path,
-                                         tool=tool)
-            self.repository.save()
-
         if 'test_users' in fixtures:
             self.client.login(username="grumpy", password="grumpy")
             self.user = User.objects.get(username="grumpy")
@@ -66,6 +46,8 @@ class BaseWebAPITestCase(TestCase, EmailTestHelper):
         self.base_url = 'http://testserver'
 
     def tearDown(self):
+        super(BaseWebAPITestCase, self).tearDown()
+
         self.client.logout()
 
         if self.siteconfig.settings != self._saved_siteconfig_settings:
@@ -243,49 +225,6 @@ class BaseWebAPITestCase(TestCase, EmailTestHelper):
 
         return User.objects.get(username=username)
 
-    def _postNewReviewRequest(self, local_site_name=None,
-                              repository=None):
-        """Creates a review request and returns the payload response."""
-        if not repository:
-            repository = self.repository
-
-        rsp = self.apiPost(
-            get_review_request_list_url(local_site_name),
-            {'repository': repository.path},
-            expected_mimetype=review_request_item_mimetype)
-
-        self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(
-            rsp['review_request']['links']['repository']['href'],
-            self.base_url + get_repository_item_url(repository,
-                                                    local_site_name))
-
-        return rsp
-
-    def _postNewReview(self, review_request, body_top="",
-                       body_bottom=""):
-        """Creates a review and returns the payload response."""
-        if review_request.local_site:
-            local_site_name = review_request.local_site.name
-        else:
-            local_site_name = None
-
-        post_data = {
-            'body_top': body_top,
-            'body_bottom': body_bottom,
-        }
-
-        rsp = self.apiPost(
-            get_review_list_url(review_request, local_site_name),
-            post_data,
-            expected_mimetype=review_item_mimetype)
-
-        self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(rsp['review']['body_top'], body_top)
-        self.assertEqual(rsp['review']['body_bottom'], body_bottom)
-
-        return rsp
-
     def _postNewDiffComment(self, review_request, review_id, comment_text,
                             filediff_id=None, interfilediff_id=None,
                             first_line=10, num_lines=5, issue_opened=None,
@@ -361,30 +300,6 @@ class BaseWebAPITestCase(TestCase, EmailTestHelper):
 
         return rsp
 
-    def _postNewScreenshot(self, review_request):
-        """Creates a screenshot and returns the payload response."""
-        if review_request.local_site:
-            local_site_name = review_request.local_site.name
-        else:
-            local_site_name = None
-
-        f = open(self._getTrophyFilename(), "r")
-        self.assert_(f)
-
-        post_data = {
-            'path': f,
-        }
-
-        rsp = self.apiPost(
-            get_screenshot_list_url(review_request, local_site_name),
-            post_data,
-            expected_mimetype=screenshot_item_mimetype)
-        f.close()
-
-        self.assertEqual(rsp['stat'], 'ok')
-
-        return rsp
-
     def _delete_screenshot(self, review_request, screenshot):
         """Deletes a screenshot but does not return, as deletes don't return a
         payload response.
@@ -423,53 +338,10 @@ class BaseWebAPITestCase(TestCase, EmailTestHelper):
 
         review = Review.objects.get(pk=review_id)
         rsp = self.apiPost(
-            get_file_attachment_comment_list_url(review, local_site_name),
+            get_review_file_attachment_comment_list_url(review,
+                                                        local_site_name),
             post_data,
             expected_mimetype=file_attachment_comment_item_mimetype)
-
-        self.assertEqual(rsp['stat'], 'ok')
-
-        return rsp
-
-    def _postNewFileAttachment(self, review_request):
-        """Creates a file_attachment and returns the payload response."""
-        if review_request.local_site:
-            local_site_name = review_request.local_site.name
-        else:
-            local_site_name = None
-
-        f = open(self._getTrophyFilename(), "r")
-        self.assert_(f)
-
-        post_data = {
-            'path': f,
-        }
-
-        rsp = self.apiPost(
-            get_file_attachment_list_url(review_request, local_site_name),
-            post_data,
-            expected_mimetype=file_attachment_item_mimetype)
-        f.close()
-
-        self.assertEqual(rsp['stat'], 'ok')
-
-        return rsp
-
-    def _postNewDiff(self, review_request):
-        """Creates a diff and returns the payload response."""
-        diff_filename = os.path.join(
-            os.path.dirname(scmtools.__file__),
-            'testdata', 'svn_makefile.diff')
-
-        f = open(diff_filename, "r")
-        rsp = self.apiPost(
-            get_diff_list_url(review_request),
-            {
-                'path': f,
-                'basedir': "/trunk",
-            },
-            expected_mimetype=diff_item_mimetype)
-        f.close()
 
         self.assertEqual(rsp['stat'], 'ok')
 

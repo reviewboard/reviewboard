@@ -1,10 +1,5 @@
-import os
-
 from djblets.testing.decorators import add_fixtures
 
-from reviewboard import scmtools
-from reviewboard.scmtools.models import Repository, Tool
-from reviewboard.site.models import LocalSite
 from reviewboard.webapi.errors import REPO_NOT_IMPLEMENTED
 from reviewboard.webapi.tests.base import BaseWebAPITestCase
 from reviewboard.webapi.tests.mimetypes import \
@@ -18,7 +13,8 @@ class RepositoryBranchesResourceTests(BaseWebAPITestCase):
 
     def test_get_repository_branches(self):
         """Testing the GET repositories/<id>/branches/ API"""
-        rsp = self.apiGet(get_repository_branches_url(self.repository),
+        repository = self.create_repository(tool_name='Subversion')
+        rsp = self.apiGet(get_repository_branches_url(repository),
                           expected_mimetype=repository_branches_item_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(
@@ -32,12 +28,12 @@ class RepositoryBranchesResourceTests(BaseWebAPITestCase):
     def test_get_repository_branches_with_site(self):
         """Testing the GET repositories/<id>/branches/ API with a local site"""
         self._login_user(local_site=True)
-        self.repository.local_site = \
-            LocalSite.objects.get(name=self.local_site_name)
-        self.repository.save()
+
+        repository = self.create_repository(tool_name='Subversion',
+                                            with_local_site=True)
 
         rsp = self.apiGet(
-            get_repository_branches_url(self.repository, self.local_site_name),
+            get_repository_branches_url(repository, self.local_site_name),
             expected_mimetype=repository_branches_item_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(
@@ -50,22 +46,15 @@ class RepositoryBranchesResourceTests(BaseWebAPITestCase):
     @add_fixtures(['test_site'])
     def test_get_repository_branches_with_site_no_access(self):
         """Testing the GET repositories/<id>/branches/ API with a local site and Permission Denied error"""
-        self.repository.local_site = \
-            LocalSite.objects.get(name=self.local_site_name)
-        self.repository.save()
+        repository = self.create_repository(with_local_site=True)
 
         self.apiGet(
-            get_repository_branches_url(self.repository, self.local_site_name),
+            get_repository_branches_url(repository, self.local_site_name),
             expected_status=403)
 
     def test_get_repository_branches_with_no_support(self):
         """Testing the GET repositories/<id>/branches/ API with a repository that does not implement it"""
-        hg_repo_path = os.path.join(os.path.dirname(scmtools.__file__),
-                                    'testdata', 'hg_repo.bundle')
-        repository = Repository(name='Test HG',
-                                path=hg_repo_path,
-                                tool=Tool.objects.get(name='Mercurial'))
-        repository.save()
+        repository = self.create_repository(tool_name='Mercurial')
 
         rsp = self.apiGet(get_repository_branches_url(repository),
                           expected_status=501)

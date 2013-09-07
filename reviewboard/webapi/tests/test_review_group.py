@@ -13,7 +13,7 @@ from reviewboard.webapi.tests.urls import (get_review_group_item_url,
 
 class ReviewGroupResourceTests(BaseWebAPITestCase):
     """Testing the ReviewGroupResource APIs."""
-    fixtures = ['test_users', 'test_scmtools', 'test_reviewrequests']
+    fixtures = ['test_users']
 
     def test_post_group(self, local_site=None):
         """Testing the POST groups/ API"""
@@ -113,7 +113,7 @@ class ReviewGroupResourceTests(BaseWebAPITestCase):
     def test_post_group_with_conflict(self):
         """Testing the POST groups/ API with Group Already Exists error"""
         self._login_user(admin=True)
-        group = Group.objects.get(pk=1)
+        group = self.create_review_group()
 
         rsp = self.apiPost(
             get_review_group_list_url(),
@@ -133,9 +133,8 @@ class ReviewGroupResourceTests(BaseWebAPITestCase):
         display_name = 'My Group'
         mailing_list = 'mygroup@example.com'
 
-        group = Group.objects.get(pk=1)
-        group.local_site = local_site
-        group.save()
+        group = self.create_review_group(
+            with_local_site=(local_site is not None))
 
         self._login_user(admin=True)
         rsp = self.apiPut(
@@ -162,9 +161,8 @@ class ReviewGroupResourceTests(BaseWebAPITestCase):
 
     def test_put_group_with_no_access(self, local_site=None):
         """Testing the PUT groups/<name>/ API with no access"""
-        group = Group.objects.get(pk=1)
-        group.local_site = local_site
-        group.save()
+        group = self.create_review_group(
+            with_local_site=(local_site is not None))
 
         rsp = self.apiPut(
             get_review_group_item_url(group.name, local_site),
@@ -185,8 +183,8 @@ class ReviewGroupResourceTests(BaseWebAPITestCase):
 
     def test_put_group_with_conflict(self):
         """Testing the PUT groups/<name>/ API with Group Already Exists error"""
-        group = Group.objects.get(pk=1)
-        group2 = Group.objects.get(pk=2)
+        group = self.create_review_group(name='group1')
+        group2 = self.create_review_group(name='group2')
 
         self._login_user(admin=True)
         rsp = self.apiPut(
@@ -200,18 +198,24 @@ class ReviewGroupResourceTests(BaseWebAPITestCase):
     @add_fixtures(['test_site'])
     def test_get_groups(self):
         """Testing the GET groups/ API"""
+        self.create_review_group(name='group1')
+        self.create_review_group(name='group2', with_local_site=True)
+
         rsp = self.apiGet(get_review_group_list_url(),
                           expected_mimetype=review_group_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(len(rsp['groups']),
                          Group.objects.accessible(self.user).count())
-        self.assertEqual(len(rsp['groups']), 4)
+        self.assertEqual(len(rsp['groups']), 1)
 
     @add_fixtures(['test_site'])
     def test_get_groups_with_site(self):
         """Testing the GET groups/ API with a local site"""
         self._login_user(local_site=True)
         local_site = LocalSite.objects.get(name=self.local_site_name)
+        self.create_review_group(name='group1', with_local_site=True)
+        self.create_review_group(name='group2')
+
         groups = Group.objects.accessible(self.user, local_site=local_site)
 
         rsp = self.apiGet(get_review_group_list_url(self.local_site_name),
@@ -228,6 +232,9 @@ class ReviewGroupResourceTests(BaseWebAPITestCase):
 
     def test_get_groups_with_q(self):
         """Testing the GET groups/?q= API"""
+        self.create_review_group(name='docgroup')
+        self.create_review_group(name='devgroup')
+
         rsp = self.apiGet(get_review_group_list_url(), {'q': 'dev'},
                           expected_mimetype=review_group_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
@@ -274,10 +281,10 @@ class ReviewGroupResourceTests(BaseWebAPITestCase):
     def test_get_group_with_site(self):
         """Testing the GET groups/<id>/ API with a local site"""
         self._login_user(local_site=True)
-        group = Group.objects.get(name='sitegroup')
+        group = self.create_review_group(with_local_site=True)
 
         rsp = self.apiGet(
-            get_review_group_item_url('sitegroup', self.local_site_name),
+            get_review_group_item_url(group.name, self.local_site_name),
             expected_mimetype=review_group_item_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(rsp['group']['name'], group.name)
@@ -311,6 +318,8 @@ class ReviewGroupResourceTests(BaseWebAPITestCase):
     @add_fixtures(['test_site'])
     def test_delete_group_with_local_site(self):
         """Testing the DELETE groups/<id>/ API with a local site"""
+        self.create_review_group(name='sitegroup', with_local_site=True)
+
         self._login_user(local_site=True, admin=True)
         self.apiDelete(
             get_review_group_item_url('sitegroup', self.local_site_name),
@@ -319,11 +328,14 @@ class ReviewGroupResourceTests(BaseWebAPITestCase):
     @add_fixtures(['test_site'])
     def test_delete_group_with_local_site_and_permission_denied_error(self):
         """Testing the DELETE groups/<id>/ API with a local site and Permission Denied error"""
+        self.create_review_group(name='sitegroup', with_local_site=True)
+
         self._login_user(local_site=True)
         self.apiDelete(
             get_review_group_item_url('sitegroup', self.local_site_name),
             expected_status=403)
 
+    @add_fixtures(['test_scmtools'])
     def test_delete_group_with_review_requests(self):
         """Testing the DELETE groups/<id>/ API with existing review requests"""
         self._login_user(admin=True)
@@ -331,7 +343,8 @@ class ReviewGroupResourceTests(BaseWebAPITestCase):
         group = Group.objects.create(name='test-group', invite_only=True)
         group.users.add(self.user)
 
-        request = ReviewRequest.objects.create(self.user, self.repository)
+        repository = self.create_repository()
+        request = ReviewRequest.objects.create(self.user, repository)
         request.target_groups.add(group)
 
         self.apiDelete(get_review_group_item_url('test-group'),

@@ -5,7 +5,6 @@ from djblets.webapi.errors import INVALID_FORM_DATA
 
 from reviewboard import scmtools
 from reviewboard.scmtools.models import Repository, Tool
-from reviewboard.site.models import LocalSite
 from reviewboard.webapi.errors import REPO_NOT_IMPLEMENTED
 from reviewboard.webapi.tests.base import BaseWebAPITestCase
 from reviewboard.webapi.tests.mimetypes import repository_commits_item_mimetype
@@ -18,7 +17,9 @@ class RepositoryCommitsResourceTests(BaseWebAPITestCase):
 
     def test_get_repository_commits(self):
         """Testing the GET repositories/<id>/commits/ API"""
-        rsp = self.apiGet(get_repository_commits_url(self.repository),
+        repository = self.create_repository(tool_name='Subversion')
+
+        rsp = self.apiGet(get_repository_commits_url(repository),
                           query={'start': 5},
                           expected_mimetype=repository_commits_item_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
@@ -29,7 +30,8 @@ class RepositoryCommitsResourceTests(BaseWebAPITestCase):
 
     def test_get_repository_commits_without_start(self):
         """Testing the GET repositories/<id>/commits/ API without providing a start parameter"""
-        rsp = self.apiGet(get_repository_commits_url(self.repository),
+        repository = self.create_repository()
+        rsp = self.apiGet(get_repository_commits_url(repository),
                           expected_status=400)
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], INVALID_FORM_DATA.code)
@@ -39,12 +41,11 @@ class RepositoryCommitsResourceTests(BaseWebAPITestCase):
     def test_get_repository_commits_with_site(self):
         """Testing the GET repositories/<id>/commits/ API with a local site"""
         self._login_user(local_site=True)
-        self.repository.local_site = \
-            LocalSite.objects.get(name=self.local_site_name)
-        self.repository.save()
+        repository = self.create_repository(with_local_site=True,
+                                            tool_name='Subversion')
 
         rsp = self.apiGet(
-            get_repository_commits_url(self.repository, self.local_site_name),
+            get_repository_commits_url(repository, self.local_site_name),
             query={'start': 7},
             expected_mimetype=repository_commits_item_mimetype)
         self.assertEqual(len(rsp['commits']), 7)
@@ -56,12 +57,10 @@ class RepositoryCommitsResourceTests(BaseWebAPITestCase):
     @add_fixtures(['test_site'])
     def test_get_repository_commits_with_site_no_access(self):
         """Testing the GET repositories/<id>/commits/ API with a local site and Permission Denied error"""
-        self.repository.local_site = \
-            LocalSite.objects.get(name=self.local_site_name)
-        self.repository.save()
+        repository = self.create_repository(with_local_site=True)
 
         self.apiGet(
-            get_repository_commits_url(self.repository, self.local_site_name),
+            get_repository_commits_url(repository, self.local_site_name),
             expected_status=403)
 
     def test_get_repository_commits_with_no_support(self):

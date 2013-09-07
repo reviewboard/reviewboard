@@ -5,6 +5,12 @@ from reviewboard.webapi.resources import resources
 #
 # ChangeResource
 #
+def get_change_list_url(review_request, local_site_name=None):
+    return resources.change.get_list_url(
+        local_site_name=local_site_name,
+        review_request_id=review_request.display_id)
+
+
 def get_change_item_url(changedesc, local_site_name=None):
     return resources.change.get_item_url(
         local_site_name=local_site_name,
@@ -78,19 +84,20 @@ def get_file_attachment_item_url(file_attachment, local_site_name=None):
 #
 # FileAttachmentCommentResource
 #
-def get_file_attachment_comment_list_url(review, local_site_name=None):
-    return resources.review_file_attachment_comment.get_list_url(
-        local_site_name=local_site_name,
-        review_request_id=review.review_request.display_id,
-        review_id=review.pk)
-
-
-def get_file_attachment_comment_item_url(review, comment_id,
+def get_file_attachment_comment_list_url(file_attachment,
                                          local_site_name=None):
-    return resources.review_file_attachment_comment.get_item_url(
+    return resources.file_attachment_comment.get_list_url(
         local_site_name=local_site_name,
-        review_request_id=review.review_request.display_id,
-        review_id=review.pk,
+        file_attachment_id=file_attachment.pk,
+        review_request_id=file_attachment.review_request.get().display_id)
+
+
+def get_file_attachment_comment_item_url(file_attachment, comment_id,
+                                         local_site_name=None):
+    return resources.file_attachment_comment.get_item_url(
+        local_site_name=local_site_name,
+        file_attachment_id=file_attachment.pk,
+        review_request_id=file_attachment.review_request.get().display_id,
         comment_id=comment_id)
 
 
@@ -189,6 +196,25 @@ def get_review_diff_comment_item_url(review, comment_id, local_site_name=None):
 
 
 #
+# FileAttachmentCommentResource
+#
+def get_review_file_attachment_comment_list_url(review, local_site_name=None):
+    return resources.review_file_attachment_comment.get_list_url(
+        local_site_name=local_site_name,
+        review_request_id=review.review_request.display_id,
+        review_id=review.pk)
+
+
+def get_review_file_attachment_comment_item_url(review, comment_id,
+                                                local_site_name=None):
+    return resources.review_file_attachment_comment.get_item_url(
+        local_site_name=local_site_name,
+        review_request_id=review.review_request.display_id,
+        review_id=review.pk,
+        comment_id=comment_id)
+
+
+#
 # ReviewGroupResource
 #
 def get_review_group_list_url(local_site_name=None):
@@ -234,6 +260,70 @@ def get_review_reply_item_url(review, reply_id, local_site_name=None):
         review_request_id=review.review_request.display_id,
         review_id=review.pk,
         reply_id=reply_id)
+
+
+#
+# ReviewReplyDiffCommentResource
+#
+def get_review_reply_diff_comment_list_url(reply, local_site_name=None):
+    return resources.review_reply_diff_comment.get_list_url(
+        local_site_name=local_site_name,
+        review_request_id=reply.review_request.display_id,
+        review_id=reply.base_reply_to_id,
+        reply_id=reply.pk)
+
+
+def get_review_reply_diff_comment_item_url(reply, comment_id,
+                                           local_site_name=None):
+    return resources.review_reply_diff_comment.get_item_url(
+        local_site_name=local_site_name,
+        review_request_id=reply.review_request.display_id,
+        review_id=reply.base_reply_to_id,
+        reply_id=reply.pk,
+        comment_id=comment_id)
+
+
+#
+# ReviewReplyFileAttachmentCommentResource
+#
+def get_review_reply_file_attachment_comment_list_url(reply,
+                                                      local_site_name=None):
+    return resources.review_reply_file_attachment_comment.get_list_url(
+        local_site_name=local_site_name,
+        review_request_id=reply.review_request.display_id,
+        review_id=reply.base_reply_to_id,
+        reply_id=reply.pk)
+
+
+def get_review_reply_file_attachment_comment_item_url(reply, comment_id,
+                                                      local_site_name=None):
+    return resources.review_reply_file_attachment_comment.get_item_url(
+        local_site_name=local_site_name,
+        review_request_id=reply.review_request.display_id,
+        review_id=reply.base_reply_to_id,
+        reply_id=reply.pk,
+        comment_id=comment_id)
+
+
+#
+# ReviewReplyScreenshotCommentResource
+#
+def get_review_reply_screenshot_comment_list_url(reply, local_site_name=None):
+    return resources.review_reply_screenshot_comment.get_list_url(
+        local_site_name=local_site_name,
+        review_request_id=reply.review_request.display_id,
+        review_id=reply.base_reply_to_id,
+        reply_id=reply.pk)
+
+
+def get_review_reply_screenshot_comment_item_url(reply, comment_id,
+                                                 local_site_name=None):
+    return resources.review_reply_screenshot_comment.get_item_url(
+        local_site_name=local_site_name,
+        review_request_id=reply.review_request.display_id,
+        review_id=reply.base_reply_to_id,
+        reply_id=reply.pk,
+        comment_id=comment_id)
 
 
 #

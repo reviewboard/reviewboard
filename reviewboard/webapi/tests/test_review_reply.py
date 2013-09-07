@@ -1,9 +1,8 @@
-from django.contrib.auth.models import User
 from django.core import mail
 from djblets.testing.decorators import add_fixtures
 from djblets.webapi.errors import PERMISSION_DENIED
 
-from reviewboard.reviews.models import Review, ReviewRequest
+from reviewboard.reviews.models import Review
 from reviewboard.webapi.tests.base import BaseWebAPITestCase
 from reviewboard.webapi.tests.mimetypes import (review_reply_item_mimetype,
                                                 review_reply_list_mimetype)
@@ -13,12 +12,12 @@ from reviewboard.webapi.tests.urls import (get_review_reply_item_url,
 
 class ReviewReplyResourceTests(BaseWebAPITestCase):
     """Testing the ReviewReplyResource APIs."""
-    fixtures = ['test_users', 'test_scmtools', 'test_reviewrequests']
+    fixtures = ['test_users']
 
     def test_get_replies(self):
         """Testing the GET review-requests/<id>/reviews/<id>/replies API"""
-        review = \
-            Review.objects.filter(base_reply_to__isnull=True, public=True)[0]
+        review = self._create_test_review()
+
         self.test_put_reply()
 
         public_replies = review.public_replies()
@@ -37,8 +36,8 @@ class ReviewReplyResourceTests(BaseWebAPITestCase):
 
     def test_get_replies_with_counts_only(self):
         """Testing the GET review-requests/<id>/reviews/<id>/replies/?counts-only=1 API"""
-        review = \
-            Review.objects.filter(base_reply_to__isnull=True, public=True)[0]
+        review = self._create_test_review()
+
         self.test_put_reply()
 
         rsp = self.apiGet(
@@ -50,21 +49,10 @@ class ReviewReplyResourceTests(BaseWebAPITestCase):
     @add_fixtures(['test_site'])
     def test_get_replies_with_site(self):
         """Testing the GET review-requests/<id>/reviews/<id>/replies/ API with a local site"""
-        review_request = \
-            ReviewRequest.objects.filter(local_site__name=self.local_site_name)[0]
-
-        review = Review()
-        review.review_request = review_request
-        review.user = User.objects.get(username='doc')
-        review.public = True
-        review.save()
-
-        reply = Review()
-        reply.review_request = review_request
-        reply.user = review.user
-        reply.public = True
-        reply.base_reply_to = review
-        reply.save()
+        review_request = self.create_review_request(with_local_site=True,
+                                                    publish=True)
+        review = self.create_review(review_request, publish=True)
+        review = self.create_reply(review, user=self.user, publish=True)
 
         self._login_user(local_site=True)
 
@@ -86,14 +74,8 @@ class ReviewReplyResourceTests(BaseWebAPITestCase):
     @add_fixtures(['test_site'])
     def test_get_replies_with_site_no_access(self):
         """Testing the GET review-requests/<id>/reviews/<id>/replies/ API with a local site and Permission Denied error"""
-        review_request = \
-            ReviewRequest.objects.filter(local_site__name=self.local_site_name)[0]
-
-        review = Review()
-        review.review_request = review_request
-        review.user = User.objects.get(username='doc')
-        review.public = True
-        review.save()
+        review_request = self.create_review_request(publish=True)
+        review = self.create_review(review_request, publish=True)
 
         rsp = self.apiGet(
             get_review_reply_list_url(review, self.local_site_name),
@@ -103,16 +85,20 @@ class ReviewReplyResourceTests(BaseWebAPITestCase):
 
     def test_get_reply_not_modified(self):
         """Testing the GET review-requests/<id>/reviews/<id>/ with Not Modified response"""
-        reply = \
-            Review.objects.filter(base_reply_to__isnull=False, public=True)[0]
+        review_request = self.create_review_request(publish=True)
+        review = self.create_review(review_request, publish=True)
+        reply = self.create_reply(review, publish=True)
+
         self._testHttpCaching(
             get_review_reply_item_url(reply.base_reply_to, reply.id),
             check_last_modified=True)
 
     def test_post_replies(self):
         """Testing the POST review-requests/<id>/reviews/<id>/replies/ API"""
-        review = \
-            Review.objects.filter(base_reply_to__isnull=True, public=True)[0]
+        review_request = self.create_review_request(publish=True)
+        review = self.create_review(review_request, publish=True)
+
+        mail.outbox = []
 
         rsp = self.apiPost(
             get_review_reply_list_url(review),
@@ -126,14 +112,10 @@ class ReviewReplyResourceTests(BaseWebAPITestCase):
     @add_fixtures(['test_site'])
     def test_post_replies_with_site(self):
         """Testing the POST review-requsets/<id>/reviews/<id>/replies/ API with a local site"""
-        review_request = \
-            ReviewRequest.objects.filter(local_site__name=self.local_site_name)[0]
+        review_request = self.create_review_request(with_local_site=True)
+        review = self.create_review(review_request, publish=True)
 
-        review = Review()
-        review.review_request = review_request
-        review.user = User.objects.get(username='doc')
-        review.public = True
-        review.save()
+        mail.outbox = []
 
         self._login_user(local_site=True)
 
@@ -147,14 +129,8 @@ class ReviewReplyResourceTests(BaseWebAPITestCase):
     @add_fixtures(['test_site'])
     def test_post_replies_with_site_no_access(self):
         """Testing the POST review-requests/<id>/reviews/<id>/replies/ API with a local site and Permission Denied error"""
-        review_request = \
-            ReviewRequest.objects.filter(local_site__name=self.local_site_name)[0]
-
-        review = Review()
-        review.review_request = review_request
-        review.user = User.objects.get(username='doc')
-        review.public = True
-        review.save()
+        review_request = self.create_review_request(with_local_site=True)
+        review = self.create_review(review_request, publish=True)
 
         rsp = self.apiPost(
             get_review_reply_list_url(review, self.local_site_name),
@@ -167,8 +143,8 @@ class ReviewReplyResourceTests(BaseWebAPITestCase):
         """Testing the POST review-requests/<id>/reviews/<id>/replies/ API with body_top"""
         body_top = 'My Body Top'
 
-        review = \
-            Review.objects.filter(base_reply_to__isnull=True, public=True)[0]
+        review_request = self.create_review_request(publish=True)
+        review = self.create_review(review_request, publish=True)
 
         rsp = self.apiPost(
             get_review_reply_list_url(review),
@@ -184,8 +160,8 @@ class ReviewReplyResourceTests(BaseWebAPITestCase):
         """Testing the POST review-requests/<id>/reviews/<id>/replies/ API with body_bottom"""
         body_bottom = 'My Body Bottom'
 
-        review = \
-            Review.objects.filter(base_reply_to__isnull=True, public=True)[0]
+        review_request = self.create_review_request(publish=True)
+        review = self.create_review(review_request, publish=True)
 
         rsp = self.apiPost(
             get_review_reply_list_url(review),
@@ -199,8 +175,8 @@ class ReviewReplyResourceTests(BaseWebAPITestCase):
 
     def test_put_reply(self):
         """Testing the PUT review-requests/<id>/reviews/<id>/replies/<id>/ API"""
-        review = \
-            Review.objects.filter(base_reply_to__isnull=True, public=True)[0]
+        review_request = self.create_review_request(publish=True)
+        review = self.create_review(review_request, publish=True)
 
         rsp, response = self.api_post_with_response(
             get_review_reply_list_url(review),
@@ -220,14 +196,9 @@ class ReviewReplyResourceTests(BaseWebAPITestCase):
     @add_fixtures(['test_site'])
     def test_put_reply_with_site(self):
         """Testing the PUT review-requests/<id>/reviews/<id>/replies/<id>/ API with a local site"""
-        review_request = \
-            ReviewRequest.objects.filter(local_site__name=self.local_site_name)[0]
+        review_request = self.create_review_request(with_local_site=True)
 
-        review = Review()
-        review.review_request = review_request
-        review.user = User.objects.get(username='doc')
-        review.public = True
-        review.save()
+        review = self.create_review(review_request, user='doc', publish=True)
 
         self._login_user(local_site=True)
 
@@ -247,21 +218,9 @@ class ReviewReplyResourceTests(BaseWebAPITestCase):
     @add_fixtures(['test_site'])
     def test_put_reply_with_site_no_access(self):
         """Testing the PUT review-requests/<id>/reviews/<id>/replies/<id>/ API with a local site and Permission Denied error"""
-        review_request = \
-            ReviewRequest.objects.filter(local_site__name=self.local_site_name)[0]
-
-        review = Review()
-        review.review_request = review_request
-        review.user = User.objects.get(username='doc')
-        review.public = True
-        review.save()
-
-        reply = Review()
-        reply.review_request = review_request
-        reply.user = review.user
-        reply.public = True
-        reply.base_reply_to = review
-        reply.save()
+        review_request = self.create_review_request(with_local_site=True)
+        review = self.create_review(review_request, user='doc', publish=True)
+        reply = self.create_reply(review, user=self.user, publish=True)
 
         rsp = self.apiPut(
             get_review_reply_item_url(review, reply.id, self.local_site_name),
@@ -271,8 +230,13 @@ class ReviewReplyResourceTests(BaseWebAPITestCase):
 
     def test_put_reply_publish(self):
         """Testing the PUT review-requests/<id>/reviews/<id>/replies/<id>/?public=1 API"""
-        review = \
-            Review.objects.filter(base_reply_to__isnull=True, public=True)[0]
+        self.siteconfig.set('mail_send_review_mail', True)
+        self.siteconfig.save()
+
+        review_request = self.create_review_request(publish=True)
+        review = self.create_review(review_request, publish=True)
+
+        mail.outbox = []
 
         rsp, response = self.api_post_with_response(
             get_review_reply_list_url(review),
@@ -299,8 +263,8 @@ class ReviewReplyResourceTests(BaseWebAPITestCase):
 
     def test_delete_reply(self):
         """Testing the DELETE review-requests/<id>/reviews/<id>/replies/<id>/ API"""
-        review = \
-            Review.objects.filter(base_reply_to__isnull=True, public=True)[0]
+        review_request = self.create_review_request(publish=True)
+        review = self.create_review(review_request, user='doc', publish=True)
 
         rsp = self.apiPost(
             get_review_reply_list_url(review),
@@ -317,21 +281,10 @@ class ReviewReplyResourceTests(BaseWebAPITestCase):
     @add_fixtures(['test_site'])
     def test_delete_reply_with_site(self):
         """Testing the DELETE review-requests/<id>/reviews/<id>/replies/<id>/ API with a local site"""
-        review_request = \
-            ReviewRequest.objects.filter(local_site__name=self.local_site_name)[0]
-
-        review = Review()
-        review.review_request = review_request
-        review.user = User.objects.get(username='doc')
-        review.public = True
-        review.save()
-
-        reply = Review()
-        reply.review_request = review_request
-        reply.user = review.user
-        reply.public = False
-        reply.base_reply_to = review
-        reply.save()
+        review_request = self.create_review_request(with_local_site=True,
+                                                    publish=True)
+        review = self.create_review(review_request, user='doc', publish=True)
+        reply = self.create_reply(review, user=review.user)
 
         self._login_user(local_site=True)
         self.apiDelete(get_review_reply_item_url(review, reply.id,
@@ -341,24 +294,25 @@ class ReviewReplyResourceTests(BaseWebAPITestCase):
     @add_fixtures(['test_site'])
     def test_delete_reply_with_site_no_access(self):
         """Testing the DELETE review-requests/<id>/reviews/<id>/replies/<id>/ API with a local site and Permission Denied error"""
-        review_request = \
-            ReviewRequest.objects.filter(local_site__name=self.local_site_name)[0]
-
-        review = Review()
-        review.review_request = review_request
-        review.user = User.objects.get(username='doc')
-        review.public = True
-        review.save()
-
-        reply = Review()
-        reply.review_request = review_request
-        reply.user = review.user
-        reply.public = False
-        reply.base_reply_to = review
-        reply.save()
+        review_request = self.create_review_request(with_local_site=True,
+                                                    publish=True)
+        review = self.create_review(review_request, publish=True)
+        reply = self.create_reply(review)
 
         rsp = self.apiDelete(get_review_reply_item_url(review, reply.id,
                                                        self.local_site_name),
                              expected_status=403)
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
+
+    def _create_test_review(self, with_local_site=False):
+        review_request = self.create_review_request(
+            submitter=self.user,
+            with_local_site=with_local_site)
+        file_attachment = self.create_file_attachment(review_request)
+        review_request.publish(review_request.submitter)
+
+        review = self.create_review(review_request, publish=True)
+        self.create_file_attachment_comment(review, file_attachment)
+
+        return review

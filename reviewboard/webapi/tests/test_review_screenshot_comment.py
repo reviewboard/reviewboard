@@ -2,15 +2,11 @@ from django.contrib.auth.models import User
 from djblets.testing.decorators import add_fixtures
 from djblets.webapi.errors import PERMISSION_DENIED
 
-from reviewboard.reviews.models import Review, ReviewRequest, Screenshot
-from reviewboard.scmtools.models import Repository
 from reviewboard.webapi.tests.base import BaseWebAPITestCase
 from reviewboard.webapi.tests.mimetypes import (
-    review_item_mimetype,
     screenshot_comment_item_mimetype,
     screenshot_comment_list_mimetype)
 from reviewboard.webapi.tests.urls import (
-    get_review_list_url,
     get_review_screenshot_comment_item_url,
     get_review_screenshot_comment_list_url)
 
@@ -24,21 +20,9 @@ class ReviewScreenshotCommentResourceTests(BaseWebAPITestCase):
         comment_text = "This is a test comment."
         x, y, w, h = (2, 2, 10, 10)
 
-        # Post the review request
-        rsp = self._postNewReviewRequest()
-        review_request = ReviewRequest.objects.get(
-            pk=rsp['review_request']['id'])
-
-        # Post the screenshot.
-        rsp = self._postNewScreenshot(review_request)
-        screenshot = Screenshot.objects.get(pk=rsp['screenshot']['id'])
-
-        # Make these public.
-        review_request.publish(self.user)
-
-        # Post the review.
-        rsp = self._postNewReview(review_request)
-        review = Review.objects.get(pk=rsp['review']['id'])
+        review_request = self.create_review_request(publish=True)
+        screenshot = self.create_screenshot(review_request)
+        review = self.create_review(review_request, user=self.user)
 
         rsp = self._postNewScreenshotComment(review_request, review.id,
                                              screenshot, comment_text,
@@ -56,27 +40,12 @@ class ReviewScreenshotCommentResourceTests(BaseWebAPITestCase):
         comment_text = 'This is a test comment.'
         x, y, w, h = (2, 2, 10, 10)
 
-        self._login_user(local_site=True)
+        user = self._login_user(local_site=True)
 
-        # Post the review request
-        repo = Repository.objects.get(name='Review Board Git')
-        rsp = self._postNewReviewRequest(local_site_name=self.local_site_name,
-                                         repository=repo)
-        self.assertEqual(rsp['stat'], 'ok')
-        review_request = ReviewRequest.objects.get(
-            local_site__name=self.local_site_name,
-            local_id=rsp['review_request']['id'])
-
-        # Post the screenshot.
-        rsp = self._postNewScreenshot(review_request)
-        screenshot = Screenshot.objects.get(pk=rsp['screenshot']['id'])
-
-        # Make these public.
-        review_request.publish(User.objects.get(username='doc'))
-
-        # Post the review.
-        rsp = self._postNewReview(review_request)
-        review = Review.objects.get(pk=rsp['review']['id'])
+        review_request = self.create_review_request(with_local_site=True,
+                                                    publish=True)
+        screenshot = self.create_screenshot(review_request)
+        review = self.create_review(review_request, user=user)
 
         rsp = self._postNewScreenshotComment(review_request, review.id,
                                              screenshot, comment_text,
@@ -93,27 +62,13 @@ class ReviewScreenshotCommentResourceTests(BaseWebAPITestCase):
         """Testing the POST review-requests/<id>/reviews/<id>/screenshot-comments/ API with a local site and Permission Denied error"""
         x, y, w, h = (2, 2, 10, 10)
 
-        self._login_user(local_site=True)
+        user = self._login_user(local_site=True)
 
-        # Post the review request
-        repo = Repository.objects.get(name='Review Board Git')
-        rsp = self._postNewReviewRequest(local_site_name=self.local_site_name,
-                                         repository=repo)
-        self.assertEqual(rsp['stat'], 'ok')
-        review_request = ReviewRequest.objects.get(
-            local_site__name=self.local_site_name,
-            local_id=rsp['review_request']['id'])
-
-        # Post the screenshot.
-        rsp = self._postNewScreenshot(review_request)
-        screenshot = Screenshot.objects.get(pk=rsp['screenshot']['id'])
-
-        # Make these public.
-        review_request.publish(User.objects.get(username='doc'))
-
-        # Post the review.
-        rsp = self._postNewReview(review_request)
-        review = Review.objects.get(pk=rsp['review']['id'])
+        review_request = self.create_review_request(with_local_site=True,
+                                                    create_repository=True,
+                                                    publish=True)
+        screenshot = self.create_screenshot(review_request)
+        review = self.create_review(review_request, user=user)
 
         self._login_user()
 
@@ -130,23 +85,9 @@ class ReviewScreenshotCommentResourceTests(BaseWebAPITestCase):
         comment_text = "This is a test comment."
         x, y, w, h = (2, 2, 10, 10)
 
-        # Post the review request
-        rsp = self._postNewReviewRequest()
-        review_request = ReviewRequest.objects.get(
-            pk=rsp['review_request']['id'])
-
-        # Post the screenshot.
-        rsp = self._postNewScreenshot(review_request)
-        screenshot = Screenshot.objects.get(pk=rsp['screenshot']['id'])
-
-        # Make these public.
-        review_request.publish(self.user)
-
-        # Post the review.
-        rsp = self._postNewReview(review_request)
-        review = Review.objects.get(pk=rsp['review']['id'])
-        screenshot_comments_url = \
-            rsp['review']['links']['screenshot_comments']['href']
+        review_request = self.create_review_request(publish=True)
+        screenshot = self.create_screenshot(review_request)
+        review = self.create_review(review_request, user=self.user)
 
         rsp = self._postNewScreenshotComment(review_request, review.id,
                                              screenshot, comment_text,
@@ -155,7 +96,7 @@ class ReviewScreenshotCommentResourceTests(BaseWebAPITestCase):
         self.apiDelete(rsp['screenshot_comment']['links']['self']['href'])
 
         rsp = self.apiGet(
-            screenshot_comments_url,
+            get_review_screenshot_comment_list_url(review),
             expected_mimetype=screenshot_comment_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
         self.assertTrue('screenshot_comments' in rsp)
@@ -167,30 +108,12 @@ class ReviewScreenshotCommentResourceTests(BaseWebAPITestCase):
         comment_text = 'This is a test comment.'
         x, y, w, h = (2, 2, 10, 10)
 
-        self._login_user(local_site=True)
+        user = self._login_user(local_site=True)
 
-        # Post the review request
-        repo = Repository.objects.get(name='Review Board Git')
-        rsp = self._postNewReviewRequest(local_site_name=self.local_site_name,
-                                         repository=repo)
-        self.assertEqual(rsp['stat'], 'ok')
-        review_request = ReviewRequest.objects.get(
-            local_site__name=self.local_site_name,
-            local_id=rsp['review_request']['id'])
-
-        # Post the screenshot.
-        rsp = self._postNewScreenshot(review_request)
-        screenshot = Screenshot.objects.get(pk=rsp['screenshot']['id'])
-
-        # Make these public.
-        review_request.publish(User.objects.get(username='doc'))
-
-        # Post the review.
-        rsp = self._postNewReview(review_request)
-        review = Review.objects.get(pk=rsp['review']['id'])
-
-        screenshot_comments_url = \
-            rsp['review']['links']['screenshot_comments']['href']
+        review_request = self.create_review_request(with_local_site=True,
+                                                    publish=True)
+        screenshot = self.create_screenshot(review_request)
+        review = self.create_review(review_request, user=user)
 
         rsp = self._postNewScreenshotComment(review_request, review.id,
                                              screenshot, comment_text,
@@ -199,7 +122,8 @@ class ReviewScreenshotCommentResourceTests(BaseWebAPITestCase):
         self.apiDelete(rsp['screenshot_comment']['links']['self']['href'])
 
         rsp = self.apiGet(
-            screenshot_comments_url,
+            get_review_screenshot_comment_list_url(review,
+                                                   self.local_site_name),
             expected_mimetype=screenshot_comment_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
         self.assertTrue('screenshot_comments' in rsp)
@@ -211,27 +135,12 @@ class ReviewScreenshotCommentResourceTests(BaseWebAPITestCase):
         comment_text = 'This is a test comment.'
         x, y, w, h = (2, 2, 10, 10)
 
-        self._login_user(local_site=True)
+        user = self._login_user(local_site=True)
 
-        # Post the review request
-        repo = Repository.objects.get(name='Review Board Git')
-        rsp = self._postNewReviewRequest(local_site_name=self.local_site_name,
-                                         repository=repo)
-        self.assertEqual(rsp['stat'], 'ok')
-        review_request = ReviewRequest.objects.get(
-            local_site__name=self.local_site_name,
-            local_id=rsp['review_request']['id'])
-
-        # Post the screenshot.
-        rsp = self._postNewScreenshot(review_request)
-        screenshot = Screenshot.objects.get(pk=rsp['screenshot']['id'])
-
-        # Make these public.
-        review_request.publish(User.objects.get(username='doc'))
-
-        # Post the review.
-        rsp = self._postNewReview(review_request)
-        review = Review.objects.get(pk=rsp['review']['id'])
+        review_request = self.create_review_request(with_local_site=True,
+                                                    publish=True)
+        screenshot = self.create_screenshot(review_request)
+        review = self.create_review(review_request, user=user)
 
         rsp = self._postNewScreenshotComment(review_request, review.id,
                                              screenshot, comment_text,
@@ -248,21 +157,9 @@ class ReviewScreenshotCommentResourceTests(BaseWebAPITestCase):
         """Testing the DELETE review-requests/<id>/reviews/<id>/screenshot-comments/<id>/ API with Does Not Exist error"""
         x, y, w, h = (2, 2, 10, 10)
 
-        # Post the review request
-        rsp = self._postNewReviewRequest()
-        review_request = ReviewRequest.objects.get(
-            pk=rsp['review_request']['id'])
-
-        # Post the screenshot.
-        rsp = self._postNewScreenshot(review_request)
-        Screenshot.objects.get(pk=rsp['screenshot']['id'])
-
-        # Make these public.
-        review_request.publish(self.user)
-
-        # Post the review.
-        rsp = self._postNewReview(review_request)
-        review = Review.objects.get(pk=rsp['review']['id'])
+        review_request = self.create_review_request(publish=True)
+        self.create_screenshot(review_request)
+        review = self.create_review(review_request, user=self.user)
 
         self.apiDelete(get_review_screenshot_comment_item_url(review, 123),
                        expected_status=404)
@@ -370,24 +267,12 @@ class ReviewScreenshotCommentResourceTests(BaseWebAPITestCase):
         comment_text = "Test screenshot comment with an opened issue"
         x, y, w, h = (2, 2, 10, 10)
 
-        # Post the review request
-        rsp = self._postNewReviewRequest()
-        review_request = ReviewRequest.objects.get(
-            pk=rsp['review_request']['id'])
+        review_request = self.create_review_request(publish=True,
+                                                    submitter=self.user)
+        screenshot = self.create_screenshot(review_request)
+        review = self.create_review(review_request, user=self.user)
 
-        # Post the screenshot.
-        rsp = self._postNewScreenshot(review_request)
-        screenshot = Screenshot.objects.get(pk=rsp['screenshot']['id'])
-
-        # Make these public.
-        review_request.publish(self.user)
-
-        rsp = self.apiPost(get_review_list_url(review_request),
-                           expected_mimetype=review_item_mimetype)
-        review_id = rsp['review']['id']
-        review = Review.objects.get(pk=review_id)
-
-        rsp = self._postNewScreenshotComment(review_request, review_id,
+        rsp = self._postNewScreenshotComment(review_request, review.pk,
                                              screenshot, comment_text,
                                              x, y, w, h, issue_opened=True)
 
@@ -441,30 +326,14 @@ class ReviewScreenshotCommentResourceTests(BaseWebAPITestCase):
         if not comment_text:
             comment_text = 'Test screenshot comment with an opened issue'
 
-        # Post the review request
-        rsp = self._postNewReviewRequest()
-        review_request = ReviewRequest.objects.get(
-            pk=rsp['review_request']['id'])
-
-        # Post the screenshot
-        rsp = self._postNewScreenshot(review_request)
-        screenshot = Screenshot.objects.get(pk=rsp['screenshot']['id'])
-
-        # Make these public
-        review_request.publish(self.user)
-
-        # Create the review
-        rsp = self.apiPost(get_review_list_url(review_request),
-                           expected_mimetype=review_item_mimetype)
-        self.assertEqual(rsp['stat'], 'ok')
-        self.assertTrue('review' in rsp)
-
-        review_id = rsp['review']['id']
-        review = Review.objects.get(pk=review_id)
+        review_request = self.create_review_request(publish=True,
+                                                    submitter=self.user)
+        screenshot = self.create_screenshot(review_request)
+        review = self.create_review(review_request, user=self.user)
 
         # Create the comment
         x, y, w, h = (2, 2, 10, 10)
-        rsp = self._postNewScreenshotComment(review_request, review_id,
+        rsp = self._postNewScreenshotComment(review_request, review.pk,
                                              screenshot, comment_text,
                                              x, y, w, h, issue_opened=True)
         self.assertEqual(rsp['stat'], 'ok')

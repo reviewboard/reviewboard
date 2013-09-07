@@ -1,11 +1,7 @@
-from django.core.files import File
 from djblets.testing.decorators import add_fixtures
 from djblets.webapi.errors import PERMISSION_DENIED
 
 from reviewboard.attachments.models import FileAttachment
-from reviewboard.diffviewer.models import DiffSet, FileDiff
-from reviewboard.reviews.models import ReviewRequest
-from reviewboard.scmtools.models import Repository
 from reviewboard.webapi.tests.base import BaseWebAPITestCase
 from reviewboard.webapi.tests.mimetypes import (file_attachment_item_mimetype,
                                                 file_attachment_list_mimetype)
@@ -19,60 +15,32 @@ class FileAttachmentResourceTests(BaseWebAPITestCase):
 
     def test_get_file_attachments(self):
         """Testing the GET review-requests/<id>/file-attachments/ API"""
-        rsp = self._postNewReviewRequest()
-        self.assertEqual(rsp['stat'], 'ok')
-        review_request = \
-            ReviewRequest.objects.get(pk=rsp['review_request']['id'])
-
-        trophy_filename = self._getTrophyFilename()
+        review_request = self.create_review_request(create_repository=True,
+                                                    publish=True)
 
         # This is the file attachment that should be returned.
-        f = open(trophy_filename, "r")
-        file_attachment = FileAttachment.objects.create(
-            orig_filename='trophy1.png',
-            mimetype='image/png')
-        file_attachment.file.save('trophy.png', File(f), save=True)
-        f.close()
-        review_request.file_attachments.add(file_attachment)
+        self.create_file_attachment(review_request,
+                                    orig_filename='trophy1.png')
 
         # This attachment shouldn't be shown in the results. It represents
         # a file to be shown in the diff viewer.
-        f = open(trophy_filename, "r")
-        file_attachment = FileAttachment.objects.create(
-            orig_filename='trophy2.png',
-            mimetype='image/png',
-            repo_path='/trophy.png',
-            repo_revision='123',
-            repository=review_request.repository)
-        file_attachment.file.save('trophy.png', File(f), save=True)
-        f.close()
-        review_request.file_attachments.add(file_attachment)
+        self.create_file_attachment(review_request,
+                                    orig_filename='trophy2.png',
+                                    repo_path='/trophy.png',
+                                    repo_revision='123',
+                                    repository=review_request.repository)
 
         # This attachment shouldn't be shown either, for the same
         # reasons.
-        diffset = DiffSet.objects.create(
-            name='diffset',
-            revision=1,
-            history=review_request.diffset_history,
-            repository=review_request.repository)
-        filediff = FileDiff.objects.create(
-            diffset=diffset,
-            source_file='/trophy3.png',
-            dest_file='/trophy3.png',
-            source_revision='123',
-            dest_detail='124',
-            status=FileDiff.MODIFIED)
-
-        f = open(trophy_filename, "r")
-        file_attachment = FileAttachment.objects.create(
-            orig_filename='trophy3.png',
-            mimetype='image/png',
-            added_in_filediff=filediff)
-        file_attachment.file.save('trophy.png', File(f), save=True)
-        f.close()
-        review_request.file_attachments.add(file_attachment)
-
-        review_request.publish(review_request.submitter)
+        diffset = self.create_diffset(review_request)
+        filediff = self.create_filediff(diffset,
+                                        source_file='/trophy3.png',
+                                        dest_file='/trophy3.png',
+                                        source_revision='123',
+                                        dest_detail='124')
+        self.create_file_attachment(review_request,
+                                    orig_filename='trophy3.png',
+                                    added_in_filediff=filediff)
 
         rsp = self.apiGet(
             get_file_attachment_list_url(review_request),
@@ -93,18 +61,13 @@ class FileAttachmentResourceTests(BaseWebAPITestCase):
 
     def test_post_file_attachments(self):
         """Testing the POST review-requests/<id>/file-attachments/ API"""
-        rsp = self._postNewReviewRequest()
-        self.assertEqual(rsp['stat'], 'ok')
-        review_request = \
-            ReviewRequest.objects.get(pk=rsp['review_request']['id'])
-
-        file_attachments_url = \
-            rsp['review_request']['links']['file_attachments']['href']
+        review_request = self.create_review_request(submitter=self.user,
+                                                    publish=True)
 
         f = open(self._getTrophyFilename(), "r")
         self.assertNotEqual(f, None)
         rsp = self.apiPost(
-            file_attachments_url,
+            get_file_attachment_list_url(review_request),
             {'path': f},
             expected_mimetype=file_attachment_item_mimetype)
         f.close()
@@ -113,11 +76,10 @@ class FileAttachmentResourceTests(BaseWebAPITestCase):
 
         review_request.publish(review_request.submitter)
 
-    @add_fixtures(['test_reviewrequests'])
     def test_post_file_attachments_with_permission_denied_error(self):
         """Testing the POST review-requests/<id>/file-attachments/ API with Permission Denied error"""
-        review_request = ReviewRequest.objects.filter(
-            public=True, local_site=None).exclude(submitter=self.user)[0]
+        review_request = self.create_review_request()
+        self.assertNotEqual(review_request.submitter, self.user)
 
         f = open(self._getTrophyFilename(), "r")
         self.assert_(f)
@@ -133,25 +95,19 @@ class FileAttachmentResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
-    def _test_review_request_with_site(self):
-        self._login_user(local_site=True)
-
-        repo = Repository.objects.get(name='Review Board Git')
-        rsp = self._postNewReviewRequest(local_site_name=self.local_site_name,
-                                         repository=repo)
-        self.assertEqual(rsp['stat'], 'ok')
-
-        return rsp['review_request']['links']['file_attachments']['href']
-
     @add_fixtures(['test_site'])
     def test_post_file_attachments_with_site(self):
         """Testing the POST review-requests/<id>/file-attachments/ API with a local site"""
-        file_attachments_url = self._test_review_request_with_site()
+        user = self._login_user(local_site=True)
+
+        review_request = self.create_review_request(with_local_site=True,
+                                                    publish=True,
+                                                    submitter=user)
 
         f = open(self._getTrophyFilename(), 'r')
         self.assertNotEqual(f, None)
         rsp = self.apiPost(
-            file_attachments_url,
+            get_file_attachment_list_url(review_request, self.local_site_name),
             {'path': f},
             expected_mimetype=file_attachment_item_mimetype)
         f.close()
@@ -161,13 +117,18 @@ class FileAttachmentResourceTests(BaseWebAPITestCase):
     @add_fixtures(['test_site'])
     def test_post_file_attachments_with_site_no_access(self):
         """Testing the POST review-requests/<id>/file-attachments/ API with a local site and Permission Denied error"""
-        file_attachments_url = self._test_review_request_with_site()
+        user = self._login_user(local_site=True)
+
+        review_request = self.create_review_request(with_local_site=True,
+                                                    publish=True,
+                                                    submitter=user)
+
         self._login_user()
 
         f = open(self._getTrophyFilename(), 'r')
         self.assertNotEqual(f, None)
         rsp = self.apiPost(
-            file_attachments_url,
+            get_file_attachment_list_url(review_request, self.local_site_name),
             {'path': f},
             expected_status=403)
         f.close()

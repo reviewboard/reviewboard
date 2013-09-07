@@ -2,38 +2,35 @@ from django.contrib.auth.models import User
 from djblets.testing.decorators import add_fixtures
 from djblets.webapi.errors import PERMISSION_DENIED
 
-from reviewboard.reviews.models import Comment, Review, ReviewRequest
+from reviewboard.reviews.models import Comment
 from reviewboard.site.models import LocalSite
 from reviewboard.webapi.tests.base import BaseWebAPITestCase
 from reviewboard.webapi.tests.mimetypes import (
     review_reply_diff_comment_item_mimetype,
-    review_reply_diff_comment_list_mimetype,
-    review_reply_item_mimetype)
-from reviewboard.webapi.tests.urls import get_review_reply_list_url
+    review_reply_diff_comment_list_mimetype)
+from reviewboard.webapi.tests.urls import (
+    get_review_reply_diff_comment_list_url)
 
 
 class ReviewReplyDiffCommentResourceTests(BaseWebAPITestCase):
     """Testing the ReviewReplyDiffCommentResource APIs."""
-    fixtures = ['test_users', 'test_scmtools', 'test_reviewrequests']
+    fixtures = ['test_users', 'test_scmtools']
 
     def test_post_reply_with_diff_comment(self):
         """Testing the POST review-requests/<id>/reviews/<id>/replies/<id>/diff-comments/ API"""
         comment_text = "My Comment Text"
 
-        comment = Comment.objects.all()[0]
-        review = comment.review.get()
+        review_request = self.create_review_request(create_repository=True,
+                                                    submitter=self.user)
+        diffset = self.create_diffset(review_request)
+        filediff = self.create_filediff(diffset)
+        review_request.publish(review_request.submitter)
 
-        # Create the reply
-        rsp = self.apiPost(
-            get_review_reply_list_url(review),
-            expected_mimetype=review_reply_item_mimetype)
-        self.assertEqual(rsp['stat'], 'ok')
+        review = self.create_review(review_request, publish=True)
+        comment = self.create_diff_comment(review, filediff)
+        reply = self.create_reply(review, user=self.user)
 
-        self.assertTrue('reply' in rsp)
-        self.assertNotEqual(rsp['reply'], None)
-        self.assertTrue('links' in rsp['reply'])
-        self.assertTrue('diff_comments' in rsp['reply']['links'])
-        diff_comments_url = rsp['reply']['links']['diff_comments']['href']
+        diff_comments_url = get_review_reply_diff_comment_list_url(reply)
 
         rsp = self.apiPost(
             diff_comments_url,
@@ -54,39 +51,25 @@ class ReviewReplyDiffCommentResourceTests(BaseWebAPITestCase):
         """Testing the POST review-requests/<id>/reviews/<id>/replies/<id>/diff-comments/ API with a local site"""
         comment_text = 'My Comment Text'
 
-        review_request = ReviewRequest.objects.filter(
-            local_site__name=self.local_site_name)[0]
+        user = self._login_user(local_site=True)
 
-        review = Review()
-        review.review_request = review_request
-        review.user = User.objects.get(username='doc')
-        review.save()
+        review_request = self.create_review_request(create_repository=True,
+                                                    submitter=self.user,
+                                                    with_local_site=True)
+        diffset = self.create_diffset(review_request)
+        filediff = self.create_filediff(diffset)
+        review_request.publish(review_request.submitter)
 
-        self._login_user(local_site=True)
+        review = self.create_review(review_request, publish=True)
+        comment = self.create_diff_comment(review, filediff)
 
-        rsp = self._postNewDiffComment(review_request, review.id, 'Comment')
-        review = Review.objects.get(pk=review.id)
-        review.public = True
-        review.save()
+        reply = self.create_reply(review, user=user)
 
-        self.assertTrue('diff_comment' in rsp)
-        self.assertTrue('id' in rsp['diff_comment'])
-        comment_id = rsp['diff_comment']['id']
-        comment = Comment.objects.get(pk=comment_id)
-
-        rsp = self.apiPost(
-            get_review_reply_list_url(review, self.local_site_name),
-            expected_mimetype=review_reply_item_mimetype)
-        self.assertEqual(rsp['stat'], 'ok')
-
-        self.assertTrue('reply' in rsp)
-        self.assertNotEqual(rsp['reply'], None)
-        self.assertTrue('links' in rsp['reply'])
-        self.assertTrue('diff_comments' in rsp['reply']['links'])
-        diff_comments_url = rsp['reply']['links']['diff_comments']['href']
+        diff_comments_url = \
+            get_review_reply_diff_comment_list_url(reply, self.local_site_name)
 
         post_data = {
-            'reply_to_id': comment_id,
+            'reply_to_id': comment.pk,
             'text': comment_text,
         }
 
@@ -200,7 +183,7 @@ class ReviewReplyDiffCommentResourceTests(BaseWebAPITestCase):
         self.assertTrue('diff_comments' in rsp)
         self.assertEqual(len(rsp['diff_comments']), 0)
 
-    @add_fixtures(['test_reviewrequests', 'test_site'])
+    @add_fixtures(['test_site'])
     def test_delete_diff_comment_with_local_site(self):
         """Testing the DELETE review-requests/<id>/reviews/<id>/replies/<id>/diff-comments/<id>/ API with a local site"""
         rsp, comment, diff_comments_url = \
@@ -225,7 +208,7 @@ class ReviewReplyDiffCommentResourceTests(BaseWebAPITestCase):
         self.apiDelete(rsp['diff_comment']['links']['self']['href'],
                        expected_status=403)
 
-    @add_fixtures(['test_reviewrequests', 'test_site'])
+    @add_fixtures(['test_site'])
     def test_delete_diff_comment_with_local_site_no_access(self):
         """Testing the DELETE review-requests/<id>/reviews/<id>/replies/<id>/diff-comments/<id>/ API with a local site and Permission Denied"""
         rsp, comment, diff_comments_url = \

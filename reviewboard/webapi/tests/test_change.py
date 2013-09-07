@@ -6,40 +6,36 @@ from django.utils import timezone
 from djblets.testing.decorators import add_fixtures
 
 from reviewboard.changedescs.models import ChangeDescription
-from reviewboard.diffviewer.models import DiffSet
-from reviewboard.reviews.models import (Group, ReviewRequest,
-                                        ReviewRequestDraft, Screenshot)
+from reviewboard.reviews.models import Group, ReviewRequestDraft, Screenshot
 from reviewboard.webapi.tests.base import BaseWebAPITestCase
 from reviewboard.webapi.tests.mimetypes import (change_item_mimetype,
                                                 change_list_mimetype)
-from reviewboard.webapi.tests.urls import get_change_item_url
+from reviewboard.webapi.tests.urls import (get_change_item_url,
+                                           get_change_list_url)
 
 
 class ChangeResourceTests(BaseWebAPITestCase):
     """Testing the ChangeResourceAPIs."""
-    fixtures = ['test_users', 'test_scmtools', 'test_reviewrequests']
+    fixtures = ['test_users', 'test_scmtools']
 
     def test_get_changes(self):
         """Testing the GET review-requests/<id>/changes/ API"""
-        rsp = self._postNewReviewRequest()
-        self.assertTrue('changes' in rsp['review_request']['links'])
-
-        r = ReviewRequest.objects.get(pk=rsp['review_request']['id'])
+        review_request = self.create_review_request(publish=True)
 
         now = timezone.now()
         change1 = ChangeDescription(public=True,
                                     timestamp=now)
         change1.record_field_change('summary', 'foo', 'bar')
         change1.save()
-        r.changedescs.add(change1)
+        review_request.changedescs.add(change1)
 
         change2 = ChangeDescription(public=True,
                                     timestamp=now + timedelta(seconds=1))
         change2.record_field_change('description', 'foo', 'bar')
         change2.save()
-        r.changedescs.add(change2)
+        review_request.changedescs.add(change2)
 
-        rsp = self.apiGet(rsp['review_request']['links']['changes']['href'],
+        rsp = self.apiGet(get_change_list_url(review_request),
                           expected_mimetype=change_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(len(rsp['changes']), 2)
@@ -63,8 +59,11 @@ class ChangeResourceTests(BaseWebAPITestCase):
 
         changedesc_text = 'Change description text'
         user1, user2 = User.objects.all()[:2]
-        group1, group2 = Group.objects.all()[:2]
-        diff1, diff2 = DiffSet.objects.all()[:2]
+        group1 = Group.objects.create(name='group1')
+        group2 = Group.objects.create(name='group2')
+        repository = self.create_repository()
+        diff1 = self.create_diffset(revision=1, repository=repository)
+        diff2 = self.create_diffset(revision=2, repository=repository)
         old_screenshot_caption = 'old screenshot'
         new_screenshot_caption = 'new screenshot'
         screenshot1 = Screenshot.objects.create()
@@ -93,11 +92,8 @@ class ChangeResourceTests(BaseWebAPITestCase):
         }
         model_fields = ('target_people', 'target_groups', 'screenshots', 'diff')
 
-        rsp = self._postNewReviewRequest()
-        self.assertTrue('changes' in rsp['review_request']['links'])
-
         # Set the initial data on the review request.
-        r = ReviewRequest.objects.get(pk=rsp['review_request']['id'])
+        r = self.create_review_request(submitter=self.user)
         write_fields(r, 0)
         r.publish(self.user)
 
@@ -164,7 +160,7 @@ class ChangeResourceTests(BaseWebAPITestCase):
                          new_screenshot_caption)
 
         # Now confirm with the API
-        rsp = self.apiGet(rsp['review_request']['links']['changes']['href'],
+        rsp = self.apiGet(get_change_list_url(r),
                           expected_mimetype=change_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(len(rsp['changes']), 1)
@@ -226,7 +222,7 @@ class ChangeResourceTests(BaseWebAPITestCase):
     @add_fixtures(['test_site'])
     def test_get_change_not_modified(self):
         """Testing the GET review-requests/<id>/changes/<id>/ API with Not Modified response"""
-        review_request = ReviewRequest.objects.public()[0]
+        review_request = self.create_review_request()
 
         changedesc = ChangeDescription(public=True)
         changedesc.save()
