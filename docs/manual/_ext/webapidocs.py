@@ -135,9 +135,16 @@ class ResourceDirective(Directive):
         self.state.document.note_explicit_target(targetnode)
         main_section = nodes.section(ids=[docname])
 
-        # Details section
+        # Main section
         main_section += nodes.title(text=resource_title)
-        main_section += self.build_details_table(resource)
+        main_section += parse_text(self, inspect.getdoc(resource))
+
+        # Details section
+        details_section = nodes.section(ids=['details'])
+        main_section += details_section
+
+        details_section += nodes.title(text='Details')
+        details_section += self.build_details_table(resource)
 
         # Fields section
         if (resource.fields and
@@ -183,15 +190,39 @@ class ResourceDirective(Directive):
                     # so we don't show redundant examples.
                     continue
 
-                example_node = build_example(
-                    self.fetch_resource_data(resource, mimetype),
-                    mimetype)
+                if mimetype.endswith('xml'):
+                    # JSON is preferred. While we support XML, let's not
+                    # continue to advertise it.
+                    continue
+
+                url, headers, data = \
+                    self.fetch_resource_data(resource, mimetype)
+                example_node = build_example(headers, data, mimetype)
 
                 if example_node:
-                    example_section = nodes.section(ids=['example_' + mimetype])
+                    example_section = \
+                        nodes.section(ids=['example_' + mimetype],
+                                      classes=['examples', 'requests-example'])
                     examples_section += example_section
 
                     example_section += nodes.title(text=mimetype)
+
+                    accept_mimetype = mimetype
+
+                    if (mimetype.startswith('application/') and
+                        mimetype.endswith('+json')):
+                        # Instead of telling the user to ask for a specific
+                        # mimetype on the request, show them that asking for
+                        # application/json works fine.
+                        accept_mimetype = 'application/json'
+
+                    curl_text = ('$ curl http://reviews.example.com%s -A %s'
+                                 % (url, accept_mimetype))
+                    example_section += nodes.literal_block(
+                        curl_text, curl_text, classes=['cmdline'])
+
+                    example_section += nodes.literal_block(
+                        headers, headers, classes=['http-headers'])
                     example_section += example_node
                     has_examples = True
 
@@ -203,13 +234,13 @@ class ResourceDirective(Directive):
     def build_details_table(self, resource):
         is_list = 'is-list' in self.options
 
-        table = nodes.table()
+        table = nodes.table(classes=['resource-info'])
 
         tgroup = nodes.tgroup(cols=2)
         table += tgroup
 
-        tgroup += nodes.colspec(colwidth=30)
-        tgroup += nodes.colspec(colwidth=70)
+        tgroup += nodes.colspec(colwidth=30, classes=['field'])
+        tgroup += nodes.colspec(colwidth=70, classes=['value'])
 
         tbody = nodes.tbody()
         tgroup += tbody
@@ -228,10 +259,6 @@ class ResourceDirective(Directive):
 
         # URI Parameters
         #append_detail_row(tbody, "URI Parameters", '')
-
-        # Description
-        append_detail_row(tbody, "Description",
-                          parse_text(self, inspect.getdoc(resource)))
 
         # HTTP Methods
         allowed_http_methods = self.get_http_methods(resource, is_list)
@@ -355,14 +382,14 @@ class ResourceDirective(Directive):
                 print "Unknown type %s" % (field_type,)
                 assert False
 
-        table = nodes.table()
+        table = nodes.table(classes=['resource-fields'])
 
         tgroup = nodes.tgroup(cols=3)
         table += tgroup
 
-        tgroup += nodes.colspec(colwidth=25)
-        tgroup += nodes.colspec(colwidth=15)
-        tgroup += nodes.colspec(colwidth=60)
+        tgroup += nodes.colspec(colwidth=25, classes=['field'])
+        tgroup += nodes.colspec(colwidth=15, classes=['type'])
+        tgroup += nodes.colspec(colwidth=60, classes=['description'])
 
         thead = nodes.thead()
         tgroup += thead
@@ -521,7 +548,10 @@ class ResourceDirective(Directive):
         request.path = create_fake_resource_path(request, resource, kwargs,
                                                  'is-list' not in self.options)
 
-        return fetch_response_data(resource, mimetype, request, **kwargs)
+        headers, data = fetch_response_data(resource, mimetype, request,
+                                            **kwargs)
+
+        return request.path, headers, data
 
     def get_resource_class(self, classname):
         try:
@@ -643,11 +673,11 @@ class ErrorDirective(Directive):
         has_examples = False
 
         for mimetype in self.MIMETYPES:
-            example_node = build_example(
+            headers, data = \
                 fetch_response_data(WebAPIResponseError, mimetype,
                                     err=error_obj,
-                                    extra_params=extra_params),
-                mimetype)
+                                    extra_params=extra_params)
+            example_node = build_example(headers, data, mimetype)
 
             if example_node:
                 example_section = nodes.section(ids=['example_' + mimetype])
@@ -895,7 +925,7 @@ def create_fake_resource_path(request, resource, child_keys, include_child):
     return path
 
 
-def build_example(data, mimetype):
+def build_example(headers, data, mimetype):
     if not data:
         return None
 
@@ -911,7 +941,8 @@ def build_example(data, mimetype):
     else:
         code = data
 
-    return nodes.literal_block(code, code, language=language)
+    return nodes.literal_block(code, code, language=language,
+                               classes=['example-payload'])
 
 
 def fetch_response_data(response_class, mimetype, request=None, **kwargs):
@@ -921,8 +952,7 @@ def fetch_response_data(response_class, mimetype, request=None, **kwargs):
     request.META['HTTP_ACCEPT'] = mimetype
 
     result = unicode(response_class(request, **kwargs))
-    headers, data = result.split('\n\n', 1)
-    return data
+    return result.split('\n\n', 1)
 
 
 def setup(app):

@@ -156,7 +156,7 @@ class FileDiffResource(WebAPIResource):
 
         .. list-table::
            :header-rows: 1
-           :widths: 25 15 60
+           :widths: 10 15 75
 
            * - Field
              - Type
@@ -190,7 +190,7 @@ class FileDiffResource(WebAPIResource):
 
         .. list-table::
            :header-rows: 1
-           :widths: 25 15 60
+           :widths: 10 15 75
 
            * - Field
              - Type
