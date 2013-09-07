@@ -232,7 +232,7 @@ class BaseFileAttachmentResource(WebAPIResource):
                     file.pk, e, request=request)
                 return INVALID_FORM_DATA, {
                     'fields': {
-                        'thumbnail': str(e),
+                        'thumbnail': [str(e)],
                     }
                 }
 
