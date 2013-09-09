@@ -1,3 +1,9 @@
+(function() {
+
+
+var DiffFileIndexView;
+
+
 /*
  * Displays the file index for the diffs on a page.
  *
@@ -5,7 +11,7 @@
  * icon showing the relative size and complexity of a file, a list of chunks
  * (and their types), and the number of lines added and removed.
  */
-var DiffFileIndexView = Backbone.View.extend({
+DiffFileIndexView = Backbone.View.extend({
     chunkTemplate: _.template(
         '<a href="#<%= chunkID %>" class="<%= className %>"> </a>'
     ),
@@ -19,6 +25,7 @@ var DiffFileIndexView = Backbone.View.extend({
      */
     initialize: function() {
         this._$items = null;
+        this._$itemsTable = null;
         this._iconInsertColor = null;
         this._iconReplaceColor = null;
         this._iconDeleteColor = null;
@@ -33,6 +40,7 @@ var DiffFileIndexView = Backbone.View.extend({
     render: function() {
         var $iconColor = $('<div/>').appendTo(document.body);
 
+        this._$itemsTable = $('<table/>').appendTo(this.el);
         this._$items = this.$('tr');
 
         $iconColor[0].className = 'diff-changes-icon-insert';
@@ -47,6 +55,53 @@ var DiffFileIndexView = Backbone.View.extend({
         $iconColor.remove();
 
         return this;
+    },
+
+    _itemTemplate: _.template([
+        '<tr class="loading<%',
+        ' if (newfile) { print(" new-file"); }',
+        ' if (binary) { print(" binary-file"); }',
+        ' if (deleted) { print(" deleted-file"); }',
+        ' if (destFilename !== depotFilename) { print(" renamed-file"); }',
+        ' %>">',
+        ' <td class="diff-file-icon"></td>',
+        ' <td class="diff-file-info">',
+        '  <a href="#<%- index %>"><%- destFilename %></a>',
+        '  <% if (destFilename !== depotFilename) { %>',
+        '  <span class="diff-file-rename"><%- wasText %></span>',
+        '  <% } %>',
+        ' </td>',
+        ' <td class="diff-chunks-cell">',
+        '  <% if (binary) { %>',
+        '   <%- binaryFileText %>',
+        '  <% } else if (deleted) { %>',
+        '   <%- deletedFileText %>',
+        '  <% } else { %>',
+        '   <div class="diff-chunks"></div>',
+        '  <% } %>',
+        ' </td>',
+        '</tr>'
+    ].join('')),
+
+    /*
+     * Update the list of files in the index view.
+     *
+     * `files` is a DiffFileCollection.
+     */
+    update: function(files) {
+        this._$itemsTable.empty();
+
+        files.each(function(file) {
+            this._$itemsTable.append(this._itemTemplate(
+                _.defaults({
+                    binaryFileText: gettext('Binary file'),
+                    deletedFileText: gettext('Deleted'),
+                    wasText: interpolate(gettext('Was %s'),
+                                         [file.get('depotFilename')])
+                }, file.attributes)
+            ));
+        }, this);
+        this._$items = this.$('tr');
     },
 
     /*
@@ -269,7 +324,9 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
         this._diffFileIndexView = new DiffFileIndexView({
             el: $('#diff_index')
         });
-        this._diffFileIndexView.render();
+        this._diffFileIndexView
+            .render()
+            .update(this.options.files);
 
         this.listenTo(this._diffFileIndexView, 'anchorClicked',
                       this.selectAnchorByName);
@@ -549,3 +606,6 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
     }
 });
 _.extend(RB.DiffViewerPageView.prototype, RB.KeyBindingsMixin);
+
+
+})();

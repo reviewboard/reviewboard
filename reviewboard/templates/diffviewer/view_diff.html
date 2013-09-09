@@ -114,7 +114,7 @@
 {#   Show a revision selector for jumping between revisions. #}
  <table class="revision-selector">
   <tr>
-   <th><label for="jump_to_revision">{% trans "Jump to revision:" %}<label></th>
+   <th><label for="jump_to_revision">{% trans "Jump to revision:" %}</label></th>
    <td>
     <div id="jump_to_revision" class="revisions">
 {%  for item in review_request.diffset_history|revision_link_list:diffset_pair %}
@@ -160,7 +160,7 @@
  </table>
 {% endif %}
 
-{% include "diffviewer/changeindex.html" %}
+   <div id="diff_index"></div>
   </div>
  </div>
 </div>
@@ -231,6 +231,32 @@
 
 <script>
     RB.PageManager.setPage(new RB.DiffViewerPageView({
+        files: new RB.DiffFileCollection([
+{%  for file in files %}
+            new RB.DiffFile({
+                newfile: {{file.newfile|yesno:"true,false"}},
+                binary: {{file.binary|yesno:"true,false"}},
+                deleted: {{file.deleted|yesno:"true,false"}},
+                id: {{file.filediff.pk}},
+                depotFilename: '{{file.depot_filename|escapejs}}',
+                destFilename: '{{file.dest_filename|escapejs}}',
+                destRevision: '{{file.dest_revision|escapejs}}',
+                revision: '{{file.revision|escapejs}}',
+                filediff: {
+                    id: {{file.filediff.pk}},
+                    revision: {{file.filediff.diffset.revision}}
+                },
+{%   if file.interfilediff %}
+                interfilediff: {
+                    id: {{file.interfilediff.pk}},
+                    revision: {{file.interfilediff.diffset.revision}}
+                },
+{%   endif %}
+                index: {{file.index}},
+                commentCounts: {% commentcounts file.filediff file.interfilediff %}
+            }){% if not forloop.last %},{% endif %}
+{%  endfor %}
+        ]),
         checkUpdatesType: 'diff',
 {%   localtime off %}
         lastActivityTimestamp: '{{last_activity_time|date:"c"}}',
