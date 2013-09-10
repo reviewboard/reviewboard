@@ -250,6 +250,7 @@ DiffFileIndexView = Backbone.View.extend({
     }
 });
 
+
 /*
  * Manages the diff viewer page.
  *
@@ -330,6 +331,15 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
 
         this.listenTo(this._diffFileIndexView, 'anchorClicked',
                       this.selectAnchorByName);
+
+        this._diffRevisionLabelView = new RB.DiffRevisionLabelView({
+            el: $('#diff_revision_label'),
+            model: this.options.revision
+        });
+        this._diffRevisionLabelView.render();
+
+        this.listenTo(this._diffRevisionLabelView, 'revisionSelected',
+                      this._onRevisionSelected);
 
         $('#diffs').bindClass(RB.UserSession.instance,
                               'diffsShowExtraWhitespace', 'ewhl');
@@ -653,6 +663,27 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
         RB.UserSession.instance.toggleAttr('diffsShowExtraWhitespace');
 
         return false;
+    },
+
+    /*
+     * Callback when a revision is selected.
+     *
+     * Navigates to the selected revision of the diff. If `base` is 0, this
+     * will show the single diff revision given in `tip`. Otherwise, this will
+     * show an interdiff between `base` and `tip`.
+     *
+     * TODO: this should show the new revision without reloading the page.
+     */
+    _onRevisionSelected: function(base, tip) {
+        var url = this.reviewRequest.get('reviewURL');
+
+        if (base === 0) {
+            url += 'diff/' + tip + '/#index_header';
+        } else {
+            url += 'diff/' + base + '-' + tip + '/#index_header';
+        }
+
+        window.location = url;
     }
 });
 _.extend(RB.DiffViewerPageView.prototype, RB.KeyBindingsMixin);

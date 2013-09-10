@@ -50,40 +50,11 @@
 {% include "reviews/review_request_box.html" %}
 
 <div id="diff-details" class="content">
-<a name="index_header"></a>
+ <a name="index_header"></a>
+ <div id="diff_revision_label"></div>
+
 {% with latest_diffset.revision as latest_revision %}
 {% with diffset.revision as revision %}
-<div class="main">
-{%  if interdiffset %}
-{#   We're showing an interdiff, so indicate the revision range. #}
- <h1>{% blocktrans with interdiffset.revision as interdiff_revision %}Changes between revision {{revision}} and {{interdiff_revision}}{% endblocktrans %}</h1>
-{%  else %}
-{%   if diffset.revision == latest_revision %}
- <h1>{% blocktrans %}Diff revision {{revision}} (Latest){% endblocktrans %}</h1>
-{%   else %}
-{#    This is not the most recent diff. See if we're showing a draft. #}
-{%    if is_draft_diff %}
- <h1>{% trans "Draft diff" %}</h1>
- <p>
-{%     blocktrans %}
-  This diff is part of your current draft. Other users will not see this
-  diff until you publish your draft.
-{%     endblocktrans %}
-{%    else %}
-{#     This is not a draft. Tell the user this is not the most recent. #}
- <h1>{% blocktrans %}Diff revision {{revision}}{% endblocktrans %}</h1>
- <p>
-{%     blocktrans with diffset.revision as revision and review_request.get_absolute_url as review_request_url%}
-  This is not the most recent revision of the diff. The
-  <a href="{{review_request_url}}diff/">latest diff</a> is revision
-  {{latest_revision}}.
-  <a href="{{review_request_url}}diff/{{revision}}-{{latest_revision}}/">See what's changed.</a>
-{%     endblocktrans %}
-{%    endif %}
- </p>
-{%   endif %}
-{%  endif %}
-
 {#  Notify the user if they have unpublished comments in other diffs. #}
 {%  if review|has_comments_in_diffsets_excluding:diffset_pair %}
 {%   box "important" %}
@@ -160,8 +131,7 @@
  </table>
 {% endif %}
 
-   <div id="diff_index"></div>
-  </div>
+  <div id="diff_index"></div>
  </div>
 </div>
 
@@ -232,11 +202,22 @@
             }){% if not forloop.last %},{% endif %}
 {%  endfor %}
         ]),
+        revision: new RB.DiffRevision({
+            revision: {{diffset.revision}},
+{%  if interdiffset %}
+            interdiffRevision: {{interdiffset.revision}},
+{%  else %}
+            interdiffRevision: null,
+{%  endif %}
+            latestRevision: {{latest_diffset.revision}},
+            isInterdiff: {{interdiffset|yesno:"true,false"}},
+            isDraftDiff: {{is_draft_diff|yesno:"true,false"}}
+        }),
         checkUpdatesType: 'diff',
-{%   localtime off %}
+{%  localtime off %}
         lastActivityTimestamp: '{{last_activity_time|date:"c"}}',
-{%   endlocaltime %}
-{%   include "reviews/reviewable_page_data.js" %}
+{%  endlocaltime %}
+{%  include "reviews/reviewable_page_data.js" %}
     }));
 </script>
 {% endblock %}
