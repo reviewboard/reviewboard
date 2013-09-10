@@ -182,33 +182,8 @@
 {% endwith %}
 {%  endbox %}
 
-<div id="diffs">
-{% for file in files %}
- <div class="diff-container">
-  <div class="diff-box">
-{%  if file.fragment %}
-{{file.fragment|safe}}
-{%  else %}
-   <table class="sidebyside loading{% if file.newfile %} newfile{% endif %}"
-          id="file_container_{{file.filediff.pk}}">
-    <thead>
-     <tr class="filename-row">
-      <th colspan="2">{{file.depot_filename}}</th>
-     </tr>
-     <tr class="revision-row">
-      <th>{{file.revision}}</th>
-      <th>{{file.dest_revision}}</th>
-     </tr>
-    </thead>
-    <tbody>
-     <tr><td colspan="2"><pre>&nbsp;</pre></td></tr>
-    </tbody>
-   </table>
-{%  endif %}
-  </div>
- </div>
-{% endfor %}
-
+<div id="diffs"></div>
+<div id="pagination">
 {% if is_paginated %}
  {% blocktrans %}This diff has been split across {{ pages }} pages:{% endblocktrans %}
  {% if has_previous %}<span class="paginate-previous"><a href="?page={{ previous_page }}" title="{% trans "Previous Page" %}">&lt;</a></span>{% endif %}
@@ -263,20 +238,5 @@
 {%   endlocaltime %}
 {%   include "reviews/reviewable_page_data.js" %}
     }));
-
-    RB.PageManager.beforeRender(function(page) {
-{% for file in files %}
-        page.queueLoadDiff(
-            "{{file.filediff.id}}", "{{file.filediff.diffset.revision}}",
-{% if file.interfilediff %}
-            "{{file.interfilediff.id}}",
-            "{{file.interfilediff.diffset.revision}}",
-{% else %}
-            null, null,
-{% endif %}
-            "{{file.index}}",
-            {% commentcounts file.filediff file.interfilediff %});
-{% endfor %}
-    });
 </script>
 {% endblock %}

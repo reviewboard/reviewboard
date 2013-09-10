@@ -334,9 +334,59 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
         $('#diffs').bindClass(RB.UserSession.instance,
                               'diffsShowExtraWhitespace', 'ewhl');
 
-        $.funcQueue("diff_files").start();
+        this._setFiles(this.options.files);
 
         return this;
+    },
+
+    _fileEntryTemplate: _.template([
+        '<div class="diff-container">',
+        ' <div class="diff-box">',
+        '  <table class="sidebyside loading <% if (newfile) { %>newfile<% } %>"',
+        '         id="file_container_<%- id %>">',
+        '   <thead>',
+        '    <tr class="filename-row">',
+        '     <th colspan="2"><%- depotFilename %></th>',
+        '    </tr>',
+        '    <tr class="revision-row">',
+        '    <th><%- revision %></th>',
+        '    <th><%- destRevision %></th>',
+        '    </tr>',
+        '   </thead>',
+        '   <tbody>',
+        '    <tr><td colspan="2"><pre>&nbsp;</pre></td></tr>',
+        '   </tbody>',
+        '  </table>',
+        ' </div>',
+        '</div>'
+    ].join('')),
+
+    /*
+     * Set the displayed files.
+     *
+     * This will replace the displayed files with a set of pending entries,
+     * queue loads for each file, and start the queue.
+     *
+     * `files` is a DiffFileCollection
+     */
+    _setFiles: function(files) {
+        var $diffs = $('#diffs').empty();
+
+        files.each(function(file) {
+            var filediff = file.get('filediff'),
+                interfilediff = file.get('interfilediff');
+
+            $diffs.append(this._fileEntryTemplate(file.attributes));
+
+            this.queueLoadDiff(filediff.id,
+                               filediff.revision,
+                               interfilediff ? interfilediff.id : null,
+                               interfilediff ? interfilediff.revision : null,
+                               file.get('index'),
+                               file.get('commentCounts'));
+        }, this);
+
+        $.funcQueue('diff_files').start();
     },
 
     /*
