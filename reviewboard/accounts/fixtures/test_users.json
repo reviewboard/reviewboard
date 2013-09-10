@@ -157,8 +157,8 @@
             "direct_incoming_request_count": 0, 
             "local_site": null, 
             "starred_public_request_count": 0, 
-            "total_outgoing_request_count": 4, 
-            "pending_outgoing_request_count": 4, 
+            "total_outgoing_request_count": 0, 
+            "pending_outgoing_request_count": 0, 
             "user": 1, 
             "total_incoming_request_count": 0
         }
@@ -168,13 +168,13 @@
         "model": "accounts.localsiteprofile", 
         "fields": {
             "profile": 2, 
-            "direct_incoming_request_count": 2, 
+            "direct_incoming_request_count": 0, 
             "local_site": null, 
             "starred_public_request_count": 0, 
-            "total_outgoing_request_count": 2, 
-            "pending_outgoing_request_count": 1, 
+            "total_outgoing_request_count": 0, 
+            "pending_outgoing_request_count": 0, 
             "user": 2, 
-            "total_incoming_request_count": 3
+            "total_incoming_request_count": 0
         }
     }, 
     {
@@ -182,13 +182,13 @@
         "model": "accounts.localsiteprofile", 
         "fields": {
             "profile": 3, 
-            "direct_incoming_request_count": 1, 
+            "direct_incoming_request_count": 0, 
             "local_site": null, 
             "starred_public_request_count": 0, 
-            "total_outgoing_request_count": 1, 
-            "pending_outgoing_request_count": 1, 
+            "total_outgoing_request_count": 0, 
+            "pending_outgoing_request_count": 0, 
             "user": 4, 
-            "total_incoming_request_count": 2
+            "total_incoming_request_count": 0
         }
     }, 
     {
@@ -199,8 +199,8 @@
             "direct_incoming_request_count": 0, 
             "local_site": 1, 
             "starred_public_request_count": 0, 
-            "total_outgoing_request_count": -1, 
-            "pending_outgoing_request_count": -1, 
+            "total_outgoing_request_count": 0,
+            "pending_outgoing_request_count": 0,
             "user": 1, 
             "total_incoming_request_count": 0
         }

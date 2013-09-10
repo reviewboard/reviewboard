@@ -9,7 +9,6 @@ from django.core.urlresolvers import reverse
 from django.template import Context, Template
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.testing.decorators import add_fixtures
-from djblets.testing.testcases import TestCase
 from kgb import SpyAgency
 
 from reviewboard.accounts.models import Profile, LocalSiteProfile
@@ -26,158 +25,312 @@ from reviewboard.scmtools.core import Commit
 from reviewboard.scmtools.models import Repository, Tool
 from reviewboard.site.models import LocalSite
 from reviewboard.site.urlresolvers import local_site_reverse
+from reviewboard.testing import TestCase
 
 
 class DbQueryTests(TestCase):
     """Tests review request query utility functions."""
-    fixtures = ['test_users', 'test_reviewrequests', 'test_scmtools',
-                'test_site']
+    fixtures = ['test_users']
 
     def testAllReviewRequests(self):
         """Testing get_all_review_requests"""
-        self.assertValidSummaries(
-            ReviewRequest.objects.public(
-                User.objects.get(username="doc")), [
-                    "Comments Improvements",
-                    "Update for cleaned_data changes",
-                    "Add permission checking for JSON API",
-                    "Made e-mail improvements",
-                    "Error dialog",
-                    "Interdiff Revision Test",
-                ])
+        user1 = User.objects.get(username='doc')
+        user2 = User.objects.get(username='grumpy')
+
+        self.create_review_request(summary='Test 1',
+                                   publish=True,
+                                   submitter=user1)
+        self.create_review_request(summary='Test 2',
+                                   submitter=user2)
+        self.create_review_request(summary='Test 3',
+                                   status='S',
+                                   public=True,
+                                   submitter=user1)
+        self.create_review_request(summary='Test 4',
+                                   status='S',
+                                   public=True,
+                                   submitter=user2)
+        self.create_review_request(summary='Test 5',
+                                   status='D',
+                                   public=True,
+                                   submitter=user1)
+        self.create_review_request(summary='Test 6',
+                                   status='D',
+                                   submitter=user2)
 
         self.assertValidSummaries(
-            ReviewRequest.objects.public(status=None), [
-                "Update for cleaned_data changes",
-                "Add permission checking for JSON API",
-                "Made e-mail improvements",
-                "Error dialog",
-                "Improved login form",
-                "Interdiff Revision Test",
+            ReviewRequest.objects.public(user1),
+            [
+                'Test 1',
             ])
 
         self.assertValidSummaries(
-            ReviewRequest.objects.public(
-                User.objects.get(username="doc"), status=None), [
-                    "Comments Improvements",
-                    "Update for cleaned_data changes",
-                    "Add permission checking for JSON API",
-                    "Made e-mail improvements",
-                    "Error dialog",
-                    "Improved login form",
-                    "Interdiff Revision Test",
-                ])
+            ReviewRequest.objects.public(status=None),
+            [
+                'Test 5',
+                'Test 4',
+                'Test 3',
+                'Test 1',
+            ])
+
+        self.assertValidSummaries(
+            ReviewRequest.objects.public(user2, status=None),
+            [
+                'Test 6',
+                'Test 5',
+                'Test 4',
+                'Test 3',
+                'Test 2',
+                'Test 1'
+            ])
 
     def testReviewRequestsToGroup(self):
         """Testing get_review_requests_to_group"""
+        user1 = User.objects.get(username='doc')
+
+        group1 = self.create_review_group(name='privgroup')
+        group1.users.add(user1)
+
+        review_request = self.create_review_request(summary='Test 1',
+                                                    public=True,
+                                                    submitter=user1)
+        review_request.target_groups.add(group1)
+
+        review_request = self.create_review_request(summary='Test 2',
+                                                    public=False,
+                                                    submitter=user1)
+        review_request.target_groups.add(group1)
+
+        review_request = self.create_review_request(summary='Test 3',
+                                                    public=True,
+                                                    status='S',
+                                                    submitter=user1)
+        review_request.target_groups.add(group1)
+
         self.assertValidSummaries(
             ReviewRequest.objects.to_group("privgroup", None),
-            ["Add permission checking for JSON API"])
+            [
+                'Test 1',
+            ])
 
         self.assertValidSummaries(
             ReviewRequest.objects.to_group("privgroup", None, status=None),
-            ["Add permission checking for JSON API"])
+            [
+                'Test 3',
+                'Test 1',
+            ])
 
     def testReviewRequestsToUserGroups(self):
         """Testing get_review_requests_to_user_groups"""
+        user1 = User.objects.get(username='doc')
+        user2 = User.objects.get(username='grumpy')
+
+        group1 = self.create_review_group(name='group1')
+        group1.users.add(user1)
+
+        group2 = self.create_review_group(name='group2')
+        group2.users.add(user2)
+
+        review_request = self.create_review_request(summary='Test 1',
+                                                    public=True,
+                                                    submitter=user1)
+        review_request.target_groups.add(group1)
+
+        review_request = self.create_review_request(summary='Test 2',
+                                                    submitter=user2,
+                                                    public=True,
+                                                    status='S')
+        review_request.target_groups.add(group1)
+
+        review_request = self.create_review_request(summary='Test 3',
+                                                    public=True,
+                                                    submitter=user2)
+        review_request.target_groups.add(group1)
+        review_request.target_groups.add(group2)
+
         self.assertValidSummaries(
             ReviewRequest.objects.to_user_groups("doc", local_site=None),
             [
-                "Update for cleaned_data changes",
-                "Add permission checking for JSON API"
+                'Test 3',
+                'Test 1',
             ])
 
         self.assertValidSummaries(
             ReviewRequest.objects.to_user_groups(
                 "doc", status=None, local_site=None),
             [
-                "Update for cleaned_data changes",
-                "Add permission checking for JSON API"
+                'Test 3',
+                'Test 2',
+                'Test 1',
             ])
 
         self.assertValidSummaries(
             ReviewRequest.objects.to_user_groups(
-                "doc", User.objects.get(username="doc"), local_site=None),
+                "grumpy", user=user2, local_site=None),
             [
-                "Comments Improvements",
-                "Update for cleaned_data changes",
-                "Add permission checking for JSON API"
+                'Test 3',
             ])
 
     def testReviewRequestsToUserDirectly(self):
         """Testing get_review_requests_to_user_directly"""
+        user1 = User.objects.get(username='doc')
+        user2 = User.objects.get(username='grumpy')
+
+        group1 = self.create_review_group(name='group1')
+        group1.users.add(user1)
+
+        group2 = self.create_review_group(name='group2')
+        group2.users.add(user2)
+
+        review_request = self.create_review_request(summary='Test 1',
+                                                    public=True,
+                                                    submitter=user1)
+        review_request.target_groups.add(group1)
+        review_request.target_people.add(user2)
+
+        review_request = self.create_review_request(summary='Test 2',
+                                                    submitter=user2,
+                                                    status='S')
+        review_request.target_groups.add(group1)
+        review_request.target_people.add(user2)
+        review_request.target_people.add(user1)
+
+        review_request = self.create_review_request(summary='Test 3',
+                                                    public=True,
+                                                    submitter=user2)
+        review_request.target_groups.add(group1)
+        review_request.target_groups.add(group2)
+        review_request.target_people.add(user1)
+
+        review_request = self.create_review_request(summary='Test 4',
+                                                    public=True,
+                                                    status='S',
+                                                    submitter=user2)
+        review_request.target_people.add(user1)
+
         self.assertValidSummaries(
             ReviewRequest.objects.to_user_directly("doc", local_site=None),
             [
-                "Add permission checking for JSON API",
-                "Made e-mail improvements"
+                'Test 3',
             ])
 
         self.assertValidSummaries(
             ReviewRequest.objects.to_user_directly("doc", status=None),
-            ["Add permission checking for JSON API",
-             "Made e-mail improvements",
-             "Improved login form"])
+            [
+                'Test 4',
+                'Test 3',
+            ])
 
         self.assertValidSummaries(
             ReviewRequest.objects.to_user_directly(
-                "doc", User.objects.get(username="doc"), status=None,
-                local_site=None),
+                "doc", user2, status=None, local_site=None),
             [
-                "Add permission checking for JSON API",
-                "Made e-mail improvements",
-                "Improved login form"
+                'Test 4',
+                'Test 3',
+                'Test 2',
             ])
 
     def testReviewRequestsFromUser(self):
         """Testing get_review_requests_from_user"""
+        user1 = User.objects.get(username='doc')
+
+        self.create_review_request(summary='Test 1',
+                                   public=True,
+                                   submitter=user1)
+
+        self.create_review_request(summary='Test 2',
+                                   public=False,
+                                   submitter=user1)
+
+        self.create_review_request(summary='Test 3',
+                                   public=True,
+                                   status='S',
+                                   submitter=user1)
+
         self.assertValidSummaries(
-            ReviewRequest.objects.from_user("doc", local_site=None), [])
+            ReviewRequest.objects.from_user("doc", local_site=None),
+            [
+                'Test 1',
+            ])
 
         self.assertValidSummaries(
             ReviewRequest.objects.from_user("doc", status=None,
                                             local_site=None),
-            ["Improved login form"])
+            [
+                'Test 3',
+                'Test 1',
+            ])
 
         self.assertValidSummaries(
             ReviewRequest.objects.from_user(
-                "doc", user=User.objects.get(username="doc"), status=None,
-                local_site=None),
+                "doc", user=user1, status=None, local_site=None),
             [
-                "Comments Improvements",
-                "Improved login form"
+                'Test 3',
+                'Test 2',
+                'Test 1',
             ])
 
     def testReviewRequestsToUser(self):
         """Testing get_review_requests_to_user"""
+        user1 = User.objects.get(username='doc')
+        user2 = User.objects.get(username='grumpy')
+
+        group1 = self.create_review_group(name='group1')
+        group1.users.add(user1)
+
+        group2 = self.create_review_group(name='group2')
+        group2.users.add(user2)
+
+        review_request = self.create_review_request(summary='Test 1',
+                                                    publish=True,
+                                                    submitter=user1)
+        review_request.target_groups.add(group1)
+
+        review_request = self.create_review_request(summary='Test 2',
+                                                    submitter=user2,
+                                                    status='S')
+        review_request.target_groups.add(group1)
+        review_request.target_people.add(user2)
+        review_request.target_people.add(user1)
+
+        review_request = self.create_review_request(summary='Test 3',
+                                                    publish=True,
+                                                    submitter=user2)
+        review_request.target_groups.add(group1)
+        review_request.target_groups.add(group2)
+        review_request.target_people.add(user1)
+
+        review_request = self.create_review_request(summary='Test 4',
+                                                    publish=True,
+                                                    status='S',
+                                                    submitter=user2)
+        review_request.target_groups.add(group1)
+        review_request.target_groups.add(group2)
+        review_request.target_people.add(user1)
+
         self.assertValidSummaries(
             ReviewRequest.objects.to_user("doc", local_site=None),
             [
-                "Update for cleaned_data changes",
-                "Add permission checking for JSON API",
-                "Made e-mail improvements"
+                'Test 3',
+                'Test 1',
             ])
 
         self.assertValidSummaries(
-            ReviewRequest.objects.to_user("doc", status=None,
-                                          local_site=None),
+            ReviewRequest.objects.to_user("doc", status=None, local_site=None),
             [
-                "Update for cleaned_data changes",
-                "Add permission checking for JSON API",
-                "Made e-mail improvements",
-                "Improved login form"
+                'Test 4',
+                'Test 3',
+                'Test 1',
             ])
 
         self.assertValidSummaries(
             ReviewRequest.objects.to_user(
-                "doc", User.objects.get(username="doc"), status=None,
-                local_site=None),
+                "doc", user=user2, status=None, local_site=None),
             [
-                "Comments Improvements",
-                "Update for cleaned_data changes",
-                "Add permission checking for JSON API",
-                "Made e-mail improvements",
-                "Improved login form"
+                'Test 4',
+                'Test 3',
+                'Test 2',
+                'Test 1',
             ])
 
     def assertValidSummaries(self, review_requests, summaries):
@@ -196,8 +349,7 @@ class DbQueryTests(TestCase):
 
 class ViewTests(TestCase):
     """Tests for views in reviewboard.reviews.views"""
-    fixtures = ['test_users', 'test_reviewrequests', 'test_scmtools',
-                'test_site']
+    fixtures = ['test_users', 'test_scmtools', 'test_site']
 
     def setUp(self):
         self.siteconfig = SiteConfiguration.objects.get_current()
@@ -218,7 +370,7 @@ class ViewTests(TestCase):
 
     def testReviewDetail1(self):
         """Testing review_detail view (1)"""
-        review_request = ReviewRequest.objects.public()[0]
+        review_request = self.create_review_request(publish=True)
 
         response = self.client.get('/r/%d/' % review_request.id)
         self.assertEqual(response.status_code, 200)
@@ -232,32 +384,27 @@ class ViewTests(TestCase):
         # login-only pieces of the review_detail view.
         self.client.login(username='admin', password='admin')
 
-        response = self.client.get('/r/3/')
+        username = 'admin'
+        summary = 'This is a test summary'
+        description = 'This is my description'
+        testing_done = 'Some testing'
+
+        review_request = self.create_review_request(
+            publish=True,
+            submitter=username,
+            summary=summary,
+            description=description,
+            testing_done=testing_done)
+
+        response = self.client.get('/r/%s/' % review_request.pk)
         self.assertEqual(response.status_code, 200)
 
         request = self.getContextVar(response, 'review_request')
-        self.assertEqual(request.submitter.username, 'admin')
-        self.assertEqual(request.summary,
-                         'Add permission checking for JSON API')
-        self.assertEqual(request.description,
-                         'Added some user permissions checking for JSON API '
-                         'functions.')
-        self.assertEqual(request.testing_done, 'Tested some functions.')
-
-        self.assertEqual(request.target_people.count(), 2)
-        self.assertEqual(request.target_people.all()[0].username, 'doc')
-        self.assertEqual(request.target_people.all()[1].username, 'dopey')
-
-        self.assertEqual(request.target_groups.count(), 1)
-        self.assertEqual(request.target_groups.all()[0].name, 'privgroup')
-
-        self.assertEqual(request.bugs_closed, '1234, 5678, 8765, 4321')
-        self.assertEqual(request.status, 'P')
-
-        # TODO - diff
-        # TODO - reviews
-
-        self.client.logout()
+        self.assertEqual(request.submitter.username, username)
+        self.assertEqual(request.summary, summary)
+        self.assertEqual(request.description, description)
+        self.assertEqual(request.testing_done, testing_done)
+        self.assertEqual(request.pk, review_request.pk)
 
     def test_review_detail_diff_comment_ordering(self):
         """Testing order of diff comments on a review."""
@@ -265,50 +412,36 @@ class ViewTests(TestCase):
         comment_text_2 = "Comment text 2"
         comment_text_3 = "Comment text 3"
 
-        review_request = ReviewRequest.objects.get(
-            summary="Add permission checking for JSON API")
-        filediff = \
-            review_request.diffset_history.diffsets.latest().files.all()[0]
-
-        # Remove all the reviews on this.
-        review_request.reviews.all().delete()
+        review_request = self.create_review_request(create_repository=True,
+                                                    publish=True)
+        diffset = self.create_diffset(review_request)
+        filediff = self.create_filediff(diffset)
 
         # Create the users who will be commenting.
         user1 = User.objects.get(username='doc')
         user2 = User.objects.get(username='dopey')
 
         # Create the master review.
-        main_review = Review.objects.create(review_request=review_request,
-                                            user=user1)
-        main_comment = main_review.comments.create(filediff=filediff,
-                                                   first_line=1,
-                                                   num_lines=1,
-                                                   text=comment_text_1)
+        main_review = self.create_review(review_request, user=user1)
+        main_comment = self.create_diff_comment(main_review, filediff,
+                                                text=comment_text_1)
         main_review.publish()
 
         # First reply
-        reply1 = Review.objects.create(
-            review_request=review_request,
+        reply1 = self.create_reply(
+            main_review,
             user=user1,
-            base_reply_to=main_review,
             timestamp=(main_review.timestamp + timedelta(days=1)))
-        reply1.comments.create(filediff=filediff,
-                               first_line=1,
-                               num_lines=1,
-                               text=comment_text_2,
-                               reply_to=main_comment)
+        self.create_diff_comment(reply1, filediff, text=comment_text_2,
+                                 reply_to=main_comment)
 
         # Second reply
-        reply2 = Review.objects.create(
-            review_request=review_request,
+        reply2 = self.create_reply(
+            main_review,
             user=user2,
-            base_reply_to=main_review,
             timestamp=(main_review.timestamp + timedelta(days=2)))
-        reply2.comments.create(filediff=filediff,
-                               first_line=1,
-                               num_lines=1,
-                               text=comment_text_3,
-                               reply_to=main_comment)
+        self.create_diff_comment(reply2, filediff, text=comment_text_3,
+                                 reply_to=main_comment)
 
         # Publish them out of order.
         reply2.publish()
@@ -491,6 +624,9 @@ class ViewTests(TestCase):
         """Testing review_detail view with site-wide login enabled"""
         self.siteconfig.set("auth_require_sitewide_login", True)
         self.siteconfig.save()
+
+        self.create_review_request(publish=True)
+
         response = self.client.get('/r/1/')
         self.assertEqual(response.status_code, 302)
 
@@ -507,10 +643,12 @@ class ViewTests(TestCase):
         response = self.client.get('/r/new/')
         self.assertEqual(response.status_code, 200)
 
-        self.client.logout()
-
     def testReviewList(self):
         """Testing all_review_requests view"""
+        self.create_review_request(summary='Test 1', publish=True)
+        self.create_review_request(summary='Test 2', publish=True)
+        self.create_review_request(summary='Test 3', publish=True)
+
         self.client.login(username='grumpy', password='grumpy')
 
         response = self.client.get('/r/')
@@ -518,21 +656,10 @@ class ViewTests(TestCase):
 
         datagrid = self.getContextVar(response, 'datagrid')
         self.assert_(datagrid)
-        self.assertEqual(len(datagrid.rows), 6)
-        self.assertEqual(datagrid.rows[0]['object'].summary,
-                         'Interdiff Revision Test')
-        self.assertEqual(datagrid.rows[1]['object'].summary,
-                         'Made e-mail improvements')
-        self.assertEqual(datagrid.rows[2]['object'].summary,
-                         'Improved login form')
-        self.assertEqual(datagrid.rows[3]['object'].summary,
-                         'Error dialog')
-        self.assertEqual(datagrid.rows[4]['object'].summary,
-                         'Update for cleaned_data changes')
-        self.assertEqual(datagrid.rows[5]['object'].summary,
-                         'Add permission checking for JSON API')
-
-        self.client.logout()
+        self.assertEqual(len(datagrid.rows), 3)
+        self.assertEqual(datagrid.rows[0]['object'].summary, 'Test 3')
+        self.assertEqual(datagrid.rows[1]['object'].summary, 'Test 2')
+        self.assertEqual(datagrid.rows[2]['object'].summary, 'Test 1')
 
     def testReviewListSitewideLogin(self):
         """Testing all_review_requests view with site-wide login enabled"""
@@ -568,6 +695,11 @@ class ViewTests(TestCase):
 
     def testGroupList(self):
         """Testing group_list view"""
+        self.create_review_group(name='devgroup')
+        self.create_review_group(name='emptygroup')
+        self.create_review_group(name='newgroup')
+        self.create_review_group(name='privgroup')
+
         response = self.client.get('/groups/')
         self.assertEqual(response.status_code, 200)
 
@@ -590,26 +722,45 @@ class ViewTests(TestCase):
         """Testing dashboard view (incoming)"""
         self.client.login(username='doc', password='doc')
 
+        user = User.objects.get(username='doc')
+
+        review_request = self.create_review_request(summary='Test 1',
+                                                    publish=True)
+        review_request.target_people.add(user)
+
+        review_request = self.create_review_request(summary='Test 2',
+                                                    publish=True)
+        review_request.target_people.add(user)
+
+        review_request = self.create_review_request(summary='Test 3',
+                                                    publish=True)
+
         response = self.client.get('/dashboard/', {'view': 'incoming'})
         self.assertEqual(response.status_code, 200)
 
         datagrid = self.getContextVar(response, 'datagrid')
         self.assert_(datagrid)
-        self.assertEqual(len(datagrid.rows), 4)
-        self.assertEqual(datagrid.rows[0]['object'].summary,
-                         'Made e-mail improvements')
-        self.assertEqual(datagrid.rows[1]['object'].summary,
-                         'Update for cleaned_data changes')
-        self.assertEqual(datagrid.rows[2]['object'].summary,
-                         'Comments Improvements')
-        self.assertEqual(datagrid.rows[3]['object'].summary,
-                         'Add permission checking for JSON API')
-
-        self.client.logout()
+        self.assertEqual(len(datagrid.rows), 2)
+        self.assertEqual(datagrid.rows[0]['object'].summary, 'Test 2')
+        self.assertEqual(datagrid.rows[1]['object'].summary, 'Test 1')
 
     def testDashboard2(self):
         """Testing dashboard view (outgoing)"""
         self.client.login(username='admin', password='admin')
+
+        user = User.objects.get(username='admin')
+
+        self.create_review_request(summary='Test 1',
+                                   submitter=user,
+                                   publish=True)
+
+        self.create_review_request(summary='Test 2',
+                                   submitter=user,
+                                   publish=True)
+
+        self.create_review_request(summary='Test 3',
+                                   submitter='grumpy',
+                                   publish=True)
 
         response = self.client.get('/dashboard/', {'view': 'outgoing'})
         self.assertEqual(response.status_code, 200)
@@ -617,16 +768,29 @@ class ViewTests(TestCase):
         datagrid = self.getContextVar(response, 'datagrid')
         self.assert_(datagrid)
         self.assertEqual(len(datagrid.rows), 2)
-        self.assertEqual(datagrid.rows[0]['object'].summary,
-                         'Interdiff Revision Test')
-        self.assertEqual(datagrid.rows[1]['object'].summary,
-                         'Add permission checking for JSON API')
-
-        self.client.logout()
+        self.assertEqual(datagrid.rows[0]['object'].summary, 'Test 2')
+        self.assertEqual(datagrid.rows[1]['object'].summary, 'Test 1')
 
     def testDashboard3(self):
         """Testing dashboard view (to-me)"""
         self.client.login(username='doc', password='doc')
+
+        user = User.objects.get(username='doc')
+
+        group = self.create_review_group()
+        group.users.add(user)
+
+        review_request = self.create_review_request(summary='Test 1',
+                                                    publish=True)
+        review_request.target_people.add(user)
+
+        review_request = self.create_review_request(summary='Test 2',
+                                                    publish=True)
+        review_request.target_people.add(user)
+
+        review_request = self.create_review_request(summary='Test 3',
+                                                    publish=True)
+        review_request.target_groups.add(group)
 
         response = self.client.get('/dashboard/', {'view': 'to-me'})
         self.assertEqual(response.status_code, 200)
@@ -634,16 +798,27 @@ class ViewTests(TestCase):
         datagrid = self.getContextVar(response, 'datagrid')
         self.assert_(datagrid)
         self.assertEqual(len(datagrid.rows), 2)
-        self.assertEqual(datagrid.rows[0]['object'].summary,
-                         'Made e-mail improvements')
-        self.assertEqual(datagrid.rows[1]['object'].summary,
-                         'Add permission checking for JSON API')
-
-        self.client.logout()
+        self.assertEqual(datagrid.rows[0]['object'].summary, 'Test 2')
+        self.assertEqual(datagrid.rows[1]['object'].summary, 'Test 1')
 
     def testDashboard4(self):
         """Testing dashboard view (to-group devgroup)"""
         self.client.login(username='doc', password='doc')
+
+        group = self.create_review_group(name='devgroup')
+
+        review_request = self.create_review_request(summary='Test 1',
+                                                    publish=True)
+        review_request.target_groups.add(group)
+
+        review_request = self.create_review_request(summary='Test 2',
+                                                    publish=True)
+        review_request.target_groups.add(group)
+
+        review_request = self.create_review_request(summary='Test 3',
+                                                    publish=True)
+        review_request.target_groups.add(
+            self.create_review_group(name='test-group'))
 
         response = self.client.get('/dashboard/',
                                    {'view': 'to-group',
@@ -653,58 +828,160 @@ class ViewTests(TestCase):
         datagrid = self.getContextVar(response, 'datagrid')
         self.assert_(datagrid)
         self.assertEqual(len(datagrid.rows), 2)
-        self.assertEqual(datagrid.rows[0]['object'].summary,
-                         'Update for cleaned_data changes')
-        self.assertEqual(datagrid.rows[1]['object'].summary,
-                         'Comments Improvements')
-
-        self.client.logout()
+        self.assertEqual(datagrid.rows[0]['object'].summary, 'Test 2')
+        self.assertEqual(datagrid.rows[1]['object'].summary, 'Test 1')
 
     def testDashboardSidebar(self):
-        """Testing dashboard view (to-group devgroup)"""
+        """Testing dashboard sidebar counts"""
         self.client.login(username='doc', password='doc')
         user = User.objects.get(username='doc')
         profile = user.get_profile()
-        local_site = None
 
+        # Create all the test data.
+        devgroup = self.create_review_group(name='devgroup')
+        devgroup.users.add(user)
+
+        privgroup = self.create_review_group(name='privgroup')
+        privgroup.users.add(user)
+
+        review_request = self.create_review_request(submitter=user,
+                                                    publish=True)
+
+        review_request = self.create_review_request(submitter='grumpy')
+        draft = ReviewRequestDraft.create(review_request)
+        draft.target_people.add(user)
+        review_request.publish(review_request.submitter)
+
+        review_request = self.create_review_request(submitter='grumpy')
+        draft = ReviewRequestDraft.create(review_request)
+        draft.target_groups.add(devgroup)
+        review_request.publish(review_request.submitter)
+
+        review_request = self.create_review_request(submitter='grumpy')
+        draft = ReviewRequestDraft.create(review_request)
+        draft.target_groups.add(privgroup)
+        review_request.publish(review_request.submitter)
+        profile.star_review_request(review_request)
+
+        # Now get the counts.
         response = self.client.get('/dashboard/')
         self.assertEqual(response.status_code, 200)
 
         counts = self.getContextVar(response, 'sidebar_counts')
-        self.assertEqual(
-            counts['outgoing'],
-            ReviewRequest.objects.from_user(
-                user, user, local_site=local_site).count())
-        self.assertEqual(
-            counts['incoming'],
-            ReviewRequest.objects.to_user(user, local_site=local_site).count())
-        self.assertEqual(
-            counts['to-me'],
-            ReviewRequest.objects.to_user_directly(
-                user, local_site=local_site).count())
-        self.assertEqual(
-            counts['starred'],
-            profile.starred_review_requests.public(
-                user, local_site=local_site).count())
-        self.assertEqual(
-            counts['mine'],
-            ReviewRequest.objects.from_user(
-                user, user, None, local_site=local_site).count())
-        self.assertEqual(
-            counts['groups']['devgroup'],
-            ReviewRequest.objects.to_group(
-                'devgroup', local_site=local_site).count())
-        self.assertEqual(
-            counts['groups']['privgroup'],
-            ReviewRequest.objects.to_group(
-                'privgroup', local_site=local_site).count())
-
-        self.client.logout()
+        self.assertEqual(counts['outgoing'], 1)
+        self.assertEqual(counts['incoming'], 3)
+        self.assertEqual(counts['to-me'], 1)
+        self.assertEqual(counts['starred'], 1)
+        self.assertEqual(counts['mine'], 1)
+        self.assertEqual(counts['groups']['devgroup'], 1)
+        self.assertEqual(counts['groups']['privgroup'], 1)
 
     # Bug 892
     def testInterdiff(self):
         """Testing the diff viewer with interdiffs"""
-        response = self.client.get('/r/8/diff/1-2/')
+        review_request = self.create_review_request(create_repository=True,
+                                                    publish=True)
+        diffset = self.create_diffset(review_request, revision=1)
+        self.create_filediff(
+            diffset,
+            source_file='/diffutils.py',
+            dest_file='/diffutils.py',
+            source_revision='6bba278',
+            dest_detail='465d217',
+            diff=(
+                'diff --git a/diffutils.py b/diffutils.py\n'
+                'index 6bba278..465d217 100644\n'
+                '--- a/diffutils.py\n'
+                '+++ b/diffutils.py\n'
+                '@@ -1,3 +1,4 @@\n'
+                '+# diffutils.py\n'
+                ' import fnmatch\n'
+                ' import os\n'
+                ' import re\n'
+            ))
+        self.create_filediff(
+            diffset,
+            source_file='/readme',
+            dest_file='/readme',
+            source_revision='d6613f5',
+            dest_detail='5b50866',
+            diff=(
+                'diff --git a/readme b/readme\n'
+                'index d6613f5..5b50866 100644\n'
+                '--- a/readme\n'
+                '+++ b/readme\n'
+                '@@ -1 +1,3 @@\n'
+                ' Hello there\n'
+                '+\n'
+                '+Oh hi!\n'
+            ))
+        self.create_filediff(
+            diffset,
+            source_file='/newfile',
+            dest_file='/newfile',
+            source_revision='PRE-CREATION',
+            dest_detail='',
+            diff=(
+                'diff --git a/new_file b/new_file\n'
+                'new file mode 100644\n'
+                'index 0000000..ac30bd3\n'
+                '--- /dev/null\n'
+                '+++ b/new_file\n'
+                '@@ -0,0 +1 @@\n'
+                '+This is a new file!\n'
+            ))
+
+        diffset = self.create_diffset(review_request, revision=2)
+        self.create_filediff(
+            diffset,
+            source_file='/diffutils.py',
+            dest_file='/diffutils.py',
+            source_revision='6bba278',
+            dest_detail='465d217',
+            diff=(
+                'diff --git a/diffutils.py b/diffutils.py\n'
+                'index 6bba278..465d217 100644\n'
+                '--- a/diffutils.py\n'
+                '+++ b/diffutils.py\n'
+                '@@ -1,3 +1,4 @@\n'
+                '+# diffutils.py\n'
+                ' import fnmatch\n'
+                ' import os\n'
+                ' import re\n'
+            ))
+        self.create_filediff(
+            diffset,
+            source_file='/readme',
+            dest_file='/readme',
+            source_revision='d6613f5',
+            dest_detail='5b50867',
+            diff=(
+                'diff --git a/readme b/readme\n'
+                'index d6613f5..5b50867 100644\n'
+                '--- a/readme\n'
+                '+++ b/readme\n'
+                '@@ -1 +1,3 @@\n'
+                ' Hello there\n'
+                '+----------\n'
+                '+Oh hi!\n'
+            ))
+        self.create_filediff(
+            diffset,
+            source_file='/newfile',
+            dest_file='/newfile',
+            source_revision='PRE-CREATION',
+            dest_detail='',
+            diff=(
+                'diff --git a/new_file b/new_file\n'
+                'new file mode 100644\n'
+                'index 0000000..ac30bd4\n'
+                '--- /dev/null\n'
+                '+++ b/new_file\n'
+                '@@ -0,0 +1 @@\n'
+                '+This is a diffent version of this new file!\n'
+            ))
+
+        response = self.client.get('/r/1/diff/1-2/')
 
         # Useful for debugging any actual errors here.
         if response.status_code != 200:
@@ -713,24 +990,77 @@ class ViewTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
 
-        self.assertEqual(self.getContextVar(response, 'num_diffs'), 3)
+        self.assertEqual(self.getContextVar(response, 'num_diffs'), 2)
 
         files = self.getContextVar(response, 'files')
         self.assert_(files)
         self.assertEqual(len(files), 2)
 
-        self.assertEqual(files[0]['depot_filename'],
-                         '/trunk/reviewboard/TESTING')
+        self.assertEqual(files[0]['depot_filename'], '/newfile')
         self.assertTrue('interfilediff' in files[0])
 
-        self.assertEqual(files[1]['depot_filename'],
-                         '/trunk/reviewboard/settings_local.py.tmpl')
+        self.assertEqual(files[1]['depot_filename'], '/readme')
         self.assertTrue('interfilediff' in files[1])
 
     # Bug 847
     def testInterdiffNewFile(self):
         """Testing the diff viewer with interdiffs containing new files"""
-        response = self.client.get('/r/8/diff/2-3/')
+        review_request = self.create_review_request(create_repository=True,
+                                                    publish=True)
+        diffset = self.create_diffset(review_request, revision=1)
+        self.create_filediff(
+            diffset,
+            source_file='/diffutils.py',
+            dest_file='/diffutils.py',
+            source_revision='6bba278',
+            dest_detail='465d217',
+            diff=(
+                'diff --git a/diffutils.py b/diffutils.py\n'
+                'index 6bba278..465d217 100644\n'
+                '--- a/diffutils.py\n'
+                '+++ b/diffutils.py\n'
+                '@@ -1,3 +1,4 @@\n'
+                '+# diffutils.py\n'
+                ' import fnmatch\n'
+                ' import os\n'
+                ' import re\n'
+            ))
+
+        diffset = self.create_diffset(review_request, revision=2)
+        self.create_filediff(
+            diffset,
+            source_file='/diffutils.py',
+            dest_file='/diffutils.py',
+            source_revision='6bba278',
+            dest_detail='465d217',
+            diff=(
+                'diff --git a/diffutils.py b/diffutils.py\n'
+                'index 6bba278..465d217 100644\n'
+                '--- a/diffutils.py\n'
+                '+++ b/diffutils.py\n'
+                '@@ -1,3 +1,4 @@\n'
+                '+# diffutils.py\n'
+                ' import fnmatch\n'
+                ' import os\n'
+                ' import re\n'
+            ))
+        self.create_filediff(
+            diffset,
+            source_file='/newfile',
+            dest_file='/newfile',
+            source_revision='PRE-CREATION',
+            dest_detail='',
+            diff=(
+                'diff --git a/new_file b/new_file\n'
+                'new file mode 100644\n'
+                'index 0000000..ac30bd4\n'
+                '--- /dev/null\n'
+                '+++ b/new_file\n'
+                '@@ -0,0 +1 @@\n'
+                '+This is a diffent version of this new file!\n'
+            ))
+
+        response = self.client.get('/r/1/diff/1-2/')
 
         # Useful for debugging any actual errors here.
         if response.status_code != 200:
@@ -739,32 +1069,37 @@ class ViewTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
 
-        self.assertEqual(self.getContextVar(response, 'num_diffs'), 3)
+        self.assertEqual(self.getContextVar(response, 'num_diffs'), 2)
 
         files = self.getContextVar(response, 'files')
         self.assert_(files)
         self.assertEqual(len(files), 1)
 
-        self.assertEqual(files[0]['depot_filename'],
-                         '/trunk/reviewboard/NEW_FILE')
+        self.assertEqual(files[0]['depot_filename'], '/newfile')
         self.assertTrue('interfilediff' in files[0])
 
     def testDashboard5(self):
         """Testing dashboard view (mine)"""
         self.client.login(username='doc', password='doc')
 
+        self.create_review_request(summary='Test 1',
+                                   submitter='doc',
+                                   publish=True)
+        self.create_review_request(summary='Test 2',
+                                   submitter='doc',
+                                   publish=True)
+        self.create_review_request(summary='Test 3',
+                                   submitter='grumpy',
+                                   publish=True)
+
         response = self.client.get('/dashboard/', {'view': 'mine'})
         self.assertEqual(response.status_code, 200)
 
         datagrid = self.getContextVar(response, 'datagrid')
-        self.assert_(datagrid)
+        self.assertTrue(datagrid is not None)
         self.assertEqual(len(datagrid.rows), 2)
-        self.assertEqual(datagrid.rows[0]['object'].summary,
-                         'Improved login form')
-        self.assertEqual(datagrid.rows[1]['object'].summary,
-                         'Comments Improvements')
-
-        self.client.logout()
+        self.assertEqual(datagrid.rows[0]['object'].summary, 'Test 2')
+        self.assertEqual(datagrid.rows[1]['object'].summary, 'Test 1')
 
     def test_review_request_etag_with_issues(self):
         """Testing review request ETags with issue status toggling"""
@@ -773,22 +1108,15 @@ class ViewTests(TestCase):
         # Some objects we need.
         user = User.objects.get(username="doc")
 
-        review_request = ReviewRequest.objects.get(
-            summary="Add permission checking for JSON API")
-        filediff = \
-            review_request.diffset_history.diffsets.latest().files.all()[0]
+        review_request = self.create_review_request(create_repository=True,
+                                                    publish=True)
+        diffset = self.create_diffset(review_request)
+        filediff = self.create_filediff(diffset)
 
         # Create a review.
-        review = Review(review_request=review_request, user=user)
-        review.save()
-
-        comment = review.comments.create(filediff=filediff, first_line=1)
-        comment.text = 'This is a test'
-        comment.issue_opened = True
-        comment.issue_status = Comment.OPEN
-        comment.num_lines = 1
-        comment.save()
-
+        review = self.create_review(review_request, user=user)
+        comment = self.create_diff_comment(review, filediff,
+                                           issue_opened=True)
         review.publish()
 
         # Get the etag
@@ -812,7 +1140,7 @@ class ViewTests(TestCase):
 
 
 class DraftTests(TestCase):
-    fixtures = ['test_users', 'test_reviewrequests', 'test_scmtools']
+    fixtures = ['test_users', 'test_scmtools']
 
     def testDraftChanges(self):
         """Testing recording of draft changes."""
@@ -860,8 +1188,8 @@ class DraftTests(TestCase):
 
     def getDraft(self):
         """Convenience function for getting a new draft to work with."""
-        return ReviewRequestDraft.create(ReviewRequest.objects.get(
-            summary="Add permission checking for JSON API"))
+        review_request = self.create_review_request(publish=True)
+        return ReviewRequestDraft.create(review_request)
 
 
 class FieldTests(TestCase):
@@ -885,11 +1213,12 @@ class FieldTests(TestCase):
         review_request = ReviewRequest()
         lower(unicode(review_request))
 
-    @add_fixtures(['test_users', 'test_reviewrequests'])
+    @add_fixtures(['test_users'])
     def test_commit_id(self):
         """Testing commit_id migration"""
-        review_request = ReviewRequest.objects.filter(
-            changenum__isnull=False)[0]
+        review_request = self.create_review_request()
+        review_request.changenum = '123'
+
         self.assertEqual(review_request.commit_id, None)
         self.assertEqual(review_request.commit,
                          str(review_request.changenum))
@@ -897,7 +1226,7 @@ class FieldTests(TestCase):
 
 
 class PostCommitTests(SpyAgency, TestCase):
-    fixtures = ['test_users', 'test_reviewrequests', 'test_scmtools']
+    fixtures = ['test_users', 'test_scmtools']
 
     def setUp(self):
         self.user = User.objects.create(username='testuser', password='')
@@ -968,7 +1297,7 @@ class PostCommitTests(SpyAgency, TestCase):
 
 
 class ConcurrencyTests(TestCase):
-    fixtures = ['test_users', 'test_reviewrequests', 'test_scmtools']
+    fixtures = ['test_users', 'test_scmtools']
 
     def testDuplicateReviews(self):
         """Testing consolidation of duplicate reviews"""
@@ -982,45 +1311,35 @@ class ConcurrencyTests(TestCase):
         # Some objects we need.
         user = User.objects.get(username="doc")
 
-        review_request = ReviewRequest.objects.get(
-            summary="Add permission checking for JSON API")
-        filediff = \
-            review_request.diffset_history.diffsets.latest().files.all()[0]
+        review_request = self.create_review_request(create_repository=True,
+                                                    publish=True)
+        diffset = self.create_diffset(review_request)
+        filediff = self.create_filediff(diffset)
 
         # Create the first review.
-        review = Review(review_request=review_request, user=user)
-        review.body_top = body_top
-        review.save()
-        master_review = review
-
-        comment = review.comments.create(filediff=filediff, first_line=1)
-        comment.text = comment_text_1
-        comment.num_lines = 1
-        comment.save()
+        master_review = self.create_review(review_request, user=user,
+                                           body_top=body_top,
+                                           body_bottom='')
+        self.create_diff_comment(master_review, filediff, text=comment_text_1,
+                                 first_line=1, num_lines=1)
 
         # Create the second review.
-        review = Review(review_request=review_request, user=user)
-        review.save()
-
-        comment = review.comments.create(filediff=filediff, first_line=1)
-        comment.text = comment_text_2
-        comment.num_lines = 1
-        comment.save()
+        review = self.create_review(review_request, user=user,
+                                    body_top='', body_bottom='')
+        self.create_diff_comment(review, filediff, text=comment_text_2,
+                                 first_line=1, num_lines=1)
 
         # Create the third review.
-        review = Review(review_request=review_request, user=user)
-        review.body_bottom = body_bottom
-        review.save()
-
-        comment = review.comments.create(filediff=filediff, first_line=1)
-        comment.text = comment_text_3
-        comment.num_lines = 1
-        comment.save()
+        review = self.create_review(review_request, user=user,
+                                    body_top='',
+                                    body_bottom=body_bottom)
+        self.create_diff_comment(review, filediff, text=comment_text_3,
+                                 first_line=1, num_lines=1)
 
         # Now that we've made a mess, see if we get a single review back.
         logging.disable(logging.WARNING)
         review = review_request.get_pending_review(user)
-        self.assert_(review)
+        self.assertTrue(review)
         self.assertEqual(review.id, master_review.id)
         self.assertEqual(review.body_top, body_top)
         self.assertEqual(review.body_bottom, body_bottom)
@@ -1766,8 +2085,7 @@ class CounterTests(TestCase):
 
 
 class PolicyTests(TestCase):
-    fixtures = ['test_users', 'test_reviewrequests', 'test_scmtools',
-                'test_site']
+    fixtures = ['test_users']
 
     def setUp(self):
         self.user = User.objects.create(username='testuser', password='')
@@ -1850,13 +2168,13 @@ class PolicyTests(TestCase):
         group = Group.objects.create(name='test-group', visible=False,
                                      invite_only=True)
 
-        review_request = self._get_review_request()
-        review_request.submitter = self.user
+        review_request = self.create_review_request(publish=True,
+                                                    submitter=self.user)
         review_request.target_groups.add(group)
-        review_request.save()
 
         self.assertTrue(review_request.is_accessible_by(self.user))
 
+    @add_fixtures(['test_scmtools'])
     def test_repository_public(self):
         """Testing access to a public repository"""
         tool = Tool.objects.get(name='CVS')
@@ -1866,6 +2184,7 @@ class PolicyTests(TestCase):
         self.assertTrue(repo.is_accessible_by(self.user))
         self.assertTrue(repo.is_accessible_by(self.anonymous))
 
+    @add_fixtures(['test_scmtools'])
     def test_repository_private_access_denied(self):
         """Testing no access to a private repository"""
         tool = Tool.objects.get(name='CVS')
@@ -1876,6 +2195,7 @@ class PolicyTests(TestCase):
         self.assertFalse(repo.is_accessible_by(self.user))
         self.assertFalse(repo.is_accessible_by(self.anonymous))
 
+    @add_fixtures(['test_scmtools'])
     def test_repository_private_access_allowed_by_user(self):
         """Testing access to a private repository with user added"""
         tool = Tool.objects.get(name='CVS')
@@ -1887,6 +2207,7 @@ class PolicyTests(TestCase):
         self.assertTrue(repo.is_accessible_by(self.user))
         self.assertFalse(repo.is_accessible_by(self.anonymous))
 
+    @add_fixtures(['test_scmtools'])
     def test_repository_private_access_allowed_by_review_group(self):
         """Testing access to a private repository with joined review group added"""
         group = Group.objects.create(name='test-group', invite_only=True)
@@ -1903,7 +2224,7 @@ class PolicyTests(TestCase):
 
     def test_review_request_public(self):
         """Testing access to a public review request"""
-        review_request = self._get_review_request()
+        review_request = self.create_review_request(publish=True)
 
         self.assertTrue(review_request.is_accessible_by(self.user))
         self.assertTrue(review_request.is_accessible_by(self.anonymous))
@@ -1913,7 +2234,7 @@ class PolicyTests(TestCase):
         group = Group(name='test-group', invite_only=True)
         group.save()
 
-        review_request = self._get_review_request()
+        review_request = self.create_review_request(publish=True)
         review_request.target_groups.add(group)
 
         self.assertFalse(review_request.is_accessible_by(self.user))
@@ -1924,33 +2245,33 @@ class PolicyTests(TestCase):
         group = Group(name='test-group', invite_only=True)
         group.save()
 
-        review_request = self._get_review_request()
+        review_request = self.create_review_request(publish=True)
         review_request.target_groups.add(group)
         review_request.target_people.add(self.user)
 
         self.assertTrue(review_request.is_accessible_by(self.user))
         self.assertFalse(review_request.is_accessible_by(self.anonymous))
 
+    @add_fixtures(['test_scmtools'])
     def test_review_request_with_private_repository(self):
         """Testing no access to a review request with a private repository"""
         Group.objects.create(name='test-group', invite_only=True)
 
-        review_request = self._get_review_request()
-        review_request.save()
-
+        review_request = self.create_review_request(create_repository=True,
+                                                    publish=True)
         review_request.repository.public = False
         review_request.repository.save()
 
         self.assertFalse(review_request.is_accessible_by(self.user))
         self.assertFalse(review_request.is_accessible_by(self.anonymous))
 
+    @add_fixtures(['test_scmtools'])
     def test_review_request_with_private_repository_allowed_by_user(self):
         """Testing access to a review request with a private repository with user added"""
         Group.objects.create(name='test-group', invite_only=True)
 
-        review_request = self._get_review_request()
-        review_request.save()
-
+        review_request = self.create_review_request(create_repository=True,
+                                                    publish=True)
         review_request.repository.public = False
         review_request.repository.users.add(self.user)
         review_request.repository.save()
@@ -1958,27 +2279,20 @@ class PolicyTests(TestCase):
         self.assertTrue(review_request.is_accessible_by(self.user))
         self.assertFalse(review_request.is_accessible_by(self.anonymous))
 
+    @add_fixtures(['test_scmtools'])
     def test_review_request_with_private_repository_allowed_by_review_group(self):
         """Testing access to a review request with a private repository with review group added"""
         group = Group.objects.create(name='test-group', invite_only=True)
         group.users.add(self.user)
 
-        review_request = self._get_review_request()
-        review_request.save()
-
+        review_request = self.create_review_request(create_repository=True,
+                                                    publish=True)
         review_request.repository.public = False
         review_request.repository.review_groups.add(group)
         review_request.repository.save()
 
         self.assertTrue(review_request.is_accessible_by(self.user))
         self.assertFalse(review_request.is_accessible_by(self.anonymous))
-
-    def _get_review_request(self, local_site=None):
-        # Get a review request and clear out the reviewers.
-        review_request = ReviewRequest.objects.public(local_site=local_site)[0]
-        review_request.target_people.clear()
-        review_request.target_groups.clear()
-        return review_request
 
 
 class UserInfoboxTests(TestCase):

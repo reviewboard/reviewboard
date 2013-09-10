@@ -3,7 +3,6 @@ import unittest
 
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.http import HttpResponse
-from django.test import TestCase
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.util.misc import cache_memoize
 from kgb import SpyAgency
@@ -21,6 +20,7 @@ from reviewboard.diffviewer.processors import (filter_interdiff_opcodes,
                                                merge_adjacent_chunks)
 from reviewboard.diffviewer.templatetags.difftags import highlightregion
 from reviewboard.scmtools.models import Repository, Tool
+from reviewboard.testing import TestCase
 
 
 class MyersDifferTest(TestCase):
@@ -365,7 +365,7 @@ class FileDiffMigrationTests(TestCase):
             '-blah..\n'
             '+blah blah\n')
 
-        repository = Repository.objects.get(pk=1)
+        repository = self.create_repository(tool_name='Subversion')
         diffset = DiffSet.objects.create(name='test',
                                          revision=1,
                                          repository=repository)
@@ -527,7 +527,7 @@ class DbTests(TestCase):
         """Testing using long filenames (1024 characters) in FileDiff."""
         long_filename = 'x' * 1024
 
-        repository = Repository.objects.get(pk=1)
+        repository = self.create_repository()
         diffset = DiffSet.objects.create(name='test',
                                          revision=1,
                                          repository=repository)
@@ -544,7 +544,7 @@ class DbTests(TestCase):
         Testing that uploading two of the same diff will result in only
         one database entry.
         """
-        repository = Repository.objects.get(pk=1)
+        repository = self.create_repository()
         diffset = DiffSet.objects.create(name='test',
                                          revision=1,
                                          repository=repository)

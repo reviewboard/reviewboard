@@ -6,7 +6,6 @@ from django.contrib.auth.models import User
 from django.core.cache import cache
 from django.core.files.uploadedfile import SimpleUploadedFile
 from djblets.testing.decorators import add_fixtures
-from djblets.testing.testcases import TestCase
 
 from reviewboard.attachments.forms import UploadFileForm
 from reviewboard.attachments.mimetypes import (MimetypeHandler,
@@ -16,7 +15,7 @@ from reviewboard.attachments.models import FileAttachment
 from reviewboard.diffviewer.models import DiffSet, DiffSetHistory, FileDiff
 from reviewboard.reviews.models import ReviewRequest
 from reviewboard.scmtools.core import PRE_CREATION
-from reviewboard.scmtools.models import Repository
+from reviewboard.testing import TestCase
 
 
 class BaseFileAttachmentTestCase(TestCase):
@@ -40,7 +39,7 @@ class BaseFileAttachmentTestCase(TestCase):
             source_revision = '1'
             dest_revision = '2'
 
-        repository = Repository.objects.get(pk=1)
+        repository = self.create_repository()
 
         if not diffset_history:
             diffset_history = DiffSetHistory.objects.create(name='testhistory')
@@ -61,7 +60,7 @@ class BaseFileAttachmentTestCase(TestCase):
 
 
 class FileAttachmentTests(BaseFileAttachmentTestCase):
-    @add_fixtures(['test_users', 'test_reviewrequests', 'test_scmtools'])
+    @add_fixtures(['test_users', 'test_scmtools'])
     def test_upload_file(self):
         """Testing uploading a file attachment"""
         file = self.make_uploaded_file()
@@ -70,7 +69,7 @@ class FileAttachmentTests(BaseFileAttachmentTestCase):
         })
         self.assertTrue(form.is_valid())
 
-        review_request = ReviewRequest.objects.get(pk=1)
+        review_request = self.create_review_request(publish=True)
         file_attachment = form.create(file, review_request)
         self.assertTrue(os.path.basename(file_attachment.file.name).endswith(
             '__trophy.png'))
@@ -85,7 +84,7 @@ class FileAttachmentTests(BaseFileAttachmentTestCase):
     @add_fixtures(['test_scmtools'])
     def test_is_from_diff_with_repository(self):
         """Testing FileAttachment.is_from_diff with repository association"""
-        repository = Repository.objects.get(pk=1)
+        repository = self.create_repository()
         file_attachment = FileAttachment(repository=repository)
 
         self.assertTrue(file_attachment.is_from_diff)
@@ -315,8 +314,7 @@ class FileAttachmentManagerTests(BaseFileAttachmentTestCase):
 
 class DiffViewerFileAttachmentTests(BaseFileAttachmentTestCase):
     """Tests for inline diff file attachments in the diff viewer."""
-    fixtures = ['test_users', 'test_reviewrequests', 'test_scmtools',
-                'test_site']
+    fixtures = ['test_users', 'test_scmtools', 'test_site']
 
     def setUp(self):
         # The diff viewer's caching breaks the result of these tests,
