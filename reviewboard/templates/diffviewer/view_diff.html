@@ -1,85 +1,77 @@
 {% extends "reviews/reviewable_base.html" %}
-{% load difftags %}
-{% load djblets_deco %}
-{% load djblets_utils %}
-{% load i18n %}
-{% load rb_extensions %}
-{% load reviewtags %}
-{% load staticfiles %}
-{% load tz %}
+{% load difftags djblets_deco djblets_utils i18n rb_extensions reviewtags %}
+{% load staticfiles tz %}
 
 {% block title %}{{review_request_details.summary}} | {% trans "Diff Viewer" %}{% endblock %}
 
 {% block css %}
 {{block.super}}
 
-{% if siteconfig.settings.diffviewer_show_trailing_whitespace|default_if_none:1 %}
+{%  if siteconfig.settings.diffviewer_show_trailing_whitespace|default_if_none:1 %}
 <style type="text/css">
   #diffs.ewhl table.sidebyside .ew { background: #ee3434; }
 </style>
-{% endif %}
-{% endblock %}
+{%  endif %}
+{% endblock css %}
 
 {% block content %}
-{% if error %}
-{%  errorbox %}
+{%  if error %}
+{%   errorbox %}
 <p>{{error}}</p>
-{%   if trace %}<pre>{{trace|escape}}</pre>{% endif %}
-{%  enderrorbox %}
-{% else %}{# !error #}
+{%    if trace %}<pre>{{trace|escape}}</pre>{% endif %}
+{%   enderrorbox %}
+{%  else %}{# !error #}
 
 <div id="review_request">
-{% include "reviews/trophy_box.html" %}
-{% include "reviews/review_header.html" %}
+{%   include "reviews/trophy_box.html" %}
+{%   include "reviews/review_header.html" %}
 
-{% box "review-request" %}
+{%   box "review-request" %}
 <div class="actions-container">
- {% star review_request %}
+{%    star review_request %}
  <ul class="actions">
-{% include "reviews/review_request_actions_secondary.html" %}
-{% diffviewer_action_hooks %}
-{% if not interdiffset %}
+{%    include "reviews/review_request_actions_secondary.html" %}
+{%    diffviewer_action_hooks %}
+{%    if not interdiffset %}
   <li class="primary"><a href="raw/">{% trans "Download Diff" %}</a></li>
-{% endif %}
-{% include "reviews/review_request_actions_primary.html" %}
+{%    endif %}
+{%    include "reviews/review_request_actions_primary.html" %}
   <li class="primary"><a href="{{review_request.get_absolute_url}}">{% trans "View Reviews" %}</a></li>
  </ul>
 </div>
 
 <div class="main">
-{% include "reviews/review_request_box.html" %}
+{%    include "reviews/review_request_box.html" %}
 
 <div id="diff-details" class="content">
  <a name="index_header"></a>
  <div id="diff_revision_label"></div>
 
-{% with latest_diffset.revision as latest_revision %}
-{% with diffset.revision as revision %}
 {#  Notify the user if they have unpublished comments in other diffs. #}
-{%  if review|has_comments_in_diffsets_excluding:diffset_pair %}
-{%   box "important" %}
+{%    if review|has_comments_in_diffsets_excluding:diffset_pair %}
+{%     box "important" %}
  <h1>{% trans "You have unpublished comments on other revisions" %}</h1>
  <p>
   {% trans "Your review consists of comments on the following revisions:" %}
  </p>
  <ul>
-{%    for diffset_info in review|diffsets_with_comments:diffset_pair %}
-{%     if diffset_info.is_current %}
+{%      for diffset_info in review|diffsets_with_comments:diffset_pair %}
+{%       if diffset_info.is_current %}
   <li><b>Revision {{diffset_info.diffset.revision}}</b></li>
-{%     else %}
+{%       else %}
   <li><a href="{{review_request.get_absolute_url}}diff/{{diffset_info.diffset.revision}}/#index_header">Revision {{diffset_info.diffset.revision}}</a></li>
-{%     endif %}
-{%    endfor %}
-{%    for pair in review|interdiffs_with_comments:diffset_pair %}
-{%     if pair.is_current %}
+{%       endif %}
+{%      endfor %}
+{%      for pair in review|interdiffs_with_comments:diffset_pair %}
+{%       if pair.is_current %}
   <li><b>Interdiff revision {{pair.diffset.revision}} - {{pair.interdiff.revision}}</b></li>
-{%     else %}
+{%       else %}
   <li><a href="{{review_request.get_absolute_url}}diff/{{pair.diffset.revision}}-{{pair.interdiff.revision}}/">Interdiff revision {{pair.diffset.revision}} - {{pair.interdiff.revision}}</a></li>
-{%     endif %}
-{%    endfor %}
+{%       endif %}
+{%      endfor %}{# diffset_info in ... #}
  </ul>
- {%  endbox %}
-{%  endif %}
+{%     endbox %}{# "important" #}
+{%    endif %}
 
   <div id="diff_revision_selector"></div>
   <div id="diff_index"></div>
@@ -87,40 +79,38 @@
 </div>
 
 <ul class="controls">
-{% if collapseall %}
+{%    if collapseall %}
  <li><a href=".?expand=1"><div class="rb-icon rb-icon-expand"></div> {% trans "Expand changes" %}</a></li>
-{% else %}
+{%    else %}
  <li><a href=".?collapse=1"><div class="rb-icon rb-icon-collapse"></div> {% trans "Collapse changes" %}</a></li>
-{% endif %}
-{% if siteconfig.settings.diffviewer_show_trailing_whitespace|default_if_none:1 %}
+{%    endif %}
+{%    if siteconfig.settings.diffviewer_show_trailing_whitespace|default_if_none:1 %}
  <li class="ew" style="display:none;"><a href="#" class="toggle-show-whitespace"><div class="rb-icon rb-icon-collapse"></div> {% trans "Hide Extra Whitespace" %}</a></li>
  <li class="ew"><a href="#" class="toggle-show-whitespace"><div class="rb-icon rb-icon-expand"></div> {% trans "Show Extra Whitespace" %}</a></li>
-{% endif %}
+{%    endif %}
  <li class="ws"><a href="#" class="toggle-whitespace-only-chunks"><div class="rb-icon rb-icon-collapse"></div> {% trans "Hide Whitespace changes" %}</a></li>
  <li  class="ws" style="display:none;"><a href="#" class="toggle-whitespace-only-chunks"><div class="rb-icon rb-icon-expand"></div> {% trans "Show Whitespace changes" %}</a></li>
 </ul>
-{% endwith %}
-{% endwith %}
-{%  endbox %}
+{%   endbox %}
 
 <div id="diffs"></div>
 <div id="pagination">
-{% if is_paginated %}
- {% blocktrans %}This diff has been split across {{ pages }} pages:{% endblocktrans %}
- {% if has_previous %}<span class="paginate-previous"><a href="?page={{ previous_page }}" title="{% trans "Previous Page" %}">&lt;</a></span>{% endif %}
- {% for num in page_numbers %}
-  {% if num == page %}
+{%   if is_paginated %}
+{%    blocktrans %}This diff has been split across {{ pages }} pages:{% endblocktrans %}
+{%    if has_previous %}<span class="paginate-previous"><a href="?page={{ previous_page }}" title="{% trans "Previous Page" %}">&lt;</a></span>{% endif %}
+{%    for num in page_numbers %}
+{%     if num == page %}
    <span class="paginate-current" title="{% trans "Current Page" %}">{{ num }}</span>
-  {% else %}
+{%     else %}
    <span class="paginate-link"><a href="?page={{ num }}" title="{% blocktrans %}Page {{ num }} {% endblocktrans %}">{{ num }}</a></span>
-  {% endif %}
- {% endfor %}
- {% if has_next %}<span class="paginate-next"><a href="?page={{ next_page }}" title="{% trans "Next Page" %}">&gt;</a></span>{% endif %}
-{% endif %}
+{%     endif %}{# num == page #}
+{%    endfor %}
+{%    if has_next %}<span class="paginate-next"><a href="?page={{ next_page }}" title="{% trans "Next Page" %}">&gt;</a></span>{% endif %}
+{%   endif %}{# has_previous #}
 </div>
 
-{% endif %}{# !error #}
-{% endblock %}
+{%  endif %}{# !error #}
+{% endblock content %}
 
 {% block scripts-post %}
 {{block.super}}
@@ -174,4 +164,4 @@
 {%  include "reviews/reviewable_page_data.js" %}
     }));
 </script>
-{% endblock %}
+{% endblock scripts-post %}
