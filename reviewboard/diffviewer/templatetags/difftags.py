@@ -14,41 +14,6 @@ register = template.Library()
 
 
 @register.filter
-def revision_link_list(history, current_pair):
-    """
-    Returns a list of revisions in the specified diffset history, indicating
-    which of the revisions is already selected, as determined by the current
-    diffset pair.
-    """
-    for diffset in history.diffsets.all():
-        yield {
-            'revision': diffset.revision,
-            'is_current': (current_pair[0] == diffset and
-                           current_pair[1] is None)
-        }
-
-
-@register.filter
-def interdiff_link_list(history, current_pair):
-    """
-    Returns a list of revisions in the specified diffset history based on
-    the passed interdiff pair.
-    """
-    for diffset in history.diffsets.all():
-        if current_pair[0].revision < diffset.revision:
-            path = "%s-%s" % (current_pair[0].revision, diffset.revision)
-        else:
-            path = "%s-%s" % (diffset.revision, current_pair[0].revision)
-
-        yield {
-            'revision': diffset.revision,
-            'path': path,
-            'is_current': (current_pair[0] == diffset or
-                           current_pair[1] == diffset)
-        }
-
-
-@register.filter
 def highlightregion(value, regions):
     """
     Highlights the specified regions of text.

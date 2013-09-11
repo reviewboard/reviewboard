@@ -453,6 +453,7 @@ PIPELINE_JS = {
             'rb/js/diffviewer/views/diffCommentBlockView.js',
             'rb/js/diffviewer/views/diffReviewableView.js',
             'rb/js/diffviewer/views/diffRevisionLabelView.js',
+            'rb/js/diffviewer/views/diffRevisionSelectorView.js',
             'rb/js/diffviewer.js',
             'rb/js/reviews.js',
         ),

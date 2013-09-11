@@ -296,6 +296,8 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
         this._diffReviewableViews = [];
         this._diffFileIndexView = null;
 
+        this._revisionModel = this.options.revision;
+
         /* Check to see if there's an anchor we need to scroll to. */
         url = document.location.toString();
         this._startAtAnchorName = (url.match('#') ? url.split('#')[1] : null);
@@ -334,12 +336,24 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
 
         this._diffRevisionLabelView = new RB.DiffRevisionLabelView({
             el: $('#diff_revision_label'),
-            model: this.options.revision
+            model: this._revisionModel
         });
         this._diffRevisionLabelView.render();
 
         this.listenTo(this._diffRevisionLabelView, 'revisionSelected',
                       this._onRevisionSelected);
+
+        if (this.options.numDiffs > 1) {
+            this._diffRevisionSelectorView = new RB.DiffRevisionSelectorView({
+                el: $('#diff_revision_selector'),
+                model: this._revisionModel,
+                numDiffs: this.options.numDiffs
+            });
+            this._diffRevisionSelectorView.render();
+
+            this.listenTo(this._diffRevisionSelectorView, 'revisionSelected',
+                          this._onRevisionSelected);
+        }
 
         $('#diffs').bindClass(RB.UserSession.instance,
                               'diffsShowExtraWhitespace', 'ewhl');
