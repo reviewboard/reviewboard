@@ -2742,6 +2742,28 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['review_request']['summary'],
                          review_request.summary)
 
+    def test_get_reviewrequest_reviews_with_invite_only_group_and_permission_denied_error(self):
+        """Testing the GET review-requests/<id>/reviews/ API with invite-only group and Permission Denied error"""
+        review_request = ReviewRequest.objects.filter(public=True,
+            local_site=None).exclude(submitter=self.user)[0]
+        review_request.target_groups.clear()
+        review_request.target_people.clear()
+
+        group = Group(name='test-group', invite_only=True)
+        group.save()
+
+        review_request.target_groups.add(group)
+        review_request.save()
+
+        rsp = self.apiGet(
+            local_site_reverse(
+                'reviews-resource',
+                local_site_name=None,
+                kwargs={'review_request_id': review_request.display_id}),
+            expected_status=403)
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
+
     def test_get_reviewrequest_with_repository_and_changenum(self):
         """Testing the GET review-requests/?repository=&changenum= API"""
         review_request = \
