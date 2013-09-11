@@ -2336,6 +2336,28 @@
     },
     {
         "pk": 1,
+        "model": "extensions.registeredextension",
+        "fields": {
+            "class_name": "rbe.extension.EnterpriseExtension",
+            "settings": "{}",
+            "enabled": false,
+            "name": "ReviewBoardPowerPack",
+            "installed": false
+        }
+    },
+    {
+        "pk": 2,
+        "model": "extensions.registeredextension",
+        "fields": {
+            "class_name": "rbpdf.extension.PDFReviewExtension",
+            "settings": "{}",
+            "enabled": false,
+            "name": "ReviewBoardPowerPack",
+            "installed": false
+        }
+    },
+    {
+        "pk": 1,
         "model": "hostingsvcs.hostingserviceaccount",
         "fields": {
             "username": "testuser",
