@@ -257,7 +257,7 @@ class TestCase(DjbletsTestCase):
         return review
 
     def create_review_group(self, name='test-group', with_local_site=False,
-                            visible=True):
+                            visible=True, invite_only=False):
         """Creates a review group for testing.
 
         The group may optionally be attached to a LocalSite. It's also
@@ -271,7 +271,8 @@ class TestCase(DjbletsTestCase):
         return Group.objects.create(
             name=name,
             local_site=local_site,
-            visible=visible)
+            visible=visible,
+            invite_only=invite_only)
 
     def create_reply(self, review, user='grumpy', username=None,
                      body_top='Test Body Top', timestamp=None,

@@ -3,12 +3,13 @@ from django.db.models import Q
 from djblets.testing.decorators import add_fixtures
 from djblets.webapi.errors import DOES_NOT_EXIST, PERMISSION_DENIED
 
-from reviewboard.reviews.models import Group, ReviewRequest
+from reviewboard.reviews.models import ReviewRequest
 from reviewboard.webapi.errors import INVALID_REPOSITORY
 from reviewboard.webapi.tests.base import BaseWebAPITestCase
 from reviewboard.webapi.tests.mimetypes import (review_request_item_mimetype,
                                                 review_request_list_mimetype)
 from reviewboard.webapi.tests.urls import (get_repository_item_url,
+                                           get_review_list_url,
                                            get_review_request_item_url,
                                            get_review_request_list_url,
                                            get_user_item_url)
@@ -788,8 +789,7 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
         review_request = self.create_review_request(publish=True)
         self.assertNotEqual(review_request.submitter, self.user)
 
-        group = Group(name='test-group', invite_only=True)
-        group.save()
+        group = self.create_review_group(invite_only=True)
 
         review_request.target_groups.add(group)
         review_request.save()
@@ -806,8 +806,7 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
         review_request = self.create_review_request(publish=True)
         self.assertNotEqual(review_request.submitter, self.user)
 
-        group = Group(name='test-group', invite_only=True)
-        group.save()
+        group = self.create_review_group(invite_only=True)
 
         review_request.target_groups.add(group)
         review_request.target_people.add(self.user)
@@ -820,6 +819,21 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['review_request']['id'], review_request.display_id)
         self.assertEqual(rsp['review_request']['summary'],
                          review_request.summary)
+
+    def test_get_reviewrequest_reviews_with_invite_only_group_and_permission_denied_error(self):
+        """Testing the GET review-requests/<id>/reviews/ API with invite-only group and Permission Denied error"""
+        review_request = self.create_review_request(publish=True)
+        self.assertNotEqual(review_request.submitter, self.user)
+
+        group = self.create_review_group(invite_only=True)
+
+        review_request.target_groups.add(group)
+        review_request.save()
+
+        rsp = self.apiGet(get_review_list_url(review_request),
+                          expected_status=403)
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
     @add_fixtures(['test_scmtools'])
     def test_get_reviewrequest_with_repository_and_changenum(self):
