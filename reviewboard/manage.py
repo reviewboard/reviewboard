@@ -6,7 +6,7 @@ import subprocess
 import sys
 from os.path import abspath, dirname
 
-from django.core.management import execute_manager, setup_environ
+from django.core.management import execute_from_command_line
 
 
 warnings_found = 0
@@ -16,9 +16,6 @@ def check_dependencies(settings):
     # Some of our checks require access to django.conf.settings, so
     # tell Django about our settings.
     #
-    # This must go before the imports.
-    setup_environ(settings)
-
     from django.template.defaultfilters import striptags
     from djblets.util.filesystem import is_exe_in_path
 
@@ -148,8 +145,8 @@ def main(settings):
        (sys.argv[1] == 'runserver' or sys.argv[1] == 'test'):
         if settings.DEBUG:
             # If DJANGO_SETTINGS_MODULE is in our environment, we're in
-            # execute_manager's sub-process.  It doesn't make sense to do this
-            # check twice, so just return.
+            # execute_from_command_line's sub-process.  It doesn't make sense
+            # to do this check twice, so just return.
             if 'DJANGO_SETTINGS_MODULE' not in os.environ:
                 sys.stderr.write('Running dependency checks (set DEBUG=False '
                                  'to turn this off)...\n')
@@ -158,9 +155,6 @@ def main(settings):
         # Some of our checks require access to django.conf.settings, so
         # tell Django about our settings.
         #
-        # This must go before the imports.
-        setup_environ(settings)
-
         # Initialize Review Board, so we're in a state ready to load
         # extensions and run management commands.
         from reviewboard import initialize
@@ -168,7 +162,7 @@ def main(settings):
 
         include_enabled_extensions(settings)
 
-    execute_manager(settings)
+    execute_from_command_line(sys.argv)
 
 
 if __name__ == "__main__":
@@ -176,6 +170,7 @@ if __name__ == "__main__":
     # manage.py can be run from any directory.
     # From http://www.djangosnippets.org/snippets/281/
     sys.path.insert(0, dirname(dirname(abspath(__file__))))
+    os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'reviewboard.settings')
 
     try:
         import settings  # Assumed to be in the same directory.
