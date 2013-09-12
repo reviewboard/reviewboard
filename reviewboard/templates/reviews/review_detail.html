@@ -78,7 +78,7 @@
   {% template_hook_point "review-summary-header-pre" %}
   {% if entry.review.ship_it %}<div class="shipit">{% trans "Ship it!" %}</div>{% endif %}
   <div class="collapse-button btn"><div class="rb-icon"></div></div>
-  <div class="reviewer"><a href="{% url user entry.review.user %}" class="user">{{entry.review.user|user_displayname}}</a></div>
+  <div class="reviewer"><a href="{% url 'user' entry.review.user %}" class="user">{{entry.review.user|user_displayname}}</a></div>
   <div class="posted_time">{% localtime on %}{% blocktrans with entry.review.timestamp as timestamp and entry.review.timestamp|date:"c" as timestamp_raw %}Posted <time class="timesince" datetime="{{timestamp_raw}}">{{timestamp}}</time> ({{timestamp}}){% endblocktrans %}{% endlocaltime %}</div>
   {% template_hook_point "review-summary-header-post" %}
  </div>
@@ -245,7 +245,7 @@
 {%       if fieldinfo.diff_revision %}
 {%        with fieldinfo.diff_revision|add:"-1" as past_revision and fieldinfo.diff_revision as current_revision %}
 {%         if  past_revision != 0 %}
-      - <a href="{% url view-interdiff review_request.display_id past_revision current_revision %}">{% trans "Show changes" %}</a>
+      - <a href="{% url 'view-interdiff' review_request.display_id past_revision current_revision %}">{% trans "Show changes" %}</a>
 {%         endif %}
 {%        endwith %}
 {%       endif %}

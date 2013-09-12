@@ -34,7 +34,7 @@
 {% if auth_backends.0.supports_registration and siteconfig.settings.auth_enable_registration|default_if_none:1 %}
    <td class="hint">
     {% trans "Don't have an account?" %}
-    <a href="{% url register %}">{% trans "Create one now" %}</a>
+    <a href="{% url 'register' %}">{% trans "Create one now" %}</a>
    </td>
 {% endif %}
   </tr>
@@ -44,7 +44,7 @@
 {% if auth_backends.0.supports_registration %}
    <td class="hint">
     {% trans "Forgot your password?" %}
-    <a href="{% url recover %}">{% trans "Recover it" %}</a>
+    <a href="{% url 'recover' %}">{% trans "Recover it" %}</a>
    </td>
 {% endif %}
   </tr>

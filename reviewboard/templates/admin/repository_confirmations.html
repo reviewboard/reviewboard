@@ -70,7 +70,7 @@
 <fieldset class="module confirmation">
 {{userkeyerror|paragraphs}}
 
-{% url settings-ssh as ssh_settings_url %}
+{% url 'settings-ssh' as ssh_settings_url %}
 <p>{% blocktrans %}
  Review Board doesn't have a public key to send to the server. You can
  <a href="{{ssh_settings_url}}" target="ssh_settings">create one</a>, add it to the server,

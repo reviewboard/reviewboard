@@ -41,7 +41,7 @@
    </colgroup>
    <tr>
     <th class="label"><label for="submitter">{% trans "Submitter" %}:</label></th>
-    <td class="value"><a id="submitter" class="user" href="{% url user review_request.submitter %}">{{review_request.submitter|user_displayname}}</a></td>
+    <td class="value"><a id="submitter" class="user" href="{% url 'user' review_request.submitter %}">{{review_request.submitter|user_displayname}}</a></td>
    </tr>
    <tr>
     <th class="label"><label for="branch">{% trans "Branch" %}:</label></th>
@@ -114,7 +114,7 @@
     <th class="label"><label for="target_groups">{% trans "Groups" %}:</label></th>
     <td class="value" id="target-groups-value-cell"><span id="target_groups" class="editable">{% spaceless %}
 {%  for group in review_request_details.target_groups.all %}
-<a href="{% url group group %}">{{group}}</a>{%if not forloop.last %}, {%endif %}
+<a href="{% url 'group' group %}">{{group}}</a>{%if not forloop.last %}, {%endif %}
 {%  endfor %}
 {% endspaceless %}</span></td>
    </tr>
@@ -122,7 +122,7 @@
     <th class="label"><label for="target_people">{% trans "People" %}:</label></th>
     <td class="value" id="target-people-value-cell"><span id="target_people" class="editable comma-editable">{% spaceless %}
 {%  for person in review_request_details.target_people.all %}
-<a href="{% url user person %}" class="user{% if not person.is_active %} inactive{% endif %}">{{person}}</a>{% if not forloop.last %}, {% endif %}
+<a href="{% url 'user' person %}" class="user{% if not person.is_active %} inactive{% endif %}">{{person}}</a>{% if not forloop.last %}, {% endif %}
 {%  endfor %}
 {% endspaceless %}</span></td>
    </tr>
@@ -193,7 +193,7 @@
      <ul class="actions">
 {%  if request.user.is_authenticated %}
 {%   if file.review_ui %}
-      <li class="{% if file.review_ui.allow_inline %}file-review-inline %}{% else %}file-review{% endif %}"><a href="{% url file_attachment review_request.display_id file.pk %}">{% trans "Review" %}</a></li>
+      <li class="{% if file.review_ui.allow_inline %}file-review-inline %}{% else %}file-review{% endif %}"><a href="{% url 'file_attachment' review_request.display_id file.pk %}">{% trans "Review" %}</a></li>
 {%   else %}
       <li class="file-add-comment"><a href="#">{% trans "Add Comment" %}</a></li>
 {%   endif %}
@@ -210,7 +210,7 @@
      </div>
      <div class="file-thumbnail-container">
       {% if file.review_ui %}
-      <a href="{% url file_attachment review_request.display_id file.pk %}" class="file-thumbnail-overlay"> </a>
+      <a href="{% url 'file_attachment' review_request.display_id file.pk %}" class="file-thumbnail-overlay"> </a>
       {{file.thumbnail}}
       {% else %}
       {{file.thumbnail}}

@@ -64,32 +64,32 @@
       <a href="#">{% trans "Support" %} &#9662;</a>
       <ul>
        <li><a href="http://www.reviewboard.org/docs/manual/1.7/">{% trans "Documentation" %}</a></li>
-       <li><a href="{% url support %}">{% trans "Get Support" %}</a></li>
+       <li><a href="{% url 'support' %}">{% trans "Get Support" %}</a></li>
       </ul>
      </li>
 {% if user.is_authenticated %}
      <li>
-      <a class="user-nav-item" href="{% url user-preferences %}">{% gravatar user 32 %} {{user.first_name}} &#9662;</a>
+      <a class="user-nav-item" href="{% url 'user-preferences' %}">{% gravatar user 32 %} {{user.first_name}} &#9662;</a>
       <ul>
-       <li><a href="{% url user-preferences %}">{% trans "My account" %}</a></li>
+       <li><a href="{% url 'user-preferences' %}">{% trans "My account" %}</a></li>
 {%  if user.is_staff %}
-       <li><a href="{% url reviewboard.admin.views.dashboard %}">{% trans "Admin" %}</a></li>
+       <li><a href="{% url 'reviewboard.admin.views.dashboard' %}">{% trans "Admin" %}</a></li>
 {%  endif %}
-       <li><a href="{% url logout %}">{% trans "Log out" %}</a></li>
+       <li><a href="{% url 'logout' %}">{% trans "Log out" %}</a></li>
       </ul>
      </li>
 {% else %}
-     <li><a href="{% url login %}?next_page={{request.path}}">{% trans "Log in" %}</a></li>
+     <li><a href="{% url 'login' %}?next_page={{request.path}}">{% trans "Log in" %}</a></li>
 {#  XXX Using default sucks, but siteconfig defaults don't #}
 {#      work from templates.                               #}
 {%  if auth_backends.0.supports_registration and siteconfig.settings.auth_enable_registration|default_if_none:1 %}
-     <li><a href="{% url register %}">{% trans "Register" %}</a></li>
+     <li><a href="{% url 'register' %}">{% trans "Register" %}</a></li>
 {%  endif %}
 {% endif %}{# !is_authenticated #}
     </ul>
     <div id="search">
 {% if siteconfig.settings.search_enable %}
-    <form method="get" action="{% url search %}">
+    <form method="get" action="{% url 'search' %}">
 {% endif %}
      <input type="text" name="q" placeholder="{% if siteconfig.settings.search_enable %}{% trans "Search" %}{% else %}{% trans "Jump to..." %}{% endif %}" id="search_field" {% attr "value" %}{{query}}{% endattr %} />
 {% if siteconfig.settings.search_enable %}
@@ -105,12 +105,12 @@
    <ul id="navbar">
 {%  if user.is_authenticated or not siteconfig.settings.auth_require_sitewide_login %}
 {%   if user.is_authenticated %}
-    <li><a href="{% url dashboard %}">{% trans "My Dashboard" %}</a></li>
-    <li><a href="{% url new-review-request %}">{% trans "New Review Request" %}</a></li>
+    <li><a href="{% url 'dashboard' %}">{% trans "My Dashboard" %}</a></li>
+    <li><a href="{% url 'new-review-request' %}">{% trans "New Review Request" %}</a></li>
 {%   endif %}
-    <li><a href="{% url all-review-requests %}">{% trans "All Review Requests" %}</a></li>
-    <li><a href="{% url all-groups %}">{% trans "Groups" %}</a></li>
-    <li><a href="{% url all-users %}">{% trans "Submitters" %}</a></li>
+    <li><a href="{% url 'all-review-requests' %}">{% trans "All Review Requests" %}</a></li>
+    <li><a href="{% url 'all-groups' %}">{% trans "Groups" %}</a></li>
+    <li><a href="{% url 'all-users' %}">{% trans "Submitters" %}</a></li>
 {%   navigation_bar_hooks %}
 {%  endif %}
    </ul>
@@ -121,7 +121,7 @@
 {%  box "important" %}
      <h1>{% trans "JavaScript is turned off" %}</h1>
      <p>{% blocktrans %}Review Board requires JavaScript in order to function.
-     Please turn it on in your browser preferences.{% endblocktrans %}
+     Please turn it on in your browser preferences.{% endblocktrans %}</p>
      <p>{% blocktrans %}Firefox users: if you prefer to turn on JavaScript only
      for specific sites, we recommend the
      <a href="https://addons.mozilla.org/en-US/firefox/addon/722">NoScript
@@ -141,7 +141,7 @@
     </div>
    </div>
   </div>
-  <script src="{% url js-catalog %}"></script>
+  <script src="{% url 'js-catalog' %}"></script>
   {% include "js/jquery-ui.html" %}
   {% compressed_js "3rdparty" %}
   <script src="{% static "djblets/js/jquery.gravy.js" %}"></script>
@@ -155,14 +155,14 @@
 {%  endif %}
         fullName: "{{request.user|user_displayname|escapejs}}",
         username: "{{request.user.username|escapejs}}",
-        userPageURL: "{% url user request.user %}",
-        sessionURL: "{% url session-resource %}",
+        userPageURL: "{% url 'user' request.user %}",
+        sessionURL: "{% url 'session-resource' %}",
         timezoneOffset: "{% now 'O' %}",
-        watchedReviewGroupsURL: "{% url watched-review-groups-resource request.user %}",
-        watchedReviewRequestsURL: "{% url watched-review-requests-resource request.user %}"
+        watchedReviewGroupsURL: "{% url 'watched-review-groups-resource' request.user %}",
+        watchedReviewRequestsURL: "{% url 'watched-review-requests-resource' request.user %}"
 {% else %}
         authenticated: false,
-        loginURL: "{% url login %}"
+        loginURL: "{% url 'login' %}"
 {% endif %}
     });
   </script>
