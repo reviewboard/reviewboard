@@ -4,6 +4,7 @@ import os
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.core import mail
+from django.test.client import BOUNDARY, MULTIPART_CONTENT, encode_multipart
 from djblets.siteconfig.models import SiteConfiguration
 
 from reviewboard import initialize
@@ -56,8 +57,9 @@ class BaseWebAPITestCase(TestCase, EmailTestHelper):
 
     def api_func_wrapper(self, api_func, path, query, expected_status,
                          follow_redirects, expected_redirects,
-                         expected_mimetype):
-        response = api_func(path, query, follow=follow_redirects)
+                         expected_mimetype, content_type='', extra={}):
+        response = api_func(path, query, follow=follow_redirects,
+                            content_type=content_type, extra=extra)
         self.assertEqual(response.status_code, expected_status)
 
         if expected_status >= 400:
@@ -85,9 +87,10 @@ class BaseWebAPITestCase(TestCase, EmailTestHelper):
         print 'GETing %s' % path
         print "Query data: %s" % query
 
-        response = self.api_func_wrapper(self.client.get, path, query,
-                                         expected_status, follow_redirects,
-                                         expected_redirects, expected_mimetype)
+        response = self.api_func_wrapper(
+            self.client.get, path, query, expected_status, follow_redirects,
+            expected_redirects, expected_mimetype,
+            content_type='text/html; charset=utf-8')
 
         print "Raw response: %s" % response.content
 
@@ -131,9 +134,12 @@ class BaseWebAPITestCase(TestCase, EmailTestHelper):
 
         print 'PUTing to %s' % path
         print "Post data: %s" % query
-        response = self.api_func_wrapper(self.client.put, path, query,
+        data = encode_multipart(BOUNDARY, query)
+
+        response = self.api_func_wrapper(self.client.put, path, data,
                                          expected_status, follow_redirects,
-                                         expected_redirects, expected_mimetype)
+                                         expected_redirects, expected_mimetype,
+                                         content_type=MULTIPART_CONTENT)
         print "Raw response: %s" % response.content
 
         return self._get_result(response, expected_status)
