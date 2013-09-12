@@ -4,7 +4,7 @@ from django.conf import settings
 from django.conf.urls import patterns, include, url
 from django.conf.urls.static import static
 from django.contrib import admin
-from django.views.generic import TemplateView
+from django.views.generic import RedirectView, TemplateView
 
 from reviewboard.extensions.base import get_extension_manager
 from reviewboard.webapi.resources import resources
@@ -86,9 +86,7 @@ if settings.DEBUG or getattr(settings, 'RUNNING_TEST', False):
 localsite_urlpatterns = patterns(
     '',
 
-    url(r'^$', 'django.views.generic.simple.redirect_to',
-        {'url': 'dashboard/'},
-        name="root"),
+    url(r'^$', RedirectView.as_view(url='dashboard/'), name="root"),
 
     (r'^api/', include(resources.root.get_url_patterns())),
     (r'^r/', include('reviewboard.reviews.urls')),

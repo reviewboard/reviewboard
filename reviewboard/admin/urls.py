@@ -27,6 +27,7 @@
 
 from django.conf.urls import include, patterns, url
 from django.contrib import admin
+from django.views.generic import RedirectView
 
 from reviewboard.admin import forms
 
@@ -86,10 +87,8 @@ urlpatterns += patterns(
     ('^feed/news/$', 'djblets.feedview.views.view_feed',
      {'template_name': 'admin/feed.html',
       'url': NEWS_FEED}),
-    (r'^feed/news/rss/$', 'django.views.generic.simple.redirect_to',
-     {'url': NEWS_FEED}),
+    (r'^feed/news/rss/$', RedirectView.as_view(url=NEWS_FEED)),
 
-    url(r'^settings/$', 'django.views.generic.simple.redirect_to',
-        {'url': 'general/'},
+    url(r'^settings/$', RedirectView.as_view(url='general/'),
         name="site-settings"),
 )

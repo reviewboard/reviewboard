@@ -20,7 +20,7 @@ from django.utils.http import http_date
 from django.utils.safestring import mark_safe
 from django.utils.timezone import utc
 from django.utils.translation import ugettext as _
-from django.views.generic.list_detail import object_list
+from django.views.generic.list import ListView
 
 from djblets.auth.util import login_required
 from djblets.siteconfig.models import SiteConfiguration
@@ -1523,82 +1523,81 @@ def view_screenshot(request,
     return review_ui.render_to_response(request)
 
 
-@check_login_required
-def search(request,
-           template_name='reviews/search.html',
-           local_site_name=None):
-    """
-    Searches review requests on Review Board based on a query string.
-    """
-    query = request.GET.get('q', '')
-    siteconfig = SiteConfiguration.objects.get_current()
+class ReviewsSearchView(ListView):
+    template_name = 'reviews/search.html'
 
-    if not siteconfig.get("search_enable"):
-        # FIXME: show something useful
-        raise Http404
+    def get_context_data(self, **kwargs):
+        query = self.request.GET.get('q', '')
+        context_data = super(ReviewsSearchView, self).get_context_data(kwargs)
+        context_data.update({
+            'query': query,
+            'extra_query': 'q=%s' % query,
+        })
 
-    if not query:
-        # FIXME: I'm not super thrilled with this
-        return HttpResponseRedirect(reverse("root"))
+        return context_data
 
-    if query.isdigit():
-        query_review_request = get_object_or_none(ReviewRequest, pk=query)
-        if query_review_request:
-            return HttpResponseRedirect(
-                query_review_request.get_absolute_url())
+    def get_queryset(self):
+        query = self.request.GET.get('q', '')
+        siteconfig = SiteConfiguration.objects.get_current()
 
-    import lucene
-    lv = [int(x) for x in lucene.VERSION.split('.')]
-    lucene_is_2x = lv[0] == 2 and lv[1] < 9
-    lucene_is_3x = lv[0] == 3 or (lv[0] == 2 and lv[1] == 9)
+        if not siteconfig.get("search_enable"):
+            # FIXME: show something useful
+            raise Http404
 
-    # We may have already initialized lucene
-    try:
-        lucene.initVM(lucene.CLASSPATH)
-    except ValueError:
-        pass
+        if not query:
+            # FIXME: I'm not super thrilled with this
+            return HttpResponseRedirect(reverse("root"))
 
-    index_file = siteconfig.get("search_index_file")
-    if lucene_is_2x:
-        store = lucene.FSDirectory.getDirectory(index_file, False)
-    elif lucene_is_3x:
-        store = lucene.FSDirectory.open(lucene.File(index_file))
-    else:
-        assert False
+        if query.isdigit():
+            query_review_request = get_object_or_none(ReviewRequest, pk=query)
+            if query_review_request:
+                return HttpResponseRedirect(
+                    query_review_request.get_absolute_url())
 
-    try:
-        searcher = lucene.IndexSearcher(store)
-    except lucene.JavaError, e:
-        # FIXME: show a useful error
-        raise e
+        import lucene
+        lv = [int(x) for x in lucene.VERSION.split('.')]
+        lucene_is_2x = lv[0] == 2 and lv[1] < 9
+        lucene_is_3x = lv[0] == 3 or (lv[0] == 2 and lv[1] == 9)
 
-    if lucene_is_2x:
-        parser = lucene.QueryParser('text', lucene.StandardAnalyzer())
-        result_ids = [int(lucene.Hit.cast_(hit).getDocument().get('id'))
-                      for hit in searcher.search(parser.parse(query))]
-    elif lucene_is_3x:
-        parser = lucene.QueryParser(
-            lucene.Version.LUCENE_CURRENT, 'text',
-            lucene.StandardAnalyzer(lucene.Version.LUCENE_CURRENT))
+        # We may have already initialized lucene
+        try:
+            lucene.initVM(lucene.CLASSPATH)
+        except ValueError:
+            pass
 
-        result_ids = [
-            searcher.doc(hit.doc).get('id')
-            for hit in searcher.search(parser.parse(query), 100).scoreDocs
-        ]
+        index_file = siteconfig.get("search_index_file")
+        if lucene_is_2x:
+            store = lucene.FSDirectory.getDirectory(index_file, False)
+        elif lucene_is_3x:
+            store = lucene.FSDirectory.open(lucene.File(index_file))
+        else:
+            assert False
 
-    searcher.close()
+        try:
+            searcher = lucene.IndexSearcher(store)
+        except lucene.JavaError, e:
+            # FIXME: show a useful error
+            raise e
 
-    results = ReviewRequest.objects.filter(id__in=result_ids,
-                                           local_site__name=local_site_name)
+        if lucene_is_2x:
+            parser = lucene.QueryParser('text', lucene.StandardAnalyzer())
+            result_ids = [int(lucene.Hit.cast_(hit).getDocument().get('id'))
+                          for hit in searcher.search(parser.parse(query))]
+        elif lucene_is_3x:
+            parser = lucene.QueryParser(
+                lucene.Version.LUCENE_CURRENT, 'text',
+                lucene.StandardAnalyzer(lucene.Version.LUCENE_CURRENT))
 
-    return object_list(request=request,
-                       queryset=results,
-                       paginate_by=10,
-                       template_name=template_name,
-                       extra_context={
-                           'query': query,
-                           'extra_query': 'q=%s' % query,
-                       })
+            result_ids = [
+                searcher.doc(hit.doc).get('id')
+                for hit in searcher.search(parser.parse(query), 100).scoreDocs
+            ]
+
+        searcher.close()
+
+        return ReviewRequest.objects.filter(
+            id__in=result_ids,
+            local_site__name=self.kwargs['local_site_name'])
 
 
 @check_login_required
