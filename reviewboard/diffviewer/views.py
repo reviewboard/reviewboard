@@ -151,7 +151,7 @@ class DiffViewerView(TemplateView):
 
         page = paginator.page(page_num)
 
-        return dict({
+        context = dict({
             'diffset': diffset,
             'interdiffset': interdiffset,
             'diffset_pair': (diffset, interdiffset),
@@ -164,11 +164,17 @@ class DiffViewerView(TemplateView):
             'pages': paginator.num_pages,
             'page_numbers': paginator.page_range,
             'has_next': page.has_next(),
-            'next_page': page.next_page_number(),
             'has_previous': page.has_previous(),
-            'previous_page': page.previous_page_number(),
             'page_start_index': page.start_index(),
         }, **extra_context)
+
+        if page.has_next():
+            context['next_page'] = page.next_page_number()
+
+        if page.has_previous():
+            context['previous_page'] = page.previous_page_number()
+
+        return context
 
 
 class DiffFragmentView(View):
