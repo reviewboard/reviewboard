@@ -25,7 +25,7 @@
 #
 
 
-from django.conf.urls.defaults import include, patterns, url
+from django.conf.urls import include, patterns, url
 from django.contrib import admin
 
 from reviewboard.admin import forms
