@@ -1042,6 +1042,7 @@ class RepositoryForm(forms.ModelForm):
         hosting_type = self.cleaned_data['hosting_type']
         hosting_service_cls = get_hosting_service(hosting_type)
         hosting_service = None
+        plan = None
         repository_extra_data = {}
 
         if hosting_service_cls:
@@ -1064,6 +1065,7 @@ class RepositoryForm(forms.ModelForm):
                         password=password,
                         scmtool_class=scmtool_class,
                         local_site_name=self.local_site_name,
+                        plan=plan,
                         **repository_extra_data)
                 else:
                     scmtool_class.check_repository(path, username, password,

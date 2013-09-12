@@ -9,8 +9,9 @@ from django.utils import simplejson
 from django.utils.translation import ugettext_lazy as _
 from djblets.siteconfig.models import SiteConfiguration
 
-from reviewboard.hostingsvcs.errors import AuthorizationError, \
-                                           SSHKeyAssociationError
+from reviewboard.hostingsvcs.errors import (AuthorizationError,
+                                            InvalidPlanError,
+                                            SSHKeyAssociationError)
 from reviewboard.hostingsvcs.forms import HostingServiceForm
 from reviewboard.hostingsvcs.service import HostingService
 from reviewboard.scmtools.errors import FileNotFoundError
@@ -377,8 +378,7 @@ class GitHub(HostingService):
         elif plan in ('public-org', 'private-org'):
             owner = self.get_plan_field(plan, repository.extra_data, 'name')
         else:
-            raise KeyError('%s is not a valid plan for this hosting service'
-                           % plan)
+            raise InvalidPlanError(plan)
 
         return '%srepos/%s/%s/' % (
             self.get_api_url(self.account.hosting_url),
