@@ -89,7 +89,7 @@ class ServiceTests(SpyAgency, TestCase):
 class BeanstalkTests(ServiceTests):
     """Unit tests for the Beanstalk hosting service."""
     service_name = 'beanstalk'
-    fixtures = ['test_scmtools.json']
+    fixtures = ['test_scmtools']
 
     def test_service_support(self):
         """Testing Beanstalk service support capabilities"""
@@ -290,7 +290,7 @@ class BeanstalkTests(ServiceTests):
 class BitbucketTests(ServiceTests):
     """Unit tests for the Bitbucket hosting service."""
     service_name = 'bitbucket'
-    fixtures = ['test_scmtools.json']
+    fixtures = ['test_scmtools']
 
     def test_service_support(self):
         """Testing Bitbucket service support capabilities"""
@@ -492,7 +492,7 @@ class BitbucketTests(ServiceTests):
 class BugzillaTests(ServiceTests):
     """Unit tests for the Bugzilla hosting service."""
     service_name = 'bugzilla'
-    fixtures = ['test_scmtools.json']
+    fixtures = ['test_scmtools']
 
     def test_service_support(self):
         """Testing the Bugzilla service support capabilities"""
@@ -1191,7 +1191,7 @@ class GoogleCodeTests(ServiceTests):
 class RedmineTests(ServiceTests):
     """Unit tests for the Redmine hosting service."""
     service_name = 'redmine'
-    fixtures = ['test_scmtools.json']
+    fixtures = ['test_scmtools']
 
     def test_service_support(self):
         """Testing the Redmine service support capabilities"""
@@ -1263,7 +1263,7 @@ class SourceForgeTests(ServiceTests):
 class TracTests(ServiceTests):
     """Unit tests for the Trac hosting service."""
     service_name = 'trac'
-    fixtures = ['test_scmtools.json']
+    fixtures = ['test_scmtools']
 
     def test_service_support(self):
         """Testing the Trac service support capabilities"""
@@ -1283,7 +1283,7 @@ class TracTests(ServiceTests):
 class VersionOneTests(ServiceTests):
     """Unit tests for the VersionOne hosting service."""
     service_name = 'versionone'
-    fixtures = ['test_scmtools.json']
+    fixtures = ['test_scmtools']
 
     def test_service_support(self):
         """Testing the VersionOne service support capabilities"""

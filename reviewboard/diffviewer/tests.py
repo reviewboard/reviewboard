@@ -349,7 +349,7 @@ class DiffParserTest(unittest.TestCase):
 
 
 class FileDiffMigrationTests(TestCase):
-    fixtures = ['test_scmtools.json']
+    fixtures = ['test_scmtools']
 
     def setUp(self):
         self.diff = (
@@ -520,7 +520,7 @@ class HighlightRegionTest(TestCase):
 
 class DbTests(TestCase):
     """Unit tests for database operations."""
-    fixtures = ['test_scmtools.json']
+    fixtures = ['test_scmtools']
     PREFIX = os.path.join(os.path.dirname(__file__), 'testdata')
 
     def test_long_filenames(self):
