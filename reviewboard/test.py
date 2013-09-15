@@ -142,7 +142,9 @@ class RBTestRunner(DjangoTestSuiteRunner):
             os.makedirs(images_dir)
 
         # Collect all static media needed for tests, including web-based tests.
-        execute_from_command_line([__file__, 'collectstatic', '--noinput'])
+        execute_from_command_line([
+            __file__, 'collectstatic', '--noinput', '-v', '0',
+        ])
 
         generate_media_serial()
 
