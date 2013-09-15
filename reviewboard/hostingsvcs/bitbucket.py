@@ -5,6 +5,7 @@ from django import forms
 from django.utils import simplejson
 from django.utils.translation import ugettext_lazy as _
 
+from reviewboard.hostingsvcs.errors import InvalidPlanError
 from reviewboard.hostingsvcs.forms import HostingServiceForm
 from reviewboard.hostingsvcs.service import HostingService
 from reviewboard.scmtools.crypto_utils import (decrypt_password,
@@ -12,8 +13,25 @@ from reviewboard.scmtools.crypto_utils import (decrypt_password,
 from reviewboard.scmtools.errors import FileNotFoundError
 
 
-class BitbucketForm(HostingServiceForm):
+class BitbucketPersonalForm(HostingServiceForm):
     bitbucket_repo_name = forms.CharField(
+        label=_('Repository name'),
+        max_length=64,
+        required=True,
+        widget=forms.TextInput(attrs={'size': '60'}))
+
+
+class BitbucketTeamForm(HostingServiceForm):
+    bitbucket_team_name = forms.CharField(
+        label=_('Team name'),
+        max_length=64,
+        required=True,
+        widget=forms.TextInput(attrs={'size': '60'}),
+        help_text=_('The name of the team. This is hte &lt;team_name&gt; in '
+                    'https://bitbucket.org/&lt;team_name&gt;/'
+                    '&lt;repo_name&gt;/'))
+
+    bitbucket_team_repo_name = forms.CharField(
         label=_('Repository name'),
         max_length=64,
         required=True,
@@ -33,37 +51,72 @@ class Bitbucket(HostingService):
     supports_repositories = True
     supports_bug_trackers = True
 
-    form = BitbucketForm
     supported_scmtools = ['Git', 'Mercurial']
-    repository_fields = {
-        'Git': {
-            'path': 'git@bitbucket.org:%(hosting_account_username)s/'
-                    '%(bitbucket_repo_name)s.git',
-            'mirror_path': 'https://%(hosting_account_username)s@'
-                           'bitbucket.org/%(hosting_account_username)s/'
-                           '%(bitbucket_repo_name)s.git',
-        },
-        'Mercurial': {
-            'path': 'https://%(hosting_account_username)s@'
-                    'bitbucket.org/%(hosting_account_username)s/'
-                    '%(bitbucket_repo_name)s',
-            'mirror_path': 'ssh://hg@bitbucket.org/'
-                           '%(hosting_account_username)s/'
-                           '%(bitbucket_repo_name)s',
-        },
-    }
-    bug_tracker_field = ('https://bitbucket.org/'
-                         '%(hosting_account_username)s/'
-                         '%(bitbucket_repo_name)s/issue/%%s/')
+    plans = [
+        ('personal', {
+            'name': _('Personal'),
+            'form': BitbucketPersonalForm,
+            'repository_fields': {
+                'Git': {
+                    'path': 'git@bitbucket.org:%(hosting_account_username)s/'
+                            '%(bitbucket_repo_name)s.git',
+                    'mirror_path': 'https://%(hosting_account_username)s@'
+                                   'bitbucket.org/'
+                                   '%(hosting_account_username)s/'
+                                   '%(bitbucket_repo_name)s.git',
+                },
+                'Mercurial': {
+                    'path': 'https://%(hosting_account_username)s@'
+                            'bitbucket.org/%(hosting_account_username)s/'
+                            '%(bitbucket_repo_name)s',
+                    'mirror_path': 'ssh://hg@bitbucket.org/'
+                                   '%(hosting_account_username)s/'
+                                   '%(bitbucket_repo_name)s',
+                },
+            },
+            'bug_tracker_field': ('https://bitbucket.org/'
+                                  '%(hosting_account_username)s/'
+                                  '%(bitbucket_repo_name)s/issue/%%s/'),
+        }),
+        ('team', {
+            'name': _('Team'),
+            'form': BitbucketTeamForm,
+            'repository_fields': {
+                'Git': {
+                    'path': 'git@bitbucket.org:%(bitbucket_team_name)s/'
+                            '%(bitbucket_team_repo_name)s.git',
+                    'mirror_path': 'https://%(hosting_account_username)s@'
+                                   'bitbucket.org/%(bitbucket_team_name)s/'
+                                   '%(bitbucket_team_repo_name)s.git',
+                },
+                'Mercurial': {
+                    'path': 'https://%(hosting_account_username)s@'
+                            'bitbucket.org/%(bitbucket_team_name)s/'
+                            '%(bitbucket_team_repo_name)s',
+                    'mirror_path': 'ssh://hg@bitbucket.org/'
+                                   '%(bitbucket_team_name)s/'
+                                   '%(bitbucket_team_repo_name)s',
+                },
+            },
+            'bug_tracker_field': ('https://bitbucket.org/'
+                                  '%(bitbucket_team_name)s/'
+                                  '%(bitbucket_team_repo_name)s/issue/%%s/'),
 
-    def check_repository(self, bitbucket_repo_name=None, *args, **kwargs):
+        }),
+    ]
+
+    DEFAULT_PLAN = 'personal'
+
+    def check_repository(self, plan=DEFAULT_PLAN, *args, **kwargs):
         """Checks the validity of a repository.
 
         This will perform an API request against Bitbucket to get
         information on the repository. This will throw an exception if
         the repository was not found, and return cleanly if it was found.
         """
-        self._api_get_repository(self.account.username, bitbucket_repo_name)
+        self._api_get_repository(
+            self._get_repository_owner_raw(plan, kwargs),
+            self._get_repository_name_raw(plan, kwargs))
 
     def authorize(self, username, password, *args, **kwargs):
         """Authorizes the Bitbucket repository.
@@ -137,7 +190,7 @@ class Bitbucket(HostingService):
 
         url = self._build_api_url(
             'repositories/%s/%s/raw/%s/%s'
-            % (self.account.username,
+            % (quote(self._get_repository_owner(repository)),
                quote(self._get_repository_name(repository)),
                quote(revision),
                quote(path)))
@@ -147,8 +200,35 @@ class Bitbucket(HostingService):
     def _build_api_url(self, url):
         return 'https://bitbucket.org/api/1.0/%s' % url
 
+    def _get_repository_plan(self, repository):
+        return (repository.extra_data.get('repository_plan') or
+                self.DEFAULT_PLAN)
+
     def _get_repository_name(self, repository):
-        return repository.extra_data['bitbucket_repo_name']
+        return self._get_repository_name_raw(
+            self._get_repository_plan(repository),
+            repository.extra_data)
+
+    def _get_repository_name_raw(self, plan, extra_data):
+        if plan == 'personal':
+            return extra_data['bitbucket_repo_name']
+        elif plan == 'team':
+            return extra_data['bitbucket_team_repo_name']
+        else:
+            raise InvalidPlanError(plan)
+
+    def _get_repository_owner(self, repository):
+        return self._get_repository_owner_raw(
+            self._get_repository_plan(repository),
+            repository.extra_data)
+
+    def _get_repository_owner_raw(self, plan, extra_data):
+        if plan == 'personal':
+            return self.account.username
+        elif plan == 'team':
+            return extra_data['bitbucket_team_name']
+        else:
+            raise InvalidPlanError(plan)
 
     def _api_get(self, url, raw_content=False):
         try:

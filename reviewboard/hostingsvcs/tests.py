@@ -297,51 +297,47 @@ class BitbucketTests(ServiceTests):
         self.assertTrue(self.service_class.supports_bug_trackers)
         self.assertTrue(self.service_class.supports_repositories)
 
-    def test_repo_field_values_git(self):
-        """Testing Bitbucket repository field values for Git"""
-        fields = self._get_repository_fields('Git', fields={
-            'bitbucket_repo_name': 'myrepo',
-        })
+    def test_personal_repo_field_values_git(self):
+        """Testing Bitbucket personal repository field values for Git"""
+        fields = self._get_repository_fields(
+            'Git',
+            fields={
+                'bitbucket_repo_name': 'myrepo',
+            },
+            plan='personal')
         self.assertEqual(fields['path'],
                          'git@bitbucket.org:myuser/myrepo.git')
         self.assertEqual(fields['mirror_path'],
                          'https://myuser@bitbucket.org/myuser/myrepo.git')
 
-    def test_repo_field_values_mercurial(self):
-        """Testing Bitbucket repository field values for Mercurial"""
-        fields = self._get_repository_fields('Mercurial', fields={
-            'bitbucket_repo_name': 'myrepo',
-        })
+    def test_personal_repo_field_values_mercurial(self):
+        """Testing Bitbucket personal repository field values for Mercurial"""
+        fields = self._get_repository_fields(
+            'Mercurial',
+            fields={
+                'bitbucket_repo_name': 'myrepo',
+            },
+            plan='personal')
         self.assertEqual(fields['path'],
                          'https://myuser@bitbucket.org/myuser/myrepo')
         self.assertEqual(fields['mirror_path'],
                          'ssh://hg@bitbucket.org/myuser/myrepo')
 
-    def test_bug_tracker_field(self):
-        """Testing Bitbucket bug tracker field values"""
-        self.assertTrue(self.service_class.get_bug_tracker_requires_username())
+    def test_personal_bug_tracker_field(self):
+        """Testing Bitbucket personal bug tracker field values"""
+        self.assertTrue(self.service_class.get_bug_tracker_requires_username(
+            plan='personal'))
         self.assertEqual(
-            self.service_class.get_bug_tracker_field(None, {
-                'bitbucket_repo_name': 'myrepo',
-                'hosting_account_username': 'myuser',
-            }),
+            self.service_class.get_bug_tracker_field(
+                'personal',
+                {
+                    'bitbucket_repo_name': 'myrepo',
+                    'hosting_account_username': 'myuser',
+                }),
             'https://bitbucket.org/myuser/myrepo/issue/%s/')
 
-    def test_authorize(self):
-        """Testing Bitbucket authorization password storage"""
-        account = self._get_hosting_account()
-        service = account.service
-
-        self.assertFalse(service.is_authorized())
-
-        service.authorize('myuser', 'abc123', None)
-
-        self.assertTrue('password' in account.data)
-        self.assertNotEqual(account.data['password'], 'abc123')
-        self.assertTrue(service.is_authorized())
-
-    def test_check_repository(self):
-        """Testing Bitbucket check_repository"""
+    def test_personal_check_repository(self):
+        """Testing Bitbucket personal check_repository"""
         def _http_get(service, url, *args, **kwargs):
             self.assertEqual(
                 url,
@@ -355,8 +351,83 @@ class BitbucketTests(ServiceTests):
 
         self.spy_on(service._http_get, call_fake=_http_get)
 
-        service.check_repository(bitbucket_repo_name='myrepo')
+        service.check_repository(bitbucket_repo_name='myrepo',
+                                 plan='personal')
         self.assertTrue(service._http_get.called)
+
+    def test_team_repo_field_values_git(self):
+        """Testing Bitbucket team repository field values for Git"""
+        fields = self._get_repository_fields(
+            'Git',
+            fields={
+                'bitbucket_team_name': 'myteam',
+                'bitbucket_team_repo_name': 'myrepo',
+            },
+            plan='team')
+        self.assertEqual(fields['path'],
+                         'git@bitbucket.org:myteam/myrepo.git')
+        self.assertEqual(fields['mirror_path'],
+                         'https://myuser@bitbucket.org/myteam/myrepo.git')
+
+    def test_team_repo_field_values_mercurial(self):
+        """Testing Bitbucket team repository field values for Mercurial"""
+        fields = self._get_repository_fields(
+            'Mercurial',
+            fields={
+                'bitbucket_team_name': 'myteam',
+                'bitbucket_team_repo_name': 'myrepo',
+            },
+            plan='team')
+        self.assertEqual(fields['path'],
+                         'https://myuser@bitbucket.org/myteam/myrepo')
+        self.assertEqual(fields['mirror_path'],
+                         'ssh://hg@bitbucket.org/myteam/myrepo')
+
+    def test_team_bug_tracker_field(self):
+        """Testing Bitbucket team bug tracker field values"""
+        self.assertFalse(self.service_class.get_bug_tracker_requires_username(
+            plan='team'))
+        self.assertEqual(
+            self.service_class.get_bug_tracker_field(
+                'team',
+                {
+                    'bitbucket_team_name': 'myteam',
+                    'bitbucket_team_repo_name': 'myrepo',
+                }),
+            'https://bitbucket.org/myteam/myrepo/issue/%s/')
+
+    def test_team_check_repository(self):
+        """Testing Bitbucket team check_repository"""
+        def _http_get(service, url, *args, **kwargs):
+            self.assertEqual(
+                url,
+                'https://bitbucket.org/api/1.0/repositories/myteam/myrepo')
+            return '{}', {}
+
+        account = self._get_hosting_account()
+        service = account.service
+
+        service.authorize('myuser', 'abc123', None)
+
+        self.spy_on(service._http_get, call_fake=_http_get)
+
+        service.check_repository(bitbucket_team_name='myteam',
+                                 bitbucket_team_repo_name='myrepo',
+                                 plan='team')
+        self.assertTrue(service._http_get.called)
+
+    def test_authorize(self):
+        """Testing Bitbucket authorization password storage"""
+        account = self._get_hosting_account()
+        service = account.service
+
+        self.assertFalse(service.is_authorized())
+
+        service.authorize('myuser', 'abc123', None)
+
+        self.assertTrue('password' in account.data)
+        self.assertNotEqual(account.data['password'], 'abc123')
+        self.assertTrue(service.is_authorized())
 
     def test_get_file_with_mercurial_and_base_commit_id(self):
         """Testing Bitbucket get_file with Mercurial and base commit ID"""
