@@ -13,7 +13,7 @@ class RepositoryBranchesResourceTests(BaseWebAPITestCase):
 
     def test_get_repository_branches(self):
         """Testing the GET repositories/<id>/branches/ API"""
-        repository = self.create_repository(tool_name='Subversion')
+        repository = self.create_repository(tool_name='Test')
         rsp = self.apiGet(get_repository_branches_url(repository),
                           expected_mimetype=repository_branches_item_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
@@ -29,7 +29,7 @@ class RepositoryBranchesResourceTests(BaseWebAPITestCase):
         """Testing the GET repositories/<id>/branches/ API with a local site"""
         self._login_user(local_site=True)
 
-        repository = self.create_repository(tool_name='Subversion',
+        repository = self.create_repository(tool_name='Test',
                                             with_local_site=True)
 
         rsp = self.apiGet(

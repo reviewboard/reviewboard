@@ -17,16 +17,15 @@ class RepositoryCommitsResourceTests(BaseWebAPITestCase):
 
     def test_get_repository_commits(self):
         """Testing the GET repositories/<id>/commits/ API"""
-        repository = self.create_repository(tool_name='Subversion')
+        repository = self.create_repository(tool_name='Test')
 
         rsp = self.apiGet(get_repository_commits_url(repository),
                           query={'start': 5},
                           expected_mimetype=repository_commits_item_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(len(rsp['commits']), 5)
-        self.assertEqual(rsp['commits'][0]['date'],
-                         '2010-05-21T09:33:40.893946')
-        self.assertEqual(rsp['commits'][3]['author_name'], 'emurphy')
+        self.assertEqual(rsp['commits'][0]['message'], 'Commit 5')
+        self.assertEqual(rsp['commits'][3]['author_name'], 'user2')
 
     def test_get_repository_commits_without_start(self):
         """Testing the GET repositories/<id>/commits/ API without providing a start parameter"""
@@ -42,7 +41,7 @@ class RepositoryCommitsResourceTests(BaseWebAPITestCase):
         """Testing the GET repositories/<id>/commits/ API with a local site"""
         self._login_user(local_site=True)
         repository = self.create_repository(with_local_site=True,
-                                            tool_name='Subversion')
+                                            tool_name='Test')
 
         rsp = self.apiGet(
             get_repository_commits_url(repository, self.local_site_name),
@@ -51,8 +50,7 @@ class RepositoryCommitsResourceTests(BaseWebAPITestCase):
         self.assertEqual(len(rsp['commits']), 7)
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(rsp['commits'][0]['id'], '7')
-        self.assertEqual(rsp['commits'][1]['message'],
-                         'Add a branches directory')
+        self.assertEqual(rsp['commits'][1]['message'], 'Commit 6')
 
     @add_fixtures(['test_site'])
     def test_get_repository_commits_with_site_no_access(self):

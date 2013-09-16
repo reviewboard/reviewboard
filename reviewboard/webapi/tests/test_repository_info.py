@@ -11,7 +11,7 @@ class RepositoryInfoResourceTests(BaseWebAPITestCase):
 
     def test_get_repository_info(self):
         """Testing the GET repositories/<id>/info API"""
-        repository = self.create_repository(tool_name='Subversion')
+        repository = self.create_repository(tool_name='Test')
         rsp = self.apiGet(get_repository_info_url(repository),
                           expected_mimetype=repository_info_item_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
@@ -23,7 +23,7 @@ class RepositoryInfoResourceTests(BaseWebAPITestCase):
         """Testing the GET repositories/<id>/info API with a local site"""
         self._login_user(local_site=True)
         repository = self.create_repository(with_local_site=True,
-                                            tool_name='Subversion')
+                                            tool_name='Test')
 
         rsp = self.apiGet(
             get_repository_info_url(repository, self.local_site_name),

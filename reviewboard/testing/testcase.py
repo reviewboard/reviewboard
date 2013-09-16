@@ -160,7 +160,7 @@ class TestCase(DjbletsTestCase):
         testdata_dir = os.path.join(os.path.dirname(scmtools.__file__),
                                     'testdata')
 
-        if tool_name == 'Git':
+        if tool_name in ('Git', 'Test'):
             path = os.path.join(testdata_dir, 'git_repo')
         elif tool_name == 'Subversion':
             path = 'file://' + os.path.join(testdata_dir, 'svn_repo')

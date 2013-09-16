@@ -8,10 +8,10 @@ from reviewboard.reviews.models import ReviewRequest
 from reviewboard.scmtools.errors import (AuthenticationError,
                                          UnverifiedCertificateError)
 from reviewboard.scmtools.models import Repository
-from reviewboard.scmtools.svn import SVNTool
 from reviewboard.ssh.client import SSHClient
 from reviewboard.ssh.errors import (BadHostKeyError,
                                     UnknownHostKeyError)
+from reviewboard.testing.scmtool import TestTool
 from reviewboard.webapi.errors import (BAD_HOST_KEY,
                                        MISSING_USER_KEY,
                                        REPO_AUTHENTICATION_ERROR,
@@ -38,16 +38,16 @@ class RepositoryResourceTests(BaseWebAPITestCase):
 
         # Some tests will temporarily replace some functions, so back them up
         # so we can restore them.
-        self._old_check_repository = SVNTool.check_repository
-        self._old_accept_certificate = SVNTool.accept_certificate
+        self._old_check_repository = TestTool.check_repository
+        self._old_accept_certificate = TestTool.accept_certificate
         self._old_add_host_key = SSHClient.add_host_key
         self._old_replace_host_key = SSHClient.replace_host_key
 
     def tearDown(self):
         super(RepositoryResourceTests, self).tearDown()
 
-        SVNTool.check_repository = self._old_check_repository
-        SVNTool.accept_certificate = self._old_accept_certificate
+        TestTool.check_repository = self._old_check_repository
+        TestTool.accept_certificate = self._old_accept_certificate
         SSHClient.add_host_key = self._old_add_host_key
         SSHClient.replace_host_key = self._old_replace_host_key
 
@@ -107,7 +107,7 @@ class RepositoryResourceTests(BaseWebAPITestCase):
         def _check_repository(cls, *args, **kwargs):
             raise BadHostKeyError(hostname, key, expected_key)
 
-        SVNTool.check_repository = _check_repository
+        TestTool.check_repository = _check_repository
 
         self._login_user(admin=True)
         rsp = self._post_repository(False, expected_status=403)
@@ -138,7 +138,7 @@ class RepositoryResourceTests(BaseWebAPITestCase):
             if not saw['replace_host_key']:
                 raise BadHostKeyError(hostname, key, expected_key)
 
-        SVNTool.check_repository = _check_repository
+        TestTool.check_repository = _check_repository
         SSHClient.replace_host_key = _replace_host_key
 
         self._login_user(admin=True)
@@ -157,7 +157,7 @@ class RepositoryResourceTests(BaseWebAPITestCase):
         def _check_repository(cls, *args, **kwargs):
             raise UnknownHostKeyError(hostname, key)
 
-        SVNTool.check_repository = _check_repository
+        TestTool.check_repository = _check_repository
 
         self._login_user(admin=True)
         rsp = self._post_repository(False, expected_status=403)
@@ -184,7 +184,7 @@ class RepositoryResourceTests(BaseWebAPITestCase):
             if not saw['add_host_key']:
                 raise UnknownHostKeyError(hostname, key)
 
-        SVNTool.check_repository = _check_repository
+        TestTool.check_repository = _check_repository
         SSHClient.add_host_key = _add_host_key
 
         self._login_user(admin=True)
@@ -210,7 +210,7 @@ class RepositoryResourceTests(BaseWebAPITestCase):
         def _check_repository(cls, *args, **kwargs):
             raise UnverifiedCertificateError(cert)
 
-        SVNTool.check_repository = _check_repository
+        TestTool.check_repository = _check_repository
 
         self._login_user(admin=True)
         rsp = self._post_repository(False, expected_status=403)
@@ -250,8 +250,8 @@ class RepositoryResourceTests(BaseWebAPITestCase):
                 'fingerprint': '123',
             }
 
-        SVNTool.check_repository = _check_repository
-        SVNTool.accept_certificate = _accept_certificate
+        TestTool.check_repository = _check_repository
+        TestTool.accept_certificate = _accept_certificate
 
         self._login_user(admin=True)
         rsp = self._post_repository(False, data={
@@ -270,7 +270,7 @@ class RepositoryResourceTests(BaseWebAPITestCase):
             raise AuthenticationError(allowed_types=['publickey'],
                                       user_key=None)
 
-        SVNTool.check_repository = _check_repository
+        TestTool.check_repository = _check_repository
 
         self._login_user(admin=True)
         rsp = self._post_repository(False, expected_status=403)
@@ -283,7 +283,7 @@ class RepositoryResourceTests(BaseWebAPITestCase):
         def _check_repository(cls, *args, **kwargs):
             raise AuthenticationError
 
-        SVNTool.check_repository = _check_repository
+        TestTool.check_repository = _check_repository
 
         self._login_user(admin=True)
         rsp = self._post_repository(False, expected_status=403)
@@ -433,7 +433,7 @@ class RepositoryResourceTests(BaseWebAPITestCase):
             dict({
                 'name': repo_name,
                 'path': repo_path,
-                'tool': 'Subversion',
+                'tool': 'Test',
             }, **data),
             expected_status=expected_status,
             expected_mimetype=expected_mimetype)

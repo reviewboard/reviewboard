@@ -353,19 +353,23 @@ class FileDiffMigrationTests(TestCase):
 
     def setUp(self):
         self.diff = (
-            '--- README  123\n'
-            '+++ README  (new)\n'
+            'diff --git a/README b/README\n'
+            'index d6613f5..5b50866 100644\n'
+            '--- README\n'
+            '+++ README\n'
             '@ -1,1 +1,1 @@\n'
             '-blah blah\n'
             '+blah!\n')
         self.parent_diff = (
-            '--- README  123\n'
-            '+++ README  (new)\n'
+            'diff --git a/README b/README\n'
+            'index d6613f5..5b50866 100644\n'
+            '--- README\n'
+            '+++ README\n'
             '@ -1,1 +1,1 @@\n'
             '-blah..\n'
             '+blah blah\n')
 
-        repository = self.create_repository(tool_name='Subversion')
+        repository = self.create_repository(tool_name='Test')
         diffset = DiffSet.objects.create(name='test',
                                          revision=1,
                                          repository=repository)
@@ -570,22 +574,16 @@ class DiffSetManagerTests(SpyAgency, TestCase):
     def test_creating_with_diff_data(self):
         """Test creating a DiffSet from diff file data"""
         diff = (
-            'Index: README\n'
-            '==========================================================='
-            '========\n'
-            '--- README  (revision 123)\n'
-            '+++ README  (new)\n'
+            'diff --git a/README b/README\n'
+            'index d6613f5..5b50866 100644\n'
+            '--- README\n'
+            '+++ README\n'
             '@ -1,1 +1,1 @@\n'
             '-blah..\n'
             '+blah blah\n'
         )
 
-        repository = Repository.objects.create(
-            name='Subversion SVN',
-            path='file://%s' % (os.path.join(os.path.dirname(__file__),
-                                             '..', 'scmtools', 'testdata',
-                                             'svn_repo')),
-            tool=Tool.objects.get(name='Subversion'))
+        repository = self.create_repository(tool_name='Test')
 
         self.spy_on(repository.get_file_exists,
                     call_fake=lambda *args, **kwargs: True)
@@ -603,11 +601,10 @@ class UploadDiffFormTests(SpyAgency, TestCase):
     def test_creating_diffsets(self):
         """Test creating a DiffSet from form data"""
         diff = (
-            'Index: README\n'
-            '==========================================================='
-            '========\n'
-            '--- README  (revision 123)\n'
-            '+++ README  (new)\n'
+            'diff --git a/README b/README\n'
+            'index d6613f5..5b50866 100644\n'
+            '--- README\n'
+            '+++ README\n'
             '@ -1,1 +1,1 @@\n'
             '-blah..\n'
             '+blah blah\n'
@@ -616,12 +613,7 @@ class UploadDiffFormTests(SpyAgency, TestCase):
         diff_file = SimpleUploadedFile('diff', diff,
                                        content_type='text/x-patch')
 
-        repository = Repository.objects.create(
-            name='Subversion SVN',
-            path='file://%s' % (os.path.join(os.path.dirname(__file__),
-                                             '..', 'scmtools', 'testdata',
-                                             'svn_repo')),
-            tool=Tool.objects.get(name='Subversion'))
+        repository = self.create_repository(tool_name='Test')
 
         self.spy_on(repository.get_file_exists,
                     call_fake=lambda *args, **kwargs: True)
@@ -651,31 +643,28 @@ class UploadDiffFormTests(SpyAgency, TestCase):
             return True
 
         diff = (
-            'Index: README\n'
-            '==========================================================='
-            '========\n'
-            '--- README  (revision 124)\n'
-            '+++ README  (new)\n'
+            'diff --git a/README b/README\n'
+            'index d6613f5..5b50866 100644\n'
+            '--- README\n'
+            '+++ README\n'
             '@ -1,1 +1,1 @@\n'
             '-blah blah\n'
             '+blah!\n'
         )
         parent_diff_1 = (
-            'Index: README\n'
-            '==========================================================='
-            '========\n'
-            '--- README  (revision 123)\n'
-            '+++ README  (new)\n'
+            'diff --git a/README b/README\n'
+            'index d6613f4..5b50865 100644\n'
+            '--- README\n'
+            '+++ README\n'
             '@ -1,1 +1,1 @@\n'
             '-blah..\n'
             '+blah blah\n'
         )
         parent_diff_2 = (
-            'Index: UNUSED\n'
-            '==========================================================='
-            '========\n'
-            '--- UNUSED  (revision 123)\n'
-            '+++ UNUSED  (new)\n'
+            'diff --git a/UNUSED b/UNUSED\n'
+            'index 1234567..5b50866 100644\n'
+            '--- UNUSED\n'
+            '+++ UNUSED\n'
             '@ -1,1 +1,1 @@\n'
             '-foo\n'
             '+bar\n'
@@ -687,15 +676,7 @@ class UploadDiffFormTests(SpyAgency, TestCase):
         parent_diff_file = SimpleUploadedFile('parent_diff', parent_diff,
                                               content_type='text/x-patch')
 
-        # Note that we're using SVN here for the test just because it's
-        # a bit easier to test with than Git (easier diff parsing logic
-        # and revision numbers).
-        repository = Repository.objects.create(
-            name='Subversion SVN',
-            path='file://%s' % (os.path.join(os.path.dirname(__file__),
-                                             '..', 'scmtools', 'testdata',
-                                             'svn_repo')),
-            tool=Tool.objects.get(name='Subversion'))
+        repository = self.create_repository(tool_name='Test')
         self.spy_on(repository.get_file_exists, call_fake=get_file_exists)
 
         form = UploadDiffForm(
@@ -716,8 +697,8 @@ class UploadDiffFormTests(SpyAgency, TestCase):
         self.assertEqual(filediff.diff, diff)
         self.assertEqual(filediff.parent_diff, parent_diff_1)
 
-        self.assertTrue(('/README', '123') in saw_file_exists)
-        self.assertFalse(('/UNUSED', '123') in saw_file_exists)
+        self.assertTrue(('/README', 'd6613f4') in saw_file_exists)
+        self.assertFalse(('/UNUSED', '1234567') in saw_file_exists)
         self.assertEqual(len(saw_file_exists), 1)
 
     def test_mercurial_parent_diff_base_rev(self):

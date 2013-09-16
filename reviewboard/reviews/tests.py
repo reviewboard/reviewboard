@@ -1238,10 +1238,7 @@ class PostCommitTests(SpyAgency, TestCase):
             'scmtools', 'testdata')
 
         svn_repo_path = os.path.join(self.testdata_dir, 'svn_repo')
-        self.repository = Repository(name='Subversion SVN',
-                                     path='file://' + svn_repo_path,
-                                     tool=Tool.objects.get(name='Subversion'))
-        self.repository.save()
+        self.repository = self.create_repository(tool_name='Test')
 
     def test_update_from_committed_change(self):
         """Testing post-commit update"""
@@ -1253,8 +1250,7 @@ class PostCommitTests(SpyAgency, TestCase):
             commit = Commit()
             commit.message = \
                 'This is my commit message\n\nWith a summary line too.'
-            diff_filename = os.path.join(self.testdata_dir,
-                                         'svn_makefile.diff')
+            diff_filename = os.path.join(self.testdata_dir, 'git_readme.diff')
             f = open(diff_filename, 'r')
             commit.diff = f.read()
             f.close()
@@ -1263,7 +1259,7 @@ class PostCommitTests(SpyAgency, TestCase):
 
         def get_file_exists(repository, path, revision, base_commit_id=None,
                             request=None):
-            return (path, revision) in [('/doc/misc-docs/Makefile', '4')]
+            return (path, revision) in [('/readme', 'd6613f5')]
 
         self.spy_on(self.repository.get_change, call_fake=get_change)
         self.spy_on(self.repository.get_file_exists, call_fake=get_file_exists)
@@ -1282,8 +1278,8 @@ class PostCommitTests(SpyAgency, TestCase):
         self.assertEqual(diffset.files.count(), 1)
 
         fileDiff = diffset.files.get()
-        self.assertEqual(fileDiff.source_file, '/doc/misc-docs/Makefile')
-        self.assertEqual(fileDiff.source_revision, '4')
+        self.assertEqual(fileDiff.source_file, '/readme')
+        self.assertEqual(fileDiff.source_revision, 'd6613f5')
 
     def test_update_from_committed_change_without_repository_support(self):
         """Testing post-commit update failure conditions"""

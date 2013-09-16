@@ -1,0 +1,8 @@
+diff --git a/missing-file b/missing-file
+index d6613f0..5b50866 100644
+--- a/missing-file
++++ b/missing-file
+@@ -1 +1,3 @@
+ Hello there
++
++Oh hi!

@@ -5,6 +5,7 @@ from djblets.webapi.errors import INVALID_FORM_DATA
 
 from reviewboard import scmtools
 from reviewboard.diffviewer.models import DiffSet
+from reviewboard.testing.scmtool import TestTool
 from reviewboard.webapi.errors import DIFF_TOO_BIG
 from reviewboard.webapi.tests.base import BaseWebAPITestCase
 from reviewboard.webapi.tests.mimetypes import (diff_item_mimetype,
@@ -19,13 +20,13 @@ class DiffResourceTests(BaseWebAPITestCase):
 
     def test_post_diffs(self):
         """Testing the POST review-requests/<id>/diffs/ API"""
-        repository = self.create_repository(tool_name='Subversion')
+        repository = self.create_repository(tool_name='Test')
         review_request = self.create_review_request(
             repository=repository,
             submitter=self.user)
 
         diff_filename = os.path.join(os.path.dirname(scmtools.__file__),
-                                     'testdata', 'svn_makefile.diff')
+                                     'testdata', 'git_readme.diff')
         f = open(diff_filename, "r")
         rsp = self.apiPost(
             get_diff_list_url(review_request),
@@ -47,7 +48,7 @@ class DiffResourceTests(BaseWebAPITestCase):
 
     def test_post_diffs_with_missing_data(self):
         """Testing the POST review-requests/<id>/diffs/ API with Invalid Form Data"""
-        repository = self.create_repository(tool_name='Subversion')
+        repository = self.create_repository(tool_name='Test')
         review_request = self.create_review_request(
             repository=repository,
             submitter=self.user)
@@ -67,7 +68,7 @@ class DiffResourceTests(BaseWebAPITestCase):
             submitter=self.user)
 
         diff_filename = os.path.join(os.path.dirname(scmtools.__file__),
-                                     'testdata', 'svn_makefile.diff')
+                                     'testdata', 'git_readme.diff')
         f = open(diff_filename, "r")
         rsp = self.apiPost(
             get_diff_list_url(review_request),
@@ -91,7 +92,7 @@ class DiffResourceTests(BaseWebAPITestCase):
             submitter=self.user)
 
         diff_filename = os.path.join(os.path.dirname(scmtools.__file__),
-                                     'testdata', 'svn_makefile.diff')
+                                     'testdata', 'git_readme.diff')
         f = open(diff_filename, "r")
 
         rsp = self.apiPost(
@@ -115,7 +116,7 @@ class DiffResourceTests(BaseWebAPITestCase):
         user = self._login_user(local_site=True)
 
         repository = self.create_repository(with_local_site=True,
-                                            tool_name='Subversion')
+                                            tool_name='Test')
 
         review_request = self.create_review_request(
             with_local_site=True,
@@ -123,7 +124,7 @@ class DiffResourceTests(BaseWebAPITestCase):
             submitter=user)
 
         diff_filename = os.path.join(os.path.dirname(scmtools.__file__),
-                                     'testdata', 'svn_makefile.diff')
+                                     'testdata', 'git_readme.diff')
         f = open(diff_filename, 'r')
         rsp = self.apiPost(
             get_diff_list_url(review_request, self.local_site_name),
@@ -135,7 +136,7 @@ class DiffResourceTests(BaseWebAPITestCase):
         f.close()
 
         self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(rsp['diff']['name'], 'svn_makefile.diff')
+        self.assertEqual(rsp['diff']['name'], 'git_readme.diff')
 
     def test_get_diffs(self):
         """Testing the GET review-requests/<id>/diffs/ API"""

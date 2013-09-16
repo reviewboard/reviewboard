@@ -15,10 +15,10 @@ class ValidateDiffResourceTests(BaseWebAPITestCase):
 
     def test_post_diff(self):
         """Testing the POST validation/diffs/ API"""
-        repository = self.create_repository(tool_name='Subversion')
+        repository = self.create_repository(tool_name='Test')
 
         diff_filename = os.path.join(os.path.dirname(scmtools.__file__),
-                                     'testdata', 'svn_makefile.diff')
+                                     'testdata', 'git_readme.diff')
         f = open(diff_filename, "r")
 
         self.apiPost(
@@ -35,10 +35,10 @@ class ValidateDiffResourceTests(BaseWebAPITestCase):
 
     def test_post_diff_with_missing_basedir(self):
         """Testing the POST validations/diffs/ API with a missing basedir"""
-        repository = self.create_repository(tool_name='Subversion')
+        repository = self.create_repository(tool_name='Test')
 
         diff_filename = os.path.join(os.path.dirname(scmtools.__file__),
-                                     'testdata', 'svn_makefile.diff')
+                                     'testdata', 'git_readme.diff')
         f = open(diff_filename, 'r')
 
         rsp = self.apiPost(
@@ -56,10 +56,10 @@ class ValidateDiffResourceTests(BaseWebAPITestCase):
 
     def test_post_diff_with_files_not_found(self):
         """Testing the POST validation/diffs/ API with source files not found"""
-        repository = self.create_repository(tool_name='Subversion')
+        repository = self.create_repository(tool_name='Test')
 
         diff_filename = os.path.join(os.path.dirname(scmtools.__file__),
-                                     'testdata', 'svn_file_not_found.diff')
+                                     'testdata', 'git_file_not_found.diff')
         f = open(diff_filename, 'r')
 
         rsp = self.apiPost(
@@ -67,23 +67,22 @@ class ValidateDiffResourceTests(BaseWebAPITestCase):
             {
                 'repository': repository.pk,
                 'path': f,
-                'basedir': '/trunk',
+                'basedir': '',
             },
             expected_status=400)
         f.close()
 
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], REPO_FILE_NOT_FOUND.code)
-        self.assertEqual(rsp['file'], '/trunk/doc/misc-docs/Makefile2')
-        self.assertEqual(rsp['revision'], '4')
+        self.assertEqual(rsp['file'], 'missing-file')
+        self.assertEqual(rsp['revision'], 'd6613f0')
 
     def test_post_diff_with_parse_error(self):
         """Testing the POST validation/diffs/ API with a malformed diff file"""
-        # Post a git diff against the svn repository
-        repository = self.create_repository(tool_name='Subversion')
+        repository = self.create_repository(tool_name='Test')
 
         diff_filename = os.path.join(os.path.dirname(scmtools.__file__),
-                                     'testdata', 'git_complex.diff')
+                                     'testdata', 'stunnel.pem')
         f = open(diff_filename, 'r')
         rsp = self.apiPost(
             get_validate_diff_url(),
@@ -97,7 +96,6 @@ class ValidateDiffResourceTests(BaseWebAPITestCase):
 
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], DIFF_PARSE_ERROR.code)
-        self.assertEqual(
-            rsp['reason'],
-            'No valid separator after the filename was found in the diff header')
-        self.assertEqual(rsp['linenum'], 2)
+        self.assertEqual(rsp['reason'],
+                         'This does not appear to be a git diff')
+        self.assertEqual(rsp['linenum'], 0)
