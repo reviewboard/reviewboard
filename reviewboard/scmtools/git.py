@@ -170,6 +170,10 @@ class GitDiffParser(DiffParser):
 
             i = next_i
 
+        if not self.files and preamble.strip() != '':
+            # This is probably not an actual git diff file.
+            raise DiffParserError('This does not appear to be a git diff', 0)
+
         return self.files
 
     def _parse_diff(self, linenum):
