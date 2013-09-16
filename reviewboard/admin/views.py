@@ -1,3 +1,4 @@
+import json
 import logging
 
 from django.conf import settings
@@ -6,7 +7,6 @@ from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import render_to_response
 from django.template.context import RequestContext
 from django.template.loader import render_to_string
-from django.utils import simplejson
 from django.utils.translation import ugettext as _
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.siteconfig.views import site_settings as djblets_site_settings
@@ -137,7 +137,7 @@ def widget_activity(request):
     """
     activity_data = dynamic_activity_data(request)
 
-    return HttpResponse(simplejson.dumps(activity_data),
+    return HttpResponse(json.dumps(activity_data),
                         mimetype="application/json")
 
 

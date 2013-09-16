@@ -1,10 +1,10 @@
 import base64
+import json
 import logging
 import mimetools
 import urllib2
 from urlparse import urlparse
 
-from django.utils import simplejson
 from django.utils.translation import ugettext_lazy as _
 from pkg_resources import iter_entry_points
 
@@ -225,11 +225,11 @@ class HostingService(object):
 
     def _json_get(self, *args, **kwargs):
         data, headers = self._http_get(*args, **kwargs)
-        return simplejson.loads(data), headers
+        return json.loads(data), headers
 
     def _json_post(self, *args, **kwargs):
         data, headers = self._http_post(*args, **kwargs)
-        return simplejson.loads(data), headers
+        return json.loads(data), headers
 
     def _http_get(self, url, *args, **kwargs):
         return self._http_request(url, **kwargs)

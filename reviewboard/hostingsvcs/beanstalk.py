@@ -1,9 +1,9 @@
+import json
 import os
 from urllib import quote
 from urllib2 import HTTPError, URLError
 
 from django import forms
-from django.utils import simplejson
 from django.utils.translation import ugettext_lazy as _
 
 from reviewboard.hostingsvcs.forms import HostingServiceForm
@@ -157,12 +157,12 @@ class Beanstalk(HostingService):
             if raw_content:
                 return data
             else:
-                return simplejson.loads(data)
+                return json.loads(data)
         except HTTPError, e:
             data = e.read()
 
             try:
-                rsp = simplejson.loads(data)
+                rsp = json.loads(data)
             except:
                 rsp = None
 

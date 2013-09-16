@@ -1,3 +1,4 @@
+import json
 import logging
 import os
 from uuid import uuid4
@@ -6,7 +7,6 @@ import mimeparse
 from django.http import HttpResponse
 from django.template.context import RequestContext
 from django.template.loader import render_to_string
-from django.utils import simplejson
 from django.utils.html import escape
 from django.utils.safestring import mark_safe
 
@@ -179,7 +179,7 @@ class ReviewUI(object):
         The result of this can be used directly in a template to provide
         comments to JavaScript functions.
         """
-        return mark_safe(simplejson.dumps(
+        return mark_safe(json.dumps(
             self.serialize_comments(self.get_comments())))
 
     def serialize_comments(self, comments):

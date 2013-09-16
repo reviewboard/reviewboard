@@ -1,8 +1,8 @@
+import json
 from urllib import quote
 from urllib2 import HTTPError, URLError
 
 from django import forms
-from django.utils import simplejson
 from django.utils.translation import ugettext_lazy as _
 
 from reviewboard.hostingsvcs.errors import InvalidPlanError
@@ -240,7 +240,7 @@ class Bitbucket(HostingService):
             if raw_content:
                 return data
             else:
-                return simplejson.loads(data)
+                return json.loads(data)
         except HTTPError, e:
             # Bitbucket's API documentation doesn't provide any information
             # on an error structure, and the API browser shows that we

@@ -1,3 +1,4 @@
+import json
 import logging
 
 from django import template
@@ -5,7 +6,6 @@ from django.db.models import Q
 from django.template import TemplateSyntaxError
 from django.template.defaultfilters import stringfilter
 from django.template.loader import render_to_string
-from django.utils import simplejson
 from django.utils.html import escape
 from django.utils.translation import ugettext_lazy as _
 from djblets.util.decorators import basictag, blocktag
@@ -134,7 +134,7 @@ def commentcounts(context, filediff, interfilediff=None):
         cmp=lambda x, y: (cmp(x['linenum'], y['linenum'] or
                           cmp(x['num_lines'], y['num_lines']))))
 
-    return simplejson.dumps(comments_array)
+    return json.dumps(comments_array)
 
 
 @register.tag
@@ -187,7 +187,7 @@ def screenshotcommentcounts(context, screenshot):
                     comment.issue_status),
             })
 
-    return simplejson.dumps(comments)
+    return json.dumps(comments)
 
 
 @register.tag
@@ -217,7 +217,7 @@ def file_attachment_comments(context, file_attachment):
                     comment.issue_status),
             })
 
-    return simplejson.dumps(comments)
+    return json.dumps(comments)
 
 
 @register.tag

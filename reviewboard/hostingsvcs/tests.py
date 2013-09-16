@@ -1,4 +1,5 @@
 from __future__ import with_statement
+import json
 from hashlib import md5
 from textwrap import dedent
 from urllib2 import HTTPError
@@ -6,7 +7,6 @@ from urlparse import urlparse
 
 from django.contrib.sites.models import Site
 from django.test import TestCase
-from django.utils import simplejson
 from kgb import SpyAgency
 
 from reviewboard.hostingsvcs.models import HostingServiceAccount
@@ -791,7 +791,7 @@ class GitHubTests(ServiceTests):
         """Testing that GitHub associated SSH keys are correctly identified"""
         associated_key = 'good_key'
         unassociated_key = 'bad_key'
-        keys = simplejson.dumps([
+        keys = json.dumps([
             {'key': 'neutral_key'},
             {'key': associated_key}
         ])
@@ -841,7 +841,7 @@ class GitHubTests(ServiceTests):
 
         service = account.service
         service.associate_ssh_key(repository, 'mykey')
-        req_body = simplejson.loads(http_post_data['kwargs']['body'])
+        req_body = json.loads(http_post_data['kwargs']['body'])
         expected_title = ('Review Board (%s)'
                           % Site.objects.get_current().domain)
 
@@ -861,7 +861,7 @@ class GitHubTests(ServiceTests):
             http_post_data['args'] = args
             http_post_data['kwargs'] = kwargs
 
-            return simplejson.dumps({
+            return json.dumps({
                 'id': 1,
                 'url': 'https://api.github.com/authorizations/1',
                 'scopes': ['user', 'repo'],
@@ -897,7 +897,7 @@ class GitHubTests(ServiceTests):
             http_post_data['args'] = args
             http_post_data['kwargs'] = kwargs
 
-            return simplejson.dumps({
+            return json.dumps({
                 'id': 1,
                 'url': 'https://api.github.com/authorizations/1',
                 'scopes': ['user', 'repo'],
@@ -921,13 +921,13 @@ class GitHubTests(ServiceTests):
 
         self.assertTrue(account.is_authorized)
 
-        body = simplejson.loads(http_post_data['kwargs']['body'])
+        body = json.loads(http_post_data['kwargs']['body'])
         self.assertEqual(body['client_id'], client_id)
         self.assertEqual(body['client_secret'], client_secret)
 
     def test_get_branches(self):
         """Testing GitHub get_branches implementation"""
-        branches_api_response = simplejson.dumps([
+        branches_api_response = json.dumps([
             {
                 'ref': 'refs/heads/master',
                 'object': {
@@ -979,7 +979,7 @@ class GitHubTests(ServiceTests):
 
     def test_get_commits(self):
         """Testing GitHub get_commits implementation"""
-        commits_api_response = simplejson.dumps([
+        commits_api_response = json.dumps([
             {
                 'commit': {
                     'author': {'name': 'Christian Hammond'},
@@ -1045,7 +1045,7 @@ class GitHubTests(ServiceTests):
         parent_sha = '44568f7d33647d286691517e6325fea5c7a21d5e'
         tree_sha = '56e25e58380daf9b4dfe35677ae6043fe1743922'
 
-        commits_api_response = simplejson.dumps([
+        commits_api_response = json.dumps([
             {
                 'commit': {
                     'author': {'name': 'David Trowbridge'},
@@ -1057,7 +1057,7 @@ class GitHubTests(ServiceTests):
             },
         ])
 
-        compare_api_response = simplejson.dumps({
+        compare_api_response = json.dumps({
             'base_commit': {
                 'commit': {
                     'tree': {'sha': tree_sha},
@@ -1128,7 +1128,7 @@ class GitHubTests(ServiceTests):
             ]
         })
 
-        trees_api_response = simplejson.dumps({
+        trees_api_response = json.dumps({
             'tree': [
                 {
                     'path': 'reviewboard/static/rb/css/defs.less',

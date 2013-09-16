@@ -1,4 +1,5 @@
 import httplib
+import json
 import logging
 import urllib2
 
@@ -6,7 +7,6 @@ from django import forms
 from django.conf import settings
 from django.contrib.sites.models import Site
 from django.core.cache import cache
-from django.utils import simplejson
 from django.utils.translation import ugettext_lazy as _
 from djblets.siteconfig.models import SiteConfiguration
 
@@ -214,12 +214,12 @@ class GitHub(HostingService):
                 url=self.get_api_url(hosting_url) + 'authorizations',
                 username=username,
                 password=password,
-                body=simplejson.dumps(body))
+                body=json.dumps(body))
         except (urllib2.HTTPError, urllib2.URLError), e:
             data = e.read()
 
             try:
-                rsp = simplejson.loads(data)
+                rsp = json.loads(data)
             except:
                 rsp = None
 
@@ -430,7 +430,7 @@ class GitHub(HostingService):
 
             self._key_association_api_call(self._http_post, url,
                                            content_type='application/json',
-                                           body=simplejson.dumps(post_data))
+                                           body=json.dumps(post_data))
 
     def _key_association_api_call(self, instance_method, *args,
                                   **kwargs):
@@ -444,7 +444,7 @@ class GitHub(HostingService):
             return response
         except (urllib2.HTTPError, urllib2.URLError), e:
             try:
-                rsp = simplejson.loads(e.read())
+                rsp = json.loads(e.read())
                 status_code = e.code
             except:
                 rsp = None
@@ -524,12 +524,12 @@ class GitHub(HostingService):
     def _api_get(self, url):
         try:
             data, headers = self._http_get(url)
-            return simplejson.loads(data)
+            return json.loads(data)
         except (urllib2.URLError, urllib2.HTTPError), e:
             data = e.read()
 
             try:
-                rsp = simplejson.loads(data)
+                rsp = json.loads(data)
             except:
                 rsp = None
 

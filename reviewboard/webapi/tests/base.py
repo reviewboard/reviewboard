@@ -1,9 +1,9 @@
+import json
 import os
 
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.core import mail
-from django.utils import simplejson
 from djblets.siteconfig.models import SiteConfiguration
 
 from reviewboard import initialize
@@ -94,7 +94,7 @@ class BaseWebAPITestCase(TestCase, EmailTestHelper):
         for header in expected_headers:
             self.assertTrue(header in response)
 
-        rsp = simplejson.loads(response.content)
+        rsp = json.loads(response.content)
         print "Response: %s" % rsp
 
         return rsp
@@ -191,7 +191,7 @@ class BaseWebAPITestCase(TestCase, EmailTestHelper):
             self.assertEqual(response.content, '')
             rsp = None
         else:
-            rsp = simplejson.loads(response.content)
+            rsp = json.loads(response.content)
             print "Response: %s" % rsp
 
         return rsp
