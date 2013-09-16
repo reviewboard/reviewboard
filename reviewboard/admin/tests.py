@@ -16,10 +16,20 @@ from reviewboard.site.urlresolvers import local_site_reverse
 
 class UpdateTests(TestCase):
     """Tests for update required pages"""
+    def setUp(self):
+        self.old_media_root = settings.MEDIA_ROOT
 
     def tearDown(self):
         # Make sure we don't break further tests by resetting this fully.
         checks.reset_check_cache()
+
+        # If testManualUpdatesRequiredBadUpload failed in the middle, it could
+        # neglect to fix the MEDIA_ROOT, which will break a bunch of future
+        # tests. Make sure it's always what we expect.
+        settings.MEDIA_ROOT = self.old_media_root
+        siteconfig = SiteConfiguration.objects.get_current()
+        siteconfig.set('site_media_root', self.old_media_root)
+        siteconfig.save()
 
     def testManualUpdatesRequired(self):
         """Testing check_updates_required with valid configuration"""
@@ -34,7 +44,6 @@ class UpdateTests(TestCase):
         """Testing check_updates_required with a bad upload directory"""
         siteconfig = SiteConfiguration.objects.get_current()
 
-        old_media_root = settings.MEDIA_ROOT
         siteconfig.set('site_media_root', '/')
         siteconfig.save()
         settings.MEDIA_ROOT = "/"
@@ -50,8 +59,9 @@ class UpdateTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, "admin/manual_updates_required.html")
 
-        settings.MEDIA_ROOT = old_media_root
-        siteconfig.set('site_media_root', old_media_root)
+        settings.MEDIA_ROOT = self.old_media_root
+        siteconfig = SiteConfiguration.objects.get_current()
+        siteconfig.set('site_media_root', self.old_media_root)
         siteconfig.save()
 
         # Make sure that the site works again once the media root is fixed.
