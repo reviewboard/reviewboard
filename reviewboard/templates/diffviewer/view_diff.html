@@ -209,7 +209,9 @@
 {%  else %}
             interdiffRevision: null,
 {%  endif %}
+{%  if latest_diffset %}
             latestRevision: {{latest_diffset.revision}},
+{%  endif %}
             isInterdiff: {{interdiffset|yesno:"true,false"}},
             isDraftDiff: {{is_draft_diff|yesno:"true,false"}}
         }),
