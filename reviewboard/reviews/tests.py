@@ -338,13 +338,14 @@ class DbQueryTests(TestCase):
         r_summaries = [r.summary for r in review_requests]
 
         for summary in r_summaries:
-            self.assert_(summary in summaries,
-                         u'summary "%s" not found in summary list' % summary)
+            self.assertTrue(summary in summaries,
+                            u'summary "%s" not found in summary list'
+                            % summary)
 
         for summary in summaries:
-            self.assert_(summary in r_summaries,
-                         u'summary "%s" not found in review request list' %
-                         summary)
+            self.assertTrue(summary in r_summaries,
+                            u'summary "%s" not found in review request list'
+                            % summary)
 
 
 class ViewTests(TestCase):
@@ -655,7 +656,7 @@ class ViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
 
         datagrid = self.getContextVar(response, 'datagrid')
-        self.assert_(datagrid)
+        self.assertTrue(datagrid)
         self.assertEqual(len(datagrid.rows), 3)
         self.assertEqual(datagrid.rows[0]['object'].summary, 'Test 3')
         self.assertEqual(datagrid.rows[1]['object'].summary, 'Test 2')
@@ -674,7 +675,7 @@ class ViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
 
         datagrid = self.getContextVar(response, 'datagrid')
-        self.assert_(datagrid)
+        self.assertTrue(datagrid)
         self.assertEqual(len(datagrid.rows), 4)
         self.assertEqual(datagrid.rows[0]['object'].username, 'admin')
         self.assertEqual(datagrid.rows[1]['object'].username, 'doc')
@@ -704,7 +705,7 @@ class ViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
 
         datagrid = self.getContextVar(response, 'datagrid')
-        self.assert_(datagrid)
+        self.assertTrue(datagrid)
         self.assertEqual(len(datagrid.rows), 4)
         self.assertEqual(datagrid.rows[0]['object'].name, 'devgroup')
         self.assertEqual(datagrid.rows[1]['object'].name, 'emptygroup')
@@ -739,7 +740,7 @@ class ViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
 
         datagrid = self.getContextVar(response, 'datagrid')
-        self.assert_(datagrid)
+        self.assertTrue(datagrid)
         self.assertEqual(len(datagrid.rows), 2)
         self.assertEqual(datagrid.rows[0]['object'].summary, 'Test 2')
         self.assertEqual(datagrid.rows[1]['object'].summary, 'Test 1')
@@ -766,7 +767,7 @@ class ViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
 
         datagrid = self.getContextVar(response, 'datagrid')
-        self.assert_(datagrid)
+        self.assertTrue(datagrid)
         self.assertEqual(len(datagrid.rows), 2)
         self.assertEqual(datagrid.rows[0]['object'].summary, 'Test 2')
         self.assertEqual(datagrid.rows[1]['object'].summary, 'Test 1')
@@ -796,7 +797,7 @@ class ViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
 
         datagrid = self.getContextVar(response, 'datagrid')
-        self.assert_(datagrid)
+        self.assertTrue(datagrid)
         self.assertEqual(len(datagrid.rows), 2)
         self.assertEqual(datagrid.rows[0]['object'].summary, 'Test 2')
         self.assertEqual(datagrid.rows[1]['object'].summary, 'Test 1')
@@ -826,7 +827,7 @@ class ViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
 
         datagrid = self.getContextVar(response, 'datagrid')
-        self.assert_(datagrid)
+        self.assertTrue(datagrid)
         self.assertEqual(len(datagrid.rows), 2)
         self.assertEqual(datagrid.rows[0]['object'].summary, 'Test 2')
         self.assertEqual(datagrid.rows[1]['object'].summary, 'Test 1')
@@ -993,7 +994,7 @@ class ViewTests(TestCase):
         self.assertEqual(self.getContextVar(response, 'num_diffs'), 2)
 
         files = self.getContextVar(response, 'files')
-        self.assert_(files)
+        self.assertTrue(files)
         self.assertEqual(len(files), 2)
 
         self.assertEqual(files[0]['depot_filename'], '/newfile')
@@ -1072,7 +1073,7 @@ class ViewTests(TestCase):
         self.assertEqual(self.getContextVar(response, 'num_diffs'), 2)
 
         files = self.getContextVar(response, 'files')
-        self.assert_(files)
+        self.assertTrue(files)
         self.assertEqual(len(files), 1)
 
         self.assertEqual(files[0]['depot_filename'], '/newfile')
@@ -1164,11 +1165,11 @@ class DraftTests(TestCase):
         changes = draft.publish()
         fields = changes.fields_changed
 
-        self.assert_("summary" in fields)
-        self.assert_("description" in fields)
-        self.assert_("testing_done" in fields)
-        self.assert_("branch" in fields)
-        self.assert_("bugs_closed" in fields)
+        self.assertTrue("summary" in fields)
+        self.assertTrue("description" in fields)
+        self.assertTrue("testing_done" in fields)
+        self.assertTrue("branch" in fields)
+        self.assertTrue("bugs_closed" in fields)
 
         old_bugs_norm = set([(bug,) for bug in old_bugs])
         new_bugs_norm = set([(bug,) for bug in new_bugs])
@@ -1237,7 +1238,6 @@ class PostCommitTests(SpyAgency, TestCase):
             os.path.dirname(os.path.dirname(__file__)),
             'scmtools', 'testdata')
 
-        svn_repo_path = os.path.join(self.testdata_dir, 'svn_repo')
         self.repository = self.create_repository(tool_name='Test')
 
     def test_update_from_committed_change(self):
@@ -1368,13 +1368,13 @@ class DefaultReviewerTests(TestCase):
         repo2.save()
 
         default_reviewers = DefaultReviewer.objects.for_repository(repo1, None)
-        self.assert_(len(default_reviewers) == 2)
-        self.assert_(default_reviewer1 in default_reviewers)
-        self.assert_(default_reviewer2 in default_reviewers)
+        self.assertEqual(len(default_reviewers), 2)
+        self.assertTrue(default_reviewer1 in default_reviewers)
+        self.assertTrue(default_reviewer2 in default_reviewers)
 
         default_reviewers = DefaultReviewer.objects.for_repository(repo2, None)
-        self.assert_(len(default_reviewers) == 1)
-        self.assert_(default_reviewer2 in default_reviewers)
+        self.assertEqual(len(default_reviewers), 1)
+        self.assertTrue(default_reviewer2 in default_reviewers)
 
     def test_for_repository_with_localsite(self):
         """Testing DefaultReviewer.objects.for_repository with a LocalSite."""
@@ -1389,12 +1389,12 @@ class DefaultReviewerTests(TestCase):
 
         default_reviewers = DefaultReviewer.objects.for_repository(
             None, test_site)
-        self.assert_(len(default_reviewers) == 1)
-        self.assert_(default_reviewer1 in default_reviewers)
+        self.assertEqual(len(default_reviewers), 1)
+        self.assertTrue(default_reviewer1 in default_reviewers)
 
         default_reviewers = DefaultReviewer.objects.for_repository(None, None)
-        self.assert_(len(default_reviewers) == 1)
-        self.assert_(default_reviewer2 in default_reviewers)
+        self.assertEqual(len(default_reviewers), 1)
+        self.assertTrue(default_reviewer2 in default_reviewers)
 
     def test_form_with_localsite(self):
         """Testing DefaultReviewerForm with a LocalSite."""

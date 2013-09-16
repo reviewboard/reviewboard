@@ -79,7 +79,7 @@ class WatchedReviewGroupResourceTests(BaseWebAPITestCase):
             {'object_id': group.name},
             expected_mimetype=watched_review_group_item_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
-        self.assert_(group in self.user.get_profile().starred_groups.all())
+        self.assertTrue(group in self.user.get_profile().starred_groups.all())
 
         return group
 

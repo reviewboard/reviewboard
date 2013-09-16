@@ -80,7 +80,7 @@ class FileAttachmentResourceTests(BaseWebAPITestCase):
         self.assertNotEqual(review_request.submitter, self.user)
 
         f = open(self._getTrophyFilename(), "r")
-        self.assert_(f)
+        self.assertTrue(f)
         rsp = self.apiPost(
             get_file_attachment_list_url(review_request),
             {

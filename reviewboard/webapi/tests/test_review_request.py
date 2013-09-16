@@ -686,7 +686,7 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
         self.user.user_permissions.add(
             Permission.objects.get(codename='delete_reviewrequest'))
         self.user.save()
-        self.assert_(self.user.has_perm('reviews.delete_reviewrequest'))
+        self.assertTrue(self.user.has_perm('reviews.delete_reviewrequest'))
 
         review_request = self.create_review_request(submitter=self.user,
                                                     publish=True)
@@ -718,7 +718,7 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
         self.user.user_permissions.add(
             Permission.objects.get(codename='delete_reviewrequest'))
         self.user.save()
-        self.assert_(self.user.has_perm('reviews.delete_reviewrequest'))
+        self.assertTrue(self.user.has_perm('reviews.delete_reviewrequest'))
 
         rsp = self.apiDelete(get_review_request_item_url(999),
                              expected_status=404)

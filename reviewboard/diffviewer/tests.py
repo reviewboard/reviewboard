@@ -195,9 +195,9 @@ class DiffParserTest(unittest.TestCase):
             data = f.read()
             f.close()
 
-            self.failUnless(file.origFile.startswith("%s/orig_src/" %
+            self.assertTrue(file.origFile.startswith("%s/orig_src/" %
                                                      self.PREFIX))
-            self.failUnless(file.newFile.startswith("%s/new_src/" %
+            self.assertTrue(file.newFile.startswith("%s/new_src/" %
                                                     self.PREFIX))
             self.assertNotEquals(file.origInfo, "")
             self.assertNotEquals(file.newInfo, "")

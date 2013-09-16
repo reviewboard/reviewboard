@@ -100,8 +100,8 @@ class WatchedReviewRequestResourceTests(BaseWebAPITestCase):
             {'object_id': review_request.display_id},
             expected_mimetype=watched_review_request_item_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
-        self.assert_(review_request in
-                     self.user.get_profile().starred_review_requests.all())
+        self.assertTrue(review_request in
+                        self.user.get_profile().starred_review_requests.all())
 
     def test_post_watched_review_request_with_does_not_exist_error(self):
         """Testing the POST users/<username>/watched/review_request/
