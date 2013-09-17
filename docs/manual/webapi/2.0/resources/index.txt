@@ -12,6 +12,10 @@ Resources
    diff
    default-reviewer-list
    default-reviewer
+   draft-diff-list
+   draft-diff
+   draft-file-diff-list
+   draft-file-diff
    draft-file-attachment-list
    draft-file-attachment
    draft-screenshot-list

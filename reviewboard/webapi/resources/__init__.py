@@ -65,8 +65,14 @@ class Resources(object):
                          self.review_reply_diff_comment or
                          self.review_diff_comment))
         register_resource_for_model(DefaultReviewer, self.default_reviewer)
-        register_resource_for_model(DiffSet, self.diff)
-        register_resource_for_model(FileDiff, self.filediff)
+        register_resource_for_model(
+            DiffSet,
+            lambda obj: obj.history_id and self.diff or self.draft_diff)
+        register_resource_for_model(
+            FileDiff,
+            lambda obj: (obj.diffset.history_id and
+                         self.filediff or
+                         self.draft_filediff))
         register_resource_for_model(Group, self.review_group)
         register_resource_for_model(RegisteredExtension, self.extension)
         register_resource_for_model(HostingServiceAccount,

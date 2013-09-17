@@ -2245,7 +2245,7 @@
             "basedir": "",
             "diffcompat": 1,
             "revision": 2,
-            "history": 8
+            "history": null
         }
     },
     {
@@ -2744,7 +2744,7 @@
             "target_people": [
                 4
             ],
-            "diffset": null,
+            "diffset": 10,
             "screenshots": [
                 1
             ],

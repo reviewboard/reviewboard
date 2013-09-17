@@ -17,7 +17,7 @@ from reviewboard import scmtools
 from reviewboard.attachments.models import FileAttachment
 from reviewboard.diffviewer.models import DiffSet, DiffSetHistory, FileDiff
 from reviewboard.reviews.models import (Comment, Group, Review, ReviewRequest,
-                                        Screenshot)
+                                        ReviewRequestDraft, Screenshot)
 from reviewboard.scmtools.models import Repository, Tool
 from reviewboard.site.models import LocalSite
 
@@ -62,7 +62,7 @@ class TestCase(DjbletsTestCase):
         return doc
 
     def create_diffset(self, review_request=None, revision=1, repository=None,
-                       name='diffset'):
+                       draft=False, name='diffset'):
         """Creates a DiffSet for testing.
 
         The DiffSet defaults to revision 1. This can be overriden by the
@@ -79,7 +79,13 @@ class TestCase(DjbletsTestCase):
             repository=repository)
 
         if review_request:
-            review_request.diffset_history.diffsets.add(diffset)
+            if draft:
+                review_request_draft = \
+                    ReviewRequestDraft.create(review_request)
+                review_request_draft.diffset = diffset
+                review_request_draft.save()
+            else:
+                review_request.diffset_history.diffsets.add(diffset)
 
         return diffset
 

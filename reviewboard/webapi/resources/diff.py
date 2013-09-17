@@ -21,8 +21,6 @@ from reviewboard.webapi.errors import (DIFF_EMPTY,
                                        DIFF_TOO_BIG,
                                        REPO_FILE_NOT_FOUND)
 from reviewboard.webapi.resources import resources
-from reviewboard.webapi.resources.review_request_draft import \
-    ReviewRequestDraftResource
 
 
 class DiffResource(WebAPIResource):
@@ -101,13 +99,7 @@ class DiffResource(WebAPIResource):
             history__review_request=review_request)
 
     def get_parent_object(self, diffset):
-        history = diffset.history
-
-        if history:
-            return history.review_request.get()
-        else:
-            # This isn't in a history yet. It's part of a draft.
-            return diffset.review_request_draft.get().review_request
+        return diffset.history.review_request.get()
 
     def has_access_permissions(self, request, diffset, *args, **kwargs):
         review_request = diffset.history.review_request.get()
@@ -242,6 +234,11 @@ class DiffResource(WebAPIResource):
             <Unified Diff Content Here>
             -- SoMe BoUnDaRy --
         """
+        # Prevent a circular dependency, as ReviewRequestDraftResource
+        # needs DraftDiffResource, which needs DiffResource.
+        from reviewboard.webapi.resources.review_request_draft import \
+            ReviewRequestDraftResource
+
         try:
             review_request = \
                 resources.review_request.get_object(request, *args, **kwargs)

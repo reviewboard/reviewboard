@@ -7,6 +7,7 @@ from djblets.util.http import set_last_modified
 from djblets.webapi.errors import DOES_NOT_EXIST
 
 from reviewboard.diffviewer.diffutils import get_original_file
+from reviewboard.diffviewer.models import DiffSet
 from reviewboard.webapi.base import WebAPIResource
 from reviewboard.webapi.decorators import webapi_check_login_required
 from reviewboard.webapi.errors import FILE_RETRIEVAL_ERROR
@@ -20,14 +21,23 @@ class OriginalFileResource(WebAPIResource):
     allowed_item_mimetypes = ['text/plain']
 
     @webapi_check_login_required
-    def get(self, request, *args, **kwargs):
+    def get(self, request, diffset_id=None, *args, **kwargs):
         """Returns the original unpatched file.
 
         The file is returned as :mimetype:`text/plain` and is the original
         file before applying a patch.
         """
         try:
-            filediff = resources.filediff.get_object(request, *args, **kwargs)
+            attached_diffset = DiffSet.objects.filter(pk=diffset_id,
+                                                      history__isnull=True)
+
+            if attached_diffset.exists():
+                filediff_resource = resources.filediff
+            else:
+                filediff_resource = resources.draft_filediff
+
+            filediff = filediff_resource.get_object(
+                request, diffset=diffset_id, *args, **kwargs)
         except ObjectDoesNotExist:
             return DOES_NOT_EXIST
 

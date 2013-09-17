@@ -64,7 +64,9 @@ class BaseWebAPITestCase(TestCase, EmailTestHelper):
 
         if expected_status >= 400:
             self.assertEqual(expected_mimetype, None)
-            self.assertEqual(response['Content-Type'], error_mimetype)
+
+            if expected_status != 405:
+                self.assertEqual(response['Content-Type'], error_mimetype)
         else:
             self.assertNotEqual(expected_mimetype, None)
             self.assertEqual(response['Content-Type'], expected_mimetype)
@@ -115,7 +117,9 @@ class BaseWebAPITestCase(TestCase, EmailTestHelper):
 
         if expected_status >= 400:
             self.assertEqual(expected_mimetype, None)
-            self.assertEqual(response['Content-Type'], error_mimetype)
+
+            if expected_status != 405:
+                self.assertEqual(response['Content-Type'], error_mimetype)
         else:
             self.assertNotEqual(expected_mimetype, None)
             self.assertEqual(response['Content-Type'], expected_mimetype)
@@ -193,7 +197,7 @@ class BaseWebAPITestCase(TestCase, EmailTestHelper):
             return path
 
     def _get_result(self, response, expected_status):
-        if expected_status == 204:
+        if expected_status in (204, 405):
             self.assertEqual(response.content, '')
             rsp = None
         else:

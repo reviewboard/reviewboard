@@ -1185,6 +1185,14 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
         """Returns the diffset for this draft."""
         return self.diffset
 
+    def is_accessible_by(self, user):
+        """Returns whether or not the user can access this draft."""
+        return self.is_mutable_by(user)
+
+    def is_mutable_by(self, user):
+        """Returns whether or not the user can modify this draft."""
+        return self.review_request.is_mutable_by(user)
+
     @staticmethod
     def create(review_request):
         """

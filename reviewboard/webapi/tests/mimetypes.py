@@ -31,6 +31,10 @@ file_attachment_comment_item_mimetype = \
     _build_mimetype('file-attachment-comment')
 
 
+filediff_list_mimetype = _build_mimetype('files')
+filediff_item_mimetype = _build_mimetype('file')
+
+
 filediff_comment_list_mimetype = _build_mimetype('file-diff-comments')
 filediff_comment_item_mimetype = _build_mimetype('file-diff-comment')
 

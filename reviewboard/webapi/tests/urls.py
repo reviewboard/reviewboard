@@ -49,6 +49,23 @@ def get_diff_item_url(review_request, diff_revision, local_site_name=None):
 
 
 #
+# DraftDiffResource
+#
+def get_draft_diff_list_url(review_request, local_site_name=None):
+    return resources.draft_diff.get_list_url(
+        local_site_name=local_site_name,
+        review_request_id=review_request.display_id)
+
+
+def get_draft_diff_item_url(review_request, diff_revision,
+                            local_site_name=None):
+    return resources.draft_diff.get_item_url(
+        local_site_name=local_site_name,
+        review_request_id=review_request.display_id,
+        diff_revision=diff_revision)
+
+
+#
 # DraftFileAttachmentResource
 #
 def get_draft_file_attachment_list_url(review_request, local_site_name=None):
@@ -63,6 +80,25 @@ def get_draft_file_attachment_item_url(review_request, file_attachment_id,
         local_site_name=local_site_name,
         review_request_id=review_request.display_id,
         file_attachment_id=file_attachment_id)
+
+
+#
+# DraftFileDiffResource
+#
+def get_draft_filediff_list_url(diffset, review_request, local_site_name=None):
+    return resources.draft_filediff.get_list_url(
+        local_site_name=local_site_name,
+        review_request_id=review_request.display_id,
+        diff_revision=diffset.revision)
+
+
+def get_draft_filediff_item_url(filediff, review_request,
+                                local_site_name=None):
+    return resources.draft_filediff.get_item_url(
+        local_site_name=local_site_name,
+        review_request_id=review_request.display_id,
+        diff_revision=filediff.diffset.revision,
+        filediff_id=filediff.pk)
 
 
 #

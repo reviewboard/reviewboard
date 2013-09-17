@@ -113,6 +113,7 @@ class ReviewRequestDraftResource(WebAPIResource):
     allowed_methods = ('GET', 'POST', 'PUT', 'DELETE')
 
     item_child_resources = [
+        resources.draft_diff,
         resources.draft_screenshot,
         resources.draft_file_attachment,
     ]
@@ -145,8 +146,11 @@ class ReviewRequestDraftResource(WebAPIResource):
     def serialize_public_field(self, obj, **kwargs):
         return False
 
+    def has_access_permissions(self, request, draft, *args, **kwargs):
+        return draft.is_accessible_by(request.user)
+
     def has_delete_permissions(self, request, draft, *args, **kwargs):
-        return draft.review_request.is_mutable_by(request.user)
+        return draft.is_mutable_by(request.user)
 
     @webapi_check_local_site
     @webapi_login_required
