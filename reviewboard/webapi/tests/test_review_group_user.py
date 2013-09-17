@@ -14,7 +14,30 @@ class ReviewGroupUserResourceTests(BaseWebAPITestCase):
     """Testing the ReviewGroupUserResource API tests."""
     fixtures = ['test_users']
 
-    def test_create_user(self, local_site=None):
+    #
+    # List tests
+    #
+
+    def test_get_users(self, local_site=None):
+        """Testing the GET groups/<name>/users/ API"""
+        group = self.create_review_group(
+            with_local_site=(local_site is not None))
+        group.users.add(User.objects.get(username='grumpy'))
+        group.users.add(User.objects.get(username='doc'))
+
+        rsp = self.apiGet(
+            get_review_group_user_list_url(group.name, local_site),
+            expected_mimetype=user_list_mimetype)
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(len(rsp['users']), 2)
+
+    @add_fixtures(['test_site'])
+    def test_get_users_with_site(self):
+        """Testing the GET groups/<name>/users/ API with local site"""
+        self._login_user(local_site=True)
+        self.test_get_users(LocalSite.objects.get(name=self.local_site_name))
+
+    def test_post_user(self, local_site=None):
         """Testing the POST groups/<name>/users/ API"""
         self._login_user(admin=True, local_site=local_site)
 
@@ -32,11 +55,11 @@ class ReviewGroupUserResourceTests(BaseWebAPITestCase):
         self.assertEqual(group.users.get().username, user.username)
 
     @add_fixtures(['test_site'])
-    def test_create_user_with_site(self):
+    def test_post_user_with_site(self):
         """Testing the POST groups/<name>/users/ API with local site"""
-        self.test_create_user(LocalSite.objects.get(name=self.local_site_name))
+        self.test_post_user(LocalSite.objects.get(name=self.local_site_name))
 
-    def test_create_user_with_no_access(self, local_site=None):
+    def test_post_user_with_no_access(self, local_site=None):
         """Testing the POST groups/<name>/users/ API with Permission Denied"""
         group = self.create_review_group()
         user = User.objects.get(pk=1)
@@ -48,14 +71,14 @@ class ReviewGroupUserResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['stat'], 'fail')
 
     @add_fixtures(['test_site'])
-    def test_create_user_with_site_no_access(self):
+    def test_post_user_with_site_no_access(self):
         """Testing the POST groups/<name>/users/ API
         with local site and Permission Denied
         """
-        self.test_create_user_with_no_access(
+        self.test_post_user_with_no_access(
             LocalSite.objects.get(name=self.local_site_name))
 
-    def test_create_user_with_invalid_user(self):
+    def test_post_user_with_invalid_user(self):
         """Testing the POST groups/<name>/users/ API with invalid user"""
         self._login_user(admin=True)
 
@@ -69,6 +92,10 @@ class ReviewGroupUserResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['err']['code'], INVALID_USER.code)
 
         self.assertEqual(group.users.count(), 0)
+
+    #
+    # Item tests
+    #
 
     def test_delete_user(self, local_site=None):
         """Testing the DELETE groups/<name>/users/<username>/ API"""
@@ -115,22 +142,3 @@ class ReviewGroupUserResourceTests(BaseWebAPITestCase):
         """
         self.test_delete_user_with_no_access(
             LocalSite.objects.get(name=self.local_site_name))
-
-    def test_get_users(self, local_site=None):
-        """Testing the GET groups/<name>/users/ API"""
-        group = self.create_review_group(
-            with_local_site=(local_site is not None))
-        group.users.add(User.objects.get(username='grumpy'))
-        group.users.add(User.objects.get(username='doc'))
-
-        rsp = self.apiGet(
-            get_review_group_user_list_url(group.name, local_site),
-            expected_mimetype=user_list_mimetype)
-        self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(len(rsp['users']), 2)
-
-    @add_fixtures(['test_site'])
-    def test_get_users_with_site(self):
-        """Testing the GET groups/<name>/users/ API with local site"""
-        self._login_user(local_site=True)
-        self.test_get_users(LocalSite.objects.get(name=self.local_site_name))

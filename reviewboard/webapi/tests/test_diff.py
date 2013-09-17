@@ -5,7 +5,6 @@ from djblets.webapi.errors import INVALID_FORM_DATA
 
 from reviewboard import scmtools
 from reviewboard.diffviewer.models import DiffSet
-from reviewboard.testing.scmtool import TestTool
 from reviewboard.webapi.errors import DIFF_TOO_BIG
 from reviewboard.webapi.tests.base import BaseWebAPITestCase
 from reviewboard.webapi.tests.mimetypes import (diff_item_mimetype,
@@ -17,6 +16,53 @@ from reviewboard.webapi.tests.urls import (get_diff_item_url,
 class DiffResourceTests(BaseWebAPITestCase):
     """Testing the DiffResource APIs."""
     fixtures = ['test_users', 'test_scmtools']
+
+    #
+    # List tests
+    #
+
+    def test_get_diffs(self):
+        """Testing the GET review-requests/<id>/diffs/ API"""
+        review_request = self.create_review_request(create_repository=True,
+                                                    publish=True)
+        diffset = self.create_diffset(review_request)
+
+        rsp = self.apiGet(get_diff_list_url(review_request),
+                          expected_mimetype=diff_list_mimetype)
+
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(rsp['diffs'][0]['id'], diffset.pk)
+        self.assertEqual(rsp['diffs'][0]['name'], diffset.name)
+
+    @add_fixtures(['test_site'])
+    def test_get_diffs_with_site(self):
+        """Testing the GET review-requests/<id>/diffs API with a local site"""
+        review_request = self.create_review_request(create_repository=True,
+                                                    with_local_site=True,
+                                                    publish=True)
+        diffset = self.create_diffset(review_request)
+
+        self._login_user(local_site=True)
+
+        rsp = self.apiGet(get_diff_list_url(review_request,
+                                            self.local_site_name),
+                          expected_mimetype=diff_list_mimetype)
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(rsp['diffs'][0]['id'], diffset.pk)
+        self.assertEqual(rsp['diffs'][0]['name'], diffset.name)
+
+    @add_fixtures(['test_site'])
+    def test_get_diffs_with_site_no_access(self):
+        """Testing the GET review-requests/<id>/diffs API
+        with a local site and Permission Denied error
+        """
+        review_request = self.create_review_request(create_repository=True,
+                                                    with_local_site=True,
+                                                    publish=True)
+        self.create_diffset(review_request)
+
+        self.apiGet(get_diff_list_url(review_request, self.local_site_name),
+                    expected_status=403)
 
     def test_post_diffs(self):
         """Testing the POST review-requests/<id>/diffs/ API"""
@@ -144,48 +190,9 @@ class DiffResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(rsp['diff']['name'], 'git_readme.diff')
 
-    def test_get_diffs(self):
-        """Testing the GET review-requests/<id>/diffs/ API"""
-        review_request = self.create_review_request(create_repository=True,
-                                                    publish=True)
-        diffset = self.create_diffset(review_request)
-
-        rsp = self.apiGet(get_diff_list_url(review_request),
-                          expected_mimetype=diff_list_mimetype)
-
-        self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(rsp['diffs'][0]['id'], diffset.pk)
-        self.assertEqual(rsp['diffs'][0]['name'], diffset.name)
-
-    @add_fixtures(['test_site'])
-    def test_get_diffs_with_site(self):
-        """Testing the GET review-requests/<id>/diffs API with a local site"""
-        review_request = self.create_review_request(create_repository=True,
-                                                    with_local_site=True,
-                                                    publish=True)
-        diffset = self.create_diffset(review_request)
-
-        self._login_user(local_site=True)
-
-        rsp = self.apiGet(get_diff_list_url(review_request,
-                                            self.local_site_name),
-                          expected_mimetype=diff_list_mimetype)
-        self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(rsp['diffs'][0]['id'], diffset.pk)
-        self.assertEqual(rsp['diffs'][0]['name'], diffset.name)
-
-    @add_fixtures(['test_site'])
-    def test_get_diffs_with_site_no_access(self):
-        """Testing the GET review-requests/<id>/diffs API
-        with a local site and Permission Denied error
-        """
-        review_request = self.create_review_request(create_repository=True,
-                                                    with_local_site=True,
-                                                    publish=True)
-        self.create_diffset(review_request)
-
-        self.apiGet(get_diff_list_url(review_request, self.local_site_name),
-                    expected_status=403)
+    #
+    # Item tests
+    #
 
     def test_get_diff(self):
         """Testing the GET review-requests/<id>/diffs/<revision>/ API"""

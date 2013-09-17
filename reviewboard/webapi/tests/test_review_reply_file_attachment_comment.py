@@ -15,6 +15,10 @@ class ReviewReplyFileAttachmentCommentResourceTests(BaseWebAPITestCase):
     """Testing the ReviewReplyFileAttachmentCommentResource APIs."""
     fixtures = ['test_users']
 
+    #
+    # List tests
+    #
+
     def test_post_reply_with_file_attachment_comment(self):
         """Testing the POST
         review-requests/<id>/reviews/<id>/replies/<id>/file-attachment-comments/
@@ -152,29 +156,9 @@ class ReviewReplyFileAttachmentCommentResourceTests(BaseWebAPITestCase):
             pk=rsp['file_attachment_comment']['id'])
         self.assertEqual(reply_comment.text, comment_text)
 
-    def test_put_reply_with_file_attachment_comment(self):
-        """Testing the PUT
-        review-requests/<id>/reviews/<id>/replies/<id>/file-attachment-comments/
-        API
-        """
-        new_comment_text = 'My new comment text'
-
-        # First, create a comment that we can update.
-        rsp = self.test_post_reply_with_file_attachment_comment()[0]
-
-        reply_comment = FileAttachmentComment.objects.get(
-            pk=rsp['file_attachment_comment']['id'])
-
-        rsp = self.apiPut(
-            rsp['file_attachment_comment']['links']['self']['href'],
-            {'text': new_comment_text},
-            expected_mimetype=(
-                review_reply_file_attachment_comment_item_mimetype))
-        self.assertEqual(rsp['stat'], 'ok')
-
-        reply_comment = FileAttachmentComment.objects.get(
-            pk=rsp['file_attachment_comment']['id'])
-        self.assertEqual(reply_comment.text, new_comment_text)
+    #
+    # Item tests
+    #
 
     def test_delete_file_attachment_comment(self):
         """Testing the DELETE
@@ -242,3 +226,27 @@ class ReviewReplyFileAttachmentCommentResourceTests(BaseWebAPITestCase):
 
         self.apiDelete(rsp['file_attachment_comment']['links']['self']['href'],
                        expected_status=403)
+
+    def test_put_reply_with_file_attachment_comment(self):
+        """Testing the PUT
+        review-requests/<id>/reviews/<id>/replies/<id>/file-attachment-comments/
+        API
+        """
+        new_comment_text = 'My new comment text'
+
+        # First, create a comment that we can update.
+        rsp = self.test_post_reply_with_file_attachment_comment()[0]
+
+        reply_comment = FileAttachmentComment.objects.get(
+            pk=rsp['file_attachment_comment']['id'])
+
+        rsp = self.apiPut(
+            rsp['file_attachment_comment']['links']['self']['href'],
+            {'text': new_comment_text},
+            expected_mimetype=(
+                review_reply_file_attachment_comment_item_mimetype))
+        self.assertEqual(rsp['stat'], 'ok')
+
+        reply_comment = FileAttachmentComment.objects.get(
+            pk=rsp['file_attachment_comment']['id'])
+        self.assertEqual(reply_comment.text, new_comment_text)

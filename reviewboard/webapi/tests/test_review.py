@@ -19,6 +19,10 @@ class ReviewResourceTests(BaseWebAPITestCase):
     list_mimetype = review_list_mimetype
     item_mimetype = review_item_mimetype
 
+    #
+    # List tests
+    #
+
     def test_get_reviews(self):
         """Testing the GET review-requests/<id>/reviews/ API"""
         review_request = self.create_review_request(publish=True)
@@ -72,16 +76,22 @@ class ReviewResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(rsp['count'], 2)
 
-    def test_get_review_not_modified(self):
-        """Testing the GET review-requests/<id>/reviews/<id>/ API
-        with Not Modified response
+    def test_get_reviewrequest_reviews_with_invite_only_group_and_permission_denied_error(self):
+        """Testing the GET review-requests/<id>/reviews/ API
+        with invite-only group and Permission Denied error
         """
         review_request = self.create_review_request(publish=True)
-        review = self.create_review(review_request, publish=True)
+        self.assertNotEqual(review_request.submitter, self.user)
 
-        self._testHttpCaching(
-            get_review_item_url(review_request, review.pk),
-            check_last_modified=True)
+        group = self.create_review_group(invite_only=True)
+
+        review_request.target_groups.add(group)
+        review_request.save()
+
+        rsp = self.apiGet(get_review_list_url(review_request),
+                          expected_status=403)
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
     @add_fixtures(['test_site'])
     def test_post_reviews(self):
@@ -185,6 +195,100 @@ class ReviewResourceTests(BaseWebAPITestCase):
             expected_status=403)
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
+
+    #
+    # Item tests
+    #
+
+    @add_fixtures(['test_site'])
+    def test_delete_review(self):
+        """Testing the DELETE review-requests/<id>/reviews/<id>/ API"""
+        # Set up the draft to delete.
+        review = self.test_put_review()
+        review_request = review.review_request
+
+        self.apiDelete(get_review_item_url(review_request, review.id))
+        self.assertEqual(review_request.reviews.count(), 0)
+
+    @add_fixtures(['test_site'])
+    def test_delete_review_with_permission_denied(self):
+        """Testing the DELETE review-requests/<id>/reviews/<id>/ API
+        with Permission Denied error
+        """
+        # Set up the draft to delete.
+        review = self.test_put_review()
+        review.user = User.objects.get(username='doc')
+        review.save()
+
+        review_request = review.review_request
+        old_count = review_request.reviews.count()
+
+        self.apiDelete(get_review_item_url(review_request, review.id),
+                       expected_status=403)
+        self.assertEqual(review_request.reviews.count(), old_count)
+
+    def test_delete_review_with_published_review(self):
+        """Testing the DELETE review-requests/<id>/reviews/<id>/ API
+        with pre-published review
+        """
+        review_request = self.create_review_request(publish=True)
+        review = self.create_review(review_request, username=self.user,
+                                    publish=True)
+
+        self.apiDelete(get_review_item_url(review_request, review.id),
+                       expected_status=403)
+        self.assertEqual(review_request.reviews.count(), 1)
+
+    def test_delete_review_with_does_not_exist(self):
+        """Testing the DELETE review-requests/<id>/reviews/<id>/ API
+        with Does Not Exist error
+        """
+        review_request = self.create_review_request(publish=True)
+
+        rsp = self.apiDelete(get_review_item_url(review_request, 919239),
+                             expected_status=404)
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertEqual(rsp['err']['code'], DOES_NOT_EXIST.code)
+
+    @add_fixtures(['test_site'])
+    def test_delete_review_with_local_site(self):
+        """Testing the DELETE review-requests/<id>/reviews/<id>/ API
+        with a local site
+        """
+        review = self.test_put_review_with_site()
+
+        local_site = LocalSite.objects.get(name=self.local_site_name)
+        review_request = ReviewRequest.objects.public(local_site=local_site)[0]
+
+        self.apiDelete(get_review_item_url(review_request, review.id,
+                                           self.local_site_name))
+        self.assertEqual(review_request.reviews.count(), 0)
+
+    @add_fixtures(['test_site'])
+    def test_delete_review_with_local_site_no_access(self):
+        """Testing the DELETE review-requests/<id>/reviews/<id>/ API
+        with a local site and Permission Denied error
+        """
+        review_request = self.create_review_request(with_local_site=True,
+                                                    publish=True)
+        review = self.create_review(review_request, username='doc')
+
+        rsp = self.apiDelete(get_review_item_url(review_request, review.id,
+                                                 self.local_site_name),
+                             expected_status=403)
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
+
+    def test_get_review_not_modified(self):
+        """Testing the GET review-requests/<id>/reviews/<id>/ API
+        with Not Modified response
+        """
+        review_request = self.create_review_request(publish=True)
+        review = self.create_review(review_request, publish=True)
+
+        self._testHttpCaching(
+            get_review_item_url(review_request, review.pk),
+            check_last_modified=True)
 
     @add_fixtures(['test_site'])
     def test_put_review(self):
@@ -350,82 +454,3 @@ class ReviewResourceTests(BaseWebAPITestCase):
             review_request.submitter.username,
             self.user.username,
         ])
-
-    @add_fixtures(['test_site'])
-    def test_delete_review(self):
-        """Testing the DELETE review-requests/<id>/reviews/<id>/ API"""
-        # Set up the draft to delete.
-        review = self.test_put_review()
-        review_request = review.review_request
-
-        self.apiDelete(get_review_item_url(review_request, review.id))
-        self.assertEqual(review_request.reviews.count(), 0)
-
-    @add_fixtures(['test_site'])
-    def test_delete_review_with_permission_denied(self):
-        """Testing the DELETE review-requests/<id>/reviews/<id>/ API
-        with Permission Denied error
-        """
-        # Set up the draft to delete.
-        review = self.test_put_review()
-        review.user = User.objects.get(username='doc')
-        review.save()
-
-        review_request = review.review_request
-        old_count = review_request.reviews.count()
-
-        self.apiDelete(get_review_item_url(review_request, review.id),
-                       expected_status=403)
-        self.assertEqual(review_request.reviews.count(), old_count)
-
-    def test_delete_review_with_published_review(self):
-        """Testing the DELETE review-requests/<id>/reviews/<id>/ API
-        with pre-published review
-        """
-        review_request = self.create_review_request(publish=True)
-        review = self.create_review(review_request, username=self.user,
-                                    publish=True)
-
-        self.apiDelete(get_review_item_url(review_request, review.id),
-                       expected_status=403)
-        self.assertEqual(review_request.reviews.count(), 1)
-
-    def test_delete_review_with_does_not_exist(self):
-        """Testing the DELETE review-requests/<id>/reviews/<id>/ API
-        with Does Not Exist error
-        """
-        review_request = self.create_review_request(publish=True)
-
-        rsp = self.apiDelete(get_review_item_url(review_request, 919239),
-                             expected_status=404)
-        self.assertEqual(rsp['stat'], 'fail')
-        self.assertEqual(rsp['err']['code'], DOES_NOT_EXIST.code)
-
-    @add_fixtures(['test_site'])
-    def test_delete_review_with_local_site(self):
-        """Testing the DELETE review-requests/<id>/reviews/<id>/ API
-        with a local site
-        """
-        review = self.test_put_review_with_site()
-
-        local_site = LocalSite.objects.get(name=self.local_site_name)
-        review_request = ReviewRequest.objects.public(local_site=local_site)[0]
-
-        self.apiDelete(get_review_item_url(review_request, review.id,
-                                           self.local_site_name))
-        self.assertEqual(review_request.reviews.count(), 0)
-
-    @add_fixtures(['test_site'])
-    def test_delete_review_with_local_site_no_access(self):
-        """Testing the DELETE review-requests/<id>/reviews/<id>/ API
-        with a local site and Permission Denied error
-        """
-        review_request = self.create_review_request(with_local_site=True,
-                                                    publish=True)
-        review = self.create_review(review_request, username='doc')
-
-        rsp = self.apiDelete(get_review_item_url(review_request, review.id,
-                                                 self.local_site_name),
-                             expected_status=403)
-        self.assertEqual(rsp['stat'], 'fail')
-        self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)

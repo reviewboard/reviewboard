@@ -13,6 +13,10 @@ class FileAttachmentCommentResourceTests(BaseWebAPITestCase):
     """Testing the FileAttachmentCommentResource APIs."""
     fixtures = ['test_users', 'test_scmtools']
 
+    #
+    # List tests
+    #
+
     def test_get_file_attachment_comments(self):
         """Testing the
         GET review-requests/<id>/file-attachments/<id>/comments/ API
@@ -176,6 +180,10 @@ class FileAttachmentCommentResourceTests(BaseWebAPITestCase):
                          file_attachment1.pk)
 
         return rsp
+
+    #
+    # Item tests
+    #
 
     def test_put_file_attachment_comments_with_extra_fields(self):
         """Testing the

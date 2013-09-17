@@ -14,6 +14,10 @@ class FileAttachmentDraftResourceTests(BaseWebAPITestCase):
     """Testing the FileAttachmentDraftResource APIs."""
     fixtures = ['test_users', 'test_scmtools']
 
+    #
+    # List tests
+    #
+
     def test_post_file_attachments(self):
         """Testing the POST review-requests/<id>/draft/file-attachments/ API"""
         review_request = self.create_review_request(submitter=self.user)
@@ -101,6 +105,10 @@ class FileAttachmentDraftResourceTests(BaseWebAPITestCase):
 
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
+
+    #
+    # Item tests
+    #
 
     def test_put_file_attachment(self):
         """Testing the

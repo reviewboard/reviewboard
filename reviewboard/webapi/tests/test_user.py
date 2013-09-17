@@ -13,6 +13,10 @@ class UserResourceTests(BaseWebAPITestCase):
     """Testing the UserResource API tests."""
     fixtures = ['test_users']
 
+    #
+    # List tests
+    #
+
     def test_get_users(self):
         """Testing the GET users/ API"""
         rsp = self.apiGet(get_user_list_url(),
@@ -44,6 +48,10 @@ class UserResourceTests(BaseWebAPITestCase):
         """
         self.apiGet(get_user_list_url(self.local_site_name),
                     expected_status=403)
+
+    #
+    # Item tests
+    #
 
     def test_get_user(self):
         """Testing the GET users/<username>/ API"""

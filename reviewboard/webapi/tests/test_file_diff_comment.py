@@ -9,6 +9,10 @@ class FileDiffCommentResourceTests(BaseWebAPITestCase):
     """Testing the FileDiffCommentResource APIs."""
     fixtures = ['test_users', 'test_scmtools', 'test_site']
 
+    #
+    # List tests
+    #
+
     def test_get_comments(self):
         """Testing the
         GET review-requests/<id>/diffs/<revision>/files/<id>/diff-comments/ API

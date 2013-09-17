@@ -16,6 +16,10 @@ class ReviewCommentResourceTests(BaseWebAPITestCase):
     """Testing the ReviewCommentResource APIs."""
     fixtures = ['test_users', 'test_scmtools']
 
+    #
+    # List tests
+    #
+
     def test_get_diff_comments(self):
         """Testing the
         GET review-requests/<id>/reviews/<id>/diff-comments/ API
@@ -38,6 +42,23 @@ class ReviewCommentResourceTests(BaseWebAPITestCase):
         }, expected_mimetype=review_diff_comment_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(rsp['count'], review.comments.count())
+
+    def test_get_diff_comments_with_interdiff(self):
+        """Testing the GET review-requests/<id>/reviews/<id>/diff-comments/ API
+        with interdiff
+        """
+        comment_text = "Test diff comment"
+
+        comment, review_request, review, interdiff_revision = \
+            self._common_post_interdiff_comments(comment_text)
+
+        rsp = self.apiGet(get_review_diff_comment_list_url(review), {
+            'interdiff-revision': interdiff_revision,
+        }, expected_mimetype=review_diff_comment_list_mimetype)
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertTrue('diff_comments' in rsp)
+        self.assertEqual(len(rsp['diff_comments']), 1)
+        self.assertEqual(rsp['diff_comments'][0]['text'], comment_text)
 
     @add_fixtures(['test_site'])
     def test_get_diff_comments_with_site(self):
@@ -67,18 +88,6 @@ class ReviewCommentResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
-    def test_get_diff_comment_not_modified(self):
-        """Testing the
-        GET review-requests/<id>/reviews/<id>/diff-comments/<id>/ API
-        with Not Modified response
-        """
-        review = self._create_diff_review()
-        comment = Comment.objects.all()[0]
-
-        self._testHttpCaching(
-            get_review_diff_comment_item_url(review, comment.id),
-            check_last_modified=True)
-
     def test_post_diff_comments(self):
         """Testing the
         POST review-requests/<id>/reviews/<id>/diff-comments/ API
@@ -99,6 +108,23 @@ class ReviewCommentResourceTests(BaseWebAPITestCase):
         self.assertTrue('diff_comments' in rsp)
         self.assertEqual(len(rsp['diff_comments']), 1)
         self.assertEqual(rsp['diff_comments'][0]['text'], diff_comment_text)
+
+    def test_post_diff_comments_with_issue(self):
+        """Testing the
+        POST review-requests/<id>/reviews/<id>/diff-comments/ API
+        with an issue
+        """
+        diff_comment_text = 'Test diff comment with an opened issue'
+        comment, review, review_request = self._create_diff_review_with_issue(
+            publish=False, comment_text=diff_comment_text)
+
+        rsp = self.apiGet(get_review_diff_comment_list_url(review),
+                          expected_mimetype=review_diff_comment_list_mimetype)
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertTrue('diff_comments' in rsp)
+        self.assertEqual(len(rsp['diff_comments']), 1)
+        self.assertEqual(rsp['diff_comments'][0]['text'], diff_comment_text)
+        self.assertTrue(rsp['diff_comments'][0]['issue_opened'])
 
     @add_fixtures(['test_site'])
     def test_post_diff_comments_with_site(self):
@@ -159,22 +185,9 @@ class ReviewCommentResourceTests(BaseWebAPITestCase):
         self.assertEqual(len(rsp['diff_comments']), 1)
         self.assertEqual(rsp['diff_comments'][0]['text'], comment_text)
 
-    def test_get_diff_comments_with_interdiff(self):
-        """Testing the GET review-requests/<id>/reviews/<id>/diff-comments/ API
-        with interdiff
-        """
-        comment_text = "Test diff comment"
-
-        comment, review_request, review, interdiff_revision = \
-            self._common_post_interdiff_comments(comment_text)
-
-        rsp = self.apiGet(get_review_diff_comment_list_url(review), {
-            'interdiff-revision': interdiff_revision,
-        }, expected_mimetype=review_diff_comment_list_mimetype)
-        self.assertEqual(rsp['stat'], 'ok')
-        self.assertTrue('diff_comments' in rsp)
-        self.assertEqual(len(rsp['diff_comments']), 1)
-        self.assertEqual(rsp['diff_comments'][0]['text'], comment_text)
+    #
+    # Item tests
+    #
 
     def test_delete_diff_comment_with_interdiff(self):
         """Testing the
@@ -226,24 +239,19 @@ class ReviewCommentResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
-    def test_post_diff_comments_with_issue(self):
+    def test_get_diff_comment_not_modified(self):
         """Testing the
-        POST review-requests/<id>/reviews/<id>/diff-comments/ API
-        with an issue
+        GET review-requests/<id>/reviews/<id>/diff-comments/<id>/ API
+        with Not Modified response
         """
-        diff_comment_text = 'Test diff comment with an opened issue'
-        comment, review, review_request = self._create_diff_review_with_issue(
-            publish=False, comment_text=diff_comment_text)
+        review = self._create_diff_review()
+        comment = Comment.objects.all()[0]
 
-        rsp = self.apiGet(get_review_diff_comment_list_url(review),
-                          expected_mimetype=review_diff_comment_list_mimetype)
-        self.assertEqual(rsp['stat'], 'ok')
-        self.assertTrue('diff_comments' in rsp)
-        self.assertEqual(len(rsp['diff_comments']), 1)
-        self.assertEqual(rsp['diff_comments'][0]['text'], diff_comment_text)
-        self.assertTrue(rsp['diff_comments'][0]['issue_opened'])
+        self._testHttpCaching(
+            get_review_diff_comment_item_url(review, comment.id),
+            check_last_modified=True)
 
-    def test_update_diff_comment_with_issue(self):
+    def test_put_diff_comment_with_issue(self):
         """Testing the
         PUT review-requests/<id>/reviews/<id>/diff-comments/<id>/ API,
         removing issue_opened
@@ -257,7 +265,7 @@ class ReviewCommentResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['stat'], 'ok')
         self.assertFalse(rsp['diff_comment']['issue_opened'])
 
-    def test_update_diff_comment_issue_status_before_publish(self):
+    def test_put_diff_comment_issue_status_before_publish(self):
         """Testing the
         PUT review-requests/<id>/reviews/<id>/diff-comments/<id>/ API
         with an issue, before review is published
@@ -275,7 +283,7 @@ class ReviewCommentResourceTests(BaseWebAPITestCase):
         # The issue_status should still be "open"
         self.assertEqual(rsp['diff_comment']['issue_status'], 'open')
 
-    def test_update_diff_comment_issue_status_after_publish(self):
+    def test_put_diff_comment_issue_status_after_publish(self):
         """Testing the
         PUT review-requests/<id>/reviews/<id>/diff-comments/<id>/ API
         with an issue, after review is published
@@ -290,7 +298,7 @@ class ReviewCommentResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(rsp['diff_comment']['issue_status'], 'resolved')
 
-    def test_update_diff_comment_issue_status_by_issue_creator(self):
+    def test_put_diff_comment_issue_status_by_issue_creator(self):
         """Testing the
         PUT review-requests/<id>/reviews/<id>/diff-comments/<id>/ API
         permissions for issue creator
@@ -312,7 +320,7 @@ class ReviewCommentResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(rsp['diff_comment']['issue_status'], 'dropped')
 
-    def test_update_diff_comment_issue_status_by_uninvolved_user(self):
+    def test_put_diff_comment_issue_status_by_uninvolved_user(self):
         """Testing the
         PUT review-requests/<id>/reviews/<id>/diff-comments/<id>/ API
         permissions for an uninvolved user
@@ -335,7 +343,7 @@ class ReviewCommentResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
-    def test_remove_issue_opened(self):
+    def test_put_with_remove_issue_opened(self):
         """Testing the
         PUT review-requests/<id>/reviews/<id>/diff-comments/<id>/ API,
         removing the issue_opened state

@@ -14,6 +14,10 @@ class ReviewReplyResourceTests(BaseWebAPITestCase):
     """Testing the ReviewReplyResource APIs."""
     fixtures = ['test_users']
 
+    #
+    # List tests
+    #
+
     def test_get_replies(self):
         """Testing the GET review-requests/<id>/reviews/<id>/replies API"""
         review = self._create_test_review()
@@ -88,18 +92,6 @@ class ReviewReplyResourceTests(BaseWebAPITestCase):
             expected_status=403)
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
-
-    def test_get_reply_not_modified(self):
-        """Testing the GET review-requests/<id>/reviews/<id>/
-        with Not Modified response
-        """
-        review_request = self.create_review_request(publish=True)
-        review = self.create_review(review_request, publish=True)
-        reply = self.create_reply(review, publish=True)
-
-        self._testHttpCaching(
-            get_review_reply_item_url(reply.base_reply_to, reply.id),
-            check_last_modified=True)
 
     def test_post_replies(self):
         """Testing the POST review-requests/<id>/reviews/<id>/replies/ API"""
@@ -188,6 +180,74 @@ class ReviewReplyResourceTests(BaseWebAPITestCase):
 
         reply = Review.objects.get(pk=rsp['reply']['id'])
         self.assertEqual(reply.body_bottom, body_bottom)
+
+    #
+    # Item tests
+    #
+
+    def test_delete_reply(self):
+        """Testing the
+        DELETE review-requests/<id>/reviews/<id>/replies/<id>/ API
+        """
+        review_request = self.create_review_request(publish=True)
+        review = self.create_review(review_request, user='doc', publish=True)
+
+        rsp = self.apiPost(
+            get_review_reply_list_url(review),
+            {'body_top': 'Test'},
+            expected_mimetype=review_reply_item_mimetype)
+
+        self.assertEqual(rsp['stat'], 'ok')
+
+        reply_id = rsp['reply']['id']
+        rsp = self.apiDelete(rsp['reply']['links']['self']['href'])
+
+        self.assertEqual(Review.objects.filter(pk=reply_id).count(), 0)
+
+    @add_fixtures(['test_site'])
+    def test_delete_reply_with_site(self):
+        """Testing the
+        DELETE review-requests/<id>/reviews/<id>/replies/<id>/ API
+        with a local site
+        """
+        review_request = self.create_review_request(with_local_site=True,
+                                                    publish=True)
+        review = self.create_review(review_request, user='doc', publish=True)
+        reply = self.create_reply(review, user=review.user)
+
+        self._login_user(local_site=True)
+        self.apiDelete(get_review_reply_item_url(review, reply.id,
+                                                 self.local_site_name))
+        self.assertEqual(review.replies.count(), 0)
+
+    @add_fixtures(['test_site'])
+    def test_delete_reply_with_site_no_access(self):
+        """Testing the
+        DELETE review-requests/<id>/reviews/<id>/replies/<id>/ API
+        with a local site and Permission Denied error
+        """
+        review_request = self.create_review_request(with_local_site=True,
+                                                    publish=True)
+        review = self.create_review(review_request, publish=True)
+        reply = self.create_reply(review)
+
+        rsp = self.apiDelete(get_review_reply_item_url(review, reply.id,
+                                                       self.local_site_name),
+                             expected_status=403)
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
+
+    def test_get_reply_not_modified(self):
+        """Testing the GET review-requests/<id>/reviews/<id>/
+        with Not Modified response
+        """
+        review_request = self.create_review_request(publish=True)
+        review = self.create_review(review_request, publish=True)
+        reply = self.create_reply(review, publish=True)
+
+        self._testHttpCaching(
+            get_review_reply_item_url(reply.base_reply_to, reply.id),
+            check_last_modified=True)
 
     def test_put_reply(self):
         """Testing the
@@ -284,58 +344,6 @@ class ReviewReplyResourceTests(BaseWebAPITestCase):
         self.assertEqual(reply.public, True)
 
         self.assertEqual(len(mail.outbox), 1)
-
-    def test_delete_reply(self):
-        """Testing the
-        DELETE review-requests/<id>/reviews/<id>/replies/<id>/ API
-        """
-        review_request = self.create_review_request(publish=True)
-        review = self.create_review(review_request, user='doc', publish=True)
-
-        rsp = self.apiPost(
-            get_review_reply_list_url(review),
-            {'body_top': 'Test'},
-            expected_mimetype=review_reply_item_mimetype)
-
-        self.assertEqual(rsp['stat'], 'ok')
-
-        reply_id = rsp['reply']['id']
-        rsp = self.apiDelete(rsp['reply']['links']['self']['href'])
-
-        self.assertEqual(Review.objects.filter(pk=reply_id).count(), 0)
-
-    @add_fixtures(['test_site'])
-    def test_delete_reply_with_site(self):
-        """Testing the
-        DELETE review-requests/<id>/reviews/<id>/replies/<id>/ API
-        with a local site
-        """
-        review_request = self.create_review_request(with_local_site=True,
-                                                    publish=True)
-        review = self.create_review(review_request, user='doc', publish=True)
-        reply = self.create_reply(review, user=review.user)
-
-        self._login_user(local_site=True)
-        self.apiDelete(get_review_reply_item_url(review, reply.id,
-                                                 self.local_site_name))
-        self.assertEqual(review.replies.count(), 0)
-
-    @add_fixtures(['test_site'])
-    def test_delete_reply_with_site_no_access(self):
-        """Testing the
-        DELETE review-requests/<id>/reviews/<id>/replies/<id>/ API
-        with a local site and Permission Denied error
-        """
-        review_request = self.create_review_request(with_local_site=True,
-                                                    publish=True)
-        review = self.create_review(review_request, publish=True)
-        reply = self.create_reply(review)
-
-        rsp = self.apiDelete(get_review_reply_item_url(review, reply.id,
-                                                       self.local_site_name),
-                             expected_status=403)
-        self.assertEqual(rsp['stat'], 'fail')
-        self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
     def _create_test_review(self, with_local_site=False):
         review_request = self.create_review_request(

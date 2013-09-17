@@ -15,6 +15,10 @@ class ScreenshotDraftResourceTests(BaseWebAPITestCase):
     """Testing the ScreenshotDraftResource APIs."""
     fixtures = ['test_users', 'test_scmtools']
 
+    #
+    # List tests
+    #
+
     def test_post_screenshots(self):
         """Testing the POST review-requests/<id>/draft/screenshots/ API"""
         review_request = self.create_review_request(submitter=self.user,
@@ -98,6 +102,10 @@ class ScreenshotDraftResourceTests(BaseWebAPITestCase):
 
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
+
+    #
+    # Item tests
+    #
 
     def test_put_screenshot(self):
         """Testing the PUT review-requests/<id>/draft/screenshots/<id>/ API"""

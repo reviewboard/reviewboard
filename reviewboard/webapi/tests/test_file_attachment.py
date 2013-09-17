@@ -13,6 +13,10 @@ class FileAttachmentResourceTests(BaseWebAPITestCase):
     """Testing the FileAttachmentResource APIs."""
     fixtures = ['test_users', 'test_scmtools']
 
+    #
+    # List tests
+    #
+
     def test_get_file_attachments(self):
         """Testing the GET review-requests/<id>/file-attachments/ API"""
         review_request = self.create_review_request(create_repository=True,
@@ -50,16 +54,6 @@ class FileAttachmentResourceTests(BaseWebAPITestCase):
         file_attachments = rsp['file_attachments']
         self.assertEqual(len(file_attachments), 1)
         self.assertEqual(file_attachments[0]['filename'], 'trophy1.png')
-
-    def test_get_file_attachment_not_modified(self):
-        """Testing the GET review-requests/<id>/file-attachments/<id>/ API
-        with Not Modified response
-        """
-        self.test_post_file_attachments()
-
-        file_attachment = FileAttachment.objects.all()[0]
-        self._testHttpCaching(get_file_attachment_item_url(file_attachment),
-                              check_etags=True)
 
     def test_post_file_attachments(self):
         """Testing the POST review-requests/<id>/file-attachments/ API"""
@@ -143,3 +137,17 @@ class FileAttachmentResourceTests(BaseWebAPITestCase):
 
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
+
+    #
+    # Item tests
+    #
+
+    def test_get_file_attachment_not_modified(self):
+        """Testing the GET review-requests/<id>/file-attachments/<id>/ API
+        with Not Modified response
+        """
+        self.test_post_file_attachments()
+
+        file_attachment = FileAttachment.objects.all()[0]
+        self._testHttpCaching(get_file_attachment_item_url(file_attachment),
+                              check_etags=True)

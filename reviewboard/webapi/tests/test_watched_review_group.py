@@ -15,6 +15,61 @@ class WatchedReviewGroupResourceTests(BaseWebAPITestCase):
     """Testing the WatchedReviewGroupResource API tests."""
     fixtures = ['test_users']
 
+    #
+    # List tests
+    #
+
+    def test_get_watched_review_groups(self):
+        """Testing the GET users/<username>/watched/review-groups/ API"""
+        self.test_post_watched_review_group()
+
+        rsp = self.apiGet(
+            get_watched_review_group_list_url(self.user.username),
+            expected_mimetype=watched_review_group_list_mimetype)
+        self.assertEqual(rsp['stat'], 'ok')
+
+        watched = self.user.get_profile().starred_groups.all()
+        apigroups = rsp['watched_review_groups']
+
+        self.assertEqual(len(apigroups), len(watched))
+
+        for id in range(len(watched)):
+            self.assertEqual(apigroups[id]['watched_review_group']['name'],
+                             watched[id].name)
+
+    @add_fixtures(['test_site'])
+    def test_get_watched_review_groups_with_site(self):
+        """Testing the GET users/<username>/watched/review-groups/ API
+        with a local site
+        """
+        self.test_post_watched_review_group_with_site()
+
+        rsp = self.apiGet(
+            get_watched_review_group_list_url('doc', self.local_site_name),
+            expected_mimetype=watched_review_group_list_mimetype)
+
+        watched = self.user.get_profile().starred_groups.filter(
+            local_site__name=self.local_site_name)
+        apigroups = rsp['watched_review_groups']
+
+        self.assertEqual(rsp['stat'], 'ok')
+
+        for id in range(len(watched)):
+            self.assertEqual(apigroups[id]['watched_review_group']['name'],
+                             watched[id].name)
+
+    @add_fixtures(['test_site'])
+    def test_get_watched_review_groups_with_site_no_access(self):
+        """Testing the GET users/<username>/watched/review-groups/ API
+        with a local site and Permission Denied error
+        """
+        rsp = self.apiGet(
+            get_watched_review_group_list_url(self.user.username,
+                                              self.local_site_name),
+            expected_status=403)
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
+
     def test_post_watched_review_group(self):
         """Testing the POST users/<username>/watched/review-groups/ API"""
         group = self.create_review_group()
@@ -87,6 +142,10 @@ class WatchedReviewGroupResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
+    #
+    # Item tests
+    #
+
     def test_delete_watched_review_group(self):
         """Testing the DELETE users/<username>/watched/review-groups/<id>/ API
         """
@@ -129,57 +188,6 @@ class WatchedReviewGroupResourceTests(BaseWebAPITestCase):
         """
         rsp = self.apiDelete(
             get_watched_review_group_item_url(self.user.username, 'group',
-                                              self.local_site_name),
-            expected_status=403)
-        self.assertEqual(rsp['stat'], 'fail')
-        self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
-
-    def test_get_watched_review_groups(self):
-        """Testing the GET users/<username>/watched/review-groups/ API"""
-        self.test_post_watched_review_group()
-
-        rsp = self.apiGet(
-            get_watched_review_group_list_url(self.user.username),
-            expected_mimetype=watched_review_group_list_mimetype)
-        self.assertEqual(rsp['stat'], 'ok')
-
-        watched = self.user.get_profile().starred_groups.all()
-        apigroups = rsp['watched_review_groups']
-
-        self.assertEqual(len(apigroups), len(watched))
-
-        for id in range(len(watched)):
-            self.assertEqual(apigroups[id]['watched_review_group']['name'],
-                             watched[id].name)
-
-    @add_fixtures(['test_site'])
-    def test_get_watched_review_groups_with_site(self):
-        """Testing the GET users/<username>/watched/review-groups/ API
-        with a local site
-        """
-        self.test_post_watched_review_group_with_site()
-
-        rsp = self.apiGet(
-            get_watched_review_group_list_url('doc', self.local_site_name),
-            expected_mimetype=watched_review_group_list_mimetype)
-
-        watched = self.user.get_profile().starred_groups.filter(
-            local_site__name=self.local_site_name)
-        apigroups = rsp['watched_review_groups']
-
-        self.assertEqual(rsp['stat'], 'ok')
-
-        for id in range(len(watched)):
-            self.assertEqual(apigroups[id]['watched_review_group']['name'],
-                             watched[id].name)
-
-    @add_fixtures(['test_site'])
-    def test_get_watched_review_groups_with_site_no_access(self):
-        """Testing the GET users/<username>/watched/review-groups/ API
-        with a local site and Permission Denied error
-        """
-        rsp = self.apiGet(
-            get_watched_review_group_list_url(self.user.username,
                                               self.local_site_name),
             expected_status=403)
         self.assertEqual(rsp['stat'], 'fail')

@@ -78,23 +78,51 @@ class ReviewRequestDraftResourceTests(BaseWebAPITestCase):
         return self._create_update_review_request(
             apiFunc, expected_status, review_request, self.local_site_name)
 
-    def test_put_reviewrequestdraft(self, review_request=None):
-        """Testing the PUT review-requests/<id>/draft/ API"""
-        self._create_update_review_request(self.apiPut, 200, review_request)
+    def test_delete_reviewrequestdraft(self):
+        """Testing the DELETE review-requests/<id>/draft/ API"""
+        review_request = self.create_review_request(submitter=self.user)
+        summary = review_request.summary
+        description = review_request.description
+
+        # Set some data.
+        self.test_put_reviewrequestdraft(review_request)
+
+        self.apiDelete(get_review_request_draft_url(review_request))
+
+        review_request = ReviewRequest.objects.get(pk=review_request.id)
+        self.assertEqual(review_request.summary, summary)
+        self.assertEqual(review_request.description, description)
 
     @add_fixtures(['test_site'])
-    def test_put_reviewrequestdraft_with_site(self, review_request=None):
-        """Testing the PUT review-requests/<id>/draft/ API with a local site"""
-        self._create_update_review_request_with_site(
-            self.apiPut, 200, review_request=review_request)
+    def test_delete_reviewrequestdraft_with_site(self):
+        """Testing the DELETE review-requests/<id>/draft/ API
+        with a local site
+        """
+        review_request = self.create_review_request(submitter='doc',
+                                                    with_local_site=True)
+        summary = review_request.summary
+        description = review_request.description
+
+        self.test_put_reviewrequestdraft_with_site(review_request)
+
+        self.apiDelete(get_review_request_draft_url(review_request,
+                                                    self.local_site_name))
+
+        review_request = ReviewRequest.objects.get(pk=review_request.id)
+        self.assertEqual(review_request.summary, summary)
+        self.assertEqual(review_request.description, description)
 
     @add_fixtures(['test_site'])
-    def test_put_reviewrequestdraft_with_site_no_access(self):
-        """Testing the PUT review-requests/<id>/draft/ API
+    def test_delete_reviewrequestdraft_with_site_no_access(self):
+        """Testing the DELETE review-requests/<id>/draft/ API
         with a local site and Permission Denied error
         """
-        rsp = self._create_update_review_request_with_site(
-            self.apiPut, 403, relogin=False)
+        review_request = self.create_review_request(submitter='doc',
+                                                    with_local_site=True)
+
+        rsp = self.apiDelete(
+            get_review_request_draft_url(review_request, self.local_site_name),
+            expected_status=403)
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
@@ -116,6 +144,26 @@ class ReviewRequestDraftResourceTests(BaseWebAPITestCase):
         """
         rsp = self._create_update_review_request_with_site(
             self.apiPost, 403, relogin=False)
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
+
+    def test_put_reviewrequestdraft(self, review_request=None):
+        """Testing the PUT review-requests/<id>/draft/ API"""
+        self._create_update_review_request(self.apiPut, 200, review_request)
+
+    @add_fixtures(['test_site'])
+    def test_put_reviewrequestdraft_with_site(self, review_request=None):
+        """Testing the PUT review-requests/<id>/draft/ API with a local site"""
+        self._create_update_review_request_with_site(
+            self.apiPut, 200, review_request=review_request)
+
+    @add_fixtures(['test_site'])
+    def test_put_reviewrequestdraft_with_site_no_access(self):
+        """Testing the PUT review-requests/<id>/draft/ API
+        with a local site and Permission Denied error
+        """
+        rsp = self._create_update_review_request_with_site(
+            self.apiPut, 403, relogin=False)
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
@@ -324,51 +372,3 @@ class ReviewRequestDraftResourceTests(BaseWebAPITestCase):
         self.assertEqual(mail.outbox[0].subject,
                          "Review Request %s: My Summary" % review_request.pk)
         self.assertValidRecipients(["doc", "grumpy"], [])
-
-    def test_delete_reviewrequestdraft(self):
-        """Testing the DELETE review-requests/<id>/draft/ API"""
-        review_request = self.create_review_request(submitter=self.user)
-        summary = review_request.summary
-        description = review_request.description
-
-        # Set some data.
-        self.test_put_reviewrequestdraft(review_request)
-
-        self.apiDelete(get_review_request_draft_url(review_request))
-
-        review_request = ReviewRequest.objects.get(pk=review_request.id)
-        self.assertEqual(review_request.summary, summary)
-        self.assertEqual(review_request.description, description)
-
-    @add_fixtures(['test_site'])
-    def test_delete_reviewrequestdraft_with_site(self):
-        """Testing the DELETE review-requests/<id>/draft/ API
-        with a local site
-        """
-        review_request = self.create_review_request(submitter='doc',
-                                                    with_local_site=True)
-        summary = review_request.summary
-        description = review_request.description
-
-        self.test_put_reviewrequestdraft_with_site(review_request)
-
-        self.apiDelete(get_review_request_draft_url(review_request,
-                                                    self.local_site_name))
-
-        review_request = ReviewRequest.objects.get(pk=review_request.id)
-        self.assertEqual(review_request.summary, summary)
-        self.assertEqual(review_request.description, description)
-
-    @add_fixtures(['test_site'])
-    def test_delete_reviewrequestdraft_with_site_no_access(self):
-        """Testing the DELETE review-requests/<id>/draft/ API
-        with a local site and Permission Denied error
-        """
-        review_request = self.create_review_request(submitter='doc',
-                                                    with_local_site=True)
-
-        rsp = self.apiDelete(
-            get_review_request_draft_url(review_request, self.local_site_name),
-            expected_status=403)
-        self.assertEqual(rsp['stat'], 'fail')
-        self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)

@@ -15,6 +15,10 @@ class RepositoryCommitsResourceTests(BaseWebAPITestCase):
     """Testing the RepositoryCommitsResource APIs."""
     fixtures = ['test_users', 'test_scmtools']
 
+    #
+    # List tests
+    #
+
     def test_get_repository_commits(self):
         """Testing the GET repositories/<id>/commits/ API"""
         repository = self.create_repository(tool_name='Test')

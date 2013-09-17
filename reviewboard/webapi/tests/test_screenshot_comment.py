@@ -11,6 +11,10 @@ class ScreenshotCommentResourceTests(BaseWebAPITestCase):
     """Testing the ScreenshotCommentResource APIs."""
     fixtures = ['test_users', 'test_scmtools']
 
+    #
+    # List tests
+    #
+
     def test_get_screenshot_comments(self):
         """Testing the
         GET review-requests/<id>/screenshots/<id>/comments/ API

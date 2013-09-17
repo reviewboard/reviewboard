@@ -15,123 +15,9 @@ class WatchedReviewRequestResourceTests(BaseWebAPITestCase):
     """Testing the WatchedReviewRequestResource API tests."""
     fixtures = ['test_users']
 
-    def test_post_watched_review_request(self):
-        """Testing the POST users/<username>/watched/review-request/ API"""
-        review_request = self.create_review_request(publish=True)
-        rsp = self.apiPost(
-            get_watched_review_request_list_url(self.user.username),
-            {'object_id': review_request.display_id},
-            expected_mimetype=watched_review_request_item_mimetype)
-        self.assertEqual(rsp['stat'], 'ok')
-        self.assert_(review_request in
-                     self.user.get_profile().starred_review_requests.all())
-
-    def test_post_watched_review_request_with_does_not_exist_error(self):
-        """Testing the POST users/<username>/watched/review_request/
-        with Does Not Exist error
-        """
-        rsp = self.apiPost(
-            get_watched_review_request_list_url(self.user.username),
-            {'object_id': 999},
-            expected_status=404)
-        self.assertEqual(rsp['stat'], 'fail')
-        self.assertEqual(rsp['err']['code'], DOES_NOT_EXIST.code)
-
-    @add_fixtures(['test_site'])
-    def test_post_watched_review_request_with_site(self):
-        """Testing the POST users/<username>/watched/review_request/ API
-        with a local site
-        """
-        self._login_user(local_site=True)
-
-        username = 'doc'
-        user = User.objects.get(username=username)
-        review_request = self.create_review_request(with_local_site=True,
-                                                    publish=True)
-
-        rsp = self.apiPost(
-            get_watched_review_request_list_url(username,
-                                                self.local_site_name),
-            {'object_id': review_request.display_id},
-            expected_mimetype=watched_review_request_item_mimetype)
-        self.assertEqual(rsp['stat'], 'ok')
-        self.assertTrue(review_request in
-                        user.get_profile().starred_review_requests.all())
-
-        return review_request
-
-    @add_fixtures(['test_site'])
-    def test_post_watched_review_request_with_site_does_not_exist_error(self):
-        """Testing the POST users/<username>/watched/review_request/ API
-        with a local site and Does Not Exist error
-        """
-        self._login_user(local_site=True)
-        rsp = self.apiPost(
-            get_watched_review_request_list_url('doc', self.local_site_name),
-            {'object_id': 10},
-            expected_status=404)
-        self.assertEqual(rsp['stat'], 'fail')
-        self.assertEqual(rsp['err']['code'], DOES_NOT_EXIST.code)
-
-    @add_fixtures(['test_site'])
-    def test_post_watched_review_request_with_site_no_access(self):
-        """Testing the POST users/<username>/watched/review_request/ API
-        with a local site and Permission Denied error
-        """
-        rsp = self.apiPost(
-            get_watched_review_request_list_url('doc', self.local_site_name),
-            {'object_id': 10},
-            expected_status=403)
-        self.assertEqual(rsp['stat'], 'fail')
-        self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
-
-    def test_delete_watched_review_request(self):
-        """Testing the DELETE users/<username>/watched/review_request/ API"""
-        # First, star it.
-        self.test_post_watched_review_request()
-
-        review_request = self.create_review_request(publish=True)
-        self.apiDelete(
-            get_watched_review_request_item_url(self.user.username,
-                                                review_request.display_id))
-        self.assertTrue(review_request not in
-                        self.user.get_profile().starred_review_requests.all())
-
-    def test_delete_watched_review_request_with_does_not_exist_error(self):
-        """Testing the DELETE users/<username>/watched/review_request/ API
-        with Does Not Exist error
-        """
-        rsp = self.apiDelete(
-            get_watched_review_request_item_url(self.user.username, 999),
-            expected_status=404)
-        self.assertEqual(rsp['stat'], 'fail')
-        self.assertEqual(rsp['err']['code'], DOES_NOT_EXIST.code)
-
-    @add_fixtures(['test_site'])
-    def test_delete_watched_review_request_with_site(self):
-        """Testing the DELETE users/<username>/watched/review_request/ API
-        with a local site
-        """
-        review_request = self.test_post_watched_review_request_with_site()
-
-        user = User.objects.get(username='doc')
-
-        self.apiDelete(get_watched_review_request_item_url(
-            user.username, review_request.display_id, self.local_site_name))
-        self.assertTrue(review_request not in
-                        user.get_profile().starred_review_requests.all())
-
-    @add_fixtures(['test_site'])
-    def test_delete_watched_review_request_with_site_no_access(self):
-        """Testing the DELETE users/<username>/watched/review_request/ API
-        with a local site and Permission Denied error
-        """
-        rsp = self.apiDelete(
-            get_watched_review_request_item_url(self.user.username, 1,
-                                                self.local_site_name),
-            expected_status=403)
-        self.assertEqual(rsp['stat'], 'fail')
-        self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
+    #
+    # List tests
+    #
 
     def test_get_watched_review_requests(self):
         """Testing the GET users/<username>/watched/review_request/ API"""
@@ -205,3 +91,125 @@ class WatchedReviewRequestResourceTests(BaseWebAPITestCase):
             expected_status=404)
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], DOES_NOT_EXIST.code)
+
+    def test_post_watched_review_request(self):
+        """Testing the POST users/<username>/watched/review-request/ API"""
+        review_request = self.create_review_request(publish=True)
+        rsp = self.apiPost(
+            get_watched_review_request_list_url(self.user.username),
+            {'object_id': review_request.display_id},
+            expected_mimetype=watched_review_request_item_mimetype)
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assert_(review_request in
+                     self.user.get_profile().starred_review_requests.all())
+
+    def test_post_watched_review_request_with_does_not_exist_error(self):
+        """Testing the POST users/<username>/watched/review_request/
+        with Does Not Exist error
+        """
+        rsp = self.apiPost(
+            get_watched_review_request_list_url(self.user.username),
+            {'object_id': 999},
+            expected_status=404)
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertEqual(rsp['err']['code'], DOES_NOT_EXIST.code)
+
+    @add_fixtures(['test_site'])
+    def test_post_watched_review_request_with_site(self):
+        """Testing the POST users/<username>/watched/review_request/ API
+        with a local site
+        """
+        self._login_user(local_site=True)
+
+        username = 'doc'
+        user = User.objects.get(username=username)
+        review_request = self.create_review_request(with_local_site=True,
+                                                    publish=True)
+
+        rsp = self.apiPost(
+            get_watched_review_request_list_url(username,
+                                                self.local_site_name),
+            {'object_id': review_request.display_id},
+            expected_mimetype=watched_review_request_item_mimetype)
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertTrue(review_request in
+                        user.get_profile().starred_review_requests.all())
+
+        return review_request
+
+    @add_fixtures(['test_site'])
+    def test_post_watched_review_request_with_site_does_not_exist_error(self):
+        """Testing the POST users/<username>/watched/review_request/ API
+        with a local site and Does Not Exist error
+        """
+        self._login_user(local_site=True)
+        rsp = self.apiPost(
+            get_watched_review_request_list_url('doc', self.local_site_name),
+            {'object_id': 10},
+            expected_status=404)
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertEqual(rsp['err']['code'], DOES_NOT_EXIST.code)
+
+    @add_fixtures(['test_site'])
+    def test_post_watched_review_request_with_site_no_access(self):
+        """Testing the POST users/<username>/watched/review_request/ API
+        with a local site and Permission Denied error
+        """
+        rsp = self.apiPost(
+            get_watched_review_request_list_url('doc', self.local_site_name),
+            {'object_id': 10},
+            expected_status=403)
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
+
+    #
+    # Item tests
+    #
+
+    def test_delete_watched_review_request(self):
+        """Testing the DELETE users/<username>/watched/review_request/ API"""
+        # First, star it.
+        self.test_post_watched_review_request()
+
+        review_request = self.create_review_request(publish=True)
+        self.apiDelete(
+            get_watched_review_request_item_url(self.user.username,
+                                                review_request.display_id))
+        self.assertTrue(review_request not in
+                        self.user.get_profile().starred_review_requests.all())
+
+    def test_delete_watched_review_request_with_does_not_exist_error(self):
+        """Testing the DELETE users/<username>/watched/review_request/ API
+        with Does Not Exist error
+        """
+        rsp = self.apiDelete(
+            get_watched_review_request_item_url(self.user.username, 999),
+            expected_status=404)
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertEqual(rsp['err']['code'], DOES_NOT_EXIST.code)
+
+    @add_fixtures(['test_site'])
+    def test_delete_watched_review_request_with_site(self):
+        """Testing the DELETE users/<username>/watched/review_request/ API
+        with a local site
+        """
+        review_request = self.test_post_watched_review_request_with_site()
+
+        user = User.objects.get(username='doc')
+
+        self.apiDelete(get_watched_review_request_item_url(
+            user.username, review_request.display_id, self.local_site_name))
+        self.assertTrue(review_request not in
+                        user.get_profile().starred_review_requests.all())
+
+    @add_fixtures(['test_site'])
+    def test_delete_watched_review_request_with_site_no_access(self):
+        """Testing the DELETE users/<username>/watched/review_request/ API
+        with a local site and Permission Denied error
+        """
+        rsp = self.apiDelete(
+            get_watched_review_request_item_url(self.user.username, 1,
+                                                self.local_site_name),
+            expected_status=403)
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)

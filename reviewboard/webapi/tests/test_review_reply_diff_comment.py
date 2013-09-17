@@ -16,6 +16,10 @@ class ReviewReplyDiffCommentResourceTests(BaseWebAPITestCase):
     """Testing the ReviewReplyDiffCommentResource APIs."""
     fixtures = ['test_users', 'test_scmtools']
 
+    #
+    # List tests
+    #
+
     def test_post_reply_with_diff_comment(self):
         """Testing the
         POST review-requests/<id>/reviews/<id>/replies/<id>/diff-comments/ API
@@ -129,64 +133,9 @@ class ReviewReplyDiffCommentResourceTests(BaseWebAPITestCase):
         reply_comment = Comment.objects.get(pk=rsp['diff_comment']['id'])
         self.assertEqual(reply_comment.text, comment_text)
 
-    def test_put_reply_with_diff_comment(self):
-        """Testing the
-        PUT review-requests/<id>/reviews/<id>/replies/<id>/diff-comments/ API
-        """
-        new_comment_text = 'My new comment text'
-
-        # First, create a comment that we can update.
-        rsp = self.test_post_reply_with_diff_comment()[0]
-
-        reply_comment = Comment.objects.get(pk=rsp['diff_comment']['id'])
-
-        rsp = self.apiPut(
-            rsp['diff_comment']['links']['self']['href'],
-            {'text': new_comment_text},
-            expected_mimetype=review_reply_diff_comment_item_mimetype)
-        self.assertEqual(rsp['stat'], 'ok')
-
-        reply_comment = Comment.objects.get(pk=rsp['diff_comment']['id'])
-        self.assertEqual(reply_comment.text, new_comment_text)
-
-    @add_fixtures(['test_site'])
-    def test_put_reply_with_diff_comment_and_local_site(self):
-        """Testing the
-        PUT review-requests/<id>/reviews/<id>/replies/<id>/diff-comments/ API
-        with a local site
-        """
-        new_comment_text = 'My new comment text'
-
-        rsp = self.test_post_reply_with_diff_comment_and_local_site()[0]
-
-        reply_comment = Comment.objects.get(pk=rsp['diff_comment']['id'])
-
-        rsp = self.apiPut(
-            rsp['diff_comment']['links']['self']['href'],
-            {'text': new_comment_text},
-            expected_mimetype=review_reply_diff_comment_item_mimetype)
-        self.assertEqual(rsp['stat'], 'ok')
-
-        reply_comment = Comment.objects.get(pk=rsp['diff_comment']['id'])
-        self.assertEqual(reply_comment.text, new_comment_text)
-
-    @add_fixtures(['test_site'])
-    def test_put_reply_with_diff_comment_and_local_site_no_access(self):
-        """Testing the
-        PUT review-requests/<id>/reviews/<id>/replies/<id>/diff-comments/ API
-        with a local site and Permission Denied error
-        """
-        new_comment_text = 'My new comment text'
-
-        rsp = self.test_post_reply_with_diff_comment_and_local_site()[0]
-
-        self._login_user()
-        rsp = self.apiPut(
-            rsp['diff_comment']['links']['self']['href'],
-            {'text': new_comment_text},
-            expected_status=403)
-        self.assertEqual(rsp['stat'], 'fail')
-        self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
+    #
+    # Item tests
+    #
 
     def test_delete_diff_comment(self):
         """Testing the DELETE
@@ -251,3 +200,62 @@ class ReviewReplyDiffCommentResourceTests(BaseWebAPITestCase):
 
         self.apiDelete(rsp['diff_comment']['links']['self']['href'],
                        expected_status=403)
+
+    def test_put_reply_with_diff_comment(self):
+        """Testing the
+        PUT review-requests/<id>/reviews/<id>/replies/<id>/diff-comments/ API
+        """
+        new_comment_text = 'My new comment text'
+
+        # First, create a comment that we can update.
+        rsp = self.test_post_reply_with_diff_comment()[0]
+
+        reply_comment = Comment.objects.get(pk=rsp['diff_comment']['id'])
+
+        rsp = self.apiPut(
+            rsp['diff_comment']['links']['self']['href'],
+            {'text': new_comment_text},
+            expected_mimetype=review_reply_diff_comment_item_mimetype)
+        self.assertEqual(rsp['stat'], 'ok')
+
+        reply_comment = Comment.objects.get(pk=rsp['diff_comment']['id'])
+        self.assertEqual(reply_comment.text, new_comment_text)
+
+    @add_fixtures(['test_site'])
+    def test_put_reply_with_diff_comment_and_local_site(self):
+        """Testing the
+        PUT review-requests/<id>/reviews/<id>/replies/<id>/diff-comments/ API
+        with a local site
+        """
+        new_comment_text = 'My new comment text'
+
+        rsp = self.test_post_reply_with_diff_comment_and_local_site()[0]
+
+        reply_comment = Comment.objects.get(pk=rsp['diff_comment']['id'])
+
+        rsp = self.apiPut(
+            rsp['diff_comment']['links']['self']['href'],
+            {'text': new_comment_text},
+            expected_mimetype=review_reply_diff_comment_item_mimetype)
+        self.assertEqual(rsp['stat'], 'ok')
+
+        reply_comment = Comment.objects.get(pk=rsp['diff_comment']['id'])
+        self.assertEqual(reply_comment.text, new_comment_text)
+
+    @add_fixtures(['test_site'])
+    def test_put_reply_with_diff_comment_and_local_site_no_access(self):
+        """Testing the
+        PUT review-requests/<id>/reviews/<id>/replies/<id>/diff-comments/ API
+        with a local site and Permission Denied error
+        """
+        new_comment_text = 'My new comment text'
+
+        rsp = self.test_post_reply_with_diff_comment_and_local_site()[0]
+
+        self._login_user()
+        rsp = self.apiPut(
+            rsp['diff_comment']['links']['self']['href'],
+            {'text': new_comment_text},
+            expected_status=403)
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)

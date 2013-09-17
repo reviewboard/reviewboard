@@ -9,7 +9,6 @@ from reviewboard.webapi.tests.base import BaseWebAPITestCase
 from reviewboard.webapi.tests.mimetypes import (review_request_item_mimetype,
                                                 review_request_list_mimetype)
 from reviewboard.webapi.tests.urls import (get_repository_item_url,
-                                           get_review_list_url,
                                            get_review_request_item_url,
                                            get_review_request_list_url,
                                            get_user_item_url)
@@ -18,6 +17,10 @@ from reviewboard.webapi.tests.urls import (get_repository_item_url,
 class ReviewRequestResourceTests(BaseWebAPITestCase):
     """Testing the ReviewRequestResource API tests."""
     fixtures = ['test_users']
+
+    #
+    # List tests
+    #
 
     @add_fixtures(['test_site'])
     def test_get_reviewrequests(self):
@@ -461,15 +464,57 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
                 public=True, status='P',
                 last_updated__lt=r.last_updated).count())
 
-    @add_fixtures(['test_site'])
-    def test_get_reviewrequest_not_modified(self):
-        """Testing the GET review-requests/<id>/ API
-        with Not Modified response
-        """
-        review_request = self.create_review_request(publish=True)
+    @add_fixtures(['test_scmtools'])
+    def test_get_reviewrequest_with_repository_and_changenum(self):
+        """Testing the GET review-requests/?repository=&changenum= API"""
+        review_request = self.create_review_request(create_repository=True,
+                                                    publish=True)
+        review_request.changenum = 1234
+        review_request.save()
 
-        self._testHttpCaching(get_review_request_item_url(review_request.id),
-                              check_last_modified=True)
+        rsp = self.apiGet(get_review_request_list_url(), {
+            'repository': review_request.repository.id,
+            'changenum': review_request.changenum,
+        }, expected_mimetype=review_request_list_mimetype)
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(len(rsp['review_requests']), 1)
+        self.assertEqual(rsp['review_requests'][0]['id'],
+                         review_request.display_id)
+        self.assertEqual(rsp['review_requests'][0]['summary'],
+                         review_request.summary)
+        self.assertEqual(rsp['review_requests'][0]['changenum'],
+                         review_request.changenum)
+        self.assertEqual(rsp['review_requests'][0]['commit_id'],
+                         review_request.commit)
+
+    @add_fixtures(['test_scmtools'])
+    def test_get_reviewrequest_with_repository_and_commit_id(self):
+        """Testing the GET review-requests/?repository=&commit_id= API
+        with changenum backwards-compatibility
+        """
+        review_request = self.create_review_request(create_repository=True,
+                                                    publish=True)
+        review_request.changenum = 1234
+        review_request.save()
+
+        self.assertEqual(review_request.commit_id, None)
+
+        commit_id = str(review_request.changenum)
+
+        rsp = self.apiGet(get_review_request_list_url(), {
+            'repository': review_request.repository.id,
+            'commit_id': review_request.commit,
+        }, expected_mimetype=review_request_list_mimetype)
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(len(rsp['review_requests']), 1)
+        self.assertEqual(rsp['review_requests'][0]['id'],
+                         review_request.display_id)
+        self.assertEqual(rsp['review_requests'][0]['summary'],
+                         review_request.summary)
+        self.assertEqual(rsp['review_requests'][0]['changenum'],
+                         review_request.changenum)
+        self.assertEqual(rsp['review_requests'][0]['commit_id'],
+                         commit_id)
 
     @add_fixtures(['test_scmtools'])
     def test_post_reviewrequests(self):
@@ -632,6 +677,178 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
+    #
+    # Item tests
+    #
+
+    def test_delete_reviewrequest(self):
+        """Testing the DELETE review-requests/<id>/ API"""
+        self.user.user_permissions.add(
+            Permission.objects.get(codename='delete_reviewrequest'))
+        self.user.save()
+        self.assert_(self.user.has_perm('reviews.delete_reviewrequest'))
+
+        review_request = self.create_review_request(submitter=self.user,
+                                                    publish=True)
+
+        rsp = self.apiDelete(
+            get_review_request_item_url(review_request.display_id))
+        self.assertEqual(rsp, None)
+        self.assertRaises(ReviewRequest.DoesNotExist,
+                          ReviewRequest.objects.get,
+                          pk=review_request.pk)
+
+    def test_delete_reviewrequest_with_permission_denied_error(self):
+        """Testing the DELETE review-requests/<id>/ API
+        with Permission Denied error
+        """
+        review_request = self.create_review_request(publish=True)
+        self.assertNotEqual(review_request.submitter, self.user)
+
+        rsp = self.apiDelete(
+            get_review_request_item_url(review_request.display_id),
+            expected_status=403)
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
+
+    def test_delete_reviewrequest_with_does_not_exist_error(self):
+        """Testing the DELETE review-requests/<id>/ API
+        with Does Not Exist error
+        """
+        self.user.user_permissions.add(
+            Permission.objects.get(codename='delete_reviewrequest'))
+        self.user.save()
+        self.assert_(self.user.has_perm('reviews.delete_reviewrequest'))
+
+        rsp = self.apiDelete(get_review_request_item_url(999),
+                             expected_status=404)
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertEqual(rsp['err']['code'], DOES_NOT_EXIST.code)
+
+    @add_fixtures(['test_site'])
+    def test_delete_reviewrequest_with_site(self):
+        """Testing the DELETE review-requests/<id>/ API with a lotal site"""
+        user = User.objects.get(username='doc')
+        user.user_permissions.add(
+            Permission.objects.get(codename='delete_reviewrequest'))
+        user.save()
+
+        self._login_user(local_site=True)
+        review_request = self.create_review_request(with_local_site=True)
+
+        rsp = self.apiDelete(
+            get_review_request_item_url(review_request.display_id,
+                                        self.local_site_name))
+        self.assertEqual(rsp, None)
+        self.assertRaises(ReviewRequest.DoesNotExist,
+                          ReviewRequest.objects.get, pk=review_request.pk)
+    @add_fixtures(['test_site'])
+    def test_get_reviewrequest(self):
+        """Testing the GET review-requests/<id>/ API"""
+        review_request = self.create_review_request(publish=True)
+
+        rsp = self.apiGet(
+            get_review_request_item_url(review_request.display_id),
+            expected_mimetype=review_request_item_mimetype)
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(rsp['review_request']['id'], review_request.display_id)
+        self.assertEqual(rsp['review_request']['summary'],
+                         review_request.summary)
+
+    @add_fixtures(['test_site'])
+    def test_get_reviewrequest_with_site(self):
+        """Testing the GET review-requests/<id>/ API with a local site"""
+        self._login_user(local_site=True)
+        review_request = self.create_review_request(publish=True,
+                                                    with_local_site=True)
+
+        rsp = self.apiGet(
+            get_review_request_item_url(review_request.display_id,
+                                        self.local_site_name),
+            expected_mimetype=review_request_item_mimetype)
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(rsp['review_request']['id'],
+                         review_request.display_id)
+        self.assertEqual(rsp['review_request']['summary'],
+                         review_request.summary)
+
+    @add_fixtures(['test_site'])
+    def test_get_reviewrequest_with_site_no_access(self):
+        """Testing the GET review-requests/<id>/ API
+        with a local site and Permission Denied error
+        """
+        group = self.create_review_group(with_local_site=True)
+        review_request = self.create_review_request(with_local_site=True,
+                                                    publish=True)
+        review_request.target_groups.add(group)
+
+        self.apiGet(get_review_request_item_url(review_request.display_id,
+                                                self.local_site_name),
+                    expected_status=403)
+
+    def test_get_reviewrequest_with_non_public_and_permission_denied_error(self):
+        """Testing the GET review-requests/<id>/ API
+        with non-public and Permission Denied error
+        """
+        review_request = self.create_review_request(public=False)
+        self.assertNotEqual(review_request.submitter, self.user)
+
+        rsp = self.apiGet(
+            get_review_request_item_url(review_request.display_id),
+            expected_status=403)
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
+
+    def test_get_reviewrequest_with_invite_only_group_and_permission_denied_error(self):
+        """Testing the GET review-requests/<id>/ API
+        with invite-only group and Permission Denied error
+        """
+        review_request = self.create_review_request(publish=True)
+        self.assertNotEqual(review_request.submitter, self.user)
+
+        group = self.create_review_group(invite_only=True)
+
+        review_request.target_groups.add(group)
+        review_request.save()
+
+        rsp = self.apiGet(
+            get_review_request_item_url(review_request.display_id),
+            expected_status=403)
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
+
+    @add_fixtures(['test_site'])
+    def test_get_reviewrequest_with_invite_only_group_and_target_user(self):
+        """Testing the GET review-requests/<id>/ API
+        with invite-only group and target user
+        """
+        review_request = self.create_review_request(publish=True)
+        self.assertNotEqual(review_request.submitter, self.user)
+
+        group = self.create_review_group(invite_only=True)
+
+        review_request.target_groups.add(group)
+        review_request.target_people.add(self.user)
+        review_request.save()
+
+        rsp = self.apiGet(
+            get_review_request_item_url(review_request.display_id),
+            expected_mimetype=review_request_item_mimetype)
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(rsp['review_request']['id'], review_request.display_id)
+        self.assertEqual(rsp['review_request']['summary'],
+                         review_request.summary)
+
+    @add_fixtures(['test_site'])
+    def test_get_reviewrequest_not_modified(self):
+        """Testing the GET review-requests/<id>/ API
+        with Not Modified response
+        """
+        review_request = self.create_review_request(publish=True)
+
+        self._testHttpCaching(get_review_request_item_url(review_request.id),
+                              check_last_modified=True)
+
     def test_put_reviewrequest_status_discarded(self):
         """Testing the PUT review-requests/<id>/?status=discarded API"""
         r = self.create_review_request(submitter=self.user, publish=True)
@@ -752,231 +969,3 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
             get_review_request_item_url(r.display_id, self.local_site_name),
             {'status': 'submitted'},
             expected_status=403)
-
-    @add_fixtures(['test_site'])
-    def test_get_reviewrequest(self):
-        """Testing the GET review-requests/<id>/ API"""
-        review_request = self.create_review_request(publish=True)
-
-        rsp = self.apiGet(
-            get_review_request_item_url(review_request.display_id),
-            expected_mimetype=review_request_item_mimetype)
-        self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(rsp['review_request']['id'], review_request.display_id)
-        self.assertEqual(rsp['review_request']['summary'],
-                         review_request.summary)
-
-    @add_fixtures(['test_site'])
-    def test_get_reviewrequest_with_site(self):
-        """Testing the GET review-requests/<id>/ API with a local site"""
-        self._login_user(local_site=True)
-        review_request = self.create_review_request(publish=True,
-                                                    with_local_site=True)
-
-        rsp = self.apiGet(
-            get_review_request_item_url(review_request.display_id,
-                                        self.local_site_name),
-            expected_mimetype=review_request_item_mimetype)
-        self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(rsp['review_request']['id'],
-                         review_request.display_id)
-        self.assertEqual(rsp['review_request']['summary'],
-                         review_request.summary)
-
-    @add_fixtures(['test_site'])
-    def test_get_reviewrequest_with_site_no_access(self):
-        """Testing the GET review-requests/<id>/ API
-        with a local site and Permission Denied error
-        """
-        group = self.create_review_group(with_local_site=True)
-        review_request = self.create_review_request(with_local_site=True,
-                                                    publish=True)
-        review_request.target_groups.add(group)
-
-        self.apiGet(get_review_request_item_url(review_request.display_id,
-                                                self.local_site_name),
-                    expected_status=403)
-
-    def test_get_reviewrequest_with_non_public_and_permission_denied_error(self):
-        """Testing the GET review-requests/<id>/ API
-        with non-public and Permission Denied error
-        """
-        review_request = self.create_review_request(public=False)
-        self.assertNotEqual(review_request.submitter, self.user)
-
-        rsp = self.apiGet(
-            get_review_request_item_url(review_request.display_id),
-            expected_status=403)
-        self.assertEqual(rsp['stat'], 'fail')
-        self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
-
-    def test_get_reviewrequest_with_invite_only_group_and_permission_denied_error(self):
-        """Testing the GET review-requests/<id>/ API
-        with invite-only group and Permission Denied error
-        """
-        review_request = self.create_review_request(publish=True)
-        self.assertNotEqual(review_request.submitter, self.user)
-
-        group = self.create_review_group(invite_only=True)
-
-        review_request.target_groups.add(group)
-        review_request.save()
-
-        rsp = self.apiGet(
-            get_review_request_item_url(review_request.display_id),
-            expected_status=403)
-        self.assertEqual(rsp['stat'], 'fail')
-        self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
-
-    @add_fixtures(['test_site'])
-    def test_get_reviewrequest_with_invite_only_group_and_target_user(self):
-        """Testing the GET review-requests/<id>/ API
-        with invite-only group and target user
-        """
-        review_request = self.create_review_request(publish=True)
-        self.assertNotEqual(review_request.submitter, self.user)
-
-        group = self.create_review_group(invite_only=True)
-
-        review_request.target_groups.add(group)
-        review_request.target_people.add(self.user)
-        review_request.save()
-
-        rsp = self.apiGet(
-            get_review_request_item_url(review_request.display_id),
-            expected_mimetype=review_request_item_mimetype)
-        self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(rsp['review_request']['id'], review_request.display_id)
-        self.assertEqual(rsp['review_request']['summary'],
-                         review_request.summary)
-
-    def test_get_reviewrequest_reviews_with_invite_only_group_and_permission_denied_error(self):
-        """Testing the GET review-requests/<id>/reviews/ API
-        with invite-only group and Permission Denied error
-        """
-        review_request = self.create_review_request(publish=True)
-        self.assertNotEqual(review_request.submitter, self.user)
-
-        group = self.create_review_group(invite_only=True)
-
-        review_request.target_groups.add(group)
-        review_request.save()
-
-        rsp = self.apiGet(get_review_list_url(review_request),
-                          expected_status=403)
-        self.assertEqual(rsp['stat'], 'fail')
-        self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
-
-    @add_fixtures(['test_scmtools'])
-    def test_get_reviewrequest_with_repository_and_changenum(self):
-        """Testing the GET review-requests/?repository=&changenum= API"""
-        review_request = self.create_review_request(create_repository=True,
-                                                    publish=True)
-        review_request.changenum = 1234
-        review_request.save()
-
-        rsp = self.apiGet(get_review_request_list_url(), {
-            'repository': review_request.repository.id,
-            'changenum': review_request.changenum,
-        }, expected_mimetype=review_request_list_mimetype)
-        self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(len(rsp['review_requests']), 1)
-        self.assertEqual(rsp['review_requests'][0]['id'],
-                         review_request.display_id)
-        self.assertEqual(rsp['review_requests'][0]['summary'],
-                         review_request.summary)
-        self.assertEqual(rsp['review_requests'][0]['changenum'],
-                         review_request.changenum)
-        self.assertEqual(rsp['review_requests'][0]['commit_id'],
-                         review_request.commit)
-
-    @add_fixtures(['test_scmtools'])
-    def test_get_reviewrequest_with_repository_and_commit_id(self):
-        """Testing the GET review-requests/?repository=&commit_id= API
-        with changenum backwards-compatibility
-        """
-        review_request = self.create_review_request(create_repository=True,
-                                                    publish=True)
-        review_request.changenum = 1234
-        review_request.save()
-
-        self.assertEqual(review_request.commit_id, None)
-
-        commit_id = str(review_request.changenum)
-
-        rsp = self.apiGet(get_review_request_list_url(), {
-            'repository': review_request.repository.id,
-            'commit_id': review_request.commit,
-        }, expected_mimetype=review_request_list_mimetype)
-        self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(len(rsp['review_requests']), 1)
-        self.assertEqual(rsp['review_requests'][0]['id'],
-                         review_request.display_id)
-        self.assertEqual(rsp['review_requests'][0]['summary'],
-                         review_request.summary)
-        self.assertEqual(rsp['review_requests'][0]['changenum'],
-                         review_request.changenum)
-        self.assertEqual(rsp['review_requests'][0]['commit_id'],
-                         commit_id)
-
-    def test_delete_reviewrequest(self):
-        """Testing the DELETE review-requests/<id>/ API"""
-        self.user.user_permissions.add(
-            Permission.objects.get(codename='delete_reviewrequest'))
-        self.user.save()
-        self.assert_(self.user.has_perm('reviews.delete_reviewrequest'))
-
-        review_request = self.create_review_request(submitter=self.user,
-                                                    publish=True)
-
-        rsp = self.apiDelete(
-            get_review_request_item_url(review_request.display_id))
-        self.assertEqual(rsp, None)
-        self.assertRaises(ReviewRequest.DoesNotExist,
-                          ReviewRequest.objects.get,
-                          pk=review_request.pk)
-
-    def test_delete_reviewrequest_with_permission_denied_error(self):
-        """Testing the DELETE review-requests/<id>/ API
-        with Permission Denied error
-        """
-        review_request = self.create_review_request(publish=True)
-        self.assertNotEqual(review_request.submitter, self.user)
-
-        rsp = self.apiDelete(
-            get_review_request_item_url(review_request.display_id),
-            expected_status=403)
-        self.assertEqual(rsp['stat'], 'fail')
-        self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
-
-    def test_delete_reviewrequest_with_does_not_exist_error(self):
-        """Testing the DELETE review-requests/<id>/ API
-        with Does Not Exist error
-        """
-        self.user.user_permissions.add(
-            Permission.objects.get(codename='delete_reviewrequest'))
-        self.user.save()
-        self.assert_(self.user.has_perm('reviews.delete_reviewrequest'))
-
-        rsp = self.apiDelete(get_review_request_item_url(999),
-                             expected_status=404)
-        self.assertEqual(rsp['stat'], 'fail')
-        self.assertEqual(rsp['err']['code'], DOES_NOT_EXIST.code)
-
-    @add_fixtures(['test_site'])
-    def test_delete_reviewrequest_with_site(self):
-        """Testing the DELETE review-requests/<id>/ API with a lotal site"""
-        user = User.objects.get(username='doc')
-        user.user_permissions.add(
-            Permission.objects.get(codename='delete_reviewrequest'))
-        user.save()
-
-        self._login_user(local_site=True)
-        review_request = self.create_review_request(with_local_site=True)
-
-        rsp = self.apiDelete(
-            get_review_request_item_url(review_request.display_id,
-                                        self.local_site_name))
-        self.assertEqual(rsp, None)
-        self.assertRaises(ReviewRequest.DoesNotExist,
-                          ReviewRequest.objects.get, pk=review_request.pk)

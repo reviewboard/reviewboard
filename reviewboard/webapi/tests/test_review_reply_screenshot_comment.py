@@ -15,6 +15,10 @@ class ReviewReplyScreenshotCommentResourceTests(BaseWebAPITestCase):
     """Testing the ReviewReplyScreenshotCommentResource APIs."""
     fixtures = ['test_users']
 
+    #
+    # List tests
+    #
+
     @add_fixtures(['test_scmtools'])
     def test_post_reply_with_screenshot_comment(self):
         """Testing the POST
@@ -111,6 +115,10 @@ class ReviewReplyScreenshotCommentResourceTests(BaseWebAPITestCase):
         reply_comment = ScreenshotComment.objects.get(
             pk=rsp['screenshot_comment']['id'])
         self.assertEqual(reply_comment.text, comment_text)
+
+    #
+    # Item tests
+    #
 
     @add_fixtures(['test_scmtools'])
     def test_delete_screenshot_comment(self):

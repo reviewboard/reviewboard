@@ -15,6 +15,57 @@ class ReviewGroupResourceTests(BaseWebAPITestCase):
     """Testing the ReviewGroupResource APIs."""
     fixtures = ['test_users']
 
+    #
+    # List tests
+    #
+
+    @add_fixtures(['test_site'])
+    def test_get_groups(self):
+        """Testing the GET groups/ API"""
+        self.create_review_group(name='group1')
+        self.create_review_group(name='group2', with_local_site=True)
+
+        rsp = self.apiGet(get_review_group_list_url(),
+                          expected_mimetype=review_group_list_mimetype)
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(len(rsp['groups']),
+                         Group.objects.accessible(self.user).count())
+        self.assertEqual(len(rsp['groups']), 1)
+
+    @add_fixtures(['test_site'])
+    def test_get_groups_with_site(self):
+        """Testing the GET groups/ API with a local site"""
+        self._login_user(local_site=True)
+        local_site = LocalSite.objects.get(name=self.local_site_name)
+        self.create_review_group(name='group1', with_local_site=True)
+        self.create_review_group(name='group2')
+
+        groups = Group.objects.accessible(self.user, local_site=local_site)
+
+        rsp = self.apiGet(get_review_group_list_url(self.local_site_name),
+                          expected_mimetype=review_group_list_mimetype)
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(len(rsp['groups']), groups.count())
+        self.assertEqual(len(rsp['groups']), 1)
+
+    @add_fixtures(['test_site'])
+    def test_get_groups_with_site_no_access(self):
+        """Testing the GET groups/ API
+        with a local site and Permission Denied error
+        """
+        self.apiGet(get_review_group_list_url(self.local_site_name),
+                    expected_status=403)
+
+    def test_get_groups_with_q(self):
+        """Testing the GET groups/?q= API"""
+        self.create_review_group(name='docgroup')
+        self.create_review_group(name='devgroup')
+
+        rsp = self.apiGet(get_review_group_list_url(), {'q': 'dev'},
+                          expected_mimetype=review_group_list_mimetype)
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(len(rsp['groups']), 1)  # devgroup
+
     def test_post_group(self, local_site=None):
         """Testing the POST groups/ API"""
         name = 'my-group'
@@ -126,6 +177,129 @@ class ReviewGroupResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], GROUP_ALREADY_EXISTS.code)
 
+    #
+    # Item tests
+    #
+
+    def test_delete_group(self):
+        """Testing the DELETE groups/<id>/ API"""
+        self._login_user(admin=True)
+        group = Group.objects.create(name='test-group', invite_only=True)
+        group.users.add(self.user)
+
+        self.apiDelete(get_review_group_item_url('test-group'),
+                       expected_status=204)
+        self.assertFalse(Group.objects.filter(name='test-group').exists())
+
+    def test_delete_group_with_permission_denied_error(self):
+        """Testing the DELETE groups/<id>/ API with Permission Denied error"""
+        group = Group.objects.create(name='test-group', invite_only=True)
+        group.users.add(self.user)
+
+        self.apiDelete(get_review_group_item_url('test-group'),
+                       expected_status=403)
+
+    @add_fixtures(['test_site'])
+    def test_delete_group_with_local_site(self):
+        """Testing the DELETE groups/<id>/ API with a local site"""
+        self.create_review_group(name='sitegroup', with_local_site=True)
+
+        self._login_user(local_site=True, admin=True)
+        self.apiDelete(
+            get_review_group_item_url('sitegroup', self.local_site_name),
+            expected_status=204)
+
+    @add_fixtures(['test_site'])
+    def test_delete_group_with_local_site_and_permission_denied_error(self):
+        """Testing the DELETE groups/<id>/ API
+        with a local site and Permission Denied error
+        """
+        self.create_review_group(name='sitegroup', with_local_site=True)
+
+        self._login_user(local_site=True)
+        self.apiDelete(
+            get_review_group_item_url('sitegroup', self.local_site_name),
+            expected_status=403)
+
+    @add_fixtures(['test_scmtools'])
+    def test_delete_group_with_review_requests(self):
+        """Testing the DELETE groups/<id>/ API with existing review requests"""
+        self._login_user(admin=True)
+
+        group = Group.objects.create(name='test-group', invite_only=True)
+        group.users.add(self.user)
+
+        repository = self.create_repository()
+        request = ReviewRequest.objects.create(self.user, repository)
+        request.target_groups.add(group)
+
+        self.apiDelete(get_review_group_item_url('test-group'),
+                       expected_status=204)
+
+        request = ReviewRequest.objects.get(pk=request.id)
+        self.assertEqual(request.target_groups.count(), 0)
+
+    def test_get_group_public(self):
+        """Testing the GET groups/<id>/ API"""
+        group = Group.objects.create(name='test-group')
+
+        rsp = self.apiGet(get_review_group_item_url(group.name),
+                          expected_mimetype=review_group_item_mimetype)
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(rsp['group']['name'], group.name)
+        self.assertEqual(rsp['group']['display_name'], group.display_name)
+        self.assertEqual(rsp['group']['invite_only'], False)
+
+    def test_get_group_public_not_modified(self):
+        """Testing the GET groups/<id>/ API with Not Modified response"""
+        Group.objects.create(name='test-group')
+
+        self._testHttpCaching(get_review_group_item_url('test-group'),
+                              check_etags=True)
+
+    def test_get_group_invite_only(self):
+        """Testing the GET groups/<id>/ API with invite-only"""
+        group = Group.objects.create(name='test-group', invite_only=True)
+        group.users.add(self.user)
+
+        rsp = self.apiGet(get_review_group_item_url(group.name),
+                          expected_mimetype=review_group_item_mimetype)
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(rsp['group']['invite_only'], True)
+
+    def test_get_group_invite_only_with_permission_denied_error(self):
+        """Testing the GET groups/<id>/ API
+        with invite-only and Permission Denied error
+        """
+        group = Group.objects.create(name='test-group', invite_only=True)
+
+        rsp = self.apiGet(get_review_group_item_url(group.name),
+                          expected_status=403)
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
+
+    @add_fixtures(['test_site'])
+    def test_get_group_with_site(self):
+        """Testing the GET groups/<id>/ API with a local site"""
+        self._login_user(local_site=True)
+        group = self.create_review_group(with_local_site=True)
+
+        rsp = self.apiGet(
+            get_review_group_item_url(group.name, self.local_site_name),
+            expected_mimetype=review_group_item_mimetype)
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(rsp['group']['name'], group.name)
+        self.assertEqual(rsp['group']['display_name'], group.display_name)
+
+    @add_fixtures(['test_site'])
+    def test_get_group_with_site_no_access(self):
+        """Testing the GET groups/<id>/ API
+        with a local site and Permission Denied error
+        """
+        self.apiGet(
+            get_review_group_item_url('sitegroup', self.local_site_name),
+            expected_status=403)
+
     @add_fixtures(['test_site'])
     def test_put_group(self, local_site=None):
         """Testing the PUT groups/<name>/ API"""
@@ -196,169 +370,3 @@ class ReviewGroupResourceTests(BaseWebAPITestCase):
 
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], GROUP_ALREADY_EXISTS.code)
-
-    @add_fixtures(['test_site'])
-    def test_get_groups(self):
-        """Testing the GET groups/ API"""
-        self.create_review_group(name='group1')
-        self.create_review_group(name='group2', with_local_site=True)
-
-        rsp = self.apiGet(get_review_group_list_url(),
-                          expected_mimetype=review_group_list_mimetype)
-        self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(len(rsp['groups']),
-                         Group.objects.accessible(self.user).count())
-        self.assertEqual(len(rsp['groups']), 1)
-
-    @add_fixtures(['test_site'])
-    def test_get_groups_with_site(self):
-        """Testing the GET groups/ API with a local site"""
-        self._login_user(local_site=True)
-        local_site = LocalSite.objects.get(name=self.local_site_name)
-        self.create_review_group(name='group1', with_local_site=True)
-        self.create_review_group(name='group2')
-
-        groups = Group.objects.accessible(self.user, local_site=local_site)
-
-        rsp = self.apiGet(get_review_group_list_url(self.local_site_name),
-                          expected_mimetype=review_group_list_mimetype)
-        self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(len(rsp['groups']), groups.count())
-        self.assertEqual(len(rsp['groups']), 1)
-
-    @add_fixtures(['test_site'])
-    def test_get_groups_with_site_no_access(self):
-        """Testing the GET groups/ API
-        with a local site and Permission Denied error
-        """
-        self.apiGet(get_review_group_list_url(self.local_site_name),
-                    expected_status=403)
-
-    def test_get_groups_with_q(self):
-        """Testing the GET groups/?q= API"""
-        self.create_review_group(name='docgroup')
-        self.create_review_group(name='devgroup')
-
-        rsp = self.apiGet(get_review_group_list_url(), {'q': 'dev'},
-                          expected_mimetype=review_group_list_mimetype)
-        self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(len(rsp['groups']), 1)  # devgroup
-
-    def test_get_group_public(self):
-        """Testing the GET groups/<id>/ API"""
-        group = Group.objects.create(name='test-group')
-
-        rsp = self.apiGet(get_review_group_item_url(group.name),
-                          expected_mimetype=review_group_item_mimetype)
-        self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(rsp['group']['name'], group.name)
-        self.assertEqual(rsp['group']['display_name'], group.display_name)
-        self.assertEqual(rsp['group']['invite_only'], False)
-
-    def test_get_group_public_not_modified(self):
-        """Testing the GET groups/<id>/ API with Not Modified response"""
-        Group.objects.create(name='test-group')
-
-        self._testHttpCaching(get_review_group_item_url('test-group'),
-                              check_etags=True)
-
-    def test_get_group_invite_only(self):
-        """Testing the GET groups/<id>/ API with invite-only"""
-        group = Group.objects.create(name='test-group', invite_only=True)
-        group.users.add(self.user)
-
-        rsp = self.apiGet(get_review_group_item_url(group.name),
-                          expected_mimetype=review_group_item_mimetype)
-        self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(rsp['group']['invite_only'], True)
-
-    def test_get_group_invite_only_with_permission_denied_error(self):
-        """Testing the GET groups/<id>/ API
-        with invite-only and Permission Denied error
-        """
-        group = Group.objects.create(name='test-group', invite_only=True)
-
-        rsp = self.apiGet(get_review_group_item_url(group.name),
-                          expected_status=403)
-        self.assertEqual(rsp['stat'], 'fail')
-        self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
-
-    @add_fixtures(['test_site'])
-    def test_get_group_with_site(self):
-        """Testing the GET groups/<id>/ API with a local site"""
-        self._login_user(local_site=True)
-        group = self.create_review_group(with_local_site=True)
-
-        rsp = self.apiGet(
-            get_review_group_item_url(group.name, self.local_site_name),
-            expected_mimetype=review_group_item_mimetype)
-        self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(rsp['group']['name'], group.name)
-        self.assertEqual(rsp['group']['display_name'], group.display_name)
-
-    @add_fixtures(['test_site'])
-    def test_get_group_with_site_no_access(self):
-        """Testing the GET groups/<id>/ API
-        with a local site and Permission Denied error
-        """
-        self.apiGet(
-            get_review_group_item_url('sitegroup', self.local_site_name),
-            expected_status=403)
-
-    def test_delete_group(self):
-        """Testing the DELETE groups/<id>/ API"""
-        self._login_user(admin=True)
-        group = Group.objects.create(name='test-group', invite_only=True)
-        group.users.add(self.user)
-
-        self.apiDelete(get_review_group_item_url('test-group'),
-                       expected_status=204)
-        self.assertFalse(Group.objects.filter(name='test-group').exists())
-
-    def test_delete_group_with_permission_denied_error(self):
-        """Testing the DELETE groups/<id>/ API with Permission Denied error"""
-        group = Group.objects.create(name='test-group', invite_only=True)
-        group.users.add(self.user)
-
-        self.apiDelete(get_review_group_item_url('test-group'),
-                       expected_status=403)
-
-    @add_fixtures(['test_site'])
-    def test_delete_group_with_local_site(self):
-        """Testing the DELETE groups/<id>/ API with a local site"""
-        self.create_review_group(name='sitegroup', with_local_site=True)
-
-        self._login_user(local_site=True, admin=True)
-        self.apiDelete(
-            get_review_group_item_url('sitegroup', self.local_site_name),
-            expected_status=204)
-
-    @add_fixtures(['test_site'])
-    def test_delete_group_with_local_site_and_permission_denied_error(self):
-        """Testing the DELETE groups/<id>/ API
-        with a local site and Permission Denied error
-        """
-        self.create_review_group(name='sitegroup', with_local_site=True)
-
-        self._login_user(local_site=True)
-        self.apiDelete(
-            get_review_group_item_url('sitegroup', self.local_site_name),
-            expected_status=403)
-
-    @add_fixtures(['test_scmtools'])
-    def test_delete_group_with_review_requests(self):
-        """Testing the DELETE groups/<id>/ API with existing review requests"""
-        self._login_user(admin=True)
-
-        group = Group.objects.create(name='test-group', invite_only=True)
-        group.users.add(self.user)
-
-        repository = self.create_repository()
-        request = ReviewRequest.objects.create(self.user, repository)
-        request.target_groups.add(group)
-
-        self.apiDelete(get_review_group_item_url('test-group'),
-                       expected_status=204)
-
-        request = ReviewRequest.objects.get(pk=request.id)
-        self.assertEqual(request.target_groups.count(), 0)

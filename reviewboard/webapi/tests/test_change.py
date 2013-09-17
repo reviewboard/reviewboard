@@ -18,6 +18,10 @@ class ChangeResourceTests(BaseWebAPITestCase):
     """Testing the ChangeResourceAPIs."""
     fixtures = ['test_users', 'test_scmtools']
 
+    #
+    # List tests
+    #
+
     def test_get_changes(self):
         """Testing the GET review-requests/<id>/changes/ API"""
         review_request = self.create_review_request(publish=True)
@@ -42,6 +46,10 @@ class ChangeResourceTests(BaseWebAPITestCase):
 
         self.assertEqual(rsp['changes'][0]['id'], change2.pk)
         self.assertEqual(rsp['changes'][1]['id'], change1.pk)
+
+    #
+    # Item tests
+    #
 
     def test_get_change(self):
         """Testing the GET review-requests/<id>/changes/<id>/ API"""

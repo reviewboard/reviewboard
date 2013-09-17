@@ -15,6 +15,10 @@ class ReviewScreenshotCommentResourceTests(BaseWebAPITestCase):
     """Testing the ReviewScreenshotCommentResource APIs."""
     fixtures = ['test_users', 'test_scmtools']
 
+    #
+    # List tests
+    #
+
     def test_post_screenshot_comments(self):
         """Testing the
         POST review-requests/<id>/reviews/<id>/screenshot-comments/ API
@@ -62,6 +66,25 @@ class ReviewScreenshotCommentResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['screenshot_comment']['w'], w)
         self.assertEqual(rsp['screenshot_comment']['h'], h)
 
+    def test_post_screenshot_comment_with_issue(self):
+        """Testing the
+        POST review-requests/<id>/reviews/<id>/screenshot-comments/ API
+        with an issue
+        """
+        comment_text = "Test screenshot comment with an opened issue"
+        rsp, review, review_request = \
+            self._create_screenshot_review_with_issue(
+                publish=False, comment_text=comment_text)
+
+        rsp = self.apiGet(
+            get_review_screenshot_comment_list_url(review),
+            expected_mimetype=screenshot_comment_list_mimetype)
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertTrue('screenshot_comments' in rsp)
+        self.assertEqual(len(rsp['screenshot_comments']), 1)
+        self.assertEqual(rsp['screenshot_comments'][0]['text'], comment_text)
+        self.assertTrue(rsp['screenshot_comments'][0]['issue_opened'])
+
     @add_fixtures(['test_site'])
     def test_post_screenshot_comments_with_site_no_access(self):
         """Testing the
@@ -87,6 +110,10 @@ class ReviewScreenshotCommentResourceTests(BaseWebAPITestCase):
             expected_status=403)
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
+
+    #
+    # Item tests
+    #
 
     def test_delete_screenshot_comment(self):
         """Testing the
@@ -183,26 +210,7 @@ class ReviewScreenshotCommentResourceTests(BaseWebAPITestCase):
         self.apiDelete(get_review_screenshot_comment_item_url(review, 123),
                        expected_status=404)
 
-    def test_post_screenshot_comment_with_issue(self):
-        """Testing the
-        POST review-requests/<id>/reviews/<id>/screenshot-comments/ API
-        with an issue
-        """
-        comment_text = "Test screenshot comment with an opened issue"
-        rsp, review, review_request = \
-            self._create_screenshot_review_with_issue(
-                publish=False, comment_text=comment_text)
-
-        rsp = self.apiGet(
-            get_review_screenshot_comment_list_url(review),
-            expected_mimetype=screenshot_comment_list_mimetype)
-        self.assertEqual(rsp['stat'], 'ok')
-        self.assertTrue('screenshot_comments' in rsp)
-        self.assertEqual(len(rsp['screenshot_comments']), 1)
-        self.assertEqual(rsp['screenshot_comments'][0]['text'], comment_text)
-        self.assertTrue(rsp['screenshot_comments'][0]['issue_opened'])
-
-    def test_update_screenshot_comment_with_issue(self):
+    def test_put_screenshot_comment_with_issue(self):
         """Testing the
         PUT review-requests/<id>/reviews/<id>/screenshot-comments/<id>/ API
         with an issue, removing issue_opened
@@ -217,7 +225,7 @@ class ReviewScreenshotCommentResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['stat'], 'ok')
         self.assertFalse(rsp['screenshot_comment']['issue_opened'])
 
-    def test_update_screenshot_comment_issue_status_before_publish(self):
+    def test_put_screenshot_comment_issue_status_before_publish(self):
         """Testing the
         PUT review-requests/<id>/reviews/<id>/screenshot-comments/<id> API
         with an issue, before review is published
@@ -237,7 +245,7 @@ class ReviewScreenshotCommentResourceTests(BaseWebAPITestCase):
         # The issue_status should still be "open"
         self.assertEqual(rsp['screenshot_comment']['issue_status'], 'open')
 
-    def test_update_screenshot_comment_issue_status_after_publish(self):
+    def test_put_screenshot_comment_issue_status_after_publish(self):
         """Testing the
         PUT review-requests/<id>/reviews/<id>/screenshot-comments/<id>/ API
         with an issue, after review is published
@@ -252,7 +260,7 @@ class ReviewScreenshotCommentResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(rsp['screenshot_comment']['issue_status'], 'resolved')
 
-    def test_update_screenshot_comment_issue_status_by_issue_creator(self):
+    def test_put_screenshot_comment_issue_status_by_issue_creator(self):
         """Testing the
         PUT review-requests/<id>/reviews/<id>/screenshot-comments/<id>/ API
         permissions for issue creator
@@ -274,7 +282,7 @@ class ReviewScreenshotCommentResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(rsp['screenshot_comment']['issue_status'], 'dropped')
 
-    def test_update_screenshot_comment_issue_status_by_uninvolved_user(self):
+    def test_put_screenshot_comment_issue_status_by_uninvolved_user(self):
         """Testing the
         PUT review-requests/<id>/reviews/<id>/screenshot-comments/<id>/ API
         permissions for an uninvolved user
@@ -297,7 +305,7 @@ class ReviewScreenshotCommentResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
-    def test_update_deleted_screenshot_comment_issue_status(self):
+    def test_put_deleted_screenshot_comment_issue_status(self):
         """Testing the PUT review-requests/<id>/reviews/<id>/screenshot-comments/<id>
         API with an issue and a deleted screenshot
         """

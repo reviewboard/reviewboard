@@ -51,6 +51,10 @@ class RepositoryResourceTests(BaseWebAPITestCase):
         SSHClient.add_host_key = self._old_add_host_key
         SSHClient.replace_host_key = self._old_replace_host_key
 
+    #
+    # List tests
+    #
+
     def test_get_repositories(self):
         """Testing the GET repositories/ API"""
         rsp = self.apiGet(get_repository_list_url(),
@@ -331,53 +335,9 @@ class RepositoryResourceTests(BaseWebAPITestCase):
         self._login_user(local_site=True)
         self._post_repository(True, expected_status=403)
 
-    def test_put_repository(self):
-        """Testing the PUT repositories/<id>/ API"""
-        self._login_user(admin=True)
-        self._put_repository(False, {
-            'bug_tracker': 'http://bugtracker/%s/',
-            'encoding': 'UTF-8',
-            'mirror_path': 'http://svn.example.com/',
-            'username': 'user',
-            'password': '123',
-            'public': False,
-            'raw_file_url': 'http://example.com/<filename>/<version>',
-        })
-
-    @add_fixtures(['test_site'])
-    def test_put_repository_with_site(self):
-        """Testing the PUT repositories/<id>/ API with a local site"""
-        self._login_user(local_site=True, admin=True)
-        self._put_repository(True, {
-            'bug_tracker': 'http://bugtracker/%s/',
-            'encoding': 'UTF-8',
-            'mirror_path': 'http://svn.example.com/',
-            'username': 'user',
-            'password': '123',
-            'public': False,
-            'raw_file_url': 'http://example.com/<filename>/<version>',
-        })
-
-    def test_put_repository_with_no_access(self):
-        """Testing the PUT repositories/<id>/ API with no access"""
-        self._login_user()
-        self._put_repository(False, expected_status=403)
-
-    @add_fixtures(['test_site'])
-    def test_put_repository_with_site_no_access(self):
-        """Testing the PUT repositories/<id>/ API
-        with a local site and no access
-        """
-        self._login_user(local_site=True)
-        self._put_repository(False, expected_status=403)
-
-    def test_put_repository_with_archive(self):
-        """Testing the PUT repositories/<id>/ API with archive_name=True"""
-        self._login_user(admin=True)
-        repo_id = self._put_repository(False, {'archive_name': True})
-
-        repo = Repository.objects.get(pk=repo_id)
-        self.assertEqual(repo.name[:23], 'ar:New Test Repository:')
+    #
+    # Item tests
+    #
 
     def test_delete_repository(self):
         """Testing the DELETE repositories/<id>/ API"""
@@ -427,6 +387,54 @@ class RepositoryResourceTests(BaseWebAPITestCase):
         """
         self._login_user(local_site=True)
         self._delete_repository(True, expected_status=403)
+
+    def test_put_repository(self):
+        """Testing the PUT repositories/<id>/ API"""
+        self._login_user(admin=True)
+        self._put_repository(False, {
+            'bug_tracker': 'http://bugtracker/%s/',
+            'encoding': 'UTF-8',
+            'mirror_path': 'http://svn.example.com/',
+            'username': 'user',
+            'password': '123',
+            'public': False,
+            'raw_file_url': 'http://example.com/<filename>/<version>',
+        })
+
+    @add_fixtures(['test_site'])
+    def test_put_repository_with_site(self):
+        """Testing the PUT repositories/<id>/ API with a local site"""
+        self._login_user(local_site=True, admin=True)
+        self._put_repository(True, {
+            'bug_tracker': 'http://bugtracker/%s/',
+            'encoding': 'UTF-8',
+            'mirror_path': 'http://svn.example.com/',
+            'username': 'user',
+            'password': '123',
+            'public': False,
+            'raw_file_url': 'http://example.com/<filename>/<version>',
+        })
+
+    def test_put_repository_with_no_access(self):
+        """Testing the PUT repositories/<id>/ API with no access"""
+        self._login_user()
+        self._put_repository(False, expected_status=403)
+
+    @add_fixtures(['test_site'])
+    def test_put_repository_with_site_no_access(self):
+        """Testing the PUT repositories/<id>/ API
+        with a local site and no access
+        """
+        self._login_user(local_site=True)
+        self._put_repository(False, expected_status=403)
+
+    def test_put_repository_with_archive(self):
+        """Testing the PUT repositories/<id>/ API with archive_name=True"""
+        self._login_user(admin=True)
+        repo_id = self._put_repository(False, {'archive_name': True})
+
+        repo = Repository.objects.get(pk=repo_id)
+        self.assertEqual(repo.name[:23], 'ar:New Test Repository:')
 
     def _post_repository(self, use_local_site, data={}, expected_status=201):
         repo_name = 'Test Repository'
