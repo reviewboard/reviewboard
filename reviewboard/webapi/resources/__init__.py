@@ -14,6 +14,7 @@ from reviewboard.reviews.models import (Comment, DefaultReviewer,
                                         ReviewRequest, ReviewRequestDraft,
                                         Review, ScreenshotComment, Screenshot,
                                         FileAttachmentComment)
+from reviewboard.webapi.base import WebAPIResource
 
 
 class Resources(object):
@@ -93,3 +94,6 @@ class Resources(object):
 
 
 resources = Resources()
+
+
+__all__ = ['Resources', 'resources', 'WebAPIResource']
