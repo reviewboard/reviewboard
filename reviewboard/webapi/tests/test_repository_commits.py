@@ -28,7 +28,9 @@ class RepositoryCommitsResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['commits'][3]['author_name'], 'user2')
 
     def test_get_repository_commits_without_start(self):
-        """Testing the GET repositories/<id>/commits/ API without providing a start parameter"""
+        """Testing the GET repositories/<id>/commits/ API
+        without providing a start parameter
+        """
         repository = self.create_repository()
         rsp = self.apiGet(get_repository_commits_url(repository),
                           expected_status=400)
@@ -54,7 +56,9 @@ class RepositoryCommitsResourceTests(BaseWebAPITestCase):
 
     @add_fixtures(['test_site'])
     def test_get_repository_commits_with_site_no_access(self):
-        """Testing the GET repositories/<id>/commits/ API with a local site and Permission Denied error"""
+        """Testing the GET repositories/<id>/commits/ API
+        with a local site and Permission Denied error
+        """
         repository = self.create_repository(with_local_site=True)
 
         self.apiGet(
@@ -62,7 +66,9 @@ class RepositoryCommitsResourceTests(BaseWebAPITestCase):
             expected_status=403)
 
     def test_get_repository_commits_with_no_support(self):
-        """Testing the GET repositories/<id>/commits/ API with a repository that does not implement it"""
+        """Testing the GET repositories/<id>/commits/ API
+        with a repository that does not implement it
+        """
         hg_repo_path = os.path.join(os.path.dirname(scmtools.__file__),
                                     'testdata', 'hg_repo.bundle')
         repository = Repository(name='Test HG',

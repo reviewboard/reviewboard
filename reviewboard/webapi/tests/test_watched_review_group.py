@@ -29,7 +29,9 @@ class WatchedReviewGroupResourceTests(BaseWebAPITestCase):
         return group
 
     def test_post_watched_review_group_with_does_not_exist_error(self):
-        """Testing the POST users/<username>/watched/review-groups/ API with Does Not Exist error"""
+        """Testing the POST users/<username>/watched/review-groups/ API
+        with Does Not Exist error
+        """
         rsp = self.apiPost(
             get_watched_review_group_list_url(self.user.username),
             {'object_id': 'invalidgroup'},
@@ -39,7 +41,9 @@ class WatchedReviewGroupResourceTests(BaseWebAPITestCase):
 
     @add_fixtures(['test_site'])
     def test_post_watched_review_group_with_site(self):
-        """Testing the POST users/<username>/watched/review-groups/ API with a local site"""
+        """Testing the POST users/<username>/watched/review-groups/ API
+        with a local site
+        """
         self._login_user(local_site=True)
 
         username = 'doc'
@@ -57,7 +61,9 @@ class WatchedReviewGroupResourceTests(BaseWebAPITestCase):
 
     @add_fixtures(['test_site'])
     def test_post_watched_review_group_with_site_does_not_exist_error(self):
-        """Testing the POST users/<username>/watched/review-groups/ API with a local site and Does Not Exist error"""
+        """Testing the POST users/<username>/watched/review-groups/ API
+        with a local site and Does Not Exist error
+        """
         username = 'doc'
 
         self._login_user(local_site=True)
@@ -70,7 +76,9 @@ class WatchedReviewGroupResourceTests(BaseWebAPITestCase):
 
     @add_fixtures(['test_site'])
     def test_post_watched_review_group_with_site_no_access(self):
-        """Testing the POST users/<username>/watched/review-groups/ API with a local site and Permission Denied error"""
+        """Testing the POST users/<username>/watched/review-groups/ API
+        with a local site and Permission Denied error
+        """
         rsp = self.apiPost(
             get_watched_review_group_list_url(self.user.username,
                                               self.local_site_name),
@@ -80,7 +88,8 @@ class WatchedReviewGroupResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
     def test_delete_watched_review_group(self):
-        """Testing the DELETE users/<username>/watched/review-groups/<id>/ API"""
+        """Testing the DELETE users/<username>/watched/review-groups/<id>/ API
+        """
         # First, star it.
         group = self.test_post_watched_review_group()
 
@@ -90,7 +99,9 @@ class WatchedReviewGroupResourceTests(BaseWebAPITestCase):
                          self.user.get_profile().starred_groups.all())
 
     def test_delete_watched_review_group_with_does_not_exist_error(self):
-        """Testing the DELETE users/<username>/watched/review-groups/<id>/ API with Does Not Exist error"""
+        """Testing the DELETE users/<username>/watched/review-groups/<id>/ API
+        with Does Not Exist error
+        """
         rsp = self.apiDelete(
             get_watched_review_group_item_url(self.user.username,
                                               'invalidgroup'),
@@ -100,7 +111,9 @@ class WatchedReviewGroupResourceTests(BaseWebAPITestCase):
 
     @add_fixtures(['test_site'])
     def test_delete_watched_review_group_with_site(self):
-        """Testing the DELETE users/<username>/watched/review-groups/<id>/ API with a local site"""
+        """Testing the DELETE users/<username>/watched/review-groups/<id>/ API
+        with a local site
+        """
         group = self.test_post_watched_review_group_with_site()
         user = User.objects.get(username='doc')
 
@@ -111,7 +124,9 @@ class WatchedReviewGroupResourceTests(BaseWebAPITestCase):
 
     @add_fixtures(['test_site'])
     def test_delete_watched_review_group_with_site_no_access(self):
-        """Testing the DELETE users/<username>/watched/review-groups/<id>/ API with a local site and Permission Denied error"""
+        """Testing the DELETE users/<username>/watched/review-groups/<id>/ API
+        with a local site and Permission Denied error
+        """
         rsp = self.apiDelete(
             get_watched_review_group_item_url(self.user.username, 'group',
                                               self.local_site_name),
@@ -139,7 +154,9 @@ class WatchedReviewGroupResourceTests(BaseWebAPITestCase):
 
     @add_fixtures(['test_site'])
     def test_get_watched_review_groups_with_site(self):
-        """Testing the GET users/<username>/watched/review-groups/ API with a local site"""
+        """Testing the GET users/<username>/watched/review-groups/ API
+        with a local site
+        """
         self.test_post_watched_review_group_with_site()
 
         rsp = self.apiGet(
@@ -158,7 +175,9 @@ class WatchedReviewGroupResourceTests(BaseWebAPITestCase):
 
     @add_fixtures(['test_site'])
     def test_get_watched_review_groups_with_site_no_access(self):
-        """Testing the GET users/<username>/watched/review-groups/ API with a local site and Permission Denied error"""
+        """Testing the GET users/<username>/watched/review-groups/ API
+        with a local site and Permission Denied error
+        """
         rsp = self.apiGet(
             get_watched_review_group_list_url(self.user.username,
                                               self.local_site_name),

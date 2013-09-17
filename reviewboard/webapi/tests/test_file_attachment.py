@@ -52,7 +52,9 @@ class FileAttachmentResourceTests(BaseWebAPITestCase):
         self.assertEqual(file_attachments[0]['filename'], 'trophy1.png')
 
     def test_get_file_attachment_not_modified(self):
-        """Testing the GET review-requests/<id>/file-attachments/<id>/ API with Not Modified response"""
+        """Testing the GET review-requests/<id>/file-attachments/<id>/ API
+        with Not Modified response
+        """
         self.test_post_file_attachments()
 
         file_attachment = FileAttachment.objects.all()[0]
@@ -77,7 +79,9 @@ class FileAttachmentResourceTests(BaseWebAPITestCase):
         review_request.publish(review_request.submitter)
 
     def test_post_file_attachments_with_permission_denied_error(self):
-        """Testing the POST review-requests/<id>/file-attachments/ API with Permission Denied error"""
+        """Testing the POST review-requests/<id>/file-attachments/ API
+        with Permission Denied error
+        """
         review_request = self.create_review_request()
         self.assertNotEqual(review_request.submitter, self.user)
 
@@ -97,7 +101,9 @@ class FileAttachmentResourceTests(BaseWebAPITestCase):
 
     @add_fixtures(['test_site'])
     def test_post_file_attachments_with_site(self):
-        """Testing the POST review-requests/<id>/file-attachments/ API with a local site"""
+        """Testing the POST review-requests/<id>/file-attachments/ API
+        with a local site
+        """
         user = self._login_user(local_site=True)
 
         review_request = self.create_review_request(with_local_site=True,
@@ -116,7 +122,9 @@ class FileAttachmentResourceTests(BaseWebAPITestCase):
 
     @add_fixtures(['test_site'])
     def test_post_file_attachments_with_site_no_access(self):
-        """Testing the POST review-requests/<id>/file-attachments/ API with a local site and Permission Denied error"""
+        """Testing the POST review-requests/<id>/file-attachments/ API
+        with a local site and Permission Denied error
+        """
         user = self._login_user(local_site=True)
 
         review_request = self.create_review_request(with_local_site=True,

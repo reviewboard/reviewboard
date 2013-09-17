@@ -45,7 +45,9 @@ class RepositoryBranchesResourceTests(BaseWebAPITestCase):
 
     @add_fixtures(['test_site'])
     def test_get_repository_branches_with_site_no_access(self):
-        """Testing the GET repositories/<id>/branches/ API with a local site and Permission Denied error"""
+        """Testing the GET repositories/<id>/branches/ API
+        with a local site and Permission Denied error
+        """
         repository = self.create_repository(with_local_site=True)
 
         self.apiGet(
@@ -53,7 +55,9 @@ class RepositoryBranchesResourceTests(BaseWebAPITestCase):
             expected_status=403)
 
     def test_get_repository_branches_with_no_support(self):
-        """Testing the GET repositories/<id>/branches/ API with a repository that does not implement it"""
+        """Testing the GET repositories/<id>/branches/ API
+        with a repository that does not implement it
+        """
         repository = self.create_repository(tool_name='Mercurial')
 
         rsp = self.apiGet(get_repository_branches_url(repository),

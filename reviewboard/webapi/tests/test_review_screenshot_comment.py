@@ -16,7 +16,9 @@ class ReviewScreenshotCommentResourceTests(BaseWebAPITestCase):
     fixtures = ['test_users', 'test_scmtools']
 
     def test_post_screenshot_comments(self):
-        """Testing the POST review-requests/<id>/reviews/<id>/screenshot-comments/ API"""
+        """Testing the
+        POST review-requests/<id>/reviews/<id>/screenshot-comments/ API
+        """
         comment_text = "This is a test comment."
         x, y, w, h = (2, 2, 10, 10)
 
@@ -36,7 +38,10 @@ class ReviewScreenshotCommentResourceTests(BaseWebAPITestCase):
 
     @add_fixtures(['test_site'])
     def test_post_screenshot_comments_with_site(self):
-        """Testing the POST review-requests/<id>/reviews/<id>/screenshot-comments/ API with a local site"""
+        """Testing the
+        POST review-requests/<id>/reviews/<id>/screenshot-comments/ API
+        with a local site
+        """
         comment_text = 'This is a test comment.'
         x, y, w, h = (2, 2, 10, 10)
 
@@ -59,7 +64,10 @@ class ReviewScreenshotCommentResourceTests(BaseWebAPITestCase):
 
     @add_fixtures(['test_site'])
     def test_post_screenshot_comments_with_site_no_access(self):
-        """Testing the POST review-requests/<id>/reviews/<id>/screenshot-comments/ API with a local site and Permission Denied error"""
+        """Testing the
+        POST review-requests/<id>/reviews/<id>/screenshot-comments/ API
+        with a local site and Permission Denied error
+        """
         x, y, w, h = (2, 2, 10, 10)
 
         user = self._login_user(local_site=True)
@@ -81,7 +89,9 @@ class ReviewScreenshotCommentResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
     def test_delete_screenshot_comment(self):
-        """Testing the DELETE review-requests/<id>/reviews/<id>/screenshot-comments/<id>/ API"""
+        """Testing the
+        DELETE review-requests/<id>/reviews/<id>/screenshot-comments/<id>/ API
+        """
         comment_text = "This is a test comment."
         x, y, w, h = (2, 2, 10, 10)
 
@@ -104,7 +114,10 @@ class ReviewScreenshotCommentResourceTests(BaseWebAPITestCase):
 
     @add_fixtures(['test_site'])
     def test_delete_screenshot_comment_with_local_site(self):
-        """Testing the DELETE review-requests/<id>/reviews/<id>/screenshot-comments/<id> API with a local site"""
+        """Testing the
+        DELETE review-requests/<id>/reviews/<id>/screenshot-comments/<id> API
+        with a local site
+        """
         comment_text = 'This is a test comment.'
         x, y, w, h = (2, 2, 10, 10)
 
@@ -131,7 +144,10 @@ class ReviewScreenshotCommentResourceTests(BaseWebAPITestCase):
 
     @add_fixtures(['test_site'])
     def test_delete_screenshot_comment_with_local_site_no_access(self):
-        """Testing the DELETE review-requests/<id>/reviews/<id>/screenshot-comments/<id> API with a local site and Permission Denied error"""
+        """Testing the
+        DELETE review-requests/<id>/reviews/<id>/screenshot-comments/<id> API
+        with a local site and Permission Denied error
+        """
         comment_text = 'This is a test comment.'
         x, y, w, h = (2, 2, 10, 10)
 
@@ -154,7 +170,10 @@ class ReviewScreenshotCommentResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
     def test_delete_screenshot_comment_with_does_not_exist_error(self):
-        """Testing the DELETE review-requests/<id>/reviews/<id>/screenshot-comments/<id>/ API with Does Not Exist error"""
+        """Testing the
+        DELETE review-requests/<id>/reviews/<id>/screenshot-comments/<id>/ API
+        with Does Not Exist error
+        """
         x, y, w, h = (2, 2, 10, 10)
 
         review_request = self.create_review_request(publish=True)
@@ -165,7 +184,10 @@ class ReviewScreenshotCommentResourceTests(BaseWebAPITestCase):
                        expected_status=404)
 
     def test_post_screenshot_comment_with_issue(self):
-        """Testing the POST review-requests/<id>/reviews/<id>/screenshot-comments/ API with an issue"""
+        """Testing the
+        POST review-requests/<id>/reviews/<id>/screenshot-comments/ API
+        with an issue
+        """
         comment_text = "Test screenshot comment with an opened issue"
         rsp, review, review_request = \
             self._create_screenshot_review_with_issue(
@@ -181,7 +203,10 @@ class ReviewScreenshotCommentResourceTests(BaseWebAPITestCase):
         self.assertTrue(rsp['screenshot_comments'][0]['issue_opened'])
 
     def test_update_screenshot_comment_with_issue(self):
-        """Testing the PUT review-requests/<id>/reviews/<id>/screenshot-comments/<id>/ API, issue, removing issue_opened"""
+        """Testing the
+        PUT review-requests/<id>/reviews/<id>/screenshot-comments/<id>/ API
+        with an issue, removing issue_opened
+        """
         rsp, review, review_request = \
             self._create_screenshot_review_with_issue()
 
@@ -193,7 +218,10 @@ class ReviewScreenshotCommentResourceTests(BaseWebAPITestCase):
         self.assertFalse(rsp['screenshot_comment']['issue_opened'])
 
     def test_update_screenshot_comment_issue_status_before_publish(self):
-        """Testing the PUT review-requests/<id>/reviews/<id>/screenshot-comments/<id>l API with an issue, before review is published"""
+        """Testing the
+        PUT review-requests/<id>/reviews/<id>/screenshot-comments/<id> API
+        with an issue, before review is published
+        """
         rsp, review, review_request = \
             self._create_screenshot_review_with_issue()
 
@@ -210,7 +238,10 @@ class ReviewScreenshotCommentResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['screenshot_comment']['issue_status'], 'open')
 
     def test_update_screenshot_comment_issue_status_after_publish(self):
-        """Testing the PUT review-requests/<id>/reviews/<id>/screenshot-comments/<id>/ API with an issue, after review is published"""
+        """Testing the
+        PUT review-requests/<id>/reviews/<id>/screenshot-comments/<id>/ API
+        with an issue, after review is published
+        """
         rsp, review, review_request = \
             self._create_screenshot_review_with_issue(publish=True)
 
@@ -222,7 +253,10 @@ class ReviewScreenshotCommentResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['screenshot_comment']['issue_status'], 'resolved')
 
     def test_update_screenshot_comment_issue_status_by_issue_creator(self):
-        """Testing the PUT review-requests/<id>/reviews/<id>/screenshot-comments/<id>/ API permissions for issue creator"""
+        """Testing the
+        PUT review-requests/<id>/reviews/<id>/screenshot-comments/<id>/ API
+        permissions for issue creator
+        """
         rsp, review, review_request = \
             self._create_screenshot_review_with_issue(publish=True)
 
@@ -241,7 +275,10 @@ class ReviewScreenshotCommentResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['screenshot_comment']['issue_status'], 'dropped')
 
     def test_update_screenshot_comment_issue_status_by_uninvolved_user(self):
-        """Testing the PUT review-requests/<id>/reviews/<id>/screenshot-comments/<id>/ API permissions for an uninvolved user"""
+        """Testing the
+        PUT review-requests/<id>/reviews/<id>/screenshot-comments/<id>/ API
+        permissions for an uninvolved user
+        """
         rsp, review, review_request = \
             self._create_screenshot_review_with_issue(publish=True)
 

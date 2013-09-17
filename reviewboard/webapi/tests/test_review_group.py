@@ -182,7 +182,9 @@ class ReviewGroupResourceTests(BaseWebAPITestCase):
             LocalSite.objects.get(name=self.local_site_name))
 
     def test_put_group_with_conflict(self):
-        """Testing the PUT groups/<name>/ API with Group Already Exists error"""
+        """Testing the PUT groups/<name>/ API
+        with Group Already Exists error
+        """
         group = self.create_review_group(name='group1')
         group2 = self.create_review_group(name='group2')
 
@@ -226,7 +228,9 @@ class ReviewGroupResourceTests(BaseWebAPITestCase):
 
     @add_fixtures(['test_site'])
     def test_get_groups_with_site_no_access(self):
-        """Testing the GET groups/ API with a local site and Permission Denied error"""
+        """Testing the GET groups/ API
+        with a local site and Permission Denied error
+        """
         self.apiGet(get_review_group_list_url(self.local_site_name),
                     expected_status=403)
 
@@ -269,7 +273,9 @@ class ReviewGroupResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['group']['invite_only'], True)
 
     def test_get_group_invite_only_with_permission_denied_error(self):
-        """Testing the GET groups/<id>/ API with invite-only and Permission Denied error"""
+        """Testing the GET groups/<id>/ API
+        with invite-only and Permission Denied error
+        """
         group = Group.objects.create(name='test-group', invite_only=True)
 
         rsp = self.apiGet(get_review_group_item_url(group.name),
@@ -292,7 +298,9 @@ class ReviewGroupResourceTests(BaseWebAPITestCase):
 
     @add_fixtures(['test_site'])
     def test_get_group_with_site_no_access(self):
-        """Testing the GET groups/<id>/ API with a local site and Permission Denied error"""
+        """Testing the GET groups/<id>/ API
+        with a local site and Permission Denied error
+        """
         self.apiGet(
             get_review_group_item_url('sitegroup', self.local_site_name),
             expected_status=403)
@@ -327,7 +335,9 @@ class ReviewGroupResourceTests(BaseWebAPITestCase):
 
     @add_fixtures(['test_site'])
     def test_delete_group_with_local_site_and_permission_denied_error(self):
-        """Testing the DELETE groups/<id>/ API with a local site and Permission Denied error"""
+        """Testing the DELETE groups/<id>/ API
+        with a local site and Permission Denied error
+        """
         self.create_review_group(name='sitegroup', with_local_site=True)
 
         self._login_user(local_site=True)

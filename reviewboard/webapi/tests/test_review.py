@@ -31,7 +31,9 @@ class ReviewResourceTests(BaseWebAPITestCase):
 
     @add_fixtures(['test_site'])
     def test_get_reviews_with_site(self):
-        """Testing the GET review-requests/<id>/reviews/ API with a local site"""
+        """Testing the GET review-requests/<id>/reviews/ API
+        with a local site
+        """
         self.test_post_reviews_with_site(public=True)
 
         local_site = LocalSite.objects.get(name=self.local_site_name)
@@ -45,7 +47,9 @@ class ReviewResourceTests(BaseWebAPITestCase):
 
     @add_fixtures(['test_site'])
     def test_get_reviews_with_site_no_access(self):
-        """Testing the GET review-requests/<id>/reviews/ API with a local site and Permission Denied error"""
+        """Testing the GET review-requests/<id>/reviews/ API
+        with a local site and Permission Denied error
+        """
         review_request = self.create_review_request(with_local_site=True,
                                                     publish=True)
 
@@ -69,7 +73,9 @@ class ReviewResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['count'], 2)
 
     def test_get_review_not_modified(self):
-        """Testing the GET review-requests/<id>/reviews/<id>/ API with Not Modified response"""
+        """Testing the GET review-requests/<id>/reviews/<id>/ API
+        with Not Modified response
+        """
         review_request = self.create_review_request(publish=True)
         review = self.create_review(review_request, publish=True)
 
@@ -117,7 +123,9 @@ class ReviewResourceTests(BaseWebAPITestCase):
 
     @add_fixtures(['test_site'])
     def test_post_reviews_with_site(self, public=False):
-        """Testing the POST review-requests/<id>/reviews/ API with a local site"""
+        """Testing the POST review-requests/<id>/reviews/ API
+        with a local site
+        """
         self._login_user(local_site=True)
 
         body_top = ""
@@ -166,7 +174,9 @@ class ReviewResourceTests(BaseWebAPITestCase):
 
     @add_fixtures(['test_site'])
     def test_post_reviews_with_site_no_access(self):
-        """Testing the POST review-requests/<id>/reviews/ API with a local site and Permission Denied error"""
+        """Testing the POST review-requests/<id>/reviews/ API
+        with a local site and Permission Denied error
+        """
         review_request = self.create_review_request(with_local_site=True,
                                                     publish=True)
 
@@ -221,7 +231,9 @@ class ReviewResourceTests(BaseWebAPITestCase):
 
     @add_fixtures(['test_site'])
     def test_put_review_with_site(self):
-        """Testing the PUT review-requests/<id>/reviews/<id>/ API with a local site"""
+        """Testing the PUT review-requests/<id>/reviews/<id>/ API
+        with a local site
+        """
         self._login_user(local_site=True)
 
         body_top = ""
@@ -267,7 +279,9 @@ class ReviewResourceTests(BaseWebAPITestCase):
 
     @add_fixtures(['test_site'])
     def test_put_review_with_site_no_access(self):
-        """Testing the PUT review-requests/<id>/reviews/<id>/ API with a local site and Permission Denied error"""
+        """Testing the PUT review-requests/<id>/reviews/<id>/ API
+        with a local site and Permission Denied error
+        """
         review_request = self.create_review_request(with_local_site=True,
                                                     publish=True)
         review = self.create_review(review_request, username='doc',
@@ -282,7 +296,9 @@ class ReviewResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
     def test_put_review_with_published_review(self):
-        """Testing the PUT review-requests/<id>/reviews/<id>/ API with pre-published review"""
+        """Testing the PUT review-requests/<id>/reviews/<id>/ API
+        with pre-published review
+        """
         review_request = self.create_review_request(publish=True)
         review = self.create_review(review_request, username=self.user,
                                     publish=True)
@@ -347,7 +363,9 @@ class ReviewResourceTests(BaseWebAPITestCase):
 
     @add_fixtures(['test_site'])
     def test_delete_review_with_permission_denied(self):
-        """Testing the DELETE review-requests/<id>/reviews/<id>/ API with Permission Denied error"""
+        """Testing the DELETE review-requests/<id>/reviews/<id>/ API
+        with Permission Denied error
+        """
         # Set up the draft to delete.
         review = self.test_put_review()
         review.user = User.objects.get(username='doc')
@@ -361,7 +379,9 @@ class ReviewResourceTests(BaseWebAPITestCase):
         self.assertEqual(review_request.reviews.count(), old_count)
 
     def test_delete_review_with_published_review(self):
-        """Testing the DELETE review-requests/<id>/reviews/<id>/ API with pre-published review"""
+        """Testing the DELETE review-requests/<id>/reviews/<id>/ API
+        with pre-published review
+        """
         review_request = self.create_review_request(publish=True)
         review = self.create_review(review_request, username=self.user,
                                     publish=True)
@@ -371,7 +391,9 @@ class ReviewResourceTests(BaseWebAPITestCase):
         self.assertEqual(review_request.reviews.count(), 1)
 
     def test_delete_review_with_does_not_exist(self):
-        """Testing the DELETE review-requests/<id>/reviews/<id>/ API with Does Not Exist error"""
+        """Testing the DELETE review-requests/<id>/reviews/<id>/ API
+        with Does Not Exist error
+        """
         review_request = self.create_review_request(publish=True)
 
         rsp = self.apiDelete(get_review_item_url(review_request, 919239),
@@ -381,7 +403,9 @@ class ReviewResourceTests(BaseWebAPITestCase):
 
     @add_fixtures(['test_site'])
     def test_delete_review_with_local_site(self):
-        """Testing the DELETE review-requests/<id>/reviews/<id>/ API with a local site"""
+        """Testing the DELETE review-requests/<id>/reviews/<id>/ API
+        with a local site
+        """
         review = self.test_put_review_with_site()
 
         local_site = LocalSite.objects.get(name=self.local_site_name)
@@ -393,7 +417,9 @@ class ReviewResourceTests(BaseWebAPITestCase):
 
     @add_fixtures(['test_site'])
     def test_delete_review_with_local_site_no_access(self):
-        """Testing the DELETE review-requests/<id>/reviews/<id>/ API with a local site and Permission Denied error"""
+        """Testing the DELETE review-requests/<id>/reviews/<id>/ API
+        with a local site and Permission Denied error
+        """
         review_request = self.create_review_request(with_local_site=True,
                                                     publish=True)
         review = self.create_review(review_request, username='doc')

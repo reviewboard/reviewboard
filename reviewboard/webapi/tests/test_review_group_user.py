@@ -49,7 +49,9 @@ class ReviewGroupUserResourceTests(BaseWebAPITestCase):
 
     @add_fixtures(['test_site'])
     def test_create_user_with_site_no_access(self):
-        """Testing the POST groups/<name>/users/ API with local site and Permission Denied"""
+        """Testing the POST groups/<name>/users/ API
+        with local site and Permission Denied
+        """
         self.test_create_user_with_no_access(
             LocalSite.objects.get(name=self.local_site_name))
 
@@ -87,11 +89,15 @@ class ReviewGroupUserResourceTests(BaseWebAPITestCase):
 
     @add_fixtures(['test_site'])
     def test_delete_user_with_site(self):
-        """Testing the DELETE groups/<name>/users/<username>/ API with local site"""
+        """Testing the DELETE groups/<name>/users/<username>/ API
+        with local site
+        """
         self.test_delete_user(LocalSite.objects.get(name=self.local_site_name))
 
     def test_delete_user_with_no_access(self, local_site=None):
-        """Testing the DELETE groups/<name>/users/<username>/ API with Permission Denied"""
+        """Testing the DELETE groups/<name>/users/<username>/ API
+        with Permission Denied
+        """
         user = User.objects.get(username='grumpy')
 
         group = self.create_review_group()
@@ -104,7 +110,9 @@ class ReviewGroupUserResourceTests(BaseWebAPITestCase):
 
     @add_fixtures(['test_site'])
     def test_delete_user_with_site_no_access(self):
-        """Testing the DELETE groups/<name>/users/<username>/ API with local site and Permission Denied"""
+        """Testing the DELETE groups/<name>/users/<username>/ API
+        with local site and Permission Denied
+        """
         self.test_delete_user_with_no_access(
             LocalSite.objects.get(name=self.local_site_name))
 

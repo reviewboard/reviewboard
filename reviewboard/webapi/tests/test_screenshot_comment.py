@@ -12,7 +12,9 @@ class ScreenshotCommentResourceTests(BaseWebAPITestCase):
     fixtures = ['test_users', 'test_scmtools']
 
     def test_get_screenshot_comments(self):
-        """Testing the GET review-requests/<id>/screenshots/<id>/comments/ API"""
+        """Testing the
+        GET review-requests/<id>/screenshots/<id>/comments/ API
+        """
         comment_text = "This is a test comment."
         x, y, w, h = (2, 2, 10, 10)
 
@@ -41,7 +43,9 @@ class ScreenshotCommentResourceTests(BaseWebAPITestCase):
 
     @add_fixtures(['test_site'])
     def test_get_screenshot_comments_with_site(self):
-        """Testing the GET review-requests/<id>/screenshots/<id>/comments/ API with a local site"""
+        """Testing the GET review-requests/<id>/screenshots/<id>/comments/ API
+        with a local site
+        """
         comment_text = 'This is a test comment.'
         x, y, w, h = (2, 2, 10, 10)
 
@@ -73,7 +77,9 @@ class ScreenshotCommentResourceTests(BaseWebAPITestCase):
 
     @add_fixtures(['test_site'])
     def test_get_screenshot_comments_with_site_no_access(self):
-        """Testing the GET review-requests/<id>/screenshots/<id>/comments/ API with a local site and Permission Denied error"""
+        """Testing the GET review-requests/<id>/screenshots/<id>/comments/ API
+        with a local site and Permission Denied error
+        """
         comment_text = 'This is a test comment.'
         x, y, w, h = (2, 2, 10, 10)
 

@@ -17,7 +17,9 @@ class ReviewReplyDiffCommentResourceTests(BaseWebAPITestCase):
     fixtures = ['test_users', 'test_scmtools']
 
     def test_post_reply_with_diff_comment(self):
-        """Testing the POST review-requests/<id>/reviews/<id>/replies/<id>/diff-comments/ API"""
+        """Testing the
+        POST review-requests/<id>/reviews/<id>/replies/<id>/diff-comments/ API
+        """
         comment_text = "My Comment Text"
 
         review_request = self.create_review_request(create_repository=True,
@@ -48,7 +50,10 @@ class ReviewReplyDiffCommentResourceTests(BaseWebAPITestCase):
 
     @add_fixtures(['test_site'])
     def test_post_reply_with_diff_comment_and_local_site(self, badlogin=False):
-        """Testing the POST review-requests/<id>/reviews/<id>/replies/<id>/diff-comments/ API with a local site"""
+        """Testing the
+        POST review-requests/<id>/reviews/<id>/replies/<id>/diff-comments/ API
+        with a local site
+        """
         comment_text = 'My Comment Text'
 
         user = self._login_user(local_site=True)
@@ -94,11 +99,17 @@ class ReviewReplyDiffCommentResourceTests(BaseWebAPITestCase):
 
     @add_fixtures(['test_site'])
     def test_post_reply_with_diff_comment_and_local_site_no_access(self):
-        """Testing the POST review-requests/<id>/reviews/<id>/replies/<id>/diff-comments/ API with a local site and Permission Denied error"""
+        """Testing the
+        POST review-requests/<id>/reviews/<id>/replies/<id>/diff-comments/ API
+        with a local site and Permission Denied error
+        """
         self.test_post_reply_with_diff_comment_and_local_site(True)
 
     def test_post_reply_with_diff_comment_http_303(self):
-        """Testing the POST review-requests/<id>/reviews/<id>/replies/<id>/diff-comments/ API and 303 See Other"""
+        """Testing the
+        POST review-requests/<id>/reviews/<id>/replies/<id>/diff-comments/ API
+        and 303 See Other
+        """
         comment_text = "My New Comment Text"
 
         rsp, comment, comments_url = self.test_post_reply_with_diff_comment()
@@ -119,7 +130,9 @@ class ReviewReplyDiffCommentResourceTests(BaseWebAPITestCase):
         self.assertEqual(reply_comment.text, comment_text)
 
     def test_put_reply_with_diff_comment(self):
-        """Testing the PUT review-requests/<id>/reviews/<id>/replies/<id>/diff-comments/ API"""
+        """Testing the
+        PUT review-requests/<id>/reviews/<id>/replies/<id>/diff-comments/ API
+        """
         new_comment_text = 'My new comment text'
 
         # First, create a comment that we can update.
@@ -138,7 +151,10 @@ class ReviewReplyDiffCommentResourceTests(BaseWebAPITestCase):
 
     @add_fixtures(['test_site'])
     def test_put_reply_with_diff_comment_and_local_site(self):
-        """Testing the PUT review-requests/<id>/reviews/<id>/replies/<id>/diff-comments/ API with a local site"""
+        """Testing the
+        PUT review-requests/<id>/reviews/<id>/replies/<id>/diff-comments/ API
+        with a local site
+        """
         new_comment_text = 'My new comment text'
 
         rsp = self.test_post_reply_with_diff_comment_and_local_site()[0]
@@ -156,7 +172,10 @@ class ReviewReplyDiffCommentResourceTests(BaseWebAPITestCase):
 
     @add_fixtures(['test_site'])
     def test_put_reply_with_diff_comment_and_local_site_no_access(self):
-        """Testing the PUT review-requests/<id>/reviews/<id>/replies/<id>/diff-comments/ API with a local site and Permission Denied error"""
+        """Testing the
+        PUT review-requests/<id>/reviews/<id>/replies/<id>/diff-comments/ API
+        with a local site and Permission Denied error
+        """
         new_comment_text = 'My new comment text'
 
         rsp = self.test_post_reply_with_diff_comment_and_local_site()[0]
@@ -170,7 +189,9 @@ class ReviewReplyDiffCommentResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
     def test_delete_diff_comment(self):
-        """Testing the DELETE review-requests/<id>/reviews/<id>/replies/<id>/diff-comments/<id>/ API"""
+        """Testing the DELETE
+        review-requests/<id>/reviews/<id>/replies/<id>/diff-comments/<id>/ API
+        """
         rsp, comment, diff_comments_url = \
             self.test_post_reply_with_diff_comment()
 
@@ -185,7 +206,10 @@ class ReviewReplyDiffCommentResourceTests(BaseWebAPITestCase):
 
     @add_fixtures(['test_site'])
     def test_delete_diff_comment_with_local_site(self):
-        """Testing the DELETE review-requests/<id>/reviews/<id>/replies/<id>/diff-comments/<id>/ API with a local site"""
+        """Testing the DELETE
+        review-requests/<id>/reviews/<id>/replies/<id>/diff-comments/<id>/ API
+        with a local site
+        """
         rsp, comment, diff_comments_url = \
             self.test_post_reply_with_diff_comment_and_local_site()
 
@@ -199,7 +223,10 @@ class ReviewReplyDiffCommentResourceTests(BaseWebAPITestCase):
         self.assertEqual(len(rsp['diff_comments']), 0)
 
     def test_delete_diff_comment_no_access(self):
-        """Testing the DELETE review-requests/<id>/reviews/<id>/replies/<id>/diff-comments/<id>/ API and Permission Denied"""
+        """Testing the DELETE
+        review-requests/<id>/reviews/<id>/replies/<id>/diff-comments/<id>/ API
+        and Permission Denied
+        """
         rsp, comment, diff_comments_url = \
             self.test_post_reply_with_diff_comment()
 
@@ -210,7 +237,10 @@ class ReviewReplyDiffCommentResourceTests(BaseWebAPITestCase):
 
     @add_fixtures(['test_site'])
     def test_delete_diff_comment_with_local_site_no_access(self):
-        """Testing the DELETE review-requests/<id>/reviews/<id>/replies/<id>/diff-comments/<id>/ API with a local site and Permission Denied"""
+        """Testing the DELETE
+        review-requests/<id>/reviews/<id>/replies/<id>/diff-comments/<id>/ API
+        with a local site and Permission Denied
+        """
         rsp, comment, diff_comments_url = \
             self.test_post_reply_with_diff_comment_and_local_site()
 

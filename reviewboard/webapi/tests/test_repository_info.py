@@ -34,7 +34,9 @@ class RepositoryInfoResourceTests(BaseWebAPITestCase):
 
     @add_fixtures(['test_site'])
     def test_get_repository_info_with_site_no_access(self):
-        """Testing the GET repositories/<id>/info API with a local site and Permission Denied error"""
+        """Testing the GET repositories/<id>/info API
+        with a local site and Permission Denied error
+        """
         repository = self.create_repository(with_local_site=True)
 
         self.apiGet(

@@ -221,7 +221,9 @@ class ChangeResourceTests(BaseWebAPITestCase):
 
     @add_fixtures(['test_site'])
     def test_get_change_not_modified(self):
-        """Testing the GET review-requests/<id>/changes/<id>/ API with Not Modified response"""
+        """Testing the GET review-requests/<id>/changes/<id>/ API
+        with Not Modified response
+        """
         review_request = self.create_review_request()
 
         changedesc = ChangeDescription(public=True)

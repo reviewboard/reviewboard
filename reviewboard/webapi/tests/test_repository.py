@@ -82,7 +82,9 @@ class RepositoryResourceTests(BaseWebAPITestCase):
 
     @add_fixtures(['test_site'])
     def test_get_repositories_with_site_no_access(self):
-        """Testing the GET repositories/ API with a local site and Permission Denied error"""
+        """Testing the GET repositories/ API
+        with a local site and Permission Denied error
+        """
         self.apiGet(get_repository_list_url(self.local_site_name),
                     expected_status=403)
 
@@ -121,7 +123,9 @@ class RepositoryResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['key'], key.get_base64())
 
     def test_post_repository_with_bad_host_key_and_trust_host(self):
-        """Testing the POST repositories/ API with Bad Host Key error and trust_host=1"""
+        """Testing the POST repositories/ API
+        with Bad Host Key error and trust_host=1
+        """
         hostname = 'example.com'
         key = key1
         expected_key = key2
@@ -169,7 +173,9 @@ class RepositoryResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['key'], key.get_base64())
 
     def test_post_repository_with_unknown_host_key_and_trust_host(self):
-        """Testing the POST repositories/ API with Unknown Host Key error and trust_host=1"""
+        """Testing the POST repositories/ API
+        with Unknown Host Key error and trust_host=1
+        """
         hostname = 'example.com'
         key = key1
         saw = {'add_host_key': False}
@@ -226,7 +232,9 @@ class RepositoryResourceTests(BaseWebAPITestCase):
                          cert.valid_until)
 
     def test_post_repository_with_unknown_cert_and_trust_host(self):
-        """Testing the POST repositories/ API with Unknown Certificate error and trust_host=1"""
+        """Testing the POST repositories/ API
+        with Unknown Certificate error and trust_host=1
+        """
         class Certificate(object):
             failures = ['failures']
             fingerprint = 'fingerprint'
@@ -317,7 +325,9 @@ class RepositoryResourceTests(BaseWebAPITestCase):
 
     @add_fixtures(['test_site'])
     def test_post_repository_with_site_no_access(self):
-        """Testing the POST repositories/ API with a local site and no access"""
+        """Testing the POST repositories/ API
+        with a local site and no access
+        """
         self._login_user(local_site=True)
         self._post_repository(True, expected_status=403)
 
@@ -355,7 +365,9 @@ class RepositoryResourceTests(BaseWebAPITestCase):
 
     @add_fixtures(['test_site'])
     def test_put_repository_with_site_no_access(self):
-        """Testing the PUT repositories/<id>/ API with a local site and no access"""
+        """Testing the PUT repositories/<id>/ API
+        with a local site and no access
+        """
         self._login_user(local_site=True)
         self._put_repository(False, expected_status=403)
 
@@ -394,7 +406,9 @@ class RepositoryResourceTests(BaseWebAPITestCase):
 
     @add_fixtures(['test_site'])
     def test_delete_empty_repository_with_site(self):
-        """Testing the DELETE repositories/<id>/ API with a local site and no review requests"""
+        """Testing the DELETE repositories/<id>/ API
+        with a local site and no review requests
+        """
         self._login_user(local_site=True, admin=True)
         repo_id = self._delete_repository(True)
         self.assertRaises(Repository.DoesNotExist,
@@ -408,7 +422,9 @@ class RepositoryResourceTests(BaseWebAPITestCase):
 
     @add_fixtures(['test_site'])
     def test_delete_repository_with_site_no_access(self):
-        """Testing the DELETE repositories/<id>/ API with a local site and no access"""
+        """Testing the DELETE repositories/<id>/ API
+        with a local site and no access
+        """
         self._login_user(local_site=True)
         self._delete_repository(True, expected_status=403)
 

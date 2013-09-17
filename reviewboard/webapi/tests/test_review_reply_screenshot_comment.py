@@ -17,7 +17,9 @@ class ReviewReplyScreenshotCommentResourceTests(BaseWebAPITestCase):
 
     @add_fixtures(['test_scmtools'])
     def test_post_reply_with_screenshot_comment(self):
-        """Testing the POST review-requests/<id>/reviews/<id>/replies/<id>/screenshot-comments/ API"""
+        """Testing the POST
+        review-requests/<id>/reviews/<id>/replies/<id>/screenshot-comments/ API
+        """
         comment_text = "My Comment Text"
         x, y, w, h = 10, 10, 20, 20
 
@@ -48,7 +50,10 @@ class ReviewReplyScreenshotCommentResourceTests(BaseWebAPITestCase):
 
     @add_fixtures(['test_site'])
     def test_post_reply_with_screenshot_comment_and_local_site(self):
-        """Testing the POST review-requests/<id>/reviews/<id>/replies/<id>/screenshot-comments/ API with a local site"""
+        """Testing the POST
+        review-requests/<id>/reviews/<id>/replies/<id>/screenshot-comments/ API
+        with a local site
+        """
         comment_text = "My Comment Text"
         x, y, w, h = 10, 10, 20, 20
 
@@ -83,7 +88,9 @@ class ReviewReplyScreenshotCommentResourceTests(BaseWebAPITestCase):
 
     @add_fixtures(['test_scmtools'])
     def test_post_reply_with_screenshot_comment_http_303(self):
-        """Testing the POST review-requests/<id>/reviews/<id>/replies/<id>/screenshot-comments/ API"""
+        """Testing the POST
+        review-requests/<id>/reviews/<id>/replies/<id>/screenshot-comments/ API
+        """
         comment_text = "My Comment Text"
 
         rsp, comment, comments_url = \
@@ -107,7 +114,10 @@ class ReviewReplyScreenshotCommentResourceTests(BaseWebAPITestCase):
 
     @add_fixtures(['test_scmtools'])
     def test_delete_screenshot_comment(self):
-        """Testing the DELETE review-requests/<id>/reviews/<id>/replies/<id>/screenshot-comments/<id>/ API"""
+        """Testing the DELETE
+        review-requests/<id>/reviews/<id>/replies/<id>/screenshot-comments/<id>/
+        API
+        """
         rsp, comment, screenshot_comments_url = \
             self.test_post_reply_with_screenshot_comment()
 
@@ -122,7 +132,10 @@ class ReviewReplyScreenshotCommentResourceTests(BaseWebAPITestCase):
 
     @add_fixtures(['test_site'])
     def test_delete_screenshot_comment_with_local_site(self):
-        """Testing the DELETE review-requests/<id>/reviews/<id>/replies/<id>/screenshot-comments/<id>/ API with a local site"""
+        """Testing the DELETE
+        review-requests/<id>/reviews/<id>/replies/<id>/screenshot-comments/<id>/
+        API with a local site
+        """
         rsp, comment, screenshot_comments_url = \
             self.test_post_reply_with_screenshot_comment_and_local_site()
 
@@ -137,7 +150,10 @@ class ReviewReplyScreenshotCommentResourceTests(BaseWebAPITestCase):
 
     @add_fixtures(['test_scmtools'])
     def test_delete_screenshot_comment_no_access(self):
-        """Testing the DELETE review-requests/<id>/reviews/<id>/replies/<id>/screenshot-comments/<id>/ API and Permission Denied"""
+        """Testing the DELETE
+        review-requests/<id>/reviews/<id>/replies/<id>/screenshot-comments/<id>/
+        API and Permission Denied
+        """
         rsp, comment, screenshot_comments_url = \
             self.test_post_reply_with_screenshot_comment()
 
@@ -148,7 +164,10 @@ class ReviewReplyScreenshotCommentResourceTests(BaseWebAPITestCase):
 
     @add_fixtures(['test_site'])
     def test_delete_screenshot_comment_with_local_site_no_access(self):
-        """Testing the DELETE review-requests/<id>/reviews/<id>/replies/<id>/screenshot-comments/<id>/ API with a local site and Permission Denied"""
+        """Testing the DELETE
+        review-requests/<id>/reviews/<id>/replies/<id>/screenshot-comments/<id>/
+        API with a local site and Permission Denied
+        """
         rsp, comment, screenshot_comments_url = \
             self.test_post_reply_with_screenshot_comment_and_local_site()
 

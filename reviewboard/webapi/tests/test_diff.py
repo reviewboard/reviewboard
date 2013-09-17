@@ -47,7 +47,9 @@ class DiffResourceTests(BaseWebAPITestCase):
         self.assertEqual(diffset.base_commit_id, '1234')
 
     def test_post_diffs_with_missing_data(self):
-        """Testing the POST review-requests/<id>/diffs/ API with Invalid Form Data"""
+        """Testing the POST review-requests/<id>/diffs/ API
+        with Invalid Form Data
+        """
         repository = self.create_repository(tool_name='Test')
         review_request = self.create_review_request(
             repository=repository,
@@ -81,7 +83,9 @@ class DiffResourceTests(BaseWebAPITestCase):
         self.assertTrue('basedir' in rsp['fields'])
 
     def test_post_diffs_too_big(self):
-        """Testing the POST review-requests/<id>/diffs/ API with diff exceeding max size"""
+        """Testing the POST review-requests/<id>/diffs/ API
+        with diff exceeding max size
+        """
         repository = self.create_repository()
 
         self.siteconfig.set('diffviewer_max_diff_size', 2)
@@ -112,7 +116,9 @@ class DiffResourceTests(BaseWebAPITestCase):
 
     @add_fixtures(['test_site'])
     def test_post_diffs_with_site(self):
-        """Testing the POST review-requests/<id>/diffs/ API with a local site"""
+        """Testing the POST review-requests/<id>/diffs/ API
+        with a local site
+        """
         user = self._login_user(local_site=True)
 
         repository = self.create_repository(with_local_site=True,
@@ -170,7 +176,9 @@ class DiffResourceTests(BaseWebAPITestCase):
 
     @add_fixtures(['test_site'])
     def test_get_diffs_with_site_no_access(self):
-        """Testing the GET review-requests/<id>/diffs API with a local site and Permission Denied error"""
+        """Testing the GET review-requests/<id>/diffs API
+        with a local site and Permission Denied error
+        """
         review_request = self.create_review_request(create_repository=True,
                                                     with_local_site=True,
                                                     publish=True)
@@ -194,7 +202,9 @@ class DiffResourceTests(BaseWebAPITestCase):
 
     @add_fixtures(['test_site'])
     def test_get_diff_with_site(self):
-        """Testing the GET review-requests/<id>/diffs/<revision>/ API with a local site"""
+        """Testing the GET review-requests/<id>/diffs/<revision>/ API
+        with a local site
+        """
         review_request = self.create_review_request(create_repository=True,
                                                     with_local_site=True,
                                                     publish=True)
@@ -210,7 +220,9 @@ class DiffResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['diff']['name'], diffset.name)
 
     def test_get_diff_not_modified(self):
-        """Testing the GET review-requests/<id>/diffs/<revision>/ API with Not Modified response"""
+        """Testing the GET review-requests/<id>/diffs/<revision>/ API
+        with Not Modified response
+        """
         review_request = self.create_review_request(create_repository=True,
                                                     publish=True)
         diffset = self.create_diffset(review_request)
@@ -221,7 +233,9 @@ class DiffResourceTests(BaseWebAPITestCase):
 
     @add_fixtures(['test_site'])
     def test_get_diff_with_site_no_access(self):
-        """Testing the GET review-requests/<id>/diffs/<revision>/ API with a local site and Permission Denied error"""
+        """Testing the GET review-requests/<id>/diffs/<revision>/ API
+        with a local site and Permission Denied error
+        """
         review_request = self.create_review_request(create_repository=True,
                                                     with_local_site=True,
                                                     publish=True)

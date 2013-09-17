@@ -38,6 +38,8 @@ class ServerInfoResourceTests(BaseWebAPITestCase):
 
     @add_fixtures(['test_users', 'test_site'])
     def test_get_server_info_with_site_no_access(self):
-        """Testing the GET info/ API with a local site and Permission Denied error"""
+        """Testing the GET info/ API
+        with a local site and Permission Denied error
+        """
         self.apiGet(get_server_info_url(self.local_site_name),
                     expected_status=403)

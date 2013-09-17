@@ -10,7 +10,9 @@ class FileDiffCommentResourceTests(BaseWebAPITestCase):
     fixtures = ['test_users', 'test_scmtools', 'test_site']
 
     def test_get_comments(self):
-        """Testing the GET review-requests/<id>/diffs/<revision>/files/<id>/diff-comments/ API"""
+        """Testing the
+        GET review-requests/<id>/diffs/<revision>/files/<id>/diff-comments/ API
+        """
         diff_comment_text = 'Sample comment.'
 
         review_request = self.create_review_request(create_repository=True,
@@ -29,7 +31,10 @@ class FileDiffCommentResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['diff_comments'][0]['text'], comment.text)
 
     def test_get_comments_as_anonymous(self):
-        """Testing the GET review-requests/<id>/diffs/<revision>/files/<id>/diff-comments/ API as an anonymous user"""
+        """Testing the
+        GET review-requests/<id>/diffs/<revision>/files/<id>/diff-comments/ API
+        as an anonymous user
+        """
         diff_comment_text = 'Sample comment.'
 
         review_request = self.create_review_request(create_repository=True,
@@ -50,7 +55,10 @@ class FileDiffCommentResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['diff_comments'][0]['text'], comment.text)
 
     def test_get_comments_with_site(self):
-        """Testing the GET review-requests/<id>/diffs/<revision>/files/<id>/diff-comments/ API with a local site"""
+        """Testing the
+        GET review-requests/<id>/diffs/<revision>/files/<id>/diff-comments/ API
+        with a local site
+        """
         diff_comment_text = 'Sample comment.'
 
         self._login_user(local_site=True)
@@ -73,7 +81,10 @@ class FileDiffCommentResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['diff_comments'][0]['text'], comment.text)
 
     def test_get_comments_with_site_no_access(self):
-        """Testing the GET review-requests/<id>/diffs/<revision>/files/<id>/diff-comments/ API with a local site and Permission Denied error"""
+        """Testing the
+        GET review-requests/<id>/diffs/<revision>/files/<id>/diff-comments/ API
+        with a local site and Permission Denied error
+        """
         diff_comment_text = 'Sample comment.'
 
         self._login_user(local_site=True)
@@ -96,7 +107,10 @@ class FileDiffCommentResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
     def test_get_comments_with_line(self):
-        """Testing the GET review-requests/<id>/diffs/<revision>/files/<id>/diff-comments/?line= API"""
+        """Testing the
+        GET review-requests/<id>/diffs/<revision>/files/<id>/diff-comments/ API
+        with ?line=
+        """
         diff_comment_text = 'Sample comment.'
         diff_comment_line = 10
 

@@ -12,7 +12,9 @@ class DraftReviewFileAttachmentCommentResourceTests(BaseWebAPITestCase):
     fixtures = ['test_users', 'test_scmtools']
 
     def test_get_review_file_attachment_comments(self):
-        """Testing the GET review-requests/<id>/reviews/draft/file-attachment-comments/ API"""
+        """Testing the
+        GET review-requests/<id>/reviews/draft/file-attachment-comments/ API
+        """
         review_request = self.create_review_request(publish=True)
         file_attachment = self.create_file_attachment(review_request)
         review = self.create_review(review_request, user=self.user)
@@ -29,7 +31,10 @@ class DraftReviewFileAttachmentCommentResourceTests(BaseWebAPITestCase):
 
     @add_fixtures(['test_site'])
     def test_get_review_file_attachment_comments_with_site(self):
-        """Testing the GET review-requests/<id>/reviews/draft/file-attachment-comments/ APIs with a local site"""
+        """Testing the
+        GET review-requests/<id>/reviews/draft/file-attachment-comments/ APIs
+        with a local site
+        """
         user = self._login_user(local_site=True)
 
         review_request = self.create_review_request(with_local_site=True,

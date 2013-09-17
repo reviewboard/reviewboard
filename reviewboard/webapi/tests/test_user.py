@@ -39,7 +39,9 @@ class UserResourceTests(BaseWebAPITestCase):
 
     @add_fixtures(['test_site'])
     def test_get_users_with_site_no_access(self):
-        """Testing the GET users/ API with a local site and Permission Denied error"""
+        """Testing the GET users/ API
+        with a local site and Permission Denied error
+        """
         self.apiGet(get_user_list_url(self.local_site_name),
                     expected_status=403)
 
@@ -83,7 +85,9 @@ class UserResourceTests(BaseWebAPITestCase):
 
     @add_fixtures(['test_site'])
     def test_get_user_with_site_and_profile_private(self):
-        """Testing the GET users/<username>/ API with a local site and private profile"""
+        """Testing the GET users/<username>/ API
+        with a local site and private profile
+        """
         self._login_user(local_site=True)
 
         username = 'admin'
@@ -110,7 +114,9 @@ class UserResourceTests(BaseWebAPITestCase):
 
     @add_fixtures(['test_site'])
     def test_get_user_with_site_no_access(self):
-        """Testing the GET users/<username>/ API with a local site and Permission Denied error."""
+        """Testing the GET users/<username>/ API
+        with a local site and Permission Denied error
+        """
         print self.fixtures
         self.apiGet(get_user_item_url('doc', self.local_site_name),
                     expected_status=403)

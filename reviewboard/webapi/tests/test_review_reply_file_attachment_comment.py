@@ -16,7 +16,10 @@ class ReviewReplyFileAttachmentCommentResourceTests(BaseWebAPITestCase):
     fixtures = ['test_users']
 
     def test_post_reply_with_file_attachment_comment(self):
-        """Testing the POST review-requests/<id>/reviews/<id>/replies/<id>/file-attachment-comments/ API"""
+        """Testing the POST
+        review-requests/<id>/reviews/<id>/replies/<id>/file-attachment-comments/
+        API
+        """
         comment_text = "My Comment Text"
 
         review_request = self.create_review_request(submitter=self.user)
@@ -46,7 +49,10 @@ class ReviewReplyFileAttachmentCommentResourceTests(BaseWebAPITestCase):
 
     @add_fixtures(['test_site'])
     def test_post_reply_with_file_attachment_comment_and_local_site(self):
-        """Testing the POST review-requests/<id>/reviews/<id>/replies/<id>/file-attachment-comments/ API with a local site"""
+        """Testing the POST
+        review-requests/<id>/reviews/<id>/replies/<id>/file-attachment-comments/
+        API with a local site
+        """
         comment_text = "My Comment Text"
 
         review_request = self.create_review_request(submitter=self.user,
@@ -80,7 +86,10 @@ class ReviewReplyFileAttachmentCommentResourceTests(BaseWebAPITestCase):
         return rsp, comment, comments_url
 
     def test_post_reply_with_inactive_file_attachment_comment(self):
-        """Testing the POST review-requests/<id>/reviews/<id>/replies/<id>/file-attachment-comments/ API with inactive file attachment"""
+        """Testing the POST
+        review-requests/<id>/reviews/<id>/replies/<id>/file-attachment-comments/
+        API with inactive file attachment
+        """
         comment_text = "My Comment Text"
 
         review_request = self.create_review_request(submitter=self.user)
@@ -117,7 +126,10 @@ class ReviewReplyFileAttachmentCommentResourceTests(BaseWebAPITestCase):
         return rsp, comment, comments_url
 
     def test_post_reply_with_file_attachment_comment_http_303(self):
-        """Testing the POST review-requests/<id>/reviews/<id>/replies/<id>/file-attachment-comments/ API and 303 See Other"""
+        """Testing the POST
+        review-requests/<id>/reviews/<id>/replies/<id>/file-attachment-comments/
+        API and 303 See Other
+        """
         comment_text = "My New Comment Text"
 
         rsp, comment, comments_url = \
@@ -141,7 +153,10 @@ class ReviewReplyFileAttachmentCommentResourceTests(BaseWebAPITestCase):
         self.assertEqual(reply_comment.text, comment_text)
 
     def test_put_reply_with_file_attachment_comment(self):
-        """Testing the PUT review-requests/<id>/reviews/<id>/replies/<id>/file-attachment-comments/ API"""
+        """Testing the PUT
+        review-requests/<id>/reviews/<id>/replies/<id>/file-attachment-comments/
+        API
+        """
         new_comment_text = 'My new comment text'
 
         # First, create a comment that we can update.
@@ -162,7 +177,10 @@ class ReviewReplyFileAttachmentCommentResourceTests(BaseWebAPITestCase):
         self.assertEqual(reply_comment.text, new_comment_text)
 
     def test_delete_file_attachment_comment(self):
-        """Testing the DELETE review-requests/<id>/reviews/<id>/replies/<id>/file-attachment-comments/<id>/ API"""
+        """Testing the DELETE
+        review-requests/<id>/reviews/<id>/replies/<id>/file-attachment-comments/<id>/
+        API
+        """
         rsp, comment, file_attachment_comments_url = \
             self.test_post_reply_with_file_attachment_comment()
 
@@ -178,7 +196,10 @@ class ReviewReplyFileAttachmentCommentResourceTests(BaseWebAPITestCase):
 
     @add_fixtures(['test_site'])
     def test_delete_file_attachment_comment_with_local_site(self):
-        """Testing the DELETE review-requests/<id>/reviews/<id>/replies/<id>/file-attachment-comments/<id>/ API with a local site"""
+        """Testing the DELETE
+        review-requests/<id>/reviews/<id>/replies/<id>/file-attachment-comments/<id>/
+        API with a local site
+        """
         rsp, comment, file_attachment_comments_url = \
             self.test_post_reply_with_file_attachment_comment_and_local_site()
 
@@ -193,7 +214,10 @@ class ReviewReplyFileAttachmentCommentResourceTests(BaseWebAPITestCase):
         self.assertEqual(len(rsp['file_attachment_comments']), 0)
 
     def test_delete_file_attachment_comment_no_access(self):
-        """Testing the DELETE review-requests/<id>/reviews/<id>/replies/<id>/file-attachment-comments/<id>/ API and Permission Denied"""
+        """Testing the DELETE
+        review-requests/<id>/reviews/<id>/replies/<id>/file-attachment-comments/<id>/
+        API and Permission Denied
+        """
         rsp, comment, file_attachment_comments_url = \
             self.test_post_reply_with_file_attachment_comment()
 
@@ -204,7 +228,10 @@ class ReviewReplyFileAttachmentCommentResourceTests(BaseWebAPITestCase):
 
     @add_fixtures(['test_site'])
     def test_delete_file_attachment_comment_with_local_site_no_access(self):
-        """Testing the DELETE review-requests/<id>/reviews/<id>/replies/<id>/file-attachment-comments/<id>/ API with a local site and Permission Denied"""
+        """Testing the DELETE
+        review-requests/<id>/reviews/<id>/replies/<id>/file-attachment-comments/<id>/
+        API with a local site and Permission Denied
+        """
         rsp, comment, file_attachment_comments_url = \
             self.test_post_reply_with_file_attachment_comment_and_local_site()
 

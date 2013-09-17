@@ -55,7 +55,9 @@ class ValidateDiffResourceTests(BaseWebAPITestCase):
         self.assertTrue('basedir' in rsp['fields'])
 
     def test_post_diff_with_files_not_found(self):
-        """Testing the POST validation/diffs/ API with source files not found"""
+        """Testing the POST validation/diffs/ API
+        with source files not found
+        """
         repository = self.create_repository(tool_name='Test')
 
         diff_filename = os.path.join(os.path.dirname(scmtools.__file__),

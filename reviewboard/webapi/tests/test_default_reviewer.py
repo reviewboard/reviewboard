@@ -101,7 +101,9 @@ class DefaultReviewerResourceTests(BaseWebAPITestCase):
 
     @add_fixtures(['test_users'])
     def test_post_default_reviewer_with_permission_denied(self):
-        """Testing the POST default-reviewers/ API with Permission Denied error"""
+        """Testing the POST default-reviewers/ API
+        with Permission Denied error
+        """
         self._login_user()
 
         self.apiPost(
@@ -114,7 +116,9 @@ class DefaultReviewerResourceTests(BaseWebAPITestCase):
 
     @add_fixtures(['test_users', 'test_site'])
     def test_post_default_reviewer_with_permission_denied_and_local_site(self):
-        """Testing the POST default-reviewers/ API with a local site and Permission Denied error"""
+        """Testing the POST default-reviewers/ API
+        with a local site and Permission Denied error
+        """
         self._login_user()
 
         self.apiPost(
@@ -144,7 +148,9 @@ class DefaultReviewerResourceTests(BaseWebAPITestCase):
 
     @add_fixtures(['test_users', 'test_site'])
     def test_post_default_reviewer_with_user_invalid_site(self):
-        """Testing the POST default-reviewers/ API with user and invalid site"""
+        """Testing the POST default-reviewers/ API
+        with user and invalid site
+        """
         self._login_user(admin=True)
 
         local_site = LocalSite.objects.get(name=self.local_site_name)
@@ -180,7 +186,9 @@ class DefaultReviewerResourceTests(BaseWebAPITestCase):
 
     @add_fixtures(['test_users', 'test_site'])
     def test_post_default_reviewer_with_group_invalid_site(self):
-        """Testing the POST default-reviewers/ API with group and invalid site"""
+        """Testing the POST default-reviewers/ API
+        with group and invalid site
+        """
         self._login_user(admin=True)
 
         local_site = LocalSite.objects.get(name=self.local_site_name)
@@ -217,7 +225,9 @@ class DefaultReviewerResourceTests(BaseWebAPITestCase):
 
     @add_fixtures(['test_users', 'test_site', 'test_scmtools'])
     def test_post_default_reviewer_with_repository_invalid_site(self):
-        """Testing the POST default-reviewers/ API with repository and invalid site"""
+        """Testing the POST default-reviewers/ API
+        with repository and invalid site
+        """
         repository = self.create_repository(with_local_site=True)
 
         self._login_user(admin=True)
@@ -321,7 +331,9 @@ class DefaultReviewerResourceTests(BaseWebAPITestCase):
 
     @add_fixtures(['test_users'])
     def test_put_default_reviewer_with_permission_denied(self):
-        """Testing the POST default-reviewers/ API with Permission Denied error"""
+        """Testing the POST default-reviewers/ API with Permission Denied
+        error
+        """
         self._login_user()
 
         default_reviewer = DefaultReviewer.objects.create(
@@ -334,7 +346,9 @@ class DefaultReviewerResourceTests(BaseWebAPITestCase):
 
     @add_fixtures(['test_users', 'test_site'])
     def test_put_default_reviewer_with_permission_denied_and_local_site(self):
-        """Testing the PUT default-reviewers/<id>/ API with a local site and Permission Denied error"""
+        """Testing the PUT default-reviewers/<id>/ API
+        with a local site and Permission Denied error
+        """
         self._login_user()
 
         local_site = LocalSite.objects.get(name=self.local_site_name)
@@ -365,7 +379,9 @@ class DefaultReviewerResourceTests(BaseWebAPITestCase):
 
     @add_fixtures(['test_users', 'test_site'])
     def test_put_default_reviewer_with_user_invalid_site(self):
-        """Testing the PUT default-reviewers/<id>/ API with user and invalid site"""
+        """Testing the PUT default-reviewers/<id>/ API
+        with user and invalid site
+        """
         self._login_user(admin=True)
 
         local_site = LocalSite.objects.get(name=self.local_site_name)
@@ -399,7 +415,9 @@ class DefaultReviewerResourceTests(BaseWebAPITestCase):
 
     @add_fixtures(['test_users', 'test_site'])
     def test_put_default_reviewer_with_group_invalid_site(self):
-        """Testing the PUT default-reviewers/<id>/ API with group and invalid site"""
+        """Testing the PUT default-reviewers/<id>/ API
+        with group and invalid site
+        """
         self._login_user(admin=True)
 
         local_site = LocalSite.objects.get(name=self.local_site_name)
@@ -417,7 +435,9 @@ class DefaultReviewerResourceTests(BaseWebAPITestCase):
 
     @add_fixtures(['test_users'])
     def test_put_default_reviewer_with_invalid_repository(self):
-        """Testing the PUT default-reviewers/<id>/ API with invalid repository"""
+        """Testing the PUT default-reviewers/<id>/ API
+        with invalid repository
+        """
         self._login_user(admin=True)
 
         default_reviewer = DefaultReviewer.objects.create(
@@ -433,7 +453,9 @@ class DefaultReviewerResourceTests(BaseWebAPITestCase):
 
     @add_fixtures(['test_users', 'test_site', 'test_scmtools'])
     def test_put_default_reviewer_with_repository_invalid_site(self):
-        """Testing the PUT default-reviewers/<id>/ API with repository and invalid site"""
+        """Testing the PUT default-reviewers/<id>/ API
+        with repository and invalid site
+        """
         repository = self.create_repository(with_local_site=True)
 
         default_reviewer = DefaultReviewer.objects.create(
@@ -518,7 +540,9 @@ class DefaultReviewerResourceTests(BaseWebAPITestCase):
 
     @add_fixtures(['test_users', 'test_site'])
     def test_get_default_reviewers_with_site_no_access(self):
-        """Testing the GET default-reviewers/ API with a local site and Permission Denied error"""
+        """Testing the GET default-reviewers/ API
+        with a local site and Permission Denied error
+        """
         self.apiGet(get_default_reviewer_list_url(self.local_site_name),
                     expected_status=403)
 
@@ -672,7 +696,9 @@ class DefaultReviewerResourceTests(BaseWebAPITestCase):
 
     @add_fixtures(['test_users', 'test_site'])
     def test_get_default_reviewer_with_site_no_access(self):
-        """Testing the GET default-reviewers/<id>/ API with a local site and Permission Denied error"""
+        """Testing the GET default-reviewers/<id>/ API
+        with a local site and Permission Denied error
+        """
         local_site = LocalSite.objects.get(name=self.local_site_name)
         default_reviewer = DefaultReviewer.objects.create(
             name='default1', file_regex='.*', local_site=local_site)
@@ -682,7 +708,9 @@ class DefaultReviewerResourceTests(BaseWebAPITestCase):
                     expected_status=403)
 
     def test_get_default_reviewer_not_modified(self):
-        """Testing the GET default-reviewers/<id>/ API with Not Modified response"""
+        """Testing the GET default-reviewers/<id>/ API
+        with Not Modified response
+        """
         default_reviewer = DefaultReviewer.objects.create(
             name='default1', file_regex='.*')
 
@@ -704,7 +732,9 @@ class DefaultReviewerResourceTests(BaseWebAPITestCase):
 
     @add_fixtures(['test_users'])
     def test_delete_default_reviewer_with_permission_denied_error(self):
-        """Testing the DELETE default-reviewers/<id>/ API with Permission Denied error"""
+        """Testing the DELETE default-reviewers/<id>/ API
+        with Permission Denied error
+        """
         default_reviewer = DefaultReviewer.objects.create(
             name='default1', file_regex='.*')
 
@@ -730,7 +760,9 @@ class DefaultReviewerResourceTests(BaseWebAPITestCase):
 
     @add_fixtures(['test_users', 'test_site'])
     def test_delete_default_reviewer_with_site_and_permission_denied_error(self):
-        """Testing the DELETE default-reviewers/<id>/ API with a local site and Permission Denied error"""
+        """Testing the DELETE default-reviewers/<id>/ API
+        with a local site and Permission Denied error
+        """
         local_site = LocalSite.objects.get(name=self.local_site_name)
         default_reviewer = DefaultReviewer.objects.create(
             name='default1', file_regex='.*', local_site=local_site)

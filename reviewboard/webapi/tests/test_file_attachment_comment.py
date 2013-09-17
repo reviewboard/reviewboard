@@ -14,7 +14,9 @@ class FileAttachmentCommentResourceTests(BaseWebAPITestCase):
     fixtures = ['test_users', 'test_scmtools']
 
     def test_get_file_attachment_comments(self):
-        """Testing the GET review-requests/<id>/file-attachments/<id>/comments/ API"""
+        """Testing the
+        GET review-requests/<id>/file-attachments/<id>/comments/ API
+        """
         comment_text = "This is a test comment."
 
         # Post the review request.
@@ -44,7 +46,10 @@ class FileAttachmentCommentResourceTests(BaseWebAPITestCase):
 
     @add_fixtures(['test_site'])
     def test_get_file_attachment_comments_with_site(self):
-        """Testing the GET review-requests/<id>/file-attachments/<id>/comments/ API with a local site"""
+        """Testing the
+        GET review-requests/<id>/file-attachments/<id>/comments/ API
+        with a local site
+        """
         user = self._login_user(local_site=True)
 
         # Post the review request.
@@ -70,7 +75,10 @@ class FileAttachmentCommentResourceTests(BaseWebAPITestCase):
 
     @add_fixtures(['test_site'])
     def test_get_file_attachment_comments_with_site_no_access(self):
-        """Testing the GET review-requests/<id>/file-attachments/<id>/comments/ API with a local site and Permission Denied error"""
+        """Testing the
+        GET review-requests/<id>/file-attachments/<id>/comments/ API
+        with a local site and Permission Denied error
+        """
         user = self._login_user(local_site=True)
 
         # Post the review request.
@@ -95,7 +103,10 @@ class FileAttachmentCommentResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
     def test_post_file_attachment_comments_with_extra_fields(self):
-        """Testing the POST review-requests/<id>/file-attachments/<id>/comments/ API with extra fields"""
+        """Testing the
+        POST review-requests/<id>/file-attachments/<id>/comments/ API
+        with extra fields
+        """
         comment_text = "This is a test comment."
         extra_fields = {
             'extra_data.foo': '123',
@@ -132,7 +143,10 @@ class FileAttachmentCommentResourceTests(BaseWebAPITestCase):
         return rsp
 
     def test_post_file_attachment_comments_with_diff(self):
-        """Testing the POST review-requests/<id>/file-attachments/<id>/comments/ API with diffed file attachments"""
+        """Testing the
+        POST review-requests/<id>/file-attachments/<id>/comments/ API
+        with diffed file attachments
+        """
         comment_text = "This is a test comment."
 
         # Post the review request.
@@ -164,7 +178,10 @@ class FileAttachmentCommentResourceTests(BaseWebAPITestCase):
         return rsp
 
     def test_put_file_attachment_comments_with_extra_fields(self):
-        """Testing the PUT review-requests/<id>/file-attachments/<id>/comments/<id>/ API with extra fields"""
+        """Testing the
+        PUT review-requests/<id>/file-attachments/<id>/comments/<id>/ API
+        with extra fields
+        """
         extra_fields = {
             'extra_data.foo': 'abc',
             'extra_data.bar': '',

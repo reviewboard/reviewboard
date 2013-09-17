@@ -48,7 +48,9 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
 
     @add_fixtures(['test_site'])
     def test_get_reviewrequests_with_site_no_access(self):
-        """Testing the GET review-requests/ API with a local site and Permission Denied error"""
+        """Testing the GET review-requests/ API
+        with a local site and Permission Denied error
+        """
         self.apiGet(get_review_request_list_url(self.local_site_name),
                     expected_status=403)
 
@@ -256,7 +258,9 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
             ReviewRequest.objects.to_user_directly("doc", status='D').count())
 
     def test_get_reviewrequests_with_to_users_directly_and_counts_only(self):
-        """Testing the GET review-requests/?to-users-directly=&counts-only=1 API"""
+        """Testing the
+        GET review-requests/?to-users-directly=&counts-only=1 API
+        """
         rsp = self.apiGet(get_review_request_list_url(), {
             'to-users-directly': 'doc',
             'counts-only': 1,
@@ -459,7 +463,9 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
 
     @add_fixtures(['test_site'])
     def test_get_reviewrequest_not_modified(self):
-        """Testing the GET review-requests/<id>/ API with Not Modified response"""
+        """Testing the GET review-requests/<id>/ API
+        with Not Modified response
+        """
         review_request = self.create_review_request(publish=True)
 
         self._testHttpCaching(get_review_request_item_url(review_request.id),
@@ -534,7 +540,9 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
 
     @add_fixtures(['test_site', 'test_scmtools'])
     def test_post_reviewrequests_with_site_no_access(self):
-        """Testing the POST review-requests/ API with a local site and Permission Denied error"""
+        """Testing the POST review-requests/ API
+        with a local site and Permission Denied error
+        """
         repository = self.create_repository(with_local_site=True)
 
         self.apiPost(
@@ -544,7 +552,9 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
 
     @add_fixtures(['test_site', 'test_scmtools'])
     def test_post_reviewrequests_with_site_invalid_repository_error(self):
-        """Testing the POST review-requests/ API with a local site and Invalid Repository error"""
+        """Testing the POST review-requests/ API
+        with a local site and Invalid Repository error
+        """
         repository = self.create_repository()
 
         self._login_user(local_site=True)
@@ -556,7 +566,9 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['err']['code'], INVALID_REPOSITORY.code)
 
     def test_post_reviewrequests_with_invalid_repository_error(self):
-        """Testing the POST review-requests/ API with Invalid Repository error"""
+        """Testing the POST review-requests/ API
+        with Invalid Repository error
+        """
         rsp = self.apiPost(
             get_review_request_list_url(),
             {'repository': 'gobbledygook'},
@@ -566,7 +578,9 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
 
     @add_fixtures(['test_site', 'test_scmtools'])
     def test_post_reviewrequests_with_no_site_invalid_repository_error(self):
-        """Testing the POST review-requests/ API with Invalid Repository error from a site-local repository"""
+        """Testing the POST review-requests/ API with
+        Invalid Repository error from a site-local repository
+        """
         repository = self.create_repository(with_local_site=True)
 
         rsp = self.apiPost(
@@ -603,7 +617,9 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
 
     @add_fixtures(['test_scmtools'])
     def test_post_reviewrequests_with_submit_as_and_permission_denied_error(self):
-        """Testing the POST review-requests/?submit_as= API with Permission Denied error"""
+        """Testing the POST review-requests/?submit_as= API
+        with Permission Denied error
+        """
         repository = self.create_repository()
 
         rsp = self.apiPost(
@@ -641,7 +657,9 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
         self.assertEqual(fc_status['new'][0], 'D')
 
     def test_put_reviewrequest_status_discarded_with_permission_denied(self):
-        """Testing the PUT review-requests/<id>/?status=discarded API with Permission Denied"""
+        """Testing the PUT review-requests/<id>/?status=discarded API
+        with Permission Denied
+        """
         r = self.create_review_request()
         self.assertNotEqual(r.submitter, self.user)
 
@@ -695,7 +713,9 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
 
     @add_fixtures(['test_site'])
     def test_put_reviewrequest_status_submitted_with_site(self):
-        """Testing the PUT review-requests/<id>/?status=submitted API with a local site"""
+        """Testing the PUT review-requests/<id>/?status=submitted API
+        with a local site
+        """
         self._login_user(local_site=True)
         r = self.create_review_request(submitter='doc', with_local_site=True,
                                        publish=True)
@@ -722,7 +742,9 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
 
     @add_fixtures(['test_site'])
     def test_put_reviewrequest_status_submitted_with_site_no_access(self):
-        """Testing the PUT review-requests/<id>/?status=submitted API with a local site and Permission Denied error"""
+        """Testing the PUT review-requests/<id>/?status=submitted API
+        with a local site and Permission Denied error
+        """
         r = self.create_review_request(submitter='doc', with_local_site=True,
                                        publish=True)
 
@@ -763,7 +785,9 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
 
     @add_fixtures(['test_site'])
     def test_get_reviewrequest_with_site_no_access(self):
-        """Testing the GET review-requests/<id>/ API with a local site and Permission Denied error"""
+        """Testing the GET review-requests/<id>/ API
+        with a local site and Permission Denied error
+        """
         group = self.create_review_group(with_local_site=True)
         review_request = self.create_review_request(with_local_site=True,
                                                     publish=True)
@@ -774,7 +798,9 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
                     expected_status=403)
 
     def test_get_reviewrequest_with_non_public_and_permission_denied_error(self):
-        """Testing the GET review-requests/<id>/ API with non-public and Permission Denied error"""
+        """Testing the GET review-requests/<id>/ API
+        with non-public and Permission Denied error
+        """
         review_request = self.create_review_request(public=False)
         self.assertNotEqual(review_request.submitter, self.user)
 
@@ -785,7 +811,9 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
     def test_get_reviewrequest_with_invite_only_group_and_permission_denied_error(self):
-        """Testing the GET review-requests/<id>/ API with invite-only group and Permission Denied error"""
+        """Testing the GET review-requests/<id>/ API
+        with invite-only group and Permission Denied error
+        """
         review_request = self.create_review_request(publish=True)
         self.assertNotEqual(review_request.submitter, self.user)
 
@@ -802,7 +830,9 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
 
     @add_fixtures(['test_site'])
     def test_get_reviewrequest_with_invite_only_group_and_target_user(self):
-        """Testing the GET review-requests/<id>/ API with invite-only group and target user"""
+        """Testing the GET review-requests/<id>/ API
+        with invite-only group and target user
+        """
         review_request = self.create_review_request(publish=True)
         self.assertNotEqual(review_request.submitter, self.user)
 
@@ -821,7 +851,9 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
                          review_request.summary)
 
     def test_get_reviewrequest_reviews_with_invite_only_group_and_permission_denied_error(self):
-        """Testing the GET review-requests/<id>/reviews/ API with invite-only group and Permission Denied error"""
+        """Testing the GET review-requests/<id>/reviews/ API
+        with invite-only group and Permission Denied error
+        """
         review_request = self.create_review_request(publish=True)
         self.assertNotEqual(review_request.submitter, self.user)
 
@@ -860,7 +892,9 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
 
     @add_fixtures(['test_scmtools'])
     def test_get_reviewrequest_with_repository_and_commit_id(self):
-        """Testing the GET review-requests/?repository=&commit_id= API with changenum backwards-compatibility"""
+        """Testing the GET review-requests/?repository=&commit_id= API
+        with changenum backwards-compatibility
+        """
         review_request = self.create_review_request(create_repository=True,
                                                     publish=True)
         review_request.changenum = 1234
@@ -903,7 +937,9 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
                           pk=review_request.pk)
 
     def test_delete_reviewrequest_with_permission_denied_error(self):
-        """Testing the DELETE review-requests/<id>/ API with Permission Denied error"""
+        """Testing the DELETE review-requests/<id>/ API
+        with Permission Denied error
+        """
         review_request = self.create_review_request(publish=True)
         self.assertNotEqual(review_request.submitter, self.user)
 
@@ -914,7 +950,9 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
     def test_delete_reviewrequest_with_does_not_exist_error(self):
-        """Testing the DELETE review-requests/<id>/ API with Does Not Exist error"""
+        """Testing the DELETE review-requests/<id>/ API
+        with Does Not Exist error
+        """
         self.user.user_permissions.add(
             Permission.objects.get(codename='delete_reviewrequest'))
         self.user.save()

@@ -1,5 +1,6 @@
 import copy
 import os
+import re
 import sys
 
 from django.conf import settings
@@ -37,11 +38,28 @@ class TestCase(DjbletsTestCase):
     _precompiled_fixtures = {}
     _fixture_dirs = []
 
+    ws_re = re.compile(r'\s+')
+
     def setUp(self):
         super(TestCase, self).setUp()
 
         # Clear the cache so that previous tests don't impact this one.
         cache.clear()
+
+    def shortDescription(self):
+        """Returns the description of the current test.
+
+        This changes the default behavior to replace all newlines with spaces,
+        allowing a test description to span lines. It should still be kept
+        short, though.
+        """
+        doc = self._testMethodDoc
+
+        if doc is not None:
+            doc = doc.split('\n\n', 1)[0]
+            doc = self.ws_re.sub(' ', doc).strip()
+
+        return doc
 
     def create_diffset(self, review_request=None, revision=1, repository=None,
                        name='diffset'):

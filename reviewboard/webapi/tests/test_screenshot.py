@@ -11,7 +11,9 @@ class ScreenshotResourceTests(BaseWebAPITestCase):
     fixtures = ['test_users', 'test_scmtools']
 
     def test_get_screenshots_with_invalid_review_request_id(self):
-        """Testing the GET review-requests/<id>/screenshots/ API with an invalid review request ID"""
+        """Testing the GET review-requests/<id>/screenshots/ API
+        with an invalid review request ID
+        """
         screenshot_invalid_id_url = get_screenshot_list_url(999999)
         rsp = self.apiGet(screenshot_invalid_id_url, expected_status=404)
 
@@ -33,7 +35,9 @@ class ScreenshotResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['stat'], 'ok')
 
     def test_post_screenshots_with_permission_denied_error(self):
-        """Testing the POST review-requests/<id>/screenshots/ API with Permission Denied error"""
+        """Testing the POST review-requests/<id>/screenshots/ API
+        with Permission Denied error
+        """
         review_request = self.create_review_request()
         self.assertNotEqual(review_request.submitter, self.user)
 
@@ -53,7 +57,9 @@ class ScreenshotResourceTests(BaseWebAPITestCase):
 
     @add_fixtures(['test_site'])
     def test_post_screenshots_with_site(self):
-        """Testing the POST review-requests/<id>/screenshots/ API with a local site"""
+        """Testing the POST review-requests/<id>/screenshots/ API
+        with a local site
+        """
         user = self._login_user(local_site=True)
 
         review_request = self.create_review_request(submitter=user,
@@ -72,7 +78,9 @@ class ScreenshotResourceTests(BaseWebAPITestCase):
 
     @add_fixtures(['test_site'])
     def test_post_screenshots_with_site_no_access(self):
-        """Testing the POST review-requests/<id>/screenshots/ API with a local site and Permission Denied error"""
+        """Testing the POST review-requests/<id>/screenshots/ API
+        with a local site and Permission Denied error
+        """
         user = self._login_user(local_site=True)
 
         review_request = self.create_review_request(submitter=user,

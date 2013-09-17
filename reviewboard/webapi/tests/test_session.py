@@ -40,6 +40,8 @@ class SessionResourceTests(BaseWebAPITestCase):
 
     @add_fixtures(['test_users', 'test_site'])
     def test_get_session_with_site_no_access(self):
-        """Testing the GET session/ API with a local site and Permission Denied error"""
+        """Testing the GET session/ API
+        with a local site and Permission Denied error
+        """
         self.apiGet(get_session_url(self.local_site_name),
                     expected_status=403)

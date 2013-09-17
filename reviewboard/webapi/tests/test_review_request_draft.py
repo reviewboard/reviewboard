@@ -90,7 +90,9 @@ class ReviewRequestDraftResourceTests(BaseWebAPITestCase):
 
     @add_fixtures(['test_site'])
     def test_put_reviewrequestdraft_with_site_no_access(self):
-        """Testing the PUT review-requests/<id>/draft/ API with a local site and Permission Denied error"""
+        """Testing the PUT review-requests/<id>/draft/ API
+        with a local site and Permission Denied error
+        """
         rsp = self._create_update_review_request_with_site(
             self.apiPut, 403, relogin=False)
         self.assertEqual(rsp['stat'], 'fail')
@@ -102,19 +104,25 @@ class ReviewRequestDraftResourceTests(BaseWebAPITestCase):
 
     @add_fixtures(['test_site'])
     def test_post_reviewrequestdraft_with_site(self):
-        """Testing the POST review-requests/<id>/draft/ API with a local site"""
+        """Testing the POST review-requests/<id>/draft/ API
+        with a local site
+        """
         self._create_update_review_request_with_site(self.apiPost, 201)
 
     @add_fixtures(['test_site'])
     def test_post_reviewrequestdraft_with_site_no_access(self):
-        """Testing the POST review-requests/<id>/draft/ API with a local site and Permission Denied error"""
+        """Testing the POST review-requests/<id>/draft/ API
+        with a local site and Permission Denied error
+        """
         rsp = self._create_update_review_request_with_site(
             self.apiPost, 403, relogin=False)
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
     def test_put_reviewrequestdraft_with_changedesc(self):
-        """Testing the PUT review-requests/<id>/draft/ API with a change description"""
+        """Testing the PUT review-requests/<id>/draft/ API
+        with a change description
+        """
         changedesc = 'This is a test change description.'
         review_request = self.create_review_request(submitter=self.user,
                                                     publish=True)
@@ -132,7 +140,9 @@ class ReviewRequestDraftResourceTests(BaseWebAPITestCase):
         self.assertEqual(draft.changedesc.text, changedesc)
 
     def test_put_reviewrequestdraft_with_depends_on(self):
-        """Testing the PUT review-requests/<id>/draft/ API with depends_on field"""
+        """Testing the PUT review-requests/<id>/draft/ API
+        with depends_on field
+        """
         review_request = self.create_review_request(submitter=self.user,
                                                     publish=True)
 
@@ -164,7 +174,9 @@ class ReviewRequestDraftResourceTests(BaseWebAPITestCase):
 
     @add_fixtures(['test_site'])
     def test_put_reviewrequestdraft_with_depends_on_and_site(self):
-        """Testing the PUT review-requests/<id>/draft/ API with depends_on field and local site"""
+        """Testing the PUT review-requests/<id>/draft/ API
+        with depends_on field and local site
+        """
         review_request = self.create_review_request(submitter='doc',
                                                     with_local_site=True)
 
@@ -200,7 +212,9 @@ class ReviewRequestDraftResourceTests(BaseWebAPITestCase):
         self.assertEqual(bad_depends.draft_blocks.count(), 0)
 
     def test_put_reviewrequestdraft_with_depends_on_invalid_id(self):
-        """Testing the PUT review-requests/<id>/draft/ API with depends_on field and invalid ID"""
+        """Testing the PUT review-requests/<id>/draft/ API
+        with depends_on field and invalid ID
+        """
         review_request = self.create_review_request(submitter=self.user,
                                                     publish=True)
 
@@ -215,7 +229,9 @@ class ReviewRequestDraftResourceTests(BaseWebAPITestCase):
         self.assertEqual(draft.depends_on.count(), 0)
 
     def test_put_reviewrequestdraft_with_invalid_field_name(self):
-        """Testing the PUT review-requests/<id>/draft/ API with Invalid Form Data error"""
+        """Testing the PUT review-requests/<id>/draft/ API
+        with Invalid Form Data error
+        """
         review_request = self.create_review_request(submitter=self.user)
 
         rsp = self.apiPut(
@@ -228,7 +244,9 @@ class ReviewRequestDraftResourceTests(BaseWebAPITestCase):
         self.assertTrue('foobar' in rsp['fields'])
 
     def test_put_reviewrequestdraft_with_permission_denied_error(self):
-        """Testing the PUT review-requests/<id>/draft/ API with Permission Denied error"""
+        """Testing the PUT review-requests/<id>/draft/ API
+        with Permission Denied error
+        """
         bugs_closed = '123,456'
         review_request = self.create_review_request()
         self.assertNotEqual(review_request.submitter, self.user)
@@ -273,7 +291,9 @@ class ReviewRequestDraftResourceTests(BaseWebAPITestCase):
         self.assertValidRecipients(["doc", "grumpy"])
 
     def test_put_reviewrequestdraft_publish_with_new_review_request(self):
-        """Testing the PUT review-requests/<id>/draft/?public=1 API with a new review request"""
+        """Testing the PUT review-requests/<id>/draft/?public=1 API
+        with a new review request
+        """
         self.siteconfig.set('mail_send_review_mail', True)
         self.siteconfig.save()
 
@@ -322,7 +342,9 @@ class ReviewRequestDraftResourceTests(BaseWebAPITestCase):
 
     @add_fixtures(['test_site'])
     def test_delete_reviewrequestdraft_with_site(self):
-        """Testing the DELETE review-requests/<id>/draft/ API with a local site"""
+        """Testing the DELETE review-requests/<id>/draft/ API
+        with a local site
+        """
         review_request = self.create_review_request(submitter='doc',
                                                     with_local_site=True)
         summary = review_request.summary
@@ -339,7 +361,9 @@ class ReviewRequestDraftResourceTests(BaseWebAPITestCase):
 
     @add_fixtures(['test_site'])
     def test_delete_reviewrequestdraft_with_site_no_access(self):
-        """Testing the DELETE review-requests/<id>/draft/ API with a local site and Permission Denied error"""
+        """Testing the DELETE review-requests/<id>/draft/ API
+        with a local site and Permission Denied error
+        """
         review_request = self.create_review_request(submitter='doc',
                                                     with_local_site=True)
 

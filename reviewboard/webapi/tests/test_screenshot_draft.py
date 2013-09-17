@@ -30,7 +30,9 @@ class ScreenshotDraftResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['stat'], 'ok')
 
     def test_post_screenshots_with_permission_denied_error(self):
-        """Testing the POST review-requests/<id>/draft/screenshots/ API with Permission Denied error"""
+        """Testing the POST review-requests/<id>/draft/screenshots/ API
+        with Permission Denied error
+        """
         review_request = self.create_review_request()
         self.assertNotEqual(review_request.submitter, self.user)
 
@@ -49,7 +51,9 @@ class ScreenshotDraftResourceTests(BaseWebAPITestCase):
 
     @add_fixtures(['test_site'])
     def test_post_screenshots_with_site(self):
-        """Testing the POST review-requests/<id>/draft/screenshots/ API with a local site"""
+        """Testing the POST review-requests/<id>/draft/screenshots/ API
+        with a local site
+        """
         self._login_user(local_site=True)
 
         review_request = self.create_review_request(with_local_site=True,
@@ -79,7 +83,9 @@ class ScreenshotDraftResourceTests(BaseWebAPITestCase):
 
     @add_fixtures(['test_site'])
     def test_post_screenshots_with_site_no_access(self):
-        """Testing the POST review-requests/<id>/draft/screenshots/ API with a local site and Permission Denied error"""
+        """Testing the POST review-requests/<id>/draft/screenshots/ API
+        with a local site and Permission Denied error
+        """
         review_request = self.create_review_request(with_local_site=True)
 
         f = open(self._getTrophyFilename(), 'r')
@@ -129,7 +135,9 @@ class ScreenshotDraftResourceTests(BaseWebAPITestCase):
 
     @add_fixtures(['test_site'])
     def test_put_screenshot_with_site(self):
-        """Testing the PUT review-requests/<id>/draft/screenshots/<id>/ API with a local site"""
+        """Testing the PUT review-requests/<id>/draft/screenshots/<id>/ API
+        with a local site
+        """
         draft_caption = 'The new caption'
         user = User.objects.get(username='doc')
 
@@ -151,7 +159,9 @@ class ScreenshotDraftResourceTests(BaseWebAPITestCase):
 
     @add_fixtures(['test_site'])
     def test_put_screenshot_with_site_no_access(self):
-        """Testing the PUT review-requests/<id>/draft/screenshots/<id>/ API with a local site and Permission Denied error"""
+        """Testing the PUT review-requests/<id>/draft/screenshots/<id>/ API
+        with a local site and Permission Denied error
+        """
         review_request, screenshot_id = self.test_post_screenshots_with_site()
         review_request.publish(User.objects.get(username='doc'))
 
