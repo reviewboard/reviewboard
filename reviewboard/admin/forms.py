@@ -458,9 +458,9 @@ class EMailSettingsForm(SiteSettingsForm):
     mail_host_user = forms.CharField(
         label=_("Username"),
         required=False,
-        widget=forms.TextInput(attrs={'size': '30'}))
+        widget=forms.TextInput(attrs={'size': '30', 'autocomplete': 'off'}))
     mail_host_password = forms.CharField(
-        widget=forms.PasswordInput(attrs={'size': '30'}),
+        widget=forms.PasswordInput(attrs={'size': '30', 'autocomplete': 'off'}),
         label=_("Password"),
         required=False)
     mail_use_tls = forms.BooleanField(
