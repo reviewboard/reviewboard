@@ -7,7 +7,7 @@ from reviewboard.webapi.tests.urls import get_screenshot_comment_list_url
 
 class DraftReviewScreenshotCommentResourceTests(BaseWebAPITestCase):
     """Testing the ReviewScreenshotCommentResource APIs."""
-    fixtures = ['test_users', 'test_scmtools']
+    fixtures = ['test_users']
 
     #
     # List tests

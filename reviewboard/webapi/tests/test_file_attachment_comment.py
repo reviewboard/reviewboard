@@ -11,12 +11,12 @@ from reviewboard.webapi.tests.urls import (
     get_file_attachment_comment_list_url)
 
 
-class FileAttachmentCommentResourceTests(BaseWebAPITestCase):
-    """Testing the FileAttachmentCommentResource APIs."""
-    fixtures = ['test_users', 'test_scmtools']
+class ResourceListTests(BaseWebAPITestCase):
+    """Testing the FileAttachmentCommentResource list APIs."""
+    fixtures = ['test_users']
 
     #
-    # List tests
+    # HTTP GET tests
     #
 
     def test_get_file_attachment_comments(self):
@@ -105,6 +105,10 @@ class FileAttachmentCommentResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
+    #
+    # HTTP POST tests
+    #
+
     def test_post_file_attachment_comments_with_extra_fields(self):
         """Testing the
         POST review-requests/<id>/file-attachments/<id>/comments/ API
@@ -178,8 +182,13 @@ class FileAttachmentCommentResourceTests(BaseWebAPITestCase):
 
         return rsp
 
+
+class ResourceItemTests(BaseWebAPITestCase):
+    """Testing the FileAttachmentCommentResource item APIs."""
+    fixtures = ['test_users']
+
     #
-    # Item tests
+    # HTTP PUT tests
     #
 
     def test_put_file_attachment_comments_with_extra_fields(self):

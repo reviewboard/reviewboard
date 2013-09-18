@@ -10,7 +10,7 @@ from reviewboard.webapi.tests.mimetypes import \
 from reviewboard.webapi.tests.urls import get_review_request_draft_url
 
 
-class ReviewRequestDraftResourceTests(BaseWebAPITestCase):
+class ResourceTests(BaseWebAPITestCase):
     """Testing the ReviewRequestDraftResource API tests."""
     fixtures = ['test_users']
 
@@ -78,6 +78,10 @@ class ReviewRequestDraftResourceTests(BaseWebAPITestCase):
         return self._create_update_review_request(
             apiFunc, expected_status, review_request, self.local_site_name)
 
+    #
+    # HTTP DELETE tests
+    #
+
     def test_delete_reviewrequestdraft(self):
         """Testing the DELETE review-requests/<id>/draft/ API"""
         review_request = self.create_review_request(submitter=self.user)
@@ -126,6 +130,10 @@ class ReviewRequestDraftResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
+    #
+    # HTTP POST tests
+    #
+
     def test_post_reviewrequestdraft(self):
         """Testing the POST review-requests/<id>/draft/ API"""
         self._create_update_review_request(self.apiPost, 201)
@@ -146,6 +154,10 @@ class ReviewRequestDraftResourceTests(BaseWebAPITestCase):
             self.apiPost, 403, relogin=False)
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
+
+    #
+    # HTTP PUT tests
+    #
 
     def test_put_reviewrequestdraft(self, review_request=None):
         """Testing the PUT review-requests/<id>/draft/ API"""

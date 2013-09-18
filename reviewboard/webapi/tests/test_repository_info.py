@@ -5,9 +5,13 @@ from reviewboard.webapi.tests.mimetypes import repository_info_item_mimetype
 from reviewboard.webapi.tests.urls import get_repository_info_url
 
 
-class RepositoryInfoResourceTests(BaseWebAPITestCase):
+class ResourceTests(BaseWebAPITestCase):
     """Testing the RepositoryInfoResource APIs."""
     fixtures = ['test_users', 'test_scmtools']
+
+    #
+    # HTTP GET tests
+    #
 
     def test_get_repository_info(self):
         """Testing the GET repositories/<id>/info API"""

@@ -10,12 +10,26 @@ from reviewboard.webapi.tests.urls import (get_review_reply_item_url,
                                            get_review_reply_list_url)
 
 
-class ReviewReplyResourceTests(BaseWebAPITestCase):
-    """Testing the ReviewReplyResource APIs."""
+class BaseResourceTestCase(BaseWebAPITestCase):
+    def _create_test_review(self, with_local_site=False):
+        review_request = self.create_review_request(
+            submitter=self.user,
+            with_local_site=with_local_site)
+        file_attachment = self.create_file_attachment(review_request)
+        review_request.publish(review_request.submitter)
+
+        review = self.create_review(review_request, publish=True)
+        self.create_file_attachment_comment(review, file_attachment)
+
+        return review
+
+
+class ResourceListTests(BaseResourceTestCase):
+    """Testing the ReviewReplyResource list APIs."""
     fixtures = ['test_users']
 
     #
-    # List tests
+    # HTTP GET tests
     #
 
     def test_get_replies(self):
@@ -86,6 +100,10 @@ class ReviewReplyResourceTests(BaseWebAPITestCase):
             expected_status=403)
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
+
+    #
+    # HTTP POST tests
+    #
 
     def test_post_replies(self):
         """Testing the POST review-requests/<id>/reviews/<id>/replies/ API"""
@@ -175,8 +193,13 @@ class ReviewReplyResourceTests(BaseWebAPITestCase):
         reply = Review.objects.get(pk=rsp['reply']['id'])
         self.assertEqual(reply.body_bottom, body_bottom)
 
+
+class ResourceItemTests(BaseResourceTestCase):
+    """Testing the ReviewReplyResource item APIs."""
+    fixtures = ['test_users']
+
     #
-    # Item tests
+    # HTTP DELETE tests
     #
 
     def test_delete_reply(self):
@@ -231,6 +254,10 @@ class ReviewReplyResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
+    #
+    # HTTP GET tests
+    #
+
     def test_get_reply_not_modified(self):
         """Testing the GET review-requests/<id>/reviews/<id>/
         with Not Modified response
@@ -242,6 +269,10 @@ class ReviewReplyResourceTests(BaseWebAPITestCase):
         self._testHttpCaching(
             get_review_reply_item_url(reply.base_reply_to, reply.id),
             check_last_modified=True)
+
+    #
+    # HTTP PUT tests
+    #
 
     def test_put_reply(self):
         """Testing the
@@ -338,15 +369,3 @@ class ReviewReplyResourceTests(BaseWebAPITestCase):
         self.assertEqual(reply.public, True)
 
         self.assertEqual(len(mail.outbox), 1)
-
-    def _create_test_review(self, with_local_site=False):
-        review_request = self.create_review_request(
-            submitter=self.user,
-            with_local_site=with_local_site)
-        file_attachment = self.create_file_attachment(review_request)
-        review_request.publish(review_request.submitter)
-
-        review = self.create_review(review_request, publish=True)
-        self.create_file_attachment_comment(review, file_attachment)
-
-        return review

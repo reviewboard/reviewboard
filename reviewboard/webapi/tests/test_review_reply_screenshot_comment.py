@@ -9,15 +9,14 @@ from reviewboard.webapi.tests.urls import (
     get_review_reply_screenshot_comment_list_url)
 
 
-class ReviewReplyScreenshotCommentResourceTests(BaseWebAPITestCase):
-    """Testing the ReviewReplyScreenshotCommentResource APIs."""
+class ResourceListTests(BaseWebAPITestCase):
+    """Testing the ReviewReplyScreenshotCommentResource list APIs."""
     fixtures = ['test_users']
 
     #
-    # List tests
+    # HTTP POST tests
     #
 
-    @add_fixtures(['test_scmtools'])
     def test_post_reply_with_screenshot_comment(self):
         """Testing the POST
         review-requests/<id>/reviews/<id>/replies/<id>/screenshot-comments/ API
@@ -79,7 +78,6 @@ class ReviewReplyScreenshotCommentResourceTests(BaseWebAPITestCase):
         self.assertEqual(reply_comment.text, comment_text)
         self.assertEqual(reply_comment.reply_to, comment)
 
-    @add_fixtures(['test_scmtools'])
     def test_post_reply_with_screenshot_comment_http_303(self):
         """Testing the POST
         review-requests/<id>/reviews/<id>/replies/<id>/screenshot-comments/ API
@@ -111,11 +109,15 @@ class ReviewReplyScreenshotCommentResourceTests(BaseWebAPITestCase):
             pk=rsp['screenshot_comment']['id'])
         self.assertEqual(reply_comment.text, comment_text)
 
+
+class ResourceItemTests(BaseWebAPITestCase):
+    """Testing the ReviewReplyScreenshotCommentResource item APIs."""
+    fixtures = ['test_users']
+
     #
-    # Item tests
+    # HTTP DELETE tests
     #
 
-    @add_fixtures(['test_scmtools'])
     def test_delete_screenshot_comment(self):
         """Testing the DELETE
         review-requests/<id>/reviews/<id>/replies/<id>/screenshot-comments/<id>/
@@ -160,7 +162,6 @@ class ReviewReplyScreenshotCommentResourceTests(BaseWebAPITestCase):
                                                    reply_to=comment)
         self.assertEqual(replies.count(), 0)
 
-    @add_fixtures(['test_scmtools'])
     def test_delete_screenshot_comment_no_access(self):
         """Testing the DELETE
         review-requests/<id>/reviews/<id>/replies/<id>/screenshot-comments/<id>/

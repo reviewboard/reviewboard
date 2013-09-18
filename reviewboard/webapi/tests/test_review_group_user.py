@@ -10,12 +10,12 @@ from reviewboard.webapi.tests.urls import (get_review_group_user_item_url,
                                            get_review_group_user_list_url)
 
 
-class ReviewGroupUserResourceTests(BaseWebAPITestCase):
-    """Testing the ReviewGroupUserResource API tests."""
+class ResourceListTests(BaseWebAPITestCase):
+    """Testing the ReviewGroupUserResource list API tests."""
     fixtures = ['test_users']
 
     #
-    # List tests
+    # HTTP GET tests
     #
 
     def test_get_users(self, local_site=None):
@@ -36,6 +36,10 @@ class ReviewGroupUserResourceTests(BaseWebAPITestCase):
         """Testing the GET groups/<name>/users/ API with local site"""
         self._login_user(local_site=True)
         self.test_get_users(LocalSite.objects.get(name=self.local_site_name))
+
+    #
+    # HTTP POST tests
+    #
 
     def test_post_user(self, local_site=None):
         """Testing the POST groups/<name>/users/ API"""
@@ -93,8 +97,13 @@ class ReviewGroupUserResourceTests(BaseWebAPITestCase):
 
         self.assertEqual(group.users.count(), 0)
 
+
+class ResourceItemTests(BaseWebAPITestCase):
+    """Testing the ReviewGroupUserResource item API tests."""
+    fixtures = ['test_users']
+
     #
-    # Item tests
+    # HTTP DELETE tests
     #
 
     def test_delete_user(self, local_site=None):

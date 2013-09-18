@@ -13,12 +13,12 @@ from reviewboard.webapi.tests.urls import (get_diff_item_url,
                                            get_diff_list_url)
 
 
-class DiffResourceTests(BaseWebAPITestCase):
-    """Testing the DiffResource APIs."""
+class ResourceListTests(BaseWebAPITestCase):
+    """Testing the DiffResource list APIs."""
     fixtures = ['test_users', 'test_scmtools']
 
     #
-    # List tests
+    # HTTP GET tests
     #
 
     def test_get_diffs(self):
@@ -63,6 +63,10 @@ class DiffResourceTests(BaseWebAPITestCase):
 
         self.apiGet(get_diff_list_url(review_request, self.local_site_name),
                     expected_status=403)
+
+    #
+    # HTTP POST tests
+    #
 
     def test_post_diffs(self):
         """Testing the POST review-requests/<id>/diffs/ API"""
@@ -190,8 +194,13 @@ class DiffResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(rsp['diff']['name'], 'git_readme.diff')
 
+
+class ResourceItemTests(BaseWebAPITestCase):
+    """Testing the DiffResource item APIs."""
+    fixtures = ['test_users', 'test_scmtools']
+
     #
-    # Item tests
+    # HTTP GET tests
     #
 
     def test_get_diff(self):

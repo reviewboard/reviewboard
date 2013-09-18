@@ -12,12 +12,12 @@ from reviewboard.webapi.tests.urls import (get_review_item_url,
                                            get_review_list_url)
 
 
-class ReviewResourceTests(BaseWebAPITestCase):
-    """Testing the ReviewResource APIs."""
+class ResourceListTests(BaseWebAPITestCase):
+    """Testing the ReviewResource list APIs."""
     fixtures = ['test_users']
 
     #
-    # List tests
+    # HTTP GET tests
     #
 
     def test_get_reviews(self):
@@ -89,6 +89,10 @@ class ReviewResourceTests(BaseWebAPITestCase):
                           expected_status=403)
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
+
+    #
+    # HTTP POST tests
+    #
 
     @add_fixtures(['test_site'])
     def test_post_reviews(self):
@@ -193,8 +197,13 @@ class ReviewResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
+
+class ResourceItemTests(BaseWebAPITestCase):
+    """Testing the ReviewResource item APIs."""
+    fixtures = ['test_users']
+
     #
-    # Item tests
+    # HTTP DELETE tests
     #
 
     @add_fixtures(['test_site'])
@@ -276,6 +285,10 @@ class ReviewResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
+    #
+    # HTTP GET tests
+    #
+
     def test_get_review_not_modified(self):
         """Testing the GET review-requests/<id>/reviews/<id>/ API
         with Not Modified response
@@ -286,6 +299,10 @@ class ReviewResourceTests(BaseWebAPITestCase):
         self._testHttpCaching(
             get_review_item_url(review_request, review.pk),
             check_last_modified=True)
+
+    #
+    # HTTP PUT tests
+    #
 
     @add_fixtures(['test_site'])
     def test_put_review(self):

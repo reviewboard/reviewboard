@@ -11,12 +11,12 @@ from reviewboard.webapi.tests.urls import (get_screenshot_draft_item_url,
                                            get_screenshot_list_url)
 
 
-class ScreenshotDraftResourceTests(BaseWebAPITestCase):
-    """Testing the ScreenshotDraftResource APIs."""
-    fixtures = ['test_users', 'test_scmtools']
+class ResourceListTests(BaseWebAPITestCase):
+    """Testing the ScreenshotDraftResource list APIs."""
+    fixtures = ['test_users']
 
     #
-    # List tests
+    # HTTP POST tests
     #
 
     def test_post_screenshots(self):
@@ -103,8 +103,13 @@ class ScreenshotDraftResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
+
+class ResourceItemTests(BaseWebAPITestCase):
+    """Testing the ScreenshotDraftResource item APIs."""
+    fixtures = ['test_users']
+
     #
-    # Item tests
+    # HTTP PUT tests
     #
 
     def test_put_screenshot(self):

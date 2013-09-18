@@ -5,7 +5,7 @@ from reviewboard.webapi.tests.mimetypes import root_item_mimetype
 from reviewboard.webapi.tests.urls import get_root_url
 
 
-class RootResourceTests(BaseWebAPITestCase):
+class ResourceTests(BaseWebAPITestCase):
     """Testing the RootResource APIs."""
 
     @add_fixtures(['test_users', 'test_site'])

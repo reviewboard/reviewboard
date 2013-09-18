@@ -7,12 +7,12 @@ from reviewboard.webapi.tests.urls import (
     get_review_file_attachment_comment_list_url)
 
 
-class DraftReviewFileAttachmentCommentResourceTests(BaseWebAPITestCase):
-    """Testing the ReviewFileAttachmentCommentResource APIs."""
-    fixtures = ['test_users', 'test_scmtools']
+class ResourceListTests(BaseWebAPITestCase):
+    """Testing the ReviewFileAttachmentCommentResource list APIs."""
+    fixtures = ['test_users']
 
     #
-    # List tests
+    # HTTP GET tests
     #
 
     def test_get_review_file_attachment_comments(self):

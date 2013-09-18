@@ -12,11 +12,11 @@ from reviewboard.webapi.tests.urls import (get_default_reviewer_item_url,
                                            get_default_reviewer_list_url)
 
 
-class DefaultReviewerResourceTests(BaseWebAPITestCase):
-    """Testing the DefaultReviewerResource APIs."""
+class ResourceListTests(BaseWebAPITestCase):
+    """Testing the DefaultReviewerResource list APIs."""
 
     #
-    # List tests
+    # HTTP GET tests
     #
 
     @add_fixtures(['test_users', 'test_scmtools'])
@@ -194,6 +194,10 @@ class DefaultReviewerResourceTests(BaseWebAPITestCase):
         default_reviewers = rsp['default_reviewers']
         self.assertEqual(len(default_reviewers), 1)
         self.assertEqual(default_reviewers[0]['name'], 'default1')
+
+    #
+    # HTTP POST tests
+    #
 
     @add_fixtures(['test_users', 'test_scmtools'])
     def test_post_default_reviewer(self, local_site=None):
@@ -448,8 +452,11 @@ class DefaultReviewerResourceTests(BaseWebAPITestCase):
         local_site = LocalSite.objects.get(name=self.local_site_name)
         self.test_post_default_reviewer(local_site)
 
+
+class ResourceItemTests(BaseWebAPITestCase):
+    """Testing the DefaultReviewerResource item APIs."""
     #
-    # Item tests
+    # HTTP DELETE tests
     #
 
     @add_fixtures(['test_users'])
@@ -506,6 +513,10 @@ class DefaultReviewerResourceTests(BaseWebAPITestCase):
                        expected_status=403)
         self.assertTrue(
             DefaultReviewer.objects.filter(name='default1').exists())
+
+    #
+    # HTTP GET tests
+    #
 
     @add_fixtures(['test_users', 'test_scmtools'])
     def test_get_default_reviewer(self):
@@ -577,6 +588,10 @@ class DefaultReviewerResourceTests(BaseWebAPITestCase):
         self._testHttpCaching(
             get_default_reviewer_item_url(default_reviewer.pk),
             check_etags=True)
+
+    #
+    # HTTP PUT tests
+    #
 
     @add_fixtures(['test_users', 'test_scmtools'])
     def test_put_default_reviewer(self, local_site=None):

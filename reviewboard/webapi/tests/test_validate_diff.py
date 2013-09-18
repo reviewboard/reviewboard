@@ -9,9 +9,13 @@ from reviewboard.webapi.tests.mimetypes import validate_diff_mimetype
 from reviewboard.webapi.tests.urls import get_validate_diff_url
 
 
-class ValidateDiffResourceTests(BaseWebAPITestCase):
+class ResourceTests(BaseWebAPITestCase):
     """Testing the ValidateDiffResource APIs."""
     fixtures = ['test_users', 'test_scmtools']
+
+    #
+    # HTTP POST tests
+    #
 
     def test_post_diff(self):
         """Testing the POST validation/diffs/ API"""

@@ -11,12 +11,12 @@ from reviewboard.webapi.tests.urls import (
     get_watched_review_request_list_url)
 
 
-class WatchedReviewRequestResourceTests(BaseWebAPITestCase):
-    """Testing the WatchedReviewRequestResource API tests."""
+class ResourceListTests(BaseWebAPITestCase):
+    """Testing the WatchedReviewRequestResource list API tests."""
     fixtures = ['test_users']
 
     #
-    # List tests
+    # HTTP GET tests
     #
 
     def test_get_watched_review_requests(self):
@@ -96,6 +96,10 @@ class WatchedReviewRequestResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], DOES_NOT_EXIST.code)
 
+    #
+    # HTTP POST tests
+    #
+
     def test_post_watched_review_request(self):
         """Testing the POST users/<username>/watched/review-request/ API"""
         review_request = self.create_review_request(publish=True)
@@ -169,8 +173,13 @@ class WatchedReviewRequestResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
+
+class ResourceItemTests(BaseWebAPITestCase):
+    """Testing the WatchedReviewRequestResource item API tests."""
+    fixtures = ['test_users']
+
     #
-    # Item tests
+    # HTTP DELETE tests
     #
 
     def test_delete_watched_review_request(self):

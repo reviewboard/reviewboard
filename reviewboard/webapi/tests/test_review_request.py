@@ -14,12 +14,12 @@ from reviewboard.webapi.tests.urls import (get_repository_item_url,
                                            get_user_item_url)
 
 
-class ReviewRequestResourceTests(BaseWebAPITestCase):
-    """Testing the ReviewRequestResource API tests."""
+class ResourceListTests(BaseWebAPITestCase):
+    """Testing the ReviewRequestResource list API tests."""
     fixtures = ['test_users']
 
     #
-    # List tests
+    # HTTP GET tests
     #
 
     @add_fixtures(['test_site'])
@@ -516,6 +516,10 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['review_requests'][0]['commit_id'],
                          commit_id)
 
+    #
+    # HTTP POST tests
+    #
+
     @add_fixtures(['test_scmtools'])
     def test_post_reviewrequests(self):
         """Testing the POST review-requests/ API"""
@@ -677,8 +681,13 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
+
+class ResourceItemTests(BaseWebAPITestCase):
+    """Testing the ReviewRequestResource item API tests."""
+    fixtures = ['test_users']
+
     #
-    # Item tests
+    # HTTP DELETE tests
     #
 
     def test_delete_reviewrequest(self):
@@ -742,6 +751,12 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp, None)
         self.assertRaises(ReviewRequest.DoesNotExist,
                           ReviewRequest.objects.get, pk=review_request.pk)
+
+
+    #
+    # HTTP GET tests
+    #
+
     @add_fixtures(['test_site'])
     def test_get_reviewrequest(self):
         """Testing the GET review-requests/<id>/ API"""
@@ -848,6 +863,10 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
 
         self._testHttpCaching(get_review_request_item_url(review_request.id),
                               check_last_modified=True)
+
+    #
+    # HTTP PUT tests
+    #
 
     def test_put_reviewrequest_status_discarded(self):
         """Testing the PUT review-requests/<id>/?status=discarded API"""

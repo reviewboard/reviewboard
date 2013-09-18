@@ -14,12 +14,12 @@ from reviewboard.webapi.tests.urls import (get_change_item_url,
                                            get_change_list_url)
 
 
-class ChangeResourceTests(BaseWebAPITestCase):
-    """Testing the ChangeResourceAPIs."""
+class ResourceListTests(BaseWebAPITestCase):
+    """Testing the ChangeResource list APIs."""
     fixtures = ['test_users', 'test_scmtools']
 
     #
-    # List tests
+    # HTTP GET tests
     #
 
     def test_get_changes(self):
@@ -47,8 +47,13 @@ class ChangeResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['changes'][0]['id'], change2.pk)
         self.assertEqual(rsp['changes'][1]['id'], change1.pk)
 
+
+class ResourceItemTests(BaseWebAPITestCase):
+    """Testing the ChangeResource item APIs."""
+    fixtures = ['test_users', 'test_scmtools']
+
     #
-    # Item tests
+    # HTTP GET tests
     #
 
     def test_get_change(self):

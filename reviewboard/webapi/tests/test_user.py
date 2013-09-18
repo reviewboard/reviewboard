@@ -10,12 +10,12 @@ from reviewboard.webapi.tests.urls import (get_user_item_url,
                                            get_user_list_url)
 
 
-class UserResourceTests(BaseWebAPITestCase):
-    """Testing the UserResource API tests."""
+class ResourceListTests(BaseWebAPITestCase):
+    """Testing the UserResource list API tests."""
     fixtures = ['test_users']
 
     #
-    # List tests
+    # HTTP GET tests
     #
 
     def test_get_users(self):
@@ -50,8 +50,13 @@ class UserResourceTests(BaseWebAPITestCase):
         self.apiGet(get_user_list_url(self.local_site_name),
                     expected_status=403)
 
+
+class ResourceItemTests(BaseWebAPITestCase):
+    """Testing the UserResource item API tests."""
+    fixtures = ['test_users']
+
     #
-    # Item tests
+    # HTTP GET tests
     #
 
     def test_get_user(self):

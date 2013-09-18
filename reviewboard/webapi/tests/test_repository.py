@@ -29,12 +29,32 @@ key1 = paramiko.RSAKey.generate(1024)
 key2 = paramiko.RSAKey.generate(1024)
 
 
-class RepositoryResourceTests(BaseWebAPITestCase):
-    """Testing the RepositoryResource APIs."""
+class BaseRepositoryTests(BaseWebAPITestCase):
+    """Base class for the RepositoryResource test suites."""
     fixtures = ['test_users', 'test_scmtools']
 
+    def _verify_repository_info(self, rsp, repo_name, repo_path, data):
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertTrue('repository' in rsp)
+
+        repository = Repository.objects.get(pk=rsp['repository']['id'])
+
+        self.assertEqual(rsp['repository']['path'], repo_path)
+        self.assertEqual(repository.path, repo_path)
+
+        if not data.get('archive_name', False):
+            self.assertEqual(rsp['repository']['name'], repo_name)
+            self.assertEqual(repository.name, repo_name)
+
+        for key, value in data.iteritems():
+            if hasattr(repository, key):
+                self.assertEqual(getattr(repository, key), value)
+
+
+class ResourceListTests(BaseRepositoryTests):
+    """Testing the RepositoryResource list APIs."""
     def setUp(self):
-        super(RepositoryResourceTests, self).setUp()
+        super(ResourceListTests, self).setUp()
 
         # Some tests will temporarily replace some functions, so back them up
         # so we can restore them.
@@ -44,7 +64,7 @@ class RepositoryResourceTests(BaseWebAPITestCase):
         self._old_replace_host_key = SSHClient.replace_host_key
 
     def tearDown(self):
-        super(RepositoryResourceTests, self).tearDown()
+        super(ResourceListTests, self).tearDown()
 
         TestTool.check_repository = self._old_check_repository
         TestTool.accept_certificate = self._old_accept_certificate
@@ -52,7 +72,7 @@ class RepositoryResourceTests(BaseWebAPITestCase):
         SSHClient.replace_host_key = self._old_replace_host_key
 
     #
-    # List tests
+    # HTTP GET tests
     #
 
     def test_get_repositories(self):
@@ -91,6 +111,10 @@ class RepositoryResourceTests(BaseWebAPITestCase):
         """
         self.apiGet(get_repository_list_url(self.local_site_name),
                     expected_status=403)
+
+    #
+    # HTTP POST tests
+    #
 
     def test_post_repository(self):
         """Testing the POST repositories/ API"""
@@ -335,8 +359,50 @@ class RepositoryResourceTests(BaseWebAPITestCase):
         self._login_user(local_site=True)
         self._post_repository(True, expected_status=403)
 
+    def _post_repository(self, use_local_site, data={}, expected_status=201):
+        repo_name = 'Test Repository'
+        repo_path = 'file://' + os.path.abspath(
+            os.path.join(os.path.dirname(scmtools.__file__), 'testdata',
+                         'svn_repo'))
+
+        if 200 <= expected_status < 300:
+            expected_mimetype = repository_item_mimetype
+        else:
+            expected_mimetype = None
+
+        if use_local_site:
+            local_site_name = self.local_site_name
+        else:
+            local_site_name = None
+
+        rsp = self.apiPost(
+            get_repository_list_url(local_site_name),
+            dict({
+                'name': repo_name,
+                'path': repo_path,
+                'tool': 'Test',
+            }, **data),
+            expected_status=expected_status,
+            expected_mimetype=expected_mimetype)
+
+        if 200 <= expected_status < 300:
+            self._verify_repository_info(rsp, repo_name, repo_path, data)
+
+            self.assertEqual(
+                rsp['repository']['links']['self']['href'],
+                self.base_url +
+                get_repository_item_url(rsp['repository']['id'],
+                                        local_site_name))
+
+        return rsp
+
+
+class ResourceItemTests(BaseRepositoryTests):
+    """Testing the RepositoryResource item APIs."""
+    fixtures = ['test_users', 'test_scmtools']
+
     #
-    # Item tests
+    # HTTP DELETE tests
     #
 
     def test_delete_repository(self):
@@ -388,6 +454,10 @@ class RepositoryResourceTests(BaseWebAPITestCase):
         self._login_user(local_site=True)
         self._delete_repository(True, expected_status=403)
 
+    #
+    # HTTP PUT tests
+    #
+
     def test_put_repository(self):
         """Testing the PUT repositories/<id>/ API"""
         self._login_user(admin=True)
@@ -435,43 +505,6 @@ class RepositoryResourceTests(BaseWebAPITestCase):
 
         repo = Repository.objects.get(pk=repo_id)
         self.assertEqual(repo.name[:23], 'ar:New Test Repository:')
-
-    def _post_repository(self, use_local_site, data={}, expected_status=201):
-        repo_name = 'Test Repository'
-        repo_path = 'file://' + os.path.abspath(
-            os.path.join(os.path.dirname(scmtools.__file__), 'testdata',
-                         'svn_repo'))
-
-        if 200 <= expected_status < 300:
-            expected_mimetype = repository_item_mimetype
-        else:
-            expected_mimetype = None
-
-        if use_local_site:
-            local_site_name = self.local_site_name
-        else:
-            local_site_name = None
-
-        rsp = self.apiPost(
-            get_repository_list_url(local_site_name),
-            dict({
-                'name': repo_name,
-                'path': repo_path,
-                'tool': 'Test',
-            }, **data),
-            expected_status=expected_status,
-            expected_mimetype=expected_mimetype)
-
-        if 200 <= expected_status < 300:
-            self._verify_repository_info(rsp, repo_name, repo_path, data)
-
-            self.assertEqual(
-                rsp['repository']['links']['self']['href'],
-                self.base_url +
-                get_repository_item_url(rsp['repository']['id'],
-                                        local_site_name))
-
-        return rsp
 
     def _put_repository(self, use_local_site, data={}, expected_status=200):
         repo_name = 'New Test Repository'
@@ -522,20 +555,3 @@ class RepositoryResourceTests(BaseWebAPITestCase):
                        expected_status=expected_status)
 
         return repo.pk
-
-    def _verify_repository_info(self, rsp, repo_name, repo_path, data):
-        self.assertEqual(rsp['stat'], 'ok')
-        self.assertTrue('repository' in rsp)
-
-        repository = Repository.objects.get(pk=rsp['repository']['id'])
-
-        self.assertEqual(rsp['repository']['path'], repo_path)
-        self.assertEqual(repository.path, repo_path)
-
-        if not data.get('archive_name', False):
-            self.assertEqual(rsp['repository']['name'], repo_name)
-            self.assertEqual(repository.name, repo_name)
-
-        for key, value in data.iteritems():
-            if hasattr(repository, key):
-                self.assertEqual(getattr(repository, key), value)

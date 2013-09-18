@@ -11,12 +11,12 @@ from reviewboard.webapi.tests.urls import (get_review_group_item_url,
                                            get_review_group_list_url)
 
 
-class ReviewGroupResourceTests(BaseWebAPITestCase):
-    """Testing the ReviewGroupResource APIs."""
+class ResourceListTests(BaseWebAPITestCase):
+    """Testing the ReviewGroupResource list APIs."""
     fixtures = ['test_users']
 
     #
-    # List tests
+    # HTTP GET tests
     #
 
     @add_fixtures(['test_site'])
@@ -65,6 +65,10 @@ class ReviewGroupResourceTests(BaseWebAPITestCase):
                           expected_mimetype=review_group_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(len(rsp['groups']), 1)  # devgroup
+
+    #
+    # HTTP POST tests
+    #
 
     def test_post_group(self, local_site=None):
         """Testing the POST groups/ API"""
@@ -177,8 +181,13 @@ class ReviewGroupResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], GROUP_ALREADY_EXISTS.code)
 
+
+class ResourceItemTests(BaseWebAPITestCase):
+    """Testing the ReviewGroupResource item APIs."""
+    fixtures = ['test_users']
+
     #
-    # Item tests
+    # HTTP DELETE tests
     #
 
     def test_delete_group(self):
@@ -238,6 +247,10 @@ class ReviewGroupResourceTests(BaseWebAPITestCase):
 
         request = ReviewRequest.objects.get(pk=request.id)
         self.assertEqual(request.target_groups.count(), 0)
+
+    #
+    # HTTP GET tests
+    #
 
     def test_get_group_public(self):
         """Testing the GET groups/<id>/ API"""
@@ -299,6 +312,10 @@ class ReviewGroupResourceTests(BaseWebAPITestCase):
         self.apiGet(
             get_review_group_item_url('sitegroup', self.local_site_name),
             expected_status=403)
+
+    #
+    # HTTP PUT tests
+    #
 
     @add_fixtures(['test_site'])
     def test_put_group(self, local_site=None):

@@ -6,12 +6,12 @@ from reviewboard.webapi.tests.mimetypes import filediff_comment_list_mimetype
 from reviewboard.webapi.tests.urls import get_filediff_comment_list_url
 
 
-class FileDiffCommentResourceTests(BaseWebAPITestCase):
-    """Testing the FileDiffCommentResource APIs."""
+class ResourceListTests(BaseWebAPITestCase):
+    """Testing the FileDiffCommentResource list APIs."""
     fixtures = ['test_users', 'test_scmtools']
 
     #
-    # List tests
+    # HTTP GET tests
     #
 
     def test_get_comments(self):

@@ -10,12 +10,12 @@ from reviewboard.webapi.tests.urls import (
     get_review_reply_diff_comment_list_url)
 
 
-class ReviewReplyDiffCommentResourceTests(BaseWebAPITestCase):
-    """Testing the ReviewReplyDiffCommentResource APIs."""
+class ResourceListTests(BaseWebAPITestCase):
+    """Testing the ReviewReplyDiffCommentResource list APIs."""
     fixtures = ['test_users', 'test_scmtools']
 
     #
-    # List tests
+    # HTTP POST tests
     #
 
     def test_post_reply_with_diff_comment(self):
@@ -131,8 +131,13 @@ class ReviewReplyDiffCommentResourceTests(BaseWebAPITestCase):
         reply_comment = Comment.objects.get(pk=rsp['diff_comment']['id'])
         self.assertEqual(reply_comment.text, comment_text)
 
+
+class ResourceItemTests(BaseWebAPITestCase):
+    """Testing the ReviewReplyDiffCommentResource item APIs."""
+    fixtures = ['test_users', 'test_scmtools']
+
     #
-    # Item tests
+    # HTTP DELETE tests
     #
 
     def test_delete_diff_comment(self):
@@ -225,6 +230,10 @@ class ReviewReplyDiffCommentResourceTests(BaseWebAPITestCase):
             get_review_reply_diff_comment_item_url(
                 reply, reply_comment.pk, self.local_site_name),
             expected_status=403)
+
+    #
+    # HTTP PUT tests
+    #
 
     def test_put_reply_with_diff_comment(self):
         """Testing the

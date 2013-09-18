@@ -12,12 +12,67 @@ from reviewboard.webapi.tests.urls import (
     get_review_diff_comment_list_url)
 
 
-class ReviewCommentResourceTests(BaseWebAPITestCase):
-    """Testing the ReviewCommentResource APIs."""
+class BaseResourceTestCase(BaseWebAPITestCase):
+    def _common_post_interdiff_comments(self, comment_text):
+        review_request, filediff = self._create_diff_review_request()
+        diffset = filediff.diffset
+
+        # Post the second diff.
+        interdiffset = self.create_diffset(review_request)
+        interfilediff = self.create_filediff(diffset)
+
+        review = self.create_review(review_request, user=self.user)
+        comment = self.create_diff_comment(review, filediff, interfilediff,
+                                           text=comment_text)
+
+        return comment, review_request, review, interdiffset.revision
+
+    def _create_diff_review_with_issue(self, publish=False, comment_text=None):
+        """Sets up a review for a diff that includes a comment with an issue.
+
+        If `publish` is True, the review is published. The review request is
+        always published.
+
+        Returns the response from posting the comment, the review object, and
+        the review request object.
+        """
+        if not comment_text:
+            comment_text = 'Test diff comment with an opened issue'
+
+        review_request, filediff = self._create_diff_review_request()
+        review = self.create_review(review_request, user=self.user,
+                                    publish=publish)
+        comment = self.create_diff_comment(review, filediff, text=comment_text,
+                                           issue_opened=True)
+
+        return comment, review, review_request
+
+    def _create_diff_review_request(self, with_local_site=False):
+        review_request = self.create_review_request(
+            create_repository=True,
+            submitter=self.user,
+            with_local_site=with_local_site,
+            publish=True)
+        diffset = self.create_diffset(review_request)
+        filediff = self.create_filediff(diffset)
+
+        return review_request, filediff
+
+    def _create_diff_review(self):
+        review_request, filediff = self._create_diff_review_request()
+
+        review = self.create_review(review_request, publish=True)
+        self.create_diff_comment(review, filediff)
+
+        return review
+
+
+class ResourceListTests(BaseResourceTestCase):
+    """Testing the ReviewCommentResource list APIs."""
     fixtures = ['test_users', 'test_scmtools']
 
     #
-    # List tests
+    # HTTP GET tests
     #
 
     def test_get_diff_comments(self):
@@ -87,6 +142,10 @@ class ReviewCommentResourceTests(BaseWebAPITestCase):
             expected_status=403)
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
+
+    #
+    # HTTP POST tests
+    #
 
     def test_post_diff_comments(self):
         """Testing the
@@ -178,8 +237,13 @@ class ReviewCommentResourceTests(BaseWebAPITestCase):
         self.assertEqual(len(rsp['diff_comments']), 1)
         self.assertEqual(rsp['diff_comments'][0]['text'], comment_text)
 
+
+class ResourceItemTests(BaseResourceTestCase):
+    """Testing the ReviewCommentResource item APIs."""
+    fixtures = ['test_users', 'test_scmtools']
+
     #
-    # Item tests
+    # HTTP DELETE tests
     #
 
     def test_delete_diff_comment_with_interdiff(self):
@@ -239,6 +303,10 @@ class ReviewCommentResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
+    #
+    # HTTP GET tests
+    #
+
     def test_get_diff_comment_not_modified(self):
         """Testing the
         GET review-requests/<id>/reviews/<id>/diff-comments/<id>/ API
@@ -250,6 +318,10 @@ class ReviewCommentResourceTests(BaseWebAPITestCase):
         self._testHttpCaching(
             get_review_diff_comment_item_url(review, comment.id),
             check_last_modified=True)
+
+    #
+    # HTTP PUT tests
+    #
 
     def test_put_diff_comment_with_issue(self):
         """Testing the
@@ -356,56 +428,3 @@ class ReviewCommentResourceTests(BaseWebAPITestCase):
             expected_mimetype=review_diff_comment_item_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(rsp['diff_comment']['issue_status'], '')
-
-    def _common_post_interdiff_comments(self, comment_text):
-        review_request, filediff = self._create_diff_review_request()
-        diffset = filediff.diffset
-
-        # Post the second diff.
-        interdiffset = self.create_diffset(review_request)
-        interfilediff = self.create_filediff(diffset)
-
-        review = self.create_review(review_request, user=self.user)
-        comment = self.create_diff_comment(review, filediff, interfilediff,
-                                           text=comment_text)
-
-        return comment, review_request, review, interdiffset.revision
-
-    def _create_diff_review_with_issue(self, publish=False, comment_text=None):
-        """Sets up a review for a diff that includes a comment with an issue.
-
-        If `publish` is True, the review is published. The review request is
-        always published.
-
-        Returns the response from posting the comment, the review object, and
-        the review request object.
-        """
-        if not comment_text:
-            comment_text = 'Test diff comment with an opened issue'
-
-        review_request, filediff = self._create_diff_review_request()
-        review = self.create_review(review_request, user=self.user,
-                                    publish=publish)
-        comment = self.create_diff_comment(review, filediff, text=comment_text,
-                                           issue_opened=True)
-
-        return comment, review, review_request
-
-    def _create_diff_review_request(self, with_local_site=False):
-        review_request = self.create_review_request(
-            create_repository=True,
-            submitter=self.user,
-            with_local_site=with_local_site,
-            publish=True)
-        diffset = self.create_diffset(review_request)
-        filediff = self.create_filediff(diffset)
-
-        return review_request, filediff
-
-    def _create_diff_review(self):
-        review_request, filediff = self._create_diff_review_request()
-
-        review = self.create_review(review_request, publish=True)
-        self.create_diff_comment(review, filediff)
-
-        return review

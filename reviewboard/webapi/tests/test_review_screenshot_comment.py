@@ -11,12 +11,39 @@ from reviewboard.webapi.tests.urls import (
     get_review_screenshot_comment_list_url)
 
 
-class ReviewScreenshotCommentResourceTests(BaseWebAPITestCase):
-    """Testing the ReviewScreenshotCommentResource APIs."""
+class BaseTestCase(BaseWebAPITestCase):
     fixtures = ['test_users']
 
+    def _create_screenshot_review_with_issue(self, publish=False,
+                                             comment_text=None):
+        """Sets up a review for a screenshot that includes an open issue.
+
+        If `publish` is True, the review is published. The review request is
+        always published.
+
+        Returns the response from posting the comment, the review object, and
+        the review request object.
+        """
+        if not comment_text:
+            comment_text = 'Test screenshot comment with an opened issue'
+
+        review_request = self.create_review_request(publish=True,
+                                                    submitter=self.user)
+        screenshot = self.create_screenshot(review_request)
+        review = self.create_review(review_request, user=self.user,
+                                    publish=publish)
+        comment = self.create_screenshot_comment(review, screenshot,
+                                                 comment_text,
+                                                 issue_opened=True)
+
+        return comment, review, review_request
+
+
+class ResourceListTests(BaseTestCase):
+    """Testing the ReviewScreenshotCommentResource list APIs."""
+
     #
-    # List tests
+    # HTTP POST tests
     #
 
     def test_post_screenshot_comments(self):
@@ -110,8 +137,13 @@ class ReviewScreenshotCommentResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
+
+class ResourceItemTests(BaseTestCase):
+    """Testing the ReviewScreenshotCommentResource item APIs."""
+    fixtures = ['test_users']
+
     #
-    # Item tests
+    # HTTP DELETE tests
     #
 
     def test_delete_screenshot_comment(self):
@@ -211,6 +243,10 @@ class ReviewScreenshotCommentResourceTests(BaseWebAPITestCase):
 
         self.apiDelete(get_review_screenshot_comment_item_url(review, 123),
                        expected_status=404)
+
+    #
+    # HTTP PUT tests
+    #
 
     def test_put_screenshot_comment_with_issue(self):
         """Testing the
@@ -359,27 +395,3 @@ class ReviewScreenshotCommentResourceTests(BaseWebAPITestCase):
             expected_mimetype=screenshot_comment_item_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(rsp['screenshot_comment']['issue_status'], 'open')
-
-    def _create_screenshot_review_with_issue(self, publish=False,
-                                             comment_text=None):
-        """Sets up a review for a screenshot that includes an open issue.
-
-        If `publish` is True, the review is published. The review request is
-        always published.
-
-        Returns the response from posting the comment, the review object, and
-        the review request object.
-        """
-        if not comment_text:
-            comment_text = 'Test screenshot comment with an opened issue'
-
-        review_request = self.create_review_request(publish=True,
-                                                    submitter=self.user)
-        screenshot = self.create_screenshot(review_request)
-        review = self.create_review(review_request, user=self.user,
-                                    publish=publish)
-        comment = self.create_screenshot_comment(review, screenshot,
-                                                 comment_text,
-                                                 issue_opened=True)
-
-        return comment, review, review_request

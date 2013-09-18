@@ -10,12 +10,12 @@ from reviewboard.webapi.tests.urls import (get_draft_file_attachment_item_url,
                                            get_draft_file_attachment_list_url)
 
 
-class FileAttachmentDraftResourceTests(BaseWebAPITestCase):
-    """Testing the FileAttachmentDraftResource APIs."""
-    fixtures = ['test_users', 'test_scmtools']
+class ResourceListTests(BaseWebAPITestCase):
+    """Testing the FileAttachmentDraftResource list APIs."""
+    fixtures = ['test_users']
 
     #
-    # List tests
+    # HTTP POST tests
     #
 
     def test_post_file_attachments(self):
@@ -105,8 +105,13 @@ class FileAttachmentDraftResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
+
+class ResourceItemTests(BaseWebAPITestCase):
+    """Testing the FileAttachmentDraftResource item APIs."""
+    fixtures = ['test_users']
+
     #
-    # Item tests
+    # HTTP PUT tests
     #
 
     def test_put_file_attachment(self):

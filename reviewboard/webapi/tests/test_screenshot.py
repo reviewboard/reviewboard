@@ -6,9 +6,13 @@ from reviewboard.webapi.tests.mimetypes import screenshot_item_mimetype
 from reviewboard.webapi.tests.urls import get_screenshot_list_url
 
 
-class ScreenshotResourceTests(BaseWebAPITestCase):
-    """Testing the ScreenshotResource APIs."""
-    fixtures = ['test_users', 'test_scmtools']
+class ResourceListTests(BaseWebAPITestCase):
+    """Testing the ScreenshotResource list APIs."""
+    fixtures = ['test_users']
+
+    #
+    # HTTP GET tests
+    #
 
     def test_get_screenshots_with_invalid_review_request_id(self):
         """Testing the GET review-requests/<id>/screenshots/ API
@@ -18,6 +22,10 @@ class ScreenshotResourceTests(BaseWebAPITestCase):
         rsp = self.apiGet(screenshot_invalid_id_url, expected_status=404)
 
         self.assertEqual(rsp['stat'], 'fail')
+
+    #
+    # HTTP POST tests
+    #
 
     def test_post_screenshots(self):
         """Testing the POST review-requests/<id>/screenshots/ API"""

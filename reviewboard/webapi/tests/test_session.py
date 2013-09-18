@@ -5,8 +5,12 @@ from reviewboard.webapi.tests.mimetypes import session_mimetype
 from reviewboard.webapi.tests.urls import get_session_url
 
 
-class SessionResourceTests(BaseWebAPITestCase):
+class ResourceTests(BaseWebAPITestCase):
     """Testing the SessionResource APIs."""
+
+    #
+    # HTTP GET tests
+    #
 
     @add_fixtures(['test_users'])
     def test_get_session_with_logged_in_user(self):

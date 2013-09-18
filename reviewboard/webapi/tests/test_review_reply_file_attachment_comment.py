@@ -9,12 +9,12 @@ from reviewboard.webapi.tests.urls import (
     get_review_reply_file_attachment_comment_list_url)
 
 
-class ReviewReplyFileAttachmentCommentResourceTests(BaseWebAPITestCase):
-    """Testing the ReviewReplyFileAttachmentCommentResource APIs."""
+class ResourceListTests(BaseWebAPITestCase):
+    """Testing the ReviewReplyFileAttachmentCommentResource list APIs."""
     fixtures = ['test_users']
 
     #
-    # List tests
+    # HTTP POST tests
     #
 
     def test_post_reply_with_file_attachment_comment(self):
@@ -150,8 +150,13 @@ class ReviewReplyFileAttachmentCommentResourceTests(BaseWebAPITestCase):
             pk=rsp['file_attachment_comment']['id'])
         self.assertEqual(reply_comment.text, comment_text)
 
+
+class ResourceItemTests(BaseWebAPITestCase):
+    """Testing the ReviewReplyFileAttachmentCommentResource item APIs."""
+    fixtures = ['test_users']
+
     #
-    # Item tests
+    # HTTP DELETE tests
     #
 
     def test_delete_file_attachment_comment(self):
@@ -241,6 +246,10 @@ class ReviewReplyFileAttachmentCommentResourceTests(BaseWebAPITestCase):
             get_review_reply_file_attachment_comment_item_url(
                 reply, reply_comment.pk, self.local_site_name),
             expected_status=403)
+
+    #
+    # HTTP PUT tests
+    #
 
     def test_put_reply_with_file_attachment_comment(self):
         """Testing the PUT

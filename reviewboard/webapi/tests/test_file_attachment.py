@@ -8,12 +8,12 @@ from reviewboard.webapi.tests.urls import (get_file_attachment_item_url,
                                            get_file_attachment_list_url)
 
 
-class FileAttachmentResourceTests(BaseWebAPITestCase):
-    """Testing the FileAttachmentResource APIs."""
+class ResourceListTests(BaseWebAPITestCase):
+    """Testing the FileAttachmentResource list APIs."""
     fixtures = ['test_users']
 
     #
-    # List tests
+    # HTTP GET tests
     #
 
     @add_fixtures(['test_scmtools'])
@@ -54,6 +54,10 @@ class FileAttachmentResourceTests(BaseWebAPITestCase):
         file_attachments = rsp['file_attachments']
         self.assertEqual(len(file_attachments), 1)
         self.assertEqual(file_attachments[0]['filename'], 'trophy1.png')
+
+    #
+    # HTTP POST tests
+    #
 
     def test_post_file_attachments(self):
         """Testing the POST review-requests/<id>/file-attachments/ API"""
@@ -138,8 +142,13 @@ class FileAttachmentResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
+
+class ResourceItemTests(BaseWebAPITestCase):
+    """Testing the FileAttachmentResource item APIs."""
+    fixtures = ['test_users']
+
     #
-    # Item tests
+    # HTP GET tests
     #
 
     def test_get_file_attachment_not_modified(self):

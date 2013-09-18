@@ -5,8 +5,12 @@ from reviewboard.webapi.tests.mimetypes import server_info_mimetype
 from reviewboard.webapi.tests.urls import get_server_info_url
 
 
-class ServerInfoResourceTests(BaseWebAPITestCase):
+class ResourceTests(BaseWebAPITestCase):
     """Testing the ServerInfoResource APIs."""
+
+    #
+    # HTTP GET tests
+    #
 
     def test_get_server_info(self):
         """Testing the GET info/ API"""

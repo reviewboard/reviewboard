@@ -7,12 +7,12 @@ from reviewboard.webapi.tests.mimetypes import screenshot_comment_list_mimetype
 from reviewboard.webapi.tests.urls import get_screenshot_comment_list_url
 
 
-class ScreenshotCommentResourceTests(BaseWebAPITestCase):
-    """Testing the ScreenshotCommentResource APIs."""
-    fixtures = ['test_users', 'test_scmtools']
+class ResourceListTests(BaseWebAPITestCase):
+    """Testing the ScreenshotCommentResource list APIs."""
+    fixtures = ['test_users']
 
     #
-    # List tests
+    # HTTP GET tests
     #
 
     def test_get_screenshot_comments(self):
