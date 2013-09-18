@@ -92,22 +92,19 @@ class ReviewCommentResourceTests(BaseWebAPITestCase):
         """Testing the
         POST review-requests/<id>/reviews/<id>/diff-comments/ API
         """
-        diff_comment_text = "Test diff comment"
-
         review_request = self.create_review_request(create_repository=True,
                                                     publish=True)
         diffset = self.create_diffset(review_request)
-        self.create_filediff(diffset)
+        filediff = self.create_filediff(diffset)
         review = self.create_review(review_request, user=self.user)
-
-        self._postNewDiffComment(review_request, review.pk, diff_comment_text)
+        comment = self.create_diff_comment(review, filediff)
 
         rsp = self.apiGet(get_review_diff_comment_list_url(review),
                           expected_mimetype=review_diff_comment_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
         self.assertTrue('diff_comments' in rsp)
         self.assertEqual(len(rsp['diff_comments']), 1)
-        self.assertEqual(rsp['diff_comments'][0]['text'], diff_comment_text)
+        self.assertEqual(rsp['diff_comments'][0]['text'], comment.text)
 
     def test_post_diff_comments_with_issue(self):
         """Testing the
@@ -132,15 +129,11 @@ class ReviewCommentResourceTests(BaseWebAPITestCase):
         POST review-requests/<id>/reviews/<id>/diff-comments/ API
         with a local site
         """
-        diff_comment_text = "Test diff comment"
         review_request, filediff = \
             self._create_diff_review_request(with_local_site=True)
-
         user = self._login_user(local_site=True)
-
         review = self.create_review(review_request, user=user)
-
-        self._postNewDiffComment(review_request, review.pk, diff_comment_text)
+        comment = self.create_diff_comment(review, filediff)
 
         rsp = self.apiGet(
             get_review_diff_comment_list_url(review, self.local_site_name),
@@ -148,7 +141,7 @@ class ReviewCommentResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['stat'], 'ok')
         self.assertTrue('diff_comments' in rsp)
         self.assertEqual(len(rsp['diff_comments']), 1)
-        self.assertEqual(rsp['diff_comments'][0]['text'], diff_comment_text)
+        self.assertEqual(rsp['diff_comments'][0]['text'], comment.text)
 
         return review
 
@@ -212,14 +205,18 @@ class ReviewCommentResourceTests(BaseWebAPITestCase):
         DELETE review-requests/<id>/reviews/<id>/diff-comments/<id>/ API
         with a local site
         """
-        review = self.test_post_diff_comments_with_site()
-        comment = review.comments.all()[0]
-        comment_count = review.comments.count()
+        review_request, filediff = \
+            self._create_diff_review_request(with_local_site=True)
+        user = self._login_user(local_site=True)
+        review = self.create_review(review_request, user=user)
+        comment = self.create_diff_comment(review, filediff)
 
-        self.apiDelete(get_review_diff_comment_item_url(review, comment.id,
+        self.assertEqual(review.comments.count(), 1)
+
+        self.apiDelete(get_review_diff_comment_item_url(review, comment.pk,
                                                         self.local_site_name))
 
-        self.assertEqual(review.comments.count(), comment_count - 1)
+        self.assertEqual(review.comments.count(), 0)
 
     @add_fixtures(['test_site'])
     def test_delete_diff_comment_with_site_no_access(self):
@@ -227,8 +224,11 @@ class ReviewCommentResourceTests(BaseWebAPITestCase):
         DELETE review-requests/<id>/reviews/<id>/diff-comments/<id>/ API
         with a local site and Permission Denied error
         """
-        review = self.test_post_diff_comments_with_site()
-        comment = review.comments.all()[0]
+        review_request, filediff = \
+            self._create_diff_review_request(with_local_site=True)
+        user = self._login_user(local_site=True)
+        review = self.create_review(review_request, user=user)
+        comment = self.create_diff_comment(review, filediff)
 
         self._login_user()
 
@@ -377,8 +377,8 @@ class ReviewCommentResourceTests(BaseWebAPITestCase):
         If `publish` is True, the review is published. The review request is
         always published.
 
-        Returns the response from posting the comment, the review object, and the
-        review request object.
+        Returns the response from posting the comment, the review object, and
+        the review request object.
         """
         if not comment_text:
             comment_text = 'Test diff comment with an opened issue'

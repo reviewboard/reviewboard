@@ -21,36 +21,30 @@ class ReviewReplyResourceTests(BaseWebAPITestCase):
     def test_get_replies(self):
         """Testing the GET review-requests/<id>/reviews/<id>/replies API"""
         review = self._create_test_review()
-
-        self.test_put_reply()
-
-        public_replies = review.public_replies()
+        reply = self.create_reply(review, user=self.user, publish=True)
 
         rsp = self.apiGet(get_review_reply_list_url(review),
                           expected_mimetype=review_reply_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(len(rsp['replies']), public_replies.count())
+        self.assertEqual(len(rsp['replies']), 1)
 
-        for i in range(public_replies.count()):
-            reply = public_replies[i]
-            self.assertEqual(rsp['replies'][i]['id'], reply.id)
-            self.assertEqual(rsp['replies'][i]['body_top'], reply.body_top)
-            self.assertEqual(rsp['replies'][i]['body_bottom'],
-                             reply.body_bottom)
+        reply_rsp = rsp['replies'][0]
+        self.assertEqual(reply_rsp['id'], reply.id)
+        self.assertEqual(reply_rsp['body_top'], reply.body_top)
+        self.assertEqual(reply_rsp['body_bottom'], reply.body_bottom)
 
     def test_get_replies_with_counts_only(self):
         """Testing the
         GET review-requests/<id>/reviews/<id>/replies/?counts-only=1 API
         """
         review = self._create_test_review()
-
-        self.test_put_reply()
+        self.create_reply(review, user=self.user, publish=True)
 
         rsp = self.apiGet(
             '%s?counts-only=1' % get_review_reply_list_url(review),
             expected_mimetype=review_reply_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(rsp['count'], review.public_replies().count())
+        self.assertEqual(rsp['count'], 1)
 
     @add_fixtures(['test_site'])
     def test_get_replies_with_site(self):

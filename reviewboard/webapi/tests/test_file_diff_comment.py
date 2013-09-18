@@ -1,3 +1,4 @@
+from djblets.testing.decorators import add_fixtures
 from djblets.webapi.errors import PERMISSION_DENIED
 
 from reviewboard.webapi.tests.base import BaseWebAPITestCase
@@ -7,7 +8,7 @@ from reviewboard.webapi.tests.urls import get_filediff_comment_list_url
 
 class FileDiffCommentResourceTests(BaseWebAPITestCase):
     """Testing the FileDiffCommentResource APIs."""
-    fixtures = ['test_users', 'test_scmtools', 'test_site']
+    fixtures = ['test_users', 'test_scmtools']
 
     #
     # List tests
@@ -58,6 +59,7 @@ class FileDiffCommentResourceTests(BaseWebAPITestCase):
         self.assertEqual(len(rsp['diff_comments']), 1)
         self.assertEqual(rsp['diff_comments'][0]['text'], comment.text)
 
+    @add_fixtures(['test_site'])
     def test_get_comments_with_site(self):
         """Testing the
         GET review-requests/<id>/diffs/<revision>/files/<id>/diff-comments/ API
@@ -84,6 +86,7 @@ class FileDiffCommentResourceTests(BaseWebAPITestCase):
         self.assertEqual(len(rsp['diff_comments']), 1)
         self.assertEqual(rsp['diff_comments'][0]['text'], comment.text)
 
+    @add_fixtures(['test_site'])
     def test_get_comments_with_site_no_access(self):
         """Testing the
         GET review-requests/<id>/diffs/<revision>/files/<id>/diff-comments/ API

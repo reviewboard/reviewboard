@@ -147,13 +147,15 @@ class ScreenshotDraftResourceTests(BaseWebAPITestCase):
         with a local site
         """
         draft_caption = 'The new caption'
-        user = User.objects.get(username='doc')
+        user = self._login_user(local_site=True)
 
-        review_request, screenshot_id = self.test_post_screenshots_with_site()
-        review_request.publish(user)
+        review_request = self.create_review_request(submitter=user,
+                                                    with_local_site=True,
+                                                    publish=True)
+        screenshot = self.create_screenshot(review_request)
 
         rsp = self.apiPut(
-            get_screenshot_draft_item_url(review_request, screenshot_id,
+            get_screenshot_draft_item_url(review_request, screenshot.pk,
                                           self.local_site_name),
             {'caption': draft_caption},
             expected_mimetype=screenshot_draft_item_mimetype)
@@ -162,7 +164,7 @@ class ScreenshotDraftResourceTests(BaseWebAPITestCase):
         draft = review_request.get_draft(user)
         self.assertNotEqual(draft, None)
 
-        screenshot = Screenshot.objects.get(pk=screenshot_id)
+        screenshot = Screenshot.objects.get(pk=screenshot.pk)
         self.assertEqual(screenshot.draft_caption, draft_caption)
 
     @add_fixtures(['test_site'])
@@ -170,13 +172,16 @@ class ScreenshotDraftResourceTests(BaseWebAPITestCase):
         """Testing the PUT review-requests/<id>/draft/screenshots/<id>/ API
         with a local site and Permission Denied error
         """
-        review_request, screenshot_id = self.test_post_screenshots_with_site()
-        review_request.publish(User.objects.get(username='doc'))
+        user = self._login_user(local_site=True)
+        review_request = self.create_review_request(submitter=user,
+                                                    with_local_site=True,
+                                                    publish=True)
+        screenshot = self.create_screenshot(review_request)
 
         self._login_user()
 
         rsp = self.apiPut(
-            get_screenshot_draft_item_url(review_request, screenshot_id,
+            get_screenshot_draft_item_url(review_request, screenshot.pk,
                                           self.local_site_name),
             {'caption': 'test'},
             expected_status=403)

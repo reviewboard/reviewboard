@@ -14,10 +14,7 @@ from reviewboard.webapi.tests.urls import (get_review_item_url,
 
 class ReviewResourceTests(BaseWebAPITestCase):
     """Testing the ReviewResource APIs."""
-    fixtures = ['test_users', 'test_scmtools']
-
-    list_mimetype = review_list_mimetype
-    item_mimetype = review_item_mimetype
+    fixtures = ['test_users']
 
     #
     # List tests
@@ -29,7 +26,7 @@ class ReviewResourceTests(BaseWebAPITestCase):
         self.create_review(review_request, publish=True)
 
         rsp = self.apiGet(get_review_list_url(review_request),
-                          expected_mimetype=self.list_mimetype)
+                          expected_mimetype=review_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(len(rsp['reviews']), 1)
 
@@ -45,7 +42,7 @@ class ReviewResourceTests(BaseWebAPITestCase):
 
         rsp = self.apiGet(get_review_list_url(review_request,
                                               self.local_site_name),
-                          expected_mimetype=self.list_mimetype)
+                          expected_mimetype=review_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(len(rsp['reviews']), review_request.reviews.count())
 
@@ -72,7 +69,7 @@ class ReviewResourceTests(BaseWebAPITestCase):
 
         rsp = self.apiGet(get_review_list_url(review_request), {
             'counts-only': 1,
-        }, expected_mimetype=self.list_mimetype)
+        }, expected_mimetype=review_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(rsp['count'], 2)
 
@@ -110,7 +107,7 @@ class ReviewResourceTests(BaseWebAPITestCase):
                 'body_top': body_top,
                 'body_bottom': body_bottom,
             },
-            expected_mimetype=self.item_mimetype)
+            expected_mimetype=review_item_mimetype)
 
         self.assertTrue('stat' in rsp)
         self.assertEqual(rsp['stat'], 'ok')
@@ -160,7 +157,7 @@ class ReviewResourceTests(BaseWebAPITestCase):
         rsp, response = self.api_post_with_response(
             get_review_list_url(review_request, self.local_site_name),
             post_data,
-            expected_mimetype=self.item_mimetype)
+            expected_mimetype=review_item_mimetype)
 
         self.assertTrue('stat' in rsp)
         self.assertEqual(rsp['stat'], 'ok')
@@ -302,7 +299,7 @@ class ReviewResourceTests(BaseWebAPITestCase):
 
         rsp, response = self.api_post_with_response(
             get_review_list_url(review_request),
-            expected_mimetype=self.item_mimetype)
+            expected_mimetype=review_item_mimetype)
 
         self.assertTrue('stat' in rsp)
         self.assertEqual(rsp['stat'], 'ok')
@@ -317,7 +314,7 @@ class ReviewResourceTests(BaseWebAPITestCase):
                 'body_top': body_top,
                 'body_bottom': body_bottom,
             },
-            expected_mimetype=self.item_mimetype)
+            expected_mimetype=review_item_mimetype)
 
         reviews = review_request.reviews.filter(user=self.user)
         self.assertEqual(len(reviews), 1)
@@ -350,7 +347,7 @@ class ReviewResourceTests(BaseWebAPITestCase):
 
         rsp, response = self.api_post_with_response(
             get_review_list_url(review_request, self.local_site_name),
-            expected_mimetype=self.item_mimetype)
+            expected_mimetype=review_item_mimetype)
 
         self.assertTrue('stat' in rsp)
         self.assertEqual(rsp['stat'], 'ok')
@@ -365,7 +362,7 @@ class ReviewResourceTests(BaseWebAPITestCase):
                 'body_top': body_top,
                 'body_bottom': body_bottom,
             },
-            expected_mimetype=self.item_mimetype)
+            expected_mimetype=review_item_mimetype)
 
         reviews = review_request.reviews.filter(user__username='doc')
         self.assertEqual(len(reviews), 1)
@@ -435,7 +432,7 @@ class ReviewResourceTests(BaseWebAPITestCase):
                 'body_top': body_top,
                 'body_bottom': body_bottom,
             },
-            expected_mimetype=self.item_mimetype)
+            expected_mimetype=review_item_mimetype)
 
         reviews = review_request.reviews.filter(user=self.user)
         self.assertEqual(len(reviews), 1)

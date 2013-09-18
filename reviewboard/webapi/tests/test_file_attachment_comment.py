@@ -6,7 +6,9 @@ from reviewboard.webapi.tests.base import BaseWebAPITestCase
 from reviewboard.webapi.tests.mimetypes import (
     file_attachment_comment_item_mimetype,
     file_attachment_comment_list_mimetype)
-from reviewboard.webapi.tests.urls import get_file_attachment_comment_list_url
+from reviewboard.webapi.tests.urls import (
+    get_review_file_attachment_comment_item_url,
+    get_file_attachment_comment_list_url)
 
 
 class FileAttachmentCommentResourceTests(BaseWebAPITestCase):
@@ -24,8 +26,7 @@ class FileAttachmentCommentResourceTests(BaseWebAPITestCase):
         comment_text = "This is a test comment."
 
         # Post the review request.
-        review_request = self.create_review_request(create_repository=True,
-                                                    submitter=self.user,
+        review_request = self.create_review_request(submitter=self.user,
                                                     publish=True)
         file_attachment = self.create_file_attachment(review_request)
 
@@ -57,8 +58,7 @@ class FileAttachmentCommentResourceTests(BaseWebAPITestCase):
         user = self._login_user(local_site=True)
 
         # Post the review request.
-        review_request = self.create_review_request(create_repository=True,
-                                                    submitter=user,
+        review_request = self.create_review_request(submitter=user,
                                                     with_local_site=True,
                                                     publish=True)
         file_attachment = self.create_file_attachment(review_request)
@@ -86,8 +86,7 @@ class FileAttachmentCommentResourceTests(BaseWebAPITestCase):
         user = self._login_user(local_site=True)
 
         # Post the review request.
-        review_request = self.create_review_request(create_repository=True,
-                                                    submitter=user,
+        review_request = self.create_review_request(submitter=user,
                                                     with_local_site=True,
                                                     publish=True)
         file_attachment = self.create_file_attachment(review_request)
@@ -120,8 +119,7 @@ class FileAttachmentCommentResourceTests(BaseWebAPITestCase):
         }
 
         # Post the review request.
-        review_request = self.create_review_request(create_repository=True,
-                                                    submitter=self.user,
+        review_request = self.create_review_request(submitter=self.user,
                                                     publish=True)
         file_attachment = self.create_file_attachment(review_request)
 
@@ -154,8 +152,7 @@ class FileAttachmentCommentResourceTests(BaseWebAPITestCase):
         comment_text = "This is a test comment."
 
         # Post the review request.
-        review_request = self.create_review_request(create_repository=True,
-                                                    submitter=self.user,
+        review_request = self.create_review_request(submitter=self.user,
                                                     publish=True)
         file_attachment1 = self.create_file_attachment(review_request)
         file_attachment2 = self.create_file_attachment(review_request)
@@ -196,10 +193,21 @@ class FileAttachmentCommentResourceTests(BaseWebAPITestCase):
             'ignored': 'foo',
         }
 
-        rsp = self.test_post_file_attachment_comments_with_extra_fields()
+        comment_text = "This is a test comment."
+
+        review_request = self.create_review_request(submitter=self.user,
+                                                    publish=True)
+        file_attachment = self.create_file_attachment(review_request)
+        review = self.create_review(review_request, user=self.user)
+        comment = self.create_file_attachment_comment(
+            review, file_attachment, text=comment_text,
+            extra_fields={
+                'foo': '123',
+                'bar': '456',
+            })
 
         rsp = self.apiPut(
-            rsp['file_attachment_comment']['links']['self']['href'],
+            get_review_file_attachment_comment_item_url(review, comment.pk),
             extra_fields,
             expected_mimetype=file_attachment_comment_item_mimetype)
         self.assertEqual(rsp['stat'], 'ok')

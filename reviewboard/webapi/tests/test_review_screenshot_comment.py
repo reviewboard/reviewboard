@@ -13,7 +13,7 @@ from reviewboard.webapi.tests.urls import (
 
 class ReviewScreenshotCommentResourceTests(BaseWebAPITestCase):
     """Testing the ReviewScreenshotCommentResource APIs."""
-    fixtures = ['test_users', 'test_scmtools']
+    fixtures = ['test_users']
 
     #
     # List tests
@@ -72,7 +72,7 @@ class ReviewScreenshotCommentResourceTests(BaseWebAPITestCase):
         with an issue
         """
         comment_text = "Test screenshot comment with an opened issue"
-        rsp, review, review_request = \
+        comment, review, review_request = \
             self._create_screenshot_review_with_issue(
                 publish=False, comment_text=comment_text)
 
@@ -96,7 +96,6 @@ class ReviewScreenshotCommentResourceTests(BaseWebAPITestCase):
         user = self._login_user(local_site=True)
 
         review_request = self.create_review_request(with_local_site=True,
-                                                    create_repository=True,
                                                     publish=True)
         screenshot = self.create_screenshot(review_request)
         review = self.create_review(review_request, user=user)
@@ -125,12 +124,11 @@ class ReviewScreenshotCommentResourceTests(BaseWebAPITestCase):
         review_request = self.create_review_request(publish=True)
         screenshot = self.create_screenshot(review_request)
         review = self.create_review(review_request, user=self.user)
+        comment = self.create_screenshot_comment(review, screenshot,
+                                                 comment_text, x, y, w, h)
 
-        rsp = self._postNewScreenshotComment(review_request, review.id,
-                                             screenshot, comment_text,
-                                             x, y, w, h)
-
-        self.apiDelete(rsp['screenshot_comment']['links']['self']['href'])
+        self.apiDelete(
+            get_review_screenshot_comment_item_url(review, comment.pk))
 
         rsp = self.apiGet(
             get_review_screenshot_comment_list_url(review),
@@ -154,12 +152,12 @@ class ReviewScreenshotCommentResourceTests(BaseWebAPITestCase):
                                                     publish=True)
         screenshot = self.create_screenshot(review_request)
         review = self.create_review(review_request, user=user)
+        comment = self.create_screenshot_comment(review, screenshot,
+                                                 comment_text, x, y, w, h)
 
-        rsp = self._postNewScreenshotComment(review_request, review.id,
-                                             screenshot, comment_text,
-                                             x, y, w, h)
-
-        self.apiDelete(rsp['screenshot_comment']['links']['self']['href'])
+        self.apiDelete(
+            get_review_screenshot_comment_item_url(review, comment.pk,
+                                                   self.local_site_name))
 
         rsp = self.apiGet(
             get_review_screenshot_comment_list_url(review,
@@ -184,15 +182,19 @@ class ReviewScreenshotCommentResourceTests(BaseWebAPITestCase):
                                                     publish=True)
         screenshot = self.create_screenshot(review_request)
         review = self.create_review(review_request, user=user)
+        comment = self.create_screenshot_comment(review, screenshot,
+                                                 comment_text, x, y, w, h)
 
-        rsp = self._postNewScreenshotComment(review_request, review.id,
-                                             screenshot, comment_text,
-                                             x, y, w, h)
+        self.apiDelete(
+            get_review_screenshot_comment_item_url(review, comment.pk,
+                                                   self.local_site_name))
 
         self._login_user()
 
-        rsp = self.apiDelete(rsp['screenshot_comment']['links']['self']['href'],
-                             expected_status=403)
+        rsp = self.apiDelete(
+            get_review_screenshot_comment_item_url(review, comment.pk,
+                                                   self.local_site_name),
+            expected_status=403)
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
@@ -215,11 +217,11 @@ class ReviewScreenshotCommentResourceTests(BaseWebAPITestCase):
         PUT review-requests/<id>/reviews/<id>/screenshot-comments/<id>/ API
         with an issue, removing issue_opened
         """
-        rsp, review, review_request = \
+        comment, review, review_request = \
             self._create_screenshot_review_with_issue()
 
         rsp = self.apiPut(
-            rsp['screenshot_comment']['links']['self']['href'],
+            get_review_screenshot_comment_item_url(review, comment.pk),
             {'issue_opened': False},
             expected_mimetype=screenshot_comment_item_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
@@ -230,13 +232,13 @@ class ReviewScreenshotCommentResourceTests(BaseWebAPITestCase):
         PUT review-requests/<id>/reviews/<id>/screenshot-comments/<id> API
         with an issue, before review is published
         """
-        rsp, review, review_request = \
+        comment, review, review_request = \
             self._create_screenshot_review_with_issue()
 
         # The issue_status should not be able to be changed while the review is
         # unpublished.
         rsp = self.apiPut(
-            rsp['screenshot_comment']['links']['self']['href'],
+            get_review_screenshot_comment_item_url(review, comment.pk),
             {'issue_status': 'resolved'},
             expected_mimetype=screenshot_comment_item_mimetype)
 
@@ -250,11 +252,11 @@ class ReviewScreenshotCommentResourceTests(BaseWebAPITestCase):
         PUT review-requests/<id>/reviews/<id>/screenshot-comments/<id>/ API
         with an issue, after review is published
         """
-        rsp, review, review_request = \
+        comment, review, review_request = \
             self._create_screenshot_review_with_issue(publish=True)
 
         rsp = self.apiPut(
-            rsp['screenshot_comment']['links']['self']['href'],
+            get_review_screenshot_comment_item_url(review, comment.pk),
             {'issue_status': 'resolved'},
             expected_mimetype=screenshot_comment_item_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
@@ -265,7 +267,7 @@ class ReviewScreenshotCommentResourceTests(BaseWebAPITestCase):
         PUT review-requests/<id>/reviews/<id>/screenshot-comments/<id>/ API
         permissions for issue creator
         """
-        rsp, review, review_request = \
+        comment, review, review_request = \
             self._create_screenshot_review_with_issue(publish=True)
 
         # Change the owner of the review request so that it's not owned by
@@ -276,7 +278,7 @@ class ReviewScreenshotCommentResourceTests(BaseWebAPITestCase):
         # The review/comment (and therefore issue) is still owned by self.user,
         # so we should be able to change the issue status.
         rsp = self.apiPut(
-            rsp['screenshot_comment']['links']['self']['href'],
+            get_review_screenshot_comment_item_url(review, comment.pk),
             {'issue_status': 'dropped'},
             expected_mimetype=screenshot_comment_item_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
@@ -287,7 +289,7 @@ class ReviewScreenshotCommentResourceTests(BaseWebAPITestCase):
         PUT review-requests/<id>/reviews/<id>/screenshot-comments/<id>/ API
         permissions for an uninvolved user
         """
-        rsp, review, review_request = \
+        comment, review, review_request = \
             self._create_screenshot_review_with_issue(publish=True)
 
         # Change the owner of the review request and review so that they're not
@@ -299,14 +301,15 @@ class ReviewScreenshotCommentResourceTests(BaseWebAPITestCase):
         review.save()
 
         rsp = self.apiPut(
-            rsp['screenshot_comment']['links']['self']['href'],
+            get_review_screenshot_comment_item_url(review, comment.pk),
             {'issue_status': 'dropped'},
             expected_status=403)
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
     def test_put_deleted_screenshot_comment_issue_status(self):
-        """Testing the PUT review-requests/<id>/reviews/<id>/screenshot-comments/<id>
+        """Testing the
+        PUT review-requests/<id>/reviews/<id>/screenshot-comments/<id>
         API with an issue and a deleted screenshot
         """
         comment_text = "Test screenshot comment with an opened issue"
@@ -316,15 +319,14 @@ class ReviewScreenshotCommentResourceTests(BaseWebAPITestCase):
                                                     submitter=self.user)
         screenshot = self.create_screenshot(review_request)
         review = self.create_review(review_request, user=self.user)
-
-        rsp = self._postNewScreenshotComment(review_request, review.pk,
-                                             screenshot, comment_text,
-                                             x, y, w, h, issue_opened=True)
+        comment = self.create_screenshot_comment(review, screenshot,
+                                                 comment_text, x, y, w, h,
+                                                 issue_opened=True)
 
         # First, let's ensure that the user that has created the comment
         # cannot alter the issue_status while the review is unpublished.
         rsp = self.apiPut(
-            rsp['screenshot_comment']['links']['self']['href'],
+            get_review_screenshot_comment_item_url(review, comment.pk),
             {'issue_status': 'resolved'},
             expected_mimetype=screenshot_comment_item_mimetype)
 
@@ -360,7 +362,7 @@ class ReviewScreenshotCommentResourceTests(BaseWebAPITestCase):
 
     def _create_screenshot_review_with_issue(self, publish=False,
                                              comment_text=None):
-        """Sets up a review for a screenshot that includes a comment with an issue.
+        """Sets up a review for a screenshot that includes an open issue.
 
         If `publish` is True, the review is published. The review request is
         always published.
@@ -374,17 +376,10 @@ class ReviewScreenshotCommentResourceTests(BaseWebAPITestCase):
         review_request = self.create_review_request(publish=True,
                                                     submitter=self.user)
         screenshot = self.create_screenshot(review_request)
-        review = self.create_review(review_request, user=self.user)
+        review = self.create_review(review_request, user=self.user,
+                                    publish=publish)
+        comment = self.create_screenshot_comment(review, screenshot,
+                                                 comment_text,
+                                                 issue_opened=True)
 
-        # Create the comment
-        x, y, w, h = (2, 2, 10, 10)
-        rsp = self._postNewScreenshotComment(review_request, review.pk,
-                                             screenshot, comment_text,
-                                             x, y, w, h, issue_opened=True)
-        self.assertEqual(rsp['stat'], 'ok')
-
-        if publish:
-            review.public = True
-            review.save()
-
-        return rsp, review, review_request
+        return comment, review, review_request

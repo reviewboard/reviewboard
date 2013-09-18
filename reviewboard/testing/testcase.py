@@ -132,15 +132,31 @@ class TestCase(DjbletsTestCase):
 
         return file_attachment
 
-    def create_file_attachment_comment(self, review, file_attachment):
+    def create_file_attachment_comment(self, review, file_attachment,
+                                       text='My comment', issue_opened=False,
+                                       extra_fields=None, reply_to=None):
         """Creates a FileAttachmentComment for testing.
 
         The comment is tied to the given Review and FileAttachment. It's
         populated with default data that can be overridden by the caller.
         """
-        return review.file_attachment_comments.create(
+        if issue_opened:
+            issue_status = Comment.OPEN
+        else:
+            issue_status = None
+
+        comment = review.file_attachment_comments.create(
             file_attachment=file_attachment,
-            text='My comment')
+            text=text,
+            issue_opened=issue_opened,
+            issue_status=issue_status,
+            reply_to=reply_to)
+
+        if extra_fields:
+            comment.extra_data = extra_fields
+            comment.save()
+
+        return comment
 
     def create_filediff(self, diffset, source_file='/test-file',
                         dest_file='/test-file', source_revision='123',
@@ -333,19 +349,28 @@ class TestCase(DjbletsTestCase):
         return screenshot
 
     def create_screenshot_comment(self, review, screenshot, text='My comment',
-                                  x=1, y=1, w=5, h=5):
+                                  x=1, y=1, w=5, h=5, issue_opened=False,
+                                  reply_to=None):
         """Creates a ScreenshotComment for testing.
 
         The comment is tied to the given Review and Screenshot. It's
         It's populated with default data that can be overridden by the caller.
         """
+        if issue_opened:
+            issue_status = Comment.OPEN
+        else:
+            issue_status = None
+
         return review.screenshot_comments.create(
             screenshot=screenshot,
-            text='My comment',
+            text=text,
             x=x,
             y=y,
             w=w,
-            h=h)
+            h=h,
+            issue_opened=issue_opened,
+            issue_status=issue_status,
+            reply_to=reply_to)
 
     def _fixture_setup(self):
         """Set up fixtures for unit tests.

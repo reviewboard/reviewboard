@@ -1,7 +1,6 @@
 from djblets.testing.decorators import add_fixtures
 from djblets.webapi.errors import PERMISSION_DENIED
 
-from reviewboard.attachments.models import FileAttachment
 from reviewboard.webapi.tests.base import BaseWebAPITestCase
 from reviewboard.webapi.tests.mimetypes import (file_attachment_item_mimetype,
                                                 file_attachment_list_mimetype)
@@ -11,12 +10,13 @@ from reviewboard.webapi.tests.urls import (get_file_attachment_item_url,
 
 class FileAttachmentResourceTests(BaseWebAPITestCase):
     """Testing the FileAttachmentResource APIs."""
-    fixtures = ['test_users', 'test_scmtools']
+    fixtures = ['test_users']
 
     #
     # List tests
     #
 
+    @add_fixtures(['test_scmtools'])
     def test_get_file_attachments(self):
         """Testing the GET review-requests/<id>/file-attachments/ API"""
         review_request = self.create_review_request(create_repository=True,
@@ -146,8 +146,8 @@ class FileAttachmentResourceTests(BaseWebAPITestCase):
         """Testing the GET review-requests/<id>/file-attachments/<id>/ API
         with Not Modified response
         """
-        self.test_post_file_attachments()
+        review_request = self.create_review_request(publish=True)
+        file_attachment = self.create_file_attachment(review_request)
 
-        file_attachment = FileAttachment.objects.all()[0]
         self._testHttpCaching(get_file_attachment_item_url(file_attachment),
                               check_etags=True)

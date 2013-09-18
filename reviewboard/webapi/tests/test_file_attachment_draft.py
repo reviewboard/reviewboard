@@ -61,7 +61,6 @@ class FileAttachmentDraftResourceTests(BaseWebAPITestCase):
         user = self._login_user(local_site=True)
 
         review_request = self.create_review_request(submitter=user,
-                                                    create_repository=True,
                                                     with_local_site=True)
 
         f = open(self._getTrophyFilename(), 'r')
@@ -142,15 +141,16 @@ class FileAttachmentDraftResourceTests(BaseWebAPITestCase):
         with a local site
         """
         draft_caption = 'The new caption'
-        user = User.objects.get(username='doc')
+        user = self._login_user(local_site=True)
 
-        review_request, file_attachment_id = \
-            self.test_post_file_attachments_with_site()
-        review_request.publish(user)
+        review_request = self.create_review_request(submitter=user,
+                                                    with_local_site=True,
+                                                    publish=True)
+        file_attachment = self.create_file_attachment(review_request)
 
         rsp = self.apiPut(
             get_draft_file_attachment_item_url(review_request,
-                                               file_attachment_id,
+                                               file_attachment.pk,
                                                self.local_site_name),
             {'caption': draft_caption},
             expected_mimetype=draft_file_attachment_item_mimetype)
@@ -159,7 +159,7 @@ class FileAttachmentDraftResourceTests(BaseWebAPITestCase):
         draft = review_request.get_draft(user)
         self.assertNotEqual(draft, None)
 
-        file_attachment = FileAttachment.objects.get(pk=file_attachment_id)
+        file_attachment = FileAttachment.objects.get(pk=file_attachment.pk)
         self.assertEqual(file_attachment.draft_caption, draft_caption)
 
     @add_fixtures(['test_site'])
@@ -168,15 +168,16 @@ class FileAttachmentDraftResourceTests(BaseWebAPITestCase):
         PUT review-requests/<id>/draft/file-attachments/<id>/ API
         with a local site and Permission Denied error
         """
-        review_request, file_attachment_id = \
-            self.test_post_file_attachments_with_site()
-        review_request.publish(User.objects.get(username='doc'))
+        review_request = self.create_review_request(submitter=self.user,
+                                                    with_local_site=True,
+                                                    publish=True)
+        file_attachment = self.create_file_attachment(review_request)
 
         self._login_user()
 
         rsp = self.apiPut(
             get_draft_file_attachment_item_url(review_request,
-                                               file_attachment_id,
+                                               file_attachment.pk,
                                                self.local_site_name),
             {'caption': 'test'},
             expected_status=403)
