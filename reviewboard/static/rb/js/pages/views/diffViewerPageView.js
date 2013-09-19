@@ -355,6 +355,13 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
                           this._onRevisionSelected);
         }
 
+        this._paginationModel = this.options.pagination;
+        this._paginationView = new RB.PaginationView({
+            el: $('#pagination'),
+            model: this._paginationModel
+        });
+        this._paginationView.render();
+
         $('#diffs').bindClass(RB.UserSession.instance,
                               'diffsShowExtraWhitespace', 'ewhl');
 

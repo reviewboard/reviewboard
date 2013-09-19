@@ -94,20 +94,7 @@
 {%   endbox %}
 
 <div id="diffs"></div>
-<div id="pagination">
-{%   if is_paginated %}
-{%    blocktrans %}This diff has been split across {{ pages }} pages:{% endblocktrans %}
-{%    if has_previous %}<span class="paginate-previous"><a href="?page={{ previous_page }}" title="{% trans "Previous Page" %}">&lt;</a></span>{% endif %}
-{%    for num in page_numbers %}
-{%     if num == page %}
-   <span class="paginate-current" title="{% trans "Current Page" %}">{{ num }}</span>
-{%     else %}
-   <span class="paginate-link"><a href="?page={{ num }}" title="{% blocktrans %}Page {{ num }} {% endblocktrans %}">{{ num }}</a></span>
-{%     endif %}{# num == page #}
-{%    endfor %}
-{%    if has_next %}<span class="paginate-next"><a href="?page={{ next_page }}" title="{% trans "Next Page" %}">&gt;</a></span>{% endif %}
-{%   endif %}{# has_previous #}
-</div>
+<div id="pagination"></div>
 
 {%  endif %}{# !error #}
 {% endblock content %}
@@ -157,6 +144,22 @@
             isDraftDiff: {{is_draft_diff|yesno:"true,false"}}
         }),
         numDiffs: {{num_diffs}},
+        pagination: new RB.Pagination({
+            isPaginated: {{is_paginated|yesno:"true,false"}},
+            pages: {{pages}},
+            hasPrevious: {{has_previous|yesno:"true,false"}},
+            hasNext: {{has_next|yesno:"true,false"}},
+            pageNumbers: [
+{%  for num in page_numbers %}{{num}}{% if not forloop.last %},{% endif %}{% endfor %}
+            ],
+{%  if has_previous %}
+            previousPage: {{previous_page}},
+{%  endif %}
+{%  if has_next %}
+            nextPage: {{next_page}},
+{%  endif %}
+            currentPage: {{page}}
+        }),
         checkUpdatesType: 'diff',
 {%  localtime off %}
         lastActivityTimestamp: '{{last_activity_time|date:"c"}}',
