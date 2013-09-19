@@ -1,5 +1,6 @@
 from django.contrib.auth.models import User
 from djblets.testing.decorators import add_fixtures
+from djblets.webapi.errors import INVALID_FORM_DATA
 
 from reviewboard.reviews.models import DefaultReviewer, Group
 from reviewboard.scmtools.models import Repository, Tool
@@ -194,7 +195,6 @@ class DefaultReviewerResourceTests(BaseWebAPITestCase):
         self.assertEqual(len(default_reviewers), 1)
         self.assertEqual(default_reviewers[0]['name'], 'default1')
 
-
     @add_fixtures(['test_users', 'test_scmtools'])
     def test_post_default_reviewer(self, local_site=None):
         """Testing the POST default-reviewers/ API"""
@@ -294,6 +294,23 @@ class DefaultReviewerResourceTests(BaseWebAPITestCase):
                 'file_regex': '.*',
             },
             expected_status=403)
+
+    @add_fixtures(['test_users', 'test_site'])
+    def test_post_default_reviewer_with_invalid_regex(self):
+        """Testing the POST default-reviewers/ API with an invalid regex"""
+        self._login_user(admin=True)
+
+        rsp = self.apiPost(
+            get_default_reviewer_list_url(),
+            {
+                'name': 'default1',
+                'file_regex': '\\',
+            },
+            expected_status=400)
+
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertEqual(rsp['err']['code'], INVALID_FORM_DATA.code)
+        self.assertTrue('file_regex' in rsp['fields'])
 
     @add_fixtures(['test_users', 'test_site'])
     def test_post_default_reviewer_with_permission_denied_and_local_site(self):

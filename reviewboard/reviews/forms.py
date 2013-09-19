@@ -13,6 +13,14 @@ from reviewboard.scmtools.models import Repository
 from reviewboard.site.validation import validate_review_groups, validate_users
 
 
+def regex_validator(value):
+    """Validates that the specified regular expression is valid."""
+    try:
+        re.compile(value)
+    except Exception, e:
+        raise ValidationError(e)
+
+
 class DefaultReviewerForm(forms.ModelForm):
     name = forms.CharField(
         label=_("Name"),
@@ -23,6 +31,7 @@ class DefaultReviewerForm(forms.ModelForm):
         label=_("File regular expression"),
         max_length=256,
         widget=forms.TextInput(attrs={'size': '60'}),
+        validators=[regex_validator],
         help_text=_('File paths are matched against this regular expression '
                     'to determine if these reviewers should be added.'))
 
@@ -34,17 +43,6 @@ class DefaultReviewerForm(forms.ModelForm):
                     'default reviewer for. If left empty, this will match '
                     'all repositories.'),
         widget=FilteredSelectMultiple(_("Repositories"), False))
-
-    def clean_file_regex(self):
-        """Validates that the specified regular expression is valid."""
-        file_regex = self.cleaned_data['file_regex']
-
-        try:
-            re.compile(file_regex)
-        except Exception, e:
-            raise ValidationError(e)
-
-        return file_regex
 
     def clean(self):
         try:
