@@ -365,6 +365,7 @@ class Site(object):
         fp.write("SITE_ROOT = '%s'\n" % self.site_root)
         fp.write("FORCE_SCRIPT_NAME = ''\n")
         fp.write("DEBUG = False\n")
+        fp.write("ALLOWED_HOSTS = ['%s']\n" % (self.domain_name or '*'))
         fp.close()
 
         self.setup_settings()

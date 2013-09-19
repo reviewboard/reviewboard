@@ -215,6 +215,10 @@ if os.path.split(os.path.dirname(__file__))[1] != 'reviewboard':
 LOCAL_ROOT = None
 PRODUCTION = True
 
+# Default ALLOWED_HOSTS to allow everything. This should be overridden in
+# settings_local.py
+ALLOWED_HOSTS = ['*']
+
 # Cookie settings
 LANGUAGE_COOKIE_NAME = "rblanguage"
 SESSION_COOKIE_NAME = "rbsessionid"
