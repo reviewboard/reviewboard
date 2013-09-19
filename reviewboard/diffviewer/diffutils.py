@@ -490,7 +490,7 @@ def get_enable_highlighting(user):
 
     if user.is_authenticated():
         try:
-            profile = user.get_profile()
+            profile = Profile.objects.get(user=user)
             user_syntax_highlighting = profile.syntax_highlighting
         except Profile.DoesNotExist:
             pass

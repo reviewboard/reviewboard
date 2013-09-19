@@ -1,7 +1,7 @@
 from django.contrib.auth.models import User
 from djblets.testing.decorators import add_fixtures
 
-from reviewboard.accounts.models import LocalSiteProfile
+from reviewboard.accounts.models import LocalSiteProfile, Profile
 from reviewboard.testing import TestCase
 
 
@@ -21,7 +21,7 @@ class ProfileTests(TestCase):
         user1 = User.objects.get(username='admin')
         user2 = User.objects.get(username='doc')
 
-        profile = user1.get_profile()
+        profile = Profile.objects.get(user=user1)
         profile.is_private = True
         profile.save()
 
@@ -35,7 +35,7 @@ class ProfileTests(TestCase):
     def test_is_star_unstar_updating_count_correctly(self):
         """Testing if star, unstar affect review request counts correctly."""
         user1 = User.objects.get(username='admin')
-        profile1 = user1.get_profile()
+        profile1 = Profile.objects.get(user=user1)
         review_request = self.create_review_request(publish=True)
 
         site_profile = profile1.site_profiles.get(local_site=None)

@@ -192,8 +192,9 @@ class ReviewRequestManager(ConcurrencyManager):
 
         query = Q(target_people=query_user)
 
+        from reviewboard.accounts.models import Profile
         try:
-            profile = query_user.get_profile()
+            profile = Profile.objects.get(user=query_user)
             query = query | Q(starred_by=profile)
         except ObjectDoesNotExist:
             pass
@@ -215,8 +216,9 @@ class ReviewRequestManager(ConcurrencyManager):
 
         query = Q(target_people=query_user) | Q(target_groups__in=groups)
 
+        from reviewboard.accounts.models import Profile
         try:
-            profile = query_user.get_profile()
+            profile = Profile.objects.get(user=query_user)
             query = query | Q(starred_by=profile)
         except ObjectDoesNotExist:
             pass

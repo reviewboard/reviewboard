@@ -2,6 +2,7 @@ from django.contrib.auth.models import User
 from djblets.testing.decorators import add_fixtures
 from djblets.webapi.errors import DOES_NOT_EXIST, PERMISSION_DENIED
 
+from reviewboard.accounts.models import Profile
 from reviewboard.webapi.tests.base import BaseWebAPITestCase
 from reviewboard.webapi.tests.mimetypes import (
     watched_review_request_item_mimetype,
@@ -28,7 +29,8 @@ class WatchedReviewRequestResourceTests(BaseWebAPITestCase):
             expected_mimetype=watched_review_request_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
 
-        watched = self.user.get_profile().starred_review_requests.all()
+        profile = Profile.objects.get(user=self.user)
+        watched = profile.starred_review_requests.all()
         apiwatched = rsp['watched_review_requests']
 
         self.assertEqual(len(watched), len(apiwatched))
@@ -55,7 +57,8 @@ class WatchedReviewRequestResourceTests(BaseWebAPITestCase):
                                                 self.local_site_name),
             expected_mimetype=watched_review_request_list_mimetype)
 
-        watched = user.get_profile().starred_review_requests.filter(
+        profile = Profile.objects.get(user=user)
+        watched = profile.starred_review_requests.filter(
             local_site__name=self.local_site_name)
         apiwatched = rsp['watched_review_requests']
 
@@ -100,8 +103,9 @@ class WatchedReviewRequestResourceTests(BaseWebAPITestCase):
             {'object_id': review_request.display_id},
             expected_mimetype=watched_review_request_item_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
+        profile = Profile.objects.get(user=self.user)
         self.assertTrue(review_request in
-                        self.user.get_profile().starred_review_requests.all())
+                        profile.starred_review_requests.all())
 
     def test_post_watched_review_request_with_does_not_exist_error(self):
         """Testing the POST users/<username>/watched/review_request/
@@ -132,8 +136,10 @@ class WatchedReviewRequestResourceTests(BaseWebAPITestCase):
             {'object_id': review_request.display_id},
             expected_mimetype=watched_review_request_item_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
+
+        profile = Profile.objects.get(user=user)
         self.assertTrue(review_request in
-                        user.get_profile().starred_review_requests.all())
+                        profile.starred_review_requests.all())
 
         return review_request
 
@@ -175,8 +181,10 @@ class WatchedReviewRequestResourceTests(BaseWebAPITestCase):
         self.apiDelete(
             get_watched_review_request_item_url(self.user.username,
                                                 review_request.display_id))
+
+        profile = Profile.objects.get(user=self.user)
         self.assertTrue(review_request not in
-                        self.user.get_profile().starred_review_requests.all())
+                        profile.starred_review_requests.all())
 
     def test_delete_watched_review_request_with_does_not_exist_error(self):
         """Testing the DELETE users/<username>/watched/review_request/ API
@@ -199,8 +207,10 @@ class WatchedReviewRequestResourceTests(BaseWebAPITestCase):
 
         self.apiDelete(get_watched_review_request_item_url(
             user.username, review_request.display_id, self.local_site_name))
+
+        profile = Profile.objects.get(user=user)
         self.assertTrue(review_request not in
-                        user.get_profile().starred_review_requests.all())
+                        profile.starred_review_requests.all())
 
     @add_fixtures(['test_site'])
     def test_delete_watched_review_request_with_site_no_access(self):

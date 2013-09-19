@@ -11,6 +11,7 @@ from djblets.siteconfig.models import SiteConfiguration
 from djblets.util.forms import TimeZoneField
 from recaptcha.client import captcha
 
+from reviewboard.accounts.models import Profile
 from reviewboard.admin.checks import get_can_enable_dns, get_can_enable_ldap
 from reviewboard.reviews.models import Group
 
@@ -81,7 +82,7 @@ class PreferencesForm(forms.Form):
         user.review_groups = self.cleaned_data['groups']
         user.save()
 
-        profile = user.get_profile()
+        profile = Profile.objects.get_or_create(user=user)
         profile.first_time_setup_done = True
         profile.syntax_highlighting = self.cleaned_data['syntax_highlighting']
         profile.is_private = self.cleaned_data['profile_private']

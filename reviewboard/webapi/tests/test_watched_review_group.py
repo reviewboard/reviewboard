@@ -2,6 +2,7 @@ from django.contrib.auth.models import User
 from djblets.testing.decorators import add_fixtures
 from djblets.webapi.errors import DOES_NOT_EXIST, PERMISSION_DENIED
 
+from reviewboard.accounts.models import Profile
 from reviewboard.webapi.tests.base import BaseWebAPITestCase
 from reviewboard.webapi.tests.mimetypes import (
     watched_review_group_item_mimetype,
@@ -28,7 +29,8 @@ class WatchedReviewGroupResourceTests(BaseWebAPITestCase):
             expected_mimetype=watched_review_group_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
 
-        watched = self.user.get_profile().starred_groups.all()
+        profile = Profile.objects.get(user=self.user)
+        watched = profile.starred_groups.all()
         apigroups = rsp['watched_review_groups']
 
         self.assertEqual(len(apigroups), len(watched))
@@ -48,7 +50,8 @@ class WatchedReviewGroupResourceTests(BaseWebAPITestCase):
             get_watched_review_group_list_url('doc', self.local_site_name),
             expected_mimetype=watched_review_group_list_mimetype)
 
-        watched = self.user.get_profile().starred_groups.filter(
+        profile = Profile.objects.get(user=self.user)
+        watched = profile.starred_groups.filter(
             local_site__name=self.local_site_name)
         apigroups = rsp['watched_review_groups']
 
@@ -79,7 +82,8 @@ class WatchedReviewGroupResourceTests(BaseWebAPITestCase):
             {'object_id': group.name},
             expected_mimetype=watched_review_group_item_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
-        self.assertTrue(group in self.user.get_profile().starred_groups.all())
+        profile = Profile.objects.get(user=self.user)
+        self.assertTrue(group in profile.starred_groups.all())
 
         return group
 
@@ -110,7 +114,8 @@ class WatchedReviewGroupResourceTests(BaseWebAPITestCase):
             {'object_id': group.name},
             expected_mimetype=watched_review_group_item_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
-        self.assertTrue(group in user.get_profile().starred_groups.all())
+        profile = Profile.objects.get(user=user)
+        self.assertTrue(group in profile.starred_groups.all())
 
         return group
 
@@ -154,8 +159,9 @@ class WatchedReviewGroupResourceTests(BaseWebAPITestCase):
 
         self.apiDelete(
             get_watched_review_group_item_url(self.user.username, group.name))
-        self.assertFalse(group in
-                         self.user.get_profile().starred_groups.all())
+
+        profile = Profile.objects.get(user=self.user)
+        self.assertFalse(group in profile.starred_groups.all())
 
     def test_delete_watched_review_group_with_does_not_exist_error(self):
         """Testing the DELETE users/<username>/watched/review-groups/<id>/ API
@@ -179,7 +185,9 @@ class WatchedReviewGroupResourceTests(BaseWebAPITestCase):
         self.apiDelete(
             get_watched_review_group_item_url(user.username, group.name,
                                               self.local_site_name))
-        self.assertFalse(group in user.get_profile().starred_groups.all())
+
+        profile = Profile.objects.get(user=user)
+        self.assertFalse(group in profile.starred_groups.all())
 
     @add_fixtures(['test_site'])
     def test_delete_watched_review_group_with_site_no_access(self):

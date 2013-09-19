@@ -10,7 +10,7 @@ from django.utils.translation import ugettext_lazy as _
 from djblets.datagrid.grids import Column, DateTimeColumn, DataGrid
 from djblets.util.templatetags.djblets_utils import ageid
 
-from reviewboard.accounts.models import Profile
+from reviewboard.accounts.models import Profile, LocalSiteProfile
 from reviewboard.reviews.models import Group, ReviewRequest
 from reviewboard.reviews.templatetags.reviewtags import render_star
 from reviewboard.site.urlresolvers import local_site_reverse
@@ -61,7 +61,7 @@ class ReviewGroupStarColumn(StarColumn):
             return queryset
 
         try:
-            profile = user.get_profile()
+            profile = Profile.objects.get(user=user)
         except Profile.DoesNotExist:
             return queryset
 
@@ -89,7 +89,7 @@ class ReviewRequestStarColumn(StarColumn):
             return queryset
 
         try:
-            profile = user.get_profile()
+            profile = Profile.objects.get(user=user)
         except Profile.DoesNotExist:
             return queryset
 
@@ -578,7 +578,8 @@ class ReviewRequestDataGrid(DataGrid):
         # Add local timezone info to the columns
         user = self.request.user
         if user.is_authenticated():
-            self.timezone = pytz.timezone(user.get_profile().timezone)
+            profile, is_new = Profile.objects.get_or_create(user=user)
+            self.timezone = pytz.timezone(profile.timezone)
             self.time_added.timezone = self.timezone
             self.last_updated.timezone = self.timezone
             self.diff_updated.timezone = self.timezone
@@ -700,7 +701,7 @@ class DashboardDataGrid(ReviewRequestDataGrid):
                     user, user, local_site=self.local_site)
                 self.title = _(u"All Incoming Review Requests to My Groups")
         elif view == 'starred':
-            profile = user.get_profile()
+            profile, is_new = Profile.objects.get_or_create(user=user)
             self.queryset = profile.starred_review_requests.public(
                 user, local_site=self.local_site, status=None)
             self.title = _(u"Starred Review Requests")
@@ -789,7 +790,7 @@ class WatchedGroupDataGrid(GroupDataGrid):
                                                    *args, **kwargs)
 
         user = request.user
-        profile = user.get_profile()
+        profile, is_new = Profile.objects.get_or_create(user=user)
 
         self.queryset = profile.starred_groups.all()
         self.queryset = self.queryset.filter(local_site=local_site)
@@ -800,9 +801,9 @@ class WatchedGroupDataGrid(GroupDataGrid):
 
 def get_sidebar_counts(user, local_site):
     """Returns counts used for the Dashboard sidebar."""
-    profile = user.get_profile()
+    profile, is_new = Profile.objects.get_or_create(user=user)
 
-    site_profile, is_new = user.get_profile().site_profiles.get_or_create(
+    site_profile, is_new = LocalSiteProfile.objects.get_or_create(
         local_site=local_site,
         user=user,
         profile=profile)

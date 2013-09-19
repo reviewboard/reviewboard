@@ -379,10 +379,8 @@ def review_detail(request,
             visited.timestamp = timezone.now()
             visited.save()
 
-        # Try using get_profile first, because it caches for future calls.
-        # If it fails, it's okay. We don't rely upon it here.
         try:
-            profile = request.user.get_profile()
+            profile = Profile.objects.get(user=request.user)
             starred_review_requests = \
                 profile.starred_review_requests.filter(pk=review_request.pk)
             starred = (starred_review_requests.count() > 0)

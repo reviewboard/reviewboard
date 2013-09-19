@@ -1,6 +1,7 @@
 from django.contrib.auth.models import User
 from djblets.testing.decorators import add_fixtures
 
+from reviewboard.accounts.models import Profile
 from reviewboard.site.models import LocalSite
 from reviewboard.webapi.tests.base import BaseWebAPITestCase
 from reviewboard.webapi.tests.mimetypes import (user_item_mimetype,
@@ -57,7 +58,8 @@ class UserResourceTests(BaseWebAPITestCase):
         """Testing the GET users/<username>/ API"""
         username = 'doc'
         user = User.objects.get(username=username)
-        self.assertFalse(user.get_profile().is_private)
+        profile = Profile.objects.get(user=user)
+        self.assertFalse(profile.is_private)
 
         rsp = self.apiGet(get_user_item_url(username),
                           expected_mimetype=user_item_mimetype)
@@ -80,7 +82,8 @@ class UserResourceTests(BaseWebAPITestCase):
 
         username = 'doc'
         user = User.objects.get(username=username)
-        self.assertFalse(user.get_profile().is_private)
+        profile = Profile.objects.get(user=user)
+        self.assertFalse(profile.is_private)
 
         rsp = self.apiGet(get_user_item_url(username, self.local_site_name),
                           expected_mimetype=user_item_mimetype)
@@ -101,7 +104,7 @@ class UserResourceTests(BaseWebAPITestCase):
         username = 'admin'
         user = User.objects.get(username=username)
 
-        profile = user.get_profile()
+        profile, is_new = Profile.objects.get_or_create(user=user)
         profile.is_private = True
         profile.save()
 

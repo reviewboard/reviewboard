@@ -524,7 +524,7 @@ def render_star(user, obj):
 
     if not hasattr(obj, 'starred'):
         try:
-            profile = user.get_profile()
+            profile = Profile.objects.get(user=user)
         except Profile.DoesNotExist:
             return ""
 

@@ -119,7 +119,7 @@ class Profile(models.Model):
             site_profile, is_new = LocalSiteProfile.objects.get_or_create(
                 user=self.user,
                 local_site=review_request.local_site,
-                profile=self.user.get_profile())
+                profile=self)
 
             if is_new:
                 site_profile.save()
@@ -145,7 +145,7 @@ class Profile(models.Model):
             site_profile, is_new = LocalSiteProfile.objects.get_or_create(
                 user=self.user,
                 local_site=review_request.local_site,
-                profile=self.user.get_profile())
+                profile=self)
 
             if is_new:
                 site_profile.save()
@@ -223,8 +223,9 @@ def _is_user_profile_visible(self, user=None):
     user owns the profile, or the user is a staff member.
     """
     try:
+        profile = Profile.objects.get(user=self)
         return ((user and (user == self or user.is_staff)) or
-                not self.get_profile().is_private)
+                not profile.is_private)
     except Profile.DoesNotExist:
         return True
 
