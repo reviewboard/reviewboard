@@ -25,6 +25,13 @@ RB.DiffRevisionSelectorView = Backbone.View.extend({
     },
 
     /*
+     * Initialize the view.
+     */
+    initialize: function() {
+        this.listenTo(this.model, 'change', this.render);
+    },
+
+    /*
      * Render the view.
      */
     render: function() {
@@ -71,8 +78,6 @@ RB.DiffRevisionSelectorView = Backbone.View.extend({
         this._$interdiffLabel.text(interpolate(
             gettext('Changes between r%s and:'),
             [revision]));
-
-        this.listenTo(this.model, 'change', this.render);
 
         return this;
     },

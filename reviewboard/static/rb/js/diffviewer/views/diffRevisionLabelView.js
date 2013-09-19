@@ -25,6 +25,13 @@ RB.DiffRevisionLabelView = Backbone.View.extend({
         gettext('This is not the most recent revision of the diff. The <a href="#" class="select-latest">latest diff</a> is revision <%- latestRevision %>. <a href="#" class="select-changed">See what\'s changed.</a>')),
 
     /*
+     * Initialize the view.
+     */
+    initialize: function() {
+        this.listenTo(this.model, 'change', this.render);
+    },
+
+    /*
      * Render the view.
      */
     render: function() {
@@ -61,7 +68,6 @@ RB.DiffRevisionLabelView = Backbone.View.extend({
             header: header,
             detail: detail
         }));
-        this.listenTo(this.model, 'change', this.render);
 
         return this;
     },
