@@ -334,8 +334,9 @@ class ReviewRequestDraftResourceTests(BaseWebAPITestCase):
         self.assertTrue(review_request.public)
 
         self.assertEqual(len(mail.outbox), 1)
-        self.assertEqual(mail.outbox[0].subject,
-                         "Review Request %s: My Summary" % review_request.pk)
+        self.assertEqual(
+            mail.outbox[0].subject,
+            "Re: Review Request %s: My Summary" % review_request.pk)
         self.assertValidRecipients(["doc", "grumpy"])
 
     def test_put_reviewrequestdraft_publish_with_new_review_request(self):
