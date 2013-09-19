@@ -1,4 +1,5 @@
-from django import forms
+from django.core.exceptions import ValidationError
+from django.utils.translation import ugettext as _
 
 
 def validate_users(form, field='users'):
@@ -14,8 +15,8 @@ def validate_users(form, field='users'):
     if local_site:
         for user in users:
             if not user.local_site.filter(pk=local_site.pk).exists():
-                raise forms.ValidationError(
-                    ["The user %s is not a member of this site."
+                raise ValidationError(
+                    [_("The user %s is not a member of this site.")
                      % user.username])
 
     return users
@@ -33,7 +34,7 @@ def validate_review_groups(form, field='review_groups'):
 
     for group in groups:
         if group.local_site != local_site:
-            raise forms.ValidationError(
-                ["The review group %s does not exist." % group.name])
+            raise ValidationError(
+                [_("The review group %s does not exist.") % group.name])
 
     return groups

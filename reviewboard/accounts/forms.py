@@ -2,6 +2,7 @@ import re
 import sre_constants
 
 from django import forms
+from django.core.exceptions import ValidationError
 from django.forms import widgets
 from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext as _
@@ -94,7 +95,7 @@ class PreferencesForm(forms.Form):
         p1 = self.cleaned_data['password1']
         p2 = self.cleaned_data['password2']
         if p1 != p2:
-            raise forms.ValidationError('passwords do not match')
+            raise ValidationError(_('Passwords do not match'))
         return p2
 
 
@@ -146,13 +147,13 @@ class RegistrationForm(DjbletsRegistrationForm):
                     # as the reCAPTCHA widget itself displays the error
                     # message. However, this may be useful for testing or
                     # debugging.
-                    raise forms.ValidationError(
+                    raise ValidationError(
                         _("The text you entered didn't match what was "
                           "displayed"))
             else:
                 self.captcha_error_query_str = '&error=incorrect-captcha-sol'
 
-                raise forms.ValidationError(
+                raise ValidationError(
                     _('You need to respond to the captcha'))
 
         return super(RegistrationForm, self).clean()
@@ -281,7 +282,7 @@ class StandardAuthSettingsForm(SiteSettingsForm):
         key = self.cleaned_data['recaptcha_public_key'].strip()
 
         if self.cleaned_data['auth_registration_show_captcha'] and not key:
-            raise forms.ValidationError(_('This field is required.'))
+            raise ValidationError(_('This field is required.'))
 
         return key
 
@@ -290,7 +291,7 @@ class StandardAuthSettingsForm(SiteSettingsForm):
         key = self.cleaned_data['recaptcha_private_key'].strip()
 
         if self.cleaned_data['auth_registration_show_captcha'] and not key:
-            raise forms.ValidationError(_('This field is required.'))
+            raise ValidationError(_('This field is required.'))
 
         return key
 
@@ -471,7 +472,7 @@ class X509SettingsForm(SiteSettingsForm):
         try:
             re.compile(regex)
         except sre_constants.error, e:
-            raise forms.ValidationError(e)
+            raise ValidationError(e)
 
         return regex
 

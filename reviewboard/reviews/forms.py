@@ -2,6 +2,7 @@ import re
 
 from django import forms
 from django.contrib.admin.widgets import FilteredSelectMultiple
+from django.core.exceptions import ValidationError
 from django.utils.translation import ugettext as _
 
 from reviewboard.diffviewer import forms as diffviewer_forms
@@ -41,19 +42,19 @@ class DefaultReviewerForm(forms.ModelForm):
         try:
             re.compile(file_regex)
         except Exception, e:
-            raise forms.ValidationError(e)
+            raise ValidationError(e)
 
         return file_regex
 
     def clean(self):
         try:
             validate_users(self, 'people')
-        except forms.ValidationError, e:
+        except ValidationError, e:
             self._errors['people'] = self.error_class(e.messages)
 
         try:
             validate_review_groups(self, 'groups')
-        except forms.ValidationError, e:
+        except ValidationError, e:
             self._errors['groups'] = self.error_class(e.messages)
 
         # Now make sure the repositories are valid.

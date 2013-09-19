@@ -34,6 +34,7 @@ from django import forms
 from django.contrib.sites.models import Site
 from django.conf import settings
 from django.core.cache import DEFAULT_CACHE_ALIAS
+from django.core.exceptions import ValidationError
 from django.utils.translation import ugettext as _
 from djblets.log import restart_logging
 from djblets.siteconfig.forms import SiteSettingsForm
@@ -239,7 +240,7 @@ class GeneralSettingsForm(SiteSettingsForm):
         cache_host = self.cleaned_data['cache_host'].strip()
 
         if self.fields['cache_host'].required and not cache_host:
-            raise forms.ValidationError(
+            raise ValidationError(
                 _('A valid cache host must be provided.'))
 
         return cache_host
@@ -248,7 +249,7 @@ class GeneralSettingsForm(SiteSettingsForm):
         cache_path = self.cleaned_data['cache_path'].strip()
 
         if self.fields['cache_path'].required and not cache_path:
-            raise forms.ValidationError(
+            raise ValidationError(
                 _('A valid cache path must be provided.'))
 
         return cache_path
@@ -259,12 +260,12 @@ class GeneralSettingsForm(SiteSettingsForm):
 
         if index_file:
             if not os.path.isabs(index_file):
-                raise forms.ValidationError(
+                raise ValidationError(
                     _("The search index path must be absolute."))
 
             if (os.path.exists(index_file) and
                     not os.access(index_file, os.W_OK)):
-                raise forms.ValidationError(
+                raise ValidationError(
                     _('The search index path is not writable. Make sure the '
                       'web server has write access to it and its parent '
                       'directory.'))
@@ -624,13 +625,13 @@ class LoggingSettingsForm(SiteSettingsForm):
         logging_dir = self.cleaned_data['logging_directory']
 
         if not os.path.exists(logging_dir):
-            raise forms.ValidationError(_("This path does not exist."))
+            raise ValidationError(_("This path does not exist."))
 
         if not os.path.isdir(logging_dir):
-            raise forms.ValidationError(_("This is not a directory."))
+            raise ValidationError(_("This is not a directory."))
 
         if not os.access(logging_dir, os.W_OK):
-            raise forms.ValidationError(
+            raise ValidationError(
                 _("This path is not writable by the web server."))
 
         return logging_dir

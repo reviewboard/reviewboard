@@ -4,6 +4,7 @@ import sys
 
 from django import forms
 from django.contrib.admin.widgets import FilteredSelectMultiple
+from django.core.exceptions import ValidationError
 from django.utils.translation import ugettext_lazy as _
 from djblets.util.filesystem import is_exe_in_path
 
@@ -548,7 +549,7 @@ class RepositoryForm(forms.ModelForm):
                 hosting_account.username, hosting_account.hosting_url, plan,
                 tool_name, field_vars))
         except KeyError, e:
-            raise forms.ValidationError([unicode(e)])
+            raise ValidationError([unicode(e)])
 
     def _clean_bug_tracker_info(self):
         """Clean the bug tracker information.
@@ -789,7 +790,7 @@ class RepositoryForm(forms.ModelForm):
                 if self.local_site:
                     self.local_site_name = self.local_site.name
             except LocalSite.DoesNotExist, e:
-                raise forms.ValidationError([e])
+                raise ValidationError([e])
 
             self._clean_hosting_info()
             self._clean_bug_tracker_info()
@@ -846,7 +847,7 @@ class RepositoryForm(forms.ModelForm):
         except SSHKeyAssociationError, e:
             logging.warning('SSHKeyAssociationError for repository "%s" (%s)'
                             % (repository, e.message))
-            raise forms.ValidationError([
+            raise ValidationError([
                 _('Unable to associate SSH key with your hosting service. '
                   'This is most often the result of a problem communicating '
                   'with the hosting service. Please try again later or '
@@ -873,7 +874,7 @@ class RepositoryForm(forms.ModelForm):
             hosting_service = get_hosting_service(hosting_type)
 
             if not hosting_service:
-                raise forms.ValidationError(['Not a valid hosting service'])
+                raise ValidationError([_('Not a valid hosting service')])
 
         return hosting_type
 
@@ -891,7 +892,7 @@ class RepositoryForm(forms.ModelForm):
 
             if (not hosting_service or
                 not hosting_service.supports_bug_trackers):
-                raise forms.ValidationError(['Not a valid hosting service'])
+                raise ValidationError([_('Not a valid hosting service')])
 
         return bug_tracker_type
 
@@ -910,9 +911,9 @@ class RepositoryForm(forms.ModelForm):
             try:
                 imp.find_module(dep)
             except ImportError:
-                errors.append('The Python module "%s" is not installed.'
-                              'You may need to restart the server '
-                              'after installing it.' % dep)
+                errors.append(_('The Python module "%s" is not installed.'
+                                'You may need to restart the server '
+                                'after installing it.') % dep)
 
         for dep in scmtool_class.dependencies.get('executables', []):
             if not is_exe_in_path(dep):
@@ -921,11 +922,11 @@ class RepositoryForm(forms.ModelForm):
                 else:
                     exe_name = dep
 
-                errors.append('The executable "%s" is not in the path.' %
-                              exe_name)
+                errors.append(_('The executable "%s" is not in the path.')
+                              % exe_name)
 
         if errors:
-            raise forms.ValidationError(errors)
+            raise ValidationError(errors)
 
         return tool
 
@@ -1086,7 +1087,7 @@ class RepositoryForm(forms.ModelForm):
                                                          e.raw_expected_key,
                                                          e.raw_key)
                     except IOError, e:
-                        raise forms.ValidationError(e)
+                        raise ValidationError(e)
                 else:
                     self.hostkeyerror = e
                     break
@@ -1095,7 +1096,7 @@ class RepositoryForm(forms.ModelForm):
                     try:
                         self.ssh_client.add_host_key(e.hostname, e.raw_key)
                     except IOError, e:
-                        raise forms.ValidationError(e)
+                        raise ValidationError(e)
                 else:
                     self.hostkeyerror = e
                     break
@@ -1105,7 +1106,7 @@ class RepositoryForm(forms.ModelForm):
                         self.cert = scmtool_class.accept_certificate(
                             path, self.local_site_name, e.certificate)
                     except IOError, e:
-                        raise forms.ValidationError(e)
+                        raise ValidationError(e)
                 else:
                     self.certerror = e
                     break
@@ -1114,13 +1115,13 @@ class RepositoryForm(forms.ModelForm):
                     self.userkeyerror = e
                     break
 
-                raise forms.ValidationError(e)
+                raise ValidationError(e)
             except Exception, e:
                 try:
                     text = unicode(e)
                 except UnicodeDecodeError:
                     text = str(e).decode('ascii', 'replace')
-                raise forms.ValidationError(text)
+                raise ValidationError(text)
 
     def _get_field_data(self, field):
         return self[field].data or self.fields[field].initial
