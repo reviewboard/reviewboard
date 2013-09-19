@@ -27,10 +27,6 @@ settings_local.py
 django.mo
 djangojs.mo
 
-# Generated media files
-reviewboard/static/rb/css/*.css
-reviewboard/htdocs/static/
-
 # Directories/symlinks
 reviewboard/htdocs/media/djblets
 reviewboard/htdocs/media/uploaded
