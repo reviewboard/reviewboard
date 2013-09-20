@@ -29,16 +29,17 @@ from reviewboard import get_package_version, is_release, VERSION
 # prevent people on older versions from unintentionally trying to install
 # the source tarball, and failing.
 if sys.hexversion < 0x02050000:
-    sys.stderr.write('Review Board %s is incompatible with your version of '
-                     'Python.\n' % get_package_version())
-    sys.stderr.write('Please install Review Board 1.6.x, or '
-                     'upgrade\n')
-    sys.stderr.write('Python to a newer 2.x version (preferably 2.7).\n')
+    sys.stderr.write(
+        'Review Board %s is incompatible with your version of Python.\n'
+        'Please install Review Board 1.6.x or upgrade Python to at least '
+        '2.6.x (preferably 2.7).\n' % get_package_version())
     sys.exit(1)
 elif sys.hexversion < 0x02060000:
-    markdown_requirement = 'markdown==2.2.1'
-else:
-    markdown_requirement = 'markdown>=2.2.1'
+    sys.stderr.write(
+        'Review Board %s is incompatible with your version of Python.\n'
+        'Please install Review Board 1.7.x or upgrade Python to at least '
+        '2.6.x (preferably 2.7).\n' % get_package_version())
+    sys.exit(1)
 
 
 # Make sure we're actually in the directory containing setup.py.
@@ -192,7 +193,7 @@ setup(name=PACKAGE_NAME,
           'Djblets>=0.8.0,<0.9',
           'django-pipeline>=1.2.24,<1.3',
           'docutils',
-          markdown_requirement,
+          'markdown>=2.2.1',
           'mimeparse>=0.1.3',
           'paramiko>=1.9.0',
           'Pygments>=1.5',
