@@ -23,7 +23,7 @@ class ResourceListTests(BaseWebAPITestCase):
     #
 
     @add_fixtures(['test_site'])
-    def test_get_reviewrequests(self):
+    def test_get(self):
         """Testing the GET review-requests/ API"""
         self.create_review_request(publish=True)
         self.create_review_request(publish=True)
@@ -35,7 +35,7 @@ class ResourceListTests(BaseWebAPITestCase):
         self.assertEqual(len(rsp['review_requests']), 2)
 
     @add_fixtures(['test_site'])
-    def test_get_reviewrequests_with_site(self):
+    def test_get_with_site(self):
         """Testing the GET review-requests/ API with a local site"""
         self._login_user(local_site=True)
 
@@ -50,7 +50,7 @@ class ResourceListTests(BaseWebAPITestCase):
         self.assertEqual(len(rsp['review_requests']), 2)
 
     @add_fixtures(['test_site'])
-    def test_get_reviewrequests_with_site_no_access(self):
+    def test_get_with_site_no_access(self):
         """Testing the GET review-requests/ API
         with a local site and Permission Denied error
         """
@@ -58,7 +58,7 @@ class ResourceListTests(BaseWebAPITestCase):
                     expected_status=403)
 
     @add_fixtures(['test_site'])
-    def test_get_reviewrequests_with_status(self):
+    def test_get_with_status(self):
         """Testing the GET review-requests/?status= API"""
         self.create_review_request(publish=True, status='S')
         self.create_review_request(publish=True, status='S')
@@ -84,7 +84,7 @@ class ResourceListTests(BaseWebAPITestCase):
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(len(rsp['review_requests']), 6)
 
-    def test_get_reviewrequests_with_counts_only(self):
+    def test_get_with_counts_only(self):
         """Testing the GET review-requests/?counts-only=1 API"""
         self.create_review_request(publish=True)
         self.create_review_request(publish=True)
@@ -95,7 +95,7 @@ class ResourceListTests(BaseWebAPITestCase):
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(rsp['count'], 2)
 
-    def test_get_reviewrequests_with_to_groups(self):
+    def test_get_with_to_groups(self):
         """Testing the GET review-requests/?to-groups= API"""
         group = self.create_review_group(name='devgroup')
 
@@ -110,7 +110,7 @@ class ResourceListTests(BaseWebAPITestCase):
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(len(rsp['review_requests']), 1)
 
-    def test_get_reviewrequests_with_to_groups_and_status(self):
+    def test_get_with_to_groups_and_status(self):
         """Testing the GET review-requests/?to-groups=&status= API"""
         group = self.create_review_group(name='devgroup')
 
@@ -142,7 +142,7 @@ class ResourceListTests(BaseWebAPITestCase):
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(len(rsp['review_requests']), 2)
 
-    def test_get_reviewrequests_with_to_groups_and_counts_only(self):
+    def test_get_with_to_groups_and_counts_only(self):
         """Testing the GET review-requests/?to-groups=&counts-only=1 API"""
         group = self.create_review_group(name='devgroup')
 
@@ -159,7 +159,7 @@ class ResourceListTests(BaseWebAPITestCase):
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(rsp['count'], 2)
 
-    def test_get_reviewrequests_with_to_users(self):
+    def test_get_with_to_users(self):
         """Testing the GET review-requests/?to-users= API"""
         grumpy = User.objects.get(username='grumpy')
 
@@ -177,7 +177,7 @@ class ResourceListTests(BaseWebAPITestCase):
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(len(rsp['review_requests']), 2)
 
-    def test_get_reviewrequests_with_to_users_and_status(self):
+    def test_get_with_to_users_and_status(self):
         """Testing the GET review-requests/?to-users=&status= API"""
         grumpy = User.objects.get(username='grumpy')
 
@@ -209,7 +209,7 @@ class ResourceListTests(BaseWebAPITestCase):
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(len(rsp['review_requests']), 2)
 
-    def test_get_reviewrequests_with_to_users_and_counts_only(self):
+    def test_get_with_to_users_and_counts_only(self):
         """Testing the GET review-requests/?to-users=&counts-only=1 API"""
         grumpy = User.objects.get(username='grumpy')
 
@@ -229,7 +229,7 @@ class ResourceListTests(BaseWebAPITestCase):
         self.assertEqual(rsp['count'], 2)
 
     @add_fixtures(['test_site'])
-    def test_get_reviewrequests_with_to_users_directly(self):
+    def test_get_with_to_users_directly(self):
         """Testing the GET review-requests/?to-users-directly= API"""
         rsp = self.apiGet(get_review_request_list_url(), {
             'to-users-directly': 'doc',
@@ -238,7 +238,7 @@ class ResourceListTests(BaseWebAPITestCase):
         self.assertEqual(len(rsp['review_requests']),
                          ReviewRequest.objects.to_user_directly("doc").count())
 
-    def test_get_reviewrequests_with_to_users_directly_and_status(self):
+    def test_get_with_to_users_directly_and_status(self):
         """Testing the GET review-requests/?to-users-directly=&status= API"""
         url = get_review_request_list_url()
 
@@ -260,7 +260,7 @@ class ResourceListTests(BaseWebAPITestCase):
             len(rsp['review_requests']),
             ReviewRequest.objects.to_user_directly("doc", status='D').count())
 
-    def test_get_reviewrequests_with_to_users_directly_and_counts_only(self):
+    def test_get_with_to_users_directly_and_counts_only(self):
         """Testing the
         GET review-requests/?to-users-directly=&counts-only=1 API
         """
@@ -272,7 +272,7 @@ class ResourceListTests(BaseWebAPITestCase):
         self.assertEqual(rsp['count'],
                          ReviewRequest.objects.to_user_directly("doc").count())
 
-    def test_get_reviewrequests_with_from_user(self):
+    def test_get_with_from_user(self):
         """Testing the GET review-requests/?from-user= API"""
         rsp = self.apiGet(get_review_request_list_url(), {
             'from-user': 'grumpy',
@@ -281,7 +281,7 @@ class ResourceListTests(BaseWebAPITestCase):
         self.assertEqual(len(rsp['review_requests']),
                          ReviewRequest.objects.from_user("grumpy").count())
 
-    def test_get_reviewrequests_with_from_user_and_status(self):
+    def test_get_with_from_user_and_status(self):
         """Testing the GET review-requests/?from-user=&status= API"""
         url = get_review_request_list_url()
 
@@ -303,7 +303,7 @@ class ResourceListTests(BaseWebAPITestCase):
             len(rsp['review_requests']),
             ReviewRequest.objects.from_user("grumpy", status='D').count())
 
-    def test_get_reviewrequests_with_from_user_and_counts_only(self):
+    def test_get_with_from_user_and_counts_only(self):
         """Testing the GET review-requests/?from-user=&counts-only=1 API"""
         rsp = self.apiGet(get_review_request_list_url(), {
             'from-user': 'grumpy',
@@ -314,7 +314,7 @@ class ResourceListTests(BaseWebAPITestCase):
                          ReviewRequest.objects.from_user("grumpy").count())
 
     @add_fixtures(['test_site'])
-    def test_get_reviewrequests_with_ship_it_0(self):
+    def test_get_with_ship_it_0(self):
         """Testing the GET review-requests/?ship-it=0 API"""
         self.create_review_request(publish=True)
 
@@ -333,7 +333,7 @@ class ResourceListTests(BaseWebAPITestCase):
         self.assertEqual(len(rsp['review_requests']), q.count())
 
     @add_fixtures(['test_site'])
-    def test_get_reviewrequests_with_ship_it_1(self):
+    def test_get_with_ship_it_1(self):
         """Testing the GET review-requests/?ship-it=1 API"""
         self.create_review_request(publish=True)
 
@@ -352,7 +352,7 @@ class ResourceListTests(BaseWebAPITestCase):
         self.assertEqual(len(rsp['review_requests']), q.count())
 
     @add_fixtures(['test_site'])
-    def test_get_reviewrequests_with_time_added_from(self):
+    def test_get_with_time_added_from(self):
         """Testing the GET review-requests/?time-added-from= API"""
         start_index = 3
 
@@ -381,7 +381,7 @@ class ResourceListTests(BaseWebAPITestCase):
                 time_added__gte=r.time_added).count())
 
     @add_fixtures(['test_site'])
-    def test_get_reviewrequests_with_time_added_to(self):
+    def test_get_with_time_added_to(self):
         """Testing the GET review-requests/?time-added-to= API"""
         start_index = 3
 
@@ -409,7 +409,7 @@ class ResourceListTests(BaseWebAPITestCase):
                 public=True, status='P',
                 time_added__lt=r.time_added).count())
 
-    def test_get_reviewrequests_with_last_updated_from(self):
+    def test_get_with_last_updated_from(self):
         """Testing the GET review-requests/?last-updated-from= API"""
         start_index = 3
         public_review_requests = [
@@ -437,7 +437,7 @@ class ResourceListTests(BaseWebAPITestCase):
                 last_updated__gte=r.last_updated).count())
 
     @add_fixtures(['test_site'])
-    def test_get_reviewrequests_with_last_updated_to(self):
+    def test_get_with_last_updated_to(self):
         """Testing the GET review-requests/?last-updated-to= API"""
         start_index = 3
         public_review_requests = [
@@ -465,7 +465,7 @@ class ResourceListTests(BaseWebAPITestCase):
                 last_updated__lt=r.last_updated).count())
 
     @add_fixtures(['test_scmtools'])
-    def test_get_reviewrequest_with_repository_and_changenum(self):
+    def test_get_with_repository_and_changenum(self):
         """Testing the GET review-requests/?repository=&changenum= API"""
         review_request = self.create_review_request(create_repository=True,
                                                     publish=True)
@@ -488,7 +488,7 @@ class ResourceListTests(BaseWebAPITestCase):
                          review_request.commit)
 
     @add_fixtures(['test_scmtools'])
-    def test_get_reviewrequest_with_repository_and_commit_id(self):
+    def test_get_with_repository_and_commit_id(self):
         """Testing the GET review-requests/?repository=&commit_id= API
         with changenum backwards-compatibility
         """
@@ -521,7 +521,7 @@ class ResourceListTests(BaseWebAPITestCase):
     #
 
     @add_fixtures(['test_scmtools'])
-    def test_post_reviewrequests(self):
+    def test_post(self):
         """Testing the POST review-requests/ API"""
         repository = self.create_repository()
 
@@ -539,7 +539,7 @@ class ResourceListTests(BaseWebAPITestCase):
         return ReviewRequest.objects.get(pk=rsp['review_request']['id'])
 
     @add_fixtures(['test_scmtools'])
-    def test_post_reviewrequests_with_repository_name(self):
+    def test_post_with_repository_name(self):
         """Testing the POST review-requests/ API with a repository name"""
         repository = self.create_repository()
 
@@ -557,7 +557,7 @@ class ResourceListTests(BaseWebAPITestCase):
         return ReviewRequest.objects.get(pk=rsp['review_request']['id'])
 
     @add_fixtures(['test_scmtools'])
-    def test_post_reviewrequests_with_no_repository(self):
+    def test_post_with_no_repository(self):
         """Testing the POST review-requests/ API with no repository"""
         rsp = self.apiPost(
             get_review_request_list_url(),
@@ -573,7 +573,7 @@ class ResourceListTests(BaseWebAPITestCase):
         self.assertEqual(review_request.repository, None)
 
     @add_fixtures(['test_site', 'test_scmtools'])
-    def test_post_reviewrequests_with_site(self):
+    def test_post_with_site(self):
         """Testing the POST review-requests/ API with a local site"""
         self._login_user(local_site=True)
 
@@ -588,7 +588,7 @@ class ResourceListTests(BaseWebAPITestCase):
                          repository.name)
 
     @add_fixtures(['test_site', 'test_scmtools'])
-    def test_post_reviewrequests_with_site_no_access(self):
+    def test_post_with_site_no_access(self):
         """Testing the POST review-requests/ API
         with a local site and Permission Denied error
         """
@@ -600,7 +600,7 @@ class ResourceListTests(BaseWebAPITestCase):
             expected_status=403)
 
     @add_fixtures(['test_site', 'test_scmtools'])
-    def test_post_reviewrequests_with_site_invalid_repository_error(self):
+    def test_post_with_site_invalid_repository_error(self):
         """Testing the POST review-requests/ API
         with a local site and Invalid Repository error
         """
@@ -614,7 +614,7 @@ class ResourceListTests(BaseWebAPITestCase):
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], INVALID_REPOSITORY.code)
 
-    def test_post_reviewrequests_with_invalid_repository_error(self):
+    def test_post_with_invalid_repository_error(self):
         """Testing the POST review-requests/ API
         with Invalid Repository error
         """
@@ -626,7 +626,7 @@ class ResourceListTests(BaseWebAPITestCase):
         self.assertEqual(rsp['err']['code'], INVALID_REPOSITORY.code)
 
     @add_fixtures(['test_site', 'test_scmtools'])
-    def test_post_reviewrequests_with_no_site_invalid_repository_error(self):
+    def test_post_with_no_site_invalid_repository_error(self):
         """Testing the POST review-requests/ API with
         Invalid Repository error from a site-local repository
         """
@@ -640,7 +640,7 @@ class ResourceListTests(BaseWebAPITestCase):
         self.assertEqual(rsp['err']['code'], INVALID_REPOSITORY.code)
 
     @add_fixtures(['test_scmtools'])
-    def test_post_reviewrequests_with_submit_as(self):
+    def test_post_with_submit_as(self):
         """Testing the POST review-requests/?submit_as= API"""
         self.user.is_superuser = True
         self.user.save()
@@ -665,7 +665,7 @@ class ResourceListTests(BaseWebAPITestCase):
         ReviewRequest.objects.get(pk=rsp['review_request']['id'])
 
     @add_fixtures(['test_scmtools'])
-    def test_post_reviewrequests_with_submit_as_and_permission_denied_error(self):
+    def test_post_with_submit_as_and_permission_denied_error(self):
         """Testing the POST review-requests/?submit_as= API
         with Permission Denied error
         """
@@ -690,7 +690,7 @@ class ResourceItemTests(BaseWebAPITestCase):
     # HTTP DELETE tests
     #
 
-    def test_delete_reviewrequest(self):
+    def test_delete(self):
         """Testing the DELETE review-requests/<id>/ API"""
         self.user.user_permissions.add(
             Permission.objects.get(codename='delete_reviewrequest'))
@@ -707,7 +707,7 @@ class ResourceItemTests(BaseWebAPITestCase):
                           ReviewRequest.objects.get,
                           pk=review_request.pk)
 
-    def test_delete_reviewrequest_with_permission_denied_error(self):
+    def test_delete_with_permission_denied_error(self):
         """Testing the DELETE review-requests/<id>/ API
         with Permission Denied error
         """
@@ -720,7 +720,7 @@ class ResourceItemTests(BaseWebAPITestCase):
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
-    def test_delete_reviewrequest_with_does_not_exist_error(self):
+    def test_delete_with_does_not_exist_error(self):
         """Testing the DELETE review-requests/<id>/ API
         with Does Not Exist error
         """
@@ -735,7 +735,7 @@ class ResourceItemTests(BaseWebAPITestCase):
         self.assertEqual(rsp['err']['code'], DOES_NOT_EXIST.code)
 
     @add_fixtures(['test_site'])
-    def test_delete_reviewrequest_with_site(self):
+    def test_delete_with_site(self):
         """Testing the DELETE review-requests/<id>/ API with a lotal site"""
         user = User.objects.get(username='doc')
         user.user_permissions.add(
@@ -758,7 +758,7 @@ class ResourceItemTests(BaseWebAPITestCase):
     #
 
     @add_fixtures(['test_site'])
-    def test_get_reviewrequest(self):
+    def test_get(self):
         """Testing the GET review-requests/<id>/ API"""
         review_request = self.create_review_request(publish=True)
 
@@ -771,7 +771,7 @@ class ResourceItemTests(BaseWebAPITestCase):
                          review_request.summary)
 
     @add_fixtures(['test_site'])
-    def test_get_reviewrequest_with_site(self):
+    def test_get_with_site(self):
         """Testing the GET review-requests/<id>/ API with a local site"""
         self._login_user(local_site=True)
         review_request = self.create_review_request(publish=True,
@@ -788,7 +788,7 @@ class ResourceItemTests(BaseWebAPITestCase):
                          review_request.summary)
 
     @add_fixtures(['test_site'])
-    def test_get_reviewrequest_with_site_no_access(self):
+    def test_get_with_site_no_access(self):
         """Testing the GET review-requests/<id>/ API
         with a local site and Permission Denied error
         """
@@ -801,7 +801,7 @@ class ResourceItemTests(BaseWebAPITestCase):
                                                 self.local_site_name),
                     expected_status=403)
 
-    def test_get_reviewrequest_with_non_public_and_permission_denied_error(self):
+    def test_get_with_non_public_and_permission_denied_error(self):
         """Testing the GET review-requests/<id>/ API
         with non-public and Permission Denied error
         """
@@ -814,7 +814,7 @@ class ResourceItemTests(BaseWebAPITestCase):
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
-    def test_get_reviewrequest_with_invite_only_group_and_permission_denied_error(self):
+    def test_get_with_invite_only_group_and_permission_denied_error(self):
         """Testing the GET review-requests/<id>/ API
         with invite-only group and Permission Denied error
         """
@@ -833,7 +833,7 @@ class ResourceItemTests(BaseWebAPITestCase):
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
     @add_fixtures(['test_site'])
-    def test_get_reviewrequest_with_invite_only_group_and_target_user(self):
+    def test_get_with_invite_only_group_and_target_user(self):
         """Testing the GET review-requests/<id>/ API
         with invite-only group and target user
         """
@@ -855,7 +855,7 @@ class ResourceItemTests(BaseWebAPITestCase):
                          review_request.summary)
 
     @add_fixtures(['test_site'])
-    def test_get_reviewrequest_not_modified(self):
+    def test_get_not_modified(self):
         """Testing the GET review-requests/<id>/ API
         with Not Modified response
         """
@@ -868,7 +868,7 @@ class ResourceItemTests(BaseWebAPITestCase):
     # HTTP PUT tests
     #
 
-    def test_put_reviewrequest_status_discarded(self):
+    def test_put_status_discarded(self):
         """Testing the PUT review-requests/<id>/?status=discarded API"""
         r = self.create_review_request(submitter=self.user, publish=True)
 
@@ -892,7 +892,7 @@ class ResourceItemTests(BaseWebAPITestCase):
         self.assertEqual(fc_status['old'][0], 'P')
         self.assertEqual(fc_status['new'][0], 'D')
 
-    def test_put_reviewrequest_status_discarded_with_permission_denied(self):
+    def test_put_status_discarded_with_permission_denied(self):
         """Testing the PUT review-requests/<id>/?status=discarded API
         with Permission Denied
         """
@@ -907,7 +907,7 @@ class ResourceItemTests(BaseWebAPITestCase):
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
-    def test_put_reviewrequest_status_pending(self):
+    def test_put_status_pending(self):
         """Testing the PUT review-requests/<id>/?status=pending API"""
         r = self.create_review_request(submitter=self.user, publish=True)
         r.close(ReviewRequest.SUBMITTED)
@@ -923,7 +923,7 @@ class ResourceItemTests(BaseWebAPITestCase):
         r = ReviewRequest.objects.get(pk=r.id)
         self.assertEqual(r.status, 'P')
 
-    def test_put_reviewrequest_status_submitted(self):
+    def test_put_status_submitted(self):
         """Testing the PUT review-requests/<id>/?status=submitted API"""
         r = self.create_review_request(submitter=self.user, publish=True)
 
@@ -948,7 +948,7 @@ class ResourceItemTests(BaseWebAPITestCase):
         self.assertEqual(fc_status['new'][0], 'S')
 
     @add_fixtures(['test_site'])
-    def test_put_reviewrequest_status_submitted_with_site(self):
+    def test_put_status_submitted_with_site(self):
         """Testing the PUT review-requests/<id>/?status=submitted API
         with a local site
         """
@@ -977,7 +977,7 @@ class ResourceItemTests(BaseWebAPITestCase):
         self.assertEqual(fc_status['new'][0], 'S')
 
     @add_fixtures(['test_site'])
-    def test_put_reviewrequest_status_submitted_with_site_no_access(self):
+    def test_put_status_submitted_with_site_no_access(self):
         """Testing the PUT review-requests/<id>/?status=submitted API
         with a local site and Permission Denied error
         """

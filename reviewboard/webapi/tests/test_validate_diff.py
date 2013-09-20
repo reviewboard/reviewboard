@@ -17,7 +17,7 @@ class ResourceTests(BaseWebAPITestCase):
     # HTTP POST tests
     #
 
-    def test_post_diff(self):
+    def test_post(self):
         """Testing the POST validation/diffs/ API"""
         repository = self.create_repository(tool_name='Test')
 
@@ -37,7 +37,7 @@ class ResourceTests(BaseWebAPITestCase):
 
         f.close()
 
-    def test_post_diff_with_missing_basedir(self):
+    def test_post_with_missing_basedir(self):
         """Testing the POST validations/diffs/ API with a missing basedir"""
         repository = self.create_repository(tool_name='Test')
 
@@ -58,7 +58,7 @@ class ResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['err']['code'], INVALID_FORM_DATA.code)
         self.assertTrue('basedir' in rsp['fields'])
 
-    def test_post_diff_with_files_not_found(self):
+    def test_post_with_files_not_found(self):
         """Testing the POST validation/diffs/ API
         with source files not found
         """
@@ -83,7 +83,7 @@ class ResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['file'], 'missing-file')
         self.assertEqual(rsp['revision'], 'd6613f0')
 
-    def test_post_diff_with_parse_error(self):
+    def test_post_with_parse_error(self):
         """Testing the POST validation/diffs/ API with a malformed diff file"""
         repository = self.create_repository(tool_name='Test')
 

@@ -46,7 +46,7 @@ class ResourceListTests(BaseTestCase):
     # HTTP POST tests
     #
 
-    def test_post_screenshot_comments(self):
+    def test_post(self):
         """Testing the
         POST review-requests/<id>/reviews/<id>/screenshot-comments/ API
         """
@@ -68,7 +68,7 @@ class ResourceListTests(BaseTestCase):
         self.assertEqual(rsp['screenshot_comment']['h'], h)
 
     @add_fixtures(['test_site'])
-    def test_post_screenshot_comments_with_site(self):
+    def test_post_with_site(self):
         """Testing the
         POST review-requests/<id>/reviews/<id>/screenshot-comments/ API
         with a local site
@@ -93,7 +93,7 @@ class ResourceListTests(BaseTestCase):
         self.assertEqual(rsp['screenshot_comment']['w'], w)
         self.assertEqual(rsp['screenshot_comment']['h'], h)
 
-    def test_post_screenshot_comment_with_issue(self):
+    def test_post_with_issue(self):
         """Testing the
         POST review-requests/<id>/reviews/<id>/screenshot-comments/ API
         with an issue
@@ -113,7 +113,7 @@ class ResourceListTests(BaseTestCase):
         self.assertTrue(rsp['screenshot_comments'][0]['issue_opened'])
 
     @add_fixtures(['test_site'])
-    def test_post_screenshot_comments_with_site_no_access(self):
+    def test_post_with_site_no_access(self):
         """Testing the
         POST review-requests/<id>/reviews/<id>/screenshot-comments/ API
         with a local site and Permission Denied error
@@ -146,7 +146,7 @@ class ResourceItemTests(BaseTestCase):
     # HTTP DELETE tests
     #
 
-    def test_delete_screenshot_comment(self):
+    def test_delete(self):
         """Testing the
         DELETE review-requests/<id>/reviews/<id>/screenshot-comments/<id>/ API
         """
@@ -170,7 +170,7 @@ class ResourceItemTests(BaseTestCase):
         self.assertEqual(len(rsp['screenshot_comments']), 0)
 
     @add_fixtures(['test_site'])
-    def test_delete_screenshot_comment_with_local_site(self):
+    def test_delete_with_local_site(self):
         """Testing the
         DELETE review-requests/<id>/reviews/<id>/screenshot-comments/<id> API
         with a local site
@@ -200,7 +200,7 @@ class ResourceItemTests(BaseTestCase):
         self.assertEqual(len(rsp['screenshot_comments']), 0)
 
     @add_fixtures(['test_site'])
-    def test_delete_screenshot_comment_with_local_site_no_access(self):
+    def test_delete_with_local_site_no_access(self):
         """Testing the
         DELETE review-requests/<id>/reviews/<id>/screenshot-comments/<id> API
         with a local site and Permission Denied error
@@ -230,7 +230,7 @@ class ResourceItemTests(BaseTestCase):
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
-    def test_delete_screenshot_comment_with_does_not_exist_error(self):
+    def test_delete_with_does_not_exist_error(self):
         """Testing the
         DELETE review-requests/<id>/reviews/<id>/screenshot-comments/<id>/ API
         with Does Not Exist error
@@ -248,7 +248,7 @@ class ResourceItemTests(BaseTestCase):
     # HTTP PUT tests
     #
 
-    def test_put_screenshot_comment_with_issue(self):
+    def test_put_with_issue(self):
         """Testing the
         PUT review-requests/<id>/reviews/<id>/screenshot-comments/<id>/ API
         with an issue, removing issue_opened
@@ -263,7 +263,7 @@ class ResourceItemTests(BaseTestCase):
         self.assertEqual(rsp['stat'], 'ok')
         self.assertFalse(rsp['screenshot_comment']['issue_opened'])
 
-    def test_put_screenshot_comment_issue_status_before_publish(self):
+    def test_put_issue_status_before_publish(self):
         """Testing the
         PUT review-requests/<id>/reviews/<id>/screenshot-comments/<id> API
         with an issue, before review is published
@@ -283,7 +283,7 @@ class ResourceItemTests(BaseTestCase):
         # The issue_status should still be "open"
         self.assertEqual(rsp['screenshot_comment']['issue_status'], 'open')
 
-    def test_put_screenshot_comment_issue_status_after_publish(self):
+    def test_put_issue_status_after_publish(self):
         """Testing the
         PUT review-requests/<id>/reviews/<id>/screenshot-comments/<id>/ API
         with an issue, after review is published
@@ -298,7 +298,7 @@ class ResourceItemTests(BaseTestCase):
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(rsp['screenshot_comment']['issue_status'], 'resolved')
 
-    def test_put_screenshot_comment_issue_status_by_issue_creator(self):
+    def test_put_issue_status_by_issue_creator(self):
         """Testing the
         PUT review-requests/<id>/reviews/<id>/screenshot-comments/<id>/ API
         permissions for issue creator
@@ -320,7 +320,7 @@ class ResourceItemTests(BaseTestCase):
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(rsp['screenshot_comment']['issue_status'], 'dropped')
 
-    def test_put_screenshot_comment_issue_status_by_uninvolved_user(self):
+    def test_put_issue_status_by_uninvolved_user(self):
         """Testing the
         PUT review-requests/<id>/reviews/<id>/screenshot-comments/<id>/ API
         permissions for an uninvolved user

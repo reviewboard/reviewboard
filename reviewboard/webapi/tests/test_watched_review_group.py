@@ -19,7 +19,7 @@ class ResourceListTests(BaseWebAPITestCase):
     # HTTP GET tests
     #
 
-    def test_get_watched_review_groups(self):
+    def test_get(self):
         """Testing the GET users/<username>/watched/review-groups/ API"""
         group = self.create_review_group()
         profile = Profile.objects.get(user=self.user)
@@ -40,7 +40,7 @@ class ResourceListTests(BaseWebAPITestCase):
                              watched[id].name)
 
     @add_fixtures(['test_site'])
-    def test_get_watched_review_groups_with_site(self):
+    def test_get_with_site(self):
         """Testing the GET users/<username>/watched/review-groups/ API
         with a local site
         """
@@ -65,7 +65,7 @@ class ResourceListTests(BaseWebAPITestCase):
                              watched[id].name)
 
     @add_fixtures(['test_site'])
-    def test_get_watched_review_groups_with_site_no_access(self):
+    def test_get_with_site_no_access(self):
         """Testing the GET users/<username>/watched/review-groups/ API
         with a local site and Permission Denied error
         """
@@ -80,7 +80,7 @@ class ResourceListTests(BaseWebAPITestCase):
     # HTTP POST tests
     #
 
-    def test_post_watched_review_group(self):
+    def test_post(self):
         """Testing the POST users/<username>/watched/review-groups/ API"""
         group = self.create_review_group()
 
@@ -94,7 +94,7 @@ class ResourceListTests(BaseWebAPITestCase):
 
         return group
 
-    def test_post_watched_review_group_with_does_not_exist_error(self):
+    def test_post_with_does_not_exist_error(self):
         """Testing the POST users/<username>/watched/review-groups/ API
         with Does Not Exist error
         """
@@ -106,7 +106,7 @@ class ResourceListTests(BaseWebAPITestCase):
         self.assertEqual(rsp['err']['code'], DOES_NOT_EXIST.code)
 
     @add_fixtures(['test_site'])
-    def test_post_watched_review_group_with_site(self):
+    def test_post_with_site(self):
         """Testing the POST users/<username>/watched/review-groups/ API
         with a local site
         """
@@ -125,7 +125,7 @@ class ResourceListTests(BaseWebAPITestCase):
         return group
 
     @add_fixtures(['test_site'])
-    def test_post_watched_review_group_with_site_does_not_exist_error(self):
+    def test_post_with_site_does_not_exist_error(self):
         """Testing the POST users/<username>/watched/review-groups/ API
         with a local site and Does Not Exist error
         """
@@ -139,7 +139,7 @@ class ResourceListTests(BaseWebAPITestCase):
         self.assertEqual(rsp['err']['code'], DOES_NOT_EXIST.code)
 
     @add_fixtures(['test_site'])
-    def test_post_watched_review_group_with_site_no_access(self):
+    def test_post_with_site_no_access(self):
         """Testing the POST users/<username>/watched/review-groups/ API
         with a local site and Permission Denied error
         """
@@ -160,7 +160,7 @@ class ResourceItemTests(BaseWebAPITestCase):
     # HTTP DELETE tests
     #
 
-    def test_delete_watched_review_group(self):
+    def test_delete(self):
         """Testing the DELETE users/<username>/watched/review-groups/<id>/ API
         """
         # First, star it.
@@ -173,7 +173,7 @@ class ResourceItemTests(BaseWebAPITestCase):
 
         self.assertFalse(group in profile.starred_groups.all())
 
-    def test_delete_watched_review_group_with_does_not_exist_error(self):
+    def test_delete_with_does_not_exist_error(self):
         """Testing the DELETE users/<username>/watched/review-groups/<id>/ API
         with Does Not Exist error
         """
@@ -185,7 +185,7 @@ class ResourceItemTests(BaseWebAPITestCase):
         self.assertEqual(rsp['err']['code'], DOES_NOT_EXIST.code)
 
     @add_fixtures(['test_site'])
-    def test_delete_watched_review_group_with_site(self):
+    def test_delete_with_site(self):
         """Testing the DELETE users/<username>/watched/review-groups/<id>/ API
         with a local site
         """
@@ -200,7 +200,7 @@ class ResourceItemTests(BaseWebAPITestCase):
         self.assertFalse(group in profile.starred_groups.all())
 
     @add_fixtures(['test_site'])
-    def test_delete_watched_review_group_with_site_no_access(self):
+    def test_delete_with_site_no_access(self):
         """Testing the DELETE users/<username>/watched/review-groups/<id>/ API
         with a local site and Permission Denied error
         """

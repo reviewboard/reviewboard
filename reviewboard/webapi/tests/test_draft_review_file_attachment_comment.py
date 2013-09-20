@@ -15,7 +15,7 @@ class ResourceListTests(BaseWebAPITestCase):
     # HTTP GET tests
     #
 
-    def test_get_review_file_attachment_comments(self):
+    def test_get(self):
         """Testing the
         GET review-requests/<id>/reviews/draft/file-attachment-comments/ API
         """
@@ -34,7 +34,7 @@ class ResourceListTests(BaseWebAPITestCase):
                          comment.text)
 
     @add_fixtures(['test_site'])
-    def test_get_review_file_attachment_comments_with_site(self):
+    def test_get_with_site(self):
         """Testing the
         GET review-requests/<id>/reviews/draft/file-attachment-comments/ APIs
         with a local site

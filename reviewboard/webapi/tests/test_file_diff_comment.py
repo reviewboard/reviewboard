@@ -14,7 +14,7 @@ class ResourceListTests(BaseWebAPITestCase):
     # HTTP GET tests
     #
 
-    def test_get_comments(self):
+    def test_get(self):
         """Testing the
         GET review-requests/<id>/diffs/<revision>/files/<id>/diff-comments/ API
         """
@@ -35,7 +35,7 @@ class ResourceListTests(BaseWebAPITestCase):
         self.assertEqual(len(rsp['diff_comments']), 1)
         self.assertEqual(rsp['diff_comments'][0]['text'], comment.text)
 
-    def test_get_comments_as_anonymous(self):
+    def test_get_as_anonymous(self):
         """Testing the
         GET review-requests/<id>/diffs/<revision>/files/<id>/diff-comments/ API
         as an anonymous user
@@ -60,7 +60,7 @@ class ResourceListTests(BaseWebAPITestCase):
         self.assertEqual(rsp['diff_comments'][0]['text'], comment.text)
 
     @add_fixtures(['test_site'])
-    def test_get_comments_with_site(self):
+    def test_get_with_site(self):
         """Testing the
         GET review-requests/<id>/diffs/<revision>/files/<id>/diff-comments/ API
         with a local site
@@ -87,7 +87,7 @@ class ResourceListTests(BaseWebAPITestCase):
         self.assertEqual(rsp['diff_comments'][0]['text'], comment.text)
 
     @add_fixtures(['test_site'])
-    def test_get_comments_with_site_no_access(self):
+    def test_get_with_site_no_access(self):
         """Testing the
         GET review-requests/<id>/diffs/<revision>/files/<id>/diff-comments/ API
         with a local site and Permission Denied error
@@ -113,7 +113,7 @@ class ResourceListTests(BaseWebAPITestCase):
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
-    def test_get_comments_with_line(self):
+    def test_get_with_line(self):
         """Testing the
         GET review-requests/<id>/diffs/<revision>/files/<id>/diff-comments/ API
         with ?line=

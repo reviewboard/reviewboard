@@ -22,7 +22,7 @@ class ResourceListTests(BaseWebAPITestCase):
     # HTTP GET tests
     #
 
-    def test_get_changes(self):
+    def test_get(self):
         """Testing the GET review-requests/<id>/changes/ API"""
         review_request = self.create_review_request(publish=True)
 
@@ -56,7 +56,7 @@ class ResourceItemTests(BaseWebAPITestCase):
     # HTTP GET tests
     #
 
-    def test_get_change(self):
+    def test_get(self):
         """Testing the GET review-requests/<id>/changes/<id>/ API"""
         def write_fields(obj, index):
             for field, data in test_data.iteritems():
@@ -233,7 +233,7 @@ class ResourceItemTests(BaseWebAPITestCase):
         self.assertEqual(screenshot_data['screenshot']['id'], screenshot3.pk)
 
     @add_fixtures(['test_site'])
-    def test_get_change_not_modified(self):
+    def test_get_not_modified(self):
         """Testing the GET review-requests/<id>/changes/<id>/ API
         with Not Modified response
         """

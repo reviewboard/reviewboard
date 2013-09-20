@@ -75,7 +75,7 @@ class ResourceListTests(BaseRepositoryTests):
     # HTTP GET tests
     #
 
-    def test_get_repositories(self):
+    def test_get(self):
         """Testing the GET repositories/ API"""
         rsp = self.apiGet(get_repository_list_url(),
                           expected_mimetype=repository_list_mimetype)
@@ -84,7 +84,7 @@ class ResourceListTests(BaseRepositoryTests):
                          Repository.objects.accessible(self.user).count())
 
     @add_fixtures(['test_site'])
-    def test_get_repositories_with_site(self):
+    def test_get_with_site(self):
         """Testing the GET repositories/ API with a local site"""
         self._login_user(local_site=True)
         rsp = self.apiGet(get_repository_list_url(self.local_site_name),
@@ -94,7 +94,7 @@ class ResourceListTests(BaseRepositoryTests):
                              local_site__name=self.local_site_name).count())
 
     @add_fixtures(['test_site'])
-    def test_get_repositories_with_show_visible(self):
+    def test_get_with_show_visible(self):
         """Testing the GET repositories/ API with show_invisible=True"""
         rsp = self.apiGet(get_repository_list_url(),
                           query={'show-invisible': True},
@@ -105,7 +105,7 @@ class ResourceListTests(BaseRepositoryTests):
                              self.user, visible_only=False).count())
 
     @add_fixtures(['test_site'])
-    def test_get_repositories_with_site_no_access(self):
+    def test_get_with_site_no_access(self):
         """Testing the GET repositories/ API
         with a local site and Permission Denied error
         """
@@ -116,18 +116,18 @@ class ResourceListTests(BaseRepositoryTests):
     # HTTP POST tests
     #
 
-    def test_post_repository(self):
+    def test_post(self):
         """Testing the POST repositories/ API"""
         self._login_user(admin=True)
         self._post_repository(False)
 
-    def test_post_repository_with_visible_False(self):
+    def test_post_with_visible_False(self):
         """Testing the POST repositories/ API with visible=False"""
         self._login_user(admin=True)
         rsp = self._post_repository(False, data={'visible': False})
         self.assertEqual(rsp['repository']['visible'], False)
 
-    def test_post_repository_with_bad_host_key(self):
+    def test_post_with_bad_host_key(self):
         """Testing the POST repositories/ API with Bad Host Key error"""
         hostname = 'example.com'
         key = key1
@@ -150,7 +150,7 @@ class ResourceListTests(BaseRepositoryTests):
         self.assertEqual(rsp['expected_key'], expected_key.get_base64())
         self.assertEqual(rsp['key'], key.get_base64())
 
-    def test_post_repository_with_bad_host_key_and_trust_host(self):
+    def test_post_with_bad_host_key_and_trust_host(self):
         """Testing the POST repositories/ API
         with Bad Host Key error and trust_host=1
         """
@@ -180,7 +180,7 @@ class ResourceListTests(BaseRepositoryTests):
 
         self.assertTrue(saw['replace_host_key'])
 
-    def test_post_repository_with_unknown_host_key(self):
+    def test_post_with_unknown_host_key(self):
         """Testing the POST repositories/ API with Unknown Host Key error"""
         hostname = 'example.com'
         key = key1
@@ -200,7 +200,7 @@ class ResourceListTests(BaseRepositoryTests):
         self.assertEqual(rsp['hostname'], hostname)
         self.assertEqual(rsp['key'], key.get_base64())
 
-    def test_post_repository_with_unknown_host_key_and_trust_host(self):
+    def test_post_with_unknown_host_key_and_trust_host(self):
         """Testing the POST repositories/ API
         with Unknown Host Key error and trust_host=1
         """
@@ -228,7 +228,7 @@ class ResourceListTests(BaseRepositoryTests):
 
         self.assertTrue(saw['add_host_key'])
 
-    def test_post_repository_with_unknown_cert(self):
+    def test_post_with_unknown_cert(self):
         """Testing the POST repositories/ API with Unknown Certificate error"""
         class Certificate(object):
             failures = ['failures']
@@ -259,7 +259,7 @@ class ResourceListTests(BaseRepositoryTests):
         self.assertEqual(rsp['certificate']['valid']['until'],
                          cert.valid_until)
 
-    def test_post_repository_with_unknown_cert_and_trust_host(self):
+    def test_post_with_unknown_cert_and_trust_host(self):
         """Testing the POST repositories/ API
         with Unknown Certificate error and trust_host=1
         """
@@ -299,7 +299,7 @@ class ResourceListTests(BaseRepositoryTests):
         self.assertTrue('cert' in repository.extra_data)
         self.assertEqual(repository.extra_data['cert']['fingerprint'], '123')
 
-    def test_post_repository_with_missing_user_key(self):
+    def test_post_with_missing_user_key(self):
         """Testing the POST repositories/ API with Missing User Key error"""
         @classmethod
         def _check_repository(cls, *args, **kwargs):
@@ -313,7 +313,7 @@ class ResourceListTests(BaseRepositoryTests):
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], MISSING_USER_KEY.code)
 
-    def test_post_repository_with_authentication_error(self):
+    def test_post_with_authentication_error(self):
         """Testing the POST repositories/ API with Authentication Error"""
         @classmethod
         def _check_repository(cls, *args, **kwargs):
@@ -328,12 +328,12 @@ class ResourceListTests(BaseRepositoryTests):
         self.assertTrue('reason' in rsp)
 
     @add_fixtures(['test_site'])
-    def test_post_repository_with_site(self):
+    def test_post_with_site(self):
         """Testing the POST repositories/ API with a local site"""
         self._login_user(local_site=True, admin=True)
         self._post_repository(True)
 
-    def test_post_repository_full_info(self):
+    def test_post_full_info(self):
         """Testing the POST repositories/ API with all available info"""
         self._login_user(admin=True)
         self._post_repository(False, {
@@ -346,13 +346,13 @@ class ResourceListTests(BaseRepositoryTests):
             'raw_file_url': 'http://example.com/<filename>/<version>',
         })
 
-    def test_post_repository_with_no_access(self):
+    def test_post_with_no_access(self):
         """Testing the POST repositories/ API with no access"""
         self._login_user()
         self._post_repository(False, expected_status=403)
 
     @add_fixtures(['test_site'])
-    def test_post_repository_with_site_no_access(self):
+    def test_post_with_site_no_access(self):
         """Testing the POST repositories/ API
         with a local site and no access
         """
@@ -405,7 +405,7 @@ class ResourceItemTests(BaseRepositoryTests):
     # HTTP DELETE tests
     #
 
-    def test_delete_repository(self):
+    def test_delete(self):
         """Testing the DELETE repositories/<id>/ API"""
         self._login_user(admin=True)
         repo_id = self._delete_repository(False, with_review_request=True)
@@ -422,7 +422,7 @@ class ResourceItemTests(BaseRepositoryTests):
                           pk=repo_id)
 
     @add_fixtures(['test_site'])
-    def test_delete_repository_with_site(self):
+    def test_delete_with_site(self):
         """Testing the DELETE repositories/<id>/ API with a local site"""
         self._login_user(local_site=True, admin=True)
         repo_id = self._delete_repository(True, with_review_request=True)
@@ -441,13 +441,13 @@ class ResourceItemTests(BaseRepositoryTests):
                           Repository.objects.get,
                           pk=repo_id)
 
-    def test_delete_repository_with_no_access(self):
+    def test_delete_with_no_access(self):
         """Testing the DELETE repositories/<id>/ API with no access"""
         self._login_user()
         self._delete_repository(False, expected_status=403)
 
     @add_fixtures(['test_site'])
-    def test_delete_repository_with_site_no_access(self):
+    def test_delete_with_site_no_access(self):
         """Testing the DELETE repositories/<id>/ API
         with a local site and no access
         """
@@ -458,7 +458,7 @@ class ResourceItemTests(BaseRepositoryTests):
     # HTTP PUT tests
     #
 
-    def test_put_repository(self):
+    def test_put(self):
         """Testing the PUT repositories/<id>/ API"""
         self._login_user(admin=True)
         self._put_repository(False, {
@@ -472,7 +472,7 @@ class ResourceItemTests(BaseRepositoryTests):
         })
 
     @add_fixtures(['test_site'])
-    def test_put_repository_with_site(self):
+    def test_put_with_site(self):
         """Testing the PUT repositories/<id>/ API with a local site"""
         self._login_user(local_site=True, admin=True)
         self._put_repository(True, {
@@ -485,20 +485,20 @@ class ResourceItemTests(BaseRepositoryTests):
             'raw_file_url': 'http://example.com/<filename>/<version>',
         })
 
-    def test_put_repository_with_no_access(self):
+    def test_put_with_no_access(self):
         """Testing the PUT repositories/<id>/ API with no access"""
         self._login_user()
         self._put_repository(False, expected_status=403)
 
     @add_fixtures(['test_site'])
-    def test_put_repository_with_site_no_access(self):
+    def test_put_with_site_no_access(self):
         """Testing the PUT repositories/<id>/ API
         with a local site and no access
         """
         self._login_user(local_site=True)
         self._put_repository(False, expected_status=403)
 
-    def test_put_repository_with_archive(self):
+    def test_put_with_archive(self):
         """Testing the PUT repositories/<id>/ API with archive_name=True"""
         self._login_user(admin=True)
         repo_id = self._put_repository(False, {'archive_name': True})

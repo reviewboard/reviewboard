@@ -14,7 +14,7 @@ class ResourceListTests(BaseWebAPITestCase):
     # HTTP GET tests
     #
 
-    def test_get_screenshots_with_invalid_review_request_id(self):
+    def test_get_with_invalid_review_request_id(self):
         """Testing the GET review-requests/<id>/screenshots/ API
         with an invalid review request ID
         """
@@ -27,7 +27,7 @@ class ResourceListTests(BaseWebAPITestCase):
     # HTTP POST tests
     #
 
-    def test_post_screenshots(self):
+    def test_post(self):
         """Testing the POST review-requests/<id>/screenshots/ API"""
         review_request = self.create_review_request(publish=True,
                                                     submitter=self.user)
@@ -42,7 +42,7 @@ class ResourceListTests(BaseWebAPITestCase):
 
         self.assertEqual(rsp['stat'], 'ok')
 
-    def test_post_screenshots_with_permission_denied_error(self):
+    def test_post_with_permission_denied_error(self):
         """Testing the POST review-requests/<id>/screenshots/ API
         with Permission Denied error
         """
@@ -64,7 +64,7 @@ class ResourceListTests(BaseWebAPITestCase):
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
     @add_fixtures(['test_site'])
-    def test_post_screenshots_with_site(self):
+    def test_post_with_site(self):
         """Testing the POST review-requests/<id>/screenshots/ API
         with a local site
         """
@@ -85,7 +85,7 @@ class ResourceListTests(BaseWebAPITestCase):
         self.assertEqual(rsp['stat'], 'ok')
 
     @add_fixtures(['test_site'])
-    def test_post_screenshots_with_site_no_access(self):
+    def test_post_with_site_no_access(self):
         """Testing the POST review-requests/<id>/screenshots/ API
         with a local site and Permission Denied error
         """

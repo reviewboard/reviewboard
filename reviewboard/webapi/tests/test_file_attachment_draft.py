@@ -18,7 +18,7 @@ class ResourceListTests(BaseWebAPITestCase):
     # HTTP POST tests
     #
 
-    def test_post_file_attachments(self):
+    def test_post(self):
         """Testing the POST review-requests/<id>/draft/file-attachments/ API"""
         review_request = self.create_review_request(submitter=self.user)
 
@@ -32,7 +32,7 @@ class ResourceListTests(BaseWebAPITestCase):
 
         self.assertEqual(rsp['stat'], 'ok')
 
-    def test_post_file_attachments_with_permission_denied_error(self):
+    def test_post_with_permission_denied_error(self):
         """Testing the POST review-requests/<id>/draft/file-attachments/ API
         with Permission Denied error
         """
@@ -54,7 +54,7 @@ class ResourceListTests(BaseWebAPITestCase):
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
     @add_fixtures(['test_site'])
-    def test_post_file_attachments_with_site(self):
+    def test_post_with_site(self):
         """Testing the POST review-requests/<id>/draft/file-attachments/ API
         with a local site
         """
@@ -87,7 +87,7 @@ class ResourceListTests(BaseWebAPITestCase):
         return review_request, rsp['draft_file_attachment']['id']
 
     @add_fixtures(['test_site'])
-    def test_post_file_attachments_with_site_no_access(self):
+    def test_post_with_site_no_access(self):
         """Testing the POST review-requests/<id>/draft/file-attachments/ API
         with a local site and Permission Denied error
         """
@@ -114,7 +114,7 @@ class ResourceItemTests(BaseWebAPITestCase):
     # HTTP PUT tests
     #
 
-    def test_put_file_attachment(self):
+    def test_put(self):
         """Testing the
         PUT review-requests/<id>/draft/file-attachments/<id>/ API
         """
@@ -140,7 +140,7 @@ class ResourceItemTests(BaseWebAPITestCase):
         self.assertEqual(file_attachment.draft_caption, draft_caption)
 
     @add_fixtures(['test_site'])
-    def test_put_file_attachment_with_site(self):
+    def test_put_with_site(self):
         """Testing the
         PUT review-requests/<id>/draft/file-attachments/<id>/ API
         with a local site
@@ -168,7 +168,7 @@ class ResourceItemTests(BaseWebAPITestCase):
         self.assertEqual(file_attachment.draft_caption, draft_caption)
 
     @add_fixtures(['test_site'])
-    def test_put_file_attachment_with_site_no_access(self):
+    def test_put_with_site_no_access(self):
         """Testing the
         PUT review-requests/<id>/draft/file-attachments/<id>/ API
         with a local site and Permission Denied error

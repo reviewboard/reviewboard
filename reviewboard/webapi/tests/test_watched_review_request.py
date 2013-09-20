@@ -19,7 +19,7 @@ class ResourceListTests(BaseWebAPITestCase):
     # HTTP GET tests
     #
 
-    def test_get_watched_review_requests(self):
+    def test_get(self):
         """Testing the GET users/<username>/watched/review_request/ API"""
         review_request = self.create_review_request(publish=True)
         profile = Profile.objects.get(user=self.user)
@@ -43,7 +43,7 @@ class ResourceListTests(BaseWebAPITestCase):
                 apiwatched[i]['watched_review_request']['summary'])
 
     @add_fixtures(['test_site'])
-    def test_get_watched_review_requests_with_site(self):
+    def test_get_with_site(self):
         """Testing the GET users/<username>/watched/review_request/ API
         with a local site
         """
@@ -72,7 +72,7 @@ class ResourceListTests(BaseWebAPITestCase):
                 apiwatched[i]['watched_review_request']['summary'])
 
     @add_fixtures(['test_site'])
-    def test_get_watched_review_requests_with_site_no_access(self):
+    def test_get_with_site_no_access(self):
         """Testing the GET users/<username>/watched/review_request/ API
         with a local site and Permission Denied error
         """
@@ -84,7 +84,7 @@ class ResourceListTests(BaseWebAPITestCase):
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
     @add_fixtures(['test_site'])
-    def test_get_watched_review_requests_with_site_does_not_exist(self):
+    def test_get_with_site_does_not_exist(self):
         """Testing the GET users/<username>/watched/review_request/ API
         with a local site and Does Not Exist error
         """
@@ -100,7 +100,7 @@ class ResourceListTests(BaseWebAPITestCase):
     # HTTP POST tests
     #
 
-    def test_post_watched_review_request(self):
+    def test_post(self):
         """Testing the POST users/<username>/watched/review-request/ API"""
         review_request = self.create_review_request(publish=True)
         rsp = self.apiPost(
@@ -112,7 +112,7 @@ class ResourceListTests(BaseWebAPITestCase):
         self.assertTrue(review_request in
                         profile.starred_review_requests.all())
 
-    def test_post_watched_review_request_with_does_not_exist_error(self):
+    def test_post_with_does_not_exist_error(self):
         """Testing the POST users/<username>/watched/review_request/
         with Does Not Exist error
         """
@@ -124,7 +124,7 @@ class ResourceListTests(BaseWebAPITestCase):
         self.assertEqual(rsp['err']['code'], DOES_NOT_EXIST.code)
 
     @add_fixtures(['test_site'])
-    def test_post_watched_review_request_with_site(self):
+    def test_post_with_site(self):
         """Testing the POST users/<username>/watched/review_request/ API
         with a local site
         """
@@ -146,7 +146,7 @@ class ResourceListTests(BaseWebAPITestCase):
         return review_request
 
     @add_fixtures(['test_site'])
-    def test_post_watched_review_request_with_site_does_not_exist_error(self):
+    def test_post_with_site_does_not_exist_error(self):
         """Testing the POST users/<username>/watched/review_request/ API
         with a local site and Does Not Exist error
         """
@@ -161,7 +161,7 @@ class ResourceListTests(BaseWebAPITestCase):
         self.assertEqual(rsp['err']['code'], DOES_NOT_EXIST.code)
 
     @add_fixtures(['test_site'])
-    def test_post_watched_review_request_with_site_no_access(self):
+    def test_post_with_site_no_access(self):
         """Testing the POST users/<username>/watched/review_request/ API
         with a local site and Permission Denied error
         """
@@ -182,7 +182,7 @@ class ResourceItemTests(BaseWebAPITestCase):
     # HTTP DELETE tests
     #
 
-    def test_delete_watched_review_request(self):
+    def test_delete(self):
         """Testing the DELETE users/<username>/watched/review_request/ API"""
         # First, star it.
         review_request = self.create_review_request(publish=True)
@@ -198,7 +198,7 @@ class ResourceItemTests(BaseWebAPITestCase):
         self.assertTrue(review_request not in
                         profile.starred_review_requests.all())
 
-    def test_delete_watched_review_request_with_does_not_exist_error(self):
+    def test_delete_with_does_not_exist_error(self):
         """Testing the DELETE users/<username>/watched/review_request/ API
         with Does Not Exist error
         """
@@ -209,7 +209,7 @@ class ResourceItemTests(BaseWebAPITestCase):
         self.assertEqual(rsp['err']['code'], DOES_NOT_EXIST.code)
 
     @add_fixtures(['test_site'])
-    def test_delete_watched_review_request_with_site(self):
+    def test_delete_with_site(self):
         """Testing the DELETE users/<username>/watched/review_request/ API
         with a local site
         """
@@ -225,7 +225,7 @@ class ResourceItemTests(BaseWebAPITestCase):
                         profile.starred_review_requests.all())
 
     @add_fixtures(['test_site'])
-    def test_delete_watched_review_request_with_site_no_access(self):
+    def test_delete_with_site_no_access(self):
         """Testing the DELETE users/<username>/watched/review_request/ API
         with a local site and Permission Denied error
         """

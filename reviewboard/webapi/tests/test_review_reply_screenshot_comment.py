@@ -17,7 +17,7 @@ class ResourceListTests(BaseWebAPITestCase):
     # HTTP POST tests
     #
 
-    def test_post_reply_with_screenshot_comment(self):
+    def test_post_with_screenshot_comment(self):
         """Testing the POST
         review-requests/<id>/reviews/<id>/replies/<id>/screenshot-comments/ API
         """
@@ -46,7 +46,7 @@ class ResourceListTests(BaseWebAPITestCase):
         self.assertEqual(reply_comment.reply_to, comment)
 
     @add_fixtures(['test_site'])
-    def test_post_reply_with_screenshot_comment_and_local_site(self):
+    def test_post_with_screenshot_comment_and_local_site(self):
         """Testing the POST
         review-requests/<id>/reviews/<id>/replies/<id>/screenshot-comments/ API
         with a local site
@@ -78,7 +78,7 @@ class ResourceListTests(BaseWebAPITestCase):
         self.assertEqual(reply_comment.text, comment_text)
         self.assertEqual(reply_comment.reply_to, comment)
 
-    def test_post_reply_with_screenshot_comment_http_303(self):
+    def test_post_with_screenshot_comment_http_303(self):
         """Testing the POST
         review-requests/<id>/reviews/<id>/replies/<id>/screenshot-comments/ API
         """
@@ -118,7 +118,7 @@ class ResourceItemTests(BaseWebAPITestCase):
     # HTTP DELETE tests
     #
 
-    def test_delete_screenshot_comment(self):
+    def test_delete(self):
         """Testing the DELETE
         review-requests/<id>/reviews/<id>/replies/<id>/screenshot-comments/<id>/
         API
@@ -140,7 +140,7 @@ class ResourceItemTests(BaseWebAPITestCase):
         self.assertEqual(replies.count(), 0)
 
     @add_fixtures(['test_site'])
-    def test_delete_screenshot_comment_with_local_site(self):
+    def test_delete_with_local_site(self):
         """Testing the DELETE
         review-requests/<id>/reviews/<id>/replies/<id>/screenshot-comments/<id>/
         API with a local site
@@ -162,7 +162,7 @@ class ResourceItemTests(BaseWebAPITestCase):
                                                    reply_to=comment)
         self.assertEqual(replies.count(), 0)
 
-    def test_delete_screenshot_comment_no_access(self):
+    def test_delete_no_access(self):
         """Testing the DELETE
         review-requests/<id>/reviews/<id>/replies/<id>/screenshot-comments/<id>/
         API and Permission Denied
@@ -184,7 +184,7 @@ class ResourceItemTests(BaseWebAPITestCase):
             expected_status=403)
 
     @add_fixtures(['test_site'])
-    def test_delete_screenshot_comment_with_local_site_no_access(self):
+    def test_delete_with_local_site_no_access(self):
         """Testing the DELETE
         review-requests/<id>/reviews/<id>/replies/<id>/screenshot-comments/<id>/
         API with a local site and Permission Denied

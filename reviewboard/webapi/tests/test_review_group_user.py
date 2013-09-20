@@ -18,7 +18,7 @@ class ResourceListTests(BaseWebAPITestCase):
     # HTTP GET tests
     #
 
-    def test_get_users(self, local_site=None):
+    def test_get(self, local_site=None):
         """Testing the GET groups/<name>/users/ API"""
         group = self.create_review_group(
             with_local_site=(local_site is not None))
@@ -32,16 +32,16 @@ class ResourceListTests(BaseWebAPITestCase):
         self.assertEqual(len(rsp['users']), 2)
 
     @add_fixtures(['test_site'])
-    def test_get_users_with_site(self):
+    def test_get_with_site(self):
         """Testing the GET groups/<name>/users/ API with local site"""
         self._login_user(local_site=True)
-        self.test_get_users(LocalSite.objects.get(name=self.local_site_name))
+        self.test_get(LocalSite.objects.get(name=self.local_site_name))
 
     #
     # HTTP POST tests
     #
 
-    def test_post_user(self, local_site=None):
+    def test_post(self, local_site=None):
         """Testing the POST groups/<name>/users/ API"""
         self._login_user(admin=True, local_site=local_site)
 
@@ -59,11 +59,11 @@ class ResourceListTests(BaseWebAPITestCase):
         self.assertEqual(group.users.get().username, user.username)
 
     @add_fixtures(['test_site'])
-    def test_post_user_with_site(self):
+    def test_post_with_site(self):
         """Testing the POST groups/<name>/users/ API with local site"""
-        self.test_post_user(LocalSite.objects.get(name=self.local_site_name))
+        self.test_post(LocalSite.objects.get(name=self.local_site_name))
 
-    def test_post_user_with_no_access(self, local_site=None):
+    def test_post_with_no_access(self, local_site=None):
         """Testing the POST groups/<name>/users/ API with Permission Denied"""
         group = self.create_review_group()
         user = User.objects.get(pk=1)
@@ -75,14 +75,14 @@ class ResourceListTests(BaseWebAPITestCase):
         self.assertEqual(rsp['stat'], 'fail')
 
     @add_fixtures(['test_site'])
-    def test_post_user_with_site_no_access(self):
+    def test_post_with_site_no_access(self):
         """Testing the POST groups/<name>/users/ API
         with local site and Permission Denied
         """
-        self.test_post_user_with_no_access(
+        self.test_post_with_no_access(
             LocalSite.objects.get(name=self.local_site_name))
 
-    def test_post_user_with_invalid_user(self):
+    def test_post_with_invalid_user(self):
         """Testing the POST groups/<name>/users/ API with invalid user"""
         self._login_user(admin=True)
 
@@ -106,7 +106,7 @@ class ResourceItemTests(BaseWebAPITestCase):
     # HTTP DELETE tests
     #
 
-    def test_delete_user(self, local_site=None):
+    def test_delete(self, local_site=None):
         """Testing the DELETE groups/<name>/users/<username>/ API"""
         self._login_user(admin=True, local_site=local_site)
 
@@ -124,13 +124,13 @@ class ResourceItemTests(BaseWebAPITestCase):
         self.assertEqual(group.users.count(), 0)
 
     @add_fixtures(['test_site'])
-    def test_delete_user_with_site(self):
+    def test_delete_with_site(self):
         """Testing the DELETE groups/<name>/users/<username>/ API
         with local site
         """
-        self.test_delete_user(LocalSite.objects.get(name=self.local_site_name))
+        self.test_delete(LocalSite.objects.get(name=self.local_site_name))
 
-    def test_delete_user_with_no_access(self, local_site=None):
+    def test_delete_with_no_access(self, local_site=None):
         """Testing the DELETE groups/<name>/users/<username>/ API
         with Permission Denied
         """
@@ -145,9 +145,9 @@ class ResourceItemTests(BaseWebAPITestCase):
             expected_status=403)
 
     @add_fixtures(['test_site'])
-    def test_delete_user_with_site_no_access(self):
+    def test_delete_with_site_no_access(self):
         """Testing the DELETE groups/<name>/users/<username>/ API
         with local site and Permission Denied
         """
-        self.test_delete_user_with_no_access(
+        self.test_delete_with_no_access(
             LocalSite.objects.get(name=self.local_site_name))

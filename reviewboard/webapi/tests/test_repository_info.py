@@ -13,7 +13,7 @@ class ResourceTests(BaseWebAPITestCase):
     # HTTP GET tests
     #
 
-    def test_get_repository_info(self):
+    def test_get(self):
         """Testing the GET repositories/<id>/info API"""
         repository = self.create_repository(tool_name='Test')
         rsp = self.apiGet(get_repository_info_url(repository),
@@ -23,7 +23,7 @@ class ResourceTests(BaseWebAPITestCase):
                          repository.get_scmtool().get_repository_info())
 
     @add_fixtures(['test_site'])
-    def test_get_repository_info_with_site(self):
+    def test_get_with_site(self):
         """Testing the GET repositories/<id>/info API with a local site"""
         self._login_user(local_site=True)
         repository = self.create_repository(with_local_site=True,
@@ -37,7 +37,7 @@ class ResourceTests(BaseWebAPITestCase):
                          repository.get_scmtool().get_repository_info())
 
     @add_fixtures(['test_site'])
-    def test_get_repository_info_with_site_no_access(self):
+    def test_get_with_site_no_access(self):
         """Testing the GET repositories/<id>/info API
         with a local site and Permission Denied error
         """

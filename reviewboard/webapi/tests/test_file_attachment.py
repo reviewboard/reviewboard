@@ -17,7 +17,7 @@ class ResourceListTests(BaseWebAPITestCase):
     #
 
     @add_fixtures(['test_scmtools'])
-    def test_get_file_attachments(self):
+    def test_get(self):
         """Testing the GET review-requests/<id>/file-attachments/ API"""
         review_request = self.create_review_request(create_repository=True,
                                                     publish=True)
@@ -59,7 +59,7 @@ class ResourceListTests(BaseWebAPITestCase):
     # HTTP POST tests
     #
 
-    def test_post_file_attachments(self):
+    def test_post(self):
         """Testing the POST review-requests/<id>/file-attachments/ API"""
         review_request = self.create_review_request(submitter=self.user,
                                                     publish=True)
@@ -76,7 +76,7 @@ class ResourceListTests(BaseWebAPITestCase):
 
         review_request.publish(review_request.submitter)
 
-    def test_post_file_attachments_with_permission_denied_error(self):
+    def test_post_with_permission_denied_error(self):
         """Testing the POST review-requests/<id>/file-attachments/ API
         with Permission Denied error
         """
@@ -98,7 +98,7 @@ class ResourceListTests(BaseWebAPITestCase):
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
     @add_fixtures(['test_site'])
-    def test_post_file_attachments_with_site(self):
+    def test_post_with_site(self):
         """Testing the POST review-requests/<id>/file-attachments/ API
         with a local site
         """
@@ -119,7 +119,7 @@ class ResourceListTests(BaseWebAPITestCase):
         self.assertEqual(rsp['stat'], 'ok')
 
     @add_fixtures(['test_site'])
-    def test_post_file_attachments_with_site_no_access(self):
+    def test_post_with_site_no_access(self):
         """Testing the POST review-requests/<id>/file-attachments/ API
         with a local site and Permission Denied error
         """
@@ -151,7 +151,7 @@ class ResourceItemTests(BaseWebAPITestCase):
     # HTP GET tests
     #
 
-    def test_get_file_attachment_not_modified(self):
+    def test_get_not_modified(self):
         """Testing the GET review-requests/<id>/file-attachments/<id>/ API
         with Not Modified response
         """

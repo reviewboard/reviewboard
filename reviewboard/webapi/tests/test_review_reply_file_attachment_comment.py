@@ -17,7 +17,7 @@ class ResourceListTests(BaseWebAPITestCase):
     # HTTP POST tests
     #
 
-    def test_post_reply_with_file_attachment_comment(self):
+    def test_post_with_file_attachment_comment(self):
         """Testing the POST
         review-requests/<id>/reviews/<id>/replies/<id>/file-attachment-comments/
         API
@@ -47,7 +47,7 @@ class ResourceListTests(BaseWebAPITestCase):
         self.assertEqual(reply_comment.text, comment_text)
 
     @add_fixtures(['test_site'])
-    def test_post_reply_with_file_attachment_comment_and_local_site(self):
+    def test_post_with_file_attachment_comment_and_local_site(self):
         """Testing the POST
         review-requests/<id>/reviews/<id>/replies/<id>/file-attachment-comments/
         API with a local site
@@ -79,7 +79,7 @@ class ResourceListTests(BaseWebAPITestCase):
             pk=rsp['file_attachment_comment']['id'])
         self.assertEqual(reply_comment.text, comment_text)
 
-    def test_post_reply_with_inactive_file_attachment_comment(self):
+    def test_post_with_inactive_file_attachment_comment(self):
         """Testing the POST
         review-requests/<id>/reviews/<id>/replies/<id>/file-attachment-comments/
         API with inactive file attachment
@@ -117,7 +117,7 @@ class ResourceListTests(BaseWebAPITestCase):
             pk=rsp['file_attachment_comment']['id'])
         self.assertEqual(reply_comment.text, comment_text)
 
-    def test_post_reply_with_file_attachment_comment_http_303(self):
+    def test_post_with_file_attachment_comment_http_303(self):
         """Testing the POST
         review-requests/<id>/reviews/<id>/replies/<id>/file-attachment-comments/
         API and 303 See Other
@@ -159,7 +159,7 @@ class ResourceItemTests(BaseWebAPITestCase):
     # HTTP DELETE tests
     #
 
-    def test_delete_file_attachment_comment(self):
+    def test_delete(self):
         """Testing the DELETE
         review-requests/<id>/reviews/<id>/replies/<id>/file-attachment-comments/<id>/
         API
@@ -181,7 +181,7 @@ class ResourceItemTests(BaseWebAPITestCase):
         self.assertEqual(comments.count(), 0)
 
     @add_fixtures(['test_site'])
-    def test_delete_file_attachment_comment_with_local_site(self):
+    def test_delete_with_local_site(self):
         """Testing the DELETE
         review-requests/<id>/reviews/<id>/replies/<id>/file-attachment-comments/<id>/
         API with a local site
@@ -203,7 +203,7 @@ class ResourceItemTests(BaseWebAPITestCase):
                                                         reply_to=comment)
         self.assertEqual(comments.count(), 0)
 
-    def test_delete_file_attachment_comment_no_access(self):
+    def test_delete_no_access(self):
         """Testing the DELETE
         review-requests/<id>/reviews/<id>/replies/<id>/file-attachment-comments/<id>/
         API and Permission Denied
@@ -225,7 +225,7 @@ class ResourceItemTests(BaseWebAPITestCase):
             expected_status=403)
 
     @add_fixtures(['test_site'])
-    def test_delete_file_attachment_comment_with_local_site_no_access(self):
+    def test_delete_with_local_site_no_access(self):
         """Testing the DELETE
         review-requests/<id>/reviews/<id>/replies/<id>/file-attachment-comments/<id>/
         API with a local site and Permission Denied
@@ -251,7 +251,7 @@ class ResourceItemTests(BaseWebAPITestCase):
     # HTTP PUT tests
     #
 
-    def test_put_reply_with_file_attachment_comment(self):
+    def test_put_with_file_attachment_comment(self):
         """Testing the PUT
         review-requests/<id>/reviews/<id>/replies/<id>/file-attachment-comments/
         API

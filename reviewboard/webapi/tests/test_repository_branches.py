@@ -15,7 +15,7 @@ class ResourceListTests(BaseWebAPITestCase):
     # HTTP GET tests
     #
 
-    def test_get_repository_branches(self):
+    def test_get(self):
         """Testing the GET repositories/<id>/branches/ API"""
         repository = self.create_repository(tool_name='Test')
         rsp = self.apiGet(get_repository_branches_url(repository),
@@ -29,7 +29,7 @@ class ResourceListTests(BaseWebAPITestCase):
             ])
 
     @add_fixtures(['test_site'])
-    def test_get_repository_branches_with_site(self):
+    def test_get_with_site(self):
         """Testing the GET repositories/<id>/branches/ API with a local site"""
         self._login_user(local_site=True)
 
@@ -48,7 +48,7 @@ class ResourceListTests(BaseWebAPITestCase):
             ])
 
     @add_fixtures(['test_site'])
-    def test_get_repository_branches_with_site_no_access(self):
+    def test_get_with_site_no_access(self):
         """Testing the GET repositories/<id>/branches/ API
         with a local site and Permission Denied error
         """
@@ -58,7 +58,7 @@ class ResourceListTests(BaseWebAPITestCase):
             get_repository_branches_url(repository, self.local_site_name),
             expected_status=403)
 
-    def test_get_repository_branches_with_no_support(self):
+    def test_get_with_no_support(self):
         """Testing the GET repositories/<id>/branches/ API
         with a repository that does not implement it
         """

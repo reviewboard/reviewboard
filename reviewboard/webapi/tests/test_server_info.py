@@ -12,7 +12,7 @@ class ResourceTests(BaseWebAPITestCase):
     # HTTP GET tests
     #
 
-    def test_get_server_info(self):
+    def test_get(self):
         """Testing the GET info/ API"""
         rsp = self.apiGet(get_server_info_url(),
                           expected_mimetype=server_info_mimetype)
@@ -30,7 +30,7 @@ class ResourceTests(BaseWebAPITestCase):
         self.assertTrue(diffs_caps.get('base_commit_ids', False))
 
     @add_fixtures(['test_users', 'test_site'])
-    def test_get_server_info_with_site(self):
+    def test_get_with_site(self):
         """Testing the GET info/ API with a local site"""
         self._login_user(local_site=True)
         rsp = self.apiGet(get_server_info_url(self.local_site_name),
@@ -41,7 +41,7 @@ class ResourceTests(BaseWebAPITestCase):
         self.assertTrue('site' in rsp['info'])
 
     @add_fixtures(['test_users', 'test_site'])
-    def test_get_server_info_with_site_no_access(self):
+    def test_get_with_site_no_access(self):
         """Testing the GET info/ API
         with a local site and Permission Denied error
         """

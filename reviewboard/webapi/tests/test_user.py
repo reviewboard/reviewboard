@@ -18,14 +18,14 @@ class ResourceListTests(BaseWebAPITestCase):
     # HTTP GET tests
     #
 
-    def test_get_users(self):
+    def test_get(self):
         """Testing the GET users/ API"""
         rsp = self.apiGet(get_user_list_url(),
                           expected_mimetype=user_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(len(rsp['users']), User.objects.count())
 
-    def test_get_users_with_q(self):
+    def test_get_with_q(self):
         """Testing the GET users/?q= API"""
         rsp = self.apiGet(get_user_list_url(), {'q': 'gru'},
                           expected_mimetype=user_list_mimetype)
@@ -33,7 +33,7 @@ class ResourceListTests(BaseWebAPITestCase):
         self.assertEqual(len(rsp['users']), 1)  # grumpy
 
     @add_fixtures(['test_site'])
-    def test_get_users_with_site(self):
+    def test_get_with_site(self):
         """Testing the GET users/ API with a local site"""
         self._login_user(local_site=True)
         local_site = LocalSite.objects.get(name=self.local_site_name)
@@ -43,7 +43,7 @@ class ResourceListTests(BaseWebAPITestCase):
         self.assertEqual(len(rsp['users']), local_site.users.count())
 
     @add_fixtures(['test_site'])
-    def test_get_users_with_site_no_access(self):
+    def test_get_with_site_no_access(self):
         """Testing the GET users/ API
         with a local site and Permission Denied error
         """
@@ -59,7 +59,7 @@ class ResourceItemTests(BaseWebAPITestCase):
     # HTTP GET tests
     #
 
-    def test_get_user(self):
+    def test_get(self):
         """Testing the GET users/<username>/ API"""
         username = 'doc'
         user = User.objects.get(username=username)
@@ -75,13 +75,13 @@ class ResourceItemTests(BaseWebAPITestCase):
         self.assertEqual(rsp['user']['id'], user.id)
         self.assertEqual(rsp['user']['email'], user.email)
 
-    def test_get_user_not_modified(self):
+    def test_get_not_modified(self):
         """Testing the GET users/<username>/ API with Not Modified response"""
         self._testHttpCaching(get_user_item_url('doc'),
                               check_etags=True)
 
     @add_fixtures(['test_site'])
-    def test_get_user_with_site(self):
+    def test_get_with_site(self):
         """Testing the GET users/<username>/ API with a local site"""
         self._login_user(local_site=True)
 
@@ -100,7 +100,7 @@ class ResourceItemTests(BaseWebAPITestCase):
         self.assertEqual(rsp['user']['email'], user.email)
 
     @add_fixtures(['test_site'])
-    def test_get_user_with_site_and_profile_private(self):
+    def test_get_with_site_and_profile_private(self):
         """Testing the GET users/<username>/ API
         with a local site and private profile
         """
@@ -129,10 +129,9 @@ class ResourceItemTests(BaseWebAPITestCase):
                     expected_status=404)
 
     @add_fixtures(['test_site'])
-    def test_get_user_with_site_no_access(self):
+    def test_get_with_site_no_access(self):
         """Testing the GET users/<username>/ API
         with a local site and Permission Denied error
         """
-        print self.fixtures
         self.apiGet(get_user_item_url('doc', self.local_site_name),
                     expected_status=403)

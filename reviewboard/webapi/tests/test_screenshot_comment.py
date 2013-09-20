@@ -15,7 +15,7 @@ class ResourceListTests(BaseWebAPITestCase):
     # HTTP GET tests
     #
 
-    def test_get_screenshot_comments(self):
+    def test_get(self):
         """Testing the
         GET review-requests/<id>/screenshots/<id>/comments/ API
         """
@@ -46,7 +46,7 @@ class ResourceListTests(BaseWebAPITestCase):
             self.assertEqual(rsp_comments[i]['h'], comments[i].h)
 
     @add_fixtures(['test_site'])
-    def test_get_screenshot_comments_with_site(self):
+    def test_get_with_site(self):
         """Testing the GET review-requests/<id>/screenshots/<id>/comments/ API
         with a local site
         """
@@ -80,7 +80,7 @@ class ResourceListTests(BaseWebAPITestCase):
             self.assertEqual(rsp_comments[i]['h'], comments[i].h)
 
     @add_fixtures(['test_site'])
-    def test_get_screenshot_comments_with_site_no_access(self):
+    def test_get_with_site_no_access(self):
         """Testing the GET review-requests/<id>/screenshots/<id>/comments/ API
         with a local site and Permission Denied error
         """

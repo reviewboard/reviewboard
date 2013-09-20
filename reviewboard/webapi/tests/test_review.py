@@ -20,7 +20,7 @@ class ResourceListTests(BaseWebAPITestCase):
     # HTTP GET tests
     #
 
-    def test_get_reviews(self):
+    def test_get(self):
         """Testing the GET review-requests/<id>/reviews/ API"""
         review_request = self.create_review_request(publish=True)
         self.create_review(review_request, publish=True)
@@ -31,11 +31,11 @@ class ResourceListTests(BaseWebAPITestCase):
         self.assertEqual(len(rsp['reviews']), 1)
 
     @add_fixtures(['test_site'])
-    def test_get_reviews_with_site(self):
+    def test_get_with_site(self):
         """Testing the GET review-requests/<id>/reviews/ API
         with a local site
         """
-        self.test_post_reviews_with_site(public=True)
+        self.test_post_with_site(public=True)
 
         local_site = LocalSite.objects.get(name=self.local_site_name)
         review_request = ReviewRequest.objects.public(local_site=local_site)[0]
@@ -47,7 +47,7 @@ class ResourceListTests(BaseWebAPITestCase):
         self.assertEqual(len(rsp['reviews']), review_request.reviews.count())
 
     @add_fixtures(['test_site'])
-    def test_get_reviews_with_site_no_access(self):
+    def test_get_with_site_no_access(self):
         """Testing the GET review-requests/<id>/reviews/ API
         with a local site and Permission Denied error
         """
@@ -61,7 +61,7 @@ class ResourceListTests(BaseWebAPITestCase):
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
-    def test_get_reviews_with_counts_only(self):
+    def test_get_with_counts_only(self):
         """Testing the GET review-requests/<id>/reviews/?counts-only=1 API"""
         review_request = self.create_review_request(publish=True)
         self.create_review(review_request, publish=True)
@@ -73,7 +73,7 @@ class ResourceListTests(BaseWebAPITestCase):
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(rsp['count'], 2)
 
-    def test_get_reviewrequest_reviews_with_invite_only_group_and_permission_denied_error(self):
+    def test_get_with_invite_only_group_and_permission_denied_error(self):
         """Testing the GET review-requests/<id>/reviews/ API
         with invite-only group and Permission Denied error
         """
@@ -95,7 +95,7 @@ class ResourceListTests(BaseWebAPITestCase):
     #
 
     @add_fixtures(['test_site'])
-    def test_post_reviews(self):
+    def test_post(self):
         """Testing the POST review-requests/<id>/reviews/ API"""
         body_top = ""
         body_bottom = "My Body Bottom"
@@ -133,7 +133,7 @@ class ResourceListTests(BaseWebAPITestCase):
         self.assertEqual(len(mail.outbox), 0)
 
     @add_fixtures(['test_site'])
-    def test_post_reviews_with_site(self, public=False):
+    def test_post_with_site(self, public=False):
         """Testing the POST review-requests/<id>/reviews/ API
         with a local site
         """
@@ -184,7 +184,7 @@ class ResourceListTests(BaseWebAPITestCase):
             self.assertEqual(len(mail.outbox), 0)
 
     @add_fixtures(['test_site'])
-    def test_post_reviews_with_site_no_access(self):
+    def test_post_with_site_no_access(self):
         """Testing the POST review-requests/<id>/reviews/ API
         with a local site and Permission Denied error
         """
@@ -207,22 +207,22 @@ class ResourceItemTests(BaseWebAPITestCase):
     #
 
     @add_fixtures(['test_site'])
-    def test_delete_review(self):
+    def test_delete(self):
         """Testing the DELETE review-requests/<id>/reviews/<id>/ API"""
         # Set up the draft to delete.
-        review = self.test_put_review()
+        review = self.test_put()
         review_request = review.review_request
 
         self.apiDelete(get_review_item_url(review_request, review.id))
         self.assertEqual(review_request.reviews.count(), 0)
 
     @add_fixtures(['test_site'])
-    def test_delete_review_with_permission_denied(self):
+    def test_delete_with_permission_denied(self):
         """Testing the DELETE review-requests/<id>/reviews/<id>/ API
         with Permission Denied error
         """
         # Set up the draft to delete.
-        review = self.test_put_review()
+        review = self.test_put()
         review.user = User.objects.get(username='doc')
         review.save()
 
@@ -233,7 +233,7 @@ class ResourceItemTests(BaseWebAPITestCase):
                        expected_status=403)
         self.assertEqual(review_request.reviews.count(), old_count)
 
-    def test_delete_review_with_published_review(self):
+    def test_delete_with_published_review(self):
         """Testing the DELETE review-requests/<id>/reviews/<id>/ API
         with pre-published review
         """
@@ -245,7 +245,7 @@ class ResourceItemTests(BaseWebAPITestCase):
                        expected_status=403)
         self.assertEqual(review_request.reviews.count(), 1)
 
-    def test_delete_review_with_does_not_exist(self):
+    def test_delete_with_does_not_exist(self):
         """Testing the DELETE review-requests/<id>/reviews/<id>/ API
         with Does Not Exist error
         """
@@ -257,11 +257,11 @@ class ResourceItemTests(BaseWebAPITestCase):
         self.assertEqual(rsp['err']['code'], DOES_NOT_EXIST.code)
 
     @add_fixtures(['test_site'])
-    def test_delete_review_with_local_site(self):
+    def test_delete_with_local_site(self):
         """Testing the DELETE review-requests/<id>/reviews/<id>/ API
         with a local site
         """
-        review = self.test_put_review_with_site()
+        review = self.test_put_with_site()
 
         local_site = LocalSite.objects.get(name=self.local_site_name)
         review_request = ReviewRequest.objects.public(local_site=local_site)[0]
@@ -271,7 +271,7 @@ class ResourceItemTests(BaseWebAPITestCase):
         self.assertEqual(review_request.reviews.count(), 0)
 
     @add_fixtures(['test_site'])
-    def test_delete_review_with_local_site_no_access(self):
+    def test_delete_with_local_site_no_access(self):
         """Testing the DELETE review-requests/<id>/reviews/<id>/ API
         with a local site and Permission Denied error
         """
@@ -289,7 +289,7 @@ class ResourceItemTests(BaseWebAPITestCase):
     # HTTP GET tests
     #
 
-    def test_get_review_not_modified(self):
+    def test_get_not_modified(self):
         """Testing the GET review-requests/<id>/reviews/<id>/ API
         with Not Modified response
         """
@@ -305,7 +305,7 @@ class ResourceItemTests(BaseWebAPITestCase):
     #
 
     @add_fixtures(['test_site'])
-    def test_put_review(self):
+    def test_put(self):
         """Testing the PUT review-requests/<id>/reviews/<id>/ API"""
         body_top = ""
         body_bottom = "My Body Bottom"
@@ -348,7 +348,7 @@ class ResourceItemTests(BaseWebAPITestCase):
         return review
 
     @add_fixtures(['test_site'])
-    def test_put_review_with_site(self):
+    def test_put_with_site(self):
         """Testing the PUT review-requests/<id>/reviews/<id>/ API
         with a local site
         """
@@ -396,7 +396,7 @@ class ResourceItemTests(BaseWebAPITestCase):
         return review
 
     @add_fixtures(['test_site'])
-    def test_put_review_with_site_no_access(self):
+    def test_put_with_site_no_access(self):
         """Testing the PUT review-requests/<id>/reviews/<id>/ API
         with a local site and Permission Denied error
         """
@@ -413,7 +413,7 @@ class ResourceItemTests(BaseWebAPITestCase):
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
-    def test_put_review_with_published_review(self):
+    def test_put_with_published_review(self):
         """Testing the PUT review-requests/<id>/reviews/<id>/ API
         with pre-published review
         """
@@ -427,7 +427,7 @@ class ResourceItemTests(BaseWebAPITestCase):
             expected_status=403)
 
     @add_fixtures(['test_site'])
-    def test_put_review_publish(self):
+    def test_put_publish(self):
         """Testing the PUT review-requests/<id>/reviews/<id>/?public=1 API"""
         body_top = "My Body Top"
         body_bottom = ""

@@ -75,7 +75,7 @@ class ResourceListTests(BaseResourceTestCase):
     # HTTP GET tests
     #
 
-    def test_get_diff_comments(self):
+    def test_get(self):
         """Testing the
         GET review-requests/<id>/reviews/<id>/diff-comments/ API
         """
@@ -86,7 +86,7 @@ class ResourceListTests(BaseResourceTestCase):
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(len(rsp['diff_comments']), review.comments.count())
 
-    def test_get_diff_comments_with_counts_only(self):
+    def test_get_with_counts_only(self):
         """Testing the
         GET review-requests/<id>/reviews/<id>/diff-comments/?counts-only=1 API
         """
@@ -98,7 +98,7 @@ class ResourceListTests(BaseResourceTestCase):
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(rsp['count'], review.comments.count())
 
-    def test_get_diff_comments_with_interdiff(self):
+    def test_get_with_interdiff(self):
         """Testing the GET review-requests/<id>/reviews/<id>/diff-comments/ API
         with interdiff
         """
@@ -116,11 +116,11 @@ class ResourceListTests(BaseResourceTestCase):
         self.assertEqual(rsp['diff_comments'][0]['text'], comment_text)
 
     @add_fixtures(['test_site'])
-    def test_get_diff_comments_with_site(self):
+    def test_get_with_site(self):
         """Testing the GET review-requests/<id>/reviews/<id>/diff-comments/ API
         with a local site
         """
-        review = self.test_post_diff_comments_with_site()
+        review = self.test_post_with_site()
 
         rsp = self.apiGet(
             get_review_diff_comment_list_url(review, self.local_site_name),
@@ -129,11 +129,11 @@ class ResourceListTests(BaseResourceTestCase):
         self.assertEqual(len(rsp['diff_comments']), review.comments.count())
 
     @add_fixtures(['test_site'])
-    def test_get_diff_comments_with_site_no_access(self):
+    def test_get_with_site_no_access(self):
         """Testing the GET review-requests/<id>/reviews/<id>/diff-comments/ API
         with a local site and Permission Denied error
         """
-        review = self.test_post_diff_comments_with_site()
+        review = self.test_post_with_site()
 
         self._login_user()
 
@@ -147,7 +147,7 @@ class ResourceListTests(BaseResourceTestCase):
     # HTTP POST tests
     #
 
-    def test_post_diff_comments(self):
+    def test_post(self):
         """Testing the
         POST review-requests/<id>/reviews/<id>/diff-comments/ API
         """
@@ -165,7 +165,7 @@ class ResourceListTests(BaseResourceTestCase):
         self.assertEqual(len(rsp['diff_comments']), 1)
         self.assertEqual(rsp['diff_comments'][0]['text'], comment.text)
 
-    def test_post_diff_comments_with_issue(self):
+    def test_post_with_issue(self):
         """Testing the
         POST review-requests/<id>/reviews/<id>/diff-comments/ API
         with an issue
@@ -183,7 +183,7 @@ class ResourceListTests(BaseResourceTestCase):
         self.assertTrue(rsp['diff_comments'][0]['issue_opened'])
 
     @add_fixtures(['test_site'])
-    def test_post_diff_comments_with_site(self):
+    def test_post_with_site(self):
         """Testing the
         POST review-requests/<id>/reviews/<id>/diff-comments/ API
         with a local site
@@ -205,7 +205,7 @@ class ResourceListTests(BaseResourceTestCase):
         return review
 
     @add_fixtures(['test_site'])
-    def test_post_diff_comments_with_site_no_access(self):
+    def test_post_with_site_no_access(self):
         """Testing the
         POST review-requests/<id>/reviews/<id>/diff-comments/ API
         with a local site and Permission Denied error
@@ -220,7 +220,7 @@ class ResourceListTests(BaseResourceTestCase):
             expected_status=403)
         self.assertEqual(rsp['stat'], 'fail')
 
-    def test_post_diff_comments_with_interdiff(self):
+    def test_post_with_interdiff(self):
         """Testing the
         POST review-requests/<id>/reviews/<id>/diff-comments/ API
         with interdiff
@@ -246,7 +246,7 @@ class ResourceItemTests(BaseResourceTestCase):
     # HTTP DELETE tests
     #
 
-    def test_delete_diff_comment_with_interdiff(self):
+    def test_delete_with_interdiff(self):
         """Testing the
         DELETE review-requests/<id>/reviews/<id>/diff-comments/<id>/ API
         """
@@ -264,7 +264,7 @@ class ResourceItemTests(BaseResourceTestCase):
         self.assertEqual(len(rsp['diff_comments']), 0)
 
     @add_fixtures(['test_site'])
-    def test_delete_diff_comment_with_site(self):
+    def test_delete_with_site(self):
         """Testing the
         DELETE review-requests/<id>/reviews/<id>/diff-comments/<id>/ API
         with a local site
@@ -283,7 +283,7 @@ class ResourceItemTests(BaseResourceTestCase):
         self.assertEqual(review.comments.count(), 0)
 
     @add_fixtures(['test_site'])
-    def test_delete_diff_comment_with_site_no_access(self):
+    def test_delete_with_site_no_access(self):
         """Testing the
         DELETE review-requests/<id>/reviews/<id>/diff-comments/<id>/ API
         with a local site and Permission Denied error
@@ -307,7 +307,7 @@ class ResourceItemTests(BaseResourceTestCase):
     # HTTP GET tests
     #
 
-    def test_get_diff_comment_not_modified(self):
+    def test_get_not_modified(self):
         """Testing the
         GET review-requests/<id>/reviews/<id>/diff-comments/<id>/ API
         with Not Modified response
@@ -323,7 +323,7 @@ class ResourceItemTests(BaseResourceTestCase):
     # HTTP PUT tests
     #
 
-    def test_put_diff_comment_with_issue(self):
+    def test_put_with_issue(self):
         """Testing the
         PUT review-requests/<id>/reviews/<id>/diff-comments/<id>/ API,
         removing issue_opened
@@ -337,7 +337,7 @@ class ResourceItemTests(BaseResourceTestCase):
         self.assertEqual(rsp['stat'], 'ok')
         self.assertFalse(rsp['diff_comment']['issue_opened'])
 
-    def test_put_diff_comment_issue_status_before_publish(self):
+    def test_put_issue_status_before_publish(self):
         """Testing the
         PUT review-requests/<id>/reviews/<id>/diff-comments/<id>/ API
         with an issue, before review is published
@@ -355,7 +355,7 @@ class ResourceItemTests(BaseResourceTestCase):
         # The issue_status should still be "open"
         self.assertEqual(rsp['diff_comment']['issue_status'], 'open')
 
-    def test_put_diff_comment_issue_status_after_publish(self):
+    def test_put_issue_status_after_publish(self):
         """Testing the
         PUT review-requests/<id>/reviews/<id>/diff-comments/<id>/ API
         with an issue, after review is published
@@ -370,7 +370,7 @@ class ResourceItemTests(BaseResourceTestCase):
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(rsp['diff_comment']['issue_status'], 'resolved')
 
-    def test_put_diff_comment_issue_status_by_issue_creator(self):
+    def test_put_issue_status_by_issue_creator(self):
         """Testing the
         PUT review-requests/<id>/reviews/<id>/diff-comments/<id>/ API
         permissions for issue creator
@@ -392,7 +392,7 @@ class ResourceItemTests(BaseResourceTestCase):
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(rsp['diff_comment']['issue_status'], 'dropped')
 
-    def test_put_diff_comment_issue_status_by_uninvolved_user(self):
+    def test_put_issue_status_by_uninvolved_user(self):
         """Testing the
         PUT review-requests/<id>/reviews/<id>/diff-comments/<id>/ API
         permissions for an uninvolved user

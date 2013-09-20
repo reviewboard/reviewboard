@@ -13,7 +13,7 @@ class ResourceTests(BaseWebAPITestCase):
     #
 
     @add_fixtures(['test_users'])
-    def test_get_session_with_logged_in_user(self):
+    def test_get_with_logged_in_user(self):
         """Testing the GET session/ API with logged in user"""
         rsp = self.apiGet(get_session_url(),
                           expected_mimetype=session_mimetype)
@@ -23,7 +23,7 @@ class ResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['session']['links']['user']['title'],
                          self.user.username)
 
-    def test_get_session_with_anonymous_user(self):
+    def test_get_with_anonymous_user(self):
         """Testing the GET session/ API with anonymous user"""
         rsp = self.apiGet(get_session_url(),
                           expected_mimetype=session_mimetype)
@@ -32,7 +32,7 @@ class ResourceTests(BaseWebAPITestCase):
         self.assertFalse(rsp['session']['authenticated'])
 
     @add_fixtures(['test_users', 'test_site'])
-    def test_get_session_with_site(self):
+    def test_get_with_site(self):
         """Testing the GET session/ API with a local site"""
         self._login_user(local_site=True)
         rsp = self.apiGet(get_session_url(self.local_site_name),
@@ -43,7 +43,7 @@ class ResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['session']['links']['user']['title'], 'doc')
 
     @add_fixtures(['test_users', 'test_site'])
-    def test_get_session_with_site_no_access(self):
+    def test_get_with_site_no_access(self):
         """Testing the GET session/ API
         with a local site and Permission Denied error
         """

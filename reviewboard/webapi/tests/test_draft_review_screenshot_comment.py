@@ -13,7 +13,7 @@ class DraftReviewScreenshotCommentResourceTests(BaseWebAPITestCase):
     # List tests
     #
 
-    def test_get_review_screenshot_comments(self):
+    def test_get(self):
         """Testing the
         GET review-requests/<id>/reviews/draft/screenshot-comments/ API
         """
@@ -30,7 +30,7 @@ class DraftReviewScreenshotCommentResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['screenshot_comments'][0]['text'], comment.text)
 
     @add_fixtures(['test_site'])
-    def test_get_review_screenshot_comments_with_site(self):
+    def test_get_with_site(self):
         """Testing the
         GET review-requests/<id>/reviews/draft/screenshot-comments/ APIs
         with a local site

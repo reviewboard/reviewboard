@@ -140,7 +140,7 @@ class ResourceItemTests(BaseWebAPITestCase):
     # HTTP DELETE tests
     #
 
-    def test_delete_diff_comment(self):
+    def test_delete(self):
         """Testing the DELETE
         review-requests/<id>/reviews/<id>/replies/<id>/diff-comments/<id>/ API
         """
@@ -162,7 +162,7 @@ class ResourceItemTests(BaseWebAPITestCase):
         self.assertEqual(comments.count(), 0)
 
     @add_fixtures(['test_site'])
-    def test_delete_diff_comment_with_local_site(self):
+    def test_delete_with_local_site(self):
         """Testing the DELETE
         review-requests/<id>/reviews/<id>/replies/<id>/diff-comments/<id>/ API
         with a local site
@@ -186,7 +186,7 @@ class ResourceItemTests(BaseWebAPITestCase):
         comments = Comment.objects.filter(review=reply, reply_to=comment)
         self.assertEqual(comments.count(), 0)
 
-    def test_delete_diff_comment_no_access(self):
+    def test_delete_no_access(self):
         """Testing the DELETE
         review-requests/<id>/reviews/<id>/replies/<id>/diff-comments/<id>/ API
         and Permission Denied
@@ -207,7 +207,7 @@ class ResourceItemTests(BaseWebAPITestCase):
             expected_status=403)
 
     @add_fixtures(['test_site'])
-    def test_delete_diff_comment_with_local_site_no_access(self):
+    def test_delete_with_local_site_no_access(self):
         """Testing the DELETE
         review-requests/<id>/reviews/<id>/replies/<id>/diff-comments/<id>/ API
         with a local site and Permission Denied

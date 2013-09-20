@@ -20,7 +20,7 @@ class ResourceListTests(BaseWebAPITestCase):
     #
 
     @add_fixtures(['test_users', 'test_scmtools'])
-    def test_get_default_reviewers(self):
+    def test_get(self):
         """Testing the GET default-reviewers/ API"""
         user = User.objects.get(username='doc')
         group = Group.objects.create(name='group1')
@@ -58,7 +58,7 @@ class ResourceListTests(BaseWebAPITestCase):
         self.assertEqual(repos[0]['title'], repository.name)
 
     @add_fixtures(['test_users', 'test_site'])
-    def test_get_default_reviewers_with_site(self):
+    def test_get_with_site(self):
         """Testing the GET default-reviewers/ API with a local site"""
         local_site = LocalSite.objects.get(name=self.local_site_name)
         DefaultReviewer.objects.create(name='default1', file_regex='.*',
@@ -87,7 +87,7 @@ class ResourceListTests(BaseWebAPITestCase):
         self.assertEqual(default_reviewers[0]['file_regex'], '.*')
 
     @add_fixtures(['test_users', 'test_site'])
-    def test_get_default_reviewers_with_site_no_access(self):
+    def test_get_with_site_no_access(self):
         """Testing the GET default-reviewers/ API
         with a local site and Permission Denied error
         """
@@ -95,7 +95,7 @@ class ResourceListTests(BaseWebAPITestCase):
                     expected_status=403)
 
     @add_fixtures(['test_users', 'test_scmtools'])
-    def test_get_default_reviewers_with_repositories(self):
+    def test_get_with_repositories(self):
         """Testing the GET default-reviewers/?repositories= API"""
         repository1 = self.create_repository(name='repo 1')
         repository2 = self.create_repository(name='repo 2')
@@ -130,7 +130,7 @@ class ResourceListTests(BaseWebAPITestCase):
         self.assertEqual(default_reviewers[0]['name'], 'default1')
 
     @add_fixtures(['test_users'])
-    def test_get_default_reviewers_with_users(self):
+    def test_get_with_users(self):
         """Testing the GET default-reviewers/?users= API"""
         user1 = User.objects.get(username='doc')
         user2 = User.objects.get(username='dopey')
@@ -162,7 +162,7 @@ class ResourceListTests(BaseWebAPITestCase):
         self.assertEqual(len(default_reviewers), 1)
         self.assertEqual(default_reviewers[0]['name'], 'default1')
 
-    def test_get_default_reviewers_with_groups(self):
+    def test_get_with_groups(self):
         """Testing the GET default-reviewers/?groups= API"""
         group1 = Group.objects.create(name='group1')
         group2 = Group.objects.create(name='group2')
@@ -200,7 +200,7 @@ class ResourceListTests(BaseWebAPITestCase):
     #
 
     @add_fixtures(['test_users', 'test_scmtools'])
-    def test_post_default_reviewer(self, local_site=None):
+    def test_post(self, local_site=None):
         """Testing the POST default-reviewers/ API"""
         self._login_user(admin=True)
 
@@ -261,7 +261,7 @@ class ResourceListTests(BaseWebAPITestCase):
         self.assertEqual(repos[1], repo2)
 
     @add_fixtures(['test_users'])
-    def test_post_default_reviewer_with_defaults(self):
+    def test_post_with_defaults(self):
         """Testing the POST default-reviewers/ API with field defaults"""
         self._login_user(admin=True)
 
@@ -285,7 +285,7 @@ class ResourceListTests(BaseWebAPITestCase):
         self.assertEqual(default_reviewer.file_regex, file_regex)
 
     @add_fixtures(['test_users'])
-    def test_post_default_reviewer_with_permission_denied(self):
+    def test_post_with_permission_denied(self):
         """Testing the POST default-reviewers/ API
         with Permission Denied error
         """
@@ -300,7 +300,7 @@ class ResourceListTests(BaseWebAPITestCase):
             expected_status=403)
 
     @add_fixtures(['test_users', 'test_site'])
-    def test_post_default_reviewer_with_invalid_regex(self):
+    def test_post_with_invalid_regex(self):
         """Testing the POST default-reviewers/ API with an invalid regex"""
         self._login_user(admin=True)
 
@@ -317,7 +317,7 @@ class ResourceListTests(BaseWebAPITestCase):
         self.assertTrue('file_regex' in rsp['fields'])
 
     @add_fixtures(['test_users', 'test_site'])
-    def test_post_default_reviewer_with_permission_denied_and_local_site(self):
+    def test_post_with_permission_denied_and_local_site(self):
         """Testing the POST default-reviewers/ API
         with a local site and Permission Denied error
         """
@@ -332,7 +332,7 @@ class ResourceListTests(BaseWebAPITestCase):
             expected_status=403)
 
     @add_fixtures(['test_users'])
-    def test_post_default_reviewer_with_invalid_username(self):
+    def test_post_with_invalid_username(self):
         """Testing the POST default-reviewers/ API with invalid username"""
         self._login_user(admin=True)
 
@@ -349,7 +349,7 @@ class ResourceListTests(BaseWebAPITestCase):
         self.assertTrue('users' in rsp['fields'])
 
     @add_fixtures(['test_users', 'test_site'])
-    def test_post_default_reviewer_with_user_invalid_site(self):
+    def test_post_with_user_invalid_site(self):
         """Testing the POST default-reviewers/ API
         with user and invalid site
         """
@@ -370,7 +370,7 @@ class ResourceListTests(BaseWebAPITestCase):
         self.assertTrue('users' in rsp['fields'])
 
     @add_fixtures(['test_users'])
-    def test_post_default_reviewer_with_invalid_group(self):
+    def test_post_with_invalid_group(self):
         """Testing the POST default-reviewers/ API with invalid group"""
         self._login_user(admin=True)
 
@@ -387,7 +387,7 @@ class ResourceListTests(BaseWebAPITestCase):
         self.assertTrue('groups' in rsp['fields'])
 
     @add_fixtures(['test_users', 'test_site'])
-    def test_post_default_reviewer_with_group_invalid_site(self):
+    def test_post_with_group_invalid_site(self):
         """Testing the POST default-reviewers/ API
         with group and invalid site
         """
@@ -409,7 +409,7 @@ class ResourceListTests(BaseWebAPITestCase):
         self.assertTrue('groups' in rsp['fields'])
 
     @add_fixtures(['test_users'])
-    def test_post_default_reviewer_with_invalid_repository(self):
+    def test_post_with_invalid_repository(self):
         """Testing the POST default-reviewers/ API with invalid repository"""
         self._login_user(admin=True)
 
@@ -426,7 +426,7 @@ class ResourceListTests(BaseWebAPITestCase):
         self.assertTrue('repositories' in rsp['fields'])
 
     @add_fixtures(['test_users', 'test_site', 'test_scmtools'])
-    def test_post_default_reviewer_with_repository_invalid_site(self):
+    def test_post_with_repository_invalid_site(self):
         """Testing the POST default-reviewers/ API
         with repository and invalid site
         """
@@ -447,10 +447,10 @@ class ResourceListTests(BaseWebAPITestCase):
         self.assertTrue('repositories' in rsp['fields'])
 
     @add_fixtures(['test_users', 'test_site', 'test_scmtools'])
-    def test_post_default_reviewer_with_site(self, local_site=None):
+    def test_post_with_site(self, local_site=None):
         """Testing the POST default-reviewers/ API with a local site"""
         local_site = LocalSite.objects.get(name=self.local_site_name)
-        self.test_post_default_reviewer(local_site)
+        self.test_post(local_site)
 
 
 class ResourceItemTests(BaseWebAPITestCase):
@@ -460,7 +460,7 @@ class ResourceItemTests(BaseWebAPITestCase):
     #
 
     @add_fixtures(['test_users'])
-    def test_delete_default_reviewer(self):
+    def test_delete(self):
         """Testing the DELETE default-reviewers/<id>/ API"""
         self._login_user(admin=True)
         default_reviewer = DefaultReviewer.objects.create(
@@ -472,7 +472,7 @@ class ResourceItemTests(BaseWebAPITestCase):
             DefaultReviewer.objects.filter(name='default1').exists())
 
     @add_fixtures(['test_users'])
-    def test_delete_default_reviewer_with_permission_denied_error(self):
+    def test_delete_with_permission_denied_error(self):
         """Testing the DELETE default-reviewers/<id>/ API
         with Permission Denied error
         """
@@ -485,7 +485,7 @@ class ResourceItemTests(BaseWebAPITestCase):
             DefaultReviewer.objects.filter(name='default1').exists())
 
     @add_fixtures(['test_users', 'test_site'])
-    def test_delete_default_reviewer_with_site(self):
+    def test_delete_with_site(self):
         """Testing the DELETE default-reviewers/<id>/ API with a local site"""
         self._login_user(local_site=True, admin=True)
 
@@ -500,7 +500,7 @@ class ResourceItemTests(BaseWebAPITestCase):
             DefaultReviewer.objects.filter(name='default1').exists())
 
     @add_fixtures(['test_users', 'test_site'])
-    def test_delete_default_reviewer_with_site_and_permission_denied_error(self):
+    def test_delete_with_site_and_permission_denied_error(self):
         """Testing the DELETE default-reviewers/<id>/ API
         with a local site and Permission Denied error
         """
@@ -519,7 +519,7 @@ class ResourceItemTests(BaseWebAPITestCase):
     #
 
     @add_fixtures(['test_users', 'test_scmtools'])
-    def test_get_default_reviewer(self):
+    def test_get(self):
         """Testing the GET default-reviewers/<id>/ API"""
         user = User.objects.get(username='doc')
         group = Group.objects.create(name='group1')
@@ -550,7 +550,7 @@ class ResourceItemTests(BaseWebAPITestCase):
         self.assertEqual(repos[0]['title'], repository.name)
 
     @add_fixtures(['test_users', 'test_site'])
-    def test_get_default_reviewer_with_site(self):
+    def test_get_with_site(self):
         """Testing the GET default-reviewers/<id>/ API with a local site"""
         self._login_user(local_site=True)
 
@@ -566,7 +566,7 @@ class ResourceItemTests(BaseWebAPITestCase):
         self.assertEqual(rsp['default_reviewer']['file_regex'], '.*')
 
     @add_fixtures(['test_users', 'test_site'])
-    def test_get_default_reviewer_with_site_no_access(self):
+    def test_get_with_site_no_access(self):
         """Testing the GET default-reviewers/<id>/ API
         with a local site and Permission Denied error
         """
@@ -578,7 +578,7 @@ class ResourceItemTests(BaseWebAPITestCase):
                                                   self.local_site_name),
                     expected_status=403)
 
-    def test_get_default_reviewer_not_modified(self):
+    def test_get_not_modified(self):
         """Testing the GET default-reviewers/<id>/ API
         with Not Modified response
         """
@@ -594,7 +594,7 @@ class ResourceItemTests(BaseWebAPITestCase):
     #
 
     @add_fixtures(['test_users', 'test_scmtools'])
-    def test_put_default_reviewer(self, local_site=None):
+    def test_put(self, local_site=None):
         """Testing the PUT default-reviewers/<id>/ API"""
         name = 'my-default-reviewer'
         file_regex = '/foo/'
@@ -667,13 +667,12 @@ class ResourceItemTests(BaseWebAPITestCase):
         self.assertEqual(repos[1], repo2)
 
     @add_fixtures(['test_users', 'test_site', 'test_scmtools'])
-    def test_put_default_reviewer_with_site(self):
+    def test_put_with_site(self):
         """Testing the PUT default-reviewers/<id>/ API with a local site"""
-        self.test_put_default_reviewer(
-            LocalSite.objects.get(name=self.local_site_name))
+        self.test_put(LocalSite.objects.get(name=self.local_site_name))
 
     @add_fixtures(['test_users'])
-    def test_put_default_reviewer_with_permission_denied(self):
+    def test_put_with_permission_denied(self):
         """Testing the POST default-reviewers/ API with Permission Denied
         error
         """
@@ -688,7 +687,7 @@ class ResourceItemTests(BaseWebAPITestCase):
             expected_status=403)
 
     @add_fixtures(['test_users', 'test_site'])
-    def test_put_default_reviewer_with_permission_denied_and_local_site(self):
+    def test_put_with_permission_denied_and_local_site(self):
         """Testing the PUT default-reviewers/<id>/ API
         with a local site and Permission Denied error
         """
@@ -705,7 +704,7 @@ class ResourceItemTests(BaseWebAPITestCase):
             expected_status=403)
 
     @add_fixtures(['test_users'])
-    def test_put_default_reviewer_with_invalid_username(self):
+    def test_put_with_invalid_username(self):
         """Testing the PUT default-reviewers/<id>/ API with invalid username"""
         self._login_user(admin=True)
 
@@ -721,7 +720,7 @@ class ResourceItemTests(BaseWebAPITestCase):
         self.assertTrue('users' in rsp['fields'])
 
     @add_fixtures(['test_users', 'test_site'])
-    def test_put_default_reviewer_with_user_invalid_site(self):
+    def test_put_with_user_invalid_site(self):
         """Testing the PUT default-reviewers/<id>/ API
         with user and invalid site
         """
@@ -741,7 +740,7 @@ class ResourceItemTests(BaseWebAPITestCase):
         self.assertTrue('users' in rsp['fields'])
 
     @add_fixtures(['test_users'])
-    def test_put_default_reviewer_with_invalid_group(self):
+    def test_put_with_invalid_group(self):
         """Testing the PUT default-reviewers/<id>/ API with invalid group"""
         self._login_user(admin=True)
 
@@ -757,7 +756,7 @@ class ResourceItemTests(BaseWebAPITestCase):
         self.assertTrue('groups' in rsp['fields'])
 
     @add_fixtures(['test_users', 'test_site'])
-    def test_put_default_reviewer_with_group_invalid_site(self):
+    def test_put_with_group_invalid_site(self):
         """Testing the PUT default-reviewers/<id>/ API
         with group and invalid site
         """
@@ -777,7 +776,7 @@ class ResourceItemTests(BaseWebAPITestCase):
         self.assertTrue('groups' in rsp['fields'])
 
     @add_fixtures(['test_users'])
-    def test_put_default_reviewer_with_invalid_repository(self):
+    def test_put_with_invalid_repository(self):
         """Testing the PUT default-reviewers/<id>/ API
         with invalid repository
         """
@@ -795,7 +794,7 @@ class ResourceItemTests(BaseWebAPITestCase):
         self.assertTrue('repositories' in rsp['fields'])
 
     @add_fixtures(['test_users', 'test_site', 'test_scmtools'])
-    def test_put_default_reviewer_with_repository_invalid_site(self):
+    def test_put_with_repository_invalid_site(self):
         """Testing the PUT default-reviewers/<id>/ API
         with repository and invalid site
         """

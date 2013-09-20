@@ -21,7 +21,7 @@ class ResourceListTests(BaseWebAPITestCase):
     # HTTP GET tests
     #
 
-    def test_get_diffs(self):
+    def test_get(self):
         """Testing the GET review-requests/<id>/diffs/ API"""
         review_request = self.create_review_request(create_repository=True,
                                                     publish=True)
@@ -35,7 +35,7 @@ class ResourceListTests(BaseWebAPITestCase):
         self.assertEqual(rsp['diffs'][0]['name'], diffset.name)
 
     @add_fixtures(['test_site'])
-    def test_get_diffs_with_site(self):
+    def test_get_with_site(self):
         """Testing the GET review-requests/<id>/diffs API with a local site"""
         review_request = self.create_review_request(create_repository=True,
                                                     with_local_site=True,
@@ -52,7 +52,7 @@ class ResourceListTests(BaseWebAPITestCase):
         self.assertEqual(rsp['diffs'][0]['name'], diffset.name)
 
     @add_fixtures(['test_site'])
-    def test_get_diffs_with_site_no_access(self):
+    def test_get_with_site_no_access(self):
         """Testing the GET review-requests/<id>/diffs API
         with a local site and Permission Denied error
         """
@@ -68,7 +68,7 @@ class ResourceListTests(BaseWebAPITestCase):
     # HTTP POST tests
     #
 
-    def test_post_diffs(self):
+    def test_post(self):
         """Testing the POST review-requests/<id>/diffs/ API"""
         repository = self.create_repository(tool_name='Test')
         review_request = self.create_review_request(
@@ -96,7 +96,7 @@ class ResourceListTests(BaseWebAPITestCase):
         self.assertEqual(diffset.basedir, '/trunk')
         self.assertEqual(diffset.base_commit_id, '1234')
 
-    def test_post_diffs_with_missing_data(self):
+    def test_post_with_missing_data(self):
         """Testing the POST review-requests/<id>/diffs/ API
         with Invalid Form Data
         """
@@ -132,7 +132,7 @@ class ResourceListTests(BaseWebAPITestCase):
         self.assertEqual(rsp['err']['code'], INVALID_FORM_DATA.code)
         self.assertTrue('basedir' in rsp['fields'])
 
-    def test_post_diffs_too_big(self):
+    def test_post_too_big(self):
         """Testing the POST review-requests/<id>/diffs/ API
         with diff exceeding max size
         """
@@ -165,7 +165,7 @@ class ResourceListTests(BaseWebAPITestCase):
                          self.siteconfig.get('diffviewer_max_diff_size'))
 
     @add_fixtures(['test_site'])
-    def test_post_diffs_with_site(self):
+    def test_post_with_site(self):
         """Testing the POST review-requests/<id>/diffs/ API
         with a local site
         """
@@ -203,7 +203,7 @@ class ResourceItemTests(BaseWebAPITestCase):
     # HTTP GET tests
     #
 
-    def test_get_diff(self):
+    def test_get(self):
         """Testing the GET review-requests/<id>/diffs/<revision>/ API"""
         review_request = self.create_review_request(create_repository=True,
                                                     publish=True)
@@ -217,7 +217,7 @@ class ResourceItemTests(BaseWebAPITestCase):
         self.assertEqual(rsp['diff']['name'], diffset.name)
 
     @add_fixtures(['test_site'])
-    def test_get_diff_with_site(self):
+    def test_get_with_site(self):
         """Testing the GET review-requests/<id>/diffs/<revision>/ API
         with a local site
         """
@@ -235,7 +235,7 @@ class ResourceItemTests(BaseWebAPITestCase):
         self.assertEqual(rsp['diff']['id'], diffset.id)
         self.assertEqual(rsp['diff']['name'], diffset.name)
 
-    def test_get_diff_not_modified(self):
+    def test_get_not_modified(self):
         """Testing the GET review-requests/<id>/diffs/<revision>/ API
         with Not Modified response
         """
@@ -248,7 +248,7 @@ class ResourceItemTests(BaseWebAPITestCase):
             check_last_modified=True)
 
     @add_fixtures(['test_site'])
-    def test_get_diff_with_site_no_access(self):
+    def test_get_with_site_no_access(self):
         """Testing the GET review-requests/<id>/diffs/<revision>/ API
         with a local site and Permission Denied error
         """

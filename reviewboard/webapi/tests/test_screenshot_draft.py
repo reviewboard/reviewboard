@@ -19,7 +19,7 @@ class ResourceListTests(BaseWebAPITestCase):
     # HTTP POST tests
     #
 
-    def test_post_screenshots(self):
+    def test_post(self):
         """Testing the POST review-requests/<id>/draft/screenshots/ API"""
         review_request = self.create_review_request(submitter=self.user,
                                                     publish=True)
@@ -33,7 +33,7 @@ class ResourceListTests(BaseWebAPITestCase):
 
         self.assertEqual(rsp['stat'], 'ok')
 
-    def test_post_screenshots_with_permission_denied_error(self):
+    def test_post_with_permission_denied_error(self):
         """Testing the POST review-requests/<id>/draft/screenshots/ API
         with Permission Denied error
         """
@@ -54,7 +54,7 @@ class ResourceListTests(BaseWebAPITestCase):
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
     @add_fixtures(['test_site'])
-    def test_post_screenshots_with_site(self):
+    def test_post_with_site(self):
         """Testing the POST review-requests/<id>/draft/screenshots/ API
         with a local site
         """
@@ -86,7 +86,7 @@ class ResourceListTests(BaseWebAPITestCase):
         return review_request, rsp['draft_screenshot']['id']
 
     @add_fixtures(['test_site'])
-    def test_post_screenshots_with_site_no_access(self):
+    def test_post_with_site_no_access(self):
         """Testing the POST review-requests/<id>/draft/screenshots/ API
         with a local site and Permission Denied error
         """
@@ -112,7 +112,7 @@ class ResourceItemTests(BaseWebAPITestCase):
     # HTTP PUT tests
     #
 
-    def test_put_screenshot(self):
+    def test_put(self):
         """Testing the PUT review-requests/<id>/draft/screenshots/<id>/ API"""
         draft_caption = 'The new caption'
 
@@ -147,7 +147,7 @@ class ResourceItemTests(BaseWebAPITestCase):
         self.assertEqual(screenshot.draft_caption, draft_caption)
 
     @add_fixtures(['test_site'])
-    def test_put_screenshot_with_site(self):
+    def test_put_with_site(self):
         """Testing the PUT review-requests/<id>/draft/screenshots/<id>/ API
         with a local site
         """
@@ -173,7 +173,7 @@ class ResourceItemTests(BaseWebAPITestCase):
         self.assertEqual(screenshot.draft_caption, draft_caption)
 
     @add_fixtures(['test_site'])
-    def test_put_screenshot_with_site_no_access(self):
+    def test_put_with_site_no_access(self):
         """Testing the PUT review-requests/<id>/draft/screenshots/<id>/ API
         with a local site and Permission Denied error
         """

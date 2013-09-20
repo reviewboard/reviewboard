@@ -19,7 +19,7 @@ class ResourceListTests(BaseWebAPITestCase):
     # HTTP GET tests
     #
 
-    def test_get_file_attachment_comments(self):
+    def test_get(self):
         """Testing the
         GET review-requests/<id>/file-attachments/<id>/comments/ API
         """
@@ -50,7 +50,7 @@ class ResourceListTests(BaseWebAPITestCase):
             self.assertEqual(rsp_comments[i]['text'], comments[i].text)
 
     @add_fixtures(['test_site'])
-    def test_get_file_attachment_comments_with_site(self):
+    def test_get_with_site(self):
         """Testing the
         GET review-requests/<id>/file-attachments/<id>/comments/ API
         with a local site
@@ -78,7 +78,7 @@ class ResourceListTests(BaseWebAPITestCase):
         self.assertEqual(rsp_comments[0]['text'], comment.text)
 
     @add_fixtures(['test_site'])
-    def test_get_file_attachment_comments_with_site_no_access(self):
+    def test_get_with_site_no_access(self):
         """Testing the
         GET review-requests/<id>/file-attachments/<id>/comments/ API
         with a local site and Permission Denied error
@@ -109,7 +109,7 @@ class ResourceListTests(BaseWebAPITestCase):
     # HTTP POST tests
     #
 
-    def test_post_file_attachment_comments_with_extra_fields(self):
+    def test_post_with_extra_fields(self):
         """Testing the
         POST review-requests/<id>/file-attachments/<id>/comments/ API
         with extra fields
@@ -148,7 +148,7 @@ class ResourceListTests(BaseWebAPITestCase):
 
         return rsp
 
-    def test_post_file_attachment_comments_with_diff(self):
+    def test_post_with_diff(self):
         """Testing the
         POST review-requests/<id>/file-attachments/<id>/comments/ API
         with diffed file attachments
@@ -191,7 +191,7 @@ class ResourceItemTests(BaseWebAPITestCase):
     # HTTP PUT tests
     #
 
-    def test_put_file_attachment_comments_with_extra_fields(self):
+    def test_put_with_extra_fields(self):
         """Testing the
         PUT review-requests/<id>/file-attachments/<id>/comments/<id>/ API
         with extra fields

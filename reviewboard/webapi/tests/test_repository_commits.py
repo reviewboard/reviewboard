@@ -19,7 +19,7 @@ class RepositoryCommitsResourceTests(BaseWebAPITestCase):
     # List tests
     #
 
-    def test_get_repository_commits(self):
+    def test_get(self):
         """Testing the GET repositories/<id>/commits/ API"""
         repository = self.create_repository(tool_name='Test')
 
@@ -31,7 +31,7 @@ class RepositoryCommitsResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['commits'][0]['message'], 'Commit 5')
         self.assertEqual(rsp['commits'][3]['author_name'], 'user2')
 
-    def test_get_repository_commits_without_start(self):
+    def test_get_without_start(self):
         """Testing the GET repositories/<id>/commits/ API
         without providing a start parameter
         """
@@ -43,7 +43,7 @@ class RepositoryCommitsResourceTests(BaseWebAPITestCase):
         self.assertTrue('start' in rsp['fields'])
 
     @add_fixtures(['test_site'])
-    def test_get_repository_commits_with_site(self):
+    def test_get_with_site(self):
         """Testing the GET repositories/<id>/commits/ API with a local site"""
         self._login_user(local_site=True)
         repository = self.create_repository(with_local_site=True,
@@ -59,7 +59,7 @@ class RepositoryCommitsResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['commits'][1]['message'], 'Commit 6')
 
     @add_fixtures(['test_site'])
-    def test_get_repository_commits_with_site_no_access(self):
+    def test_get_with_site_no_access(self):
         """Testing the GET repositories/<id>/commits/ API
         with a local site and Permission Denied error
         """
@@ -69,7 +69,7 @@ class RepositoryCommitsResourceTests(BaseWebAPITestCase):
             get_repository_commits_url(repository, self.local_site_name),
             expected_status=403)
 
-    def test_get_repository_commits_with_no_support(self):
+    def test_get_with_no_support(self):
         """Testing the GET repositories/<id>/commits/ API
         with a repository that does not implement it
         """
