@@ -702,7 +702,7 @@ class DashboardDataGrid(ReviewRequestDataGrid):
         elif view == 'starred':
             profile = user.get_profile()
             self.queryset = profile.starred_review_requests.public(
-                user, local_site=self.local_site)
+                user, local_site=self.local_site, status=None)
             self.title = _(u"Starred Review Requests")
         elif view == 'incoming':
             self.queryset = ReviewRequest.objects.to_user(

@@ -114,7 +114,8 @@ class Profile(models.Model):
         self.starred_review_requests.add(review_request)
 
         if (review_request.public and
-                review_request.status == ReviewRequest.PENDING_REVIEW):
+            (review_request.status == ReviewRequest.PENDING_REVIEW or
+             review_request.status == ReviewRequest.SUBMITTED)):
             site_profile, is_new = LocalSiteProfile.objects.get_or_create(
                 user=self.user,
                 local_site=review_request.local_site,
@@ -139,7 +140,8 @@ class Profile(models.Model):
             self.starred_review_requests.remove(review_request)
 
         if (review_request.public and
-                review_request.status == ReviewRequest.PENDING_REVIEW):
+            (review_request.status == ReviewRequest.PENDING_REVIEW or
+             review_request.status == ReviewRequest.SUBMITTED)):
             site_profile, is_new = LocalSiteProfile.objects.get_or_create(
                 user=self.user,
                 local_site=review_request.local_site,
