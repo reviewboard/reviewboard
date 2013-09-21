@@ -555,7 +555,6 @@ PIPELINE_CSS = {
     },
 }
 
-BLESS_IMPORT_PATHS = ('rb/css/',)
 PIPELINE_CSS_COMPRESSOR = None
 PIPELINE_JS_COMPRESSOR = 'pipeline.compressors.uglifyjs.UglifyJSCompressor'
 
