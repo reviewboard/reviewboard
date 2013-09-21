@@ -137,7 +137,9 @@ class ResourceDirective(Directive):
 
         # Main section
         main_section += nodes.title(text=resource_title)
-        main_section += parse_text(self, inspect.getdoc(resource))
+        main_section += parse_text(
+            self, inspect.getdoc(resource),
+            where='%s class docstring' % self.options['classname'])
 
         # Details section
         details_section = nodes.section(ids=['details'])
@@ -417,7 +419,8 @@ class ResourceDirective(Directive):
                 append_row(tbody,
                            [name_node,
                             type_node,
-                            parse_text(self, info['description'])])
+                            parse_text(self, info['description'],
+                                       where='%s field description' % field)])
         else:
             for field in sorted(fields):
                 name = field
@@ -499,7 +502,9 @@ class ResourceDirective(Directive):
         http_method_func = self.get_http_method_func(resource, http_method)
 
         # Description text
-        returned_nodes = [parse_text(self, doc)]
+        returned_nodes = [
+            parse_text(self, doc, where='HTTP %s doc' % http_method)
+        ]
 
         # Request Parameters section
         required_fields = getattr(http_method_func, 'required_fields', [])
@@ -732,10 +737,11 @@ class ErrorDirective(Directive):
 
             append_detail_row(tbody, 'HTTP Headers', content)
 
-
         # Description
-        append_detail_row(tbody, 'Description',
-                          parse_text(self, '\n'.join(self.content)))
+        append_detail_row(
+            tbody, 'Description',
+            parse_text(self, '\n'.join(self.content),
+                       where='API error %s description' % error_obj.code))
 
         return table
 
@@ -755,8 +761,11 @@ class ErrorDirective(Directive):
             raise ErrorNotFound(self, name)
 
 
-def parse_text(directive, text, node_type=nodes.paragraph):
+def parse_text(directive, text, node_type=nodes.paragraph,
+               where=None):
     """Parses text in ReST format and returns a node with the content."""
+    assert text, 'Missing text during parse_text in %s' % where
+
     vl = ViewList()
 
     for line in text.split('\n'):
