@@ -118,7 +118,7 @@ class ReviewDiffCommentResource(BaseDiffCommentResource):
 
         new_comment = self.model(filediff=filediff,
                                  interfilediff=interfilediff,
-                                 text=text,
+                                 text=text.strip(),
                                  first_line=first_line,
                                  num_lines=num_lines,
                                  issue_opened=bool(issue_opened))

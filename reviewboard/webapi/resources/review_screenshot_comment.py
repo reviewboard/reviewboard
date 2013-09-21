@@ -94,7 +94,8 @@ class ReviewScreenshotCommentResource(BaseScreenshotCommentResource):
             }
 
         new_comment = self.model(screenshot=screenshot, x=x, y=y, w=w, h=h,
-                                 text=text, issue_opened=bool(issue_opened))
+                                 text=text.strip(),
+                                 issue_opened=bool(issue_opened))
 
         if issue_opened:
             new_comment.issue_status = BaseComment.OPEN

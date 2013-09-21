@@ -111,7 +111,7 @@ class ReviewFileAttachmentCommentResource(BaseFileAttachmentCommentResource):
         new_comment = self.model(
             file_attachment=file_attachment,
             diff_against_file_attachment=diff_against_file_attachment,
-            text=text,
+            text=text.strip(),
             issue_opened=bool(issue_opened))
 
         self._import_extra_data(new_comment.extra_data, extra_fields)

@@ -235,6 +235,9 @@ class BaseReviewResource(WebAPIResource):
             value = kwargs.get(field, None)
 
             if value is not None:
+                if isinstance(value, basestring):
+                    value = value.strip()
+
                 setattr(review, field, value)
 
         review.save()

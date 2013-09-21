@@ -106,7 +106,7 @@ class ReviewReplyFileAttachmentCommentResource(
                                      reply_to=comment)
             is_new = True
 
-        new_comment.text = text
+        new_comment.text = text.strip()
         new_comment.save()
 
         data = {

@@ -218,7 +218,7 @@ class ReviewReplyResource(BaseReviewResource):
             value = kwargs.get(field, None)
 
             if value is not None:
-                setattr(reply, field, value)
+                setattr(reply, field, value.strip())
 
                 if value == '':
                     reply_to = None
