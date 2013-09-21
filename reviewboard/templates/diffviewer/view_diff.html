@@ -1,5 +1,5 @@
 {% extends "reviews/reviewable_base.html" %}
-{% load difftags djblets_deco djblets_utils i18n rb_extensions reviewtags %}
+{% load difftags djblets_deco djblets_js djblets_utils i18n rb_extensions reviewtags %}
 {% load staticfiles tz %}
 
 {% block title %}{{review_request_details.summary}} | {% trans "Diff Viewer" %}{% endblock %}
@@ -104,62 +104,8 @@
 
 <script>
     RB.PageManager.setPage(new RB.DiffViewerPageView({
-        files: new RB.DiffFileCollection([
-{%  for file in files %}
-            new RB.DiffFile({
-                newfile: {{file.newfile|yesno:"true,false"}},
-                binary: {{file.binary|yesno:"true,false"}},
-                deleted: {{file.deleted|yesno:"true,false"}},
-                id: {{file.filediff.pk}},
-                depotFilename: '{{file.depot_filename|escapejs}}',
-                destFilename: '{{file.dest_filename|escapejs}}',
-                destRevision: '{{file.dest_revision|escapejs}}',
-                revision: '{{file.revision|escapejs}}',
-                filediff: {
-                    id: {{file.filediff.pk}},
-                    revision: {{file.filediff.diffset.revision}}
-                },
-{%   if file.interfilediff %}
-                interfilediff: {
-                    id: {{file.interfilediff.pk}},
-                    revision: {{file.interfilediff.diffset.revision}}
-                },
-{%   endif %}
-                index: {{file.index}},
-                commentCounts: {% commentcounts file.filediff file.interfilediff %}
-            }){% if not forloop.last %},{% endif %}
-{%  endfor %}
-        ]),
-        revision: new RB.DiffRevision({
-            revision: {{diffset.revision}},
-{%  if interdiffset %}
-            interdiffRevision: {{interdiffset.revision}},
-{%  else %}
-            interdiffRevision: null,
-{%  endif %}
-{%  if latest_diffset %}
-            latestRevision: {{latest_diffset.revision}},
-{%  endif %}
-            isInterdiff: {{interdiffset|yesno:"true,false"}},
-            isDraftDiff: {{is_draft_diff|yesno:"true,false"}}
-        }),
-        numDiffs: {{num_diffs}},
-        pagination: new RB.Pagination({
-            isPaginated: {{is_paginated|yesno:"true,false"}},
-            pages: {{pages}},
-            hasPrevious: {{has_previous|yesno:"true,false"}},
-            hasNext: {{has_next|yesno:"true,false"}},
-            pageNumbers: [
-{%  for num in page_numbers %}{{num}}{% if not forloop.last %},{% endif %}{% endfor %}
-            ],
-{%  if has_previous %}
-            previousPage: {{previous_page}},
-{%  endif %}
-{%  if has_next %}
-            nextPage: {{next_page}},
-{%  endif %}
-            currentPage: {{page}}
-        }),
+        model: new RB.DiffViewerPageModel({{diff_context|json_dumps}},
+                                          {parse: true}),
         checkUpdatesType: 'diff',
 {%  localtime off %}
         lastActivityTimestamp: '{{last_activity_time|date:"c"}}',

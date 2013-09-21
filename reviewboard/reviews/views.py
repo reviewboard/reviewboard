@@ -43,7 +43,8 @@ from reviewboard.extensions.hooks import (DashboardHook,
                                           ReviewRequestDetailHook,
                                           UserPageSidebarHook)
 from reviewboard.reviews.ui.screenshot import LegacyScreenshotReviewUI
-from reviewboard.reviews.context import make_review_request_context
+from reviewboard.reviews.context import (comment_counts,
+                                         make_review_request_context)
 from reviewboard.reviews.datagrids import (DashboardDataGrid,
                                            GroupDataGrid,
                                            ReviewRequestDataGrid,
@@ -1027,27 +1028,65 @@ class ReviewsDiffViewerView(DiffViewerView):
             key = (comment.filediff_id, comment.interfilediff_id)
             comments.setdefault(key, []).append(comment)
 
-        context = make_review_request_context(self.request,
-                                              self.review_request, {
-            'diffsets': diffsets,
-            'latest_diffset': latest_diffset,
-            'review': pending_review,
-            'review_request_details': self.draft or self.review_request,
-            'draft': self.draft,
+        context = super(ReviewsDiffViewerView, self).get_context_data(
+            *args, **kwargs)
+
+        context['diff_context'].update({
+            'num_diffs': num_diffs,
+        })
+        context['diff_context']['revision'].update({
+            'latest_revision': (latest_diffset.revision
+                                if latest_diffset else None),
             'is_draft_diff': is_draft_diff,
             'is_draft_interdiff': is_draft_interdiff,
-            'num_diffs': num_diffs,
-            'last_activity_time': last_activity_time,
-            'file_attachments': [file_attachment
-                                 for file_attachment in file_attachments
-                                 if not file_attachment.is_from_diff],
-            'all_file_attachments': file_attachments,
-            'screenshots': screenshots,
-            'comments': comments,
         })
 
-        return super(ReviewsDiffViewerView, self).get_context_data(
-            extra_context=context, *args, **kwargs)
+        files = []
+        for f in context['files']:
+            data = {
+                'newfile': f['newfile'],
+                'binary': f['binary'],
+                'deleted': f['deleted'],
+                'id': f['filediff'].pk,
+                'depot_filename': f['depot_filename'],
+                'dest_filename': f['dest_filename'],
+                'dest_revision': f['dest_revision'],
+                'revision': f['revision'],
+                'filediff': {
+                    'id': f['filediff'].id,
+                    'revision': f['filediff'].diffset.revision,
+                },
+                'index': f['index'],
+                'comment_counts': comment_counts(
+                    context, f['filediff'], f['interfilediff']),
+            }
+
+            if f['interfilediff']:
+                data['interfilediff'] = {
+                    'id': f['interfilediff'].id,
+                    'revision': f['interfilediff'].diffset.revision,
+                }
+
+            files.append(data)
+
+        context['diff_context']['files'] = files
+
+        context.update(
+            make_review_request_context(self.request, self.review_request, {
+                'diffsets': diffsets,
+                'review': pending_review,
+                'review_request_details': self.draft or self.review_request,
+                'draft': self.draft,
+                'last_activity_time': last_activity_time,
+                'file_attachments': [file_attachment
+                                     for file_attachment in file_attachments
+                                     if not file_attachment.is_from_diff],
+                'all_file_attachments': file_attachments,
+                'screenshots': screenshots,
+                'comments': comments,
+            }))
+
+        return context
 
 
 @check_login_required

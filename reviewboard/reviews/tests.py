@@ -991,7 +991,9 @@ class ViewTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
 
-        self.assertEqual(self.getContextVar(response, 'num_diffs'), 2)
+        self.assertEqual(
+            self.getContextVar(response, 'diff_context')['num_diffs'],
+            2)
 
         files = self.getContextVar(response, 'files')
         self.assertTrue(files)
@@ -1070,7 +1072,9 @@ class ViewTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
 
-        self.assertEqual(self.getContextVar(response, 'num_diffs'), 2)
+        self.assertEqual(
+            self.getContextVar(response, 'diff_context')['num_diffs'],
+            2)
 
         files = self.getContextVar(response, 'files')
         self.assertTrue(files)

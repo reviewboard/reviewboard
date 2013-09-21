@@ -151,28 +151,38 @@ class DiffViewerView(TemplateView):
 
         page = paginator.page(page_num)
 
+        diff_context = {
+            'revision': {
+                'revision': diffset.revision,
+                'is_interdiff': interdiffset is not None,
+                'interdiff_revision': (interdiffset.revision
+                                       if interdiffset else None),
+            },
+            'pagination': {
+                'is_paginated': page.has_other_pages(),
+                'current_page': page.number,
+                'pages': paginator.num_pages,
+                'page_numbers': paginator.page_range,
+                'has_next': page.has_next(),
+                'has_previous': page.has_previous(),
+            },
+        }
+
+        if page.has_next():
+            diff_context['pagination']['next_page'] = page.next_page_number()
+
+        if page.has_previous():
+            diff_context['pagination']['previous_page'] = \
+                page.previous_page_number()
+
         context = dict({
+            'diff_context': diff_context,
             'diffset': diffset,
             'interdiffset': interdiffset,
             'diffset_pair': (diffset, interdiffset),
             'files': page.object_list,
             'collapseall': self.collapse_diffs,
-
-            # Add the pagination context
-            'is_paginated': page.has_other_pages(),
-            'page': page.number,
-            'pages': paginator.num_pages,
-            'page_numbers': paginator.page_range,
-            'has_next': page.has_next(),
-            'has_previous': page.has_previous(),
-            'page_start_index': page.start_index(),
         }, **extra_context)
-
-        if page.has_next():
-            context['next_page'] = page.next_page_number()
-
-        if page.has_previous():
-            context['previous_page'] = page.previous_page_number()
 
         return context
 

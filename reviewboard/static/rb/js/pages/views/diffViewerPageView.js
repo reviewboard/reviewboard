@@ -29,6 +29,9 @@ DiffFileIndexView = Backbone.View.extend({
         this._iconInsertColor = null;
         this._iconReplaceColor = null;
         this._iconDeleteColor = null;
+
+        this.collection = this.options.collection;
+        this.listenTo(this.collection, 'update', this.update);
     },
 
     /*
@@ -53,6 +56,9 @@ DiffFileIndexView = Backbone.View.extend({
         this._iconDeleteColor = $iconColor.css('color');
 
         $iconColor.remove();
+
+        // Add the files from the collection
+        this.update();
 
         return this;
     },
@@ -85,13 +91,11 @@ DiffFileIndexView = Backbone.View.extend({
 
     /*
      * Update the list of files in the index view.
-     *
-     * `files` is a DiffFileCollection.
      */
-    update: function(files) {
+    update: function() {
         this._$itemsTable.empty();
 
-        files.each(function(file) {
+        this.collection.each(function(file) {
             this._$itemsTable.append(this._itemTemplate(
                 _.defaults({
                     binaryFileText: gettext('Binary file'),
@@ -296,7 +300,7 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
         this._diffReviewableViews = [];
         this._diffFileIndexView = null;
 
-        this._revisionModel = this.options.revision;
+        this.listenTo(this.model.get('files'), 'update', this._setFiles);
 
         /* Check to see if there's an anchor we need to scroll to. */
         url = document.location.toString();
@@ -316,7 +320,9 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
      * Renders the page and begins loading all diffs.
      */
     render: function() {
-        var $reviewRequest;
+        var $reviewRequest,
+            numDiffs = this.model.get('numDiffs'),
+            revisionModel = this.model.get('revision');
 
         _.super(this).render.call(this);
 
@@ -325,29 +331,28 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
         this._$controls = $reviewRequest.find('ul.controls');
 
         this._diffFileIndexView = new DiffFileIndexView({
-            el: $('#diff_index')
+            el: $('#diff_index'),
+            collection: this.model.get('files')
         });
-        this._diffFileIndexView
-            .render()
-            .update(this.options.files);
+        this._diffFileIndexView.render();
 
         this.listenTo(this._diffFileIndexView, 'anchorClicked',
                       this.selectAnchorByName);
 
         this._diffRevisionLabelView = new RB.DiffRevisionLabelView({
             el: $('#diff_revision_label'),
-            model: this._revisionModel
+            model: revisionModel
         });
         this._diffRevisionLabelView.render();
 
         this.listenTo(this._diffRevisionLabelView, 'revisionSelected',
                       this._onRevisionSelected);
 
-        if (this.options.numDiffs > 1) {
+        if (numDiffs > 1) {
             this._diffRevisionSelectorView = new RB.DiffRevisionSelectorView({
                 el: $('#diff_revision_selector'),
-                model: this._revisionModel,
-                numDiffs: this.options.numDiffs
+                model: revisionModel,
+                numDiffs: numDiffs
             });
             this._diffRevisionSelectorView.render();
 
@@ -355,17 +360,16 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
                           this._onRevisionSelected);
         }
 
-        this._paginationModel = this.options.pagination;
         this._paginationView = new RB.PaginationView({
             el: $('#pagination'),
-            model: this._paginationModel
+            model: this.model.get('pagination')
         });
         this._paginationView.render();
 
         $('#diffs').bindClass(RB.UserSession.instance,
                               'diffsShowExtraWhitespace', 'ewhl');
 
-        this._setFiles(this.options.files);
+        this._setFiles();
 
         return this;
     },
@@ -397,11 +401,10 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
      *
      * This will replace the displayed files with a set of pending entries,
      * queue loads for each file, and start the queue.
-     *
-     * `files` is a DiffFileCollection
      */
-    _setFiles: function(files) {
-        var $diffs = $('#diffs').empty();
+    _setFiles: function() {
+        var files = this.model.get('files'),
+            $diffs = $('#diffs').empty();
 
         files.each(function(file) {
             var filediff = file.get('filediff'),

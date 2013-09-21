@@ -420,6 +420,7 @@ PIPELINE_JS = {
             'rb/js/models/textBasedCommentBlockModel.js',
             'rb/js/models/textBasedReviewableModel.js',
             'rb/js/models/markdownReviewableModel.js',
+            'rb/js/pages/models/diffViewerPageModel.js',
             'rb/js/pages/views/reviewablePageView.js',
             'rb/js/pages/views/reviewRequestPageView.js',
             'rb/js/pages/views/diffViewerPageView.js',
