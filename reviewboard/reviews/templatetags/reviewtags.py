@@ -12,7 +12,6 @@ from djblets.util.decorators import basictag, blocktag
 from djblets.util.humanize import humanize_list
 
 from reviewboard.accounts.models import Profile
-from reviewboard.diffviewer.models import DiffSet
 from reviewboard.reviews.models import (BaseComment, Group,
                                         ReviewRequest, ScreenshotComment,
                                         FileAttachmentComment)
@@ -287,85 +286,6 @@ def bug_url(bug_id, review_request):
                           review_request.repository.bug_tracker)
 
     return None
-
-
-@register.filter
-def diffsets_with_comments(review, current_pair):
-    """
-    Returns a list of diffsets in the review that contain draft comments.
-    """
-    if not review:
-        return
-
-    diffsets = DiffSet.objects.filter(files__comments__review=review)
-    diffsets = diffsets.filter(files__comments__interfilediff__isnull=True)
-    diffsets = diffsets.distinct()
-
-    for diffset in diffsets:
-        yield {
-            'diffset': diffset,
-            'is_current': (current_pair[0] == diffset and
-                           current_pair[1] is None),
-        }
-
-
-@register.filter
-def interdiffs_with_comments(review, current_pair):
-    """
-    Returns a list of interdiffs in the review that contain draft comments.
-    """
-    if not review:
-        return
-
-    diffsets = DiffSet.objects.filter(files__comments__review=review)
-    diffsets = diffsets.filter(files__comments__interfilediff__isnull=False)
-    diffsets = diffsets.distinct()
-
-    for diffset in diffsets:
-        interdiffs = DiffSet.objects.filter(
-            files__interdiff_comments__filediff__diffset=diffset).distinct()
-
-        for interdiff in interdiffs:
-            yield {
-                'diffset': diffset,
-                'interdiff': interdiff,
-                'is_current': (current_pair[0] == diffset and
-                               current_pair[1] == interdiff),
-            }
-
-
-@register.filter
-def has_comments_in_diffsets_excluding(review, diffset_pair):
-    """
-    Returns whether or not the specified review has any comments that
-    aren't in the specified diffset or interdiff.
-    """
-    if not review:
-        return False
-
-    current_diffset, interdiff = diffset_pair
-
-    # See if there are any diffsets with comments on them in this review.
-    q = DiffSet.objects.filter(files__comments__review=review)
-    q = q.filter(files__comments__interfilediff__isnull=True).distinct()
-
-    if not interdiff:
-        # The user is browsing a standard diffset, so filter it out.
-        q = q.exclude(pk=current_diffset.id)
-
-    if q.count() > 0:
-        return True
-
-    # See if there are any interdiffs with comments on them in this review.
-    q = DiffSet.objects.filter(files__comments__review=review)
-    q = q.filter(files__comments__interfilediff__isnull=False)
-
-    if interdiff:
-        # The user is browsing an interdiff, so filter it out.
-        q = q.exclude(pk=current_diffset.id,
-                      files__comments__interfilediff__diffset=interdiff)
-
-    return q.count() > 0
 
 
 @register.tag

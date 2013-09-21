@@ -3,6 +3,7 @@
  */
 RB.DiffViewerPageModel = Backbone.Model.extend({
     defaults: {
+        commentsHint: null,
         files: null,
         numDiffs: 1,
         pagination: null,
@@ -14,6 +15,8 @@ RB.DiffViewerPageModel = Backbone.Model.extend({
      */
     parse: function(rsp) {
         return {
+            commentsHint: new RB.DiffCommentsHint(rsp.comments_hint,
+                                                  {parse: true}),
             files: new RB.DiffFileCollection(rsp.files, {parse: true}),
             numDiffs: rsp.num_diffs,
             pagination: new RB.Pagination(rsp.pagination, {parse: true}),
@@ -34,6 +37,13 @@ RB.DiffViewerPageModel = Backbone.Model.extend({
         var toSet = {
             numDiffs: attrs.numDiffs
         };
+
+        if (this.attributes.commentsHint) {
+            this.attributes.commentsHint.set(
+                attrs.commentsHint.attributes);
+        } else {
+            toSet.commentsHint = attrs.commentsHint;
+        }
 
         if (this.attributes.files) {
             this.attributes.files.set(attrs.files.models);

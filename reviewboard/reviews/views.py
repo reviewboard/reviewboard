@@ -44,6 +44,9 @@ from reviewboard.extensions.hooks import (DashboardHook,
                                           UserPageSidebarHook)
 from reviewboard.reviews.ui.screenshot import LegacyScreenshotReviewUI
 from reviewboard.reviews.context import (comment_counts,
+                                         diffsets_with_comments,
+                                         has_comments_in_diffsets_excluding,
+                                         interdiffs_with_comments,
                                          make_review_request_context)
 from reviewboard.reviews.datagrids import (DashboardDataGrid,
                                            GroupDataGrid,
@@ -1031,8 +1034,30 @@ class ReviewsDiffViewerView(DiffViewerView):
         context = super(ReviewsDiffViewerView, self).get_context_data(
             *args, **kwargs)
 
+        diffset_pair = context['diffset_pair']
         context['diff_context'].update({
             'num_diffs': num_diffs,
+            'comments_hint': {
+                'has_other_comments': has_comments_in_diffsets_excluding(
+                    pending_review, diffset_pair),
+                'diffsets_with_comments': [
+                    {
+                        'revision': diffset_info['diffset'].revision,
+                        'is_current': diffset_info['is_current'],
+                    }
+                    for diffset_info in diffsets_with_comments(
+                        pending_review, diffset_pair)
+                ],
+                'interdiffs_with_comments': [
+                    {
+                        'old_revision': pair['diffset'].revision,
+                        'new_revision': pair['interdiff'].revision,
+                        'is_current': pair['is_current'],
+                    }
+                    for pair in interdiffs_with_comments(
+                        pending_review, diffset_pair)
+                ],
+            },
         })
         context['diff_context']['revision'].update({
             'latest_revision': (latest_diffset.revision

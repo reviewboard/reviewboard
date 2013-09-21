@@ -360,6 +360,15 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
                           this._onRevisionSelected);
         }
 
+        this._commentsHintModel = this.options.commentsHint;
+        this._commentsHintView = new RB.DiffCommentsHintView({
+            el: $('#diff_comments_hint'),
+            model: this.model.get('commentsHint')
+        });
+        this._commentsHintView.render();
+        this.listenTo(this._commentsHintView, 'revisionSelected',
+                      this._onRevisionSelected);
+
         this._paginationView = new RB.PaginationView({
             el: $('#pagination'),
             model: this.model.get('pagination')
