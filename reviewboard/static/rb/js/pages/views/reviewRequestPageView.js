@@ -16,6 +16,9 @@ RB.ReviewRequestPageView = RB.ReviewablePageView.extend({
             pageEditState: this.reviewRequestEditor,
             reviewRequest: this.reviewRequest
         });
+
+        this.reviewRequestEditorView.issueSummaryTableView
+            .on('issueClicked', _.bind(this._expandIssueBox, this));
     },
 
     /*
@@ -46,5 +49,27 @@ RB.ReviewRequestPageView = RB.ReviewablePageView.extend({
      */
     openCommentEditor: function(contextType, contextID) {
         this._reviewBoxListView.openCommentEditor(contextType, contextID);
+    },
+
+    /*
+     * Expands the review box that contains the relevent comment for the issue.
+     *
+     * This is used when clicking an issue from the issue summary table to
+     * navigate the user to the issue comment.
+     */
+    _expandIssueBox: function(commentAttributes) {
+        var typeToPrefixMap = {
+                diff: '',
+                file: 'f',
+                screenshot: 's'
+            },
+            selector = '#' + typeToPrefixMap[commentAttributes.type] +
+                       'comment' + commentAttributes.id;
+
+        _.each(this._reviewBoxListView._boxes, function(box) {
+            if (box.$el.find(selector).length) {
+                box.expand();
+            }
+        });
     }
 });
