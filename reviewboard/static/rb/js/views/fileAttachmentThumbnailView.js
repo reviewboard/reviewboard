@@ -31,8 +31,7 @@ RB.FileAttachmentThumbnail = Backbone.View.extend({
 
     events: {
         'click a.delete': '_onDeleteClicked',
-        'click .file-add-comment a': '_onAddCommentClicked',
-        'click .file-review-inline a': '_onInlineReviewClicked'
+        'click .file-add-comment a': '_onAddCommentClicked'
     },
 
     template: _.template([
@@ -213,13 +212,6 @@ RB.FileAttachmentThumbnail = Backbone.View.extend({
     },
 
     /*
-     * Shows an inline review UI for the file attachment.
-     */
-    showInlineReviewUI: function() {
-        /* TODO: Display a lightbox and show the page. */
-    },
-
-    /*
      * Processes all comments provided when constructing the view.
      *
      * The comments will be made usable by the comment dialog.
@@ -355,18 +347,6 @@ RB.FileAttachmentThumbnail = Backbone.View.extend({
         e.stopPropagation();
 
         this.showCommentDlg();
-    },
-
-    /*
-     * Handler for the Review button when using an inline review UI.
-     *
-     * Shows the review UI for the file attachment.
-     */
-    _onInlineReviewClicked: function(e) {
-        e.preventDefault();
-        e.stopPropagation();
-
-        this.showInlineReviewUI();
     },
 
     /*
