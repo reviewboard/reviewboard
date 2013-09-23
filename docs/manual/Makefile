@@ -31,8 +31,7 @@ clean:
 docs.db: fixtures/initial_data.json
 	@echo Building docs.db
 	@rm -f docs.db
-	@./docsmanage.py syncdb --noinput -v 0
-	@./docsmanage.py reset --noinput scmtools -v 0
+	@RUNNING_TEST=1 ./docsmanage.py syncdb --noinput -v 0
 	@./docsmanage.py loaddata fixtures/initial_data.json -v 0
 
 html: docs.db

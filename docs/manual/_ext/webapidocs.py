@@ -283,7 +283,10 @@ class ResourceDirective(Directive):
                 doc_summary = doc_summary[:i + 1]
 
             paragraph += nodes.inline(text=" - ")
-            paragraph += parse_text(self, doc_summary, nodes.inline)
+            paragraph += parse_text(
+                self, doc_summary, nodes.inline,
+                where='HTTP %s handler summary for %s'
+                      % (http_method, self.options['classname']))
 
         append_detail_row(tbody, "HTTP Methods", bullet_list)
 
@@ -764,7 +767,7 @@ class ErrorDirective(Directive):
 def parse_text(directive, text, node_type=nodes.paragraph,
                where=None):
     """Parses text in ReST format and returns a node with the content."""
-    assert text, 'Missing text during parse_text in %s' % where
+    assert text is not None, 'Missing text during parse_text in %s' % where
 
     vl = ViewList()
 
@@ -961,7 +964,7 @@ def fetch_response_data(response_class, mimetype, request=None, **kwargs):
     request.META['HTTP_ACCEPT'] = mimetype
 
     result = unicode(response_class(request, **kwargs))
-    return result.split('\n\n', 1)
+    return result.split('\r\n\r\n', 1)
 
 
 def setup(app):
