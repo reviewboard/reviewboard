@@ -460,6 +460,7 @@ PIPELINE_JS = {
             'rb/js/diffviewer/views/chunkHighlighterView.js',
             'rb/js/diffviewer/views/diffCommentBlockView.js',
             'rb/js/diffviewer/views/diffCommentsHintView.js',
+            'rb/js/diffviewer/views/diffFileIndexView.js',
             'rb/js/diffviewer/views/diffReviewableView.js',
             'rb/js/diffviewer/views/diffRevisionLabelView.js',
             'rb/js/diffviewer/views/diffRevisionSelectorView.js',
