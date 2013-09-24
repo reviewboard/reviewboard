@@ -26,12 +26,13 @@ help:
 	@echo "  linkcheck to check all external links for integrity"
 
 clean:
-	-rm -rf $(BUILDDIR)/*
+	@-rm -rf $(BUILDDIR)/*
+	@-rm -f docs.db
 
 docs.db: fixtures/initial_data.json
+	@make clean
 	@echo Building docs.db
-	@rm -f docs.db
-	@RUNNING_TEST=1 ./docsmanage.py syncdb --noinput -v 0
+	@./docsmanage.py syncdb --noinput -v 0
 	@./docsmanage.py loaddata fixtures/initial_data.json -v 0
 
 html: docs.db
