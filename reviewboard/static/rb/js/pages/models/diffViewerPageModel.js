@@ -21,7 +21,7 @@ RB.DiffViewerPageModel = Backbone.Model.extend({
             numDiffs: rsp.num_diffs,
             pagination: new RB.Pagination(rsp.pagination, {parse: true}),
             revision: new RB.DiffRevision(rsp.revision, {parse: true})
-        }
+        };
     },
 
     /*

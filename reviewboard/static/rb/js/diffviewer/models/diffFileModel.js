@@ -20,18 +20,18 @@ RB.DiffFile = Backbone.Model.extend({
      */
     parse: function(rsp) {
         return {
-            newfile: rsp.newfile,
             binary: rsp.binary,
+            commentCounts: rsp.comment_counts,
             deleted: rsp.deleted,
-            id: rsp.id,
             depotFilename: rsp.depot_filename,
             destFilename: rsp.dest_filename,
             destRevision: rsp.dest_revision,
-            revision: rsp.revision,
             filediff: rsp.filediff,
-            interfilediff: rsp.interfilediff,
+            id: rsp.id,
             index: rsp.index,
-            commentCounts: rsp.comment_counts
+            interfilediff: rsp.interfilediff,
+            newfile: rsp.newfile,
+            revision: rsp.revision
         };
     }
 });

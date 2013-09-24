@@ -28,6 +28,6 @@ RB.DiffCommentsHint = Backbone.Model.extend({
                         isCurrent: interdiff.is_current
                     };
                 })
-        }
+        };
     }
 });
