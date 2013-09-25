@@ -52,12 +52,18 @@ the reviewer.
 
 Patch by Yazan Medanat.
 
-|issue-summary-image|_
+.. only:: html
 
-.. |issue-summary-image| image::
-   http://www.reviewboard.org/media/screenshots/2012/12/16/issue-summary_thumb.png
-.. _issue-summary-image:
-   http://www.reviewboard.org/media/screenshots/2012/12/16/issue-summary.png
+   |issue-summary-image|_
+
+   .. |issue-summary-image| image::
+      _static/images/1.7/issue-summary_thumb.png
+   .. _issue-summary-image:
+      _static/images/1.7/issue-summary.png
+
+.. only:: not html
+
+   .. image:: _static/images/1.7/issue-summary.png
 
 
 Diff Viewer
@@ -91,12 +97,18 @@ These renderers are extensible through our new extensions support.
 
 Work on this feature was done by Anthony Mok and Sampson Chen.
 
-|attachment-thumbnails|_
+.. only:: html
 
-.. |attachment-thumbnails| image::
-   http://www.reviewboard.org/media/screenshots/2012/12/16/file-attachments_thumb.png
-.. _attachment-thumbnails:
-   http://www.reviewboard.org/media/screenshots/2012/12/16/file-attachments.png
+   |attachment-thumbnails|_
+
+   .. |attachment-thumbnails| image::
+      _static/images/1.7/file-attachments_thumb.png
+   .. _attachment-thumbnails:
+      _static/images/1.7/file-attachments.png
+
+.. only:: not html
+
+   .. image:: _static/images/1.7/file-attachments.png
 
 
 Image Review
@@ -112,12 +124,18 @@ Along with this, we've simplified things by removing screenshot uploading
 and standardizing on file attachments. Existing screenshots on review requests
 can still be reviewed, but new ones cannot be uploaded.
 
-|image-review|_
+.. only:: html
 
-.. |image-review| image::
-   http://www.reviewboard.org/media/screenshots/2012/12/16/image-review_thumb.png
-.. _image-review:
-   http://www.reviewboard.org/media/screenshots/2012/12/16/image-review.png
+   |image-review|_
+
+   .. |image-review| image::
+      _static/images/1.7/image-review_thumb.png
+   .. _image-review:
+      _static/images/1.7/image-review.png
+
+.. only:: not html
+
+   .. image:: _static/images/1.7/image-review.png
 
 
 Dashboard
@@ -191,12 +209,18 @@ Some of the main settings are also listed on the side, for quick reference.
 
 This was based on work done by Vlad Filippov.
 
-|admin-ui|_
+.. only:: html
 
-.. |admin-ui| image::
-   http://www.reviewboard.org/media/screenshots/2012/12/16/admin-ui_thumb.png
-.. _admin-ui:
-   http://www.reviewboard.org/media/screenshots/2012/12/16/admin-ui.png
+   |admin-ui|_
+
+   .. |admin-ui| image::
+      _static/images/1.7/admin-ui_thumb.png
+   .. _admin-ui:
+      _static/images/1.7/admin-ui.png
+
+.. only:: not html
+
+   .. image:: _static/images/1.7/admin-ui.png
 
 
 Improved Cache Settings
@@ -282,12 +306,18 @@ flesh this out in time to provide more information on extension development.
 This was the work of many developers and contributors. In particular,
 Mike Conley led a lot of the effort into getting this feature ready.
 
-|extension-selector|_
+.. only:: html
 
-.. |extension-selector| image::
-   http://www.reviewboard.org/media/screenshots/2012/12/16/extensions_thumb.png
-.. _extension-selector:
-   http://www.reviewboard.org/media/screenshots/2012/12/16/extensions.png
+   |extension-selector|_
+
+   .. |extension-selector| image::
+      _static/images/1.7/extensions_thumb.png
+   .. _extension-selector:
+      _static/images/1.7/extensions.png
+
+.. only:: not html
+
+   .. image:: _static/images/1.7/extensions.png
 
 
 Review UIs

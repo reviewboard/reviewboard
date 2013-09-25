@@ -182,7 +182,7 @@ htmlhelp_basename = 'ReleaseNotes'
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title, author, document class [howto/manual]).
 latex_documents = [
-  ('contents', 'ReleaseNotes.tex', ur'Release Notes',
+  ('index', 'ReleaseNotes.tex', ur'Release Notes',
    ur'Christian Hammond', 'manual'),
 ]
 
