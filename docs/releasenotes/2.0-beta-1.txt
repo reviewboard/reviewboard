@@ -1,0 +1,515 @@
+=====================================
+Review Board 2.0 Beta 1 Release Notes
+=====================================
+
+**UNDER DEVELOPMENT**
+
+
+This release contains all bug fixes and features found in Review Board version
+:doc:`1.7.18 <1.7.18>`.
+
+
+New User Features
+=================
+
+Diff Viewer
+-----------
+
+New File Index
+~~~~~~~~~~~~~~
+
+The index of files at the top of the diff viewer has been rebuilt from the
+ground up. In addition to just giving a list of filenames and links to the
+changed chunks, the new index shows:
+
+* A graph on the left which shows the ratio of added/changed/deleted lines. The
+  thickness of this graph indicates what percentage of the file has been
+  altered.
+* Whether files have been renamed, and the old filename if so.
+* Indications for deleted or binary files.
+* A list of clickable chunk dots, color-coded to represent add/change/delete.
+
+.. image:: _static/images/2.0/diff-file-index.png
+
+
+New Diff Revision Selector
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+When a Review Request has multiple revisions of a diff, the interface for
+choosing which revision or interdiff to view has changed. The new design is
+more compact, and is much easier to understand. The new revision selector
+allows viewing both individual revisions (by selecting :guilabel:`orig` and the
+desired revision), and viewing interdiffs (by selecting the two revisions to
+compare).
+
+.. image:: _static/images/2.0/diff-revision-selector.png
+
+
+Reload-Free Navigation
+~~~~~~~~~~~~~~~~~~~~~~
+
+As part of the new revision selector, switching between diff revisions,
+interdiffs, and across pages of a large diff will occur without reloading the
+entire page.
+
+
+Visual Design Refresh
+~~~~~~~~~~~~~~~~~~~~~
+
+We've refreshed the visual design of the diff viewer, tweaking many of the
+colors to dramatically improve readability. In addition, several small bugs
+with alignment and spacing of various pieces of the diff view have been fixed
+across all major browsers.
+
+
+Interdiff Improvements
+~~~~~~~~~~~~~~~~~~~~~~
+
+When the local working directory was synced from a repository during the
+development process, interdiffs between two revisions of a change could include
+all the other changes from other developers that happened in between. The diff
+viewer will now do its best to filter out any changes that weren't part of the
+uploaded diff files.
+
+:bug:`311`
+
+
+Moved-Lines Detection Improvements
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The algorithm for detecting moved lines within a diff file has been
+dramatically improved. The new algorithm has several improvements:
+
+*   Blank lines are now included in the moved blocks, instead of treated as two
+    separate moves.
+
+*   Adjacent but different move regions didn't work properly, showing only the
+    first moved region (unless there was at least one line in between them).
+    Now any regions anywhere work, in any order.
+
+*   Only insert/delete lines were considered for moves, which was a problem
+    when moving some functions that resulted in replace lines (such as when one
+    function was replaced by another). Now replace lines are factored in.
+
+
+The flag indicating a moved block has also been redesigned to be cleaner and
+easier to read. Instead of flagging each and every line, only the first line is
+flagged, with a "flagpole" across the rest of the block.
+
+
+Improved Rendering for New Files
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Newly-added files would show empty line number and code columns for the
+left-hand side of the diff (where the original version of the file would
+normally go). These have been removed, and new files now take up the entire
+width of the box.
+
+
+"New Review Request" UI
+-----------------------
+
+The "New Review Request" page has been completely re-done, with many new
+features and capabilities.
+
+.. only:: html
+
+    |new-review-request-image|_
+
+    .. |new-review-request-image| image::
+       _static/images/2.0/new-review-request_thumb.png
+    .. _new-review-request-image:
+       _static/images/2.0/new-review-request.png
+
+.. only:: not html
+
+    .. image:: _static/images/2.0/new-review-request.png
+
+
+Post-Commit Review Requests
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+One of the most requested features over the past few years has been the ability
+to create review requests for committed changes from the web UI. Until now,
+doing this has required using RBTools from the command-line.
+
+For repositories which support it, the "New Review Request" page now has a list
+of the committed changes from most recent to least. This can be browsed by
+branch. Clicking on a commit will download the diff and change description from
+the repository and create a new review request.
+
+This is currently implemented for GitHub and Subversion repositories. Support
+for other services and repository types will be coming in future releases.
+
+:bug:`100`
+
+
+Simplified Pre-Commit Workflow
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The workflow for creating new pre-commit review requests through the web UI has
+also been reworked and simplified. This will now guide users through the
+process, asking for additional input only when necessary. In most cases, the
+workflow is now as simple as dragging a diff file onto the page.
+
+
+Repository Quick Search
+~~~~~~~~~~~~~~~~~~~~~~~
+
+The old repository selector (a drop-down box) has been replaced with a
+sidebar which provides the capability to search for repository names. Simply
+click the magnifying glass and then type in the box that appears. The list of
+repositories will be filtered in real time as you type.
+
+
+Better Validation and Errors
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+When uploading diffs through the web UI, more checking is done to ensure
+correctness before creating the review request. In particular, a common error
+case with Git repositories and diffs with abbreviated indexes will now produce
+a useful error message during review request creation instead of failing at the
+diff display stage.
+
+
+Review Requests
+---------------
+
+Markdown for Text Fields
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+Many of the multi-line text fields in Review Board (Review Request description
+and testing done, comments, replies, and close description) now support using
+Markdown_. This allows you to add some structure and rich features to your
+comments. The basic Markdown syntax is available, as well as a few extensions
+such as GitHub's "fenced code blocks" and tables.
+
+Most notably, it's now possible to embed syntax-highlighted code samples or
+images into your comments. See the user manual for more information on how to
+use Markdown.
+
+Based on work by Greg Wang. (:bug:`2093`, :bug:`2098`)
+
+.. _Markdown: http://daringfireball.net/projects/markdown/
+
+
+Changing Issue Status
+~~~~~~~~~~~~~~~~~~~~~
+
+Issues can now be marked as fixed or dropped and reopened by the user who
+created the comment, in addition to the owner of the review request.
+
+Based on work by Niklas Hambuechen. (:bug:`2713`, :bug:`2888`)
+
+
+Markdown Review UI
+------------------
+
+Markdown files uploaded as file attachments can now be reviewed in detail.
+The uploaded file will be rendered, and users can comment on each paragraph or
+other top-level block in the output.
+
+Patch by Aamir Mansoor.
+
+
+Other User Features
+-------------------
+
+* High-DPI display support for icons, graphs, and thumbnails.
+
+  Continuing our work on supporting high-DPI ("retina") screens such as phones,
+  tablets, and some newer laptops, we've added high-resolution artwork for all
+  the icons throughout the UI. In addition, the graphs in the admin site and
+  thumbnails for uploaded image attachments will be shown in high resolution if
+  appropriate.
+
+* Expand collapsed reviews when jumping to issues from the summary table.
+
+  When clicking on issues in the issue table, if the containing review was
+  collapsed, it will now be opened before jumping to it.
+
+  Patches by Hiroki Gohara and Yazan Medanat. (:bug:`3770`)
+
+* Submitted review requests are now included in the "Starred Reviews" page of
+  the Dashboard.
+
+  Previously, any review requests that a user had starred would be removed from
+  this page as soon as the request was closed. Submitted and discarded review
+  requests are now included in this page along with open ones.
+
+  Patch by Mary Elaine Malit. (:bug:`1075`)
+
+* File attachment comment thumbnails (like image excerpts) are now shown in the
+  "Edit Review" dialog.
+
+  When opening the Review dialog (either through the top-level
+  :guilabel:`Review` action or the :guilabel:`Edit Review` button on the
+  banner), any comments on file attachments will show the comment thumbnail
+  along with the comment text (for example, the selected region of an image).
+  This more closely mirrors what the review will look like once published.
+
+
+New Administration Features
+===========================
+
+Web API Changes
+===============
+
+``visible`` Attribute For Repository Resources
+----------------------------------------------
+
+The :ref:`Repository resource <webapi2.0-repository-resource>` now allows you
+to get and set the ``visible`` attribute on repositories, which controls
+whether or not the repository is listed in the "New Review Request" page.
+Additionally, the :ref:`Repository List resource
+<webapi2.0-repository-list-resource>` has a new parameter, ``show-invisible``,
+which can be set to ``1`` to get a list of all repositories, including those
+which are not visible.
+
+
+New ``Repository Branches`` and ``Repository Commits`` Resources
+----------------------------------------------------------------
+
+The :ref:`Repository Branches <webapi2.0-repository-branches-resource>` and
+:ref:`Repository Commits <webapi2.0-repository-commits-resource>` resources are
+special list resources that allow you to fetch a list of branches or a commit
+log for supported repositories. These are used for the post-commit review
+request UI.
+
+
+Draft Diff Resources
+--------------------
+
+In order to make resources more consistent, diffs that are attached to a draft
+now have a separate resource. This provides the same interface as the diff
+resource, with the exception that there's always a maximum of a single diff
+attached to a draft.
+
+
+File Attachments For Diffs
+--------------------------
+
+As part of a continuing effort to support reviewing binary files as part of a
+change, a new resource exists for associating file attachments with file diffs.
+
+
+Diff Validation Resource
+------------------------
+
+A new resource has been added to verify diff files before creating review
+requests. The new :ref:`Diff Validation resource
+<webapi2.0-validate-diff-resource>` allows you to POST the same data that you
+would to the :ref:`Review Request List resource
+<webapi2.0-review-request-list-resource>`, but instead of creating a new
+object, it will either return an OK or a detailed error message explaining what
+is wrong with the posted diff.
+
+
+Internationalization
+====================
+
+Review Board 2.0 includes mostly-complete translations into Italian (``it_IT``)
+and Traditional Chinese (``zh_TW``) locales. These can be activated by choosing
+preferred languages in your web browser preferences.
+
+Contributions by Po-Chien Lin and Alessandro Menti.
+
+
+Extensibility
+=============
+
+Extension Static Media
+----------------------
+
+Extensions can now define a list of JavaScript and CSS/LESS files into one or
+more bundles, listed in the extension class's ``css_bundles`` or ``js_bundles``
+attributes.
+
+When running in a development environment, the files will be included directly
+into the pages. When building a package, these bundles will be compiled and
+minified.
+
+
+User Page Sidebar Hook
+----------------------
+
+A new extension hook has been added for adding links to the sidebar on the user
+page (``/users/<username>/``). This hook can add top-level links, as well as
+one level of nesting.
+
+
+JavaScript Extensions
+---------------------
+
+Review Board 2.0 adds the beginning of JavaScript extensions, which are a
+counterpart to standard Review Board extensions. They can be used to hook into
+parts of the JavaScript codebase in a clean way to augment UI or react to
+events. Currently, there are two hooks: One for interfacing with the comment
+dialog, and one for adding additional elements to comments in the review
+dialog. More will come in future releases.
+
+
+Performance Improvements
+========================
+
+Diff Storage Improvements
+-------------------------
+
+Starting in Review Board 1.7, newly uploaded diffs of files would be stored in
+the database only once, saving storage space if that particular file was used
+repeatedly in parent diffs or remained unchanged across several iterations of a
+change.
+
+In Review Board 2.0, when older diffs are viewed, they will be migrated to the
+new format if necessary.
+
+
+Consolidated Static Media
+-------------------------
+
+In order to speed up page loads, we've reduced the number of HTTP requests by
+consolidating stylesheets, JavasSript, and images into a smaller number of
+files.
+
+
+Edit Review Dialog
+------------------
+
+The Edit Review dialog was previously completely rendered on the server side,
+which could cause long delays when the review was large. This is now shown
+immediately in the browser and comments are fetched incrementally from the
+server.
+
+
+Bug Fixes
+=========
+
+* Disallow drag-and-drop uploads of non-files.
+
+  The drag-and-drop support for uploading file attachments was too broad, and
+  would accept drops of any type of data (for example, text from a word
+  processor). This will now only accept file drops.
+
+  Patch by Dave Druska.
+
+* Clarification of the ``issue_status`` field in the API when issue_opened is
+  False. (:bug:`2984`)
+
+  When a comment was modified through the API to remove the ``issue_opened``
+  bit, it would leave things in an inconsistent state where the
+  ``issue_status`` was still set to 'open' instead of null.
+
+* Set the cwd of ``patch`` to be the tempdir. (:bug:`2065`)
+
+  In some rare cases with older versions of ``patch``, the diff would fail to
+  display because the target files could not be found. Setting the working
+  directory fixes this problem in this cases.
+
+* Escape User and Group names when using Active Directory filters.
+  (:bug:`2928`)
+
+  If User or Group names include characters which are designated as special
+  characters by LDAP, it would cause an authentication failure. These names are
+  now escaped before trying to run filters against Active Directory.
+
+* Fixed parsing of Git diffs with binary changes.
+
+  Git diffs with a binary file at the end of the diff would show that file as
+  empty instead of binary. These are now parsed correctly.
+
+* Fixed the z-index of the user account drop-down. (:bug:`3088`)
+
+  The user account menu at the top right of the page would sometimes overlap
+  incorrectly with other elements, especially within the admin UI.
+
+  Patch by Natasha Dalal.
+
+* Don't show :guilabel:`Show changes` when there's only one diff revision.
+  (:bug:`2901`)
+
+  It was previously possible to create a review request where the first
+  revision of the diff was added after the initial publish. In this case, the
+  change description box would include a link to "Show changes" between
+  revisions 0 and 1, leading to a 404.
+
+  Patch by Behzad Raeisfard.
+
+* Trimming of extra whitespace around review comments. (:bug:`2933`)
+
+  When writing comments, any blank lines at the beginning or end of the comment
+  would be included in the page and emails. These are now stripped out.
+
+  Patch by Edward Lee.
+
+* Loading the ``/r/`` page before anything else would cause a profile lookup error.
+  (:bug:`3083`)
+
+  With a new user, if the first page they visited was the "All Review Requests"
+  page (at ``/r/``), the user profile would fail to be found and cause a 500
+  error. This has been fixed.
+
+
+Compatibility Changes
+=====================
+
+Server-Side and Deployment Changes
+----------------------------------
+
+* Django 1.5
+
+  This is the first release to require Django 1.5. This release is not
+  compatible with earlier versions of Django, or tested to be compatible with
+  Django 1.6 or newer.
+
+  We expect the final 2.0 release to require Django 1.6.
+
+* Dropped Python 2.5 support.
+
+  We no longer support Python 2.5 deployments. Python 2.6 or 2.7 is required
+  both by Review Board 2.0 and Django 1.5. Review Board is not compatible with
+  Python 3.x.
+
+  We expect the final 2.0 release to be compatible with Python 2.6, 2.7, and
+  Python 3.2 and newer.
+
+
+A Note on Security
+==================
+
+As of Django 1.5.x, the ``ALLOWED_HOSTS`` setting is required. This setting is
+used to work around a handful of host poisoning attacks.
+
+By default, Review Board will set this to ``'*'``, which disables this security
+check. We recommend setting this in your ``settings_local.py`` file (in your
+site's conf directory). For more information, see `Django's ALLOWED_HOSTS
+documentation
+<https://docs.djangoproject.com/en/1.5/ref/settings/#std:setting-ALLOWED_HOSTS>`_.
+
+
+Contributors
+============
+
+* Aamir Mansoor
+* Alessandro Menti
+* Behzad Raeisifard
+* Christian Hammond
+* Dave Druska
+* David Trowbridge
+* Edward Lee
+* Emmanuel Gil Peyrot
+* German Galkin
+* Hiroki Gohara
+* Katherine Schramm
+* Mary Elaine Malit
+* Mike Conley
+* Natasha Dalal
+* Niklas Hambuechen
+* Patrick Uiterwijk
+* Po-Chien Lin
+* Raja Venkataraman
+* Steven MacLeod
+* Tomasz Moń
+* Yazan Medanat
+
+
+.. comment: vim ft=rst et
