@@ -78,6 +78,7 @@ class RBTestRunner(DjangoTestSuiteRunner):
         self.nose_argv = [
             sys.argv[0],
             '-v',
+            '--match=^test',
             '--with-doctest',
             '--doctest-extension=.txt',
         ]

@@ -25,6 +25,8 @@ from reviewboard.webapi.tests.urls import (
 
 
 class BaseWebAPITestCase(TestCase, EmailTestHelper):
+    sample_api_url = None
+
     def setUp(self):
         super(BaseWebAPITestCase, self).setUp()
 
@@ -54,6 +56,17 @@ class BaseWebAPITestCase(TestCase, EmailTestHelper):
         if self.siteconfig.settings != self._saved_siteconfig_settings:
             self.siteconfig.settings = self._saved_siteconfig_settings
             self.siteconfig.save()
+
+    def shortDescription(self):
+        desc = super(BaseWebAPITestCase, self).shortDescription()
+
+        if self.sample_api_url:
+            test_method = getattr(self, self._testMethodName)
+
+            if getattr(test_method, 'is_test_template', False):
+                desc = desc.replace('<URL>', self.sample_api_url)
+
+        return desc
 
     def api_func_wrapper(self, api_func, path, query, expected_status,
                          follow_redirects, expected_redirects,

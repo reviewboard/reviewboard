@@ -1,13 +1,17 @@
 from django.contrib.auth.models import User, Permission
 from django.db.models import Q
 from djblets.testing.decorators import add_fixtures
+from djblets.util.misc import get_object_or_none
 from djblets.webapi.errors import DOES_NOT_EXIST, PERMISSION_DENIED
 
 from reviewboard.reviews.models import ReviewRequest
+from reviewboard.site.models import LocalSite
 from reviewboard.webapi.errors import INVALID_REPOSITORY
+from reviewboard.webapi.resources import resources
 from reviewboard.webapi.tests.base import BaseWebAPITestCase
 from reviewboard.webapi.tests.mimetypes import (review_request_item_mimetype,
                                                 review_request_list_mimetype)
+from reviewboard.webapi.tests.mixins import BasicTestsMetaclass
 from reviewboard.webapi.tests.urls import (get_repository_item_url,
                                            get_review_request_item_url,
                                            get_review_request_list_url,
@@ -16,46 +20,43 @@ from reviewboard.webapi.tests.urls import (get_repository_item_url,
 
 class ResourceListTests(BaseWebAPITestCase):
     """Testing the ReviewRequestResource list API tests."""
+    __metaclass__ = BasicTestsMetaclass
+
     fixtures = ['test_users']
+    basic_post_fixtures = ['test_scmtools']
+    sample_api_url = 'review-requests/'
+    resource = resources.review_request
+
+    def compare_item(self, item_rsp, review_request):
+        self.assertEqual(item_rsp['id'], review_request.display_id)
+        self.assertEqual(item_rsp['summary'], review_request.summary)
 
     #
     # HTTP GET tests
     #
 
-    @add_fixtures(['test_site'])
-    def test_get(self):
-        """Testing the GET review-requests/ API"""
-        self.create_review_request(publish=True)
-        self.create_review_request(publish=True)
-        self.create_review_request(publish=True, with_local_site=True)
+    def setup_basic_get_test(self, user, with_local_site, local_site_name,
+                             populate_items):
+        if populate_items:
+            if not with_local_site:
+                LocalSite.objects.create(name=self.local_site_name)
 
-        rsp = self.apiGet(get_review_request_list_url(),
-                          expected_mimetype=review_request_list_mimetype)
-        self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(len(rsp['review_requests']), 2)
+            items = [
+                self.create_review_request(
+                    publish=True,
+                    submitter=user,
+                    with_local_site=with_local_site),
+            ]
 
-    @add_fixtures(['test_site'])
-    def test_get_with_site(self):
-        """Testing the GET review-requests/ API with a local site"""
-        self._login_user(local_site=True)
+            self.create_review_request(publish=True,
+                                       submitter=user,
+                                       with_local_site=not with_local_site)
+        else:
+            items = []
 
-        self.create_review_request(publish=True, with_local_site=True)
-        self.create_review_request(publish=True, with_local_site=True,
-                                   local_id=1002)
-        self.create_review_request(publish=True)
-
-        rsp = self.apiGet(get_review_request_list_url(self.local_site_name),
-                          expected_mimetype=review_request_list_mimetype)
-        self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(len(rsp['review_requests']), 2)
-
-    @add_fixtures(['test_site'])
-    def test_get_with_site_no_access(self):
-        """Testing the GET review-requests/ API
-        with a local site and Permission Denied error
-        """
-        self.apiGet(get_review_request_list_url(self.local_site_name),
-                    expected_status=403)
+        return (get_review_request_list_url(local_site_name),
+                review_request_list_mimetype,
+                items)
 
     @add_fixtures(['test_site'])
     def test_get_with_status(self):
@@ -228,7 +229,6 @@ class ResourceListTests(BaseWebAPITestCase):
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(rsp['count'], 2)
 
-    @add_fixtures(['test_site'])
     def test_get_with_to_users_directly(self):
         """Testing the GET review-requests/?to-users-directly= API"""
         rsp = self.apiGet(get_review_request_list_url(), {
@@ -313,7 +313,6 @@ class ResourceListTests(BaseWebAPITestCase):
         self.assertEqual(rsp['count'],
                          ReviewRequest.objects.from_user("grumpy").count())
 
-    @add_fixtures(['test_site'])
     def test_get_with_ship_it_0(self):
         """Testing the GET review-requests/?ship-it=0 API"""
         self.create_review_request(publish=True)
@@ -332,7 +331,6 @@ class ResourceListTests(BaseWebAPITestCase):
                                          extra_query=Q(shipit_count=0))
         self.assertEqual(len(rsp['review_requests']), q.count())
 
-    @add_fixtures(['test_site'])
     def test_get_with_ship_it_1(self):
         """Testing the GET review-requests/?ship-it=1 API"""
         self.create_review_request(publish=True)
@@ -351,7 +349,6 @@ class ResourceListTests(BaseWebAPITestCase):
                                          extra_query=Q(shipit_count__gt=0))
         self.assertEqual(len(rsp['review_requests']), q.count())
 
-    @add_fixtures(['test_site'])
     def test_get_with_time_added_from(self):
         """Testing the GET review-requests/?time-added-from= API"""
         start_index = 3
@@ -380,7 +377,6 @@ class ResourceListTests(BaseWebAPITestCase):
                 public=True, status='P',
                 time_added__gte=r.time_added).count())
 
-    @add_fixtures(['test_site'])
     def test_get_with_time_added_to(self):
         """Testing the GET review-requests/?time-added-to= API"""
         start_index = 3
@@ -436,7 +432,6 @@ class ResourceListTests(BaseWebAPITestCase):
                 public=True, status='P',
                 last_updated__gte=r.last_updated).count())
 
-    @add_fixtures(['test_site'])
     def test_get_with_last_updated_to(self):
         """Testing the GET review-requests/?last-updated-to= API"""
         start_index = 3
@@ -520,23 +515,25 @@ class ResourceListTests(BaseWebAPITestCase):
     # HTTP POST tests
     #
 
-    @add_fixtures(['test_scmtools'])
-    def test_post(self):
-        """Testing the POST review-requests/ API"""
-        repository = self.create_repository()
+    def setup_basic_post_test(self, user, with_local_site, local_site_name,
+                              post_valid_data):
+        if post_valid_data:
+            repository = \
+                self.create_repository(with_local_site=with_local_site)
 
-        rsp = self.apiPost(
-            get_review_request_list_url(),
-            {'repository': repository.path},
-            expected_mimetype=review_request_item_mimetype)
-        self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(
-            rsp['review_request']['links']['repository']['href'],
-            self.base_url + get_repository_item_url(repository))
+            post_data = {
+                'repository': repository.path,
+            }
+        else:
+            post_data = {}
 
-        # See if we can fetch this. Also return it for use in other
-        # unit tests.
-        return ReviewRequest.objects.get(pk=rsp['review_request']['id'])
+        return (get_review_request_list_url(local_site_name),
+                review_request_item_mimetype,
+                post_data,
+                [])
+
+    def check_post_result(self, user, rsp):
+        ReviewRequest.objects.get(pk=rsp['review_request']['id'])
 
     @add_fixtures(['test_scmtools'])
     def test_post_with_repository_name(self):
@@ -571,33 +568,6 @@ class ResourceListTests(BaseWebAPITestCase):
         review_request = ReviewRequest.objects.get(
             pk=rsp['review_request']['id'])
         self.assertEqual(review_request.repository, None)
-
-    @add_fixtures(['test_site', 'test_scmtools'])
-    def test_post_with_site(self):
-        """Testing the POST review-requests/ API with a local site"""
-        self._login_user(local_site=True)
-
-        repository = self.create_repository(with_local_site=True)
-
-        rsp = self.apiPost(
-            get_review_request_list_url(self.local_site_name),
-            {'repository': repository.path},
-            expected_mimetype=review_request_item_mimetype)
-        self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(rsp['review_request']['links']['repository']['title'],
-                         repository.name)
-
-    @add_fixtures(['test_site', 'test_scmtools'])
-    def test_post_with_site_no_access(self):
-        """Testing the POST review-requests/ API
-        with a local site and Permission Denied error
-        """
-        repository = self.create_repository(with_local_site=True)
-
-        self.apiPost(
-            get_review_request_list_url(self.local_site_name),
-            {'repository': repository.path},
-            expected_status=403)
 
     @add_fixtures(['test_site', 'test_scmtools'])
     def test_post_with_site_invalid_repository_error(self):
@@ -684,32 +654,42 @@ class ResourceListTests(BaseWebAPITestCase):
 
 class ResourceItemTests(BaseWebAPITestCase):
     """Testing the ReviewRequestResource item API tests."""
+    __metaclass__ = BasicTestsMetaclass
+
     fixtures = ['test_users']
+    sample_api_url = 'review-requests/<id>/'
+    resource = resources.review_request
+    test_http_methods = ('DELETE', 'GET')
+
+    def compare_item(self, item_rsp, review_request):
+        self.assertEqual(item_rsp['id'], review_request.display_id)
+        self.assertEqual(item_rsp['summary'], review_request.summary)
 
     #
     # HTTP DELETE tests
     #
 
-    def test_delete(self):
-        """Testing the DELETE review-requests/<id>/ API"""
-        self.user.user_permissions.add(
+    def setup_basic_delete_test(self, user, with_local_site, local_site_name):
+        user.user_permissions.add(
             Permission.objects.get(codename='delete_reviewrequest'))
-        self.user.save()
-        self.assertTrue(self.user.has_perm('reviews.delete_reviewrequest'))
+        self.assertTrue(user.has_perm('reviews.delete_reviewrequest'))
 
-        review_request = self.create_review_request(submitter=self.user,
-                                                    publish=True)
+        review_request = self.create_review_request(
+            submitter=user,
+            with_local_site=with_local_site,
+            publish=True)
 
-        rsp = self.apiDelete(
-            get_review_request_item_url(review_request.display_id))
-        self.assertEqual(rsp, None)
-        self.assertRaises(ReviewRequest.DoesNotExist,
-                          ReviewRequest.objects.get,
-                          pk=review_request.pk)
+        return (get_review_request_item_url(review_request.display_id,
+                                            local_site_name),
+                [review_request.pk])
+
+    def check_delete_result(self, user, review_request_id):
+        self.assertIsNone(get_object_or_none(ReviewRequest,
+                                             pk=review_request_id))
 
     def test_delete_with_permission_denied_error(self):
         """Testing the DELETE review-requests/<id>/ API
-        with Permission Denied error
+        without permission and with Permission Denied error
         """
         review_request = self.create_review_request(publish=True)
         self.assertNotEqual(review_request.submitter, self.user)
@@ -734,72 +714,20 @@ class ResourceItemTests(BaseWebAPITestCase):
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], DOES_NOT_EXIST.code)
 
-    @add_fixtures(['test_site'])
-    def test_delete_with_site(self):
-        """Testing the DELETE review-requests/<id>/ API with a lotal site"""
-        user = User.objects.get(username='doc')
-        user.user_permissions.add(
-            Permission.objects.get(codename='delete_reviewrequest'))
-        user.save()
-
-        self._login_user(local_site=True)
-        review_request = self.create_review_request(with_local_site=True)
-
-        rsp = self.apiDelete(
-            get_review_request_item_url(review_request.display_id,
-                                        self.local_site_name))
-        self.assertEqual(rsp, None)
-        self.assertRaises(ReviewRequest.DoesNotExist,
-                          ReviewRequest.objects.get, pk=review_request.pk)
-
 
     #
     # HTTP GET tests
     #
 
-    @add_fixtures(['test_site'])
-    def test_get(self):
-        """Testing the GET review-requests/<id>/ API"""
-        review_request = self.create_review_request(publish=True)
+    def setup_basic_get_test(self, user, with_local_site, local_site_name):
+        review_request = self.create_review_request(
+            with_local_site=with_local_site,
+            publish=True)
 
-        rsp = self.apiGet(
-            get_review_request_item_url(review_request.display_id),
-            expected_mimetype=review_request_item_mimetype)
-        self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(rsp['review_request']['id'], review_request.display_id)
-        self.assertEqual(rsp['review_request']['summary'],
-                         review_request.summary)
-
-    @add_fixtures(['test_site'])
-    def test_get_with_site(self):
-        """Testing the GET review-requests/<id>/ API with a local site"""
-        self._login_user(local_site=True)
-        review_request = self.create_review_request(publish=True,
-                                                    with_local_site=True)
-
-        rsp = self.apiGet(
-            get_review_request_item_url(review_request.display_id,
-                                        self.local_site_name),
-            expected_mimetype=review_request_item_mimetype)
-        self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(rsp['review_request']['id'],
-                         review_request.display_id)
-        self.assertEqual(rsp['review_request']['summary'],
-                         review_request.summary)
-
-    @add_fixtures(['test_site'])
-    def test_get_with_site_no_access(self):
-        """Testing the GET review-requests/<id>/ API
-        with a local site and Permission Denied error
-        """
-        group = self.create_review_group(with_local_site=True)
-        review_request = self.create_review_request(with_local_site=True,
-                                                    publish=True)
-        review_request.target_groups.add(group)
-
-        self.apiGet(get_review_request_item_url(review_request.display_id,
-                                                self.local_site_name),
-                    expected_status=403)
+        return (get_review_request_item_url(review_request.display_id,
+                                            local_site_name),
+                review_request_item_mimetype,
+                review_request)
 
     def test_get_with_non_public_and_permission_denied_error(self):
         """Testing the GET review-requests/<id>/ API

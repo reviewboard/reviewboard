@@ -4,116 +4,104 @@ from djblets.testing.decorators import add_fixtures
 from djblets.webapi.errors import INVALID_FORM_DATA, PERMISSION_DENIED
 
 from reviewboard.reviews.models import ReviewRequest, ReviewRequestDraft
+from reviewboard.webapi.resources import resources
 from reviewboard.webapi.tests.base import BaseWebAPITestCase
 from reviewboard.webapi.tests.mimetypes import \
     review_request_draft_item_mimetype
+from reviewboard.webapi.tests.mixins import BasicTestsMetaclass
 from reviewboard.webapi.tests.urls import get_review_request_draft_url
 
 
 class ResourceTests(BaseWebAPITestCase):
     """Testing the ReviewRequestDraftResource API tests."""
+    __metaclass__ = BasicTestsMetaclass
+
     fixtures = ['test_users']
+    sample_api_url = 'review-requests/<id>/draft/'
+    resource = resources.review_request_draft
+
+    def compare_item(self, item_rsp, draft):
+        self.assertEqual(item_rsp['description'], draft.description)
+        self.assertEqual(item_rsp['testing_done'], draft.testing_done)
 
     #
     # HTTP DELETE tests
     #
 
-    def test_delete(self):
-        """Testing the DELETE review-requests/<id>/draft/ API"""
-        review_request = self.create_review_request(submitter=self.user)
-        summary = review_request.summary
-        description = review_request.description
+    def setup_basic_delete_test(self, user, with_local_site, local_site_name):
+        review_request = self.create_review_request(
+            with_local_site=with_local_site,
+            submitter=user,
+            publish=True)
+        ReviewRequestDraft.create(review_request)
 
-        # Set some data.
-        self.test_put(review_request)
+        return (get_review_request_draft_url(review_request, local_site_name),
+                [review_request])
 
-        self.apiDelete(get_review_request_draft_url(review_request))
+    def check_delete_result(self, user, review_request):
+        self.assertIsNone(review_request.get_draft())
 
-        review_request = ReviewRequest.objects.get(pk=review_request.id)
-        self.assertEqual(review_request.summary, summary)
-        self.assertEqual(review_request.description, description)
+    #
+    # HTTP GET tests
+    #
 
-    @add_fixtures(['test_site'])
-    def test_delete_with_site(self):
-        """Testing the DELETE review-requests/<id>/draft/ API
-        with a local site
-        """
-        review_request = self.create_review_request(submitter='doc',
-                                                    with_local_site=True)
-        summary = review_request.summary
-        description = review_request.description
+    def setup_basic_get_test(self, user, with_local_site, local_site_name):
+        review_request = self.create_review_request(
+            with_local_site=with_local_site,
+            submitter=user,
+            publish=True)
+        draft = ReviewRequestDraft.create(review_request)
 
-        self.test_put_with_site(review_request)
-
-        self.apiDelete(get_review_request_draft_url(review_request,
-                                                    self.local_site_name))
-
-        review_request = ReviewRequest.objects.get(pk=review_request.id)
-        self.assertEqual(review_request.summary, summary)
-        self.assertEqual(review_request.description, description)
-
-    @add_fixtures(['test_site'])
-    def test_delete_with_site_no_access(self):
-        """Testing the DELETE review-requests/<id>/draft/ API
-        with a local site and Permission Denied error
-        """
-        review_request = self.create_review_request(submitter='doc',
-                                                    with_local_site=True)
-
-        rsp = self.apiDelete(
-            get_review_request_draft_url(review_request, self.local_site_name),
-            expected_status=403)
-        self.assertEqual(rsp['stat'], 'fail')
-        self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
+        return (get_review_request_draft_url(review_request, local_site_name),
+                review_request_draft_item_mimetype,
+                draft)
 
     #
     # HTTP POST tests
     #
 
-    def test_post(self):
-        """Testing the POST review-requests/<id>/draft/ API"""
-        self._create_update_review_request(self.apiPost, 201)
+    def setup_basic_post_test(self, user, with_local_site, local_site_name,
+                              post_valid_data):
+        review_request = self.create_review_request(
+            with_local_site=with_local_site,
+            submitter=user,
+            publish=True)
 
-    @add_fixtures(['test_site'])
-    def test_post_with_site(self):
-        """Testing the POST review-requests/<id>/draft/ API
-        with a local site
-        """
-        self._create_update_review_request_with_site(self.apiPost, 201)
+        return (get_review_request_draft_url(review_request, local_site_name),
+                review_request_draft_item_mimetype,
+                {
+                    'description': 'New description',
+                },
+                [review_request])
 
-    @add_fixtures(['test_site'])
-    def test_post_with_site_no_access(self):
-        """Testing the POST review-requests/<id>/draft/ API
-        with a local site and Permission Denied error
-        """
-        rsp = self._create_update_review_request_with_site(
-            self.apiPost, 403, relogin=False)
-        self.assertEqual(rsp['stat'], 'fail')
-        self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
+    def check_post_result(self, user, rsp, review_request):
+        draft = review_request.get_draft()
+        self.assertIsNotNone(draft)
+        self.compare_item(rsp['draft'], draft)
 
     #
     # HTTP PUT tests
     #
 
-    def test_put(self, review_request=None):
-        """Testing the PUT review-requests/<id>/draft/ API"""
-        self._create_update_review_request(self.apiPut, 200, review_request)
+    def setup_basic_put_test(self, user, with_local_site, local_site_name,
+                             put_valid_data):
+        review_request = self.create_review_request(
+            with_local_site=with_local_site,
+            submitter=user,
+            publish=True)
+        draft = ReviewRequestDraft.create(review_request)
 
-    @add_fixtures(['test_site'])
-    def test_put_with_site(self, review_request=None):
-        """Testing the PUT review-requests/<id>/draft/ API with a local site"""
-        self._create_update_review_request_with_site(
-            self.apiPut, 200, review_request=review_request)
+        return (get_review_request_draft_url(review_request, local_site_name),
+                review_request_draft_item_mimetype,
+                {
+                    'description': 'New description',
+                },
+                draft,
+                [review_request])
 
-    @add_fixtures(['test_site'])
-    def test_put_with_site_no_access(self):
-        """Testing the PUT review-requests/<id>/draft/ API
-        with a local site and Permission Denied error
-        """
-        rsp = self._create_update_review_request_with_site(
-            self.apiPut, 403, relogin=False)
-        self.assertEqual(rsp['stat'], 'fail')
-        self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
+    def check_put_result(self, user, item_rsp, draft, review_request):
+        draft = ReviewRequestDraft.create(review_request)
+        self.compare_item(item_rsp, draft)
 
     def test_put_with_changedesc(self):
         """Testing the PUT review-requests/<id>/draft/ API
@@ -260,12 +248,17 @@ class ResourceTests(BaseWebAPITestCase):
         self.siteconfig.set('mail_send_review_mail', True)
         self.siteconfig.save()
 
-        # Set some data first.
-        self.test_put()
+        review_request = self.create_review_request(submitter=self.user,
+                                                    publish=True)
+        draft = ReviewRequestDraft.create(review_request)
+        draft.summary = 'My Summary'
+        draft.description = 'My Description'
+        draft.testing_done = 'My Testing Done'
+        draft.branch = 'My Branch'
+        draft.target_people.add(User.objects.get(username='doc'))
+        draft.save()
 
         mail.outbox = []
-
-        review_request = ReviewRequest.objects.from_user(self.user.username)[0]
 
         rsp = self.apiPut(
             get_review_request_draft_url(review_request),

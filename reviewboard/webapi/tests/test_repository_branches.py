@@ -1,62 +1,47 @@
-from djblets.testing.decorators import add_fixtures
-
 from reviewboard.webapi.errors import REPO_NOT_IMPLEMENTED
+from reviewboard.webapi.resources import resources
 from reviewboard.webapi.tests.base import BaseWebAPITestCase
 from reviewboard.webapi.tests.mimetypes import \
     repository_branches_item_mimetype
+from reviewboard.webapi.tests.mixins import BasicTestsMetaclass
 from reviewboard.webapi.tests.urls import get_repository_branches_url
 
 
 class ResourceTests(BaseWebAPITestCase):
     """Testing the RepositoryBranchesResource list APIs."""
+    __metaclass__ = BasicTestsMetaclass
+
     fixtures = ['test_users', 'test_scmtools']
+    sample_api_url = 'repositories/<id>/branches/'
+    resource = resources.repository_branches
+
+    def setup_http_not_allowed_list_test(self, user):
+        repository = self.create_repository(tool_name='Test')
+
+        return get_repository_branches_url(repository)
+
+    def setup_http_not_allowed_item_test(self, user):
+        repository = self.create_repository(tool_name='Test')
+
+        return get_repository_branches_url(repository)
+
+    def compare_item(self, item_rsp, branch):
+        self.assertEqual(item_rsp, branch)
 
     #
     # HTTP GET tests
     #
 
-    def test_get(self):
-        """Testing the GET repositories/<id>/branches/ API"""
-        repository = self.create_repository(tool_name='Test')
-        rsp = self.apiGet(get_repository_branches_url(repository),
-                          expected_mimetype=repository_branches_item_mimetype)
-        self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(
-            rsp['branches'],
-            [
-                {'name': 'trunk', 'commit': '5', 'default': True},
-                {'name': 'branch1', 'commit': '7', 'default': False},
-            ])
-
-    @add_fixtures(['test_site'])
-    def test_get_with_site(self):
-        """Testing the GET repositories/<id>/branches/ API with a local site"""
-        self._login_user(local_site=True)
-
+    def setup_basic_get_test(self, user, with_local_site, local_site_name):
         repository = self.create_repository(tool_name='Test',
-                                            with_local_site=True)
+                                            with_local_site=with_local_site)
 
-        rsp = self.apiGet(
-            get_repository_branches_url(repository, self.local_site_name),
-            expected_mimetype=repository_branches_item_mimetype)
-        self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(
-            rsp['branches'],
-            [
-                {'name': 'trunk', 'commit': '5', 'default': True},
-                {'name': 'branch1', 'commit': '7', 'default': False},
-            ])
-
-    @add_fixtures(['test_site'])
-    def test_get_with_site_no_access(self):
-        """Testing the GET repositories/<id>/branches/ API
-        with a local site and Permission Denied error
-        """
-        repository = self.create_repository(with_local_site=True)
-
-        self.apiGet(
-            get_repository_branches_url(repository, self.local_site_name),
-            expected_status=403)
+        return (get_repository_branches_url(repository, local_site_name),
+                repository_branches_item_mimetype,
+                [
+                    {'name': 'trunk', 'commit': '5', 'default': True},
+                    {'name': 'branch1', 'commit': '7', 'default': False},
+                ])
 
     def test_get_with_no_support(self):
         """Testing the GET repositories/<id>/branches/ API

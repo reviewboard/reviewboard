@@ -4,24 +4,32 @@ from django.contrib.auth.models import User
 from django.core.files import File
 from django.utils import timezone
 from djblets.testing.decorators import add_fixtures
+from djblets.webapi.errors import PERMISSION_DENIED
 
 from reviewboard.changedescs.models import ChangeDescription
 from reviewboard.reviews.models import Group, ReviewRequestDraft, Screenshot
 from reviewboard.webapi.tests.base import BaseWebAPITestCase
 from reviewboard.webapi.tests.mimetypes import (change_item_mimetype,
                                                 change_list_mimetype)
+from reviewboard.webapi.tests.mixins import (ReviewRequestChildItemMixin,
+                                             ReviewRequestChildListMixin)
 from reviewboard.webapi.tests.urls import (get_change_item_url,
                                            get_change_list_url)
 
 
-class ResourceListTests(BaseWebAPITestCase):
+class ResourceListTests(ReviewRequestChildListMixin, BaseWebAPITestCase):
     """Testing the ChangeResource list APIs."""
-    fixtures = ['test_users', 'test_scmtools']
+    fixtures = ['test_users']
+    sample_api_url = 'review-requests/<id>/changes/'
+
+    def setup_review_request_child_test(self, review_request):
+        return get_change_list_url(review_request), change_list_mimetype
 
     #
     # HTTP GET tests
     #
 
+    @add_fixtures(['test_scmtools'])
     def test_get(self):
         """Testing the GET review-requests/<id>/changes/ API"""
         review_request = self.create_review_request(publish=True)
@@ -47,15 +55,96 @@ class ResourceListTests(BaseWebAPITestCase):
         self.assertEqual(rsp['changes'][0]['id'], change2.pk)
         self.assertEqual(rsp['changes'][1]['id'], change1.pk)
 
+    @add_fixtures(['test_site'])
+    def test_get_with_site(self):
+        """Testing the GET review-requests/<id>/changes/ API
+        with access to a local site
+        """
+        review_request = self.create_review_request(publish=True,
+                                                    with_local_site=True)
 
-class ResourceItemTests(BaseWebAPITestCase):
+        self._login_user(local_site=True)
+
+        now = timezone.now()
+        change1 = ChangeDescription(public=True,
+                                    timestamp=now)
+        change1.record_field_change('summary', 'foo', 'bar')
+        change1.save()
+        review_request.changedescs.add(change1)
+
+        change2 = ChangeDescription(public=True,
+                                    timestamp=now + timedelta(seconds=1))
+        change2.record_field_change('description', 'foo', 'bar')
+        change2.save()
+        review_request.changedescs.add(change2)
+
+        rsp = self.apiGet(
+            get_change_list_url(review_request, self.local_site_name),
+            expected_mimetype=change_list_mimetype)
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(len(rsp['changes']), 2)
+
+        self.assertEqual(rsp['changes'][0]['id'], change2.pk)
+        self.assertEqual(rsp['changes'][1]['id'], change1.pk)
+
+    @add_fixtures(['test_site'])
+    def test_get_with_site_no_access(self):
+        """Testing the GET review-requests/<id>/changes/ API
+        without access to a local site
+        """
+        review_request = self.create_review_request(publish=True,
+                                                    with_local_site=True)
+
+        rsp = self.apiGet(
+            get_change_list_url(review_request, self.local_site_name),
+            expected_status=403)
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
+
+    #
+    # HTTP POST tests
+    #
+
+    def test_post_method_not_allowed(self):
+        """Testing the POST review-requests/<id>/changes/ API
+        gives Method Not Allowed
+        """
+        review_request = self.create_review_request()
+
+        self.apiPost(get_change_list_url(review_request), expected_status=405)
+
+
+class ResourceItemTests(ReviewRequestChildItemMixin, BaseWebAPITestCase):
     """Testing the ChangeResource item APIs."""
-    fixtures = ['test_users', 'test_scmtools']
+    fixtures = ['test_users']
+    sample_api_url = 'review-requests/<id>/changes/<id>/'
+
+    def setup_review_request_child_test(self, review_request):
+        change = ChangeDescription.objects.create(public=True)
+        review_request.changedescs.add(change)
+
+        return get_change_item_url(change), change_item_mimetype
+
+    #
+    # HTTP DELETE tests
+    #
+
+    def test_delete_method_not_allowed(self):
+        """Testing the DELETE review-requests/<id>/changes/ API
+        gives Method Not Allowed
+        """
+        review_request = self.create_review_request()
+
+        change = ChangeDescription.objects.create(public=True)
+        review_request.changedescs.add(change)
+
+        self.apiDelete(get_change_item_url(change), expected_status=405)
 
     #
     # HTTP GET tests
     #
 
+    @add_fixtures(['test_scmtools'])
     def test_get(self):
         """Testing the GET review-requests/<id>/changes/<id>/ API"""
         def write_fields(obj, index):
@@ -233,6 +322,47 @@ class ResourceItemTests(BaseWebAPITestCase):
         self.assertEqual(screenshot_data['screenshot']['id'], screenshot3.pk)
 
     @add_fixtures(['test_site'])
+    def test_get_with_site(self):
+        """Testing the GET review-requests/<id>/changes/<id>/ API
+        with access to a local site
+        """
+        review_request = self.create_review_request(publish=True,
+                                                    with_local_site=True)
+
+        self._login_user(local_site=True)
+
+        now = timezone.now()
+        change = ChangeDescription(public=True, timestamp=now)
+        change.record_field_change('summary', 'foo', 'bar')
+        change.save()
+        review_request.changedescs.add(change)
+
+        rsp = self.apiGet(
+            get_change_item_url(change, self.local_site_name),
+            expected_mimetype=change_item_mimetype)
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(rsp['change']['id'], change.pk)
+
+    @add_fixtures(['test_site'])
+    def test_get_with_site_no_access(self):
+        """Testing the GET review-requests/<id>/changes/<id>/ API
+        without access to a local site
+        """
+        review_request = self.create_review_request(publish=True,
+                                                    with_local_site=True)
+
+        now = timezone.now()
+        change = ChangeDescription(public=True, timestamp=now)
+        change.record_field_change('summary', 'foo', 'bar')
+        change.save()
+        review_request.changedescs.add(change)
+
+        rsp = self.apiGet(
+            get_change_item_url(change, self.local_site_name),
+            expected_status=403)
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
+
     def test_get_not_modified(self):
         """Testing the GET review-requests/<id>/changes/<id>/ API
         with Not Modified response
@@ -244,3 +374,18 @@ class ResourceItemTests(BaseWebAPITestCase):
 
         self._testHttpCaching(get_change_item_url(changedesc),
                               check_last_modified=True)
+
+    #
+    # HTTP PUT tests
+    #
+
+    def test_put_method_not_allowed(self):
+        """Testing the PUT review-requests/<id>/changes/ API
+        gives Method Not Allowed
+        """
+        review_request = self.create_review_request()
+
+        change = ChangeDescription.objects.create(public=True)
+        review_request.changedescs.add(change)
+
+        self.apiPut(get_change_item_url(change), {}, expected_status=405)

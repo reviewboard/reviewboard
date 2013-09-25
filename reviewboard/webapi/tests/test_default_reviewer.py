@@ -5,21 +5,31 @@ from djblets.webapi.errors import INVALID_FORM_DATA
 from reviewboard.reviews.models import DefaultReviewer, Group
 from reviewboard.scmtools.models import Repository, Tool
 from reviewboard.site.models import LocalSite
+from reviewboard.webapi.resources import resources
 from reviewboard.webapi.tests.base import BaseWebAPITestCase
 from reviewboard.webapi.tests.mimetypes import (default_reviewer_item_mimetype,
                                                 default_reviewer_list_mimetype)
+from reviewboard.webapi.tests.mixins import BasicTestsMetaclass
 from reviewboard.webapi.tests.urls import (get_default_reviewer_item_url,
                                            get_default_reviewer_list_url)
 
 
 class ResourceListTests(BaseWebAPITestCase):
     """Testing the DefaultReviewerResource list APIs."""
+    __metaclass__ = BasicTestsMetaclass
+
+    fixtures = ['test_users']
+    basic_post_fixtures = ['test_scmtools']
+    basic_post_use_admin = True
+    sample_api_url = 'default-reviewers/'
+    resource = resources.default_reviewer
+    test_http_methods = ('POST',)
 
     #
     # HTTP GET tests
     #
 
-    @add_fixtures(['test_users', 'test_scmtools'])
+    @add_fixtures(['test_scmtools'])
     def test_get(self):
         """Testing the GET default-reviewers/ API"""
         user = User.objects.get(username='doc')
@@ -57,7 +67,7 @@ class ResourceListTests(BaseWebAPITestCase):
         self.assertEqual(len(repos), 1)
         self.assertEqual(repos[0]['title'], repository.name)
 
-    @add_fixtures(['test_users', 'test_site'])
+    @add_fixtures(['test_site'])
     def test_get_with_site(self):
         """Testing the GET default-reviewers/ API with a local site"""
         local_site = LocalSite.objects.get(name=self.local_site_name)
@@ -86,7 +96,7 @@ class ResourceListTests(BaseWebAPITestCase):
         self.assertEqual(default_reviewers[0]['name'], 'default1')
         self.assertEqual(default_reviewers[0]['file_regex'], '.*')
 
-    @add_fixtures(['test_users', 'test_site'])
+    @add_fixtures(['test_site'])
     def test_get_with_site_no_access(self):
         """Testing the GET default-reviewers/ API
         with a local site and Permission Denied error
@@ -94,7 +104,7 @@ class ResourceListTests(BaseWebAPITestCase):
         self.apiGet(get_default_reviewer_list_url(self.local_site_name),
                     expected_status=403)
 
-    @add_fixtures(['test_users', 'test_scmtools'])
+    @add_fixtures(['test_scmtools'])
     def test_get_with_repositories(self):
         """Testing the GET default-reviewers/?repositories= API"""
         repository1 = self.create_repository(name='repo 1')
@@ -129,7 +139,6 @@ class ResourceListTests(BaseWebAPITestCase):
         self.assertEqual(len(default_reviewers), 1)
         self.assertEqual(default_reviewers[0]['name'], 'default1')
 
-    @add_fixtures(['test_users'])
     def test_get_with_users(self):
         """Testing the GET default-reviewers/?users= API"""
         user1 = User.objects.get(username='doc')
@@ -199,66 +208,68 @@ class ResourceListTests(BaseWebAPITestCase):
     # HTTP POST tests
     #
 
-    @add_fixtures(['test_users', 'test_scmtools'])
-    def test_post(self, local_site=None):
-        """Testing the POST default-reviewers/ API"""
-        self._login_user(admin=True)
+    def setup_basic_post_test(self, user, with_local_site, local_site_name,
+                              post_valid_data):
+        if post_valid_data:
+            self.create_review_group(name='group1',
+                                     with_local_site=with_local_site)
+            self.create_review_group(name='group2',
+                                     with_local_site=with_local_site)
+            repo1 = self.create_repository(name='Test Repo 1',
+                                           with_local_site=with_local_site,
+                                           path='test-repo-1')
+            repo2 = self.create_repository(name='Test Repo 2',
+                                           with_local_site=with_local_site,
+                                           path='test-repo-2')
 
-        name = 'default1'
-        file_regex = '.*'
-        git_tool = Tool.objects.get(name='Git')
+            if with_local_site:
+                site = LocalSite.objects.get(name=local_site_name)
+                site.users.add(User.objects.get(username='doc'))
+                site.users.add(User.objects.get(username='dopey'))
 
-        user1 = User.objects.get(username='doc')
-        user2 = User.objects.get(username='dopey')
-        group1 = Group.objects.create(name='group1', local_site=local_site)
-        group2 = Group.objects.create(name='group2', local_site=local_site)
-        repo1 = Repository.objects.create(name='Test Repo 1',
-                                          local_site=local_site,
-                                          path='test-repo-1',
-                                          tool=git_tool)
-        repo2 = Repository.objects.create(name='Test Repo 2',
-                                          local_site=local_site,
-                                          path='test-repo-2',
-                                          tool=git_tool)
-
-        # For the tests, make sure these are what we expect.
-        if local_site:
-            local_site.users.add(user1)
-            local_site.users.add(user2)
-
-        rsp = self.apiPost(
-            get_default_reviewer_list_url(local_site),
-            {
-                'name': name,
-                'file_regex': file_regex,
-                'users': ','.join([user1.username, user2.username]),
-                'groups': ','.join([group1.name, group2.name]),
+            post_data = {
+                'name': 'my-default',
+                'file_regex': '.*',
+                'users': 'doc,dopey',
+                'groups': 'group1,group2',
                 'repositories': ','.join([str(repo1.pk), str(repo2.pk)]),
-            },
-            expected_mimetype=default_reviewer_item_mimetype)
+            }
+        else:
+            post_data = {}
 
-        self.assertEqual(rsp['stat'], 'ok')
+        return (get_default_reviewer_list_url(local_site_name),
+                default_reviewer_item_mimetype,
+                post_data,
+                [local_site_name])
 
-        default_reviewer = DefaultReviewer.objects.get(
-            pk=rsp['default_reviewer']['id'])
-        self.assertEqual(default_reviewer.local_site, local_site)
-        self.assertEqual(default_reviewer.name, name)
-        self.assertEqual(default_reviewer.file_regex, file_regex)
+    def check_post_result(self, user, rsp, local_site_name):
+        self.assertIn('default_reviewer', rsp)
+        item_rsp = rsp['default_reviewer']
+
+        self.assertEqual(item_rsp['name'], 'my-default')
+        self.assertEqual(item_rsp['file_regex'], '.*')
+
+        default_reviewer = DefaultReviewer.objects.get(pk=item_rsp['id'])
+        self.assertEqual(default_reviewer.name, 'my-default')
+        self.assertEqual(default_reviewer.file_regex, '.*')
+
+        if local_site_name:
+            self.assertEqual(default_reviewer.local_site.name, local_site_name)
 
         people = list(default_reviewer.people.all())
         self.assertEqual(len(people), 2)
-        self.assertEqual(people[0], user1)
-        self.assertEqual(people[1], user2)
+        self.assertEqual(people[0].username, 'doc')
+        self.assertEqual(people[1].username, 'dopey')
 
         groups = list(default_reviewer.groups.all())
         self.assertEqual(len(groups), 2)
-        self.assertEqual(groups[0], group1)
-        self.assertEqual(groups[1], group2)
+        self.assertEqual(groups[0].name, 'group1')
+        self.assertEqual(groups[1].name, 'group2')
 
         repos = list(default_reviewer.repository.all())
         self.assertEqual(len(repos), 2)
-        self.assertEqual(repos[0], repo1)
-        self.assertEqual(repos[1], repo2)
+        self.assertEqual(repos[0].name, 'Test Repo 1')
+        self.assertEqual(repos[1].name, 'Test Repo 2')
 
     @add_fixtures(['test_users'])
     def test_post_with_defaults(self):
@@ -315,21 +326,6 @@ class ResourceListTests(BaseWebAPITestCase):
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], INVALID_FORM_DATA.code)
         self.assertTrue('file_regex' in rsp['fields'])
-
-    @add_fixtures(['test_users', 'test_site'])
-    def test_post_with_permission_denied_and_local_site(self):
-        """Testing the POST default-reviewers/ API
-        with a local site and Permission Denied error
-        """
-        self._login_user()
-
-        self.apiPost(
-            get_default_reviewer_list_url(self.local_site_name),
-            {
-                'name': 'default1',
-                'file_regex': '.*',
-            },
-            expected_status=403)
 
     @add_fixtures(['test_users'])
     def test_post_with_invalid_username(self):
@@ -446,137 +442,94 @@ class ResourceListTests(BaseWebAPITestCase):
         self.assertTrue('fields' in rsp)
         self.assertTrue('repositories' in rsp['fields'])
 
-    @add_fixtures(['test_users', 'test_site', 'test_scmtools'])
-    def test_post_with_site(self, local_site=None):
-        """Testing the POST default-reviewers/ API with a local site"""
-        local_site = LocalSite.objects.get(name=self.local_site_name)
-        self.test_post(local_site)
-
 
 class ResourceItemTests(BaseWebAPITestCase):
     """Testing the DefaultReviewerResource item APIs."""
+    __metaclass__ = BasicTestsMetaclass
+
+    fixtures = ['test_users']
+    basic_get_fixtures = ['test_scmtools']
+    basic_put_fixtures = ['test_scmtools']
+    basic_delete_use_admin = True
+    basic_put_use_admin = True
+    sample_api_url = 'default-reviewers/<id>/'
+    resource = resources.default_reviewer
+
+    def compare_item(self, item_rsp, default_reviewer):
+        self.assertEqual(default_reviewer.name, 'default1')
+        self.assertEqual(default_reviewer.file_regex, '.*')
+        self.assertEqual(item_rsp['name'], 'default1')
+        self.assertEqual(item_rsp['file_regex'], '.*')
+
+        user_rsps = item_rsp['users']
+        users = list(default_reviewer.people.all())
+        self.assertEqual(len(user_rsps), 1)
+        self.assertEqual(len(users), 1)
+        self.assertEqual(user_rsps[0]['title'], 'doc')
+        self.assertEqual(users[0].username, user_rsps[0]['title'])
+
+        group_rsps = item_rsp['groups']
+        groups = list(default_reviewer.groups.all())
+        self.assertEqual(len(group_rsps), 1)
+        self.assertEqual(len(groups), 1)
+        self.assertEqual(group_rsps[0]['title'], 'group1')
+        self.assertEqual(groups[0].name, group_rsps[0]['title'])
+
+        repo_rsps = item_rsp['repositories']
+        repos = list(default_reviewer.repository.all())
+        self.assertEqual(len(repo_rsps), 1)
+        self.assertEqual(len(repos), 1)
+        self.assertEqual(repo_rsps[0]['title'], 'Test Repo')
+        self.assertEqual(repos[0].name, repo_rsps[0]['title'])
+
     #
     # HTTP DELETE tests
     #
 
-    @add_fixtures(['test_users'])
-    def test_delete(self):
-        """Testing the DELETE default-reviewers/<id>/ API"""
-        self._login_user(admin=True)
+    def setup_basic_delete_test(self, user, with_local_site, local_site_name):
+        if with_local_site:
+            local_site = LocalSite.objects.get(name=local_site_name)
+        else:
+            local_site = None
+
         default_reviewer = DefaultReviewer.objects.create(
-            name='default1', file_regex='.*')
+            name='default1',
+            file_regex='.*',
+            local_site=local_site)
 
-        self.apiDelete(get_default_reviewer_item_url(default_reviewer.pk),
-                       expected_status=204)
-        self.assertFalse(
-            DefaultReviewer.objects.filter(name='default1').exists())
+        return (get_default_reviewer_item_url(default_reviewer.pk,
+                                              local_site_name),
+                [])
 
-    @add_fixtures(['test_users'])
-    def test_delete_with_permission_denied_error(self):
-        """Testing the DELETE default-reviewers/<id>/ API
-        with Permission Denied error
-        """
-        default_reviewer = DefaultReviewer.objects.create(
-            name='default1', file_regex='.*')
-
-        self.apiDelete(get_default_reviewer_item_url(default_reviewer.pk),
-                       expected_status=403)
-        self.assertTrue(
-            DefaultReviewer.objects.filter(name='default1').exists())
-
-    @add_fixtures(['test_users', 'test_site'])
-    def test_delete_with_site(self):
-        """Testing the DELETE default-reviewers/<id>/ API with a local site"""
-        self._login_user(local_site=True, admin=True)
-
-        local_site = LocalSite.objects.get(name=self.local_site_name)
-        default_reviewer = DefaultReviewer.objects.create(
-            name='default1', file_regex='.*', local_site=local_site)
-
-        self.apiDelete(get_default_reviewer_item_url(default_reviewer.pk,
-                                                     self.local_site_name),
-                       expected_status=204)
-        self.assertFalse(
-            DefaultReviewer.objects.filter(name='default1').exists())
-
-    @add_fixtures(['test_users', 'test_site'])
-    def test_delete_with_site_and_permission_denied_error(self):
-        """Testing the DELETE default-reviewers/<id>/ API
-        with a local site and Permission Denied error
-        """
-        local_site = LocalSite.objects.get(name=self.local_site_name)
-        default_reviewer = DefaultReviewer.objects.create(
-            name='default1', file_regex='.*', local_site=local_site)
-
-        self.apiDelete(get_default_reviewer_item_url(default_reviewer.pk,
-                                                     self.local_site_name),
-                       expected_status=403)
-        self.assertTrue(
-            DefaultReviewer.objects.filter(name='default1').exists())
+    def check_delete_result(self, user):
+        self.assertEqual(
+            DefaultReviewer.objects.filter(name='default1').count(),
+            0)
 
     #
     # HTTP GET tests
     #
 
-    @add_fixtures(['test_users', 'test_scmtools'])
-    def test_get(self):
-        """Testing the GET default-reviewers/<id>/ API"""
-        user = User.objects.get(username='doc')
-        group = Group.objects.create(name='group1')
-        repository = self.create_repository()
-
+    def setup_basic_get_test(self, user, with_local_site, local_site_name):
         default_reviewer = DefaultReviewer.objects.create(
             name='default1', file_regex='.*')
-        default_reviewer.people.add(user)
-        default_reviewer.groups.add(group)
-        default_reviewer.repository.add(repository)
 
-        rsp = self.apiGet(get_default_reviewer_item_url(default_reviewer.pk),
-                          expected_mimetype=default_reviewer_item_mimetype)
-        self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(rsp['default_reviewer']['name'], 'default1')
-        self.assertEqual(rsp['default_reviewer']['file_regex'], '.*')
+        if with_local_site:
+            default_reviewer.local_site = \
+                LocalSite.objects.get(name=local_site_name)
+            default_reviewer.save()
 
-        users = rsp['default_reviewer']['users']
-        self.assertEqual(len(users), 1)
-        self.assertEqual(users[0]['title'], user.username)
+        default_reviewer.people.add(User.objects.get(username='doc'))
+        default_reviewer.groups.add(
+            self.create_review_group(name='group1',
+                                     with_local_site=with_local_site))
+        default_reviewer.repository.add(
+            self.create_repository(with_local_site=with_local_site))
 
-        groups = rsp['default_reviewer']['groups']
-        self.assertEqual(len(groups), 1)
-        self.assertEqual(groups[0]['title'], group.name)
-
-        repos = rsp['default_reviewer']['repositories']
-        self.assertEqual(len(repos), 1)
-        self.assertEqual(repos[0]['title'], repository.name)
-
-    @add_fixtures(['test_users', 'test_site'])
-    def test_get_with_site(self):
-        """Testing the GET default-reviewers/<id>/ API with a local site"""
-        self._login_user(local_site=True)
-
-        local_site = LocalSite.objects.get(name=self.local_site_name)
-        default_reviewer = DefaultReviewer.objects.create(
-            name='default1', file_regex='.*', local_site=local_site)
-
-        rsp = self.apiGet(get_default_reviewer_item_url(default_reviewer.pk,
-                                                        self.local_site_name),
-                          expected_mimetype=default_reviewer_item_mimetype)
-        self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(rsp['default_reviewer']['name'], 'default1')
-        self.assertEqual(rsp['default_reviewer']['file_regex'], '.*')
-
-    @add_fixtures(['test_users', 'test_site'])
-    def test_get_with_site_no_access(self):
-        """Testing the GET default-reviewers/<id>/ API
-        with a local site and Permission Denied error
-        """
-        local_site = LocalSite.objects.get(name=self.local_site_name)
-        default_reviewer = DefaultReviewer.objects.create(
-            name='default1', file_regex='.*', local_site=local_site)
-
-        self.apiGet(get_default_reviewer_item_url(default_reviewer.pk,
-                                                  self.local_site_name),
-                    expected_status=403)
+        return (get_default_reviewer_item_url(default_reviewer.pk,
+                                              local_site_name),
+                default_reviewer_item_mimetype,
+                default_reviewer)
 
     def test_get_not_modified(self):
         """Testing the GET default-reviewers/<id>/ API
@@ -593,115 +546,75 @@ class ResourceItemTests(BaseWebAPITestCase):
     # HTTP PUT tests
     #
 
-    @add_fixtures(['test_users', 'test_scmtools'])
-    def test_put(self, local_site=None):
-        """Testing the PUT default-reviewers/<id>/ API"""
-        name = 'my-default-reviewer'
-        file_regex = '/foo/'
-        git_tool = Tool.objects.get(name='Git')
-
-        old_user = User.objects.get(username='admin')
-        old_group = Group.objects.create(name='group3', local_site=local_site)
-        old_repo = Repository.objects.create(name='Old Repo',
-                                             local_site=local_site,
-                                             path='old-repo',
-                                             tool=git_tool)
-
-        user1 = User.objects.get(username='doc')
-        user2 = User.objects.get(username='dopey')
-        group1 = Group.objects.create(name='group1', local_site=local_site)
-        group2 = Group.objects.create(name='group2', local_site=local_site)
-        repo1 = Repository.objects.create(name='Test Repo 1',
-                                          local_site=local_site,
-                                          path='test-repo-1',
-                                          tool=git_tool)
-        repo2 = Repository.objects.create(name='Test Repo 2',
-                                          local_site=local_site,
-                                          path='test-repo-2',
-                                          tool=git_tool)
-
-        # For the tests, make sure these are what we expect.
-        if local_site:
-            local_site.users.add(user1)
-            local_site.users.add(user2)
-            local_site.users.add(old_user)
-
-        default_reviewer = DefaultReviewer.objects.create(
-            name='default1', file_regex='.*', local_site=local_site)
-        default_reviewer.groups.add(old_group)
-        default_reviewer.repository.add(old_repo)
-        default_reviewer.people.add(old_user)
-
-        self._login_user(admin=True)
-        rsp = self.apiPut(
-            get_default_reviewer_item_url(default_reviewer.pk, local_site),
-            {
-                'name': name,
-                'file_regex': file_regex,
-                'users': ','.join([user1.username, user2.username]),
-                'groups': ','.join([group1.name, group2.name]),
-                'repositories': ','.join([str(repo1.pk), str(repo2.pk)]),
-            },
-            expected_mimetype=default_reviewer_item_mimetype)
-
-        self.assertEqual(rsp['stat'], 'ok')
-
-        default_reviewer = DefaultReviewer.objects.get(pk=default_reviewer.pk)
-        self.assertEqual(default_reviewer.local_site, local_site)
-        self.assertEqual(default_reviewer.name, name)
-        self.assertEqual(default_reviewer.file_regex, file_regex)
-
-        people = list(default_reviewer.people.all())
-        self.assertEqual(len(people), 2)
-        self.assertEqual(people[0], user1)
-        self.assertEqual(people[1], user2)
-
-        groups = list(default_reviewer.groups.all())
-        self.assertEqual(len(groups), 2)
-        self.assertEqual(groups[0], group1)
-        self.assertEqual(groups[1], group2)
-
-        repos = list(default_reviewer.repository.all())
-        self.assertEqual(len(repos), 2)
-        self.assertEqual(repos[0], repo1)
-        self.assertEqual(repos[1], repo2)
-
-    @add_fixtures(['test_users', 'test_site', 'test_scmtools'])
-    def test_put_with_site(self):
-        """Testing the PUT default-reviewers/<id>/ API with a local site"""
-        self.test_put(LocalSite.objects.get(name=self.local_site_name))
-
-    @add_fixtures(['test_users'])
-    def test_put_with_permission_denied(self):
-        """Testing the POST default-reviewers/ API with Permission Denied
-        error
-        """
-        self._login_user()
-
+    def setup_basic_put_test(self, user, with_local_site, local_site_name,
+                             put_valid_data):
         default_reviewer = DefaultReviewer.objects.create(
             name='default1', file_regex='.*')
 
-        self.apiPut(
-            get_default_reviewer_item_url(default_reviewer.pk),
-            {'name': 'default2'},
-            expected_status=403)
+        if with_local_site:
+            local_site = LocalSite.objects.get(name=local_site_name)
+            local_site.users.add(User.objects.get(username='doc'))
+            local_site.users.add(User.objects.get(username='dopey'))
 
-    @add_fixtures(['test_users', 'test_site'])
-    def test_put_with_permission_denied_and_local_site(self):
-        """Testing the PUT default-reviewers/<id>/ API
-        with a local site and Permission Denied error
-        """
-        self._login_user()
+            default_reviewer.local_site = local_site
+            default_reviewer.save()
 
-        local_site = LocalSite.objects.get(name=self.local_site_name)
-        default_reviewer = DefaultReviewer.objects.create(
-            name='default1', file_regex='.*', local_site=local_site)
+        default_reviewer.people.add(User.objects.get(username='doc'))
+        default_reviewer.groups.add(
+            self.create_review_group(name='group1',
+                                     with_local_site=with_local_site))
 
-        self.apiPut(
-            get_default_reviewer_item_url(default_reviewer.pk,
-                                          self.local_site_name),
-            {'name': 'default2'},
-            expected_status=403)
+        repo1 = self.create_repository(with_local_site=with_local_site,
+                                       name='Test Repo 1',
+                                       path='test-repo-1')
+        default_reviewer.repository.add(repo1)
+
+        if put_valid_data:
+            self.create_review_group(name='group2',
+                                     with_local_site=with_local_site)
+            repo2 = self.create_repository(with_local_site=with_local_site,
+                                           name='Test Repo 2',
+                                           path='test-repo-2')
+
+            put_data = {
+                'name': 'New name',
+                'file_regex': '/foo/',
+                'users': 'doc,dopey',
+                'groups': 'group1,group2',
+                'repositories': ','.join([str(repo1.pk), str(repo2.pk)]),
+            }
+        else:
+            put_data = {}
+
+        return (get_default_reviewer_item_url(default_reviewer.pk,
+                                              local_site_name),
+                default_reviewer_item_mimetype,
+                put_data,
+                default_reviewer,
+                [])
+
+    def check_put_result(self, user, item_rsp, default_reviewer):
+        self.assertEqual(item_rsp['name'], 'New name')
+        self.assertEqual(item_rsp['file_regex'], '/foo/')
+
+        default_reviewer = DefaultReviewer.objects.get(pk=item_rsp['id'])
+        self.assertEqual(default_reviewer.name, 'New name')
+        self.assertEqual(default_reviewer.file_regex, '/foo/')
+
+        people = list(default_reviewer.people.all())
+        self.assertEqual(len(people), 2)
+        self.assertEqual(people[0].username, 'doc')
+        self.assertEqual(people[1].username, 'dopey')
+
+        groups = list(default_reviewer.groups.all())
+        self.assertEqual(len(groups), 2)
+        self.assertEqual(groups[0].name, 'group1')
+        self.assertEqual(groups[1].name, 'group2')
+
+        repos = list(default_reviewer.repository.all())
+        self.assertEqual(len(repos), 2)
+        self.assertEqual(repos[0].name, 'Test Repo 1')
+        self.assertEqual(repos[1].name, 'Test Repo 2')
 
     @add_fixtures(['test_users'])
     def test_put_with_invalid_username(self):

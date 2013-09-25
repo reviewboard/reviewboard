@@ -5,18 +5,35 @@ from djblets.webapi.errors import INVALID_FORM_DATA
 
 from reviewboard import scmtools
 from reviewboard.scmtools.models import Repository, Tool
+from reviewboard.webapi.resources import resources
 from reviewboard.webapi.errors import REPO_NOT_IMPLEMENTED
 from reviewboard.webapi.tests.base import BaseWebAPITestCase
 from reviewboard.webapi.tests.mimetypes import repository_commits_item_mimetype
+from reviewboard.webapi.tests.mixins import BasicTestsMetaclass
 from reviewboard.webapi.tests.urls import get_repository_commits_url
 
 
 class ResourceTests(BaseWebAPITestCase):
     """Testing the RepositoryCommitsResource APIs."""
+    __metaclass__ = BasicTestsMetaclass
+
     fixtures = ['test_users', 'test_scmtools']
+    sample_api_url = 'repositories/<id>/commits/'
+    resource = resources.repository_commits
+    test_http_methods = ('DELETE', 'POST', 'PUT')
+
+    def setup_http_not_allowed_list_test(self, user):
+        repository = self.create_repository(tool_name='Test')
+
+        return get_repository_commits_url(repository)
+
+    def setup_http_not_allowed_item_test(self, user):
+        repository = self.create_repository(tool_name='Test')
+
+        return get_repository_commits_url(repository)
 
     #
-    # List tests
+    # HTTP GET tests
     #
 
     def test_get(self):

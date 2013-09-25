@@ -1,12 +1,16 @@
 from django.contrib.auth.models import User
-from djblets.testing.decorators import add_fixtures
 from djblets.webapi.errors import PERMISSION_DENIED
 
 from reviewboard.reviews.models import ScreenshotComment
+from reviewboard.webapi.resources import resources
 from reviewboard.webapi.tests.base import BaseWebAPITestCase
 from reviewboard.webapi.tests.mimetypes import (
     screenshot_comment_item_mimetype,
     screenshot_comment_list_mimetype)
+from reviewboard.webapi.tests.mixins import (
+    BasicTestsMetaclass,
+    ReviewRequestChildItemMixin,
+    ReviewRequestChildListMixin)
 from reviewboard.webapi.tests.urls import (
     get_review_screenshot_comment_item_url,
     get_review_screenshot_comment_list_url)
@@ -40,59 +44,81 @@ class BaseTestCase(BaseWebAPITestCase):
         return comment, review, review_request
 
 
-class ResourceListTests(BaseTestCase):
+class ResourceListTests(ReviewRequestChildListMixin, BaseTestCase):
     """Testing the ReviewScreenshotCommentResource list APIs."""
+    __metaclass__ = BasicTestsMetaclass
+
+    sample_api_url = 'review-requests/<id>/reviews/<id>/screenshot-comments/'
+    resource = resources.review_screenshot_comment
+
+    def setup_review_request_child_test(self, review_request):
+        self.create_screenshot(review_request)
+        review = self.create_review(review_request, user=self.user)
+
+        return (get_review_screenshot_comment_list_url(review),
+                screenshot_comment_list_mimetype)
+
+    def compare_item(self, item_rsp, comment):
+        self.assertEqual(item_rsp['id'], comment.pk)
+        self.assertEqual(item_rsp['text'], comment.text)
+        self.assertEqual(item_rsp['x'], comment.x)
+        self.assertEqual(item_rsp['y'], comment.y)
+        self.assertEqual(item_rsp['w'], comment.w)
+        self.assertEqual(item_rsp['h'], comment.h)
+
+    #
+    # HTTP GET tests
+    #
+
+    def setup_basic_get_test(self, user, with_local_site, local_site_name,
+                             populate_items):
+        review_request = self.create_review_request(
+            with_local_site=with_local_site,
+            submitter=user,
+            publish=True)
+        screenshot = self.create_screenshot(review_request)
+        review = self.create_review(review_request, user=user)
+
+        if populate_items:
+            items = [self.create_screenshot_comment(review, screenshot)]
+        else:
+            items = []
+
+        return (get_review_screenshot_comment_list_url(review,
+                                                       local_site_name),
+                screenshot_comment_list_mimetype,
+                items)
 
     #
     # HTTP POST tests
     #
 
-    def test_post(self):
-        """Testing the
-        POST review-requests/<id>/reviews/<id>/screenshot-comments/ API
-        """
-        comment_text = "This is a test comment."
-        x, y, w, h = (2, 2, 10, 10)
-
-        review_request = self.create_review_request(publish=True)
-        screenshot = self.create_screenshot(review_request)
-        review = self.create_review(review_request, user=self.user)
-
-        rsp = self._postNewScreenshotComment(review_request, review.id,
-                                             screenshot, comment_text,
-                                             x, y, w, h)
-
-        self.assertEqual(rsp['screenshot_comment']['text'], comment_text)
-        self.assertEqual(rsp['screenshot_comment']['x'], x)
-        self.assertEqual(rsp['screenshot_comment']['y'], y)
-        self.assertEqual(rsp['screenshot_comment']['w'], w)
-        self.assertEqual(rsp['screenshot_comment']['h'], h)
-
-    @add_fixtures(['test_site'])
-    def test_post_with_site(self):
-        """Testing the
-        POST review-requests/<id>/reviews/<id>/screenshot-comments/ API
-        with a local site
-        """
-        comment_text = 'This is a test comment.'
-        x, y, w, h = (2, 2, 10, 10)
-
-        user = self._login_user(local_site=True)
-
-        review_request = self.create_review_request(with_local_site=True,
-                                                    publish=True)
+    def setup_basic_post_test(self, user, with_local_site, local_site_name,
+                              post_valid_data):
+        review_request = self.create_review_request(
+            with_local_site=with_local_site,
+            submitter=user,
+            publish=True)
         screenshot = self.create_screenshot(review_request)
         review = self.create_review(review_request, user=user)
 
-        rsp = self._postNewScreenshotComment(review_request, review.id,
-                                             screenshot, comment_text,
-                                             x, y, w, h)
+        return (get_review_screenshot_comment_list_url(review,
+                                                       local_site_name),
+                screenshot_comment_item_mimetype,
+                {
+                    'screenshot_id': screenshot.pk,
+                    'text': 'Test comment',
+                    'x': 2,
+                    'y': 2,
+                    'w': 10,
+                    'h': 10,
+                },
+                [review, screenshot])
 
-        self.assertEqual(rsp['screenshot_comment']['text'], comment_text)
-        self.assertEqual(rsp['screenshot_comment']['x'], x)
-        self.assertEqual(rsp['screenshot_comment']['y'], y)
-        self.assertEqual(rsp['screenshot_comment']['w'], w)
-        self.assertEqual(rsp['screenshot_comment']['h'], h)
+    def check_post_result(self, user, rsp, review, screenshot):
+        comment = \
+            ScreenshotComment.objects.get(pk=rsp['screenshot_comment']['id'])
+        self.compare_item(rsp['screenshot_comment'], comment)
 
     def test_post_with_issue(self):
         """Testing the
@@ -113,30 +139,31 @@ class ResourceListTests(BaseTestCase):
         self.assertEqual(rsp['screenshot_comments'][0]['text'], comment_text)
         self.assertTrue(rsp['screenshot_comments'][0]['issue_opened'])
 
-    @add_fixtures(['test_site'])
-    def test_post_with_site_no_access(self):
-        """Testing the
-        POST review-requests/<id>/reviews/<id>/screenshot-comments/ API
-        with a local site and Permission Denied error
-        """
-        x, y, w, h = (2, 2, 10, 10)
 
-        user = self._login_user(local_site=True)
+class ResourceItemTests(ReviewRequestChildItemMixin, BaseTestCase):
+    """Testing the ReviewScreenshotCommentResource item APIs."""
+    __metaclass__ = BasicTestsMetaclass
 
-        review_request = self.create_review_request(with_local_site=True,
-                                                    publish=True)
+    fixtures = ['test_users']
+    sample_api_url = \
+        'review-requests/<id>/reviews/<id>/screenshot-comments/<id>/'
+    resource = resources.review_screenshot_comment
+
+    def compare_item(self, item_rsp, comment):
+        self.assertEqual(item_rsp['id'], comment.pk)
+        self.assertEqual(item_rsp['text'], comment.text)
+        self.assertEqual(item_rsp['x'], comment.x)
+        self.assertEqual(item_rsp['y'], comment.y)
+        self.assertEqual(item_rsp['w'], comment.w)
+        self.assertEqual(item_rsp['h'], comment.h)
+
+    def setup_review_request_child_test(self, review_request):
         screenshot = self.create_screenshot(review_request)
-        review = self.create_review(review_request, user=user)
+        review = self.create_review(review_request, user=self.user)
+        comment = self.create_screenshot_comment(review, screenshot)
 
-        self._login_user()
-
-        rsp = self.apiPost(
-            get_review_screenshot_comment_list_url(review,
-                                                   self.local_site_name),
-            {'screenshot_id': screenshot.id},
-            expected_status=403)
-        self.assertEqual(rsp['stat'], 'fail')
-        self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
+        return (get_review_screenshot_comment_item_url(review, comment.pk),
+                screenshot_comment_item_mimetype)
 
     def test_post_with_extra_fields(self):
         """Testing the
@@ -183,98 +210,25 @@ class ResourceListTests(BaseTestCase):
         self.assertEqual(comment.extra_data['bar'],
                          extra_fields['extra_data.bar'])
 
-
-class ResourceItemTests(BaseTestCase):
-    """Testing the ReviewScreenshotCommentResource item APIs."""
-    fixtures = ['test_users']
-
     #
     # HTTP DELETE tests
     #
 
-    def test_delete(self):
-        """Testing the
-        DELETE review-requests/<id>/reviews/<id>/screenshot-comments/<id>/ API
-        """
-        comment_text = "This is a test comment."
-        x, y, w, h = (2, 2, 10, 10)
-
-        review_request = self.create_review_request(publish=True)
-        screenshot = self.create_screenshot(review_request)
-        review = self.create_review(review_request, user=self.user)
-        comment = self.create_screenshot_comment(review, screenshot,
-                                                 comment_text, x, y, w, h)
-
-        self.apiDelete(
-            get_review_screenshot_comment_item_url(review, comment.pk))
-
-        rsp = self.apiGet(
-            get_review_screenshot_comment_list_url(review),
-            expected_mimetype=screenshot_comment_list_mimetype)
-        self.assertEqual(rsp['stat'], 'ok')
-        self.assertTrue('screenshot_comments' in rsp)
-        self.assertEqual(len(rsp['screenshot_comments']), 0)
-
-    @add_fixtures(['test_site'])
-    def test_delete_with_local_site(self):
-        """Testing the
-        DELETE review-requests/<id>/reviews/<id>/screenshot-comments/<id> API
-        with a local site
-        """
-        comment_text = 'This is a test comment.'
-        x, y, w, h = (2, 2, 10, 10)
-
-        user = self._login_user(local_site=True)
-
-        review_request = self.create_review_request(with_local_site=True,
-                                                    publish=True)
+    def setup_basic_delete_test(self, user, with_local_site, local_site_name):
+        review_request = self.create_review_request(
+            with_local_site=with_local_site,
+            submitter=user,
+            publish=True)
         screenshot = self.create_screenshot(review_request)
         review = self.create_review(review_request, user=user)
-        comment = self.create_screenshot_comment(review, screenshot,
-                                                 comment_text, x, y, w, h)
+        comment = self.create_screenshot_comment(review, screenshot)
 
-        self.apiDelete(
-            get_review_screenshot_comment_item_url(review, comment.pk,
-                                                   self.local_site_name))
+        return (get_review_screenshot_comment_item_url(review, comment.pk,
+                                                       local_site_name),
+                [comment, review])
 
-        rsp = self.apiGet(
-            get_review_screenshot_comment_list_url(review,
-                                                   self.local_site_name),
-            expected_mimetype=screenshot_comment_list_mimetype)
-        self.assertEqual(rsp['stat'], 'ok')
-        self.assertTrue('screenshot_comments' in rsp)
-        self.assertEqual(len(rsp['screenshot_comments']), 0)
-
-    @add_fixtures(['test_site'])
-    def test_delete_with_local_site_no_access(self):
-        """Testing the
-        DELETE review-requests/<id>/reviews/<id>/screenshot-comments/<id> API
-        with a local site and Permission Denied error
-        """
-        comment_text = 'This is a test comment.'
-        x, y, w, h = (2, 2, 10, 10)
-
-        user = self._login_user(local_site=True)
-
-        review_request = self.create_review_request(with_local_site=True,
-                                                    publish=True)
-        screenshot = self.create_screenshot(review_request)
-        review = self.create_review(review_request, user=user)
-        comment = self.create_screenshot_comment(review, screenshot,
-                                                 comment_text, x, y, w, h)
-
-        self.apiDelete(
-            get_review_screenshot_comment_item_url(review, comment.pk,
-                                                   self.local_site_name))
-
-        self._login_user()
-
-        rsp = self.apiDelete(
-            get_review_screenshot_comment_item_url(review, comment.pk,
-                                                   self.local_site_name),
-            expected_status=403)
-        self.assertEqual(rsp['stat'], 'fail')
-        self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
+    def check_delete_result(self, user, comment, review):
+        self.assertNotIn(comment, review.screenshot_comments.all())
 
     def test_delete_with_does_not_exist_error(self):
         """Testing the
@@ -291,8 +245,51 @@ class ResourceItemTests(BaseTestCase):
                        expected_status=404)
 
     #
+    # HTTP GET tests
+    #
+
+    def setup_basic_get_test(self, user, with_local_site, local_site_name):
+        review_request = self.create_review_request(
+            with_local_site=with_local_site,
+            submitter=user,
+            publish=True)
+        screenshot = self.create_screenshot(review_request)
+        review = self.create_review(review_request, user=user)
+        comment = self.create_screenshot_comment(review, screenshot)
+
+        return (get_review_screenshot_comment_item_url(review, comment.pk,
+                                                       local_site_name),
+                screenshot_comment_item_mimetype,
+                comment)
+
+    #
     # HTTP PUT tests
     #
+
+    def setup_basic_put_test(self, user, with_local_site, local_site_name,
+                             put_valid_data):
+        review_request = self.create_review_request(
+            with_local_site=with_local_site,
+            submitter=user,
+            publish=True)
+        screenshot = self.create_screenshot(review_request)
+        review = self.create_review(review_request, user=user)
+        comment = self.create_screenshot_comment(review, screenshot)
+
+        return (get_review_screenshot_comment_item_url(review, comment.pk,
+                                                       local_site_name),
+                screenshot_comment_item_mimetype,
+                {
+                    'text': 'Test comment',
+                },
+                comment,
+                [])
+
+    def check_put_result(self, user, item_rsp, comment, *args):
+        comment = ScreenshotComment.objects.get(pk=comment.pk)
+        self.assertEqual(item_rsp['id'], comment.pk)
+        self.assertEqual(item_rsp['text'], 'Test comment')
+        self.assertEqual(comment.text, 'Test comment')
 
     def test_put_with_issue(self):
         """Testing the

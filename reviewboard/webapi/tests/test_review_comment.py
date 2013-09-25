@@ -1,12 +1,16 @@
 from django.contrib.auth.models import User
-from djblets.testing.decorators import add_fixtures
 from djblets.webapi.errors import PERMISSION_DENIED
 
 from reviewboard.reviews.models import Comment
+from reviewboard.webapi.resources import resources
 from reviewboard.webapi.tests.base import BaseWebAPITestCase
 from reviewboard.webapi.tests.mimetypes import (
     review_diff_comment_item_mimetype,
     review_diff_comment_list_mimetype)
+from reviewboard.webapi.tests.mixins import (
+    BasicTestsMetaclass,
+    ReviewRequestChildItemMixin,
+    ReviewRequestChildListMixin)
 from reviewboard.webapi.tests.urls import (
     get_review_diff_comment_item_url,
     get_review_diff_comment_list_url)
@@ -27,7 +31,8 @@ class BaseResourceTestCase(BaseWebAPITestCase):
 
         return comment, review_request, review, interdiffset.revision
 
-    def _create_diff_review_with_issue(self, publish=False, comment_text=None):
+    def _create_diff_review_with_issue(self, publish=False, comment_text=None,
+                                       expected_status=201):
         """Sets up a review for a diff that includes a comment with an issue.
 
         If `publish` is True, the review is published. The review request is
@@ -67,24 +72,57 @@ class BaseResourceTestCase(BaseWebAPITestCase):
         return review
 
 
-class ResourceListTests(BaseResourceTestCase):
+class ResourceListTests(ReviewRequestChildListMixin, BaseResourceTestCase):
     """Testing the ReviewDiffCommentResource list APIs."""
+    __metaclass__ = BasicTestsMetaclass
+
     fixtures = ['test_users', 'test_scmtools']
+    sample_api_url = 'review-requests/<id>/reviews/<id>/diff-comments/'
+    resource = resources.review_diff_comment
+
+    def setup_review_request_child_test(self, review_request):
+        if not review_request.repository_id:
+            # The group tests don't create a repository by default.
+            review_request.repository = self.create_repository()
+            review_request.save()
+
+        diffset = self.create_diffset(review_request)
+        self.create_filediff(diffset)
+        review = self.create_review(review_request, publish=True)
+
+        return (get_review_diff_comment_list_url(review),
+                review_diff_comment_list_mimetype)
+
+    def compare_item(self, item_rsp, comment):
+        self.assertEqual(item_rsp['id'], comment.pk)
+        self.assertEqual(item_rsp['text'], comment.text)
+        self.assertEqual(item_rsp['issue_opened'], comment.issue_opened)
+        self.assertEqual(item_rsp['first_line'], comment.first_line)
+        self.assertEqual(item_rsp['num_lines'], comment.num_lines)
 
     #
     # HTTP GET tests
     #
 
-    def test_get(self):
-        """Testing the
-        GET review-requests/<id>/reviews/<id>/diff-comments/ API
-        """
-        review = self._create_diff_review()
+    def setup_basic_get_test(self, user, with_local_site, local_site_name,
+                             populate_items):
+        review_request = self.create_review_request(
+            create_repository=True,
+            with_local_site=with_local_site,
+            submitter=user,
+            publish=True)
+        diffset = self.create_diffset(review_request)
+        filediff = self.create_filediff(diffset)
+        review = self.create_review(review_request, publish=True)
 
-        rsp = self.apiGet(get_review_diff_comment_list_url(review),
-                          expected_mimetype=review_diff_comment_list_mimetype)
-        self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(len(rsp['diff_comments']), review.comments.count())
+        if populate_items:
+            items = [self.create_diff_comment(review, filediff)]
+        else:
+            items = []
+
+        return (get_review_diff_comment_list_url(review, local_site_name),
+                review_diff_comment_list_mimetype,
+                items)
 
     def test_get_with_counts_only(self):
         """Testing the
@@ -115,55 +153,37 @@ class ResourceListTests(BaseResourceTestCase):
         self.assertEqual(len(rsp['diff_comments']), 1)
         self.assertEqual(rsp['diff_comments'][0]['text'], comment_text)
 
-    @add_fixtures(['test_site'])
-    def test_get_with_site(self):
-        """Testing the GET review-requests/<id>/reviews/<id>/diff-comments/ API
-        with a local site
-        """
-        review = self.test_post_with_site()
-
-        rsp = self.apiGet(
-            get_review_diff_comment_list_url(review, self.local_site_name),
-            expected_mimetype=review_diff_comment_list_mimetype)
-        self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(len(rsp['diff_comments']), review.comments.count())
-
-    @add_fixtures(['test_site'])
-    def test_get_with_site_no_access(self):
-        """Testing the GET review-requests/<id>/reviews/<id>/diff-comments/ API
-        with a local site and Permission Denied error
-        """
-        review = self.test_post_with_site()
-
-        self._login_user()
-
-        rsp = self.apiGet(
-            get_review_diff_comment_list_url(review, self.local_site_name),
-            expected_status=403)
-        self.assertEqual(rsp['stat'], 'fail')
-        self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
-
     #
     # HTTP POST tests
     #
 
-    def test_post(self):
-        """Testing the
-        POST review-requests/<id>/reviews/<id>/diff-comments/ API
-        """
-        review_request = self.create_review_request(create_repository=True,
-                                                    publish=True)
+    def setup_basic_post_test(self, user, with_local_site, local_site_name,
+                              post_valid_data):
+        review_request = self.create_review_request(
+            create_repository=True,
+            with_local_site=with_local_site,
+            submitter=user,
+            publish=True)
         diffset = self.create_diffset(review_request)
         filediff = self.create_filediff(diffset)
-        review = self.create_review(review_request, user=self.user)
-        comment = self.create_diff_comment(review, filediff)
+        review = self.create_review(review_request, user=user)
 
-        rsp = self.apiGet(get_review_diff_comment_list_url(review),
-                          expected_mimetype=review_diff_comment_list_mimetype)
-        self.assertEqual(rsp['stat'], 'ok')
-        self.assertTrue('diff_comments' in rsp)
-        self.assertEqual(len(rsp['diff_comments']), 1)
-        self.assertEqual(rsp['diff_comments'][0]['text'], comment.text)
+        return (get_review_diff_comment_list_url(review, local_site_name),
+                review_diff_comment_item_mimetype,
+                {
+                    'filediff_id': filediff.pk,
+                    'text': 'My new text',
+                    'first_line': 1,
+                    'num_lines': 2,
+                },
+                [review])
+
+    def check_post_result(self, user, rsp, review):
+        comment_rsp = rsp['diff_comment']
+        self.assertEqual(comment_rsp['text'], 'My new text')
+
+        comment = Comment.objects.get(pk=comment_rsp['id'])
+        self.compare_item(comment_rsp, comment)
 
     def test_post_with_issue(self):
         """Testing the
@@ -171,54 +191,24 @@ class ResourceListTests(BaseResourceTestCase):
         with an issue
         """
         diff_comment_text = 'Test diff comment with an opened issue'
-        comment, review, review_request = self._create_diff_review_with_issue(
-            publish=False, comment_text=diff_comment_text)
 
-        rsp = self.apiGet(get_review_diff_comment_list_url(review),
-                          expected_mimetype=review_diff_comment_list_mimetype)
-        self.assertEqual(rsp['stat'], 'ok')
-        self.assertTrue('diff_comments' in rsp)
-        self.assertEqual(len(rsp['diff_comments']), 1)
-        self.assertEqual(rsp['diff_comments'][0]['text'], diff_comment_text)
-        self.assertTrue(rsp['diff_comments'][0]['issue_opened'])
-
-    @add_fixtures(['test_site'])
-    def test_post_with_site(self):
-        """Testing the
-        POST review-requests/<id>/reviews/<id>/diff-comments/ API
-        with a local site
-        """
-        review_request, filediff = \
-            self._create_diff_review_request(with_local_site=True)
-        user = self._login_user(local_site=True)
-        review = self.create_review(review_request, user=user)
-        comment = self.create_diff_comment(review, filediff)
-
-        rsp = self.apiGet(
-            get_review_diff_comment_list_url(review, self.local_site_name),
-            expected_mimetype=review_diff_comment_list_mimetype)
-        self.assertEqual(rsp['stat'], 'ok')
-        self.assertTrue('diff_comments' in rsp)
-        self.assertEqual(len(rsp['diff_comments']), 1)
-        self.assertEqual(rsp['diff_comments'][0]['text'], comment.text)
-
-        return review
-
-    @add_fixtures(['test_site'])
-    def test_post_with_site_no_access(self):
-        """Testing the
-        POST review-requests/<id>/reviews/<id>/diff-comments/ API
-        with a local site and Permission Denied error
-        """
-        review_request = self.create_review_request(with_local_site=True,
-                                                    publish=True)
-        review = self.create_review(review_request, user='doc', publish=True)
-
+        review_request, filediff = self._create_diff_review_request()
+        review = self.create_review(review_request, user=self.user)
         rsp = self.apiPost(
-            get_review_diff_comment_list_url(review, self.local_site_name),
-            {},
-            expected_status=403)
-        self.assertEqual(rsp['stat'], 'fail')
+            get_review_diff_comment_list_url(review),
+            {
+                'filediff_id': filediff.pk,
+                'issue_opened': True,
+                'first_line': 1,
+                'num_lines': 5,
+                'text': diff_comment_text,
+            },
+            expected_mimetype=review_diff_comment_item_mimetype)
+
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertTrue('diff_comment' in rsp)
+        self.assertEqual(rsp['diff_comment']['text'], diff_comment_text)
+        self.assertTrue(rsp['diff_comment']['issue_opened'])
 
     def test_post_with_interdiff(self):
         """Testing the
@@ -227,15 +217,33 @@ class ResourceListTests(BaseResourceTestCase):
         """
         comment_text = "Test diff comment"
 
-        comment, review_request, review, interdiff_revision = \
-            self._common_post_interdiff_comments(comment_text)
+        review_request, filediff = self._create_diff_review_request()
 
-        rsp = self.apiGet(get_review_diff_comment_list_url(review),
-                          expected_mimetype=review_diff_comment_list_mimetype)
+        # Post the second diff.
+        interdiffset = self.create_diffset(review_request)
+        interfilediff = self.create_filediff(interdiffset)
+
+        review = self.create_review(review_request, user=self.user)
+
+        rsp = self.apiPost(
+            get_review_diff_comment_list_url(review),
+            {
+                'filediff_id': filediff.pk,
+                'interfilediff_id': interfilediff.pk,
+                'issue_opened': True,
+                'first_line': 1,
+                'num_lines': 5,
+                'text': comment_text,
+            },
+            expected_mimetype=review_diff_comment_item_mimetype)
+
         self.assertEqual(rsp['stat'], 'ok')
-        self.assertTrue('diff_comments' in rsp)
-        self.assertEqual(len(rsp['diff_comments']), 1)
-        self.assertEqual(rsp['diff_comments'][0]['text'], comment_text)
+        self.assertTrue('diff_comment' in rsp)
+        self.assertEqual(rsp['diff_comment']['text'], comment_text)
+
+        comment = Comment.objects.get(pk=rsp['diff_comment']['id'])
+        self.assertEqual(comment.filediff_id, filediff.pk)
+        self.assertEqual(comment.interfilediff_id, interfilediff.pk)
 
     def test_post_with_extra_fields(self):
         """Testing the
@@ -282,13 +290,56 @@ class ResourceListTests(BaseResourceTestCase):
                          extra_fields['extra_data.bar'])
 
 
-class ResourceItemTests(BaseResourceTestCase):
+class ResourceItemTests(ReviewRequestChildItemMixin, BaseResourceTestCase):
     """Testing the ReviewDiffCommentResource item APIs."""
+    __metaclass__ = BasicTestsMetaclass
+
     fixtures = ['test_users', 'test_scmtools']
+    sample_api_url = 'review-requests/<id>/reviews/<id>/diff-comments/'
+    resource = resources.review_diff_comment
+
+    def setup_review_request_child_test(self, review_request):
+        if not review_request.repository_id:
+            # The group tests don't create a repository by default.
+            review_request.repository = self.create_repository()
+            review_request.save()
+
+        diffset = self.create_diffset(review_request)
+        filediff = self.create_filediff(diffset)
+        review = self.create_review(review_request, publish=True)
+        comment = self.create_diff_comment(review, filediff)
+
+        return (get_review_diff_comment_item_url(review, comment.pk),
+                review_diff_comment_item_mimetype)
+
+    def compare_item(self, item_rsp, comment):
+        self.assertEqual(item_rsp['id'], comment.pk)
+        self.assertEqual(item_rsp['text'], comment.text)
+        self.assertEqual(item_rsp['issue_opened'], comment.issue_opened)
+        self.assertEqual(item_rsp['first_line'], comment.first_line)
+        self.assertEqual(item_rsp['num_lines'], comment.num_lines)
 
     #
     # HTTP DELETE tests
     #
+
+    def setup_basic_delete_test(self, user, with_local_site, local_site_name):
+        review_request = self.create_review_request(
+            create_repository=True,
+            with_local_site=with_local_site,
+            submitter=user,
+            publish=True)
+        diffset = self.create_diffset(review_request)
+        filediff = self.create_filediff(diffset)
+        review = self.create_review(review_request, user=user)
+        comment = self.create_diff_comment(review, filediff)
+
+        return (get_review_diff_comment_item_url(review, comment.pk,
+                                                 local_site_name),
+                [comment, review])
+
+    def check_delete_result(self, user, comment, review):
+        self.assertNotIn(comment, review.comments.all())
 
     def test_delete_with_interdiff(self):
         """Testing the
@@ -307,49 +358,25 @@ class ResourceItemTests(BaseResourceTestCase):
         self.assertTrue('diff_comments' in rsp)
         self.assertEqual(len(rsp['diff_comments']), 0)
 
-    @add_fixtures(['test_site'])
-    def test_delete_with_site(self):
-        """Testing the
-        DELETE review-requests/<id>/reviews/<id>/diff-comments/<id>/ API
-        with a local site
-        """
-        review_request, filediff = \
-            self._create_diff_review_request(with_local_site=True)
-        user = self._login_user(local_site=True)
-        review = self.create_review(review_request, user=user)
-        comment = self.create_diff_comment(review, filediff)
-
-        self.assertEqual(review.comments.count(), 1)
-
-        self.apiDelete(get_review_diff_comment_item_url(review, comment.pk,
-                                                        self.local_site_name))
-
-        self.assertEqual(review.comments.count(), 0)
-
-    @add_fixtures(['test_site'])
-    def test_delete_with_site_no_access(self):
-        """Testing the
-        DELETE review-requests/<id>/reviews/<id>/diff-comments/<id>/ API
-        with a local site and Permission Denied error
-        """
-        review_request, filediff = \
-            self._create_diff_review_request(with_local_site=True)
-        user = self._login_user(local_site=True)
-        review = self.create_review(review_request, user=user)
-        comment = self.create_diff_comment(review, filediff)
-
-        self._login_user()
-
-        rsp = self.apiDelete(
-            get_review_diff_comment_item_url(review, comment.id,
-                                             self.local_site_name),
-            expected_status=403)
-        self.assertEqual(rsp['stat'], 'fail')
-        self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
-
     #
     # HTTP GET tests
     #
+
+    def setup_basic_get_test(self, user, with_local_site, local_site_name):
+        review_request = self.create_review_request(
+            create_repository=True,
+            with_local_site=with_local_site,
+            submitter=user,
+            publish=True)
+        diffset = self.create_diffset(review_request)
+        filediff = self.create_filediff(diffset)
+        review = self.create_review(review_request, user=user)
+        comment = self.create_diff_comment(review, filediff)
+
+        return (get_review_diff_comment_item_url(review, comment.pk,
+                                                 local_site_name),
+                review_diff_comment_item_mimetype,
+                comment)
 
     def test_get_not_modified(self):
         """Testing the
@@ -366,6 +393,32 @@ class ResourceItemTests(BaseResourceTestCase):
     #
     # HTTP PUT tests
     #
+
+    def setup_basic_put_test(self, user, with_local_site, local_site_name,
+                             put_valid_data):
+        review_request = self.create_review_request(
+            create_repository=True,
+            with_local_site=with_local_site,
+            submitter=user,
+            publish=True)
+        diffset = self.create_diffset(review_request)
+        filediff = self.create_filediff(diffset)
+        review = self.create_review(review_request, user=user)
+        comment = self.create_diff_comment(review, filediff)
+
+        return (get_review_diff_comment_item_url(review, comment.pk,
+                                                 local_site_name),
+                review_diff_comment_item_mimetype,
+                {
+                    'text': 'My new text',
+                },
+                comment,
+                [])
+
+    def check_put_result(self, user, item_rsp, comment, *args):
+        self.assertEqual(item_rsp['id'], comment.pk)
+        self.assertEqual(item_rsp['text'], 'My new text')
+        self.compare_item(item_rsp, Comment.objects.get(pk=comment.pk))
 
     def test_put_with_issue(self):
         """Testing the

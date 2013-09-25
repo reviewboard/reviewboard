@@ -1,65 +1,56 @@
-from django.contrib.auth.models import User
 from django.core import mail
 from djblets.testing.decorators import add_fixtures
 from djblets.webapi.errors import DOES_NOT_EXIST, PERMISSION_DENIED
 
-from reviewboard.reviews.models import ReviewRequest
-from reviewboard.site.models import LocalSite
+from reviewboard.reviews.models import Review
+from reviewboard.webapi.resources import resources
 from reviewboard.webapi.tests.base import BaseWebAPITestCase
 from reviewboard.webapi.tests.mimetypes import (review_list_mimetype,
                                                 review_item_mimetype)
+from reviewboard.webapi.tests.mixins import (BasicTestsMetaclass,
+                                             ReviewRequestChildItemMixin,
+                                             ReviewRequestChildListMixin)
 from reviewboard.webapi.tests.urls import (get_review_item_url,
                                            get_review_list_url)
 
 
-class ResourceListTests(BaseWebAPITestCase):
+class ResourceListTests(ReviewRequestChildListMixin, BaseWebAPITestCase):
     """Testing the ReviewResource list APIs."""
+    __metaclass__ = BasicTestsMetaclass
+
     fixtures = ['test_users']
+    sample_api_url = 'review-requests/<id>/reviews/'
+    resource = resources.review
+
+    def setup_review_request_child_test(self, review_request):
+        return (get_review_list_url(review_request),
+                review_list_mimetype)
+
+    def compare_item(self, item_rsp, review):
+        self.assertEqual(item_rsp['id'], review.pk)
+        self.assertEqual(item_rsp['ship_it'], review.ship_it)
+        self.assertEqual(item_rsp['body_top'], review.body_top)
+        self.assertEqual(item_rsp['body_bottom'], review.body_bottom)
 
     #
     # HTTP GET tests
     #
 
-    def test_get(self):
-        """Testing the GET review-requests/<id>/reviews/ API"""
-        review_request = self.create_review_request(publish=True)
-        self.create_review(review_request, publish=True)
+    def setup_basic_get_test(self, user, with_local_site, local_site_name,
+                             populate_items):
+        review_request = self.create_review_request(
+            with_local_site=with_local_site,
+            submitter=user,
+            publish=True)
 
-        rsp = self.apiGet(get_review_list_url(review_request),
-                          expected_mimetype=review_list_mimetype)
-        self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(len(rsp['reviews']), 1)
+        if populate_items:
+            items = [self.create_review(review_request, publish=True)]
+        else:
+            items = []
 
-    @add_fixtures(['test_site'])
-    def test_get_with_site(self):
-        """Testing the GET review-requests/<id>/reviews/ API
-        with a local site
-        """
-        self.test_post_with_site(public=True)
-
-        local_site = LocalSite.objects.get(name=self.local_site_name)
-        review_request = ReviewRequest.objects.public(local_site=local_site)[0]
-
-        rsp = self.apiGet(get_review_list_url(review_request,
-                                              self.local_site_name),
-                          expected_mimetype=review_list_mimetype)
-        self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(len(rsp['reviews']), review_request.reviews.count())
-
-    @add_fixtures(['test_site'])
-    def test_get_with_site_no_access(self):
-        """Testing the GET review-requests/<id>/reviews/ API
-        with a local site and Permission Denied error
-        """
-        review_request = self.create_review_request(with_local_site=True,
-                                                    publish=True)
-
-        rsp = self.apiGet(get_review_list_url(review_request,
-                                              self.local_site_name),
-                          expected_status=403)
-
-        self.assertEqual(rsp['stat'], 'fail')
-        self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
+        return (get_review_list_url(review_request, local_site_name),
+                review_list_mimetype,
+                items)
 
     def test_get_with_counts_only(self):
         """Testing the GET review-requests/<id>/reviews/?counts-only=1 API"""
@@ -94,144 +85,64 @@ class ResourceListTests(BaseWebAPITestCase):
     # HTTP POST tests
     #
 
-    @add_fixtures(['test_site'])
-    def test_post(self):
-        """Testing the POST review-requests/<id>/reviews/ API"""
-        body_top = ""
-        body_bottom = "My Body Bottom"
-        ship_it = True
+    def setup_basic_post_test(self, user, with_local_site, local_site_name,
+                              post_valid_data):
+        review_request = self.create_review_request(
+            with_local_site=with_local_site,
+            submitter=user,
+            publish=True)
 
-        review_request = self.create_review_request(publish=True)
-        mail.outbox = []
+        return (get_review_list_url(review_request, local_site_name),
+                review_item_mimetype,
+                {
+                    'ship_it': True,
+                    'body_top': 'My body top',
+                    'body_bottom': 'My body bottom',
+                },
+                [review_request])
 
-        rsp, response = self.api_post_with_response(
-            get_review_list_url(review_request),
-            {
-                'ship_it': ship_it,
-                'body_top': body_top,
-                'body_bottom': body_bottom,
-            },
-            expected_mimetype=review_item_mimetype)
-
-        self.assertTrue('stat' in rsp)
-        self.assertEqual(rsp['stat'], 'ok')
-        self.assertTrue('Location' in response)
-
-        reviews = review_request.reviews.filter(user=self.user)
-        self.assertEqual(len(reviews), 1)
-        review = reviews[0]
-
-        self.assertEqual(response['Location'],
-                         self.base_url +
-                         get_review_item_url(review_request, review.id))
-
-        self.assertEqual(review.ship_it, ship_it)
-        self.assertEqual(review.body_top, body_top)
-        self.assertEqual(review.body_bottom, body_bottom)
-        self.assertEqual(review.public, False)
-
-        self.assertEqual(len(mail.outbox), 0)
-
-    @add_fixtures(['test_site'])
-    def test_post_with_site(self, public=False):
-        """Testing the POST review-requests/<id>/reviews/ API
-        with a local site
-        """
-        self._login_user(local_site=True)
-
-        body_top = ""
-        body_bottom = "My Body Bottom"
-        ship_it = True
-
-        self.siteconfig.set('mail_send_review_mail', True)
-        self.siteconfig.save()
-
-        review_request = self.create_review_request(with_local_site=True,
-                                                    publish=True)
-
-        mail.outbox = []
-
-        post_data = {
-            'ship_it': ship_it,
-            'body_top': body_top,
-            'body_bottom': body_bottom,
-            'public': public,
-        }
-
-        rsp, response = self.api_post_with_response(
-            get_review_list_url(review_request, self.local_site_name),
-            post_data,
-            expected_mimetype=review_item_mimetype)
-
-        self.assertTrue('stat' in rsp)
-        self.assertEqual(rsp['stat'], 'ok')
-        self.assertTrue('Location' in response)
-
-        reviews = review_request.reviews.all()
-        self.assertEqual(len(reviews), 1)
-        review = reviews[0]
-
-        self.assertEqual(rsp['review']['id'], review.id)
-
-        self.assertEqual(review.ship_it, ship_it)
-        self.assertEqual(review.body_top, body_top)
-        self.assertEqual(review.body_bottom, body_bottom)
-        self.assertEqual(review.public, public)
-
-        if public:
-            self.assertEqual(len(mail.outbox), 1)
-        else:
-            self.assertEqual(len(mail.outbox), 0)
-
-    @add_fixtures(['test_site'])
-    def test_post_with_site_no_access(self):
-        """Testing the POST review-requests/<id>/reviews/ API
-        with a local site and Permission Denied error
-        """
-        review_request = self.create_review_request(with_local_site=True,
-                                                    publish=True)
-
-        rsp = self.apiPost(
-            get_review_list_url(review_request, self.local_site_name),
-            expected_status=403)
-        self.assertEqual(rsp['stat'], 'fail')
-        self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
+    def check_post_result(self, user, rsp, review_request):
+        review = Review.objects.get(pk=rsp['review']['id'])
+        self.compare_item(rsp['review'], review)
 
 
-class ResourceItemTests(BaseWebAPITestCase):
+class ResourceItemTests(ReviewRequestChildItemMixin, BaseWebAPITestCase):
     """Testing the ReviewResource item APIs."""
+    __metaclass__ = BasicTestsMetaclass
+
     fixtures = ['test_users']
+    sample_api_url = 'review-requests/<id>/reviews/<id>/'
+    resource = resources.review
+
+    def setup_review_request_child_test(self, review_request):
+        review = self.create_review(review_request, publish=True)
+
+        return (get_review_item_url(review_request, review.pk),
+                review_item_mimetype)
+
+    def compare_item(self, item_rsp, review):
+        self.assertEqual(item_rsp['id'], review.pk)
+        self.assertEqual(item_rsp['ship_it'], review.ship_it)
+        self.assertEqual(item_rsp['body_top'], review.body_top)
+        self.assertEqual(item_rsp['body_bottom'], review.body_bottom)
 
     #
     # HTTP DELETE tests
     #
 
-    @add_fixtures(['test_site'])
-    def test_delete(self):
-        """Testing the DELETE review-requests/<id>/reviews/<id>/ API"""
-        # Set up the draft to delete.
-        review = self.test_put()
-        review_request = review.review_request
+    def setup_basic_delete_test(self, user, with_local_site, local_site_name):
+        review_request = self.create_review_request(
+            with_local_site=with_local_site,
+            submitter=user,
+            publish=True)
+        review = self.create_review(review_request, user=user)
 
-        self.apiDelete(get_review_item_url(review_request, review.id))
-        self.assertEqual(review_request.reviews.count(), 0)
+        return (get_review_item_url(review_request, review.pk,
+                                    local_site_name),
+                [review, review_request])
 
-    @add_fixtures(['test_site'])
-    def test_delete_with_permission_denied(self):
-        """Testing the DELETE review-requests/<id>/reviews/<id>/ API
-        with Permission Denied error
-        """
-        # Set up the draft to delete.
-        review = self.test_put()
-        review.user = User.objects.get(username='doc')
-        review.save()
-
-        review_request = review.review_request
-        old_count = review_request.reviews.count()
-
-        self.apiDelete(get_review_item_url(review_request, review.id),
-                       expected_status=403)
-        self.assertEqual(review_request.reviews.count(), old_count)
+    def check_delete_result(self, user, review, review_request):
+        self.assertNotIn(review, review_request.reviews.all())
 
     def test_delete_with_published_review(self):
         """Testing the DELETE review-requests/<id>/reviews/<id>/ API
@@ -256,38 +167,21 @@ class ResourceItemTests(BaseWebAPITestCase):
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], DOES_NOT_EXIST.code)
 
-    @add_fixtures(['test_site'])
-    def test_delete_with_local_site(self):
-        """Testing the DELETE review-requests/<id>/reviews/<id>/ API
-        with a local site
-        """
-        review = self.test_put_with_site()
-
-        local_site = LocalSite.objects.get(name=self.local_site_name)
-        review_request = ReviewRequest.objects.public(local_site=local_site)[0]
-
-        self.apiDelete(get_review_item_url(review_request, review.id,
-                                           self.local_site_name))
-        self.assertEqual(review_request.reviews.count(), 0)
-
-    @add_fixtures(['test_site'])
-    def test_delete_with_local_site_no_access(self):
-        """Testing the DELETE review-requests/<id>/reviews/<id>/ API
-        with a local site and Permission Denied error
-        """
-        review_request = self.create_review_request(with_local_site=True,
-                                                    publish=True)
-        review = self.create_review(review_request, username='doc')
-
-        rsp = self.apiDelete(get_review_item_url(review_request, review.id,
-                                                 self.local_site_name),
-                             expected_status=403)
-        self.assertEqual(rsp['stat'], 'fail')
-        self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
-
     #
     # HTTP GET tests
     #
+
+    def setup_basic_get_test(self, user, with_local_site, local_site_name):
+        review_request = self.create_review_request(
+            with_local_site=with_local_site,
+            submitter=user,
+            publish=True)
+        review = self.create_review(review_request, user=user)
+
+        return (get_review_item_url(review_request, review.pk,
+                                    local_site_name),
+                review_item_mimetype,
+                review)
 
     def test_get_not_modified(self):
         """Testing the GET review-requests/<id>/reviews/<id>/ API
@@ -304,114 +198,29 @@ class ResourceItemTests(BaseWebAPITestCase):
     # HTTP PUT tests
     #
 
-    @add_fixtures(['test_site'])
-    def test_put(self):
-        """Testing the PUT review-requests/<id>/reviews/<id>/ API"""
-        body_top = ""
-        body_bottom = "My Body Bottom"
-        ship_it = True
+    def setup_basic_put_test(self, user, with_local_site, local_site_name,
+                             put_valid_data):
+        review_request = self.create_review_request(
+            with_local_site=with_local_site,
+            submitter=user,
+            publish=True)
+        review = self.create_review(review_request, user=user)
 
-        review_request = self.create_review_request(publish=True)
-        mail.outbox = []
+        return (get_review_item_url(review_request, review.pk,
+                                    local_site_name),
+                review_item_mimetype,
+                {
+                    'body_top': 'New body top',
+                },
+                review,
+                [])
 
-        rsp, response = self.api_post_with_response(
-            get_review_list_url(review_request),
-            expected_mimetype=review_item_mimetype)
+    def check_put_result(self, user, item_rsp, review, *args):
+        self.assertEqual(item_rsp['id'], review.pk)
+        self.assertEqual(item_rsp['body_top'], 'New body top')
 
-        self.assertTrue('stat' in rsp)
-        self.assertEqual(rsp['stat'], 'ok')
-        self.assertTrue('Location' in response)
-
-        review_url = response['Location']
-
-        rsp = self.apiPut(
-            review_url,
-            {
-                'ship_it': ship_it,
-                'body_top': body_top,
-                'body_bottom': body_bottom,
-            },
-            expected_mimetype=review_item_mimetype)
-
-        reviews = review_request.reviews.filter(user=self.user)
-        self.assertEqual(len(reviews), 1)
-        review = reviews[0]
-
-        self.assertEqual(review.ship_it, ship_it)
-        self.assertEqual(review.body_top, body_top)
-        self.assertEqual(review.body_bottom, body_bottom)
-        self.assertEqual(review.public, False)
-
-        self.assertEqual(len(mail.outbox), 0)
-
-        # Make this easy to use in other tests.
-        return review
-
-    @add_fixtures(['test_site'])
-    def test_put_with_site(self):
-        """Testing the PUT review-requests/<id>/reviews/<id>/ API
-        with a local site
-        """
-        self._login_user(local_site=True)
-
-        body_top = ""
-        body_bottom = "My Body Bottom"
-        ship_it = True
-
-        review_request = self.create_review_request(with_local_site=True,
-                                                    publish=True)
-        mail.outbox = []
-
-        rsp, response = self.api_post_with_response(
-            get_review_list_url(review_request, self.local_site_name),
-            expected_mimetype=review_item_mimetype)
-
-        self.assertTrue('stat' in rsp)
-        self.assertEqual(rsp['stat'], 'ok')
-        self.assertTrue('Location' in response)
-
-        review_url = response['Location']
-
-        rsp = self.apiPut(
-            review_url,
-            {
-                'ship_it': ship_it,
-                'body_top': body_top,
-                'body_bottom': body_bottom,
-            },
-            expected_mimetype=review_item_mimetype)
-
-        reviews = review_request.reviews.filter(user__username='doc')
-        self.assertEqual(len(reviews), 1)
-        review = reviews[0]
-
-        self.assertEqual(review.ship_it, ship_it)
-        self.assertEqual(review.body_top, body_top)
-        self.assertEqual(review.body_bottom, body_bottom)
-        self.assertEqual(review.public, False)
-
-        self.assertEqual(len(mail.outbox), 0)
-
-        # Make this easy to use in other tests.
-        return review
-
-    @add_fixtures(['test_site'])
-    def test_put_with_site_no_access(self):
-        """Testing the PUT review-requests/<id>/reviews/<id>/ API
-        with a local site and Permission Denied error
-        """
-        review_request = self.create_review_request(with_local_site=True,
-                                                    publish=True)
-        review = self.create_review(review_request, username='doc',
-                                    publish=True)
-
-        rsp = self.apiPut(
-            get_review_item_url(review_request, review.id,
-                                self.local_site_name),
-            {'ship_it': True},
-            expected_status=403)
-        self.assertEqual(rsp['stat'], 'fail')
-        self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
+        review = Review.objects.get(pk=review.pk)
+        self.compare_item(item_rsp, review)
 
     def test_put_with_published_review(self):
         """Testing the PUT review-requests/<id>/reviews/<id>/ API

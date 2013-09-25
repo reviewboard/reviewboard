@@ -1,36 +1,83 @@
-from django.contrib.auth.models import User
-from djblets.testing.decorators import add_fixtures
 from djblets.webapi.errors import PERMISSION_DENIED
 
 from reviewboard.attachments.models import FileAttachment
+from reviewboard.webapi.resources import resources
 from reviewboard.webapi.tests.base import BaseWebAPITestCase
 from reviewboard.webapi.tests.mimetypes import (
-    draft_file_attachment_item_mimetype)
+    draft_file_attachment_item_mimetype,
+    draft_file_attachment_list_mimetype)
+from reviewboard.webapi.tests.mixins import BasicTestsMetaclass
 from reviewboard.webapi.tests.urls import (get_draft_file_attachment_item_url,
                                            get_draft_file_attachment_list_url)
 
 
 class ResourceListTests(BaseWebAPITestCase):
     """Testing the DraftFileAttachmentResource list APIs."""
+    __metaclass__ = BasicTestsMetaclass
+
     fixtures = ['test_users']
+    sample_api_url = 'review-requests/<id>/draft/file-attachments/'
+    resource = resources.draft_file_attachment
+
+    def compare_item(self, item_rsp, attachment):
+        self.assertEqual(item_rsp['id'], attachment.pk)
+        self.assertEqual(item_rsp['filename'], attachment.filename)
+
+    #
+    # HTTP GET tests
+    #
+
+    def setup_basic_get_test(self, user, with_local_site, local_site_name,
+                             populate_items):
+        review_request = self.create_review_request(
+            with_local_site=with_local_site,
+            submitter=user)
+
+        if populate_items:
+            items = [self.create_file_attachment(review_request, draft=True)]
+        else:
+            items = []
+
+        return (get_draft_file_attachment_list_url(review_request,
+                                                   local_site_name),
+                draft_file_attachment_list_mimetype,
+                items)
 
     #
     # HTTP POST tests
     #
 
-    def test_post(self):
-        """Testing the POST review-requests/<id>/draft/file-attachments/ API"""
-        review_request = self.create_review_request(submitter=self.user)
+    def setup_basic_post_test(self, user, with_local_site, local_site_name,
+                              post_valid_data):
+        review_request = self.create_review_request(
+            with_local_site=with_local_site,
+            submitter=user)
 
-        f = open(self._getTrophyFilename(), "r")
-        self.assertNotEqual(f, None)
-        rsp = self.apiPost(
-            get_draft_file_attachment_list_url(review_request),
-            {'path': f},
-            expected_mimetype=draft_file_attachment_item_mimetype)
-        f.close()
+        if post_valid_data:
+            post_data = {
+                'path': open(self._getTrophyFilename(), 'r'),
+                'caption': 'New caption',
+            }
+        else:
+            post_data = {}
 
-        self.assertEqual(rsp['stat'], 'ok')
+        return (get_draft_file_attachment_list_url(review_request,
+                                                   local_site_name),
+                draft_file_attachment_item_mimetype,
+                post_data,
+                [review_request])
+
+    def check_post_result(self, user, rsp, review_request):
+        draft = review_request.get_draft()
+        self.assertIsNotNone(draft)
+
+        self.assertTrue('draft_file_attachment' in rsp)
+        item_rsp = rsp['draft_file_attachment']
+
+        attachment = FileAttachment.objects.get(pk=item_rsp['id'])
+        self.assertTrue(attachment in draft.file_attachments.all())
+        self.assertFalse(attachment in review_request.file_attachments.all())
+        self.compare_item(item_rsp, attachment)
 
     def test_post_with_permission_denied_error(self):
         """Testing the POST review-requests/<id>/draft/file-attachments/ API
@@ -53,138 +100,83 @@ class ResourceListTests(BaseWebAPITestCase):
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
-    @add_fixtures(['test_site'])
-    def test_post_with_site(self):
-        """Testing the POST review-requests/<id>/draft/file-attachments/ API
-        with a local site
-        """
-        user = self._login_user(local_site=True)
-
-        review_request = self.create_review_request(submitter=user,
-                                                    with_local_site=True)
-
-        f = open(self._getTrophyFilename(), 'r')
-        self.assertNotEqual(f, None)
-
-        post_data = {
-            'path': f,
-            'caption': 'Trophy',
-        }
-
-        rsp = self.apiPost(
-            get_draft_file_attachment_list_url(review_request,
-                                               self.local_site_name),
-            post_data,
-            expected_mimetype=draft_file_attachment_item_mimetype)
-        f.close()
-
-        self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(rsp['draft_file_attachment']['caption'], 'Trophy')
-
-        draft = review_request.get_draft(User.objects.get(username='doc'))
-        self.assertNotEqual(draft, None)
-
-        return review_request, rsp['draft_file_attachment']['id']
-
-    @add_fixtures(['test_site'])
-    def test_post_with_site_no_access(self):
-        """Testing the POST review-requests/<id>/draft/file-attachments/ API
-        with a local site and Permission Denied error
-        """
-        review_request = self.create_review_request(with_local_site=True)
-
-        f = open(self._getTrophyFilename(), 'r')
-        self.assertNotEqual(f, None)
-        rsp = self.apiPost(
-            get_draft_file_attachment_list_url(review_request,
-                                               self.local_site_name),
-            {'path': f},
-            expected_status=403)
-        f.close()
-
-        self.assertEqual(rsp['stat'], 'fail')
-        self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
-
 
 class ResourceItemTests(BaseWebAPITestCase):
     """Testing the DraftFileAttachmentResource item APIs."""
+    __metaclass__ = BasicTestsMetaclass
+
     fixtures = ['test_users']
+    sample_api_url = 'review-requests/<id>/draft/file-attachments/<id>/'
+    resource = resources.draft_file_attachment
+
+    def compare_item(self, item_rsp, attachment):
+        self.assertEqual(item_rsp['id'], attachment.pk)
+        self.assertEqual(item_rsp['filename'], attachment.filename)
+
+    #
+    # HTTP DELETE tests
+    #
+
+    def setup_basic_delete_test(self, user, with_local_site, local_site_name):
+        review_request = self.create_review_request(
+            with_local_site=with_local_site,
+            submitter=user)
+        file_attachment = self.create_file_attachment(review_request,
+                                                      draft=True)
+
+        return (get_draft_file_attachment_item_url(review_request,
+                                                   file_attachment.pk,
+                                                   local_site_name),
+                [review_request, file_attachment])
+
+    def check_delete_result(self, user, review_request, file_attachment):
+        draft = review_request.get_draft()
+        self.assertIsNotNone(draft)
+        self.assertIn(file_attachment, draft.inactive_file_attachments.all())
+        self.assertNotIn(file_attachment, draft.file_attachments.all())
+        self.assertNotIn(file_attachment,
+                         review_request.file_attachments.all())
+
+    #
+    # HTTP GET tests
+    #
+
+    def setup_basic_get_test(self, user, with_local_site, local_site_name):
+        review_request = self.create_review_request(
+            with_local_site=with_local_site,
+            submitter=user)
+
+        file_attachment = self.create_file_attachment(review_request,
+                                                      draft=True)
+
+        return (get_draft_file_attachment_item_url(review_request,
+                                                   file_attachment.pk,
+                                                   local_site_name),
+                draft_file_attachment_item_mimetype,
+                file_attachment)
 
     #
     # HTTP PUT tests
     #
 
-    def test_put(self):
-        """Testing the
-        PUT review-requests/<id>/draft/file-attachments/<id>/ API
-        """
-        draft_caption = 'The new caption'
-
-        review_request = self.create_review_request(submitter=self.user,
-                                                    publish=True)
+    def setup_basic_put_test(self, user, with_local_site, local_site_name,
+                             put_valid_data):
+        review_request = self.create_review_request(
+            with_local_site=with_local_site,
+            submitter=user)
         file_attachment = self.create_file_attachment(review_request)
 
-        # Now modify the caption.
-        rsp = self.apiPut(
-            get_draft_file_attachment_item_url(review_request,
-                                               file_attachment.id),
-            {'caption': draft_caption},
-            expected_mimetype=draft_file_attachment_item_mimetype)
+        return (get_draft_file_attachment_item_url(review_request,
+                                                   file_attachment.pk,
+                                                   local_site_name),
+                draft_file_attachment_item_mimetype,
+                {
+                    'caption': 'My new caption',
+                },
+                file_attachment,
+                [])
 
-        self.assertEqual(rsp['stat'], 'ok')
-
-        draft = review_request.get_draft(self.user)
-        self.assertNotEqual(draft, None)
-
-        file_attachment = FileAttachment.objects.get(pk=file_attachment.id)
-        self.assertEqual(file_attachment.draft_caption, draft_caption)
-
-    @add_fixtures(['test_site'])
-    def test_put_with_site(self):
-        """Testing the
-        PUT review-requests/<id>/draft/file-attachments/<id>/ API
-        with a local site
-        """
-        draft_caption = 'The new caption'
-        user = self._login_user(local_site=True)
-
-        review_request = self.create_review_request(submitter=user,
-                                                    with_local_site=True,
-                                                    publish=True)
-        file_attachment = self.create_file_attachment(review_request)
-
-        rsp = self.apiPut(
-            get_draft_file_attachment_item_url(review_request,
-                                               file_attachment.pk,
-                                               self.local_site_name),
-            {'caption': draft_caption},
-            expected_mimetype=draft_file_attachment_item_mimetype)
-        self.assertEqual(rsp['stat'], 'ok')
-
-        draft = review_request.get_draft(user)
-        self.assertNotEqual(draft, None)
-
+    def check_put_result(self, user, item_rsp, file_attachment):
         file_attachment = FileAttachment.objects.get(pk=file_attachment.pk)
-        self.assertEqual(file_attachment.draft_caption, draft_caption)
-
-    @add_fixtures(['test_site'])
-    def test_put_with_site_no_access(self):
-        """Testing the
-        PUT review-requests/<id>/draft/file-attachments/<id>/ API
-        with a local site and Permission Denied error
-        """
-        review_request = self.create_review_request(submitter=self.user,
-                                                    with_local_site=True,
-                                                    publish=True)
-        file_attachment = self.create_file_attachment(review_request)
-
-        self._login_user()
-
-        rsp = self.apiPut(
-            get_draft_file_attachment_item_url(review_request,
-                                               file_attachment.pk,
-                                               self.local_site_name),
-            {'caption': 'test'},
-            expected_status=403)
-        self.assertEqual(rsp['stat'], 'fail')
-        self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
+        self.assertEqual(item_rsp['id'], file_attachment.pk)
+        self.assertEqual(file_attachment.draft_caption, 'My new caption')

@@ -17,9 +17,11 @@ from reviewboard.webapi.errors import (BAD_HOST_KEY,
                                        REPO_AUTHENTICATION_ERROR,
                                        UNVERIFIED_HOST_CERT,
                                        UNVERIFIED_HOST_KEY)
+from reviewboard.webapi.resources import resources
 from reviewboard.webapi.tests.base import BaseWebAPITestCase
 from reviewboard.webapi.tests.mimetypes import (repository_item_mimetype,
                                                 repository_list_mimetype)
+from reviewboard.webapi.tests.mixins import BasicTestsMetaclass
 from reviewboard.webapi.tests.urls import (get_repository_item_url,
                                            get_repository_list_url)
 
@@ -32,6 +34,11 @@ key2 = paramiko.RSAKey.generate(1024)
 class BaseRepositoryTests(BaseWebAPITestCase):
     """Base class for the RepositoryResource test suites."""
     fixtures = ['test_users', 'test_scmtools']
+
+    sample_repo_path = (
+        'file://' + os.path.abspath(
+            os.path.join(os.path.dirname(scmtools.__file__), 'testdata',
+                         'git_repo')))
 
     def _verify_repository_info(self, rsp, repo_name, repo_path, data):
         self.assertEqual(rsp['stat'], 'ok')
@@ -53,6 +60,13 @@ class BaseRepositoryTests(BaseWebAPITestCase):
 
 class ResourceListTests(BaseRepositoryTests):
     """Testing the RepositoryResource list APIs."""
+    __metaclass__ = BasicTestsMetaclass
+
+    sample_api_url = 'repositories/'
+    resource = resources.repository
+    basic_post_fixtures = ['test_scmtools']
+    basic_post_use_admin = True
+
     def setUp(self):
         super(ResourceListTests, self).setUp()
 
@@ -71,27 +85,27 @@ class ResourceListTests(BaseRepositoryTests):
         SSHClient.add_host_key = self._old_add_host_key
         SSHClient.replace_host_key = self._old_replace_host_key
 
+    def compare_item(self, item_rsp, repository):
+        self.assertEqual(item_rsp['id'], repository.pk)
+        self.assertEqual(item_rsp['path'], repository.path)
+
     #
     # HTTP GET tests
     #
 
-    def test_get(self):
-        """Testing the GET repositories/ API"""
-        rsp = self.apiGet(get_repository_list_url(),
-                          expected_mimetype=repository_list_mimetype)
-        self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(len(rsp['repositories']),
-                         Repository.objects.accessible(self.user).count())
+    def setup_basic_get_test(self, user, with_local_site, local_site_name,
+                             populate_items):
+        if populate_items:
+            items = [
+                self.create_repository(
+                    tool_name='Test', with_local_site=with_local_site)
+            ]
+        else:
+            items = []
 
-    @add_fixtures(['test_site'])
-    def test_get_with_site(self):
-        """Testing the GET repositories/ API with a local site"""
-        self._login_user(local_site=True)
-        rsp = self.apiGet(get_repository_list_url(self.local_site_name),
-                          expected_mimetype=repository_list_mimetype)
-        self.assertEqual(len(rsp['repositories']),
-                         Repository.objects.filter(
-                             local_site__name=self.local_site_name).count())
+        return (get_repository_list_url(local_site_name),
+                repository_list_mimetype,
+                items)
 
     @add_fixtures(['test_site'])
     def test_get_with_show_visible(self):
@@ -104,22 +118,25 @@ class ResourceListTests(BaseRepositoryTests):
                          Repository.objects.accessible(
                              self.user, visible_only=False).count())
 
-    @add_fixtures(['test_site'])
-    def test_get_with_site_no_access(self):
-        """Testing the GET repositories/ API
-        with a local site and Permission Denied error
-        """
-        self.apiGet(get_repository_list_url(self.local_site_name),
-                    expected_status=403)
-
     #
     # HTTP POST tests
     #
 
-    def test_post(self):
-        """Testing the POST repositories/ API"""
-        self._login_user(admin=True)
-        self._post_repository(False)
+    def setup_basic_post_test(self, user, with_local_site, local_site_name,
+                              post_valid_data):
+
+        return (get_repository_list_url(local_site_name),
+                repository_item_mimetype,
+                {
+                    'name': 'Test Repository',
+                    'path': self.sample_repo_path,
+                    'tool': 'Test',
+                },
+                [])
+
+    def check_post_result(self, user, rsp):
+        self._verify_repository_info(rsp, 'Test Repository',
+                                     self.sample_repo_path, {})
 
     def test_post_with_visible_False(self):
         """Testing the POST repositories/ API with visible=False"""
@@ -327,12 +344,6 @@ class ResourceListTests(BaseRepositoryTests):
         self.assertEqual(rsp['err']['code'], REPO_AUTHENTICATION_ERROR.code)
         self.assertTrue('reason' in rsp)
 
-    @add_fixtures(['test_site'])
-    def test_post_with_site(self):
-        """Testing the POST repositories/ API with a local site"""
-        self._login_user(local_site=True, admin=True)
-        self._post_repository(True)
-
     def test_post_full_info(self):
         """Testing the POST repositories/ API with all available info"""
         self._login_user(admin=True)
@@ -351,19 +362,8 @@ class ResourceListTests(BaseRepositoryTests):
         self._login_user()
         self._post_repository(False, expected_status=403)
 
-    @add_fixtures(['test_site'])
-    def test_post_with_site_no_access(self):
-        """Testing the POST repositories/ API
-        with a local site and no access
-        """
-        self._login_user(local_site=True)
-        self._post_repository(True, expected_status=403)
-
     def _post_repository(self, use_local_site, data={}, expected_status=201):
         repo_name = 'Test Repository'
-        repo_path = 'file://' + os.path.abspath(
-            os.path.join(os.path.dirname(scmtools.__file__), 'testdata',
-                         'svn_repo'))
 
         if 200 <= expected_status < 300:
             expected_mimetype = repository_item_mimetype
@@ -379,14 +379,15 @@ class ResourceListTests(BaseRepositoryTests):
             get_repository_list_url(local_site_name),
             dict({
                 'name': repo_name,
-                'path': repo_path,
+                'path': self.sample_repo_path,
                 'tool': 'Test',
             }, **data),
             expected_status=expected_status,
             expected_mimetype=expected_mimetype)
 
         if 200 <= expected_status < 300:
-            self._verify_repository_info(rsp, repo_name, repo_path, data)
+            self._verify_repository_info(rsp, repo_name, self.sample_repo_path,
+                                         data)
 
             self.assertEqual(
                 rsp['repository']['links']['self']['href'],
@@ -399,7 +400,15 @@ class ResourceListTests(BaseRepositoryTests):
 
 class ResourceItemTests(BaseRepositoryTests):
     """Testing the RepositoryResource item APIs."""
+    __metaclass__ = BasicTestsMetaclass
+
     fixtures = ['test_users', 'test_scmtools']
+    test_http_methods = ('GET',)
+    resource = resources.repository
+
+    def compare_item(self, item_rsp, repository):
+        self.assertEqual(item_rsp['id'], repository.pk)
+        self.assertEqual(item_rsp['path'], repository.path)
 
     #
     # HTTP DELETE tests
@@ -455,6 +464,17 @@ class ResourceItemTests(BaseRepositoryTests):
         self._delete_repository(True, expected_status=403)
 
     #
+    # HTTP GET tests
+    #
+
+    def setup_basic_get_test(self, user, with_local_site, local_site_name):
+        repository = self.create_repository(with_local_site=with_local_site)
+
+        return (get_repository_item_url(repository, local_site_name),
+                repository_item_mimetype,
+                repository)
+
+    #
     # HTTP PUT tests
     #
 
@@ -508,9 +528,6 @@ class ResourceItemTests(BaseRepositoryTests):
 
     def _put_repository(self, use_local_site, data={}, expected_status=200):
         repo_name = 'New Test Repository'
-        repo_path = 'file://' + os.path.abspath(
-            os.path.join(os.path.dirname(scmtools.__file__), 'testdata',
-                         'git_repo'))
 
         repo = self.create_repository(with_local_site=use_local_site)
 
@@ -528,13 +545,14 @@ class ResourceItemTests(BaseRepositoryTests):
             get_repository_item_url(repo, local_site_name),
             dict({
                 'name': repo_name,
-                'path': repo_path,
+                'path': self.sample_repo_path,
             }, **data),
             expected_status=expected_status,
             expected_mimetype=expected_mimetype)
 
         if 200 <= expected_status < 300:
-            self._verify_repository_info(rsp, repo_name, repo_path, data)
+            self._verify_repository_info(rsp, repo_name, self.sample_repo_path,
+                                         data)
 
         return repo.pk
 

@@ -151,6 +151,18 @@ def get_filediff_comment_list_url(filediff, local_site_name=None):
         filediff_id=filediff.pk)
 
 
+def get_filediff_comment_item_url(filediff, comment_id, local_site_name=None):
+    diffset = filediff.diffset
+    review_request = diffset.history.review_request.get()
+
+    return resources.filediff_comment.get_item_url(
+        local_site_name=local_site_name,
+        review_request_id=review_request.display_id,
+        diff_revision=filediff.diffset.revision,
+        filediff_id=filediff.pk,
+        comment_id=comment_id)
+
+
 #
 # RepositoryResource
 #
@@ -426,21 +438,29 @@ def get_screenshot_list_url(review_request_or_id, local_site_name=None):
         review_request_id=review_request_id)
 
 
+def get_screenshot_item_url(screenshot, local_site_name=None):
+    return resources.screenshot.get_item_url(
+        local_site_name=local_site_name,
+        screenshot_id=screenshot.pk,
+        review_request_id=screenshot.review_request.get().display_id)
+
+
 #
 # ScreenshotCommentResource
 #
-def get_screenshot_comment_list_url(review, local_site_name=None):
+def get_screenshot_comment_list_url(screenshot, local_site_name=None):
     return resources.screenshot_comment.get_list_url(
         local_site_name=local_site_name,
-        review_request_id=review.review_request.display_id,
-        review_id=review.pk)
+        review_request_id=screenshot.review_request.get().display_id,
+        screenshot_id=screenshot.pk)
 
 
-def get_screenshot_comment_item_url(review, comment_id, local_site_name=None):
+def get_screenshot_comment_item_url(screenshot, comment_id,
+                                    local_site_name=None):
     return resources.screenshot_comment.get_item_url(
         local_site_name=local_site_name,
-        review_request_id=review.review_request.display_id,
-        review_id=review.pk,
+        review_request_id=screenshot.review_request.get().display_id,
+        screenshot_id=screenshot.pk,
         comment_id=comment_id)
 
 

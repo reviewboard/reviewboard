@@ -1,48 +1,39 @@
-from djblets.testing.decorators import add_fixtures
-
+from reviewboard.webapi.resources import resources
 from reviewboard.webapi.tests.base import BaseWebAPITestCase
 from reviewboard.webapi.tests.mimetypes import repository_info_item_mimetype
+from reviewboard.webapi.tests.mixins import BasicTestsMetaclass
 from reviewboard.webapi.tests.urls import get_repository_info_url
 
 
 class ResourceTests(BaseWebAPITestCase):
     """Testing the RepositoryInfoResource APIs."""
+    __metaclass__ = BasicTestsMetaclass
+
     fixtures = ['test_users', 'test_scmtools']
+    sample_api_url = 'repositories/<id>/info/'
+    resource = resources.repository_info
+
+    def setup_http_not_allowed_list_test(self, user):
+        repository = self.create_repository(tool_name='Test')
+
+        return get_repository_info_url(repository)
+
+    def setup_http_not_allowed_item_test(self, user):
+        repository = self.create_repository(tool_name='Test')
+
+        return get_repository_info_url(repository)
+
+    def compare_item(self, item_rsp, info):
+        self.assertEqual(item_rsp, info)
 
     #
     # HTTP GET tests
     #
 
-    def test_get(self):
-        """Testing the GET repositories/<id>/info API"""
-        repository = self.create_repository(tool_name='Test')
-        rsp = self.apiGet(get_repository_info_url(repository),
-                          expected_mimetype=repository_info_item_mimetype)
-        self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(rsp['info'],
-                         repository.get_scmtool().get_repository_info())
+    def setup_basic_get_test(self, user, with_local_site, local_site_name):
+        repository = self.create_repository(tool_name='Test',
+                                            with_local_site=with_local_site)
 
-    @add_fixtures(['test_site'])
-    def test_get_with_site(self):
-        """Testing the GET repositories/<id>/info API with a local site"""
-        self._login_user(local_site=True)
-        repository = self.create_repository(with_local_site=True,
-                                            tool_name='Test')
-
-        rsp = self.apiGet(
-            get_repository_info_url(repository, self.local_site_name),
-            expected_mimetype=repository_info_item_mimetype)
-        self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(rsp['info'],
-                         repository.get_scmtool().get_repository_info())
-
-    @add_fixtures(['test_site'])
-    def test_get_with_site_no_access(self):
-        """Testing the GET repositories/<id>/info API
-        with a local site and Permission Denied error
-        """
-        repository = self.create_repository(with_local_site=True)
-
-        self.apiGet(
-            get_repository_info_url(repository, self.local_site_name),
-            expected_status=403)
+        return (get_repository_info_url(repository, local_site_name),
+                repository_info_item_mimetype,
+                repository.get_scmtool().get_repository_info())

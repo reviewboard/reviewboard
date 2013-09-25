@@ -1,51 +1,42 @@
-from djblets.testing.decorators import add_fixtures
-
+from reviewboard.webapi.resources import resources
 from reviewboard.webapi.tests.base import BaseWebAPITestCase
 from reviewboard.webapi.tests.mimetypes import session_mimetype
+from reviewboard.webapi.tests.mixins import BasicTestsMetaclass
 from reviewboard.webapi.tests.urls import get_session_url
 
 
 class ResourceTests(BaseWebAPITestCase):
     """Testing the SessionResource APIs."""
+    __metaclass__ = BasicTestsMetaclass
+
+    fixtures = ['test_users']
+    sample_api_url = 'session/'
+    resource = resources.session
+
+    def setup_http_not_allowed_list_test(self, user):
+        return get_session_url()
+
+    def setup_http_not_allowed_item_test(self, user):
+        return get_session_url()
+
+    def compare_item(self, item_rsp, user):
+        self.assertTrue(item_rsp['authenticated'])
+        self.assertEqual(item_rsp['links']['user']['title'], user.username)
 
     #
     # HTTP GET tests
     #
 
-    @add_fixtures(['test_users'])
-    def test_get_with_logged_in_user(self):
-        """Testing the GET session/ API with logged in user"""
-        rsp = self.apiGet(get_session_url(),
-                          expected_mimetype=session_mimetype)
-        self.assertEqual(rsp['stat'], 'ok')
-        self.assertTrue('session' in rsp)
-        self.assertTrue(rsp['session']['authenticated'])
-        self.assertEqual(rsp['session']['links']['user']['title'],
-                         self.user.username)
+    def setup_basic_get_test(self, user, with_local_site, local_site_name):
+        return (get_session_url(local_site_name),
+                session_mimetype,
+                user)
 
     def test_get_with_anonymous_user(self):
         """Testing the GET session/ API with anonymous user"""
+        self.client.logout()
         rsp = self.apiGet(get_session_url(),
                           expected_mimetype=session_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
         self.assertTrue('session' in rsp)
         self.assertFalse(rsp['session']['authenticated'])
-
-    @add_fixtures(['test_users', 'test_site'])
-    def test_get_with_site(self):
-        """Testing the GET session/ API with a local site"""
-        self._login_user(local_site=True)
-        rsp = self.apiGet(get_session_url(self.local_site_name),
-                          expected_mimetype=session_mimetype)
-        self.assertEqual(rsp['stat'], 'ok')
-        self.assertTrue('session' in rsp)
-        self.assertTrue(rsp['session']['authenticated'])
-        self.assertEqual(rsp['session']['links']['user']['title'], 'doc')
-
-    @add_fixtures(['test_users', 'test_site'])
-    def test_get_with_site_no_access(self):
-        """Testing the GET session/ API
-        with a local site and Permission Denied error
-        """
-        self.apiGet(get_session_url(self.local_site_name),
-                    expected_status=403)

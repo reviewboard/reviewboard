@@ -1,111 +1,64 @@
-from djblets.testing.decorators import add_fixtures
-from djblets.webapi.errors import PERMISSION_DENIED
-
-from reviewboard.reviews.models import ScreenshotComment
+from reviewboard.webapi.resources import resources
 from reviewboard.webapi.tests.base import BaseWebAPITestCase
 from reviewboard.webapi.tests.mimetypes import screenshot_comment_list_mimetype
+from reviewboard.webapi.tests.mixins import (BasicTestsMetaclass,
+                                             ReviewRequestChildListMixin)
 from reviewboard.webapi.tests.urls import get_screenshot_comment_list_url
 
 
-class ResourceListTests(BaseWebAPITestCase):
+class ResourceListTests(ReviewRequestChildListMixin, BaseWebAPITestCase):
     """Testing the ScreenshotCommentResource list APIs."""
+    __metaclass__ = BasicTestsMetaclass
+
     fixtures = ['test_users']
+    sample_api_url = 'review-requests/<id>/screenshots/<id>/comments/'
+    resource = resources.screenshot_comment
+
+    def setup_review_request_child_test(self, review_request):
+        screenshot = self.create_screenshot(review_request)
+
+        return (get_screenshot_comment_list_url(screenshot),
+                screenshot_comment_list_mimetype)
+
+    def setup_http_not_allowed_list_test(self, user):
+        review_request = self.create_review_request(submitter=user,
+                                                    publish=True)
+        screenshot = self.create_screenshot(review_request)
+
+        return get_screenshot_comment_list_url(screenshot)
+
+    def compare_item(self, item_rsp, comment):
+        self.assertEqual(item_rsp['id'], comment.pk)
+        self.assertEqual(item_rsp['text'], comment.text)
+        self.assertEqual(item_rsp['issue_opened'], comment.issue_opened)
+        self.assertEqual(item_rsp['x'], comment.x)
+        self.assertEqual(item_rsp['y'], comment.y)
+        self.assertEqual(item_rsp['w'], comment.w)
+        self.assertEqual(item_rsp['h'], comment.h)
 
     #
     # HTTP GET tests
     #
 
-    def test_get(self):
-        """Testing the
-        GET review-requests/<id>/screenshots/<id>/comments/ API
-        """
-        comment_text = "This is a test comment."
-        x, y, w, h = (2, 2, 10, 10)
-
-        review_request = self.create_review_request(publish=True)
+    def setup_basic_get_test(self, user, with_local_site, local_site_name,
+                             populate_items):
+        review_request = self.create_review_request(
+            with_local_site=with_local_site,
+            submitter=user,
+            publish=True)
         screenshot = self.create_screenshot(review_request)
-        review = self.create_review(review_request, user=self.user)
 
-        self._postNewScreenshotComment(review_request, review.id, screenshot,
-                                       comment_text, x, y, w, h)
+        if populate_items:
+            review = self.create_review(review_request, publish=True)
+            items = [self.create_screenshot_comment(review, screenshot)]
+        else:
+            items = []
 
-        rsp = self.apiGet(
-            get_screenshot_comment_list_url(review),
-            expected_mimetype=screenshot_comment_list_mimetype)
-        self.assertEqual(rsp['stat'], 'ok')
-
-        comments = ScreenshotComment.objects.filter(screenshot=screenshot)
-        rsp_comments = rsp['screenshot_comments']
-        self.assertEqual(len(rsp_comments), comments.count())
-
-        for i in range(0, len(comments)):
-            self.assertEqual(rsp_comments[i]['text'], comments[i].text)
-            self.assertEqual(rsp_comments[i]['x'], comments[i].x)
-            self.assertEqual(rsp_comments[i]['y'], comments[i].y)
-            self.assertEqual(rsp_comments[i]['w'], comments[i].w)
-            self.assertEqual(rsp_comments[i]['h'], comments[i].h)
-
-    @add_fixtures(['test_site'])
-    def test_get_with_site(self):
-        """Testing the GET review-requests/<id>/screenshots/<id>/comments/ API
-        with a local site
-        """
-        comment_text = 'This is a test comment.'
-        x, y, w, h = (2, 2, 10, 10)
-
-        user = self._login_user(local_site=True)
-
-        review_request = self.create_review_request(with_local_site=True,
-                                                    publish=True)
-        screenshot = self.create_screenshot(review_request)
-        review = self.create_review(review_request, user=user)
-
-        self._postNewScreenshotComment(review_request, review.id, screenshot,
-                                       comment_text, x, y, w, h)
-
-        rsp = self.apiGet(
-            get_screenshot_comment_list_url(review, self.local_site_name),
-            expected_mimetype=screenshot_comment_list_mimetype)
-        self.assertEqual(rsp['stat'], 'ok')
-
-        comments = ScreenshotComment.objects.filter(screenshot=screenshot)
-        rsp_comments = rsp['screenshot_comments']
-        self.assertEqual(len(rsp_comments), comments.count())
-
-        for i in range(0, len(comments)):
-            self.assertEqual(rsp_comments[i]['text'], comments[i].text)
-            self.assertEqual(rsp_comments[i]['x'], comments[i].x)
-            self.assertEqual(rsp_comments[i]['y'], comments[i].y)
-            self.assertEqual(rsp_comments[i]['w'], comments[i].w)
-            self.assertEqual(rsp_comments[i]['h'], comments[i].h)
-
-    @add_fixtures(['test_site'])
-    def test_get_with_site_no_access(self):
-        """Testing the GET review-requests/<id>/screenshots/<id>/comments/ API
-        with a local site and Permission Denied error
-        """
-        comment_text = 'This is a test comment.'
-        x, y, w, h = (2, 2, 10, 10)
-
-        user = self._login_user(local_site=True)
-
-        review_request = self.create_review_request(with_local_site=True,
-                                                    publish=True)
-        screenshot = self.create_screenshot(review_request)
-        review = self.create_review(review_request, user=user)
-
-        self._postNewScreenshotComment(review_request, review.id, screenshot,
-                                       comment_text, x, y, w, h)
-
-        self._login_user()
-
-        rsp = self.apiGet(
-            get_screenshot_comment_list_url(review, self.local_site_name),
-            expected_status=403)
-        self.assertEqual(rsp['stat'], 'fail')
-        self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
+        return (get_screenshot_comment_list_url(screenshot, local_site_name),
+                screenshot_comment_list_mimetype,
+                items)
 
 
-class ResourceItemTests(BaseWebAPITestCase):
-    """Testing the ScreenshotCommentResource item APIs."""
-    fixtures = ['test_users']
+# Satisfy the linter check. This resource is a list only, and doesn't
+# support items.
+ResourceItemTests = None
