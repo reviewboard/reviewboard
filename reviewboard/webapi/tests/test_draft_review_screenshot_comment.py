@@ -5,8 +5,8 @@ from reviewboard.webapi.tests.mimetypes import screenshot_comment_list_mimetype
 from reviewboard.webapi.tests.urls import get_screenshot_comment_list_url
 
 
-class DraftReviewScreenshotCommentResourceTests(BaseWebAPITestCase):
-    """Testing the ReviewScreenshotCommentResource APIs."""
+class ResourceListTests(BaseWebAPITestCase):
+    """Testing the ReviewScreenshotCommentResource list APIs."""
     fixtures = ['test_users']
 
     #
@@ -50,3 +50,8 @@ class DraftReviewScreenshotCommentResourceTests(BaseWebAPITestCase):
         self.assertTrue('screenshot_comments' in rsp)
         self.assertEqual(len(rsp['screenshot_comments']), 1)
         self.assertEqual(rsp['screenshot_comments'][0]['text'], comment.text)
+
+
+class ResourceItemTests(BaseWebAPITestCase):
+    """Testing the ReviewScreenshotCommentResource item APIs."""
+    fixtures = ['test_users']

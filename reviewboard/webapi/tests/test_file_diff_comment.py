@@ -142,3 +142,8 @@ class ResourceListTests(BaseWebAPITestCase):
         self.assertEqual(rsp['diff_comments'][0]['text'], diff_comment_text)
         self.assertEqual(rsp['diff_comments'][0]['first_line'],
                          diff_comment_line)
+
+
+class ResourceItemTests(BaseWebAPITestCase):
+    """Testing the FileDiffCommentResource item APIs."""
+    fixtures = ['test_users', 'test_scmtools']

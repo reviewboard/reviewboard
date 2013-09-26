@@ -11,7 +11,7 @@ from reviewboard.webapi.tests.mimetypes import repository_commits_item_mimetype
 from reviewboard.webapi.tests.urls import get_repository_commits_url
 
 
-class RepositoryCommitsResourceTests(BaseWebAPITestCase):
+class ResourceTests(BaseWebAPITestCase):
     """Testing the RepositoryCommitsResource APIs."""
     fixtures = ['test_users', 'test_scmtools']
 

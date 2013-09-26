@@ -56,3 +56,8 @@ class ResourceListTests(BaseWebAPITestCase):
         self.assertEqual(len(rsp['file_attachment_comments']), 1)
         self.assertEqual(rsp['file_attachment_comments'][0]['text'],
                          comment.text)
+
+
+class ResourceItemTests(BaseWebAPITestCase):
+    """Testing the ReviewFileAttachmentCommentResource item APIs."""
+    fixtures = ['test_users']

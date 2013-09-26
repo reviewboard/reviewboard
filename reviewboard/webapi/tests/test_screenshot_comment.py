@@ -104,3 +104,8 @@ class ResourceListTests(BaseWebAPITestCase):
             expected_status=403)
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
+
+
+class ResourceItemTests(BaseWebAPITestCase):
+    """Testing the ScreenshotCommentResource item APIs."""
+    fixtures = ['test_users']

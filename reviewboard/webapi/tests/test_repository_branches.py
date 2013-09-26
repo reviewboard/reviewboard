@@ -7,7 +7,7 @@ from reviewboard.webapi.tests.mimetypes import \
 from reviewboard.webapi.tests.urls import get_repository_branches_url
 
 
-class ResourceListTests(BaseWebAPITestCase):
+class ResourceTests(BaseWebAPITestCase):
     """Testing the RepositoryBranchesResource list APIs."""
     fixtures = ['test_users', 'test_scmtools']
 

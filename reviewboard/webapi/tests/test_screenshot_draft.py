@@ -12,7 +12,7 @@ from reviewboard.webapi.tests.urls import (get_screenshot_draft_item_url,
 
 
 class ResourceListTests(BaseWebAPITestCase):
-    """Testing the ScreenshotDraftResource list APIs."""
+    """Testing the DraftScreenshotResource list APIs."""
     fixtures = ['test_users']
 
     #
@@ -105,7 +105,7 @@ class ResourceListTests(BaseWebAPITestCase):
 
 
 class ResourceItemTests(BaseWebAPITestCase):
-    """Testing the ScreenshotDraftResource item APIs."""
+    """Testing the DraftScreenshotResource item APIs."""
     fixtures = ['test_users']
 
     #

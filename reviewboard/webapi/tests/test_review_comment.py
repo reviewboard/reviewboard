@@ -68,7 +68,7 @@ class BaseResourceTestCase(BaseWebAPITestCase):
 
 
 class ResourceListTests(BaseResourceTestCase):
-    """Testing the ReviewCommentResource list APIs."""
+    """Testing the ReviewDiffCommentResource list APIs."""
     fixtures = ['test_users', 'test_scmtools']
 
     #
@@ -283,7 +283,7 @@ class ResourceListTests(BaseResourceTestCase):
 
 
 class ResourceItemTests(BaseResourceTestCase):
-    """Testing the ReviewCommentResource item APIs."""
+    """Testing the ReviewDiffCommentResource item APIs."""
     fixtures = ['test_users', 'test_scmtools']
 
     #

@@ -11,7 +11,7 @@ from reviewboard.webapi.tests.urls import (get_draft_file_attachment_item_url,
 
 
 class ResourceListTests(BaseWebAPITestCase):
-    """Testing the FileAttachmentDraftResource list APIs."""
+    """Testing the DraftFileAttachmentResource list APIs."""
     fixtures = ['test_users']
 
     #
@@ -107,7 +107,7 @@ class ResourceListTests(BaseWebAPITestCase):
 
 
 class ResourceItemTests(BaseWebAPITestCase):
-    """Testing the FileAttachmentDraftResource item APIs."""
+    """Testing the DraftFileAttachmentResource item APIs."""
     fixtures = ['test_users']
 
     #
