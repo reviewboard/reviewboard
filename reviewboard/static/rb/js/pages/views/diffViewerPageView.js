@@ -510,16 +510,12 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
         }
 
         $.ajax(contextURL).done(_.bind(function(rsp) {
-            var context = rsp.diff_context,
-                files,
-                url;
-
             _.each(this._diffReviewableViews, function(diffReviewableView) {
                 diffReviewableView.remove();
             });
             this._diffReviewableViews = [];
 
-            this.model.set(this.model.parse(context));
+            this.model.set(this.model.parse(rsp.diff_context));
         }, this));
     }
 });

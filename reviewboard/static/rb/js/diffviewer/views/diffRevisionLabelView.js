@@ -16,7 +16,7 @@ RB.DiffRevisionLabelView = Backbone.View.extend({
         '<% if (detail) { %><p><%= detail %><% } %>'
     ].join('')),
     _interdiffTemplate: _.template(gettext(
-        'Changes between <%- revision %> and <%- interdiffRevision %>')),
+        'Changes between revision <%- revision %> and <%- interdiffRevision %>')),
     _latestTemplate: _.template(gettext(
         'Diff Revision <%- revision %> (Latest)')),
     _oldHeaderTemplate: _.template(gettext('Diff revision <%- revision %>')),

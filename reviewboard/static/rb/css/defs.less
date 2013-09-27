@@ -196,6 +196,32 @@
 }
 
 
+.user-select(@arg) {
+  user-select: @arg;
+  -moz-user-select: @arg;
+  -ms-user-select: @arg;
+  -webkit-user-select: @arg;
+}
+
+
+// CSS3 cursors
+.grab-cursor() {
+  cursor: grab;
+  cursor: -moz-grab;
+  cursor: -webkit-grab;
+}
+
+.grabbing-cursor-important() {
+  /*
+   * XXX: We should be able in instantiate mixins with !important but for some
+   * reason it's not working for me.
+   */
+  cursor: grabbing !important;
+  cursor: -moz-grabbing !important;
+  cursor: -webkit-grabbing !important;
+}
+
+
 /* !(*%!(&^ (see http://www.positioniseverything.net/easyclearing.html) */
 .clearfix {
   display: inline-block;
