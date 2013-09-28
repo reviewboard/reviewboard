@@ -1,11 +1,15 @@
 {% extends "datagrid/datagrid.html" %}
-{% load staticfiles %}
+{% load compressed staticfiles %}
 
 {% block extrahead %}
 {# Empty this out. We use "scripts" and "scripts-post" in Review Board. #}
 {% endblock %}
 
-{% block scripts %}
-<link rel="stylesheet" type="text/css" href="{% static "djblets/css/datagrid.css" %}" />
-<script type="text/javascript" src="{% static "djblets/js/datagrid.js" %}"></script>
+{% block css %}
+{{block.super}}
+{%  compressed_css "djblets-datagrid" %}
+{% endblock %}
+
+{% block scripts-post %}
+{%  compressed_js "djblets-datagrid" %}
 {% endblock %}

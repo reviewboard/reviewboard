@@ -4,6 +4,8 @@ import os
 import sys
 
 import djblets
+from djblets.settings import (PIPELINE_JS as DJBLETS_PIPELINE_JS,
+                              PIPELINE_CSS as DJBLETS_PIPELINE_CSS)
 from django.core.urlresolvers import reverse
 
 
@@ -120,7 +122,8 @@ TEMPLATE_DIRS = (
 STATICFILES_DIRS = (
     ('lib', os.path.join(REVIEWBOARD_ROOT, 'static', 'lib')),
     ('rb', os.path.join(REVIEWBOARD_ROOT, 'static', 'rb')),
-    ('djblets', os.path.join(os.path.dirname(djblets.__file__), 'media')),
+    ('djblets', os.path.join(os.path.dirname(djblets.__file__),
+                             'static', 'djblets')),
 )
 
 STATICFILES_FINDERS = (
@@ -288,7 +291,7 @@ MEDIA_URL = getattr(settings_local, 'MEDIA_URL', SITE_ROOT + MEDIA_DIRECTORY)
 LOGIN_URL = SITE_ROOT + 'account/login/'
 
 # Media compression
-PIPELINE_JS = {
+PIPELINE_JS = dict({
     '3rdparty': {
         'source_filenames': (
             'lib/js/flot/jquery.flot.min.js',
@@ -511,9 +514,9 @@ PIPELINE_JS = {
         ),
         'output_filename': 'rb/js/repositoryform.min.js',
     },
-}
+}, **DJBLETS_PIPELINE_JS)
 
-PIPELINE_CSS = {
+PIPELINE_CSS = dict({
     'common': {
         'source_filenames': (
             'lib/css/jquery-ui-1.8.24.min.css',
@@ -559,7 +562,7 @@ PIPELINE_CSS = {
         'output_filename': 'rb/css/admin.min.css',
         'absolute_paths': False,
     },
-}
+}, **DJBLETS_PIPELINE_CSS)
 
 PIPELINE_CSS_COMPRESSOR = None
 PIPELINE_JS_COMPRESSOR = 'pipeline.compressors.uglifyjs.UglifyJSCompressor'

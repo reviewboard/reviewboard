@@ -1,18 +1,11 @@
 {% extends "base.html" %}
-{% load djblets_deco %}
-{% load i18n %}
-{% load reviewtags %}
-{% load staticfiles %}
+{% load compressed djblets_deco i18n reviewtags staticfiles %}
 
 {% block title %}{% trans "My Dashboard" %}{% endblock %}
 
 {% block css %}
 {{block.super}}
-<link rel="stylesheet" type="text/css" href="{% static "djblets/css/datagrid.css" %}" />
-{% endblock %}
-
-{% block scripts-post %}
-<script type="text/javascript" src="{% static "djblets/js/datagrid.js" %}"></script>
+{% compressed_css "djblets-datagrid" %}
 {% endblock %}
 
 {% block content %}
@@ -53,7 +46,11 @@
  </div>
 </div>
 {% endbox %}
+{% endblock content %}
 
+{% block scripts-post %}
+{{block.super}}
+{% compressed_js "djblets-datagrid" %}
 <script type="text/javascript">
     $(document).ready(function() {
         var $dashboardWrapper = $('#dashboard-wrapper');
@@ -78,4 +75,4 @@
         }, 5 * 60 * 1000);
     });
 </script>
-{% endblock %}
+{% endblock scripts-post %}
