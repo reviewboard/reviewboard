@@ -81,5 +81,18 @@ class WatchedReviewRequestResource(BaseWatchedObjectResource):
         """
         pass
 
+    def serialize_object(self, obj, *args, **kwargs):
+        return {
+            'id': obj.display_id,
+            self.item_result_key: obj,
+        }
+
+    def get_watched_object(self, queryset, obj_id, local_site_name=None,
+                           *args, **kwargs):
+        if local_site_name:
+            return queryset.get(local_id=obj_id)
+        else:
+            return queryset.get(pk=obj_id)
+
 
 watched_review_request_resource = WatchedReviewRequestResource()

@@ -1,3 +1,4 @@
+from django.contrib.auth.models import User
 from djblets.testing.decorators import add_fixtures
 from djblets.webapi.errors import DOES_NOT_EXIST, PERMISSION_DENIED
 
@@ -7,6 +8,7 @@ from reviewboard.webapi.tests.mimetypes import (
     watched_review_request_item_mimetype,
     watched_review_request_list_mimetype)
 from reviewboard.webapi.tests.urls import (
+    get_review_request_item_url,
     get_watched_review_request_item_url,
     get_watched_review_request_list_url)
 
@@ -179,17 +181,82 @@ class ResourceItemTests(BaseWebAPITestCase):
     fixtures = ['test_users']
 
     #
+    # HTTP GET tests
+    #
+
+    def test_get(self):
+        """Testing the GET users/<username>/watched/review_request/<id>/ API"""
+        review_request = self.create_review_request(publish=True)
+        profile = self.user.get_profile()
+        profile.starred_review_requests.add(review_request)
+
+        expected_url = (self.base_url +
+                        get_review_request_item_url(review_request.display_id))
+
+        self.apiGet(
+            get_watched_review_request_item_url(self.user.username,
+                                                review_request.display_id),
+            expected_status=302,
+            expected_headers={
+                'Location': expected_url,
+            })
+
+    @add_fixtures(['test_site'])
+    def test_get_with_site(self):
+        """Testing the GET users/<username>/watched/review_request/<id>/ API
+        with access to a local site
+        """
+        user = self._login_user(local_site=True)
+
+        review_request = self.create_review_request(with_local_site=True,
+                                                    publish=True)
+        profile = user.get_profile()
+        profile.starred_review_requests.add(review_request)
+
+        expected_url = (self.base_url +
+                        get_review_request_item_url(review_request.display_id,
+                                                    self.local_site_name))
+
+        self.apiGet(
+            get_watched_review_request_item_url(user.username,
+                                                review_request.display_id,
+                                                self.local_site_name),
+            expected_status=302,
+            expected_headers={
+                'Location': expected_url,
+            })
+
+    @add_fixtures(['test_site'])
+    def test_get_with_site_no_access(self):
+        """Testing the GET users/<username>/watched/review_request/<id>/ API
+        with access to a local site
+        """
+        review_request = self.create_review_request(with_local_site=True,
+                                                    publish=True)
+        profile = self.user.get_profile()
+        profile.starred_review_requests.add(review_request)
+
+        rsp = self.apiGet(
+            get_watched_review_request_item_url(self.user.username,
+                                                review_request.display_id,
+                                                self.local_site_name),
+            expected_status=403)
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
+
+    #
     # HTTP DELETE tests
     #
 
     def test_delete(self):
-        """Testing the DELETE users/<username>/watched/review_request/ API"""
+        """Testing the
+        DELETE users/<username>/watched/review_request/<id> API
+        """
         # First, star it.
         review_request = self.create_review_request(publish=True)
         profile = self.user.get_profile()
         profile.starred_review_requests.add(review_request)
 
-        review_request = self.create_review_request(publish=True)
         self.apiDelete(
             get_watched_review_request_item_url(self.user.username,
                                                 review_request.display_id))
@@ -199,7 +266,7 @@ class ResourceItemTests(BaseWebAPITestCase):
                         profile.starred_review_requests.all())
 
     def test_delete_with_does_not_exist_error(self):
-        """Testing the DELETE users/<username>/watched/review_request/ API
+        """Testing the DELETE users/<username>/watched/review_request/<id>/ API
         with Does Not Exist error
         """
         rsp = self.apiDelete(
@@ -209,8 +276,27 @@ class ResourceItemTests(BaseWebAPITestCase):
         self.assertEqual(rsp['err']['code'], DOES_NOT_EXIST.code)
 
     @add_fixtures(['test_site'])
+    def test_delete_not_owner(self):
+        """Testing the DELETE users/<username>/watched/review_request/<id>/ API
+        without being the owner
+        """
+        user = User.objects.get(username='doc')
+        self.assertNotEqual(user, self.user)
+
+        review_request = self.create_review_request(publish=True)
+        profile = user.get_profile()
+        profile.starred_review_requests.add(review_request)
+
+        rsp = self.apiDelete(
+            get_watched_review_request_item_url(user.username, 1,
+                                                self.local_site_name),
+            expected_status=403)
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
+
+    @add_fixtures(['test_site'])
     def test_delete_with_site(self):
-        """Testing the DELETE users/<username>/watched/review_request/ API
+        """Testing the DELETE users/<username>/watched/review_request/<id>/ API
         with a local site
         """
         user = self._login_user(local_site=True)
@@ -226,7 +312,7 @@ class ResourceItemTests(BaseWebAPITestCase):
 
     @add_fixtures(['test_site'])
     def test_delete_with_site_no_access(self):
-        """Testing the DELETE users/<username>/watched/review_request/ API
+        """Testing the DELETE users/<username>/watched/review_request/<id>/ API
         with a local site and Permission Denied error
         """
         rsp = self.apiDelete(

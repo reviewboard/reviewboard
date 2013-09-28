@@ -49,7 +49,7 @@ class BaseWatchedObjectResource(WebAPIResource):
     def get(self, request, watched_obj_id, *args, **kwargs):
         try:
             q = self.get_queryset(request, *args, **kwargs)
-            obj = q.get(pk=watched_obj_id)
+            obj = self.get_watched_object(q, watched_obj_id, *args, **kwargs)
         except ObjectDoesNotExist:
             return DOES_NOT_EXIST
 
@@ -135,3 +135,6 @@ class BaseWatchedObjectResource(WebAPIResource):
             'id': obj.pk,
             self.item_result_key: obj,
         }
+
+    def get_watched_object(self, queryset, obj_id, *args, **kwargs):
+        return queryset.get(pk=obj_id)
