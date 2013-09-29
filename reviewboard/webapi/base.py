@@ -1,12 +1,14 @@
 from django.utils.encoding import force_unicode
 from djblets.util.decorators import augment_method_from
-from djblets.webapi.decorators import webapi_request_fields
+from djblets.webapi.decorators import (webapi_login_required,
+                                       webapi_request_fields)
 from djblets.webapi.errors import NOT_LOGGED_IN, PERMISSION_DENIED
 from djblets.webapi.resources import WebAPIResource as DjbletsWebAPIResource
 
 from reviewboard.site.models import LocalSite
 from reviewboard.site.urlresolvers import local_site_reverse
-from reviewboard.webapi.decorators import webapi_check_login_required
+from reviewboard.webapi.decorators import (webapi_check_local_site,
+                                           webapi_check_login_required)
 
 
 CUSTOM_MIMETYPE_BASE = 'application/vnd.reviewboard.org'
@@ -18,7 +20,15 @@ class WebAPIResource(DjbletsWebAPIResource):
 
     mimetype_vendor = 'reviewboard.org'
 
+    def has_access_permissions(self, *args, **kwargs):
+        # By default, raise an exception if this is called. Specific resources
+        # will have to explicitly override this and opt-in to access.
+        raise NotImplementedError(
+            '%s must provide a has_access_permissions method'
+            % self.__class__.__name__)
+
     @webapi_check_login_required
+    @webapi_check_local_site
     @augment_method_from(DjbletsWebAPIResource)
     def get(self, *args, **kwargs):
         """Returns the serialized object for the resource.
@@ -29,6 +39,7 @@ class WebAPIResource(DjbletsWebAPIResource):
         pass
 
     @webapi_check_login_required
+    @webapi_check_local_site
     @webapi_request_fields(
         optional=dict({
             'counts-only': {
@@ -58,6 +69,12 @@ class WebAPIResource(DjbletsWebAPIResource):
             }
         else:
             return self._get_list_impl(request, *args, **kwargs)
+
+    @webapi_login_required
+    @webapi_check_local_site
+    @augment_method_from(DjbletsWebAPIResource)
+    def delete(self, *args, **kwargs):
+        pass
 
     def _get_list_impl(self, request, *args, **kwargs):
         """Actual implementation to return the list of results.

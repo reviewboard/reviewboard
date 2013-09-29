@@ -25,6 +25,14 @@ class ReviewGroupUserResource(UserResource):
                                   local_site__name=local_site_name)
         return group.users.all()
 
+    def has_access_permissions(self, request, user, *args, **kwargs):
+        group = resources.review_group.get_object(request, *args, **kwargs)
+        return group.is_accessible_by(user)
+
+    def has_delete_permissions(self, request, user, *args, **kwargs):
+        group = resources.review_group.get_object(request, *args, **kwargs)
+        return group.is_mutable_by(user)
+
     @webapi_check_local_site
     @webapi_login_required
     @webapi_response_errors(DOES_NOT_EXIST, INVALID_USER,
@@ -55,7 +63,7 @@ class ReviewGroupUserResource(UserResource):
         group.users.add(user)
 
         return 201, {
-            self.item_result_key: group,
+            self.item_result_key: user,
         }
 
     @webapi_check_local_site

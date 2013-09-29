@@ -52,9 +52,14 @@ class BaseCommentResource(WebAPIResource):
     }
     last_modified_field = 'timestamp'
 
-    def has_delete_permissions(self, request, comment, *args, **kwargs):
-        review = comment.review.get()
-        return not review.public and review.user == request.user
+    def has_access_permissions(self, request, obj, *args, **kwargs):
+        return obj.is_accessible_by(request.user)
+
+    def has_modify_permissions(self, request, obj, *args, **kwargs):
+        return obj.is_mutable_by(request.user)
+
+    def has_delete_permissions(self, request, obj, *args, **kwargs):
+        return obj.is_mutable_by(request.user)
 
     def update_issue_status(self, request, comment_resource, *args, **kwargs):
         """Updates the issue status for a comment.

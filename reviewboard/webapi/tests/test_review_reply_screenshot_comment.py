@@ -145,13 +145,14 @@ class ResourceItemTests(BaseWebAPITestCase):
         review-requests/<id>/reviews/<id>/replies/<id>/screenshot-comments/<id>/
         API with a local site
         """
-        review_request = self.create_review_request(with_local_site=True,
+        user = self._login_user(local_site=True)
+        review_request = self.create_review_request(submitter=user,
+                                                    with_local_site=True,
                                                     publish=True)
         screenshot = self.create_screenshot(review_request)
-        review = self.create_review(review_request, user=self.user,
-                                    publish=True)
+        review = self.create_review(review_request, publish=True)
         comment = self.create_screenshot_comment(review, screenshot)
-        reply = self.create_reply(review, user=self.user)
+        reply = self.create_reply(review, user=user)
         reply_comment = self.create_screenshot_comment(reply, screenshot,
                                                        reply_to=comment)
 

@@ -14,7 +14,6 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'reviewboard.settings')
 
 from djblets.webapi.errors import (DOES_NOT_EXIST, NOT_LOGGED_IN,
                                    PERMISSION_DENIED)
-from djblets.webapi.resources import WebAPIResource
 from reviewboard.webapi.resources import resources
 
 # We have to fetch this first in order to build the tree, before accessing
@@ -22,6 +21,7 @@ from reviewboard.webapi.resources import resources
 root_resource = resources.root
 root_resource.get_url_patterns()
 
+from reviewboard.webapi.resources import WebAPIResource
 from reviewboard.webapi.resources.review_request import (
     ReviewRequestDraftResource,
     ReviewRequestResource)

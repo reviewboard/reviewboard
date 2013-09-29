@@ -5,7 +5,8 @@ from djblets.webapi.errors import DOES_NOT_EXIST
 
 from reviewboard.reviews.views import ReviewsDiffViewerView
 from reviewboard.webapi.base import WebAPIResource
-from reviewboard.webapi.decorators import webapi_check_local_site
+from reviewboard.webapi.decorators import (webapi_check_local_site,
+                                           webapi_check_login_required)
 
 
 class DiffViewerContextView(ReviewsDiffViewerView):
@@ -29,6 +30,7 @@ class DiffContextResource(WebAPIResource):
     name = 'diff_context'
     singleton = True
 
+    @webapi_check_login_required
     @webapi_check_local_site
     @webapi_request_fields(
         optional={

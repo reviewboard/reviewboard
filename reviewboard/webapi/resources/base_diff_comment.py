@@ -1,9 +1,7 @@
 from django.core.exceptions import ObjectDoesNotExist
 from django.template.defaultfilters import timesince
 from djblets.util.decorators import augment_method_from
-from djblets.webapi.decorators import (webapi_response_errors,
-                                       webapi_request_fields)
-from djblets.webapi.errors import DOES_NOT_EXIST
+from djblets.webapi.decorators import webapi_request_fields
 
 from reviewboard.reviews.models import Comment
 from reviewboard.webapi.base import WebAPIResource
@@ -44,8 +42,8 @@ class BaseDiffCommentResource(BaseCommentResource):
 
     allowed_methods = ('GET',)
 
-    def get_queryset(self, request, review_request_id, is_list=False,
-                     *args, **kwargs):
+    def get_queryset(self, request, review_request_id, review_id=None,
+                     is_list=False, *args, **kwargs):
         """Returns a queryset for Comment models.
 
         This filters the query for comments on the specified review request
@@ -56,14 +54,20 @@ class BaseDiffCommentResource(BaseCommentResource):
         on the URL to match the given interdiff revision, and
         ``?line=`` to match comments on the given line number.
         """
-        review_request = resources.review_request.get_object(
-            request, review_request_id, *args, **kwargs)
+        try:
+            review_request = resources.review_request.get_object(
+                request, review_request_id, *args, **kwargs)
+        except ObjectDoesNotExist:
+            raise self.model.DoesNotExist
 
         q = self.model.objects.filter(
             filediff__diffset__history__review_request=review_request,
             review__isnull=False)
 
         if is_list:
+            if review_id:
+                q = q.filter(review=review_id)
+
             if 'interdiff-revision' in request.GET:
                 interdiff_revision = int(request.GET['interdiff-revision'])
                 q = q.filter(
@@ -92,7 +96,6 @@ class BaseDiffCommentResource(BaseCommentResource):
     def serialize_user_field(self, obj, **kwargs):
         return obj.review.get().user
 
-    @webapi_check_local_site
     @webapi_request_fields(
         optional={
             'interdiff-revision': {
@@ -113,19 +116,9 @@ class BaseDiffCommentResource(BaseCommentResource):
         },
         allow_unknown=True
     )
-    @webapi_response_errors(DOES_NOT_EXIST)
+    @augment_method_from(BaseCommentResource)
     def get_list(self, request, review_id=None, *args, **kwargs):
-        try:
-            resources.review_request.get_object(request, *args, **kwargs)
-
-            if review_id:
-                resources.review.get_object(
-                    request, review_id=review_id, *args, **kwargs)
-
-            return super(BaseDiffCommentResource, self).get_list(
-                request, review_id=review_id, *args, **kwargs)
-        except ObjectDoesNotExist:
-            return DOES_NOT_EXIST
+        pass
 
     @webapi_check_local_site
     @augment_method_from(WebAPIResource)

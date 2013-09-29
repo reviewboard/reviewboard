@@ -101,6 +101,7 @@ class RepositoryResource(WebAPIResource):
     def has_delete_permissions(self, request, repository, *args, **kwargs):
         return repository.is_mutable_by(request.user)
 
+    @webapi_check_login_required
     @webapi_check_local_site
     @webapi_request_fields(
         optional=dict({

@@ -237,10 +237,9 @@ class ResourceItemTests(BaseWebAPITestCase):
         """Testing the GET review-requests/<id>/changes/<id>/ API
         with Not Modified response
         """
-        review_request = self.create_review_request()
+        review_request = self.create_review_request(publish=True)
 
-        changedesc = ChangeDescription(public=True)
-        changedesc.save()
+        changedesc = ChangeDescription.objects.create(public=True)
         review_request.changedescs.add(changedesc)
 
         self._testHttpCaching(get_change_item_url(changedesc),

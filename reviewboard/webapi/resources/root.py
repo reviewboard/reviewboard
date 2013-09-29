@@ -1,7 +1,8 @@
 from djblets.util.decorators import augment_method_from
 from djblets.webapi.resources import RootResource as DjbletsRootResource
 
-from reviewboard.webapi.decorators import webapi_check_local_site
+from reviewboard.webapi.decorators import (webapi_check_login_required,
+                                           webapi_check_local_site)
 from reviewboard.webapi.resources import resources
 
 
@@ -31,6 +32,7 @@ class RootResource(DjbletsRootResource):
             resources.validation,
         ], *args, **kwargs)
 
+    @webapi_check_login_required
     @webapi_check_local_site
     @augment_method_from(DjbletsRootResource)
     def get(self, request, *args, **kwargs):

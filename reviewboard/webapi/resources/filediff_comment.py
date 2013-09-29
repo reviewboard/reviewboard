@@ -1,8 +1,5 @@
-from django.core.exceptions import ObjectDoesNotExist
-from djblets.webapi.errors import DOES_NOT_EXIST
+from djblets.util.decorators import augment_method_from
 
-from reviewboard.webapi.decorators import webapi_check_local_site
-from reviewboard.webapi.resources import resources
 from reviewboard.webapi.resources.base_diff_comment import \
     BaseDiffCommentResource
 
@@ -37,9 +34,9 @@ class FileDiffCommentResource(BaseDiffCommentResource):
         q = super(FileDiffCommentResource, self).get_queryset(
             request, review_request_id, *args, **kwargs)
         return q.filter(filediff__diffset__revision=diff_revision,
-                        filediff__id=filediff_id)
+                        filediff=filediff_id)
 
-    @webapi_check_local_site
+    @augment_method_from(BaseDiffCommentResource)
     def get_list(self, request, diff_revision=None, *args, **kwargs):
         """Returns the list of comments on a file in a diff.
 
@@ -52,14 +49,7 @@ class FileDiffCommentResource(BaseDiffCommentResource):
         To filter for comments that span revisions of diffs, you can specify
         the second revision in the range using ``?interdiff-revision=``.
         """
-        try:
-            resources.filediff.get_object(
-                request, diff_revision=diff_revision, *args, **kwargs)
-
-            return super(FileDiffCommentResource, self).get_list(
-                request, diff_revision=diff_revision, *args, **kwargs)
-        except ObjectDoesNotExist:
-            return DOES_NOT_EXIST
+        pass
 
 
 filediff_comment_resource = FileDiffCommentResource()

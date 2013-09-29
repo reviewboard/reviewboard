@@ -9,7 +9,8 @@ from djblets.webapi.errors import DOES_NOT_EXIST
 from reviewboard.diffviewer.diffutils import get_original_file
 from reviewboard.diffviewer.models import DiffSet
 from reviewboard.webapi.base import WebAPIResource
-from reviewboard.webapi.decorators import webapi_check_login_required
+from reviewboard.webapi.decorators import (webapi_check_local_site,
+                                           webapi_check_login_required)
 from reviewboard.webapi.errors import FILE_RETRIEVAL_ERROR
 from reviewboard.webapi.resources import resources
 
@@ -21,6 +22,7 @@ class OriginalFileResource(WebAPIResource):
     allowed_item_mimetypes = ['text/plain']
 
     @webapi_check_login_required
+    @webapi_check_local_site
     def get(self, request, diffset_id=None, *args, **kwargs):
         """Returns the original unpatched file.
 

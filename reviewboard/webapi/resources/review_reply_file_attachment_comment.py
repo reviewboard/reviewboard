@@ -44,10 +44,6 @@ class ReviewReplyFileAttachmentCommentResource(
         q = q.filter(review=reply_id, review__base_reply_to=review_id)
         return q
 
-    def has_delete_permissions(self, request, comment, *args, **kwargs):
-        review = comment.review.get()
-        return not review.public and review.user == request.user
-
     @webapi_check_local_site
     @webapi_login_required
     @webapi_response_errors(DOES_NOT_EXIST, INVALID_FORM_DATA,

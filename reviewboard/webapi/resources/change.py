@@ -6,6 +6,7 @@ from reviewboard.diffviewer.models import DiffSet
 from reviewboard.reviews.models import Group, Screenshot
 from reviewboard.webapi.base import WebAPIResource
 from reviewboard.webapi.decorators import webapi_check_local_site
+from reviewboard.webapi.resources import resources
 
 
 class ChangeResource(WebAPIResource):
@@ -137,9 +138,14 @@ class ChangeResource(WebAPIResource):
 
         return fields_changed
 
-    def get_queryset(self, request, review_request_id, *args, **kwargs):
-        return self.model.objects.filter(review_request=review_request_id,
-                                         public=True)
+    def has_access_permissions(self, request, obj, *args, **kwargs):
+        return obj.review_request.get().is_accessible_by(request.user)
+
+    def get_queryset(self, request, *args, **kwargs):
+        review_request = resources.review_request.get_object(
+            request, *args, **kwargs)
+
+        return review_request.changedescs.filter(public=True)
 
     @webapi_check_local_site
     @augment_method_from(WebAPIResource)

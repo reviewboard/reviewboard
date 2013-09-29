@@ -107,6 +107,15 @@ class BaseScreenshotResource(WebAPIResource):
         # prefer draft_caption, in case people are changing an existing one.
         return obj.caption or obj.draft_caption
 
+    def has_access_permissions(self, request, obj, *args, **kwargs):
+        return obj.get_review_request().is_accessible_by(request.user)
+
+    def has_modify_permissions(self, request, obj, *args, **kwargs):
+        return obj.get_review_request().is_mutable_by(request.user)
+
+    def has_delete_permissions(self, request, obj, *args, **kwargs):
+        return obj.get_review_request().is_mutable_by(request.user)
+
     @webapi_check_local_site
     @webapi_login_required
     @webapi_response_errors(DOES_NOT_EXIST, NOT_LOGGED_IN, PERMISSION_DENIED,
@@ -193,13 +202,17 @@ class BaseScreenshotResource(WebAPIResource):
         try:
             review_request = \
                 resources.review_request.get_object(request, *args, **kwargs)
-            screenshot = resources.screenshot.get_object(request, *args,
-                                                         **kwargs)
         except ObjectDoesNotExist:
             return DOES_NOT_EXIST
 
         if not review_request.is_mutable_by(request.user):
             return self._no_access_error(request.user)
+
+        try:
+            screenshot = resources.screenshot.get_object(request, *args,
+                                                         **kwargs)
+        except ObjectDoesNotExist:
+            return DOES_NOT_EXIST
 
         try:
             resources.review_request_draft.prepare_draft(request,
@@ -221,10 +234,13 @@ class BaseScreenshotResource(WebAPIResource):
         try:
             review_request = \
                 resources.review_request.get_object(request, *args, **kwargs)
-            screenshot = resources.screenshot.get_object(request, *args,
-                                                         **kwargs)
+            screenshot = self.get_object(request, *args, **kwargs)
         except ObjectDoesNotExist:
             return DOES_NOT_EXIST
+
+        if not self.has_delete_permissions(request, screenshot, *args,
+                                           **kwargs):
+            return self._no_access_error(request.user)
 
         try:
             draft = resources.review_request_draft.prepare_draft(

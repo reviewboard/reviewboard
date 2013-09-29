@@ -80,6 +80,9 @@ class UserResource(WebAPIResource, DjbletsUserResource):
     def serialize_avatar_url_field(self, user, request=None, **kwargs):
         return get_gravatar_url(request, user)
 
+    def has_access_permissions(self, *args, **kwargs):
+        return True
+
     @webapi_check_local_site
     @webapi_request_fields(
         optional={

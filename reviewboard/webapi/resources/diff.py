@@ -105,6 +105,7 @@ class DiffResource(WebAPIResource):
         review_request = diffset.history.review_request.get()
         return review_request.is_accessible_by(request.user)
 
+    @webapi_check_login_required
     @webapi_check_local_site
     @webapi_response_errors(DOES_NOT_EXIST)
     def get_list(self, *args, **kwargs):
@@ -117,8 +118,8 @@ class DiffResource(WebAPIResource):
         except self.model.DoesNotExist:
             return DOES_NOT_EXIST
 
-    @webapi_check_local_site
     @webapi_check_login_required
+    @webapi_check_local_site
     def get(self, request, *args, **kwargs):
         """Returns the information or contents on a particular diff.
 
@@ -166,8 +167,8 @@ class DiffResource(WebAPIResource):
 
         return resp
 
-    @webapi_check_local_site
     @webapi_login_required
+    @webapi_check_local_site
     @webapi_response_errors(DOES_NOT_EXIST, NOT_LOGGED_IN, PERMISSION_DENIED,
                             REPO_FILE_NOT_FOUND, INVALID_FORM_DATA,
                             DIFF_EMPTY, DIFF_TOO_BIG)

@@ -1538,6 +1538,14 @@ class BaseComment(models.Model):
         return self.reply_to_id is not None
     is_reply.boolean = True
 
+    def is_accessible_by(self, user):
+        """Returns whether the user can access this comment."""
+        return self.get_review().is_accessible_by(user)
+
+    def is_mutable_by(self, user):
+        """Returns whether the user can modify this comment."""
+        return self.get_review().is_mutable_by(user)
+
     def public_replies(self, user=None):
         """
         Returns a list of public replies to this comment, optionally
@@ -1802,6 +1810,17 @@ class Review(models.Model):
                 for u in reply.participants]
 
     participants = property(get_participants)
+
+    def is_accessible_by(self, user):
+        """Returns whether the user can access this review."""
+        return ((self.public or self.user == user or user.is_superuser) and
+                self.review_request.is_accessible_by(user))
+
+    def is_mutable_by(self, user):
+        """Returns whether the user can modify this review."""
+        return ((not self.public and
+                 (self.user == user or user.is_superuser)) and
+                self.review_request.is_accessible_by(user))
 
     def __unicode__(self):
         return u"Review of '%s'" % self.review_request

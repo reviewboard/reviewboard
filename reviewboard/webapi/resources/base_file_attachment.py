@@ -115,6 +115,15 @@ class BaseFileAttachmentResource(WebAPIResource):
 
         return ''
 
+    def has_access_permissions(self, request, obj, *args, **kwargs):
+        return obj.get_review_request().is_accessible_by(request.user)
+
+    def has_modify_permissions(self, request, obj, *args, **kwargs):
+        return obj.get_review_request().is_mutable_by(request.user)
+
+    def has_delete_permissions(self, request, obj, *args, **kwargs):
+        return obj.get_review_request().is_mutable_by(request.user)
+
     @webapi_check_local_site
     @webapi_login_required
     @webapi_response_errors(DOES_NOT_EXIST, PERMISSION_DENIED,
@@ -205,13 +214,17 @@ class BaseFileAttachmentResource(WebAPIResource):
         try:
             review_request = \
                 resources.review_request.get_object(request, *args, **kwargs)
-            file = resources.file_attachment.get_object(request, *args,
-                                                        **kwargs)
         except ObjectDoesNotExist:
             return DOES_NOT_EXIST
 
         if not review_request.is_mutable_by(request.user):
             return PERMISSION_DENIED
+
+        try:
+            file = resources.file_attachment.get_object(request, *args,
+                                                        **kwargs)
+        except ObjectDoesNotExist:
+            return DOES_NOT_EXIST
 
         if caption is not None:
             try:
@@ -247,10 +260,13 @@ class BaseFileAttachmentResource(WebAPIResource):
         try:
             review_request = \
                 resources.review_request.get_object(request, *args, **kwargs)
-            file_attachment = \
-                resources.file_attachment.get_object(request, *args, **kwargs)
+            file_attachment = self.get_object(request, *args, **kwargs)
         except ObjectDoesNotExist:
             return DOES_NOT_EXIST
+
+        if not self.has_delete_permissions(request, file_attachment, *args,
+                                           **kwargs):
+            return self._no_access_error(request.user)
 
         try:
             draft = resources.review_request_draft.prepare_draft(

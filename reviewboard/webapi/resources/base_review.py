@@ -74,13 +74,13 @@ class BaseReviewResource(WebAPIResource):
         raise NotImplementedError
 
     def has_access_permissions(self, request, review, *args, **kwargs):
-        return review.public or review.user == request.user
+        return review.is_accessible_by(request.user)
 
     def has_modify_permissions(self, request, review, *args, **kwargs):
-        return not review.public and review.user == request.user
+        return review.is_mutable_by(request.user)
 
     def has_delete_permissions(self, request, review, *args, **kwargs):
-        return not review.public and review.user == request.user
+        return review.is_mutable_by(request.user)
 
     @webapi_check_local_site
     @webapi_login_required

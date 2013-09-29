@@ -6,7 +6,8 @@ from djblets.webapi.errors import DOES_NOT_EXIST
 from reviewboard.diffviewer.models import DiffSet
 from reviewboard.reviews.models import Review, ReviewRequest
 from reviewboard.webapi.base import WebAPIResource
-from reviewboard.webapi.decorators import webapi_check_login_required
+from reviewboard.webapi.decorators import (webapi_check_local_site,
+                                           webapi_check_login_required)
 from reviewboard.webapi.resources import resources
 
 
@@ -48,6 +49,7 @@ class ReviewRequestLastUpdateResource(WebAPIResource):
     }
 
     @webapi_check_login_required
+    @webapi_check_local_site
     def get(self, request, *args, **kwargs):
         """Returns the last update made to the review request.
 

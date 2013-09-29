@@ -18,6 +18,9 @@ class SearchResource(WebAPIResource, DjbletsUserResource):
     name = 'search'
     singleton = True
 
+    def has_access_permissions(self, request, *args, **kwargs):
+        return True
+
     @webapi_check_local_site
     @webapi_check_login_required
     def get(self, request, local_site_name=None, fullname=None, q=None,

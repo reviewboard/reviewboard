@@ -186,13 +186,14 @@ class ResourceItemTests(BaseWebAPITestCase):
         review-requests/<id>/reviews/<id>/replies/<id>/file-attachment-comments/<id>/
         API with a local site
         """
-        review_request = self.create_review_request(submitter=self.user,
+        user = self._login_user(local_site=True)
+        review_request = self.create_review_request(submitter=user,
                                                     with_local_site=True,
                                                     publish=True)
         file_attachment = self.create_file_attachment(review_request)
         review = self.create_review(review_request)
         comment = self.create_file_attachment_comment(review, file_attachment)
-        reply = self.create_reply(review, user=self.user)
+        reply = self.create_reply(review, user=user)
         reply_comment = self.create_file_attachment_comment(
             reply, file_attachment, reply_to=comment)
 

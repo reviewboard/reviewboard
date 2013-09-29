@@ -149,6 +149,9 @@ class ReviewRequestDraftResource(WebAPIResource):
     def has_access_permissions(self, request, draft, *args, **kwargs):
         return draft.is_accessible_by(request.user)
 
+    def has_modify_permissions(self, request, draft, *args, **kwargs):
+        return draft.is_mutable_by(request.user)
+
     def has_delete_permissions(self, request, draft, *args, **kwargs):
         return draft.is_mutable_by(request.user)
 

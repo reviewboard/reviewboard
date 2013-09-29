@@ -89,6 +89,13 @@ class FileDiffResource(WebAPIResource):
             diffset__history__review_request=review_request_id,
             diffset__revision=diff_revision)
 
+    def has_access_permissions(self, request, filediff, *args, **kwargs):
+        review_request = resources.review_request.get_object(
+            request, *args, **kwargs)
+
+        return resources.review_request.has_access_permissions(
+            request, review_request, *args, **kwargs)
+
     @webapi_check_local_site
     @augment_method_from(WebAPIResource)
     def get_list(self, *args, **kwargs):
@@ -124,6 +131,7 @@ class FileDiffResource(WebAPIResource):
         return links
 
     @webapi_check_login_required
+    @webapi_check_local_site
     def get(self, request, *args, **kwargs):
         """Returns the information or contents on a per-file diff.
 
