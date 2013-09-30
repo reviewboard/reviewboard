@@ -44,7 +44,7 @@ EMAIL_SUBJECT_PREFIX = "[Review Board] "
 
 # If you set this to False, Django will make some optimizations so as not
 # to load the internationalization machinery.
-USE_I18N = False
+USE_I18N = True
 LANGUAGES = (
     ('en', _('English')),
     ('it', _('Italian')),
