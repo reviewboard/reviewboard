@@ -247,8 +247,8 @@ RB.CommentDialogView = Backbone.View.extend({
                 .proxyTouchEvents();
 
             this.$el.resizable({
-                handles: $.browser.mobileSafari ? "grip,se"
-                                                : "grip,n,e,s,w,se,sw,ne,nw",
+                handles: $.support.touch ? "grip,se"
+                                         : "grip,n,e,s,w,se,sw,ne,nw",
                 transparent: true,
                 resize: _.bind(this._handleResize, this)
             });
@@ -257,14 +257,9 @@ RB.CommentDialogView = Backbone.View.extend({
             $grip.css("opacity", 100);
         }
 
-        if (!$.browser.msie || $.browser.version >= 7) {
-            /*
-             * draggable works in IE7 and up, but not IE6.
-             */
-            this.$el.draggable({
-                handle: $(".title", this).css("cursor", "move")
-            });
-        }
+        this.$el.draggable({
+            handle: $(".title", this).css("cursor", "move")
+        });
 
         this.model.on('change:dirty', function() {
             if (this.$el.is(':visible')) {

@@ -102,10 +102,6 @@ BaseImageView = Backbone.View.extend({
          */
         offset.left += $region.getExtents('m', 'l');
 
-        if ($.browser.msie && $.browser.version === 6) {
-            offset.left -= this.getExtents('mp', 'l');
-        }
-
         return {
             left: offset.left,
             top: offset.top,

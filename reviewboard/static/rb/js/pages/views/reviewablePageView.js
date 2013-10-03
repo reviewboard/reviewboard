@@ -45,8 +45,7 @@ var UpdatesBubbleView = Backbone.View.extend({
      */
     open: function() {
         this.$el
-            .css('position', $.browser.msie && $.browser.version === 6
-                             ? 'absolute' : 'fixed')
+            .css('position', 'fixed')
             .fadeIn();
     },
 
