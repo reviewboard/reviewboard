@@ -6,7 +6,7 @@ from reviewboard.reviews.forms import UploadDiffForm, UploadScreenshotForm
 from reviewboard.reviews.models import BaseComment
 
 
-def comment_counts(context, filediff, interfilediff=None):
+def comment_counts(user, all_comments, filediff, interfilediff=None):
     """
     Returns an array of current comments for a filediff, sorted by line number.
 
@@ -27,8 +27,6 @@ def comment_counts(context, filediff, interfilediff=None):
       ==============================================================
     """
     comment_dict = {}
-    user = context.get('user', None)
-    all_comments = context.get('comments', {})
 
     if interfilediff:
         key = (filediff.pk, interfilediff.pk)

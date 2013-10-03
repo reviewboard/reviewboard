@@ -1034,6 +1034,23 @@ class ReviewsDiffViewerView(DiffViewerView):
         context = super(ReviewsDiffViewerView, self).get_context_data(
             *args, **kwargs)
 
+        context.update({
+            'diffsets': diffsets,
+            'review': pending_review,
+            'review_request_details': self.draft or self.review_request,
+            'draft': self.draft,
+            'last_activity_time': last_activity_time,
+            'file_attachments': [file_attachment
+                                 for file_attachment in file_attachments
+                                 if not file_attachment.is_from_diff],
+            'all_file_attachments': file_attachments,
+            'screenshots': screenshots,
+            'comments': comments,
+        })
+
+        context.update(
+            make_review_request_context(self.request, self.review_request))
+
         diffset_pair = context['diffset_pair']
         context['diff_context'].update({
             'num_diffs': num_diffs,
@@ -1068,6 +1085,8 @@ class ReviewsDiffViewerView(DiffViewerView):
 
         files = []
         for f in context['files']:
+            filediff = f['filediff']
+            interfilediff = f['interfilediff']
             data = {
                 'newfile': f['newfile'],
                 'binary': f['binary'],
@@ -1078,38 +1097,23 @@ class ReviewsDiffViewerView(DiffViewerView):
                 'dest_revision': f['dest_revision'],
                 'revision': f['revision'],
                 'filediff': {
-                    'id': f['filediff'].id,
-                    'revision': f['filediff'].diffset.revision,
+                    'id': filediff.id,
+                    'revision': filediff.diffset.revision,
                 },
                 'index': f['index'],
-                'comment_counts': comment_counts(
-                    context, f['filediff'], f['interfilediff']),
+                'comment_counts': comment_counts(self.request.user, comments,
+                                                 filediff, interfilediff),
             }
 
-            if f['interfilediff']:
+            if interfilediff:
                 data['interfilediff'] = {
-                    'id': f['interfilediff'].id,
-                    'revision': f['interfilediff'].diffset.revision,
+                    'id': interfilediff.id,
+                    'revision': interfilediff.diffset.revision,
                 }
 
             files.append(data)
 
         context['diff_context']['files'] = files
-
-        context.update(
-            make_review_request_context(self.request, self.review_request, {
-                'diffsets': diffsets,
-                'review': pending_review,
-                'review_request_details': self.draft or self.review_request,
-                'draft': self.draft,
-                'last_activity_time': last_activity_time,
-                'file_attachments': [file_attachment
-                                     for file_attachment in file_attachments
-                                     if not file_attachment.is_from_diff],
-                'all_file_attachments': file_attachments,
-                'screenshots': screenshots,
-                'comments': comments,
-            }))
 
         return context
 
