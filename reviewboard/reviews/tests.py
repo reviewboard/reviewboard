@@ -7,9 +7,8 @@ from django.contrib.auth.models import AnonymousUser, User
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.core.urlresolvers import reverse
 from django.template import Context, Template
-from django.test import TestCase
-
 from djblets.siteconfig.models import SiteConfiguration
+from djblets.testing.decorators import add_fixtures
 
 from reviewboard.accounts.models import Profile, LocalSiteProfile
 from reviewboard.attachments.models import FileAttachment
@@ -24,6 +23,7 @@ from reviewboard.reviews.models import Comment, \
 from reviewboard.scmtools.models import Repository, Tool
 from reviewboard.site.models import LocalSite
 from reviewboard.site.urlresolvers import local_site_reverse
+from reviewboard.testing.testcase import TestCase
 
 
 class ReviewRequestManagerTests(TestCase):
@@ -35,7 +35,7 @@ class ReviewRequestManagerTests(TestCase):
         """Testing ReviewRequest.objects.public"""
         self.assertValidSummaries(
             ReviewRequest.objects.public(
-                User.objects.get(username="doc")), [
+                user=User.objects.get(username="doc")), [
             "Comments Improvements",
             "Update for cleaned_data changes",
             "Add permission checking for JSON API",
@@ -56,7 +56,7 @@ class ReviewRequestManagerTests(TestCase):
 
         self.assertValidSummaries(
             ReviewRequest.objects.public(
-                User.objects.get(username="doc"), status=None), [
+                user=User.objects.get(username="doc"), status=None), [
             "Comments Improvements",
             "Update for cleaned_data changes",
             "Add permission checking for JSON API",
@@ -65,6 +65,203 @@ class ReviewRequestManagerTests(TestCase):
             "Improved login form",
             "Interdiff Revision Test",
         ])
+
+    @add_fixtures(['test_scmtools'])
+    def test_public_without_private_repo_access(self):
+        """Testing ReviewRequest.objects.public without access to private
+        repositories
+        """
+        ReviewRequest.objects.all().delete()
+
+        user = User.objects.get(username='grumpy')
+
+        repository = self.create_repository(public=False)
+        review_request = self.create_review_request(repository=repository,
+                                                    publish=True)
+        self.assertFalse(review_request.is_accessible_by(user))
+
+        review_requests = ReviewRequest.objects.public(user=user)
+        self.assertEqual(review_requests.count(), 0)
+
+    @add_fixtures(['test_scmtools'])
+    def test_public_with_private_repo_access(self):
+        """Testing ReviewRequest.objects.public with access to private
+        repositories
+        """
+        ReviewRequest.objects.all().delete()
+
+        user = User.objects.get(username='grumpy')
+
+        repository = self.create_repository(public=False)
+        repository.users.add(user)
+        review_request = self.create_review_request(repository=repository,
+                                                    publish=True)
+        self.assertTrue(review_request.is_accessible_by(user))
+
+        review_requests = ReviewRequest.objects.public(user=user)
+        self.assertEqual(review_requests.count(), 1)
+
+    @add_fixtures(['test_scmtools'])
+    def test_public_with_private_repo_access_through_group(self):
+        """Testing ReviewRequest.objects.public with access to private
+        repositories
+        """
+        ReviewRequest.objects.all().delete()
+
+        user = User.objects.get(username='grumpy')
+        group = self.create_review_group(invite_only=True)
+        group.users.add(user)
+
+        repository = self.create_repository(public=False)
+        repository.review_groups.add(group)
+        review_request = self.create_review_request(repository=repository,
+                                                    publish=True)
+        self.assertTrue(review_request.is_accessible_by(user))
+
+        review_requests = ReviewRequest.objects.public(user=user)
+        self.assertEqual(review_requests.count(), 1)
+
+    def test_public_without_private_group_access(self):
+        """Testing ReviewRequest.objects.public without access to private
+        group
+        """
+        ReviewRequest.objects.all().delete()
+
+        user = User.objects.get(username='grumpy')
+        group = self.create_review_group(invite_only=True)
+
+        review_request = self.create_review_request(publish=True)
+        review_request.target_groups.add(group)
+        self.assertFalse(review_request.is_accessible_by(user))
+
+        review_requests = ReviewRequest.objects.public(user=user)
+        self.assertEqual(review_requests.count(), 0)
+
+    def test_public_with_private_group_access(self):
+        """Testing ReviewRequest.objects.public with access to private
+        group
+        """
+        ReviewRequest.objects.all().delete()
+
+        user = User.objects.get(username='grumpy')
+        group = self.create_review_group(invite_only=True)
+        group.users.add(user)
+
+        review_request = self.create_review_request(publish=True)
+        review_request.target_groups.add(group)
+        self.assertTrue(review_request.is_accessible_by(user))
+
+        review_requests = ReviewRequest.objects.public(user=user)
+        self.assertEqual(review_requests.count(), 1)
+
+    @add_fixtures(['test_scmtools'])
+    def test_public_with_private_repo_and_public_group(self):
+        """Testing ReviewRequest.objects.public without access to private
+        repositories and with access to private group
+        """
+        ReviewRequest.objects.all().delete()
+
+        user = User.objects.get(username='grumpy')
+        group = self.create_review_group()
+
+        repository = self.create_repository(public=False)
+        review_request = self.create_review_request(repository=repository,
+                                                    publish=True)
+        review_request.target_groups.add(group)
+        self.assertFalse(review_request.is_accessible_by(user))
+
+        review_requests = ReviewRequest.objects.public(user=user)
+        self.assertEqual(review_requests.count(), 0)
+
+    @add_fixtures(['test_scmtools'])
+    def test_public_with_private_group_and_public_repo(self):
+        """Testing ReviewRequest.objects.public with access to private
+        group and without access to private group
+        """
+        ReviewRequest.objects.all().delete()
+
+        user = User.objects.get(username='grumpy')
+        group = self.create_review_group(invite_only=True)
+
+        repository = self.create_repository(public=False)
+        repository.users.add(user)
+        review_request = self.create_review_request(repository=repository,
+                                                    publish=True)
+        review_request.target_groups.add(group)
+        self.assertFalse(review_request.is_accessible_by(user))
+
+        review_requests = ReviewRequest.objects.public(user=user)
+        self.assertEqual(review_requests.count(), 0)
+
+    @add_fixtures(['test_scmtools'])
+    def test_public_with_private_repo_and_owner(self):
+        """Testing ReviewRequest.objects.public without access to private
+        repository and as the submitter
+        """
+        ReviewRequest.objects.all().delete()
+
+        user = User.objects.get(username='grumpy')
+
+        repository = self.create_repository(public=False)
+        review_request = self.create_review_request(repository=repository,
+                                                    submitter=user,
+                                                    publish=True)
+        self.assertTrue(review_request.is_accessible_by(user))
+
+        review_requests = ReviewRequest.objects.public(user=user)
+        self.assertEqual(review_requests.count(), 1)
+
+    def test_public_with_private_group_and_owner(self):
+        """Testing ReviewRequest.objects.public without access to private
+        group and as the submitter
+        """
+        ReviewRequest.objects.all().delete()
+
+        user = User.objects.get(username='grumpy')
+        group = self.create_review_group(invite_only=True)
+
+        review_request = self.create_review_request(submitter=user,
+                                                    publish=True)
+        review_request.target_groups.add(group)
+        self.assertTrue(review_request.is_accessible_by(user))
+
+        review_requests = ReviewRequest.objects.public(user=user)
+        self.assertEqual(review_requests.count(), 1)
+
+    @add_fixtures(['test_scmtools'])
+    def test_public_with_private_repo_and_target_people(self):
+        """Testing ReviewRequest.objects.public without access to private
+        repository and user in target_people
+        """
+        ReviewRequest.objects.all().delete()
+
+        user = User.objects.get(username='grumpy')
+
+        repository = self.create_repository(public=False)
+        review_request = self.create_review_request(repository=repository,
+                                                    publish=True)
+        review_request.target_people.add(user)
+        self.assertFalse(review_request.is_accessible_by(user))
+
+        review_requests = ReviewRequest.objects.public(user=user)
+        self.assertEqual(review_requests.count(), 0)
+
+    def test_public_with_private_group_and_target_people(self):
+        """Testing ReviewRequest.objects.public without access to private
+        group and user in target_people
+        """
+        ReviewRequest.objects.all().delete()
+
+        user = User.objects.get(username='grumpy')
+        group = self.create_review_group(invite_only=True)
+
+        review_request = self.create_review_request(publish=True)
+        review_request.target_groups.add(group)
+        review_request.target_people.add(user)
+        self.assertTrue(review_request.is_accessible_by(user))
+
+        review_requests = ReviewRequest.objects.public(user=user)
+        self.assertEqual(review_requests.count(), 1)
 
     def test_to_group(self):
         """Testing ReviewRequest.objects.to_group"""
@@ -553,6 +750,54 @@ class ViewTests(TestCase):
         self.siteconfig.save()
         response = self.client.get('/r/')
         self.assertEqual(response.status_code, 302)
+
+    @add_fixtures(['test_scmtools'])
+    def test_all_review_requests_with_private_review_requests(self):
+        """Testing all_review_requests view with private review requests"""
+        ReviewRequest.objects.all().delete()
+
+        user = User.objects.get(username='grumpy')
+
+        # These are public
+        self.create_review_request(summary='Test 1', publish=True)
+        self.create_review_request(summary='Test 2', publish=True)
+
+        repository1 = self.create_repository(public=False)
+        repository1.users.add(user)
+        self.create_review_request(summary='Test 3',
+                                   repository=repository1,
+                                   publish=True)
+
+        group1 = self.create_review_group(invite_only=True)
+        group1.users.add(user)
+        review_request = self.create_review_request(summary='Test 4',
+                                                    publish=True)
+        review_request.target_groups.add(group1)
+
+        # These are private
+        repository2 = self.create_repository(public=False)
+        self.create_review_request(summary='Test 5',
+                                   repository=repository2,
+                                   publish=True)
+
+        group2 = self.create_review_group(invite_only=True)
+        review_request = self.create_review_request(summary='Test 6',
+                                                    publish=True)
+        review_request.target_groups.add(group2)
+
+        # Log in and check what we get.
+        self.client.login(username='grumpy', password='grumpy')
+
+        response = self.client.get('/r/')
+        self.assertEqual(response.status_code, 200)
+
+        datagrid = self.getContextVar(response, 'datagrid')
+        self.assertTrue(datagrid)
+        self.assertEqual(len(datagrid.rows), 4)
+        self.assertEqual(datagrid.rows[0]['object'].summary, 'Test 4')
+        self.assertEqual(datagrid.rows[1]['object'].summary, 'Test 3')
+        self.assertEqual(datagrid.rows[2]['object'].summary, 'Test 2')
+        self.assertEqual(datagrid.rows[3]['object'].summary, 'Test 1')
 
     def testSubmitterList(self):
         """Testing submitter_list view"""
