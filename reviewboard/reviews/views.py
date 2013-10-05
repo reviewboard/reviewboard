@@ -740,7 +740,7 @@ def all_review_requests(request,
 
     datagrid = ReviewRequestDataGrid(
         request,
-        ReviewRequest.objects.public(request.user,
+        ReviewRequest.objects.public(user=request.user,
                                      status=None,
                                      local_site=local_site,
                                      with_counts=True),
