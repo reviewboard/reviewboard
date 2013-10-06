@@ -116,6 +116,7 @@ class TestCase(DjbletsTestCase):
     def create_file_attachment(self, review_request,
                                orig_filename='filename.png',
                                caption='My Caption',
+                               draft=False,
                                **kwargs):
         """Creates a FileAttachment for testing.
 
@@ -134,7 +135,11 @@ class TestCase(DjbletsTestCase):
         with open(filename, 'r') as f:
             file_attachment.file.save(filename, File(f), save=True)
 
-        review_request.file_attachments.add(file_attachment)
+        if draft:
+            review_request_draft = ReviewRequestDraft.create(review_request)
+            review_request_draft.file_attachments.add(file_attachment)
+        else:
+            review_request.file_attachments.add(file_attachment)
 
         return file_attachment
 
@@ -182,7 +187,7 @@ class TestCase(DjbletsTestCase):
             diff=diff)
 
     def create_repository(self, with_local_site=False, name='Test Repo',
-                          tool_name='Git'):
+                          tool_name='Git', path=None, **kwargs):
         """Creates a Repository for testing.
 
         The Repository may optionally be attached to a LocalSite. It's also
@@ -200,20 +205,22 @@ class TestCase(DjbletsTestCase):
         testdata_dir = os.path.join(os.path.dirname(scmtools.__file__),
                                     'testdata')
 
-        if tool_name in ('Git', 'Test'):
-            path = os.path.join(testdata_dir, 'git_repo')
-        elif tool_name == 'Subversion':
-            path = 'file://' + os.path.join(testdata_dir, 'svn_repo')
-        elif tool_name == 'Mercurial':
-            path = os.path.join(testdata_dir, 'hg_repo.bundle')
-        else:
-            raise NotImplementedError
+        if not path:
+            if tool_name in ('Git', 'Test'):
+                path = os.path.join(testdata_dir, 'git_repo')
+            elif tool_name == 'Subversion':
+                path = 'file://' + os.path.join(testdata_dir, 'svn_repo')
+            elif tool_name == 'Mercurial':
+                path = os.path.join(testdata_dir, 'hg_repo.bundle')
+            else:
+                raise NotImplementedError
 
         return Repository.objects.create(
             name=name,
             local_site=local_site,
             tool=Tool.objects.get(name=tool_name),
-            path=path)
+            path=path,
+            **kwargs)
 
     def create_review_request(self, with_local_site=False, with_diffs=False,
                               summary='Test Summary',
@@ -337,7 +344,8 @@ class TestCase(DjbletsTestCase):
 
         return reply
 
-    def create_screenshot(self, review_request, caption='My caption'):
+    def create_screenshot(self, review_request, caption='My caption',
+                          draft=False):
         """Creates a Screenshot for testing.
 
         The Screenshot is tied to the given ReviewRequest. It's populated
@@ -350,7 +358,11 @@ class TestCase(DjbletsTestCase):
         with open(filename, 'r') as f:
             screenshot.image.save(filename, File(f), save=True)
 
-        review_request.screenshots.add(screenshot)
+        if draft:
+            review_request_draft = ReviewRequestDraft.create(review_request)
+            review_request_draft.screenshots.add(screenshot)
+        else:
+            review_request.screenshots.add(screenshot)
 
         return screenshot
 
@@ -402,14 +414,26 @@ class TestCase(DjbletsTestCase):
 
         for db in databases:
             if hasattr(self, 'fixtures'):
-                if db not in TestCase._precompiled_fixtures:
-                    TestCase._precompiled_fixtures[db] = {}
+                self.load_fixtures(self.fixtures, db=db)
 
-                for fixture in self.fixtures:
-                    if fixture not in TestCase._precompiled_fixtures[db]:
-                        self._precompile_fixture(fixture, db)
+    def load_fixtures(self, fixtures, db=DEFAULT_DB_ALIAS):
+        """Loads fixtures for the current test.
 
-                self._load_fixtures(self.fixtures, db)
+        This is called for every fixture in the testcase's ``fixtures``
+        list. It can also be called by an individual test to add additional
+        fixtures on top of that.
+        """
+        if not fixtures:
+            return
+
+        if db not in TestCase._precompiled_fixtures:
+            TestCase._precompiled_fixtures[db] = {}
+
+        for fixture in fixtures:
+            if fixture not in TestCase._precompiled_fixtures[db]:
+                self._precompile_fixture(fixture, db)
+
+        self._load_fixtures(fixtures, db)
 
     def _precompile_fixture(self, fixture, db):
         """Precompiles a fixture.
