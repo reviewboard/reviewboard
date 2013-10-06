@@ -102,7 +102,7 @@ class BaseWebAPITestCase(TestCase, EmailTestHelper):
         if expected_status >= 400:
             self.assertEqual(expected_mimetype, None)
             self.assertEqual(response['Content-Type'], self.error_mimetype)
-        else:
+        elif expected_status != 302:
             self.assertNotEqual(expected_mimetype, None)
             self.assertEqual(response['Content-Type'], expected_mimetype)
 
@@ -118,7 +118,7 @@ class BaseWebAPITestCase(TestCase, EmailTestHelper):
 
     def apiGet(self, path, query={}, follow_redirects=False,
                expected_status=200, expected_redirects=[],
-               expected_headers=[], expected_mimetype=None):
+               expected_headers={}, expected_mimetype=None):
         path = self._normalize_path(path)
 
         print 'GETing %s' % path
@@ -130,10 +130,15 @@ class BaseWebAPITestCase(TestCase, EmailTestHelper):
 
         print "Raw response: %s" % response.content
 
-        for header in expected_headers:
+        for header, value in expected_headers.iteritems():
             self.assertTrue(header in response)
+            self.assertEqual(response[header], value)
 
-        rsp = simplejson.loads(response.content)
+        if expected_status == 302:
+            rsp = response.content
+        else:
+            rsp = simplejson.loads(response.content)
+
         print "Response: %s" % rsp
 
         return rsp
@@ -1690,6 +1695,60 @@ class WatchedReviewRequestResourceTests(BaseWebAPITestCase):
     item_mimetype = _build_mimetype('watched-review-request')
     list_mimetype = _build_mimetype('watched-review-requests')
 
+    def test_get(self):
+        """Testing the GET users/<username>/watched/review_request/<id>/ API"""
+        review_request = ReviewRequest.objects.public()[0]
+        profile = self.user.get_profile()
+        profile.starred_review_requests.add(review_request)
+
+        expected_url = (
+            self.base_url +
+            ReviewRequestResourceTests.get_item_url(review_request.display_id))
+
+        self.apiGet(
+            self.get_item_url(self.user.username, review_request.display_id),
+            expected_status=302,
+            expected_headers={
+                'Location': expected_url,
+            })
+
+    def test_get_with_site(self):
+        """Testing the GET users/<username>/watched/review_request/<id>/ API with access to a local site"""
+        user = self._login_user(local_site=True)
+
+        local_site = LocalSite.objects.get(name=self.local_site_name)
+        review_request = ReviewRequest.objects.public(local_site=local_site)[0]
+        profile = user.get_profile()
+        profile.starred_review_requests.add(review_request)
+
+        expected_url = (
+            self.base_url +
+            ReviewRequestResourceTests.get_item_url(review_request.display_id,
+                                                    self.local_site_name))
+
+        self.apiGet(
+            self.get_item_url(user.username, review_request.display_id,
+                              self.local_site_name),
+            expected_status=302,
+            expected_headers={
+                'Location': expected_url,
+            })
+
+    def test_get_with_site_no_access(self):
+        """Testing the GET users/<username>/watched/review_request/<id>/ API with access to a local site
+        """
+        local_site = LocalSite.objects.get(name=self.local_site_name)
+        review_request = ReviewRequest.objects.public(local_site=local_site)[0]
+        profile = self.user.get_profile()
+        profile.starred_review_requests.add(review_request)
+
+        rsp = self.apiGet(
+            self.get_item_url(self.user.username, review_request.display_id,
+                              self.local_site_name),
+            expected_status=403)
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
+
     def test_post_watched_review_request(self):
         """Testing the POST users/<username>/watched/review-request/ API"""
         review_request = ReviewRequest.objects.public()[0]
@@ -1759,6 +1818,22 @@ class WatchedReviewRequestResourceTests(BaseWebAPITestCase):
                              expected_status=404)
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], DOES_NOT_EXIST.code)
+
+    def test_delete_not_owner(self):
+        """Testing the DELETE users/<username>/watched/review-requests/<id>/ API without being the owner
+        """
+        user = User.objects.get(username='doc')
+        self.assertNotEqual(user, self.user)
+
+        review_request = ReviewRequest.objects.public()[0]
+        profile = user.get_profile()
+        profile.starred_review_requests.add(review_request)
+
+        rsp = self.apiDelete(
+            self.get_item_url(user.username, 1, self.local_site_name),
+            expected_status=403)
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
     def test_delete_watched_review_request_with_site(self):
         """Testing the DELETE users/<username>/watched/review_request/ API with a local site"""
@@ -2773,6 +2848,7 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
         return local_site_reverse('review-requests-resource',
                                   local_site_name=local_site_name)
 
+    @classmethod
     def get_item_url(self, review_request_id, local_site_name=None):
         return local_site_reverse('review-request-resource',
                                   local_site_name=local_site_name,

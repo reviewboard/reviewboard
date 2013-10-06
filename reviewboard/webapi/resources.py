@@ -1978,7 +1978,7 @@ class BaseWatchedObjectResource(WebAPIResource):
     def get(self, request, watched_obj_id, *args, **kwargs):
         try:
             q = self.get_queryset(request, *args, **kwargs)
-            obj = q.get(pk=watched_obj_id)
+            obj = self.get_watched_object(q, watched_obj_id, *args, **kwargs)
         except ObjectDoesNotExist:
             return DOES_NOT_EXIST
 
@@ -2061,6 +2061,9 @@ class BaseWatchedObjectResource(WebAPIResource):
             'id': obj.pk,
             self.item_result_key: obj,
         }
+
+    def get_watched_object(self, queryset, obj_id, *args, **kwargs):
+        return queryset.get(pk=obj_id)
 
 
 class WatchedReviewGroupResource(BaseWatchedObjectResource):
@@ -2215,6 +2218,19 @@ class WatchedReviewRequestResource(BaseWatchedObjectResource):
         not actually delete the review request, just the entry in the list.
         """
         pass
+
+    def serialize_object(self, obj, *args, **kwargs):
+        return {
+            'id': obj.display_id,
+            self.item_result_key: obj,
+        }
+
+    def get_watched_object(self, queryset, obj_id, local_site_name=None,
+                           *args, **kwargs):
+        if local_site_name:
+            return queryset.get(local_id=obj_id)
+        else:
+            return queryset.get(pk=obj_id)
 
 watched_review_request_resource = WatchedReviewRequestResource()
 
