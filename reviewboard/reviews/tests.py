@@ -28,12 +28,12 @@ from reviewboard.site.urlresolvers import local_site_reverse
 from reviewboard.testing import TestCase
 
 
-class DbQueryTests(TestCase):
-    """Tests review request query utility functions."""
+class ReviewRequestManagerTests(TestCase):
+    """Tests ReviewRequestManager functions."""
     fixtures = ['test_users']
 
-    def testAllReviewRequests(self):
-        """Testing get_all_review_requests"""
+    def test_public(self):
+        """Testing ReviewRequest.objects.public"""
         user1 = User.objects.get(username='doc')
         user2 = User.objects.get(username='grumpy')
 
@@ -84,8 +84,8 @@ class DbQueryTests(TestCase):
                 'Test 1'
             ])
 
-    def testReviewRequestsToGroup(self):
-        """Testing get_review_requests_to_group"""
+    def test_to_group(self):
+        """Testing ReviewRequest.objects.to_group"""
         user1 = User.objects.get(username='doc')
 
         group1 = self.create_review_group(name='privgroup')
@@ -120,8 +120,8 @@ class DbQueryTests(TestCase):
                 'Test 1',
             ])
 
-    def testReviewRequestsToUserGroups(self):
-        """Testing get_review_requests_to_user_groups"""
+    def test_to_user_group(self):
+        """Testing ReviewRequest.objects.to_user_groups"""
         user1 = User.objects.get(username='doc')
         user2 = User.objects.get(username='grumpy')
 
@@ -171,8 +171,8 @@ class DbQueryTests(TestCase):
                 'Test 3',
             ])
 
-    def testReviewRequestsToUserDirectly(self):
-        """Testing get_review_requests_to_user_directly"""
+    def test_to_user_directly(self):
+        """Testing ReviewRequest.objects.to_user_directly"""
         user1 = User.objects.get(username='doc')
         user2 = User.objects.get(username='grumpy')
 
@@ -230,8 +230,8 @@ class DbQueryTests(TestCase):
                 'Test 2',
             ])
 
-    def testReviewRequestsFromUser(self):
-        """Testing get_review_requests_from_user"""
+    def test_from_user(self):
+        """Testing ReviewRequest.objects.from_user"""
         user1 = User.objects.get(username='doc')
 
         self.create_review_request(summary='Test 1',
@@ -270,8 +270,8 @@ class DbQueryTests(TestCase):
                 'Test 1',
             ])
 
-    def testReviewRequestsToUser(self):
-        """Testing get_review_requests_to_user"""
+    def to_user(self):
+        """Testing ReviewRequest.objects.to_user"""
         user1 = User.objects.get(username='doc')
         user2 = User.objects.get(username='grumpy')
 
