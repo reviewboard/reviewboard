@@ -65,8 +65,22 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
                                    parseInt(parts[1], 10));
             }
         });
+
+        /*
+         * If we have the "index_header" hash in the location, strip it off.
+         * Backbone's router makes use of the hash to try to be backwards
+         * compatible with browsers that don't support the history API, but we
+         * don't care about those, and if it's present when we call
+         * start(), it will change the page's URL to be /diff/index_header,
+         * which isn't a valid URL.
+         */
+        if (window.location.hash === '#index_header') {
+            window.location.hash = '';
+        }
+
         Backbone.history.start({
             pushState: true,
+            hashChange: false,
             root: this.options.reviewRequestData.reviewURL + 'diff/',
             silent: true
         });
