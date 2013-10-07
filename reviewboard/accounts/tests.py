@@ -1,9 +1,9 @@
 from django.contrib.auth.models import User
 from djblets.testing.decorators import add_fixtures
-from djblets.testing.testcases import TestCase
 
 from reviewboard.accounts.models import LocalSiteProfile
 from reviewboard.reviews.models import ReviewRequest
+from reviewboard.testing.testcase import TestCase
 
 
 class ProfileTests(TestCase):

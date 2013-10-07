@@ -9,7 +9,6 @@ from django.db.models import Q
 from django.utils import simplejson, timezone
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.testing.decorators import add_fixtures
-from djblets.testing.testcases import TestCase
 from djblets.webapi.errors import DOES_NOT_EXIST, INVALID_FORM_DATA, \
                                   PERMISSION_DENIED
 import paramiko
@@ -33,6 +32,7 @@ from reviewboard.site.models import LocalSite
 from reviewboard.ssh.client import SSHClient
 from reviewboard.ssh.errors import BadHostKeyError, \
                                    UnknownHostKeyError
+from reviewboard.testing.testcase import TestCase
 from reviewboard.webapi.errors import BAD_HOST_KEY, \
                                       DIFF_TOO_BIG, \
                                       GROUP_ALREADY_EXISTS, \

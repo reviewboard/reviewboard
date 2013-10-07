@@ -965,7 +965,7 @@ class ConcurrencyTests(TestCase):
 
 
 class DefaultReviewerTests(TestCase):
-    fixtures = ['test_scmtools.json']
+    fixtures = ['test_scmtools']
 
     def test_for_repository(self):
         """Testing DefaultReviewer.objects.for_repository"""
@@ -1167,7 +1167,7 @@ class IfNeatNumberTagTests(TestCase):
 
 
 class CounterTests(TestCase):
-    fixtures = ['test_scmtools.json']
+    fixtures = ['test_scmtools']
 
     def setUp(self):
         tool = Tool.objects.get(name='Subversion')
