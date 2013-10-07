@@ -1023,11 +1023,12 @@ class ViewTests(TestCase):
         self.assertEqual(datagrid.rows[0]['object'].summary, 'Test 2')
         self.assertEqual(datagrid.rows[1]['object'].summary, 'Test 1')
 
-    def testDashboard4(self):
-        """Testing dashboard view (to-group devgroup)"""
+    def test_dashboard_to_group_with_joined_groups(self):
+        """Testing dashboard view with to-group and joined groups"""
         self.client.login(username='doc', password='doc')
 
         group = self.create_review_group(name='devgroup')
+        group.users.add(User.objects.get(username='doc'))
 
         review_request = self.create_review_request(summary='Test 1',
                                                     publish=True)
@@ -1052,6 +1053,21 @@ class ViewTests(TestCase):
         self.assertEqual(len(datagrid.rows), 2)
         self.assertEqual(datagrid.rows[0]['object'].summary, 'Test 2')
         self.assertEqual(datagrid.rows[1]['object'].summary, 'Test 1')
+
+    def test_dashboard_to_group_with_unjoined_group(self):
+        """Testing dashboard view with to-group and unjoined group"""
+        self.client.login(username='doc', password='doc')
+
+        group = self.create_review_group(name='devgroup')
+
+        review_request = self.create_review_request(summary='Test 1',
+                                                    publish=True)
+        review_request.target_groups.add(group)
+
+        response = self.client.get('/dashboard/',
+                                   {'view': 'to-group',
+                                    'group': 'devgroup'})
+        self.assertEqual(response.status_code, 404)
 
     def testDashboardSidebar(self):
         """Testing dashboard sidebar counts"""
