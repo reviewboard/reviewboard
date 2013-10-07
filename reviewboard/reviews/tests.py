@@ -7,7 +7,6 @@ from django.contrib.auth.models import AnonymousUser, User
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.core.urlresolvers import reverse
 from django.template import Context, Template
-from django.test import TestCase
 
 from djblets.siteconfig.models import SiteConfiguration
 
@@ -24,6 +23,7 @@ from reviewboard.reviews.models import Comment, \
 from reviewboard.scmtools.models import Repository, Tool
 from reviewboard.site.models import LocalSite
 from reviewboard.site.urlresolvers import local_site_reverse
+from reviewboard.testing.testcase import TestCase
 
 
 class ReviewRequestManagerTests(TestCase):
@@ -962,7 +962,7 @@ class ConcurrencyTests(TestCase):
 
 
 class DefaultReviewerTests(TestCase):
-    fixtures = ['test_scmtools.json']
+    fixtures = ['test_scmtools']
 
     def test_for_repository(self):
         """Testing DefaultReviewer.objects.for_repository"""
@@ -1164,7 +1164,7 @@ class IfNeatNumberTagTests(TestCase):
 
 
 class CounterTests(TestCase):
-    fixtures = ['test_scmtools.json']
+    fixtures = ['test_scmtools']
 
     def setUp(self):
         tool = Tool.objects.get(name='Subversion')

@@ -410,7 +410,7 @@ class HighlightRegionTest(TestCase):
 
 class DbTests(TestCase):
     """Unit tests for database operations."""
-    fixtures = ['test_scmtools.json']
+    fixtures = ['test_scmtools']
 
     def testLongFilenames(self):
         """Testing using long filenames (1024 characters) in FileDiff."""

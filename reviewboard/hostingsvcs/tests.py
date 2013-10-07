@@ -68,7 +68,7 @@ class ServiceTests(TestCase):
 class BitbucketTests(ServiceTests):
     """Unit tests for the Bitbucket hosting service."""
     service_name = 'bitbucket'
-    fixtures = ['test_scmtools.json']
+    fixtures = ['test_scmtools']
 
     def test_service_support(self):
         """Testing the Bitbucket service support capabilities"""
@@ -98,7 +98,7 @@ class BitbucketTests(ServiceTests):
 class BugzillaTests(ServiceTests):
     """Unit tests for the Bugzilla hosting service."""
     service_name = 'bugzilla'
-    fixtures = ['test_scmtools.json']
+    fixtures = ['test_scmtools']
 
     def test_service_support(self):
         """Testing the Bugzilla service support capabilities"""
@@ -414,7 +414,7 @@ class GoogleCodeTests(ServiceTests):
 class RedmineTests(ServiceTests):
     """Unit tests for the Redmine hosting service."""
     service_name = 'redmine'
-    fixtures = ['test_scmtools.json']
+    fixtures = ['test_scmtools']
 
     def test_service_support(self):
         """Testing the Redmine service support capabilities"""
@@ -486,7 +486,7 @@ class SourceForgeTests(ServiceTests):
 class TracTests(ServiceTests):
     """Unit tests for the Trac hosting service."""
     service_name = 'trac'
-    fixtures = ['test_scmtools.json']
+    fixtures = ['test_scmtools']
 
     def test_service_support(self):
         """Testing the Trac service support capabilities"""

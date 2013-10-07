@@ -152,7 +152,7 @@ class CoreTests(DjangoTestCase):
 
 class BZRTests(SCMTestCase):
     """Unit tests for bzr."""
-    fixtures = ['test_scmtools.json']
+    fixtures = ['test_scmtools']
 
     def setUp(self):
         super(BZRTests, self).setUp()
@@ -187,7 +187,7 @@ class BZRTests(SCMTestCase):
 
 class CVSTests(SCMTestCase):
     """Unit tests for CVS."""
-    fixtures = ['test_scmtools.json']
+    fixtures = ['test_scmtools']
 
     def setUp(self):
         super(CVSTests, self).setUp()
@@ -363,7 +363,7 @@ class CVSTests(SCMTestCase):
 
 class SubversionTests(SCMTestCase):
     """Unit tests for subversion."""
-    fixtures = ['test_scmtools.json']
+    fixtures = ['test_scmtools']
 
     def setUp(self):
         super(SubversionTests, self).setUp()
@@ -573,7 +573,7 @@ class PerforceTests(SCMTestCase):
        pieces.  Because we have no control over things like pending
        changesets, not everything can be tested.
        """
-    fixtures = ['test_scmtools.json']
+    fixtures = ['test_scmtools']
 
     def setUp(self):
         super(PerforceTests, self).setUp()
@@ -738,7 +738,7 @@ class PerforceStunnelTests(SCMTestCase):
     connections and proxy (insecurely) to the public perforce server. We can
     then tell the Perforce SCMTool to connect securely to localhost.
     """
-    fixtures = ['test_scmtools.json']
+    fixtures = ['test_scmtools']
 
     def setUp(self):
         super(PerforceStunnelTests, self).setUp()
@@ -808,7 +808,7 @@ class PerforceStunnelTests(SCMTestCase):
 
 class VMWareTests(SCMTestCase):
     """Tests for VMware specific code"""
-    fixtures = ['vmware.json', 'test_scmtools.json']
+    fixtures = ['vmware.json', 'test_scmtools']
 
     def setUp(self):
         super(VMWareTests, self).setUp()
@@ -891,7 +891,7 @@ class VMWareTests(SCMTestCase):
 
 class MercurialTests(SCMTestCase):
     """Unit tests for mercurial."""
-    fixtures = ['test_scmtools.json']
+    fixtures = ['test_scmtools']
 
     def setUp(self):
         super(MercurialTests, self).setUp()
@@ -1046,7 +1046,7 @@ class MercurialTests(SCMTestCase):
 
 class GitTests(SCMTestCase):
     """Unit tests for Git."""
-    fixtures = ['test_scmtools.json']
+    fixtures = ['test_scmtools']
 
     def setUp(self):
         super(GitTests, self).setUp()
