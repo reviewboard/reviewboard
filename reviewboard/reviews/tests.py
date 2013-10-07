@@ -26,13 +26,13 @@ from reviewboard.site.models import LocalSite
 from reviewboard.site.urlresolvers import local_site_reverse
 
 
-class DbQueryTests(TestCase):
-    """Tests review request query utility functions."""
+class ReviewRequestManagerTests(TestCase):
+    """Tests ReviewRequestManager functions."""
     fixtures = ['test_users', 'test_reviewrequests', 'test_scmtools',
                 'test_site']
 
-    def testAllReviewRequests(self):
-        """Testing get_all_review_requests"""
+    def test_public(self):
+        """Testing ReviewRequest.objects.public"""
         self.assertValidSummaries(
             ReviewRequest.objects.public(
                 User.objects.get(username="doc")), [
@@ -66,8 +66,8 @@ class DbQueryTests(TestCase):
             "Interdiff Revision Test",
         ])
 
-    def testReviewRequestsToGroup(self):
-        """Testing get_review_requests_to_group"""
+    def test_to_group(self):
+        """Testing ReviewRequest.objects.to_group"""
         self.assertValidSummaries(
             ReviewRequest.objects.to_group("privgroup", None),
             ["Add permission checking for JSON API"])
@@ -76,8 +76,8 @@ class DbQueryTests(TestCase):
             ReviewRequest.objects.to_group("privgroup", None, status=None),
             ["Add permission checking for JSON API"])
 
-    def testReviewRequestsToUserGroups(self):
-        """Testing get_review_requests_to_user_groups"""
+    def test_to_user_group(self):
+        """Testing ReviewRequest.objects.to_user_groups"""
         self.assertValidSummaries(
             ReviewRequest.objects.to_user_groups("doc", local_site=None),
             ["Update for cleaned_data changes",
@@ -96,8 +96,8 @@ class DbQueryTests(TestCase):
              "Update for cleaned_data changes",
              "Add permission checking for JSON API"])
 
-    def testReviewRequestsToUserDirectly(self):
-        """Testing get_review_requests_to_user_directly"""
+    def test_to_user_directly(self):
+        """Testing ReviewRequest.objects.to_user_directly"""
         self.assertValidSummaries(
             ReviewRequest.objects.to_user_directly("doc", local_site=None),
             ["Add permission checking for JSON API",
@@ -116,8 +116,8 @@ class DbQueryTests(TestCase):
              "Made e-mail improvements",
              "Improved login form"])
 
-    def testReviewRequestsFromUser(self):
-        """Testing get_review_requests_from_user"""
+    def test_from_user(self):
+        """Testing ReviewRequest.objects.from_user"""
         self.assertValidSummaries(
             ReviewRequest.objects.from_user("doc", local_site=None), [])
 
@@ -132,8 +132,8 @@ class DbQueryTests(TestCase):
             ["Comments Improvements",
              "Improved login form"])
 
-    def testReviewRequestsToUser(self):
-        """Testing get_review_requests_to_user"""
+    def to_user(self):
+        """Testing ReviewRequest.objects.to_user"""
         self.assertValidSummaries(
             ReviewRequest.objects.to_user("doc", local_site=None), [
             "Update for cleaned_data changes",
