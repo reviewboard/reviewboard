@@ -854,9 +854,12 @@ class ViewTests(TestCase):
 
         self.client.logout()
 
-    def testDashboard4(self):
-        """Testing dashboard view (to-group devgroup)"""
+    def test_dashboard_to_group_with_joined_groups(self):
+        """Testing dashboard view with to-group and joined groups"""
         self.client.login(username='doc', password='doc')
+
+        group = Group.objects.get(name='devgroup')
+        group.users.add(User.objects.get(username='doc'))
 
         response = self.client.get('/dashboard/',
                                    {'view': 'to-group',
@@ -872,6 +875,21 @@ class ViewTests(TestCase):
                          'Comments Improvements')
 
         self.client.logout()
+
+    def test_dashboard_to_group_with_unjoined_group(self):
+        """Testing dashboard view with to-group and unjoined group"""
+        self.client.login(username='doc', password='doc')
+
+        group = self.create_review_group(name='new-group')
+
+        review_request = self.create_review_request(summary='Test 1',
+                                                    publish=True)
+        review_request.target_groups.add(group)
+
+        response = self.client.get('/dashboard/',
+                                   {'view': 'to-group',
+                                    'group': 'new-group'})
+        self.assertEqual(response.status_code, 404)
 
     def testDashboardSidebar(self):
         """Testing dashboard view (to-group devgroup)"""
