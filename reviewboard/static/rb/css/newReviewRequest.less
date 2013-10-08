@@ -15,12 +15,14 @@
     border-right: 1px @grey solid;
     background-color: @headerbar-bg;
     color: white;
-    overflow: scroll;
+    overflow-y: auto;
+    overflow-x: hidden;
     position: relative;
 
     h3 {
-      padding: 1em;
-      margin: 0;
+      padding: 0;
+      margin: 1em;
+      overflow: hidden;
     }
 
     .repository {
@@ -36,19 +38,18 @@
 
     .search-icon-wrapper {
       position: absolute;
-      right: 0;
       top: 0;
       background-color: @headerbar-bg;
       z-index: @z-index-banner;
     }
 
     .repository-search-icon {
-      margin: 0.75em;
+      margin: 9px;
     }
 
     .repository-search {
       position: absolute;
-      right: 1em;
+      right: 8px;
       top: 0.75em;
       width: 0;
       visibility: hidden;
@@ -57,6 +58,7 @@
       color: #ccc;
       .box-shadow(none);
       padding: 2px;
+      z-index: (@z-index-banner + 1);
     }
   }
 

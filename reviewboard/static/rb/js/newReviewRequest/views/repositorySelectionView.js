@@ -44,6 +44,9 @@ RB.RepositorySelectionView = RB.CollectionView.extend({
             .addClass('repository-search')
             .prependTo(this.$el);
 
+        this._iconOffset = this.$el.innerWidth() - this._$searchIcon.outerWidth(true);
+        this._$searchIconWrapper.css('left', this._iconOffset);
+
         return this;
     },
 
@@ -73,11 +76,9 @@ RB.RepositorySelectionView = RB.CollectionView.extend({
      * Toggles on/off the search bar.
      */
     _onSearchClicked: function() {
-        var parentWidth = this.$el.width(),
-            iconWidth = this._$searchIconWrapper.outerWidth(true),
-            iconOffset = parentWidth - iconWidth,
+        var parentWidth = this.$el.innerWidth(),
             $searchBox = this._$searchBox,
-            searchBoxRightEdge = ($searchBox.position().left + $searchBox.width()),
+            searchBoxRightEdge = ($searchBox.position().left + $searchBox.outerWidth()),
             searchBoxRightMargin = parentWidth - searchBoxRightEdge,
             animationSpeedMS = 200;
 
@@ -85,21 +86,27 @@ RB.RepositorySelectionView = RB.CollectionView.extend({
 
         if (this._searchActive) {
             this._$searchIconWrapper.animate({
-                right: iconOffset
+                left: '0px'
             }, animationSpeedMS);
             this._$searchBox
                 .css('visibility', 'visible')
                 .animate({
-                    width: parentWidth - iconWidth - searchBoxRightMargin
+                    width: this._iconOffset - (searchBoxRightMargin * 2)
                 }, {
                     duration: animationSpeedMS,
                     complete: function() {
                         $searchBox.focus();
                     }
                 });
+            this._$header.animate({
+                width: 0
+            }, animationSpeedMS);
         } else {
+            this._$header.animate({
+                width: '100%'
+            }, animationSpeedMS);
             this._$searchIconWrapper.animate({
-                right: 0
+                left: this._iconOffset
             }, animationSpeedMS);
             this._$searchBox.animate({
                 width: 0
