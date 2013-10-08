@@ -15,32 +15,10 @@ class BaseScreenshotCommentResource(BaseCommentResource):
     name = 'screenshot_comment'
 
     fields = dict({
-        'id': {
-            'type': int,
-            'description': 'The numeric ID of the comment.',
-        },
         'screenshot': {
             'type': 'reviewboard.webapi.resources.screenshot.'
                     'ScreenshotResource',
             'description': 'The screenshot the comment was made on.',
-        },
-        'text': {
-            'type': str,
-            'description': 'The comment text.',
-        },
-        'timestamp': {
-            'type': str,
-            'description': 'The date and time that the comment was made '
-                           '(in YYYY-MM-DD HH:MM:SS format).',
-        },
-        'public': {
-            'type': bool,
-            'description': 'Whether or not the comment is part of a public '
-                           'review.',
-        },
-        'user': {
-            'type': 'reviewboard.webapi.resources.user.UserResource',
-            'description': 'The user who made the comment.',
         },
         'x': {
             'type': int,

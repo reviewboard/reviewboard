@@ -2,6 +2,7 @@ from django.contrib.auth.models import User
 from djblets.testing.decorators import add_fixtures
 from djblets.webapi.errors import PERMISSION_DENIED
 
+from reviewboard.reviews.models import ScreenshotComment
 from reviewboard.webapi.tests.base import BaseWebAPITestCase
 from reviewboard.webapi.tests.mimetypes import (
     screenshot_comment_item_mimetype,
@@ -136,6 +137,51 @@ class ResourceListTests(BaseTestCase):
             expected_status=403)
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
+
+    def test_post_with_extra_fields(self):
+        """Testing the
+        POST review-requests/<id>/reviews/<id>/screenshots-comments/ API
+        with extra fields
+        """
+        comment_text = "This is a test comment."
+        extra_fields = {
+            'extra_data.foo': '123',
+            'extra_data.bar': '456',
+            'extra_data.baz': '',
+            'ignored': 'foo',
+        }
+
+        # Post the review request.
+        review_request = self.create_review_request(submitter=self.user,
+                                                    publish=True)
+        screenshot = self.create_screenshot(review_request)
+
+        # Post the review.
+        review = self.create_review(review_request, user=self.user)
+
+        rsp = self.apiPost(
+            get_review_screenshot_comment_list_url(review),
+            dict({
+                'screenshot_id': screenshot.pk,
+                'text': comment_text,
+                'x': 5,
+                'y': 5,
+                'w': 10,
+                'h': 10,
+            }, **extra_fields),
+            expected_mimetype=screenshot_comment_item_mimetype)
+
+        comment = ScreenshotComment.objects.get(
+            pk=rsp['screenshot_comment']['id'])
+
+        self.assertTrue('foo' in comment.extra_data)
+        self.assertTrue('bar' in comment.extra_data)
+        self.assertFalse('baz' in comment.extra_data)
+        self.assertFalse('ignored' in comment.extra_data)
+        self.assertEqual(comment.extra_data['foo'],
+                         extra_fields['extra_data.foo'])
+        self.assertEqual(comment.extra_data['bar'],
+                         extra_fields['extra_data.bar'])
 
 
 class ResourceItemTests(BaseTestCase):
@@ -395,3 +441,45 @@ class ResourceItemTests(BaseTestCase):
             expected_mimetype=screenshot_comment_item_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(rsp['screenshot_comment']['issue_status'], 'open')
+
+    def test_put_with_extra_fields(self):
+        """Testing the
+        PUT review-requests/<id>/reviews/<id>/screenshot-comments/<id>/ API
+        with extra fields
+        """
+        extra_fields = {
+            'extra_data.foo': 'abc',
+            'extra_data.bar': '',
+            'ignored': 'foo',
+        }
+
+        comment_text = "This is a test comment."
+
+        review_request = self.create_review_request(submitter=self.user,
+                                                    publish=True)
+        screenshot = self.create_screenshot(review_request)
+        review = self.create_review(review_request, user=self.user)
+        comment = self.create_screenshot_comment(
+            review,
+            screenshot,
+            text=comment_text,
+            extra_fields={
+                'foo': '123',
+                'bar': '456',
+            })
+
+        rsp = self.apiPut(
+            get_review_screenshot_comment_item_url(review, comment.pk),
+            extra_fields,
+            expected_mimetype=screenshot_comment_item_mimetype)
+        self.assertEqual(rsp['stat'], 'ok')
+
+        comment = ScreenshotComment.objects.get(
+            pk=rsp['screenshot_comment']['id'])
+
+        self.assertTrue('foo' in comment.extra_data)
+        self.assertFalse('bar' in comment.extra_data)
+        self.assertFalse('ignored' in comment.extra_data)
+        self.assertEqual(len(comment.extra_data.keys()), 1)
+        self.assertEqual(comment.extra_data['foo'],
+                         extra_fields['extra_data.foo'])

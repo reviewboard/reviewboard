@@ -14,10 +14,6 @@ class BaseFileAttachmentCommentResource(BaseCommentResource):
     model = FileAttachmentComment
     name = 'file_attachment_comment'
     fields = dict({
-        'id': {
-            'type': int,
-            'description': 'The numeric ID of the comment.',
-        },
         'diff_against_file_attachment': {
             'type': 'reviewboard.webapi.resources.file_attachment.'
                     'FileAttachmentResource',
@@ -27,29 +23,6 @@ class BaseFileAttachmentCommentResource(BaseCommentResource):
             'type': 'reviewboard.webapi.resources.file_attachment.'
                     'FileAttachmentResource',
             'description': 'The file the comment was made on.',
-        },
-        'text': {
-            'type': str,
-            'description': 'The comment text.',
-        },
-        'timestamp': {
-            'type': str,
-            'description': 'The date and time that the comment was made '
-                           '(in YYYY-MM-DD HH:MM:SS format).',
-        },
-        'public': {
-            'type': bool,
-            'description': 'Whether or not the comment is part of a public '
-                           'review.',
-        },
-        'user': {
-            'type': 'reviewboard.webapi.resources.user.UserResource',
-            'description': 'The user who made the comment.',
-        },
-        'extra_data': {
-            'type': dict,
-            'description': 'Extra data as part of the comment. This depends '
-                           'on the type of file being commented on.',
         },
         'link_text': {
             'type': str,

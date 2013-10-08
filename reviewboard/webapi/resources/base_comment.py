@@ -13,6 +13,16 @@ class BaseCommentResource(WebAPIResource):
     Provides common fields and functionality for all comment resources.
     """
     fields = {
+        'id': {
+            'type': int,
+            'description': 'The numeric ID of the comment.',
+        },
+        'extra_data': {
+            'type': dict,
+            'description': 'Extra data as part of the comment. This depends '
+                           'on what is being commented on, and may be '
+                           'used in conjunction with an extension.',
+        },
         'issue_opened': {
             'type': bool,
             'description': 'Whether or not a comment opens an issue.',
@@ -20,6 +30,24 @@ class BaseCommentResource(WebAPIResource):
         'issue_status': {
             'type': ('dropped', 'open', 'resolved'),
             'description': 'The status of an issue.',
+        },
+        'public': {
+            'type': bool,
+            'description': 'Whether or not the comment is part of a public '
+                           'review.',
+        },
+        'text': {
+            'type': str,
+            'description': 'The comment text.',
+        },
+        'timestamp': {
+            'type': str,
+            'description': 'The date and time that the comment was made '
+                           '(in YYYY-MM-DD HH:MM:SS format).',
+        },
+        'user': {
+            'type': 'reviewboard.webapi.resources.user.UserResource',
+            'description': 'The user who made the comment.',
         },
     }
     last_modified_field = 'timestamp'

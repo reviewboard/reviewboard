@@ -67,10 +67,11 @@ class ReviewDiffCommentResource(BaseDiffCommentResource):
                 'description': 'Whether the comment opens an issue.',
             },
         },
+        allow_unknown=True,
     )
     def create(self, request, first_line, num_lines, text,
-               filediff_id, issue_opened=False, interfilediff_id=None, *args,
-               **kwargs):
+               filediff_id, issue_opened=False, interfilediff_id=None,
+               extra_fields={}, *args, **kwargs):
         """Creates a new diff comment.
 
         This will create a new diff comment on this review. The review
@@ -123,6 +124,8 @@ class ReviewDiffCommentResource(BaseDiffCommentResource):
                                  num_lines=num_lines,
                                  issue_opened=bool(issue_opened))
 
+        self._import_extra_data(new_comment.extra_data, extra_fields)
+
         if issue_opened:
             new_comment.issue_status = BaseComment.OPEN
         else:
@@ -163,8 +166,9 @@ class ReviewDiffCommentResource(BaseDiffCommentResource):
                 'description': 'The status of an open issue.',
             }
         },
+        allow_unknown=True,
     )
-    def update(self, request, *args, **kwargs):
+    def update(self, request, extra_fields={}, *args, **kwargs):
         """Updates a diff comment.
 
         This can update the text or line range of an existing comment.
@@ -200,6 +204,7 @@ class ReviewDiffCommentResource(BaseDiffCommentResource):
             if value is not None:
                 setattr(diff_comment, field, value)
 
+        self._import_extra_data(diff_comment.extra_data, extra_fields)
         diff_comment.save()
 
         return 200, {

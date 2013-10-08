@@ -16,8 +16,10 @@ from djblets.testing.testcases import TestCase as DjbletsTestCase
 from reviewboard import scmtools
 from reviewboard.attachments.models import FileAttachment
 from reviewboard.diffviewer.models import DiffSet, DiffSetHistory, FileDiff
-from reviewboard.reviews.models import (Comment, Group, Review, ReviewRequest,
-                                        ReviewRequestDraft, Screenshot)
+from reviewboard.reviews.models import (Comment, FileAttachmentComment,
+                                        Group, Review, ReviewRequest,
+                                        ReviewRequestDraft, Screenshot,
+                                        ScreenshotComment)
 from reviewboard.scmtools.models import Repository, Tool
 from reviewboard.site.models import LocalSite
 
@@ -91,7 +93,8 @@ class TestCase(DjbletsTestCase):
 
     def create_diff_comment(self, review, filediff, interfilediff=None,
                             text='My comment', issue_opened=False,
-                            first_line=1, num_lines=5, reply_to=None):
+                            first_line=1, num_lines=5, extra_fields=None,
+                            reply_to=None):
         """Creates a Comment for testing.
 
         The comment is tied to the given Review and FileDiff (and, optionally,
@@ -103,7 +106,7 @@ class TestCase(DjbletsTestCase):
         else:
             issue_status = None
 
-        return review.comments.create(
+        comment = Comment(
             filediff=filediff,
             interfilediff=interfilediff,
             first_line=first_line,
@@ -112,6 +115,14 @@ class TestCase(DjbletsTestCase):
             issue_opened=issue_opened,
             issue_status=issue_status,
             reply_to=reply_to)
+
+        if extra_fields:
+            comment.extra_data = extra_fields
+
+        comment.save()
+        review.comments.add(comment)
+
+        return comment
 
     def create_file_attachment(self, review_request,
                                orig_filename='filename.png',
@@ -156,7 +167,7 @@ class TestCase(DjbletsTestCase):
         else:
             issue_status = None
 
-        comment = review.file_attachment_comments.create(
+        comment = FileAttachmentComment(
             file_attachment=file_attachment,
             text=text,
             issue_opened=issue_opened,
@@ -165,7 +176,9 @@ class TestCase(DjbletsTestCase):
 
         if extra_fields:
             comment.extra_data = extra_fields
-            comment.save()
+
+        comment.save()
+        review.file_attachment_comments.add(comment)
 
         return comment
 
@@ -368,7 +381,7 @@ class TestCase(DjbletsTestCase):
 
     def create_screenshot_comment(self, review, screenshot, text='My comment',
                                   x=1, y=1, w=5, h=5, issue_opened=False,
-                                  reply_to=None):
+                                  extra_fields=None, reply_to=None):
         """Creates a ScreenshotComment for testing.
 
         The comment is tied to the given Review and Screenshot. It's
@@ -379,7 +392,7 @@ class TestCase(DjbletsTestCase):
         else:
             issue_status = None
 
-        return review.screenshot_comments.create(
+        comment = ScreenshotComment(
             screenshot=screenshot,
             text=text,
             x=x,
@@ -389,6 +402,14 @@ class TestCase(DjbletsTestCase):
             issue_opened=issue_opened,
             issue_status=issue_status,
             reply_to=reply_to)
+
+        if extra_fields:
+            comment.extra_data = extra_fields
+
+        comment.save()
+        review.screenshot_comments.add(comment)
+
+        return comment
 
     def _fixture_setup(self):
         """Set up fixtures for unit tests.

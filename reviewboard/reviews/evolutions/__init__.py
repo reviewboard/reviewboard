@@ -17,4 +17,5 @@ SEQUENCE = [
     'commit_id',
     'file_attachment_comment_diff_id',
     'rich_text',
+    'base_comment_extra_data',
 ]

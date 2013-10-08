@@ -63,10 +63,11 @@ class ReviewScreenshotCommentResource(BaseScreenshotCommentResource):
                 'type': bool,
                 'description': 'Whether or not the comment opens an issue.',
             },
-        }
+        },
+        allow_unknown=True,
     )
     def create(self, request, screenshot_id, x, y, w, h, text,
-               issue_opened=False, *args, **kwargs):
+               issue_opened=False, extra_fields={}, *args, **kwargs):
         """Creates a screenshot comment on a review.
 
         This will create a new comment on a screenshot as part of a review.
@@ -96,6 +97,8 @@ class ReviewScreenshotCommentResource(BaseScreenshotCommentResource):
         new_comment = self.model(screenshot=screenshot, x=x, y=y, w=w, h=h,
                                  text=text.strip(),
                                  issue_opened=bool(issue_opened))
+
+        self._import_extra_data(new_comment.extra_data, extra_fields)
 
         if issue_opened:
             new_comment.issue_status = BaseComment.OPEN
@@ -145,8 +148,9 @@ class ReviewScreenshotCommentResource(BaseScreenshotCommentResource):
                 'description': 'The status of an open issue.',
             },
         },
+        allow_unknown=True
     )
-    def update(self, request, *args, **kwargs):
+    def update(self, request, extra_fields={}, *args, **kwargs):
         """Updates a screenshot comment.
 
         This can update the text or region of an existing comment. It
@@ -178,6 +182,7 @@ class ReviewScreenshotCommentResource(BaseScreenshotCommentResource):
             if value is not None:
                 setattr(screenshot_comment, field, value)
 
+        self._import_extra_data(screenshot_comment.extra_data, extra_fields)
         screenshot_comment.save()
 
         return 200, {

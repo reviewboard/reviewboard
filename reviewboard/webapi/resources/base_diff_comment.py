@@ -20,10 +20,6 @@ class BaseDiffCommentResource(BaseCommentResource):
     model = Comment
     name = 'diff_comment'
     fields = dict({
-        'id': {
-            'type': int,
-            'description': 'The numeric ID of the comment.',
-        },
         'first_line': {
             'type': int,
             'description': 'The line number that the comment starts at.',
@@ -31,10 +27,6 @@ class BaseDiffCommentResource(BaseCommentResource):
         'num_lines': {
             'type': int,
             'description': 'The number of lines the comment spans.',
-        },
-        'text': {
-            'type': str,
-            'description': 'The comment text.',
         },
         'filediff': {
             'type': 'reviewboard.webapi.resources.filediff.FileDiffResource',
@@ -45,20 +37,6 @@ class BaseDiffCommentResource(BaseCommentResource):
             'description': "The second per-file diff in an interdiff that "
                            "the comment was made on. This will be ``null`` if "
                            "the comment wasn't made on an interdiff.",
-        },
-        'timestamp': {
-            'type': str,
-            'description': 'The date and time that the comment was made '
-                           '(in YYYY-MM-DD HH:MM:SS format).',
-        },
-        'public': {
-            'type': bool,
-            'description': 'Whether or not the comment is part of a public '
-                           'review.',
-        },
-        'user': {
-            'type': 'reviewboard.webapi.resources.user.UserResource',
-            'description': 'The user who made the comment.',
         },
     }, **BaseCommentResource.fields)
 

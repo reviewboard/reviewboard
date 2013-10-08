@@ -1489,6 +1489,8 @@ class BaseComment(models.Model):
     text = models.TextField(_("comment text"))
     rich_text = models.BooleanField(_("rich text"), default=True)
 
+    extra_data = JSONField(null=True)
+
     # Set this up with a ConcurrencyManager to help prevent race conditions.
     objects = ConcurrencyManager()
 
@@ -1673,8 +1675,6 @@ class FileAttachmentComment(BaseComment):
         verbose_name=_('diff against file attachment'),
         related_name="diffed_against_comments",
         null=True)
-
-    extra_data = JSONField(null=True)
 
     @property
     def thumbnail(self):

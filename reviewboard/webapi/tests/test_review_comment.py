@@ -237,6 +237,50 @@ class ResourceListTests(BaseResourceTestCase):
         self.assertEqual(len(rsp['diff_comments']), 1)
         self.assertEqual(rsp['diff_comments'][0]['text'], comment_text)
 
+    def test_post_with_extra_fields(self):
+        """Testing the
+        POST review-requests/<id>/reviews/<id>/diff-comments/ API
+        with extra fields
+        """
+        comment_text = "This is a test comment."
+        extra_fields = {
+            'extra_data.foo': '123',
+            'extra_data.bar': '456',
+            'extra_data.baz': '',
+            'ignored': 'foo',
+        }
+
+        # Post the review request.
+        review_request = self.create_review_request(create_repository=True,
+                                                    submitter=self.user,
+                                                    publish=True)
+        diffset = self.create_diffset(review_request)
+        filediff = self.create_filediff(diffset)
+
+        # Post the review.
+        review = self.create_review(review_request, user=self.user)
+
+        rsp = self.apiPost(
+            get_review_diff_comment_list_url(review),
+            dict({
+                'filediff_id': filediff.pk,
+                'first_line': 1,
+                'num_lines': 5,
+                'text': comment_text,
+            }, **extra_fields),
+            expected_mimetype=review_diff_comment_item_mimetype)
+
+        comment = Comment.objects.get(pk=rsp['diff_comment']['id'])
+
+        self.assertTrue('foo' in comment.extra_data)
+        self.assertTrue('bar' in comment.extra_data)
+        self.assertFalse('baz' in comment.extra_data)
+        self.assertFalse('ignored' in comment.extra_data)
+        self.assertEqual(comment.extra_data['foo'],
+                         extra_fields['extra_data.foo'])
+        self.assertEqual(comment.extra_data['bar'],
+                         extra_fields['extra_data.bar'])
+
 
 class ResourceItemTests(BaseResourceTestCase):
     """Testing the ReviewCommentResource item APIs."""
@@ -428,3 +472,46 @@ class ResourceItemTests(BaseResourceTestCase):
             expected_mimetype=review_diff_comment_item_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(rsp['diff_comment']['issue_status'], '')
+
+    def test_put_with_extra_fields(self):
+        """Testing the
+        PUT review-requests/<id>/reviews/<id>/diff-comments/<id>/ API
+        with extra fields
+        """
+        extra_fields = {
+            'extra_data.foo': 'abc',
+            'extra_data.bar': '',
+            'ignored': 'foo',
+        }
+
+        comment_text = "This is a test comment."
+
+        review_request = self.create_review_request(create_repository=True,
+                                                    submitter=self.user,
+                                                    publish=True)
+        diffset = self.create_diffset(review_request)
+        filediff = self.create_filediff(diffset)
+        review = self.create_review(review_request, user=self.user)
+        comment = self.create_diff_comment(
+            review,
+            filediff,
+            text=comment_text,
+            extra_fields={
+                'foo': '123',
+                'bar': '456',
+            })
+
+        rsp = self.apiPut(
+            get_review_diff_comment_item_url(review, comment.pk),
+            extra_fields,
+            expected_mimetype=review_diff_comment_item_mimetype)
+        self.assertEqual(rsp['stat'], 'ok')
+
+        comment = Comment.objects.get(pk=rsp['diff_comment']['id'])
+
+        self.assertTrue('foo' in comment.extra_data)
+        self.assertFalse('bar' in comment.extra_data)
+        self.assertFalse('ignored' in comment.extra_data)
+        self.assertEqual(len(comment.extra_data.keys()), 1)
+        self.assertEqual(comment.extra_data['foo'],
+                         extra_fields['extra_data.foo'])
