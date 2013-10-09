@@ -18,7 +18,8 @@ from django.utils.encoding import force_unicode
 from django.utils.formats import localize
 from django.utils.translation import ugettext as _
 from djblets.extensions.base import RegisteredExtension
-from djblets.extensions.resources import ExtensionResource
+from djblets.extensions.resources import \
+    ExtensionResource as DjbletsExtensionResource
 from djblets.gravatars import get_gravatar_url
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.util.decorators import augment_method_from
@@ -804,6 +805,40 @@ class DefaultReviewerResource(WebAPIResource):
 
 
 default_reviewer_resource = DefaultReviewerResource()
+
+
+class ExtensionResource(WebAPIResource, DjbletsExtensionResource):
+    """A resource for representing a Review Board Extension."""
+
+    @webapi_check_login_required
+    @webapi_check_local_site
+    @augment_method_from(DjbletsExtensionResource)
+    def get(self, *args, **kwargs):
+        """For retrieving data about an ExtensionResource."""
+        pass
+
+    @webapi_check_login_required
+    @webapi_check_local_site
+    @augment_method_from(DjbletsExtensionResource)
+    def get_list(self, request, *args, **kwargs):
+        """For retrieving the list of available ExtensionResources."""
+        pass
+
+    @webapi_check_login_required
+    @webapi_check_local_site
+    @augment_method_from(DjbletsExtensionResource)
+    def update(self, request, *args, **kwargs):
+        pass
+
+    def has_access_permissions(self, request, obj, *args, **kwargs):
+        return True
+
+    def has_modify_permissions(self, request, obj, *args, **kwargs):
+        """Only staff have modify permissions for ExtensionResources. """
+        return request.user and request.user.is_superuser
+
+
+extension_resource = ExtensionResource(get_extension_manager())
 
 
 class FileDiffCommentResource(BaseDiffCommentResource):
@@ -7505,9 +7540,6 @@ class SessionResource(WebAPIResource):
         return links
 
 session_resource = SessionResource()
-
-
-extension_resource = ExtensionResource(get_extension_manager())
 
 
 class RootResource(DjbletsRootResource):
