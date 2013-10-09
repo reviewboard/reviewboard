@@ -83,7 +83,7 @@ class PreferencesForm(forms.Form):
         user.review_groups = self.cleaned_data['groups']
         user.save()
 
-        profile = Profile.objects.get_or_create(user=user)
+        profile, is_new = Profile.objects.get_or_create(user=user)
         profile.first_time_setup_done = True
         profile.syntax_highlighting = self.cleaned_data['syntax_highlighting']
         profile.is_private = self.cleaned_data['profile_private']
