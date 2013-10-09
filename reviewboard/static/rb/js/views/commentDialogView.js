@@ -136,7 +136,7 @@ RB.CommentDialogView = Backbone.View.extend({
         'click .buttons .cancel': '_onCancelClicked',
         'click .buttons .close': '_onCancelClicked',
         'click .buttons .delete': '_onDeleteClicked',
-        'click .buttons .save': '_onSaveClicked',
+        'click .buttons .save': 'save',
         'keydown textarea': '_onTextKeyDown',
         'keyup textarea': '_onTextKeyUp'
     },
@@ -173,7 +173,6 @@ RB.CommentDialogView = Backbone.View.extend({
 
         this._$draftForm    = this.$el.find('form');
         this._$commentsPane = this.$el.find('.other-comments');
-        this._$buttons      = this._$draftForm.find(".buttons");
         this._$statusField  = this._$draftForm.find(".status");
         this._$issueOptions = this._$draftForm.find(".comment-issue-options")
             .bindVisibility(this.model, 'canEdit');
@@ -185,29 +184,31 @@ RB.CommentDialogView = Backbone.View.extend({
                 inverse: true
             });
 
-        this._$saveButton = this._$buttons.find('input.save')
+        this.$buttons = this._$draftForm.find('.buttons');
+
+        this.$saveButton = this.$buttons.find('input.save')
             .bindVisibility(this.model, 'canEdit')
             .bindProperty('disabled', this.model, 'canSave', {
                 elementToModel: false,
                 inverse: true
             });
 
-        this._$cancelButton = this._$buttons.find('input.cancel')
+        this.$cancelButton = this.$buttons.find('input.cancel')
             .bindVisibility(this.model, 'canEdit');
 
-        this._$deleteButton = this._$buttons.find('input.delete')
+        this.$deleteButton = this.$buttons.find('input.delete')
             .bindVisibility(this.model, 'canDelete')
             .bindProperty('disabled', this.model, 'canDelete', {
                 elementToModel: false,
                 inverse: true
             });
 
-        this._$closeButton = this._$buttons.find('input.close')
+        this.$closeButton = this.$buttons.find('input.close')
             .bindVisibility(this.model, 'canEdit', {
                 inverse: true
             });
 
-        this._commentsList = new CommentsListView({
+        this.commentsList = new CommentsListView({
             el: this._$commentsPane.find('ul'),
             reviewRequestURL: reviewRequest.get('reviewURL'),
             commentIssueManager: this.options.commentIssueManager,
@@ -243,7 +244,7 @@ RB.CommentDialogView = Backbone.View.extend({
             $grip = $("<img/>")
                 .addClass("ui-resizable-handle ui-resizable-grip")
                 .attr("src", STATIC_URLS["rb/images/resize-grip.png"])
-                .insertAfter(this._$buttons)
+                .insertAfter(this.$buttons)
                 .proxyTouchEvents();
 
             this.$el.resizable({
@@ -275,7 +276,36 @@ RB.CommentDialogView = Backbone.View.extend({
                       this._onPublishedCommentsChanged, this);
         this._onPublishedCommentsChanged();
 
+        /* Add any hooks. */
+        RB.CommentDialogHook.each(function(hook) {
+            var HookViewType = hook.get('viewType');
+            var
+                hookView = new HookViewType({
+                    commentDialog: this,
+                    commentEditor: this.model,
+                    el: this.el
+                });
+
+            hookView.render();
+        }, this);
+
         return this;
+    },
+
+    /*
+     * Callback for when the Save button is pressed.
+     *
+     * Saves the comment, creating it if it's new, and closes the dialog.
+     */
+    save: function() {
+        if (this.model.get('canSave')) {
+            this.model.save({
+                error: function(model, xhr) {
+                    alert(gettext('Error saving comment: ') + xhr.errorText);
+                }
+            }, this);
+            this.close();
+        }
     },
 
     /*
@@ -364,7 +394,7 @@ RB.CommentDialogView = Backbone.View.extend({
             showComments = (comments.length > 0),
             width = this.FORM_BOX_WIDTH;
 
-        this._commentsList.setComments(comments,
+        this.commentsList.setComments(comments,
                                        this.model.get('publishedCommentsType'));
         this._$commentsPane.setVisible(showComments);
 
@@ -393,7 +423,7 @@ RB.CommentDialogView = Backbone.View.extend({
     _handleResize: function() {
         var $draftForm = this._$draftForm,
             $commentsPane = this._$commentsPane,
-            $commentsList = this._commentsList.$el,
+            $commentsList = this.commentsList.$el,
             $textField = this._$textField,
             textFieldPos,
             width = this.$el.width(),
@@ -428,7 +458,7 @@ RB.CommentDialogView = Backbone.View.extend({
             .width($draftForm.width() - textFieldPos.left -
                    $textField.getExtents("bmp", "r"))
             .height($draftForm.height() - textFieldPos.top -
-                    this._$buttons.outerHeight(true) -
+                    this.$buttons.outerHeight(true) -
                     this._$statusField.height() -
                     this._$issueOptions.height() -
                     $textField.getExtents("bmp", "b"));
@@ -453,22 +483,6 @@ RB.CommentDialogView = Backbone.View.extend({
     _onDeleteClicked: function() {
         if (this.model.get('canDelete')) {
             this.model.deleteComment();
-            this.close();
-        }
-    },
-
-    /*
-     * Callback for when the Save button is pressed.
-     *
-     * Saves the comment, creating it if it's new, and closes the dialog.
-     */
-    _onSaveClicked: function() {
-        if (this.model.get('canSave')) {
-            this.model.save({
-                error: function(model, xhr) {
-                    alert(gettext('Error saving comment: ') + xhr.errorText);
-                }
-            }, this);
             this.close();
         }
     },
@@ -505,7 +519,7 @@ RB.CommentDialogView = Backbone.View.extend({
                 /* Enter */
                 if (e.ctrlKey) {
                     this._ignoreKeyUp = true;
-                    this._onSaveClicked();
+                    this.save();
                     return false;
                 }
                 break;
