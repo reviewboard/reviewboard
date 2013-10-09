@@ -906,13 +906,15 @@ def submitter(request,
     datagrid = ReviewRequestDataGrid(request,
         ReviewRequest.objects.from_user(username, status=None,
                                         with_counts=True,
-                                        local_site=local_site),
+                                        local_site=local_site,
+                                        filter_private=True),
         _("%s's review requests") % username,
         local_site=local_site)
 
     return datagrid.render_to_response(template_name, extra_context={
         'show_profile': user.is_profile_visible(request.user),
         'viewing_user': user,
+        'groups': user.review_groups.accessible(request.user),
     })
 
 
