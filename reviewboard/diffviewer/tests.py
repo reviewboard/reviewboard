@@ -6,6 +6,7 @@ from django.http import HttpResponse
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.util.misc import cache_memoize
 from kgb import SpyAgency
+import nose
 
 import reviewboard.diffviewer.diffutils as diffutils
 import reviewboard.diffviewer.parser as diffparser
@@ -726,6 +727,11 @@ class UploadDiffFormTests(SpyAgency, TestCase):
             '@@ -0,0 +1,1 @@\n'
             '+Lorem ipsum\n'
         )
+
+        try:
+            import mercurial
+        except ImportError:
+            raise nose.SkipTest("Hg is not installed")
 
         diff_file = SimpleUploadedFile('diff', diff,
                                        content_type='text/x-patch')

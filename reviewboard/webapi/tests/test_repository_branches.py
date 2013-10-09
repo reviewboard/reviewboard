@@ -47,7 +47,7 @@ class ResourceTests(BaseWebAPITestCase):
         """Testing the GET repositories/<id>/branches/ API
         with a repository that does not implement it
         """
-        repository = self.create_repository(tool_name='Mercurial')
+        repository = self.create_repository(tool_name='CVS')
 
         rsp = self.apiGet(get_repository_branches_url(repository),
                           expected_status=501)

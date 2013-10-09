@@ -90,11 +90,7 @@ class ResourceTests(BaseWebAPITestCase):
         """Testing the GET repositories/<id>/commits/ API
         with a repository that does not implement it
         """
-        hg_repo_path = os.path.join(os.path.dirname(scmtools.__file__),
-                                    'testdata', 'hg_repo.bundle')
-        repository = Repository(name='Test HG',
-                                path=hg_repo_path,
-                                tool=Tool.objects.get(name='Mercurial'))
+        repository = self.create_repository(tool_name='CVS')
         repository.save()
 
         rsp = self.apiGet(

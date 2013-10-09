@@ -226,6 +226,8 @@ class TestCase(DjbletsTestCase):
                 path = 'file://' + os.path.join(testdata_dir, 'svn_repo')
             elif tool_name == 'Mercurial':
                 path = os.path.join(testdata_dir, 'hg_repo.bundle')
+            elif tool_name == 'CVS':
+                path = os.path.join(testdata_dir, 'cvs_repo')
             else:
                 raise NotImplementedError
 
