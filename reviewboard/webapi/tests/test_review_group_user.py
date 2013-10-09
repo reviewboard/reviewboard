@@ -1,4 +1,5 @@
 from django.contrib.auth.models import User
+from djblets.webapi.errors import PERMISSION_DENIED
 
 from reviewboard.webapi.resources import resources
 from reviewboard.webapi.errors import INVALID_USER
@@ -45,6 +46,16 @@ class ResourceListTests(BaseWebAPITestCase):
         return (get_review_group_user_list_url(group.name, local_site_name),
                 user_list_mimetype,
                 items)
+
+    def test_get_with_no_access(self):
+        """Testing the GET groups/<name>/users/ API
+        without access to invite-only group
+        """
+        group = self.create_review_group(name='priv-group', invite_only=True)
+        rsp = self.apiGet(get_review_group_user_list_url(group.name),
+                          expected_status=403)
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
     #
     # HTTP POST tests
