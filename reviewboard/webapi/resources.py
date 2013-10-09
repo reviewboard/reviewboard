@@ -3021,6 +3021,9 @@ class HostingServiceAccountResource(WebAPIResource):
         """
         pass
 
+    def serialize_service_field(self, obj, **kwargs):
+        return obj.service_name
+
     @webapi_check_local_site
     @webapi_login_required
     @webapi_response_errors(BAD_HOST_KEY, INVALID_FORM_DATA, NOT_LOGGED_IN,
