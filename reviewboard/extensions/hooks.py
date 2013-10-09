@@ -189,5 +189,15 @@ class DiffViewerActionHook(ActionHook):
     __metaclass__ = ExtensionHookPoint
 
 
+class HeaderActionHook(ActionHook):
+    """A hook for putting an action in the page header."""
+    __metaclass__ = ExtensionHookPoint
+
+
+class HeaderDropdownActionHook(ActionHook):
+    """A hook for putting multiple actions into a header dropdown."""
+    __metaclass__ = ExtensionHookPoint
+
+
 URLHook = djblets_hooks.URLHook
 TemplateHook = djblets_hooks.TemplateHook

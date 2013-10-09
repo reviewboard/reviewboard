@@ -3,6 +3,8 @@ from django.template.loader import render_to_string
 from djblets.util.decorators import basictag
 
 from reviewboard.extensions.hooks import DiffViewerActionHook, \
+                                         HeaderActionHook, \
+                                         HeaderDropdownActionHook, \
                                          NavigationBarHook, \
                                          ReviewRequestActionHook, \
                                          ReviewRequestDropdownActionHook
@@ -74,3 +76,20 @@ def navigation_bar_hooks(context):
                 context.pop()
 
     return s
+
+
+@register.tag
+@basictag(takes_context=True)
+def header_action_hooks(context):
+    """Displays all single-entry action hooks for the header bar."""
+    return action_hooks(context, HeaderActionHook)
+
+
+@register.tag
+@basictag(takes_context=True)
+def header_dropdown_action_hooks(context):
+    """Displays all multi-entry action hooks for the header bar."""
+    return action_hooks(context,
+                        HeaderDropdownActionHook,
+                        "actions",
+                        "extensions/header_action_dropdown.html")

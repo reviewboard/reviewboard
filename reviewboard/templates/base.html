@@ -95,6 +95,8 @@
      <li><a href="{% url register %}">{% trans "Register" %}</a></li>
 {%  endif %}
 {% endif %}{# !is_authenticated #}
+{% header_action_hooks %}
+{% header_dropdown_action_hooks %}
     </ul>
     <div id="search">
 {% if siteconfig.settings.search_enable %}
