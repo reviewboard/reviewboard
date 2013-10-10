@@ -656,7 +656,7 @@ class DashboardDataGrid(ReviewRequestDataGrid):
         self.local_site = local_site
 
     def load_extra_state(self, profile):
-        group = self.request.GET.get('group', '')
+        group_name = self.request.GET.get('group', '')
         view = self.request.GET.get('view', self.default_view)
         user = self.request.user
 
@@ -673,20 +673,19 @@ class DashboardDataGrid(ReviewRequestDataGrid):
                 user, user, local_site=self.local_site)
             self.title = _(u"Incoming Review Requests to Me")
         elif view == 'to-group':
-            if group != "":
+            if group_name:
                 # to-group is special because we want to make sure that the
                 # group exists and show a 404 if it doesn't. Otherwise, we'll
                 # show an empty datagrid with the name.
-                has_groups = Group.objects.filter(
-                    name=group,
-                    local_site=self.local_site).exists()
-
-                if not has_groups:
+                try:
+                    group = user.review_groups.get(name=group_name,
+                                                   local_site=self.local_site)
+                except Group.DoesNotExist:
                     raise Http404
 
                 self.queryset = ReviewRequest.objects.to_group(
-                    group, self.local_site, user)
-                self.title = _(u"Incoming Review Requests to %s") % group
+                    group_name, self.local_site, user)
+                self.title = _(u"Incoming Review Requests to %s") % group_name
             else:
                 self.queryset = ReviewRequest.objects.to_user_groups(
                     user, user, local_site=self.local_site)
@@ -694,7 +693,7 @@ class DashboardDataGrid(ReviewRequestDataGrid):
         elif view == 'starred':
             profile = user.get_profile()
             self.queryset = profile.starred_review_requests.public(
-                user, local_site=self.local_site)
+                user=user, local_site=self.local_site)
             self.title = _(u"Starred Review Requests")
         elif view == 'incoming':
             self.queryset = ReviewRequest.objects.to_user(

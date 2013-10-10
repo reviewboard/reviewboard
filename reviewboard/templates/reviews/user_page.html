@@ -40,7 +40,7 @@
    <tr>
     <td>
      <p><label>{% trans "Groups:" %}</label></p>
-{% for group in viewing_user.review_groups.all %}
+{% for group in groups %}
      <a class="group" href="{% url group group %}">{{group}}</a>{% if not forloop.last %}, {% endif %}
 {% endfor %}
     </td>
