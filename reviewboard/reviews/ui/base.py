@@ -13,7 +13,7 @@ from django.utils.safestring import mark_safe
 from reviewboard.attachments.mimetypes import MIMETYPE_EXTENSIONS, score_match
 from reviewboard.diffviewer.models import DiffSet
 from reviewboard.reviews.context import make_review_request_context
-from reviewboard.reviews.models import FileAttachmentComment
+from reviewboard.reviews.models import FileAttachmentComment, Review
 from reviewboard.site.urlresolvers import local_site_reverse
 
 
@@ -193,7 +193,11 @@ class ReviewUI(object):
         user = self.request.user
 
         for comment in comments:
-            review = comment.get_review()
+            try:
+                review = comment.get_review()
+            except Review.DoesNotExist:
+                logging.error('Missing Review for comment %r' % comment)
+                continue
 
             if review and (review.public or review.user == user):
                 yield self.serialize_comment(comment)
