@@ -913,7 +913,8 @@ def submitter(request,
         request,
         ReviewRequest.objects.from_user(username, status=None,
                                         with_counts=True,
-                                        local_site=local_site),
+                                        local_site=local_site,
+                                        filter_private=True),
         _("%s's review requests") % username,
         local_site=local_site)
 
@@ -921,6 +922,7 @@ def submitter(request,
         'show_profile': user.is_profile_visible(request.user),
         'sidebar_hooks': UserPageSidebarHook.hooks,
         'viewing_user': user,
+        'groups': user.review_groups.accessible(request.user),
     })
 
 
