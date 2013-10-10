@@ -7,6 +7,9 @@
  */
 RB.BaseComment = RB.BaseResource.extend({
     defaults: _.defaults({
+        /* Extra data for the comment. */
+        extraData: {},
+
         /* Whether or not an issue is opened. */
         issueOpened: true,
 
@@ -47,6 +50,10 @@ RB.BaseComment = RB.BaseResource.extend({
             parentObject,
             isPublic;
 
+        _.each(this.get('extraData'), function(value, key) {
+            data['extra_data.' + key] = value;
+        }, this);
+
         if (this.get('loaded')) {
             parentObject = this.get('parentObject');
 
@@ -74,6 +81,7 @@ RB.BaseComment = RB.BaseResource.extend({
      */
     parseResourceData: function(rsp) {
         return {
+            extraData: rsp.extra_data,
             issueOpened: rsp.issue_opened,
             issueStatus: rsp.issue_status,
             text: rsp.text

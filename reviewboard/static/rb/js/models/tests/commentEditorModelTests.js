@@ -238,6 +238,24 @@ describe('models/CommentEditor', function() {
     });
 
     describe('Operations', function() {
+        it('setExtraData', function() {
+            editor.setExtraData('key1', 'strvalue');
+            editor.setExtraData('key2', 42);
+
+            expect(editor.get('extraData')).toEqual({
+                key1: 'strvalue',
+                key2: 42
+            });
+        });
+
+        it('getExtraData', function() {
+            editor.set('extraData', {
+                mykey: 'value'
+            });
+
+            expect(editor.getExtraData('mykey')).toBe('value');
+        });
+
         describe('beginEdit', function() {
             it('With canEdit=true', function() {
                 editor.set({
@@ -370,12 +388,15 @@ describe('models/CommentEditor', function() {
                     issue_opened: issue_opened,
                     canSave: true
                 });
+                editor.setExtraData('mykey', 'myvalue');
 
                 editor.save();
                 expect(console.assert.calls[0].args[0]).toBeTruthy();
                 expect(comment.save).toHaveBeenCalled();
                 expect(comment.get('text')).toBe(text);
                 expect(comment.get('issueOpened')).toBe(issue_opened);
+                expect(comment.get('issueOpened')).toBe(issue_opened);
+                expect(comment.get('extraData')).toEqual({mykey: 'myvalue'});
                 expect(editor.get('dirty')).toBe(false);
                 expect(editor.trigger).toHaveBeenCalledWith('saved');
             });
