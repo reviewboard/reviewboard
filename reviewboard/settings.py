@@ -386,6 +386,7 @@ PIPELINE_JS = dict({
             'rb/js/utils/linkifyUtils.js',
             'rb/js/utils/keyBindingUtils.js',
             'rb/js/collections/baseCollection.js',
+            'rb/js/extensions/models/aliases.js',
             'rb/js/pages/models/pageManagerModel.js',
             'rb/js/resources/models/baseResourceModel.js',
             'rb/js/resources/models/draftResourceModelMixin.js',

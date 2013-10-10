@@ -141,6 +141,7 @@
   {% include "js/jquery-ui.html" %}
   {% compressed_js "3rdparty" %}
   {% compressed_js "djblets-gravy" %}
+  {% compressed_js "djblets-extensions" %}
   {% compressed_js "common" %}
   <script>
     RB.UserSession.create({
@@ -163,6 +164,7 @@
     });
   </script>
 {% block scripts-post %}{% endblock %}
+{% init_js_extensions "reviewboard.extensions" %}
 {% template_hook_point "base-scripts-post" %}
  </body>
 </html>
