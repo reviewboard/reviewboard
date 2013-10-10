@@ -824,6 +824,39 @@ class ViewTests(TestCase):
         # Test if this throws an exception. Bug #1250
         reverse('user', args=['user@example.com'])
 
+    def test_submitter_review_requests_with_private(self):
+        """Testing submitter page view with private review requests"""
+        ReviewRequest.objects.all().delete()
+
+        user = User.objects.get(username='grumpy')
+        user.review_groups.clear()
+
+        group1 = Group.objects.create(name='test-group-1')
+        group1.users.add(user)
+
+        group2 = Group.objects.create(name='test-group-2', invite_only=True)
+        group2.users.add(user)
+
+        self.create_review_request(summary='Summary 1', submitter=user,
+                                   publish=True)
+
+        review_request = self.create_review_request(summary='Summary 2',
+                                                    submitter=user,
+                                                    publish=True)
+        review_request.target_groups.add(group2)
+
+        response = self.client.get('/users/grumpy/')
+        self.assertEqual(response.status_code, 200)
+
+        datagrid = self.getContextVar(response, 'datagrid')
+        self.assertIsNotNone(datagrid)
+        self.assertEqual(len(datagrid.rows), 1)
+        self.assertEqual(datagrid.rows[0]['object'].summary, 'Summary 1')
+
+        groups = self.getContextVar(response, 'groups')
+        self.assertEqual(len(groups), 1)
+        self.assertEqual(groups[0], group1)
+
     def testGroupList(self):
         """Testing group_list view"""
         response = self.client.get('/groups/')
@@ -899,9 +932,12 @@ class ViewTests(TestCase):
 
         self.client.logout()
 
-    def testDashboard4(self):
-        """Testing dashboard view (to-group devgroup)"""
+    def test_dashboard_to_group_with_joined_groups(self):
+        """Testing dashboard view with to-group and joined groups"""
         self.client.login(username='doc', password='doc')
+
+        group = Group.objects.get(name='devgroup')
+        group.users.add(User.objects.get(username='doc'))
 
         response = self.client.get('/dashboard/',
                                    {'view': 'to-group',
@@ -917,6 +953,21 @@ class ViewTests(TestCase):
                          'Comments Improvements')
 
         self.client.logout()
+
+    def test_dashboard_to_group_with_unjoined_group(self):
+        """Testing dashboard view with to-group and unjoined group"""
+        self.client.login(username='doc', password='doc')
+
+        group = self.create_review_group(name='new-group')
+
+        review_request = self.create_review_request(summary='Test 1',
+                                                    publish=True)
+        review_request.target_groups.add(group)
+
+        response = self.client.get('/dashboard/',
+                                   {'view': 'to-group',
+                                    'group': 'new-group'})
+        self.assertEqual(response.status_code, 404)
 
     def testDashboardSidebar(self):
         """Testing dashboard view (to-group devgroup)"""

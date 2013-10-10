@@ -2627,6 +2627,7 @@ user_resource = UserResource()
 class ReviewGroupUserResource(UserResource):
     """Provides information on users that are members of a review group."""
     allowed_methods = ('GET', 'POST', 'DELETE')
+    model_parent_key = 'review_groups'
 
     def get_queryset(self, request, group_name, local_site_name=None,
                      *args, **kwargs):
