@@ -10,7 +10,9 @@ from reviewboard.diffviewer.errors import (DiffParserError,
                                            EmptyDiffError)
 from reviewboard.diffviewer.models import DiffSet
 from reviewboard.scmtools.models import Repository
-from reviewboard.scmtools.errors import FileNotFoundError
+from reviewboard.scmtools.errors import (FileNotFoundError,
+                                         SCMError)
+from reviewboard.scmtools.git import ShortSHA1Error
 from reviewboard.webapi.decorators import (webapi_check_login_required,
                                            webapi_check_local_site)
 from reviewboard.webapi.errors import (DIFF_EMPTY,
@@ -137,6 +139,16 @@ class ValidateDiffResource(DiffResource):
             return DIFF_PARSE_ERROR, {
                 'reason': str(e),
                 'linenum': e.linenum,
+            }
+        except ShortSHA1Error, e:
+            return REPO_FILE_NOT_FOUND, {
+                'reason': str(e),
+                'file': e.path,
+                'revision': unicode(e.revision),
+            }
+        except SCMError, e:
+            return DIFF_PARSE_ERROR, {
+                'reason': str(e),
             }
 
         return 200, {}
