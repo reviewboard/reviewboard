@@ -44,18 +44,6 @@ Common Tasks
    tasks/database-evolutions
 
 
-Extending Review Board
-======================
-
-.. toctree::
-   :maxdepth: 1
-
-   extending/extensions
-   extending/auth-backends
-   extending/legacy-auth-backends
-   extending/database-evolutions
-
-
 Git Guides
 ==========
 

@@ -13,6 +13,7 @@ Users Guide
    review-requests/index
    reviews/index
    tools/index
+   extending/index
 
 
 .. comment: vim: ft=rst et ts=3
