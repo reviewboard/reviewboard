@@ -18,7 +18,6 @@ from reviewboard.webapi.resources.user import UserResource
 class ReviewGroupUserResource(UserResource):
     """Provides information on users that are members of a review group."""
     allowed_methods = ('GET', 'POST', 'DELETE')
-    model_parent_key = 'review_groups'
 
     def get_queryset(self, request, group_name, local_site_name=None,
                      *args, **kwargs):
@@ -28,11 +27,15 @@ class ReviewGroupUserResource(UserResource):
 
     def has_access_permissions(self, request, user, *args, **kwargs):
         group = resources.review_group.get_object(request, *args, **kwargs)
-        return group.is_accessible_by(user)
+        return group.is_accessible_by(request.user)
+
+    def has_list_access_permissions(self, request, *args, **kwargs):
+        group = resources.review_group.get_object(request, *args, **kwargs)
+        return group.is_accessible_by(request.user)
 
     def has_delete_permissions(self, request, user, *args, **kwargs):
         group = resources.review_group.get_object(request, *args, **kwargs)
-        return group.is_mutable_by(user)
+        return group.is_mutable_by(request.user)
 
     @webapi_check_local_site
     @webapi_login_required
