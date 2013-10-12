@@ -1,0 +1,206 @@
+.. _extensions-hooks:
+
+===============
+Extension Hooks
+===============
+
+Extension hooks are the primary mechanism for customizing Review Board's
+appearance and behavior.
+
+Hooks need only be instantiated for Review Board to "notice" them, and are
+automatically removed when the extension shuts down.
+
+The following hooks are available for use by extensions.
+
+URLHook
+-------
+
+:py:class:`reviewboard.extensions.hooks.URLHook` are used to extend the URL
+patterns that Review Board wil recognize and respond to.
+
+:py:class:`URLHook` requires two arguments for initialization: the extension
+instance and the URL patterns.
+
+Example usage in an Extension::
+
+    class SampleExtension(Extension):
+        def __init__(self, *args, **kwargs):
+            super(SampleExtension, self).__init__(*args, **kwargs)
+            pattern = patterns('', (r'^sample_extension/',
+                                    include('sample_extension.urls')))
+            self.url_hook = URLHook(self, pattern)
+
+Notice how `sample_extension.urls` was included in the patterns. In this case,
+`sample_extension` is the package name for the extension, and `urls` is the module
+that contains the patterns::
+
+    from django.conf.urls.defaults import patterns, url
+
+
+    urlpatterns = patterns('sample_extension.views',
+        url(r'^$', 'dashboard'),
+    )
+
+
+DashboardHook
+-------------
+
+:py:class:`reviewboard.extensions.hooks.DashboardHook` can be used to define a
+custom dashboard page for your Extension. :py:class:`DashboardHook` requires
+two arguments for initialization: the extension instance and a list of entries.
+Each entry in this list must be a dictionary with the following keys:
+
+   * **label**: Label to appear on the dashboard's navigation pane.
+   * **url**: URL for the dashboard page.
+
+If the extension needs only one dashboard, then it needs only one entry in
+this list. (See :ref:`extension-navigation-bar-hook`)
+
+Example usage in an Extension::
+
+    class SampleExtension(Extension):
+        def __init__(self, *args, **kwargs):
+            super(SampleExtension, self).__init__(*args, **kwargs)
+            self.dashboard_hook = DashboardHook(
+                self,
+                entries = [
+                    {
+                        'label': 'A SampleExtension Label',
+                        'url': settings.SITE_ROOT + 'sample_extension/',
+                    }
+                ]
+            )
+
+Corresponding code in `views.py`::
+
+    def dashboard(request, template_name='sample_extension/dashboard.html'):
+        return render_to_response(template_name, RequestContext(request))
+
+.. highlight:: html
+
+Corresponding template `dashboard.html`::
+
+    {% extends "base.html" %}
+    {% load djblets_deco %}
+    {% load i18n %}
+
+    {% block title %}{% trans "sample_extension Dashboard" %}{% endblock %}
+
+    {% block content %}
+    {%  box "reports" %}
+     <h1 class="title">{% trans "sample_extension Dashboard" %}</h1>
+
+     <div class="main">
+      <p>{% trans "This is my new Dashboard page for Review Board" %}</p>
+     </div>
+    {%  endbox %}
+    {% endblock %}
+
+
+.. _extension-navigation-bar-hook:
+
+NavigationBarHook
+-----------------
+
+.. highlight:: python
+
+:py:class:`reviewboard.extensions.hooks.NavigationBarHook` can be used to
+introduce additional items to the main navigation bar.
+
+:py:class:`NavigationBarHook` requires two arguments: the extension instance
+and a list of entries. Each entry represents an item on the navigation bar,
+and is a dictionary with the following keys:
+
+    * **label**:    The label to display.
+    * **url**:      The URL to point to.
+    * **url_name**: The name of the URL to point to.
+
+Only one of **url** or **url_name** is required. **url_name** will take precedence.
+
+If your extension needs to access the template context, you can define a
+subclass from NavigationBarHook to override get_entries and return results
+from there.
+
+Example usage in an Extension::
+
+    class SampleExtension(Extension):
+        def __init__(self, *args, **kwargs):
+            super(SampleExtension, self).__init__(*args, **kwargs)
+            self.navigationbar_hook = NavigationBarHook(
+                self,
+                entries = [
+                    {
+                        'label': 'An Item on Navigation Bar',
+                        'url': settings.SITE_ROOT + 'an_item_url_a/',
+                    },
+                    {
+                        'label': 'Another Item on Navigation Bar',
+                        'url': settings.SITE_ROOT + 'an_item_url_b/',
+                    },
+                    {
+                        'label': 'Yet Another Item on Navigation Bar',
+                        'url': settings.SITE_ROOT + 'an_item_url_c/',
+                    },
+                ]
+            )
+
+
+UserPageSidebarHook
+-------------------
+
+:py:class:`reviewboard.extensions.hooks.UserPageSidebarHook` can be used to
+introduce additional items in the user page. :py:class:`UserPageSidebarHook`
+requires two arguments for initialization: the extension instance and a list
+of entries. Each entry in this list must be a dictionary with the following
+keys:
+
+   * **label**: Label to appear on the UserPage navigation pane.
+   * **url**: URL for the UserPage Entry.
+
+The dictionary can also have an optional **subitems** key to show additional
+items under a main label. Each entry of the subitems must be a dictionary with
+the following keys:
+
+   * **label**: Sub-Item to appear on the UserPage navigation pane.
+   * **url**: URL for the Sub-Item
+
+Example usage in an Extension::
+
+    class SampleExtension(Extension):
+        def __init__(self, *args, **kwargs):
+            super(SampleExtension, self).__init__(*args, **kwargs)
+            self.userpage_hook = UserPageSidebarHook(
+                self,
+                entries = [
+                    {
+                        'label': 'A SampleExtension Label',
+                        'url': settings.SITE_ROOT + 'sample_extension/',
+                    }
+                ]
+            )
+
+
+Example usage with subitems in an Extension::
+
+    class SampleExtension(Extension):
+        def __init__(self, *args, **kwargs):
+            super(SampleExtension, self).__init__(*args, **kwargs)
+            self.userpage_hook = UserPageSidebarHook(
+                self,
+                entries = [
+                    {
+                        'label': 'User Menu with SubItems',
+                        'url': settings.SITE_ROOT + 'sample_extension/',
+                        'subitems': [
+                            {
+                                'label': 'SubItem entry',
+                                'url': settings.SITE_ROOT + 'subitem/',
+                            },
+                            {
+                                'label': 'Another SubItem entry',
+                                'url': settings.SITE_ROOT + 'subitem2/',
+                            }
+                        ]
+                    }
+                ]
+            )
