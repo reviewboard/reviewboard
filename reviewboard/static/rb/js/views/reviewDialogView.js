@@ -33,6 +33,18 @@ BaseCommentView = Backbone.View.extend({
         this.$issueOpened = null;
 
         this._origIssueOpened = this.model.get('issueOpened');
+        this._origExtraData = _.clone(this.model.get('extraData'));
+        this._hookViews = [];
+    },
+
+    remove: function() {
+        _.each(this._hookViews, function(hookView) {
+            hookView.remove();
+        });
+
+        this._hookViews = [];
+
+        _.super(this).remove.call(this);
     },
 
     /*
@@ -46,7 +58,8 @@ BaseCommentView = Backbone.View.extend({
             newIssueOpened = this.$issueOpened.prop('checked');
 
         return this.model.get('text') !== newValue ||
-               this.model.get('issueOpened') !== newIssueOpened;
+               this.model.get('issueOpened') !== newIssueOpened ||
+               !_.isEqual(this.model.get('extraData'), this._origExtraData);
     },
 
     /*
@@ -67,6 +80,8 @@ BaseCommentView = Backbone.View.extend({
      * Renders the comment view.
      */
     render: function() {
+        var $editFields;
+
         this.$el
             .append(this.renderThumbnail())
             .append($(this.editorTemplate({
@@ -79,6 +94,22 @@ BaseCommentView = Backbone.View.extend({
             .text(this.model.get('text'));
         this.$issueOpened = this.$('.issue-opened')
             .prop('checked', this.model.get('issueOpened'));
+
+        $editFields = this.$('.edit-fields');
+
+        RB.ReviewDialogCommentHook.each(function(hook) {
+            var HookView = hook.get('viewType'),
+                hookView = new HookView({
+                    model: this.model
+                });
+
+            this._hookViews.push(hookView);
+
+            $editFields.append(
+                $('<div class="edit-field"/>')
+                    .append(hookView.$el));
+            hookView.render();
+        }, this);
 
         return this;
     },
