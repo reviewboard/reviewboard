@@ -1,6 +1,5 @@
 {% extends "notifications/email_base.html" %}
-{% load djblets_email %}
-{% load djblets_utils %}
+{% load djblets_email djblets_utils rb_extensions %}
 
 {% block content %}
 {%  if review.ship_it %}
@@ -21,7 +20,10 @@
   <td><a href="{{domain_method}}://{{domain}}{{comment.screenshot.get_absolute_url}}"><img src="{{domain_method}}://{{domain}}{{comment.get_image_url}}" style="border: 1px black solid;" alt="{{comment.screenshot.caption}}"></a></td>
  </tr>
 </table>
-<pre style="margin-left: 2em; {{precss}}">{{comment.text}}</pre>
+<div style="margin-left: 2em;">
+{%  comment_detail_display_hook comment "html-email" %}
+ <pre style="{{precss}}">{{comment.text}}</pre>
+</div>
 <br />
 {% endfor %}
 
@@ -41,14 +43,20 @@
   </td>
  </tr>
 </table>
-<pre style="margin-left: 2em; {{precss}}">{{comment.text}}</pre>
+<div style="margin-left: 2em;">
+{%  comment_detail_display_hook comment "html-email" %}
+ <pre style="{{precss}}">{{comment.text}}</pre>
+</div>
 <br />
 {% endfor %}
 
 {% for entry in comment_entries %}
 <div>
 {{entry.html|safe}}
-<pre style="margin-left: 2em; {{precss}}">{{entry.comment.text}}</pre>
+ <div style="margin-left: 2em;">
+{%  comment_detail_display_hook entry.comment "html-email" %}
+  <pre style="{{precss}}">{{entry.comment.text}}</pre>
+ </div>
 </div>
 <br />
 {% endfor %}

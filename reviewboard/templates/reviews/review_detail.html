@@ -106,6 +106,7 @@
      </div>
     </dt>
     <dd>
+{% comment_detail_display_hook comment "review" %}
      <pre class="comment-text" id="{{comment.anchor_prefix}}{{comment.id}}">{{comment.text|escape}}</pre>
 {% if comment.issue_opened %}
      <div class="issue-indicator">
@@ -132,12 +133,13 @@
 {% endspaceless %}</a>
 {% with comment.thumbnail as thumbnail %}
 {%  if thumbnail %}
-	  <div class="thumbnail">{{thumbnail|default:''|safe}}</div>
+      <div class="thumbnail">{{thumbnail|default:''|safe}}</div>
 {%  endif %}
 {% endwith %}
      </div>
     </dt>
     <dd>
+{% comment_detail_display_hook comment "review" %}
      <pre class="comment-text" id="{{comment.anchor_prefix}}{{comment.id}}">{{comment.text|escape}}</pre>
 {% if comment.issue_opened %}
      <div class="issue-indicator">
@@ -177,6 +179,7 @@
      </div>
     </dt>
     <dd>
+{% comment_detail_display_hook comment "review" %}
      <pre class="reviewtext comment-text" data-rich-text="{{comment.rich_text|yesno:'true,false'}}" id="{{comment.anchor_prefix}}{{comment.id}}">{{comment.text|escape}}</pre>
 {% if comment.issue_opened %}
      <div class="issue-indicator">

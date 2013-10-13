@@ -81,6 +81,21 @@ class ReviewRequestDetailHook(ExtensionHook):
         return False
 
 
+class CommentDetailDisplayHook(ExtensionHook):
+    """This hook allows adding details to the display of comments.
+
+    The hook can provide additional details to display for a comment in a
+    review and e-mails.
+    """
+    __metaclass__ = ExtensionHookPoint
+
+    def render_review_comment_detail(self, comment):
+        raise NotImplementedError
+
+    def render_email_comment_detail(self, comment, is_html):
+        raise NotImplementedError
+
+
 class ReviewUIHook(ExtensionHook):
     """This hook allows integration of Extension-defined Review UIs.
 

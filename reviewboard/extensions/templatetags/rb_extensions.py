@@ -2,7 +2,8 @@ from django import template
 from django.template.loader import render_to_string
 from djblets.util.decorators import basictag
 
-from reviewboard.extensions.hooks import (DiffViewerActionHook,
+from reviewboard.extensions.hooks import (CommentDetailDisplayHook,
+                                          DiffViewerActionHook,
                                           HeaderActionHook,
                                           HeaderDropdownActionHook,
                                           NavigationBarHook,
@@ -93,3 +94,24 @@ def header_dropdown_action_hooks(context):
                         HeaderDropdownActionHook,
                         "actions",
                         "extensions/header_action_dropdown.html")
+
+
+@register.tag
+@basictag(takes_context=True)
+def comment_detail_display_hook(context, comment, render_mode):
+    """Displays all additional detail from CommentDetailDisplayHooks."""
+    assert render_mode in ('review', 'text-email', 'html-email')
+
+    s = ''
+
+    for hook in CommentDetailDisplayHook.hooks:
+        try:
+            if render_mode == 'review':
+                s += hook.render_review_comment_detail(comment)
+            elif render_mode in ('text-email', 'html-email'):
+                s += hook.render_email_comment_detail(
+                    comment, render_mode == 'html-email')
+        except NotImplementedError:
+            pass
+
+    return s
