@@ -248,7 +248,7 @@
 {%       if fieldinfo.diff_revision %}
 {%        with fieldinfo.diff_revision|add:"-1" as past_revision and fieldinfo.diff_revision as current_revision %}
 {%         if  past_revision != 0 %}
-      - <a href="{% url 'view-interdiff' review_request.display_id past_revision current_revision %}">{% trans "Show changes" %}</a>
+      - <a href="{% url 'view_interdiff' review_request.display_id past_revision current_revision %}">{% trans "Show changes" %}</a>
 {%         endif %}
 {%        endwith %}
 {%       endif %}

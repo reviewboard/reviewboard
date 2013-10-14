@@ -42,7 +42,7 @@ urlpatterns = patterns(
     # Review request interdiffs
     url(r'^(?P<review_request_id>[0-9]+)/diff/(?P<revision>[0-9]+)-(?P<interdiff_revision>[0-9]+)/$',
         ReviewsDiffViewerView.as_view(),
-        name="view-interdiff"),
+        name="view_interdiff"),
     (r'^(?P<review_request_id>[0-9]+)/diff/(?P<revision>[0-9]+)-(?P<interdiff_revision>[0-9]+)/fragment/(?P<filediff_id>[0-9]+)/$',
      ReviewsDiffFragmentView.as_view()),
     (r'^(?P<review_request_id>[0-9]+)/diff/(?P<revision>[0-9]+)-(?P<interdiff_revision>[0-9]+)/fragment/(?P<filediff_id>[0-9]+)/chunk/(?P<chunkindex>[0-9]+)/$',
