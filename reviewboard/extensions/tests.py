@@ -1,6 +1,7 @@
 from django.template import Context, Template
 from django.test import TestCase
-from djblets.extensions.base import ExtensionManager, RegisteredExtension
+from djblets.extensions.manager import ExtensionManager
+from djblets.extensions.models import RegisteredExtension
 
 from reviewboard.extensions.base import Extension
 from reviewboard.extensions.hooks import (DashboardHook, DiffViewerActionHook,

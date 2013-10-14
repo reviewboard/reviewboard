@@ -178,7 +178,7 @@ The base class also provides the following attributes:
 
    .. py:attribute:: settings
 
-      An instance of :py:class:`djblets.extensions.base.settings`. This
+      An instance of :py:class:`djblets.extensions.settings.Settings`. This
       attribute gives each extension an easy-to-use and persistent data store
       for settings. See :ref:`extension-settings` for more information.
 
@@ -231,13 +231,13 @@ Settings
 Each extension is given a settings dictionary which it can load from the
 database using :py:meth:`load` and save to the database using :py:meth:`save`.
 This is found in the :py:attr:`settings` attribute and is an instance of the
-:py:class:`djblets.extensions.base.settings` class.
+:py:class:`djblets.extensions.settings.Settings` class.
 
 A set of defaults may be provided in :py:attr:`default_settings` to make
 initialization of the dictionary simple. See :ref:`extension-settings-defaults`
 for more information.
 
-.. py:class:: djblets.extensions.base.settings
+.. py:class:: djblets.extensions.settings.Settings
 
    .. py:method:: load()
 

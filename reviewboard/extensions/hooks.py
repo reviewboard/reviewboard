@@ -1,5 +1,5 @@
-from djblets.extensions.base import ExtensionHook, ExtensionHookPoint
-import djblets.extensions.hooks as djblets_hooks
+from djblets.extensions.hooks import (ExtensionHook, ExtensionHookPoint,
+                                      TemplateHook, URLHook)
 
 from reviewboard.attachments.mimetypes import (register_mimetype_handler,
                                                unregister_mimetype_handler)
@@ -237,7 +237,3 @@ class HeaderActionHook(ActionHook):
 class HeaderDropdownActionHook(ActionHook):
     """A hook for putting multiple actions into a header dropdown."""
     __metaclass__ = ExtensionHookPoint
-
-
-URLHook = djblets_hooks.URLHook
-TemplateHook = djblets_hooks.TemplateHook
