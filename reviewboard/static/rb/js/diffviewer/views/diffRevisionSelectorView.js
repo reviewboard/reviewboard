@@ -163,7 +163,10 @@ RB.DiffRevisionSelectorView = Backbone.View.extend({
 
         this._mouseActive = true;
         this._activeHandle = $target.data('handle-id');
-        this._activeValues = this._values;
+        this._activeValues = [
+            this._values[0],
+            this._values[1]
+        ];
 
         document.addEventListener('mouseup', this._onHandleMouseUp, true);
         document.addEventListener('mousemove', this._onHandleMouseMove, true);
@@ -192,8 +195,11 @@ RB.DiffRevisionSelectorView = Backbone.View.extend({
 
         $('body').removeClass('revision-selector-grabbed');
 
-        this.trigger('revisionSelected',
-                     this._activeValues[0], this._activeValues[1]);
+        if (this._activeValues[0] !== this._values[0] ||
+            this._activeValues[1] !== this._values[1]) {
+            this.trigger('revisionSelected',
+                         this._activeValues[0], this._activeValues[1]);
+        }
 
         ev.stopPropagation();
         ev.preventDefault();
