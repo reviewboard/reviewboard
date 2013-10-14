@@ -171,13 +171,15 @@ class ActionHook(ExtensionHook):
        * `image_height`: The height of the image (optional).
        * `label`:        The label for the action.
        * `url`:          The URI to invoke when the action is clicked.
-                         This should not be a javascript: URL, as that won't
-                         work on all browsers.
+                         If you want to invoke a javascript action, this should
+                         be '#', and you should use a selector on the `id`
+                         field to attach the handler (as opposed to a
+                         javascript: URL, which doesn't work on all browsers).
 
     If your hook needs to access the template context, it can override
     get_actions and return results from there.
     """
-    def __init__(self, extension, actions={}, *args, **kwargs):
+    def __init__(self, extension, actions=[], *args, **kwargs):
         super(ActionHook, self).__init__(extension, *args, **kwargs)
         self.actions = actions
 

@@ -13,6 +13,100 @@ automatically removed when the extension shuts down.
 The following hooks are available for use by extensions.
 
 
+ActionHook
+----------
+
+There are a variety of action hooks, which allow injecting clickable actions
+into various parts of the UI.
+
+:py:mod:`reviewboard.extensions.hooks` contains the following hooks:
+
++-------------------------------------+-----------------------------------+
+| Class                               | Location                          |
++=====================================+===================================+
+| :py:class:`ReviewRequestActionHook` | The bar at the top of a review    |
+|                                     | request (containing "Close",      |
+|                                     | "Update", etc.)                   |
++-------------------------------------+-----------------------------------+
+| :py:class:`DiffViewerActionHook`    | Like the ReviewRequestActionHook, |
+|                                     | but limited to the diff viewer    |
+|                                     | page.                             |
++-------------------------------------+-----------------------------------+
+| :py:class:`HeaderActionHook`        | An action in the page header.     |
++-------------------------------------+-----------------------------------+
+
+When instantiating any of these, you can pass a list of dictionaries defining
+the actions you'd like to insert. These dictionaries have the following fields:
+
+*
+    **id**: The ID of the action (optional)
+
+*
+    **label**: The label for the action.
+
+*
+    **url**: The URI to invoke when the action is clicked. If you want to
+    invoke a javascript action, this should be '#', and you should use a
+    selector on the **id** field to attach the handler (as opposed to a
+    javascript: URL, which doesn't work on all browsers).
+
+*
+    **image**: The path to the image used for the icon (optional).
+
+*
+    **image_width**: The width of the image (optional).
+
+*
+    **image_height**: The height of the image (optional).
+
+There are also two hooks to provide drop-down menus in the action bars:
+
++---------------------------------------------+-------------------------+
+| Class                                       | Location                |
++=============================================+=========================+
+| :py:class:`ReviewRequestDropdownActionHook` | The bar at the top of a |
+|                                             | review request.         |
++---------------------------------------------+-------------------------+
+| :py:class:`HeaderDropdownActionHook`        | The page header.        |
++---------------------------------------------+-------------------------+
+
+These work like the basic ActionHooks, except instead of a **url** field, they
+contain an **items** field which is another list of dictionaries. Only one
+level of nesting is possible.
+
+.. highlight:: python
+
+Example::
+
+    class SampleExtension(Extension):
+        def __init__(self, *args, **kwargs):
+            super(SampleExtension, self).__init__(*args, **kwargs)
+
+            # Single entry on review requests, consumed from javascript
+            ReviewRequestActionHook(self, actions=[
+                {
+                    'id': 'sample-item',
+                    'label': 'Review Request Item',
+                    'url': '#',
+                },
+            ])
+
+            # A drop-down in the header that links to other pages.
+            HeaderDropdownActionHook(self, actions=[
+                'label': 'Header Dropdown',
+                'items': [
+                    {
+                        'label': 'Item 1',
+                        'url': '...',
+                    },
+                    {
+                        'label': 'Item 2',
+                        'url': '...',
+                    },
+                ],
+            ])
+
+
 CommentDetailDisplayHook
 ------------------------
 
@@ -46,36 +140,6 @@ For example::
                 return '<p>Severity: %s</p>' % comment.extra_data['severity']
             else:
                 return 'Severity: %s\n' % comment.extra_data['severity']
-
-
-URLHook
--------
-
-:py:class:`reviewboard.extensions.hooks.URLHook` are used to extend the URL
-patterns that Review Board wil recognize and respond to.
-
-:py:class:`URLHook` requires two arguments for initialization: the extension
-instance and the URL patterns.
-
-Example usage in an Extension::
-
-    class SampleExtension(Extension):
-        def __init__(self, *args, **kwargs):
-            super(SampleExtension, self).__init__(*args, **kwargs)
-            pattern = patterns('', (r'^sample_extension/',
-                                    include('sample_extension.urls')))
-            self.url_hook = URLHook(self, pattern)
-
-Notice how `sample_extension.urls` was included in the patterns. In this case,
-`sample_extension` is the package name for the extension, and `urls` is the module
-that contains the patterns::
-
-    from django.conf.urls.defaults import patterns, url
-
-
-    urlpatterns = patterns('sample_extension.views',
-        url(r'^$', 'dashboard'),
-    )
 
 
 DashboardHook
@@ -133,6 +197,59 @@ Corresponding template `dashboard.html`::
     {% endblock %}
 
 
+.. _extension-file-attachment-thumbnail-hook
+
+FileAttachmentThumbnailHook
+---------------------------
+
+:py:class:`reviewboard.extensions.hooks.FileAttachmentThumbnailHook` allows
+extensions to create custom thumbnailers for new file types. This is
+particularly useful when combined with :ref:`extension-review-ui-integration`.
+
+To use this, define a subclass of
+:py:class:`reviewboard.attachments.mimetypes.MimetypeHandler`, where you'll
+define a list of ``supported_mimetypes`` and a method for creating the
+thumbnail:
+
+.. highlight:: python
+
+Example::
+
+    class XMLMimetype(MimetypeHandler):
+        # Generate thumbnails for these mimetypes
+        supported_mimetypes = ['application/xml', 'text/xml']
+
+        def get_thumbnail(self):
+            # This renders the XML using pygments to syntax highlight it. The
+            # HTML will then be stuck inside the thumbnail element styled to
+            # use a small font and clipped to the size of the thumbnail box.
+            f = self.attachment.file.file
+            f.open()
+
+            try:
+                # Only use the first 2000 characters
+                data_string = f.read(2000)
+            except (ValueError, IOError), e:
+                logging.error('Failed to read from file attachment %s: %s'
+                              % (self.attachment.pk, e))
+
+            f.close()
+
+            html = pygments.highlight(force_unicode(data_string),
+                                      pygments.lexers.XmlLexer(),
+                                      pygments.formatters.HtmlFormatter())
+
+            return mark_safe('<div class="file-thumbnail-clipped">%s</div>'
+                             % html)
+
+
+    class XMLThumbnailExtension(Extension):
+        def __init__(self, *args, **kwargs):
+            super(XMLThumbnailExtension, self).__init__(*args, **kwargs)
+            FileAttachmentThumbnailHook(self, [XMLMimetype])
+
+
+
 .. _extension-navigation-bar-hook:
 
 NavigationBarHook
@@ -179,6 +296,152 @@ Example usage in an Extension::
                     },
                 ]
             )
+
+
+ReviewRequestDetailHook
+-----------------------
+
+:py:class:`reviewboard.extensions.hooks.ReviewRequestDetailHook` provides a way
+for extensions to augment the information shown in the review request box,
+alongside fields like :guilabel:`Submitter` and :guilabel:`Bugs`.
+
+This hook is intended to be subclassed. There are four methods that can be
+implemented:
+
+*
+    **get_field_id**: Returns an ID used for the field's id in HTML.
+
+*
+    **get_label**: Returns the text used for the label (like "Branch:").
+
+*
+    **get_detail**: Returns the text used for the detail.
+
+*
+    **get_wide**: Returns True or False depending on whether the field should span across both columns.
+
+Example usage in an Extension::
+
+    class SampleDetailHook(ReviewRequestDetailHook):
+        def get_field_id(self):
+	    return 'sample-detail'
+
+	def get_label(self):
+	    return 'Label:'
+
+	def get_detail(self):
+	    return 'detail'
+
+
+    class SampleExtension(Extension):
+        def __init__(self, *args, **kwargs):
+	    super(SampleExtension, self).__init__(*args, **kwargs)
+	    SampleDetailHook(self)
+
+
+ReviewUIHook
+------------
+
+:py:class:`reviewboard.extensions.hooks.ReviewUIHook` is used to add new UIs to
+review specific types of file attachments. For more information, see
+:ref:`extension-review-ui-integration`.
+
+
+TemplateHook
+------------
+
+:py:class:`djblets.extensions.hooks.TemplateHook` is one of the most versatile
+hooks, allowing you to inject your own HTML into templates at various points.
+
+Template hooks have three parameters:
+
+*
+    **name**: The name of the template hook point to inject into.
+
+*
+    **template_name**: The filename of the template to render. This should
+    refer to template files in your extensions ``templates`` directory.
+
+*
+    **apply_to**: An optional list of URL names to limit this hook to. This is
+    useful when using a generic template hook point, but when you only want to
+    inject onto a specific page. If this is not provided, the template will be
+    rendered for all pages with the given hook point name.
+
+The existing template hook names are as follows:
+
++----------------------------+------------------------------------------------+
+|         Name               |                  Location                      |
++============================+================================================+
+| base-extrahead             | All pages, inside the <head> tag.              |
++----------------------------+------------------------------------------------+
+| base-css                   | All pages, used to add new CSS.                |
++----------------------------+------------------------------------------------+
+| base-scripts               | All pages, <script> tags that need to go at    |
+|                            | the top.                                       |
++----------------------------+------------------------------------------------+
+| base-before-navbar         | All pages, at the top of the page before the   |
+|                            | navigation bar.                                |
++----------------------------+------------------------------------------------+
+| base-after-navbar          | All pages, after the navigation bar but before |
+|                            | the content.                                   |
++----------------------------+------------------------------------------------+
+| base-before-content        | All pages, before the content.                 |
++----------------------------+------------------------------------------------+
+| base-after-content         | All pages, at the end of the content.          |
++----------------------------+------------------------------------------------+
+| base-scripts-post          | All pages, <script> tags that go at the end of |
+|                            | <body>.                                        |
++----------------------------+------------------------------------------------+
+| review-summary-header-pre  | For each review, before the header.            |
++----------------------------+------------------------------------------------+
+| review-summary-header-post | For each review, after the header but before   |
+|                            | any comments.                                  |
++----------------------------+------------------------------------------------+
+
+Additional template hook points are trivially added. If these are insufficient
+for your needs, please get in touch with the Review Board developer community.
+
+
+Example usage in an Extension::
+
+    class SampleExtension(Extension):
+        def __init__(self, *args, **kwargs):
+            super(SampleExtension, self).__init__(*args, **kwargs)
+            TemplateHook(self, 'base-css', 'diff-extension-css.html',
+                         apply_to=['view_diff', 'view_diff_revision'])
+            TemplateHook(self, 'base-scripts-post', 'diff-extension-js.html',
+                         apply_to=['view_diff', 'view_diff_revision'])
+
+
+URLHook
+-------
+
+:py:class:`reviewboard.extensions.hooks.URLHook` is used to extend the URL
+patterns that Review Board wil recognize and respond to.
+
+:py:class:`URLHook` requires two arguments for initialization: the extension
+instance and the URL patterns.
+
+Example usage in an Extension::
+
+    class SampleExtension(Extension):
+        def __init__(self, *args, **kwargs):
+            super(SampleExtension, self).__init__(*args, **kwargs)
+            pattern = patterns('', (r'^sample_extension/',
+                                    include('sample_extension.urls')))
+            URLHook(self, pattern)
+
+Notice how `sample_extension.urls` was included in the patterns. In this case,
+`sample_extension` is the package name for the extension, and `urls` is the module
+that contains the patterns::
+
+    from django.conf.urls.defaults import patterns, url
+
+
+    urlpatterns = patterns('sample_extension.views',
+        url(r'^$', 'dashboard'),
+    )
 
 
 UserPageSidebarHook
