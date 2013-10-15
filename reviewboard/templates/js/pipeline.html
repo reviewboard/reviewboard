@@ -1,4 +1,4 @@
 {% load staticfiles %}
-{% if not settings.PIPELINE %}
+{% if not settings.PIPELINE_ENABLED %}
 <script type="text/javascript" src="{% static "lib/js/less-1.4.1.min.js" %}"></script>
 {% endif %}
