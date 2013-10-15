@@ -7,5 +7,6 @@ Writing Review Board Extensions
 
    overview
    hooks
+   static-files
    review-ui
    distribution

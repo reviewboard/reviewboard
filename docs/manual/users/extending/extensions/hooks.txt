@@ -197,7 +197,7 @@ Corresponding template `dashboard.html`::
     {% endblock %}
 
 
-.. _extension-file-attachment-thumbnail-hook
+.. _extension-file-attachment-thumbnail-hook:
 
 FileAttachmentThumbnailHook
 ---------------------------
@@ -346,6 +346,8 @@ ReviewUIHook
 review specific types of file attachments. For more information, see
 :ref:`extension-review-ui-integration`.
 
+
+.. _extensions-template-hook:
 
 TemplateHook
 ------------

@@ -155,7 +155,7 @@ ReviewUI JavaScript
 
 Here are the corresponding JavaScript used in the above template.
 
-:file:`xml_review_ui_extension/htdocs/js/XMLReviewableModel.js`::
+:file:`xml_review_ui_extension/static/js/XMLReviewableModel.js`::
 
     /*
      * Provides review capabilities for XML files.
@@ -167,7 +167,7 @@ Here are the corresponding JavaScript used in the above template.
     });
 
 
-:file:`xml_review_ui_extension/htdocs/js/XMLReviewableView.js`::
+:file:`xml_review_ui_extension/static/js/XMLReviewableView.js`::
 
     /*
      * Displays a review UI for XML files.

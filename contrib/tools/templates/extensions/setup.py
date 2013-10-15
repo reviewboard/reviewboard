@@ -1,4 +1,4 @@
-from setuptools import setup
+from reviewboard.extensions.packaging import setup
 
 
 PACKAGE = "{{extension_name}}"
@@ -16,8 +16,6 @@ setup(
     },
     package_data={
         '{{package_name}}': [
-            'htdocs/css/*.css',
-            'htdocs/js/*.js',
             'templates/{{package_name}}/*.txt',
             'templates/{{package_name}}/*.html',
         ],

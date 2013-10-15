@@ -39,7 +39,7 @@ This defines an entry point for the :py:class:`SampleExtension` class from
 the :py:mod:`sample_extension.extension` module. Here is an example of
 a full :file:`setup.py` file defining this entry point::
 
-   from setuptools import setup
+   from reviewboard.extensions.packaging import setup
 
 
    PACKAGE = "sample_extension"
@@ -64,13 +64,19 @@ Static Files
 ------------
 
 Any static files (such as css, html, and javascript) the extension requires
-must be added to the package data of the Python Egg. Here is an example of
-how this is done in the setup.py file::
+should be listed in the extension class's ``css_bundles`` or ``js_bundles``
+attributes. Providing you are using the py:func:`setup` method from
+:py:mod:`reviewboard.extensions.packaging`, all listed CSS and JavaScript
+media bundles will be automatically compiled, minified, combined, and packaged
+along with your extension.
+
+See :ref:`extension-static-files` for more information on bundles.
+
+If you have other files you need to include, such as templates, you can list
+them in the ``package_data`` section in setup.py. For example::
 
        package_data={
            'sample_extension': [
-               'htdocs/css/*.css',
-               'htdocs/js/*.js',
                'templates/rbreports/*.html',
                'templates/rbreports/*.txt',
            ],
@@ -78,7 +84,7 @@ how this is done in the setup.py file::
 
 Here is an example of a full setup.py file including the static files::
 
-   from setuptools import setup
+   from reviewboard.extensions.packaging import setup
 
 
    PACKAGE = "sample_extension"
@@ -96,8 +102,6 @@ Here is an example of a full setup.py file including the static files::
        },
        package_data={
            'sample_extension': [
-               'htdocs/css/*.css',
-               'htdocs/js/*.js',
                'templates/rbreports/*.html',
                'templates/rbreports/*.txt',
            ],
@@ -114,7 +118,7 @@ Any dependencies of the extension are defined in the :file:`setup.py` file
 using :py:attr:`install_requires`. Here is an example of a full
 :file`setup.py` file including a dependency::
 
-   from setuptools import setup
+   from reviewboard.extensions.packaging import setup
 
 
    PACKAGE = "sample_extension"

@@ -61,7 +61,7 @@ The following are a description and example of each file. In each example
    :ref:`extension-distribution` for a description of features relevant to
    Review Board extensions. Example::
 
-      from setuptools import setup
+      from reviewboard.extensions.packaging import setup
 
 
       PACKAGE = "sample_extension"

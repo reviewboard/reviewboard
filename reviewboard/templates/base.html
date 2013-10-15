@@ -23,6 +23,7 @@
   <link rel="apple-touch-icon-precomposed" type="image/png" href="{% static "rb/images/apple-home-icon.png" %}" />
 {% compressed_css "common" %}
 {% block css %}{% endblock %}
+{% load_extensions_css "reviewboard.extensions" %}
 {% template_hook_point "base-css" %}
   <!--[if lt IE 7.]>
   <style type="text/css">
@@ -164,6 +165,7 @@
     });
   </script>
 {% block scripts-post %}{% endblock %}
+{% load_extensions_js "reviewboard.extensions" %}
 {% init_js_extensions "reviewboard.extensions" %}
 {% template_hook_point "base-scripts-post" %}
  </body>
