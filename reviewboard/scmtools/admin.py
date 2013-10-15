@@ -73,9 +73,11 @@ class RepositoryAdmin(admin.ModelAdmin):
     def hosting(self, repository):
         if repository.hosting_account_id:
             account = repository.hosting_account
-            return '%s@%s' % (account.username, account.service.name)
-        else:
-            return ''
+
+            if account.service:
+                return '%s@%s' % (account.username, account.service.name)
+
+        return ''
 
 
 class ToolAdmin(admin.ModelAdmin):

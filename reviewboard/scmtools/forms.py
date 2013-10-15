@@ -436,6 +436,8 @@ class RepositoryForm(forms.ModelForm):
         hosting_type = self.cleaned_data['hosting_type']
 
         if hosting_type == self.NO_HOSTING_SERVICE_ID:
+            self.data['hosting_account'] = None
+            self.cleaned_data['hosting_account'] = None
             return
 
         # This should have been caught during validation, so we can assume
