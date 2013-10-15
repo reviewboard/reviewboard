@@ -11,6 +11,9 @@ from djblets.webapi.decorators import (webapi_login_required,
 from djblets.webapi.errors import (DOES_NOT_EXIST, NOT_LOGGED_IN,
                                    PERMISSION_DENIED)
 
+from reviewboard.diffviewer.errors import (DiffTooBigError,
+                                           DiffParserError,
+                                           EmptyDiffError)
 from reviewboard.reviews.errors import PermissionError
 from reviewboard.reviews.models import ReviewRequest
 from reviewboard.scmtools.errors import (AuthenticationError,
@@ -25,6 +28,9 @@ from reviewboard.webapi.base import WebAPIResource
 from reviewboard.webapi.decorators import webapi_check_local_site
 from reviewboard.webapi.encoder import status_to_string, string_to_status
 from reviewboard.webapi.errors import (CHANGE_NUMBER_IN_USE,
+                                       DIFF_EMPTY,
+                                       DIFF_TOO_BIG,
+                                       DIFF_PARSE_ERROR,
                                        EMPTY_CHANGESET,
                                        INVALID_CHANGE_NUMBER,
                                        INVALID_REPOSITORY,
@@ -374,7 +380,8 @@ class ReviewRequestResource(WebAPIResource):
                             INVALID_REPOSITORY, CHANGE_NUMBER_IN_USE,
                             INVALID_CHANGE_NUMBER, EMPTY_CHANGESET,
                             REPO_AUTHENTICATION_ERROR, REPO_INFO_ERROR,
-                            MISSING_REPOSITORY)
+                            MISSING_REPOSITORY, DIFF_EMPTY, DIFF_TOO_BIG,
+                            DIFF_PARSE_ERROR)
     @webapi_request_fields(
         optional={
             'changenum': {
@@ -491,6 +498,15 @@ class ReviewRequestResource(WebAPIResource):
             return INVALID_CHANGE_NUMBER
         except EmptyChangeSetError:
             return EMPTY_CHANGESET
+        except DiffTooBigError:
+            return DIFF_TOO_BIG
+        except EmptyDiffError:
+            return DIFF_EMPTY
+        except DiffParserError, e:
+            return DIFF_PARSE_ERROR, {
+                'linenum': e.linenum,
+                'message': str(e),
+            }
         except SSHError, e:
             logging.error("Got unexpected SSHError when creating "
                           "repository: %s"
