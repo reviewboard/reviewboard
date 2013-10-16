@@ -61,13 +61,23 @@ class ReviewReplyFileAttachmentCommentResource(
                 'description': 'The comment text.',
             },
         },
+        optional={
+            'rich_text': {
+                'type': bool,
+                'description': 'Whether the comment text is in rich-text '
+                               '(Markdown) format. The default is false.',
+            },
+        }
     )
-    def create(self, request, reply_to_id, text, *args, **kwargs):
+    def create(self, request, reply_to_id, *args, **kwargs):
         """Creates a reply to a file comment on a review.
 
         This will create a reply to a file comment on a review.
         The new comment will contain the same dimensions of the comment
         being replied to, but may contain new text.
+
+        If ``rich_text`` is provided and set to true, then the the ``text``
+        field is expected to be in valid Markdown format.
         """
         try:
             resources.review_request.get_object(request, *args, **kwargs)
@@ -104,8 +114,7 @@ class ReviewReplyFileAttachmentCommentResource(
                                      reply_to=comment)
             is_new = True
 
-        new_comment.text = text.strip()
-        new_comment.save()
+        self.update_comment(new_comment, is_reply=True, **kwargs)
 
         data = {
             self.item_result_key: new_comment,
@@ -126,7 +135,12 @@ class ReviewReplyFileAttachmentCommentResource(
     @webapi_login_required
     @webapi_response_errors(DOES_NOT_EXIST, NOT_LOGGED_IN, PERMISSION_DENIED)
     @webapi_request_fields(
-        required={
+        optional={
+            'rich_text': {
+                'type': bool,
+                'description': 'Whether the comment text is in rich-text '
+                               '(Markdown) format. The default is false.',
+            },
             'text': {
                 'type': str,
                 'description': 'The new comment text.',
@@ -138,6 +152,14 @@ class ReviewReplyFileAttachmentCommentResource(
 
         This can only update the text in the comment. The comment being
         replied to cannot change.
+
+        If ``rich_text`` is provided and changed to true, then the ``text``
+        field will be set to be interpreted as Markdown. When setting to true
+        and not specifying any new text, the existing text will be escaped so
+        as not to be unintentionally interpreted as Markdown.
+
+        If ``rich_text`` is changed to false, and new text is not provided,
+        the existing text will be unescaped.
         """
         try:
             resources.review_request.get_object(request, *args, **kwargs)
@@ -149,13 +171,7 @@ class ReviewReplyFileAttachmentCommentResource(
         if not resources.review_reply.has_modify_permissions(request, reply):
             return self._no_access_error(request.user)
 
-        for field in ('text',):
-            value = kwargs.get(field, None)
-
-            if value is not None:
-                setattr(file_comment, field, value)
-
-        file_comment.save()
+        self.update_comment(file_comment, is_reply=True, **kwargs)
 
         return 200, {
             self.item_result_key: file_comment,

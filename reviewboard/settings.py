@@ -358,6 +358,7 @@ PIPELINE_JS = dict({
             'rb/js/utils/tests/keyBindingUtilsTests.js',
             'rb/js/utils/tests/linkifyUtilsTests.js',
             'rb/js/utils/tests/propertyUtilsTests.js',
+            'rb/js/utils/tests/textUtilsTests.js',
             'rb/js/views/tests/collectionViewTests.js',
             'rb/js/views/tests/commentDialogViewTests.js',
             'rb/js/views/tests/commentIssueBarViewTests.js',

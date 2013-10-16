@@ -65,6 +65,11 @@ class ReviewScreenshotCommentResource(BaseScreenshotCommentResource):
                 'type': bool,
                 'description': 'Whether or not the comment opens an issue.',
             },
+            'rich_text': {
+                'type': bool,
+                'description': 'Whether the comment text is in rich-text '
+                               '(Markdown) format. The default is false.',
+            },
         },
         allow_unknown=True,
     )
@@ -74,6 +79,9 @@ class ReviewScreenshotCommentResource(BaseScreenshotCommentResource):
         This will create a new comment on a screenshot as part of a review.
         The comment contains text and dimensions for the area being commented
         on.
+
+        If ``rich_text`` is provided and set to true, then the the ``text``
+        field is expected to be in valid Markdown format.
         """
         try:
             review_request = \
@@ -96,6 +104,7 @@ class ReviewScreenshotCommentResource(BaseScreenshotCommentResource):
             }
 
         new_comment = self.create_comment(
+            review=review,
             screenshot=screenshot,
             fields=('screenshot', 'x', 'y', 'w', 'h'),
             **kwargs)
@@ -138,6 +147,11 @@ class ReviewScreenshotCommentResource(BaseScreenshotCommentResource):
                 'type': ('dropped', 'open', 'resolved'),
                 'description': 'The status of an open issue.',
             },
+            'rich_text': {
+                'type': bool,
+                'description': 'Whether the comment text is in rich-text '
+                               '(Markdown) format. The default is false.',
+            },
         },
         allow_unknown=True
     )
@@ -146,6 +160,14 @@ class ReviewScreenshotCommentResource(BaseScreenshotCommentResource):
 
         This can update the text or region of an existing comment. It
         can only be done for comments that are part of a draft review.
+
+        If ``rich_text`` is provided and changed to true, then the ``text``
+        field will be set to be interpreted as Markdown. When setting to true
+        and not specifying any new text, the existing text will be escaped so
+        as not to be unintentionally interpreted as Markdown.
+
+        If ``rich_text`` is changed to false, and new text is not provided,
+        the existing text will be unescaped.
         """
         try:
             resources.review_request.get_object(request, *args, **kwargs)

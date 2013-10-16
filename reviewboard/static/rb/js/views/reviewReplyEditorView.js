@@ -68,7 +68,10 @@ RB.ReviewReplyEditorView = Backbone.View.extend({
             var reviewRequest = this.model.get('review').get('parentObject');
 
             if (this._$editor) {
-                RB.formatText(this._$editor, text, reviewRequest.get('bugTrackerURL'));
+                RB.formatText(this._$editor, text,
+                              reviewRequest.get('bugTrackerURL'), {
+                    forceRichText: true
+                });
             }
         }, this);
 

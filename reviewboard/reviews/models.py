@@ -257,7 +257,7 @@ class BaseReviewRequestDetails(models.Model):
     testing_done = models.TextField(_("testing done"), blank=True)
     bugs_closed = models.CharField(_("bugs"), max_length=300, blank=True)
     branch = models.CharField(_("branch"), max_length=300, blank=True)
-    rich_text = models.BooleanField(_("rich text"), default=True)
+    rich_text = models.BooleanField(_("rich text"), default=False)
 
     def _get_review_request(self):
         raise NotImplementedError
@@ -895,7 +895,7 @@ class ReviewRequest(BaseReviewRequestDetails):
     def can_publish(self):
         return not self.public or get_object_or_none(self.draft) is not None
 
-    def close(self, type, user=None, description=None):
+    def close(self, type, user=None, description=None, rich_text=False):
         """
         Closes the review request. The type must be one of
         SUBMITTED or DISCARDED.
@@ -908,7 +908,9 @@ class ReviewRequest(BaseReviewRequestDetails):
             raise AttributeError("%s is not a valid close type" % type)
 
         if self.status != type:
-            changedesc = ChangeDescription(public=True, text=description or "")
+            changedesc = ChangeDescription(public=True,
+                                           text=description or "",
+                                           rich_text=rich_text)
             changedesc.record_field_change('status', self.status, type)
             changedesc.save()
 
@@ -1215,10 +1217,11 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
                     'testing_done': review_request.testing_done,
                     'bugs_closed': review_request.bugs_closed,
                     'branch': review_request.branch,
+                    'rich_text': review_request.rich_text,
                 })
 
         if draft.changedesc is None and review_request.public:
-            changedesc = ChangeDescription()
+            changedesc = ChangeDescription(rich_text=draft.rich_text)
             changedesc.save()
             draft.changedesc = changedesc
 
@@ -1491,7 +1494,7 @@ class BaseComment(models.Model):
                                  verbose_name=_("reply to"))
     timestamp = models.DateTimeField(_('timestamp'), default=timezone.now)
     text = models.TextField(_("comment text"))
-    rich_text = models.BooleanField(_("rich text"), default=True)
+    rich_text = models.BooleanField(_("rich text"), default=False)
 
     extra_data = JSONField(null=True)
 
@@ -1686,7 +1689,8 @@ class FileAttachmentComment(BaseComment):
         FileAttachment,
         verbose_name=_('diff against file attachment'),
         related_name="diffed_against_comments",
-        null=True)
+        null=True,
+        blank=True)
 
     @property
     def thumbnail(self):
@@ -1784,7 +1788,7 @@ class Review(models.Model):
         related_name="review",
         blank=True)
 
-    rich_text = models.BooleanField(_("rich text"), default=True)
+    rich_text = models.BooleanField(_("rich text"), default=False)
 
     # XXX Deprecated. This will be removed in a future release.
     reviewed_diffset = models.ForeignKey(

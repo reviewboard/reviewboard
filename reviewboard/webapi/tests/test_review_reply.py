@@ -8,6 +8,8 @@ from reviewboard.webapi.tests.mimetypes import (review_reply_item_mimetype,
 from reviewboard.webapi.tests.mixins import (BasicTestsMetaclass,
                                              ReviewRequestChildItemMixin,
                                              ReviewRequestChildListMixin)
+from reviewboard.webapi.tests.mixins_review import (ReviewItemMixin,
+                                                    ReviewListMixin)
 from reviewboard.webapi.tests.urls import (get_review_reply_item_url,
                                            get_review_reply_list_url)
 
@@ -26,7 +28,8 @@ class BaseResourceTestCase(BaseWebAPITestCase):
         return review
 
 
-class ResourceListTests(ReviewRequestChildListMixin, BaseResourceTestCase):
+class ResourceListTests(ReviewListMixin, ReviewRequestChildListMixin,
+                        BaseResourceTestCase):
     """Testing the ReviewReplyResource list APIs."""
     __metaclass__ = BasicTestsMetaclass
 
@@ -44,6 +47,7 @@ class ResourceListTests(ReviewRequestChildListMixin, BaseResourceTestCase):
         self.assertEqual(item_rsp['id'], reply.pk)
         self.assertEqual(item_rsp['body_top'], reply.body_top)
         self.assertEqual(item_rsp['body_bottom'], reply.body_bottom)
+        self.assertEqual(item_rsp['rich_text'], reply.rich_text)
 
     #
     # HTTP GET tests
@@ -98,6 +102,7 @@ class ResourceListTests(ReviewRequestChildListMixin, BaseResourceTestCase):
 
     def check_post_result(self, user, rsp, review):
         reply = Review.objects.get(pk=rsp['reply']['id'])
+        self.assertFalse(reply.rich_text)
         self.compare_item(rsp['reply'], reply)
 
     def test_post_with_body_top(self):
@@ -139,7 +144,8 @@ class ResourceListTests(ReviewRequestChildListMixin, BaseResourceTestCase):
         self.assertEqual(reply.body_bottom, body_bottom)
 
 
-class ResourceItemTests(ReviewRequestChildItemMixin, BaseResourceTestCase):
+class ResourceItemTests(ReviewItemMixin, ReviewRequestChildItemMixin,
+                        BaseResourceTestCase):
     """Testing the ReviewReplyResource item APIs."""
     __metaclass__ = BasicTestsMetaclass
 
@@ -158,6 +164,7 @@ class ResourceItemTests(ReviewRequestChildItemMixin, BaseResourceTestCase):
         self.assertEqual(item_rsp['id'], reply.pk)
         self.assertEqual(item_rsp['body_top'], reply.body_top)
         self.assertEqual(item_rsp['body_bottom'], reply.body_bottom)
+        self.assertEqual(item_rsp['rich_text'], reply.rich_text)
 
     #
     # HTTP DELETE tests
@@ -229,6 +236,7 @@ class ResourceItemTests(ReviewRequestChildItemMixin, BaseResourceTestCase):
     def check_put_result(self, user, item_rsp, reply, *args):
         self.assertEqual(item_rsp['id'], reply.pk)
         self.assertEqual(item_rsp['body_top'], 'New body top')
+        self.assertFalse(item_rsp['rich_text'])
 
         reply = Review.objects.get(pk=reply.pk)
         self.compare_item(item_rsp, reply)

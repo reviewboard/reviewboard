@@ -47,8 +47,9 @@ RB.BaseComment = RB.BaseResource.extend({
      */
     toJSON: function() {
         var data = {
-                text: this.get('text'),
-                issue_opened: this.get('issueOpened')
+                issue_opened: this.get('issueOpened'),
+                rich_text: this.get('richText'),
+                text: this.get('text')
             },
             parentObject,
             isPublic;

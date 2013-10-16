@@ -96,13 +96,23 @@ describe('resources/models/Review', function() {
             });
         });
 
+        describe('richText field', function() {
+            it('With value', function() {
+                var data;
+
+                model.set('richText', true);
+                data = model.toJSON();
+                expect(data.rich_text).toBe(true);
+            });
+        });
+
         describe('shipIt field', function() {
             it('With value', function() {
                 var data;
 
                 model.set('shipIt', true);
                 data = model.toJSON();
-                expect(data.ship_it).toBe(1);
+                expect(data.ship_it).toBe(true);
             });
         });
     });

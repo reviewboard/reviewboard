@@ -18,7 +18,8 @@ RB.Review = RB.BaseResource.extend({
 
     toJSON: function() {
         var data = {
-            ship_it: (this.get('shipIt') ? 1 : 0),
+            rich_text: this.get('richText'),
+            ship_it: this.get('shipIt'),
             body_top: this.get('bodyTop'),
             body_bottom: this.get('bodyBottom')
         };

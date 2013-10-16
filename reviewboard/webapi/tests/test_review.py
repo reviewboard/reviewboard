@@ -10,11 +10,14 @@ from reviewboard.webapi.tests.mimetypes import (review_list_mimetype,
 from reviewboard.webapi.tests.mixins import (BasicTestsMetaclass,
                                              ReviewRequestChildItemMixin,
                                              ReviewRequestChildListMixin)
+from reviewboard.webapi.tests.mixins_review import (ReviewItemMixin,
+                                                    ReviewListMixin)
 from reviewboard.webapi.tests.urls import (get_review_item_url,
                                            get_review_list_url)
 
 
-class ResourceListTests(ReviewRequestChildListMixin, BaseWebAPITestCase):
+class ResourceListTests(ReviewListMixin, ReviewRequestChildListMixin,
+                        BaseWebAPITestCase):
     """Testing the ReviewResource list APIs."""
     __metaclass__ = BasicTestsMetaclass
 
@@ -31,6 +34,7 @@ class ResourceListTests(ReviewRequestChildListMixin, BaseWebAPITestCase):
         self.assertEqual(item_rsp['ship_it'], review.ship_it)
         self.assertEqual(item_rsp['body_top'], review.body_top)
         self.assertEqual(item_rsp['body_bottom'], review.body_bottom)
+        self.assertEqual(item_rsp['rich_text'], review.rich_text)
 
     #
     # HTTP GET tests
@@ -103,10 +107,12 @@ class ResourceListTests(ReviewRequestChildListMixin, BaseWebAPITestCase):
 
     def check_post_result(self, user, rsp, review_request):
         review = Review.objects.get(pk=rsp['review']['id'])
+        self.assertFalse(review.rich_text)
         self.compare_item(rsp['review'], review)
 
 
-class ResourceItemTests(ReviewRequestChildItemMixin, BaseWebAPITestCase):
+class ResourceItemTests(ReviewItemMixin, ReviewRequestChildItemMixin,
+                        BaseWebAPITestCase):
     """Testing the ReviewResource item APIs."""
     __metaclass__ = BasicTestsMetaclass
 
@@ -125,6 +131,7 @@ class ResourceItemTests(ReviewRequestChildItemMixin, BaseWebAPITestCase):
         self.assertEqual(item_rsp['ship_it'], review.ship_it)
         self.assertEqual(item_rsp['body_top'], review.body_top)
         self.assertEqual(item_rsp['body_bottom'], review.body_bottom)
+        self.assertEqual(item_rsp['rich_text'], review.rich_text)
 
     #
     # HTTP DELETE tests
@@ -149,7 +156,7 @@ class ResourceItemTests(ReviewRequestChildItemMixin, BaseWebAPITestCase):
         with pre-published review
         """
         review_request = self.create_review_request(publish=True)
-        review = self.create_review(review_request, username=self.user,
+        review = self.create_review(review_request, user=self.user,
                                     publish=True)
 
         self.apiDelete(get_review_item_url(review_request, review.id),
@@ -218,6 +225,7 @@ class ResourceItemTests(ReviewRequestChildItemMixin, BaseWebAPITestCase):
     def check_put_result(self, user, item_rsp, review, *args):
         self.assertEqual(item_rsp['id'], review.pk)
         self.assertEqual(item_rsp['body_top'], 'New body top')
+        self.assertFalse(item_rsp['rich_text'])
 
         review = Review.objects.get(pk=review.pk)
         self.compare_item(item_rsp, review)
@@ -227,11 +235,11 @@ class ResourceItemTests(ReviewRequestChildItemMixin, BaseWebAPITestCase):
         with pre-published review
         """
         review_request = self.create_review_request(publish=True)
-        review = self.create_review(review_request, username=self.user,
+        review = self.create_review(review_request, user=self.user,
                                     publish=True)
 
         self.apiPut(
-            get_review_item_url(review.review_request, review.id),
+            get_review_item_url(review_request, review.id),
             {'ship_it': True},
             expected_status=403)
 

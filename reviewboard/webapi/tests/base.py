@@ -73,6 +73,9 @@ class BaseWebAPITestCase(TestCase, EmailTestHelper):
                          expected_mimetype, content_type='', extra={}):
         response = api_func(path, query, follow=follow_redirects,
                             content_type=content_type, extra=extra)
+
+        print "Raw response: %s" % response.content
+
         self.assertEqual(response.status_code, expected_status)
 
         if expected_status >= 400:

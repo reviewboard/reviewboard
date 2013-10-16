@@ -1,6 +1,9 @@
 (function() {
 
 
+var ESCAPED_CHARS_RE = /([\\`\*_\{\}\[\]\(\)\>\#\+\-\.\!])/g;
+
+
 // If `marked` is defined, initialize it with our preferred options
 if (marked !== undefined) {
     marked.setOptions({
@@ -23,13 +26,27 @@ if (marked !== undefined) {
  * Format the given text and put it into $el.
  *
  * If the given element is expected to be rich text, this will format the text
- * using markdown. If not, it will add links to review requests and bug
- * trackers but otherwise leave the text alone.
+ * using Markdown.
+ *
+ * If it's not expected to be rich text, but we want to force conversion to
+ * rich text, this will escape the text and turn it into valid Markdown.
+ *
+ * Otherwise, if it's not expected and won't be converted, then it will add
+ * links to review requests and bug trackers but otherwise leave the text alone.
  */
-RB.formatText = function($el, text, bugTrackerURL) {
-    var markedUp = text;
+RB.formatText = function($el, text, bugTrackerURL, options) {
+    var markedUp;
+        elRichText = $el.data('rich-text');
 
-    if ($el.data('rich-text')) {
+    if (options && options.forceRichText && !elRichText) {
+        text = RB.escapeMarkdown(text);
+        $el.data('rich-text', true);
+        elRichText = true;
+    }
+
+    markedUp = text;
+
+    if (elRichText) {
         /*
          * If there's an inline editor attached to this element, set up some
          * options first. Primarily, we need to pass in the raw value of the
@@ -58,11 +75,22 @@ RB.formatText = function($el, text, bugTrackerURL) {
         $el
             .empty()
             .append(markedUp)
-            .addClass('rich-text');
+            .addClass('rich-text')
+            .find('a')
+                .attr('target', '_blank');
     } else {
         $el.html(RB.LinkifyUtils.linkifyText(text, bugTrackerURL));
     }
 };
+
+
+/*
+ * Escapes text, turning it into valid Markdown, without causing any existing
+ * characters to be interpreted as Markdown.
+ */
+RB.escapeMarkdown = function(text) {
+    return text.replace(ESCAPED_CHARS_RE, '\\$1');
+}
 
 
 }());

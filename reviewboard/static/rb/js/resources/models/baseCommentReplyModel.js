@@ -37,7 +37,8 @@ RB.BaseCommentReply = RB.BaseResource.extend({
      */
     toJSON: function() {
         var data = {
-            text: this.get('text')
+            text: this.get('text'),
+            rich_text: this.get('richText')
         };
 
         if (!this.get('loaded')) {

@@ -23,6 +23,7 @@ RB.CommentEditor = Backbone.Model.extend({
             publishedComments: [],
             publishedCommentsType: null,
             reviewRequest: null,
+            richText: true,
             statusText: '',
             text: ''
         };
@@ -190,7 +191,8 @@ RB.CommentEditor = Backbone.Model.extend({
         comment.set({
             text: this.get('text'),
             issueOpened: this.get('openIssue'),
-            extraData: _.clone(this.get('extraData'))
+            extraData: _.clone(this.get('extraData')),
+            richText: this.get('richText')
         });
 
         comment.save({

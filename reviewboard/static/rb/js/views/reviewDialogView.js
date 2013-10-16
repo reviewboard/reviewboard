@@ -71,6 +71,7 @@ BaseCommentView = Backbone.View.extend({
     save: function(options) {
         this.model.set({
             issueOpened: this.$issueOpened.prop('checked'),
+            richText: true,
             text: this.$textarea.val()
         });
         this.model.save(options);
@@ -80,7 +81,8 @@ BaseCommentView = Backbone.View.extend({
      * Renders the comment view.
      */
     render: function() {
-        var $editFields;
+        var $editFields,
+            text = this.model.get('text');
 
         this.$el
             .append(this.renderThumbnail())
@@ -90,10 +92,20 @@ BaseCommentView = Backbone.View.extend({
                 openAnIssueText: gettext('Open an issue')
             })));
 
-        this.$textarea = this.$('textarea')
-            .text(this.model.get('text'));
+        this.$textarea = this.$('textarea');
         this.$issueOpened = this.$('.issue-opened')
             .prop('checked', this.model.get('issueOpened'));
+
+        if (!this.model.get('richText')) {
+            /*
+             * If this comment is modified and saved, it'll be saved as
+             * Markdown. Escape it so that nothing currently there is
+             * unintentionally interpreted as Markdown later.
+             */
+            text = RB.escapeMarkdown(text);
+        }
+
+        this.$textarea.text(text);
 
         $editFields = this.$('.edit-fields');
 
@@ -364,14 +376,29 @@ RB.ReviewDialogView = Backbone.View.extend({
 
         this.model.ready({
             ready: function() {
+                var bodyBottom,
+                    bodyTop;
+
                 this._renderDialog();
 
                 if (this.model.isNew()) {
                     this._$spinner.remove();
                     this._$spinner = null;
                 } else {
-                    this._$bodyBottom.text(this.model.get('bodyBottom') || '');
-                    this._$bodyTop.text(this.model.get('bodyTop') || '');
+                    bodyBottom = this.model.get('bodyBottom') || '';
+                    bodyTop = this.model.get('bodyTop') || '';
+
+                    if (!this.model.get('richText')) {
+                        /*
+                         * When saving, these will convert to Markdown,
+                         * so escape them before-hand.
+                         */
+                        bodyBottom = RB.escapeMarkdown(bodyBottom);
+                        bodyTop = RB.escapeMarkdown(bodyTop);
+                    }
+
+                    this._$bodyBottom.text(bodyBottom);
+                    this._$bodyTop.text(bodyTop);
                     this._$shipIt.prop('checked', this.model.get('shipIt'));
 
                     this._loadComments();
@@ -567,7 +594,8 @@ RB.ReviewDialogView = Backbone.View.extend({
                 shipIt: this._$shipIt.prop('checked'),
                 bodyTop: this._$bodyTop.val(),
                 bodyBottom: this._$bodyBottom.val(),
-                public: publish
+                public: publish,
+                richText: true
             });
 
             this.model.save({

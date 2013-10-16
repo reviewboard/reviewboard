@@ -6,6 +6,7 @@ from djblets.webapi.decorators import (webapi_login_required,
 from djblets.webapi.errors import (DOES_NOT_EXIST, NOT_LOGGED_IN,
                                    PERMISSION_DENIED)
 
+from reviewboard.reviews.markdown_utils import markdown_set_field_escaped
 from reviewboard.reviews.models import Review
 from reviewboard.webapi.decorators import webapi_check_local_site
 
@@ -105,6 +106,12 @@ class ReviewReplyResource(BaseReviewResource):
                                'If a reply is public, it cannot be made '
                                'private again.',
             },
+            'rich_text': {
+                'type': bool,
+                'description': 'Whether the body_top and body_bottom text '
+                               'is in rich-text (Markdown) format. '
+                               'The default is false.',
+            },
         },
     )
     def create(self, request, *args, **kwargs):
@@ -117,6 +124,9 @@ class ReviewReplyResource(BaseReviewResource):
         Initial data for the reply can be provided by passing data for
         any number of the fields. If nothing is provided, the reply will
         start off as blank.
+
+        If ``rich_text`` is provided and changed to true, then the ``body_top``
+        and ``body_bottom`` are expected to be in valid Markdown format.
 
         If the user submitting this reply already has a pending draft reply
         on this review, then this will update the existing draft and
@@ -175,6 +185,12 @@ class ReviewReplyResource(BaseReviewResource):
                                'If a reply is public, it cannot be made '
                                'private again.',
             },
+            'rich_text': {
+                'type': bool,
+                'description': 'Whether the body_top and body_bottom text '
+                               'is in rich-text (Markdown) format. '
+                               'The default is false.',
+            },
         },
     )
     def update(self, request, *args, **kwargs):
@@ -186,7 +202,16 @@ class ReviewReplyResource(BaseReviewResource):
         Only the owner of a reply can make changes. One or more fields can
         be updated at once.
 
-        The only special field is ``public``, which, if set to ``1``, will
+        If ``rich_text`` is provided and changed to true, then the ``body_top``
+        and ``body_bottom`` fields will be set to be interpreted as Markdown.
+        When setting to true and not specifying one or both of those fields,
+        the existing text will be escaped so as not to be unintentionally
+        interpreted as Markdown.
+
+        If ``rich_text`` is changed to false, and one or both of those fields
+        are not provided, the existing text will be unescaped.
+
+        The only special field is ``public``, which, if set to true, will
         publish the reply. The reply will then be made publicly visible. Once
         public, the reply cannot be modified or made private again.
         """
@@ -223,6 +248,8 @@ class ReviewReplyResource(BaseReviewResource):
             # to the user.
             return self._no_access_error(request.user)
 
+        old_rich_text = reply.rich_text
+
         for field in ('body_top', 'body_bottom'):
             value = kwargs.get(field, None)
 
@@ -235,6 +262,19 @@ class ReviewReplyResource(BaseReviewResource):
                     reply_to = reply.base_reply_to
 
                 setattr(reply, '%s_reply_to' % field, reply_to)
+
+        if 'rich_text' in kwargs:
+            rich_text = kwargs['rich_text']
+
+            if rich_text != old_rich_text:
+                reply.rich_text = rich_text
+
+                # rich_text has been changed, but new comment text has not.
+                # Escape or unescape the comment text as necessary.
+                for text_field in ('body_top', 'body_bottom'):
+                    if text_field not in kwargs:
+                        markdown_set_field_escaped(reply, text_field,
+                                                   rich_text)
 
         if public:
             reply.publish(user=request.user)

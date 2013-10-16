@@ -11,6 +11,9 @@ from reviewboard.webapi.tests.mixins import (
     BasicTestsMetaclass,
     ReviewRequestChildItemMixin,
     ReviewRequestChildListMixin)
+from reviewboard.webapi.tests.mixins_comment import (
+    CommentItemMixin,
+    CommentListMixin)
 from reviewboard.webapi.tests.urls import (
     get_review_screenshot_comment_item_url,
     get_review_screenshot_comment_list_url)
@@ -44,7 +47,8 @@ class BaseTestCase(BaseWebAPITestCase):
         return comment, review, review_request
 
 
-class ResourceListTests(ReviewRequestChildListMixin, BaseTestCase):
+class ResourceListTests(CommentListMixin, ReviewRequestChildListMixin,
+                        BaseTestCase):
     """Testing the ReviewScreenshotCommentResource list APIs."""
     __metaclass__ = BasicTestsMetaclass
 
@@ -65,6 +69,7 @@ class ResourceListTests(ReviewRequestChildListMixin, BaseTestCase):
         self.assertEqual(item_rsp['y'], comment.y)
         self.assertEqual(item_rsp['w'], comment.w)
         self.assertEqual(item_rsp['h'], comment.h)
+        self.assertEqual(item_rsp['rich_text'], comment.rich_text)
 
     #
     # HTTP GET tests
@@ -139,32 +144,6 @@ class ResourceListTests(ReviewRequestChildListMixin, BaseTestCase):
         self.assertEqual(rsp['screenshot_comments'][0]['text'], comment_text)
         self.assertTrue(rsp['screenshot_comments'][0]['issue_opened'])
 
-
-class ResourceItemTests(ReviewRequestChildItemMixin, BaseTestCase):
-    """Testing the ReviewScreenshotCommentResource item APIs."""
-    __metaclass__ = BasicTestsMetaclass
-
-    fixtures = ['test_users']
-    sample_api_url = \
-        'review-requests/<id>/reviews/<id>/screenshot-comments/<id>/'
-    resource = resources.review_screenshot_comment
-
-    def compare_item(self, item_rsp, comment):
-        self.assertEqual(item_rsp['id'], comment.pk)
-        self.assertEqual(item_rsp['text'], comment.text)
-        self.assertEqual(item_rsp['x'], comment.x)
-        self.assertEqual(item_rsp['y'], comment.y)
-        self.assertEqual(item_rsp['w'], comment.w)
-        self.assertEqual(item_rsp['h'], comment.h)
-
-    def setup_review_request_child_test(self, review_request):
-        screenshot = self.create_screenshot(review_request)
-        review = self.create_review(review_request, user=self.user)
-        comment = self.create_screenshot_comment(review, screenshot)
-
-        return (get_review_screenshot_comment_item_url(review, comment.pk),
-                screenshot_comment_item_mimetype)
-
     def test_post_with_extra_fields(self):
         """Testing the
         POST review-requests/<id>/reviews/<id>/screenshots-comments/ API
@@ -209,6 +188,34 @@ class ResourceItemTests(ReviewRequestChildItemMixin, BaseTestCase):
                          extra_fields['extra_data.foo'])
         self.assertEqual(comment.extra_data['bar'],
                          extra_fields['extra_data.bar'])
+
+
+class ResourceItemTests(CommentItemMixin, ReviewRequestChildItemMixin,
+                        BaseTestCase):
+    """Testing the ReviewScreenshotCommentResource item APIs."""
+    __metaclass__ = BasicTestsMetaclass
+
+    fixtures = ['test_users']
+    sample_api_url = \
+        'review-requests/<id>/reviews/<id>/screenshot-comments/<id>/'
+    resource = resources.review_screenshot_comment
+
+    def compare_item(self, item_rsp, comment):
+        self.assertEqual(item_rsp['id'], comment.pk)
+        self.assertEqual(item_rsp['text'], comment.text)
+        self.assertEqual(item_rsp['x'], comment.x)
+        self.assertEqual(item_rsp['y'], comment.y)
+        self.assertEqual(item_rsp['w'], comment.w)
+        self.assertEqual(item_rsp['h'], comment.h)
+        self.assertEqual(item_rsp['rich_text'], comment.rich_text)
+
+    def setup_review_request_child_test(self, review_request):
+        screenshot = self.create_screenshot(review_request)
+        review = self.create_review(review_request, user=self.user)
+        comment = self.create_screenshot_comment(review, screenshot)
+
+        return (get_review_screenshot_comment_item_url(review, comment.pk),
+                screenshot_comment_item_mimetype)
 
     #
     # HTTP DELETE tests
@@ -287,9 +294,9 @@ class ResourceItemTests(ReviewRequestChildItemMixin, BaseTestCase):
 
     def check_put_result(self, user, item_rsp, comment, *args):
         comment = ScreenshotComment.objects.get(pk=comment.pk)
-        self.assertEqual(item_rsp['id'], comment.pk)
+        self.assertFalse(item_rsp['rich_text'])
         self.assertEqual(item_rsp['text'], 'Test comment')
-        self.assertEqual(comment.text, 'Test comment')
+        self.compare_item(item_rsp, comment)
 
     def test_put_with_issue(self):
         """Testing the

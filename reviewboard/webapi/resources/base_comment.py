@@ -2,6 +2,7 @@ from django.core.exceptions import ObjectDoesNotExist, PermissionDenied
 from django.utils.formats import localize
 from djblets.webapi.errors import DOES_NOT_EXIST
 
+from reviewboard.reviews.markdown_utils import markdown_set_field_escaped
 from reviewboard.reviews.models import BaseComment
 from reviewboard.webapi.base import WebAPIResource
 from reviewboard.webapi.resources import resources
@@ -66,11 +67,12 @@ class BaseCommentResource(WebAPIResource):
     def has_delete_permissions(self, request, obj, *args, **kwargs):
         return obj.is_mutable_by(request.user)
 
-    def create_comment(self, fields, text, issue_opened=False, extra_fields={},
-                       **kwargs):
+    def create_comment(self, review, fields, text, issue_opened=False,
+                       rich_text=False, extra_fields={}, **kwargs):
         comment_kwargs = {
-            'text': text.strip(),
             'issue_opened': bool(issue_opened),
+            'rich_text': rich_text,
+            'text': text.strip(),
         }
 
         for field in fields:
@@ -89,25 +91,42 @@ class BaseCommentResource(WebAPIResource):
         return new_comment
 
     def update_comment(self, comment, update_fields=(), extra_fields={},
+                       is_reply=False,
                        **kwargs):
-        # If we've updated the comment from having no issue opened,
-        # to having an issue opened, we need to set the issue status
-        # to OPEN.
-        if not comment.issue_opened and kwargs.get('issue_opened', False):
-            comment.issue_status = BaseComment.OPEN
+        if not is_reply:
+            # If we've updated the comment from having no issue opened,
+            # to having an issue opened, we need to set the issue status
+            # to OPEN.
+            if not comment.issue_opened and kwargs.get('issue_opened', False):
+                comment.issue_status = BaseComment.OPEN
 
-        # If we've updated the comment from having an issue opened to having
-        # no issue opened, set the issue status back to null.
-        if comment.issue_opened and not kwargs.get('issue_opened', True):
-            comment.issue_status = None
+            # If we've updated the comment from having an issue opened to
+            # having no issue opened, set the issue status back to null.
+            if comment.issue_opened and not kwargs.get('issue_opened', True):
+                comment.issue_status = None
 
-        for field in ('text', 'issue_opened') + update_fields:
+        old_rich_text = comment.rich_text
+
+        for field in ('text', 'issue_opened', 'rich_text') + update_fields:
             value = kwargs.get(field, None)
 
             if value is not None:
+                if isinstance(value, basestring):
+                    value = value.strip()
+
                 setattr(comment, field, value)
 
-        self._import_extra_data(comment.extra_data, extra_fields)
+        if 'rich_text' in kwargs:
+            rich_text = kwargs['rich_text']
+
+            if rich_text != old_rich_text and 'text' not in kwargs:
+                # rich_text has been changed, but new comment text has not.
+                # Escape or unescape the comment text as necessary.
+                markdown_set_field_escaped(comment, 'text', rich_text)
+
+        if not is_reply:
+            self._import_extra_data(comment.extra_data, extra_fields)
+
         comment.save()
 
     def update_issue_status(self, request, comment_resource, *args, **kwargs):

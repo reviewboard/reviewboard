@@ -21,8 +21,13 @@ class ResourceTests(BaseWebAPITestCase):
     resource = resources.review_request_draft
 
     def compare_item(self, item_rsp, draft):
+        changedesc = draft.changedesc
+
         self.assertEqual(item_rsp['description'], draft.description)
         self.assertEqual(item_rsp['testing_done'], draft.testing_done)
+        self.assertEqual(item_rsp['rich_text'], draft.rich_text)
+        self.assertEqual(item_rsp['rich_text'], changedesc.rich_text)
+        self.assertEqual(item_rsp['changedescription'], changedesc.text)
 
     #
     # HTTP DELETE tests
@@ -77,6 +82,7 @@ class ResourceTests(BaseWebAPITestCase):
     def check_post_result(self, user, rsp, review_request):
         draft = review_request.get_draft()
         self.assertIsNotNone(draft)
+        self.assertFalse(draft.rich_text)
         self.compare_item(rsp['draft'], draft)
 
     #
@@ -122,6 +128,54 @@ class ResourceTests(BaseWebAPITestCase):
         draft = ReviewRequestDraft.objects.get(pk=rsp['draft']['id'])
         self.assertNotEqual(draft.changedesc, None)
         self.assertEqual(draft.changedesc.text, changedesc)
+
+    def test_put_with_rich_text_true_all_fields(self):
+        """Testing the PUT review-requests/<id>/draft/ API
+        with rich_text=true and all fields specified
+        """
+        self._test_put_with_rich_text_all_fields(True)
+
+    def test_put_with_rich_text_false_all_fields(self):
+        """Testing the PUT review-requests/<id>/draft/ API
+        with rich_text=false and all fields specified
+        """
+        self._test_put_with_rich_text_all_fields(False)
+
+    def test_put_with_rich_text_true_escaping_all_fields(self):
+        """Testing the PUT review-requests/<id>/draft/ API
+        with changing rich_text to true and escaping all fields
+        """
+        self._test_put_with_rich_text_escaping_all_fields(
+            True,
+            '`This` is a **test**',
+            '\\`This\\` is a \\*\\*test\\*\\*')
+
+    def test_put_with_rich_text_false_unescaping_all_fields(self):
+        """Testing the PUT review-requests/<id>/draft/ API
+        with changing rich_text to false and unescaping all fields
+        """
+        self._test_put_with_rich_text_escaping_all_fields(
+            False,
+            '\\`This\\` is a \\*\\*test\\*\\*',
+            '`This` is a **test**')
+
+    def test_put_with_rich_text_true_escaping_unspecified_fields(self):
+        """Testing the PUT review-requests/<id>/draft/ API
+        with changing rich_text to true and escaping unspecified fields
+        """
+        self._test_put_with_rich_text_escaping_unspecified_fields(
+            True,
+            '`This` is a **test**',
+            '\\`This\\` is a \\*\\*test\\*\\*')
+
+    def test_put_with_rich_text_false_unescaping_unspecified_fields(self):
+        """Testing the PUT review-requests/<id>/draft/ API
+        with changing rich_text to false and unescaping unspecified fields
+        """
+        self._test_put_with_rich_text_escaping_unspecified_fields(
+            False,
+            '\\`This\\` is a \\*\\*test\\*\\*',
+            '`This` is a **test**')
 
     def test_put_with_depends_on(self):
         """Testing the PUT review-requests/<id>/draft/ API
@@ -378,3 +432,97 @@ class ResourceTests(BaseWebAPITestCase):
 
         return self._create_update_review_request(
             apiFunc, expected_status, review_request, self.local_site_name)
+
+    def _test_put_with_rich_text_all_fields(self, rich_text):
+        text = '`This` is a **test**'
+
+        review_request = self.create_review_request(submitter=self.user,
+                                                    publish=True)
+
+        rsp = self.apiPut(
+            get_review_request_draft_url(review_request),
+            {
+                'rich_text': rich_text,
+                'changedescription': text,
+                'description': text,
+                'testing_done': text,
+            },
+            expected_mimetype=review_request_draft_item_mimetype)
+
+        self.assertEqual(rsp['stat'], 'ok')
+
+        draft_rsp = rsp['draft']
+        self.assertEqual(draft_rsp['rich_text'], rich_text)
+        self.assertEqual(draft_rsp['changedescription'], text)
+        self.assertEqual(draft_rsp['description'], text)
+        self.assertEqual(draft_rsp['testing_done'], text)
+
+        draft = ReviewRequestDraft.objects.get(pk=rsp['draft']['id'])
+        self.compare_item(draft_rsp, draft)
+
+    def _test_put_with_rich_text_escaping_all_fields(
+            self, rich_text, text, expected_text):
+
+        review_request = self.create_review_request(submitter=self.user,
+                                                    publish=True)
+        review_request.rich_text = not rich_text
+        review_request.description = text
+        review_request.testing_done = text
+        review_request.save()
+
+        draft = ReviewRequestDraft.create(review_request)
+        draft.changedesc.text = text
+        draft.changedesc.save()
+
+        rsp = self.apiPut(
+            get_review_request_draft_url(review_request),
+            {
+                'rich_text': rich_text,
+            },
+            expected_mimetype=review_request_draft_item_mimetype)
+
+        self.assertEqual(rsp['stat'], 'ok')
+
+        draft_rsp = rsp['draft']
+        self.assertEqual(draft_rsp['rich_text'], rich_text)
+        self.assertEqual(draft_rsp['changedescription'], expected_text)
+        self.assertEqual(draft_rsp['description'], expected_text)
+        self.assertEqual(draft_rsp['testing_done'], expected_text)
+
+        draft = ReviewRequestDraft.objects.get(pk=rsp['draft']['id'])
+        self.compare_item(draft_rsp, draft)
+
+    def _test_put_with_rich_text_escaping_unspecified_fields(
+            self, rich_text, text, expected_text):
+
+        description = '`This` is the **description**'
+
+        review_request = self.create_review_request(submitter=self.user,
+                                                    publish=True)
+        review_request.rich_text = not rich_text
+        review_request.description = text
+        review_request.testing_done = text
+        review_request.save()
+
+        draft = ReviewRequestDraft.create(review_request)
+        draft.changedesc.text = text
+        draft.changedesc.save()
+
+        rsp = self.apiPut(
+            get_review_request_draft_url(review_request),
+            {
+                'rich_text': rich_text,
+                'description': description,
+            },
+            expected_mimetype=review_request_draft_item_mimetype)
+
+        self.assertEqual(rsp['stat'], 'ok')
+
+        draft_rsp = rsp['draft']
+        self.assertEqual(draft_rsp['rich_text'], rich_text)
+        self.assertEqual(draft_rsp['changedescription'], expected_text)
+        self.assertEqual(draft_rsp['description'], description)
+        self.assertEqual(draft_rsp['testing_done'], expected_text)
+
+        draft = ReviewRequestDraft.objects.get(pk=rsp['draft']['id'])
+        self.compare_item(draft_rsp, draft)

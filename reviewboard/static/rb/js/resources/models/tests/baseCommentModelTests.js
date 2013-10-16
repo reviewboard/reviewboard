@@ -131,6 +131,16 @@ describe('resources/models/BaseComment', function() {
             });
         });
 
+        describe('richText field', function() {
+            it('With value', function() {
+                var data;
+
+                model.set('richText', true);
+                data = model.toJSON();
+                expect(data.rich_text).toBe(true);
+            });
+        });
+
         describe('text field', function() {
             it('With value', function() {
                 var data;

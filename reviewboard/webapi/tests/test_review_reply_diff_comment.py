@@ -8,12 +8,16 @@ from reviewboard.webapi.tests.mixins import (
     BasicTestsMetaclass,
     ReviewRequestChildItemMixin,
     ReviewRequestChildListMixin)
+from reviewboard.webapi.tests.mixins_comment import (
+    CommentReplyItemMixin,
+    CommentReplyListMixin)
 from reviewboard.webapi.tests.urls import (
     get_review_reply_diff_comment_item_url,
     get_review_reply_diff_comment_list_url)
 
 
-class ResourceListTests(ReviewRequestChildListMixin, BaseWebAPITestCase):
+class ResourceListTests(CommentReplyListMixin, ReviewRequestChildListMixin,
+                        BaseWebAPITestCase):
     """Testing the ReviewReplyDiffCommentResource list APIs."""
     __metaclass__ = BasicTestsMetaclass
 
@@ -42,6 +46,7 @@ class ResourceListTests(ReviewRequestChildListMixin, BaseWebAPITestCase):
     def compare_item(self, item_rsp, comment):
         self.assertEqual(item_rsp['id'], comment.pk)
         self.assertEqual(item_rsp['text'], comment.text)
+        self.assertEqual(item_rsp['rich_text'], comment.rich_text)
 
     #
     # HTTP GET tests
@@ -100,6 +105,7 @@ class ResourceListTests(ReviewRequestChildListMixin, BaseWebAPITestCase):
         reply_comment = Comment.objects.get(pk=rsp['diff_comment']['id'])
         self.assertEqual(reply_comment.text, 'Test comment')
         self.assertEqual(reply_comment.reply_to, comment)
+        self.assertFalse(reply_comment.rich_text)
         self.compare_item(rsp['diff_comment'], reply_comment)
 
     def test_post_with_http_303(self):
@@ -136,7 +142,8 @@ class ResourceListTests(ReviewRequestChildListMixin, BaseWebAPITestCase):
         self.assertEqual(reply_comment.text, comment_text)
 
 
-class ResourceItemTests(ReviewRequestChildItemMixin, BaseWebAPITestCase):
+class ResourceItemTests(CommentReplyItemMixin, ReviewRequestChildItemMixin,
+                        BaseWebAPITestCase):
     """Testing the ReviewReplyDiffCommentResource item APIs."""
     __metaclass__ = BasicTestsMetaclass
 
@@ -165,6 +172,7 @@ class ResourceItemTests(ReviewRequestChildItemMixin, BaseWebAPITestCase):
     def compare_item(self, item_rsp, comment):
         self.assertEqual(item_rsp['id'], comment.pk)
         self.assertEqual(item_rsp['text'], comment.text)
+        self.assertEqual(item_rsp['rich_text'], comment.rich_text)
 
     #
     # HTTP DELETE tests
@@ -252,3 +260,4 @@ class ResourceItemTests(ReviewRequestChildItemMixin, BaseWebAPITestCase):
         self.assertEqual(item_rsp['id'], comment.pk)
         self.assertEqual(item_rsp['text'], 'Test comment')
         self.assertEqual(comment.text, 'Test comment')
+        self.assertFalse(comment.rich_text)

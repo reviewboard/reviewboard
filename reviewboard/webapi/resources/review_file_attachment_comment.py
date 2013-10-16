@@ -60,6 +60,11 @@ class ReviewFileAttachmentCommentResource(BaseFileAttachmentCommentResource):
                 'type': bool,
                 'description': 'Whether the comment opens an issue.',
             },
+            'rich_text': {
+                'type': bool,
+                'description': 'Whether the comment text is in rich-text '
+                               '(Markdown) format. The default is false.',
+            },
         },
         allow_unknown=True
     )
@@ -70,6 +75,9 @@ class ReviewFileAttachmentCommentResource(BaseFileAttachmentCommentResource):
         This will create a new comment on a file as part of a review.
         The comment contains text and dimensions for the area being commented
         on.
+
+        If ``rich_text`` is provided and set to true, then the the ``text``
+        field is expected to be in valid Markdown format.
         """
         try:
             review_request = \
@@ -110,6 +118,7 @@ class ReviewFileAttachmentCommentResource(BaseFileAttachmentCommentResource):
                 }
 
         new_comment = self.create_comment(
+            review=review,
             file_attachment=file_attachment,
             diff_against_file_attachment=diff_against_file_attachment,
             fields=('file_attachment', 'diff_against_file_attachment'),
@@ -136,7 +145,12 @@ class ReviewFileAttachmentCommentResource(BaseFileAttachmentCommentResource):
             'issue_status': {
                 'type': ('dropped', 'open', 'resolved'),
                 'description': 'The status of an open issue.',
-            }
+            },
+            'rich_text': {
+                'type': bool,
+                'description': 'Whether the comment text is in rich-text '
+                               '(Markdown) format. The default is false.',
+            },
         },
         allow_unknown=True
     )
@@ -145,6 +159,14 @@ class ReviewFileAttachmentCommentResource(BaseFileAttachmentCommentResource):
 
         This can update the text or region of an existing comment. It
         can only be done for comments that are part of a draft review.
+
+        If ``rich_text`` is provided and changed to true, then the ``text``
+        field will be set to be interpreted as Markdown. When setting to true
+        and not specifying any new text, the existing text will be escaped so
+        as not to be unintentionally interpreted as Markdown.
+
+        If ``rich_text`` is changed to false, and new text is not provided,
+        the existing text will be unescaped.
         """
         try:
             resources.review_request.get_object(request, *args, **kwargs)

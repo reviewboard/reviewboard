@@ -391,6 +391,26 @@ describe('views/ReviewRequestEditorView', function() {
                     expect(reviewRequest.close).toHaveBeenCalled();
                 });
 
+                describe('Formatting', function() {
+                    it('Links', function() {
+                        reviewRequest.draft.set('changeDescription',
+                                                'Testing /r/123');
+
+                        expect(view.$('#changedescription').html()).toBe(
+                            '<p>Testing <a href="/r/123/" target="_blank">' +
+                            '/r/123</a></p>');
+                    });
+
+                    it('Markdown', function() {
+                        reviewRequest.draft.set('changeDescription',
+                                                '`This` is a **test**');
+
+                        expect(view.$('#changedescription').html()).toBe(
+                            '<p><code>This</code> is a ' +
+                            '<strong>test</strong></p>');
+                    });
+                });
+
                 editCountTests();
             }
 
@@ -430,11 +450,22 @@ describe('views/ReviewRequestEditorView', function() {
             hasEditorTest();
             savingTest();
 
-            it('Formatting', function() {
-                reviewRequest.draft.set('description', 'Testing /r/123');
+            describe('Formatting', function() {
+                it('Links', function() {
+                    reviewRequest.draft.set('description', 'Testing /r/123');
 
-                expect(view.$('#description').html()).toBe(
-                    'Testing <a target="_blank" href="/r/123/">/r/123</a>');
+                    expect(view.$('#description').html()).toBe(
+                        '<p>Testing <a href="/r/123/" target="_blank">' +
+                        '/r/123</a></p>');
+                });
+
+                it('Markdown', function() {
+                    reviewRequest.draft.set('description',
+                                            '`This` is a **test**');
+
+                    expect(view.$('#description').html()).toBe(
+                        '<p><code>This</code> is a <strong>test</strong></p>');
+                });
             });
 
             editCountTests();
@@ -460,11 +491,22 @@ describe('views/ReviewRequestEditorView', function() {
             hasEditorTest();
             savingTest();
 
-            it('Formatting', function() {
-                reviewRequest.draft.set('testingDone', 'Testing /r/123');
+            describe('Formatting', function() {
+                it('Links', function() {
+                    reviewRequest.draft.set('testingDone', 'Testing /r/123');
 
-                expect(view.$('#testing_done').html()).toBe(
-                    'Testing <a target="_blank" href="/r/123/">/r/123</a>');
+                    expect(view.$('#testing_done').html()).toBe(
+                        '<p>Testing <a href="/r/123/" target="_blank">' +
+                        '/r/123</a></p>');
+                });
+
+                it('Markdown', function() {
+                    reviewRequest.draft.set('testingDone',
+                                            '`This` is a **test**');
+
+                    expect(view.$('#testing_done').html()).toBe(
+                        '<p><code>This</code> is a <strong>test</strong></p>');
+                });
             });
 
             editCountTests();

@@ -7,6 +7,7 @@ from djblets.webapi.decorators import (webapi_login_required,
 from djblets.webapi.errors import (DOES_NOT_EXIST, NOT_LOGGED_IN,
                                    PERMISSION_DENIED)
 
+from reviewboard.reviews.markdown_utils import markdown_set_field_escaped
 from reviewboard.reviews.models import Review
 from reviewboard.webapi.base import WebAPIResource
 from reviewboard.webapi.decorators import webapi_check_local_site
@@ -110,6 +111,12 @@ class BaseReviewResource(WebAPIResource):
                                'If a review is public, it cannot be made '
                                'private again.',
             },
+            'rich_text': {
+                'type': bool,
+                'description': 'Whether the body_top and body_bottom text '
+                               'is in rich-text (Markdown) format. '
+                               'The default is false.',
+            },
         },
     )
     def create(self, request, *args, **kwargs):
@@ -122,6 +129,9 @@ class BaseReviewResource(WebAPIResource):
         Initial data for the review can be provided by passing data for
         any number of the fields. If nothing is provided, the review will
         start off as blank.
+
+        If ``rich_text`` is provided and changed to true, then the ``body_top``
+        and ``body_bottom`` are expected to be in valid Markdown format.
 
         If the user submitting this review already has a pending draft review
         on this review request, then this will update the existing draft and
@@ -181,18 +191,30 @@ class BaseReviewResource(WebAPIResource):
                                'If a review is public, it cannot be made '
                                'private again.',
             },
+            'rich_text': {
+                'type': bool,
+                'description': 'Whether the body_top and body_bottom text '
+                               'is in rich-text (Markdown) format. '
+                               'The default is false.',
+            },
         },
     )
     def update(self, request, *args, **kwargs):
-        """Updates a review.
-
-        This updates the fields of a draft review. Published reviews cannot
-        be updated.
+        """Updates the fields of an unpublished review.
 
         Only the owner of a review can make changes. One or more fields can
         be updated at once.
 
-        The only special field is ``public``, which, if set to ``1``, will
+        If ``rich_text`` is provided and changed to true, then the ``body_top``
+        and ``body_bottom`` fields will be set to be interpreted as Markdown.
+        When setting to true and not specifying one or both of those fields,
+        the existing text will be escaped so as not to be unintentionally
+        interpreted as Markdown.
+
+        If ``rich_text`` is changed to false, and one or both of those fields
+        are not provided, the existing text will be unescaped.
+
+        The only special field is ``public``, which, if set to true, will
         publish the review. The review will then be made publicly visible. Once
         public, the review cannot be modified or made private again.
         """
@@ -236,7 +258,9 @@ class BaseReviewResource(WebAPIResource):
             # to the user.
             return self._no_access_error(request.user)
 
-        for field in ('ship_it', 'body_top', 'body_bottom'):
+        old_rich_text = review.rich_text
+
+        for field in ('ship_it', 'body_top', 'body_bottom', 'rich_text'):
             value = kwargs.get(field, None)
 
             if value is not None:
@@ -244,6 +268,17 @@ class BaseReviewResource(WebAPIResource):
                     value = value.strip()
 
                 setattr(review, field, value)
+
+        if 'rich_text' in kwargs:
+            rich_text = kwargs['rich_text']
+
+            if rich_text != old_rich_text:
+                # rich_text has been changed, but new comment text has not.
+                # Escape or unescape the comment text as necessary.
+                for text_field in ('body_top', 'body_bottom'):
+                    if text_field not in kwargs:
+                        markdown_set_field_escaped(review, text_field,
+                                                   rich_text)
 
         review.save()
 

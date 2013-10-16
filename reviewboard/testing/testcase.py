@@ -95,7 +95,7 @@ class TestCase(DjbletsTestCase):
     def create_diff_comment(self, review, filediff, interfilediff=None,
                             text='My comment', issue_opened=False,
                             first_line=1, num_lines=5, extra_fields=None,
-                            reply_to=None):
+                            reply_to=None, **kwargs):
         """Creates a Comment for testing.
 
         The comment is tied to the given Review and FileDiff (and, optionally,
@@ -115,7 +115,8 @@ class TestCase(DjbletsTestCase):
             text=text,
             issue_opened=issue_opened,
             issue_status=issue_status,
-            reply_to=reply_to)
+            reply_to=reply_to,
+            **kwargs)
 
         if extra_fields:
             comment.extra_data = extra_fields
@@ -384,7 +385,7 @@ class TestCase(DjbletsTestCase):
 
     def create_screenshot_comment(self, review, screenshot, text='My comment',
                                   x=1, y=1, w=5, h=5, issue_opened=False,
-                                  extra_fields=None, reply_to=None):
+                                  extra_fields=None, reply_to=None, **kwargs):
         """Creates a ScreenshotComment for testing.
 
         The comment is tied to the given Review and Screenshot. It's
@@ -404,7 +405,8 @@ class TestCase(DjbletsTestCase):
             h=h,
             issue_opened=issue_opened,
             issue_status=issue_status,
-            reply_to=reply_to)
+            reply_to=reply_to,
+            **kwargs)
 
         if extra_fields:
             comment.extra_data = extra_fields

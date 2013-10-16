@@ -11,6 +11,7 @@ from djblets.webapi.decorators import (webapi_login_required,
 from djblets.webapi.errors import (DOES_NOT_EXIST, INVALID_FORM_DATA,
                                    NOT_LOGGED_IN, PERMISSION_DENIED)
 
+from reviewboard.reviews.markdown_utils import markdown_set_field_escaped
 from reviewboard.reviews.models import Group, ReviewRequest, ReviewRequestDraft
 from reviewboard.webapi.base import WebAPIResource
 from reviewboard.webapi.decorators import webapi_check_local_site
@@ -196,6 +197,13 @@ class ReviewRequestDraftResource(WebAPIResource):
                                'If a review is public, it cannot be made '
                                'private again.',
             },
+            'rich_text': {
+                'type': bool,
+                'description': 'Whether or not the review request '
+                               'description, testing_done and '
+                               'changedescription fields are in rich-text '
+                               '(Markdown) format.',
+            },
             'summary': {
                 'type': str,
                 'description': 'The new review request summary.',
@@ -223,6 +231,16 @@ class ReviewRequestDraftResource(WebAPIResource):
 
         All fields from the review request will be copied over to the draft,
         unless overridden in the request.
+
+        If ``rich_text`` is provided and changed to true, then the
+        ``changedescription``, ``description`` and ``testing_done`` fields
+        will be set to be interpreted as Markdown. When setting to true and not
+        specifying any new text, the existing text from the review request
+        will be escaped so as not to be unintentionally interpreted as
+        Markdown.
+
+        If ``rich_text`` is changed to false, and new text is not provided,
+        the existing text from the review request will be unescaped.
         """
         # A draft is a singleton. Creating and updating it are the same
         # operations in practice.
@@ -266,6 +284,13 @@ class ReviewRequestDraftResource(WebAPIResource):
                                'review request, and the old draft will be '
                                'deleted.',
             },
+            'rich_text': {
+                'type': bool,
+                'description': 'Whether or not the review request '
+                               'description, testing_done and '
+                               'changedescription fields are in rich-text '
+                               '(Markdown) format.',
+            },
             'summary': {
                 'type': str,
                 'description': 'The new review request summary.',
@@ -298,6 +323,15 @@ class ReviewRequestDraftResource(WebAPIResource):
         review request itself, making it public, and sending out a notification
         (such as an e-mail) if configured on the server. The current draft will
         then be deleted.
+
+        If ``rich_text`` is provided and changed to true, then the
+        ``changedescription``, ``description`` and ``testing_done`` fields
+        will be set to be interpreted as Markdown. When setting to true and not
+        specifying any new text, the existing text will be escaped so as not to
+        be unintentionally interpreted as Markdown.
+
+        If ``rich_text`` is changed to false, and new text is not provided,
+        the existing text will be unescaped.
         """
         try:
             review_request = resources.review_request.get_object(
@@ -313,6 +347,10 @@ class ReviewRequestDraftResource(WebAPIResource):
         modified_objects = []
         invalid_fields = {}
 
+        old_rich_text = draft.rich_text
+        old_changedesc_rich_text = (draft.changedesc_id is not None and
+                                    draft.changedesc.rich_text)
+
         for field_name, field_info in self.fields.iteritems():
             if (field_info.get('mutable', True) and
                 kwargs.get(field_name, None) is not None):
@@ -326,8 +364,33 @@ class ReviewRequestDraftResource(WebAPIResource):
                 elif field_modified_objects:
                     modified_objects += field_modified_objects
 
+        if 'rich_text' in kwargs:
+            rich_text = kwargs['rich_text']
+
+            # If the caller has changed the rich_text setting, we will need to
+            # update any affected fields we already have stored that weren't
+            # changed in this request by escaping or unescaping their
+            # contents.
+            if rich_text != old_rich_text:
+                for text_field in ('description', 'testing_done'):
+                    if text_field not in kwargs:
+                        markdown_set_field_escaped(draft, text_field,
+                                                   rich_text)
+
+            if draft.changedesc_id and rich_text != old_changedesc_rich_text:
+                changedesc = draft.changedesc
+                changedesc.rich_text = rich_text
+
+                if 'changedescription' not in kwargs:
+                    # The change description's rich_text was not necessarily
+                    # in sync with the draft's, so we're handling all this
+                    # separately.
+                    markdown_set_field_escaped(changedesc, 'text', rich_text)
+
+                modified_objects.append(draft.changedesc)
+
         if always_save or not invalid_fields:
-            for obj in modified_objects:
+            for obj in set(modified_objects):
                 obj.save()
 
             draft.save()

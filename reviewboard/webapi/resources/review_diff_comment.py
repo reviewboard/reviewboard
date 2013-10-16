@@ -68,6 +68,11 @@ class ReviewDiffCommentResource(BaseDiffCommentResource):
                 'type': bool,
                 'description': 'Whether the comment opens an issue.',
             },
+            'rich_text': {
+                'type': bool,
+                'description': 'Whether the comment text is in rich-text '
+                               '(Markdown) format. The default is false.',
+            },
         },
         allow_unknown=True,
     )
@@ -77,6 +82,9 @@ class ReviewDiffCommentResource(BaseDiffCommentResource):
 
         This will create a new diff comment on this review. The review
         must be a draft review.
+
+        If ``rich_text`` is provided and set to true, then the the ``text``
+        field is expected to be in valid Markdown format.
         """
         try:
             review_request = \
@@ -119,6 +127,7 @@ class ReviewDiffCommentResource(BaseDiffCommentResource):
             }
 
         new_comment = self.create_comment(
+            review=review,
             filediff=filediff,
             interfilediff=interfilediff,
             fields=('filediff', 'interfilediff', 'first_line', 'num_lines'),
@@ -153,7 +162,12 @@ class ReviewDiffCommentResource(BaseDiffCommentResource):
             'issue_status': {
                 'type': ('dropped', 'open', 'resolved'),
                 'description': 'The status of an open issue.',
-            }
+            },
+            'rich_text': {
+                'type': bool,
+                'description': 'Whether the comment text is in rich-text '
+                               '(Markdown) format. The default is false.',
+            },
         },
         allow_unknown=True,
     )
@@ -161,6 +175,14 @@ class ReviewDiffCommentResource(BaseDiffCommentResource):
         """Updates a diff comment.
 
         This can update the text or line range of an existing comment.
+
+        If ``rich_text`` is provided and changed to true, then the ``text``
+        field will be set to be interpreted as Markdown. When setting to true
+        and not specifying any new text, the existing text will be escaped so
+        as not to be unintentionally interpreted as Markdown.
+
+        If ``rich_text`` is changed to false, and new text is not provided,
+        the existing text will be unescaped.
         """
         try:
             resources.review_request.get_object(request, *args, **kwargs)

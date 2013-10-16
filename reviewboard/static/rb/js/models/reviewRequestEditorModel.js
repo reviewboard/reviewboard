@@ -95,6 +95,21 @@ RB.ReviewRequestEditor = Backbone.Model.extend({
             return;
         }
 
+        if (!reviewRequest.draft.get('richText') &&
+            (fieldName === 'changeDescription' ||
+             fieldName === 'description' ||
+             fieldName === 'testingDone')) {
+            /*
+             * The review request was not previously rich text, but we want
+             * it to be.
+             *
+             * It is expected that the view will, at this point, have converted
+             * the initial text on the client side to valid Markdown (by
+             * escaping the text on load).
+             */
+            data.rich_text = true;
+        }
+
         jsonFieldName = this._jsonFieldMap[fieldName] || fieldName;
         data[jsonFieldName] = value;
 

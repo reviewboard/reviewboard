@@ -14,6 +14,8 @@ from kgb import SpyAgency
 from reviewboard.accounts.models import Profile, LocalSiteProfile
 from reviewboard.attachments.models import FileAttachment
 from reviewboard.reviews.forms import DefaultReviewerForm, GroupForm
+from reviewboard.reviews.markdown_utils import (markdown_escape,
+                                                markdown_unescape)
 from reviewboard.reviews.models import (Comment,
                                         DefaultReviewer,
                                         Group,
@@ -2608,3 +2610,18 @@ class UserInfoboxTests(TestCase):
         user.save()
 
         self.client.get(local_site_reverse('user-infobox', args=['test']))
+
+
+class MarkdownUtilsTests(TestCase):
+    UNESCAPED_TEXT = '\\`*_{}[]()>#+-.!'
+    ESCAPED_TEXT = '\\\\\\`\\*\\_\\{\\}\\[\\]\\(\\)\\>\\#\\+\\-\\.\\!'
+
+    def test_markdown_escape(self):
+        """Testing markdown_escape"""
+        self.assertEqual(markdown_escape(self.UNESCAPED_TEXT),
+                         self.ESCAPED_TEXT)
+
+    def test_markdown_unescape(self):
+        """Testing markdown_unescape"""
+        self.assertEqual(markdown_unescape(self.ESCAPED_TEXT),
+                         self.UNESCAPED_TEXT)
