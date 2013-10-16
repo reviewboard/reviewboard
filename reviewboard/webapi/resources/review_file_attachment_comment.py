@@ -62,8 +62,7 @@ class ReviewFileAttachmentCommentResource(BaseFileAttachmentCommentResource):
         allow_unknown=True
     )
     def create(self, request, file_attachment_id=None,
-               diff_against_file_attachment_id=None, text=None,
-               issue_opened=False, extra_fields={}, *args, **kwargs):
+               diff_against_file_attachment_id=None, *args, **kwargs):
         """Creates a file comment on a review.
 
         This will create a new comment on a file as part of a review.
@@ -108,23 +107,12 @@ class ReviewFileAttachmentCommentResource(BaseFileAttachmentCommentResource):
                     }
                 }
 
-        new_comment = self.model(
+        new_comment = self.create_comment(
             file_attachment=file_attachment,
             diff_against_file_attachment=diff_against_file_attachment,
-            text=text.strip(),
-            issue_opened=bool(issue_opened))
-
-        self._import_extra_data(new_comment.extra_data, extra_fields)
-
-        if issue_opened:
-            new_comment.issue_status = BaseComment.OPEN
-        else:
-            new_comment.issue_status = None
-
-        new_comment.save()
-
+            fields=('file_attachment', 'diff_against_file_attachment'),
+            **kwargs)
         review.file_attachment_comments.add(new_comment)
-        review.save()
 
         return 201, {
             self.item_result_key: new_comment,
@@ -150,7 +138,7 @@ class ReviewFileAttachmentCommentResource(BaseFileAttachmentCommentResource):
         },
         allow_unknown=True
     )
-    def update(self, request, extra_fields={}, *args, **kwargs):
+    def update(self, request, *args, **kwargs):
         """Updates a file comment.
 
         This can update the text or region of an existing comment. It
@@ -170,20 +158,7 @@ class ReviewFileAttachmentCommentResource(BaseFileAttachmentCommentResource):
         if not resources.review.has_modify_permissions(request, review):
             return self._no_access_error(request.user)
 
-        # If we've updated the comment from having no issue opened,
-        # to having an issue opened, we need to set the issue status
-        # to OPEN.
-        if not file_comment.issue_opened and kwargs.get('issue_opened', False):
-            file_comment.issue_status = BaseComment.OPEN
-
-        for field in ('text', 'issue_opened'):
-            value = kwargs.get(field, None)
-
-            if value is not None:
-                setattr(file_comment, field, value)
-
-        self._import_extra_data(file_comment.extra_data, extra_fields)
-        file_comment.save()
+        self.update_comment(file_comment, **kwargs)
 
         return 200, {
             self.item_result_key: file_comment,

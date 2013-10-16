@@ -61,6 +61,50 @@ class BaseCommentResource(WebAPIResource):
     def has_delete_permissions(self, request, obj, *args, **kwargs):
         return obj.is_mutable_by(request.user)
 
+    def create_comment(self, fields, text, issue_opened=False, extra_fields={},
+                       **kwargs):
+        comment_kwargs = {
+            'text': text.strip(),
+            'issue_opened': bool(issue_opened),
+        }
+
+        for field in fields:
+            comment_kwargs[field] = kwargs.get(field)
+
+        new_comment = self.model(**comment_kwargs)
+        self._import_extra_data(new_comment.extra_data, extra_fields)
+
+        if issue_opened:
+            new_comment.issue_status = BaseComment.OPEN
+        else:
+            new_comment.issue_status = None
+
+        new_comment.save()
+
+        return new_comment
+
+    def update_comment(self, comment, update_fields=(), extra_fields={},
+                       **kwargs):
+        # If we've updated the comment from having no issue opened,
+        # to having an issue opened, we need to set the issue status
+        # to OPEN.
+        if not comment.issue_opened and kwargs.get('issue_opened', False):
+            comment.issue_status = BaseComment.OPEN
+
+        # If we've updated the comment from having an issue opened to having
+        # no issue opened, set the issue status back to null.
+        if comment.issue_opened and not kwargs.get('issue_opened', True):
+            comment.issue_status = None
+
+        for field in ('text', 'issue_opened') + update_fields:
+            value = kwargs.get(field, None)
+
+            if value is not None:
+                setattr(comment, field, value)
+
+        self._import_extra_data(comment.extra_data, extra_fields)
+        comment.save()
+
     def update_issue_status(self, request, comment_resource, *args, **kwargs):
         """Updates the issue status for a comment.
 

@@ -66,8 +66,7 @@ class ReviewScreenshotCommentResource(BaseScreenshotCommentResource):
         },
         allow_unknown=True,
     )
-    def create(self, request, screenshot_id, x, y, w, h, text,
-               issue_opened=False, extra_fields={}, *args, **kwargs):
+    def create(self, request, screenshot_id, *args, **kwargs):
         """Creates a screenshot comment on a review.
 
         This will create a new comment on a screenshot as part of a review.
@@ -94,21 +93,11 @@ class ReviewScreenshotCommentResource(BaseScreenshotCommentResource):
                 }
             }
 
-        new_comment = self.model(screenshot=screenshot, x=x, y=y, w=w, h=h,
-                                 text=text.strip(),
-                                 issue_opened=bool(issue_opened))
-
-        self._import_extra_data(new_comment.extra_data, extra_fields)
-
-        if issue_opened:
-            new_comment.issue_status = BaseComment.OPEN
-        else:
-            new_comment.issue_status = None
-
-        new_comment.save()
-
+        new_comment = self.create_comment(
+            screenshot=screenshot,
+            fields=('screenshot', 'x', 'y', 'w', 'h'),
+            **kwargs)
         review.screenshot_comments.add(new_comment)
-        review.save()
 
         return 201, {
             self.item_result_key: new_comment,
@@ -150,7 +139,7 @@ class ReviewScreenshotCommentResource(BaseScreenshotCommentResource):
         },
         allow_unknown=True
     )
-    def update(self, request, extra_fields={}, *args, **kwargs):
+    def update(self, request, *args, **kwargs):
         """Updates a screenshot comment.
 
         This can update the text or region of an existing comment. It
@@ -170,20 +159,7 @@ class ReviewScreenshotCommentResource(BaseScreenshotCommentResource):
         if not resources.review.has_modify_permissions(request, review):
             return self._no_access_error(request.user)
 
-        # If we've changed the screenshot comment from having no issue
-        # opened, to having an issue opened, we should update the issue
-        # status to be OPEN
-        if not screenshot_comment.issue_opened \
-            and kwargs.get('issue_opened', False):
-            screenshot_comment.issue_status = BaseComment.OPEN
-
-        for field in ('x', 'y', 'w', 'h', 'text', 'issue_opened'):
-            value = kwargs.get(field, None)
-            if value is not None:
-                setattr(screenshot_comment, field, value)
-
-        self._import_extra_data(screenshot_comment.extra_data, extra_fields)
-        screenshot_comment.save()
+        self.update_comment(screenshot_comment, ('x', 'y', 'w', 'h'), **kwargs)
 
         return 200, {
             self.item_result_key: screenshot_comment,

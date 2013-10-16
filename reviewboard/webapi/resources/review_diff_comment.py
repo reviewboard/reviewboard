@@ -69,9 +69,8 @@ class ReviewDiffCommentResource(BaseDiffCommentResource):
         },
         allow_unknown=True,
     )
-    def create(self, request, first_line, num_lines, text,
-               filediff_id, issue_opened=False, interfilediff_id=None,
-               extra_fields={}, *args, **kwargs):
+    def create(self, request, filediff_id, interfilediff_id=None,
+               *args, **kwargs):
         """Creates a new diff comment.
 
         This will create a new diff comment on this review. The review
@@ -117,24 +116,12 @@ class ReviewDiffCommentResource(BaseDiffCommentResource):
                 'fields': invalid_fields,
             }
 
-        new_comment = self.model(filediff=filediff,
-                                 interfilediff=interfilediff,
-                                 text=text.strip(),
-                                 first_line=first_line,
-                                 num_lines=num_lines,
-                                 issue_opened=bool(issue_opened))
-
-        self._import_extra_data(new_comment.extra_data, extra_fields)
-
-        if issue_opened:
-            new_comment.issue_status = BaseComment.OPEN
-        else:
-            new_comment.issue_status = None
-
-        new_comment.save()
-
+        new_comment = self.create_comment(
+            filediff=filediff,
+            interfilediff=interfilediff,
+            fields=('filediff', 'interfilediff', 'first_line', 'num_lines'),
+            **kwargs)
         review.comments.add(new_comment)
-        review.save()
 
         return 201, {
             self.item_result_key: new_comment,
@@ -168,7 +155,7 @@ class ReviewDiffCommentResource(BaseDiffCommentResource):
         },
         allow_unknown=True,
     )
-    def update(self, request, extra_fields={}, *args, **kwargs):
+    def update(self, request, *args, **kwargs):
         """Updates a diff comment.
 
         This can update the text or line range of an existing comment.
@@ -187,25 +174,8 @@ class ReviewDiffCommentResource(BaseDiffCommentResource):
         if not resources.review.has_modify_permissions(request, review):
             return self._no_access_error(request.user)
 
-        # If we've updated the comment from having no issue opened,
-        # to having an issue opened, we need to set the issue status
-        # to OPEN.
-        if not diff_comment.issue_opened and kwargs.get('issue_opened', False):
-            diff_comment.issue_status = BaseComment.OPEN
-
-        # If we've updated the comment from having an issue opened to having
-        # no issue opened, set the issue status back to null.
-        if diff_comment.issue_opened and not kwargs.get('issue_opened', True):
-            diff_comment.issue_status = None
-
-        for field in ('text', 'first_line', 'num_lines', 'issue_opened'):
-            value = kwargs.get(field, None)
-
-            if value is not None:
-                setattr(diff_comment, field, value)
-
-        self._import_extra_data(diff_comment.extra_data, extra_fields)
-        diff_comment.save()
+        self.update_comment(diff_comment, ('first_line', 'num_lines'),
+                            **kwargs)
 
         return 200, {
             self.item_result_key: diff_comment,
