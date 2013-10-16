@@ -5,6 +5,11 @@
  {{review_ui.name}}{% if caption %}: {{caption}}{% endif %}
 {% endblock %}
 
+{% block css %}
+{{block.super}}
+{%  block review_ui_css %}{% endblock %}
+{% endblock %}
+
 {% block content %}
 <div id="review_request">
 {%  box "review-request" %}

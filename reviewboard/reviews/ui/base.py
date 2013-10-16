@@ -30,7 +30,10 @@ class ReviewUI(object):
     allow_inline = False
     supports_diffing = False
 
+    css_bundle_names = []
+    js_bundle_names = []
     js_files = []
+
     js_model_class = None
     js_view_class = None
 
