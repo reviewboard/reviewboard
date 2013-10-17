@@ -319,7 +319,7 @@ follow Django's conventions, defining a :py:data:`urlpatterns` variable.
    Used to specify URLs. This should be a Python list, in the format returned
    by the function :py:func:`django.conf.urls.patterns`.
 
-The following is an example :file:`admin_url.py` file::
+The following is an example :file:`admin_urls.py` file::
 
    from django.conf.urls.defaults import patterns, url
 
