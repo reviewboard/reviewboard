@@ -6,13 +6,13 @@ from optparse import make_option
 
 from django import db
 from django.contrib.auth.models import User
-from django.core.files.uploadedfile import UploadedFile
+from django.core.files import File
 from django.core.management.base import (BaseCommand, CommandError,
                                          NoArgsCommand)
 from django.db import transaction
 
 from reviewboard.accounts.models import Profile
-from reviewboard.diffviewer.forms import UploadDiffForm
+from reviewboard.reviews.forms import UploadDiffForm
 from reviewboard.diffviewer.models import DiffSetHistory
 from reviewboard.reviews.models import ReviewRequest, Review, Comment
 from reviewboard.scmtools.models import Repository, Tool
@@ -233,9 +233,13 @@ class Command(NoArgsCommand):
 
                     random_number = random.randint(0, len(files) - 1)
                     file_to_open = diff_dir + files[random_number]
-                    f = UploadedFile(open(file_to_open, 'r'))
-                    form = UploadDiffForm(review_request.repository, f)
-                    cur_diff = form.create(f, None, diffset_history)
+                    f = open(file_to_open, 'r')
+                    form = UploadDiffForm(review_request=review_request,
+                                          files={"path" : File(f)})
+
+                    if form.is_valid():
+                        cur_diff = form.create(f, None, diffset_history)
+
                     review_request.diffset_history = diffset_history
                     review_request.save()
                     review_request.publish(new_user)
