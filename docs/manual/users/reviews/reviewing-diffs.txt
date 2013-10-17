@@ -81,11 +81,11 @@ back to the review request page and open a reply box.
 Viewing Other Diff Revisions
 ============================
 
-Every public revision of a diff that was posted is available for review. You
-can click the box for the diff revision next to the :guilabel:`Jump to
-revision` label below the current diff revision indicator.
-
-.. image:: diff-revision-selector.png
+Every public revision of a diff that was posted is available for review. The
+diff revision selector allows you to look at previous versions of the change.
+To browse old revisions, set the handle on the left to :guilabel:`orig`
+(meaning the original version of the file) and the handle on the right to the
+revision you want to look at.
 
 This is sometimes useful when you're in the middle of a review of a particular
 diff, go away for a bit, and then come back to discover that a new diff
@@ -93,19 +93,15 @@ revision has been uploaded. In this case, a warning box will appear telling
 you that you have additional comments on an older revision, with a helpful
 link to jump back to that revision.
 
+.. image:: diff-revision-selector.png
 
-Viewing Interdiffs
-==================
+The diff viewer also allows you to do comparisons between diff revisions
+(called :term:`interdiffs`). In other words, it lets you see what changes the
+developer has made since the previous version of the diff you looked at, which
+is very useful for large changes which require several iterations of review.
 
-The diff viewer supports showing and commenting on :term:`interdiffs`. An
-interdiff is the difference between two uploaded diff revisions. In other
-words, it lets you see what changes the developer has made since the previous
-version of the diff you looked at, which is very useful for large changes
-which require several iterations of review.
-
-To view an interdiff between the current revision you're looking at and
-another revision, click the box for the diff revision next to the
-:guilabel:`Changes between r# and:` label.
+To view an interdiff between two diff revisions, set the two handles to the
+revisions you want to compare.
 
 .. note:: Due to the way that the diff viewer works, if a newer diff is based
           on a newer revision of a file, you may see other changes made to
