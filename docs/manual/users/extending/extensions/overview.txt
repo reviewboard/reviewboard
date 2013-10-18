@@ -182,6 +182,15 @@ The base class also provides the following attributes:
       attribute gives each extension an easy-to-use and persistent data store
       for settings. See :ref:`extension-settings` for more information.
 
+   .. py:attribute:: metadata
+
+      A dictionary which can contain extra package metadata. Normally, the
+      metadata from `setup.py` is used when displaying information about the
+      extension inside the administration UI. Defining this dictionary allows
+      you to override what gets displayed to the user, which is useful for
+      providing human-readable names. In particular, the `Name` and
+      `Description` fields in this dictionary are very useful.
+
 
 .. _extension-models:
 
