@@ -165,8 +165,10 @@
     });
   </script>
 {% block scripts-post %}{% endblock %}
-{% load_extensions_js "reviewboard.extensions" %}
-{% init_js_extensions "reviewboard.extensions" %}
+{% block js_extensions %}
+{%  load_extensions_js "reviewboard.extensions" %}
+{%  init_js_extensions "reviewboard.extensions" %}
+{% endblock %}
 {% template_hook_point "base-scripts-post" %}
  </body>
 </html>
