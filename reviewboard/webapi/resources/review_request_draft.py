@@ -210,6 +210,9 @@ class ReviewRequestDraftResource(WebAPIResource):
         """Creates a draft of a review request.
 
         If a draft already exists, this will just reuse the existing draft.
+
+        All fields from the review request will be copied over to the draft,
+        unless overridden in the request.
         """
         # A draft is a singleton. Creating and updating it are the same
         # operations in practice.
@@ -280,9 +283,9 @@ class ReviewRequestDraftResource(WebAPIResource):
         This will update the draft with the newly provided data.
 
         Most of the fields correspond to fields in the review request, but
-        there is one special one, ``public``. When ``public`` is set to ``1``,
+        there is one special one, ``public``. When ``public`` is set to true,
         the draft will be published, moving the new content to the
-        Review Request itself, making it public, and sending out a notification
+        review request itself, making it public, and sending out a notification
         (such as an e-mail) if configured on the server. The current draft will
         then be deleted.
         """

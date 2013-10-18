@@ -47,7 +47,20 @@ from reviewboard.webapi.resources.user import UserResource
 
 
 class ReviewRequestResource(WebAPIResource):
-    """Provides information on review requests."""
+    """Provides information on review requests.
+
+    Review requests are one of the central concepts in Review Board. They
+    represent code or files that are being placed up for review.
+
+    A review request has a number of fields that can be filled out, indicating
+    the summary, description of the change, testing that was done, affected
+    bugs, and more. These must be filled out through the associated Review
+    Request Draft resource.
+
+    When a review request is published, it can be reviewed by users. It can
+    then be updated, again through the Review Request Draft resource, or closed
+    as submitted or discarded.
+    """
     model = ReviewRequest
     name = 'review_request'
 

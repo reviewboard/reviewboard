@@ -6,7 +6,20 @@ from reviewboard.webapi.resources.base_review import BaseReviewResource
 
 
 class ReviewResource(BaseReviewResource):
-    """Provides information on reviews."""
+    """Provides information on reviews made on a review request.
+
+    Each review can contain zero or more comments on diffs, screenshots or
+    file attachments. It may also have text preceding the comments (the
+    ``body_top`` field), and text following the comments (``body_bottom``).
+
+    A review may have replies made. Replies are flat, not threaded. Like a
+    review, there may be body text and there may be comments (which are replies
+    to comments on the parent review).
+
+    If the ``ship_it`` field is true, then the reviewer has given their
+    approval of the change, once all issues raised on comments have been
+    addressed.
+    """
     uri_object_key = 'review_id'
     model_parent_key = 'review_request'
 
