@@ -36,6 +36,11 @@ class BaseCommentResource(WebAPIResource):
             'description': 'Whether or not the comment is part of a public '
                            'review.',
         },
+        'rich_text': {
+            'type': bool,
+            'description': 'Whether or not the comment is in rich-text '
+                           '(Markdown) format.',
+        },
         'text': {
             'type': str,
             'description': 'The comment text.',

@@ -20,6 +20,9 @@ class ReviewReplyResource(BaseReviewResource):
     A reply is much like a review, but is always tied to exactly one
     parent review. Every comment associated with a reply is also tied to
     a parent comment.
+
+    If the ``rich_text`` field is set to true, then ``body_top`` and
+    ``body_bottom`` should be interpreted by the client as Markdown text.
     """
     name = 'reply'
     name_plural = 'replies'
@@ -42,6 +45,12 @@ class ReviewReplyResource(BaseReviewResource):
             'type': bool,
             'description': 'Whether or not the reply is currently '
                            'visible to other users.',
+        },
+        'rich_text': {
+            'type': bool,
+            'description': 'Whether or not the review body_top and '
+                           'body_bottom fields are in rich-text (Markdown) '
+                           'format.',
         },
         'timestamp': {
             'type': str,

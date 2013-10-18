@@ -16,6 +16,9 @@ class ChangeResource(WebAPIResource):
     change, and also includes a list of fields that were changed on the
     review request.
 
+    If the ``rich_text`` field is set to true, then the provided ``text``
+    field shoud be interpreted by the client as Markdown text.
+
     The list of fields changed are in ``fields_changed``. The keys are the
     names of the fields, and the values are details on that particular
     change to the field.
@@ -61,6 +64,11 @@ class ChangeResource(WebAPIResource):
         'fields_changed': {
             'type': dict,
             'description': 'The fields that were changed.',
+        },
+        'rich_text': {
+            'type': bool,
+            'description': 'Whether or not the text is in rich-text '
+                           '(Markdown) format.',
         },
         'text': {
             'type': str,

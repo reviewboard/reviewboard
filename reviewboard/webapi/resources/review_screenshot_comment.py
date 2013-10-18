@@ -19,6 +19,9 @@ class ReviewScreenshotCommentResource(BaseScreenshotCommentResource):
     If the review is a draft, then comments can be added, deleted, or
     changed on this list. However, if the review is already published,
     then no changes can be made.
+
+    If the ``rich_text`` field is set to true, then ``text`` should be
+    interpreted by the client as Markdown text.
     """
     allowed_methods = ('GET', 'POST', 'PUT', 'DELETE')
     model_parent_key = 'review'

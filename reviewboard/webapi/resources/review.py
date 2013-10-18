@@ -12,6 +12,9 @@ class ReviewResource(BaseReviewResource):
     file attachments. It may also have text preceding the comments (the
     ``body_top`` field), and text following the comments (``body_bottom``).
 
+    If the ``rich_text`` field is set to true, then ``body_top`` and
+    ``body_bottom`` should be interpreted by the client as Markdown text.
+
     A review may have replies made. Replies are flat, not threaded. Like a
     review, there may be body text and there may be comments (which are replies
     to comments on the parent review).

@@ -60,6 +60,10 @@ class ReviewRequestResource(WebAPIResource):
     When a review request is published, it can be reviewed by users. It can
     then be updated, again through the Review Request Draft resource, or closed
     as submitted or discarded.
+
+    If the ``rich_text`` field is set to true, then the ``description`` and
+    ``testing_done`` fields should be interpreted by the client as Markdown
+    text.
     """
     model = ReviewRequest
     name = 'review_request'
@@ -94,6 +98,12 @@ class ReviewRequestResource(WebAPIResource):
             'type': str,
             'description': 'The date and time that the review request was '
                            'last updated (in YYYY-MM-DD HH:MM:SS format).',
+        },
+        'rich_text': {
+            'type': bool,
+            'description': 'Whether or not the review request description '
+                           'and testing_done fields are in rich-text '
+                           '(Markdown) format.',
         },
         'status': {
             'type': ('discarded', 'pending', 'submitted'),

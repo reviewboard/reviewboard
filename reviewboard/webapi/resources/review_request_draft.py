@@ -33,6 +33,10 @@ class ReviewRequestDraftResource(WebAPIResource):
     In order to access this resource, the user must either own the review
     request, or it must have the ``reviews.can_edit_reviewrequest`` permission
     set.
+
+    If the ``rich_text`` field is set to true, then the ``changedescription``,
+    ``description`` and ``testing_done`` fields should be interpreted
+    by the client as Markdown text.
     """
     model = ReviewRequestDraft
     name = 'draft'
@@ -89,6 +93,12 @@ class ReviewRequestDraftResource(WebAPIResource):
                            'This will always be false up until the time '
                            'it is first made public. At that point, the '
                            'draft is deleted.',
+        },
+        'rich_text': {
+            'type': bool,
+            'description': 'Whether or not the review request description, '
+                           'testing_done and changedescription fields are '
+                           'in rich-text (Markdown) format.',
         },
         'summary': {
             'type': str,

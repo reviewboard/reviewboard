@@ -10,6 +10,9 @@ class FileDiffCommentResource(BaseDiffCommentResource):
     The list of comments cannot be modified from this resource. It's meant
     purely as a way to see existing comments that were made on a diff. These
     comments will span all public reviews.
+
+    If the ``rich_text`` field is set to true, then ``text`` should be
+    interpreted by the client as Markdown text.
     """
     allowed_methods = ('GET',)
     model_parent_key = 'filediff'

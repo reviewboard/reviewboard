@@ -38,6 +38,12 @@ class BaseReviewResource(WebAPIResource):
             'description': 'Whether or not the review is currently '
                            'visible to other users.',
         },
+        'rich_text': {
+            'type': bool,
+            'description': 'Whether or not the review body_top and '
+                           'body_bottom fields are in rich-text (Markdown) '
+                           'format.',
+        },
         'ship_it': {
             'type': bool,
             'description': 'Whether or not the review has been marked '
