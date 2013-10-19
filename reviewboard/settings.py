@@ -545,7 +545,6 @@ PIPELINE_CSS = dict({
     },
     'reviews': {
         'source_filenames': (
-            'lib/css/prettify.css',
             'rb/css/diffviewer.less',
             'rb/css/dndUploader.less',
             'rb/css/image-review-ui.less',

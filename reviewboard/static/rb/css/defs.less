@@ -72,6 +72,15 @@
 @issue-resolved-border-color: darken(@issue-resolved-bg, 10%);
 @issue-resolved-link-color: darken(@issue-resolved-bg, 60%);
 
+/*
+ * At least on Chrome, using points instead of pixels does not reliably
+ * result in identical sizings when there are elements positioned inside
+ * a <pre>. Pixels fixes this.
+ */
+@textarea-font-size: 13px;
+@textarea-font-family: monospace;
+@textarea-line-height: (@textarea-font-size + 2px);
+
 @z-index-base: 1;
 @z-index-deco: 20;
 @z-index-event-overlay: 30;

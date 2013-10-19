@@ -32,8 +32,9 @@ label.required {
 }
 
 pre, textarea {
-  font-size: 10pt;
-  font-family: monospace;
+  font-size: @textarea-font-size;
+  font-family: @textarea-font-family;
+  line-height: @textarea-line-height;
 }
 
 span {
@@ -402,9 +403,16 @@ h1.title,
 
   textarea {
     border: 1px #888a85 solid;
-    font-size: 10pt;
     margin: 5px 0 0 0;
     padding: 10px;
+    .box-sizing(border-box);
+
+    /*
+     * Firefox adds an extra pixel on the sides of the textarea, making
+     * alignment hard, so we need to subtract a pixel.
+     */
+    -moz-padding-start: 9px;
+    -moz-padding-end: 9px;
   }
 }
 
