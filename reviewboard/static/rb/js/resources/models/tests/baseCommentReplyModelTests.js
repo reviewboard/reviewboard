@@ -42,13 +42,15 @@ describe('resources/models/BaseCommentReply', function() {
                 stat: 'ok',
                 my_comment: {
                     id: 42,
-                    text: 'foo'
+                    text: 'foo',
+                    rich_text: true
                 }
             });
 
             expect(data).not.toBe(undefined);
             expect(data.id).toBe(42);
             expect(data.text).toBe('foo');
+            expect(data.richText).toBe(true);
         });
     });
 

@@ -390,7 +390,8 @@ describe('resources/models/ReviewReply', function() {
                     id: 42,
                     body_top: 'foo',
                     body_bottom: 'bar',
-                    public: false
+                    public: false,
+                    rich_text: true
                 }
             });
 
@@ -399,6 +400,7 @@ describe('resources/models/ReviewReply', function() {
             expect(data.bodyTop).toBe('foo');
             expect(data.bodyBottom).toBe('bar');
             expect(data.public).toBe(false);
+            expect(data.richText).toBe(true);
         });
     });
 

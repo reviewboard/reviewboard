@@ -7,6 +7,7 @@ RB.ReviewReply = RB.BaseResource.extend({
     defaults: _.defaults({
         review: null,
         public: false,
+        richText: false,
         bodyTop: null,
         bodyBottom: null
     }, RB.BaseResource.prototype.defaults),
@@ -32,7 +33,8 @@ RB.ReviewReply = RB.BaseResource.extend({
         return {
             bodyTop: rsp.body_top,
             bodyBottom: rsp.body_bottom,
-            public: rsp.public
+            public: rsp.public,
+            richText: rsp.rich_text
         };
     },
 

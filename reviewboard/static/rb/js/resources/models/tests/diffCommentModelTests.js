@@ -28,6 +28,7 @@ describe('resources/models/DiffComment', function() {
                     id: 42,
                     issue_opened: true,
                     issue_status: 'resolved',
+                    rich_text: true,
                     text: 'foo',
                     first_line: 10,
                     num_lines: 5,
@@ -46,6 +47,7 @@ describe('resources/models/DiffComment', function() {
             expect(data.id).toBe(42);
             expect(data.issueOpened).toBe(true);
             expect(data.issueStatus).toBe(RB.BaseComment.STATE_RESOLVED);
+            expect(data.richText).toBe(true);
             expect(data.text).toBe('foo');
             expect(data.beginLineNum).toBe(10);
             expect(data.endLineNum).toBe(14);

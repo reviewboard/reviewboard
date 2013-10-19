@@ -8,6 +8,7 @@ RB.Review = RB.BaseResource.extend({
     defaults: _.defaults({
         shipIt: false,
         public: false,
+        richText: false,
         bodyTop: null,
         bodyBottom: null,
         draftReply: null
@@ -34,7 +35,8 @@ RB.Review = RB.BaseResource.extend({
             shipIt: rsp.ship_it,
             bodyTop: rsp.body_top,
             bodyBottom: rsp.body_bottom,
-            public: rsp.public
+            public: rsp.public,
+            richText: rsp.rich_text
         };
     },
 

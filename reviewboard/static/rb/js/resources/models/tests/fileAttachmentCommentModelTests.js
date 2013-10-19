@@ -20,6 +20,7 @@ describe('resources/models/FileAttachmentComment', function() {
                     id: 42,
                     issue_opened: true,
                     issue_status: 'resolved',
+                    rich_text: true,
                     text: 'foo',
                     extra_data: {
                         my_int: 123,
@@ -41,6 +42,7 @@ describe('resources/models/FileAttachmentComment', function() {
             expect(data.id).toBe(42);
             expect(data.issueOpened).toBe(true);
             expect(data.issueStatus).toBe(RB.BaseComment.STATE_RESOLVED);
+            expect(data.richText).toBe(true);
             expect(data.text).toBe('foo');
             expect(data.extraData).not.toBe(undefined);
             expect(data.extraData.my_int).toBe(123);

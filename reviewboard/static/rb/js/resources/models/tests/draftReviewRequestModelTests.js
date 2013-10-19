@@ -85,6 +85,7 @@ describe('resources/models/DraftReviewRequest', function() {
                 changedescription: 'changeDescription',
                 description: 'description',
                 public: 'public',
+                rich_text: true,
                 summary: 'summary',
                 target_groups: 'targetGroups',
                 target_people: 'targetPeople',
@@ -99,6 +100,7 @@ describe('resources/models/DraftReviewRequest', function() {
         expect(data.changeDescription).toBe('changeDescription');
         expect(data.description).toBe('description');
         expect(data.public).toBe('public');
+        expect(data.richText).toBe(true);
         expect(data.summary).toBe('summary');
         expect(data.targetGroups).toBe('targetGroups');
         expect(data.targetPeople).toBe('targetPeople');

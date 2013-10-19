@@ -20,6 +20,9 @@ RB.BaseComment = RB.BaseResource.extend({
          */
         issueStatus: null,
 
+        /* Whether the comment is saved in rich-text (Markdown) format. */
+        richText: false,
+
         /* The text entered for the comment. */
         text: ''
     }, RB.BaseResource.prototype.defaults),
@@ -84,6 +87,7 @@ RB.BaseComment = RB.BaseResource.extend({
             extraData: rsp.extra_data,
             issueOpened: rsp.issue_opened,
             issueStatus: rsp.issue_status,
+            richText: rsp.rich_text,
             text: rsp.text
         };
     },
