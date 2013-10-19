@@ -107,7 +107,7 @@
     </dt>
     <dd>
 {% comment_detail_display_hook comment "review" %}
-     <pre class="comment-text" id="{{comment.anchor_prefix}}{{comment.id}}">{{comment.text|escape}}</pre>
+     <pre class="reviewtext comment-text" data-rich-text="{{comment.rich_text|yesno:'true,false'}}" id="{{comment.anchor_prefix}}{{comment.id}}">{{comment.text|escape}}</pre>
 {% if comment.issue_opened %}
      <div class="issue-indicator">
        {% comment_issue review_request_details comment "screenshot_comments" %}
@@ -140,7 +140,7 @@
     </dt>
     <dd>
 {% comment_detail_display_hook comment "review" %}
-     <pre class="comment-text" id="{{comment.anchor_prefix}}{{comment.id}}">{{comment.text|escape}}</pre>
+     <pre class="reviewtext comment-text" data-rich-text="{{comment.rich_text|yesno:'true,false'}}" id="{{comment.anchor_prefix}}{{comment.id}}">{{comment.text|escape}}</pre>
 {% if comment.issue_opened %}
      <div class="issue-indicator">
        {% comment_issue review_request_details comment "file_attachment_comments" %}
