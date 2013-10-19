@@ -82,7 +82,7 @@ class ReviewAdmin(admin.ModelAdmin):
     fieldsets = (
         (_('General Information'), {
             'fields': ('user', 'review_request', 'public', 'ship_it',
-                       'body_top', 'body_bottom'),
+                       'rich_text', 'body_top', 'body_bottom'),
         }),
         (_('Related Objects'), {
             'fields': ('base_reply_to',
@@ -112,7 +112,7 @@ class ReviewRequestAdmin(admin.ModelAdmin):
     filter_horizontal = ('target_people', 'target_groups')
     fieldsets = (
         (_('General Information'), {
-            'fields': ('submitter', 'public', 'status',
+            'fields': ('submitter', 'public', 'status', 'rich_text',
                        'summary', 'description', 'testing_done',
                        'bugs_closed', 'repository', 'branch',
                        'depends_on', 'commit_id', 'time_added')
@@ -192,7 +192,7 @@ class ReviewRequestDraftAdmin(admin.ModelAdmin):
     filter_horizontal = ('target_people', 'target_groups')
     fieldsets = (
         (_('General Information'), {
-            'fields': ('review_request',
+            'fields': ('review_request', 'rich_text',
                        'summary', 'description', 'testing_done',
                        'depends_on', 'bugs_closed', 'branch'),
         }),
