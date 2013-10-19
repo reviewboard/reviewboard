@@ -2,16 +2,112 @@
 Resources
 =========
 
+API and Server State
+====================
+
+.. toctree::
+   :maxdepth: 1
+
+   root
+   server-info
+
+
+Default Reviewers
+=================
+
+.. toctree::
+   :maxdepth: 1
+
+   default-reviewer-list
+   default-reviewer
+
+
+Diffs
+=====
+
+.. toctree::
+   :maxdepth: 1
+
+   diff-context
+   diff-list
+   diff
+   original-file
+   patched-file
+
+
+Extensions
+==========
+
+.. toctree::
+   :maxdepth: 1
+
+   extension-list
+   extension
+
+
+Hosting Services
+================
+
+.. toctree::
+   :maxdepth: 1
+
+   hosting-service-account-list
+   hosting-service-account
+
+
+Repositories
+============
+
+.. toctree::
+   :maxdepth: 1
+
+   repository-branches
+   repository-commits
+   repository-info
+   repository-list
+   repository
+
+
+Review Groups
+=============
+
+.. toctree::
+   :maxdepth: 1
+
+   review-group-list
+   review-group
+   review-group-user-list
+   review-group-user
+
+
+Review Requests
+===============
+
 .. toctree::
    :maxdepth: 1
 
    change-list
    change
-   diff-context
-   diff-list
-   diff
-   default-reviewer-list
-   default-reviewer
+   file-attachment-list
+   file-attachment
+   file-attachment-comment-list
+   file-diff-list
+   file-diff
+   file-diff-comment-list
+   review-request-list
+   review-request
+   review-request-last-update
+   screenshot-list
+   screenshot
+   screenshot-comment-list
+
+
+Review Request Drafts
+=====================
+
+.. toctree::
+   :maxdepth: 1
+
    draft-diff-list
    draft-diff
    draft-file-diff-list
@@ -20,66 +116,76 @@ Resources
    draft-file-attachment
    draft-screenshot-list
    draft-screenshot
-   extension-list
-   extension
-   file-attachment-comment-list
-   file-attachment-comment
-   file-attachment-list
-   file-attachment
-   file-diff-comment-list
-   file-diff-list
-   file-diff
-   hosting-service-account-list
-   hosting-service-account
-   original-file
-   patched-file
-   repository-branches
-   repository-commits
-   repository-info
-   repository-list
-   repository
+   review-request-draft
+
+
+Reviews
+=======
+
+.. toctree::
+   :maxdepth: 1
+
+   review-list
+   review
+   review-draft
    review-diff-comment-list
    review-diff-comment
-   review-draft
    review-file-attachment-comment-list
    review-file-attachment-comment
-   review-group-list
-   review-group
-   review-group-user-list
-   review-group-user
-   review-list
-   review-reply-diff-comment-list
-   review-reply-diff-comment
-   review-reply-draft
-   review-reply-file-attachment-comment-list
-   review-reply-file-attachment-comment
-   review-reply-list
-   review-reply-screenshot-comment-list
-   review-reply-screenshot-comment
-   review-reply
-   review-request-draft
-   review-request-last-update
-   review-request-list
-   review-request
    review-screenshot-comment-list
    review-screenshot-comment
-   review
-   root
-   screenshot-comment-list
-   screenshot-list
-   screenshot
+
+
+Review Replies
+==============
+
+.. toctree::
+   :maxdepth: 1
+
+   review-reply-draft
+   review-reply-list
+   review-reply
+   review-reply-diff-comment-list
+   review-reply-diff-comment
+   review-reply-file-attachment-comment-list
+   review-reply-file-attachment-comment
+   review-reply-screenshot-comment-list
+   review-reply-screenshot-comment
+
+
+Search
+======
+
+.. toctree::
+   :maxdepth: 1
+
    search
-   server-info
+
+
+Users
+=====
+
+.. toctree::
+   :maxdepth: 1
+
    session
    user-list
    user
-   validate-diff
-   validation
    watched-review-group-list
    watched-review-group
    watched-review-request-list
    watched-review-request
    watched
+
+
+Validation
+==========
+
+.. toctree::
+   :maxdepth: 1
+
+   validation
+   validate-diff
 
 
 .. comment: vim: ft=rst et ts=3
