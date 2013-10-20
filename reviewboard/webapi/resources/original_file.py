@@ -19,7 +19,9 @@ class OriginalFileResource(WebAPIResource):
     """Provides the unpatched file corresponding to a file diff."""
     name = 'original_file'
     singleton = True
-    allowed_item_mimetypes = ['text/plain']
+    allowed_mimetypes = [
+        {'item': 'text/plain'},
+    ]
 
     @webapi_check_login_required
     @webapi_check_local_site

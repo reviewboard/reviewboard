@@ -64,10 +64,10 @@ class FileDiffResource(WebAPIResource):
     DIFF_DATA_MIMETYPE_JSON = DIFF_DATA_MIMETYPE_BASE + '+json'
     DIFF_DATA_MIMETYPE_XML = DIFF_DATA_MIMETYPE_BASE + '+xml'
 
-    allowed_item_mimetypes = WebAPIResource.allowed_item_mimetypes + [
-        'text/x-patch',
-        DIFF_DATA_MIMETYPE_JSON,
-        DIFF_DATA_MIMETYPE_XML,
+    allowed_mimetypes = WebAPIResource.allowed_mimetypes + [
+        {'item': 'text/x-patch'},
+        {'item': DIFF_DATA_MIMETYPE_JSON},
+        {'item': DIFF_DATA_MIMETYPE_XML},
     ]
 
     def get_last_modified(self, request, obj, *args, **kwargs):
@@ -287,8 +287,12 @@ class FileDiffResource(WebAPIResource):
         Other meta information may be available, but most is intended for
         internal use and shouldn't be relied upon.
         """
-        mimetype = get_http_requested_mimetype(request,
-                                               self.allowed_item_mimetypes)
+        mimetype = get_http_requested_mimetype(
+            request,
+            [
+                mimetype['item']
+                for mimetype in self.allowed_mimetypes
+            ])
 
         if mimetype == 'text/x-patch':
             return self._get_patch(request, *args, **kwargs)
