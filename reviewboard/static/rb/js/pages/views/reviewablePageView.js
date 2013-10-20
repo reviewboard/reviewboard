@@ -157,7 +157,7 @@ RB.ReviewablePageView = Backbone.View.extend({
      * Renders the page.
      */
     render: function() {
-        var $favicon = $('head').find('link[rel=icon]');
+        var $favicon = $('head').find('link[rel="shortcut icon"]');
 
         this._favIconURL = $favicon.attr('href');
         this._favIconNotifyURL = STATIC_URLS['rb/images/favicon_notify.ico'];
@@ -189,7 +189,7 @@ RB.ReviewablePageView = Backbone.View.extend({
      */
     _registerForUpdates: function() {
         this.listenTo(this.reviewRequest, 'updated', function(info) {
-            this._updateFavIcon(this._faviconNotifyURL);
+            this._updateFavIcon(this._favIconNotifyURL);
 
             if (this._updatesBubble) {
                 this._updatesBubble.remove();
@@ -225,13 +225,13 @@ RB.ReviewablePageView = Backbone.View.extend({
      */
     _updateFavIcon: function(url) {
         $('head')
-            .find('link[rel=icon]')
+            .find('link[rel="shortcut icon"]')
                 .remove()
             .end()
             .append($('<link/>')
                 .attr({
                     href: url,
-                    rel: 'icon',
+                    rel: 'shortcut icon',
                     type: 'image/x-icon'
                 }));
     },
