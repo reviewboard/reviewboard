@@ -38,10 +38,9 @@ class ReviewReplyScreenshotCommentResource(BaseScreenshotCommentResource):
     mimetype_list_resource_name = 'review-reply-screenshot-comments'
     mimetype_item_resource_name = 'review-reply-screenshot-comment'
 
-    def get_queryset(self, request, review_request_id, review_id, reply_id,
-                     *args, **kwargs):
+    def get_queryset(self, request, review_id, reply_id, *args, **kwargs):
         q = super(ReviewReplyScreenshotCommentResource, self).get_queryset(
-            request, review_request_id, *args, **kwargs)
+            request, *args, **kwargs)
         q = q.filter(review=reply_id, review__base_reply_to=review_id)
         return q
 

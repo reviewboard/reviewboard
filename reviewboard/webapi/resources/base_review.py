@@ -63,10 +63,9 @@ class BaseReviewResource(WebAPIResource):
 
     allowed_methods = ('GET', 'POST', 'PUT', 'DELETE')
 
-    def get_queryset(self, request, review_request_id, is_list=False,
-                     *args, **kwargs):
+    def get_queryset(self, request, is_list=False, *args, **kwargs):
         review_request = resources.review_request.get_object(
-            request, review_request_id, *args, **kwargs)
+            request, *args, **kwargs)
         q = Q(review_request=review_request) & \
             Q(**self.get_base_reply_to_field(*args, **kwargs))
 

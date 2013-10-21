@@ -30,10 +30,9 @@ class ReviewDiffCommentResource(BaseDiffCommentResource):
     mimetype_list_resource_name = 'review-diff-comments'
     mimetype_item_resource_name = 'review-diff-comment'
 
-    def get_queryset(self, request, review_request_id, review_id,
-                     *args, **kwargs):
+    def get_queryset(self, request, review_id, *args, **kwargs):
         q = super(ReviewDiffCommentResource, self).get_queryset(
-            request, review_request_id, *args, **kwargs)
+            request, *args, **kwargs)
         return q.filter(review=review_id)
 
     @webapi_check_local_site

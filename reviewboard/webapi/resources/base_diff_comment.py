@@ -42,8 +42,8 @@ class BaseDiffCommentResource(BaseCommentResource):
 
     allowed_methods = ('GET',)
 
-    def get_queryset(self, request, review_request_id, review_id=None,
-                     is_list=False, *args, **kwargs):
+    def get_queryset(self, request, review_id=None, is_list=False,
+                     *args, **kwargs):
         """Returns a queryset for Comment models.
 
         This filters the query for comments on the specified review request
@@ -56,7 +56,7 @@ class BaseDiffCommentResource(BaseCommentResource):
         """
         try:
             review_request = resources.review_request.get_object(
-                request, review_request_id, *args, **kwargs)
+                request, *args, **kwargs)
         except ObjectDoesNotExist:
             raise self.model.DoesNotExist
 

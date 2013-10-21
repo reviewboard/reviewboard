@@ -60,10 +60,9 @@ class BaseFileAttachmentResource(WebAPIResource):
     uri_object_key = 'file_attachment_id'
     autogenerate_etags = True
 
-    def get_queryset(self, request, review_request_id, is_list=False,
-                     *args, **kwargs):
+    def get_queryset(self, request, is_list=False, *args, **kwargs):
         review_request = resources.review_request.get_object(
-            request, review_request_id, *args, **kwargs)
+            request, *args, **kwargs)
 
         q = (Q(review_request=review_request) &
              Q(added_in_filediff__isnull=True) &
@@ -75,7 +74,7 @@ class BaseFileAttachmentResource(WebAPIResource):
         if request.user == review_request.submitter:
             try:
                 draft = resources.review_request_draft.get_object(
-                    request, review_request_id, *args, **kwargs)
+                    request, *args, **kwargs)
 
                 q = q | Q(drafts=draft)
 

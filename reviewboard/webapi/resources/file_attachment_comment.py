@@ -18,10 +18,9 @@ class FileAttachmentCommentResource(BaseFileAttachmentCommentResource):
     model_parent_key = 'file_attachment'
     uri_object_key = None
 
-    def get_queryset(self, request, review_request_id, file_attachment_id,
-                     *args, **kwargs):
+    def get_queryset(self, request, file_attachment_id, *args, **kwargs):
         q = super(FileAttachmentCommentResource, self).get_queryset(
-            request, review_request_id, *args, **kwargs)
+            request, *args, **kwargs)
         q = q.filter(file_attachment=file_attachment_id)
         return q
 

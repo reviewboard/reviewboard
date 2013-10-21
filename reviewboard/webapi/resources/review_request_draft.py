@@ -136,9 +136,9 @@ class ReviewRequestDraftResource(WebAPIResource):
 
         return ReviewRequestDraft.create(review_request)
 
-    def get_queryset(self, request, review_request_id, *args, **kwargs):
+    def get_queryset(self, request, *args, **kwargs):
         review_request = resources.review_request.get_object(
-            request, review_request_id, *args, **kwargs)
+            request, *args, **kwargs)
         return self.model.objects.filter(review_request=review_request)
 
     def serialize_bugs_closed_field(self, obj, **kwargs):

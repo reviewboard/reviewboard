@@ -18,10 +18,9 @@ class ScreenshotCommentResource(BaseScreenshotCommentResource):
     model_parent_key = 'screenshot'
     uri_object_key = None
 
-    def get_queryset(self, request, review_request_id, screenshot_id,
-                     *args, **kwargs):
+    def get_queryset(self, request, screenshot_id, *args, **kwargs):
         q = super(ScreenshotCommentResource, self).get_queryset(
-            request, review_request_id, *args, **kwargs)
+            request, *args, **kwargs)
         q = q.filter(screenshot=screenshot_id)
         return q
 

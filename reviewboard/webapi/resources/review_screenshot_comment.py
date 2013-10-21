@@ -26,10 +26,9 @@ class ReviewScreenshotCommentResource(BaseScreenshotCommentResource):
     allowed_methods = ('GET', 'POST', 'PUT', 'DELETE')
     model_parent_key = 'review'
 
-    def get_queryset(self, request, review_request_id, review_id,
-                     *args, **kwargs):
+    def get_queryset(self, request, review_id, *args, **kwargs):
         q = super(ReviewScreenshotCommentResource, self).get_queryset(
-            request, review_request_id, *args, **kwargs)
+            request, *args, **kwargs)
         return q.filter(review=review_id)
 
     @webapi_check_local_site

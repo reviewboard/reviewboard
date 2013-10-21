@@ -26,7 +26,7 @@ class DraftScreenshotResource(BaseScreenshotResource):
     def get_queryset(self, request, review_request_id, *args, **kwargs):
         try:
             draft = resources.review_request_draft.get_object(
-                request, review_request_id, *args, **kwargs)
+                request, review_request_id=review_request_id, *args, **kwargs)
 
             inactive_ids = \
                 draft.inactive_screenshots.values_list('pk', flat=True)
