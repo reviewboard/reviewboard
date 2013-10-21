@@ -127,7 +127,7 @@ naming files. The following files serve a special purpose:
 **admin.py**
    This file allows an extension to register models in its own Django admin
    site. It is only used when :py:attr:`has_admin_site` is set ``True``. For
-   more information, see :ref:`extension-admin-sites`.
+   more information, see :ref:`extension-admin-site`.
 
 
 .. _extension-class:
@@ -190,6 +190,12 @@ The base class also provides the following attributes:
       you to override what gets displayed to the user, which is useful for
       providing human-readable names. In particular, the `Name` and
       `Description` fields in this dictionary are very useful.
+
+   .. py:attribute:: resources
+
+      A list of resource class names. This is used to extend the Web API with
+      additional endpoints. See :ref:`extension-resources` for more
+      information.
 
 
 .. _extension-models:
@@ -421,6 +427,82 @@ For more information on Django admin sites, please see the `Django Admin Site`_
 documentation.
 
 .. _`Django Admin Site`: https://docs.djangoproject.com/en/1.4/ref/contrib/admin/
+
+
+.. _extension-resources:
+
+Extending the Web API
+=====================
+
+Each extension is given a location in the Web API which is used to get
+information about the extension and enable or disable it. Extensions can add
+child resources to this location by defining the :py:attr:`resources`
+attribute.
+
+Here is an example resource class::
+
+   from django.core.exceptions import ObjectDoesNotExist
+   from djblets.webapi.decorators import (webapi_login_required,
+                                          webapi_response_errors,
+                                          webapi_request_fields)
+   from djblets.webapi.errors import DOES_NOT_EXIST
+   from reviewboard.webapi.decorators import webapi_check_local_site
+   from reviewboard.reviews.models import Review
+   from reviewboard.webapi.resources import (WebAPIResource,
+                                             review_Request_resource)
+
+   class SampleExtensionResource(WebAPIResource):
+       """Resource for creating reviews"""
+       name = 'sample_extension_review'
+       allowed_methods = ('POST',)
+
+       @webapi_check_local_site
+       @webapi_login_required
+       @webapi_response_errors(DOES_NOT_EXIST)
+       @webapi_request_fields(
+           required={
+               'review_request_id': {
+                   'type': int,
+                   'description': 'The ID of the review request',
+               },
+           },
+       )
+       def create(self, request, review_request_id, *args, **kwargs):
+           try:
+               review_request = review_request_resource.get_object(
+                   request, review_request_id, *args, **kwargs)
+           except ObjectDoesNotExist:
+               return DOES_NOT_EXIST
+
+           new_review = Review.objects.create(
+               review_request=review_request,
+               user=request.user,
+               body_top='Sample review body')
+           new_review.publish(user=request.user)
+
+           return 201, {
+               self.item_result_key: new_review
+           }
+
+       def has_access_permissions(self, request, *args, **kwargs):
+           return review_request.is_accessible_by(request.user)
+
+   sample_review_resource = SampleExtensionResource()
+
+
+And the corresponding extension::
+
+   class SampleExtension(Extension):
+       resources = [sample_review_resource]
+
+       def __init__(self, *args, **kwargs):
+           super(SampleExtension, self).__init__(*args, **kwargs)
+
+
+With this, one would be able to POST to this resource to create reviews that
+contained the text "Sample review body". This API endpoint would be registered
+at
+``/api/extensions/sample_extension.extension.SampleExtension/sample-extension-reviews/``.
 
 
 .. _extension-generator:
