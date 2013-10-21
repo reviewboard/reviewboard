@@ -791,21 +791,20 @@ class ReviewRequestResource(WebAPIResource):
         """
         pass
 
-    def get_object(self, request, review_request_id, local_site_name=None,
-                   is_list=True, *args, **kwargs):
+    def get_object(self, request, local_site_name=None, *args, **kwargs):
         """Returns an object, given captured parameters from a URL.
 
         This is an override of the djblets WebAPIResource get_object, which
         knows about local_id and local_site_name.
         """
-        queryset = self.get_queryset(request, local_site_name=local_site_name,
-                                     review_request_id=review_request_id,
-                                     *args, **kwargs)
-
         if local_site_name:
-            return queryset.get(local_id=review_request_id)
+            id_field = 'local_id'
         else:
-            return queryset.get(pk=review_request_id)
+            id_field = 'pk'
+
+        return super(ReviewRequestResource, self).get_object(
+            request, id_field=id_field, local_site_name=local_site_name,
+            *args, **kwargs)
 
     def get_href(self, obj, request, *args, **kwargs):
         """Returns the URL for this object.

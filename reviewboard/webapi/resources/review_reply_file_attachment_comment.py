@@ -90,7 +90,7 @@ class ReviewReplyFileAttachmentCommentResource(
                 }
             }
 
-        q = self.get_queryset(request, *args, **kwargs)
+        q = self._get_queryset(request, *args, **kwargs)
         q = q.filter(Q(reply_to=comment) & Q(review=reply))
 
         try:

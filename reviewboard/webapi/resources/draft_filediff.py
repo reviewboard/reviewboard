@@ -33,8 +33,10 @@ class DraftFileDiffResource(FileDiffResource):
             diffset__revision=diff_revision)
 
     def has_access_permissions(self, request, filediff, *args, **kwargs):
-        return filediff.diffset.review_request_draft.get().is_accessible_by(
-            request.user)
+        draft = resources.review_request_draft.get_object(
+            request, *args, **kwargs)
+
+        return draft.is_accessible_by(request.user)
 
     @webapi_check_local_site
     @webapi_login_required

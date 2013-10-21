@@ -88,8 +88,8 @@ class DraftFileAttachmentResource(BaseFileAttachmentResource):
         """
         return WebAPIResponsePaginated(
             request,
-            queryset=self.get_queryset(request, is_list=True,
-                                       *args, **kwargs),
+            queryset=self._get_queryset(request, is_list=True,
+                                        *args, **kwargs),
             results_key=self.list_result_key,
             serialize_object_func=lambda obj: self.serialize_object(
                 obj, request=request, *args, **kwargs),
