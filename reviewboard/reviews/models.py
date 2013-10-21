@@ -913,6 +913,10 @@ class ReviewRequest(BaseReviewRequestDetails):
             changedesc.save()
 
             self.changedescs.add(changedesc)
+
+            if type == self.SUBMITTED:
+                self.public = True
+
             self.status = type
             self.save(update_counts=True)
 

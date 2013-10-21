@@ -523,6 +523,25 @@ class ReviewRequestManagerTests(TestCase):
                             % summary)
 
 
+class ReviewRequestTests(TestCase):
+    """Tests for ReviewRequest."""
+    fixtures = ['test_users']
+
+    def test_public_with_discard_reopen_submitted(self):
+        """Testing ReviewRequest.public when discarded, reopened, submitted."""
+        review_request = self.create_review_request(publish=True)
+        self.assertTrue(review_request.public)
+
+        review_request.close(ReviewRequest.DISCARDED)
+        self.assertTrue(review_request.public)
+
+        review_request.reopen()
+        self.assertFalse(review_request.public)
+
+        review_request.close(ReviewRequest.SUBMITTED)
+        self.assertTrue(review_request.public)
+
+
 class ViewTests(TestCase):
     """Tests for views in reviewboard.reviews.views"""
     fixtures = ['test_users', 'test_scmtools', 'test_site']
@@ -2182,7 +2201,7 @@ class CounterTests(TestCase):
         self.test_closing_draft_requests(ReviewRequest.SUBMITTED)
 
         self.review_request.reopen()
-        self.assertFalse(self.review_request.public)
+        self.assertTrue(self.review_request.public)
         self.assertTrue(self.review_request.status,
                         ReviewRequest.PENDING_REVIEW)
 
@@ -2191,7 +2210,7 @@ class CounterTests(TestCase):
         self.assertEqual(self.site_profile.pending_outgoing_request_count, 1)
         self.assertEqual(self.site_profile.direct_incoming_request_count, 0)
         self.assertEqual(self.site_profile.total_incoming_request_count, 0)
-        self.assertEqual(self.site_profile.starred_public_request_count, 0)
+        self.assertEqual(self.site_profile.starred_public_request_count, 1)
         self.assertEqual(self.site_profile2.total_outgoing_request_count, 0)
         self.assertEqual(self.site_profile2.pending_outgoing_request_count, 0)
         self.assertEqual(self.site_profile2.direct_incoming_request_count, 0)

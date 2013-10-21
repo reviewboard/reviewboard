@@ -1,5 +1,8 @@
 import base64
-from Crypto import Random
+try:
+    from Crypto import Random
+except ImportError:
+    from Crypto.Util.randpool import RandomPool as Random
 from Crypto.Cipher import AES
 from django.conf import settings
 
