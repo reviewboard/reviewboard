@@ -64,18 +64,6 @@ def install_media(site):
     site.mkdir(os.path.join(uploaded_path, "images"))
     site.mkdir(ext_media_path)
 
-    if not pkg_resources.resource_exists("djblets", "media"):
-        sys.stderr.write("Unable to find a valid Djblets installation.\n")
-        sys.stderr.write("Make sure you've ran `python setup.py develop` "
-                         "in the Djblets source tree.\n")
-        sys.exit(1)
-
-    print "Using Djblets media from %s" % \
-        pkg_resources.resource_filename("djblets", "media")
-
-    site.link_pkg_dir("djblets", "media",
-                      os.path.join(site.install_dir, media_path, "djblets"))
-
 
 def build_egg_info():
     os.system("%s setup.py egg_info" % sys.executable)
