@@ -248,7 +248,7 @@ tr.alt {
 }
 
 thead th {
-  background: transparent url("../../djblets/images/datagrid/header_bg.png") repeat-x;
+  background: transparent url("../images/header_bg.png") repeat-x;
   border-bottom: 1px solid #999999;
   border-left: 0 !important;
   border-right: 1px solid #CCCCCC;
@@ -256,7 +256,11 @@ thead th {
   padding: 5px;
 
   &.ascending a {
-    background: transparent url("../../djblets/images/datagrid/sort_asc_primary.png") no-repeat right 0.4em;
+    background: transparent url("../images/sort_asc_primary.png") no-repeat right 0.4em;
+  }
+
+  &.descending a {
+    background: transparent url("../images/sort_desc_primary.png") no-repeat right 0.4em;
   }
 
   &.sortable:hover {
