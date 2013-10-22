@@ -61,7 +61,7 @@ class ReviewGroupStarColumn(StarColumn):
             return queryset
 
         try:
-            profile = Profile.objects.get(user=user)
+            profile = user.get_profile()
         except Profile.DoesNotExist:
             return queryset
 
@@ -89,7 +89,7 @@ class ReviewRequestStarColumn(StarColumn):
             return queryset
 
         try:
-            profile = Profile.objects.get(user=user)
+            profile = user.get_profile()
         except Profile.DoesNotExist:
             return queryset
 

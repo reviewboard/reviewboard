@@ -34,7 +34,7 @@ class BaseWatchedObjectResource(WebAPIResource):
             local_site = self._get_local_site(local_site_name)
             if local_site:
                 user = local_site.users.get(username=username)
-                profile = Profile.objects.get(user=user)
+                profile = user.get_profile()
             else:
                 profile = Profile.objects.get(user__username=username)
 

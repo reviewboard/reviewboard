@@ -1,7 +1,6 @@
 from djblets.testing.decorators import add_fixtures
 from djblets.webapi.errors import DOES_NOT_EXIST, PERMISSION_DENIED
 
-from reviewboard.accounts.models import Profile
 from reviewboard.webapi.resources import resources
 from reviewboard.webapi.tests.base import BaseWebAPITestCase
 from reviewboard.webapi.tests.mimetypes import (
@@ -39,7 +38,7 @@ class ResourceListTests(BaseWebAPITestCase):
                 with_local_site=with_local_site,
                 publish=True)
 
-            profile = Profile.objects.get(user=user)
+            profile = user.get_profile()
             profile.starred_review_requests.add(review_request)
             items = [review_request]
         else:
@@ -87,7 +86,7 @@ class ResourceListTests(BaseWebAPITestCase):
                 [review_request])
 
     def check_post_result(self, user, rsp, review_request):
-        profile = Profile.objects.get(user=user)
+        profile = user.get_profile()
         self.assertTrue(review_request in
                         profile.starred_review_requests.all())
 

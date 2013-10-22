@@ -1140,7 +1140,7 @@ class ViewTests(TestCase):
         """Testing dashboard sidebar counts"""
         self.client.login(username='doc', password='doc')
         user = User.objects.get(username='doc')
-        profile = Profile.objects.get(user=user)
+        profile = user.get_profile()
 
         # Create all the test data.
         devgroup = self.create_review_group(name='devgroup')

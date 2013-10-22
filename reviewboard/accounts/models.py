@@ -6,6 +6,7 @@ from djblets.util.db import ConcurrencyManager
 from djblets.util.fields import CounterField, JSONField
 from djblets.util.forms import TIMEZONE_CHOICES
 
+from reviewboard.accounts.managers import ProfileManager
 from reviewboard.reviews.models import Group, ReviewRequest
 from reviewboard.site.models import LocalSite
 
@@ -104,6 +105,8 @@ class Profile(models.Model):
                                 max_length=30)
 
     extra_data = JSONField(null=True)
+
+    objects = ProfileManager()
 
     def star_review_request(self, review_request):
         """Marks a review request as starred.
@@ -224,11 +227,21 @@ def _is_user_profile_visible(self, user=None):
     user owns the profile, or the user is a staff member.
     """
     try:
-        profile = Profile.objects.get(user=self)
+        profile = self.get_profile()
+
         return ((user and (user == self or user.is_staff)) or
                 not profile.is_private)
     except Profile.DoesNotExist:
         return True
 
+
+def _get_profile(self):
+    if not hasattr(self, '_profile'):
+        self._profile = Profile.objects.get(user=self)
+        self._profile.user = self
+
+    return self._profile
+
 User.is_profile_visible = _is_user_profile_visible
+User.get_profile = _get_profile
 User._meta.ordering = ('username',)

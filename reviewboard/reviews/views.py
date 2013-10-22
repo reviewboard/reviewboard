@@ -384,7 +384,7 @@ def review_detail(request,
             visited.save()
 
         try:
-            profile = Profile.objects.get(user=request.user)
+            profile = request.user.get_profile()
             starred_review_requests = \
                 profile.starred_review_requests.filter(pk=review_request.pk)
             starred = (starred_review_requests.count() > 0)
