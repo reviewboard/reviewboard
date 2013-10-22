@@ -68,6 +68,26 @@ def filter_interdiff_opcodes(opcodes, filediff_data, interfilediff_data):
         return
 
     for tag, i1, i2, j1, j2 in opcodes:
+        while orig_range and i1 > orig_range[1]:
+            # We've left the range of the current chunk to consider in the
+            # original diff. Move on to the next one.
+            orig_range_i += 1
+
+            if orig_range_i < len(orig_ranges):
+                orig_range = orig_ranges[orig_range_i]
+            else:
+                orig_range = None
+
+        while new_range and j1 > new_range[1]:
+            # We've left the range of the current chunk to consider in the
+            # new diff. Move on to the next one.
+            new_range_i += 1
+
+            if new_range_i < len(new_ranges):
+                new_range = new_ranges[new_range_i]
+            else:
+                new_range = None
+
         # See if the chunk we're looking at is in the range of the chunk in
         # one of the uploaded diffs. If so, allow it through.
         valid_chunk = (
@@ -78,26 +98,6 @@ def filter_interdiff_opcodes(opcodes, filediff_data, interfilediff_data):
              (tag == 'delete' or j1 != j2) and
              (j1 >= new_range[0] and j2 <= new_range[1]))
         )
-
-        if orig_range and i2 >= orig_range[1]:
-            # We've left the range of the current chunk to consider in the
-            # original diff. Move on to the next one.
-            orig_range_i += 1
-
-            if orig_range_i < len(orig_ranges):
-                orig_range = orig_ranges[orig_range_i]
-            else:
-                orig_range = None
-
-        if new_range and j2 >= new_range[1]:
-            # We've left the range of the current chunk to consider in the
-            # new diff. Move on to the next one.
-            new_range_i += 1
-
-            if new_range_i < len(new_ranges):
-                new_range = new_ranges[new_range_i]
-            else:
-                new_range = None
 
         if not valid_chunk:
             # Turn this into an "equal" chunk. The left-hand and right-hand

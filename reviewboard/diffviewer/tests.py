@@ -832,6 +832,46 @@ class ProcessorsTests(TestCase):
             ('equal', 190, 232, 197, 239),
         ])
 
+    def test_filter_interdiff_opcodes_with_many_ignorable_ranges(self):
+        """Testing filter_interdiff_opcodes with many ignorable ranges"""
+        # These opcodes were taken from the r1-r2 interdiff at
+        # http://reviews.reviewboard.org/r/4257/
+        opcodes = [
+            ('equal', 0, 631, 0, 631),
+            ('replace', 631, 632, 631, 632),
+            ('insert', 632, 632, 632, 633),
+            ('equal', 632, 882, 633, 883),
+        ]
+
+        # NOTE: Only the "@@" lines in the diff matter below for this
+        #       processor, so the rest can be left out.
+        orig_diff = (
+            '@@ -413,6 +413,8 @@\n'
+            '@@ -422,9 +424,13 @@\n'
+            '@@ -433,6 +439,8 @@\n'
+            '@@ -442,6 +450,9 @@\n'
+            '@@ -595,6 +605,205 @@\n'
+            '@@ -636,6 +845,36 @@\n'
+        )
+        new_diff = (
+            '@@ -413,6 +413,8 @@\n'
+            '@@ -422,9 +424,13 @@\n'
+            '@@ -433,6 +439,8 @@\n'
+            '@@ -442,6 +450,8 @@\n'
+            '@@ -595,6 +605,206 @@\n'
+            '@@ -636,6 +846,36 @@\n'
+        )
+
+        new_opcodes = list(filter_interdiff_opcodes(opcodes, orig_diff,
+                                                    new_diff))
+
+        self.assertEqual(new_opcodes, [
+            ('equal', 0, 631, 0, 631),
+            ('replace', 631, 632, 631, 632),
+            ('insert', 632, 632, 632, 633),
+            ('equal', 632, 882, 633, 883),
+        ])
+
     def test_merge_adjacent_chunks(self):
         """Testing merge_adjacent_chunks"""
         opcodes = [
