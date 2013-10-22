@@ -220,22 +220,39 @@ class LocalSiteProfile(models.Model):
         return '%s (%s)' % (self.user.username, self.local_site)
 
 
+#
+# The following functions are patched onto the User model.
+#
+
 def _is_user_profile_visible(self, user=None):
-    """Returns whether or not a user's profile is viewable by a given user.
+    """Returns whether or not a User's profile is viewable by a given user.
 
     A profile is viewable if it's not marked as private, or the viewing
     user owns the profile, or the user is a staff member.
     """
     try:
-        profile = self.get_profile()
+        if hasattr(self, 'is_private'):
+            # This is an optimization used by the web API. It will set
+            # is_private on this User instance through a query, saving a
+            # lookup for each instance.
+            #
+            # This must be done because select_related() and
+            # prefetch_related() won't cache reverse foreign key relations.
+            is_private = self.is_private
+        else:
+            is_private = self.get_profile().is_private
 
         return ((user and (user == self or user.is_staff)) or
-                not profile.is_private)
+                not is_private)
     except Profile.DoesNotExist:
         return True
 
 
 def _get_profile(self):
+    """Returns the profile for the User.
+
+    The profile will be cached, preventing queries for future lookups.
+    """
     if not hasattr(self, '_profile'):
         self._profile = Profile.objects.get(user=self)
         self._profile.user = self

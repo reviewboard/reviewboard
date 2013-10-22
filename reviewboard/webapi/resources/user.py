@@ -58,7 +58,10 @@ class UserResource(WebAPIResource, DjbletsUserResource):
 
             query = query.filter(q)
 
-        return query
+        return query.extra(select={
+            'is_private': ('SELECT is_private FROM accounts_profile '
+                           'WHERE accounts_profile.user_id = auth_user.id')
+        })
 
     def serialize_object(self, obj, request=None, *args, **kwargs):
         data = super(UserResource, self).serialize_object(
