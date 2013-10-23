@@ -1446,10 +1446,12 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
 
         if self.changedesc:
             self.changedesc.timestamp = timezone.now()
+            self.changedesc.rich_text = self.rich_text
             self.changedesc.public = True
             self.changedesc.save()
             review_request.changedescs.add(self.changedesc)
 
+        review_request.rich_text = self.rich_text
         review_request.save()
 
         if send_notification:
