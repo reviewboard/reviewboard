@@ -159,6 +159,8 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
 
         this._setFiles();
 
+        $('#diff-details').removeClass('loading');
+
         return this;
     },
 

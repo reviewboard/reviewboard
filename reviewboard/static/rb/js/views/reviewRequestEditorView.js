@@ -215,6 +215,20 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
         this._$attachments = $('#file-list');
         this._$attachmentsContainer = $(this._$attachments.parent()[0]);
 
+        /*
+         * Linkify any text in the description, testing done, and change
+         * description fields.
+         *
+         * Do this as soon as possible, so that we don't show spinners for
+         * too long.
+         */
+        _.each($("#description, #testing_done, #changedescription"),
+               function(el) {
+            var $el = $(el);
+
+            this.formatText($el, $el.text());
+        }, this);
+
         this.dndUploader = new RB.DnDUploader({
             reviewRequestEditor: this.model
         });
@@ -274,16 +288,6 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
 
             draft.on('change:' + fieldOptions.fieldName,
                      _.bind(this._formatField, this, fieldOptions));
-        }, this);
-
-        /*
-         * Linkify any text in the description, testing done, and change
-         * description fields.
-         */
-        _.each($("#description, #testing_done, #changedescription"), function(el) {
-            var $el = $(el);
-
-            this.formatText($el, $el.text());
         }, this);
 
         this.model.on('change:editable', this._onEditableChanged, this);

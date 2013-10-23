@@ -81,6 +81,7 @@ RB.formatText = function($el, text, bugTrackerURL, options) {
             .empty()
             .append(markedUp)
             .addClass('rich-text')
+            .removeClass('loading')
             .find('a')
                 .attr('target', '_blank');
     } else {

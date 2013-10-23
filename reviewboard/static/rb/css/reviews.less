@@ -2,6 +2,16 @@
 
 
 /****************************************************************************
+ * Review-specific macros
+ ****************************************************************************/
+
+.rich-text-loading() {
+  color: transparent;
+  background: white url("../images/spinner.gif") no-repeat @box-padding @box-padding;
+}
+
+
+/****************************************************************************
  * Actions
  ****************************************************************************/
 .actions-container {
@@ -182,6 +192,10 @@
       border: 1px #b8b5a0 solid;
       margin: 5px 0 0 0;
       padding: 10px;
+    }
+
+    .editable.loading {
+      .rich-text-loading();
     }
   }
 
@@ -606,6 +620,10 @@
   border: 1px #b8b5a0 solid;
   margin: 5px 0 0 0;
   padding: 10px;
+
+  &.loading {
+    .rich-text-loading();
+  }
 }
 
 .changedesc {
