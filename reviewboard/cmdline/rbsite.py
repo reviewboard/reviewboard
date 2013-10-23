@@ -543,7 +543,11 @@ class Site(object):
 
         try:
             from django.core.management import execute_manager, get_commands
+            from reviewboard.extensions.base import get_extension_manager
             import reviewboard.settings
+
+            extensionmanager=get_extension_manager()
+            extensionmanager.load()
 
             if not params:
                 params = []
