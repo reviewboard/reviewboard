@@ -181,11 +181,16 @@ class ResourceDirective(Directive):
             has_examples = False
 
             if is_list:
-                allowed_mimetypes = resource.allowed_list_mimetypes
+                mimetype_key = 'list'
             else:
-                allowed_mimetypes = resource.allowed_item_mimetypes
+                mimetype_key = 'item'
 
-            for mimetype in allowed_mimetypes:
+            for mimetype in resource.allowed_mimetypes:
+                try:
+                    mimetype = mimetype[mimetype_key]
+                except KeyError:
+                    continue
+
                 if mimetype in self.FILTERED_MIMETYPES:
                     # Resources have more specific mimetypes. We want to
                     # filter out the general ones (like application/json)
