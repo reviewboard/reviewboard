@@ -10,6 +10,10 @@ like the New Review Request page.
 
 See :ref:`review-requests-for-diffs` for more information on the fields.
 
+.. note:: When updating the diff on a review request, you need to upload a
+          full diff between the upstream code (what's present in the
+	  repository) and your change. You can't just upload a diff of the
+	  changes since the previous diff.
 
 .. note:: It's usually best to use :ref:`post-review` or another tool
           to update a diff, instead of uploading using this dialog.
