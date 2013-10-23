@@ -1447,6 +1447,7 @@
 
     line-height: inherit;
     text-rendering: inherit;
+    white-space: normal;
   }
 
   h1, h2, h3, h4, h5, h6 {
@@ -1454,35 +1455,33 @@
   }
 
   ul, ol {
-    padding: 0;
     line-height: 0;
+    margin: 0;
+    padding: 0;
+
+    ul, ol {
+      margin-left: 2ch;
+    }
+  }
+
+  ol {
     list-style-position: inside;
   }
 
   ul {
-    list-style: none;
-
-    li {
-      list-style: none;
-
-      /*
-       * The bullet point browsers use is too small and doesn't match the
-       * monospaced widths, so it will cause the text to shift. Replace it
-       * with our own.
-       */
-      &:before {
-        content: "• ";
-        font-weight: bold;
-      }
-    }
+    list-style-position: outside;
+    list-style: disc;
+    margin-left: 2ch;
   }
 
-  ul+pre, ol+pre {
-    /*
-     * There are two blank lines between lists and code blocks, which won't
-     * otherwise be preserved. Try to keep that same spacing.
-     */
-    margin-top: @textarea-line-height;
+  ol, ul, pre {
+    & + pre {
+      /*
+       * There are two blank lines between lists and code blocks, which won't
+       * otherwise be preserved. Try to keep that same spacing.
+       */
+      margin-top: @textarea-line-height;
+    }
   }
 
   li {
@@ -1500,19 +1499,27 @@
     color: #4444cc;
   }
 
-  pre code {
-    border: none;
-    color: black;
-    display: block;
-    margin-left: 2.5em;
-    .box-sizing(border-box);
+  pre {
+    .pre-wrap;
 
-    .linenums {
-      /* On Firefox, we'll be one pixel too far to the right, so adjust it. */
-      -moz-margin-start: -1px;
+    * {
+      .pre-wrap;
+    }
 
-      li {
-        list-style: none;
+    code {
+      border: none;
+      color: black;
+      display: block;
+      margin-left: 2.5em;
+      .box-sizing(border-box);
+
+      .linenums {
+        /* On Firefox, we'll be one pixel too far to the right, so adjust it. */
+        -moz-margin-start: -1px;
+
+        li {
+          list-style: none;
+        }
       }
     }
   }
