@@ -10,6 +10,7 @@ Table of Contents
    users/index
    admin/index
    webapi/index
+   extending/index
    faq/index
 
 
