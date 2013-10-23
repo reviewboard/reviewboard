@@ -3,10 +3,24 @@ import re
 from markdown import Markdown
 
 
-ESCAPED_CHARS_RE = \
-    re.compile(r'([%s])' % re.escape(''.join(Markdown.ESCAPED_CHARS)))
-UNESCAPED_CHARS_RE = \
-    re.compile(r'\\([%s])' % re.escape(''.join(Markdown.ESCAPED_CHARS)))
+# NOTE: Any changes made here or in markdown_escape below should be
+#       reflected in reviewboard/static/rb/js/utils/textUtils.js.
+
+MARKDOWN_SPECIAL_CHARS = re.escape(''.join(Markdown.ESCAPED_CHARS))
+MARKDOWN_SPECIAL_CHARS_RE = re.compile('([%s])' % MARKDOWN_SPECIAL_CHARS)
+
+# Markdown.ESCAPED_CHARS lists '.' as a character to escape, but it's not
+# that simple. We only want to escape this if it's after a number at the
+# beginning of the line (ignoring leading whitespace), indicating a
+# numbered list. We'll handle that specially.
+MARKDOWN_ESCAPED_CHARS = list(Markdown.ESCAPED_CHARS)
+MARKDOWN_ESCAPED_CHARS.remove('.')
+
+ESCAPE_CHARS_RE = \
+    re.compile(r'(^\s*(\d+\.)+|[%s])'
+               % re.escape(''.join(MARKDOWN_ESCAPED_CHARS)),
+               re.M)
+UNESCAPE_CHARS_RE = re.compile(r'\\([%s])' % MARKDOWN_SPECIAL_CHARS)
 
 
 def markdown_escape(text):
@@ -15,7 +29,9 @@ def markdown_escape(text):
     This will escape the provided text so that none of the characters will
     be rendered specially by Markdown.
     """
-    return ESCAPED_CHARS_RE.sub(r'\\\1', text)
+    return ESCAPE_CHARS_RE.sub(
+        lambda m: MARKDOWN_SPECIAL_CHARS_RE.sub(r'\\\1', m.group(0)),
+        text)
 
 
 def markdown_unescape(escaped_text):
@@ -24,7 +40,7 @@ def markdown_unescape(escaped_text):
     This will unescape the provided Markdown-formatted text so that any
     escaped characters will be unescaped.
     """
-    return UNESCAPED_CHARS_RE.sub(r'\1', escaped_text)
+    return UNESCAPE_CHARS_RE.sub(r'\1', escaped_text)
 
 
 def markdown_escape_field(model, field_name):

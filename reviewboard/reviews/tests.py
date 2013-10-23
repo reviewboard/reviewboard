@@ -2614,12 +2614,24 @@ class UserInfoboxTests(TestCase):
 
 class MarkdownUtilsTests(TestCase):
     UNESCAPED_TEXT = '\\`*_{}[]()>#+-.!'
-    ESCAPED_TEXT = '\\\\\\`\\*\\_\\{\\}\\[\\]\\(\\)\\>\\#\\+\\-\\.\\!'
+    ESCAPED_TEXT = '\\\\\\`\\*\\_\\{\\}\\[\\]\\(\\)\\>\\#\\+\\-.\\!'
 
     def test_markdown_escape(self):
         """Testing markdown_escape"""
         self.assertEqual(markdown_escape(self.UNESCAPED_TEXT),
                          self.ESCAPED_TEXT)
+
+    def test_markdown_escape_periods(self):
+        """Testing markdown_escape with '.' placement"""
+        self.assertEqual(
+            markdown_escape('Line. 1.\n'
+                            '1. Line. 2.\n'
+                            '1.2. Line. 3.\n'
+                            '  1. Line. 4.'),
+            ('Line. 1.\n'
+             '1\\. Line. 2.\n'
+             '1\\.2\\. Line. 3.\n'
+             '  1\\. Line. 4.'))
 
     def test_markdown_unescape(self):
         """Testing markdown_unescape"""

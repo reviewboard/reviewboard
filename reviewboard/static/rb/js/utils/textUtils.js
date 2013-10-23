@@ -1,7 +1,12 @@
 (function() {
 
 
-var ESCAPED_CHARS_RE = /([\\`\*_\{\}\[\]\(\)\>\#\+\-\.\!])/g;
+/*
+ * NOTE: Any changes made here or in escapeMarkdown below should be
+ *       reflected in reviewboard/reviews/markdown_utils.py.
+ */
+var MARKDOWN_SPECIAL_CHARS_RE = /([\\`\*_\{\}\[\]\(\)\>\#\+\-\.\!])/g,
+    ESCAPE_CHARS_RE = /(^\s*(\d+\.)+|[\\`\*_\{\}\[\]\(\)\>\#\+\-\!])/gm;
 
 
 // If `marked` is defined, initialize it with our preferred options
@@ -89,7 +94,9 @@ RB.formatText = function($el, text, bugTrackerURL, options) {
  * characters to be interpreted as Markdown.
  */
 RB.escapeMarkdown = function(text) {
-    return text.replace(ESCAPED_CHARS_RE, '\\$1');
+    return text.replace(ESCAPE_CHARS_RE, function(text, m1) {
+        return m1.replace(MARKDOWN_SPECIAL_CHARS_RE, '\\$1');
+    });
 }
 
 
