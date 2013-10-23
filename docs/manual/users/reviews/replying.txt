@@ -11,6 +11,9 @@ below the comment on the right-hand side of the box. You can type your comment
 and then press :guilabel:`OK` to save, or :guilabel:`Cancel` to discard the
 comment.
 
+You can use rich text in your replies using the :term:`Markdown` language. See
+:ref:`using-markdown` for more information.
+
 Unpublished comments (as indicated by your name in green) will appear only to
 you. To publish your replies, click :guilabel:`Publish` in the reply draft
 banner at the top of that review box.

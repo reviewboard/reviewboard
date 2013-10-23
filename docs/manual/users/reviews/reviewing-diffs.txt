@@ -45,6 +45,9 @@ comment.
 
 .. image:: comment-box.png
 
+Comments support rich text using the :term:`Markdown` language. See
+:ref:`using-markdown` for more information.
+
 The diff comment dialog supports issue tracking. See the section on
 :ref:`issue-tracking` for more information.
 

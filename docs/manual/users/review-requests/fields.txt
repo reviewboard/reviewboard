@@ -97,6 +97,9 @@ It can support paragraphs of text with word-wrapping.
 This is intended to provide enough information for reviewers to know what the
 change is about before they go to review it.
 
+This field supports rich text using the :term:`Markdown` language. See
+:ref:`using-markdown` for more information.
+
 
 Testing Done
 ------------
@@ -107,6 +110,9 @@ It can support paragraphs of text with word-wrapping.
 This should cover any and all testing scenarios that have been done, in order
 to help reviewers feel more confident about the stability and design of the
 change.
+
+This field supports rich text using the :term:`Markdown` language. See
+:ref:`using-markdown` for more information.
 
 
 .. comment: vim: ft=rst et ts=3

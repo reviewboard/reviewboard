@@ -9,9 +9,10 @@ Users Guide
 
    getting-started/index
    dashboard/index
-   searching/index
    review-requests/index
    reviews/index
+   searching/index
+   markdown
    tools/index
 
 

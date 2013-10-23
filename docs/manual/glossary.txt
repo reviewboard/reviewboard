@@ -6,7 +6,7 @@ Glossary
 
 .. glossary::
 
-   context diff
+   Context Diff
        A type of :term:`diff file` that represents changes to a file
        using before/after sections. These are not well supported by
        Review Board.
@@ -17,7 +17,7 @@ Glossary
        lines with an exclamation point (``!``). Changes that only add
        lines only show one section.
 
-   diff file
+   Diff File
        A file representing changes to one or more files. Common diff
        formats are :term:`unified diff`\s and :term:`context diff`\s.
 
@@ -28,37 +28,44 @@ Glossary
        <http://en.wikipedia.org/wiki/DomainKeys_Identified_Mail>`_ for more
        information.
 
-   interdiffs
+   Interdiffs
        An interdiff is a diff between diffs. They show what has changed
        between two versions of a diff, which is useful when making incremental
        changes to a very large diff.
 
-   local sites
+   Local Sites
        One or more divisions of a Review Board site. Local sites act as
        individual Review Board sites with their own set of repositories,
        user lists, and other data, but share the same database and site
        install. This is an advanced feature.
 
-   post-commit hook
+   Markdown
+       A simple markup language which allows basic formatting such as headings,
+       lists, links, code blocks, and images. Many of the multi-line fields in
+       Review Board use Markdown to format their contents. See `John Gruber's
+       Markdown Syntax Overview
+       <http://daringfireball.net/projects/markdown/>`_ for more information.
+
+   Post-commit Hook
        A script that is executed after a commit is made to a repository.
        See :ref:`automating-post-review` for ways to use post-commit hooks
        to automate submitting review requests to Review Board.
 
-   post-commit review
+   Post-commit Review
        A form of code review where code is reviewed after it is submitted
        to a repository, usually in a development branch.
 
-   pre-commit review
+   Pre-commit Review
        A form of code review where code is reviewed before it even goes
        into a repository. This is generally a more strict way to handle
        code review, which can lead to fewer problems in the codebase.
 
-   private review requests
+   Private Review Requests
        A review request that can only be accessed by users meeting certain
        criteria, such as being on an access list for a group or repository.
        See :ref:`access-control` for more information.
 
-   unified diff
+   Unified Diff
        A type of :term:`diff file` designed to be easy to parse and easy
        to read by humans. This is the format supported by Review Board.
 

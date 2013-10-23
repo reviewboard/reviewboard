@@ -7,12 +7,12 @@ Reviewing Markdown Files
 Overview
 ========
 
-When writing documentation using the Markdown format, we often care much less
-about the source file than the resulting rich text document. Attaching a
-markdown file (.md) to a review request will enable a special review UI that
-will render the document.
+When writing documentation using the :term:`Markdown` format, we often care
+much less about the source file than the resulting rich text document.
+Attaching a Markdown file (.md) to a review request will enable a special
+review UI that will render the document.
 
-To begin reviewing a markdown file, click the thumbnail or the "Review" link
+To begin reviewing a Markdown file, click the thumbnail or the "Review" link
 for the file attachment on the review request page.
 
 
@@ -24,6 +24,9 @@ highlighted with a grey background. Clicking will pop open a new comment
 dialog, just like in the diff viewer.
 
 .. image:: comment-box.png
+
+Comments support rich text using the :term:`Markdown` language. See
+:ref:`using-markdown` for more information.
 
 The file attachment comment dialog supports issue tracking. See the section on
 :ref:`issue-tracking` for more information.
@@ -40,7 +43,7 @@ again.
 Reading Existing Comments
 =========================
 
-The markdown review UI will show blue comment flags along the left-hand side of
+The Markdown review UI will show blue comment flags along the left-hand side of
 the document. The number inside the comment flag indicates how many comments
 were made on that block.
 
