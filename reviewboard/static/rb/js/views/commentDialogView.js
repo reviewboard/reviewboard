@@ -115,7 +115,7 @@ RB.CommentDialogView = Backbone.View.extend({
         '<% } else if (hasDraft) { %>',
         ' <p class="draft-warning"><%= draftWarning %></p>',
         '<% } %>',
-        ' <textarea name="text" rows="6" cols="30"></textarea>',
+        ' <div class="comment-text-field"></div>',
         ' <div class="comment-issue-options">',
         '  <input type="checkbox" id="comment_issue" />',
         '  <label for="comment_issue" accesskey="i"><%= openAnIssueText %></label>',
@@ -137,8 +137,8 @@ RB.CommentDialogView = Backbone.View.extend({
         'click .buttons .close': '_onCancelClicked',
         'click .buttons .delete': '_onDeleteClicked',
         'click .buttons .save': 'save',
-        'keydown textarea': '_onTextKeyDown',
-        'keyup textarea': '_onTextKeyUp'
+        'keydown .comment-text-field': '_onTextKeyDown',
+        'keyup .comment-text-field': '_onTextKeyUp'
     },
 
     initialize: function() {
@@ -219,12 +219,16 @@ RB.CommentDialogView = Backbone.View.extend({
          * We need to handle keypress here, rather than in events above,
          * because jQuery will actually handle it. Backbone fails to.
          */
-        this._$textField = this._$draftForm.find('textarea')
+        this._textEditor = new RB.MarkdownEditorView({
+            el: this._$draftForm.find('.comment-text-field'),
+            autoSize: false,
+            minHeight: 0
+        });
+        this._textEditor.render();
+        this._textEditor.$el
             .keypress(_.bind(this._onTextKeyPress, this))
-            .bindVisibility(this.model, 'canEdit')
-            .bindProperty('value', this.model, 'text', {
-                elementToModel: false
-            });
+            .bindVisibility(this.model, 'canEdit');
+        this._textEditor.setText(this.model.get('text'));
 
         this.$el
             .css("position", "absolute")
@@ -305,7 +309,7 @@ RB.CommentDialogView = Backbone.View.extend({
     open: function() {
         function openDialog() {
             this.$el.scrollIntoView();
-            this._$textField.focus();
+            this._textEditor.focus();
         }
 
         this.$el
@@ -395,11 +399,6 @@ RB.CommentDialogView = Backbone.View.extend({
             width += this.COMMENTS_BOX_WIDTH;
         }
 
-        /* Don't let the text field bump up the size we set below. */
-        this._$textField
-            .width(10)
-            .height(10);
-
         this.$el
             .width(width)
             .height(this.model.get('canEdit')
@@ -415,7 +414,7 @@ RB.CommentDialogView = Backbone.View.extend({
         var $draftForm = this._$draftForm,
             $commentsPane = this._$commentsPane,
             $commentsList = this.commentsList.$el,
-            $textField = this._$textField,
+            $textField = this._textEditor.$el,
             textFieldPos,
             width = this.$el.width(),
             height = this.$el.height(),
@@ -445,14 +444,14 @@ RB.CommentDialogView = Backbone.View.extend({
 
         textFieldPos = $textField.position();
 
-        $textField
-            .width($draftForm.width() - textFieldPos.left -
-                   $textField.getExtents("bmp", "r"))
-            .height($draftForm.height() - textFieldPos.top -
-                    this.$buttons.outerHeight(true) -
-                    this._$statusField.height() -
-                    this._$issueOptions.height() -
-                    $textField.getExtents("bmp", "b"));
+        this._textEditor.setSize(
+            ($draftForm.width() - textFieldPos.left -
+             $textField.getExtents("bmp", "r")),
+            ($draftForm.height() - textFieldPos.top -
+             this.$buttons.outerHeight(true) -
+             this._$statusField.height() -
+             this._$issueOptions.height() -
+             $textField.getExtents("bmp", "b")));
     },
 
     /*
@@ -546,7 +545,7 @@ RB.CommentDialogView = Backbone.View.extend({
         if (!this._ignoreKeyUp) {
             e.stopPropagation();
 
-            this.model.set('text', this._$textField.val());
+            this.model.set('text', this._textEditor.getText());
         }
     }
 }, {

@@ -18,7 +18,7 @@ BaseCommentView = Backbone.View.extend({
     editorTemplate: _.template([
         '<div class="edit-fields">',
         ' <div class="edit-field">',
-        '  <textarea></textarea>',
+        '  <div class="comment-text-field"></div>',
         ' </div>',
         ' <div class="edit-field">',
         '  <input class="issue-opened" id="<%= issueOpenedID %>" ',
@@ -29,8 +29,8 @@ BaseCommentView = Backbone.View.extend({
     ].join('')),
 
     initialize: function() {
-        this.$textarea = null;
         this.$issueOpened = null;
+        this.textEditor = null;
 
         this._origIssueOpened = this.model.get('issueOpened');
         this._origExtraData = _.clone(this.model.get('extraData'));
@@ -54,7 +54,7 @@ BaseCommentView = Backbone.View.extend({
      * or if the issueOpened checkbox has changed.
      */
     needsSave: function() {
-        var newValue = this.$textarea.val(),
+        var newValue = this.textEditor.getText(),
             newIssueOpened = this.$issueOpened.prop('checked');
 
         return this.model.get('text') !== newValue ||
@@ -72,7 +72,7 @@ BaseCommentView = Backbone.View.extend({
         this.model.set({
             issueOpened: this.$issueOpened.prop('checked'),
             richText: true,
-            text: this.$textarea.val()
+            text: this.textEditor.getText()
         });
         this.model.save(options);
     },
@@ -92,7 +92,11 @@ BaseCommentView = Backbone.View.extend({
                 openAnIssueText: gettext('Open an issue')
             })));
 
-        this.$textarea = this.$('textarea');
+        this.textEditor = new RB.MarkdownEditorView({
+            el: this.$('.comment-text-field')
+        });
+        this.textEditor.render();
+
         this.$issueOpened = this.$('.issue-opened')
             .prop('checked', this.model.get('issueOpened'));
 
@@ -105,7 +109,7 @@ BaseCommentView = Backbone.View.extend({
             text = RB.escapeMarkdown(text);
         }
 
-        this.$textarea.text(text);
+        this.textEditor.setText(text);
 
         $editFields = this.$('.edit-fields');
 
@@ -270,12 +274,12 @@ RB.ReviewDialogView = Backbone.View.extend({
         ' <label for="id_shipit"><%- shipItText %></label>',
         '</div>',
         '<div class="edit-field">',
-        ' <textarea class="body-top"></textarea>',
+        ' <div class="body-top"></div>',
         '</div>',
         '<ul class="comments"></ul>',
         '<div class="spinner"></div>',
         '<div class="edit-field">',
-        ' <textarea class="body-bottom"></textarea>',
+        ' <div class="body-bottom"></div>',
         '</div>'
     ].join('')),
 
@@ -286,12 +290,12 @@ RB.ReviewDialogView = Backbone.View.extend({
         var reviewRequest = this.model.get('parentObject');
 
         this._$comments = null;
-        this._$bodyBottom = null;
-        this._$bodyTop = null;
         this._$shipIt = null;
         this._$dlg = null;
         this._$buttons = null;
         this._$spinner = null;
+        this._bodyTopEditor = null;
+        this._bodyBottomEditor = null;
 
         this._commentViews = [];
 
@@ -368,11 +372,20 @@ RB.ReviewDialogView = Backbone.View.extend({
             shipItText: gettext('Ship It')
         }));
 
-        this._$bodyBottom = this.$('.body-bottom').hide();
-        this._$bodyTop = this.$('.body-top');
         this._$shipIt = this.$('#id_shipit');
         this._$comments = this.$el.children('.comments');
         this._$spinner = this.$el.children('.spinner');
+
+        this._bodyTopEditor = new RB.MarkdownEditorView({
+            el: this.$('.body-top')
+        });
+        this._bodyTopEditor.render();
+
+        this._bodyBottomEditor = new RB.MarkdownEditorView({
+            el: this.$('.body-bottom')
+        });
+        this._bodyBottomEditor.render();
+        this._bodyBottomEditor.hide();
 
         this.model.ready({
             ready: function() {
@@ -397,8 +410,8 @@ RB.ReviewDialogView = Backbone.View.extend({
                         bodyTop = RB.escapeMarkdown(bodyTop);
                     }
 
-                    this._$bodyBottom.text(bodyBottom);
-                    this._$bodyTop.text(bodyTop);
+                    this._bodyBottomEditor.setText(bodyBottom);
+                    this._bodyTopEditor.setText(bodyTop);
                     this._$shipIt.prop('checked', this.model.get('shipIt'));
 
                     this._loadComments();
@@ -433,8 +446,7 @@ RB.ReviewDialogView = Backbone.View.extend({
                  * comments. Otherwise, it's weird to have both
                  * textareas visible with nothing inbetween.
                  */
-                this._$bodyBottom.show();
-                this._setupTextArea(this._$bodyBottom);
+                this._bodyBottomEditor.show();
             }
         });
     },
@@ -475,8 +487,6 @@ RB.ReviewDialogView = Backbone.View.extend({
         this._commentViews.push(view);
         view.$el.appendTo(this._$comments);
         view.render();
-
-        this._setupTextArea(view.$textarea);
     },
 
     /*
@@ -541,18 +551,7 @@ RB.ReviewDialogView = Backbone.View.extend({
         /* Must be done after the dialog is rendered. */
         this._$buttons = this._$dlg.modalBox('buttons');
 
-        this._setupTextArea(this._$bodyTop);
-        this._$bodyTop.focus();
-    },
-
-    /*
-     * Sets up the text area for a body-* field.
-     */
-    _setupTextArea: function($textarea) {
-        $textarea.autoSizeTextArea({
-            minHeight: 70
-        });
-        $textarea.autoSizeTextArea('autoSize');
+        this._bodyTopEditor.focus();
     },
 
     /*
@@ -592,8 +591,8 @@ RB.ReviewDialogView = Backbone.View.extend({
         $.funcQueue('reviewForm').add(function() {
             this.model.set({
                 shipIt: this._$shipIt.prop('checked'),
-                bodyTop: this._$bodyTop.val(),
-                bodyBottom: this._$bodyBottom.val(),
+                bodyTop: this._bodyTopEditor.getText(),
+                bodyBottom: this._bodyBottomEditor.getText(),
                 public: publish,
                 richText: true
             });

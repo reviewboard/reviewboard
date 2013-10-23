@@ -107,12 +107,12 @@ RB.ReviewReplyEditorView = Backbone.View.extend({
         this._$draftComment = $draftComment;
 
         this._$editor = $draftComment.find('pre.reviewtext')
-            .inlineEditor({
+            .inlineEditor(_.extend({
                 cls: 'inline-comment-editor',
                 editIconClass: 'rb-icon rb-icon-edit',
                 notifyUnchangedCompletion: true,
                 multiline: true
-            })
+            }, RB.MarkdownEditorView.getInlineEditorOptions()))
             .on({
                 beginEdit: function() {
                     if (pageEditState) {

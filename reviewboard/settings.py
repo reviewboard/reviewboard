@@ -313,6 +313,7 @@ PIPELINE_JS = dict({
             'lib/js/ui.autocomplete.js',
             'lib/js/google-code-prettify/prettify.js',
             'lib/js/marked.js',
+            'lib/js/codemirror-3.19.min.js',
         ),
         'output_filename': 'lib/js/3rdparty.min.js',
     },
@@ -453,6 +454,7 @@ PIPELINE_JS = dict({
             'rb/js/views/fileAttachmentThumbnailView.js',
             'rb/js/views/floatingBannerView.js',
             'rb/js/views/issueSummaryTableView.js',
+            'rb/js/views/markdownEditorView.js',
             'rb/js/views/regionCommentBlockView.js',
             'rb/js/views/reviewBoxListView.js',
             'rb/js/views/reviewBoxView.js',
@@ -528,6 +530,7 @@ PIPELINE_JS = dict({
 PIPELINE_CSS = dict({
     'common': {
         'source_filenames': (
+            'lib/css/codemirror.css',
             'lib/css/jquery-ui-1.8.24.min.css',
             'rb/css/common.less',
             'rb/css/dashboard.less',

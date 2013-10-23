@@ -119,6 +119,41 @@
 
 
 /****************************************************************************
+ * Code Mirror
+ ****************************************************************************/
+.CodeMirror {
+  border: @textarea-border;
+  height: auto;
+  margin: @textarea-editor-margin;
+
+  .CodeMirror-lines {
+    padding: @textarea-editor-padding;
+  }
+
+  .CodeMirror-scroll {
+    overflow-y: hidden;
+    overflow-x: auto;
+  }
+
+  pre {
+    padding: 0;
+  }
+
+  .cm-header {
+    color: black;
+  }
+
+  .cm-comment {
+    color: #4444cc;
+  }
+
+  .cm-variable-2 {
+    color: black;
+  }
+}
+
+
+/****************************************************************************
  * Review Request Box
  ****************************************************************************/
 .inline-editor-form {
@@ -132,7 +167,8 @@
     margin-right: 6px;
   }
 
-  textarea + .buttons {
+  textarea + .buttons,
+  .markdown-editor + .buttons {
     margin-top: 6px;
   }
 
@@ -156,7 +192,7 @@
   }
 
   textarea {
-    border: 1px #b8b5a0 solid;
+    border: @textarea-border;
     height: 1.5em;
     overflow: hidden;
   }
@@ -189,9 +225,9 @@
     &>pre {
       .pre-wrap;
       background-color: #FFFFFF;
-      border: 1px #b8b5a0 solid;
-      margin: 5px 0 0 0;
-      padding: 10px;
+      border: @textarea-border;
+      margin: @textarea-editor-margin;
+      padding: @textarea-editor-padding;
     }
 
     .editable.loading {
@@ -616,10 +652,10 @@
  ****************************************************************************/
 #changedescription {
   .pre-wrap;
-  background-color: #FFFFFF;
-  border: 1px #b8b5a0 solid;
-  margin: 5px 0 0 0;
-  padding: 10px;
+  background-color: @textarea-editor-background;
+  border: @textarea-border;
+  margin: @textarea-editor-margin;
+  padding: @textarea-editor-padding;
 
   &.loading {
     .rich-text-loading();
@@ -650,8 +686,8 @@
         }
 
         pre {
-          border: 1px #b8b5a0 solid;
-          padding: 10px;
+          border: @textarea-border;
+          padding: @textarea-editor-padding;
           font-size: 9pt;
         }
       }
@@ -732,11 +768,11 @@
     margin: 1em 0;
 
     textarea {
-      background-color: #FFFFFF;
-      border: 1px #b8b5a0 solid;
-      font-size: 10pt;
-      margin: 5px 0 0 0;
-      padding: 10px;
+      background-color: @textarea-editor-background;
+      border: @textarea-border;
+      font-size: @textarea-font-size;
+      margin: @textarea-editor-margin;
+      padding: @textarea-editor-padding;
       width: 100%;
       height: 1.5em;
       .box-sizing(border-box);

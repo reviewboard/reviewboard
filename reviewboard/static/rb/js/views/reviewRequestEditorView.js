@@ -41,6 +41,7 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
             selector: '#draft-banner #changedescription',
             jsonFieldName: 'changedescription',
             elementOptional: true,
+            editMarkdown: true,
             formatter: function(view, data, $el) {
                 view.formatText($el, data);
             }
@@ -51,6 +52,7 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
             jsonFieldName: 'changedescription',
             elementOptional: true,
             closeType: RB.ReviewRequest.CLOSE_SUBMITTED,
+            editMarkdown: true,
             formatter: function(view, data, $el) {
                 view.formatText($el, data);
             }
@@ -61,6 +63,7 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
             jsonFieldName: 'changedescription',
             elementOptional: true,
             closeType: RB.ReviewRequest.CLOSE_DISCARDED,
+            editMarkdown: true,
             formatter: function(view, data, $el) {
                 view.formatText($el, data);
             }
@@ -80,6 +83,7 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
         },
         {
             fieldName: 'description',
+            editMarkdown: true,
             formatter: function(view, data, $el) {
                 view.formatText($el, data);
             }
@@ -138,6 +142,7 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
             fieldName: 'testingDone',
             selector: '#testing_done',
             jsonFieldName: 'testing_done',
+            editMarkdown: true,
             formatter: function(view, data, $el) {
                 view.formatText($el, data);
             }
@@ -513,17 +518,24 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
     _buildEditor: function($el, fieldOptions) {
         var model = this.model,
             el = $el[0],
-            id = el.id;
-
-        $el
-            .inlineEditor({
+            id = el.id,
+            options = {
                 cls: id + '-editor',
                 editIconClass: 'rb-icon rb-icon-edit',
                 multiline: el.tagName === 'PRE',
                 showButtons: !$el.hasClass('screenshot-editable'),
                 useEditIconOnly: fieldOptions.useEditIconOnly,
                 showRequiredFlag: $el.hasClass('required')
-            })
+            };
+
+        if (fieldOptions.editMarkdown) {
+            _.extend(options, RB.MarkdownEditorView.getInlineEditorOptions({
+                minHeight: 0
+            }));
+        }
+
+        $el
+            .inlineEditor(options)
             .on({
                 beginEdit: function() {
                     model.incr('editCount');

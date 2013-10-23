@@ -1,0 +1,11 @@
+codemirror-3.19.min.js is built with the minifier at
+http://codemirror.net/doc/compress.html
+
+It contains the following modules:
+
+Modes:
+  * gfm.js
+  * markdown.js
+
+Add-ons:
+  * overlay.js
