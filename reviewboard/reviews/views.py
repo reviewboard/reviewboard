@@ -1039,7 +1039,8 @@ class ReviewsDiffViewerView(DiffViewerView):
             key = (comment.filediff_id, comment.interfilediff_id)
             comments.setdefault(key, []).append(comment)
 
-        close_description = None
+        close_description = ''
+        close_description_rich_text = False
 
         if latest_changedesc and 'status' in latest_changedesc.fields_changed:
             status = latest_changedesc.fields_changed['status']['new'][0]
