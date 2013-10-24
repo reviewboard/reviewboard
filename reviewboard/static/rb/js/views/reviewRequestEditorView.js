@@ -221,11 +221,32 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
         this._$attachmentsContainer = $(this._$attachments.parent()[0]);
 
         /*
+         * Set up editors for every registered field.
+         */
+        _.each(this._fieldEditors, function(fieldOptions) {
+            var $el = this.$(fieldOptions.selector);
+
+            if ($el.length === 0) {
+                return;
+            }
+
+            this._buildEditor($el, fieldOptions);
+
+            if (_.has(fieldOptions, 'autocomplete')) {
+                this._buildAutoComplete($el, fieldOptions.autocomplete);
+            }
+
+            draft.on('change:' + fieldOptions.fieldName,
+                     _.bind(this._formatField, this, fieldOptions));
+        }, this);
+
+        /*
          * Linkify any text in the description, testing done, and change
          * description fields.
          *
          * Do this as soon as possible, so that we don't show spinners for
-         * too long.
+         * too long. It must be done after the fields are set up,
+         * though.
          */
         _.each($("#description, #testing_done, #changedescription"),
                function(el) {
@@ -274,26 +295,6 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
         _.each($('.binary'),
                this._importFileAttachmentThumbnail,
                this);
-
-        /*
-         * Set up editors for every registered field.
-         */
-        _.each(this._fieldEditors, function(fieldOptions) {
-            var $el = this.$(fieldOptions.selector);
-
-            if ($el.length === 0) {
-                return;
-            }
-
-            this._buildEditor($el, fieldOptions);
-
-            if (_.has(fieldOptions, 'autocomplete')) {
-                this._buildAutoComplete($el, fieldOptions.autocomplete);
-            }
-
-            draft.on('change:' + fieldOptions.fieldName,
-                     _.bind(this._formatField, this, fieldOptions));
-        }, this);
 
         this.model.on('change:editable', this._onEditableChanged, this);
         this._onEditableChanged();
