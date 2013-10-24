@@ -241,21 +241,12 @@ RB.CommentDialogView = Backbone.View.extend({
             /*
              * resizable is pretty broken in IE 6/7.
              */
-            $grip = $("<img/>")
-                .addClass("ui-resizable-handle ui-resizable-grip")
-                .attr("src", STATIC_URLS["rb/images/resize-grip.png"])
-                .insertAfter(this.$buttons)
-                .proxyTouchEvents();
-
             this.$el.resizable({
                 handles: $.support.touch ? "grip,se"
                                          : "grip,n,e,s,w,se,sw,ne,nw",
                 transparent: true,
                 resize: _.bind(this._handleResize, this)
             });
-
-            /* Reset the opacity, which resizable() changes. */
-            $grip.css("opacity", 100);
         }
 
         this.$el.draggable({
