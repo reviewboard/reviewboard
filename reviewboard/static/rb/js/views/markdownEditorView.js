@@ -36,7 +36,10 @@ RB.MarkdownEditorView = Backbone.View.extend({
     render: function() {
         var codeMirrorOptions = {
             mode: 'gfm',
-            lineWrapping: true
+            lineWrapping: true,
+            extraKeys: {
+                'Tab': false
+            }
         };
 
         if (this.options.autoSize) {
