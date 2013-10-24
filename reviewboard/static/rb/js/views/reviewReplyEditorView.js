@@ -20,7 +20,8 @@ RB.ReviewReplyEditorView = Backbone.View.extend({
         '<% } %>',
         '   </label>',
         '  </dt>',
-        '  <dd><pre id="<%= id %>" class="reviewtext"><%- text %></pre></dd>',
+        '  <dd><pre id="<%= id %>" class="reviewtext rich-text"',
+        '           data-rich-text="true"><%- text %></pre></dd>',
         ' </dl>',
         '</li>'
     ].join('')),
