@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2013-08-14 17:59-0700\n"
+"POT-Creation-Date: 2013-10-24 14:16-0700\n"
 "PO-Revision-Date: 2013-07-06 10:40+0200\n"
 "Last-Translator: Alessandro Menti <alessandro.menti@hotmail.it>\n"
 "Language: it-IT\n"
@@ -14,15 +14,15 @@ msgstr ""
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 "X-Generator: Lokalize 1.5\n"
 
-#: settings.py:50
+#: settings.py:51
 msgid "English"
 msgstr "Inglese"
 
-#: settings.py:51
+#: settings.py:52
 msgid "Italian"
 msgstr "Italiano"
 
-#: settings.py:52
+#: settings.py:53
 msgid "Traditional Chinese"
 msgstr ""
 
@@ -41,64 +41,68 @@ msgstr ""
 "Questo valore può contenere solo lettere, numeri, trattini di "
 "sottolineatura, punti e '@'."
 
-#: accounts/admin.py:25 accounts/admin.py:36 admin/forms.py:454
-#: reviews/datagrids.py:714 templates/accounts/login.html:32
+#: accounts/admin.py:25 accounts/admin.py:36 admin/forms.py:455
+#: reviews/datagrids.py:719 templates/accounts/login.html:32
 msgid "Username"
 msgstr "Nome utente"
 
-#: accounts/backends.py:88
+#: accounts/backends.py:92
 msgid "Standard Registration"
 msgstr "Registrazione standard"
 
-#: accounts/backends.py:107
+#: accounts/backends.py:111
 msgid "NIS"
 msgstr "NIS"
 
-#: accounts/backends.py:167
+#: accounts/backends.py:171
 msgid "LDAP"
 msgstr "LDAP"
 
-#: accounts/backends.py:307
+#: accounts/backends.py:316
 msgid "Active Directory"
 msgstr "Active Directory"
 
-#: accounts/backends.py:500
+#: accounts/backends.py:512
 msgid "X.509 Public Key"
 msgstr "Chiave pubblica X.509"
 
-#: accounts/forms.py:24
+#: accounts/forms.py:26
 msgid "Enable syntax highlighting in the diff viewer"
 msgstr "Abilita evidenziazione della sintassi nel visualizzatore diff"
 
-#: accounts/forms.py:27
+#: accounts/forms.py:29
 msgid "Keep your user profile private"
 msgstr "Mantieni il tuo profilo utente privato"
 
-#: accounts/forms.py:30
+#: accounts/forms.py:32
 msgid "Always open an issue when comment box opens"
 msgstr "Crea sempre un problema quando si apre la casella dei commenti"
 
-#: accounts/forms.py:37 admin/forms.py:100
+#: accounts/forms.py:39 admin/forms.py:101
 msgid "Time Zone"
 msgstr "Fuso orario"
 
-#: accounts/forms.py:39
+#: accounts/forms.py:41
 msgid "The time zone used for this account."
 msgstr "Il fuso orario utilizzato per questo account."
 
-#: accounts/forms.py:149
+#: accounts/forms.py:98
+msgid "Passwords do not match"
+msgstr ""
+
+#: accounts/forms.py:151
 msgid "The text you entered didn't match what was displayed"
 msgstr "Il testo che hai immesso non coincide con quanto visualizzato"
 
-#: accounts/forms.py:155
+#: accounts/forms.py:157
 msgid "You need to respond to the captcha"
 msgstr "Devi rispondere al CAPTCHA"
 
-#: accounts/forms.py:172
+#: accounts/forms.py:174
 msgid "Domain name"
 msgstr "Nome dominio"
 
-#: accounts/forms.py:173
+#: accounts/forms.py:175
 msgid ""
 "Enter the domain name to use, (ie. example.com). This will be used to query "
 "for LDAP servers and to bind to the domain."
@@ -106,24 +110,24 @@ msgstr ""
 "Immetti il nome dominio da usare (ad es. example.com). Esso sarà usato per "
 "effettuare interrogazioni sui server LDAP e per collegarsi al dominio."
 
-#: accounts/forms.py:180 accounts/forms.py:351 admin/forms.py:462
+#: accounts/forms.py:182 accounts/forms.py:353 admin/forms.py:463
 msgid "Use TLS for authentication"
 msgstr "Utilizza TLS per l'autenticazione"
 
-#: accounts/forms.py:184
+#: accounts/forms.py:186
 msgid "Find DC from DNS"
 msgstr "Trova DC dal DNS"
 
-#: accounts/forms.py:185
+#: accounts/forms.py:187
 msgid "Query DNS to find which domain controller to use"
 msgstr ""
 "Interroga il DNS per determinare il controller di dominio da utilizzare"
 
-#: accounts/forms.py:189
+#: accounts/forms.py:191
 msgid "Domain controller"
 msgstr "Controller di dominio"
 
-#: accounts/forms.py:190
+#: accounts/forms.py:192
 #, fuzzy
 msgid ""
 "If not using DNS to find the DC, specify the domain controller(s) here (eg. "
@@ -132,27 +136,27 @@ msgstr ""
 "Se non utilizzi il DNS per trovare il DC specifica qui il controller di "
 "dominio"
 
-#: accounts/forms.py:197
+#: accounts/forms.py:199
 msgid "OU name"
 msgstr "Nome OU"
 
-#: accounts/forms.py:198
+#: accounts/forms.py:200
 msgid "Optionally restrict users to specified OU."
 msgstr "Restringi opzionalmente gli utenti all'OU specificata."
 
-#: accounts/forms.py:203
+#: accounts/forms.py:205
 msgid "Group name"
 msgstr "Nome gruppo"
 
-#: accounts/forms.py:204
+#: accounts/forms.py:206
 msgid "Optionally restrict users to specified group."
 msgstr "Restringi opzionalmente gli utenti al gruppo specificato."
 
-#: accounts/forms.py:209
+#: accounts/forms.py:211
 msgid "Custom search root"
 msgstr "Ricerca personalizzata radice"
 
-#: accounts/forms.py:210
+#: accounts/forms.py:212
 msgid ""
 "Optionally specify a custom search root, overriding the built-in computed "
 "search root. If set, \"OU name\" is ignored."
@@ -161,11 +165,11 @@ msgstr ""
 "la radice di ricerca calcolata e incorporata. Se impostata, \"Nome OU\" "
 "verrà ignorata."
 
-#: accounts/forms.py:217
+#: accounts/forms.py:219
 msgid "Recursion Depth"
 msgstr "Profondità ricorsione"
 
-#: accounts/forms.py:218
+#: accounts/forms.py:220
 msgid ""
 "Depth to recurse when checking group membership. 0 to turn off, -1 for "
 "unlimited."
@@ -174,23 +178,23 @@ msgstr ""
 "l'appartenenza a un gruppo. 0 per disattivarla, -1 per specificarla come "
 "illimitata."
 
-#: accounts/forms.py:245
+#: accounts/forms.py:247
 msgid "Active Directory Authentication Settings"
 msgstr "Impostazioni di autenticazione Active Directory"
 
-#: accounts/forms.py:250
+#: accounts/forms.py:252
 msgid "Enable registration"
 msgstr "Abilita registrazione"
 
-#: accounts/forms.py:251
+#: accounts/forms.py:253
 msgid "Allow users to register new accounts."
 msgstr "Consente agli utenti di registrare nuovi account."
 
-#: accounts/forms.py:255
+#: accounts/forms.py:257
 msgid "Show a captcha for registration"
 msgstr "Visualizza un CAPTCHA per la registrazione"
 
-#: accounts/forms.py:257
+#: accounts/forms.py:259
 #, python-format
 msgid ""
 "Displays a captcha using <a href=\"%(recaptcha_url)s\">reCAPTCHA</a> on the "
@@ -203,37 +207,37 @@ msgstr ""
 "andare <a href=\"%(register_url)s\">qui</A> per registrare un account e "
 "immettere le tue nuove chiavi qui sotto."
 
-#: accounts/forms.py:269
+#: accounts/forms.py:271
 msgid "reCAPTCHA Public Key"
 msgstr "Chiave pubblica reCAPTCHA"
 
-#: accounts/forms.py:274
+#: accounts/forms.py:276
 msgid "reCAPTCHA Private Key"
 msgstr "Chiave privata reCAPTCHA"
 
-#: accounts/forms.py:283 accounts/forms.py:292
+#: accounts/forms.py:285 accounts/forms.py:294
 msgid "This field is required."
 msgstr "Questo campo è richiesto."
 
-#: accounts/forms.py:297
+#: accounts/forms.py:299
 msgid "Basic Authentication Settings"
 msgstr "Impostazioni di autenticazione di base"
 
-#: accounts/forms.py:303
+#: accounts/forms.py:305
 msgid "LDAP Server"
 msgstr "Server LDAP"
 
-#: accounts/forms.py:304
+#: accounts/forms.py:306
 msgid "The LDAP server to authenticate with. For example: ldap://localhost:389"
 msgstr ""
 "Il server LDAP con cui eseguire l'autenticazione. Ad esempio: ldap://"
 "localhost:389"
 
-#: accounts/forms.py:309
+#: accounts/forms.py:311
 msgid "LDAP Base DN"
 msgstr "DN base LDAP"
 
-#: accounts/forms.py:310
+#: accounts/forms.py:312
 msgid ""
 "The LDAP Base DN for performing LDAP searches.  For example: ou=users,"
 "dc=example,dc=com"
@@ -241,27 +245,27 @@ msgstr ""
 "Il DN di base LDAP per eseguire ricerche LDAP. Ad esempio: ou=users,"
 "dc=example,dc=com"
 
-#: accounts/forms.py:316
+#: accounts/forms.py:318
 msgid "Given Name Attribute"
 msgstr "Attributo Nome"
 
-#: accounts/forms.py:318
+#: accounts/forms.py:320
 msgid "The attribute in the LDAP server that stores the user's given name."
 msgstr "L'attributo nel server LDAP che contiene il nome dell'utente."
 
-#: accounts/forms.py:323
+#: accounts/forms.py:325
 msgid "Surname Attribute"
 msgstr "Attributo Cognome"
 
-#: accounts/forms.py:325
+#: accounts/forms.py:327
 msgid "The attribute in the LDAP server that stores the user's surname."
 msgstr "L'attributo nel server LDAP che contiene il cognome dell'utente."
 
-#: accounts/forms.py:330
+#: accounts/forms.py:332
 msgid "Full Name Attribute"
 msgstr "Attributo Nome completo"
 
-#: accounts/forms.py:331
+#: accounts/forms.py:333
 msgid ""
 "The attribute in the LDAP server that stores the user's full name.  This "
 "takes precedence over the \"Full Name Attribute\" and \"Surname Attribute.\""
@@ -269,11 +273,11 @@ msgstr ""
 "L'attributo nel server LDAP che contiene il nome completo dell'utente. Esso "
 "ha la precedenza su \"Attributo Nome\" e \"Attributo Cognome\"."
 
-#: accounts/forms.py:337 accounts/forms.py:427
+#: accounts/forms.py:339 accounts/forms.py:429
 msgid "E-Mail Domain"
 msgstr "Dominio di posta elettronica"
 
-#: accounts/forms.py:338
+#: accounts/forms.py:340
 msgid ""
 "The domain name appended to the username to construct the user's e-mail "
 "address. This takes precedence over \"E-Mail LDAP Attribute.\""
@@ -282,11 +286,11 @@ msgstr ""
 "posta elettronica dell'utente. Esso ha la precedenza su \"Attributo LDAP "
 "indirizzo di posta elettronica\"."
 
-#: accounts/forms.py:345
+#: accounts/forms.py:347
 msgid "E-Mail LDAP Attribute"
 msgstr "Attributo LDAP indirizzo di posta elettronica"
 
-#: accounts/forms.py:346
+#: accounts/forms.py:348
 msgid ""
 "The attribute in the LDAP server that stores the user's e-mail address. For "
 "example: mail"
@@ -294,11 +298,11 @@ msgstr ""
 "L'attributo nel server LDAP che contiene l'indirizzo di posta elettronica "
 "dell'utente. Ad esempio: mail"
 
-#: accounts/forms.py:355
+#: accounts/forms.py:357
 msgid "User Mask"
 msgstr "Maschera utente"
 
-#: accounts/forms.py:357
+#: accounts/forms.py:359
 #, python-format
 msgid ""
 "The string representing the user. Use \"%(varname)s\" where the username "
@@ -309,11 +313,11 @@ msgstr ""
 "normalmente andrebbe il nome utente. Ad esempio: (uid=%(varname)s) o "
 "(sAMAccountName=%(varname)s) [per LDAP su Active Directory]"
 
-#: accounts/forms.py:364
+#: accounts/forms.py:366
 msgid "Anonymous User Mask"
 msgstr "Maschera utente anonimo"
 
-#: accounts/forms.py:365
+#: accounts/forms.py:367
 msgid ""
 "The user mask string for anonymous users. If specified, this should be in "
 "the same format as User Mask."
@@ -321,23 +325,23 @@ msgstr ""
 "La stringa maschera utente per gli utenti anonimi. Se specificata, deve "
 "essere nello stesso formato della maschera utente."
 
-#: accounts/forms.py:371
+#: accounts/forms.py:373
 msgid "Anonymous User Password"
 msgstr "Password utente anonimo"
 
-#: accounts/forms.py:373
+#: accounts/forms.py:375
 msgid "The optional password for the anonymous user."
 msgstr "La password facoltativa per l'utente anonimo."
 
-#: accounts/forms.py:397
+#: accounts/forms.py:399
 msgid "LDAP Authentication Settings"
 msgstr "Impostazioni di autenticazione LDAP"
 
-#: accounts/forms.py:402
+#: accounts/forms.py:404
 msgid "Backends"
 msgstr "Backend"
 
-#: accounts/forms.py:403
+#: accounts/forms.py:405
 msgid ""
 "A comma-separated list of old-style custom auth backends. These are "
 "represented as Python module paths."
@@ -345,31 +349,31 @@ msgstr ""
 "Un elenco separato da virgole di backend personalizzati di autenticazione "
 "vecchio stile. Sono rappresentati come percorso di moduli Python."
 
-#: accounts/forms.py:421
+#: accounts/forms.py:423
 msgid "Legacy Authentication Module Settings"
 msgstr "Impostazioni di autenticazione modulo legacy"
 
-#: accounts/forms.py:431
+#: accounts/forms.py:433
 msgid "NIS Authentication Settings"
 msgstr "Impostazioni di autenticazione NIS"
 
-#: accounts/forms.py:436
+#: accounts/forms.py:438
 msgid "Username Field"
 msgstr "Campo Nome utente"
 
-#: accounts/forms.py:440
+#: accounts/forms.py:442
 msgid "DN (Distinguished Name)"
 msgstr "DN (nome distinto)"
 
-#: accounts/forms.py:441
+#: accounts/forms.py:443
 msgid "CN (Common Name)"
 msgstr "CN (nome comune)"
 
-#: accounts/forms.py:442
+#: accounts/forms.py:444
 msgid "Email address"
 msgstr "Indirizzo di posta elettronica"
 
-#: accounts/forms.py:444
+#: accounts/forms.py:446
 msgid ""
 "The X.509 certificate field from which the Review Board username will be "
 "extracted."
@@ -377,11 +381,11 @@ msgstr ""
 "Il campo del certificato X.509 da cui sarà estratto il nome utente Review "
 "Board."
 
-#: accounts/forms.py:449
+#: accounts/forms.py:451
 msgid "Username Regex"
 msgstr "Espressione regolare nome utente"
 
-#: accounts/forms.py:450
+#: accounts/forms.py:452
 msgid ""
 "Optional regex used to convert the selected X.509 certificate field to a "
 "usable Review Board username. For example, if using the email field to "
@@ -395,11 +399,11 @@ msgstr ""
 "recuperare il nome utente da un indirizzo di posta elettronica: '(\\s"
 "+)@yoursite.com'. Dev'esserci solo un gruppo nell'espressione regolare."
 
-#: accounts/forms.py:460
+#: accounts/forms.py:462
 msgid "Automatically create new user accounts."
 msgstr "Crea automaticamente nuovi account utente."
 
-#: accounts/forms.py:461
+#: accounts/forms.py:463
 msgid ""
 "Enabling this option will cause new user accounts to be automatically "
 "created when a new user with an X.509 certificate accesses Review Board."
@@ -408,19 +412,19 @@ msgstr ""
 "nuovi account utente quando un nuovo utente con un certificato X.509 accede "
 "a Review Board."
 
-#: accounts/forms.py:478
+#: accounts/forms.py:480
 msgid "X.509 Client Certificate Authentication Settings"
 msgstr "Impostazioni autenticazione certificato client X.509"
 
-#: accounts/models.py:24
+#: accounts/models.py:25
 msgid "last visited"
 msgstr "ultima visita"
 
-#: accounts/models.py:45
+#: accounts/models.py:46
 msgid "first time setup done"
 msgstr "prima configurazione completata"
 
-#: accounts/models.py:46
+#: accounts/models.py:47
 msgid ""
 "Indicates whether the user has already gone through the first time setup "
 "process by saving their user preferences."
@@ -428,73 +432,73 @@ msgstr ""
 "Indica se l'utente ha già completato il processo di prima configurazione "
 "salvando le proprie preferenze utente."
 
-#: accounts/models.py:52
+#: accounts/models.py:53
 msgid "collapsed diffs"
 msgstr "diff contratti"
 
-#: accounts/models.py:53
+#: accounts/models.py:54
 msgid ""
 "Indicates whether diffs should be shown in their collapsed state by default."
 msgstr ""
 "Indica se i diff devono essere visualizzati contratti per impostazione "
 "predefinita."
 
-#: accounts/models.py:57 reviews/models.py:1745
+#: accounts/models.py:58 reviews/models.py:1799
 msgid "This field is unused and will be removed in a future version."
 msgstr ""
 "Questo campo non è utilizzato e sarà rimosso in una versione successiva."
 
-#: accounts/models.py:61
+#: accounts/models.py:62
 msgid "syntax highlighting"
 msgstr "evidenziazione sintassi"
 
-#: accounts/models.py:62
+#: accounts/models.py:63
 msgid ""
 "Indicates whether the user wishes to see syntax highlighting in the diffs."
 msgstr ""
 "Indica se l'utente vuole visualizzare i diff con l'evidenziazione della "
 "sintassi."
 
-#: accounts/models.py:66
+#: accounts/models.py:67
 msgid "profile private"
 msgstr "profilo privato"
 
-#: accounts/models.py:67
+#: accounts/models.py:68
 msgid "Indicates whether the user wishes to keep his/her profile private."
 msgstr "Indica se l'utente vuole mantenere il proprio profilo privato."
 
-#: accounts/models.py:71
+#: accounts/models.py:72
 msgid "opens an issue"
 msgstr "crea un problema"
 
-#: accounts/models.py:72
+#: accounts/models.py:73
 msgid ""
 "Indicates whether the user wishes to default to opening an issue or not."
 msgstr ""
 "Indica se l'utente vuole creare un problema per impostazione predefinita o "
 "meno."
 
-#: accounts/models.py:188
+#: accounts/models.py:193
 msgid "direct incoming review request count"
 msgstr "numero richieste revisioni in arrivo dirette"
 
-#: accounts/models.py:192
+#: accounts/models.py:197
 msgid "total incoming review request count"
 msgstr "numero totale richieste revisioni in arrivo"
 
-#: accounts/models.py:196
+#: accounts/models.py:201
 msgid "pending outgoing review request count"
 msgstr "numero richieste revisione in attesa in uscita"
 
-#: accounts/models.py:200
+#: accounts/models.py:205
 msgid "total outgoing review request count"
 msgstr "numero totale richieste revisione in uscita"
 
-#: accounts/models.py:204
+#: accounts/models.py:209
 msgid "starred public review request count"
 msgstr "numero richieste revisione preferite pubbliche"
 
-#: admin/checks.py:215
+#: admin/checks.py:216
 #, python-format
 msgid ""
 "PyLucene (with JCC) is required to enable search. See the <a href=\"%(url)s"
@@ -503,7 +507,7 @@ msgstr ""
 "Per abilitare la ricerca è richiesto PyLucene (con JCC). Vedi la <a href="
 "\"%(url)s\">documentazione</a> per le istruzioni."
 
-#: admin/checks.py:234
+#: admin/checks.py:235
 #, python-format
 msgid ""
 "Pygments %(cur_version)s is installed, but %(required_version)s or higher is "
@@ -513,7 +517,7 @@ msgstr ""
 "%(required_version)s (o superiore) per utilizzare l'evidenziazione della "
 "sintassi."
 
-#: admin/checks.py:241
+#: admin/checks.py:242
 #, python-format
 msgid ""
 "Syntax highlighting requires the <a href=\"%(url)s\">Pygments</a> library, "
@@ -522,13 +526,13 @@ msgstr ""
 "L'evidenziazione della sintassi richiede la libreria <a href=\"%(url)s"
 "\">Pygments</a>, che non è installata."
 
-#: admin/checks.py:253
+#: admin/checks.py:254
 msgid ""
 "LDAP authentication requires the python-ldap library, which is not installed."
 msgstr ""
 "L'autenticazione LDAP richiede la libreria python-ldap, che non è installata."
 
-#: admin/checks.py:267
+#: admin/checks.py:268
 msgid ""
 "PyDNS, which is required to find the domain controller, is not installed."
 msgstr ""
@@ -536,26 +540,31 @@ msgstr ""
 "installato."
 
 #: admin/checks.py:279
+#, python-format
+msgid "Amazon S3 backend failed to load: %s"
+msgstr ""
+
+#: admin/checks.py:282
 msgid "Amazon S3 depends on django-storages, which is not installed"
 msgstr "Amazon S3 dipende da django-storages, che non è installato"
 
-#: admin/checks.py:290
+#: admin/checks.py:293
 msgid "CouchDB depends on django-storages, which is not installed"
 msgstr "CouchDB dipende da django-storages, che non è installato"
 
-#: admin/forms.py:56
+#: admin/forms.py:57
 msgid "Memcached"
 msgstr "Memcached"
 
-#: admin/forms.py:57
+#: admin/forms.py:58
 msgid "File cache"
 msgstr "Cache su file"
 
-#: admin/forms.py:78
+#: admin/forms.py:79
 msgid "Server"
 msgstr "Server"
 
-#: admin/forms.py:79
+#: admin/forms.py:80
 msgid ""
 "The URL of this Review Board server. This should not contain the "
 "subdirectory Review Board is installed in."
@@ -563,11 +572,11 @@ msgstr ""
 "L'URL di questo server ReviewBoard. Non deve contenere la sottodirectory in "
 "cui è installato ReviewBoard."
 
-#: admin/forms.py:84
+#: admin/forms.py:85
 msgid "Media URL"
 msgstr "URL elementi multimediali"
 
-#: admin/forms.py:85
+#: admin/forms.py:86
 msgid ""
 "The URL to the media files. Leave blank to use the default media path on "
 "this server."
@@ -575,58 +584,58 @@ msgstr ""
 "L'URL che punta agli elementi multimediali. Lascia vuoto per utilizzare il "
 "percorso predefinito per gli elementi multimediali su questo server."
 
-#: admin/forms.py:91
+#: admin/forms.py:92
 msgid "Administrator Name"
 msgstr "Nome amministratore"
 
-#: admin/forms.py:95
+#: admin/forms.py:96
 msgid "Administrator E-Mail"
 msgstr "Indirizzo di posta elettronica amministratore"
 
-#: admin/forms.py:102
+#: admin/forms.py:103
 msgid "The time zone used for all dates on this server."
 msgstr "Il fuso orario utilizzato per tutte le date su questo server."
 
-#: admin/forms.py:105
+#: admin/forms.py:106
 msgid "Enable search"
 msgstr "Abilita ricerca"
 
-#: admin/forms.py:106
+#: admin/forms.py:107
 msgid "Provides a search field for quickly searching through review requests."
 msgstr ""
 "Fornisce un campo di ricerca per effettuare ricerche veloci nelle richieste "
 "di revisione."
 
-#: admin/forms.py:111
+#: admin/forms.py:112
 msgid "Search index directory"
 msgstr "Directory indice di ricerca"
 
-#: admin/forms.py:112
+#: admin/forms.py:113
 msgid "The directory that search index data should be stored in."
 msgstr ""
 "La directory in cui devono essere salvati i dati dell'indice di ricerca."
 
-#: admin/forms.py:118
+#: admin/forms.py:119
 msgid "Cache Backend"
 msgstr "Backend cache"
 
-#: admin/forms.py:120
+#: admin/forms.py:121
 msgid "The type of server-side caching to use."
 msgstr "Il tipo di caching server side da utilizzare."
 
-#: admin/forms.py:124
+#: admin/forms.py:125
 msgid "Cache Path"
 msgstr "Percorso cache"
 
-#: admin/forms.py:125
+#: admin/forms.py:126
 msgid "The file location for the cache."
 msgstr "Il percorso dei file per la cache."
 
-#: admin/forms.py:130
+#: admin/forms.py:131
 msgid "Cache Hosts"
 msgstr "Host cache"
 
-#: admin/forms.py:131
+#: admin/forms.py:132
 msgid ""
 "The host or hosts used for the cache, in hostname:port form. Multiple hosts "
 "can be specified by separating them with a semicolon (;)."
@@ -634,27 +643,27 @@ msgstr ""
 "L'host o gli host usati per la cache, nel formato nomehost:porta. Host "
 "multipli possono essere specificati separandoli con un punto e virgola (;)."
 
-#: admin/forms.py:160
+#: admin/forms.py:161
 msgid "Local memory cache"
 msgstr "Cache nella memoria locale"
 
-#: admin/forms.py:165
+#: admin/forms.py:166
 msgid "Custom"
 msgstr "Personalizzato"
 
-#: admin/forms.py:243
+#: admin/forms.py:244
 msgid "A valid cache host must be provided."
 msgstr "Deve essere specificato un host cache valido."
 
-#: admin/forms.py:252
+#: admin/forms.py:253
 msgid "A valid cache path must be provided."
 msgstr "Deve essere specificato un percorso cache valido."
 
-#: admin/forms.py:263
+#: admin/forms.py:264
 msgid "The search index path must be absolute."
 msgstr "Il percorso dell'indice di ricerca deve essere assoluto."
 
-#: admin/forms.py:268
+#: admin/forms.py:269
 msgid ""
 "The search index path is not writable. Make sure the web server has write "
 "access to it and its parent directory."
@@ -663,31 +672,31 @@ msgstr ""
 "server Web abbia i permessi di scrittura per esso e per la sua directory "
 "genitrice."
 
-#: admin/forms.py:275
+#: admin/forms.py:276
 msgid "General Settings"
 msgstr "Impostazioni generali"
 
-#: admin/forms.py:281
+#: admin/forms.py:282
 msgid "Site Settings"
 msgstr "Impostazioni sito"
 
-#: admin/forms.py:289
+#: admin/forms.py:290
 msgid "Cache Settings"
 msgstr "Impostazioni cache"
 
-#: admin/forms.py:294 templates/base.html:94
+#: admin/forms.py:295 templates/base.html:91
 msgid "Search"
 msgstr "Cerca"
 
-#: admin/forms.py:302
+#: admin/forms.py:303
 msgid "Legacy Authentication Module"
 msgstr "Modulo autenticazione legacy"
 
-#: admin/forms.py:305
+#: admin/forms.py:306
 msgid "Allow anonymous read-only access"
 msgstr "Consenti accesso anonimo in sola lettura"
 
-#: admin/forms.py:306
+#: admin/forms.py:307
 msgid ""
 "If checked, users will be able to view review requests and diffs without "
 "logging in."
@@ -695,39 +704,39 @@ msgstr ""
 "Se selezionato, gli utenti saranno in grado di visualizzare le richieste di "
 "revisione e i diff senza eseguire il login."
 
-#: admin/forms.py:311
+#: admin/forms.py:312
 msgid "Authentication Method"
 msgstr "Metodo di autenticazione"
 
-#: admin/forms.py:313
+#: admin/forms.py:314
 msgid "The method Review Board should use for authenticating users."
 msgstr "Il metodo che Review Board deve utilizzare per autenticare gli utenti."
 
-#: admin/forms.py:414
+#: admin/forms.py:415
 msgid "Authentication Settings"
 msgstr "Impostazioni autenticazione"
 
-#: admin/forms.py:430
+#: admin/forms.py:431
 msgid "Send e-mails for review requests and reviews"
 msgstr ""
 "Invia messaggi di posta elettronica per richieste di revisione e revisioni"
 
-#: admin/forms.py:433
+#: admin/forms.py:434
 msgid "Send e-mails when review requests are closed"
 msgstr ""
 "Invia messaggi di posta elettronica quando le richieste di revisione vengono "
 "chiuse"
 
-#: admin/forms.py:436
+#: admin/forms.py:437
 msgid "Send e-mails when new users register an account"
 msgstr ""
 "Invia messaggi di posta elettronica quando nuovi utenti registrano un account"
 
-#: admin/forms.py:439
+#: admin/forms.py:440
 msgid "Sender e-mail address"
 msgstr "Indirizzo di posta elettronica mittente"
 
-#: admin/forms.py:440
+#: admin/forms.py:441
 msgid ""
 "The e-mail address that all e-mails will be sent from. The \"Sender\" header "
 "will be used to make e-mails appear to come from the user triggering the e-"
@@ -737,31 +746,31 @@ msgstr ""
 "L'header \"Sender\" sarà utilizzato per far sì che i messaggi sembrino "
 "provenire dall'utente che causa l'invio del messaggio."
 
-#: admin/forms.py:446
+#: admin/forms.py:447
 msgid "Mail Server"
 msgstr "Server di posta"
 
-#: admin/forms.py:450
+#: admin/forms.py:451
 msgid "Port"
 msgstr "Porta"
 
-#: admin/forms.py:459 templates/accounts/login.html:42
+#: admin/forms.py:460 templates/accounts/login.html:42
 msgid "Password"
 msgstr "Password"
 
-#: admin/forms.py:476
+#: admin/forms.py:477
 msgid "E-Mail Settings"
 msgstr "Impostazioni posta elettronica"
 
-#: admin/forms.py:482
+#: admin/forms.py:483
 msgid "Show syntax highlighting"
 msgstr "Visualizza evidenziazione sintassi"
 
-#: admin/forms.py:486
+#: admin/forms.py:487
 msgid "Syntax highlighting threshold"
 msgstr "Soglia evidenziazione sintassi"
 
-#: admin/forms.py:487
+#: admin/forms.py:488
 msgid ""
 "Files with lines greater than this number will not have syntax "
 "highlighting.  Enter 0 for no limit."
@@ -769,11 +778,11 @@ msgstr ""
 "I file con un numero di righe superiore a questo non avranno "
 "l'evidenziazione della sintassi. Immetti 0 per non impostare un limite."
 
-#: admin/forms.py:493
+#: admin/forms.py:494
 msgid "Show trailing whitespace"
 msgstr "Visualizza spazi bianchi aggiuntivi"
 
-#: admin/forms.py:494
+#: admin/forms.py:495
 msgid ""
 "Show excess trailing whitespace as red blocks. This helps to visualize when "
 "a text editor added unwanted whitespace to the end of a line."
@@ -782,11 +791,11 @@ msgstr ""
 "a rendere visibili i casi in cui un editor di testo ha aggiunto spazi "
 "bianchi non voluti alla fine di una riga."
 
-#: admin/forms.py:500
+#: admin/forms.py:501
 msgid "Show all whitespace for"
 msgstr "Visualizza tutti gli spazi bianchi per"
 
-#: admin/forms.py:502
+#: admin/forms.py:503
 msgid ""
 "A comma-separated list of file patterns for which all whitespace changes "
 "should be shown. (e.g., \"*.py, *.txt\")"
@@ -795,30 +804,30 @@ msgstr ""
 "visualizzate tutte le modifiche riguardanti gli spazi bianchi (ad es. \"*."
 "py, *.txt\")"
 
-#: admin/forms.py:508
+#: admin/forms.py:509
 msgid "Lines of Context"
 msgstr "Righe di contesto"
 
-#: admin/forms.py:509
+#: admin/forms.py:510
 msgid "The number of unchanged lines shown above and below changed lines."
 msgstr ""
 "Il numero di righe non modificate visualizzate sopra e sotto le righe "
 "modificate."
 
-#: admin/forms.py:515
+#: admin/forms.py:516
 msgid "Paginate by"
 msgstr "Pagina ogni"
 
-#: admin/forms.py:516
+#: admin/forms.py:517
 msgid "The number of files to display per page in the diff viewer."
 msgstr ""
 "Il numero di file da visualizzare in ogni pagina nel visualizzatore dei diff."
 
-#: admin/forms.py:522
+#: admin/forms.py:523
 msgid "Paginate orphans"
 msgstr "Pagina orfani"
 
-#: admin/forms.py:523
+#: admin/forms.py:524
 msgid ""
 "The number of extra files required before adding another page to the diff "
 "viewer."
@@ -826,11 +835,11 @@ msgstr ""
 "Il numero di file aggiuntivi richiesti prima di aggiungere un'altra pagina "
 "al visualizzatore dei diff."
 
-#: admin/forms.py:529
+#: admin/forms.py:530
 msgid "Max diff size (bytes)"
 msgstr "Dimensione massima diff (byte)"
 
-#: admin/forms.py:530
+#: admin/forms.py:531
 msgid ""
 "The maximum size (in bytes) for any given diff. Enter 0 to disable size "
 "restrictions."
@@ -838,15 +847,15 @@ msgstr ""
 "La dimensione massima (in byte) per ogni diff. Immetti 0 per disabilitare le "
 "restrizioni sulla dimensione."
 
-#: admin/forms.py:557
+#: admin/forms.py:558
 msgid "Diff Viewer Settings"
 msgstr "Impostazioni visualizzatore diff"
 
-#: admin/forms.py:568 admin/forms.py:655
+#: admin/forms.py:569 admin/forms.py:656
 msgid "Advanced"
 msgstr "Avanzate"
 
-#: admin/forms.py:570
+#: admin/forms.py:571
 msgid ""
 "These are advanced settings that control the behavior and display of the "
 "diff viewer. In general, these settings do not need to be changed."
@@ -855,31 +864,31 @@ msgstr ""
 "l'aspetto del visualizzatore diff. Generalmente, queste impostazioni non "
 "hanno bisogno di essere modificate."
 
-#: admin/forms.py:585
+#: admin/forms.py:586
 msgid "Debug"
 msgstr "Debug"
 
-#: admin/forms.py:586
+#: admin/forms.py:587
 msgid "Info"
 msgstr "Informazione"
 
-#: admin/forms.py:587
+#: admin/forms.py:588
 msgid "Warning"
 msgstr "Avviso"
 
-#: admin/forms.py:588
+#: admin/forms.py:589
 msgid "Error"
 msgstr "Errore"
 
-#: admin/forms.py:589
+#: admin/forms.py:590
 msgid "Critical"
 msgstr "Critico"
 
-#: admin/forms.py:594
+#: admin/forms.py:595
 msgid "Enable logging"
 msgstr "Abilita logging"
 
-#: admin/forms.py:595
+#: admin/forms.py:596
 msgid ""
 "Enables logging of Review Board operations. This is in addition to your web "
 "server's logging and does not log all page visits."
@@ -888,11 +897,11 @@ msgstr ""
 "somma a quello del tuo server Web e non registra tutte le visualizzazioni "
 "delle pagine."
 
-#: admin/forms.py:601
+#: admin/forms.py:602
 msgid "Log directory"
 msgstr "Directory dei log"
 
-#: admin/forms.py:602
+#: admin/forms.py:603
 msgid ""
 "The directory where log files will be stored. This must be writable by the "
 "web server."
@@ -900,11 +909,11 @@ msgstr ""
 "La directory in cui saranno salvati i file di log. Deve essere scrivibile "
 "dal server Web"
 
-#: admin/forms.py:608
+#: admin/forms.py:609
 msgid "Log level"
 msgstr "Livello di logging"
 
-#: admin/forms.py:609
+#: admin/forms.py:610
 msgid ""
 "Indicates the logging threshold. Please note that this may increase the size "
 "of the log files if a low threshold is selected."
@@ -912,11 +921,11 @@ msgstr ""
 "Indica la soglia di logging. Nota che questa impostazione potrebbe aumentare "
 "la dimensione dei file di log se viene scelta una soglia bassa."
 
-#: admin/forms.py:616
+#: admin/forms.py:617
 msgid "Allow code profiling"
 msgstr "Consenti code profiling"
 
-#: admin/forms.py:617
+#: admin/forms.py:618
 msgid ""
 "Logs the time spent on certain operations. This is useful for debugging but "
 "may greatly increase the size of log files."
@@ -925,63 +934,63 @@ msgstr ""
 "impostazione è utile per il debug ma potrebbe aumentare notevolmente la "
 "dimensione dei file di log."
 
-#: admin/forms.py:627
+#: admin/forms.py:628
 msgid "This path does not exist."
 msgstr "Questo percorso non esiste."
 
-#: admin/forms.py:630
+#: admin/forms.py:631
 msgid "This is not a directory."
 msgstr "Questa non è una directory."
 
-#: admin/forms.py:634
+#: admin/forms.py:635
 msgid "This path is not writable by the web server."
 msgstr "Questo percorso non è scrivibile dal server Web."
 
-#: admin/forms.py:646
+#: admin/forms.py:647
 msgid "Logging Settings"
 msgstr "Impostazioni logging"
 
-#: admin/forms.py:667
+#: admin/forms.py:668
 msgid "Key file"
 msgstr "File chiave"
 
-#: admin/forms.py:680 admin/forms.py:693
+#: admin/forms.py:681 admin/forms.py:694
 #, python-format
 msgid "Unable to write SSH key file: %s"
 msgstr "Impossibile scrivere il file di chiave SSH: %s"
 
-#: admin/forms.py:685
+#: admin/forms.py:686
 #, python-format
 msgid "Error generating SSH key: %s"
 msgstr "Errore durante la generazione della chiave SSH: %s"
 
-#: admin/forms.py:698
+#: admin/forms.py:699
 #, python-format
 msgid "Error uploading SSH key: %s"
 msgstr "Errore nel caricamento della chiave SSH: %s"
 
-#: admin/forms.py:713
+#: admin/forms.py:714
 #, python-format
 msgid "Unable to delete SSH key file: %s"
 msgstr "Impossibile eliminare il file di chiave SSH: %s"
 
-#: admin/forms.py:718
+#: admin/forms.py:719
 msgid "SSH Settings"
 msgstr "Impostazioni SSH"
 
-#: admin/forms.py:725
+#: admin/forms.py:726
 msgid "File storage method"
 msgstr "Metodo salvataggio file"
 
-#: admin/forms.py:727
+#: admin/forms.py:728
 msgid "Host file system"
 msgstr "File system dell'host"
 
-#: admin/forms.py:728
+#: admin/forms.py:729
 msgid "Amazon S3"
 msgstr "Amazon S3"
 
-#: admin/forms.py:732
+#: admin/forms.py:733
 msgid ""
 "Storage method and location for uploaded files, such as screenshots and file "
 "attachments."
@@ -989,11 +998,11 @@ msgstr ""
 "Metodo di salvataggio e percorso per i file caricati, quali schermate e file "
 "allegati."
 
-#: admin/forms.py:737
+#: admin/forms.py:738
 msgid "Amazon AWS access key"
 msgstr "Chiave di accesso Amazon S3"
 
-#: admin/forms.py:738
+#: admin/forms.py:739
 msgid ""
 "Your Amazon AWS access key ID. This can be found in the \"Security "
 "Credentials\" section of the AWS site."
@@ -1001,11 +1010,11 @@ msgstr ""
 "L'ID della tua chiave di accesso Amazon S3. Può essere recuperato nella "
 "sezione \"Credenziali di sicurezza\" del sito AWS."
 
-#: admin/forms.py:744
+#: admin/forms.py:745
 msgid "Amazon AWS secret access key"
 msgstr "Chiave segreta di accesso Amazon S3"
 
-#: admin/forms.py:745
+#: admin/forms.py:746
 msgid ""
 "Your Amazon AWS secret access ID. This can be found in the \"Security "
 "Credentials\" section of the AWS site."
@@ -1013,57 +1022,57 @@ msgstr ""
 "L'ID della tua chiave segreta di accesso Amazon S3. Può essere recuperato "
 "nella sezione \"Credenziali di sicurezza\" del sito AWS."
 
-#: admin/forms.py:751
+#: admin/forms.py:752
 msgid "S3 bucket name"
 msgstr "Nome bucket S3"
 
-#: admin/forms.py:752
+#: admin/forms.py:753
 msgid "Bucket name inside Amazon S3."
 msgstr "Nome del bucket in Amazon S3."
 
-#: admin/forms.py:757
+#: admin/forms.py:758
 msgid "Amazon AWS calling format"
 msgstr "Formato di chiamata Amazon AWS"
 
-#: admin/forms.py:763
+#: admin/forms.py:764
 msgid "Calling format for AWS requests."
 msgstr "Formato di chiamata per richieste AWS."
 
-#: admin/forms.py:778
+#: admin/forms.py:779
 msgid "Default server"
 msgstr "Server predefinito"
 
-#: admin/forms.py:779
+#: admin/forms.py:780
 msgid "For example, \"http://couchdb.local:5984\""
 msgstr "Ad esempio, \"http://couchdb.local:5984\""
 
-#: admin/forms.py:830
+#: admin/forms.py:831
 msgid "File Storage Settings"
 msgstr "Impostazioni salvataggio file"
 
-#: admin/forms.py:840
+#: admin/forms.py:841
 msgid "Amazon S3 Settings"
 msgstr "Impostazioni Amazon S3"
 
-#: admin/forms.py:849
+#: admin/forms.py:850
 msgid "CouchDB Settings"
 msgstr "Impostazioni CouchDB"
 
-#: admin/forms.py:858
+#: admin/forms.py:859
 msgid "Install key"
 msgstr "Chiave d'installazione"
 
-#: admin/forms.py:859
+#: admin/forms.py:860
 msgid "The installation key to provide when purchasing a support contract."
 msgstr ""
 "La chiave d'installazione da fornire quando si acquista un contratto di "
 "supporto."
 
-#: admin/forms.py:868
+#: admin/forms.py:869
 msgid "Custom Support URL"
 msgstr "URL supporto personalizzato"
 
-#: admin/forms.py:869
+#: admin/forms.py:870
 msgid ""
 "The location of your organization's own Review Board support page. Leave "
 "blank to use the default support page."
@@ -1071,24 +1080,32 @@ msgstr ""
 "L'indirizzo della pagina di supporto di Review Board della tua azienda. "
 "Lascia vuoto per utilizzare la pagina di supporto predefinita."
 
-#: admin/forms.py:880
+#: admin/forms.py:881
 msgid "Support Settings"
 msgstr "Impostazioni supporto"
+
+#: admin/validation.py:21
+#, python-format
+msgid ""
+"%s has invalid format specification type(s). Use only one '%%s' to mark the "
+"location of the bug id. If the URI contains encoded values (e.g. '%%20'), "
+"prepend the encoded values with an additional '%%'."
+msgstr ""
 
 #: admin/views.py:31 templates/admin/base_site.html:58
 msgid "Admin Dashboard"
 msgstr "Bacheca amministratore"
 
-#: admin/views.py:49 templates/admin/widgets/w-actions.html:66
+#: admin/views.py:49 templates/admin/widgets/w-actions.html:62
 msgid "Server Cache"
 msgstr "Cache server"
 
 #: admin/widgets.py:129 admin/widgets.py:196 admin/widgets.py:236
-#: templates/admin/change_form.html:22 templates/admin/database.html:28
-#: templates/admin/index.html:28 templates/admin/widgets/w-actions.html:40
-#: templates/admin/widgets/w-actions.html:45
-#: templates/admin/widgets/w-actions.html:50
-#: templates/admin/widgets/w-actions.html:55
+#: templates/admin/change_form.html:24 templates/admin/database.html:26
+#: templates/admin/index.html:26 templates/admin/widgets/w-actions.html:36
+#: templates/admin/widgets/w-actions.html:41
+#: templates/admin/widgets/w-actions.html:46
+#: templates/admin/widgets/w-actions.html:51
 msgid "Add"
 msgstr "Aggiungi"
 
@@ -1137,41 +1154,51 @@ msgstr "Richieste revisione"
 msgid "Changes"
 msgstr "Modifiche"
 
-#: attachments/admin.py:15 reviews/admin.py:22 reviews/admin.py:214
-#: reviews/admin.py:225 reviews/admin.py:236
+#: attachments/admin.py:16 reviews/admin.py:23 reviews/admin.py:217
+#: reviews/admin.py:228 reviews/admin.py:240
 msgid "Review request ID"
 msgstr "ID richiesta revisione"
 
-#: attachments/models.py:16 reviews/models.py:163
+#: attachments/models.py:19 reviews/models.py:167
 msgid "caption"
 msgstr "titolo"
 
-#: attachments/models.py:17 reviews/models.py:164
+#: attachments/models.py:20 reviews/models.py:168
 msgid "draft caption"
 msgstr "titolo bozza"
 
-#: attachments/models.py:19
+#: attachments/models.py:22
 msgid "original filename"
 msgstr ""
 
-#: attachments/models.py:21
+#: attachments/models.py:24
 msgid "file"
 msgstr "file"
 
-#: attachments/models.py:25
+#: attachments/models.py:28
 msgid "mimetype"
 msgstr "tipo MIME"
+
+#: attachments/models.py:35
+#, fuzzy
+msgid "repository file path"
+msgstr "Piano repository"
+
+#: attachments/models.py:39
+#, fuzzy
+msgid "repository file revision"
+msgstr "revisione file sorgente"
 
 #: changedescs/admin.py:15
 msgid "Change Description Text"
 msgstr "Modifica testo descrizione"
 
 #: changedescs/models.py:33 diffviewer/models.py:245 diffviewer/models.py:302
-#: reviews/models.py:1472 reviews/models.py:1694
+#: reviews/models.py:1497 reviews/models.py:1738
 msgid "timestamp"
 msgstr "timestamp"
 
-#: changedescs/models.py:34 reviews/models.py:518 reviews/models.py:1695
+#: changedescs/models.py:34 reviews/models.py:523 reviews/models.py:1739
 msgid "public"
 msgstr "pubblico"
 
@@ -1179,16 +1206,21 @@ msgstr "pubblico"
 msgid "change text"
 msgstr "modifica testo"
 
-#: changedescs/models.py:36
+#: changedescs/models.py:36 reviews/models.py:260 reviews/models.py:1499
+#: reviews/models.py:1793
+#, fuzzy
+msgid "rich text"
+msgstr "modifica testo"
+
+#: changedescs/models.py:37
 msgid "fields changed"
 msgstr "campi modificati"
 
-#: diffviewer/admin.py:28 diffviewer/admin.py:45 diffviewer/forms.py:18
-#: reviews/views.py:216
+#: diffviewer/admin.py:28 diffviewer/forms.py:18 reviews/views.py:219
 msgid "Diff"
 msgstr "Diff"
 
-#: diffviewer/admin.py:33 diffviewer/admin.py:50
+#: diffviewer/admin.py:33
 msgid "Parent diff"
 msgstr "Diff genitore"
 
@@ -1300,11 +1332,11 @@ msgstr "Modificato"
 msgid "Moved"
 msgstr "Spostato"
 
-#: diffviewer/models.py:65 templates/diffviewer/changeindex.html:25
+#: diffviewer/models.py:65
 msgid "Deleted"
 msgstr "Eliminato"
 
-#: diffviewer/models.py:70 reviews/models.py:1129
+#: diffviewer/models.py:70 reviews/models.py:1143
 msgid "diff set"
 msgstr "set diff"
 
@@ -1336,12 +1368,12 @@ msgstr "file binario"
 msgid "parent diff"
 msgstr "diff genitore"
 
-#: diffviewer/models.py:85 reviews/models.py:516
+#: diffviewer/models.py:85 reviews/models.py:521
 msgid "status"
 msgstr "stato"
 
 #: diffviewer/models.py:243 diffviewer/models.py:301 reviews/models.py:44
-#: reviews/models.py:118 site/models.py:45
+#: reviews/models.py:120 site/models.py:45
 msgid "name"
 msgstr "nome"
 
@@ -1353,11 +1385,11 @@ msgstr "revisione"
 msgid "base directory"
 msgstr "directory di base"
 
-#: diffviewer/models.py:250 reviews/models.py:535
+#: diffviewer/models.py:250 reviews/models.py:540
 msgid "diff set history"
 msgstr "cronologia set diff"
 
-#: diffviewer/models.py:252 reviews/models.py:525
+#: diffviewer/models.py:252 reviews/models.py:530
 msgid "repository"
 msgstr "repository"
 
@@ -1373,54 +1405,76 @@ msgstr ""
 "La versione di compatibilità del generatore diff da usare. Può e dovrebbe "
 "essere ignorata."
 
-#: diffviewer/models.py:260 reviews/models.py:521
+#: diffviewer/models.py:260 reviews/models.py:526
 msgid "commit ID"
 msgstr "ID commit"
 
-#: diffviewer/models.py:304 reviews/models.py:515 reviews/models.py:1128
+#: diffviewer/models.py:304 reviews/models.py:520 reviews/models.py:1142
 msgid "last updated"
 msgstr "ultimo aggiornamento"
 
-#: diffviewer/renderers.py:57
+#: diffviewer/renderers.py:55
 #, python-format
 msgid "Invalid chunk index %s specified."
 msgstr "Specificato indice chunk %s non valido."
 
-#: diffviewer/views.py:267
+#: diffviewer/views.py:328
 #, python-format
 msgid "Internal error. Unable to locate file record for filediff %s"
 msgstr ""
 "Errore interno. Impossibile trovare il record del file per il diff file %s"
 
-#: diffviewer/templatetags/difftags.py:209
+#: diffviewer/templatetags/difftags.py:173
 #, fuzzy
 msgid "Expand to header"
 msgstr "Espandi fino all'header"
 
-#: diffviewer/templatetags/difftags.py:290
+#: diffviewer/templatetags/difftags.py:254
 #, python-format
 msgid "Moved from %s"
 msgstr "Spostato da %s"
 
-#: diffviewer/templatetags/difftags.py:298
+#: diffviewer/templatetags/difftags.py:262
 #, python-format
 msgid "Moved to %s"
 msgstr "Spostato in %s"
 
-#: hostingsvcs/beanstalk.py:17
+#: hostingsvcs/beanstalk.py:18
 msgid "Beanstalk account domain"
 msgstr ""
 
-#: hostingsvcs/beanstalk.py:21
+#: hostingsvcs/beanstalk.py:22
 msgid "This is the <tt>domain</tt> part of <tt>domain.beanstalkapp.com</tt>"
 msgstr ""
 
-#: hostingsvcs/beanstalk.py:25 hostingsvcs/bitbucket.py:16
-#: hostingsvcs/fedorahosted.py:10 hostingsvcs/github.py:24
-#: hostingsvcs/github.py:35 hostingsvcs/github.py:55 hostingsvcs/github.py:75
-#: hostingsvcs/gitorious.py:16
+#: hostingsvcs/beanstalk.py:26 hostingsvcs/bitbucket.py:18
+#: hostingsvcs/bitbucket.py:35 hostingsvcs/fedorahosted.py:10
+#: hostingsvcs/github.py:25 hostingsvcs/github.py:36 hostingsvcs/github.py:56
+#: hostingsvcs/github.py:76 hostingsvcs/gitorious.py:16
 msgid "Repository name"
 msgstr "Nome repository"
+
+#: hostingsvcs/bitbucket.py:26
+#, fuzzy
+msgid "Team name"
+msgstr "Cognome:"
+
+#: hostingsvcs/bitbucket.py:30
+#, fuzzy
+msgid ""
+"The name of the team. This is hte &lt;team_name&gt; in https://bitbucket.org/"
+"&lt;team_name&gt;/&lt;repo_name&gt;/"
+msgstr ""
+"Il nome del repository. Questa impostazione è il &lt;nome_repository&gt; in "
+"http://github.com/&lt;nomeutente&gt;/&lt;nome_repository&gt;/"
+
+#: hostingsvcs/bitbucket.py:57
+msgid "Personal"
+msgstr ""
+
+#: hostingsvcs/bitbucket.py:82
+msgid "Team"
+msgstr ""
 
 #: hostingsvcs/bugzilla.py:10
 msgid "Bugzilla URL"
@@ -1469,7 +1523,7 @@ msgstr ""
 msgid "API key"
 msgstr "Chiave API"
 
-#: hostingsvcs/github.py:28 hostingsvcs/github.py:39
+#: hostingsvcs/github.py:29 hostingsvcs/github.py:40
 msgid ""
 "The name of the repository. This is the &lt;repo_name&gt; in http://github."
 "com/&lt;username&gt;/&lt;repo_name&gt;/"
@@ -1477,11 +1531,11 @@ msgstr ""
 "Il nome del repository. Questa impostazione è il &lt;nome_repository&gt; in "
 "http://github.com/&lt;nomeutente&gt;/&lt;nome_repository&gt;/"
 
-#: hostingsvcs/github.py:46 hostingsvcs/github.py:66
+#: hostingsvcs/github.py:47 hostingsvcs/github.py:67
 msgid "Organization name"
 msgstr "Nome azienda"
 
-#: hostingsvcs/github.py:50 hostingsvcs/github.py:70
+#: hostingsvcs/github.py:51 hostingsvcs/github.py:71
 msgid ""
 "The name of the organization. This is the &lt;org_name&gt; in http://github."
 "com/&lt;org_name&gt;/&lt;repo_name&gt;/"
@@ -1489,7 +1543,7 @@ msgstr ""
 "Il nome dell'azienda. Questa impostazione è il &lt;nome_azienda&gt; in "
 "http://github.com/&lt;nome_azienda&gt;/&lt;nome_repository&gt;/"
 
-#: hostingsvcs/github.py:59 hostingsvcs/github.py:79
+#: hostingsvcs/github.py:60 hostingsvcs/github.py:80
 msgid ""
 "The name of the repository. This is the &lt;repo_name&gt; in http://github."
 "com/&lt;org_name&gt;/&lt;repo_name&gt;/"
@@ -1497,27 +1551,27 @@ msgstr ""
 "Il nome del repository. Questa impostazione è il &lt;nome_repository&gt; in "
 "http://github.com/&lt;nome_azienda&gt;/&lt;nome_repository&gt;/"
 
-#: hostingsvcs/github.py:85
+#: hostingsvcs/github.py:86
 msgid "GitHub"
 msgstr "GitHub"
 
-#: hostingsvcs/github.py:88
+#: hostingsvcs/github.py:89
 msgid "Public"
 msgstr "Pubblico"
 
-#: hostingsvcs/github.py:104
+#: hostingsvcs/github.py:106
 msgid "Public Organization"
 msgstr "Azienda (pubblico)"
 
-#: hostingsvcs/github.py:120
+#: hostingsvcs/github.py:122
 msgid "Private"
 msgstr "Privato"
 
-#: hostingsvcs/github.py:135
+#: hostingsvcs/github.py:137
 msgid "Private Organization"
 msgstr "Azienda (privato)"
 
-#: hostingsvcs/github.py:459
+#: hostingsvcs/github.py:473
 msgid "Unknown GitHub API Error"
 msgstr "Errore sconosciuto API GitHub"
 
@@ -1546,26 +1600,26 @@ msgstr "URL Trac"
 msgid "VersionOne URL"
 msgstr "URL VersionOne"
 
-#: reviews/admin.py:26
+#: reviews/admin.py:27
 msgid "Comment Text"
 msgstr "Testo commento"
 
-#: reviews/admin.py:35 reviews/admin.py:58 reviews/admin.py:82
-#: reviews/admin.py:112 reviews/admin.py:191 scmtools/admin.py:12
+#: reviews/admin.py:36 reviews/admin.py:59 reviews/admin.py:83
+#: reviews/admin.py:114 reviews/admin.py:194 scmtools/admin.py:12
 msgid "General Information"
 msgstr "Informazioni generali"
 
-#: reviews/admin.py:39 reviews/admin.py:118 reviews/admin.py:196
+#: reviews/admin.py:40 reviews/admin.py:120 reviews/admin.py:199
 #: templates/reviews/review_request_box.html:105
 msgid "Reviewers"
 msgstr "Revisori"
 
-#: reviews/admin.py:42 reviews/forms.py:37 reviews/forms.py:43
-#: templates/admin/widgets/w-actions.html:53
+#: reviews/admin.py:43 reviews/forms.py:39 reviews/forms.py:45
+#: templates/admin/widgets/w-actions.html:49
 msgid "Repositories"
 msgstr "Repository"
 
-#: reviews/admin.py:43
+#: reviews/admin.py:44
 msgid ""
 "<p>A default reviewer will cover all repositories, unless assigned one or "
 "more specific repositories below.</p>"
@@ -1573,19 +1627,19 @@ msgstr ""
 "<p>Un revisore predefinito coprirà tutti i repository, a meno che non gli "
 "siano stati assegnati uno o più repository specifici sotto.</p>"
 
-#: reviews/admin.py:62 scmtools/admin.py:56
+#: reviews/admin.py:63 scmtools/admin.py:56
 msgid "Access Control"
 msgstr "Controllo degli accessi"
 
-#: reviews/admin.py:65 reviews/admin.py:95 reviews/admin.py:126
+#: reviews/admin.py:66 reviews/admin.py:96 reviews/admin.py:129
 msgid "State"
 msgstr "Stato"
 
-#: reviews/admin.py:86 reviews/admin.py:121 reviews/admin.py:199
+#: reviews/admin.py:87 reviews/admin.py:123 reviews/admin.py:202
 msgid "Related Objects"
 msgstr "Oggetti correlati"
 
-#: reviews/admin.py:127 scmtools/admin.py:65
+#: reviews/admin.py:130 scmtools/admin.py:65
 msgid ""
 "<p>This is advanced state that should not be modified unless something is "
 "wrong.</p>"
@@ -1593,29 +1647,29 @@ msgstr ""
 "<p>Questo è uno stato avanzato che non dovrebbe essere modificato a meno che "
 "non si verifichino errori.</p>"
 
-#: reviews/admin.py:154
+#: reviews/admin.py:157
 msgid "Close selected review requests as submitted"
 msgstr "Chiudi le richieste revisione selezionate come inviate"
 
-#: reviews/admin.py:168
+#: reviews/admin.py:171
 msgid "Close selected review requests as discarded"
 msgstr "Chiudi le richieste revisione selezionate come scartate"
 
-#: reviews/admin.py:180
+#: reviews/admin.py:183
 msgid "Reopen selected review requests"
 msgstr "Riapri le richieste revisione selezionate"
 
-#: reviews/datagrids.py:43 reviews/datagrids.py:44
-#: reviews/templatetags/reviewtags.py:553
+#: reviews/datagrids.py:42 reviews/datagrids.py:43
+#: reviews/templatetags/reviewtags.py:351
 msgid "Starred"
 msgstr "Preferito"
 
-#: reviews/datagrids.py:114 reviews/datagrids.py:115
+#: reviews/datagrids.py:113 reviews/datagrids.py:114
 #: templates/reviews/review_request_actions_primary.html:4
 msgid "Ship It!"
 msgstr "Inviala!"
 
-#: reviews/datagrids.py:137 reviews/datagrids.py:138
+#: reviews/datagrids.py:136 reviews/datagrids.py:137
 msgid "My Comments"
 msgstr "I miei commenti"
 
@@ -1631,7 +1685,7 @@ msgstr "Commenti pubblicati. Inviala!"
 msgid "Comments published"
 msgstr "Commenti pubblicati"
 
-#: reviews/datagrids.py:257 reviews/views.py:204
+#: reviews/datagrids.py:257 reviews/views.py:207
 #: templates/reviews/review_request_box.html:9
 msgid "Summary"
 msgstr "Riepilogo"
@@ -1644,12 +1698,12 @@ msgstr "Nessun riepilogo"
 msgid "Draft"
 msgstr "Bozza"
 
-#: reviews/datagrids.py:294 reviews/models.py:508
+#: reviews/datagrids.py:294 reviews/models.py:513
 #: templates/reviews/review_request_actions_secondary.html:10
 msgid "Submitted"
 msgstr "Inviata"
 
-#: reviews/datagrids.py:296 reviews/models.py:509
+#: reviews/datagrids.py:296 reviews/models.py:514
 #: templates/reviews/review_request_actions_secondary.html:11
 msgid "Discarded"
 msgstr "Scartata"
@@ -1670,7 +1724,7 @@ msgstr "Persone"
 msgid "Target People"
 msgstr "Persone destinatarie"
 
-#: reviews/datagrids.py:367 templates/base.html:112
+#: reviews/datagrids.py:367 templates/base.html:109
 #: templates/accounts/prefs.html:62
 #: templates/reviews/review_request_box.html:114
 msgid "Groups"
@@ -1692,110 +1746,110 @@ msgstr "Diff aggiornato"
 msgid "Bugs"
 msgstr "Bug"
 
-#: reviews/datagrids.py:511 reviews/views.py:209
+#: reviews/datagrids.py:511 reviews/views.py:212
 #: templates/reviews/review_request_box.html:47
 msgid "Branch"
 msgstr "Branch"
 
-#: reviews/datagrids.py:515 reviews/datagrids.py:527
+#: reviews/datagrids.py:516 reviews/datagrids.py:530
 msgid "Posted"
 msgstr "Inviato"
 
-#: reviews/datagrids.py:516
+#: reviews/datagrids.py:517
 msgid "Posted Time"
 msgstr "Ora e data invio"
 
-#: reviews/datagrids.py:519 reviews/datagrids.py:531
+#: reviews/datagrids.py:521 reviews/datagrids.py:535
 #: templates/reviews/review_issue_summary_table.html:49
 msgid "Last Updated"
 msgstr "Ultimo aggiornamento"
 
-#: reviews/datagrids.py:528
+#: reviews/datagrids.py:531
 msgid "Posted Time (Relative)"
 msgstr "Ora e data invio (relativa)"
 
-#: reviews/datagrids.py:532
+#: reviews/datagrids.py:536
 msgid "Last Updated (Relative)"
 msgstr "Ultimo aggiornamento (relativo)"
 
-#: reviews/datagrids.py:537
+#: reviews/datagrids.py:541
 msgid "Diff Updated (Relative)"
 msgstr "Diff aggiornato (relativo)"
 
-#: reviews/datagrids.py:547 reviews/datagrids.py:558
+#: reviews/datagrids.py:551 reviews/datagrids.py:562
 msgid "Review ID"
 msgstr "ID revisione"
 
-#: reviews/datagrids.py:669
+#: reviews/datagrids.py:675
 msgid "All Outgoing Review Requests"
 msgstr "Tutte le richieste di revisione in uscita"
 
-#: reviews/datagrids.py:673
+#: reviews/datagrids.py:679
 msgid "All My Review Requests"
 msgstr "Tutte le mie richieste di revisione"
 
-#: reviews/datagrids.py:677
+#: reviews/datagrids.py:683
 msgid "Incoming Review Requests to Me"
 msgstr "Richieste di revisione in entrata per me"
 
-#: reviews/datagrids.py:692
+#: reviews/datagrids.py:697
 #, python-format
 msgid "Incoming Review Requests to %s"
 msgstr "Richieste di revisione in entrata per %s"
 
-#: reviews/datagrids.py:696
+#: reviews/datagrids.py:701
 msgid "All Incoming Review Requests to My Groups"
 msgstr "Tutte le richieste di revisione in entrata per i miei gruppi"
 
-#: reviews/datagrids.py:701
+#: reviews/datagrids.py:706
 msgid "Starred Review Requests"
 msgstr "Richieste di revisione preferite"
 
-#: reviews/datagrids.py:705
+#: reviews/datagrids.py:710
 msgid "All Incoming Review Requests"
 msgstr "Tutte le richieste di revisione in entrata"
 
-#: reviews/datagrids.py:715
+#: reviews/datagrids.py:720
 msgid "Full Name"
 msgstr "Nome e cognome"
 
-#: reviews/datagrids.py:717 reviews/datagrids.py:750
+#: reviews/datagrids.py:722 reviews/datagrids.py:755
 msgid "Pending Reviews"
 msgstr "Revisioni in attesa"
 
-#: reviews/datagrids.py:723
+#: reviews/datagrids.py:728
 msgid "All submitters"
 msgstr "Tutti i responsabili invio"
 
-#: reviews/datagrids.py:747
+#: reviews/datagrids.py:752
 msgid "Group ID"
 msgstr "ID gruppo"
 
-#: reviews/datagrids.py:748
+#: reviews/datagrids.py:753
 msgid "Group Name"
 msgstr "Nome gruppo"
 
-#: reviews/datagrids.py:754
+#: reviews/datagrids.py:759
 msgid "Members"
 msgstr "Membri"
 
-#: reviews/datagrids.py:758
+#: reviews/datagrids.py:763
 msgid "All groups"
 msgstr "Tutti i gruppi"
 
-#: reviews/datagrids.py:779
+#: reviews/datagrids.py:785
 msgid "Watched groups"
 msgstr "Gruppi osservati"
 
-#: reviews/forms.py:25 templates/admin/widgets/w-repositories.html:7
+#: reviews/forms.py:26 templates/admin/widgets/w-repositories.html:7
 msgid "Name"
 msgstr "Nome"
 
-#: reviews/forms.py:30
+#: reviews/forms.py:31
 msgid "File regular expression"
 msgstr "Espressione regolare file"
 
-#: reviews/forms.py:33 reviews/models.py:120
+#: reviews/forms.py:35 reviews/models.py:124
 msgid ""
 "File paths are matched against this regular expression to determine if these "
 "reviewers should be added."
@@ -1803,7 +1857,7 @@ msgstr ""
 "I percorsi dei file sono sottoposti a matching con quest'espressione "
 "regolare per determinare se questi revisori devono essere aggiunti."
 
-#: reviews/forms.py:40
+#: reviews/forms.py:42
 msgid ""
 "The list of repositories to specifically match this default reviewer for. If "
 "left empty, this will match all repositories."
@@ -1811,7 +1865,7 @@ msgstr ""
 "L'elenco dei repository a cui sarà associato in modo specifico questo "
 "revisore. Se lasciato vuoto, esso sarà associato a tutti i repository."
 
-#: reviews/forms.py:74
+#: reviews/forms.py:65
 #, python-format
 msgid "The repository '%s' doesn't exist on the local site."
 msgstr "Il repository '%s' non esiste nel sito locale."
@@ -1820,113 +1874,113 @@ msgstr "Il repository '%s' non esiste nel sito locale."
 msgid "display name"
 msgstr "nome visualizzato"
 
-#: reviews/models.py:46
+#: reviews/models.py:47
 msgid "mailing list"
 msgstr "mailing list"
 
-#: reviews/models.py:47
+#: reviews/models.py:49
 msgid "The mailing list review requests and discussions are sent to."
 msgstr ""
 "La mailing list a cui sono inviate le richieste di revisione e le "
 "discussioni."
 
-#: reviews/models.py:51
+#: reviews/models.py:53
 msgid "users"
 msgstr "utenti"
 
-#: reviews/models.py:55
+#: reviews/models.py:57
 msgid "incoming review request count"
 msgstr "Numero richieste revisione in arrivo"
 
-#: reviews/models.py:59
+#: reviews/models.py:61
 msgid "invite only"
 msgstr "solo su invito"
 
-#: reviews/models.py:99
+#: reviews/models.py:101
 msgid "review group"
 msgstr "gruppo revisione"
 
-#: reviews/models.py:119
+#: reviews/models.py:122
 msgid "file regex"
 msgstr "espressione regolare file"
 
-#: reviews/models.py:123
+#: reviews/models.py:127
 msgid "default groups"
 msgstr "gruppi predefiniti"
 
-#: reviews/models.py:125
+#: reviews/models.py:129
 msgid "default people"
 msgstr "persone predefinite"
 
-#: reviews/models.py:166
+#: reviews/models.py:170
 msgid "image"
 msgstr "immagine"
 
-#: reviews/models.py:251
+#: reviews/models.py:255
 msgid "summary"
 msgstr "riepilogo"
 
-#: reviews/models.py:252
+#: reviews/models.py:256
 msgid "description"
 msgstr "descrizione"
 
-#: reviews/models.py:253
+#: reviews/models.py:257
 msgid "testing done"
 msgstr "test effettuati"
 
-#: reviews/models.py:254
+#: reviews/models.py:258
 msgid "bugs"
 msgstr "bug"
 
-#: reviews/models.py:255
+#: reviews/models.py:259
 msgid "branch"
 msgstr "branch"
 
-#: reviews/models.py:485
+#: reviews/models.py:490
 msgid "(no summary)"
 msgstr "(nessun riepilogo)"
 
-#: reviews/models.py:507
+#: reviews/models.py:512
 msgid "Pending Review"
 msgstr "Revisione in sospeso"
 
-#: reviews/models.py:512
+#: reviews/models.py:517
 msgid "submitter"
 msgstr "responsabile invio"
 
-#: reviews/models.py:514
+#: reviews/models.py:519
 msgid "time added"
 msgstr "tempo aggiunto"
 
-#: reviews/models.py:519
+#: reviews/models.py:524
 msgid "change number"
 msgstr "numero modifica"
 
-#: reviews/models.py:528 reviews/models.py:1705
+#: reviews/models.py:533 reviews/models.py:1753
 msgid "e-mail message ID"
 msgstr "ID messaggio di posta elettronica"
 
-#: reviews/models.py:530 reviews/models.py:1707
+#: reviews/models.py:535 reviews/models.py:1755
 msgid "time e-mailed"
 msgstr "data e ora messaggio di posta"
 
-#: reviews/models.py:540 reviews/models.py:1137
+#: reviews/models.py:545 reviews/models.py:1151
 msgid "target groups"
 msgstr "gruppi destinatari"
 
-#: reviews/models.py:544 reviews/models.py:1140
+#: reviews/models.py:549 reviews/models.py:1154
 msgid "target people"
 msgstr "persone destinatarie"
 
-#: reviews/models.py:550 reviews/models.py:1145
+#: reviews/models.py:555 reviews/models.py:1159
 msgid "screenshots"
 msgstr "schermate"
 
-#: reviews/models.py:553 reviews/models.py:1148
+#: reviews/models.py:559 reviews/models.py:1163
 msgid "inactive screenshots"
 msgstr "schermate inattive"
 
-#: reviews/models.py:554
+#: reviews/models.py:560
 msgid ""
 "A list of screenshots that used to be but are no longer associated with this "
 "review request."
@@ -1934,15 +1988,15 @@ msgstr ""
 "Un elenco di schermate che erano associate a questa richiesta di revisione "
 "ma non lo sono più."
 
-#: reviews/models.py:562 reviews/models.py:1155
+#: reviews/models.py:568 reviews/models.py:1170
 msgid "file attachments"
 msgstr "file allegati"
 
-#: reviews/models.py:565
+#: reviews/models.py:572
 msgid "inactive file attachments"
 msgstr "file allegati inattivi"
 
-#: reviews/models.py:566
+#: reviews/models.py:573
 msgid ""
 "A list of file attachments that used to be but are no longer associated with "
 "this review request."
@@ -1950,250 +2004,255 @@ msgstr ""
 "Un elenco di file allegati che erano associati a questa richiesta di "
 "revisione ma non lo sono più."
 
-#: reviews/models.py:572
+#: reviews/models.py:580
 msgid "change descriptions"
 msgstr "modifica descrizioni"
 
-#: reviews/models.py:578 reviews/models.py:1169
+#: reviews/models.py:586 reviews/models.py:1184
 msgid "Dependencies"
 msgstr "Dipendenze"
 
-#: reviews/models.py:586
+#: reviews/models.py:594
 msgid "last review activity timestamp"
 msgstr "data e ora ultima attività revisione"
 
-#: reviews/models.py:591
+#: reviews/models.py:599
 msgid "ship-it count"
 msgstr "conteggio \"inviala\""
 
-#: reviews/models.py:1126 reviews/models.py:1691
+#: reviews/models.py:1140 reviews/models.py:1735
 msgid "review request"
 msgstr "richiesta revisione"
 
-#: reviews/models.py:1133
+#: reviews/models.py:1147
 msgid "change description"
 msgstr "modifica descrizione"
 
-#: reviews/models.py:1159
+#: reviews/models.py:1174
 msgid "inactive files"
 msgstr "file inattivi"
 
-#: reviews/models.py:1416
+#: reviews/models.py:1439
 #, python-format
 msgid "Diff r%s"
 msgstr "Diff r%s"
 
-#: reviews/models.py:1457 templates/reviews/review_issue_summary_table.html:16
+#: reviews/models.py:1482 templates/reviews/review_issue_summary_table.html:16
 #: templates/reviews/review_issue_summary_table.html:28
 msgid "Open"
 msgstr "Aperta"
 
-#: reviews/models.py:1458 templates/reviews/review_issue_summary_table.html:18
+#: reviews/models.py:1483 templates/reviews/review_issue_summary_table.html:18
 #: templates/reviews/review_issue_summary_table.html:30
 msgid "Resolved"
 msgstr "Risolta"
 
-#: reviews/models.py:1459 templates/reviews/review_issue_summary_table.html:20
+#: reviews/models.py:1484 templates/reviews/review_issue_summary_table.html:20
 #: templates/reviews/review_issue_summary_table.html:29
 msgid "Dropped"
 msgstr "Scartata"
 
-#: reviews/models.py:1461
+#: reviews/models.py:1486
 msgid "issue opened"
 msgstr "problema creato"
 
-#: reviews/models.py:1462
+#: reviews/models.py:1487
 msgid "issue status"
 msgstr "stato problema"
 
-#: reviews/models.py:1471
+#: reviews/models.py:1496
 msgid "reply to"
 msgstr "rispondi a"
 
-#: reviews/models.py:1473
+#: reviews/models.py:1498
 msgid "comment text"
 msgstr "testo commento"
 
-#: reviews/models.py:1586
+#: reviews/models.py:1622
 msgid "file diff"
 msgstr "file diff"
 
-#: reviews/models.py:1589
+#: reviews/models.py:1625
 msgid "interdiff file"
 msgstr "file interdiff"
 
-#: reviews/models.py:1595
+#: reviews/models.py:1631
 msgid "first line"
 msgstr "prima riga"
 
-#: reviews/models.py:1597
+#: reviews/models.py:1633
 msgid "number of lines"
 msgstr "numero di righe"
 
-#: reviews/models.py:1619
+#: reviews/models.py:1655
 msgid "screenshot"
 msgstr "schermata"
 
-#: reviews/models.py:1624
+#: reviews/models.py:1660
 msgid "sub-image X"
 msgstr "ascissa sottoimmagine"
 
-#: reviews/models.py:1625
+#: reviews/models.py:1661
 msgid "sub-image Y"
 msgstr "ordinata sottoimmagine"
 
-#: reviews/models.py:1626
+#: reviews/models.py:1662
 msgid "sub-image width"
 msgstr "larghezza sottoimmagine"
 
-#: reviews/models.py:1627
+#: reviews/models.py:1663
 msgid "sub-image height"
 msgstr "altezza sottoimmagine "
 
-#: reviews/models.py:1649
+#: reviews/models.py:1688
 #, fuzzy
-msgid "file_attachment"
-msgstr "file_allegato"
+msgid "file attachment"
+msgstr "file allegati"
 
 #: reviews/models.py:1692
+#, fuzzy
+msgid "diff against file attachment"
+msgstr "file allegati inattivi"
+
+#: reviews/models.py:1736
 #, fuzzy
 msgid "user"
 msgstr "utente"
 
-#: reviews/models.py:1696
+#: reviews/models.py:1741
 msgid "ship it"
 msgstr "inviala"
 
-#: reviews/models.py:1697
+#: reviews/models.py:1743
 msgid "Indicates whether the reviewer thinks this code is ready to ship."
 msgstr "Indica se il revisore pensa che questo codice sia pronto per l'invio."
 
-#: reviews/models.py:1702
+#: reviews/models.py:1750
 msgid "Base reply to"
 msgstr "\"Rispondi a\" di base"
 
-#: reviews/models.py:1703
+#: reviews/models.py:1751
 msgid "The top-most review in the discussion thread for this review reply."
 msgstr ""
 "La revisione collocata più in alto nel thread di discussione per questa "
 "risposta alla revisione."
 
-#: reviews/models.py:1710
+#: reviews/models.py:1759
 msgid "body (top)"
 msgstr "corpo (sopra)"
 
-#: reviews/models.py:1711
+#: reviews/models.py:1761
 msgid "The review text shown above the diff and screenshot comments."
 msgstr ""
 "Il testo della revisione visualizzato prima dei commenti al diff e alle "
 "schermate."
 
-#: reviews/models.py:1713
+#: reviews/models.py:1764
 msgid "body (bottom)"
 msgstr "corpo (sotto)"
 
-#: reviews/models.py:1714
+#: reviews/models.py:1766
 msgid "The review text shown below the diff and screenshot comments."
 msgstr ""
 "Il testo della revisione visualizzato dopo i commenti al diff e alle "
 "schermate."
 
-#: reviews/models.py:1720
+#: reviews/models.py:1772
 msgid "body (top) reply to"
 msgstr "corpo (sopra) rispondi a"
 
-#: reviews/models.py:1721
+#: reviews/models.py:1773
 #, fuzzy
 msgid "The review that the body (top) field is in reply to."
 msgstr "La revisione per cui il campo \"corpo\" (sopra) è una risposta."
 
-#: reviews/models.py:1725
+#: reviews/models.py:1777
 msgid "body (bottom) reply to"
 msgstr "corpo (sotto) rispondi a"
 
-#: reviews/models.py:1726
+#: reviews/models.py:1778
 #, fuzzy
 msgid "The review that the body (bottom) field is in reply to."
 msgstr "La revisione per cui il campo \"corpo\" (sotto) è una risposta."
 
-#: reviews/models.py:1728
+#: reviews/models.py:1780
 msgid "comments"
 msgstr "commenti"
 
-#: reviews/models.py:1732
+#: reviews/models.py:1784
 msgid "screenshot comments"
 msgstr "commenti schermate"
 
-#: reviews/models.py:1737
+#: reviews/models.py:1789
 msgid "file attachment comments"
 msgstr "commenti file allegati"
 
-#: reviews/views.py:205 templates/reviews/review_issue_summary_table.html:47
+#: reviews/views.py:208 templates/reviews/review_issue_summary_table.html:47
 #: templates/reviews/review_request_box.html:160
 msgid "Description"
 msgstr "Descrizione"
 
-#: reviews/views.py:206 templates/reviews/review_request_box.html:164
+#: reviews/views.py:209 templates/reviews/review_request_box.html:164
 msgid "Testing Done"
 msgstr "Test effettuati"
 
-#: reviews/views.py:207
+#: reviews/views.py:210
 msgid "Bugs Closed"
 msgstr "Bug chiusi"
 
-#: reviews/views.py:208 templates/reviews/review_request_box.html:61
+#: reviews/views.py:211 templates/reviews/review_request_box.html:61
 msgid "Depends On"
 msgstr "Dipende da"
 
-#: reviews/views.py:210
+#: reviews/views.py:213
 msgid "Reviewers (Groups)"
 msgstr "Revisori (Gruppi)"
 
-#: reviews/views.py:211
+#: reviews/views.py:214
 msgid "Reviewers (People)"
 msgstr "Revisori (Persone)"
 
-#: reviews/views.py:212 templates/admin/widgets/w-stats.html:16
+#: reviews/views.py:215 templates/admin/widgets/w-stats.html:16
 #: templates/reviews/review_request_box.html:171
 msgid "Screenshots"
 msgstr "Schermate"
 
-#: reviews/views.py:213
+#: reviews/views.py:216
 msgid "Screenshot Captions"
 msgstr "Descrizioni schermate"
 
-#: reviews/views.py:214
+#: reviews/views.py:217
 msgid "Uploaded Files"
 msgstr "File caricati"
 
-#: reviews/views.py:215
+#: reviews/views.py:218
 msgid "Uploaded File Captions"
 msgstr "Descrizioni file caricati"
 
-#: reviews/views.py:263
+#: reviews/views.py:266
 msgid "(None - File attachments only)"
 msgstr "(Nessuno - Solo file allegati)"
 
-#: reviews/views.py:741 templates/base.html:111
+#: reviews/views.py:747 templates/base.html:108
 msgid "All Review Requests"
 msgstr "Tutte le richieste di revisione"
 
-#: reviews/views.py:849
+#: reviews/views.py:852
 #, python-format
 msgid "Review requests for %s"
 msgstr "Richieste revisione per %s"
 
-#: reviews/views.py:880
+#: reviews/views.py:883
 #, python-format
 msgid "Members of group %s"
 msgstr "Membri del gruppo %s"
 
-#: reviews/views.py:913
+#: reviews/views.py:918
 #, python-format
 msgid "%s's review requests"
 msgstr "Richieste revisione di %s"
 
-#: reviews/templatetags/reviewtags.py:555
+#: reviews/templatetags/reviewtags.py:353
 msgid "Click to star"
 msgstr "Clicca per impostarla come preferita"
 
@@ -2224,59 +2283,59 @@ msgstr ""
 "Un certificato SSL verificato è richiesto per connettersi a questo "
 "repository."
 
-#: scmtools/forms.py:34
+#: scmtools/forms.py:35
 msgid "Repository Information"
 msgstr "Informazioni sul repository"
 
-#: scmtools/forms.py:35
+#: scmtools/forms.py:36
 msgid "Bug Tracker"
 msgstr "Bug tracker"
 
-#: scmtools/forms.py:36
+#: scmtools/forms.py:37
 msgid "Review Board Server SSH Key"
 msgstr "Chiave SSH del server Review Board"
 
-#: scmtools/forms.py:39
+#: scmtools/forms.py:40
 msgid "(None - Custom Repository)"
 msgstr "(Nessuno - Repository personalizzato)"
 
-#: scmtools/forms.py:42
+#: scmtools/forms.py:43
 msgid "(None)"
 msgstr "(Nessuno)"
 
-#: scmtools/forms.py:45
+#: scmtools/forms.py:46
 msgid "(Custom Bug Tracker)"
 msgstr "(Bug tracker personalizzato)"
 
-#: scmtools/forms.py:50
+#: scmtools/forms.py:51
 msgid "Default"
 msgstr "Predefinito"
 
-#: scmtools/forms.py:54 templates/admin/repository_confirmations.html:60
+#: scmtools/forms.py:55 templates/admin/repository_confirmations.html:60
 msgid "Re-edit repository"
 msgstr "Modifica nuovamente repository"
 
-#: scmtools/forms.py:58 templates/admin/repository_confirmations.html:59
+#: scmtools/forms.py:59 templates/admin/repository_confirmations.html:59
 msgid "I trust this host"
 msgstr "Mi fido di questo host"
 
-#: scmtools/forms.py:63
+#: scmtools/forms.py:64
 msgid "Hosting service"
 msgstr "Servizio di hosting"
 
-#: scmtools/forms.py:68
+#: scmtools/forms.py:69
 msgid "Service URL"
 msgstr "URL servizio"
 
-#: scmtools/forms.py:73
+#: scmtools/forms.py:74
 msgid "Account"
 msgstr "Account"
 
-#: scmtools/forms.py:75
+#: scmtools/forms.py:76
 msgid "<Link a new account>"
 msgstr "<Collega un nuovo account>"
 
-#: scmtools/forms.py:76
+#: scmtools/forms.py:77
 msgid ""
 "Link this repository to an account on the hosting service. This username may "
 "be used as part of the repository URL, depending on the hosting service and "
@@ -2286,23 +2345,23 @@ msgstr ""
 "utente può essere utilizzato come parte dell'URL del repository, a seconda "
 "del servizio di hosting e del relativo piano."
 
-#: scmtools/forms.py:83 scmtools/forms.py:137
+#: scmtools/forms.py:84 scmtools/forms.py:138
 msgid "Account username"
 msgstr "Nome utente account"
 
-#: scmtools/forms.py:88
+#: scmtools/forms.py:89
 msgid "Account password"
 msgstr "Password account"
 
-#: scmtools/forms.py:94
+#: scmtools/forms.py:95
 msgid "Repository type"
 msgstr "Tipo repository"
 
-#: scmtools/forms.py:100
+#: scmtools/forms.py:101
 msgid "Repository plan"
 msgstr "Piano repository"
 
-#: scmtools/forms.py:102
+#: scmtools/forms.py:103
 msgid ""
 "The plan for your repository on this hosting service. This must match what "
 "is set for your repository."
@@ -2310,11 +2369,11 @@ msgstr ""
 "Il piano per il tuo repository su questo servizio di hosting. Deve "
 "coincidere con quanto impostato per il tuo repository."
 
-#: scmtools/forms.py:107
+#: scmtools/forms.py:108
 msgid "Associate my SSH key with the hosting service"
 msgstr "Associa la mia chiave SSH con il servizio di hosting"
 
-#: scmtools/forms.py:109
+#: scmtools/forms.py:110
 msgid ""
 "Add the Review Board public SSH key to the list of authorized SSH keys on "
 "the hosting service."
@@ -2322,7 +2381,7 @@ msgstr ""
 "Aggiungi la chiave pubblica SSH di Review Board all'elenco delle chiavi SSH "
 "autorizzate per il servizio di hosting"
 
-#: scmtools/forms.py:112
+#: scmtools/forms.py:113
 #, python-format
 msgid ""
 "This repository type supports SSH key association, but the Review Board "
@@ -2332,27 +2391,27 @@ msgstr ""
 "server Review Board non ha una chiave SSH. <a href=\"%s\">Aggiungi una "
 "chiave SSH.</a>"
 
-#: scmtools/forms.py:118
+#: scmtools/forms.py:119
 msgid "Use hosting service's bug tracker"
 msgstr "Utilizza il bug tracker del servizio di hosting "
 
-#: scmtools/forms.py:123 templates/admin/widgets/w-repositories.html:8
+#: scmtools/forms.py:124 templates/admin/widgets/w-repositories.html:8
 msgid "Type"
 msgstr "Tipo"
 
-#: scmtools/forms.py:128
+#: scmtools/forms.py:129
 msgid "URL"
 msgstr "URL"
 
-#: scmtools/forms.py:133
+#: scmtools/forms.py:134
 msgid "Bug tracker plan"
 msgstr "Piano bug tracker"
 
-#: scmtools/forms.py:142 scmtools/models.py:95
+#: scmtools/forms.py:143 scmtools/models.py:95
 msgid "Bug tracker URL"
 msgstr "URL bug tracker"
 
-#: scmtools/forms.py:147
+#: scmtools/forms.py:148
 #, python-format
 msgid ""
 "The optional path to the bug tracker for this repository. The path should "
@@ -2363,46 +2422,46 @@ msgstr ""
 "deve assomigliare a http://www.example.com/issues?id=%%s, dove %%s sarà il "
 "numero del bug."
 
-#: scmtools/forms.py:158
+#: scmtools/forms.py:159
 msgid "Use ticket-based authentication"
 msgstr "Utilizza autenticazione basata su ticket"
 
-#: scmtools/forms.py:449
+#: scmtools/forms.py:453
 msgid "This tool is not supported on the given hosting service"
 msgstr "Questo strumento non è supportato sul servizio di hosting specificato"
 
-#: scmtools/forms.py:465
+#: scmtools/forms.py:469
 msgid "This account is not compatible with this hosting service configuration"
 msgstr ""
 "Questo account non è compatibile con questa configurazione del servizio di "
 "hosting"
 
-#: scmtools/forms.py:473
+#: scmtools/forms.py:477
 msgid "An account must be linked in order to use this hosting service"
 msgstr ""
 "È necessario collegare un account per utilizzare questo servizio di hosting"
 
-#: scmtools/forms.py:526
+#: scmtools/forms.py:530
 #, python-format
 msgid "Unable to link the account: %s"
 msgstr "Impossibile collegare l'account: %s"
 
-#: scmtools/forms.py:531
+#: scmtools/forms.py:535
 #, python-format
 msgid "Unknown error when linking the account: %s"
 msgstr "Errore sconosciuto durante il collegamento dell'account: %s"
 
-#: scmtools/forms.py:570
+#: scmtools/forms.py:574
 msgid "A hosting service must be chosen in order to use this"
 msgstr ""
 "Per poter usare questa funzionalità è necessario scegliere un servizio di "
 "hosting"
 
-#: scmtools/forms.py:603
+#: scmtools/forms.py:607
 msgid "This bug tracker type is not supported"
 msgstr "Questa tipologia di bug tracker non è supportata"
 
-#: scmtools/forms.py:848
+#: scmtools/forms.py:853
 msgid ""
 "Unable to associate SSH key with your hosting service. This is most often "
 "the result of a problem communicating with the hosting service. Please try "
@@ -2412,20 +2471,37 @@ msgstr ""
 "dovuto a un problema di comunicazione con il servizio di hosting. Riprova in "
 "seguito o carica manualmente la chiave SSH sul servizio di hosting."
 
-#: scmtools/forms.py:1135
+#: scmtools/forms.py:879 scmtools/forms.py:897
+#, fuzzy
+msgid "Not a valid hosting service"
+msgstr "Servizio di hosting"
+
+#: scmtools/forms.py:916
+#, python-format
+msgid ""
+"The Python module \"%s\" is not installed.You may need to restart the server "
+"after installing it."
+msgstr ""
+
+#: scmtools/forms.py:927
+#, python-format
+msgid "The executable \"%s\" is not in the path."
+msgstr ""
+
+#: scmtools/forms.py:1142
 msgid "users with access"
 msgstr "utenti con diritto di accesso"
 
-#: scmtools/forms.py:1137
+#: scmtools/forms.py:1144
 msgid "review groups with access"
 msgstr "gruppi di revisione con accesso"
 
-#: scmtools/git.py:364
+#: scmtools/git.py:366
 #, python-format
 msgid "Permission denied accessing the local Git repository '%s'"
 msgstr "Accesso negato al repository Git locale '%s'"
 
-#: scmtools/git.py:367
+#: scmtools/git.py:369
 msgid "Unable to retrieve information from local Git repository"
 msgstr "Impossibile ottenere informazioni dal repository Git locale"
 
@@ -2515,19 +2591,19 @@ msgstr ""
 "Un elenco di gruppi di revisione accessibili solo su invito i cui membri "
 "hanno accesso esplicito al repository."
 
-#: scmtools/svn.py:512
+#: scmtools/svn.py:510
 msgid "The certificate is not yet valid."
 msgstr "Il certificato non è ancora valido."
 
-#: scmtools/svn.py:515
+#: scmtools/svn.py:513
 msgid "The certificate has expired."
 msgstr "Il certificato è scaduto."
 
-#: scmtools/svn.py:518
+#: scmtools/svn.py:516
 msgid "The certificate hostname does not match."
 msgstr "Il nome host del certificato non corrisponde."
 
-#: scmtools/svn.py:522
+#: scmtools/svn.py:520
 msgid ""
 "The certificate is not issued by a trusted authority. Use the fingerprint to "
 "validate the certificate manually."
@@ -2535,7 +2611,7 @@ msgstr ""
 "Il certificato non è stato emesso da un'autorità riconosciuta. Utilizza "
 "l'impronta digitale per verificare il certificato manualmente."
 
-#: scmtools/svn.py:584
+#: scmtools/svn.py:583
 #, python-format
 msgid ""
 "Unable to create directory %(dirname)s, which is needed for the Subversion "
@@ -2546,7 +2622,17 @@ msgstr ""
 "di Subversion. Crea questa directory e imposta l'utente del server Web come "
 "suo proprietario."
 
-#: ssh/errors.py:14
+#: site/validation.py:19
+#, python-format
+msgid "The user %s is not a member of this site."
+msgstr ""
+
+#: site/validation.py:38
+#, fuzzy, python-format
+msgid "The review group %s does not exist."
+msgstr "Questo percorso non esiste."
+
+#: ssh/errors.py:16
 #, python-format
 msgid ""
 "Unable to create directory %(dirname)s, which is needed for the SSH host "
@@ -2557,7 +2643,7 @@ msgstr ""
 "SSH. Crea questa directory, imposta l'utente del server Web come "
 "proprietario e rendila scrivibile solo da tale utente."
 
-#: ssh/errors.py:33
+#: ssh/errors.py:32
 #, python-format
 msgid ""
 "Unable to authenticate against this repository using one of the supported "
@@ -2566,7 +2652,7 @@ msgstr ""
 "Impossibile autenticarsi a questo repository utilizzando uno dei tipi di "
 "autenticazione supportati (%(allowed_types)s)."
 
-#: ssh/errors.py:39
+#: ssh/errors.py:38
 msgid ""
 "Unable to authenticate against this repository using one of the supported "
 "authentication types."
@@ -2574,11 +2660,11 @@ msgstr ""
 "Impossibile autenticarsi a questo repository utilizzando uno dei tipi di "
 "autenticazione supportati."
 
-#: ssh/errors.py:51
+#: ssh/errors.py:50
 msgid "This SSH key is not a valid RSA or DSS key."
 msgstr "Questa chiave SSH non è una chiave RSA o DSS valida."
 
-#: ssh/errors.py:72
+#: ssh/errors.py:71
 #, python-format
 msgid ""
 "Warning! The host key for server %(hostname)s does not match the expected "
@@ -2595,10 +2681,16 @@ msgstr ""
 "Contatta il tuo amministratore di sistema se non ne sei sicuro. Non "
 "accettare questa chiave dell'host a meno che tu non sia certo che sia sicura!"
 
-#: ssh/errors.py:92
-#, python-format
+#: ssh/errors.py:90
+#, fuzzy, python-format
 msgid ""
-"The authenticity of the host '%(hostname)s (%(ip)s)' couldn't be determined."
+"The authenticity of the host '%(hostname)s' (%(ip)s) could not be determined."
+msgstr ""
+"Impossibile determinare l'autenticità dell'host '%(hostname)s (%(ip)s)'."
+
+#: ssh/errors.py:98
+#, fuzzy, python-format
+msgid "The authenticity of the host '%(hostname)s' could not be determined."
 msgstr ""
 "Impossibile determinare l'autenticità dell'host '%(hostname)s (%(ip)s)'."
 
@@ -2614,60 +2706,60 @@ msgid "Unable to read host keys file %(filename)s: %(error)s"
 msgstr ""
 "Impossibile leggere il file delle chiavi dell'host %(filename)s: %(error)s"
 
-#: templates/base.html:64 templates/admin/widgets/w-actions.html:27
+#: templates/base.html:59 templates/admin/widgets/w-actions.html:23
 msgid "Support"
 msgstr "Supporto"
 
-#: templates/base.html:66
+#: templates/base.html:61
 msgid "Documentation"
 msgstr "Documentazione"
 
-#: templates/base.html:67
+#: templates/base.html:62
 msgid "Get Support"
 msgstr "Ottieni assistenza"
 
-#: templates/base.html:74
+#: templates/base.html:69
 msgid "My account"
 msgstr "Il mio account"
 
-#: templates/base.html:76
+#: templates/base.html:71
 msgid "Admin"
 msgstr "Amministrazione"
 
-#: templates/base.html:78
+#: templates/base.html:73
 msgid "Log out"
 msgstr "Disconnetti"
 
-#: templates/base.html:82 templates/accounts/login.html:53
+#: templates/base.html:77 templates/accounts/login.html:53
 msgid "Log in"
 msgstr "Accedi"
 
-#: templates/base.html:86 templates/accounts/register.html:9
+#: templates/base.html:81 templates/accounts/register.html:9
 #: templates/accounts/register.html:61
 msgid "Register"
 msgstr "Registrati"
 
-#: templates/base.html:94
+#: templates/base.html:91
 msgid "Jump to..."
 msgstr "Vai a..."
 
-#: templates/base.html:108 templates/reviews/dashboard.html:7
+#: templates/base.html:105 templates/reviews/dashboard.html:4
 msgid "My Dashboard"
 msgstr "La mia bacheca"
 
-#: templates/base.html:109 templates/reviews/new_review_request.html:4
+#: templates/base.html:106 templates/reviews/new_review_request.html:4
 msgid "New Review Request"
 msgstr "Nuova richiesta revisione"
 
-#: templates/base.html:113
+#: templates/base.html:110
 msgid "Submitters"
 msgstr "Responsabili invio"
 
-#: templates/base.html:122
+#: templates/base.html:119
 msgid "JavaScript is turned off"
 msgstr "JavaScript è disabilitato"
 
-#: templates/base.html:123
+#: templates/base.html:120
 msgid ""
 "Review Board requires JavaScript in order to function.\n"
 "     Please turn it on in your browser preferences."
@@ -2675,7 +2767,7 @@ msgstr ""
 "Review Board richiede JavaScript per poter funzionare.\n"
 "     Abilitalo nelle preferenze del tuo browser."
 
-#: templates/base.html:125
+#: templates/base.html:122
 msgid ""
 "Firefox users: if you prefer to turn on JavaScript only\n"
 "     for specific sites, we recommend the\n"
@@ -2924,80 +3016,80 @@ msgstr "Database"
 msgid "Extensions"
 msgstr "Estensioni"
 
-#: templates/admin/cache_stats.html:25
+#: templates/admin/cache_stats.html:28
 msgid "Memory usage:"
 msgstr "Utilizzo memoria:"
 
-#: templates/admin/cache_stats.html:31
+#: templates/admin/cache_stats.html:34
 msgid "Keys in cache:"
 msgstr "Chiavi in cache:"
 
-#: templates/admin/cache_stats.html:37
+#: templates/admin/cache_stats.html:40
 msgid "Cache hits:"
 msgstr "Numero cache hit:"
 
-#: templates/admin/cache_stats.html:43
+#: templates/admin/cache_stats.html:46
 msgid "Cache misses:"
 msgstr "Numero cache miss:"
 
-#: templates/admin/cache_stats.html:49
+#: templates/admin/cache_stats.html:52
 msgid "Cache evictions:"
 msgstr "Rimozioni cache:"
 
-#: templates/admin/cache_stats.html:55
+#: templates/admin/cache_stats.html:58
 msgid "Cache traffic:"
 msgstr "Traffico cache:"
 
-#: templates/admin/cache_stats.html:62
+#: templates/admin/cache_stats.html:65
 msgid "Uptime:"
 msgstr "Uptime:"
 
-#: templates/admin/cache_stats.html:70
+#: templates/admin/cache_stats.html:73
 msgid "Statistics are not available for this backend."
 msgstr "Le statistiche non sono disponibili per questo backend."
 
-#: templates/admin/change_form.html:19
+#: templates/admin/change_form.html:21
 msgid "Home"
 msgstr "Pagina iniziale"
 
-#: templates/admin/change_form.html:31
+#: templates/admin/change_form.html:33
 msgid "History"
 msgstr "Cronologia"
 
-#: templates/admin/change_form.html:42
+#: templates/admin/change_form.html:44
 msgid "Please correct the error below."
 msgid_plural "Please correct the errors below."
 msgstr[0] "Correggi l'errore sottostante."
 msgstr[1] "Correggi gli errori sottostanti."
 
-#: templates/admin/database.html:16 templates/admin/index.html:16
+#: templates/admin/database.html:14 templates/admin/index.html:14
 #, python-format
 msgid "%(name)s"
 msgstr "%(name)s"
 
-#: templates/admin/database.html:18 templates/admin/index.html:18
+#: templates/admin/database.html:16 templates/admin/index.html:16
 #, python-format
 msgid "Models available in the %(name)s application."
 msgstr "Modelli disponibili nell'applicazione %(name)s."
 
-#: templates/admin/database.html:34 templates/admin/index.html:34
+#: templates/admin/database.html:32 templates/admin/index.html:32
 #: templates/reviews/review_request_box.html:83
 msgid "Change"
 msgstr "Modifica"
 
-#: templates/admin/database.html:44 templates/admin/index.html:44
+#: templates/admin/database.html:42 templates/admin/index.html:42
 msgid "You don't have permission to edit anything."
 msgstr "Non hai il permesso di modificare alcunché."
 
-#: templates/admin/database.html:52 templates/admin/index.html:52
+#: templates/admin/database.html:50 templates/admin/index.html:50
 msgid "Recent Actions"
 msgstr "Azioni recenti"
 
-#: templates/admin/database.html:53
+#: templates/admin/database.html:51
 msgid "My Actions"
 msgstr "Le mie azioni"
 
-#: templates/admin/database.html:56 templates/admin/index.html:55
+#: templates/admin/database.html:54 templates/admin/index.html:53
 #: templates/admin/widgets/w-recent-actions.html:6
 msgid "None available"
 msgstr "Nessuna disponibile"
@@ -3637,96 +3729,96 @@ msgstr ""
 "cliccare su\n"
 " \"Visualizza chiave pubblica SSH\" sulla destra.\n"
 
-#: templates/admin/widgets/w-actions.html:8
+#: templates/admin/widgets/w-actions.html:4
 msgid "Enabled"
 msgstr "Abilitato"
 
-#: templates/admin/widgets/w-actions.html:12
+#: templates/admin/widgets/w-actions.html:8
 msgid "Disabled"
 msgstr "Disabilitato"
 
-#: templates/admin/widgets/w-actions.html:17
+#: templates/admin/widgets/w-actions.html:13
 msgid "System Settings"
 msgstr "Impostazioni di sistema"
 
-#: templates/admin/widgets/w-actions.html:20
+#: templates/admin/widgets/w-actions.html:16
 msgid "General"
 msgstr "Generale"
 
-#: templates/admin/widgets/w-actions.html:21
+#: templates/admin/widgets/w-actions.html:17
 msgid "Authentication"
 msgstr "Autenticazione"
 
-#: templates/admin/widgets/w-actions.html:22
+#: templates/admin/widgets/w-actions.html:18
 msgid "E-Mail"
 msgstr "Posta elettronica"
 
-#: templates/admin/widgets/w-actions.html:23
-#: templates/diffviewer/view_diff.html:11
+#: templates/admin/widgets/w-actions.html:19
+#: templates/diffviewer/view_diff.html:5
 msgid "Diff Viewer"
 msgstr "Visualizzatore diff"
 
-#: templates/admin/widgets/w-actions.html:24
+#: templates/admin/widgets/w-actions.html:20
 msgid "Logging"
 msgstr "Logging"
 
-#: templates/admin/widgets/w-actions.html:25
+#: templates/admin/widgets/w-actions.html:21
 msgid "SSH"
 msgstr "SSH"
 
-#: templates/admin/widgets/w-actions.html:26
+#: templates/admin/widgets/w-actions.html:22
 msgid "File Storage"
 msgstr "Salvataggio file"
 
-#: templates/admin/widgets/w-actions.html:33
+#: templates/admin/widgets/w-actions.html:29
 msgid "Manage"
 msgstr "Gestisci"
 
-#: templates/admin/widgets/w-actions.html:35
+#: templates/admin/widgets/w-actions.html:31
 msgid "Common management operations."
 msgstr "Operazioni comuni di gestione."
 
-#: templates/admin/widgets/w-actions.html:38
+#: templates/admin/widgets/w-actions.html:34
 msgid "Users"
 msgstr "Utenti"
 
-#: templates/admin/widgets/w-actions.html:43
+#: templates/admin/widgets/w-actions.html:39
 msgid "Review Groups"
 msgstr "Gruppi di revisione"
 
-#: templates/admin/widgets/w-actions.html:48
+#: templates/admin/widgets/w-actions.html:44
 msgid "Default Reviewers"
 msgstr "Revisori predefiniti"
 
-#: templates/admin/widgets/w-actions.html:63
+#: templates/admin/widgets/w-actions.html:59
 msgid "System Information"
 msgstr "Informazioni di sistema"
 
-#: templates/admin/widgets/w-actions.html:73
+#: templates/admin/widgets/w-actions.html:69
 msgid "Public Read-only Access"
 msgstr "Accesso pubblico in sola lettura"
 
-#: templates/admin/widgets/w-actions.html:80
+#: templates/admin/widgets/w-actions.html:76
 msgid "Syntax Highlighting"
 msgstr "Evidenziazione sintassi"
 
-#: templates/admin/widgets/w-actions.html:87
+#: templates/admin/widgets/w-actions.html:83
 msgid "Server Log"
 msgstr "Log del server"
 
-#: templates/admin/widgets/w-actions.html:94
+#: templates/admin/widgets/w-actions.html:90
 msgid "Log Profiling"
 msgstr "Profiling dei log"
 
-#: templates/admin/widgets/w-actions.html:101
+#: templates/admin/widgets/w-actions.html:97
 msgid "Review Emails"
 msgstr "Messaggi di posta di revisione"
 
-#: templates/admin/widgets/w-actions.html:108
+#: templates/admin/widgets/w-actions.html:104
 msgid "Email TLS Authentication"
 msgstr "Autenticazione TLS posta elettronica"
 
-#: templates/admin/widgets/w-actions.html:115
+#: templates/admin/widgets/w-actions.html:111
 msgid "Indexed Search"
 msgstr "Ricerca indicizzata"
 
@@ -3810,212 +3902,176 @@ msgstr "Sei l'unico che ha eseguito l'accesso finora..."
 msgid "Add Users +"
 msgstr "Aggiungi utenti +"
 
-#: templates/diffviewer/changeindex.html:23
-#, fuzzy
-msgid "Binary file"
-msgstr "file binario"
-
-#: templates/diffviewer/diff_file_fragment.html:33
+#: templates/diffviewer/diff_file_fragment.html:30
 msgid "Collapse lines"
 msgstr "Contrai linee"
 
-#: templates/diffviewer/diff_file_fragment.html:72
+#: templates/diffviewer/diff_file_fragment.html:79
 msgid " (moved)"
 msgstr " (spostato)"
 
-#: templates/diffviewer/diff_file_fragment.html:77
-msgid "No changes were made to this file."
-msgstr "Nessun cambiamento è stato apportato a questo file."
+#: templates/diffviewer/diff_file_fragment.html:107
+#: templates/diffviewer/diff_file_fragment.html:117
+#, fuzzy
+msgid "Download"
+msgstr "Scarica diff"
 
-#: templates/diffviewer/diff_file_fragment.html:93
+#: templates/diffviewer/diff_file_fragment.html:120
+#: templates/reviews/review_request_actions_primary.html:3
+#: templates/reviews/review_request_box.html:196
+msgid "Review"
+msgstr "Revisione"
+
+#: templates/diffviewer/diff_file_fragment.html:122
+#: templates/reviews/review_request_box.html:198
+msgid "Add Comment"
+msgstr "Aggiungi commento"
+
+#: templates/diffviewer/diff_file_fragment.html:139
+#: templates/diffviewer/diff_file_fragment.html:151
 msgid "This is a binary file. The content cannot be displayed."
 msgstr ""
 "Questo è un file binario. Il suo contenuto non può essere visualizzato."
 
-#: templates/diffviewer/diff_file_fragment.html:100
+#: templates/diffviewer/diff_file_fragment.html:145
+#: templates/diffviewer/diff_file_fragment.html:157
+#, fuzzy
+msgid "No preview available."
+msgstr "Nessun repository disponibile."
+
+#: templates/diffviewer/diff_file_fragment.html:166
+msgid "No changes were made to this file."
+msgstr "Nessun cambiamento è stato apportato a questo file."
+
+#: templates/diffviewer/diff_file_fragment.html:172
 msgid "This file was deleted. The content cannot be displayed."
 msgstr ""
 "Questo file è stato eliminato. Il suo contenuto non può essere visualizzato."
 
-#: templates/diffviewer/diff_file_fragment.html:107
+#: templates/diffviewer/diff_file_fragment.html:179
 msgid "This file contains only whitespace changes."
 msgstr "Questo file contiene solo modifiche agli spazi bianchi."
 
-#: templates/diffviewer/diff_file_fragment.html:121
+#: templates/diffviewer/diff_file_fragment.html:193
 msgid "Show 20 more lines above"
 msgstr "Visualizza altre 20 linee in alto"
 
-#: templates/diffviewer/diff_file_fragment.html:125
+#: templates/diffviewer/diff_file_fragment.html:197
 #, python-format
 msgid "%(lines)s line"
 msgid_plural "%(lines)s lines"
 msgstr[0] ""
 msgstr[1] ""
 
-#: templates/diffviewer/diff_file_fragment.html:126
+#: templates/diffviewer/diff_file_fragment.html:198
 msgid "Show all lines"
 msgstr "Visualizza tutte le linee"
 
-#: templates/diffviewer/diff_file_fragment.html:131
+#: templates/diffviewer/diff_file_fragment.html:203
 msgid "Show 20 more lines below"
 msgstr "Visualizza altre 20 linee in basso"
 
-#: templates/diffviewer/diff_fragment_error.html:35
-msgid "Diff currently unavailable."
-msgstr "Diff attualmente non disponibile."
+#: templates/diffviewer/diff_fragment_error.html:17
+#, fuzzy, python-format
+msgid ""
+"\n"
+"     (Diff revisions %(revision1)s - %(revision2)s)\n"
+msgstr "Revisione diff %(revision)s (corrente)"
 
-#: templates/diffviewer/diff_fragment_error.html:39
-msgid "Error:"
-msgstr "Errore:"
+#: templates/diffviewer/diff_fragment_error.html:21
+#, fuzzy, python-format
+msgid ""
+"\n"
+"     (Diff revision %(revision)s)\n"
+msgstr "Revisione diff %(revision)s"
 
-#: templates/diffviewer/view_diff.html:42
-#: templates/reviews/review_detail.html:36 templates/reviews/ui/base.html:12
+#: templates/diffviewer/diff_fragment_error.html:46
+#, fuzzy
+msgid "There was an error displaying this diff."
+msgstr ""
+"Si sono verificati degli errori durante la validazione di questo certificato:"
+
+#: templates/diffviewer/diff_fragment_error.html:52
+msgid ""
+"\n"
+"     This may be a bug in the software, a temporary outage, or an issue\n"
+"     with the format of your diff.\n"
+msgstr ""
+
+#: templates/diffviewer/diff_fragment_error.html:59
+#, python-format
+msgid ""
+"\n"
+"     Please try again, and if you still have trouble,\n"
+"     <a href=\"%(support_url)s\">contact support</a>.\n"
+msgstr ""
+
+#: templates/diffviewer/diff_fragment_error.html:70
+msgid "Details"
+msgstr ""
+
+#: templates/diffviewer/view_diff.html:36
+#: templates/reviews/review_detail.html:36 templates/reviews/ui/base.html:21
 msgid "Download Diff"
 msgstr "Scarica diff"
 
-#: templates/diffviewer/view_diff.html:45 templates/reviews/ui/base.html:15
+#: templates/diffviewer/view_diff.html:39 templates/reviews/ui/base.html:24
 msgid "View Reviews"
 msgstr "Visualizza revisioni"
 
-#: templates/diffviewer/view_diff.html:59
-#, python-format
-msgid "Changes between revision %(revision)s and %(interdiff_revision)s"
-msgstr "Modifiche fra le revisioni %(revision)s e %(interdiff_revision)s"
-
-#: templates/diffviewer/view_diff.html:62
-#, python-format
-msgid "Diff revision %(revision)s (Latest)"
-msgstr "Revisione diff %(revision)s (corrente)"
-
-#: templates/diffviewer/view_diff.html:66
-msgid "Draft diff"
-msgstr "Diff bozza"
-
-#: templates/diffviewer/view_diff.html:68
-msgid ""
-"\n"
-"  This diff is part of your current draft. Other users will not see this\n"
-"  diff until you publish your draft.\n"
-msgstr ""
-"\n"
-"  Questo diff fa parte della tua bozza corrente. Gli altri utenti non "
-"visualizzeranno\n"
-"  questo diff fino a che non avrai pubblicato la bozza.\n"
-
-#: templates/diffviewer/view_diff.html:74
-#, python-format
-msgid "Diff revision %(revision)s"
-msgstr "Revisione diff %(revision)s"
-
-#: templates/diffviewer/view_diff.html:76
-#, python-format
-msgid ""
-"\n"
-"  This is not the most recent revision of the diff. The\n"
-"  <a href=\"%(review_request_url)sdiff/\">latest diff</a> is revision\n"
-"  %(latest_revision)s.\n"
-"  <a href=\"%(review_request_url)sdiff/%(revision)s-%(latest_revision)s/"
-"\">See what's changed.</a>\n"
-msgstr ""
-"\n"
-"  Questa non è la più recente revisione del diff. L'<a href="
-"\"%(review_request_url)sdiff/\">ultimo diff</a>\n"
-"  è la revisione %(latest_revision)s.\n"
-"  <a href=\"%(review_request_url)sdiff/%(revision)s-%(latest_revision)s/"
-"\">Visualizza le modifiche.</a>\n"
-
-#: templates/diffviewer/view_diff.html:90
-msgid "You have unpublished comments on other revisions"
-msgstr "Hai commenti non pubblicati in altre revisioni"
-
-#: templates/diffviewer/view_diff.html:92
-msgid "Your review consists of comments on the following revisions:"
-msgstr "La tua revisione consiste nei commenti sulle seguenti revisioni:"
-
-#: templates/diffviewer/view_diff.html:117
-msgid "Jump to revision:"
-msgstr "Vai alla revisione:"
-
-#: templates/diffviewer/view_diff.html:139
-#, python-format
-msgid "Changes between r%(revision)s and:"
-msgstr "Modifiche fra r%(revision)s e:"
-
-#: templates/diffviewer/view_diff.html:170
+#: templates/diffviewer/view_diff.html:57
 msgid "Expand changes"
 msgstr "Espandi modifiche"
 
-#: templates/diffviewer/view_diff.html:172
+#: templates/diffviewer/view_diff.html:59
 msgid "Collapse changes"
 msgstr "Contrai modifiche"
 
-#: templates/diffviewer/view_diff.html:175
+#: templates/diffviewer/view_diff.html:62
 msgid "Hide Extra Whitespace"
 msgstr "Nascondi spazi bianchi aggiuntivi"
 
-#: templates/diffviewer/view_diff.html:176
+#: templates/diffviewer/view_diff.html:63
 msgid "Show Extra Whitespace"
 msgstr "Visualizza spazi bianchi aggiuntivi"
 
-#: templates/diffviewer/view_diff.html:178
+#: templates/diffviewer/view_diff.html:65
 msgid "Hide Whitespace changes"
 msgstr "Nascondi modifiche agli spazi bianchi"
 
-#: templates/diffviewer/view_diff.html:179
+#: templates/diffviewer/view_diff.html:66
 msgid "Show Whitespace changes"
 msgstr "Visualizza modifiche agli spazi bianchi"
-
-#: templates/diffviewer/view_diff.html:211
-#, python-format
-msgid "This diff has been split across %(pages)s pages:"
-msgstr "Questo diff è stato diviso in %(pages)s pagine:"
-
-#: templates/diffviewer/view_diff.html:212
-msgid "Previous Page"
-msgstr "Pagina precedente"
-
-#: templates/diffviewer/view_diff.html:215
-msgid "Current Page"
-msgstr "Pagina corrente"
-
-#: templates/diffviewer/view_diff.html:217
-#, python-format
-msgid "Page %(num)s "
-msgstr "Pagina %(num)s "
-
-#: templates/diffviewer/view_diff.html:220
-msgid "Next Page"
-msgstr "Pagina successiva"
 
 #: templates/reviews/comment_issue.html:16
 msgid "Show all issues"
 msgstr "Visualizza tutti i problemi"
 
-#: templates/reviews/dashboard.html:27
+#: templates/reviews/dashboard.html:20
 #, fuzzy
 msgid "Starred Reviews"
 msgstr "Richieste di revisione preferite"
 
-#: templates/reviews/dashboard.html:28
+#: templates/reviews/dashboard.html:21
 #, fuzzy
 msgid "Outgoing Reviews"
 msgstr "Tutte le richieste di revisione in uscita"
 
-#: templates/reviews/dashboard.html:29
+#: templates/reviews/dashboard.html:22
 #, fuzzy
 msgid "Incoming Reviews"
 msgstr "Revisioni in attesa"
 
-#: templates/reviews/dashboard.html:30
+#: templates/reviews/dashboard.html:23
 msgid "To Me"
 msgstr ""
 
-#: templates/reviews/dashboard.html:35
+#: templates/reviews/dashboard.html:28
 #, fuzzy
 msgid "Watched Groups"
 msgstr "Gruppi osservati"
 
-#: templates/reviews/dashboard.html:40
+#: templates/reviews/dashboard.html:33
 #, fuzzy
 msgid "All My Requests"
 msgstr "Tutte le mie richieste di revisione"
@@ -4046,7 +4102,7 @@ msgstr ""
 msgid "Review Request"
 msgstr "Richiesta revisione"
 
-#: templates/reviews/review_detail.html:40 templates/reviews/ui/base.html:17
+#: templates/reviews/review_detail.html:40 templates/reviews/ui/base.html:26
 msgid "View Diff"
 msgstr "Visualizza diff"
 
@@ -4071,11 +4127,11 @@ msgstr ""
 "Pubblicato il <time class=\"timesince\" datetime=\"%(timestamp_raw)s\">"
 "%(timestamp)s</time> (%(timestamp)s)"
 
-#: templates/reviews/review_detail.html:208
+#: templates/reviews/review_detail.html:211
 msgid "Review request changed"
 msgstr "Richiesta revisione modificata"
 
-#: templates/reviews/review_detail.html:209
+#: templates/reviews/review_detail.html:212
 #, python-format
 msgid ""
 "Updated <time class=\"timesince\" datetime=\"%(timestamp_raw)s\">"
@@ -4084,35 +4140,35 @@ msgstr ""
 "Aggiornato il <time class=\"timesince\" datetime=\"%(timestamp_raw)s\">"
 "%(timestamp)s</time> (%(timestamp)s)"
 
-#: templates/reviews/review_detail.html:217
+#: templates/reviews/review_detail.html:220
 msgid "Changed from:"
 msgstr "Modificato da:"
 
-#: templates/reviews/review_detail.html:219
+#: templates/reviews/review_detail.html:222
 msgid "Changed to:"
 msgstr "Modificato a:"
 
-#: templates/reviews/review_detail.html:222
-#: templates/reviews/review_detail.html:263
+#: templates/reviews/review_detail.html:225
+#: templates/reviews/review_detail.html:268
 #, python-format
 msgid "changed from <i>%(old_value)s</i> to <i>%(new_value)s</i>"
 msgstr "modificato da <i>%(old_value)s</i> a <i>%(new_value)s</i>"
 
-#: templates/reviews/review_detail.html:238
+#: templates/reviews/review_detail.html:241
 #, python-format
 msgid "removed %(removed_values)s"
 msgstr "rimosse %(removed_values)s"
 
-#: templates/reviews/review_detail.html:247
+#: templates/reviews/review_detail.html:251
 msgid "Show changes"
 msgstr "Visualizza modifiche"
 
-#: templates/reviews/review_detail.html:256
+#: templates/reviews/review_detail.html:261
 #, python-format
 msgid "added %(added_values)s"
 msgstr "aggiunte %(added_values)s"
 
-#: templates/reviews/review_detail.html:271
+#: templates/reviews/review_detail.html:276
 msgid "Description:"
 msgstr "Descrizione:"
 
@@ -4142,7 +4198,7 @@ msgid "This review request is a draft."
 msgstr "Questa richiesta di revisione è una bozza."
 
 #: templates/reviews/review_header.html:35
-#: templates/reviews/review_header.html:44
+#: templates/reviews/review_header.html:48
 msgid "Be sure to publish when finished."
 msgstr "Assicurati di pubblicarla quando hai finito."
 
@@ -4158,16 +4214,16 @@ msgstr "Scarta modifiche"
 msgid "Describe your changes (optional):"
 msgstr "Descrivi le tue modifiche (facoltativo):"
 
-#: templates/reviews/review_header.html:43
+#: templates/reviews/review_header.html:47
 msgid "This review request is not yet public."
 msgstr "Questa richiesta di revisione non è ancora pubblica."
 
-#: templates/reviews/review_header.html:46
+#: templates/reviews/review_header.html:50
 #: templates/reviews/reviewable_base.html:24
 msgid "Publish"
 msgstr "Pubblica"
 
-#: templates/reviews/review_header.html:48
+#: templates/reviews/review_header.html:52
 msgid "Discard Review Request"
 msgstr "Scarta richiesta revisione"
 
@@ -4212,11 +4268,6 @@ msgstr ""
 #: templates/reviews/review_reply_section.html:10
 msgid "Add comment"
 msgstr "Aggiungi commento"
-
-#: templates/reviews/review_request_actions_primary.html:3
-#: templates/reviews/review_request_box.html:196
-msgid "Review"
-msgstr "Revisione"
 
 #: templates/reviews/review_request_actions_secondary.html:8
 msgid "Close"
@@ -4321,10 +4372,6 @@ msgstr "Elimina schermata"
 msgid "File Attachments"
 msgstr "File allegati"
 
-#: templates/reviews/review_request_box.html:198
-msgid "Add Comment"
-msgstr "Aggiungi commento"
-
 #: templates/reviews/review_request_box.html:208
 #, fuzzy
 msgid "Delete FIle"
@@ -4409,29 +4456,101 @@ msgstr "%(submitter)s ha ricevuto il numero di richiesta revisione %(id)s!"
 msgid "Groups:"
 msgstr "Gruppi:"
 
-#: webapi/resources.py:6673
+#: webapi/resources/review_request_last_update.py:88
 msgid "Review request submitted"
 msgstr "Richiesta revisione inviata"
 
-#: webapi/resources.py:6675
+#: webapi/resources/review_request_last_update.py:90
 msgid "Review request discarded"
 msgstr "Richiesta revisione scartata"
 
-#: webapi/resources.py:6677
+#: webapi/resources/review_request_last_update.py:92
 msgid "Review request updated"
 msgstr "Richiesta revisione aggiornata"
 
-#: webapi/resources.py:6681
+#: webapi/resources/review_request_last_update.py:96
 msgid "Diff updated"
 msgstr "Diff aggiornato"
 
-#: webapi/resources.py:6687
+#: webapi/resources/review_request_last_update.py:102
 msgid "New reply"
 msgstr "Nuova risposta"
 
-#: webapi/resources.py:6690
+#: webapi/resources/review_request_last_update.py:105
 msgid "New review"
 msgstr "Nuova revisione"
+
+#, fuzzy
+#~ msgid "file_attachment"
+#~ msgstr "file_allegato"
+
+#, fuzzy
+#~ msgid "Binary file"
+#~ msgstr "file binario"
+
+#~ msgid "Diff currently unavailable."
+#~ msgstr "Diff attualmente non disponibile."
+
+#~ msgid "Error:"
+#~ msgstr "Errore:"
+
+#~ msgid "Changes between revision %(revision)s and %(interdiff_revision)s"
+#~ msgstr "Modifiche fra le revisioni %(revision)s e %(interdiff_revision)s"
+
+#~ msgid "Draft diff"
+#~ msgstr "Diff bozza"
+
+#~ msgid ""
+#~ "\n"
+#~ "  This diff is part of your current draft. Other users will not see this\n"
+#~ "  diff until you publish your draft.\n"
+#~ msgstr ""
+#~ "\n"
+#~ "  Questo diff fa parte della tua bozza corrente. Gli altri utenti non "
+#~ "visualizzeranno\n"
+#~ "  questo diff fino a che non avrai pubblicato la bozza.\n"
+
+#~ msgid ""
+#~ "\n"
+#~ "  This is not the most recent revision of the diff. The\n"
+#~ "  <a href=\"%(review_request_url)sdiff/\">latest diff</a> is revision\n"
+#~ "  %(latest_revision)s.\n"
+#~ "  <a href=\"%(review_request_url)sdiff/%(revision)s-%(latest_revision)s/"
+#~ "\">See what's changed.</a>\n"
+#~ msgstr ""
+#~ "\n"
+#~ "  Questa non è la più recente revisione del diff. L'<a href="
+#~ "\"%(review_request_url)sdiff/\">ultimo diff</a>\n"
+#~ "  è la revisione %(latest_revision)s.\n"
+#~ "  <a href=\"%(review_request_url)sdiff/%(revision)s-%(latest_revision)s/"
+#~ "\">Visualizza le modifiche.</a>\n"
+
+#~ msgid "You have unpublished comments on other revisions"
+#~ msgstr "Hai commenti non pubblicati in altre revisioni"
+
+#~ msgid "Your review consists of comments on the following revisions:"
+#~ msgstr "La tua revisione consiste nei commenti sulle seguenti revisioni:"
+
+#~ msgid "Jump to revision:"
+#~ msgstr "Vai alla revisione:"
+
+#~ msgid "Changes between r%(revision)s and:"
+#~ msgstr "Modifiche fra r%(revision)s e:"
+
+#~ msgid "This diff has been split across %(pages)s pages:"
+#~ msgstr "Questo diff è stato diviso in %(pages)s pagine:"
+
+#~ msgid "Previous Page"
+#~ msgstr "Pagina precedente"
+
+#~ msgid "Current Page"
+#~ msgstr "Pagina corrente"
+
+#~ msgid "Page %(num)s "
+#~ msgstr "Pagina %(num)s "
+
+#~ msgid "Next Page"
+#~ msgstr "Pagina successiva"
 
 #~ msgid "deleted"
 #~ msgstr "eliminato"

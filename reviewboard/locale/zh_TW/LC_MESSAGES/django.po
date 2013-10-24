@@ -3,7 +3,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2013-08-14 17:59-0700\n"
+"POT-Creation-Date: 2013-10-24 14:16-0700\n"
 "PO-Revision-Date: 2012-05-12 08:00+0800\n"
 "Last-Translator: Po-Chien Lin <linpc@cs.nctu.edu.tw>\n"
 "Language-Team: Po-Chien Lin <linpc@cs.nctu.edu.tw>\n"
@@ -13,15 +13,15 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=1; plural=0\n"
 
-#: settings.py:50
+#: settings.py:51
 msgid "English"
 msgstr "英文"
 
-#: settings.py:51
+#: settings.py:52
 msgid "Italian"
 msgstr ""
 
-#: settings.py:52
+#: settings.py:53
 msgid "Traditional Chinese"
 msgstr ""
 
@@ -38,64 +38,68 @@ msgid ""
 "This value must contain only letters, numbers, underscores, periods and '@'."
 msgstr "這個欄位只能填英文字母、數字、底線符號（_）、破折號（-）和 '@' 符號。"
 
-#: accounts/admin.py:25 accounts/admin.py:36 admin/forms.py:454
-#: reviews/datagrids.py:714 templates/accounts/login.html:32
+#: accounts/admin.py:25 accounts/admin.py:36 admin/forms.py:455
+#: reviews/datagrids.py:719 templates/accounts/login.html:32
 msgid "Username"
 msgstr "使用者名稱"
 
-#: accounts/backends.py:88
+#: accounts/backends.py:92
 msgid "Standard Registration"
 msgstr "標準註冊程序"
 
-#: accounts/backends.py:107
+#: accounts/backends.py:111
 msgid "NIS"
 msgstr ""
 
-#: accounts/backends.py:167
+#: accounts/backends.py:171
 msgid "LDAP"
 msgstr "LDAP 認證"
 
-#: accounts/backends.py:307
+#: accounts/backends.py:316
 msgid "Active Directory"
 msgstr ""
 
-#: accounts/backends.py:500
+#: accounts/backends.py:512
 msgid "X.509 Public Key"
 msgstr ""
 
-#: accounts/forms.py:24
+#: accounts/forms.py:26
 msgid "Enable syntax highlighting in the diff viewer"
 msgstr "在 diff 檔瀏覽器中開啟語法高亮度顯示"
 
-#: accounts/forms.py:27
+#: accounts/forms.py:29
 msgid "Keep your user profile private"
 msgstr "將我的個人資料設為不公開的"
 
-#: accounts/forms.py:30
+#: accounts/forms.py:32
 msgid "Always open an issue when comment box opens"
 msgstr ""
 
-#: accounts/forms.py:37 admin/forms.py:100
+#: accounts/forms.py:39 admin/forms.py:101
 msgid "Time Zone"
 msgstr ""
 
-#: accounts/forms.py:39
+#: accounts/forms.py:41
 msgid "The time zone used for this account."
 msgstr ""
 
-#: accounts/forms.py:149
+#: accounts/forms.py:98
+msgid "Passwords do not match"
+msgstr ""
+
+#: accounts/forms.py:151
 msgid "The text you entered didn't match what was displayed"
 msgstr "您輸入的驗證碼與螢幕上顯示的不相符"
 
-#: accounts/forms.py:155
+#: accounts/forms.py:157
 msgid "You need to respond to the captcha"
 msgstr "您必須輸入驗證碼"
 
-#: accounts/forms.py:172
+#: accounts/forms.py:174
 msgid "Domain name"
 msgstr "主機位址"
 
-#: accounts/forms.py:173
+#: accounts/forms.py:175
 msgid ""
 "Enter the domain name to use, (ie. example.com). This will be used to query "
 "for LDAP servers and to bind to the domain."
@@ -103,81 +107,81 @@ msgstr ""
 "輸入要使用的主機位址（像是 example.com）。這將被用來作為LDAP 伺服器查詢與註冊"
 "連結的位址。"
 
-#: accounts/forms.py:180 accounts/forms.py:351 admin/forms.py:462
+#: accounts/forms.py:182 accounts/forms.py:353 admin/forms.py:463
 msgid "Use TLS for authentication"
 msgstr "透過 TLS 驗證"
 
-#: accounts/forms.py:184
+#: accounts/forms.py:186
 msgid "Find DC from DNS"
 msgstr ""
 
-#: accounts/forms.py:185
+#: accounts/forms.py:187
 msgid "Query DNS to find which domain controller to use"
 msgstr ""
 
-#: accounts/forms.py:189
+#: accounts/forms.py:191
 msgid "Domain controller"
 msgstr ""
 
-#: accounts/forms.py:190
+#: accounts/forms.py:192
 msgid ""
 "If not using DNS to find the DC, specify the domain controller(s) here (eg. "
 "ctrl1.example.com ctrl2.example.com:389)"
 msgstr ""
 
-#: accounts/forms.py:197
+#: accounts/forms.py:199
 msgid "OU name"
 msgstr ""
 
-#: accounts/forms.py:198
+#: accounts/forms.py:200
 msgid "Optionally restrict users to specified OU."
 msgstr ""
 
-#: accounts/forms.py:203
+#: accounts/forms.py:205
 msgid "Group name"
 msgstr ""
 
-#: accounts/forms.py:204
+#: accounts/forms.py:206
 msgid "Optionally restrict users to specified group."
 msgstr ""
 
-#: accounts/forms.py:209
+#: accounts/forms.py:211
 msgid "Custom search root"
 msgstr ""
 
-#: accounts/forms.py:210
+#: accounts/forms.py:212
 msgid ""
 "Optionally specify a custom search root, overriding the built-in computed "
 "search root. If set, \"OU name\" is ignored."
 msgstr ""
 
-#: accounts/forms.py:217
+#: accounts/forms.py:219
 msgid "Recursion Depth"
 msgstr ""
 
-#: accounts/forms.py:218
+#: accounts/forms.py:220
 msgid ""
 "Depth to recurse when checking group membership. 0 to turn off, -1 for "
 "unlimited."
 msgstr ""
 
-#: accounts/forms.py:245
+#: accounts/forms.py:247
 msgid "Active Directory Authentication Settings"
 msgstr ""
 
-#: accounts/forms.py:250
+#: accounts/forms.py:252
 msgid "Enable registration"
 msgstr "開放註冊"
 
-#: accounts/forms.py:251
+#: accounts/forms.py:253
 msgid "Allow users to register new accounts."
 msgstr "允許使用者註冊新帳號"
 
-#: accounts/forms.py:255
+#: accounts/forms.py:257
 msgid "Show a captcha for registration"
 msgstr "註冊時要求輸入驗證碼 (captcha)"
 
-#: accounts/forms.py:257
+#: accounts/forms.py:259
 #, python-format
 msgid ""
 "Displays a captcha using <a href=\"%(recaptcha_url)s\">reCAPTCHA</a> on the "
@@ -189,61 +193,61 @@ msgstr ""
 "要使用這個功能，您必須要到 <a href=\"%(register_url)s\">這裡</a> 註冊一個帳號"
 "並且在下方輸入您新的 key。"
 
-#: accounts/forms.py:269
+#: accounts/forms.py:271
 msgid "reCAPTCHA Public Key"
 msgstr "reCAPTCHA 公鑰"
 
-#: accounts/forms.py:274
+#: accounts/forms.py:276
 msgid "reCAPTCHA Private Key"
 msgstr "reCAPTCHA 私鑰"
 
-#: accounts/forms.py:283 accounts/forms.py:292
+#: accounts/forms.py:285 accounts/forms.py:294
 msgid "This field is required."
 msgstr "這是個必填欄位。"
 
-#: accounts/forms.py:297
+#: accounts/forms.py:299
 msgid "Basic Authentication Settings"
 msgstr "基本驗證設定"
 
-#: accounts/forms.py:303
+#: accounts/forms.py:305
 msgid "LDAP Server"
 msgstr "LDAP 伺服器"
 
-#: accounts/forms.py:304
+#: accounts/forms.py:306
 msgid "The LDAP server to authenticate with. For example: ldap://localhost:389"
 msgstr "填入要進行認證的 LDAP 伺服器。像是：ldap://localhost:389"
 
-#: accounts/forms.py:309
+#: accounts/forms.py:311
 msgid "LDAP Base DN"
 msgstr ""
 
-#: accounts/forms.py:310
+#: accounts/forms.py:312
 msgid ""
 "The LDAP Base DN for performing LDAP searches.  For example: ou=users,"
 "dc=example,dc=com"
 msgstr ""
 
-#: accounts/forms.py:316
+#: accounts/forms.py:318
 msgid "Given Name Attribute"
 msgstr ""
 
-#: accounts/forms.py:318
+#: accounts/forms.py:320
 msgid "The attribute in the LDAP server that stores the user's given name."
 msgstr "在 LDAP 伺服器中儲存使用者帳號的屬性"
 
-#: accounts/forms.py:323
+#: accounts/forms.py:325
 msgid "Surname Attribute"
 msgstr ""
 
-#: accounts/forms.py:325
+#: accounts/forms.py:327
 msgid "The attribute in the LDAP server that stores the user's surname."
 msgstr ""
 
-#: accounts/forms.py:330
+#: accounts/forms.py:332
 msgid "Full Name Attribute"
 msgstr ""
 
-#: accounts/forms.py:331
+#: accounts/forms.py:333
 msgid ""
 "The attribute in the LDAP server that stores the user's full name.  This "
 "takes precedence over the \"Full Name Attribute\" and \"Surname Attribute.\""
@@ -251,11 +255,11 @@ msgstr ""
 "在 LDAP 伺服器中儲存使用者全名的屬性。這會覆寫 \"Full Name Attribute\" 以及"
 "\"Surname Attribute.\" 的設定"
 
-#: accounts/forms.py:337 accounts/forms.py:427
+#: accounts/forms.py:339 accounts/forms.py:429
 msgid "E-Mail Domain"
 msgstr "E-Mail 使用的網域"
 
-#: accounts/forms.py:338
+#: accounts/forms.py:340
 msgid ""
 "The domain name appended to the username to construct the user's e-mail "
 "address. This takes precedence over \"E-Mail LDAP Attribute.\""
@@ -263,21 +267,21 @@ msgstr ""
 "用來附加在使用者帳號後面，產生使用者 e-mail 的網域名稱。這會覆寫 \"E-Mail "
 "LDAP Attribute.\" 的設定"
 
-#: accounts/forms.py:345
+#: accounts/forms.py:347
 msgid "E-Mail LDAP Attribute"
 msgstr ""
 
-#: accounts/forms.py:346
+#: accounts/forms.py:348
 msgid ""
 "The attribute in the LDAP server that stores the user's e-mail address. For "
 "example: mail"
 msgstr "在 LDAP 伺服器中儲存使用者 e-mail 位址的屬性。像是：mail"
 
-#: accounts/forms.py:355
+#: accounts/forms.py:357
 msgid "User Mask"
 msgstr ""
 
-#: accounts/forms.py:357
+#: accounts/forms.py:359
 #, python-format
 msgid ""
 "The string representing the user. Use \"%(varname)s\" where the username "
@@ -285,73 +289,73 @@ msgid ""
 "%(varname)s) [for active directory LDAP]"
 msgstr ""
 
-#: accounts/forms.py:364
+#: accounts/forms.py:366
 msgid "Anonymous User Mask"
 msgstr ""
 
-#: accounts/forms.py:365
+#: accounts/forms.py:367
 msgid ""
 "The user mask string for anonymous users. If specified, this should be in "
 "the same format as User Mask."
 msgstr ""
 
-#: accounts/forms.py:371
+#: accounts/forms.py:373
 msgid "Anonymous User Password"
 msgstr "匿名使用者密碼"
 
-#: accounts/forms.py:373
+#: accounts/forms.py:375
 msgid "The optional password for the anonymous user."
 msgstr "匿名帳戶的選擇性密碼"
 
-#: accounts/forms.py:397
+#: accounts/forms.py:399
 msgid "LDAP Authentication Settings"
 msgstr "LDAP 驗證設定"
 
-#: accounts/forms.py:402
+#: accounts/forms.py:404
 msgid "Backends"
 msgstr ""
 
-#: accounts/forms.py:403
+#: accounts/forms.py:405
 msgid ""
 "A comma-separated list of old-style custom auth backends. These are "
 "represented as Python module paths."
 msgstr ""
 
-#: accounts/forms.py:421
+#: accounts/forms.py:423
 msgid "Legacy Authentication Module Settings"
 msgstr ""
 
-#: accounts/forms.py:431
+#: accounts/forms.py:433
 msgid "NIS Authentication Settings"
 msgstr ""
 
-#: accounts/forms.py:436
+#: accounts/forms.py:438
 msgid "Username Field"
 msgstr ""
 
-#: accounts/forms.py:440
+#: accounts/forms.py:442
 msgid "DN (Distinguished Name)"
 msgstr ""
 
-#: accounts/forms.py:441
+#: accounts/forms.py:443
 msgid "CN (Common Name)"
 msgstr ""
 
-#: accounts/forms.py:442
+#: accounts/forms.py:444
 msgid "Email address"
 msgstr ""
 
-#: accounts/forms.py:444
+#: accounts/forms.py:446
 msgid ""
 "The X.509 certificate field from which the Review Board username will be "
 "extracted."
 msgstr ""
 
-#: accounts/forms.py:449
+#: accounts/forms.py:451
 msgid "Username Regex"
 msgstr ""
 
-#: accounts/forms.py:450
+#: accounts/forms.py:452
 msgid ""
 "Optional regex used to convert the selected X.509 certificate field to a "
 "usable Review Board username. For example, if using the email field to "
@@ -359,94 +363,94 @@ msgid ""
 "address: '(\\s+)@yoursite.com'. There must be only one group in the regex."
 msgstr ""
 
-#: accounts/forms.py:460
+#: accounts/forms.py:462
 msgid "Automatically create new user accounts."
 msgstr "自動產生新的使用者帳戶"
 
-#: accounts/forms.py:461
+#: accounts/forms.py:463
 msgid ""
 "Enabling this option will cause new user accounts to be automatically "
 "created when a new user with an X.509 certificate accesses Review Board."
 msgstr ""
 
-#: accounts/forms.py:478
+#: accounts/forms.py:480
 msgid "X.509 Client Certificate Authentication Settings"
 msgstr ""
 
-#: accounts/models.py:24
+#: accounts/models.py:25
 msgid "last visited"
 msgstr "上次拜訪"
 
-#: accounts/models.py:45
+#: accounts/models.py:46
 msgid "first time setup done"
 msgstr "完成第一次設定"
 
-#: accounts/models.py:46
+#: accounts/models.py:47
 msgid ""
 "Indicates whether the user has already gone through the first time setup "
 "process by saving their user preferences."
 msgstr "指出使用者是否已經設定過他們的喜好設定並且儲存"
 
-#: accounts/models.py:52
+#: accounts/models.py:53
 msgid "collapsed diffs"
 msgstr "收併 diff 檔"
 
-#: accounts/models.py:53
+#: accounts/models.py:54
 msgid ""
 "Indicates whether diffs should be shown in their collapsed state by default."
 msgstr ""
 
-#: accounts/models.py:57 reviews/models.py:1745
+#: accounts/models.py:58 reviews/models.py:1799
 msgid "This field is unused and will be removed in a future version."
 msgstr ""
 
-#: accounts/models.py:61
+#: accounts/models.py:62
 msgid "syntax highlighting"
 msgstr "語法高亮度顯示"
 
-#: accounts/models.py:62
+#: accounts/models.py:63
 msgid ""
 "Indicates whether the user wishes to see syntax highlighting in the diffs."
 msgstr ""
 
-#: accounts/models.py:66
+#: accounts/models.py:67
 msgid "profile private"
 msgstr "個人資料不公開"
 
-#: accounts/models.py:67
+#: accounts/models.py:68
 msgid "Indicates whether the user wishes to keep his/her profile private."
 msgstr ""
 
-#: accounts/models.py:71
+#: accounts/models.py:72
 msgid "opens an issue"
 msgstr "新增 issue"
 
-#: accounts/models.py:72
+#: accounts/models.py:73
 msgid ""
 "Indicates whether the user wishes to default to opening an issue or not."
 msgstr "指出使用者是否預設要新增一個 issue。"
 
-#: accounts/models.py:188
+#: accounts/models.py:193
 msgid "direct incoming review request count"
 msgstr "指出送來的 review request 數"
 
-#: accounts/models.py:192
+#: accounts/models.py:197
 msgid "total incoming review request count"
 msgstr "送來的 review request 總數"
 
-#: accounts/models.py:196
+#: accounts/models.py:201
 msgid "pending outgoing review request count"
 msgstr "我提出的 review request 待決數"
 
-#: accounts/models.py:200
+#: accounts/models.py:205
 msgid "total outgoing review request count"
 msgstr "所有提出的 review request 總數"
 
-#: accounts/models.py:204
+#: accounts/models.py:209
 msgid "starred public review request count"
 msgstr "標記星號的公開 review request 數"
 
-#: admin/checks.py:215
+#: admin/checks.py:216
 #, python-format
 msgid ""
 "PyLucene (with JCC) is required to enable search. See the <a href=\"%(url)s"
@@ -455,7 +459,7 @@ msgstr ""
 "要開啟搜尋功能必須安裝 PyLucene (with JCC)。請參考 <a href=\"%(url)s\">文件</"
 "a> 的指引。"
 
-#: admin/checks.py:234
+#: admin/checks.py:235
 #, python-format
 msgid ""
 "Pygments %(cur_version)s is installed, but %(required_version)s or higher is "
@@ -464,7 +468,7 @@ msgstr ""
 "已經安裝 Pygments %(cur_version)s 版，但是要使用語法高亮度必須安裝高於 "
 "%(required_version)s 的版本。"
 
-#: admin/checks.py:241
+#: admin/checks.py:242
 #, python-format
 msgid ""
 "Syntax highlighting requires the <a href=\"%(url)s\">Pygments</a> library, "
@@ -472,196 +476,201 @@ msgid ""
 msgstr ""
 "語法高亮度功能需要 <a href=\"%(url)s\">Pygments</a> 函示庫，但尚未安裝。"
 
-#: admin/checks.py:253
+#: admin/checks.py:254
 msgid ""
 "LDAP authentication requires the python-ldap library, which is not installed."
 msgstr "使用 LDAP 認證需要 python-ldap 函示庫，但尚未安裝。"
 
-#: admin/checks.py:267
+#: admin/checks.py:268
 msgid ""
 "PyDNS, which is required to find the domain controller, is not installed."
 msgstr "使用 domain controller 需要 PyDNS，但尚未安裝。"
 
 #: admin/checks.py:279
+#, python-format
+msgid "Amazon S3 backend failed to load: %s"
+msgstr ""
+
+#: admin/checks.py:282
 msgid "Amazon S3 depends on django-storages, which is not installed"
 msgstr "使用 Amazon S3 需要 django-storages，但尚未安裝。"
 
-#: admin/checks.py:290
+#: admin/checks.py:293
 msgid "CouchDB depends on django-storages, which is not installed"
 msgstr "使用 CouchDB 需要 django-storages，但尚未安裝。"
 
-#: admin/forms.py:56
+#: admin/forms.py:57
 msgid "Memcached"
 msgstr ""
 
-#: admin/forms.py:57
+#: admin/forms.py:58
 #, fuzzy
 msgid "File cache"
 msgstr "附加檔案"
 
-#: admin/forms.py:78
+#: admin/forms.py:79
 msgid "Server"
 msgstr "主機網址"
 
-#: admin/forms.py:79
+#: admin/forms.py:80
 msgid ""
 "The URL of this Review Board server. This should not contain the "
 "subdirectory Review Board is installed in."
 msgstr ""
 "Review Board 伺服器的 URL 網址。「不要」包含 Review Board 安裝的子目錄路徑"
 
-#: admin/forms.py:84
+#: admin/forms.py:85
 msgid "Media URL"
 msgstr "媒體檔 URL"
 
-#: admin/forms.py:85
+#: admin/forms.py:86
 msgid ""
 "The URL to the media files. Leave blank to use the default media path on "
 "this server."
 msgstr "媒體檔案的 URL。若留白表示使用伺服器上的預設媒體路徑。"
 
-#: admin/forms.py:91
+#: admin/forms.py:92
 msgid "Administrator Name"
 msgstr "管理員姓名"
 
-#: admin/forms.py:95
+#: admin/forms.py:96
 msgid "Administrator E-Mail"
 msgstr "管理員 E-Mail"
 
-#: admin/forms.py:102
+#: admin/forms.py:103
 msgid "The time zone used for all dates on this server."
 msgstr "此時區套用於這個站台上的所有時間"
 
-#: admin/forms.py:105
+#: admin/forms.py:106
 msgid "Enable search"
 msgstr "開啟搜尋功能"
 
-#: admin/forms.py:106
+#: admin/forms.py:107
 msgid "Provides a search field for quickly searching through review requests."
 msgstr "提供一個搜尋欄位，以供快速地在 review request 中搜尋。"
 
-#: admin/forms.py:111
+#: admin/forms.py:112
 msgid "Search index directory"
 msgstr "搜尋索引路徑"
 
-#: admin/forms.py:112
+#: admin/forms.py:113
 msgid "The directory that search index data should be stored in."
 msgstr "儲存搜尋索引的目錄"
 
-#: admin/forms.py:118
+#: admin/forms.py:119
 msgid "Cache Backend"
 msgstr ""
 
-#: admin/forms.py:120
+#: admin/forms.py:121
 msgid "The type of server-side caching to use."
 msgstr ""
 
-#: admin/forms.py:124
+#: admin/forms.py:125
 msgid "Cache Path"
 msgstr ""
 
-#: admin/forms.py:125
+#: admin/forms.py:126
 msgid "The file location for the cache."
 msgstr ""
 
-#: admin/forms.py:130
+#: admin/forms.py:131
 msgid "Cache Hosts"
 msgstr ""
 
-#: admin/forms.py:131
+#: admin/forms.py:132
 msgid ""
 "The host or hosts used for the cache, in hostname:port form. Multiple hosts "
 "can be specified by separating them with a semicolon (;)."
 msgstr ""
 
-#: admin/forms.py:160
+#: admin/forms.py:161
 msgid "Local memory cache"
 msgstr ""
 
-#: admin/forms.py:165
+#: admin/forms.py:166
 msgid "Custom"
 msgstr "自行維護"
 
-#: admin/forms.py:243
+#: admin/forms.py:244
 msgid "A valid cache host must be provided."
 msgstr ""
 
-#: admin/forms.py:252
+#: admin/forms.py:253
 msgid "A valid cache path must be provided."
 msgstr ""
 
-#: admin/forms.py:263
+#: admin/forms.py:264
 msgid "The search index path must be absolute."
 msgstr "搜尋索引路徑必須是絕對路徑"
 
-#: admin/forms.py:268
+#: admin/forms.py:269
 msgid ""
 "The search index path is not writable. Make sure the web server has write "
 "access to it and its parent directory."
 msgstr ""
 "搜尋索引路徑無法寫入。請確定網頁伺服器擁有對它以及其上層目錄的存取權限。"
 
-#: admin/forms.py:275
+#: admin/forms.py:276
 msgid "General Settings"
 msgstr "一般設定"
 
-#: admin/forms.py:281
+#: admin/forms.py:282
 msgid "Site Settings"
 msgstr "站台設定"
 
-#: admin/forms.py:289
+#: admin/forms.py:290
 #, fuzzy
 msgid "Cache Settings"
 msgstr "CouchDB 設定"
 
-#: admin/forms.py:294 templates/base.html:94
+#: admin/forms.py:295 templates/base.html:91
 msgid "Search"
 msgstr "搜尋"
 
-#: admin/forms.py:302
+#: admin/forms.py:303
 msgid "Legacy Authentication Module"
 msgstr ""
 
-#: admin/forms.py:305
+#: admin/forms.py:306
 msgid "Allow anonymous read-only access"
 msgstr "允許匿名者唯讀存取"
 
-#: admin/forms.py:306
+#: admin/forms.py:307
 msgid ""
 "If checked, users will be able to view review requests and diffs without "
 "logging in."
 msgstr "若勾選的話，使用者不用登入就可以瀏覽 review requests 以及 diff 檔案。"
 
-#: admin/forms.py:311
+#: admin/forms.py:312
 msgid "Authentication Method"
 msgstr "認證方式"
 
-#: admin/forms.py:313
+#: admin/forms.py:314
 msgid "The method Review Board should use for authenticating users."
 msgstr "Review Board 要用來驗證使用者的方式。"
 
-#: admin/forms.py:414
+#: admin/forms.py:415
 msgid "Authentication Settings"
 msgstr "驗證設定"
 
-#: admin/forms.py:430
+#: admin/forms.py:431
 msgid "Send e-mails for review requests and reviews"
 msgstr "當有 review requests 或 reviews 時寄送 email"
 
-#: admin/forms.py:433
+#: admin/forms.py:434
 #, fuzzy
 msgid "Send e-mails when review requests are closed"
 msgstr "當有 review requests 或 reviews 時寄送 email"
 
-#: admin/forms.py:436
+#: admin/forms.py:437
 msgid "Send e-mails when new users register an account"
 msgstr "當有新使用者註冊時寄送 email"
 
-#: admin/forms.py:439
+#: admin/forms.py:440
 msgid "Sender e-mail address"
 msgstr "寄件者的 email 位址"
 
-#: admin/forms.py:440
+#: admin/forms.py:441
 msgid ""
 "The e-mail address that all e-mails will be sent from. The \"Sender\" header "
 "will be used to make e-mails appear to come from the user triggering the e-"
@@ -670,41 +679,41 @@ msgstr ""
 "所有的 e-mail 將從這個位址被寄送。而 e-mail 檔頭的 \"Sender\" 欄位將會顯示為"
 "觸動當次 e-mail 寄發動作的使用者"
 
-#: admin/forms.py:446
+#: admin/forms.py:447
 msgid "Mail Server"
 msgstr "Mail 伺服器"
 
-#: admin/forms.py:450
+#: admin/forms.py:451
 msgid "Port"
 msgstr ""
 
-#: admin/forms.py:459 templates/accounts/login.html:42
+#: admin/forms.py:460 templates/accounts/login.html:42
 msgid "Password"
 msgstr "密碼"
 
-#: admin/forms.py:476
+#: admin/forms.py:477
 msgid "E-Mail Settings"
 msgstr "E-Mail 設定"
 
-#: admin/forms.py:482
+#: admin/forms.py:483
 msgid "Show syntax highlighting"
 msgstr "顯示語法高亮度"
 
-#: admin/forms.py:486
+#: admin/forms.py:487
 msgid "Syntax highlighting threshold"
 msgstr "語法高亮度上限"
 
-#: admin/forms.py:487
+#: admin/forms.py:488
 msgid ""
 "Files with lines greater than this number will not have syntax "
 "highlighting.  Enter 0 for no limit."
 msgstr "檔案行數大於這個數字將不會顯示語法高亮度。若不做任何限制請輸入 0 。"
 
-#: admin/forms.py:493
+#: admin/forms.py:494
 msgid "Show trailing whitespace"
 msgstr "顯示結尾的空白符"
 
-#: admin/forms.py:494
+#: admin/forms.py:495
 msgid ""
 "Show excess trailing whitespace as red blocks. This helps to visualize when "
 "a text editor added unwanted whitespace to the end of a line."
@@ -712,62 +721,62 @@ msgstr ""
 "將行尾的空白符顯示為紅色區塊。這可以在某些文字編輯器會在行尾加上不想要的空白"
 "時提出警示。"
 
-#: admin/forms.py:500
+#: admin/forms.py:501
 msgid "Show all whitespace for"
 msgstr "在哪些類型檔案顯示所有的空白符"
 
-#: admin/forms.py:502
+#: admin/forms.py:503
 msgid ""
 "A comma-separated list of file patterns for which all whitespace changes "
 "should be shown. (e.g., \"*.py, *.txt\")"
 msgstr ""
 "要顯示所有空白符異動的檔案類型列表，以半形逗點分隔。（像是：\"*.py, *.txt\"）"
 
-#: admin/forms.py:508
+#: admin/forms.py:509
 msgid "Lines of Context"
 msgstr "內容行數"
 
-#: admin/forms.py:509
+#: admin/forms.py:510
 msgid "The number of unchanged lines shown above and below changed lines."
 msgstr "在有異動的行上下方，要顯示的未異動行數。"
 
-#: admin/forms.py:515
+#: admin/forms.py:516
 msgid "Paginate by"
 msgstr "分頁方式"
 
-#: admin/forms.py:516
+#: admin/forms.py:517
 msgid "The number of files to display per page in the diff viewer."
 msgstr "在 diff 檔瀏覽器中，每一頁要顯示的檔案數。"
 
-#: admin/forms.py:522
+#: admin/forms.py:523
 msgid "Paginate orphans"
 msgstr "新頁檔案數"
 
-#: admin/forms.py:523
+#: admin/forms.py:524
 msgid ""
 "The number of extra files required before adding another page to the diff "
 "viewer."
 msgstr "在 diff 檔瀏覽器上每多出幾個檔案才增加另外一頁。"
 
-#: admin/forms.py:529
+#: admin/forms.py:530
 msgid "Max diff size (bytes)"
 msgstr ""
 
-#: admin/forms.py:530
+#: admin/forms.py:531
 msgid ""
 "The maximum size (in bytes) for any given diff. Enter 0 to disable size "
 "restrictions."
 msgstr ""
 
-#: admin/forms.py:557
+#: admin/forms.py:558
 msgid "Diff Viewer Settings"
 msgstr "Diif 檔瀏覽器設定"
 
-#: admin/forms.py:568 admin/forms.py:655
+#: admin/forms.py:569 admin/forms.py:656
 msgid "Advanced"
 msgstr "進階設定"
 
-#: admin/forms.py:570
+#: admin/forms.py:571
 msgid ""
 "These are advanced settings that control the behavior and display of the "
 "diff viewer. In general, these settings do not need to be changed."
@@ -775,62 +784,62 @@ msgstr ""
 "這些是控制 diff 檔瀏覽器的行為與顯示的進階設定。正常情形下，您不需要更動這些"
 "設定。"
 
-#: admin/forms.py:585
+#: admin/forms.py:586
 msgid "Debug"
 msgstr ""
 
-#: admin/forms.py:586
+#: admin/forms.py:587
 msgid "Info"
 msgstr ""
 
-#: admin/forms.py:587
+#: admin/forms.py:588
 msgid "Warning"
 msgstr ""
 
-#: admin/forms.py:588
+#: admin/forms.py:589
 #, fuzzy
 msgid "Error"
 msgstr "錯誤："
 
-#: admin/forms.py:589
+#: admin/forms.py:590
 msgid "Critical"
 msgstr ""
 
-#: admin/forms.py:594
+#: admin/forms.py:595
 msgid "Enable logging"
 msgstr "開啟 log 記錄"
 
-#: admin/forms.py:595
+#: admin/forms.py:596
 msgid ""
 "Enables logging of Review Board operations. This is in addition to your web "
 "server's logging and does not log all page visits."
 msgstr ""
 
-#: admin/forms.py:601
+#: admin/forms.py:602
 msgid "Log directory"
 msgstr "存放 log 的目錄"
 
-#: admin/forms.py:602
+#: admin/forms.py:603
 msgid ""
 "The directory where log files will be stored. This must be writable by the "
 "web server."
 msgstr "log 檔要存放的目錄。網頁伺服器必須擁有對它們的寫入權限。"
 
-#: admin/forms.py:608
+#: admin/forms.py:609
 msgid "Log level"
 msgstr ""
 
-#: admin/forms.py:609
+#: admin/forms.py:610
 msgid ""
 "Indicates the logging threshold. Please note that this may increase the size "
 "of the log files if a low threshold is selected."
 msgstr ""
 
-#: admin/forms.py:616
+#: admin/forms.py:617
 msgid "Allow code profiling"
 msgstr ""
 
-#: admin/forms.py:617
+#: admin/forms.py:618
 msgid ""
 "Logs the time spent on certain operations. This is useful for debugging but "
 "may greatly increase the size of log files."
@@ -838,73 +847,73 @@ msgstr ""
 "記錄每個動作實際花的時間。這在 debug 的時候很有用，但也相對地會增加 log 檔案"
 "的大小。"
 
-#: admin/forms.py:627
+#: admin/forms.py:628
 msgid "This path does not exist."
 msgstr "這個路徑不存在"
 
-#: admin/forms.py:630
+#: admin/forms.py:631
 msgid "This is not a directory."
 msgstr "這不是一個目錄"
 
-#: admin/forms.py:634
+#: admin/forms.py:635
 msgid "This path is not writable by the web server."
 msgstr "這個路徑無法被網頁伺服器寫入"
 
-#: admin/forms.py:646
+#: admin/forms.py:647
 msgid "Logging Settings"
 msgstr "Log 記錄設定"
 
-#: admin/forms.py:667
+#: admin/forms.py:668
 msgid "Key file"
 msgstr ""
 
-#: admin/forms.py:680 admin/forms.py:693
+#: admin/forms.py:681 admin/forms.py:694
 #, python-format
 msgid "Unable to write SSH key file: %s"
 msgstr "無法寫入 SSH key 檔案：%s"
 
-#: admin/forms.py:685
+#: admin/forms.py:686
 #, python-format
 msgid "Error generating SSH key: %s"
 msgstr "產生 SSH key 時發生錯誤：%s"
 
-#: admin/forms.py:698
+#: admin/forms.py:699
 #, python-format
 msgid "Error uploading SSH key: %s"
 msgstr "上傳 SSH key 時發生錯誤：%s"
 
-#: admin/forms.py:713
+#: admin/forms.py:714
 #, fuzzy, python-format
 msgid "Unable to delete SSH key file: %s"
 msgstr "無法寫入 SSH key 檔案：%s"
 
-#: admin/forms.py:718
+#: admin/forms.py:719
 msgid "SSH Settings"
 msgstr "SSH 設定"
 
-#: admin/forms.py:725
+#: admin/forms.py:726
 msgid "File storage method"
 msgstr "檔案儲存方式"
 
-#: admin/forms.py:727
+#: admin/forms.py:728
 msgid "Host file system"
 msgstr "主機上的檔案系統"
 
-#: admin/forms.py:728
+#: admin/forms.py:729
 msgid "Amazon S3"
 msgstr ""
 
-#: admin/forms.py:732
+#: admin/forms.py:733
 msgid ""
 "Storage method and location for uploaded files, such as screenshots and file "
 "attachments."
 msgstr "用來儲存上傳的檔案，像是截圖、或是附加檔案的方式。"
 
-#: admin/forms.py:737
+#: admin/forms.py:738
 msgid "Amazon AWS access key"
 msgstr ""
 
-#: admin/forms.py:738
+#: admin/forms.py:739
 msgid ""
 "Your Amazon AWS access key ID. This can be found in the \"Security "
 "Credentials\" section of the AWS site."
@@ -912,11 +921,11 @@ msgstr ""
 "您的 Amazon AWS access key ID。這可以在 AWS site 上的\"Security Credentials"
 "\" 部分找到。"
 
-#: admin/forms.py:744
+#: admin/forms.py:745
 msgid "Amazon AWS secret access key"
 msgstr ""
 
-#: admin/forms.py:745
+#: admin/forms.py:746
 msgid ""
 "Your Amazon AWS secret access ID. This can be found in the \"Security "
 "Credentials\" section of the AWS site."
@@ -924,79 +933,87 @@ msgstr ""
 "您的 AWS secret access ID。這可以在 AWS site 上的\"Security Credentials\" 部"
 "分找到。"
 
-#: admin/forms.py:751
+#: admin/forms.py:752
 msgid "S3 bucket name"
 msgstr ""
 
-#: admin/forms.py:752
+#: admin/forms.py:753
 msgid "Bucket name inside Amazon S3."
 msgstr ""
 
-#: admin/forms.py:757
+#: admin/forms.py:758
 msgid "Amazon AWS calling format"
 msgstr ""
 
-#: admin/forms.py:763
+#: admin/forms.py:764
 msgid "Calling format for AWS requests."
 msgstr ""
 
-#: admin/forms.py:778
+#: admin/forms.py:779
 msgid "Default server"
 msgstr ""
 
-#: admin/forms.py:779
+#: admin/forms.py:780
 msgid "For example, \"http://couchdb.local:5984\""
 msgstr ""
 
-#: admin/forms.py:830
+#: admin/forms.py:831
 msgid "File Storage Settings"
 msgstr "檔案儲存設定"
 
-#: admin/forms.py:840
+#: admin/forms.py:841
 msgid "Amazon S3 Settings"
 msgstr "Amazon S3 設定"
 
-#: admin/forms.py:849
+#: admin/forms.py:850
 msgid "CouchDB Settings"
 msgstr "CouchDB 設定"
 
-#: admin/forms.py:858
+#: admin/forms.py:859
 msgid "Install key"
 msgstr ""
 
-#: admin/forms.py:859
+#: admin/forms.py:860
 msgid "The installation key to provide when purchasing a support contract."
 msgstr ""
 
-#: admin/forms.py:868
+#: admin/forms.py:869
 msgid "Custom Support URL"
 msgstr ""
 
-#: admin/forms.py:869
+#: admin/forms.py:870
 msgid ""
 "The location of your organization's own Review Board support page. Leave "
 "blank to use the default support page."
 msgstr ""
 
-#: admin/forms.py:880
+#: admin/forms.py:881
 #, fuzzy
 msgid "Support Settings"
 msgstr "站台設定"
+
+#: admin/validation.py:21
+#, python-format
+msgid ""
+"%s has invalid format specification type(s). Use only one '%%s' to mark the "
+"location of the bug id. If the URI contains encoded values (e.g. '%%20'), "
+"prepend the encoded values with an additional '%%'."
+msgstr ""
 
 #: admin/views.py:31 templates/admin/base_site.html:58
 msgid "Admin Dashboard"
 msgstr "面板"
 
-#: admin/views.py:49 templates/admin/widgets/w-actions.html:66
+#: admin/views.py:49 templates/admin/widgets/w-actions.html:62
 msgid "Server Cache"
 msgstr "伺服器快取"
 
 #: admin/widgets.py:129 admin/widgets.py:196 admin/widgets.py:236
-#: templates/admin/change_form.html:22 templates/admin/database.html:28
-#: templates/admin/index.html:28 templates/admin/widgets/w-actions.html:40
-#: templates/admin/widgets/w-actions.html:45
-#: templates/admin/widgets/w-actions.html:50
-#: templates/admin/widgets/w-actions.html:55
+#: templates/admin/change_form.html:24 templates/admin/database.html:26
+#: templates/admin/index.html:26 templates/admin/widgets/w-actions.html:36
+#: templates/admin/widgets/w-actions.html:41
+#: templates/admin/widgets/w-actions.html:46
+#: templates/admin/widgets/w-actions.html:51
 msgid "Add"
 msgstr "新增"
 
@@ -1045,41 +1062,51 @@ msgstr "Review Requests"
 msgid "Changes"
 msgstr "變更"
 
-#: attachments/admin.py:15 reviews/admin.py:22 reviews/admin.py:214
-#: reviews/admin.py:225 reviews/admin.py:236
+#: attachments/admin.py:16 reviews/admin.py:23 reviews/admin.py:217
+#: reviews/admin.py:228 reviews/admin.py:240
 msgid "Review request ID"
 msgstr "Review request 編號"
 
-#: attachments/models.py:16 reviews/models.py:163
+#: attachments/models.py:19 reviews/models.py:167
 msgid "caption"
 msgstr "標題"
 
-#: attachments/models.py:17 reviews/models.py:164
+#: attachments/models.py:20 reviews/models.py:168
 msgid "draft caption"
 msgstr "草稿標題"
 
-#: attachments/models.py:19
+#: attachments/models.py:22
 msgid "original filename"
 msgstr ""
 
-#: attachments/models.py:21
+#: attachments/models.py:24
 msgid "file"
 msgstr "檔案"
 
-#: attachments/models.py:25
+#: attachments/models.py:28
 msgid "mimetype"
 msgstr ""
+
+#: attachments/models.py:35
+#, fuzzy
+msgid "repository file path"
+msgstr "檔案庫名稱"
+
+#: attachments/models.py:39
+#, fuzzy
+msgid "repository file revision"
+msgstr "原始碼檔案版本"
 
 #: changedescs/admin.py:15
 msgid "Change Description Text"
 msgstr "變更說明文字"
 
 #: changedescs/models.py:33 diffviewer/models.py:245 diffviewer/models.py:302
-#: reviews/models.py:1472 reviews/models.py:1694
+#: reviews/models.py:1497 reviews/models.py:1738
 msgid "timestamp"
 msgstr "時間戳記"
 
-#: changedescs/models.py:34 reviews/models.py:518 reviews/models.py:1695
+#: changedescs/models.py:34 reviews/models.py:523 reviews/models.py:1739
 msgid "public"
 msgstr "公開的"
 
@@ -1087,16 +1114,21 @@ msgstr "公開的"
 msgid "change text"
 msgstr "文字更改"
 
-#: changedescs/models.py:36
+#: changedescs/models.py:36 reviews/models.py:260 reviews/models.py:1499
+#: reviews/models.py:1793
+#, fuzzy
+msgid "rich text"
+msgstr "文字更改"
+
+#: changedescs/models.py:37
 msgid "fields changed"
 msgstr "欄位更改"
 
-#: diffviewer/admin.py:28 diffviewer/admin.py:45 diffviewer/forms.py:18
-#: reviews/views.py:216
+#: diffviewer/admin.py:28 diffviewer/forms.py:18 reviews/views.py:219
 msgid "Diff"
 msgstr "Diff 檔"
 
-#: diffviewer/admin.py:33 diffviewer/admin.py:50
+#: diffviewer/admin.py:33
 #, fuzzy
 msgid "Parent diff"
 msgstr "父送交"
@@ -1202,11 +1234,11 @@ msgstr "已修改"
 msgid "Moved"
 msgstr "已移動"
 
-#: diffviewer/models.py:65 templates/diffviewer/changeindex.html:25
+#: diffviewer/models.py:65
 msgid "Deleted"
 msgstr "已刪除"
 
-#: diffviewer/models.py:70 reviews/models.py:1129
+#: diffviewer/models.py:70 reviews/models.py:1143
 msgid "diff set"
 msgstr "diff 檔案夾"
 
@@ -1238,12 +1270,12 @@ msgstr "二進位檔"
 msgid "parent diff"
 msgstr "父送交"
 
-#: diffviewer/models.py:85 reviews/models.py:516
+#: diffviewer/models.py:85 reviews/models.py:521
 msgid "status"
 msgstr "狀態"
 
 #: diffviewer/models.py:243 diffviewer/models.py:301 reviews/models.py:44
-#: reviews/models.py:118 site/models.py:45
+#: reviews/models.py:120 site/models.py:45
 msgid "name"
 msgstr "名稱"
 
@@ -1255,11 +1287,11 @@ msgstr "版本"
 msgid "base directory"
 msgstr "目錄路徑"
 
-#: diffviewer/models.py:250 reviews/models.py:535
+#: diffviewer/models.py:250 reviews/models.py:540
 msgid "diff set history"
 msgstr "diff 檔案夾歷史"
 
-#: diffviewer/models.py:252 reviews/models.py:525
+#: diffviewer/models.py:252 reviews/models.py:530
 msgid "repository"
 msgstr "檔案庫"
 
@@ -1273,53 +1305,72 @@ msgid ""
 "ignored."
 msgstr "要使用的差異產生器相容版本。這可以、也應該被忽略。"
 
-#: diffviewer/models.py:260 reviews/models.py:521
+#: diffviewer/models.py:260 reviews/models.py:526
 msgid "commit ID"
 msgstr ""
 
-#: diffviewer/models.py:304 reviews/models.py:515 reviews/models.py:1128
+#: diffviewer/models.py:304 reviews/models.py:520 reviews/models.py:1142
 msgid "last updated"
 msgstr "最後更新時間"
 
-#: diffviewer/renderers.py:57
+#: diffviewer/renderers.py:55
 #, python-format
 msgid "Invalid chunk index %s specified."
 msgstr ""
 
-#: diffviewer/views.py:267
+#: diffviewer/views.py:328
 #, python-format
 msgid "Internal error. Unable to locate file record for filediff %s"
 msgstr "發生內部錯誤。無法找到檔案差異 %s 的檔案記錄"
 
-#: diffviewer/templatetags/difftags.py:209
+#: diffviewer/templatetags/difftags.py:173
 #, fuzzy
 msgid "Expand to header"
 msgstr "展開更改"
 
-#: diffviewer/templatetags/difftags.py:290
+#: diffviewer/templatetags/difftags.py:254
 #, fuzzy, python-format
 msgid "Moved from %s"
 msgstr "移動自"
 
-#: diffviewer/templatetags/difftags.py:298
+#: diffviewer/templatetags/difftags.py:262
 #, fuzzy, python-format
 msgid "Moved to %s"
 msgstr "移動至"
 
-#: hostingsvcs/beanstalk.py:17
+#: hostingsvcs/beanstalk.py:18
 msgid "Beanstalk account domain"
 msgstr ""
 
-#: hostingsvcs/beanstalk.py:21
+#: hostingsvcs/beanstalk.py:22
 msgid "This is the <tt>domain</tt> part of <tt>domain.beanstalkapp.com</tt>"
 msgstr ""
 
-#: hostingsvcs/beanstalk.py:25 hostingsvcs/bitbucket.py:16
-#: hostingsvcs/fedorahosted.py:10 hostingsvcs/github.py:24
-#: hostingsvcs/github.py:35 hostingsvcs/github.py:55 hostingsvcs/github.py:75
-#: hostingsvcs/gitorious.py:16
+#: hostingsvcs/beanstalk.py:26 hostingsvcs/bitbucket.py:18
+#: hostingsvcs/bitbucket.py:35 hostingsvcs/fedorahosted.py:10
+#: hostingsvcs/github.py:25 hostingsvcs/github.py:36 hostingsvcs/github.py:56
+#: hostingsvcs/github.py:76 hostingsvcs/gitorious.py:16
 msgid "Repository name"
 msgstr "檔案庫名稱"
+
+#: hostingsvcs/bitbucket.py:26
+#, fuzzy
+msgid "Team name"
+msgstr "姓氏："
+
+#: hostingsvcs/bitbucket.py:30
+msgid ""
+"The name of the team. This is hte &lt;team_name&gt; in https://bitbucket.org/"
+"&lt;team_name&gt;/&lt;repo_name&gt;/"
+msgstr ""
+
+#: hostingsvcs/bitbucket.py:57
+msgid "Personal"
+msgstr ""
+
+#: hostingsvcs/bitbucket.py:82
+msgid "Team"
+msgstr ""
 
 #: hostingsvcs/bugzilla.py:10
 msgid "Bugzilla URL"
@@ -1365,50 +1416,50 @@ msgstr ""
 msgid "API key"
 msgstr ""
 
-#: hostingsvcs/github.py:28 hostingsvcs/github.py:39
+#: hostingsvcs/github.py:29 hostingsvcs/github.py:40
 msgid ""
 "The name of the repository. This is the &lt;repo_name&gt; in http://github."
 "com/&lt;username&gt;/&lt;repo_name&gt;/"
 msgstr ""
 
-#: hostingsvcs/github.py:46 hostingsvcs/github.py:66
+#: hostingsvcs/github.py:47 hostingsvcs/github.py:67
 msgid "Organization name"
 msgstr ""
 
-#: hostingsvcs/github.py:50 hostingsvcs/github.py:70
+#: hostingsvcs/github.py:51 hostingsvcs/github.py:71
 msgid ""
 "The name of the organization. This is the &lt;org_name&gt; in http://github."
 "com/&lt;org_name&gt;/&lt;repo_name&gt;/"
 msgstr ""
 
-#: hostingsvcs/github.py:59 hostingsvcs/github.py:79
+#: hostingsvcs/github.py:60 hostingsvcs/github.py:80
 msgid ""
 "The name of the repository. This is the &lt;repo_name&gt; in http://github."
 "com/&lt;org_name&gt;/&lt;repo_name&gt;/"
 msgstr ""
 
-#: hostingsvcs/github.py:85
+#: hostingsvcs/github.py:86
 msgid "GitHub"
 msgstr ""
 
-#: hostingsvcs/github.py:88
+#: hostingsvcs/github.py:89
 #, fuzzy
 msgid "Public"
 msgstr "公開的"
 
-#: hostingsvcs/github.py:104
+#: hostingsvcs/github.py:106
 msgid "Public Organization"
 msgstr ""
 
-#: hostingsvcs/github.py:120
+#: hostingsvcs/github.py:122
 msgid "Private"
 msgstr ""
 
-#: hostingsvcs/github.py:135
+#: hostingsvcs/github.py:137
 msgid "Private Organization"
 msgstr ""
 
-#: hostingsvcs/github.py:459
+#: hostingsvcs/github.py:473
 msgid "Unknown GitHub API Error"
 msgstr ""
 
@@ -1437,73 +1488,73 @@ msgstr ""
 msgid "VersionOne URL"
 msgstr "版本"
 
-#: reviews/admin.py:26
+#: reviews/admin.py:27
 msgid "Comment Text"
 msgstr "留言內容"
 
-#: reviews/admin.py:35 reviews/admin.py:58 reviews/admin.py:82
-#: reviews/admin.py:112 reviews/admin.py:191 scmtools/admin.py:12
+#: reviews/admin.py:36 reviews/admin.py:59 reviews/admin.py:83
+#: reviews/admin.py:114 reviews/admin.py:194 scmtools/admin.py:12
 msgid "General Information"
 msgstr "一般資訊"
 
-#: reviews/admin.py:39 reviews/admin.py:118 reviews/admin.py:196
+#: reviews/admin.py:40 reviews/admin.py:120 reviews/admin.py:199
 #: templates/reviews/review_request_box.html:105
 msgid "Reviewers"
 msgstr "審查者"
 
-#: reviews/admin.py:42 reviews/forms.py:37 reviews/forms.py:43
-#: templates/admin/widgets/w-actions.html:53
+#: reviews/admin.py:43 reviews/forms.py:39 reviews/forms.py:45
+#: templates/admin/widgets/w-actions.html:49
 msgid "Repositories"
 msgstr "檔案庫"
 
-#: reviews/admin.py:43
+#: reviews/admin.py:44
 msgid ""
 "<p>A default reviewer will cover all repositories, unless assigned one or "
 "more specific repositories below.</p>"
 msgstr ""
 "<p>預設的審查人會負責所有的檔案庫，除非在下面指定一個或多個檔案庫。</p>"
 
-#: reviews/admin.py:62 scmtools/admin.py:56
+#: reviews/admin.py:63 scmtools/admin.py:56
 msgid "Access Control"
 msgstr "存取控制"
 
-#: reviews/admin.py:65 reviews/admin.py:95 reviews/admin.py:126
+#: reviews/admin.py:66 reviews/admin.py:96 reviews/admin.py:129
 msgid "State"
 msgstr "狀態"
 
-#: reviews/admin.py:86 reviews/admin.py:121 reviews/admin.py:199
+#: reviews/admin.py:87 reviews/admin.py:123 reviews/admin.py:202
 msgid "Related Objects"
 msgstr ""
 
-#: reviews/admin.py:127 scmtools/admin.py:65
+#: reviews/admin.py:130 scmtools/admin.py:65
 msgid ""
 "<p>This is advanced state that should not be modified unless something is "
 "wrong.</p>"
 msgstr "<p>這是進階的狀態，不應該被改變。除非有發生錯誤。</p>"
 
-#: reviews/admin.py:154
+#: reviews/admin.py:157
 msgid "Close selected review requests as submitted"
 msgstr "將選擇的 review requests 關閉，標示為已送交"
 
-#: reviews/admin.py:168
+#: reviews/admin.py:171
 msgid "Close selected review requests as discarded"
 msgstr "將選擇的 review requests 關閉，標示成捨棄狀態"
 
-#: reviews/admin.py:180
+#: reviews/admin.py:183
 msgid "Reopen selected review requests"
 msgstr "重新開啟選擇的 review requests"
 
-#: reviews/datagrids.py:43 reviews/datagrids.py:44
-#: reviews/templatetags/reviewtags.py:553
+#: reviews/datagrids.py:42 reviews/datagrids.py:43
+#: reviews/templatetags/reviewtags.py:351
 msgid "Starred"
 msgstr "星號標記"
 
-#: reviews/datagrids.py:114 reviews/datagrids.py:115
+#: reviews/datagrids.py:113 reviews/datagrids.py:114
 #: templates/reviews/review_request_actions_primary.html:4
 msgid "Ship It!"
 msgstr "送交至檔案庫"
 
-#: reviews/datagrids.py:137 reviews/datagrids.py:138
+#: reviews/datagrids.py:136 reviews/datagrids.py:137
 msgid "My Comments"
 msgstr "我的留言"
 
@@ -1519,7 +1570,7 @@ msgstr "留言已發表。送交！"
 msgid "Comments published"
 msgstr "送出留言"
 
-#: reviews/datagrids.py:257 reviews/views.py:204
+#: reviews/datagrids.py:257 reviews/views.py:207
 #: templates/reviews/review_request_box.html:9
 msgid "Summary"
 msgstr "摘要"
@@ -1532,12 +1583,12 @@ msgstr "尚無摘要"
 msgid "Draft"
 msgstr "草稿"
 
-#: reviews/datagrids.py:294 reviews/models.py:508
+#: reviews/datagrids.py:294 reviews/models.py:513
 #: templates/reviews/review_request_actions_secondary.html:10
 msgid "Submitted"
 msgstr "已送交"
 
-#: reviews/datagrids.py:296 reviews/models.py:509
+#: reviews/datagrids.py:296 reviews/models.py:514
 #: templates/reviews/review_request_actions_secondary.html:11
 msgid "Discarded"
 msgstr "捨棄"
@@ -1558,7 +1609,7 @@ msgstr "審查人"
 msgid "Target People"
 msgstr "負責審查人"
 
-#: reviews/datagrids.py:367 templates/base.html:112
+#: reviews/datagrids.py:367 templates/base.html:109
 #: templates/accounts/prefs.html:62
 #: templates/reviews/review_request_box.html:114
 msgid "Groups"
@@ -1580,123 +1631,123 @@ msgstr "Diff 檔更新時間"
 msgid "Bugs"
 msgstr ""
 
-#: reviews/datagrids.py:511 reviews/views.py:209
+#: reviews/datagrids.py:511 reviews/views.py:212
 #: templates/reviews/review_request_box.html:47
 msgid "Branch"
 msgstr ""
 
-#: reviews/datagrids.py:515 reviews/datagrids.py:527
+#: reviews/datagrids.py:516 reviews/datagrids.py:530
 msgid "Posted"
 msgstr "發表"
 
-#: reviews/datagrids.py:516
+#: reviews/datagrids.py:517
 msgid "Posted Time"
 msgstr "發表時間"
 
-#: reviews/datagrids.py:519 reviews/datagrids.py:531
+#: reviews/datagrids.py:521 reviews/datagrids.py:535
 #: templates/reviews/review_issue_summary_table.html:49
 msgid "Last Updated"
 msgstr "最後更新時間"
 
-#: reviews/datagrids.py:528
+#: reviews/datagrids.py:531
 msgid "Posted Time (Relative)"
 msgstr "相對發表時間"
 
-#: reviews/datagrids.py:532
+#: reviews/datagrids.py:536
 msgid "Last Updated (Relative)"
 msgstr "相對更新時間"
 
-#: reviews/datagrids.py:537
+#: reviews/datagrids.py:541
 msgid "Diff Updated (Relative)"
 msgstr "Diff 檔相對更新時間"
 
-#: reviews/datagrids.py:547 reviews/datagrids.py:558
+#: reviews/datagrids.py:551 reviews/datagrids.py:562
 msgid "Review ID"
 msgstr "Review 編號"
 
-#: reviews/datagrids.py:669
+#: reviews/datagrids.py:675
 msgid "All Outgoing Review Requests"
 msgstr "所有我提出的 Review Requests"
 
-#: reviews/datagrids.py:673
+#: reviews/datagrids.py:679
 msgid "All My Review Requests"
 msgstr "所有我的 Review Requests"
 
-#: reviews/datagrids.py:677
+#: reviews/datagrids.py:683
 msgid "Incoming Review Requests to Me"
 msgstr "給我的 Review Requests"
 
-#: reviews/datagrids.py:692
+#: reviews/datagrids.py:697
 #, python-format
 msgid "Incoming Review Requests to %s"
 msgstr "給 %s 的 Review Requests"
 
-#: reviews/datagrids.py:696
+#: reviews/datagrids.py:701
 msgid "All Incoming Review Requests to My Groups"
 msgstr "所有送至我的群組的 Review Requests"
 
-#: reviews/datagrids.py:701
+#: reviews/datagrids.py:706
 msgid "Starred Review Requests"
 msgstr "標記星號的 Review Requests"
 
-#: reviews/datagrids.py:705
+#: reviews/datagrids.py:710
 msgid "All Incoming Review Requests"
 msgstr "所有送來的 Review Requests"
 
-#: reviews/datagrids.py:715
+#: reviews/datagrids.py:720
 msgid "Full Name"
 msgstr "全名"
 
-#: reviews/datagrids.py:717 reviews/datagrids.py:750
+#: reviews/datagrids.py:722 reviews/datagrids.py:755
 msgid "Pending Reviews"
 msgstr "待決的 Reviews"
 
-#: reviews/datagrids.py:723
+#: reviews/datagrids.py:728
 msgid "All submitters"
 msgstr "所有的使用者"
 
-#: reviews/datagrids.py:747
+#: reviews/datagrids.py:752
 msgid "Group ID"
 msgstr "群組 ID"
 
-#: reviews/datagrids.py:748
+#: reviews/datagrids.py:753
 msgid "Group Name"
 msgstr "群組名稱"
 
-#: reviews/datagrids.py:754
+#: reviews/datagrids.py:759
 msgid "Members"
 msgstr "成員"
 
-#: reviews/datagrids.py:758
+#: reviews/datagrids.py:763
 msgid "All groups"
 msgstr "所有的群組"
 
-#: reviews/datagrids.py:779
+#: reviews/datagrids.py:785
 msgid "Watched groups"
 msgstr "追蹤群組"
 
-#: reviews/forms.py:25 templates/admin/widgets/w-repositories.html:7
+#: reviews/forms.py:26 templates/admin/widgets/w-repositories.html:7
 msgid "Name"
 msgstr "名稱"
 
-#: reviews/forms.py:30
+#: reviews/forms.py:31
 msgid "File regular expression"
 msgstr ""
 
-#: reviews/forms.py:33 reviews/models.py:120
+#: reviews/forms.py:35 reviews/models.py:124
 msgid ""
 "File paths are matched against this regular expression to determine if these "
 "reviewers should be added."
 msgstr ""
 "用來比對檔案路徑的 regular expression，用以決定這些審查人是否該被加入。"
 
-#: reviews/forms.py:40
+#: reviews/forms.py:42
 msgid ""
 "The list of repositories to specifically match this default reviewer for. If "
 "left empty, this will match all repositories."
 msgstr "用來比對預設審查人的檔案庫清單。若留白，則會應用到所有的檔案庫上。"
 
-#: reviews/forms.py:74
+#: reviews/forms.py:65
 #, python-format
 msgid "The repository '%s' doesn't exist on the local site."
 msgstr "檔案庫 %s 不存在於本地站台。"
@@ -1705,373 +1756,379 @@ msgstr "檔案庫 %s 不存在於本地站台。"
 msgid "display name"
 msgstr "顯示名稱"
 
-#: reviews/models.py:46
+#: reviews/models.py:47
 msgid "mailing list"
 msgstr "郵遞群組 (mailing list)"
 
-#: reviews/models.py:47
+#: reviews/models.py:49
 msgid "The mailing list review requests and discussions are sent to."
 msgstr "review requests 與討論要寄送的郵遞群組。"
 
-#: reviews/models.py:51
+#: reviews/models.py:53
 msgid "users"
 msgstr "使用者"
 
-#: reviews/models.py:55
+#: reviews/models.py:57
 msgid "incoming review request count"
 msgstr "送來的 review request 數"
 
-#: reviews/models.py:59
+#: reviews/models.py:61
 msgid "invite only"
 msgstr "僅限受邀請加入"
 
-#: reviews/models.py:99
+#: reviews/models.py:101
 msgid "review group"
 msgstr "review 群組"
 
-#: reviews/models.py:119
+#: reviews/models.py:122
 msgid "file regex"
 msgstr ""
 
-#: reviews/models.py:123
+#: reviews/models.py:127
 msgid "default groups"
 msgstr "預設審查群組"
 
-#: reviews/models.py:125
+#: reviews/models.py:129
 msgid "default people"
 msgstr "預設審查人"
 
-#: reviews/models.py:166
+#: reviews/models.py:170
 msgid "image"
 msgstr "圖片"
 
-#: reviews/models.py:251
+#: reviews/models.py:255
 msgid "summary"
 msgstr "摘要"
 
-#: reviews/models.py:252
+#: reviews/models.py:256
 msgid "description"
 msgstr "說明"
 
-#: reviews/models.py:253
+#: reviews/models.py:257
 msgid "testing done"
 msgstr "測試完成"
 
-#: reviews/models.py:254
+#: reviews/models.py:258
 msgid "bugs"
 msgstr ""
 
-#: reviews/models.py:255
+#: reviews/models.py:259
 msgid "branch"
 msgstr ""
 
-#: reviews/models.py:485
+#: reviews/models.py:490
 msgid "(no summary)"
 msgstr "（無摘要）"
 
-#: reviews/models.py:507
+#: reviews/models.py:512
 msgid "Pending Review"
 msgstr ""
 
-#: reviews/models.py:512
+#: reviews/models.py:517
 msgid "submitter"
 msgstr "送交者"
 
-#: reviews/models.py:514
+#: reviews/models.py:519
 msgid "time added"
 msgstr "新增時間"
 
-#: reviews/models.py:519
+#: reviews/models.py:524
 msgid "change number"
 msgstr ""
 
-#: reviews/models.py:528 reviews/models.py:1705
+#: reviews/models.py:533 reviews/models.py:1753
 msgid "e-mail message ID"
 msgstr ""
 
-#: reviews/models.py:530 reviews/models.py:1707
+#: reviews/models.py:535 reviews/models.py:1755
 msgid "time e-mailed"
 msgstr "寄出 e-mail 的時間"
 
-#: reviews/models.py:540 reviews/models.py:1137
+#: reviews/models.py:545 reviews/models.py:1151
 msgid "target groups"
 msgstr "負責審查群組"
 
-#: reviews/models.py:544 reviews/models.py:1140
+#: reviews/models.py:549 reviews/models.py:1154
 msgid "target people"
 msgstr "負責審查人"
 
-#: reviews/models.py:550 reviews/models.py:1145
+#: reviews/models.py:555 reviews/models.py:1159
 msgid "screenshots"
 msgstr "畫面截圖"
 
-#: reviews/models.py:553 reviews/models.py:1148
+#: reviews/models.py:559 reviews/models.py:1163
 msgid "inactive screenshots"
 msgstr "過時的畫面截圖"
 
-#: reviews/models.py:554
+#: reviews/models.py:560
 msgid ""
 "A list of screenshots that used to be but are no longer associated with this "
 "review request."
 msgstr "以前曾經是、但現在已與這個 review request 不相關的畫面截圖清單。"
 
-#: reviews/models.py:562 reviews/models.py:1155
+#: reviews/models.py:568 reviews/models.py:1170
 msgid "file attachments"
 msgstr "附加檔案"
 
-#: reviews/models.py:565
+#: reviews/models.py:572
 msgid "inactive file attachments"
 msgstr "過時的附加檔案"
 
-#: reviews/models.py:566
+#: reviews/models.py:573
 msgid ""
 "A list of file attachments that used to be but are no longer associated with "
 "this review request."
 msgstr "以前曾經是、但現在已與這個 review request 不相關的附加檔案清單。"
 
-#: reviews/models.py:572
+#: reviews/models.py:580
 msgid "change descriptions"
 msgstr "更改說明"
 
-#: reviews/models.py:578 reviews/models.py:1169
+#: reviews/models.py:586 reviews/models.py:1184
 msgid "Dependencies"
 msgstr ""
 
-#: reviews/models.py:586
+#: reviews/models.py:594
 #, fuzzy
 msgid "last review activity timestamp"
 msgstr "最後審查時間戳記"
 
-#: reviews/models.py:591
+#: reviews/models.py:599
 msgid "ship-it count"
 msgstr "送交次數"
 
-#: reviews/models.py:1126 reviews/models.py:1691
+#: reviews/models.py:1140 reviews/models.py:1735
 msgid "review request"
 msgstr ""
 
-#: reviews/models.py:1133
+#: reviews/models.py:1147
 msgid "change description"
 msgstr "更改說明"
 
-#: reviews/models.py:1159
+#: reviews/models.py:1174
 msgid "inactive files"
 msgstr "過時的檔案"
 
-#: reviews/models.py:1416
+#: reviews/models.py:1439
 #, python-format
 msgid "Diff r%s"
 msgstr "Diff 檔第 %s 版"
 
-#: reviews/models.py:1457 templates/reviews/review_issue_summary_table.html:16
+#: reviews/models.py:1482 templates/reviews/review_issue_summary_table.html:16
 #: templates/reviews/review_issue_summary_table.html:28
 msgid "Open"
 msgstr "開啟"
 
-#: reviews/models.py:1458 templates/reviews/review_issue_summary_table.html:18
+#: reviews/models.py:1483 templates/reviews/review_issue_summary_table.html:18
 #: templates/reviews/review_issue_summary_table.html:30
 msgid "Resolved"
 msgstr "已解決"
 
-#: reviews/models.py:1459 templates/reviews/review_issue_summary_table.html:20
+#: reviews/models.py:1484 templates/reviews/review_issue_summary_table.html:20
 #: templates/reviews/review_issue_summary_table.html:29
 msgid "Dropped"
 msgstr "丟棄"
 
-#: reviews/models.py:1461
+#: reviews/models.py:1486
 msgid "issue opened"
 msgstr "issue 已開啟"
 
-#: reviews/models.py:1462
+#: reviews/models.py:1487
 msgid "issue status"
 msgstr "issue 狀態"
 
-#: reviews/models.py:1471
+#: reviews/models.py:1496
 msgid "reply to"
 msgstr "回覆至"
 
-#: reviews/models.py:1473
+#: reviews/models.py:1498
 msgid "comment text"
 msgstr "留言內容"
 
-#: reviews/models.py:1586
+#: reviews/models.py:1622
 msgid "file diff"
 msgstr "檔案差異"
 
-#: reviews/models.py:1589
+#: reviews/models.py:1625
 msgid "interdiff file"
 msgstr "在差異間比對檔案"
 
-#: reviews/models.py:1595
+#: reviews/models.py:1631
 msgid "first line"
 msgstr "第一行"
 
-#: reviews/models.py:1597
+#: reviews/models.py:1633
 msgid "number of lines"
 msgstr "總行數"
 
-#: reviews/models.py:1619
+#: reviews/models.py:1655
 msgid "screenshot"
 msgstr "畫面截圖"
 
-#: reviews/models.py:1624
+#: reviews/models.py:1660
 msgid "sub-image X"
 msgstr ""
 
-#: reviews/models.py:1625
+#: reviews/models.py:1661
 msgid "sub-image Y"
 msgstr ""
 
-#: reviews/models.py:1626
+#: reviews/models.py:1662
 msgid "sub-image width"
 msgstr ""
 
-#: reviews/models.py:1627
+#: reviews/models.py:1663
 msgid "sub-image height"
 msgstr ""
 
-#: reviews/models.py:1649
-msgid "file_attachment"
+#: reviews/models.py:1688
+#, fuzzy
+msgid "file attachment"
 msgstr "附加檔案"
 
 #: reviews/models.py:1692
+#, fuzzy
+msgid "diff against file attachment"
+msgstr "過時的附加檔案"
+
+#: reviews/models.py:1736
 msgid "user"
 msgstr "使用者"
 
-#: reviews/models.py:1696
+#: reviews/models.py:1741
 msgid "ship it"
 msgstr "送至檔案庫"
 
-#: reviews/models.py:1697
+#: reviews/models.py:1743
 msgid "Indicates whether the reviewer thinks this code is ready to ship."
 msgstr "指出是否審查者認為這份 code 已經可以進行送交。"
 
-#: reviews/models.py:1702
+#: reviews/models.py:1750
 msgid "Base reply to"
 msgstr ""
 
-#: reviews/models.py:1703
+#: reviews/models.py:1751
 msgid "The top-most review in the discussion thread for this review reply."
 msgstr "在這個審查回覆的討論串最上方的 review"
 
-#: reviews/models.py:1710
+#: reviews/models.py:1759
 msgid "body (top)"
 msgstr ""
 
-#: reviews/models.py:1711
+#: reviews/models.py:1761
 msgid "The review text shown above the diff and screenshot comments."
 msgstr "要在 diff 檔與截圖留言上方顯示的審查文字。"
 
-#: reviews/models.py:1713
+#: reviews/models.py:1764
 msgid "body (bottom)"
 msgstr ""
 
-#: reviews/models.py:1714
+#: reviews/models.py:1766
 msgid "The review text shown below the diff and screenshot comments."
 msgstr "要在 diff 檔與截圖留言下方顯示的審查文字。"
 
-#: reviews/models.py:1720
+#: reviews/models.py:1772
 msgid "body (top) reply to"
 msgstr ""
 
-#: reviews/models.py:1721
+#: reviews/models.py:1773
 msgid "The review that the body (top) field is in reply to."
 msgstr ""
 
-#: reviews/models.py:1725
+#: reviews/models.py:1777
 msgid "body (bottom) reply to"
 msgstr ""
 
-#: reviews/models.py:1726
+#: reviews/models.py:1778
 msgid "The review that the body (bottom) field is in reply to."
 msgstr ""
 
-#: reviews/models.py:1728
+#: reviews/models.py:1780
 msgid "comments"
 msgstr "留言"
 
-#: reviews/models.py:1732
+#: reviews/models.py:1784
 msgid "screenshot comments"
 msgstr "截圖說明"
 
-#: reviews/models.py:1737
+#: reviews/models.py:1789
 msgid "file attachment comments"
 msgstr "附加檔案說明"
 
-#: reviews/views.py:205 templates/reviews/review_issue_summary_table.html:47
+#: reviews/views.py:208 templates/reviews/review_issue_summary_table.html:47
 #: templates/reviews/review_request_box.html:160
 msgid "Description"
 msgstr "說明"
 
-#: reviews/views.py:206 templates/reviews/review_request_box.html:164
+#: reviews/views.py:209 templates/reviews/review_request_box.html:164
 msgid "Testing Done"
 msgstr "測試完成"
 
-#: reviews/views.py:207
+#: reviews/views.py:210
 #, fuzzy
 msgid "Bugs Closed"
 msgstr "關閉"
 
-#: reviews/views.py:208 templates/reviews/review_request_box.html:61
+#: reviews/views.py:211 templates/reviews/review_request_box.html:61
 msgid "Depends On"
 msgstr ""
 
-#: reviews/views.py:210
+#: reviews/views.py:213
 #, fuzzy
 msgid "Reviewers (Groups)"
 msgstr "Review 群組"
 
-#: reviews/views.py:211
+#: reviews/views.py:214
 #, fuzzy
 msgid "Reviewers (People)"
 msgstr "審查者"
 
-#: reviews/views.py:212 templates/admin/widgets/w-stats.html:16
+#: reviews/views.py:215 templates/admin/widgets/w-stats.html:16
 #: templates/reviews/review_request_box.html:171
 msgid "Screenshots"
 msgstr "畫面截圖"
 
-#: reviews/views.py:213
+#: reviews/views.py:216
 #, fuzzy
 msgid "Screenshot Captions"
 msgstr "畫面截圖"
 
-#: reviews/views.py:214
+#: reviews/views.py:217
 #, fuzzy
 msgid "Uploaded Files"
 msgstr "上傳檔案"
 
-#: reviews/views.py:215
+#: reviews/views.py:218
 #, fuzzy
 msgid "Uploaded File Captions"
 msgstr "上傳檔案"
 
-#: reviews/views.py:263
+#: reviews/views.py:266
 #, fuzzy
 msgid "(None - File attachments only)"
 msgstr "過時的附加檔案"
 
-#: reviews/views.py:741 templates/base.html:111
+#: reviews/views.py:747 templates/base.html:108
 #, fuzzy
 msgid "All Review Requests"
 msgstr "所有我的 Review Requests"
 
-#: reviews/views.py:849
+#: reviews/views.py:852
 #, python-format
 msgid "Review requests for %s"
 msgstr "向 %s 請求的 Review requests"
 
-#: reviews/views.py:880
+#: reviews/views.py:883
 #, python-format
 msgid "Members of group %s"
 msgstr "%s 群組的成員"
 
-#: reviews/views.py:913
+#: reviews/views.py:918
 #, python-format
 msgid "%s's review requests"
 msgstr "%s 的 review requests"
 
-#: reviews/templatetags/reviewtags.py:555
+#: reviews/templatetags/reviewtags.py:353
 msgid "Click to star"
 msgstr "標記星號"
 
@@ -2103,135 +2160,135 @@ msgstr "未在您指定的目錄找到檔案庫"
 msgid "A verified SSL certificate is required to connect to this repository."
 msgstr "連線至這個檔案庫需要一個 verified HTTPS certificate。"
 
-#: scmtools/forms.py:34
+#: scmtools/forms.py:35
 #, fuzzy
 msgid "Repository Information"
 msgstr "檔案庫主機"
 
-#: scmtools/forms.py:35
+#: scmtools/forms.py:36
 msgid "Bug Tracker"
 msgstr "Bug 追蹤系統"
 
-#: scmtools/forms.py:36
+#: scmtools/forms.py:37
 #, fuzzy
 msgid "Review Board Server SSH Key"
 msgstr "Review Board 版本不符"
 
-#: scmtools/forms.py:39
+#: scmtools/forms.py:40
 msgid "(None - Custom Repository)"
 msgstr ""
 
-#: scmtools/forms.py:42
+#: scmtools/forms.py:43
 #, fuzzy
 msgid "(None)"
 msgstr "無"
 
-#: scmtools/forms.py:45
+#: scmtools/forms.py:46
 #, fuzzy
 msgid "(Custom Bug Tracker)"
 msgstr "Bug 追蹤系統"
 
-#: scmtools/forms.py:50
+#: scmtools/forms.py:51
 msgid "Default"
 msgstr ""
 
-#: scmtools/forms.py:54 templates/admin/repository_confirmations.html:60
+#: scmtools/forms.py:55 templates/admin/repository_confirmations.html:60
 msgid "Re-edit repository"
 msgstr "重新編輯檔案庫"
 
-#: scmtools/forms.py:58 templates/admin/repository_confirmations.html:59
+#: scmtools/forms.py:59 templates/admin/repository_confirmations.html:59
 msgid "I trust this host"
 msgstr "我信任這台主機"
 
-#: scmtools/forms.py:63
+#: scmtools/forms.py:64
 msgid "Hosting service"
 msgstr ""
 
-#: scmtools/forms.py:68
+#: scmtools/forms.py:69
 #, fuzzy
 msgid "Service URL"
 msgstr "伺服器 Log"
 
-#: scmtools/forms.py:73
+#: scmtools/forms.py:74
 #, fuzzy
 msgid "Account"
 msgstr "我的帳戶"
 
-#: scmtools/forms.py:75
+#: scmtools/forms.py:76
 #, fuzzy
 msgid "<Link a new account>"
 msgstr "還沒有帳號？"
 
-#: scmtools/forms.py:76
+#: scmtools/forms.py:77
 msgid ""
 "Link this repository to an account on the hosting service. This username may "
 "be used as part of the repository URL, depending on the hosting service and "
 "plan."
 msgstr ""
 
-#: scmtools/forms.py:83 scmtools/forms.py:137
+#: scmtools/forms.py:84 scmtools/forms.py:138
 msgid "Account username"
 msgstr ""
 
-#: scmtools/forms.py:88
+#: scmtools/forms.py:89
 #, fuzzy
 msgid "Account password"
 msgstr "再次確認密碼"
 
-#: scmtools/forms.py:94
+#: scmtools/forms.py:95
 msgid "Repository type"
 msgstr "檔案庫類型"
 
-#: scmtools/forms.py:100
+#: scmtools/forms.py:101
 #, fuzzy
 msgid "Repository plan"
 msgstr "檔案庫名稱"
 
-#: scmtools/forms.py:102
+#: scmtools/forms.py:103
 msgid ""
 "The plan for your repository on this hosting service. This must match what "
 "is set for your repository."
 msgstr ""
 
-#: scmtools/forms.py:107
+#: scmtools/forms.py:108
 msgid "Associate my SSH key with the hosting service"
 msgstr ""
 
-#: scmtools/forms.py:109
+#: scmtools/forms.py:110
 msgid ""
 "Add the Review Board public SSH key to the list of authorized SSH keys on "
 "the hosting service."
 msgstr ""
 
-#: scmtools/forms.py:112
+#: scmtools/forms.py:113
 #, python-format
 msgid ""
 "This repository type supports SSH key association, but the Review Board "
 "server does not have an SSH key. <a href=\"%s\">Add an SSH key.</a>"
 msgstr ""
 
-#: scmtools/forms.py:118
+#: scmtools/forms.py:119
 msgid "Use hosting service's bug tracker"
 msgstr ""
 
-#: scmtools/forms.py:123 templates/admin/widgets/w-repositories.html:8
+#: scmtools/forms.py:124 templates/admin/widgets/w-repositories.html:8
 msgid "Type"
 msgstr "類型"
 
-#: scmtools/forms.py:128
+#: scmtools/forms.py:129
 msgid "URL"
 msgstr ""
 
-#: scmtools/forms.py:133
+#: scmtools/forms.py:134
 #, fuzzy
 msgid "Bug tracker plan"
 msgstr "Bug 追蹤系統"
 
-#: scmtools/forms.py:142 scmtools/models.py:95
+#: scmtools/forms.py:143 scmtools/models.py:95
 msgid "Bug tracker URL"
 msgstr ""
 
-#: scmtools/forms.py:147
+#: scmtools/forms.py:148
 #, python-format
 msgid ""
 "The optional path to the bug tracker for this repository. The path should "
@@ -2239,63 +2296,79 @@ msgid ""
 "number."
 msgstr ""
 
-#: scmtools/forms.py:158
+#: scmtools/forms.py:159
 #, fuzzy
 msgid "Use ticket-based authentication"
 msgstr "透過 TLS 驗證"
 
-#: scmtools/forms.py:449
+#: scmtools/forms.py:453
 #, fuzzy
 msgid "This tool is not supported on the given hosting service"
 msgstr "這個路徑無法被網頁伺服器寫入"
 
-#: scmtools/forms.py:465
+#: scmtools/forms.py:469
 msgid "This account is not compatible with this hosting service configuration"
 msgstr ""
 
-#: scmtools/forms.py:473
+#: scmtools/forms.py:477
 msgid "An account must be linked in order to use this hosting service"
 msgstr ""
 
-#: scmtools/forms.py:526
+#: scmtools/forms.py:530
 #, python-format
 msgid "Unable to link the account: %s"
 msgstr ""
 
-#: scmtools/forms.py:531
+#: scmtools/forms.py:535
 #, python-format
 msgid "Unknown error when linking the account: %s"
 msgstr ""
 
-#: scmtools/forms.py:570
+#: scmtools/forms.py:574
 msgid "A hosting service must be chosen in order to use this"
 msgstr ""
 
-#: scmtools/forms.py:603
+#: scmtools/forms.py:607
 msgid "This bug tracker type is not supported"
 msgstr ""
 
-#: scmtools/forms.py:848
+#: scmtools/forms.py:853
 msgid ""
 "Unable to associate SSH key with your hosting service. This is most often "
 "the result of a problem communicating with the hosting service. Please try "
 "again later or manually upload the SSH key to your hosting service."
 msgstr ""
 
-#: scmtools/forms.py:1135
+#: scmtools/forms.py:879 scmtools/forms.py:897
+msgid "Not a valid hosting service"
+msgstr ""
+
+#: scmtools/forms.py:916
+#, python-format
+msgid ""
+"The Python module \"%s\" is not installed.You may need to restart the server "
+"after installing it."
+msgstr ""
+
+#: scmtools/forms.py:927
+#, python-format
+msgid "The executable \"%s\" is not in the path."
+msgstr ""
+
+#: scmtools/forms.py:1142
 msgid "users with access"
 msgstr "可存取的使用者"
 
-#: scmtools/forms.py:1137
+#: scmtools/forms.py:1144
 msgid "review groups with access"
 msgstr "可存取的 review 群組"
 
-#: scmtools/git.py:364
+#: scmtools/git.py:366
 #, python-format
 msgid "Permission denied accessing the local Git repository '%s'"
 msgstr "連線到本地的 Git 檔案庫 %s 時因權限不足被拒絕"
 
-#: scmtools/git.py:367
+#: scmtools/git.py:369
 msgid "Unable to retrieve information from local Git repository"
 msgstr "無法獲得本地 Git 檔案庫的相關資訊"
 
@@ -2370,25 +2443,25 @@ msgid ""
 "the repository."
 msgstr "一個僅限受邀加入的 review 群組清單，其成員可以存取檔案庫。"
 
-#: scmtools/svn.py:512
+#: scmtools/svn.py:510
 msgid "The certificate is not yet valid."
 msgstr "這個 certificate 尚未生效。"
 
-#: scmtools/svn.py:515
+#: scmtools/svn.py:513
 msgid "The certificate has expired."
 msgstr "這個 certificate 已過期。"
 
-#: scmtools/svn.py:518
+#: scmtools/svn.py:516
 msgid "The certificate hostname does not match."
 msgstr "這個 certificate 的主機名稱不符。"
 
-#: scmtools/svn.py:522
+#: scmtools/svn.py:520
 msgid ""
 "The certificate is not issued by a trusted authority. Use the fingerprint to "
 "validate the certificate manually."
 msgstr ""
 
-#: scmtools/svn.py:584
+#: scmtools/svn.py:583
 #, python-format
 msgid ""
 "Unable to create directory %(dirname)s, which is needed for the Subversion "
@@ -2396,7 +2469,17 @@ msgid ""
 "the owner."
 msgstr ""
 
-#: ssh/errors.py:14
+#: site/validation.py:19
+#, python-format
+msgid "The user %s is not a member of this site."
+msgstr ""
+
+#: site/validation.py:38
+#, fuzzy, python-format
+msgid "The review group %s does not exist."
+msgstr "這個路徑不存在"
+
+#: ssh/errors.py:16
 #, python-format
 msgid ""
 "Unable to create directory %(dirname)s, which is needed for the SSH host "
@@ -2404,24 +2487,24 @@ msgid ""
 "make it writable only by that user."
 msgstr ""
 
-#: ssh/errors.py:33
+#: ssh/errors.py:32
 #, python-format
 msgid ""
 "Unable to authenticate against this repository using one of the supported "
 "authentication types (%(allowed_types)s)."
 msgstr "無法使用支援的驗證方式 (%(allowed_types)s) 與此檔案庫進行驗證。"
 
-#: ssh/errors.py:39
+#: ssh/errors.py:38
 msgid ""
 "Unable to authenticate against this repository using one of the supported "
 "authentication types."
 msgstr "無法使用支援的驗證方式與此檔案庫進行驗證。"
 
-#: ssh/errors.py:51
+#: ssh/errors.py:50
 msgid "This SSH key is not a valid RSA or DSS key."
 msgstr ""
 
-#: ssh/errors.py:72
+#: ssh/errors.py:71
 #, python-format
 msgid ""
 "Warning! The host key for server %(hostname)s does not match the expected "
@@ -2432,10 +2515,15 @@ msgid ""
 "unless you're certain it's safe!"
 msgstr ""
 
-#: ssh/errors.py:92
+#: ssh/errors.py:90
 #, python-format
 msgid ""
-"The authenticity of the host '%(hostname)s (%(ip)s)' couldn't be determined."
+"The authenticity of the host '%(hostname)s' (%(ip)s) could not be determined."
+msgstr ""
+
+#: ssh/errors.py:98
+#, python-format
+msgid "The authenticity of the host '%(hostname)s' could not be determined."
 msgstr ""
 
 #: ssh/storage.py:174 ssh/storage.py:214
@@ -2448,60 +2536,60 @@ msgstr ""
 msgid "Unable to read host keys file %(filename)s: %(error)s"
 msgstr ""
 
-#: templates/base.html:64 templates/admin/widgets/w-actions.html:27
+#: templates/base.html:59 templates/admin/widgets/w-actions.html:23
 msgid "Support"
 msgstr ""
 
-#: templates/base.html:66
+#: templates/base.html:61
 msgid "Documentation"
 msgstr "說明文件"
 
-#: templates/base.html:67
+#: templates/base.html:62
 msgid "Get Support"
 msgstr ""
 
-#: templates/base.html:74
+#: templates/base.html:69
 msgid "My account"
 msgstr "我的帳戶"
 
-#: templates/base.html:76
+#: templates/base.html:71
 msgid "Admin"
 msgstr "管理"
 
-#: templates/base.html:78
+#: templates/base.html:73
 msgid "Log out"
 msgstr "登出"
 
-#: templates/base.html:82 templates/accounts/login.html:53
+#: templates/base.html:77 templates/accounts/login.html:53
 msgid "Log in"
 msgstr "登入"
 
-#: templates/base.html:86 templates/accounts/register.html:9
+#: templates/base.html:81 templates/accounts/register.html:9
 #: templates/accounts/register.html:61
 msgid "Register"
 msgstr "註冊"
 
-#: templates/base.html:94
+#: templates/base.html:91
 msgid "Jump to..."
 msgstr ""
 
-#: templates/base.html:108 templates/reviews/dashboard.html:7
+#: templates/base.html:105 templates/reviews/dashboard.html:4
 msgid "My Dashboard"
 msgstr "我的面板"
 
-#: templates/base.html:109 templates/reviews/new_review_request.html:4
+#: templates/base.html:106 templates/reviews/new_review_request.html:4
 msgid "New Review Request"
 msgstr "新的 Review Request"
 
-#: templates/base.html:113
+#: templates/base.html:110
 msgid "Submitters"
 msgstr "使用者列表"
 
-#: templates/base.html:122
+#: templates/base.html:119
 msgid "JavaScript is turned off"
 msgstr "JavaScript 關閉中"
 
-#: templates/base.html:123
+#: templates/base.html:120
 msgid ""
 "Review Board requires JavaScript in order to function.\n"
 "     Please turn it on in your browser preferences."
@@ -2509,7 +2597,7 @@ msgstr ""
 "您需要開啟 JavaScript 以使用 Review Board 的某些功能。\n"
 "     請在您的瀏覽器喜好設定內開啟它。"
 
-#: templates/base.html:125
+#: templates/base.html:122
 msgid ""
 "Firefox users: if you prefer to turn on JavaScript only\n"
 "     for specific sites, we recommend the\n"
@@ -2750,79 +2838,79 @@ msgstr "資料庫"
 msgid "Extensions"
 msgstr "外掛套件"
 
-#: templates/admin/cache_stats.html:25
+#: templates/admin/cache_stats.html:28
 msgid "Memory usage:"
 msgstr "記憶體使用量："
 
-#: templates/admin/cache_stats.html:31
+#: templates/admin/cache_stats.html:34
 msgid "Keys in cache:"
 msgstr ""
 
-#: templates/admin/cache_stats.html:37
+#: templates/admin/cache_stats.html:40
 msgid "Cache hits:"
 msgstr ""
 
-#: templates/admin/cache_stats.html:43
+#: templates/admin/cache_stats.html:46
 msgid "Cache misses:"
 msgstr ""
 
-#: templates/admin/cache_stats.html:49
+#: templates/admin/cache_stats.html:52
 msgid "Cache evictions:"
 msgstr ""
 
-#: templates/admin/cache_stats.html:55
+#: templates/admin/cache_stats.html:58
 msgid "Cache traffic:"
 msgstr ""
 
-#: templates/admin/cache_stats.html:62
+#: templates/admin/cache_stats.html:65
 msgid "Uptime:"
 msgstr ""
 
-#: templates/admin/cache_stats.html:70
+#: templates/admin/cache_stats.html:73
 msgid "Statistics are not available for this backend."
 msgstr "目前的 backend 不提供統計數據"
 
-#: templates/admin/change_form.html:19
+#: templates/admin/change_form.html:21
 msgid "Home"
 msgstr ""
 
-#: templates/admin/change_form.html:31
+#: templates/admin/change_form.html:33
 msgid "History"
 msgstr ""
 
-#: templates/admin/change_form.html:42
+#: templates/admin/change_form.html:44
 msgid "Please correct the error below."
 msgid_plural "Please correct the errors below."
 msgstr[0] ""
 
-#: templates/admin/database.html:16 templates/admin/index.html:16
+#: templates/admin/database.html:14 templates/admin/index.html:14
 #, python-format
 msgid "%(name)s"
 msgstr ""
 
-#: templates/admin/database.html:18 templates/admin/index.html:18
+#: templates/admin/database.html:16 templates/admin/index.html:16
 #, python-format
 msgid "Models available in the %(name)s application."
 msgstr ""
 
-#: templates/admin/database.html:34 templates/admin/index.html:34
+#: templates/admin/database.html:32 templates/admin/index.html:32
 #: templates/reviews/review_request_box.html:83
 msgid "Change"
 msgstr "更改"
 
-#: templates/admin/database.html:44 templates/admin/index.html:44
+#: templates/admin/database.html:42 templates/admin/index.html:42
 msgid "You don't have permission to edit anything."
 msgstr "你沒有權限編輯任何資料"
 
-#: templates/admin/database.html:52 templates/admin/index.html:52
+#: templates/admin/database.html:50 templates/admin/index.html:50
 msgid "Recent Actions"
 msgstr "最近的活動"
 
-#: templates/admin/database.html:53
+#: templates/admin/database.html:51
 msgid "My Actions"
 msgstr "我的活動"
 
-#: templates/admin/database.html:56 templates/admin/index.html:55
+#: templates/admin/database.html:54 templates/admin/index.html:53
 #: templates/admin/widgets/w-recent-actions.html:6
 msgid "None available"
 msgstr "沒有可供存取的項目"
@@ -3325,96 +3413,96 @@ msgid ""
 " \"Show SSH Public Key\" to the right.\n"
 msgstr ""
 
-#: templates/admin/widgets/w-actions.html:8
+#: templates/admin/widgets/w-actions.html:4
 msgid "Enabled"
 msgstr "開啟"
 
-#: templates/admin/widgets/w-actions.html:12
+#: templates/admin/widgets/w-actions.html:8
 msgid "Disabled"
 msgstr "關閉"
 
-#: templates/admin/widgets/w-actions.html:17
+#: templates/admin/widgets/w-actions.html:13
 msgid "System Settings"
 msgstr "系統設定"
 
-#: templates/admin/widgets/w-actions.html:20
+#: templates/admin/widgets/w-actions.html:16
 msgid "General"
 msgstr "一般設定"
 
-#: templates/admin/widgets/w-actions.html:21
+#: templates/admin/widgets/w-actions.html:17
 msgid "Authentication"
 msgstr "驗證"
 
-#: templates/admin/widgets/w-actions.html:22
+#: templates/admin/widgets/w-actions.html:18
 msgid "E-Mail"
 msgstr ""
 
-#: templates/admin/widgets/w-actions.html:23
-#: templates/diffviewer/view_diff.html:11
+#: templates/admin/widgets/w-actions.html:19
+#: templates/diffviewer/view_diff.html:5
 msgid "Diff Viewer"
 msgstr "Diff 檔瀏覽器"
 
-#: templates/admin/widgets/w-actions.html:24
+#: templates/admin/widgets/w-actions.html:20
 msgid "Logging"
 msgstr "Log 記錄"
 
-#: templates/admin/widgets/w-actions.html:25
+#: templates/admin/widgets/w-actions.html:21
 msgid "SSH"
 msgstr ""
 
-#: templates/admin/widgets/w-actions.html:26
+#: templates/admin/widgets/w-actions.html:22
 msgid "File Storage"
 msgstr "檔案儲存"
 
-#: templates/admin/widgets/w-actions.html:33
+#: templates/admin/widgets/w-actions.html:29
 msgid "Manage"
 msgstr "管理"
 
-#: templates/admin/widgets/w-actions.html:35
+#: templates/admin/widgets/w-actions.html:31
 msgid "Common management operations."
 msgstr "一般管理操作。"
 
-#: templates/admin/widgets/w-actions.html:38
+#: templates/admin/widgets/w-actions.html:34
 msgid "Users"
 msgstr "使用者"
 
-#: templates/admin/widgets/w-actions.html:43
+#: templates/admin/widgets/w-actions.html:39
 msgid "Review Groups"
 msgstr "Review 群組"
 
-#: templates/admin/widgets/w-actions.html:48
+#: templates/admin/widgets/w-actions.html:44
 msgid "Default Reviewers"
 msgstr "預設審查人"
 
-#: templates/admin/widgets/w-actions.html:63
+#: templates/admin/widgets/w-actions.html:59
 msgid "System Information"
 msgstr "系統資訊"
 
-#: templates/admin/widgets/w-actions.html:73
+#: templates/admin/widgets/w-actions.html:69
 msgid "Public Read-only Access"
 msgstr "公開唯讀存取"
 
-#: templates/admin/widgets/w-actions.html:80
+#: templates/admin/widgets/w-actions.html:76
 msgid "Syntax Highlighting"
 msgstr "語法高亮度顯示"
 
-#: templates/admin/widgets/w-actions.html:87
+#: templates/admin/widgets/w-actions.html:83
 msgid "Server Log"
 msgstr "伺服器 Log"
 
-#: templates/admin/widgets/w-actions.html:94
+#: templates/admin/widgets/w-actions.html:90
 msgid "Log Profiling"
 msgstr ""
 
-#: templates/admin/widgets/w-actions.html:101
+#: templates/admin/widgets/w-actions.html:97
 msgid "Review Emails"
 msgstr ""
 
-#: templates/admin/widgets/w-actions.html:108
+#: templates/admin/widgets/w-actions.html:104
 msgid "Email TLS Authentication"
 msgstr "Email 透過 TLS 驗證"
 
-#: templates/admin/widgets/w-actions.html:115
+#: templates/admin/widgets/w-actions.html:111
 msgid "Indexed Search"
 msgstr "索引搜尋"
 
@@ -3498,211 +3586,175 @@ msgstr "您是目前唯一登入的使用者..."
 msgid "Add Users +"
 msgstr "新增使用者 +"
 
-#: templates/diffviewer/changeindex.html:23
-#, fuzzy
-msgid "Binary file"
-msgstr "二進位檔"
-
-#: templates/diffviewer/diff_file_fragment.html:33
+#: templates/diffviewer/diff_file_fragment.html:30
 #, fuzzy
 msgid "Collapse lines"
 msgstr "收併更改"
 
-#: templates/diffviewer/diff_file_fragment.html:72
+#: templates/diffviewer/diff_file_fragment.html:79
 msgid " (moved)"
 msgstr " （已被移動）"
 
-#: templates/diffviewer/diff_file_fragment.html:77
-msgid "No changes were made to this file."
-msgstr "這個檔案沒有任何變更。"
+#: templates/diffviewer/diff_file_fragment.html:107
+#: templates/diffviewer/diff_file_fragment.html:117
+#, fuzzy
+msgid "Download"
+msgstr "下載 Diff 檔"
 
-#: templates/diffviewer/diff_file_fragment.html:93
+#: templates/diffviewer/diff_file_fragment.html:120
+#: templates/reviews/review_request_actions_primary.html:3
+#: templates/reviews/review_request_box.html:196
+msgid "Review"
+msgstr "新增審查評論"
+
+#: templates/diffviewer/diff_file_fragment.html:122
+#: templates/reviews/review_request_box.html:198
+msgid "Add Comment"
+msgstr "新增留言"
+
+#: templates/diffviewer/diff_file_fragment.html:139
+#: templates/diffviewer/diff_file_fragment.html:151
 msgid "This is a binary file. The content cannot be displayed."
 msgstr "這是一個二進位檔，無法顯示內容"
 
-#: templates/diffviewer/diff_file_fragment.html:100
+#: templates/diffviewer/diff_file_fragment.html:145
+#: templates/diffviewer/diff_file_fragment.html:157
+#, fuzzy
+msgid "No preview available."
+msgstr "尚無可用的檔案庫。"
+
+#: templates/diffviewer/diff_file_fragment.html:166
+msgid "No changes were made to this file."
+msgstr "這個檔案沒有任何變更。"
+
+#: templates/diffviewer/diff_file_fragment.html:172
 msgid "This file was deleted. The content cannot be displayed."
 msgstr "這個檔案已被刪除，無法顯示內容。"
 
-#: templates/diffviewer/diff_file_fragment.html:107
+#: templates/diffviewer/diff_file_fragment.html:179
 msgid "This file contains only whitespace changes."
 msgstr "這個檔案只包含空白符的變更"
 
-#: templates/diffviewer/diff_file_fragment.html:121
+#: templates/diffviewer/diff_file_fragment.html:193
 msgid "Show 20 more lines above"
 msgstr ""
 
-#: templates/diffviewer/diff_file_fragment.html:125
+#: templates/diffviewer/diff_file_fragment.html:197
 #, python-format
 msgid "%(lines)s line"
 msgid_plural "%(lines)s lines"
 msgstr[0] ""
 
-#: templates/diffviewer/diff_file_fragment.html:126
+#: templates/diffviewer/diff_file_fragment.html:198
 #, fuzzy
 msgid "Show all lines"
 msgstr "在哪些類型檔案顯示所有的空白符"
 
-#: templates/diffviewer/diff_file_fragment.html:131
+#: templates/diffviewer/diff_file_fragment.html:203
 msgid "Show 20 more lines below"
 msgstr ""
 
-#: templates/diffviewer/diff_fragment_error.html:35
-msgid "Diff currently unavailable."
-msgstr "目前無法使用 Diff 檔"
+#: templates/diffviewer/diff_fragment_error.html:17
+#, fuzzy, python-format
+msgid ""
+"\n"
+"     (Diff revisions %(revision1)s - %(revision2)s)\n"
+msgstr "Diff 檔案第 %(revision)s 版 （最新版）"
 
-#: templates/diffviewer/diff_fragment_error.html:39
-msgid "Error:"
-msgstr "錯誤："
+#: templates/diffviewer/diff_fragment_error.html:21
+#, fuzzy, python-format
+msgid ""
+"\n"
+"     (Diff revision %(revision)s)\n"
+msgstr "Diff 檔案第 %(revision)s 版"
 
-#: templates/diffviewer/view_diff.html:42
-#: templates/reviews/review_detail.html:36 templates/reviews/ui/base.html:12
+#: templates/diffviewer/diff_fragment_error.html:46
+#, fuzzy
+msgid "There was an error displaying this diff."
+msgstr "在驗證 certificate 時有錯誤發生："
+
+#: templates/diffviewer/diff_fragment_error.html:52
+msgid ""
+"\n"
+"     This may be a bug in the software, a temporary outage, or an issue\n"
+"     with the format of your diff.\n"
+msgstr ""
+
+#: templates/diffviewer/diff_fragment_error.html:59
+#, python-format
+msgid ""
+"\n"
+"     Please try again, and if you still have trouble,\n"
+"     <a href=\"%(support_url)s\">contact support</a>.\n"
+msgstr ""
+
+#: templates/diffviewer/diff_fragment_error.html:70
+msgid "Details"
+msgstr ""
+
+#: templates/diffviewer/view_diff.html:36
+#: templates/reviews/review_detail.html:36 templates/reviews/ui/base.html:21
 msgid "Download Diff"
 msgstr "下載 Diff 檔"
 
-#: templates/diffviewer/view_diff.html:45 templates/reviews/ui/base.html:15
+#: templates/diffviewer/view_diff.html:39 templates/reviews/ui/base.html:24
 msgid "View Reviews"
 msgstr "觀看審查細節"
 
-#: templates/diffviewer/view_diff.html:59
-#, python-format
-msgid "Changes between revision %(revision)s and %(interdiff_revision)s"
-msgstr "在第 %(revision)s 版與第 %(interdiff_revision)s 版之間的差異"
-
-#: templates/diffviewer/view_diff.html:62
-#, python-format
-msgid "Diff revision %(revision)s (Latest)"
-msgstr "Diff 檔案第 %(revision)s 版 （最新版）"
-
-#: templates/diffviewer/view_diff.html:66
-msgid "Draft diff"
-msgstr "草稿的 Diff 檔"
-
-#: templates/diffviewer/view_diff.html:68
-msgid ""
-"\n"
-"  This diff is part of your current draft. Other users will not see this\n"
-"  diff until you publish your draft.\n"
-msgstr ""
-"\n"
-" 這個 diff 檔是您目前草稿的一部分。除非您發佈您的草稿，\n"
-"否則其他使用者無法看到它。\n"
-
-#: templates/diffviewer/view_diff.html:74
-#, python-format
-msgid "Diff revision %(revision)s"
-msgstr "Diff 檔案第 %(revision)s 版"
-
-#: templates/diffviewer/view_diff.html:76
-#, python-format
-msgid ""
-"\n"
-"  This is not the most recent revision of the diff. The\n"
-"  <a href=\"%(review_request_url)sdiff/\">latest diff</a> is revision\n"
-"  %(latest_revision)s.\n"
-"  <a href=\"%(review_request_url)sdiff/%(revision)s-%(latest_revision)s/"
-"\">See what's changed.</a>\n"
-msgstr ""
-"\n"
-"  這不是 diff 檔案的最新版本。\n"
-"  <a href=\"%(review_request_url)sdiff/\">最新的 diff 檔</a> \n"
-"  是第 %(latest_revision)s 版。\n"
-"  <a href=\"%(review_request_url)sdiff/%(revision)s-%(latest_revision)s/\">看"
-"看有哪些更動</a>。\n"
-
-#: templates/diffviewer/view_diff.html:90
-msgid "You have unpublished comments on other revisions"
-msgstr "你已經撤回在其他版本的留言"
-
-#: templates/diffviewer/view_diff.html:92
-msgid "Your review consists of comments on the following revisions:"
-msgstr "你的 review 在以下幾個版本有留言內容："
-
-#: templates/diffviewer/view_diff.html:117
-msgid "Jump to revision:"
-msgstr "跳至特定的版本"
-
-#: templates/diffviewer/view_diff.html:139
-#, python-format
-msgid "Changes between r%(revision)s and:"
-msgstr "比較修改的變更：第 %(revision)s 版與"
-
-#: templates/diffviewer/view_diff.html:170
+#: templates/diffviewer/view_diff.html:57
 msgid "Expand changes"
 msgstr "展開更改"
 
-#: templates/diffviewer/view_diff.html:172
+#: templates/diffviewer/view_diff.html:59
 msgid "Collapse changes"
 msgstr "收併更改"
 
-#: templates/diffviewer/view_diff.html:175
+#: templates/diffviewer/view_diff.html:62
 msgid "Hide Extra Whitespace"
 msgstr "隱藏額外空白符"
 
-#: templates/diffviewer/view_diff.html:176
+#: templates/diffviewer/view_diff.html:63
 msgid "Show Extra Whitespace"
 msgstr "顯示額外空白符"
 
-#: templates/diffviewer/view_diff.html:178
+#: templates/diffviewer/view_diff.html:65
 msgid "Hide Whitespace changes"
 msgstr "隱藏空白符變更"
 
-#: templates/diffviewer/view_diff.html:179
+#: templates/diffviewer/view_diff.html:66
 msgid "Show Whitespace changes"
 msgstr "顯示空白符變更"
-
-#: templates/diffviewer/view_diff.html:211
-#, python-format
-msgid "This diff has been split across %(pages)s pages:"
-msgstr "這個 diff 檔被分開顯示在 %(pages)s 頁："
-
-#: templates/diffviewer/view_diff.html:212
-msgid "Previous Page"
-msgstr "前一頁"
-
-#: templates/diffviewer/view_diff.html:215
-msgid "Current Page"
-msgstr "當前頁"
-
-#: templates/diffviewer/view_diff.html:217
-#, python-format
-msgid "Page %(num)s "
-msgstr "第 %(num)s 頁"
-
-#: templates/diffviewer/view_diff.html:220
-msgid "Next Page"
-msgstr "下一頁"
 
 #: templates/reviews/comment_issue.html:16
 #, fuzzy
 msgid "Show all issues"
 msgstr "在哪些類型檔案顯示所有的空白符"
 
-#: templates/reviews/dashboard.html:27
+#: templates/reviews/dashboard.html:20
 #, fuzzy
 msgid "Starred Reviews"
 msgstr "標記星號的 Review Requests"
 
-#: templates/reviews/dashboard.html:28
+#: templates/reviews/dashboard.html:21
 #, fuzzy
 msgid "Outgoing Reviews"
 msgstr "所有我提出的 Review Requests"
 
-#: templates/reviews/dashboard.html:29
+#: templates/reviews/dashboard.html:22
 #, fuzzy
 msgid "Incoming Reviews"
 msgstr "待決的 Reviews"
 
-#: templates/reviews/dashboard.html:30
+#: templates/reviews/dashboard.html:23
 msgid "To Me"
 msgstr ""
 
-#: templates/reviews/dashboard.html:35
+#: templates/reviews/dashboard.html:28
 #, fuzzy
 msgid "Watched Groups"
 msgstr "追蹤群組"
 
-#: templates/reviews/dashboard.html:40
+#: templates/reviews/dashboard.html:33
 #, fuzzy
 msgid "All My Requests"
 msgstr "所有我的 Review Requests"
@@ -3733,7 +3785,7 @@ msgstr ""
 msgid "Review Request"
 msgstr ""
 
-#: templates/reviews/review_detail.html:40 templates/reviews/ui/base.html:17
+#: templates/reviews/review_detail.html:40 templates/reviews/ui/base.html:26
 msgid "View Diff"
 msgstr "觀看檔案差異"
 
@@ -3756,47 +3808,47 @@ msgid ""
 "%(timestamp)s</time> (%(timestamp)s)"
 msgstr ""
 
-#: templates/reviews/review_detail.html:208
+#: templates/reviews/review_detail.html:211
 msgid "Review request changed"
 msgstr "Review request 更動"
 
-#: templates/reviews/review_detail.html:209
+#: templates/reviews/review_detail.html:212
 #, python-format
 msgid ""
 "Updated <time class=\"timesince\" datetime=\"%(timestamp_raw)s\">"
 "%(timestamp)s</time> (%(timestamp)s)"
 msgstr ""
 
-#: templates/reviews/review_detail.html:217
+#: templates/reviews/review_detail.html:220
 msgid "Changed from:"
 msgstr "由修改前的："
 
-#: templates/reviews/review_detail.html:219
+#: templates/reviews/review_detail.html:222
 msgid "Changed to:"
 msgstr "更改為："
 
-#: templates/reviews/review_detail.html:222
-#: templates/reviews/review_detail.html:263
+#: templates/reviews/review_detail.html:225
+#: templates/reviews/review_detail.html:268
 #, python-format
 msgid "changed from <i>%(old_value)s</i> to <i>%(new_value)s</i>"
 msgstr "由 <i>%(old_value)s</i> 更改為 <i>%(new_value)s</i>"
 
-#: templates/reviews/review_detail.html:238
+#: templates/reviews/review_detail.html:241
 #, python-format
 msgid "removed %(removed_values)s"
 msgstr "移除 %(removed_values)s"
 
-#: templates/reviews/review_detail.html:247
+#: templates/reviews/review_detail.html:251
 #, fuzzy
 msgid "Show changes"
 msgstr "顯示空白符變更"
 
-#: templates/reviews/review_detail.html:256
+#: templates/reviews/review_detail.html:261
 #, python-format
 msgid "added %(added_values)s"
 msgstr "新增 %(added_values)s"
 
-#: templates/reviews/review_detail.html:271
+#: templates/reviews/review_detail.html:276
 msgid "Description:"
 msgstr "說明"
 
@@ -3826,7 +3878,7 @@ msgid "This review request is a draft."
 msgstr "這個 review request 仍是一個草稿"
 
 #: templates/reviews/review_header.html:35
-#: templates/reviews/review_header.html:44
+#: templates/reviews/review_header.html:48
 msgid "Be sure to publish when finished."
 msgstr "務必確認在結束後發佈出去。"
 
@@ -3842,16 +3894,16 @@ msgstr "捨棄草稿"
 msgid "Describe your changes (optional):"
 msgstr "請描述您作的變更（選填）："
 
-#: templates/reviews/review_header.html:43
+#: templates/reviews/review_header.html:47
 msgid "This review request is not yet public."
 msgstr "這個 review request 尚未公開。"
 
-#: templates/reviews/review_header.html:46
+#: templates/reviews/review_header.html:50
 #: templates/reviews/reviewable_base.html:24
 msgid "Publish"
 msgstr "發表出去"
 
-#: templates/reviews/review_header.html:48
+#: templates/reviews/review_header.html:52
 msgid "Discard Review Request"
 msgstr "捨棄 Review Request"
 
@@ -3895,11 +3947,6 @@ msgstr ""
 #: templates/reviews/review_reply_section.html:10
 msgid "Add comment"
 msgstr "新增留言"
-
-#: templates/reviews/review_request_actions_primary.html:3
-#: templates/reviews/review_request_box.html:196
-msgid "Review"
-msgstr "新增審查評論"
 
 #: templates/reviews/review_request_actions_secondary.html:8
 msgid "Close"
@@ -3995,10 +4042,6 @@ msgstr "刪除截圖"
 msgid "File Attachments"
 msgstr "附加檔案"
 
-#: templates/reviews/review_request_box.html:198
-msgid "Add Comment"
-msgstr "新增留言"
-
 #: templates/reviews/review_request_box.html:208
 #, fuzzy
 msgid "Delete FIle"
@@ -4078,29 +4121,99 @@ msgstr "%(submitter)s 有一個 review request #%(id)s！"
 msgid "Groups:"
 msgstr "群組："
 
-#: webapi/resources.py:6673
+#: webapi/resources/review_request_last_update.py:88
 msgid "Review request submitted"
 msgstr "Review request 已送交"
 
-#: webapi/resources.py:6675
+#: webapi/resources/review_request_last_update.py:90
 msgid "Review request discarded"
 msgstr "Review request 已捨棄"
 
-#: webapi/resources.py:6677
+#: webapi/resources/review_request_last_update.py:92
 msgid "Review request updated"
 msgstr "Review request 已更新"
 
-#: webapi/resources.py:6681
+#: webapi/resources/review_request_last_update.py:96
 msgid "Diff updated"
 msgstr "Diff 檔已更新"
 
-#: webapi/resources.py:6687
+#: webapi/resources/review_request_last_update.py:102
 msgid "New reply"
 msgstr "新的回覆"
 
-#: webapi/resources.py:6690
+#: webapi/resources/review_request_last_update.py:105
 msgid "New review"
 msgstr "新的審查"
+
+#~ msgid "file_attachment"
+#~ msgstr "附加檔案"
+
+#, fuzzy
+#~ msgid "Binary file"
+#~ msgstr "二進位檔"
+
+#~ msgid "Diff currently unavailable."
+#~ msgstr "目前無法使用 Diff 檔"
+
+#~ msgid "Error:"
+#~ msgstr "錯誤："
+
+#~ msgid "Changes between revision %(revision)s and %(interdiff_revision)s"
+#~ msgstr "在第 %(revision)s 版與第 %(interdiff_revision)s 版之間的差異"
+
+#~ msgid "Draft diff"
+#~ msgstr "草稿的 Diff 檔"
+
+#~ msgid ""
+#~ "\n"
+#~ "  This diff is part of your current draft. Other users will not see this\n"
+#~ "  diff until you publish your draft.\n"
+#~ msgstr ""
+#~ "\n"
+#~ " 這個 diff 檔是您目前草稿的一部分。除非您發佈您的草稿，\n"
+#~ "否則其他使用者無法看到它。\n"
+
+#~ msgid ""
+#~ "\n"
+#~ "  This is not the most recent revision of the diff. The\n"
+#~ "  <a href=\"%(review_request_url)sdiff/\">latest diff</a> is revision\n"
+#~ "  %(latest_revision)s.\n"
+#~ "  <a href=\"%(review_request_url)sdiff/%(revision)s-%(latest_revision)s/"
+#~ "\">See what's changed.</a>\n"
+#~ msgstr ""
+#~ "\n"
+#~ "  這不是 diff 檔案的最新版本。\n"
+#~ "  <a href=\"%(review_request_url)sdiff/\">最新的 diff 檔</a> \n"
+#~ "  是第 %(latest_revision)s 版。\n"
+#~ "  <a href=\"%(review_request_url)sdiff/%(revision)s-%(latest_revision)s/"
+#~ "\">看看有哪些更動</a>。\n"
+
+#~ msgid "You have unpublished comments on other revisions"
+#~ msgstr "你已經撤回在其他版本的留言"
+
+#~ msgid "Your review consists of comments on the following revisions:"
+#~ msgstr "你的 review 在以下幾個版本有留言內容："
+
+#~ msgid "Jump to revision:"
+#~ msgstr "跳至特定的版本"
+
+#~ msgid "Changes between r%(revision)s and:"
+#~ msgstr "比較修改的變更：第 %(revision)s 版與"
+
+#~ msgid "This diff has been split across %(pages)s pages:"
+#~ msgstr "這個 diff 檔被分開顯示在 %(pages)s 頁："
+
+#~ msgid "Previous Page"
+#~ msgstr "前一頁"
+
+#~ msgid "Current Page"
+#~ msgstr "當前頁"
+
+#~ msgid "Page %(num)s "
+#~ msgstr "第 %(num)s 頁"
+
+#~ msgid "Next Page"
+#~ msgstr "下一頁"
 
 #~ msgid "deleted"
 #~ msgstr "已刪除"
