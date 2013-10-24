@@ -219,6 +219,8 @@
         }
 
         .diff-collapse-btn {
+          @image-size: 14px;
+
           background: #E4D9CB;
           border: 1px black solid;
           padding: 5px;
@@ -227,6 +229,8 @@
           right: -8px;
           z-index: @z-index-diff-collapse-btn;
           opacity: 0.8;
+          width: @image-size;
+          height: @image-size;
 
           &:hover {
             opacity: 1.0;
