@@ -1,5 +1,5 @@
 {% extends "notifications/email_base.html" %}
-{% load djblets_email djblets_utils rb_extensions %}
+{% load djblets_email djblets_utils markdown_email rb_extensions %}
 
 {% block content %}
 {%  if review.ship_it %}
@@ -7,7 +7,7 @@
 {%  endif %}
 
 {% if review.body_top %}
- <pre style="{{precss}}">{{review.body_top}}</pre>
+ <pre style="{{precss}}">{{review.body_top|markdown_email_html:review.rich_text}}</pre>
  <br />
 {% endif %}
 
@@ -22,7 +22,7 @@
 </table>
 <div style="margin-left: 2em;">
 {%  comment_detail_display_hook comment "html-email" %}
- <pre style="{{precss}}">{{comment.text}}</pre>
+ <pre style="{{precss}}">{{comment.text|markdown_email_html:comment.rich_text}}</pre>
 </div>
 <br />
 {% endfor %}
@@ -45,7 +45,7 @@
 </table>
 <div style="margin-left: 2em;">
 {%  comment_detail_display_hook comment "html-email" %}
- <pre style="{{precss}}">{{comment.text}}</pre>
+ <pre style="{{precss}}">{{comment.text|markdown_email_html:comment.rich_text}}</pre>
 </div>
 <br />
 {% endfor %}
@@ -55,14 +55,14 @@
 {{entry.html|safe}}
  <div style="margin-left: 2em;">
 {%  comment_detail_display_hook entry.comment "html-email" %}
-  <pre style="{{precss}}">{{entry.comment.text}}</pre>
+  <pre style="{{precss}}">{{entry.comment.text|markdown_email_html:entry.comment.rich_text}}</pre>
  </div>
 </div>
 <br />
 {% endfor %}
 
 {% if review.body_bottom %}
- <pre style="{{precss}}">{{review.body_bottom}}</pre>
+ <pre style="{{precss}}">{{review.body_bottom|markdown_email_html:review.rich_text}}</pre>
 {% endif %}
 <p>- {{review.user|user_displayname}}</p>
 {% endblock %}

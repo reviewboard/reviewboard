@@ -1,6 +1,5 @@
 {% extends "notifications/email_base.html" %}
-{% load djblets_email %}
-{% load djblets_utils %}
+{% load djblets_email djblets_utils markdown_email %}
 
 {% block content %}
 
@@ -9,7 +8,7 @@
 <blockquote style="margin-left: 1em; border-left: 2px solid #d0d0d0; padding-left: 10px;">
  <p style="margin-top: 0;">On {{review.time_emailed|date:"F jS, Y, P T"}}, <b>{{review.user|user_displayname}}</b> wrote:</p>
  <blockquote style="margin-left: 1em; border-left: 2px solid #d0d0d0; padding-left: 10px;">
-  <pre style="{{precss}}">{{review.body_top}}</pre>
+  <pre style="{{precss}}">{{review.body_top|markdown_email_html:review.rich_text}}</pre>
  </blockquote>
 {%  endif %}
 {%  for reply_review in review.public_replies %}
@@ -17,7 +16,7 @@
 {%    if reply_review != reply %}
  <p>On {{reply_review.timestamp|date:"F jS, Y, P T"}}, <b>{{reply_review.user|user_displayname}}</b> wrote:</p>
  <blockquote style="margin-left: 1em; border-left: 2px solid #d0d0d0; padding-left: 10px;">
-  <pre style="{{precss}}">{{reply_review.body_top}}</pre>
+  <pre style="{{precss}}">{{reply_review.body_top|markdown_email_html:reply_review.rich_text}}</pre>
  </blockquote>
 {%    endif %}
 {%   endif %}
@@ -25,7 +24,7 @@
 {%  if review.body_top %}
 </blockquote>
 {%  endif %}
-<pre style="{{precss}}">{{reply.body_top}}</pre>
+<pre style="{{precss}}">{{reply.body_top|markdown_email_html:reply.rich_text}}</pre>
 <br />
 {% endif %}
 
@@ -58,13 +57,13 @@
 {%    if reply_comment != comment %}
  <p>On {{reply_comment.timestamp|date:"F jS, Y, P T"}}, <b>{{reply_comment.review.get.user|user_displayname}}</b> wrote:</p>
  <blockquote style="margin: 1em 0 0 1em; border-left: 2px solid #d0d0d0; padding: 0 0 0 1em;">
-  <pre style="{{precss}}">{{reply_comment.text}}</pre>
+  <pre style="{{precss}}">{{reply_comment.text|markdown_email_html:reply_comment.rich_text}}</pre>
  </blockquote>
 {%    endif %}
 {%   endif %}
 {%  endfor %}
 </blockquote>
-<pre style="margin-left: 1em; {{precss}}">{{comment.text}}</pre>
+<pre style="margin-left: 1em; {{precss}}">{{comment.text|markdown_email_html:comment.rich_text}}</pre>
 <br />
 {% endfor %}
 
@@ -90,13 +89,13 @@
 {%    if reply_comment != comment %}
  <p>On {{reply_comment.timestamp|date:"F jS, Y, P T"}}, <b>{{reply_comment.review.get.user|user_displayname}}</b> wrote:</p>
  <blockquote style="margin: 1em 0 0 1em; border-left: 2px solid #d0d0d0; padding: 0 0 0 1em;">
-  <pre style="{{precss}}">{{reply_comment.text}}</pre>
+  <pre style="{{precss}}">{{reply_comment.text|markdown_email_html:reply_comment.rich_text}}</pre>
  </blockquote>
 {%    endif %}
 {%   endif %}
 {%  endfor %}
 </blockquote>
-<pre style="margin-left: 1em; {{precss}}">{{comment.text}}</pre>
+<pre style="margin-left: 1em; {{precss}}">{{comment.text|markdown_email_html:comment.rich_text}}</pre>
 <br />
 {% endfor %}
 
@@ -105,20 +104,20 @@
  <p style="margin-top: 0;">On {{review.time_emailed|date:"F jS, Y, P T"}}, <b>{{review.user|user_displayname}}</b> wrote:</p>
  <blockquote style="margin-left: 1em; border-left: 2px solid #d0d0d0; padding-left: 10px;">
   {{entry.html|safe}}
-  <pre style="{{precss}}">{{entry.comment.reply_to.text}}</pre>
+  <pre style="{{precss}}">{{entry.comment.reply_to.text|markdown_email_html:entry.comment.reply_to.rich_text}}</pre>
  </blockquote>
 {%  for reply_comment in entry.comment.reply_to.public_replies %}
 {%   if reply_comment.text %}
 {%    if reply_comment != entry.comment %}
  <p>On {{reply_comment.timestamp|date:"F jS, Y, P T"}}, <b>{{reply_comment.review.get.user|user_displayname}}</b> wrote:</p>
  <blockquote style="margin-left: 1em; border-left: 2px solid #d0d0d0; padding-left: 10px;">
-  <pre style="{{precss}}">{{reply_comment.text}}</pre>
+  <pre style="{{precss}}">{{reply_comment.text|markdown_email_html:reply_comment.rich_text}}</pre>
  </blockquote>
 {%    endif %}
 {%   endif %}
 {%  endfor %}
 </blockquote>
-<pre style="margin-left: 1em; {{precss}}">{{entry.comment.text}}</pre>
+<pre style="margin-left: 1em; {{precss}}">{{entry.comment.text|markdown_email_html:entry.comment.rich_text}}</pre>
 <br />
 {% endfor %}
 
@@ -127,7 +126,7 @@
 <blockquote style="margin-left: 1em; border-left: 2px solid #d0d0d0; padding-left: 10px;">
  <p style="margin-top: 0;">On {{review.time_emailed|date:"F jS, Y, P T"}}, <b>{{review.user|user_displayname}}</b> wrote:</p>
  <blockquote style="margin-left: 1em; border-left: 2px solid #d0d0d0; padding-left: 10px;">
-  <pre style="{{precss}}">{{review.body_bottom}}</pre>
+  <pre style="{{precss}}">{{review.body_bottom|markdown_email_html:review.rich_text}}</pre>
  </blockquote>
 {%  endif %}
 {%  for reply_review in review.public_replies %}
@@ -135,7 +134,7 @@
 {%    if reply_review != reply %}
  <p>On {{reply_review.timestamp|date:"F jS, Y, P T"}}, <b>{{reply_review.user|user_displayname}}</b> wrote:</p>
  <blockquote style="margin-left: 1em; border-left: 2px solid #d0d0d0; padding-left: 10px;">
-  <pre style="{{precss}}">{{reply_review.body_bottom}}</pre>
+  <pre style="{{precss}}">{{reply_review.body_bottom|markdown_email_html:reply_review.rich_text}}</pre>
  </blockquote>
 {%    endif %}
 {%   endif %}
@@ -143,7 +142,7 @@
 {%  if review.body_bottom %}
 </blockquote>
 {%  endif %}
-<pre style="{{precss}}">{{reply.body_bottom}}</pre>
+<pre style="{{precss}}">{{reply.body_bottom|markdown_email_html:reply.rich_text}}</pre>
 <br />
 {% endif %}
 
