@@ -180,7 +180,7 @@ setup(name=PACKAGE_NAME,
           'Pygments>=1.5',
           'python-dateutil==1.5',
           'python-memcached',
-          'pytz>=2012h',
+          'pytz',
           'recaptcha-client',
       ],
       dependency_links = [
