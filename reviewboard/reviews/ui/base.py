@@ -75,12 +75,16 @@ class ReviewUI(object):
         """
         self.request = request
 
+        last_activity_time, updated_object = \
+            self.review_request.get_last_activity()
+
         draft = self.review_request.get_draft(request.user)
         review_request_details = draft or self.review_request
         context = {
             'caption': self.get_caption(draft),
             'comments': self.get_comments(),
             'draft': draft,
+            'last_activity_time': last_activity_time,
             'review_request_details': review_request_details,
             'review_request': self.review_request,
             'review_ui': self,
