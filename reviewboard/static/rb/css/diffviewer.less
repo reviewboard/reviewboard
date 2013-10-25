@@ -9,8 +9,8 @@
 @diff-header-color: #e4d9cb;
 
 // Moved line information
-@diff-moved-bg-color: #b0d0ff;
-@diff-moved-border-color: desaturate(darken(@diff-moved-bg-color, 20%), 35%);
+@diff-moved-from-bg-color: #b0d0ff;
+@diff-moved-to-bg-color: darken(@diff-moved-from-bg-color, 3%);
 
 // Equals lines
 @diff-linenum-color: #F0F0F0;
@@ -160,31 +160,53 @@
     padding-left: 2px;
   }
 
-  .moved-to, .moved-from {
-    background-color: @diff-moved-bg-color !important;
-    border: 1px @diff-moved-border-color solid;
-    display: block;
-    margin: -1px;
-    padding: 1px 0.5em;
+  .moved-to {
+    border-left: 4px @diff-moved-to-bg-color solid !important;
 
-    span {
-      background-color: @diff-moved-bg-color !important;
-      display: block;
-      font-size: 7pt;
-      padding: 1px 0;
+    .moved-flag {
+      background-color: @diff-moved-to-bg-color !important;
     }
   }
 
-  .moved-to {
-    .border-radius(8px, 0, 0, 8px);
-    float: right;
-    padding-left: 1em;
+  .moved-from {
+    border-right: 4px @diff-moved-from-bg-color solid !important;
+
+    .moved-flag {
+      background-color: @diff-moved-from-bg-color !important;
+    }
   }
 
-  .moved-from {
-    .border-radius(0px, 8px, 8px, 0);
-    float: left;
-    padding-right: 1em;
+  .moved-flag {
+    display: inline-block;
+    margin: -1px;
+    padding: 0;
+
+    span {
+      background-color: inherit !important;
+      display: block;
+      font-size: 7pt;
+      padding: 0;
+    }
+  }
+
+  .moved-to-start, .moved-from-start {
+    .moved-flag {
+      padding: 3px 1em;
+    }
+  }
+
+  .moved-to-start {
+    .moved-flag {
+      .border-radius(0, 8px, 8px, 0);
+    }
+  }
+
+  .moved-from-start {
+    text-align: right;
+
+    .moved-flag {
+      .border-radius(8px, 0, 0, 8px);
+    }
   }
 
   tbody {

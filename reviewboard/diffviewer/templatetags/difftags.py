@@ -198,10 +198,18 @@ def diff_lines(file, chunk, standalone, line_fmt, anchor_fmt,
     is_insert = (change == 'insert')
     is_delete = (change == 'delete')
 
+    moved_from_first_line = None
+    moved_to_first_line = None
+
     result = []
 
     for i, line in enumerate(lines):
-        class_attr = ''
+        row_classes = []
+        cell_1_classes = []
+        cell_2_classes = []
+        row_class_attr = ''
+        cell_1_class_attr = ''
+        cell_2_class_attr = ''
         line1 = line[2]
         line2 = line[5]
         linenum1 = line[1]
@@ -210,20 +218,15 @@ def diff_lines(file, chunk, standalone, line_fmt, anchor_fmt,
         anchor = None
 
         if not is_equal:
-            classes = ''
-
             if i == 0:
-                classes += 'first '
+                row_classes.append('first')
                 anchor = '%s.%s' % (file['index'], chunk_index)
 
             if i == num_lines - 1:
-                classes += 'last '
+                row_classes.append('last')
 
             if line[7]:
-                classes += 'whitespace-line'
-
-            if classes:
-                class_attr = ' class="%s"' % classes
+                row_classes.append('whitespace-line')
 
             if is_replace:
                 if len(line1) < DiffChunkGenerator.STYLED_MAX_LINE_LEN:
@@ -247,20 +250,46 @@ def diff_lines(file, chunk, standalone, line_fmt, anchor_fmt,
 
         if len(line) > 8 and line[8]:
             if is_insert:
-                moved_from = {
-                    'class': 'moved-from',
-                    'line': mark_safe(line[8]),
-                    'target': mark_safe(linenum2),
-                    'text': _('Moved from %s') % line[8],
-                }
+                cell_1_classes.append('moved-from')
+
+                if moved_from_first_line is None:
+                    cell_1_classes.append('moved-from-start')
+                    moved_from_first_line = i
+                    moved_from = {
+                        'class': 'moved-flag',
+                        'line': mark_safe(line[8]),
+                        'target': mark_safe(linenum2),
+                        'text': _('Moved from %s') % line[8],
+                    }
+            else:
+                moved_from_first_line = None
 
             if is_delete:
-                moved_to = {
-                    'class': 'moved-to',
-                    'line': mark_safe(line[8]),
-                    'target': mark_safe(linenum1),
-                    'text': _('Moved to %s') % line[8],
-                }
+                cell_2_classes.append('moved-to')
+
+                if moved_to_first_line is None:
+                    cell_2_classes.append('moved-to-start')
+                    moved_to_first_line = i
+                    moved_to = {
+                        'class': 'moved-flag',
+                        'line': mark_safe(line[8]),
+                        'target': mark_safe(linenum1),
+                        'text': _('Moved to %s') % line[8],
+                    }
+            else:
+                moved_to_first_line = None
+        else:
+            moved_from_first_line = None
+            moved_to_first_line = None
+
+        if row_classes:
+            row_class_attr = ' class="%s"' % ' '.join(row_classes)
+
+        if cell_1_classes:
+            cell_1_class_attr = ' class="%s"' % ' '.join(cell_1_classes)
+
+        if cell_2_classes:
+            cell_2_class_attr = ' class="%s"' % ' '.join(cell_2_classes)
 
         anchor_html = ''
         begin_collapse_html = ''
@@ -270,7 +299,9 @@ def diff_lines(file, chunk, standalone, line_fmt, anchor_fmt,
 
         context = {
             'chunk_index': chunk_index,
-            'class_attr': class_attr,
+            'row_class_attr': row_class_attr,
+            'cell_1_class_attr': cell_1_class_attr,
+            'cell_2_class_attr': cell_2_class_attr,
             'linenum_row': line[0],
             'linenum1': linenum1,
             'linenum2': linenum2,
