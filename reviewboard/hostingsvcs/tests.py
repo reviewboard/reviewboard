@@ -1,5 +1,9 @@
 from __future__ import with_statement
 from urllib2 import HTTPError
+try:
+    from cStringIO import StringIO
+except ImportError:
+    from StringIO import StringIO
 
 from django.contrib.sites.models import Site
 from django.test import TestCase
@@ -10,6 +14,7 @@ from reviewboard.hostingsvcs.models import HostingServiceAccount
 from reviewboard.hostingsvcs.service import get_hosting_service
 from reviewboard.scmtools.errors import FileNotFoundError
 from reviewboard.scmtools.models import Repository, Tool
+from reviewboard.testing import TestCase
 
 
 class ServiceTests(SpyAgency, TestCase):
@@ -657,19 +662,11 @@ class GitHubTests(ServiceTests):
     """Unit tests for the GitHub hosting service."""
     service_name = 'github'
 
-    def setUp(self):
-        super(GitHubTests, self).setUp()
-        self._old_format_public_key = self.service_class._format_public_key
-
-    def tearDown(self):
-        super(GitHubTests, self).tearDown()
-        self.service_class._format_public_key = self._old_format_public_key
-
     def test_service_support(self):
         """Testing the GitHub service support capabilities"""
         self.assertTrue(self.service_class.supports_bug_trackers)
         self.assertTrue(self.service_class.supports_repositories)
-        self.assertTrue(self.service_class.supports_ssh_key_association)
+        self.assertFalse(self.service_class.supports_ssh_key_association)
 
     def test_public_field_values(self):
         """Testing the GitHub public plan repository field values"""
@@ -685,7 +682,7 @@ class GitHubTests(ServiceTests):
         url = self._get_repo_api_url('public', {
             'github_public_repo_name': 'testrepo',
         })
-        self.assertEqual(url, 'https://api.github.com/repos/myuser/testrepo/')
+        self.assertEqual(url, 'https://api.github.com/repos/myuser/testrepo')
 
     def test_public_bug_tracker_field(self):
         """Testing the GitHub public repository bug tracker field value"""
@@ -714,7 +711,7 @@ class GitHubTests(ServiceTests):
             'github_public_org_name': 'myorg',
             'github_public_org_repo_name': 'testrepo',
         })
-        self.assertEqual(url, 'https://api.github.com/repos/myorg/testrepo/')
+        self.assertEqual(url, 'https://api.github.com/repos/myorg/testrepo')
 
     def test_public_org_bug_tracker_field(self):
         """Testing the GitHub public-org repository bug tracker field value"""
@@ -740,7 +737,7 @@ class GitHubTests(ServiceTests):
         url = self._get_repo_api_url('private', {
             'github_private_repo_name': 'testrepo',
         })
-        self.assertEqual(url, 'https://api.github.com/repos/myuser/testrepo/')
+        self.assertEqual(url, 'https://api.github.com/repos/myuser/testrepo')
 
     def test_private_bug_tracker_field(self):
         """Testing the GitHub private repository bug tracker field value"""
@@ -768,7 +765,7 @@ class GitHubTests(ServiceTests):
             'github_private_org_name': 'myorg',
             'github_private_org_repo_name': 'testrepo',
         })
-        self.assertEqual(url, 'https://api.github.com/repos/myorg/testrepo/')
+        self.assertEqual(url, 'https://api.github.com/repos/myorg/testrepo')
 
     def test_private_org_bug_tracker_field(self):
         """Testing the GitHub private-org repository bug tracker field value"""
@@ -781,71 +778,122 @@ class GitHubTests(ServiceTests):
             }),
             'http://github.com/myorg/myrepo/issues#issue/%s')
 
-    def test_is_ssh_key_associated(self):
-        """Testing that GitHub associated SSH keys are correctly identified"""
-        associated_key = 'good_key'
-        unassociated_key = 'bad_key'
-        keys = simplejson.dumps([
-            {'key': 'neutral_key'},
-            {'key': associated_key}
-        ])
+    def test_check_repository_public(self):
+        """Testing GitHub check_repository with public repository"""
+        self._test_check_repository(plan='public',
+                                    github_public_repo_name='myrepo')
 
-        def _http_get(self, *args, **kwargs):
-            return keys, None
+    def test_check_repository_private(self):
+        """Testing GitHub check_repository with private repository"""
+        self._test_check_repository(plan='private',
+                                    github_private_repo_name='myrepo')
 
-        self.service_class._http_get = _http_get
-        self.service_class._format_public_key = lambda self, key: key
+    def test_check_repository_public_org(self):
+        """Testing GitHub check_repository with public org repository"""
+        self._test_check_repository(plan='public-org',
+                                    github_public_org_name='myorg',
+                                    github_public_org_repo_name='myrepo',
+                                    expected_user='myorg')
 
-        account = self._get_hosting_account()
-        account.data['authorization'] = {'token': 'abc123'}
-        service = account.service
+    def test_check_repository_private_org(self):
+        """Testing GitHub check_repository with private org repository"""
+        self._test_check_repository(plan='private-org',
+                                    github_private_org_name='myorg',
+                                    github_private_org_repo_name='myrepo',
+                                    expected_user='myorg')
 
-        repository = Repository(hosting_account=account)
-        repository.extra_data = {
-            'repository_plan': 'public',
-            'github_public_repo_name': 'myrepo',
-        }
+    def test_check_repository_public_not_found(self):
+        """Testing GitHub check_repository with not found error and public
+        repository"""
+        self._test_check_repository_error(
+            plan='public',
+            github_public_repo_name='myrepo',
+            http_status=404,
+            payload='{"message": "Not Found"}',
+            expected_error='A repository with this name was not found, '
+                           'or your user may not own it.')
 
-        self.assertTrue(service.is_ssh_key_associated(repository,
-                                                      associated_key))
-        self.assertFalse(service.is_ssh_key_associated(repository,
-                                                       unassociated_key))
-        self.assertFalse(service.is_ssh_key_associated(repository, None))
+    def test_check_repository_private_not_found(self):
+        """Testing GitHub check_repository with not found error and private
+        repository"""
+        self._test_check_repository_error(
+            plan='private',
+            github_private_repo_name='myrepo',
+            http_status=404,
+            payload='{"message": "Not Found"}',
+            expected_error='A repository with this name was not found, '
+                           'or your user may not own it.')
 
-    def test_associate_ssh_key(self):
-        """Testing that GitHub SSH key association sends expected data"""
-        http_post_data = {}
+    def test_check_repository_public_org_not_found(self):
+        """Testing GitHub check_repository with not found error and
+        public organization repository"""
+        self._test_check_repository_error(
+            plan='public-org',
+            github_public_org_name='myorg',
+            github_public_org_repo_name='myrepo',
+            http_status=404,
+            payload='{"message": "Not Found"}',
+            expected_error='A repository with this organization or name '
+                           'was not found.')
 
-        def _http_post(self, *args, **kwargs):
-            http_post_data['args'] = args
-            http_post_data['kwargs'] = kwargs
-            return None, None
+    def test_check_repository_private_org_not_found(self):
+        """Testing GitHub check_repository with not found error and
+        private organization repository"""
+        self._test_check_repository_error(
+            plan='private-org',
+            github_private_org_name='myorg',
+            github_private_org_repo_name='myrepo',
+            http_status=404,
+            payload='{"message": "Not Found"}',
+            expected_error='A repository with this organization or name '
+                           'was not found, or your user may not have access '
+                           'to it.')
 
-        self.service_class._http_post = _http_post
-        self.service_class._format_public_key = lambda self, key: key
+    def test_check_repository_public_plan_private_repo(self):
+        """Testing GitHub check_repository with public plan and
+        private repository"""
+        self._test_check_repository_error(
+            plan='public',
+            github_public_repo_name='myrepo',
+            http_status=200,
+            payload='{"private": true}',
+            expected_error='This is a private repository, but you have '
+                           'selected a public plan.')
 
-        account = self._get_hosting_account()
-        account.data['authorization'] = {'token': 'abc123'}
+    def test_check_repository_private_plan_public_repo(self):
+        """Testing GitHub check_repository with private plan and
+        public repository"""
+        self._test_check_repository_error(
+            plan='private',
+            github_private_repo_name='myrepo',
+            http_status=200,
+            payload='{"private": false}',
+            expected_error='This is a public repository, but you have '
+                           'selected a private plan.')
 
-        repository = Repository(hosting_account=account)
-        repository.extra_data = {
-            'repository_plan': 'public',
-            'github_public_repo_name': 'myrepo',
-        }
+    def test_check_repository_public_org_plan_private_repo(self):
+        """Testing GitHub check_repository with public organization plan and
+        private repository"""
+        self._test_check_repository_error(
+            plan='public-org',
+            github_public_org_name='myorg',
+            github_public_org_repo_name='myrepo',
+            http_status=200,
+            payload='{"private": true}',
+            expected_error='This is a private repository, but you have '
+                           'selected a public plan.')
 
-        service = account.service
-        service.associate_ssh_key(repository, 'mykey')
-        req_body = simplejson.loads(http_post_data['kwargs']['body'])
-        expected_title = ('Review Board (%s)'
-                          % Site.objects.get_current().domain)
-
-        self.assertEqual(http_post_data['args'][0],
-                         'https://api.github.com/repos/myuser/myrepo/keys?'
-                         'access_token=abc123')
-        self.assertEqual(http_post_data['kwargs']['content_type'],
-                         'application/json')
-        self.assertEqual(req_body['title'], expected_title)
-        self.assertEqual(req_body['key'], 'mykey')
+    def test_check_repository_private_org_plan_public_repo(self):
+        """Testing GitHub check_repository with private organization plan and
+        public repository"""
+        self._test_check_repository_error(
+            plan='private-org',
+            github_private_org_name='myorg',
+            github_private_org_repo_name='myrepo',
+            http_status=200,
+            payload='{"private": false}',
+            expected_error='This is a public repository, but you have '
+                           'selected a private plan.')
 
     def test_authorization(self):
         """Testing that GitHub account authorization sends expected data"""
@@ -918,6 +966,48 @@ class GitHubTests(ServiceTests):
         body = simplejson.loads(http_post_data['kwargs']['body'])
         self.assertEqual(body['client_id'], client_id)
         self.assertEqual(body['client_secret'], client_secret)
+
+    def _test_check_repository(self, expected_user='myuser', **kwargs):
+        def _http_get(service, url, *args, **kwargs):
+            self.assertEqual(
+                url,
+                'https://api.github.com/repos/%s/myrepo?access_token=123'
+                % expected_user)
+            return '{}', {}
+
+        account = self._get_hosting_account()
+        service = account.service
+        self.spy_on(service._http_get, call_fake=_http_get)
+        account.data['authorization'] = {
+            'token': '123',
+        }
+
+        service.check_repository(**kwargs)
+        self.assertTrue(service._http_get.called)
+
+    def _test_check_repository_error(self, http_status, payload, expected_error,
+                                     **kwargs):
+        def _http_get(service, url, *args, **kwargs):
+            if http_status == 200:
+                return payload, {}
+            else:
+                raise HTTPError(url, http_status, '', {}, StringIO(payload))
+
+        account = self._get_hosting_account()
+        service = account.service
+        self.spy_on(service._http_get, call_fake=_http_get)
+        account.data['authorization'] = {
+            'token': '123',
+        }
+
+        try:
+            service.check_repository(**kwargs)
+            saw_exception = False
+        except Exception, e:
+            self.assertEqual(unicode(e), expected_error)
+            saw_exception = True
+
+        self.assertTrue(saw_exception)
 
     def _get_repo_api_url(self, plan, fields):
         account = self._get_hosting_account()
