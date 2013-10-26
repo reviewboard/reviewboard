@@ -12,7 +12,7 @@ from djblets.siteconfig.models import SiteConfiguration
 
 from reviewboard.hostingsvcs.errors import (AuthorizationError,
                                             InvalidPlanError,
-                                            SSHKeyAssociationError)
+                                            RepositoryError)
 from reviewboard.hostingsvcs.forms import HostingServiceForm
 from reviewboard.hostingsvcs.service import HostingService
 from reviewboard.scmtools.core import Branch, Commit
@@ -154,7 +154,6 @@ class GitHub(HostingService):
     supports_bug_trackers = True
     supports_post_commit = True
     supports_repositories = True
-    supports_ssh_key_association = True
     supported_scmtools = ['Git']
 
     # This should be the prefix for every field on the plan forms.
@@ -179,6 +178,47 @@ class GitHub(HostingService):
         key = '%s_%s_%s' % (self.plan_field_prefix, plan.replace('-', '_'),
                             name)
         return plan_data[key]
+
+    def check_repository(self, plan=None, *args, **kwargs):
+        """Checks the validity of a repository.
+
+        This will perform an API request against GitHub to get
+        information on the repository. This will throw an exception if
+        the repository was not found, and return cleanly if it was found.
+        """
+        try:
+            repo_info = self._api_get_repository(
+                self._get_repository_owner_raw(plan, kwargs),
+                self._get_repository_name_raw(plan, kwargs))
+        except Exception, e:
+            if str(e) == 'Not Found':
+                if plan in ('public', 'private'):
+                    raise RepositoryError(
+                        _('A repository with this name was not found, or your '
+                          'user may not own it.'))
+                elif plan == 'public-org':
+                    raise RepositoryError(
+                        _('A repository with this organization or name was not '
+                          'found.'))
+                elif plan == 'private-org':
+                    raise RepositoryError(
+                        _('A repository with this organization or name was '
+                          'not found, or your user may not have access to '
+                          'it.'))
+
+            raise
+
+        if 'private' in repo_info:
+            is_private = repo_info['private']
+
+            if is_private and plan in ('public', 'public-org'):
+                raise RepositoryError(
+                    _('This is a private repository, but you have selected '
+                      'a public plan.'))
+            elif not is_private and plan in ('private', 'private-org'):
+                raise RepositoryError(
+                    _('This is a public repository, but you have selected '
+                      'a private plan.'))
 
     def authorize(self, username, password, hosting_url,
                   local_site_name=None, *args, **kwargs):
@@ -236,7 +276,8 @@ class GitHub(HostingService):
                 'token' in self.account.data['authorization'])
 
     def get_file(self, repository, path, revision, *args, **kwargs):
-        url = self._build_api_url(repository, 'git/blobs/%s' % revision)
+        url = self._build_api_url(self._get_repo_api_url(repository),
+                                  'git/blobs/%s' % revision)
 
         try:
             return self._http_get(url, headers={
@@ -246,7 +287,8 @@ class GitHub(HostingService):
             raise FileNotFoundError(path, revision)
 
     def get_file_exists(self, repository, path, revision, *args, **kwargs):
-        url = self._build_api_url(repository, 'git/blobs/%s' % revision)
+        url = self._build_api_url(self._get_repo_api_url(repository),
+                                  'git/blobs/%s' % revision)
 
         try:
             self._http_get(url, headers={
@@ -260,7 +302,9 @@ class GitHub(HostingService):
     def get_branches(self, repository):
         results = []
 
-        url = self._build_api_url(repository, 'git/refs/heads')
+        url = self._build_api_url(self._get_repo_api_url(repository),
+                                  'git/refs/heads')
+
         try:
             rsp = self._api_get(url)
         except Exception, e:
@@ -284,7 +328,8 @@ class GitHub(HostingService):
         results = []
 
         resource = 'commits'
-        url = self._build_api_url(repository, resource)
+        url = self._build_api_url(self._get_repo_api_url(repository), resource)
+
         if start:
             url += '&sha=%s' % start
 
@@ -309,6 +354,8 @@ class GitHub(HostingService):
         return results
 
     def get_change(self, repository, revision):
+        repo_api_url = self._get_repo_api_url(repository)
+
         # Step 1: fetch the commit itself that we want to review, to get
         # the parent SHA and the commit message. Hopefully this information
         # is still in cache so we don't have to fetch it again.
@@ -319,7 +366,7 @@ class GitHub(HostingService):
             parent_revision = commit.parent
             message = commit.message
         else:
-            url = self._build_api_url(repository, 'commits')
+            url = self._build_api_url(repo_api_url, 'commits')
             url += '&sha=%s' % revision
 
             commit = self._api_get(url)[0]
@@ -331,7 +378,7 @@ class GitHub(HostingService):
 
         # Step 2: fetch the "compare two commits" API to get the diff.
         url = self._build_api_url(
-            repository, 'compare/%s...%s' % (parent_revision, revision))
+            repo_api_url, 'compare/%s...%s' % (parent_revision, revision))
         comparison = self._api_get(url)
 
         tree_sha = comparison['base_commit']['commit']['tree']['sha']
@@ -339,7 +386,7 @@ class GitHub(HostingService):
 
         # Step 3: fetch the tree for the original commit, so that we can get
         # full blob SHAs for each of the files in the diff.
-        url = self._build_api_url(repository, 'git/trees/%s' % tree_sha)
+        url = self._build_api_url(repo_api_url, 'git/trees/%s' % tree_sha)
         url += '&recursive=1'
         tree = self._api_get(url)
 
@@ -389,81 +436,6 @@ class GitHub(HostingService):
         commit.diff = diff
         return commit
 
-    def is_ssh_key_associated(self, repository, key):
-        if not key:
-            return False
-
-        formatted_key = self._format_public_key(key)
-
-        # The key might be a deploy key (associated with a repository) or a
-        # user key (associated with the currently authorized user account),
-        # so check both.
-        deploy_keys_url = self._build_api_url(repository, 'keys')
-        api_url = self.get_api_url(self.account.hosting_url)
-        user_keys_url = ('%suser/keys?access_token=%s'
-                         % (api_url,
-                            self.account.data['authorization']['token']))
-
-        for url in (deploy_keys_url, user_keys_url):
-            keys_resp = self._key_association_api_call(self._json_get, url)
-
-            keys = [
-                item['key']
-                for item in keys_resp
-                if 'key' in item
-            ]
-
-            if formatted_key in keys:
-                return True
-
-        return False
-
-    def associate_ssh_key(self, repository, key, *args, **kwargs):
-        url = self._build_api_url(repository, 'keys')
-
-        if key:
-            post_data = {
-                'key': self._format_public_key(key),
-                'title': 'Review Board (%s)' %
-                         Site.objects.get_current().domain,
-            }
-
-            self._key_association_api_call(self._http_post, url,
-                                           content_type='application/json',
-                                           body=json.dumps(post_data))
-
-    def _key_association_api_call(self, instance_method, *args,
-                                  **kwargs):
-        """Returns response of API call, or raises SSHKeyAssociationError.
-
-        The `instance_method` should be one of the HostingService http methods
-        (e.g. _http_post, _http_get, etc.)
-        """
-        try:
-            response, headers = instance_method(*args, **kwargs)
-            return response
-        except (urllib2.HTTPError, urllib2.URLError), e:
-            try:
-                rsp = json.loads(e.read())
-                status_code = e.code
-            except:
-                rsp = None
-                status_code = None
-
-            if rsp and status_code:
-                api_msg = self._get_api_error_message(rsp, status_code)
-                raise SSHKeyAssociationError('%s (%s)' % (api_msg, e))
-            else:
-                raise SSHKeyAssociationError(str(e))
-
-    def _format_public_key(self, key):
-        """Return the server's SSH public key as a string (if it exists)
-
-        The key is formatted for POSTing to GitHub's API.
-        """
-        # Key must be prepended with algorithm name
-        return '%s %s' % (key.get_name(), key.get_base64())
-
     def _get_api_error_message(self, rsp, status_code):
         """Return the error(s) reported by the GitHub API, as a string
 
@@ -500,26 +472,36 @@ class GitHub(HostingService):
         except ValueError:
             pass
 
-    def _build_api_url(self, repository, api_path):
-        return '%s%s?access_token=%s' % (
-            self._get_repo_api_url(repository),
-            api_path,
+    def _build_api_url(self, *api_paths):
+        return '%s?access_token=%s' % (
+            '/'.join(api_paths),
             self.account.data['authorization']['token'])
 
     def _get_repo_api_url(self, repository):
         plan = repository.extra_data['repository_plan']
 
+        return self._get_repo_api_url_raw(
+            self._get_repository_owner_raw(plan, repository.extra_data),
+            self._get_repository_name_raw(plan, repository.extra_data))
+
+    def _get_repo_api_url_raw(self, owner, repo_name):
+        return '%srepos/%s/%s' % (self.get_api_url(self.account.hosting_url),
+                                   owner, repo_name)
+
+    def _get_repository_owner_raw(self, plan, extra_data):
         if plan in ('public', 'private'):
-            owner = self.account.username
+            return self.account.username
         elif plan in ('public-org', 'private-org'):
-            owner = self.get_plan_field(plan, repository.extra_data, 'name')
+            return self.get_plan_field(plan, extra_data, 'name')
         else:
             raise InvalidPlanError(plan)
 
-        return '%srepos/%s/%s/' % (
-            self.get_api_url(self.account.hosting_url),
-            owner,
-            self.get_plan_field(plan, repository.extra_data, 'repo_name'))
+    def _get_repository_name_raw(self, plan, extra_data):
+        return self.get_plan_field(plan, extra_data, 'repo_name')
+
+    def _api_get_repository(self, owner, repo_name):
+        return self._api_get(self._build_api_url(
+            self._get_repo_api_url_raw(owner, repo_name)))
 
     def _api_get(self, url):
         try:
