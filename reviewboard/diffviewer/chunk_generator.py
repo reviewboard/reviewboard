@@ -331,12 +331,16 @@ class DiffChunkGenerator(object):
             (old_line_num, new_line_num) in meta['whitespace_lines']
         ]
 
-        if old_line_num and old_line_num in meta.get('moved', {}):
-            destination = meta['moved'][old_line_num]
-            result.append(destination)
-        elif new_line_num and new_line_num in meta.get('moved', {}):
-            destination = meta['moved'][new_line_num]
-            result.append(destination)
+        moved_info = {}
+
+        if old_line_num and old_line_num in meta.get('moved-to', {}):
+            moved_info['to'] = meta['moved-to'][old_line_num]
+
+        if new_line_num and new_line_num in meta.get('moved-from', {}):
+            moved_info['from'] = meta['moved-from'][new_line_num]
+
+        if moved_info:
+            result.append(moved_info)
 
         return result
 

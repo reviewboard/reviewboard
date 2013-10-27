@@ -198,8 +198,8 @@ def diff_lines(file, chunk, standalone, line_fmt, anchor_fmt,
     is_insert = (change == 'insert')
     is_delete = (change == 'delete')
 
-    moved_from_first_line = None
-    moved_to_first_line = None
+    moved_from_prev_linenum = None
+    moved_to_prev_linenum = None
 
     result = []
 
@@ -248,39 +248,52 @@ def diff_lines(file, chunk, standalone, line_fmt, anchor_fmt,
         moved_from = {}
         moved_to = {}
 
-        if len(line) > 8 and line[8]:
-            if is_insert:
+        if len(line) > 8 and isinstance(line[8], dict):
+            moved_info = line[8]
+            moved_to_linenum = moved_info.get('to')
+            moved_from_linenum = moved_info.get('from')
+
+            if moved_from_linenum is not None:
                 cell_1_classes.append('moved-from')
 
-                if moved_from_first_line is None:
+                if (moved_from_prev_linenum is None or
+                    moved_from_linenum != moved_from_prev_linenum + 1):
+                    # This is the start of a new move range.
                     cell_1_classes.append('moved-from-start')
-                    moved_from_first_line = i
                     moved_from = {
                         'class': 'moved-flag',
-                        'line': mark_safe(line[8]),
+                        'line': mark_safe(moved_from_linenum),
                         'target': mark_safe(linenum2),
-                        'text': _('Moved from %s') % line[8],
+                        'text': _('Moved from line %s &#9658;') % moved_from_linenum,
                     }
-            else:
-                moved_from_first_line = None
 
-            if is_delete:
+                moved_from_prev_linenum = moved_from_linenum
+            else:
+                moved_from_prev_linenum = None
+
+            if moved_to_linenum is not None:
                 cell_2_classes.append('moved-to')
 
-                if moved_to_first_line is None:
+                if (moved_to_prev_linenum is None or
+                    moved_to_linenum != moved_to_prev_linenum + 1):
+                    # This is the start of a new move range.
                     cell_2_classes.append('moved-to-start')
-                    moved_to_first_line = i
                     moved_to = {
                         'class': 'moved-flag',
-                        'line': mark_safe(line[8]),
+                        'line': mark_safe(moved_to_linenum),
                         'target': mark_safe(linenum1),
-                        'text': _('Moved to %s') % line[8],
+                        'text': _('&#9668; Moved to line %s') % moved_to_linenum,
                     }
+
+                moved_to_prev_linenum = moved_to_linenum
             else:
-                moved_to_first_line = None
+                moved_to_prev_linenum = None
         else:
-            moved_from_first_line = None
-            moved_to_first_line = None
+            moved_from_prev_linenum = None
+            moved_to_prev_linenum = None
+
+        if moved_to or moved_from:
+            row_classes.append('moved-row')
 
         if row_classes:
             row_class_attr = ' class="%s"' % ' '.join(row_classes)

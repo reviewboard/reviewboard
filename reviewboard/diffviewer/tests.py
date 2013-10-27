@@ -276,48 +276,100 @@ class DiffParserTest(unittest.TestCase):
         self.assertEqual(diff, files[0].data)
         self.assertEqual(patched, new)
 
-    def testMoveDetection(self):
-        """Testing move detection"""
+    def test_move_detection(self):
+        """Testing diff viewer move detection"""
         # movetest1 has two blocks of code that would appear to be moves:
         # a function, and an empty comment block. Only the function should
         # be seen as a move, whereas the empty comment block is less useful
         # (since it's content-less) and shouldn't be seen as once.
         old = self._get_file('orig_src', 'movetest1.c')
         new = self._get_file('new_src', 'movetest1.c')
-        differ = MyersDiffer(old.splitlines(), new.splitlines())
 
-        r_moves = []
-        i_moves = []
+        self._test_move_detection(
+            old.splitlines(),
+            new.splitlines(),
+            [
+                {
+                    28: 15,
+                    29: 16,
+                    30: 17,
+                    31: 18,
+                    32: 19,
+                }
+            ],
+            [
+                {
+                    15: 28,
+                    16: 29,
+                    17: 30,
+                    18: 31,
+                    19: 32,
+                }
+            ])
 
-        opcode_generator = get_diff_opcode_generator(differ)
+    def test_move_detection_with_replace_lines(self):
+        """Testing dfif viewer move detection with replace lines"""
+        self._test_move_detection(
+            [
+                'this is line 1',
+                '----------',
+                '----------',
+                'this is line 2',
+            ],
+            [
+                'this is line 2',
+                '----------',
+                '----------',
+                'this is line 1',
+            ],
+            [
+                {1: 4},
+                {4: 1},
+            ],
+            [
+                {1: 4},
+                {4: 1},
+            ]
+        )
 
-        for opcodes in opcode_generator:
-            tag = opcodes[0]
-            meta = opcodes[-1]
-
-            if tag == 'delete':
-                if 'moved' in meta:
-                    r_moves.append(meta['moved'])
-            elif tag == 'insert':
-                if 'moved' in meta:
-                    i_moves.append(meta['moved'])
-
-        self.assertEqual(len(r_moves), 1)
-        self.assertEqual(len(i_moves), 1)
-
-        moves = [
-            (15, 28),
-            (16, 29),
-            (17, 30),
-            (18, 31),
-            (19, 32)
-        ]
-
-        for i, j in moves:
-            self.assertTrue(j in i_moves[0])
-            self.assertTrue(i in r_moves[0])
-            self.assertEqual(i_moves[0][j], i)
-            self.assertEqual(r_moves[0][i], j)
+    def test_move_detection_with_adjacent_regions(self):
+        """Testing dfif viewer move detection with adjacent regions"""
+        self._test_move_detection(
+            [
+                '1. Lorem ipsum dolor sit amet, consectetur adipiscing elit.',
+                '2. Phasellus et lectus vulputate, dictum mi id, auctor ante.',
+                '3. Nulla accumsan tellus ut felis ultrices euismod.',
+                '4. Donec quis augue sed arcu tristique pellentesque.',
+                '5. Fusce rutrum diam vel viverra sagittis.',
+                '6. Nam tincidunt sapien vitae lorem vestibulum tempor.',
+                '7. Donec fermentum tortor ut egestas convallis.',
+            ],
+            [
+                '6. Nam tincidunt sapien vitae lorem vestibulum tempor.',
+                '7. Donec fermentum tortor ut egestas convallis.',
+                '4. Donec quis augue sed arcu tristique pellentesque.',
+                '5. Fusce rutrum diam vel viverra sagittis.',
+                '1. Lorem ipsum dolor sit amet, consectetur adipiscing elit.',
+                '2. Phasellus et lectus vulputate, dictum mi id, auctor ante.',
+                '3. Nulla accumsan tellus ut felis ultrices euismod.',
+            ],
+            [
+                {
+                    1: 6,
+                    2: 7,
+                    3: 4,
+                    4: 5,
+                }
+            ],
+            [
+                {
+                    4: 3,
+                    5: 4,
+                    6: 1,
+                    7: 2,
+                }
+            ],
+        )
 
     def test_line_counts(self):
         """Testing DiffParser with insert/delete line counts"""
@@ -347,6 +399,27 @@ class DiffParserTest(unittest.TestCase):
         data = f.read()
         f.close()
         return data
+
+    def _test_move_detection(self, a, b, expected_i_moves, expected_r_moves):
+        differ = MyersDiffer(a, b)
+        opcode_generator = get_diff_opcode_generator(differ)
+
+        r_moves = []
+        i_moves = []
+
+        for opcodes in opcode_generator:
+            tag = opcodes[0]
+            meta = opcodes[-1]
+            print opcodes
+
+            if 'moved-to' in meta:
+                r_moves.append(meta['moved-to'])
+
+            if 'moved-from' in meta:
+                i_moves.append(meta['moved-from'])
+
+        self.assertEqual(i_moves, expected_i_moves)
+        self.assertEqual(r_moves, expected_r_moves)
 
 
 class FileDiffMigrationTests(TestCase):

@@ -76,6 +76,9 @@
 
 
 .sidebyside {
+  @linenum-padding-right: 4px;
+  @moved-border-width: 4px;
+
   background: white;
   border-collapse: collapse;
   padding: 2px;
@@ -160,8 +163,21 @@
     padding-left: 2px;
   }
 
+  .replace {
+    .moved-to, .moved-from {
+      pre {
+        margin-top: 6px;
+      }
+    }
+
+    .moved-row th {
+      /* Compensate for the increased border. */
+      padding-right: (@linenum-padding-right - @moved-border-width / 2);
+    }
+  }
+
   .moved-to {
-    border-left: 4px @diff-moved-to-bg-color solid !important;
+    border-left: @moved-border-width @diff-moved-to-bg-color solid !important;
 
     .moved-flag {
       background-color: @diff-moved-to-bg-color !important;
@@ -169,7 +185,7 @@
   }
 
   .moved-from {
-    border-right: 4px @diff-moved-from-bg-color solid !important;
+    border-right: @moved-border-width @diff-moved-from-bg-color solid !important;
 
     .moved-flag {
       background-color: @diff-moved-from-bg-color !important;
@@ -197,6 +213,7 @@
 
   .moved-to-start {
     .moved-flag {
+      padding-left: 0.5em;
       .border-radius(0, 8px, 8px, 0);
     }
   }
@@ -204,7 +221,12 @@
   .moved-from-start {
     text-align: right;
 
+    pre {
+      text-align: left;
+    }
+
     .moved-flag {
+      padding-right: 0.5em;
       .border-radius(8px, 0, 0, 8px);
     }
   }
@@ -263,7 +285,7 @@
       th {
         background: @diff-linenum-color;
         padding-left: 1em;
-        padding-right: 4px;
+        padding-right: @linenum-padding-right;
         text-align: right;
         vertical-align: top;
         cursor: pointer;
