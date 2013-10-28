@@ -51,18 +51,26 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
 
         this.router = new Backbone.Router({
             routes: {
-                ':revision/': 'revision'
+                ':revision/': 'revision',
+                ':revision/?page=:page': 'revision'
             }
         });
-        this.listenTo(this.router, 'route:revision', function(revision) {
+        this.listenTo(this.router, 'route:revision', function(revision, page) {
             var parts;
 
+            if (page === undefined) {
+                page = 1;
+            } else {
+                page = parseInt(page, 10);
+            }
+
             if (revision.indexOf('-') === -1) {
-                this._loadRevision(0, parseInt(revision, 10));
+                this._loadRevision(0, parseInt(revision, 10), page);
             } else {
                 parts = revision.split('-', 2);
                 this._loadRevision(parseInt(parts[0], 10),
-                                   parseInt(parts[1], 10));
+                                   parseInt(parts[1], 10),
+                                   page);
             }
         });
 
@@ -148,11 +156,21 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
         this.listenTo(this._commentsHintView, 'revisionSelected',
                       this._onRevisionSelected);
 
-        this._paginationView = new RB.PaginationView({
-            el: $('#pagination'),
+        this._paginationView1 = new RB.PaginationView({
+            el: $('#pagination1'),
             model: this.model.get('pagination')
         });
-        this._paginationView.render();
+        this._paginationView1.render();
+        this.listenTo(this._paginationView1, 'pageSelected',
+                      this._onPageSelected);
+
+        this._paginationView2 = new RB.PaginationView({
+            el: $('#pagination2'),
+            model: this.model.get('pagination')
+        });
+        this._paginationView2.render();
+        this.listenTo(this._paginationView2, 'pageSelected',
+                      this._onPageSelected);
 
         $('#diffs').bindClass(RB.UserSession.instance,
                               'diffsShowExtraWhitespace', 'ewhl');
@@ -485,6 +503,8 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
      * This supports both single revisions and interdiffs. If `base` is 0, a
      * single revision is selected. If not, the interdiff between `base` and
      * `tip` will be shown.
+     *
+     * This will always implicitly navigate to page 1 of any paginated diffs.
      */
     _onRevisionSelected: function(base, tip) {
         if (base === 0) {
@@ -495,13 +515,30 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
     },
 
     /*
+     * Callback for when a new page is selected.
+     *
+     * Navigates to the same revision with a different page number.
+     */
+    _onPageSelected: function(page) {
+        var revision = this.model.get('revision'),
+            url = revision.get('revision');
+
+        if (revision.get('interdiffRevision') !== null) {
+            url += '-' + revision.get('interdiffRevision');
+        }
+
+        url += '/?page=' + page;
+        this.router.navigate(url, {trigger: true});
+    },
+
+    /*
      * Load a given revision.
      *
      * This supports both single revisions and interdiffs. If `base` is 0, a
      * single revision is selected. If not, the interdiff between `base` and
      * `tip` will be shown.
      */
-    _loadRevision: function(base, tip) {
+    _loadRevision: function(base, tip, page) {
         var reviewRequestURL = _.result(this.reviewRequest, 'url'),
             contextURL = reviewRequestURL + 'diff-context/';
 
@@ -509,6 +546,10 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
             contextURL += '?revision=' + tip;
         } else {
             contextURL += '?revision=' + base + '&interdiff_revision=' + tip;
+        }
+
+        if (page !== 1) {
+            contextURL += '&page=' + page;
         }
 
         $.ajax(contextURL).done(_.bind(function(rsp) {

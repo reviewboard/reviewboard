@@ -6,27 +6,26 @@ RB.PaginationView = Backbone.View.extend({
         '<% if (isPaginated) { %>',
         ' <%- splitText %>',
         ' <% if (hasPrevious) { %>',
-        '  <span class="paginate-previous">',
-        '   <a href="?page=<%- previousPage %>" title="<%- previousPageText %>">&lt;</a>',
-        '  </span>',
+        '  <span class="paginate-link" data-page="<%- previousPage %>"><a href="?page=<%- previousPage %>" title="<%- previousPageText %>">&lt;</a></span>',
         ' <% } %>',
         ' <% _.each(pageNumbers, function(page) { %>',
         '  <% if (page === currentPage) { %>',
         '   <span class="paginate-current" title="<%- currentPageText %>"><%- page %></span>',
         '  <% } else { %>',
-        '   <span class="paginate-link">',
-        '    <a href="?page=<%- page %>"',
-        '       title="<% print(escape(interpolate(pageText, [page]))); %>">',
-        '     <%- page %>',
-        '    </a>',
-        '   </span>',
+        '   <span class="paginate-link" data-page="<%- page %>"><a href="?page=<%- page %>"',
+        '       title="<% print(interpolate(pageText, [page])); %>"',
+        '       ><%- page %></a></span>',
         '  <% } %>',
         ' <% }); %>',
         ' <% if (hasNext) { %>',
-        '  <span class="paginate-next"><a href="?page=<%- nextPage %>" title="<%- nextPageText %>">&gt;</a></span>',
+        '  <span class="paginate-link" data-page="<%- nextPage %>"><a href="?page=<%- nextPage %>" title="<%- nextPageText %>">&gt;</a></span>',
         ' <% } %>',
         '<% } %>'
     ].join('')),
+
+    events: {
+        'click .paginate-link': '_onPageClicked'
+    },
 
     /*
      * Initialize the view.
@@ -52,5 +51,14 @@ RB.PaginationView = Backbone.View.extend({
             }, this.model.attributes)));
 
         return this;
+    },
+
+    _onPageClicked: function(ev) {
+        var page = $(ev.currentTarget).data('page');
+
+        if (page !== undefined) {
+            this.trigger('pageSelected', page);
+            return false;
+        }
     }
 });

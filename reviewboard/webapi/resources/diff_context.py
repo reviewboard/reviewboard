@@ -44,6 +44,10 @@ class DiffContextResource(WebAPIResource):
                                'this is provided, the ``revision`` field will '
                                'be the base diff.',
             },
+            'page': {
+                'type': int,
+                'description': 'The page number for paginated diffs.',
+            },
         },
     )
     @webapi_response_errors(DOES_NOT_EXIST)
