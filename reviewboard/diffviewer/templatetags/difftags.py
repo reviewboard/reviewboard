@@ -254,17 +254,17 @@ def diff_lines(file, chunk, standalone, line_fmt, anchor_fmt,
             moved_from_linenum = moved_info.get('from')
 
             if moved_from_linenum is not None:
-                cell_1_classes.append('moved-from')
+                cell_2_classes.append('moved-from')
 
                 if (moved_from_prev_linenum is None or
                     moved_from_linenum != moved_from_prev_linenum + 1):
                     # This is the start of a new move range.
-                    cell_1_classes.append('moved-from-start')
+                    cell_2_classes.append('moved-from-start')
                     moved_from = {
                         'class': 'moved-flag',
                         'line': mark_safe(moved_from_linenum),
                         'target': mark_safe(linenum2),
-                        'text': _('Moved from line %s &#9658;') % moved_from_linenum,
+                        'text': _('Moved from line %s') % moved_from_linenum,
                     }
 
                 moved_from_prev_linenum = moved_from_linenum
@@ -272,17 +272,17 @@ def diff_lines(file, chunk, standalone, line_fmt, anchor_fmt,
                 moved_from_prev_linenum = None
 
             if moved_to_linenum is not None:
-                cell_2_classes.append('moved-to')
+                cell_1_classes.append('moved-to')
 
                 if (moved_to_prev_linenum is None or
                     moved_to_linenum != moved_to_prev_linenum + 1):
                     # This is the start of a new move range.
-                    cell_2_classes.append('moved-to-start')
+                    cell_1_classes.append('moved-to-start')
                     moved_to = {
                         'class': 'moved-flag',
                         'line': mark_safe(moved_to_linenum),
                         'target': mark_safe(linenum1),
-                        'text': _('&#9668; Moved to line %s') % moved_to_linenum,
+                        'text': _('Moved to line %s') % moved_to_linenum,
                     }
 
                 moved_to_prev_linenum = moved_to_linenum

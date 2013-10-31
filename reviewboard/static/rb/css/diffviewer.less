@@ -177,7 +177,7 @@
   }
 
   .moved-to {
-    border-left: @moved-border-width @diff-moved-to-bg-color solid !important;
+    border-right: @moved-border-width @diff-moved-to-bg-color solid !important;
 
     .moved-flag {
       background-color: @diff-moved-to-bg-color !important;
@@ -185,7 +185,7 @@
   }
 
   .moved-from {
-    border-right: @moved-border-width @diff-moved-from-bg-color solid !important;
+    border-left: @moved-border-width @diff-moved-from-bg-color solid !important;
 
     .moved-flag {
       background-color: @diff-moved-from-bg-color !important;
@@ -211,14 +211,14 @@
     }
   }
 
-  .moved-to-start {
+  .moved-from-start {
     .moved-flag {
       padding-left: 0.5em;
       .border-radius(0, 8px, 8px, 0);
     }
   }
 
-  .moved-from-start {
+  .moved-to-start {
     text-align: right;
 
     pre {
