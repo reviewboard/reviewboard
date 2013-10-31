@@ -460,7 +460,7 @@ class BaseReviewRequestDetails(models.Model):
         DiffSet.objects.create_from_data(
             repository=self.repository,
             diff_file_name='diff',
-            diff_file_contents=commit.diff,
+            diff_file_contents=commit.diff.encode('utf-8'),
             parent_diff_file_name=None,
             parent_diff_file_contents=None,
             diffset_history=self.diffset_history,
