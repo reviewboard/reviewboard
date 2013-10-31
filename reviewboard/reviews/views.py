@@ -248,7 +248,7 @@ def new_review_request(request,
                     parent_diff_file=request.FILES.get('parent_diff_path'),
                     local_site=local_site)
                 return HttpResponseRedirect(review_request.get_absolute_url())
-            except (OwnershipError, SCMError, SSHError, ValueError):
+            except:
                 pass
     else:
         form = NewReviewRequestForm(request, request.user, local_site)
