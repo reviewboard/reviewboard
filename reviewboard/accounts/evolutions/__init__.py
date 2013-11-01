@@ -4,4 +4,5 @@ SEQUENCE = [
     'open_an_issue',
     'extra_data',
     'timezone_length_30',
+    'localsiteprofile_permissions',
 ]
