@@ -214,10 +214,9 @@ class Repository(models.Model):
 
         The repository is mutable by the user if the user is an administrator
         with proper permissions or the repository is part of a LocalSite and
-        the user is in the admin list.
+        the user has permissions to modify it.
         """
-        return (user.has_perm('scmtools.change_repository') or
-                (self.local_site and self.local_site.is_mutable_by(user)))
+        return user.has_perm('scmtools.change_repository', self.local_site)
 
     def __unicode__(self):
         return self.name

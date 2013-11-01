@@ -14,6 +14,7 @@ from djblets.webapi.errors import DOES_NOT_EXIST, INVALID_FORM_DATA, \
 import paramiko
 
 from reviewboard import initialize
+from reviewboard.accounts.models import LocalSiteProfile
 from reviewboard.attachments.models import FileAttachment
 from reviewboard.changedescs.models import ChangeDescription
 from reviewboard.diffviewer.models import DiffSet
@@ -2588,24 +2589,78 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], INVALID_REPOSITORY.code)
 
-    def test_post_reviewrequests_with_submit_as(self):
-        """Testing the POST review-requests/?submit_as= API"""
+    def test_post_with_submit_as_and_permission(self):
+        """Testing the POST review-requests/?submit_as= API
+        with permission
+        """
+        self.user.user_permissions.add(
+            Permission.objects.get(codename='can_submit_as_another_user'))
+
+        self._test_post_with_submit_as()
+
+    def test_post_with_submit_as_and_admin(self):
+        """Testing the POST review-requests/?submit_as= API
+        with administrator
+        """
         self.user.is_superuser = True
         self.user.save()
 
-        rsp = self.apiPost(self.get_list_url(), {
+        self._test_post_with_submit_as()
+
+    @add_fixtures(['test_site'])
+    def test_post_with_submit_as_and_site_permission(self):
+        """Testing the POST review-requests/?submit_as= API
+        with a local site and local permission
+        """
+        self.user = self._login_user(local_site=True)
+
+        local_site = LocalSite.objects.get(name=self.local_site_name)
+
+        site_profile = LocalSiteProfile.objects.create(
+            local_site=local_site,
+            user=self.user,
+            profile=self.user.get_profile())
+        site_profile.permissions['reviews.can_submit_as_another_user'] = True
+        site_profile.save()
+
+        self._test_post_with_submit_as(local_site)
+
+    @add_fixtures(['test_site'])
+    def test_post_with_submit_as_and_site_admin(self):
+        """Testing the POST review-requests/?submit_as= API
+        with a local site and site admin
+        """
+        self._login_user(local_site=True, admin=True)
+
+        self._test_post_with_submit_as(
+            LocalSite.objects.get(name=self.local_site_name))
+
+    def _test_post_with_submit_as(self, local_site=None):
+        if local_site:
+            self.repository.local_site = local_site
+            self.repository.save()
+            local_site_name = local_site.name
+        else:
+            local_site_name = None
+
+        submit_as_username = 'dopey'
+
+        self.assertNotEqual(self.user.username, submit_as_username)
+
+        rsp = self.apiPost(self.get_list_url(local_site_name), {
             'repository': self.repository.path,
-            'submit_as': 'doc',
+            'submit_as': submit_as_username,
         }, expected_mimetype=self.item_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(
             rsp['review_request']['links']['repository']['href'],
             self.base_url +
-            RepositoryResourceTests.get_item_url(self.repository.id))
+            RepositoryResourceTests.get_item_url(self.repository.id,
+                                                 local_site_name))
         self.assertEqual(
             rsp['review_request']['links']['submitter']['href'],
             self.base_url +
-            UserResourceTests.get_item_url('doc'))
+            UserResourceTests.get_item_url(submit_as_username, local_site_name))
 
         ReviewRequest.objects.get(pk=rsp['review_request']['id'])
 
@@ -2746,13 +2801,64 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
 
         self._test_put_status_as_other_user()
 
-    def _test_put_status_as_other_user(self):
+    def test_put_status_as_other_user_not_allowed(self):
+        """Testing the PUT review-requests/<id>/?status=pending API
+        as another user not allowed
+        """
+        r = ReviewRequest.objects.filter(public=True, status='P',
+                                         submitter__username='dopey')[0]
+
+        rsp = self.apiPut(
+            self.get_item_url(r.display_id),
+            {
+                'status': 'submitted',
+            },
+            expected_status=403)
+
+    @add_fixtures(['test_site'])
+    def test_put_status_as_other_user_with_site_and_permission(self):
+        """Testing the PUT review-requests/<id>/?status=pending API
+        as another user with local site and permission
+        """
+        self.user = self._login_user(local_site=True)
+
+        local_site = LocalSite.objects.get(name=self.local_site_name)
+
+        site_profile = LocalSiteProfile.objects.create(
+            local_site=local_site,
+            user=self.user,
+            profile=self.user.get_profile())
+        site_profile.permissions['reviews.can_change_status'] = True
+        site_profile.save()
+
+        self._test_put_status_as_other_user(local_site)
+
+    @add_fixtures(['test_site'])
+    def test_put_status_as_other_user_with_site_and_admin(self):
+        """Testing the PUT review-requests/<id>/?status=pending API
+        as another user with local site and admin
+        """
+        self.user = self._login_user(local_site=True, admin=True)
+
+        self._test_put_status_as_other_user(
+            LocalSite.objects.get(name=self.local_site_name))
+
+    def _test_put_status_as_other_user(self, local_site=None):
         review_request = ReviewRequest.objects.filter(
             public=True, status='P',
             submitter__username='dopey')[0]
 
+        if local_site:
+            review_request.local_id = 123
+            local_site_name = local_site.name
+        else:
+            local_site_name = None
+
+        review_request.local_site = local_site
+        review_request.save()
+
         rsp = self.apiPut(
-            self.get_item_url(review_request.display_id),
+            self.get_item_url(review_request.display_id, local_site_name),
             {
                 'status': 'submitted',
             },
@@ -2928,8 +3034,10 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['err']['code'], DOES_NOT_EXIST.code)
 
     @add_fixtures(['test_site'])
-    def test_delete_reviewrequest_with_site(self):
-        """Testing the DELETE review-requests/<id>/ API with a lotal site"""
+    def test_delete_reviewrequest_with_site_and_global_permission(self):
+        """Testing the DELETE review-requests/<id>/ API
+        with a local site and a global permission
+        """
         user = User.objects.get(username='doc')
         user.user_permissions.add(
             Permission.objects.get(codename='delete_reviewrequest'))
@@ -2945,6 +3053,49 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp, None)
         self.assertRaises(ReviewRequest.DoesNotExist,
                           ReviewRequest.objects.get, pk=review_request.pk)
+
+    @add_fixtures(['test_site'])
+    def test_delete_reviewrequest_with_site_and_local_permission(self):
+        """Testing the DELETE review-requests/<id>/ API
+        with a local site and a local permission is not allowed
+        """
+        user = User.objects.get(username='doc')
+
+        self._login_user(local_site=True)
+        local_site = LocalSite.objects.get(name=self.local_site_name)
+
+        site_profile = LocalSiteProfile.objects.create(
+            user=user,
+            local_site=local_site,
+            profile=user.get_profile())
+        site_profile.permissions['reviews.delete_reviewrequest'] = True
+        site_profile.save()
+
+        review_request = ReviewRequest.objects.filter(local_site=local_site,
+            submitter__username='doc')[0]
+
+        rsp = self.apiDelete(
+            self.get_item_url(review_request.display_id,
+                              self.local_site_name),
+            expected_status=403)
+
+    @add_fixtures(['test_site'])
+    def test_delete_reviewrequest_with_site_and_site_admin(self):
+        """Testing the DELETE review-requests/<id>/ API
+        with a local site and a site admin is not allowed
+        """
+        user = User.objects.get(username='doc')
+
+        self._login_user(local_site=True, admin=True)
+        local_site = LocalSite.objects.get(name=self.local_site_name)
+
+        review_request = ReviewRequest.objects.filter(local_site=local_site,
+            submitter__username='doc')[0]
+
+        rsp = self.apiDelete(
+            self.get_item_url(review_request.display_id,
+                              self.local_site_name),
+            expected_status=403)
 
     @classmethod
     def get_list_url(cls, local_site_name=None):
@@ -3157,6 +3308,72 @@ class ReviewRequestDraftResourceTests(BaseWebAPITestCase):
 
         draft = review_request.get_draft()
         self.assertEqual(draft.depends_on.count(), 0)
+
+    def test_put_as_other_user_with_permission(self):
+        """Testing the PUT review-requests/<id>/draft/ API
+        as another user with permission
+        """
+        self.user.user_permissions.add(
+            Permission.objects.get(codename='can_edit_reviewrequest'))
+
+        self._test_put_as_other_user()
+
+    def test_put_as_other_user_with_admin(self):
+        """Testing the PUT review-requests/<id>/draft/ API
+        as another user with admin
+        """
+        self._login_user(admin=True)
+
+        self._test_put_as_other_user()
+
+    @add_fixtures(['test_site'])
+    def test_put_as_other_user_with_site_and_permission(self):
+        """Testing the PUT review-requests/<id>/draft/ API
+        as another user with local site and permission
+        """
+        self.user = self._login_user(local_site=True)
+
+        local_site = LocalSite.objects.get(name=self.local_site_name)
+
+        site_profile = LocalSiteProfile.objects.create(
+            local_site=local_site,
+            user=self.user,
+            profile=self.user.get_profile())
+        site_profile.permissions['reviews.can_edit_reviewrequest'] = True
+        site_profile.save()
+
+        self._test_put_as_other_user(local_site)
+
+    @add_fixtures(['test_site'])
+    def test_put_as_other_user_with_site_and_admin(self):
+        """Testing the PUT review-requests/<id>/draft/ API
+        as another user with local site and admin
+        """
+        self.user = self._login_user(local_site=True, admin=True)
+
+        self._test_put_as_other_user(
+            LocalSite.objects.get(name=self.local_site_name))
+
+    def _test_put_as_other_user(self, local_site=None):
+        review_request = ReviewRequest.objects.exclude(submitter=self.user)[0]
+
+        if local_site:
+            review_request.local_site = local_site
+            review_request.local_id = 123
+            review_request.save()
+            local_site_name = local_site.name
+        else:
+            local_site_name = None
+
+        rsp = self.apiPut(
+            self.get_url(review_request, local_site_name),
+            {
+                'description': 'New description',
+            },
+            expected_mimetype=self.item_mimetype)
+
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertTrue(rsp['draft']['description'], 'New description')
 
     def test_put_reviewrequestdraft_with_invalid_field_name(self):
         """Testing the PUT review-requests/<id>/draft/ API with Invalid Form Data error"""
