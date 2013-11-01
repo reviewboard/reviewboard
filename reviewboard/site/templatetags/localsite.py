@@ -40,8 +40,8 @@ class LocalSiteURLNode(template.Node):
                 # We'll try it again without those arguments.
                 pass
 
-        self.url_node.args = self.args
-        self.url_node.kwargs = self.kwargs
+        self.url_node.args = list(self.args)
+        self.url_node.kwargs = self.kwargs.copy()
 
         return self.url_node.render(context)
 
