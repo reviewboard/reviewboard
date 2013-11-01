@@ -136,7 +136,7 @@ class CVSTool(SCMTool):
             try:
                 sshutils.check_host(m.group('hostname'), username, password,
                                     local_site_name)
-            except SSHAuthenticationError, e:
+            except SSHAuthenticationError as e:
                 # Represent an SSHAuthenticationError as a standard
                 # AuthenticationError.
                 raise AuthenticationError(e.allowed_types, unicode(e),

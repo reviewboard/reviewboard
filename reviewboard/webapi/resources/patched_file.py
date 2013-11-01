@@ -51,7 +51,7 @@ class PatchedFileResource(WebAPIResource):
 
         try:
             orig_file = get_original_file(filediff, request=request)
-        except Exception, e:
+        except Exception as e:
             logging.error("Error retrieving original file: %s", e, exc_info=1,
                           request=request)
             return FILE_RETRIEVAL_ERROR
@@ -59,7 +59,7 @@ class PatchedFileResource(WebAPIResource):
         try:
             patched_file = get_patched_file(orig_file, filediff,
                                             request=request)
-        except Exception, e:
+        except Exception as e:
             logging.error("Error retrieving patched file: %s", e, exc_info=1,
                           request=request)
             return FILE_RETRIEVAL_ERROR

@@ -134,7 +134,7 @@ class FileSSHStorage(SSHStorage):
             fp.close()
 
             return lines
-        except IOError, e:
+        except IOError as e:
             logging.warning('Unable to read SSH authorized_keys file %s: %s'
                             % (filename, e))
             raise
@@ -154,7 +154,7 @@ class FileSSHStorage(SSHStorage):
                         lines.append(line)
 
                 fp.close()
-            except IOError, e:
+            except IOError as e:
                 logging.error('Unable to read host keys file %s: %s'
                               % (filename, e))
 
@@ -169,7 +169,7 @@ class FileSSHStorage(SSHStorage):
             fp.write('%s %s %s\n' % (hostname, key.get_name(),
                                      key.get_base64()))
             fp.close()
-        except IOError, e:
+        except IOError as e:
             raise IOError(
                 _('Unable to write host keys file %(filename)s: %(error)s') % {
                     'filename': filename,
@@ -189,7 +189,7 @@ class FileSSHStorage(SSHStorage):
             fp.close()
 
             old_key_base64 = old_key.get_base64()
-        except IOError, e:
+        except IOError as e:
             raise IOError(
                 _('Unable to read host keys file %(filename)s: %(error)s') % {
                     'filename': filename,
@@ -209,7 +209,7 @@ class FileSSHStorage(SSHStorage):
                 fp.write(' '.join(parts) + '\n')
 
             fp.close()
-        except IOError, e:
+        except IOError as e:
             raise IOError(
                 _('Unable to write host keys file %(filename)s: %(error)s') % {
                     'filename': filename,

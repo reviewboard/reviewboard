@@ -92,7 +92,7 @@ class UnknownHostKeyError(SSHKeyError):
                 'hostname': hostname,
                 'ip': ipaddr,
             }
-        except Exception, e:
+        except Exception as e:
             logging.warning('Failed to find IP for "%s": %s',
                             hostname, e)
             warning = _("The authenticity of the host '%(hostname)s' could "

@@ -475,14 +475,14 @@ class RepositoryResource(WebAPIResource):
                 return None
             except RepositoryNotFoundError:
                 return MISSING_REPOSITORY
-            except BadHostKeyError, e:
+            except BadHostKeyError as e:
                 if trust_host:
                     try:
                         client = SSHClient(namespace=local_site_name)
                         client.replace_host_key(e.hostname,
                                                 e.raw_expected_key,
                                                 e.raw_key)
-                    except IOError, e:
+                    except IOError as e:
                         return SERVER_CONFIG_ERROR, {
                             'reason': str(e),
                         }
@@ -492,12 +492,12 @@ class RepositoryResource(WebAPIResource):
                         'expected_key': e.raw_expected_key.get_base64(),
                         'key': e.raw_key.get_base64(),
                     }
-            except UnknownHostKeyError, e:
+            except UnknownHostKeyError as e:
                 if trust_host:
                     try:
                         client = SSHClient(namespace=local_site_name)
                         client.add_host_key(e.hostname, e.raw_key)
-                    except IOError, e:
+                    except IOError as e:
                         return SERVER_CONFIG_ERROR, {
                             'reason': str(e),
                         }
@@ -506,7 +506,7 @@ class RepositoryResource(WebAPIResource):
                         'hostname': e.hostname,
                         'key': e.raw_key.get_base64(),
                     }
-            except UnverifiedCertificateError, e:
+            except UnverifiedCertificateError as e:
                 if trust_host:
                     try:
                         cert = scmtool_class.accept_certificate(
@@ -514,7 +514,7 @@ class RepositoryResource(WebAPIResource):
 
                         if cert:
                             ret_cert.update(cert)
-                    except IOError, e:
+                    except IOError as e:
                         return SERVER_CONFIG_ERROR, {
                             'reason': str(e),
                         }
@@ -531,28 +531,28 @@ class RepositoryResource(WebAPIResource):
                             },
                         },
                     }
-            except AuthenticationError, e:
+            except AuthenticationError as e:
                 if 'publickey' in e.allowed_types and e.user_key is None:
                     return MISSING_USER_KEY
                 else:
                     return REPO_AUTHENTICATION_ERROR, {
                         'reason': str(e),
                     }
-            except SSHError, e:
+            except SSHError as e:
                 logging.error('Got unexpected SSHError when checking '
                               'repository: %s'
                               % e, exc_info=1, request=request)
                 return REPO_INFO_ERROR, {
                     'error': str(e),
                 }
-            except SCMError, e:
+            except SCMError as e:
                 logging.error('Got unexpected SCMError when checking '
                               'repository: %s'
                               % e, exc_info=1, request=request)
                 return REPO_INFO_ERROR, {
                     'error': str(e),
                 }
-            except Exception, e:
+            except Exception as e:
                 logging.error('Unknown error in checking repository %s: %s',
                               path, e, exc_info=1, request=request)
 

@@ -265,19 +265,19 @@ class DiffResource(WebAPIResource):
         try:
             diffset = form.create(request.FILES['path'],
                                   request.FILES.get('parent_diff_path'))
-        except FileNotFoundError, e:
+        except FileNotFoundError as e:
             return REPO_FILE_NOT_FOUND, {
                 'file': e.path,
                 'revision': unicode(e.revision)
             }
-        except EmptyDiffError, e:
+        except EmptyDiffError as e:
             return DIFF_EMPTY
-        except DiffTooBigError, e:
+        except DiffTooBigError as e:
             return DIFF_TOO_BIG, {
                 'reason': str(e),
                 'max_size': e.max_diff_size,
             }
-        except Exception, e:
+        except Exception as e:
             # This could be very wrong, but at least they'll see the error.
             # We probably want a new error type for this.
             logging.error("Error uploading new diff: %s", e, exc_info=1,

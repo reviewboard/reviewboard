@@ -170,7 +170,7 @@ class BaseScreenshotResource(WebAPIResource):
 
         try:
             screenshot = form.create(request.FILES['path'], review_request)
-        except ValueError, e:
+        except ValueError as e:
             return INVALID_FORM_DATA, {
                 'fields': {
                     'path': [str(e)],

@@ -494,7 +494,7 @@ class ReviewRequestResource(WebAPIResource):
                          Q(mirror_path=repository) |
                          Q(name=repository)) &
                         Q(local_site=local_site))
-            except Repository.DoesNotExist, e:
+            except Repository.DoesNotExist as e:
                 return INVALID_REPOSITORY, {
                     'repository': repository
                 }
@@ -513,7 +513,7 @@ class ReviewRequestResource(WebAPIResource):
             return REPO_AUTHENTICATION_ERROR
         except RepositoryNotFoundError:
             return MISSING_REPOSITORY
-        except ChangeNumberInUseError, e:
+        except ChangeNumberInUseError as e:
             return CHANGE_NUMBER_IN_USE, {
                 'review_request': e.review_request
             }
@@ -525,17 +525,17 @@ class ReviewRequestResource(WebAPIResource):
             return DIFF_TOO_BIG
         except EmptyDiffError:
             return DIFF_EMPTY
-        except DiffParserError, e:
+        except DiffParserError as e:
             return DIFF_PARSE_ERROR, {
                 'linenum': e.linenum,
                 'message': str(e),
             }
-        except SSHError, e:
+        except SSHError as e:
             logging.error("Got unexpected SSHError when creating "
                           "repository: %s"
                           % e, exc_info=1, request=request)
             return REPO_INFO_ERROR
-        except SCMError, e:
+        except SCMError as e:
             logging.error("Got unexpected SCMError when creating "
                           "repository: %s"
                           % e, exc_info=1, request=request)

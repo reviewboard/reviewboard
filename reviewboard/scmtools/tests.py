@@ -69,7 +69,7 @@ class SCMTestCase(SSHTestCase):
 
         try:
             tool.check_repository(repo_path)
-        except SocketError, e:
+        except SocketError as e:
             if e.errno == ECONNREFUSED:
                 # This box likely isn't set up for this test.
                 SCMTestCase._can_test_ssh = False
@@ -912,7 +912,7 @@ class PerforceTests(SCMTestCase):
             tool.get_changeset(157)
             self.fail('Expected an error about unicode-enabled servers. Did '
                       'perforce.com turn on unicode for public.perforce.com?')
-        except SCMError, e:
+        except SCMError as e:
             # public.perforce.com doesn't have unicode enabled. Getting this
             # error means we at least passed the charset through correctly
             # to the p4 client.
@@ -1154,7 +1154,7 @@ class PerforceStunnelTests(SCMTestCase):
 
         try:
             file = self.tool.get_file('//public/perforce/api/python/P4Client/p4.py', 1)
-        except Exception, e:
+        except Exception as e:
             if str(e).startswith('Connect to server failed'):
                 raise nose.SkipTest(
                     'Connection to public.perforce.com failed.  No internet?')

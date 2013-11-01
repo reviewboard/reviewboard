@@ -47,7 +47,7 @@ class Tool(models.Model):
 
             try:
                 mod = __import__(module, {}, {}, [attr])
-            except ImportError, e:
+            except ImportError as e:
                 raise ImproperlyConfigured(
                     'Error importing SCM Tool %s: "%s"' % (module, e))
 

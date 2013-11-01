@@ -245,7 +245,7 @@ def send_review_mail(user, review_request, subject, in_reply_to,
                                  list(cc_field), in_reply_to, headers)
     try:
         message.send()
-    except Exception, e:
+    except Exception as e:
         logging.error("Error sending e-mail notification with subject '%s' on "
                       "behalf of '%s' to '%s': %s",
                       subject.strip(),
@@ -408,7 +408,7 @@ def mail_new_user(user):
 
     try:
         message.send()
-    except Exception, e:
+    except Exception as e:
         logging.error("Error sending e-mail notification with subject '%s' on "
                       "behalf of '%s' to admin: %s",
                       subject.strip(), from_email, e, exc_info=1)

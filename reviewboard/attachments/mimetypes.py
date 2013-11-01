@@ -150,7 +150,7 @@ class MimetypeHandler(object):
         if handler:
             try:
                 return handler(attachment, mimetype)
-            except Exception, e:
+            except Exception as e:
                 logging.error('Unable to load Mimetype Handler for %s: %s',
                               attachment, e, exc_info=1)
 
@@ -234,7 +234,7 @@ class TextMimetype(MimetypeHandler):
 
         try:
             data_string = f.read(self.FILE_CROP_CHAR_LIMIT)
-        except (ValueError, IOError), e:
+        except (ValueError, IOError) as e:
             logging.error('Failed to read from file attachment %s: %s'
                           % (self.attachment.pk, e))
             raise

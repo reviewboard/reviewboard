@@ -247,7 +247,7 @@ class SCMTool(object):
             try:
                 sshutils.check_host(hostname, username, password,
                                     local_site_name)
-            except SSHAuthenticationError, e:
+            except SSHAuthenticationError as e:
                 # Represent an SSHAuthenticationError as a standard
                 # AuthenticationError.
                 raise AuthenticationError(e.allowed_types, unicode(e),
@@ -311,7 +311,7 @@ class SCMClient(object):
                 request.add_header('Authorization', 'Basic %s' % auth_string)
 
             return urllib2.urlopen(request).read()
-        except urllib2.HTTPError, e:
+        except urllib2.HTTPError as e:
             if e.code == 404:
                 logging.error('404')
                 raise FileNotFoundError(path, revision)
@@ -320,7 +320,7 @@ class SCMClient(object):
                       (e.code, url, e)
                 logging.error(msg)
                 raise SCMError(msg)
-        except Exception, e:
+        except Exception as e:
             msg = "Unexpected error fetching file from %s: %s" % (url, e)
             logging.error(msg)
             raise SCMError(msg)

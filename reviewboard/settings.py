@@ -242,7 +242,7 @@ DEFAULT_SUPPORT_URL = 'http://www.beanbaginc.com/support/reviewboard/' \
 try:
     import settings_local
     from settings_local import *
-except ImportError, exc:
+except ImportError as exc:
     dependency_error('Unable to import settings_local.py: %s' % exc)
 
 SESSION_COOKIE_PATH = SITE_ROOT

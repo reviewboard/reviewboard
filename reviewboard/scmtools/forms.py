@@ -259,7 +259,7 @@ class RepositoryForm(forms.ModelForm):
                                                self.DEFAULT_PLAN_NAME,
                                                hosting_service.form,
                                                *args, **kwargs)
-            except Exception, e:
+            except Exception as e:
                 logging.error('Error loading hosting service %s: %s'
                               % (hosting_service_id, e),
                               exc_info=1)
@@ -525,12 +525,12 @@ class RepositoryForm(forms.ModelForm):
                     username, password,
                     hosting_url,
                     local_site_name=self.local_site_name)
-            except AuthorizationError, e:
+            except AuthorizationError as e:
                 self.errors['hosting_account'] = self.error_class([
                     _('Unable to link the account: %s') % e,
                 ])
                 return
-            except Exception, e:
+            except Exception as e:
                 self.errors['hosting_account'] = self.error_class([
                     _('Unknown error when linking the account: %s') % e,
                 ])
@@ -550,7 +550,7 @@ class RepositoryForm(forms.ModelForm):
             self.cleaned_data.update(hosting_service_cls.get_repository_fields(
                 hosting_account.username, hosting_account.hosting_url, plan,
                 tool_name, field_vars))
-        except KeyError, e:
+        except KeyError as e:
             raise ValidationError([unicode(e)])
 
     def _clean_bug_tracker_info(self):
@@ -791,7 +791,7 @@ class RepositoryForm(forms.ModelForm):
 
                 if self.local_site:
                     self.local_site_name = self.local_site.name
-            except LocalSite.DoesNotExist, e:
+            except LocalSite.DoesNotExist as e:
                 raise ValidationError([e])
 
             self._clean_hosting_info()
@@ -846,7 +846,7 @@ class RepositoryForm(forms.ModelForm):
             # Try to upload the key if it hasn't already been associated.
             if not hosting_service.is_ssh_key_associated(repository, key):
                 hosting_service.associate_ssh_key(repository, key)
-        except SSHKeyAssociationError, e:
+        except SSHKeyAssociationError as e:
             logging.warning('SSHKeyAssociationError for repository "%s" (%s)'
                             % (repository, e.message))
             raise ValidationError([
@@ -1082,43 +1082,43 @@ class RepositoryForm(forms.ModelForm):
 
                 # Success.
                 break
-            except BadHostKeyError, e:
+            except BadHostKeyError as e:
                 if self.cleaned_data['trust_host']:
                     try:
                         self.ssh_client.replace_host_key(e.hostname,
                                                          e.raw_expected_key,
                                                          e.raw_key)
-                    except IOError, e:
+                    except IOError as e:
                         raise ValidationError(e)
                 else:
                     self.hostkeyerror = e
                     break
-            except UnknownHostKeyError, e:
+            except UnknownHostKeyError as e:
                 if self.cleaned_data['trust_host']:
                     try:
                         self.ssh_client.add_host_key(e.hostname, e.raw_key)
-                    except IOError, e:
+                    except IOError as e:
                         raise ValidationError(e)
                 else:
                     self.hostkeyerror = e
                     break
-            except UnverifiedCertificateError, e:
+            except UnverifiedCertificateError as e:
                 if self.cleaned_data['trust_host']:
                     try:
                         self.cert = scmtool_class.accept_certificate(
                             path, self.local_site_name, e.certificate)
-                    except IOError, e:
+                    except IOError as e:
                         raise ValidationError(e)
                 else:
                     self.certerror = e
                     break
-            except AuthenticationError, e:
+            except AuthenticationError as e:
                 if 'publickey' in e.allowed_types and e.user_key is None:
                     self.userkeyerror = e
                     break
 
                 raise ValidationError(e)
-            except Exception, e:
+            except Exception as e:
                 try:
                     text = unicode(e)
                 except UnicodeDecodeError:

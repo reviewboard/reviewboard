@@ -123,7 +123,7 @@ class Command(NoArgsCommand):
                         sys.stdout.flush()
                         prev_pct = pct
 
-            except Exception, e:
+            except Exception as e:
                 sys.stderr.write('Error indexing ReviewRequest #%d: %s\n'
                                  % (request.id, e))
 

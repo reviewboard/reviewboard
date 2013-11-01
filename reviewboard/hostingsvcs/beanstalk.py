@@ -158,7 +158,7 @@ class Beanstalk(HostingService):
                 return data
             else:
                 return json.loads(data)
-        except HTTPError, e:
+        except HTTPError as e:
             data = e.read()
 
             try:

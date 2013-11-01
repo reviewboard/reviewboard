@@ -60,7 +60,7 @@ class MarkdownReviewUI(FileAttachmentReviewUI):
             document = parseString('<html>%s</html>' % self.render())
             child_node = document.childNodes[0].childNodes[child_id]
             return child_node.toxml()
-        except Exception, e:
+        except Exception as e:
             logging.warning("Failure to create comment thumbnail for markdown "
                             "file attachment pk=%d: %s" % (self.obj.pk, e))
             return ''

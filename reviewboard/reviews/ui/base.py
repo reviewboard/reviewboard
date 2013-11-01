@@ -332,7 +332,7 @@ class FileAttachmentReviewUI(ReviewUI):
             if handler:
                 try:
                     return handler(attachment.get_review_request(), attachment)
-                except Exception, e:
+                except Exception as e:
                     logging.error('Unable to load review UI for %s: %s',
                                   attachment, e, exc_info=1)
 

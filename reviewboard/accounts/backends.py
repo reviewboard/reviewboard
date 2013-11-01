@@ -228,7 +228,7 @@ class LDAPBackend(AuthBackend):
             logging.warning("LDAP error: The specified object does not exist "
                             "in the Directory or provided invalid "
                             "credentials: %s" % uid)
-        except ldap.LDAPError, e:
+        except ldap.LDAPError as e:
             logging.warning("LDAP error: %s" % e)
         except:
             # Fallback exception catch because
@@ -300,12 +300,12 @@ class LDAPBackend(AuthBackend):
                 # ANON_BIND_UID and ANON_BIND_PASSWD are wrong, but I don't
                 # know how
                 pass
-            except ldap.NO_SUCH_OBJECT, e:
+            except ldap.NO_SUCH_OBJECT as e:
                 logging.warning("LDAP error: %s settings.LDAP_BASE_DN: %s "
                                 "settings.LDAP_UID_MASK: %s" %
                                 (e, settings.LDAP_BASE_DN,
                                  settings.LDAP_UID_MASK % username))
-            except ldap.LDAPError, e:
+            except ldap.LDAPError as e:
                 logging.warning("LDAP error: %s" % e)
 
         return None
@@ -448,7 +448,7 @@ class ActiveDirectoryBackend(AuthBackend):
                 if required_group:
                     try:
                         group_names = self.get_member_of(con, user_data)
-                    except Exception, e:
+                    except Exception as e:
                         logging.error("Active Directory error: failed getting"
                                       "groups for user '%s': %s" %
                                       (username, e))
@@ -528,7 +528,7 @@ class X509Backend(AuthBackend):
                 else:
                     logging.warning("X509Backend: username '%s' didn't match "
                                     "regex." % username)
-            except sre_constants.error, e:
+            except sre_constants.error as e:
                 logging.error("X509Backend: Invalid regex specified: %s" % e)
 
         return username
@@ -566,7 +566,7 @@ def get_registered_auth_backends():
     for entry in pkg_resources.iter_entry_points('reviewboard.auth_backends'):
         try:
             yield entry.name, entry.load()
-        except Exception, e:
+        except Exception as e:
             logging.error('Error loading authentication backend %s: %s'
                           % (entry.name, e),
                           exc_info=1)

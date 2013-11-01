@@ -123,30 +123,30 @@ class ValidateDiffResource(DiffResource):
             DiffSet.objects.create_from_upload(
                 repository, path, parent_diff_path, None, basedir, request,
                 save=False)
-        except FileNotFoundError, e:
+        except FileNotFoundError as e:
             return REPO_FILE_NOT_FOUND, {
                 'file': e.path,
                 'revision': unicode(e.revision),
             }
         except EmptyDiffError:
             return DIFF_EMPTY
-        except DiffTooBigError, e:
+        except DiffTooBigError as e:
             return DIFF_TOO_BIG, {
                 'reason': str(e),
                 'max_size': e.max_diff_size,
             }
-        except DiffParserError, e:
+        except DiffParserError as e:
             return DIFF_PARSE_ERROR, {
                 'reason': str(e),
                 'linenum': e.linenum,
             }
-        except ShortSHA1Error, e:
+        except ShortSHA1Error as e:
             return REPO_FILE_NOT_FOUND, {
                 'reason': str(e),
                 'file': e.path,
                 'revision': unicode(e.revision),
             }
-        except SCMError, e:
+        except SCMError as e:
             return DIFF_PARSE_ERROR, {
                 'reason': str(e),
             }

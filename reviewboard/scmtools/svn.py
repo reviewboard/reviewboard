@@ -163,7 +163,7 @@ class SVNTool(SCMTool):
             normrev = self.__normalize_revision(revision)
             return cb(normpath, normrev)
 
-        except ClientError, e:
+        except ClientError as e:
             stre = str(e)
             if 'File not found' in stre or 'path not found' in stre:
                 raise FileNotFoundError(path, revision, detail=str(e))
@@ -414,7 +414,7 @@ class SVNTool(SCMTool):
     def get_repository_info(self):
         try:
             info = self.client.info2(self.repopath, recurse=False)
-        except ClientError, e:
+        except ClientError as e:
             raise SCMError(e)
 
         return {
@@ -494,7 +494,7 @@ class SVNTool(SCMTool):
             info = client.info2(path, recurse=False)
             logging.debug('SVN: Got repository information for %s: %s' %
                           (path, info))
-        except ClientError, e:
+        except ClientError as e:
             logging.error('SVN: Failed to get repository information '
                           'for %s: %s' % (path, e))
 

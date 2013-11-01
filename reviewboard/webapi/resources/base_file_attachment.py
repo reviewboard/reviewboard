@@ -178,7 +178,7 @@ class BaseFileAttachmentResource(WebAPIResource):
 
         try:
             file = form.create(request.FILES['path'], review_request)
-        except ValueError, e:
+        except ValueError as e:
             return INVALID_FORM_DATA, {
                 'fields': {
                     'path': [str(e)],
@@ -238,7 +238,7 @@ class BaseFileAttachmentResource(WebAPIResource):
         if thumbnail is not None:
             try:
                 file.thumbnail = thumbnail
-            except Exception, e:
+            except Exception as e:
                 logging.error(
                     'Failed to store thumbnail for attachment %d: %s',
                     file.pk, e, request=request)

@@ -570,7 +570,7 @@ class Site(object):
                         _commands[name] = module_globals['Command']()
 
             execute_manager(reviewboard.settings, [__file__, cmd] + params)
-        except ImportError, e:
+        except ImportError as e:
             ui.error("Unable to execute the manager command %s: %s" %
                      (cmd, e))
 

@@ -355,7 +355,7 @@ class AuthenticationSettingsForm(SiteSettingsForm):
                     builtin_auth_choice = choice
                 else:
                     backend_choices.append(choice)
-            except Exception, e:
+            except Exception as e:
                 logging.error('Error loading authentication backend %s: %s'
                               % (backend_id, e),
                               exc_info=1)
@@ -676,12 +676,12 @@ class SSHSettingsForm(forms.Form):
         if self.cleaned_data['generate_key']:
             try:
                 SSHClient().generate_user_key()
-            except IOError, e:
+            except IOError as e:
                 self.errors['generate_key'] = forms.util.ErrorList([
                     _('Unable to write SSH key file: %s') % e
                 ])
                 raise
-            except Exception, e:
+            except Exception as e:
                 self.errors['generate_key'] = forms.util.ErrorList([
                     _('Error generating SSH key: %s') % e
                 ])
@@ -689,12 +689,12 @@ class SSHSettingsForm(forms.Form):
         elif self.cleaned_data['keyfile']:
             try:
                 SSHClient().import_user_key(files['keyfile'])
-            except IOError, e:
+            except IOError as e:
                 self.errors['keyfile'] = forms.util.ErrorList([
                     _('Unable to write SSH key file: %s') % e
                 ])
                 raise
-            except Exception, e:
+            except Exception as e:
                 self.errors['keyfile'] = forms.util.ErrorList([
                     _('Error uploading SSH key: %s') % e
                 ])
@@ -709,7 +709,7 @@ class SSHSettingsForm(forms.Form):
         if self.cleaned_data['delete_key']:
             try:
                 SSHClient().delete_user_key()
-            except Exception, e:
+            except Exception as e:
                 self.errors['delete_key'] = forms.util.ErrorList([
                     _('Unable to delete SSH key file: %s') % e
                 ])

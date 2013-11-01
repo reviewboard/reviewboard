@@ -271,7 +271,7 @@ class HgClient(object):
 
         try:
             self.repo = hg.repository(hg_ui, path=repoPath)
-        except error.RepoError, e:
+        except error.RepoError as e:
             logging.error('Error connecting to Mercurial repository %s: %s'
                           % (repoPath, e))
             raise RepositoryNotFoundError
@@ -284,7 +284,7 @@ class HgClient(object):
 
         try:
             return self.repo.changectx(rev).filectx(path).data()
-        except Exception, e:
+        except Exception as e:
             # LookupError moves from repo to revlog in hg v0.9.4, so we
             # catch the more general Exception to avoid the dependency.
             raise FileNotFoundError(path, rev, detail=str(e))

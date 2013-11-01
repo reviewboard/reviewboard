@@ -85,14 +85,14 @@ class SSHClient(paramiko.SSHClient):
 
         try:
             mod = __import__(module, {}, {}, [class_name])
-        except ImportError, e:
+        except ImportError as e:
             msg = 'Error importing SSH storage backend %s: "%s"' % (module, e)
             logging.critical(msg)
             raise ImproperlyConfigured(msg)
 
         try:
             self.storage = getattr(mod, class_name)(namespace=self.namespace)
-        except Exception, e:
+        except Exception as e:
             msg = 'Error instantiating SSH storage backend %s: "%s"' % \
                   (module, e)
             logging.critical(msg)
@@ -109,12 +109,12 @@ class SSHClient(paramiko.SSHClient):
 
         try:
             key = self.storage.read_user_key()
-        except paramiko.SSHException, e:
+        except paramiko.SSHException as e:
             logging.error('SSH: Unknown error accessing user key: %s' % e)
-        except paramiko.PasswordRequiredException, e:
+        except paramiko.PasswordRequiredException as e:
             logging.error('SSH: Unable to access password protected '
                           'key file: %s' % e)
-        except IOError, e:
+        except IOError as e:
             logging.error('SSH: Error reading user key: %s' % e)
 
         if fp:
@@ -129,7 +129,7 @@ class SSHClient(paramiko.SSHClient):
         """
         try:
             self.storage.delete_user_key()
-        except Exception, e:
+        except Exception as e:
             logging.error('Unable to delete SSH key file: %s' % e)
             raise
 
@@ -245,13 +245,13 @@ class SSHClient(paramiko.SSHClient):
         """
         try:
             self.storage.write_user_key(key)
-        except UnsupportedSSHKeyError, e:
+        except UnsupportedSSHKeyError as e:
             logging.error('Failed to write unknown key type %s' % type(key))
             raise
-        except IOError, e:
+        except IOError as e:
             logging.error('Failed to write SSH user key: %s' % e)
             raise
-        except Exception, e:
+        except Exception as e:
             logging.error('Unknown error writing SSH user key: %s' % e,
                           exc_info=1)
             raise

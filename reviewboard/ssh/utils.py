@@ -58,9 +58,9 @@ def check_host(netloc, username=None, password=None, namespace=None):
     try:
         client.connect(hostname, port, username=username, password=password,
                        pkey=client.get_user_key(), **kwargs)
-    except paramiko.BadHostKeyException, e:
+    except paramiko.BadHostKeyException as e:
         raise BadHostKeyError(e.hostname, e.key, e.expected_key)
-    except paramiko.AuthenticationException, e:
+    except paramiko.AuthenticationException as e:
         # Some AuthenticationException instances have allowed_types set,
         # and some don't.
         allowed_types = getattr(e, 'allowed_types', [])
@@ -71,7 +71,7 @@ def check_host(netloc, username=None, password=None, namespace=None):
             key = None
 
         raise SSHAuthenticationError(allowed_types=allowed_types, user_key=key)
-    except paramiko.SSHException, e:
+    except paramiko.SSHException as e:
         if str(e) == 'No authentication methods available':
             raise SSHAuthenticationError
         else:

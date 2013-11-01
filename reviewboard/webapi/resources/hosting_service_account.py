@@ -150,7 +150,7 @@ class HostingServiceAccountResource(WebAPIResource):
             try:
                 service.authorize(request, username, password, hosting_url,
                                   local_site_name)
-            except AuthorizationError, e:
+            except AuthorizationError as e:
                 return HOSTINGSVC_AUTH_ERROR, {
                     'reason': str(e),
                 }

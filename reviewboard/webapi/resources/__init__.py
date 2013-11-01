@@ -50,7 +50,7 @@ class Resources(object):
                 mod = __import__('reviewboard.webapi.resources.%s' % name,
                                  {}, {}, [instance_name])
                 self.__dict__[name] = getattr(mod, instance_name)
-            except (ImportError, AttributeError), e:
+            except (ImportError, AttributeError) as e:
                 logging.error('Unable to load webapi resource %s: %s'
                               % (name, e))
                 raise AttributeError('%s is not a valid resource name' % name)

@@ -74,7 +74,7 @@ Type 'yes' to continue, or 'no' to cancel: """)
                                                        "[%s]" % line):
                         try:
                             obj.save()
-                        except Exception, e:
+                        except Exception as e:
                             sys.stderr.write("Error: %s\n" % e)
                             sys.stderr.write("Line %s: '%s'" % (i, line))
                 elif line[0] != "#":
@@ -93,7 +93,7 @@ Type 'yes' to continue, or 'no' to cancel: """)
 
             transaction.commit()
             transaction.leave_transaction_management()
-        except Exception, e:
+        except Exception as e:
             f.close()
             sys.stderr.write("Problem installing '%s': %s\n" %
                              (filename, str(e)))

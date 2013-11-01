@@ -17,7 +17,7 @@ def regex_validator(value):
     """Validates that the specified regular expression is valid."""
     try:
         re.compile(value)
-    except Exception, e:
+    except Exception as e:
         raise ValidationError(e)
 
 
@@ -47,12 +47,12 @@ class DefaultReviewerForm(forms.ModelForm):
     def clean(self):
         try:
             validate_users(self, 'people')
-        except ValidationError, e:
+        except ValidationError as e:
             self._errors['people'] = self.error_class(e.messages)
 
         try:
             validate_review_groups(self, 'groups')
-        except ValidationError, e:
+        except ValidationError as e:
             self._errors['groups'] = self.error_class(e.messages)
 
         # Now make sure the repositories are valid.

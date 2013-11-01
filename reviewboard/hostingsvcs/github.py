@@ -190,7 +190,7 @@ class GitHub(HostingService):
             repo_info = self._api_get_repository(
                 self._get_repository_owner_raw(plan, kwargs),
                 self._get_repository_name_raw(plan, kwargs))
-        except Exception, e:
+        except Exception as e:
             if str(e) == 'Not Found':
                 if plan in ('public', 'private'):
                     raise RepositoryError(
@@ -255,7 +255,7 @@ class GitHub(HostingService):
                 username=username,
                 password=password,
                 body=json.dumps(body))
-        except (urllib2.HTTPError, urllib2.URLError), e:
+        except (urllib2.HTTPError, urllib2.URLError) as e:
             data = e.read()
 
             try:
@@ -307,7 +307,7 @@ class GitHub(HostingService):
 
         try:
             rsp = self._api_get(url)
-        except Exception, e:
+        except Exception as e:
             logging.warning('Failed to fetch commits from %s: %s',
                             url, e)
             return results
@@ -335,7 +335,7 @@ class GitHub(HostingService):
 
         try:
             rsp = self._api_get(url)
-        except Exception, e:
+        except Exception as e:
             logging.warning('Failed to fetch commits from %s: %s',
                             url, e)
             return results
@@ -507,7 +507,7 @@ class GitHub(HostingService):
         try:
             data, headers = self._http_get(url)
             return json.loads(data)
-        except (urllib2.URLError, urllib2.HTTPError), e:
+        except (urllib2.URLError, urllib2.HTTPError) as e:
             data = e.read()
 
             try:

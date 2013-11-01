@@ -16,7 +16,7 @@ class Command(NoArgsCommand):
         for entry in pkg_resources.iter_entry_points("reviewboard.scmtools"):
             try:
                 scmtool_class = entry.load()
-            except Exception, e:
+            except Exception as e:
                 sys.stderr.write("Unable to load SCMTool %s: %s\n" %
                                  (entry, e))
                 continue

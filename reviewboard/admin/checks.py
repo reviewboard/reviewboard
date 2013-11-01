@@ -72,7 +72,7 @@ def check_updates_required():
         # Errors appear.
         try:
             siteconfig = SiteConfiguration.objects.get_current()
-        except (DatabaseError, SiteConfiguration.DoesNotExist), e:
+        except (DatabaseError, SiteConfiguration.DoesNotExist) as e:
             updates_required.append((
                 'admin/manual-updates/database-error.html', {
                     'error': e,
@@ -275,7 +275,7 @@ def get_can_use_amazon_s3():
     try:
         from storages.backends.s3boto import S3BotoStorage
         return (True, None)
-    except ImproperlyConfigured, e:
+    except ImproperlyConfigured as e:
         return (False, _('Amazon S3 backend failed to load: %s') % e)
     except ImportError:
         return (False, _(

@@ -161,7 +161,7 @@ class HostingService(object):
         for field, value in fields[tool_name].iteritems():
             try:
                 results[field] = value % new_vars
-            except KeyError, e:
+            except KeyError as e:
                 logging.error('Failed to generate %s field for hosting '
                               'service %s using %s and %r: Missing key %s'
                               % (field, unicode(cls.name), value, new_vars, e),
@@ -195,7 +195,7 @@ class HostingService(object):
 
         try:
             return bug_tracker_field % field_vars
-        except KeyError, e:
+        except KeyError as e:
             logging.error('Failed to generate %s field for hosting '
                           'service %s using %r: Missing key %s'
                           % (bug_tracker_field, unicode(cls.name),
@@ -309,7 +309,7 @@ def _populate_hosting_services():
         for entry in iter_entry_points('reviewboard.hosting_services'):
             try:
                 _hosting_services[entry.name] = entry.load()
-            except Exception, e:
+            except Exception as e:
                 logging.error(
                     'Unable to load repository hosting service %s: %s'
                     % (entry, e))

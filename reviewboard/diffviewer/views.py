@@ -101,7 +101,7 @@ class DiffViewerView(TemplateView):
                               diffset.id, request=request)
 
             return response
-        except Exception, e:
+        except Exception as e:
             return exception_traceback(request, e, self.template_name)
 
     def render_to_response(self, *args, **kwargs):
@@ -234,7 +234,7 @@ class DiffFragmentView(View):
             renderer = self.create_renderer(context, *args, **kwargs)
 
             return renderer.render_to_response()
-        except Exception, e:
+        except Exception as e:
             return exception_traceback(
                 self.request, e, self.error_template_name,
                 extra_context={

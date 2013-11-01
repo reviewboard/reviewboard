@@ -518,7 +518,7 @@ class TestCase(DjbletsTestCase):
                     for obj in serializers.deserialize('json', fp, using=db)
                     if router.allow_syncdb(db, obj.object.__class__)
                 ]
-        except IOError, e:
+        except IOError as e:
             sys.stderr.write('Unable to load fixture %s: %s\n' % (fixture, e))
 
     def _get_fixture_dirs(self):
@@ -572,7 +572,7 @@ class TestCase(DjbletsTestCase):
                     try:
                         obj = copy.copy(obj)
                         obj.save(using=db)
-                    except (DatabaseError, IntegrityError), e:
+                    except (DatabaseError, IntegrityError) as e:
                         sys.stderr.write('Could not load %s.%s(pk=%s): %s\n'
                                          % (obj.object._meta.app_label,
                                             obj.object._meta.object_name,

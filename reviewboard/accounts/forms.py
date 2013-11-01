@@ -471,7 +471,7 @@ class X509SettingsForm(SiteSettingsForm):
 
         try:
             re.compile(regex)
-        except sre_constants.error, e:
+        except sre_constants.error as e:
             raise ValidationError(e)
 
         return regex

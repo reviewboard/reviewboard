@@ -1276,7 +1276,7 @@ class GitHubTests(ServiceTests):
         try:
             service.check_repository(**kwargs)
             saw_exception = False
-        except Exception, e:
+        except Exception as e:
             self.assertEqual(unicode(e), expected_error)
             saw_exception = True
 

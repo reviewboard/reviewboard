@@ -177,7 +177,7 @@ def build_diff_comment_fragments(
                 'domain': Site.objects.get_current().domain,
                 'domain_method': siteconfig.get("site_domain_method"),
             })
-        except Exception, e:
+        except Exception as e:
             content = exception_traceback_string(None, e,
                                                  error_template_name, {
                 'comment': comment,
@@ -256,7 +256,7 @@ def new_review_request(request,
                 'requires_change_number': scmtool.supports_pending_changesets,
                 'requires_basedir': not scmtool.get_diffs_use_absolute_paths(),
             })
-        except Exception, e:
+        except Exception as e:
             logging.error('Error loading SCMTool for repository '
                           '%s (ID %d): %s' % (repo.name, repo.id, e),
                           exc_info=1)
@@ -1661,7 +1661,7 @@ class ReviewsSearchView(ListView):
 
         try:
             searcher = lucene.IndexSearcher(store)
-        except lucene.JavaError, e:
+        except lucene.JavaError as e:
             # FIXME: show a useful error
             raise e
 

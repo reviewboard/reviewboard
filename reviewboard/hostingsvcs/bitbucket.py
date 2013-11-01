@@ -241,7 +241,7 @@ class Bitbucket(HostingService):
                 return data
             else:
                 return json.loads(data)
-        except HTTPError, e:
+        except HTTPError as e:
             # Bitbucket's API documentation doesn't provide any information
             # on an error structure, and the API browser shows that we
             # sometimes get a raw error string, and sometimes raw HTML.

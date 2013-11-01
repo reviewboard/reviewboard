@@ -121,7 +121,7 @@ class BZRTool(SCMTool):
                     contents = revtree.get_file_text(fileid)
                 else:
                     contents = ""
-            except BzrError, e:
+            except BzrError as e:
                 raise SCMError(e)
         finally:
             if branch:
@@ -220,7 +220,7 @@ class BZRTool(SCMTool):
                 bzrdir.BzrDir.open_containing_tree_branch_or_repository(path)
         except AttributeError:
             raise RepositoryNotFoundError()
-        except NotBranchError, e:
+        except NotBranchError:
             raise RepositoryNotFoundError()
-        except Exception, e:
+        except Exception as e:
             raise SCMError(e)
