@@ -18,8 +18,6 @@ from reviewboard.accounts.forms import ActiveDirectorySettingsForm, \
                                        NISSettingsForm, \
                                        StandardAuthSettingsForm, \
                                        X509SettingsForm
-from reviewboard.accounts.models import LocalSiteProfile
-from reviewboard.site.models import LocalSite
 
 
 _auth_backends = []
@@ -102,63 +100,6 @@ class StandardAuthBackend(AuthBackend, ModelBackend):
 
     def update_password(self, user, password):
         user.password = hashers.make_password(password)
-
-    def get_all_permissions(self, user, obj=None):
-        assert obj is None or isinstance(obj, LocalSite)
-
-        if user.is_anonymous():
-            return set()
-
-        # First, get the list of all global permissions.
-        #
-        # Django's ModelBackend doesn't support passing an object, and will
-        # return an empty set, so don't pass an object for this attempt.
-        permissions = \
-            super(StandardAuthBackend, self).get_all_permissions(user)
-
-        if obj is not None:
-            # We know now that this is a LocalSite, due to the assertion
-            # above.
-            if not hasattr(user, '_local_site_perm_cache'):
-                user._local_site_perm_cache = {}
-
-            if obj.pk not in user._local_site_perm_cache:
-                try:
-                    site_profile = user.get_site_profile(obj)
-
-                    perm_cache = set([
-                        key
-                        for key, value in site_profile.permissions.iteritems()
-                        if value
-                    ])
-                except LocalSiteProfile.DoesNotExist:
-                    perm_cache = set()
-
-                user._local_site_perm_cache[obj.pk] = perm_cache
-
-            permissions = permissions.copy()
-            permissions.update(user._local_site_perm_cache[obj.pk])
-
-        return permissions
-
-    def has_perm(self, user, perm, obj=None):
-        assert obj is None or isinstance(obj, LocalSite)
-
-        if not user.is_active:
-            return False
-
-        if obj is not None:
-            if not hasattr(user, '_local_site_admin_for'):
-                user._local_site_admin_for = {}
-
-            if obj.pk not in user._local_site_admin_for:
-                user._local_site_admin_for[obj.pk] = obj.is_mutable_by(user)
-
-            if user._local_site_admin_for[obj.pk]:
-                return True
-
-        return super(StandardAuthBackend, self).has_perm(user, perm, obj)
-
 
 class NISBackend(AuthBackend):
     """Authenticate against a user on an NIS server."""

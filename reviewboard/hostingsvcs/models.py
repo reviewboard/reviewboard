@@ -58,7 +58,7 @@ class HostingServiceAccount(models.Model):
 
         The acount is mutable by the user if the user is an administrator
         with proper permissions or the account is part of a LocalSite and
-        the user has permissions to modify it.
+        the user is in the admin list.
         """
-        return user.has_perm('hostingsvcs.change_hostingserviceaccount',
-                             self.local_site)
+        return (user.has_perm('hostingsvcs.change_hostingserviceaccount') or
+                (self.local_site and self.local_site.is_mutable_by(user)))

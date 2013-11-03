@@ -79,7 +79,8 @@ class Group(models.Model):
         proper permissions, or the group is part of a LocalSite and the user is
         in the admin list.
         """
-        return user.has_perm('reviews.change_group', self.local_site)
+        return (user.has_perm('reviews.change_group') or
+                (self.local_site and self.local_site.is_mutable_by(user)))
 
     def __unicode__(self):
         return self.name
@@ -145,8 +146,8 @@ class DefaultReviewer(models.Model):
 
         LocalSite administrators can modify or delete them on their LocalSites.
         """
-        return user.has_perm('reviews.change_default_reviewer',
-                             self.local_site)
+        return (user.has_perm('reviews.change_default_reviewer') or
+                (self.local_site and self.local_site.is_mutable_by(user)))
 
     def __unicode__(self):
         return self.name
@@ -648,19 +649,14 @@ class ReviewRequest(BaseReviewRequestDetails):
         return False
 
     def is_mutable_by(self, user):
-        """Returns whether the user can modify this review request."""
-        return (self.submitter == user or
-                user.has_perm('reviews.can_edit_reviewrequest',
-                              self.local_site))
+        "Returns true if the user can modify this review request"
+        return self.submitter == user or \
+               user.has_perm('reviews.can_edit_reviewrequest')
 
     def is_status_mutable_by(self, user):
         """Returns whether the user can modify this review request's status."""
         return (self.submitter == user or
-                user.has_perm('reviews.can_change_status', self.local_site))
-
-    def is_deletable_by(self, user):
-        """Returns whether the user can delete this review request."""
-        return user.has_perm('reviews.delete_reviewrequest')
+                user.has_perm('reviews.can_change_status'))
 
     def get_draft(self, user=None):
         """
@@ -822,7 +818,7 @@ class ReviewRequest(BaseReviewRequestDetails):
         SUBMITTED or DISCARDED.
         """
         if (user and not self.is_mutable_by(user) and
-            not user.has_perm("reviews.can_change_status", self.local_site)):
+            not user.has_perm("reviews.can_change_status")):
             raise PermissionError
 
         if type not in [self.SUBMITTED, self.DISCARDED]:
@@ -866,7 +862,7 @@ class ReviewRequest(BaseReviewRequestDetails):
         Reopens the review request for review.
         """
         if (user and not self.is_mutable_by(user) and
-            not user.has_perm("reviews.can_change_status", self.local_site)):
+            not user.has_perm("reviews.can_change_status")):
             raise PermissionError
 
         if self.status != self.PENDING_REVIEW:
