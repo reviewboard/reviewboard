@@ -395,9 +395,12 @@ def review_detail(request,
     else:
         draft_timestamp = ""
 
-    etag = "%s:%s:%s:%s:%s:%s:%s" % (
+    blocks = list(review_request_details.blocks.all())
+
+    etag = "%s:%s:%s:%s:%s:%s:%s:%s" % (
         request.user, last_activity_time, draft_timestamp,
         review_timestamp, review_request.last_review_activity_timestamp,
+        ','.join([str(r.pk) for r in blocks]),
         int(starred), settings.AJAX_SERIAL
     )
 
@@ -684,6 +687,7 @@ def review_detail(request,
             close_description = latest_changedesc.text
 
     context_data = make_review_request_context(request, review_request, {
+        'blocks': blocks,
         'draft': draft,
         'detail_hooks': ReviewRequestDetailHook.hooks,
         'review_request_details': review_request_details,

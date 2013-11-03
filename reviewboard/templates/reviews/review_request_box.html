@@ -71,7 +71,7 @@
     <th class="label"><label for="blocks">{% trans "Blocks" %}:</label></th>
     <td class="value" id="blocks-value-cell"><span id="blocks">
 {% spaceless %}
-{%  for dependency in review_request_details.blocks.all %}
+{%  for dependency in blocks %}
      <a href="{{dependency.get_absolute_url}}">{{dependency.get_display_id}}</a>{% if not forloop.last %}, {% endif %}
 {%  endfor %}
 {% endspaceless %}
