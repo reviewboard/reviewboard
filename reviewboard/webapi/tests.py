@@ -2729,6 +2729,40 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
                     { 'status': 'submitted' },
                     expected_status=403)
 
+    def test_put_status_as_other_user_with_permission(self):
+        """Testing the PUT review-requests/<id>/?status= API
+        as another user with permission
+        """
+        self.user.user_permissions.add(
+            Permission.objects.get(codename='can_change_status'))
+
+        self._test_put_status_as_other_user()
+
+    def test_put_status_as_other_user_with_admin(self):
+        """Testing the PUT review-requests/<id>/?status= API
+        as another user with admin
+        """
+        self._login_user(admin=True)
+
+        self._test_put_status_as_other_user()
+
+    def _test_put_status_as_other_user(self):
+        review_request = ReviewRequest.objects.filter(
+            public=True, status='P',
+            submitter__username='dopey')[0]
+
+        rsp = self.apiPut(
+            self.get_item_url(review_request.display_id),
+            {
+                'status': 'submitted',
+            },
+            expected_mimetype=self.item_mimetype)
+
+        self.assertEqual(rsp['stat'], 'ok')
+
+        review_request = ReviewRequest.objects.get(pk=review_request.id)
+        self.assertEqual(review_request.status, 'S')
+
     @add_fixtures(['test_site'])
     def test_get_reviewrequest(self):
         """Testing the GET review-requests/<id>/ API"""
