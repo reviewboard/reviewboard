@@ -858,7 +858,10 @@ def group(request,
             request, 'reviews/group_permission_denied.html')
 
     datagrid = ReviewRequestDataGrid(request,
-        ReviewRequest.objects.to_group(name, local_site, status=None,
+        ReviewRequest.objects.to_group(name,
+                                       local_site,
+                                       user=request.user,
+                                       status=None,
                                        with_counts=True),
         _("Review requests for %s") % name)
 
@@ -921,7 +924,9 @@ def submitter(request,
         user = get_object_or_404(User, username=username)
 
     datagrid = ReviewRequestDataGrid(request,
-        ReviewRequest.objects.from_user(username, status=None,
+        ReviewRequest.objects.from_user(username,
+                                        user=request.user,
+                                        status=None,
                                         with_counts=True,
                                         local_site=local_site,
                                         filter_private=True),
