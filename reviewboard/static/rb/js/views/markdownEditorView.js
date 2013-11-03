@@ -57,6 +57,13 @@ RB.MarkdownEditorView = Backbone.View.extend({
     },
 
     /*
+     * Returns whether or not the editor's contents have changed.
+     */
+    isDirty: function() {
+        return !this._codeMirror.isClean();
+    },
+
+    /*
      * Sets the text in the editor.
      */
     setText: function(text) {
@@ -143,6 +150,10 @@ RB.MarkdownEditorView = Backbone.View.extend({
 
             getFieldValue: function(editor) {
                 return markdownEditor.getText();
+            },
+
+            isFieldDirty: function(editor) {
+                return markdownEditor.isDirty();
             }
         };
     }
