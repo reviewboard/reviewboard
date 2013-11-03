@@ -111,7 +111,7 @@ class ReviewRequestLastUpdateResource(WebAPIResource):
 
         return 200, {
             self.item_result_key: {
-                'timestamp': timestamp.isoformat(),
+                'timestamp': timestamp,
                 'user': user,
                 'summary': summary,
                 'type': update_type,

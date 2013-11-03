@@ -83,7 +83,7 @@
                                           {parse: true}),
         checkUpdatesType: 'diff',
 {%  localtime off %}
-        lastActivityTimestamp: '{{last_activity_time|date:"c"}}',
+        lastActivityTimestamp: {{last_activity_time|json_dumps}},
 {%  endlocaltime %}
 {%  include "reviews/reviewable_page_data.js" %}
     }));

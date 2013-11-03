@@ -1918,7 +1918,8 @@ class Review(models.Model):
         # Update the last_updated timestamp and the last review activity
         # timestamp on the review request.
         self.review_request.last_review_activity_timestamp = self.timestamp
-        self.review_request.save()
+        self.review_request.save(
+            update_fields=['last_review_activity_timestamp'])
 
         # Atomicly update the shipit_count
         if self.ship_it:

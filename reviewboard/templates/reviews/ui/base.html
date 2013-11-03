@@ -1,5 +1,5 @@
 {% extends "reviews/reviewable_base.html" %}
-{% load djblets_deco i18n reviewtags tz %}
+{% load djblets_deco djblets_js i18n reviewtags tz %}
 
 {% block title %}
  {{review_ui.name}}{% if caption %}: {{caption}}{% endif %}
@@ -53,7 +53,7 @@
 <script>
     RB.PageManager.setPage(new RB.ReviewablePageView({
 {%  localtime off %}
-        lastActivityTimestamp: '{{last_activity_time|date:"c"}}',
+        lastActivityTimestamp: {{last_activity_time|json_dumps}},
 {%  endlocaltime %}
 {%  include "reviews/reviewable_page_data.js" %}
     }));

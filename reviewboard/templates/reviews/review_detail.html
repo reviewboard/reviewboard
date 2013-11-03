@@ -1,12 +1,6 @@
 {% extends "reviews/reviewable_base.html" %}
-{% load i18n %}
-{% load djblets_deco %}
-{% load djblets_extensions %}
-{% load djblets_utils %}
-{% load rb_extensions %}
-{% load reviewtags %}
-{% load staticfiles %}
-{% load tz %}
+{% load i18n djblets_deco djblets_extensions djblets_js djblets_utils %}
+{% load rb_extensions reviewtags staticfiles tz %}
 
 {% block title %}{{review_request_details.summary}} | {% trans "Review Request" %}{% endblock %}
 
@@ -290,7 +284,7 @@
 <script>
     RB.PageManager.setPage(new RB.ReviewRequestPageView({
 {%  localtime off %}
-        lastActivityTimestamp: '{{last_activity_time|date:"c"}}',
+        lastActivityTimestamp: {{last_activity_time|json_dumps}},
 {%  endlocaltime %}
 {%  include "reviews/reviewable_page_data.js" %}
     }));

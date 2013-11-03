@@ -11,7 +11,8 @@ RB.Review = RB.BaseResource.extend({
         richText: false,
         bodyTop: null,
         bodyBottom: null,
-        draftReply: null
+        draftReply: null,
+        timestamp: null
     }, RB.BaseResource.prototype.defaults),
 
     rspNamespace: 'review',
@@ -37,7 +38,8 @@ RB.Review = RB.BaseResource.extend({
             bodyTop: rsp.body_top,
             bodyBottom: rsp.body_bottom,
             public: rsp.public,
-            richText: rsp.rich_text
+            richText: rsp.rich_text,
+            timestamp: rsp.timestamp
         };
     },
 
@@ -85,6 +87,9 @@ RB.Review = RB.BaseResource.extend({
             this.set('draftReply', draftReply);
 
             draftReply.once('published', function() {
+                var reviewRequest = this.get('parentObject');
+
+                reviewRequest.markUpdated(draftReply.get('timestamp'));
                 this.set('draftReply', null);
             }, this);
         }
