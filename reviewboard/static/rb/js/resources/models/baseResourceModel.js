@@ -276,9 +276,13 @@ RB.BaseResource = Backbone.Model.extend({
                 this.trigger('saved');
             }, this),
 
-            error: _.isFunction(options.error)
-                   ? _.bind(options.error, context)
-                   : undefined
+            error: _.bind(function() {
+                if (_.isFunction(options.error)) {
+                    options.error.apply(context, arguments);
+                }
+
+                this.trigger('saveFailed');
+            }, this)
         }, options);
 
         saveOptions.attrs = options.attrs || this.toJSON(options);

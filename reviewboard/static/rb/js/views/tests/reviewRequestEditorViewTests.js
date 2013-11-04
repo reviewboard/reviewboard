@@ -4,22 +4,7 @@ describe('views/ReviewRequestEditorView', function() {
         view,
         template = _.template([
             '<div>',
-            ' <div id="draft-banner" style="display: none;">',
-            '  <input type="button" id="btn-draft-publish" />',
-            '  <input type="button" id="btn-draft-discard" />',
-            '  <input type="button" id="btn-review-request-discard" />',
-            '  <input type="button" id="btn-review-request-reopen" />',
-            '  <pre id="changedescription" data-rich-text="true"',
-            '       class="editable"></pre>',
-            ' </div>',
-            ' <div id="discard-banner" style="display: none;">',
-            '  <pre id="changedescription" data-rich-text="true"',
-            '       class="editable"></pre>',
-            ' </div>',
-            ' <div id="submitted-banner" style="display: none;">',
-            '  <pre id="changedescription" data-rich-text="true"',
-            '       class="editable"></pre>',
-            ' </div>',
+            ' <div id="review_request_banners"></div>',
             ' <div id="review-request-warning"></div>',
             ' <div class="actions">',
             '  <a href="#" id="discard-review-request-link"></a>',
@@ -61,7 +46,9 @@ describe('views/ReviewRequestEditorView', function() {
         var $el = $(template()).appendTo($testsScratch);
 
         reviewRequest = new RB.ReviewRequest({
-            id: 123
+            id: 123,
+            public: true,
+            state: RB.ReviewRequest.PENDING
         });
 
         editor = new RB.ReviewRequestEditor({
@@ -153,41 +140,48 @@ describe('views/ReviewRequestEditorView', function() {
         describe('Draft banner', function() {
             describe('Visibility', function() {
                 it('Hidden when saving', function() {
-                    expect(view.$draftBanner.is(':visible')).toBe(false);
+                    expect(view.banner).toBe(null);
                     editor.trigger('saving');
-                    expect(view.$draftBanner.is(':visible')).toBe(false);
+                    expect(view.banner).toBe(null);
                 });
 
                 it('Show when saved', function() {
-                    expect(view.$draftBanner.is(':visible')).toBe(false);
+                    expect(view.banner).toBe(null);
                     editor.trigger('saved');
-                    expect(view.$draftBanner.is(':visible')).toBe(true);
+                    expect(view.banner).not.toBe(null);
+                    expect(view.banner.$el.is(':visible')).toBe(true);
                 });
             });
 
             describe('Buttons actions', function() {
                 it('Discard Draft', function() {
+                    view.showBanner();
+
                     spyOn(reviewRequest.draft, 'destroy');
 
-                    view.$draftBanner.find('#btn-draft-discard').click();
+                    $('#btn-draft-discard').click();
 
                     expect(reviewRequest.draft.destroy).toHaveBeenCalled();
                 });
 
                 it('Discard Review Request', function() {
+                    reviewRequest.set('public', false);
+                    view.showBanner();
+
                     spyOn(reviewRequest, 'close')
                         .andCallFake(function(options) {
                             expect(options.type).toBe(
                                 RB.ReviewRequest.CLOSE_DISCARDED);
                         });
 
-                    view.$draftBanner.find('#btn-review-request-discard')
-                        .click();
+                    $('#btn-review-request-discard').click();
 
                     expect(reviewRequest.close).toHaveBeenCalled();
                 });
 
                 it('Publish', function() {
+                    view.showBanner();
+
                     spyOn(editor, 'publishDraft').andCallThrough();
                     spyOn(reviewRequest.draft, 'publish');
 
@@ -201,47 +195,103 @@ describe('views/ReviewRequestEditorView', function() {
                         description: 'foo'
                     });
 
-                    view.$draftBanner.find('#btn-draft-publish').click();
+                    $('#btn-draft-publish').click();
 
                     expect(editor.get('publishing')).toBe(true);
                     expect(editor.get('pendingSaveCount')).toBe(0);
                     expect(editor.publishDraft).toHaveBeenCalled();
                     expect(reviewRequest.draft.publish).toHaveBeenCalled();
                 });
+            });
+
+            describe('Button states', function() {
+                var $buttons;
+
+                beforeEach(function() {
+                    view.showBanner();
+
+                    $buttons = view.banner.$buttons;
+                });
+
+                it('Enabled by default', function() {
+                    expect($buttons.prop('disabled')).toBe(false);
+                });
+
+                it('Disabled when saving', function() {
+                    expect($buttons.prop('disabled')).toBe(false);
+                    editor.trigger('saving');
+                    expect($buttons.prop('disabled')).toBe(true);
+                });
+
+                it('Enabled when saved', function() {
+                    expect($buttons.prop('disabled')).toBe(false);
+                    editor.trigger('saving');
+                    expect($buttons.prop('disabled')).toBe(true);
+                    editor.trigger('saved');
+                    expect($buttons.prop('disabled')).toBe(false);
+                });
+            });
+        });
+
+        describe('Discarded banner', function() {
+            beforeEach(function() {
+                reviewRequest.set('state', RB.ReviewRequest.CLOSE_DISCARDED);
+            });
+
+            it('Visibility', function() {
+                expect(view.banner).toBe(null);
+
+                view.showBanner();
+
+                expect(view.banner).not.toBe(null);
+                expect(view.banner.el.id).toBe('discard-banner');
+                expect(view.banner.$el.is(':visible')).toBe(true);
+            });
+
+            describe('Buttons actions', function() {
+                beforeEach(function() {
+                    expect(view.banner).toBe(null);
+                    view.showBanner();
+                });
 
                 it('Reopen', function() {
                     spyOn(reviewRequest, 'reopen');
 
-                    view.$draftBanner.find('#btn-review-request-reopen')
-                        .click();
+                    $('#btn-review-request-reopen').click();
 
                     expect(reviewRequest.reopen).toHaveBeenCalled();
                 });
             });
+        });
 
-            describe('Button states', function() {
-                it('Enabled by default', function() {
-                    expect(view.$draftBannerButtons.prop('disabled'))
-                        .toBe(false);
+        describe('Submitted banner', function() {
+            beforeEach(function() {
+                reviewRequest.set('state', RB.ReviewRequest.CLOSE_SUBMITTED);
+            });
+
+            it('Visibility', function() {
+                expect(view.banner).toBe(null);
+
+                view.showBanner();
+
+                expect(view.banner).not.toBe(null);
+                expect(view.banner.el.id).toBe('submitted-banner');
+                expect(view.banner.$el.is(':visible')).toBe(true);
+            });
+
+            describe('Buttons actions', function() {
+                beforeEach(function() {
+                    expect(view.banner).toBe(null);
+                    reviewRequest.set('state', RB.ReviewRequest.CLOSE_SUBMITTED);
+                    view.showBanner();
                 });
 
-                it('Disabled when saving', function() {
-                    expect(view.$draftBannerButtons.prop('disabled'))
-                        .toBe(false);
-                    editor.trigger('saving');
-                    expect(view.$draftBannerButtons.prop('disabled'))
-                        .toBe(true);
-                });
+                it('Reopen', function() {
+                    spyOn(reviewRequest, 'reopen');
 
-                it('Enabled when saved', function() {
-                    expect(view.$draftBannerButtons.prop('disabled'))
-                        .toBe(false);
-                    editor.trigger('saving');
-                    expect(view.$draftBannerButtons.prop('disabled'))
-                        .toBe(true);
-                    editor.trigger('saved');
-                    expect(view.$draftBannerButtons.prop('disabled'))
-                        .toBe(false);
+                    $('#btn-review-request-reopen').click();
+
+                    expect(reviewRequest.reopen).toHaveBeenCalled();
                 });
             });
         });
@@ -372,13 +422,9 @@ describe('views/ReviewRequestEditorView', function() {
 
         describe('Change Descriptions', function() {
             function closeDescriptionTests(bannerSel, closeType) {
-                setupFieldTests({
-                    jsonFieldName: 'changedescription',
-                    selector: bannerSel + ' #changedescription'
-                });
-
                 beforeEach(function() {
-                    $(bannerSel).show();
+                    reviewRequest.set('state', closeType);
+                    view.showBanner();
 
                     spyOn(reviewRequest, 'close')
                         .andCallFake(function(options) {
@@ -386,6 +432,11 @@ describe('views/ReviewRequestEditorView', function() {
                             expect(options.description).toBe(
                                 'My Value');
                         });
+                });
+
+                setupFieldTests({
+                    jsonFieldName: 'changedescription',
+                    selector: bannerSel + ' #changedescription'
                 });
 
                 hasEditorTest();
@@ -432,13 +483,13 @@ describe('views/ReviewRequestEditorView', function() {
             });
 
             describe('Draft review requests', function() {
+                beforeEach(function() {
+                    view.showBanner();
+                });
+
                 setupFieldTests({
                     jsonFieldName: 'changedescription',
                     selector: '#draft-banner #changedescription'
-                });
-
-                beforeEach(function() {
-                    $('#draft-banner').show();
                 });
 
                 hasEditorTest();

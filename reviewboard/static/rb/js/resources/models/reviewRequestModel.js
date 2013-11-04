@@ -21,11 +21,13 @@ RB.ReviewRequest = RB.BaseResource.extend({
         dependsOn: [],
         description: null,
         draftReview: null,
+        lastUpdated: null,
         localSitePrefix: null,
         public: null,
         repository: null,
         reviewURL: null,
         richText: false,
+        state: null,
         summary: null,
         targetGroups: [],
         targetPeople: [],
@@ -156,7 +158,9 @@ RB.ReviewRequest = RB.BaseResource.extend({
      * An optional description can be set by passing a 'description' option.
      */
     close: function(options, context) {
-        var data = {};
+        var data = {},
+            changingState,
+            saveOptions;
 
         console.assert(options);
 
@@ -178,25 +182,50 @@ RB.ReviewRequest = RB.BaseResource.extend({
             data.description = options.description;
         }
 
-        options = _.defaults({
-            data: data
+        changingState = (options.type !== this.get('state'));
+
+        saveOptions = _.defaults({
+            data: data,
+
+            success: _.bind(function() {
+                if (changingState) {
+                    this.trigger('closed');
+                }
+
+                this.markUpdated(this.get('lastUpdated'));
+
+                if (_.isFunction(options.success)) {
+                    options.success.call(context);
+                }
+            }, this)
         }, options);
 
-        delete options.type;
-        delete options.description;
+        delete saveOptions.type;
+        delete saveOptions.description;
 
-        this.save(options, context);
+        this.save(saveOptions, context);
     },
 
     /*
      * Reopens the review request.
      */
     reopen: function(options, context) {
+        options = options || {};
+
         this.save(
             _.defaults({
                 data: {
                     status: 'pending'
-                }
+                },
+
+                success: _.bind(function() {
+                    this.trigger('reopened');
+                    this.markUpdated(this.get('lastUpdated'));
+
+                    if (_.isFunction(options.success)) {
+                        options.success.call(context);
+                    }
+                }, this)
             }, options),
             context);
     },
@@ -287,15 +316,23 @@ RB.ReviewRequest = RB.BaseResource.extend({
      * Deserialize the response from the server.
      */
     parseResourceData: function(rsp) {
+        var state = {
+            pending: RB.ReviewRequest.PENDING,
+            discarded: RB.ReviewRequest.CLOSE_DISCARDED,
+            submitted: RB.ReviewRequest.CLOSE_SUBMITTED
+        }[rsp.status];
+
         return {
             branch: rsp.branch,
             bugsClosed: rsp.bugs_closed,
             dependsOn: rsp.depends_on,
             description: rsp.description,
+            lastUpdated: rsp.last_updated,
             public: rsp.public,
             reviewURL: rsp.url,
             richText: rsp.rich_text,
             summary: rsp.summary,
+            state: state,
             targetGroups: rsp.target_groups,
             targetPeople: rsp.target_people,
             testingDone: rsp.testing_done
@@ -305,5 +342,6 @@ RB.ReviewRequest = RB.BaseResource.extend({
     CHECK_UPDATES_MSECS: 5 * 60 * 1000, // Every 5 minutes
 
     CLOSE_DISCARDED: 1,
-    CLOSE_SUBMITTED: 2
+    CLOSE_SUBMITTED: 2,
+    PENDING: 3
 });

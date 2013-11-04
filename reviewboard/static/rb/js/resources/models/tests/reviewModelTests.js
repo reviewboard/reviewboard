@@ -3,7 +3,7 @@ describe('resources/models/Review', function() {
 
     beforeEach(function() {
         model = new RB.Review({
-            parentObject: new RB.BaseResource()
+            parentObject: new RB.ReviewRequest()
         });
     });
 
