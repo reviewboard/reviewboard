@@ -9,13 +9,16 @@ describe('views/ReviewRequestEditorView', function() {
             '  <input type="button" id="btn-draft-discard" />',
             '  <input type="button" id="btn-review-request-discard" />',
             '  <input type="button" id="btn-review-request-reopen" />',
-            '  <span id="changedescription" class="editable"></span>',
+            '  <pre id="changedescription" data-rich-text="true"',
+            '       class="editable"></pre>',
             ' </div>',
             ' <div id="discard-banner" style="display: none;">',
-            '  <span id="changedescription" class="editable"></span>',
+            '  <pre id="changedescription" data-rich-text="true"',
+            '       class="editable"></pre>',
             ' </div>',
             ' <div id="submitted-banner" style="display: none;">',
-            '  <span id="changedescription" class="editable"></span>',
+            '  <pre id="changedescription" data-rich-text="true"',
+            '       class="editable"></pre>',
             ' </div>',
             ' <div id="review-request-warning"></div>',
             ' <div class="actions">',
@@ -29,8 +32,10 @@ describe('views/ReviewRequestEditorView', function() {
             '  <span id="bugs_closed" class="editable"></span>',
             '  <span id="target_groups" class="editable"></span>',
             '  <span id="target_people" class="editable"></span>',
-            '  <span id="description" class="editable"></span>',
-            '  <span id="testing_done" class="editable"></span>',
+            '  <pre id="description" data-rich-text="true"',
+            '       class="editable"></pre>',
+            '  <pre id="testing_done" data-rich-text="true"',
+            '       class="editable"></pre>',
             ' </div>',
             ' <div>',
             '  <div id="file-list"><br /></div>',
@@ -280,9 +285,17 @@ describe('views/ReviewRequestEditorView', function() {
         function savingTest() {
             it('Saves', function() {
                 $field.inlineEditor('startEdit');
-                $input
-                    .val('My Value')
-                    .triggerHandler('keyup');
+
+                if ($field.data('rich-text')) {
+                    $input.data('markdown-editor').setText('My Value');
+                } else {
+                    $input.val('My Value');
+                }
+
+                $input.triggerHandler('keyup');
+
+                expect($field.inlineEditor('value')).toBe('My Value');
+                expect($field.inlineEditor('dirty')).toBe(true);
                 $field.inlineEditor('submit');
 
                 expect(reviewRequest.draft.save).toHaveBeenCalled();
@@ -383,9 +396,8 @@ describe('views/ReviewRequestEditorView', function() {
 
                 it('Saves', function() {
                     $field.inlineEditor('startEdit');
-                    $input
-                        .val('My Value')
-                        .triggerHandler('keyup');
+                    $input.data('markdown-editor').setText('My Value');
+                    $input.triggerHandler('keyup');
                     $field.inlineEditor('submit');
 
                     expect(reviewRequest.close).toHaveBeenCalled();

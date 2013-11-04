@@ -168,10 +168,10 @@ describe('views/ReviewDialogView', function() {
                     reviewRequestEditor: reviewRequestEditor
                 });
 
-                expect(dlg._$bodyTop.val()).toBe('');
-                expect(dlg._$bodyBottom.val()).toBe('');
+                expect(dlg._bodyTopEditor.getText()).toBe('');
+                expect(dlg._bodyBottomEditor.getText()).toBe('');
                 expect(dlg._$shipIt.prop('checked')).toBe(false);
-                expect(dlg._$bodyBottom.is(':visible')).toBe(false);
+                expect(dlg._bodyBottomEditor.$el.is(':visible')).toBe(false);
                 expect(dlg._$spinner).toBe(null);
             });
 
@@ -229,10 +229,12 @@ describe('views/ReviewDialogView', function() {
                         reviewRequestEditor: reviewRequestEditor
                     });
 
-                    expect(dlg._$bodyTop.val()).toBe(bodyTopText);
-                    expect(dlg._$bodyBottom.val()).toBe(bodyBottomText);
+                    expect(dlg._bodyTopEditor.getText()).toBe(bodyTopText);
+                    expect(dlg._bodyBottomEditor.getText())
+                        .toBe(bodyBottomText);
                     expect(dlg._$shipIt.prop('checked')).toBe(shipIt);
-                    expect(dlg._$bodyBottom.is(':visible')).toBe(false);
+                    expect(dlg._bodyBottomEditor.$el.is(':visible'))
+                        .toBe(false);
                     expect(dlg._$comments.children().length).toBe(0);
                     expect(dlg._$spinner).toBe(null);
                 });
@@ -255,12 +257,12 @@ describe('views/ReviewDialogView', function() {
                     expect(dlg._commentViews.length).toBe(1);
 
                     commentView = dlg._commentViews[0];
-                    expect(commentView.$textarea.val()).toBe(
+                    expect(commentView.textEditor.getText()).toBe(
                         diffCommentPayload.text);
                     expect(commentView.$issueOpened.prop('checked'))
                         .toBe(diffCommentPayload.issue_opened);
 
-                    expect(dlg._$bodyBottom.is(':visible')).toBe(true);
+                    expect(dlg._bodyBottomEditor.$el.is(':visible')).toBe(true);
                     expect(dlg._$spinner).toBe(null);
                 });
 
@@ -280,7 +282,7 @@ describe('views/ReviewDialogView', function() {
                     expect(dlg._commentViews.length).toBe(1);
 
                     commentView = dlg._commentViews[0];
-                    expect(commentView.$textarea.val()).toBe(
+                    expect(commentView.textEditor.getText()).toBe(
                         fileAttachmentCommentPayload.text);
                     expect(commentView.$issueOpened.prop('checked')).toBe(
                         fileAttachmentCommentPayload.issue_opened);
@@ -293,7 +295,7 @@ describe('views/ReviewDialogView', function() {
                     expect(commentView.$('.thumbnail').html()).toBe(
                         fileAttachmentCommentPayload.thumbnail_html);
 
-                    expect(dlg._$bodyBottom.is(':visible')).toBe(true);
+                    expect(dlg._bodyBottomEditor.$el.is(':visible')).toBe(true);
                     expect(dlg._$spinner).toBe(null);
                 });
 
@@ -312,7 +314,7 @@ describe('views/ReviewDialogView', function() {
                     expect(dlg._commentViews.length).toBe(1);
 
                     commentView = dlg._commentViews[0];
-                    expect(commentView.$textarea.val()).toBe(
+                    expect(commentView.textEditor.getText()).toBe(
                         screenshotCommentPayload.text);
                     expect(commentView.$issueOpened.prop('checked')).toBe(
                         screenshotCommentPayload.issue_opened);
@@ -333,7 +335,7 @@ describe('views/ReviewDialogView', function() {
                     expect($filenameA.text()).toBe(
                         screenshotCommentPayload.screenshot.caption);
 
-                    expect(dlg._$bodyBottom.is(':visible')).toBe(true);
+                    expect(dlg._bodyBottomEditor.$el.is(':visible')).toBe(true);
                     expect(dlg._$spinner).toBe(null);
                 });
             });
@@ -358,7 +360,7 @@ describe('views/ReviewDialogView', function() {
                 comment = commentView.model;
 
                 /* Set some new state for the comment. */
-                commentView.$textarea.val(newCommentText);
+                commentView.textEditor.setText(newCommentText);
                 commentView.$issueOpened.prop('checked', newIssueOpened);
 
                 spyOn(comment, 'save');
@@ -417,13 +419,13 @@ describe('views/ReviewDialogView', function() {
 
                 dlg = createCommentDialog();
 
-                dlg._$bodyTop.val(bodyTopText);
-                dlg._$bodyBottom.val(bodyBottomText);
+                dlg._bodyTopEditor.setText(bodyTopText);
+                dlg._bodyBottomEditor.setText(bodyBottomText);
                 dlg._$shipIt.prop('checked', shipIt);
                 dlg._saveReview();
 
-                expect(dlg._$bodyTop.val()).toBe(bodyTopText);
-                expect(dlg._$bodyBottom.val()).toBe(bodyBottomText);
+                expect(dlg._bodyTopEditor.getText()).toBe(bodyTopText);
+                expect(dlg._bodyBottomEditor.getText()).toBe(bodyBottomText);
                 expect(dlg._$shipIt.prop('checked')).toBe(shipIt);
                 expect(review.save).toHaveBeenCalled();
             });

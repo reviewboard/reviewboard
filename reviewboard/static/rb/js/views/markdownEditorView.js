@@ -132,6 +132,8 @@ RB.MarkdownEditorView = Backbone.View.extend({
                     markdownEditor._codeMirror.refresh();
                 });
 
+                markdownEditor.$el.data('markdown-editor', markdownEditor);
+
                 return markdownEditor.$el;
             },
 

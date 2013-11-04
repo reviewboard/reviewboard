@@ -230,6 +230,10 @@ RB.CommentDialogView = Backbone.View.extend({
             .bindVisibility(this.model, 'canEdit');
         this._textEditor.setText(this.model.get('text'));
 
+        this.model.on('change:text', function() {
+            this._textEditor.setText(this.model.get('text'));
+        }, this);
+
         this.$el
             .css("position", "absolute")
             .mousedown(function(evt) {

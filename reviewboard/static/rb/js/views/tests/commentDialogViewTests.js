@@ -289,12 +289,12 @@ describe('views/CommentDialogView', function() {
                 describe('Visibility', function() {
                     it('Shown when canEdit=true', function() {
                         editor.set('canEdit', true);
-                        expect(dlg._$textField.is(':visible')).toBe(true);
+                        expect(dlg._textEditor.$el.is(':visible')).toBe(true);
                     });
 
                     it('Hidden when canEdit=false', function() {
                         editor.set('canEdit', false);
-                        expect(dlg._$textField.is(':visible')).toBe(false);
+                        expect(dlg._textEditor.$el.is(':visible')).toBe(false);
                     });
                 });
             });
@@ -647,19 +647,20 @@ describe('views/CommentDialogView', function() {
                         e.which = c;
                         $textarea.trigger(e);
 
-                        $textarea.val($textarea.val() + text[i]);
+                        dlg._textEditor.setText(dlg._textEditor.getText() +
+                                                text[i]);
 
                         e = $.Event('keyup');
                         e.which = c;
                         $textarea.trigger(e);
                     }
 
-                    expect($textarea.val()).toEqual(text);
+                    expect(dlg._textEditor.getText()).toEqual(text);
                 }
 
                 beforeEach(function() {
                     dlg.open();
-                    $textarea = dlg.$el.find('textarea');
+                    $textarea = $(dlg._textEditor._codeMirror.getInputField());
                 });
 
                 it('Dialog to editor', function() {
@@ -673,7 +674,7 @@ describe('views/CommentDialogView', function() {
                     var text = 'bar';
 
                     editor.set('text', text);
-                    expect($textarea.val()).toEqual(text);
+                    expect(dlg._textEditor.getText()).toEqual(text);
                 });
             });
 
