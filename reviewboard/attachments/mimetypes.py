@@ -200,7 +200,7 @@ class ImageMimetype(MimetypeHandler):
         """Returns a thumbnail of the image."""
         return mark_safe('<img src="%s" class="file-thumbnail" alt="%s" />'
                          % (thumbnail(self.attachment.file),
-                            self.attachment.caption))
+                            escape(self.attachment.caption)))
 
 
 class TextMimetype(MimetypeHandler):
