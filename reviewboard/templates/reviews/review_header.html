@@ -51,8 +51,8 @@
  <input type="button" id="btn-review-request-discard"
   value="{% trans "Discard Review Request" %}" />
 {%   endif %}
-{%  endif %}
 </div>
+{%  endif %}
 {% endif %}
 
 {% if request.user.pk == review_request.submitter_id or perms.reviews.can_edit_reviewrequest and review_request.status == 'P'%}

@@ -297,7 +297,6 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
                this);
 
         this.model.on('change:editable', this._onEditableChanged, this);
-        this._onEditableChanged();
 
         /*
          * Warn the user if they try to navigate away with unsaved comments.
@@ -523,6 +522,7 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
             options = {
                 cls: id + '-editor',
                 editIconClass: 'rb-icon rb-icon-edit',
+                enabled: this.model.get('editable'),
                 multiline: el.tagName === 'PRE',
                 showButtons: !$el.hasClass('screenshot-editable'),
                 useEditIconOnly: fieldOptions.useEditIconOnly,

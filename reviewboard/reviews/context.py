@@ -3,7 +3,7 @@ from django.utils.html import escape
 from reviewboard.attachments.forms import CommentFileForm, UploadFileForm
 from reviewboard.diffviewer.models import DiffSet
 from reviewboard.reviews.forms import UploadDiffForm, UploadScreenshotForm
-from reviewboard.reviews.models import BaseComment
+from reviewboard.reviews.models import BaseComment, ReviewRequest
 
 
 def comment_counts(user, all_comments, filediff, interfilediff=None):
@@ -93,6 +93,8 @@ def make_review_request_context(request, review_request, extra_context={}):
         scmtool = None
 
     return dict({
+        'editable': (review_request.status == ReviewRequest.PENDING_REVIEW and
+                     review_request.is_mutable_by(request.user)),
         'review_request': review_request,
         'upload_diff_form': upload_diff_form,
         'upload_screenshot_form': UploadScreenshotForm(),

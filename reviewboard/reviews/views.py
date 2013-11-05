@@ -687,6 +687,7 @@ def review_detail(request,
             'changedesc': changedesc,
             'timestamp': changedesc.timestamp,
             'class': state,
+            'collapsed': state == 'collapsed',
         })
 
     entries.sort(key=lambda item: item['timestamp'])

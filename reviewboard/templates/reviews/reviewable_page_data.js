@@ -31,7 +31,7 @@
             testingDone: "{{review_request_details.testing_done|escapejs}}"
         },
         editorData: {
-            editable: {% if review_request.status == 'P' %}true{% else %}false{% endif %},
+            editable: {{editable|yesno:'true,false'}},
             fileAttachmentComments: {
 {% if all_file_attachments %}
 {%  for file_attachment in all_file_attachments %}
