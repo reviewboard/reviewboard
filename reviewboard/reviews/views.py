@@ -395,7 +395,7 @@ def review_detail(request,
     else:
         draft_timestamp = ""
 
-    blocks = list(review_request_details.blocks.all())
+    blocks = list(review_request.blocks.all())
 
     etag = "%s:%s:%s:%s:%s:%s:%s:%s" % (
         request.user, last_activity_time, draft_timestamp,
