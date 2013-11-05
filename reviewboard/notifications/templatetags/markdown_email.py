@@ -1,5 +1,6 @@
 import markdown
 from django import template
+from django.utils import six
 from django.utils.safestring import mark_safe
 from markdown.extensions import Extension
 from markdown.treeprocessors import Treeprocessor
@@ -56,7 +57,7 @@ class InlineStyleProcessor(Treeprocessor):
         # Create a valid CSS string and set it as the style attribute
         el.set('style', ''.join([
             '%s: %s;' % (k, v)
-            for k, v in style.iteritems()
+            for k, v in six.iteritems(style)
         ]))
 
         # Recurse into children

@@ -7,6 +7,7 @@ from django.conf import settings
 from django.contrib.auth.models import User
 from django.core import mail
 from django.test.client import BOUNDARY, MULTIPART_CONTENT, encode_multipart
+from django.utils import six
 from djblets.siteconfig.models import SiteConfiguration
 
 from reviewboard import initialize
@@ -113,7 +114,7 @@ class BaseWebAPITestCase(TestCase, EmailTestHelper):
             expected_redirects, expected_mimetype,
             content_type='text/html; charset=utf-8')
 
-        for header, value in expected_headers.iteritems():
+        for header, value in six.iteritems(expected_headers):
             self.assertTrue(header in response)
             self.assertEqual(response[header], value)
 

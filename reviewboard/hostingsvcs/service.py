@@ -5,6 +5,7 @@ import mimetools
 import urllib2
 from urlparse import urlparse
 
+from django.utils import six
 from django.utils.translation import ugettext_lazy as _
 from pkg_resources import iter_entry_points
 
@@ -158,7 +159,7 @@ class HostingService(object):
 
         results = {}
 
-        for field, value in fields[tool_name].iteritems():
+        for field, value in six.iteritems(fields[tool_name]):
             try:
                 results[field] = value % new_vars
             except KeyError as e:
@@ -323,7 +324,7 @@ def get_hosting_services():
     """
     _populate_hosting_services()
 
-    for name, cls in _hosting_services.iteritems():
+    for name, cls in six.iteritems(_hosting_services):
         yield name, cls
 
 

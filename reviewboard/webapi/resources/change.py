@@ -1,4 +1,5 @@
 from django.contrib.auth.models import User
+from django.utils import six
 from djblets.util.decorators import augment_method_from
 
 from reviewboard.changedescs.models import ChangeDescription
@@ -106,7 +107,7 @@ class ChangeResource(WebAPIResource):
 
         fields_changed = obj.fields_changed.copy()
 
-        for field, data in fields_changed.iteritems():
+        for field, data in six.iteritems(fields_changed):
             if field in ('screenshot_captions', 'file_captions'):
                 fields_changed[field] = [
                     {
@@ -114,7 +115,7 @@ class ChangeResource(WebAPIResource):
                         'new': data[pk]['new'][0],
                         'screenshot': get_object_cached(Screenshot, pk),
                     }
-                    for pk, values in data.iteritems()
+                    for pk, values in six.iteritems(data)
                 ]
             elif field == 'diff':
                 data['added'] = get_object_cached(DiffSet, data['added'][0][2])

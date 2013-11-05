@@ -1,6 +1,7 @@
 import os
 
 import paramiko
+from django.utils import six
 from djblets.testing.decorators import add_fixtures
 
 from reviewboard import scmtools
@@ -53,7 +54,7 @@ class BaseRepositoryTests(BaseWebAPITestCase):
             self.assertEqual(rsp['repository']['name'], repo_name)
             self.assertEqual(repository.name, repo_name)
 
-        for key, value in data.iteritems():
+        for key, value in six.iteritems(data):
             if hasattr(repository, key):
                 self.assertEqual(getattr(repository, key), value)
 

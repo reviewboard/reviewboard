@@ -2,7 +2,7 @@ from datetime import timedelta
 
 from django.contrib.auth.models import User
 from django.core.files import File
-from django.utils import timezone
+from django.utils import six, timezone
 from djblets.testing.decorators import add_fixtures
 from djblets.webapi.errors import PERMISSION_DENIED
 
@@ -148,7 +148,7 @@ class ResourceItemTests(ReviewRequestChildItemMixin, BaseWebAPITestCase):
     def test_get(self):
         """Testing the GET review-requests/<id>/changes/<id>/ API"""
         def write_fields(obj, index):
-            for field, data in test_data.iteritems():
+            for field, data in six.iteritems(test_data):
                 value = data[index]
 
                 if isinstance(value, list) and field not in model_fields:
@@ -218,7 +218,7 @@ class ResourceItemTests(ReviewRequestChildItemMixin, BaseWebAPITestCase):
         change = r.changedescs.get()
         self.assertEqual(change.text, changedesc_text)
 
-        for field, data in test_data.iteritems():
+        for field, data in six.iteritems(test_data):
             old, new, removed, added = data
             field_data = change.fields_changed[field]
 
@@ -275,7 +275,7 @@ class ResourceItemTests(ReviewRequestChildItemMixin, BaseWebAPITestCase):
 
         fields_changed = rsp['change']['fields_changed']
 
-        for field, data in test_data.iteritems():
+        for field, data in six.iteritems(test_data):
             old, new, removed, added = data
 
             self.assertTrue(field in fields_changed)

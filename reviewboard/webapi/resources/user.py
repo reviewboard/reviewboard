@@ -1,4 +1,5 @@
 from django.db.models import Q
+from django.utils import six
 from djblets.gravatars import get_gravatar_url
 from djblets.util.decorators import augment_method_from
 from djblets.webapi.decorators import webapi_request_fields
@@ -32,11 +33,11 @@ class UserResource(WebAPIResource, DjbletsUserResource):
 
     def get_etag(self, request, obj, *args, **kwargs):
         if obj.is_profile_visible(request.user):
-            return self.generate_etag(obj, self.fields.iterkeys(), request)
+            return self.generate_etag(obj, six.iterkeys(self.fields), request)
         else:
             return self.generate_etag(obj, [
                 field
-                for field in self.fields.iterkeys()
+                for field in six.iterkeys(self.fields)
                 if field not in self.hidden_fields
             ], request)
 

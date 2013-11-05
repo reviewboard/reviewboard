@@ -1,4 +1,5 @@
 from django.contrib.auth.models import User
+from django.utils import six
 from djblets.testing.decorators import add_fixtures
 from djblets.util.decorators import simple_decorator
 from djblets.webapi.errors import PERMISSION_DENIED
@@ -85,7 +86,7 @@ class BasicTestsMixin(object):
                                   % self.__class__.__name__)
 
     def _close_file_handles(self, post_data):
-        for value in post_data.itervalues():
+        for value in six.itervalues(post_data):
             if isinstance(value, file):
                 value.close()
 

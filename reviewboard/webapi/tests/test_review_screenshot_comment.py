@@ -484,6 +484,6 @@ class ResourceItemTests(CommentItemMixin, ReviewRequestChildItemMixin,
         self.assertTrue('foo' in comment.extra_data)
         self.assertFalse('bar' in comment.extra_data)
         self.assertFalse('ignored' in comment.extra_data)
-        self.assertEqual(len(comment.extra_data.keys()), 1)
+        self.assertEqual(len(comment.extra_data), 1)
         self.assertEqual(comment.extra_data['foo'],
                          extra_fields['extra_data.foo'])

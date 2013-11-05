@@ -5,6 +5,7 @@ import sys
 from django import forms
 from django.contrib.admin.widgets import FilteredSelectMultiple
 from django.core.exceptions import ValidationError
+from django.utils import six
 from django.utils.translation import ugettext_lazy as _
 from djblets.util.filesystem import is_exe_in_path
 
@@ -619,7 +620,7 @@ class RepositoryForm(forms.ModelForm):
 
             if form.is_valid():
                 # Strip the prefix from each bit of cleaned data in the form.
-                for key, value in form.cleaned_data.iteritems():
+                for key, value in six.iteritems(form.cleaned_data):
                     key = key.replace(form.prefix, '')
                     new_data[key] = value
 
@@ -634,7 +635,7 @@ class RepositoryForm(forms.ModelForm):
         extra_errors = {}
         required_values = {}
 
-        for field in self.fields.itervalues():
+        for field in six.itervalues(self.fields):
             required_values[field] = field.required
 
         if self.data:
@@ -750,8 +751,8 @@ class RepositoryForm(forms.ModelForm):
             # Validate every hosting service form and bug tracker form and
             # store any data or errors for later.
             for form_list in (self.repository_forms, self.bug_tracker_forms):
-                for plans in form_list.values():
-                    for form in plans.values():
+                for plans in six.itervalues(form_list):
+                    for form in six.itervalues(plans):
                         if form.is_valid():
                             extra_cleaned_data.update(form.cleaned_data)
                         else:
@@ -769,7 +770,7 @@ class RepositoryForm(forms.ModelForm):
         # Undo the required settings above. Now that we're done with them
         # for validation, we want to fix the display so that users don't
         # see the required states change.
-        for field, required in required_values.iteritems():
+        for field, required in six.iteritems(required_values):
             field.required = required
 
     def clean(self):

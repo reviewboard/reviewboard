@@ -1,3 +1,4 @@
+from django.utils import six
 from django.utils.encoding import force_unicode
 from djblets.util.decorators import augment_method_from
 from djblets.webapi.decorators import (webapi_login_required,
@@ -153,7 +154,7 @@ class WebAPIResource(DjbletsWebAPIResource):
             return NOT_LOGGED_IN
 
     def _import_extra_data(self, extra_data, fields):
-        for key, value in fields.iteritems():
+        for key, value in six.iteritems(fields):
             if key.startswith('extra_data.'):
                 key = key[EXTRA_DATA_LEN:]
 

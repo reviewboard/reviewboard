@@ -14,7 +14,7 @@ from django.shortcuts import (get_object_or_404, get_list_or_404,
                               render_to_response)
 from django.template.context import RequestContext
 from django.template.loader import render_to_string
-from django.utils import timezone
+from django.utils import six, timezone
 from django.utils.decorators import method_decorator
 from django.utils.http import http_date
 from django.utils.safestring import mark_safe
@@ -369,7 +369,7 @@ def review_detail(request,
                         reply_list[reply_id].append(review)
 
     pending_review = review_request.get_pending_review(request.user)
-    review_ids = reviews_id_map.keys()
+    review_ids = list(reviews_id_map.keys())
     last_visited = 0
     starred = False
 
@@ -471,7 +471,7 @@ def review_detail(request,
     # Link up all the review body replies.
     for key, reply_list in (('_body_top_replies', body_top_replies),
                             ('_body_bottom_replies', body_bottom_replies)):
-        for reply_id, replies in reply_list.iteritems():
+        for reply_id, replies in six.iteritems(reply_list):
             setattr(reviews_id_map[reply_id], key, replies)
 
     # Get all the file attachments and screenshots and build a couple maps,
@@ -613,7 +613,7 @@ def review_detail(request,
     for changedesc in changedescs:
         fields_changed = []
 
-        for name, info in changedesc.fields_changed.iteritems():
+        for name, info in six.iteritems(changedesc.fields_changed):
             info = copy.deepcopy(info)
             multiline = False
             diff_revision = False

@@ -4,6 +4,7 @@ import re
 import subprocess
 import tempfile
 
+from django.utils import six
 from django.utils.translation import ugettext as _
 from djblets.log import log_timed
 from djblets.siteconfig.models import SiteConfiguration
@@ -240,7 +241,7 @@ def get_diff_files(diffset, filediff=None, interdiffset=None, request=None):
         # this.
         filediff_parts += [
             (interdiff, None, False)
-            for interdiff in interdiff_map.itervalues()
+            for interdiff in six.itervalues(interdiff_map)
         ]
 
     files = []

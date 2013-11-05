@@ -1,4 +1,5 @@
 from django import forms
+from django.utils import six
 
 
 class HostingServiceForm(forms.Form):
@@ -16,7 +17,7 @@ class HostingServiceForm(forms.Form):
 
     def save(self, repository, *args, **kwargs):
         if not self.errors:
-            for key, value in self.cleaned_data.iteritems():
+            for key, value in six.iteritems(self.cleaned_data):
                 if self.prefix:
                     key = self.prefix + '-' + key
 

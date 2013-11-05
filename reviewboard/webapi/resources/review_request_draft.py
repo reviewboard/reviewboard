@@ -4,6 +4,7 @@ from django.contrib import auth
 from django.contrib.auth.models import User
 from django.core.exceptions import PermissionDenied
 from django.db.models import Q
+from django.utils import six
 from djblets.util.decorators import augment_method_from
 from djblets.webapi.decorators import (webapi_login_required,
                                        webapi_response_errors,
@@ -351,7 +352,7 @@ class ReviewRequestDraftResource(WebAPIResource):
         old_changedesc_rich_text = (draft.changedesc_id is not None and
                                     draft.changedesc.rich_text)
 
-        for field_name, field_info in self.fields.iteritems():
+        for field_name, field_info in six.iteritems(self.fields):
             if (field_info.get('mutable', True) and
                 kwargs.get(field_name, None) is not None):
                 field_result, field_modified_objects, invalid = \

@@ -1,5 +1,7 @@
 import re
 
+from django.utils import six
+
 from reviewboard.diffviewer.processors import (filter_interdiff_opcodes,
                                                merge_adjacent_chunks)
 
@@ -282,7 +284,7 @@ class DiffOpcodeGenerator(object):
         # problem.
         r_move_range = None
 
-        for iter_move_range in r_move_ranges.itervalues():
+        for iter_move_range in six.itervalues(r_move_ranges):
             if not r_move_range:
                 r_move_range = iter_move_range
             else:

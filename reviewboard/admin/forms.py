@@ -35,6 +35,7 @@ from django.contrib.sites.models import Site
 from django.conf import settings
 from django.core.cache import DEFAULT_CACHE_ALIAS
 from django.core.exceptions import ValidationError
+from django.utils import six
 from django.utils.translation import ugettext as _
 from djblets.log import restart_logging
 from djblets.siteconfig.forms import SiteSettingsForm
@@ -231,7 +232,7 @@ class GeneralSettingsForm(SiteSettingsForm):
     def full_clean(self):
         cache_type = self['cache_type'].data or self['cache_type'].initial
 
-        for iter_cache_type, field in self.CACHE_LOCATION_FIELD_MAP.iteritems():
+        for iter_cache_type, field in six.iteritems(self.CACHE_LOCATION_FIELD_MAP):
             self.fields[field].required = (cache_type == iter_cache_type)
 
         return super(GeneralSettingsForm, self).full_clean()
@@ -408,7 +409,7 @@ class AuthenticationSettingsForm(SiteSettingsForm):
             if auth_backend in self.auth_backend_forms:
                 self.auth_backend_forms[auth_backend].full_clean()
         else:
-            for form in self.auth_backend_forms.values():
+            for form in six.itervalues(self.auth_backend_forms):
                 form.full_clean()
 
     class Meta:

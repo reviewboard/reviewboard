@@ -1,3 +1,4 @@
+from django.utils import six
 from django.utils.html import escape
 
 from reviewboard.attachments.forms import CommentFileForm, UploadFileForm
@@ -62,7 +63,7 @@ def comment_counts(user, all_comments, filediff, interfilediff=None):
 
     comments_array = []
 
-    for key, value in comment_dict.iteritems():
+    for key, value in six.iteritems(comment_dict):
         comments_array.append({
             'linenum': key[0],
             'num_lines': key[1],

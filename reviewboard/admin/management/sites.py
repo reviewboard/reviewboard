@@ -2,7 +2,7 @@ from __future__ import print_function
 
 from django.conf import settings
 from django.contrib.sites.models import Site
-
+from django.utils import six
 from djblets.siteconfig.models import SiteConfiguration
 
 from reviewboard import get_version_string
@@ -82,7 +82,7 @@ def migrate_settings(siteconfig):
     Migrates any settings we want in the database from the settings file.
     """
     # Convert everything in the table.
-    for siteconfig_key, setting_data in migration_table.iteritems():
+    for siteconfig_key, setting_data in six.iteritems(migration_table):
         if isinstance(setting_data, dict):
             setting_key = setting_data['key']
             serialize_func = setting_data.get('serialize_func', None)
@@ -93,7 +93,7 @@ def migrate_settings(siteconfig):
         default = defaults.get(siteconfig_key, None)
         value = getattr(settings, setting_key, default)
 
-        if serialize_func and callable(serialize_func):
+        if serialize_func and six.callable(serialize_func):
             value = serialize_func(value)
 
         siteconfig.set(siteconfig_key, value)
