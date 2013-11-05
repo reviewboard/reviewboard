@@ -343,9 +343,9 @@ def render_star(user, obj):
             starred = \
                 profile.starred_groups.filter(pk=obj.id).count() > 0
     else:
-        raise template.TemplateSyntaxError, \
-            "star tag received an incompatible object type (%s)" % \
-            type(obj)
+        raise template.TemplateSyntaxError(
+            "star tag received an incompatible object type (%s)" %
+            type(obj))
 
     if starred:
         image_alt = _("Starred")
