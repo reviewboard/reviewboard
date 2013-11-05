@@ -1065,6 +1065,7 @@ class ReviewsDiffViewerView(DiffViewerView):
             'close_description': close_description,
             'close_description_rich_text': close_description_rich_text,
             'diffsets': diffsets,
+            'latest_diffset': latest_diffset,
             'review': pending_review,
             'review_request_details': self.draft or self.review_request,
             'draft': self.draft,
