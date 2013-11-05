@@ -64,6 +64,7 @@ MIDDLEWARE_CLASSES = [
     'django.middleware.gzip.GZipMiddleware',
     'reviewboard.admin.middleware.InitReviewBoardMiddleware',
 
+    'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.doc.XViewMiddleware',
     'django.middleware.http.ConditionalGetMiddleware',
