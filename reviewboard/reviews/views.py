@@ -409,9 +409,12 @@ def review_detail(request,
     else:
         draft_timestamp = ""
 
-    etag = "%s:%s:%s:%s:%s:%s:%s" % (
+    blocks = list(review_request.blocks.all())
+
+    etag = "%s:%s:%s:%s:%s:%s:%s:%s" % (
         request.user, last_activity_time, draft_timestamp,
         review_timestamp, review_request.last_review_activity_timestamp,
+        ','.join([str(r.pk) for r in blocks]),
         int(starred), settings.AJAX_SERIAL
     )
 
@@ -699,6 +702,7 @@ def review_detail(request,
             close_description_rich_text = latest_changedesc.rich_text
 
     context_data = make_review_request_context(request, review_request, {
+        'blocks': blocks,
         'draft': draft,
         'detail_hooks': ReviewRequestDetailHook.hooks,
         'review_request_details': review_request_details,
@@ -847,7 +851,10 @@ def group(request,
 
     datagrid = ReviewRequestDataGrid(
         request,
-        ReviewRequest.objects.to_group(name, local_site, status=None,
+        ReviewRequest.objects.to_group(name,
+                                       local_site,
+                                       user=request.user,
+                                       status=None,
                                        with_counts=True),
         _("Review requests for %s") % name)
 
@@ -911,7 +918,9 @@ def submitter(request,
 
     datagrid = ReviewRequestDataGrid(
         request,
-        ReviewRequest.objects.from_user(username, status=None,
+        ReviewRequest.objects.from_user(username,
+                                        user=request.user,
+                                        status=None,
                                         with_counts=True,
                                         local_site=local_site,
                                         filter_private=True),

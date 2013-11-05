@@ -738,6 +738,11 @@ class ReviewRequest(BaseReviewRequestDetails):
         return (self.submitter == user or
                 user.has_perm('reviews.can_edit_reviewrequest'))
 
+    def is_status_mutable_by(self, user):
+        """Returns whether the user can modify this review request's status."""
+        return (self.submitter == user or
+                user.has_perm('reviews.can_change_status'))
+
     def get_draft(self, user=None):
         """
         Returns the draft of the review request. If a user is specified,

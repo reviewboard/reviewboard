@@ -608,7 +608,10 @@ class ReviewRequestResource(WebAPIResource):
         except ObjectDoesNotExist:
             return DOES_NOT_EXIST
 
-        if not self.has_modify_permissions(request, review_request):
+        if ((changenum is not None and
+             not self.has_modify_permissions(request, review_request)) or
+            (status is not None and
+             not review_request.is_status_mutable_by(request.user))):
             return self._no_access_error(request.user)
 
         if (status is not None and

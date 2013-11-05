@@ -916,3 +916,36 @@ class ResourceItemTests(BaseWebAPITestCase):
             get_review_request_item_url(r.display_id, self.local_site_name),
             {'status': 'submitted'},
             expected_status=403)
+
+    def test_put_status_as_other_user_with_permission(self):
+        """Testing the PUT review-requests/<id>/?status= API
+        as another user with permission
+        """
+        self.user.user_permissions.add(
+            Permission.objects.get(codename='can_change_status'))
+
+        self._test_put_status_as_other_user()
+
+    def test_put_status_as_other_user_with_admin(self):
+        """Testing the PUT review-requests/<id>/?status= API
+        as another user with admin
+        """
+        self._login_user(admin=True)
+
+        self._test_put_status_as_other_user()
+
+    def _test_put_status_as_other_user(self):
+        review_request = self.create_review_request(
+            submitter='dopey', publish=True)
+
+        rsp = self.apiPut(
+            get_review_request_item_url(review_request.display_id),
+            {
+                'status': 'submitted',
+            },
+            expected_mimetype=review_request_item_mimetype)
+
+        self.assertEqual(rsp['stat'], 'ok')
+
+        review_request = ReviewRequest.objects.get(pk=review_request.id)
+        self.assertEqual(review_request.status, 'S')
