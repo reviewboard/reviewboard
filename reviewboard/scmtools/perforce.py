@@ -173,7 +173,7 @@ class PerforceClient(object):
             self._connect()
             result = worker()
             self._disconnect()
-        except P4Exception, e:
+        except P4Exception as e:
             self._disconnect()
             self._convert_p4exception_to_scmexception(e)
         except:
