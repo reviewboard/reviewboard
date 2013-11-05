@@ -52,7 +52,7 @@
   </tr>
   <tr>
    <td class="label"><label for="branch">{% trans "Branch" %}:</label></td>
-   <td class="value" id="branch-value-cell"><span id="branch" class="editable">{{review_request_details.branch|safe}}</span></td>
+   <td class="value" id="branch-value-cell"><span id="branch" class="editable">{{review_request_details.branch}}</span></td>
    <td class="indented label"><label for="target_groups">{% trans "Groups" %}:</label></td>
    <td class="value" id="target-groups-value-cell"><span id="target_groups" class="editable">{% spaceless %}
 {%  for group in review_request_details.target_groups.all %}

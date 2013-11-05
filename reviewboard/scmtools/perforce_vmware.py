@@ -85,7 +85,7 @@ class VMwarePerforceTool(PerforceTool):
             else:
                 sections[name] = '\n'.join(lines[start:end])[len(name):].strip()
 
-        changeset.branch = ' &rarr; '.join(branches)
+        changeset.branch = u' \u2192 '.join(branches)
 
         changeset.testing_done = sections.get('Testing Done:')
 
