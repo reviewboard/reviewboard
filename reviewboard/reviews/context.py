@@ -18,6 +18,9 @@ def make_review_request_context(request, review_request, extra_context={}):
         upload_diff_form = None
         scmtool = None
 
+    if 'blocks' not in extra_context:
+        extra_context['blocks'] = list(review_request.blocks.all())
+
     return dict({
         'review_request': review_request,
         'upload_diff_form': upload_diff_form,
