@@ -92,6 +92,9 @@ def make_review_request_context(request, review_request, extra_context={}):
         upload_diff_form = None
         scmtool = None
 
+    if 'blocks' not in extra_context:
+        extra_context['blocks'] = list(review_request.blocks.all())
+
     return dict({
         'editable': (review_request.status == ReviewRequest.PENDING_REVIEW and
                      review_request.is_mutable_by(request.user)),

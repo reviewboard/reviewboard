@@ -22,6 +22,8 @@ from reviewboard.accounts.forms import (ActiveDirectorySettingsForm,
                                         NISSettingsForm,
                                         StandardAuthSettingsForm,
                                         X509SettingsForm)
+from reviewboard.accounts.models import LocalSiteProfile
+from reviewboard.site.models import LocalSite
 
 
 _auth_backends = []
@@ -89,6 +91,22 @@ class AuthBackend(object):
 
 
 class StandardAuthBackend(AuthBackend, ModelBackend):
+    """Authenticates users against the local database.
+
+    This will authenticate a user against their entry in the database, if
+    the user has a local password stored. This is the default form of
+    authentication in Review Board.
+
+    This backend also handles permission checking for users on LocalSites.
+    In Django, this is the responsibility of at least one auth backend in
+    the list of configured backends.
+
+    Regardless of the specific type of authentication chosen for the
+    installation, StandardAuthBackend will always be provided in the list
+    of configured backends. Because of this, it will always be able to
+    handle authentication against locally added users and handle
+    LocalSite-based permissions for all configurations.
+    """
     name = _('Standard Registration')
     settings_form = StandardAuthSettingsForm
     supports_registration = True
@@ -104,6 +122,93 @@ class StandardAuthBackend(AuthBackend, ModelBackend):
 
     def update_password(self, user, password):
         user.password = hashers.make_password(password)
+
+    def get_all_permissions(self, user, obj=None):
+        """Returns a list of all permissions for a user.
+
+        If a LocalSite instance is passed as ``obj``, then the permissions
+        returned will be those that the user has on that LocalSite. Otherwise,
+        they will be their global permissions.
+
+        It is not legal to pass any other object.
+        """
+        if obj is not None and not isinstance(obj, LocalSite):
+            logging.error('Unexpected object %r passed to '
+                          'StandardAuthBackend.get_all_permissions. '
+                          'Returning an empty list.' % obj)
+
+            if settings.DEBUG:
+                raise ValueError('Unexpected object %r' % obj)
+
+            return set()
+
+        if user.is_anonymous():
+            return set()
+
+        # First, get the list of all global permissions.
+        #
+        # Django's ModelBackend doesn't support passing an object, and will
+        # return an empty set, so don't pass an object for this attempt.
+        permissions = \
+            super(StandardAuthBackend, self).get_all_permissions(user)
+
+        if obj is not None:
+            # We know now that this is a LocalSite, due to the assertion
+            # above.
+            if not hasattr(user, '_local_site_perm_cache'):
+                user._local_site_perm_cache = {}
+
+            if obj.pk not in user._local_site_perm_cache:
+                try:
+                    site_profile = user.get_site_profile(obj)
+
+                    perm_cache = set([
+                        key
+                        for key, value in site_profile.permissions.iteritems()
+                        if value
+                    ])
+                except LocalSiteProfile.DoesNotExist:
+                    perm_cache = set()
+
+                user._local_site_perm_cache[obj.pk] = perm_cache
+
+            permissions = permissions.copy()
+            permissions.update(user._local_site_perm_cache[obj.pk])
+
+        return permissions
+
+    def has_perm(self, user, perm, obj=None):
+        """Returns whether a user has the given permission.
+
+        If a LocalSite instance is passed as ``obj``, then the permissions
+        checked will be those that the user has on that LocalSite. Otherwise,
+        they will be their global permissions.
+
+        It is not legal to pass any other object.
+        """
+        if obj is not None and not isinstance(obj, LocalSite):
+            logging.error('Unexpected object %r passed to has_perm. '
+                          'Returning False.' % obj)
+
+            if settings.DEBUG:
+                raise ValueError('Unexpected object %r' % obj)
+
+            return False
+
+        if not user.is_active:
+            return False
+
+        if obj is not None:
+            if not hasattr(user, '_local_site_admin_for'):
+                user._local_site_admin_for = {}
+
+            if obj.pk not in user._local_site_admin_for:
+                user._local_site_admin_for[obj.pk] = obj.is_mutable_by(user)
+
+            if user._local_site_admin_for[obj.pk]:
+                return True
+
+        return super(StandardAuthBackend, self).has_perm(user, perm, obj)
 
 
 class NISBackend(AuthBackend):

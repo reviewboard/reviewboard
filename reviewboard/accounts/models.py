@@ -186,6 +186,10 @@ class LocalSiteProfile(models.Model):
     local_site = models.ForeignKey(LocalSite, null=True, blank=True,
                                    related_name='site_profiles')
 
+    # A dictionary of permission that the user has granted. Any permission
+    # missing is considered to be False.
+    permissions = JSONField(null=True)
+
     # Counts for quickly knowing how many review requests are incoming
     # (both directly and total), outgoing (pending and total ever made),
     # and starred (public).
@@ -259,6 +263,26 @@ def _get_profile(self):
 
     return self._profile
 
+
+def _get_site_profile(self, local_site):
+    """Returns the LocalSiteProfile for a given LocalSite for the User.
+
+    The profile will be cached, preventing queries for future lookups.
+    """
+    if not hasattr(self, '_site_profiles'):
+        self._site_profiles = {}
+
+    if local_site.pk not in self._site_profiles:
+        site_profile = \
+            LocalSiteProfile.objects.get(user=self, local_site=local_site)
+        site_profile.user = self
+        site_profile.local_site = local_site
+        self._site_profiles[local_site.pk] = site_profile
+
+    return self._site_profiles[local_site.pk]
+
+
 User.is_profile_visible = _is_user_profile_visible
 User.get_profile = _get_profile
+User.get_site_profile = _get_site_profile
 User._meta.ordering = ('username',)

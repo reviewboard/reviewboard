@@ -1,9 +1,11 @@
-from django.contrib.auth.models import User
+from django.contrib.auth.models import Permission, User
 from django.core import mail
 from djblets.testing.decorators import add_fixtures
 from djblets.webapi.errors import INVALID_FORM_DATA, PERMISSION_DENIED
 
+from reviewboard.accounts.models import LocalSiteProfile
 from reviewboard.reviews.models import ReviewRequest, ReviewRequestDraft
+from reviewboard.site.models import LocalSite
 from reviewboard.webapi.resources import resources
 from reviewboard.webapi.tests.base import BaseWebAPITestCase
 from reviewboard.webapi.tests.mimetypes import \
@@ -369,6 +371,51 @@ class ResourceTests(BaseWebAPITestCase):
                          "Review Request %s: My Summary" % review_request.pk)
         self.assertValidRecipients(["doc", "grumpy"], [])
 
+    def test_put_as_other_user_with_permission(self):
+        """Testing the PUT review-requests/<id>/draft/ API
+        as another user with permission
+        """
+        self.user.user_permissions.add(
+            Permission.objects.get(codename='can_edit_reviewrequest'))
+
+        self._test_put_as_other_user()
+
+    def test_put_as_other_user_with_admin(self):
+        """Testing the PUT review-requests/<id>/draft/ API
+        as another user with admin
+        """
+        self._login_user(admin=True)
+
+        self._test_put_as_other_user()
+
+    @add_fixtures(['test_site'])
+    def test_put_as_other_user_with_site_and_permission(self):
+        """Testing the PUT review-requests/<id>/draft/ API
+        as another user with local site and permission
+        """
+        self.user = self._login_user(local_site=True)
+
+        local_site = LocalSite.objects.get(name=self.local_site_name)
+
+        site_profile = LocalSiteProfile.objects.create(
+            local_site=local_site,
+            user=self.user,
+            profile=self.user.get_profile())
+        site_profile.permissions['reviews.can_edit_reviewrequest'] = True
+        site_profile.save()
+
+        self._test_put_as_other_user(local_site)
+
+    @add_fixtures(['test_site'])
+    def test_put_as_other_user_with_site_and_admin(self):
+        """Testing the PUT review-requests/<id>/draft/ API
+        as another user with local site and admin
+        """
+        self.user = self._login_user(local_site=True, admin=True)
+
+        self._test_put_as_other_user(
+            LocalSite.objects.get(name=self.local_site_name))
+
     def _create_update_review_request(self, apiFunc, expected_status,
                                       review_request=None,
                                       local_site_name=None):
@@ -526,3 +573,27 @@ class ResourceTests(BaseWebAPITestCase):
 
         draft = ReviewRequestDraft.objects.get(pk=rsp['draft']['id'])
         self.compare_item(draft_rsp, draft)
+
+    def _test_put_as_other_user(self, local_site=None):
+        review_request = self.create_review_request(
+            with_local_site=(local_site is not None),
+            submitter='dopey',
+            publish=True)
+        self.assertNotEqual(review_request.submitter, self.user)
+
+        ReviewRequestDraft.create(review_request)
+
+        if local_site:
+            local_site_name = local_site.name
+        else:
+            local_site_name = None
+
+        rsp = self.apiPut(
+            get_review_request_draft_url(review_request, local_site_name),
+            {
+                'description': 'New description',
+            },
+            expected_mimetype=review_request_draft_item_mimetype)
+
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertTrue(rsp['draft']['description'], 'New description')

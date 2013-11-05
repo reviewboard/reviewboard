@@ -380,7 +380,7 @@ class ReviewRequestResource(WebAPIResource):
         return review_request.is_mutable_by(request.user)
 
     def has_delete_permissions(self, request, review_request, *args, **kwargs):
-        return request.user.has_perm('reviews.delete_reviewrequest')
+        return review_request.is_deletable_by(request.user)
 
     def serialize_bugs_closed_field(self, obj, **kwargs):
         return obj.get_bug_list()
@@ -474,7 +474,8 @@ class ReviewRequestResource(WebAPIResource):
             commit_id = str(changenum)
 
         if submit_as and user.username != submit_as:
-            if not user.has_perm('reviews.can_submit_as_another_user'):
+            if not user.has_perm('reviews.can_submit_as_another_user',
+                                 local_site):
                 return self._no_access_error(request.user)
 
             try:
