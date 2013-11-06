@@ -1,5 +1,5 @@
 from django.db import models
-from django.utils import timezone
+from django.utils import six, timezone
 from django.utils.translation import ugettext_lazy as _
 from djblets.util.fields import JSONField
 
@@ -64,8 +64,8 @@ class ChangeDescription(models.Model):
                 return [(item,) for item in list(items)]
 
         if (type(old_value) != type(new_value) and
-            not (isinstance(old_value, basestring) and
-                 isinstance(new_value, basestring))):
+            not (isinstance(old_value, six.string_types) and
+                 isinstance(new_value, six.string_types))):
             raise ValueError("%s (%s) and %s (%s) are of two different value "
                              "types." % (old_value, type(old_value),
                                          new_value, type(new_value)))

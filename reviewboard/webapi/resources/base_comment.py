@@ -1,4 +1,5 @@
 from django.core.exceptions import ObjectDoesNotExist, PermissionDenied
+from django.utils import six
 from django.utils.formats import localize
 from djblets.webapi.errors import DOES_NOT_EXIST
 
@@ -111,7 +112,7 @@ class BaseCommentResource(WebAPIResource):
             value = kwargs.get(field, None)
 
             if value is not None:
-                if isinstance(value, basestring):
+                if isinstance(value, six.string_types):
                     value = value.strip()
 
                 setattr(comment, field, value)

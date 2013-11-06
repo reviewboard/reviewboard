@@ -15,6 +15,8 @@ import warnings
 from optparse import OptionGroup, OptionParser
 from random import choice
 
+from django.utils import six
+
 from reviewboard import get_version_string
 
 
@@ -872,7 +874,7 @@ class ConsoleUI(UIToolkit):
             description = ''
             enabled = True
 
-            if isinstance(choice, basestring):
+            if isinstance(choice, six.string_types):
                 text = choice
             elif len(choice) == 2:
                 text, enabled = choice
@@ -1240,7 +1242,7 @@ class GtkUI(UIToolkit):
             description = ''
             enabled = True
 
-            if isinstance(choice, basestring):
+            if isinstance(choice, six.string_types):
                 text = choice
             elif len(choice) == 2:
                 text, enabled = choice

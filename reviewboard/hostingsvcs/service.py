@@ -164,7 +164,8 @@ class HostingService(object):
             except KeyError as e:
                 logging.error('Failed to generate %s field for hosting '
                               'service %s using %s and %r: Missing key %s'
-                              % (field, unicode(cls.name), value, new_vars, e),
+                              % (field, six.text_type(cls.name), value,
+                                 new_vars, e),
                               exc_info=1)
                 raise KeyError(
                     _('Internal error when generating %(field)s field '
@@ -198,7 +199,7 @@ class HostingService(object):
         except KeyError as e:
             logging.error('Failed to generate %s field for hosting '
                           'service %s using %r: Missing key %s'
-                          % (bug_tracker_field, unicode(cls.name),
+                          % (bug_tracker_field, six.text_type(cls.name),
                              field_vars, e),
                           exc_info=1)
             raise KeyError(

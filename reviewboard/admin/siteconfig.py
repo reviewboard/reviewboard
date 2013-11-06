@@ -34,6 +34,7 @@ import os.path
 
 from django.conf import settings, global_settings
 from django.core.exceptions import ImproperlyConfigured
+from django.utils import six
 from djblets.log import siteconfig as log_siteconfig
 from djblets.siteconfig.django_settings import (apply_django_settings,
                                                 get_django_defaults,
@@ -242,7 +243,7 @@ def load_site_config():
     if auth_backend_id == "custom":
         custom_backends = siteconfig.settings.get("auth_custom_backends")
 
-        if isinstance(custom_backends, basestring):
+        if isinstance(custom_backends, six.string_types):
             custom_backends = (custom_backends,)
         elif isinstance(custom_backends, list):
             custom_backends = tuple(custom_backends)
