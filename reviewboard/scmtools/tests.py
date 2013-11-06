@@ -2,6 +2,7 @@
 import os
 from errno import ECONNREFUSED
 from hashlib import md5
+from itertools import izip_longest as zip_longest
 from socket import error as SocketError
 from tempfile import mkdtemp
 
@@ -894,7 +895,7 @@ class PerforceTests(SCMTestCase):
             '//public/perforce/python/P4Client/p4.py',
             '//public/perforce/python/P4Client/review.py',
         ]
-        for file, expected in map(None, desc.files, expected_files):
+        for file, expected in zip_longest(desc.files, expected_files):
             self.assertEqual(file, expected)
 
         self.assertEqual(md5(desc.summary).hexdigest(),
@@ -1141,7 +1142,7 @@ class PerforceStunnelTests(SCMTestCase):
             '//public/perforce/python/P4Client/p4.py',
             '//public/perforce/python/P4Client/review.py',
         ]
-        for file, expected in map(None, desc.files, expected_files):
+        for file, expected in zip_longest(desc.files, expected_files):
             self.assertEqual(file, expected)
 
         self.assertEqual(md5(desc.summary).hexdigest(),

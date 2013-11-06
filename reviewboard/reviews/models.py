@@ -1235,8 +1235,12 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
             draft.changedesc = changedesc
 
         if draft_is_new:
-            map(draft.target_groups.add, review_request.target_groups.all())
-            map(draft.target_people.add, review_request.target_people.all())
+            for group in review_request.target_groups.all():
+                draft.target_groups.add(group)
+
+            for person in review_request.target_people.all():
+                draft.target_people.add(person)
+
             for screenshot in review_request.screenshots.all():
                 screenshot.draft_caption = screenshot.caption
                 screenshot.save()
@@ -1335,7 +1339,8 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
                                                         name_field)
 
                 a.clear()
-                map(a.add, b.all())
+                for item in b.all():
+                    a.add(item)
 
         update_field(review_request, self, 'summary')
         update_field(review_request, self, 'description')
@@ -1394,8 +1399,8 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
 
         # There's no change notification required for this field.
         review_request.inactive_screenshots.clear()
-        map(review_request.inactive_screenshots.add,
-            self.inactive_screenshots.all())
+        for screenshot in self.inactive_screenshots.all():
+            review_request.inactive_screenshots.add(screenshot)
 
         # Files are treated like screenshots. The list of files can
         # change, but so can captions within each file.
@@ -1430,8 +1435,8 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
 
         # There's no change notification required for this field.
         review_request.inactive_file_attachments.clear()
-        map(review_request.inactive_file_attachments.add,
-            self.inactive_file_attachments.all())
+        for attachment in self.inactive_file_attachments.all():
+            review_request.inactive_file_attachments.add(attachment)
 
         if self.diffset:
             if self.changedesc:

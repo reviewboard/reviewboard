@@ -1,3 +1,4 @@
+from itertools import izip_longest as zip_longest
 import os
 import unittest
 
@@ -973,7 +974,7 @@ class DiffChunkGeneratorTests(TestCase):
             typea, typeb = type(A), type(B)
             self.assertEqual(typea, typeb)
             if typea is tuple or typea is list:
-                for a, b in map(None, A, B):
+                for a, b in zip_longest(A, B):
                     deep_equal(a, b)
             else:
                 self.assertEqual(A, B)
