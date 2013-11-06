@@ -202,7 +202,7 @@ class ImageMimetype(MimetypeHandler):
                          'class="file-thumbnail" alt="%s" />'
                          % (thumbnail(self.attachment.file),
                             thumbnail(self.attachment.file, '800x200'),
-                            self.attachment.caption))
+                            escape(self.attachment.caption)))
 
 
 class TextMimetype(MimetypeHandler):
