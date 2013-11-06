@@ -393,7 +393,7 @@ PIPELINE_CSS = {
 
 BLESS_IMPORT_PATHS = ('rb/css/',)
 PIPELINE_CSS_COMPRESSOR = None
-PIPELINE_JS_COMPRESSOR = 'pipeline.compressors.jsmin.JSMinCompressor'
+PIPELINE_JS_COMPRESSOR = 'pipeline.compressors.uglifyjs.UglifyJSCompressor'
 
 # On production (site-installed) builds, we always want to use the pre-compiled
 # versions. We want this regardless of the DEBUG setting (since they may
