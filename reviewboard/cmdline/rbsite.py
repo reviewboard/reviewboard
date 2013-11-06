@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+from __future__ import print_function
+
 import getpass
 import imp
 import os
@@ -683,7 +685,8 @@ class SiteList(object):
             except:
                 # We shouldn't consider this an abort-worthy error
                 # We'll warn the user and just complete setup
-                print "WARNING: Could not save site to sitelist %s" % self.path
+                print("WARNING: Could not save site to sitelist %s" %
+                      self.path)
                 return
 
         f = open(self.path, "w")
@@ -805,9 +808,9 @@ class ConsoleUI(UIToolkit):
         if on_show_func:
             on_show_func()
 
-        print
-        print
-        print self.header_wrapper.fill(text)
+        print()
+        print()
+        print(self.header_wrapper.fill(text))
 
         return True
 
@@ -826,7 +829,7 @@ class ConsoleUI(UIToolkit):
             self.text(page, "The default is %s" % default)
             prompt = "%s [%s]" % (prompt, default)
 
-        print
+        print()
 
         prompt += ": "
         value = None
@@ -882,7 +885,7 @@ class ConsoleUI(UIToolkit):
                 valid_choices.append(text)
                 i += 1
 
-        print
+        print()
 
         prompt += ": "
         choice = None
@@ -914,12 +917,12 @@ class ConsoleUI(UIToolkit):
             return
 
         if leading_newline:
-            print
+            print()
 
         if wrap:
-            print self.text_wrapper.fill(text)
+            print(self.text_wrapper.fill(text))
         else:
-            print '    %s' % text
+            print('    %s' % text)
 
     def disclaimer(self, page, text):
         self.text(page, 'NOTE: %s' % text)
@@ -947,14 +950,14 @@ class ConsoleUI(UIToolkit):
         """
         sys.stdout.write("%s ... " % text)
         func()
-        print "OK"
+        print("OK")
 
     def error(self, text, done_func=None):
         """
         Displays a block of error text to the user.
         """
-        print
-        print self.error_wrapper.fill(text)
+        print()
+        print(self.error_wrapper.fill(text))
 
         if done_func:
             done_func()
@@ -1827,8 +1830,8 @@ class InstallCommand(Command):
             abs_sitelist = os.path.abspath(site.sitelist)
 
             # Add the site to the sitelist file.
-            print "Saving site %s to the sitelist %s\n" % (
-                  site.install_dir, abs_sitelist)
+            print("Saving site %s to the sitelist %s\n" % (
+                  site.install_dir, abs_sitelist))
             sitelist = SiteList(abs_sitelist)
             sitelist.add_site(site.install_dir)
 
@@ -1856,47 +1859,48 @@ class UpgradeCommand(Command):
         data_dir_exists = os.path.exists(
             os.path.join(site.install_dir, "data"))
 
-        print "Rebuilding directory structure"
+        print("Rebuilding directory structure")
         site.rebuild_site_directory()
 
         if site.get_settings_upgrade_needed():
-            print "Upgrading site settings_local.py"
+            print("Upgrading site settings_local.py")
             site.upgrade_settings()
 
         if options.upgrade_db:
-            print "Updating database. This may take a while."
-            print
-            print "The log output below, including warnings and errors,"
-            print "can be ignored unless upgrade fails."
-            print
-            print "------------------ <begin log output> ------------------"
+            print("Updating database. This may take a while.\n"
+                  "\n"
+                  "The log output below, including warnings and errors,\n"
+                  "can be ignored unless upgrade fails.\n"
+                  "\n"
+                  "------------------ <begin log output> ------------------")
             site.sync_database()
             site.migrate_database()
-            print "------------------- <end log output> -------------------"
-            print
-
-            print "Resetting in-database caches."
+            print("------------------- <end log output> -------------------\n"
+                  "\n"
+                  "Resetting in-database caches.")
             site.run_manage_command("fixreviewcounts")
 
-        print
-        print "Upgrade complete!"
+        print()
+        print("Upgrade complete!")
 
         if not data_dir_exists:
             # This is an upgrade of a site that pre-dates the new $HOME
             # directory ($sitedir/data). Tell the user how to upgrade things.
-            print
-            print "A new 'data' directory has been created inside of your site"
-            print "directory. This will act as the home directory for programs"
-            print "invoked by Review Board."
-            print
-            print "You need to change the ownership of this directory so that"
-            print "the web server can write to it."
-            print
-            print "If using mod_python, you will also need to add the following"
-            print "to your Review Board Apache configuration:"
-            print
-            print "    SetEnv HOME %s" % os.path.join(site.abs_install_dir,
-                                                      "data")
+            print()
+            print("A new 'data' directory has been created inside of your site")
+            print("directory. This will act as the home directory for "
+                  "programs")
+            print("invoked by Review Board.")
+            print()
+            print("You need to change the ownership of this directory so that")
+            print("the web server can write to it.")
+            print()
+            print("If using mod_python, you will also need to add the "
+                  " following")
+            print("to your Review Board Apache configuration:")
+            print()
+            print("    SetEnv HOME %s" % os.path.join(site.abs_install_dir,
+                                                      "data"))
 
         if static_media_upgrade_needed:
             from djblets.siteconfig.models import SiteConfiguration
@@ -1913,40 +1917,42 @@ class UpgradeCommand(Command):
             static_dir = "%s/htdocs/static" % \
                          site.abs_install_dir.replace('\\', '/')
 
-            print
-            print "The location of static media files (CSS, JavaScript, images)"
-            print "has changed. You will need to make manual changes to "
-            print "your web server configuration."
-            print
-            print "For Apache, you will need to add:"
-            print
-            print "    <Location \"%sstatic\">" % settings.SITE_ROOT
-            print "        SetHandler None"
-            print "    </Location>"
-            print
-            print "    Alias %sstatic \"%s\"" % (settings.SITE_ROOT,
-                                                 static_dir)
-            print
-            print "For lighttpd:"
-            print
-            print "    alias.url = ("
-            print "        ..."
-            print "        \"%sstatic\" => \"%s\"," % (settings.SITE_ROOT,
-                                                       static_dir)
-            print "        ..."
-            print "    )"
-            print
-            print "    url.rewrite-once = ("
-            print "        ..."
-            print "        \"^(%sstatic/.*)$\" => \"$1\"," % settings.SITE_ROOT
-            print "        ..."
-            print "    )"
-            print
-            print "Once you have made these changes, type the following "
-            print "to resolve this:"
-            print
-            print "    $ rb-site manage %s resolve-check static-media" % \
-                  site.abs_install_dir
+            print()
+            print("The location of static media files (CSS, JavaScript, "
+                  "images)")
+            print("has changed. You will need to make manual changes to ")
+            print("your web server configuration.")
+            print()
+            print("For Apache, you will need to add:")
+            print()
+            print("    <Location \"%sstatic\">" % settings.SITE_ROOT)
+            print("        SetHandler None")
+            print("    </Location>")
+            print()
+            print("    Alias %sstatic \"%s\"" % (settings.SITE_ROOT,
+                                                 static_dir))
+            print()
+            print("For lighttpd:")
+            print()
+            print("    alias.url = (")
+            print("        ...")
+            print("        \"%sstatic\" => \"%s\"," % (settings.SITE_ROOT,
+                                                       static_dir))
+            print("        ...")
+            print("    )")
+            print()
+            print("    url.rewrite-once = (")
+            print("        ...")
+            print("        \"^(%sstatic/.*)$\" => \"$1\"," %
+                  settings.SITE_ROOT)
+            print("        ...")
+            print("    )")
+            print()
+            print("Once you have made these changes, type the following ")
+            print("to resolve this:")
+            print()
+            print("    $ rb-site manage %s resolve-check static-media" %
+                  site.abs_install_dir)
 
 
 class ManageCommand(Command):
@@ -2010,7 +2016,7 @@ def parse_options(args):
         site_paths = sitelist.sites
 
         if len(site_paths) == 0:
-            print "No Review Board sites listed in %s" % sitelist.path
+            print("No Review Board sites listed in %s" % sitelist.path)
             sys.exit(1)
     elif len(args) >= 2 and command in COMMANDS:
         site_paths = [args[1]]

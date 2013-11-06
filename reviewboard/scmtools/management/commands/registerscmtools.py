@@ -29,7 +29,7 @@ class Command(NoArgsCommand):
                 name = (scmtool_class.name or
                         scmtool_class.__name__.replace("Tool", ""))
 
-                print "Registering new SCM Tool %s (%s) in database" % \
-                      (name, class_name)
+                self.stdout.write("Registering new SCM Tool %s (%s) in "
+                                  "database" % (name, class_name))
 
                 Tool.objects.create(name=name, class_name=class_name)

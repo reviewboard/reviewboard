@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 import json
 import os
 
@@ -75,7 +77,7 @@ class BaseWebAPITestCase(TestCase, EmailTestHelper):
                             content_type=content_type, extra=extra,
                             HTTP_X_REQUESTED_WITH='XMLHttpRequest')
 
-        print "Raw response: %s" % response.content
+        print("Raw response: %s" % response.content)
 
         self.assertEqual(response.status_code, expected_status)
 
@@ -103,8 +105,8 @@ class BaseWebAPITestCase(TestCase, EmailTestHelper):
                expected_headers={}, expected_mimetype=None):
         path = self._normalize_path(path)
 
-        print 'GETing %s' % path
-        print "Query data: %s" % query
+        print('GETing %s' % path)
+        print("Query data: %s" % query)
 
         response = self.api_func_wrapper(
             self.client.get, path, query, expected_status, follow_redirects,
@@ -120,7 +122,7 @@ class BaseWebAPITestCase(TestCase, EmailTestHelper):
         else:
             rsp = json.loads(response.content)
 
-        print "Response: %s" % rsp
+        print("Response: %s" % rsp)
 
         return rsp
 
@@ -128,11 +130,11 @@ class BaseWebAPITestCase(TestCase, EmailTestHelper):
                                expected_mimetype=None):
         path = self._normalize_path(path)
 
-        print 'POSTing to %s' % path
-        print "Post data: %s" % query
+        print('POSTing to %s' % path)
+        print("Post data: %s" % query)
         response = self.client.post(path, query,
                                     HTTP_X_REQUESTED_WITH='XMLHttpRequest')
-        print "Raw response: %s" % response.content
+        print("Raw response: %s" % response.content)
         self.assertEqual(response.status_code, expected_status)
 
         if expected_status >= 400:
@@ -156,8 +158,8 @@ class BaseWebAPITestCase(TestCase, EmailTestHelper):
                expected_mimetype=None):
         path = self._normalize_path(path)
 
-        print 'PUTing to %s' % path
-        print "Post data: %s" % query
+        print('PUTing to %s' % path)
+        print("Post data: %s" % query)
         data = encode_multipart(BOUNDARY, query)
 
         response = self.api_func_wrapper(self.client.put, path, data,
@@ -170,9 +172,9 @@ class BaseWebAPITestCase(TestCase, EmailTestHelper):
     def apiDelete(self, path, expected_status=204):
         path = self._normalize_path(path)
 
-        print 'DELETEing %s' % path
+        print('DELETEing %s' % path)
         response = self.client.delete(path)
-        print "Raw response: %s" % response.content
+        print("Raw response: %s" % response.content)
         self.assertEqual(response.status_code, expected_status)
 
         return self._get_result(response, expected_status)
@@ -221,7 +223,7 @@ class BaseWebAPITestCase(TestCase, EmailTestHelper):
             rsp = None
         else:
             rsp = json.loads(response.content)
-            print "Response: %s" % rsp
+            print("Response: %s" % rsp)
 
         return rsp
 

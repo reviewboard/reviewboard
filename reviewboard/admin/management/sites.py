@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 from django.conf import settings
 from django.contrib.sites.models import Site
 
@@ -29,27 +31,27 @@ def init_siteconfig(app, created_models, verbosity, db=None, **kwargs):
         # Check the Site to see if this is a brand new installation. If so,
         # don't talk to the user about upgrades or other such nonsense.
         if Site not in created_models:
-            print "*** Migrating settings from settings_local.py to the " \
-                  "database."
+            print("*** Migrating settings from settings_local.py to the "
+                  "database.")
 
         migrate_settings(siteconfig)
 
         if Site not in created_models:
-            print "*** If you have previously configured Review Board " \
-                  "through a "
-            print "*** settings_local.py file, please ensure that the " \
-                  "migration "
-            print "*** was successful by verifying your settings at"
-            print "*** %s://%s%sadmin/settings/" % \
-                (siteconfig.get("site_domain_method"),
-                 site.domain,
-                 settings.SITE_ROOT)
+            print("*** If you have previously configured Review Board "
+                  "through a ")
+            print("*** settings_local.py file, please ensure that the "
+                  "migration ")
+            print("*** was successful by verifying your settings at")
+            print("*** %s://%s%sadmin/settings/" %
+                  (siteconfig.get("site_domain_method"),
+                   site.domain,
+                   settings.SITE_ROOT))
 
         siteconfig.version = new_version
         siteconfig.save()
     elif siteconfig.version != new_version:
-        print "Upgrading Review Board from %s to %s" % (siteconfig.version,
-                                                        new_version)
+        print("Upgrading Review Board from %s to %s" % (siteconfig.version,
+                                                        new_version))
         siteconfig.version = new_version
         siteconfig.save()
 

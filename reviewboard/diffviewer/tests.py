@@ -172,8 +172,6 @@ class InterestingLinesTest(TestCase):
         result = (differ.get_interesting_lines('header', False),
                   differ.get_interesting_lines('header', True))
 
-        print result
-
         return result
 
 
@@ -410,7 +408,6 @@ class DiffParserTest(unittest.TestCase):
         for opcodes in opcode_generator:
             tag = opcodes[0]
             meta = opcodes[-1]
-            print opcodes
 
             if 'moved-to' in meta:
                 r_moves.append(meta['moved-to'])

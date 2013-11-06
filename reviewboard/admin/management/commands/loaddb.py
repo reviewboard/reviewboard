@@ -1,28 +1,26 @@
 import os
 import re
-import sys
 
 from django import db
 from django.core import serializers
-from django.core.management.base import BaseCommand
+from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 from django.db.models import get_apps
 
 
 class Command(BaseCommand):
-    help = 'Loads data formatted by dumpdb, for migration across types ' \
-           'of databases.'
+    help = ('Loads data formatted by dumpdb, for migration across types '
+            'of databases.')
 
     def handle(self, *args, **options):
         if len(args) != 1:
-            print "You must specify a filename on the command line."
-            sys.exit(1)
+            raise CommandError("You must specify a filename on the command "
+                               "line.")
 
         filename = args[0]
 
         if not os.path.exists(filename):
-            print "%s does not exist." % filename
-            sys.exit(1)
+            raise CommandError("%s does not exist." % filename)
 
         confirm = raw_input("""
 This will wipe out your existing database prior to loading. It is highly
@@ -50,8 +48,7 @@ Type 'yes' to continue, or 'no' to cancel: """)
 
             m = re.match("^# dbdump v(\d+) - (\d+) objects$", line)
             if not m:
-                sys.stderr.write("Unknown dump format\n")
-                sys.exit(1)
+                raise CommandError("Unknown dump format\n")
 
             version = int(m.group(1))
             totalobjs = int(m.group(2))
@@ -59,15 +56,15 @@ Type 'yes' to continue, or 'no' to cancel: """)
             prev_pct = -1
 
             if version != 1:
-                sys.stderr.write("Unknown dump version\n")
-                sys.exit(1)
+                raise CommandError("Unknown dump version\n")
 
             transaction.commit_unless_managed()
             transaction.enter_transaction_management()
             transaction.managed(True)
             transaction_setup = True
 
-            print "Importing new style dump format (v%s)" % version
+            self.stdout.write("Importing new style dump format (v%s)" %
+                              version)
             for line in f.xreadlines():
                 if line[0] == "{":
                     for obj in serializers.deserialize("json",
@@ -75,18 +72,18 @@ Type 'yes' to continue, or 'no' to cancel: """)
                         try:
                             obj.save()
                         except Exception as e:
-                            sys.stderr.write("Error: %s\n" % e)
-                            sys.stderr.write("Line %s: '%s'" % (i, line))
+                            self.stderr.write("Error: %s\n" % e)
+                            self.stderr.write("Line %s: '%s'" % (i, line))
                 elif line[0] != "#":
-                    sys.stderr.write("Junk data on line %s" % i)
+                    self.stderr.write("Junk data on line %s" % i)
 
                 db.reset_queries()
 
                 i += 1
                 pct = (i * 100 / totalobjs)
                 if pct != prev_pct:
-                    sys.stdout.write("  [%s%%]\r" % pct)
-                    sys.stdout.flush()
+                    self.stdout.write("  [%s%%]\r" % pct)
+                    self.stdout.flush()
                     prev_pct = pct
 
             f.close()
@@ -95,13 +92,11 @@ Type 'yes' to continue, or 'no' to cancel: """)
             transaction.leave_transaction_management()
         except Exception as e:
             f.close()
-            sys.stderr.write("Problem installing '%s': %s\n" %
-                             (filename, str(e)))
-            sys.exit(1)
+            raise CommandError("Problem installing '%s': %s\n" %
+                               (filename, str(e)))
 
             if transaction_setup:
                 transaction.rollback()
                 transaction.leave_transaction_management()
 
-        print
-        print "Done."
+        self.stdout.write('\nDone.')

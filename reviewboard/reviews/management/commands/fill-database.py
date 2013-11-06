@@ -199,12 +199,12 @@ class Command(NoArgsCommand):
             req_val = self.pickRandomValue(num_of_requests)
 
             if int(verbosity) > NORMAL:
-                print "For user %s:%s" % (i, new_user.username)
-                print "============================="
+                self.stdout.write("For user %s:%s" % (i, new_user.username))
+                self.stdout.write("=============================")
 
             for j in range(0, req_val):
                 if int(verbosity) > NORMAL:
-                    print "Request #%s:" % j
+                    self.stdout.write("Request #%s:" % j)
 
                 review_request = ReviewRequest.objects.create(new_user, None)
                 review_request.public = True
@@ -229,7 +229,7 @@ class Command(NoArgsCommand):
                 # Won't execute if diff_val is 0, ie: no diffs requested.
                 for k in range(0, diff_val):
                     if int(verbosity) > NORMAL:
-                        print "%s:\tDiff #%s" % (i, k)
+                        self.stdout.write("%s:\tDiff #%s" % (i, k))
 
                     random_number = random.randint(0, len(files) - 1)
                     file_to_open = diff_dir + files[random_number]
@@ -250,7 +250,8 @@ class Command(NoArgsCommand):
 
                     for l in range(0, review_val):
                         if int(verbosity) > NORMAL:
-                            print "%s:%s:\t\tReview #%s:" % (i, j, l)
+                            self.stdout.write("%s:%s:\t\tReview #%s:" %
+                                              (i, j, l))
 
                         reviews = Review.objects.create(
                             review_request=review_request,
@@ -264,7 +265,8 @@ class Command(NoArgsCommand):
 
                         for m in range(0, comment_val):
                             if int(verbosity) > NORMAL:
-                                print "%s:%s:\t\t\tComments #%s" % (i, j, m)
+                                self.stdout.write("%s:%s:\t\t\tComments #%s" %
+                                                  (i, j, m))
 
                             if m == 0:
                                 file_diff = cur_diff.files.order_by('id')[0]
@@ -306,20 +308,20 @@ class Command(NoArgsCommand):
 
             # Generate output as users & data is created.
             if req_val != 0:
-                print "user %s created with %s requests" % (
-                    new_user.username, req_val)
+                self.stdout.write("user %s created with %s requests"
+                                  % (new_user.username, req_val))
             else:
-                print "user %s created successfully" % new_user.username
+                self.stdout.write("user %s created successfully"
+                                  % new_user.username)
 
     def parseCommand(self, com_arg, com_string):
         """Parse the values given in the command line."""
         try:
             return tuple((int(item.strip()) for item in com_string.split(':')))
         except ValueError:
-            print >> sys.stderr, "You failed to provide \"" + com_arg \
-                + "\" with one or two values of type int.\n" +\
-                "Example: --" + com_arg + "=2:5"
-            exit()
+            raise CommandError('You failed to provide "%s" with one or two '
+                               'values of type int.\nExample: --%s=2:5'
+                               % (com_arg, com_arg))
 
     def randUsername(self):
         """Used to generate random usernames so no flushing needed."""

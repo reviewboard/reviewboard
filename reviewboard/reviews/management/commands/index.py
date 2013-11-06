@@ -1,11 +1,10 @@
 from datetime import datetime
 import os
 import optparse
-import sys
 import time
 
 from django.conf import settings
-from django.core.management.base import NoArgsCommand
+from django.core.management.base import CommandError, NoArgsCommand
 from django.db.models import Q
 from django.utils import timezone
 
@@ -42,15 +41,13 @@ class Command(NoArgsCommand):
 
         # Refuse to do anything if they haven't turned on search.
         if not siteconfig.get("search_enable"):
-            sys.stderr.write('Search is currently disabled. It must be '
-                             'enabled in the Review Board administration '
-                             'settings to run this command.\n')
-            sys.exit(1)
+            raise CommandError('Search is currently disabled. It must be '
+                               'enabled in the Review Board administration '
+                               'settings to run this command.\n')
 
         if not have_lucene:
-            sys.stderr.write('PyLucene is required to build the search '
-                             'index.\n')
-            sys.exit(1)
+            raise CommandError('PyLucene is required to build the search '
+                               'index.\n')
 
         incremental = options.get('incremental', True)
 
@@ -101,8 +98,8 @@ class Command(NoArgsCommand):
             #        Q(review__timestamp__gt=timestamp)
             objects = objects.filter(query)
 
-        if sys.stdout.isatty():
-            print 'Creating Review Request Index'
+        if self.stdout.isatty():
+            self.stdout.write('Creating Review Request Index')
         totalobjs = objects.count()
         i = 0
         prev_pct = -1
@@ -115,25 +112,25 @@ class Command(NoArgsCommand):
 
                 self.index_review_request(writer, request)
 
-                if sys.stdout.isatty():
+                if self.stdout.isatty():
                     i += 1
                     pct = (i * 100 / totalobjs)
                     if pct != prev_pct:
-                        sys.stdout.write("  [%s%%]\r" % pct)
-                        sys.stdout.flush()
+                        self.stdout.write("  [%s%%]\r" % pct)
+                        self.stdout.flush()
                         prev_pct = pct
 
             except Exception as e:
-                sys.stderr.write('Error indexing ReviewRequest #%d: %s\n'
+                self.stderr.write('Error indexing ReviewRequest #%d: %s\n'
                                  % (request.id, e))
 
-        if sys.stdout.isatty():
-            print 'Optimizing Index'
+        if self.stdout.isatty():
+            self.stdout.write('Optimizing Index')
         writer.optimize()
 
-        if sys.stdout.isatty():
-            print 'Indexed %d documents' % totalobjs
-            print 'Done'
+        if self.stdout.isatty():
+            self.stdout.write('Indexed %d documents' % totalobjs)
+            self.stdout.write('Done')
 
         writer.close()
 

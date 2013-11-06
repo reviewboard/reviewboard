@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 from datetime import timedelta
 import logging
 import os
@@ -511,7 +513,6 @@ class ReviewRequestManagerTests(TestCase):
             ])
 
     def assertValidSummaries(self, review_requests, summaries):
-        print review_requests
         r_summaries = [r.summary for r in review_requests]
 
         for summary in r_summaries:
@@ -1292,8 +1293,8 @@ class ViewTests(TestCase):
 
         # Useful for debugging any actual errors here.
         if response.status_code != 200:
-            print "Error: %s" % self.getContextVar(response, 'error')
-            print self.getContextVar(response, 'trace')
+            print("Error: %s" % self.getContextVar(response, 'error'))
+            print(self.getContextVar(response, 'trace'))
 
         self.assertEqual(response.status_code, 200)
 
@@ -1373,8 +1374,8 @@ class ViewTests(TestCase):
 
         # Useful for debugging any actual errors here.
         if response.status_code != 200:
-            print "Error: %s" % self.getContextVar(response, 'error')
-            print self.getContextVar(response, 'trace')
+            print("Error: %s" % self.getContextVar(response, 'error'))
+            print(self.getContextVar(response, 'trace'))
 
         self.assertEqual(response.status_code, 200)
 

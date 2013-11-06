@@ -1,4 +1,5 @@
-from __future__ import with_statement
+from __future__ import print_function
+
 import json
 from hashlib import md5
 from textwrap import dedent
@@ -1219,7 +1220,7 @@ class GitHubTests(ServiceTests):
 
                 return trees_api_response, None
             else:
-                print parsed
+                print(parsed)
                 self.fail('Got an unexpected GET request')
 
         self.service_class._http_get = _http_get

@@ -1,6 +1,6 @@
 import sys
 
-from django.core.management.base import BaseCommand
+from django.core.management.base import BaseCommand, CommandError
 from djblets.siteconfig.models import SiteConfiguration
 
 
@@ -9,7 +9,7 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         if len(args) != 1:
-            print 'You must specify a check to resolve'
+            self.stderr.write('You must specify a check to resolve')
             sys.exit(1)
 
         check_name = args[0]
@@ -18,14 +18,14 @@ class Command(BaseCommand):
         updates = siteconfig.settings.get('manual-updates', {})
 
         if check_name not in updates:
-            sys.stderr.write("Couldn't find manual update check '%s'\n" %
-                             check_name)
-            sys.exit(1)
+            raise CommandError("Couldn't find manual update check '%s'\n" %
+                               check_name)
 
         if updates[check_name]:
-            print "Already resolved manual update check '%s'" % check_name
+            self.stdout.write("Already resolved manual update check '%s'" %
+                              check_name)
         else:
             updates[check_name] = True
             siteconfig.save()
 
-            print "Resolved manual update check '%s'" % check_name
+            self.stdout.write("Resolved manual update check '%s'" % check_name)
