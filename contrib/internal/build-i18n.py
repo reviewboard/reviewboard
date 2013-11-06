@@ -15,5 +15,5 @@ if __name__ == '__main__':
 
     cwd = os.getcwd()
     os.chdir(os.path.realpath('reviewboard'))
-    compile_messages(stderr=sys.stderr)
+    compile_messages(sys.stdout)
     os.chdir(cwd)

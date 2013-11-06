@@ -34,11 +34,11 @@ if sys.hexversion < 0x02050000:
         'Please install Review Board 1.6.x or upgrade Python to at least '
         '2.6.x (preferably 2.7).\n' % get_package_version())
     sys.exit(1)
-elif sys.hexversion < 0x02060000:
+elif sys.hexversion < 0x02060500:
     sys.stderr.write(
         'Review Board %s is incompatible with your version of Python.\n'
         'Please install Review Board 1.7.x or upgrade Python to at least '
-        '2.6.x (preferably 2.7).\n' % get_package_version())
+        '2.6.5 (preferably 2.7).\n' % get_package_version())
     sys.exit(1)
 
 
@@ -192,7 +192,7 @@ setup(name=PACKAGE_NAME,
       },
       cmdclass=cmdclasses,
       install_requires=[
-          'Django>=1.5.4,<1.6',
+          'Django>=1.6.1,<1.7',
           'django_evolution>=0.7beta1',
           'Djblets>=0.8alpha3.dev,<0.9',
           'django-haystack',

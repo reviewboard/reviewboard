@@ -5,6 +5,7 @@ import re
 
 from djblets.util.compat import six
 from djblets.util.compat.six.moves.urllib.parse import quote as urllib_quote
+from djblets.util.filesystem import is_exe_in_path
 
 from reviewboard.diffviewer.parser import DiffParser, DiffParserError
 from reviewboard.scmtools.git import GitDiffParser
@@ -20,7 +21,13 @@ class HgTool(SCMTool):
     }
 
     def __init__(self, repository):
-        SCMTool.__init__(self, repository)
+        super(HgTool, self).__init__(repository)
+
+        if not is_exe_in_path('hg'):
+            # This is technically not the right kind of error, but it's the
+            # pattern we use with all the other tools.
+            raise ImportError
+
         if repository.path.startswith('http'):
             credentials = repository.get_credentials()
 

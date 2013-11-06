@@ -353,9 +353,9 @@ class BZRTests(SCMTestCase):
                                      path='file://' + self.bzr_repo_path,
                                      tool=Tool.objects.get(name='Bazaar'))
 
-        try:
+        from reviewboard.scmtools.bzr import has_bzrlib
+        if not has_bzrlib:
             self.tool = self.repository.get_scmtool()
-        except ImportError:
             raise nose.SkipTest('bzrlib is not installed')
 
     def test_ssh(self):

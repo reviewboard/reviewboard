@@ -144,7 +144,6 @@ RB_BUILTIN_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
-    'django.contrib.markup',
     'django.contrib.sites',
     'django.contrib.sessions',
     'django.contrib.staticfiles',
