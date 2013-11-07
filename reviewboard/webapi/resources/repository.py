@@ -59,7 +59,7 @@ class RepositoryResource(WebAPIResource):
         },
         'mirror_path': {
             'type': str,
-            'description': 'An alternate path to the repository, for ',
+            'description': 'An alternate path to the repository, for '
                            'lookup purposes.',
         },
         'visible': {
