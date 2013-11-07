@@ -57,6 +57,11 @@ class RepositoryResource(WebAPIResource):
                            'for communicating with the repository and '
                            'accessing files.',
         },
+        'mirror_path': {
+            'type': str,
+            'description': 'An alternate path to the repository, for ',
+                           'lookup purposes.',
+        },
         'visible': {
             'type': bool,
             'description': 'Whether or not this repository is visible (admin '
