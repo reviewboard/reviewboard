@@ -130,7 +130,7 @@ RB.ReviewReplyEditor = Backbone.Model.extend({
             oldReviewReply.off(null, null, this);
         }
 
-        this.listenTo(reviewReply, 'destroy', function() {
+        this.listenTo(reviewReply, 'destroyed', function() {
             this.trigger('discarded');
             this._resetState();
         });
