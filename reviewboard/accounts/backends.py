@@ -10,6 +10,7 @@ from django.contrib.auth.backends import ModelBackend
 from django.contrib.auth.models import User
 from django.contrib.auth import get_backends
 from django.contrib.auth import hashers
+from django.utils import six
 from django.utils.translation import ugettext as _
 from djblets.util.misc import get_object_or_none
 try:
@@ -164,7 +165,7 @@ class StandardAuthBackend(AuthBackend, ModelBackend):
 
                     perm_cache = set([
                         key
-                        for key, value in site_profile.permissions.iteritems()
+                        for key, value in six.iteritems(site_profile.permissions)
                         if value
                     ])
                 except LocalSiteProfile.DoesNotExist:
