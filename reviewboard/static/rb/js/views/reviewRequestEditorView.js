@@ -108,6 +108,9 @@ ClosedBannerView = BannerView.extend({
             label: gettext('Reopen for Review')
         }
     ],
+    fieldOptions: {
+        statusField: true
+    },
 
     events: {
         'click #btn-review-request-reopen': '_onReopenClicked'
@@ -131,9 +134,9 @@ DiscardedBannerView = ClosedBannerView.extend({
     id: 'discard-banner',
     title: gettext('This change has been discarded.'),
     describeText: gettext("Describe the reason it's discarded (optional):"),
-    fieldOptions: {
+    fieldOptions: _.defaults({
         closeType: RB.ReviewRequest.CLOSE_DISCARDED
-    }
+    }, ClosedBannerView.prototype.fieldOptions)
 });
 
 
@@ -144,9 +147,9 @@ SubmittedBannerView = ClosedBannerView.extend({
     id: 'submitted-banner',
     title: gettext('This change has been marked as submitted.'),
     describeText: gettext('Describe the submission (optional):'),
-    fieldOptions: {
+    fieldOptions: _.defaults({
         closeType: RB.ReviewRequest.CLOSE_SUBMITTED
-    }
+    }, ClosedBannerView.prototype.fieldOptions)
 });
 
 
@@ -491,13 +494,12 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
                this._importFileAttachmentThumbnail,
                this);
 
-        this.model.on('change:editable', this._onEditableChanged, this);
-
         /*
          * Warn the user if they try to navigate away with unsaved comments.
          */
         window.onbeforeunload = _.bind(function(evt) {
-            if (this.model.get('editable') &&
+            if ((this.model.get('editable') ||
+                 this.model.get('statusEditable')) &&
                 this.model.get('editCount') > 0) {
                 /*
                  * On IE, the text must be set in evt.returnValue.
@@ -802,10 +804,13 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
         var model = this.model,
             el = $el[0],
             id = el.id,
+            editableProp = (fieldOptions.statusField
+                            ? 'statusEditable'
+                            : 'editable'),
             options = {
                 cls: id + '-editor',
                 editIconClass: 'rb-icon rb-icon-edit',
-                enabled: this.model.get('editable'),
+                enabled: this.model.get(editableProp),
                 multiline: el.tagName === 'PRE',
                 showButtons: !$el.hasClass('screenshot-editable'),
                 useEditIconOnly: fieldOptions.useEditIconOnly,
@@ -850,6 +855,13 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
                         }, fieldOptions),
                         this);
                 }, this)
+            });
+
+        this.listenTo(
+            this.model,
+            'change:' + editableProp,
+            function(model, editable) {
+                $el.inlineEditor(editable ? 'enable' : 'disable');
             });
     },
 
@@ -943,16 +955,6 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
         } else {
             $el.text(value);
         }
-    },
-
-    /*
-     * Handler for when the 'editable' property changes.
-     *
-     * Enables or disables all inlineEditors.
-     */
-    _onEditableChanged: function() {
-        this._$box.find('.edit, .editable')
-            .inlineEditor(this.model.get('editable') ? 'enable' : 'disable');
     },
 
     /*

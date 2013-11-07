@@ -11,9 +11,12 @@ RB.ReviewRequestEditor = Backbone.Model.extend({
         editCount: 0,
         hasDraft: false,
         fileAttachmentComments: {},
+        mutableByUser: false,
         pendingSaveCount: 0,
         publishing: false,
-        reviewRequest: null
+        reviewRequest: null,
+        statusEditable: false,
+        statusMutableByUser: false
     },
 
     _jsonFieldMap: {
@@ -47,6 +50,9 @@ RB.ReviewRequestEditor = Backbone.Model.extend({
         reviewRequest.draft.on('saved', function() {
             this.trigger('saved');
         }, this);
+
+        this.listenTo(reviewRequest, 'change:state', this._computeEditable);
+        this._computeEditable();
     },
 
     /*
@@ -243,6 +249,25 @@ RB.ReviewRequestEditor = Backbone.Model.extend({
         if (_.has(attrs, 'editCount') && attrs.editCount < 0) {
             return strings.UNBALANCED_EDIT_COUNT;
         }
+    },
+
+    /*
+     * Computes the editable state of the review request and open/close states.
+     *
+     * The review request is editable if the user has edit permissions and it's
+     * not closed.
+     *
+     * The close state and accompanying description is editable if the user
+     * has the ability to close the review request and it's currently closed.
+     */
+    _computeEditable: function() {
+        var state = this.get('reviewRequest').get('state'),
+            pending = (state === RB.ReviewRequest.PENDING);
+
+        this.set({
+            editable: this.get('mutableByUser') && pending,
+            statusEditable: this.get('statusMutableByUser') && !pending
+        });
     },
 
     /*

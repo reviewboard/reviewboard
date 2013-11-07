@@ -97,8 +97,9 @@ def make_review_request_context(request, review_request, extra_context={}):
         extra_context['blocks'] = list(review_request.blocks.all())
 
     return dict({
-        'editable': (review_request.status == ReviewRequest.PENDING_REVIEW and
-                     review_request.is_mutable_by(request.user)),
+        'mutable_by_user': review_request.is_mutable_by(request.user),
+        'status_mutable_by_user':
+            review_request.is_status_mutable_by(request.user),
         'review_request': review_request,
         'upload_diff_form': upload_diff_form,
         'upload_screenshot_form': UploadScreenshotForm(),

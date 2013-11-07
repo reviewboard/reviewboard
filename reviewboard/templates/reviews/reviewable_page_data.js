@@ -33,7 +33,8 @@
             testingDone: "{{review_request_details.testing_done|escapejs}}"
         },
         editorData: {
-            editable: {{editable|yesno:'true,false'}},
+            mutableByUser: {{mutable_by_user|yesno:'true,false'}},
+            statusMutableByUser: {{status_mutable_by_user|yesno:'true,false'}},
             fileAttachmentComments: {
 {% if all_file_attachments %}
 {%  for file_attachment in all_file_attachments %}

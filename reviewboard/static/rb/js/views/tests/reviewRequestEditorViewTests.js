@@ -52,7 +52,8 @@ describe('views/ReviewRequestEditorView', function() {
         });
 
         editor = new RB.ReviewRequestEditor({
-            editable: true,
+            mutableByUser: true,
+            statusMutableByUser: true,
             reviewRequest: reviewRequest,
             commentIssueManager: new RB.CommentIssueManager()
         });
@@ -452,6 +453,18 @@ describe('views/ReviewRequestEditorView', function() {
                     $field.inlineEditor('submit');
 
                     expect(reviewRequest.close).toHaveBeenCalled();
+                });
+
+                describe('State when statusEditable', function() {
+                    it('Disabled when false', function() {
+                        editor.set('statusEditable', false);
+                        expect($field.inlineEditor('option', 'enabled')).toBe(false);
+                    });
+
+                    it('Enabled when true', function() {
+                        editor.set('statusEditable', true);
+                        expect($field.inlineEditor('option', 'enabled')).toBe(true);
+                    });
                 });
 
                 describe('Formatting', function() {
