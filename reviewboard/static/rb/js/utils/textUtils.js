@@ -21,7 +21,7 @@ if (marked !== undefined) {
         langPrefix : 'language-',
         highlight: function(code, lang) {
             // Use google code prettify to render syntax highlighting
-            return prettyPrintOne(code, lang, true /* line nos. */);
+            return prettyPrintOne(_.escape(code), lang, true /* line nos. */);
         }
     });
 }
