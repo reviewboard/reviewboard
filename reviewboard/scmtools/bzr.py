@@ -2,7 +2,6 @@ import calendar
 from datetime import datetime, timedelta
 import re
 import time
-import urlparse
 
 try:
     from bzrlib import bzrdir, revisionspec
@@ -19,11 +18,16 @@ from reviewboard.scmtools.core import SCMTool, HEAD, PRE_CREATION
 from reviewboard.scmtools.errors import RepositoryNotFoundError, SCMError
 from reviewboard.ssh import utils as sshutils
 
+try:
+    import urlparse
+    uses_netloc = urlparse.uses_netloc
+except ImportError:
+    import urllib.parse
+    uses_netloc = urllib.parse.uses_netloc
 
 # Register these URI schemes so we can handle them properly.
-urlparse.uses_netloc.append('bzr+ssh')
-urlparse.uses_netloc.append('bzr')
 sshutils.ssh_uri_schemes.append('bzr+ssh')
+uses_netloc.extend(['bzr', 'bzr+ssh'])
 
 
 if has_bzrlib:

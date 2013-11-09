@@ -28,18 +28,18 @@
 import logging
 import os
 import re
-import urlparse
 
 from django import forms
 from django.contrib.sites.models import Site
 from django.conf import settings
 from django.core.cache import DEFAULT_CACHE_ALIAS
 from django.core.exceptions import ValidationError
-from django.utils import six
 from django.utils.translation import ugettext as _
 from djblets.log import restart_logging
 from djblets.siteconfig.forms import SiteSettingsForm
 from djblets.util.cache import normalize_cache_backend
+from djblets.util.compat import six
+from djblets.util.compat.six.moves.urllib.parse import urlparse
 from djblets.util.forms import TimeZoneField
 
 from reviewboard.accounts.forms import LegacyAuthModuleSettingsForm
@@ -188,7 +188,7 @@ class GeneralSettingsForm(SiteSettingsForm):
             # believes the domain is actually the path. So we apply a prefix.
             server = "http://" + server
 
-        url_parts = urlparse.urlparse(server)
+        url_parts = urlparse(server)
         domain_method = url_parts[0]
         domain_name = url_parts[1]
 

@@ -1,5 +1,4 @@
 import os
-import urlparse
 
 import paramiko
 
@@ -11,10 +10,20 @@ from reviewboard.ssh.policy import RaiseUnknownHostKeyPolicy
 
 SSH_PORT = 22
 
+
+try:
+    import urlparse
+    uses_netloc = urlparse.uses_netloc
+    urllib_parse = urlparse.urlparse
+except ImportError:
+    import urllib.parse
+    uses_netloc = urllib.parse.uses_netloc
+    urllib_parse = urllib.parse.urlparse
+
+
 # A list of known SSH URL schemes.
 ssh_uri_schemes = ["ssh", "sftp"]
-
-urlparse.uses_netloc.extend(ssh_uri_schemes)
+uses_netloc.extend(ssh_uri_schemes)
 
 
 def humanize_key(key):
@@ -24,7 +33,7 @@ def humanize_key(key):
 
 def is_ssh_uri(url):
     """Returns whether or not a URL represents an SSH connection."""
-    return urlparse.urlparse(url)[0] in ssh_uri_schemes
+    return urllib_parse(url)[0] in ssh_uri_schemes
 
 
 def check_host(netloc, username=None, password=None, namespace=None):

@@ -3,8 +3,6 @@ import datetime
 import logging
 import os
 import re
-import urllib
-import urlparse
 import weakref
 from shutil import rmtree
 from tempfile import mkdtemp
@@ -14,9 +12,10 @@ try:
                        SVN_DIRENT_CREATED_REV)
 except ImportError:
     pass
-
 from django.core.cache import cache
 from django.utils.translation import ugettext as _
+from djblets.util.compat.six.moves.urllib.parse import (urlsplit, urlunsplit,
+                                                        quote)
 
 from reviewboard.diffviewer.parser import DiffParser
 from reviewboard.scmtools.certs import Certificate
@@ -151,14 +150,14 @@ class SVNTool(SCMTool):
             # SVN expects to have URLs escaped. Take care to only
             # escape the path part of the URL.
             if self.client.is_url(normpath):
-                pathtuple = urlparse.urlsplit(normpath)
+                pathtuple = urlsplit(normpath)
                 path = pathtuple[2]
                 if isinstance(path, unicode):
                     path = path.encode('utf-8', 'ignore')
-                normpath = urlparse.urlunsplit((pathtuple[0],
-                                                pathtuple[1],
-                                                urllib.quote(path),
-                                                '', ''))
+                normpath = urlunsplit((pathtuple[0],
+                                       pathtuple[1],
+                                       quote(path),
+                                       '', ''))
 
             normrev = self.__normalize_revision(revision)
             return cb(normpath, normrev)

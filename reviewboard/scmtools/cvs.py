@@ -1,8 +1,8 @@
 import os
 import re
 import tempfile
-import urlparse
 
+from djblets.util.compat.six.moves.urllib.parse import urlparse
 from djblets.util.filesystem import is_exe_in_path
 
 from reviewboard.scmtools.core import SCMTool, HEAD, PRE_CREATION
@@ -156,7 +156,7 @@ class CVSTool(SCMTool):
     @classmethod
     def parse_hostname(cls, path):
         """Parses a hostname from a repository path."""
-        return urlparse.urlparse(path)[1]  # netloc
+        return urlparse(path)[1]  # netloc
 
 
 class CVSDiffParser(DiffParser):

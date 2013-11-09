@@ -1,7 +1,6 @@
-from urllib import quote as urllib_quote
-
 from django.core.exceptions import ObjectDoesNotExist
 from django.http import HttpResponse
+from djblets.util.compat.six.moves.urllib.parse import quote as urllib_quote
 from djblets.util.decorators import augment_method_from
 from djblets.util.http import get_http_requested_mimetype, set_last_modified
 from djblets.webapi.core import WebAPIResponse

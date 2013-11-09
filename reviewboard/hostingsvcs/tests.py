@@ -3,14 +3,11 @@ from __future__ import print_function
 import json
 from hashlib import md5
 from textwrap import dedent
-from urllib2 import HTTPError
-from urlparse import urlparse
-try:
-    from cStringIO import StringIO
-except ImportError:
-    from StringIO import StringIO
 
 from django.contrib.sites.models import Site
+from djblets.util.compat.six.moves import cStringIO as StringIO
+from djblets.util.compat.six.moves.urllib.error import HTTPError
+from djblets.util.compat.six.moves.urllib.parse import urlparse
 from kgb import SpyAgency
 
 from reviewboard.hostingsvcs.models import HostingServiceAccount

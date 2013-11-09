@@ -2,11 +2,14 @@ import base64
 import json
 import logging
 import mimetools
-import urllib2
-from urlparse import urlparse
 
-from django.utils import six
 from django.utils.translation import ugettext_lazy as _
+from djblets.util.compat import six
+from djblets.util.compat.six.moves.urllib.parse import urlparse
+from djblets.util.compat.six.moves.urllib.request import (
+    Request as URLRequest,
+    HTTPBasicAuthHandler,
+    urlopen)
 from pkg_resources import iter_entry_points
 
 
@@ -255,10 +258,10 @@ class HostingService(object):
 
     def _build_request(self, url, body=None, headers={}, username=None,
                        password=None):
-        r = urllib2.Request(url, body, headers)
+        r = URLRequest(url, body, headers)
 
         if username is not None and password is not None:
-            r.add_header(urllib2.HTTPBasicAuthHandler.auth_header,
+            r.add_header(HTTPBasicAuthHandler.auth_header,
                          'Basic %s' % base64.b64encode(username + ':' +
                                                        password))
 
@@ -266,7 +269,7 @@ class HostingService(object):
 
     def _http_request(self, url, body=None, headers={}, **kwargs):
         r = self._build_request(url, body, headers, **kwargs)
-        u = urllib2.urlopen(r)
+        u = urlopen(r)
 
         return u.read(), u.headers
 

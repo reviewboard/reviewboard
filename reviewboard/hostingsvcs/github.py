@@ -1,7 +1,5 @@
-import httplib
 import json
 import logging
-import urllib2
 
 from django import forms
 from django.conf import settings
@@ -9,6 +7,8 @@ from django.contrib.sites.models import Site
 from django.core.cache import cache
 from django.utils.translation import ugettext_lazy as _
 from djblets.siteconfig.models import SiteConfiguration
+from djblets.util.compat.six.moves import http_client
+from djblets.util.compat.six.moves.urllib.error import HTTPError, URLError
 
 from reviewboard.hostingsvcs.errors import (AuthorizationError,
                                             InvalidPlanError,
@@ -255,7 +255,7 @@ class GitHub(HostingService):
                 username=username,
                 password=password,
                 body=json.dumps(body))
-        except (urllib2.HTTPError, urllib2.URLError) as e:
+        except (HTTPError, URLError) as e:
             data = e.read()
 
             try:
@@ -283,7 +283,7 @@ class GitHub(HostingService):
             return self._http_get(url, headers={
                 'Accept': self.RAW_MIMETYPE,
             })[0]
-        except (urllib2.URLError, urllib2.HTTPError):
+        except (URLError, HTTPError):
             raise FileNotFoundError(path, revision)
 
     def get_file_exists(self, repository, path, revision, *args, **kwargs):
@@ -296,7 +296,7 @@ class GitHub(HostingService):
             })
 
             return True
-        except (urllib2.URLError, urllib2.HTTPError):
+        except (URLError, HTTPError):
             return False
 
     def get_branches(self, repository):
@@ -443,7 +443,7 @@ class GitHub(HostingService):
         """
         if 'message' not in rsp:
             msg = _('Unknown GitHub API Error')
-        elif 'errors' in rsp and status_code == httplib.UNPROCESSABLE_ENTITY:
+        elif 'errors' in rsp and status_code == http_client.UNPROCESSABLE_ENTITY:
             errors = [e['message'] for e in rsp['errors'] if 'message' in e]
             msg = '%s: (%s)' % (rsp['message'], ', '.join(errors))
         else:
@@ -507,7 +507,7 @@ class GitHub(HostingService):
         try:
             data, headers = self._http_get(url)
             return json.loads(data)
-        except (urllib2.URLError, urllib2.HTTPError) as e:
+        except (URLError, HTTPError) as e:
             data = e.read()
 
             try:

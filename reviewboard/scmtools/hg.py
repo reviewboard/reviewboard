@@ -1,11 +1,7 @@
 import logging
 import re
 
-try:
-    from urllib2 import quote as urllib_quote
-except ImportError:
-    from urllib import quote as urllib_quote
-
+from djblets.util.compat.six.moves.urllib.parse import quote as urllib_quote
 from pkg_resources import parse_version
 
 from reviewboard.diffviewer.parser import DiffParser, DiffParserError

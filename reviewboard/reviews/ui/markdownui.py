@@ -1,10 +1,7 @@
 import logging
-try:
-    from cStringIO import StringIO
-except ImportError:
-    from StringIO import StringIO
 from xml.dom.minidom import parseString
 
+from djblets.util.compat.six.moves import cStringIO as StringIO
 from djblets.util.misc import cache_memoize
 import markdown
 

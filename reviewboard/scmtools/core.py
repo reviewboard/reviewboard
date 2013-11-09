@@ -3,10 +3,13 @@ import logging
 import os
 import subprocess
 import sys
-import urllib2
-import urlparse
 
 from django.utils.encoding import python_2_unicode_compatible
+from djblets.util.compat.six.moves.urllib.error import HTTPError
+from djblets.util.compat.six.moves.urllib.parse import urlparse
+from djblets.util.compat.six.moves.urllib.request import (
+    Request as URLRequest,
+    urlopen)
 
 import reviewboard.diffviewer.parser as diffparser
 from reviewboard.scmtools.errors import (AuthenticationError,
@@ -267,7 +270,7 @@ class SCMTool(object):
         If a username is implicitly passed via the path (user@host), it
         takes precedence over a passed username.
         """
-        url = urlparse.urlparse(path)
+        url = urlparse(path)
 
         if '@' in url[1]:
             netloc_username, hostname = url[1].split('@', 1)
@@ -306,15 +309,15 @@ class SCMClient(object):
         logging.info('Fetching file from %s' % url)
 
         try:
-            request = urllib2.Request(url)
+            request = URLRequest(url)
 
             if self.username:
                 auth_string = base64.b64encode('%s:%s' % (self.username,
                                                           self.password))
                 request.add_header('Authorization', 'Basic %s' % auth_string)
 
-            return urllib2.urlopen(request).read()
-        except urllib2.HTTPError as e:
+            return urlopen(request).read()
+        except HTTPError as e:
             if e.code == 404:
                 logging.error('404')
                 raise FileNotFoundError(path, revision)
