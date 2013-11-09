@@ -221,16 +221,6 @@ class Site(object):
                           "htdocs/static/admin",
                           os.path.join(static_dir, 'admin'))
 
-        # Link from Djblets if available.
-        if pkg_resources.resource_exists("djblets", "media"):
-            self.link_pkg_dir("djblets", rb_djblets_src, rb_djblets_dest)
-        elif pkg_resources.resource_exists("reviewboard", rb_djblets_src):
-            self.link_pkg_dir("reviewboard", rb_djblets_src,
-                              rb_djblets_dest)
-        else:
-            ui.error("Unable to find the Djblets media path. Make sure "
-                     "Djblets is installed and try this again.")
-
         # Remove any old media directories from old sites
         self.unlink_media_dir(os.path.join(media_dir, 'admin'))
         self.unlink_media_dir(os.path.join(media_dir, 'djblets'))
