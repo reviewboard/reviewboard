@@ -75,17 +75,6 @@ RB.CommentIssueManager = Backbone.Model.extend({
                                           rsp.screenshot_comment);
                         self.trigger('issueStatusUpdated', comment,
                                      oldIssueStatus, rspComment.timestamp);
-
-                        /*
-                         * We don't want the current user to receive the
-                         * notification that the review request has been
-                         * updated, since they themselves updated the
-                         * issue status.
-                         */
-                        if (rsp.last_activity_time) {
-                            self.get('reviewRequest').markUpdated(
-                                rsp.last_activity_time);
-                        }
                     }
                 });
             }
