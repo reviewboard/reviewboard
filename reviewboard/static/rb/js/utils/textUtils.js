@@ -65,17 +65,19 @@ RB.formatText = function($el, text, bugTrackerURL, options) {
             });
         }
 
-        // Now linkify and markdown-ize
-        markedUp = RB.LinkifyUtils.linkifyReviewRequests(markedUp, true);
-        markedUp = RB.LinkifyUtils.linkifyBugs(markedUp, bugTrackerURL, true);
-        markedUp = marked(markedUp);
+        if (markedUp.length > 0) {
+            // Now linkify and markdown-ize
+            markedUp = RB.LinkifyUtils.linkifyReviewRequests(markedUp, true);
+            markedUp = RB.LinkifyUtils.linkifyBugs(markedUp, bugTrackerURL, true);
+            markedUp = marked(markedUp);
 
-        /*
-         * markup() adds newlines to each directive, resulting in a trailing
-         * newline for the contents. Since this may be formatted inside a
-         * <pre>, we want to make sure we don't have that extra newline.
-         */
-        markedUp = markedUp.trim();
+            /*
+             * markup() adds newlines to each directive, resulting in a trailing
+             * newline for the contents. Since this may be formatted inside a
+             * <pre>, we want to make sure we don't have that extra newline.
+             */
+            markedUp = markedUp.trim();
+        }
 
         $el
             .empty()
