@@ -176,7 +176,7 @@ class InterestingLinesTest(TestCase):
         return result
 
 
-class DiffParserTest(unittest.TestCase):
+class DiffParserTest(TestCase):
     PREFIX = os.path.join(os.path.dirname(__file__), 'testdata')
 
     def diff(self, options=''):
@@ -293,7 +293,6 @@ class DiffParserTest(unittest.TestCase):
                     29: 16,
                     30: 17,
                     31: 18,
-                    32: 19,
                 }
             ],
             [
@@ -302,24 +301,23 @@ class DiffParserTest(unittest.TestCase):
                     16: 29,
                     17: 30,
                     18: 31,
-                    19: 32,
                 }
             ])
 
     def test_move_detection_with_replace_lines(self):
-        """Testing dfif viewer move detection with replace lines"""
+        """Testing diff viewer move detection with replace lines"""
         self._test_move_detection(
             [
-                'this is line 1',
-                '----------',
-                '----------',
-                'this is line 2',
+                'this is line 1, and it is sufficiently long',
+                '-------------------------------------------',
+                '-------------------------------------------',
+                'this is line 2, and it is sufficiently long',
             ],
             [
-                'this is line 2',
-                '----------',
-                '----------',
-                'this is line 1',
+                'this is line 2, and it is sufficiently long',
+                '-------------------------------------------',
+                '-------------------------------------------',
+                'this is line 1, and it is sufficiently long',
             ],
             [
                 {1: 4},
@@ -332,7 +330,7 @@ class DiffParserTest(unittest.TestCase):
         )
 
     def test_move_detection_with_adjacent_regions(self):
-        """Testing dfif viewer move detection with adjacent regions"""
+        """Testing diff viewer move detection with adjacent regions"""
         self._test_move_detection(
             [
                 '1. Lorem ipsum dolor sit amet, consectetur adipiscing elit.',
@@ -368,6 +366,68 @@ class DiffParserTest(unittest.TestCase):
                     7: 2,
                 }
             ],
+        )
+
+    def test_move_detection_single_line_thresholds(self):
+        """Testing diff viewer move detection with a single line and
+        line length threshold
+        """
+        self._test_move_detection(
+            [
+                '0123456789012345678',
+                '----',
+                '----',
+                'abcdefghijklmnopqrst',
+            ],
+            [
+                'abcdefghijklmnopqrst',
+                '----',
+                '----',
+                '0123456789012345678',
+            ],
+            [
+                {1: 4},
+            ],
+            [
+                {4: 1},
+            ]
+        )
+
+    def test_move_detection_multi_line_thresholds(self):
+        """Testing diff viewer move detection with a multiple lines and
+        line count threshold
+        """
+        self._test_move_detection(
+            [
+                '123',
+                '456',
+                '789',
+                'ten',
+                'abcdefghijk',
+                'lmno',
+                'pqr',
+            ],
+            [
+                'abcdefghijk',
+                'lmno',
+                'pqr',
+                '123',
+                '456',
+                '789',
+                'ten',
+            ],
+            [
+                {
+                    1: 5,
+                    2: 6,
+                },
+            ],
+            [
+                {
+                    5: 1,
+                    6: 2,
+                },
+            ]
         )
 
     def test_line_counts(self):

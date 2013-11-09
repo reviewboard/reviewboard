@@ -177,7 +177,7 @@
   }
 
   .moved-to {
-    border-right: @moved-border-width @diff-moved-to-bg-color solid !important;
+    border-left: @moved-border-width @diff-moved-to-bg-color solid !important;
 
     .moved-flag {
       background-color: @diff-moved-to-bg-color !important;
@@ -207,27 +207,8 @@
 
   .moved-to-start, .moved-from-start {
     .moved-flag {
-      padding: 3px 1em;
-    }
-  }
-
-  .moved-from-start {
-    .moved-flag {
-      padding-left: 0.5em;
+      padding: 3px 1em 3px 0.5em;
       .border-radius(0, 8px, 8px, 0);
-    }
-  }
-
-  .moved-to-start {
-    text-align: right;
-
-    pre {
-      text-align: left;
-    }
-
-    .moved-flag {
-      padding-right: 0.5em;
-      .border-radius(8px, 0, 0, 8px);
     }
   }
 
