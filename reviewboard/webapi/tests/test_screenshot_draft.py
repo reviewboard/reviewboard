@@ -1,4 +1,5 @@
 from djblets.testing.decorators import add_fixtures
+from djblets.util.compat import six
 from djblets.webapi.errors import PERMISSION_DENIED
 
 from reviewboard.reviews.models import ReviewRequestDraft, Screenshot
@@ -13,10 +14,9 @@ from reviewboard.webapi.tests.urls import (get_screenshot_draft_item_url,
                                            get_screenshot_list_url)
 
 
+@six.add_metaclass(BasicTestsMetaclass)
 class ResourceListTests(BaseWebAPITestCase):
     """Testing the DraftScreenshotResource list APIs."""
-    __metaclass__ = BasicTestsMetaclass
-
     fixtures = ['test_users']
     sample_api_url = 'review-requests/<id>/draft/screenshots/'
     resource = resources.draft_screenshot
@@ -98,10 +98,9 @@ class ResourceListTests(BaseWebAPITestCase):
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
 
+@six.add_metaclass(BasicTestsMetaclass)
 class ResourceItemTests(BaseWebAPITestCase):
     """Testing the DraftScreenshotResource item APIs."""
-    __metaclass__ = BasicTestsMetaclass
-
     fixtures = ['test_users']
     sample_api_url = 'review-requests/<id>/draft/screenshots/<id>/'
     resource = resources.draft_screenshot

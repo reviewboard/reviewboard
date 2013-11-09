@@ -1,5 +1,6 @@
 from django.core import mail
 from djblets.testing.decorators import add_fixtures
+from djblets.util.compat import six
 from djblets.webapi.errors import DOES_NOT_EXIST, PERMISSION_DENIED
 
 from reviewboard.reviews.models import Review
@@ -16,11 +17,10 @@ from reviewboard.webapi.tests.urls import (get_review_item_url,
                                            get_review_list_url)
 
 
+@six.add_metaclass(BasicTestsMetaclass)
 class ResourceListTests(ReviewListMixin, ReviewRequestChildListMixin,
                         BaseWebAPITestCase):
     """Testing the ReviewResource list APIs."""
-    __metaclass__ = BasicTestsMetaclass
-
     fixtures = ['test_users']
     sample_api_url = 'review-requests/<id>/reviews/'
     resource = resources.review
@@ -111,11 +111,10 @@ class ResourceListTests(ReviewListMixin, ReviewRequestChildListMixin,
         self.compare_item(rsp['review'], review)
 
 
+@six.add_metaclass(BasicTestsMetaclass)
 class ResourceItemTests(ReviewItemMixin, ReviewRequestChildItemMixin,
                         BaseWebAPITestCase):
     """Testing the ReviewResource item APIs."""
-    __metaclass__ = BasicTestsMetaclass
-
     fixtures = ['test_users']
     sample_api_url = 'review-requests/<id>/reviews/<id>/'
     resource = resources.review

@@ -1,8 +1,8 @@
 import os
 
 import paramiko
-from django.utils import six
 from djblets.testing.decorators import add_fixtures
+from djblets.util.compat import six
 
 from reviewboard import scmtools
 from reviewboard.reviews.models import ReviewRequest
@@ -59,10 +59,9 @@ class BaseRepositoryTests(BaseWebAPITestCase):
                 self.assertEqual(getattr(repository, key), value)
 
 
+@six.add_metaclass(BasicTestsMetaclass)
 class ResourceListTests(BaseRepositoryTests):
     """Testing the RepositoryResource list APIs."""
-    __metaclass__ = BasicTestsMetaclass
-
     sample_api_url = 'repositories/'
     resource = resources.repository
     basic_post_fixtures = ['test_scmtools']
@@ -399,10 +398,9 @@ class ResourceListTests(BaseRepositoryTests):
         return rsp
 
 
+@six.add_metaclass(BasicTestsMetaclass)
 class ResourceItemTests(BaseRepositoryTests):
     """Testing the RepositoryResource item APIs."""
-    __metaclass__ = BasicTestsMetaclass
-
     fixtures = ['test_users', 'test_scmtools']
     test_http_methods = ('GET',)
     resource = resources.repository

@@ -1,4 +1,5 @@
 from django.contrib.auth.models import User
+from djblets.util.compat import six
 from djblets.webapi.errors import PERMISSION_DENIED
 
 from reviewboard.reviews.models import ScreenshotComment
@@ -47,11 +48,10 @@ class BaseTestCase(BaseWebAPITestCase):
         return comment, review, review_request
 
 
+@six.add_metaclass(BasicTestsMetaclass)
 class ResourceListTests(CommentListMixin, ReviewRequestChildListMixin,
                         BaseTestCase):
     """Testing the ReviewScreenshotCommentResource list APIs."""
-    __metaclass__ = BasicTestsMetaclass
-
     sample_api_url = 'review-requests/<id>/reviews/<id>/screenshot-comments/'
     resource = resources.review_screenshot_comment
 
@@ -190,11 +190,10 @@ class ResourceListTests(CommentListMixin, ReviewRequestChildListMixin,
                          extra_fields['extra_data.bar'])
 
 
+@six.add_metaclass(BasicTestsMetaclass)
 class ResourceItemTests(CommentItemMixin, ReviewRequestChildItemMixin,
                         BaseTestCase):
     """Testing the ReviewScreenshotCommentResource item APIs."""
-    __metaclass__ = BasicTestsMetaclass
-
     fixtures = ['test_users']
     sample_api_url = \
         'review-requests/<id>/reviews/<id>/screenshot-comments/<id>/'

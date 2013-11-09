@@ -1,6 +1,7 @@
 import os
 
 from djblets.testing.decorators import add_fixtures
+from djblets.util.compat import six
 from djblets.webapi.errors import INVALID_FORM_DATA
 
 from reviewboard import scmtools
@@ -12,10 +13,9 @@ from reviewboard.webapi.tests.mixins import BasicTestsMetaclass
 from reviewboard.webapi.tests.urls import get_validate_diff_url
 
 
+@six.add_metaclass(BasicTestsMetaclass)
 class ResourceTests(BaseWebAPITestCase):
     """Testing the ValidateDiffResource APIs."""
-    __metaclass__ = BasicTestsMetaclass
-
     fixtures = ['test_users', 'test_scmtools']
     sample_api_url = 'validation/diffs/'
     test_http_methods = ('DELETE', 'PUT',)

@@ -1,5 +1,6 @@
 from django.contrib.auth.models import User
 from djblets.testing.decorators import add_fixtures
+from djblets.util.compat import six
 from djblets.webapi.errors import INVALID_FORM_DATA
 
 from reviewboard.reviews.models import DefaultReviewer, Group
@@ -14,10 +15,9 @@ from reviewboard.webapi.tests.urls import (get_default_reviewer_item_url,
                                            get_default_reviewer_list_url)
 
 
+@six.add_metaclass(BasicTestsMetaclass)
 class ResourceListTests(BaseWebAPITestCase):
     """Testing the DefaultReviewerResource list APIs."""
-    __metaclass__ = BasicTestsMetaclass
-
     fixtures = ['test_users']
     basic_post_fixtures = ['test_scmtools']
     basic_post_use_admin = True
@@ -443,10 +443,9 @@ class ResourceListTests(BaseWebAPITestCase):
         self.assertTrue('repositories' in rsp['fields'])
 
 
+@six.add_metaclass(BasicTestsMetaclass)
 class ResourceItemTests(BaseWebAPITestCase):
     """Testing the DefaultReviewerResource item APIs."""
-    __metaclass__ = BasicTestsMetaclass
-
     fixtures = ['test_users']
     basic_get_fixtures = ['test_scmtools']
     basic_put_fixtures = ['test_scmtools']

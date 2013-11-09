@@ -1,5 +1,6 @@
 import os
 
+from djblets.util.compat import six
 from djblets.webapi.errors import INVALID_FORM_DATA
 
 from reviewboard import scmtools
@@ -16,10 +17,9 @@ from reviewboard.webapi.tests.urls import (get_diff_list_url,
                                            get_draft_filediff_list_url)
 
 
+@six.add_metaclass(BasicTestsMetaclass)
 class ResourceListTests(BaseWebAPITestCase):
     """Testing the DraftFileDiffResource list APIs."""
-    __metaclass__ = BasicTestsMetaclass
-
     fixtures = ['test_users', 'test_scmtools']
     sample_api_url = 'review-requests/<id>/draft/diffs/<revision>/files/'
     resource = resources.draft_filediff
@@ -72,10 +72,9 @@ class ResourceListTests(BaseWebAPITestCase):
             expected_status=403)
 
 
+@six.add_metaclass(BasicTestsMetaclass)
 class ResourceItemTests(BaseWebAPITestCase):
     """Testing the DraftFileDiffResource item APIs."""
-    __metaclass__ = BasicTestsMetaclass
-
     fixtures = ['test_users', 'test_scmtools']
     sample_api_url = 'review-requests/<id>/draft/diffs/<revision>/files/<id>/'
     resource = resources.draft_filediff

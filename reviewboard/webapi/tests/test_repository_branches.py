@@ -1,3 +1,5 @@
+from djblets.util.compat import six
+
 from reviewboard.webapi.errors import REPO_NOT_IMPLEMENTED
 from reviewboard.webapi.resources import resources
 from reviewboard.webapi.tests.base import BaseWebAPITestCase
@@ -7,10 +9,9 @@ from reviewboard.webapi.tests.mixins import BasicTestsMetaclass
 from reviewboard.webapi.tests.urls import get_repository_branches_url
 
 
+@six.add_metaclass(BasicTestsMetaclass)
 class ResourceTests(BaseWebAPITestCase):
     """Testing the RepositoryBranchesResource list APIs."""
-    __metaclass__ = BasicTestsMetaclass
-
     fixtures = ['test_users', 'test_scmtools']
     sample_api_url = 'repositories/<id>/branches/'
     resource = resources.repository_branches

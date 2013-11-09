@@ -1,4 +1,5 @@
 from django.core import mail
+from djblets.util.compat import six
 
 from reviewboard.reviews.models import Review
 from reviewboard.webapi.resources import resources
@@ -28,11 +29,10 @@ class BaseResourceTestCase(BaseWebAPITestCase):
         return review
 
 
+@six.add_metaclass(BasicTestsMetaclass)
 class ResourceListTests(ReviewListMixin, ReviewRequestChildListMixin,
                         BaseResourceTestCase):
     """Testing the ReviewReplyResource list APIs."""
-    __metaclass__ = BasicTestsMetaclass
-
     fixtures = ['test_users']
     sample_api_url = 'review-requests/<id>/reviews/<id>/replies/'
     resource = resources.review_reply
@@ -144,11 +144,10 @@ class ResourceListTests(ReviewListMixin, ReviewRequestChildListMixin,
         self.assertEqual(reply.body_bottom, body_bottom)
 
 
+@six.add_metaclass(BasicTestsMetaclass)
 class ResourceItemTests(ReviewItemMixin, ReviewRequestChildItemMixin,
                         BaseResourceTestCase):
     """Testing the ReviewReplyResource item APIs."""
-    __metaclass__ = BasicTestsMetaclass
-
     fixtures = ['test_users']
     sample_api_url = 'review-requests/<id>/reviews/<id>/replies/<id>/'
     resource = resources.review_reply

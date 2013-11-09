@@ -1,3 +1,5 @@
+from djblets.util.compat import six
+
 from reviewboard.reviews.models import FileAttachmentComment
 from reviewboard.webapi.resources import resources
 from reviewboard.webapi.tests.base import BaseWebAPITestCase
@@ -16,11 +18,10 @@ from reviewboard.webapi.tests.urls import (
     get_review_reply_file_attachment_comment_list_url)
 
 
+@six.add_metaclass(BasicTestsMetaclass)
 class ResourceListTests(CommentReplyListMixin, ReviewRequestChildListMixin,
                         BaseWebAPITestCase):
     """Testing the ReviewReplyFileAttachmentCommentResource list APIs."""
-    __metaclass__ = BasicTestsMetaclass
-
     fixtures = ['test_users']
     sample_api_url = ('review-requests/<id>/reviews/<id>/replies/<id>/'
                       'file-attachment-comments/')
@@ -166,11 +167,10 @@ class ResourceListTests(CommentReplyListMixin, ReviewRequestChildListMixin,
         self.check_post_result(self.user, rsp, reply, comment, file_attachment)
 
 
+@six.add_metaclass(BasicTestsMetaclass)
 class ResourceItemTests(CommentReplyItemMixin, ReviewRequestChildItemMixin,
                         BaseWebAPITestCase):
     """Testing the ReviewReplyFileAttachmentCommentResource item APIs."""
-    __metaclass__ = BasicTestsMetaclass
-
     fixtures = ['test_users']
     sample_api_url = ('review-requests/<id>/reviews/<id>/replies/<id>/'
                       'file-attachment-comments/<id>/')

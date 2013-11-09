@@ -1,3 +1,5 @@
+from djblets.util.compat import six
+
 from reviewboard.webapi.resources import resources
 from reviewboard.webapi.tests.base import BaseWebAPITestCase
 from reviewboard.webapi.tests.mimetypes import session_mimetype
@@ -5,10 +7,9 @@ from reviewboard.webapi.tests.mixins import BasicTestsMetaclass
 from reviewboard.webapi.tests.urls import get_session_url
 
 
+@six.add_metaclass(BasicTestsMetaclass)
 class ResourceTests(BaseWebAPITestCase):
     """Testing the SessionResource APIs."""
-    __metaclass__ = BasicTestsMetaclass
-
     fixtures = ['test_users']
     sample_api_url = 'session/'
     resource = resources.session

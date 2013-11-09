@@ -1,4 +1,5 @@
 from djblets.testing.decorators import add_fixtures
+from djblets.util.compat import six
 
 from reviewboard.webapi.resources import resources
 from reviewboard.webapi.tests.base import BaseWebAPITestCase
@@ -7,10 +8,9 @@ from reviewboard.webapi.tests.mixins import BasicTestsMetaclass
 from reviewboard.webapi.tests.urls import get_root_url
 
 
+@six.add_metaclass(BasicTestsMetaclass)
 class ResourceTests(BaseWebAPITestCase):
     """Testing the RootResource APIs."""
-    __metaclass__ = BasicTestsMetaclass
-
     fixtures = ['test_users']
     sample_api_url = '/'
     resource = resources.root

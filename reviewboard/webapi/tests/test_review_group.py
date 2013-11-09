@@ -1,4 +1,5 @@
 from djblets.testing.decorators import add_fixtures
+from djblets.util.compat import six
 from djblets.util.misc import get_object_or_none
 from djblets.webapi.errors import PERMISSION_DENIED
 
@@ -14,10 +15,9 @@ from reviewboard.webapi.tests.urls import (get_review_group_item_url,
                                            get_review_group_list_url)
 
 
+@six.add_metaclass(BasicTestsMetaclass)
 class ResourceListTests(BaseWebAPITestCase):
     """Testing the ReviewGroupResource list APIs."""
-    __metaclass__ = BasicTestsMetaclass
-
     fixtures = ['test_users']
     sample_api_url = 'groups/'
     resource = resources.review_group
@@ -146,10 +146,9 @@ class ResourceListTests(BaseWebAPITestCase):
         self.assertEqual(rsp['err']['code'], GROUP_ALREADY_EXISTS.code)
 
 
+@six.add_metaclass(BasicTestsMetaclass)
 class ResourceItemTests(BaseWebAPITestCase):
     """Testing the ReviewGroupResource item APIs."""
-    __metaclass__ = BasicTestsMetaclass
-
     fixtures = ['test_users']
     sample_api_url = 'groups/<id>/'
     resource = resources.review_group

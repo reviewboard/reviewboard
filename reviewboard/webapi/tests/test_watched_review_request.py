@@ -1,4 +1,5 @@
 from djblets.testing.decorators import add_fixtures
+from djblets.util.compat import six
 from djblets.webapi.errors import DOES_NOT_EXIST, PERMISSION_DENIED
 
 from reviewboard.webapi.resources import resources
@@ -13,10 +14,9 @@ from reviewboard.webapi.tests.urls import (
     get_watched_review_request_list_url)
 
 
+@six.add_metaclass(BasicTestsMetaclass)
 class ResourceListTests(BaseWebAPITestCase):
     """Testing the WatchedReviewRequestResource list API tests."""
-    __metaclass__ = BasicTestsMetaclass
-
     fixtures = ['test_users']
     test_http_methods = ('GET', 'POST')
     sample_api_url = 'users/<username>/watched/review-requests/'
@@ -117,10 +117,9 @@ class ResourceListTests(BaseWebAPITestCase):
         self.assertEqual(rsp['err']['code'], DOES_NOT_EXIST.code)
 
 
+@six.add_metaclass(BasicTestsMetaclass)
 class ResourceItemTests(BaseWebAPITestCase):
     """Testing the WatchedReviewRequestResource item API tests."""
-    __metaclass__ = BasicTestsMetaclass
-
     fixtures = ['test_users']
     test_http_methods = ('DELETE', 'PUT')
     sample_api_url = 'users/<username>/watched/review-requests/<id>/'

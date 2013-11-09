@@ -1,3 +1,4 @@
+from djblets.util.compat import six
 from djblets.webapi.errors import PERMISSION_DENIED
 
 from reviewboard.attachments.models import FileAttachment
@@ -11,10 +12,9 @@ from reviewboard.webapi.tests.urls import (get_draft_file_attachment_item_url,
                                            get_draft_file_attachment_list_url)
 
 
+@six.add_metaclass(BasicTestsMetaclass)
 class ResourceListTests(BaseWebAPITestCase):
     """Testing the DraftFileAttachmentResource list APIs."""
-    __metaclass__ = BasicTestsMetaclass
-
     fixtures = ['test_users']
     sample_api_url = 'review-requests/<id>/draft/file-attachments/'
     resource = resources.draft_file_attachment
@@ -101,10 +101,9 @@ class ResourceListTests(BaseWebAPITestCase):
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
 
+@six.add_metaclass(BasicTestsMetaclass)
 class ResourceItemTests(BaseWebAPITestCase):
     """Testing the DraftFileAttachmentResource item APIs."""
-    __metaclass__ = BasicTestsMetaclass
-
     fixtures = ['test_users']
     sample_api_url = 'review-requests/<id>/draft/file-attachments/<id>/'
     resource = resources.draft_file_attachment

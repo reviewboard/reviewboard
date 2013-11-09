@@ -1,4 +1,5 @@
 from django.contrib.auth.models import User
+from djblets.util.compat import six
 from djblets.testing.decorators import add_fixtures
 
 from reviewboard.accounts.models import Profile
@@ -12,10 +13,9 @@ from reviewboard.webapi.tests.urls import (get_user_item_url,
                                            get_user_list_url)
 
 
+@six.add_metaclass(BasicTestsMetaclass)
 class ResourceListTests(BaseWebAPITestCase):
     """Testing the UserResource list API tests."""
-    __metaclass__ = BasicTestsMetaclass
-
     fixtures = ['test_users']
     sample_api_url = 'users/'
     resource = resources.user
@@ -53,10 +53,9 @@ class ResourceListTests(BaseWebAPITestCase):
         self.assertEqual(len(rsp['users']), 1)  # grumpy
 
 
+@six.add_metaclass(BasicTestsMetaclass)
 class ResourceItemTests(BaseWebAPITestCase):
     """Testing the UserResource item API tests."""
-    __metaclass__ = BasicTestsMetaclass
-
     fixtures = ['test_users']
     sample_api_url = 'users/<username>/'
     resource = resources.user

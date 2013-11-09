@@ -1,3 +1,5 @@
+from djblets.util.compat import six
+
 from reviewboard.reviews.models import ScreenshotComment
 from reviewboard.webapi.resources import resources
 from reviewboard.webapi.tests.base import BaseWebAPITestCase
@@ -16,11 +18,10 @@ from reviewboard.webapi.tests.urls import (
     get_review_reply_screenshot_comment_list_url)
 
 
+@six.add_metaclass(BasicTestsMetaclass)
 class ResourceListTests(CommentReplyListMixin, ReviewRequestChildListMixin,
                         BaseWebAPITestCase):
     """Testing the ReviewReplyScreenshotCommentResource list APIs."""
-    __metaclass__ = BasicTestsMetaclass
-
     fixtures = ['test_users']
     sample_api_url = \
         'review-requests/<id>/reviews/<id>/replies/<id>/screenshot-comments/'
@@ -134,11 +135,10 @@ class ResourceListTests(CommentReplyListMixin, ReviewRequestChildListMixin,
         self.assertEqual(reply_comment.text, comment_text)
 
 
+@six.add_metaclass(BasicTestsMetaclass)
 class ResourceItemTests(CommentReplyItemMixin, ReviewRequestChildItemMixin,
                         BaseWebAPITestCase):
     """Testing the ReviewReplyScreenshotCommentResource item APIs."""
-    __metaclass__ = BasicTestsMetaclass
-
     fixtures = ['test_users']
     sample_api_url = ('review-requests/<id>/reviews/<id>/replies/<id>/'
                       'screenshot-comments/<id>/')

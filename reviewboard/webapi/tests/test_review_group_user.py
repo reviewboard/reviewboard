@@ -1,4 +1,5 @@
 from django.contrib.auth.models import User
+from djblets.util.compat import six
 from djblets.webapi.errors import PERMISSION_DENIED
 
 from reviewboard.webapi.resources import resources
@@ -11,10 +12,9 @@ from reviewboard.webapi.tests.urls import (get_review_group_user_item_url,
                                            get_review_group_user_list_url)
 
 
+@six.add_metaclass(BasicTestsMetaclass)
 class ResourceListTests(BaseWebAPITestCase):
     """Testing the ReviewGroupUserResource list API tests."""
-    __metaclass__ = BasicTestsMetaclass
-
     fixtures = ['test_users']
     sample_api_url = 'groups/<name>/users/'
     resource = resources.review_group_user
@@ -110,10 +110,9 @@ class ResourceListTests(BaseWebAPITestCase):
         self.assertEqual(group.users.count(), 0)
 
 
+@six.add_metaclass(BasicTestsMetaclass)
 class ResourceItemTests(BaseWebAPITestCase):
     """Testing the ReviewGroupUserResource item API tests."""
-    __metaclass__ = BasicTestsMetaclass
-
     fixtures = ['test_users']
     sample_api_url = 'groups/<name>/users/<username>/'
     resource = resources.review_group_user

@@ -1,6 +1,7 @@
 from django.contrib.auth.models import User, Permission
 from django.db.models import Q
 from djblets.testing.decorators import add_fixtures
+from djblets.util.compat import six
 from djblets.util.misc import get_object_or_none
 from djblets.webapi.errors import DOES_NOT_EXIST, PERMISSION_DENIED
 
@@ -19,10 +20,9 @@ from reviewboard.webapi.tests.urls import (get_repository_item_url,
                                            get_user_item_url)
 
 
+@six.add_metaclass(BasicTestsMetaclass)
 class ResourceListTests(BaseWebAPITestCase):
     """Testing the ReviewRequestResource list API tests."""
-    __metaclass__ = BasicTestsMetaclass
-
     fixtures = ['test_users']
     basic_post_fixtures = ['test_scmtools']
     sample_api_url = 'review-requests/'
@@ -698,10 +698,9 @@ class ResourceListTests(BaseWebAPITestCase):
         ReviewRequest.objects.get(pk=rsp['review_request']['id'])
 
 
+@six.add_metaclass(BasicTestsMetaclass)
 class ResourceItemTests(BaseWebAPITestCase):
     """Testing the ReviewRequestResource item API tests."""
-    __metaclass__ = BasicTestsMetaclass
-
     fixtures = ['test_users']
     sample_api_url = 'review-requests/<id>/'
     resource = resources.review_request

@@ -1,19 +1,20 @@
 from djblets.extensions.hooks import (ExtensionHook, ExtensionHookPoint,
                                       TemplateHook, URLHook)
+from djblets.util.compat import six
 
 from reviewboard.attachments.mimetypes import (register_mimetype_handler,
                                                unregister_mimetype_handler)
 from reviewboard.reviews.ui.base import register_ui, unregister_ui
 
 
+@six.add_metaclass(ExtensionHookPoint)
 class DashboardHook(ExtensionHook):
-    __metaclass__ = ExtensionHookPoint
-
     def __init__(self, extension, entries=[], *args, **kwargs):
         super(DashboardHook, self).__init__(extension, *args, **kwargs)
         self.entries = entries
 
 
+@six.add_metaclass(ExtensionHookPoint)
 class UserPageSidebarHook(ExtensionHook):
     """A Hook for adding entries to sidebar of /users/<user> page.
 
@@ -30,13 +31,12 @@ class UserPageSidebarHook(ExtensionHook):
         * ``label``:    The label for the sub-entry.
         * ``url``:      The URL that the sub-entry points to.
     """
-    __metaclass__ = ExtensionHookPoint
-
     def __init__(self, extension, entries=[], *args, **kwargs):
         super(UserPageSidebarHook, self).__init__(extension)
         self.entries = entries
 
 
+@six.add_metaclass(ExtensionHookPoint)
 class NavigationBarHook(ExtensionHook):
     """A hook for adding entries to the main navigation bar.
 
@@ -53,8 +53,6 @@ class NavigationBarHook(ExtensionHook):
     If your hook needs to access the template context, it can override
     get_entries and return results from there.
     """
-    __metaclass__ = ExtensionHookPoint
-
     def __init__(self, extension, entries={}, *args, **kwargs):
         super(NavigationBarHook, self).__init__(extension, *args,
                                                 **kwargs)
@@ -64,9 +62,8 @@ class NavigationBarHook(ExtensionHook):
         return self.entries
 
 
+@six.add_metaclass(ExtensionHookPoint)
 class ReviewRequestDetailHook(ExtensionHook):
-    __metaclass__ = ExtensionHookPoint
-
     def get_field_id(self):
         raise NotImplementedError
 
@@ -81,14 +78,13 @@ class ReviewRequestDetailHook(ExtensionHook):
         return False
 
 
+@six.add_metaclass(ExtensionHookPoint)
 class CommentDetailDisplayHook(ExtensionHook):
     """This hook allows adding details to the display of comments.
 
     The hook can provide additional details to display for a comment in a
     review and e-mails.
     """
-    __metaclass__ = ExtensionHookPoint
-
     def render_review_comment_detail(self, comment):
         raise NotImplementedError
 
@@ -96,6 +92,7 @@ class CommentDetailDisplayHook(ExtensionHook):
         raise NotImplementedError
 
 
+@six.add_metaclass(ExtensionHookPoint)
 class ReviewUIHook(ExtensionHook):
     """This hook allows integration of Extension-defined Review UIs.
 
@@ -103,8 +100,6 @@ class ReviewUIHook(ExtensionHook):
     registers them when the hook is created. Likewise, it unregisters
     the same list of Review UIs when the Extension is disabled.
     """
-    __metaclass__ = ExtensionHookPoint
-
     def __init__(self, extension, review_uis):
         super(ReviewUIHook, self).__init__(extension)
         self.review_uis = review_uis
@@ -119,6 +114,7 @@ class ReviewUIHook(ExtensionHook):
             unregister_ui(review_ui)
 
 
+@six.add_metaclass(ExtensionHookPoint)
 class FileAttachmentThumbnailHook(ExtensionHook):
     """This hook allows custom thumbnails to be defined for file attachments.
 
@@ -139,8 +135,6 @@ class FileAttachmentThumbnailHook(ExtensionHook):
     it unregisters the same list of MimetypeHandlers when the Extension is
     disabled.
     """
-    __metaclass__ = ExtensionHookPoint
-
     def __init__(self, extension, mimetype_handlers):
         super(FileAttachmentThumbnailHook, self).__init__(extension)
         self.mimetype_handlers = mimetype_handlers
@@ -188,11 +182,12 @@ class ActionHook(ExtensionHook):
         return self.actions
 
 
+@six.add_metaclass(ExtensionHookPoint)
 class ReviewRequestActionHook(ActionHook):
     """A hook for adding an action to the review request page."""
-    __metaclass__ = ExtensionHookPoint
 
 
+@six.add_metaclass(ExtensionHookPoint)
 class ReviewRequestDropdownActionHook(ActionHook):
     """A hook for adding an drop down action to the review request page.
 
@@ -221,19 +216,18 @@ class ReviewRequestDropdownActionHook(ActionHook):
             ]
         }]
     """
-    __metaclass__ = ExtensionHookPoint
 
 
+@six.add_metaclass(ExtensionHookPoint)
 class DiffViewerActionHook(ActionHook):
     """A hook for adding an action to the diff viewer page."""
-    __metaclass__ = ExtensionHookPoint
 
 
+@six.add_metaclass(ExtensionHookPoint)
 class HeaderActionHook(ActionHook):
     """A hook for putting an action in the page header."""
-    __metaclass__ = ExtensionHookPoint
 
 
+@six.add_metaclass(ExtensionHookPoint)
 class HeaderDropdownActionHook(ActionHook):
     """A hook for putting multiple actions into a header dropdown."""
-    __metaclass__ = ExtensionHookPoint

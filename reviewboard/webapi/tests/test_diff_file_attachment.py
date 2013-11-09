@@ -1,4 +1,5 @@
 from djblets.testing.decorators import add_fixtures
+from djblets.util.compat import six
 from djblets.webapi.errors import INVALID_FORM_DATA, PERMISSION_DENIED
 
 from reviewboard import scmtools
@@ -14,10 +15,9 @@ from reviewboard.webapi.tests.urls import (get_diff_file_attachment_item_url,
                                            get_diff_file_attachment_list_url)
 
 
+@six.add_metaclass(BasicTestsMetaclass)
 class ResourceListTests(BaseWebAPITestCase):
     """Testing the DiffFileAttachmentResource list APIs."""
-    __metaclass__ = BasicTestsMetaclass
-
     fixtures = ['test_users', 'test_scmtools']
     sample_api_url = 'repositories/<id>/diff-file-attachments/'
     resource = resources.diff_file_attachment
@@ -156,10 +156,9 @@ class ResourceListTests(BaseWebAPITestCase):
         self.assertEqual(attachment_rsp['mimetype'], attachment.mimetype)
 
 
+@six.add_metaclass(BasicTestsMetaclass)
 class ResourceItemTests(BaseWebAPITestCase):
     """Testing the DiffFileAttachmentResource item APIs."""
-    __metaclass__ = BasicTestsMetaclass
-
     fixtures = ['test_users', 'test_scmtools']
     sample_api_url = 'repositories/<id>/diff-file-attachments/<id>/'
     resource = resources.diff_file_attachment
