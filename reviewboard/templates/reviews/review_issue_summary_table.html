@@ -3,27 +3,31 @@
 {% load reviewtags %}
 
 {% if issues.total > 0 %}
-<div class="content-divider"></div>
 <div class="content" id="issue-summary">
  <a name="issue-summary"></a>
- <label>{% trans "Issue Summary" %}:</label>
+ <h3>{% trans "Issue Summary" %}</h3>
  <div class="header">
   <div class="counters">
-   <strong>
-    <div class="counter">{% trans "Total" %}:</div>
-    <div id="total-counter">{{issues.total}}</div>
-   </strong>
-   <div class="counter">{% trans "Open" %}:</div>
-   <div id="open-counter">{{issues.open}}</div>
-   <div class="counter">{% trans "Resolved" %}:</div>
-   <div id="resolved-counter">{{issues.resolved}}</div>
-   <div class="counter">{% trans "Dropped" %}:</div>
-   <div id="dropped-counter">{{issues.dropped}}</div>
+   <span class="counter total">
+    <label>{% trans "Total" %}:</label>
+    <span id="total-counter">{{issues.total}}</span>
+   </span>
+   <span class="counter">
+    <label>{% trans "Open" %}:</label>
+    <span id="open-counter">{{issues.open}}</span>
+   </span>
+   <span class="counter">
+    <label>{% trans "Resolved" %}:</label>
+    <span id="resolved-counter">{{issues.resolved}}</span>
+   </span>
+   <span class="counter">
+    <label>{% trans "Dropped" %}:</label>
+    <span id="dropped-counter">{{issues.dropped}}</span>
+   </span>
   </div>
-  <div class="clearfix"></div>
   <div class="filters">
    <div class="filter-wrapper">
-    <span><strong>{% trans "Status:" %}</strong></span>
+    <span><label for="issue-state-filter">{% trans "Status:" %}</label></span>
     <select class="filter" id="issue-state-filter">
      <option value="open">{% trans "Open" %}</option>
      <option value="dropped">{% trans "Dropped" %}</option>
@@ -32,13 +36,12 @@
     </select>
    </div>
    <div class="filter-wrapper">
-    <span><strong>{% trans "From:" %}</strong></span>
+    <span><label for="issue-reviewer-filter">{% trans "From:" %}</label></span>
     <select class="filter" id="issue-reviewer-filter">
      <option value="all">{% trans "All" %}</option>
     </select>
    </div>
   </div>
-  <div class="clearfix"></div>
  </div>
  <div class="issue-table-wrapper">
   <table id="issue-summary-table">

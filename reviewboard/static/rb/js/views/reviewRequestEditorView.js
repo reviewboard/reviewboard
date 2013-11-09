@@ -812,7 +812,7 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
                 editIconClass: 'rb-icon rb-icon-edit',
                 enabled: this.model.get(editableProp),
                 multiline: el.tagName === 'PRE',
-                showButtons: !$el.hasClass('screenshot-editable'),
+                showButtons: false,
                 useEditIconOnly: fieldOptions.useEditIconOnly,
                 showRequiredFlag: $el.hasClass('required')
             };

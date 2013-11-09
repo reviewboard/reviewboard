@@ -178,11 +178,13 @@
 }
 
 .review-request {
+  @details-width: 30em;
+
   background-color: #fefadf;
   background-image: url('../images/review_request_box_top_bg.png');
 
   label {
-    color: #575012;
+    color: @review-request-label-color;
     font-weight: bold;
   }
 
@@ -202,7 +204,6 @@
   }
 
   .content {
-    clear: both;
     padding: @box-padding;
 
     &.sliding {
@@ -211,15 +212,6 @@
 
     img {
       border: none;
-    }
-
-    label {
-      display: block;
-      min-height: 16px;
-
-      img {
-        vertical-align: middle;
-      }
     }
 
     &>pre {
@@ -284,52 +276,107 @@
     margin-right: 10px;
   }
 
-  #details {
-    border-bottom: 1px #c2c1b0 solid;
-    border-top: 1px #c2c1b0 solid;
-    float: left;
-    width: 100%;
+  #review_request_details {
+    border-spacing: 0px;
+    float: right;
+    width: @details-width;
+    padding: @box-padding;
 
-    #review-request-warning {
-      background-color: @review-request-warning-bg;
-      border: 1px solid @review-request-warning-border-color;
-      display: none;
-      font-weight: bold;
-      padding: 5px;
-      text-align: center;
+    a {
+      color: @review-request-link-color;
+      text-decoration: none;
     }
 
-    .details-column {
-      border-spacing: 0px;
-      float: left;
-      width: 50%;
-      padding: @box-padding;
+    th {
+      color: #39350b;
+      font-weight: bold;
+      text-align: left;
+      white-space: nowrap;
+    }
+
+    tbody {
+      td, th {
+        padding: 0;
+        vertical-align: top;
+      }
+
+      th, td span {
+        padding-top: 3px;
+      }
+
+      td {
+        padding-left: 1em;
+
+        span {
+          display: inline-block;
+          margin-right: 4px;
+        }
+
+        .editicon {
+          margin-left: 0;
+        }
+      }
 
       th {
-        color: #39350b;
-        font-weight: bold;
-        text-align: left;
-        white-space: nowrap;
-      }
-
-      td, th {
-        padding: 0 0 0 1em;
-        height: 2.6em;
-      }
-
-      #target_people .inactive {
-        text-decoration: line-through;
-      }
-
-      .indented th {
-        padding-left: 20px;
-      }
-
-      .label {
+        padding-bottom: 1.5em;
+        padding-left: 1em;
         text-align: right;
         white-space: nowrap;
       }
     }
+
+    thead {
+      &.review-request-info th {
+        padding-top: 0;
+      }
+
+      th {
+        color: @review-request-label-color;
+        font-size: 120%;
+        padding: 2em 0 1em 0;
+      }
+    }
+
+    #target_people .inactive {
+      text-decoration: line-through;
+    }
+  }
+
+  #review_request_extra {
+    clear: both;
+
+    h3 {
+      color: @review-request-label-color;
+      font-size: 120%;
+      margin: 0;
+      padding: 0;
+    }
+
+    label.textarea-label {
+      display: block;
+      min-height: 16px;
+
+      img {
+        vertical-align: middle;
+      }
+    }
+  }
+
+  #review_request_main {
+    margin-right: @details-width;
+
+    label {
+      font-size: 120%;
+    }
+  }
+
+  #review-request-warning {
+    background-color: @review-request-warning-bg;
+    border: 1px solid @review-request-warning-border-color;
+    display: none;
+    font-weight: bold;
+    padding: 5px;
+    text-align: center;
   }
 
   #diff_revision {
@@ -1326,6 +1373,7 @@
  ****************************************************************************/
 
 .issue-table-wrapper {
+  clear: both;
   margin: 8px 9px 14px 9px;
 }
 
@@ -1438,28 +1486,41 @@
   }
 }
 
-.counters {
-  display: inline;
-  font-size: 12px;
-  text-align: right;
-  float: left;
+#issue-summary {
+  .header {
+    padding-bottom: 0;
+    position: relative;
 
-  div {
-    margin-right: 3px;
-    float: left;
-  }
+    .counters {
+      position: absolute;
+      bottom: 0;
+      right: @box-padding;
 
-  .counter {
-    margin-left: 4px;
-  }
-}
+      .counter {
+        margin-left: 4px;
 
-.filters {
-  margin: 3px 0 0 0;
+        &.total {
+          label, span {
+            font-weight: bold;
+          }
+        }
 
-  .filter-wrapper {
-    float: left;
-    margin: 0 4px;
+        label {
+          color: black;
+          font-weight: normal;
+          margin-right: 3px;
+        }
+      }
+    }
+
+    .filters {
+      margin: 3px 0 0 0;
+
+      .filter-wrapper {
+        display: inline;
+        margin: 0 4px;
+      }
+    }
   }
 }
 
