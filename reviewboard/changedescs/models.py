@@ -1,9 +1,11 @@
 from django.db import models
 from django.utils import six, timezone
+from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
 from djblets.util.fields import JSONField
 
 
+@python_2_unicode_compatible
 class ChangeDescription(models.Model):
     """
     The recorded set of changes, containing optional description text
@@ -88,7 +90,7 @@ class ChangeDescription(models.Model):
                 'new': (new_value,),
             }
 
-    def __unicode__(self):
+    def __str__(self):
         return self.text
 
     class Meta:

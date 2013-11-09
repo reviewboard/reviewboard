@@ -3,6 +3,7 @@ import logging
 
 from django.db import models
 from django.utils import timezone
+from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
 from djblets.util.fields import Base64Field
 
@@ -48,6 +49,7 @@ class FileDiffData(models.Model):
             self.save()
 
 
+@python_2_unicode_compatible
 class FileDiff(models.Model):
     """
     A diff of a single file.
@@ -231,11 +233,12 @@ class FileDiff(models.Model):
         diff_hash.recalculate_line_counts(
             self.diffset.repository.get_scmtool())
 
-    def __unicode__(self):
+    def __str__(self):
         return u"%s (%s) -> %s (%s)" % (self.source_file, self.source_revision,
                                         self.dest_file, self.dest_detail)
 
 
+@python_2_unicode_compatible
 class DiffSet(models.Model):
     """
     A revisioned collection of FileDiffs.
@@ -283,7 +286,7 @@ class DiffSet(models.Model):
 
         super(DiffSet, self).save()
 
-    def __unicode__(self):
+    def __str__(self):
         return u"[%s] %s r%s" % (self.id, self.name, self.revision)
 
     class Meta:
@@ -291,6 +294,7 @@ class DiffSet(models.Model):
         ordering = ['revision', 'timestamp']
 
 
+@python_2_unicode_compatible
 class DiffSetHistory(models.Model):
     """
     A collection of diffsets.
@@ -306,7 +310,7 @@ class DiffSetHistory(models.Model):
         null=True,
         default=None)
 
-    def __unicode__(self):
+    def __str__(self):
         return u'Diff Set History (%s revisions)' % self.diffsets.count()
 
     class Meta:

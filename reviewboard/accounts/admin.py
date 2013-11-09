@@ -52,12 +52,12 @@ class ReviewRequestVisitAdmin(admin.ModelAdmin):
 
 
 class ProfileAdmin(admin.ModelAdmin):
-    list_display = ('__unicode__', 'first_time_setup_done')
+    list_display = ('__str__', 'first_time_setup_done')
     raw_id_fields = ('user', 'starred_review_requests', 'starred_groups')
 
 
 class LocalSiteProfileAdmin(admin.ModelAdmin):
-    list_display = ('__unicode__',)
+    list_display = ('__str__',)
     raw_id_fields = ('user', 'profile', 'local_site')
 
 

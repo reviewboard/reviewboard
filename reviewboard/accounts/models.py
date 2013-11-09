@@ -1,6 +1,7 @@
 from django.contrib.auth.models import User
 from django.db import models
 from django.utils import timezone
+from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
 from djblets.util.db import ConcurrencyManager
 from djblets.util.fields import CounterField, JSONField
@@ -11,6 +12,7 @@ from reviewboard.reviews.models import Group, ReviewRequest
 from reviewboard.site.models import LocalSite
 
 
+@python_2_unicode_compatible
 class ReviewRequestVisit(models.Model):
     """
     A recording of the last time a review request was visited by a user.
@@ -27,13 +29,14 @@ class ReviewRequestVisit(models.Model):
     # Set this up with a ConcurrencyManager to help prevent race conditions.
     objects = ConcurrencyManager()
 
-    def __unicode__(self):
+    def __str__(self):
         return u"Review request visit"
 
     class Meta:
         unique_together = ("user", "review_request")
 
 
+@python_2_unicode_compatible
 class Profile(models.Model):
     """User profile.  Contains some basic configurable settings"""
     user = models.ForeignKey(User, unique=True)
@@ -175,10 +178,11 @@ class Profile(models.Model):
         if self.starred_groups.filter(pk=review_group.pk).count() > 0:
             self.starred_groups.remove(review_group)
 
-    def __unicode__(self):
+    def __str__(self):
         return self.user.username
 
 
+@python_2_unicode_compatible
 class LocalSiteProfile(models.Model):
     """User profile information specific to a LocalSite."""
     user = models.ForeignKey(User, related_name='site_profiles')
@@ -220,7 +224,7 @@ class LocalSiteProfile(models.Model):
         unique_together = (('user', 'local_site'),
                            ('profile', 'local_site'))
 
-    def __unicode__(self):
+    def __str__(self):
         return '%s (%s)' % (self.user.username, self.local_site)
 
 

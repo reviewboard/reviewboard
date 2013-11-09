@@ -9,6 +9,7 @@ from django.contrib.auth.models import AnonymousUser, User
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.core.urlresolvers import reverse
 from django.template import Context, Template
+from django.utils import six
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.testing.decorators import add_fixtures
 from kgb import SpyAgency
@@ -1523,7 +1524,7 @@ class FieldTests(TestCase):
         """Testing review requests with no summary"""
         from django.template.defaultfilters import lower
         review_request = ReviewRequest()
-        lower(unicode(review_request))
+        lower(review_request)
 
     @add_fixtures(['test_users'])
     def test_commit_id(self):

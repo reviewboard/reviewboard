@@ -2,6 +2,7 @@ import os
 
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
+from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
 
 from reviewboard.attachments.managers import FileAttachmentManager
@@ -10,6 +11,7 @@ from reviewboard.diffviewer.models import FileDiff
 from reviewboard.scmtools.models import Repository
 
 
+@python_2_unicode_compatible
 class FileAttachment(models.Model):
     """A file associated with a review request.
 
@@ -104,7 +106,7 @@ class FileAttachment(models.Model):
         return (self.repository_id is not None or
                 self.added_in_filediff_id is not None)
 
-    def __unicode__(self):
+    def __str__(self):
         return self.caption
 
     def get_review_request(self):

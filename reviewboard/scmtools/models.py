@@ -2,6 +2,7 @@ from django.contrib.auth.models import User
 from django.core.cache import cache
 from django.core.exceptions import ImproperlyConfigured
 from django.db import models
+from django.utils.encoding import python_2_unicode_compatible
 from django.utils.http import urlquote
 from django.utils.translation import ugettext_lazy as _
 from djblets.log import log_timed
@@ -16,6 +17,7 @@ from reviewboard.scmtools.signals import (checked_file_exists,
 from reviewboard.site.models import LocalSite
 
 
+@python_2_unicode_compatible
 class Tool(models.Model):
     name = models.CharField(max_length=32, unique=True)
     class_name = models.CharField(max_length=128, unique=True)
@@ -36,7 +38,7 @@ class Tool(models.Model):
     field_help_text = property(
         lambda x: x.scmtool_class.field_help_text)
 
-    def __unicode__(self):
+    def __str__(self):
         return self.name
 
     def get_scmtool_class(self):
@@ -65,6 +67,7 @@ class Tool(models.Model):
         ordering = ("name",)
 
 
+@python_2_unicode_compatible
 class Repository(models.Model):
     name = models.CharField(max_length=64)
     path = models.CharField(max_length=255)
@@ -293,7 +296,7 @@ class Repository(models.Model):
         """
         return user.has_perm('scmtools.change_repository', self.local_site)
 
-    def __unicode__(self):
+    def __str__(self):
         return self.name
 
     def _make_file_cache_key(self, path, revision, base_commit_id):

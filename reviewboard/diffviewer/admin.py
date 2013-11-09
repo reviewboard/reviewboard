@@ -48,7 +48,7 @@ class FileDiffInline(admin.StackedInline):
 
 
 class DiffSetAdmin(admin.ModelAdmin):
-    list_display = ('__unicode__', 'revision', 'timestamp')
+    list_display = ('__str__', 'revision', 'timestamp')
     raw_id_fields = ('history',)
     inlines = (FileDiffInline,)
     ordering = ('-timestamp',)
@@ -60,7 +60,7 @@ class DiffSetInline(admin.StackedInline):
 
 
 class DiffSetHistoryAdmin(admin.ModelAdmin):
-    list_display = ('__unicode__', 'timestamp')
+    list_display = ('__str__', 'timestamp')
     inlines = (DiffSetInline,)
     ordering = ('-timestamp',)
 

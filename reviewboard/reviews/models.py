@@ -4,7 +4,8 @@ import re
 from django.contrib.auth.models import User
 from django.db import models
 from django.db.models import Q
-from django.utils import timezone
+from django.utils import six, timezone
+from django.utils.encoding import python_2_unicode_compatible
 from django.utils.html import escape
 from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext_lazy as _
@@ -32,6 +33,7 @@ from reviewboard.site.models import LocalSite
 from reviewboard.site.urlresolvers import local_site_reverse
 
 
+@python_2_unicode_compatible
 class Group(models.Model):
     """
     A group of reviewers identified by a name. This is usually used to
@@ -83,7 +85,7 @@ class Group(models.Model):
         """
         return user.has_perm('reviews.change_group', self.local_site)
 
-    def __unicode__(self):
+    def __str__(self):
         return self.name
 
     def get_absolute_url(self):
@@ -101,6 +103,7 @@ class Group(models.Model):
         ordering = ['name']
 
 
+@python_2_unicode_compatible
 class DefaultReviewer(models.Model):
     """
     A default reviewer entry automatically adds default reviewers to a
@@ -152,10 +155,11 @@ class DefaultReviewer(models.Model):
         return user.has_perm('reviews.change_default_reviewer',
                              self.local_site)
 
-    def __unicode__(self):
+    def __str__(self):
         return self.name
 
 
+@python_2_unicode_compatible
 class Screenshot(models.Model):
     """
     A screenshot associated with a review request.
@@ -194,7 +198,7 @@ class Screenshot(models.Model):
                           escape(self.caption)))
     thumb.allow_tags = True
 
-    def __unicode__(self):
+    def __str__(self):
         return u"%s (%s)" % (self.caption, self.image)
 
     def get_review_request(self):
@@ -482,11 +486,11 @@ class BaseReviewRequestDetails(models.Model):
 
         return string
 
-    def __unicode__(self):
+    def __str__(self):
         if self.summary:
             return self.summary
         else:
-            return unicode(_('(no summary)'))
+            return six.text_type(_(u'(no summary)'))
 
     class Meta:
         abstract = True
@@ -1487,6 +1491,7 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
         ordering = ['-last_updated']
 
 
+@python_2_unicode_compatible
 class BaseComment(models.Model):
     OPEN           = "O"
     RESOLVED       = "R"
@@ -1616,7 +1621,7 @@ class BaseComment(models.Model):
         except Review.DoesNotExist:
             pass
 
-    def __unicode__(self):
+    def __str__(self):
         return self.text
 
     class Meta:
@@ -1740,6 +1745,7 @@ class FileAttachmentComment(BaseComment):
                                              escape(self.text))
 
 
+@python_2_unicode_compatible
 class Review(models.Model):
     """
     A review of a review request.
@@ -1846,7 +1852,7 @@ class Review(models.Model):
                  (self.user == user or user.is_superuser)) and
                 self.review_request.is_accessible_by(user))
 
-    def __unicode__(self):
+    def __str__(self):
         return u"Review of '%s'" % self.review_request
 
     def is_reply(self):

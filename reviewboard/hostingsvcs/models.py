@@ -1,4 +1,5 @@
 from django.db import models
+from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
 from djblets.util.fields import JSONField
 
@@ -7,6 +8,7 @@ from reviewboard.hostingsvcs.service import get_hosting_service
 from reviewboard.site.models import LocalSite
 
 
+@python_2_unicode_compatible
 class HostingServiceAccount(models.Model):
     service_name = models.CharField(max_length=128)
     hosting_url = models.CharField(max_length=255, blank=True, null=True)
@@ -21,7 +23,7 @@ class HostingServiceAccount(models.Model):
 
     objects = HostingServiceAccountManager()
 
-    def __unicode__(self):
+    def __str__(self):
         return self.username
 
     @property

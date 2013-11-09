@@ -6,6 +6,8 @@ import sys
 import urllib2
 import urlparse
 
+from django.utils.encoding import python_2_unicode_compatible
+
 import reviewboard.diffviewer.parser as diffparser
 from reviewboard.scmtools.errors import (AuthenticationError,
                                          FileNotFoundError,
@@ -27,6 +29,7 @@ class ChangeSet:
         self.pending = False
 
 
+@python_2_unicode_compatible
 class Revision(object):
     def __init__(self, name):
         self.name = name
