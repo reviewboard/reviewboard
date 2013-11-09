@@ -1,4 +1,4 @@
-from scmtools.core import FileNotFoundError, SCMTool, HEAD
+from reviewboard.scmtools.core import FileNotFoundError, SCMTool, HEAD
 
 
 class LocalFileTool(SCMTool):
