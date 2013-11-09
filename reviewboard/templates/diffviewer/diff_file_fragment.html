@@ -40,7 +40,7 @@
 {% enddefinevar %}
 
 {% definevar 'moved_fmt' %}
- <a href="#" class="%(class)s" line="%(line)s" target="%(target)s"><span>%(text)s</span></a>
+ <a href="#" class="%(class)s" data-line="%(line)s" target="%(target)s">%(text)s</a>
 {% enddefinevar %}
 
 {% if file.changed_chunk_indexes or file.binary or file.deleted or file.moved %}

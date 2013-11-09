@@ -295,6 +295,10 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
             this.selectAnchorByName(name, false);
         });
 
+        this.listenTo(diffReviewableView, 'moveFlagClicked', function(line) {
+            this.selectAnchor(this.$('a[target=' + line + ']'));
+        });
+
         /* We must rebuild this every time. */
         this._updateAnchors(diffReviewableView.$el);
 

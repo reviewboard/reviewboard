@@ -959,17 +959,10 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
      * and briefly highlight the line.
      */
     _onMovedLineClicked: function(e) {
-        var $node = $(e.target),
-            dest = $node.attr('line'),
-            $anchor;
-
         e.preventDefault();
         e.stopPropagation();
 
-        $anchor = $node.parents('table').find('td a[target=' + dest + ']');
-        $anchor.parents('tr').children().effect('highlight', {}, 2000);
-
-        RB.scrollToAnchor($anchor);
+        this.trigger('moveFlagClicked', $(e.target).data('line'));
     },
 
     /*
