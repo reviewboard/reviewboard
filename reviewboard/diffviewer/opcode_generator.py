@@ -1,6 +1,7 @@
 import re
 
-from django.utils import six
+from djblets.util.compat import six
+from djblets.util.compat.six.moves import range
 
 from reviewboard.diffviewer.processors import (filter_interdiff_opcodes,
                                                merge_adjacent_chunks)
@@ -68,7 +69,7 @@ class DiffOpcodeGenerator(object):
                 # replace groups are good for whitespace only changes.
                 assert (i2 - i1) == (j2 - j1)
 
-                for i, j in zip(xrange(i1, i2), xrange(j1, j2)):
+                for i, j in zip(range(i1, i2), range(j1, j2)):
                     if (self.WHITESPACE_RE.sub('', self.differ.a[i]) ==
                             self.WHITESPACE_RE.sub('', self.differ.b[j])):
                         # Both original lines are equal when removing all
@@ -92,7 +93,7 @@ class DiffOpcodeGenerator(object):
             # Later, we will loop through the keys and attempt to find insert
             # keys/groups that match remove keys/groups.
             if tag in ('delete', 'replace'):
-                for i in xrange(i1, i2):
+                for i in range(i1, i2):
                     line = self.differ.a[i].strip()
 
                     if line:

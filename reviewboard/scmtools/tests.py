@@ -2,7 +2,6 @@
 import os
 from errno import ECONNREFUSED
 from hashlib import md5
-from itertools import izip_longest as zip_longest
 from socket import error as SocketError
 from tempfile import mkdtemp
 
@@ -10,6 +9,7 @@ from django import forms
 from django.contrib.auth.models import AnonymousUser, User
 from django.core.cache import cache
 from django.test import TestCase as DjangoTestCase
+from djblets.util.compat.six.moves import zip_longest
 from djblets.util.filesystem import is_exe_in_path
 import nose
 

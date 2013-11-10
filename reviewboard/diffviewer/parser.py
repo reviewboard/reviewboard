@@ -1,6 +1,8 @@
 import logging
 import re
 
+from djblets.util.compat.six.moves import range
+
 from reviewboard.diffviewer.errors import DiffParserError
 
 
@@ -116,7 +118,7 @@ class DiffParser(object):
             # The header is part of the diff, so make sure it gets in the
             # diff content.
             file.data = ''.join([
-                self.lines[i] + '\n' for i in xrange(start, linenum)
+                self.lines[i] + '\n' for i in range(start, linenum)
             ])
 
         return linenum, file

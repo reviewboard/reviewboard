@@ -1,6 +1,7 @@
 from django.contrib.auth.models import User
-from django.utils import six
 from djblets.testing.decorators import add_fixtures
+from djblets.util.compat import six
+from djblets.util.compat.six.moves import range
 from djblets.util.decorators import simple_decorator
 from djblets.webapi.errors import PERMISSION_DENIED
 
@@ -286,7 +287,7 @@ class BasicGetListTestsMixin(BasicTestsMixin):
         items_rsp = rsp[self.resource.list_result_key]
         self.assertEqual(len(items), len(items_rsp))
 
-        for i in xrange(len(items)):
+        for i in range(len(items)):
             self.compare_item(items_rsp[i], items[i])
 
     @add_fixtures(['test_site'])
@@ -308,7 +309,7 @@ class BasicGetListTestsMixin(BasicTestsMixin):
         items_rsp = rsp[self.resource.list_result_key]
         self.assertEqual(len(items), len(items_rsp))
 
-        for i in xrange(len(items)):
+        for i in range(len(items)):
             self.compare_item(items_rsp[i], items[i])
 
     @add_fixtures(['test_site'])

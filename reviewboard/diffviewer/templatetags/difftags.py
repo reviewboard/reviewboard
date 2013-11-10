@@ -5,6 +5,7 @@ from django.template.loader import render_to_string
 from django.utils.html import escape
 from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext as _
+from djblets.util.compat.six.moves import range
 from djblets.util.decorators import basictag
 
 from reviewboard.diffviewer.chunk_generator import DiffChunkGenerator
@@ -44,7 +45,7 @@ def highlightregion(value, regions):
     i = j = r = 0
     region = regions[r]
 
-    for i in xrange(len(value)):
+    for i in range(len(value)):
         if value[i] == "<":
             in_tag = True
 

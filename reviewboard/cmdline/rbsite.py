@@ -15,7 +15,8 @@ import warnings
 from optparse import OptionGroup, OptionParser
 from random import choice
 
-from django.utils import six
+from djblets.util.compat import six
+from djblets.util.compat.six.moves import input
 
 from reviewboard import get_version_string
 
@@ -830,7 +831,7 @@ class ConsoleUI(UIToolkit):
             if password:
                 value = getpass.getpass(prompt)
             else:
-                value = raw_input(prompt)
+                value = input(prompt)
 
             if not value:
                 if default:
@@ -883,7 +884,7 @@ class ConsoleUI(UIToolkit):
         choice = None
 
         while not choice:
-            choice = raw_input(prompt)
+            choice = input(prompt)
 
             if choice not in valid_choices:
                 try:

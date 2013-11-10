@@ -6,6 +6,7 @@ from django.core import serializers
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 from django.db.models import get_apps
+from djblets.util.compat.six.moves import input
 
 
 class Command(BaseCommand):
@@ -22,7 +23,7 @@ class Command(BaseCommand):
         if not os.path.exists(filename):
             raise CommandError("%s does not exist." % filename)
 
-        confirm = raw_input("""
+        confirm = input("""
 This will wipe out your existing database prior to loading. It is highly
 recommended that you have a full SQL database dump in case things go wrong.
 

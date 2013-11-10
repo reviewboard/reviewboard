@@ -8,6 +8,7 @@ from django.utils.translation import ugettext as _, get_language
 from djblets.log import log_timed
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.util.misc import cache_memoize
+from djblets.util.compat.six.moves import range
 from pygments import highlight
 from pygments.lexers import get_lexer_for_filename
 from pygments.formatters import HtmlFormatter
@@ -239,8 +240,8 @@ class DiffChunkGenerator(object):
 
             self._cur_meta = meta
             lines = map(self._diff_line,
-                        xrange(line_num, line_num + num_lines),
-                        xrange(i1 + 1, i2 + 1), xrange(j1 + 1, j2 + 1),
+                        range(line_num, line_num + num_lines),
+                        range(i1 + 1, i2 + 1), range(j1 + 1, j2 + 1),
                         a[i1:i2], b[j1:j2], old_lines, new_lines)
             self._cur_meta = None
 
@@ -411,7 +412,7 @@ class DiffChunkGenerator(object):
         except IndexError:
             raise StopIteration
 
-        for i in xrange(last_index, len(possible_functions)):
+        for i in range(last_index, len(possible_functions)):
             linenum, line = possible_functions[i]
             linenum += 1
 
