@@ -2,11 +2,25 @@
 Review Board 2.0 Beta 1 Release Notes
 =====================================
 
-**UNDER DEVELOPMENT**
+**Release date:** November 11, 2013
 
 
 This release contains all bug fixes and features found in Review Board version
 :doc:`1.7.18 <1.7.18>`.
+
+
+Installation
+============
+
+To install this release, run the following::
+
+    $ sudo easy_install \
+        -f http://downloads.reviewboard.org/releases/ReviewBoard/2.0/ \
+        -U ReviewBoard
+
+We **do not** recommend upgrading a production server with this version of
+Review Board. It's best to install on a test server, in case there are any
+major problems.
 
 
 New User Features
@@ -512,4 +526,4 @@ Contributors
 * Yazan Medanat
 
 
-.. comment: vim ft=rst et
+.. comment: vim: ft=rst et
