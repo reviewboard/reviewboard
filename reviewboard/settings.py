@@ -282,6 +282,7 @@ MEDIA_URL = getattr(settings_local, 'MEDIA_URL', SITE_ROOT + MEDIA_DIRECTORY)
 
 # Base these on the user's SITE_ROOT.
 LOGIN_URL = SITE_ROOT + 'account/login/'
+LOGIN_REDIRECT_URL = SITE_ROOT + 'dashboard/'
 
 # Media compression
 PIPELINE_JS = {
