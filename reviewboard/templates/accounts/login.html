@@ -7,46 +7,47 @@
 
 {% block content %}
 {%  if not auth_backends.0.supports_registration %}
-{%  box "important" %}
+{%   box "important" %}
 <h1>{% trans "Log in with your standard username and password" %}</h1>
  <p>
  {% blocktrans %}There's no need to register a new account. Your standard username and password should work fine.{% endblocktrans %}
  </p>
-{%  endbox %}
-{% endif%}
+{%   endbox %}
+{%  endif %}
 
-{% box "loginform" %}
+{%  box "loginform" %}
 <form method="post" action=".">
  <h1 class="title">{% trans "Log In" %}</h1>
  <div class="main">
- {% if error %}
- {%  errorbox %}
- {{ error }}
- {%  enderrorbox %}
- {% endif %}
-{% block hidden_fields %}
+{%   if form.errors %}
+{%    errorbox %}
+  {{ form.non_field_errors }}
+{%    enderrorbox %}
+{%   endif %}
+{%   block hidden_fields %}
  <input type="hidden" name="next_page" value="{{next_page}}" />
-{% endblock %}
+ {% csrf_token %}
+{%   endblock %}
  <table>
   <tr>
    <td class="label"><label for="id_username">{% trans "Username" %}</label></td>
    <td class="field"><input type="text" name="username" id="id_username" tabindex="1" /></td>
-{% if auth_backends.0.supports_registration and siteconfig.settings.auth_enable_registration|default_if_none:1 %}
+{%   if auth_backends.0.supports_registration and siteconfig.settings.auth_enable_registration|default_if_none:1 %}
    <td class="hint">
     {% trans "Don't have an account?" %}
     <a href="{% url 'register' %}">{% trans "Create one now" %}</a>
    </td>
-{% endif %}
+{%   endif %}
   </tr>
   <tr>
    <td class="label"><label for="id_password">{% trans "Password" %}</label></td>
    <td class="field"><input type="password" name="password" id="id_password" tabindex="2" /></td>
-{% if auth_backends.0.supports_registration %}
+{%   if auth_backends.0.supports_registration %}
    <td class="hint">
     {% trans "Forgot your password?" %}
     <a href="{% url 'recover' %}">{% trans "Recover it" %}</a>
    </td>
-{% endif %}
+{%   endif %}
   </tr>
   <tr>
    <td>&nbsp;</td>
@@ -55,6 +56,6 @@
  </table>
  </div>
 </form>
-{% endbox %}
+{%  endbox %}
 
 {% endblock %}

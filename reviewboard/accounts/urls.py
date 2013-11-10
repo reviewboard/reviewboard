@@ -11,17 +11,14 @@ urlpatterns = patterns(
 )
 
 urlpatterns += patterns(
-    "djblets.auth.views",
-
-    url(r'^login/$',
-        'login',
-        {'next_page': settings.SITE_ROOT + 'dashboard/'},
-        name="login"),
-)
-
-urlpatterns += patterns(
     "django.contrib.auth.views",
 
+    url(r'^login/$', 'login',
+        {
+            'template_name': 'accounts/login.html',
+            'redirect_field_name': 'next_page',
+        },
+        name='login'),
     url(r'^logout/$', 'logout_then_login', name='logout'),
 
     url(r'^recover/$',
