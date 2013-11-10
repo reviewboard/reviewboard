@@ -577,7 +577,7 @@ class SVNTool(SCMTool):
     @classmethod
     def _create_subversion_dir(cls, config_dir):
         try:
-            os.mkdir(config_dir, 0700)
+            os.mkdir(config_dir, 0o700)
         except OSError:
             raise IOError(
                 _("Unable to create directory %(dirname)s, which is needed "

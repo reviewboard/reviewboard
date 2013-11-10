@@ -266,7 +266,7 @@ class FileSSHStorage(SSHStorage):
 
         if not os.path.exists(sshdir):
             try:
-                os.makedirs(sshdir, 0700)
+                os.makedirs(sshdir, 0o700)
             except OSError:
                 raise MakeSSHDirError(sshdir)
 

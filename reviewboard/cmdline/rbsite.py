@@ -189,7 +189,7 @@ class Site(object):
         self.mkdir(os.path.join(self.install_dir, "conf"))
 
         self.mkdir(os.path.join(self.install_dir, "tmp"))
-        os.chmod(os.path.join(self.install_dir, "tmp"), 0777)
+        os.chmod(os.path.join(self.install_dir, "tmp"), 0o777)
 
         self.mkdir(os.path.join(self.install_dir, "data"))
 
@@ -298,12 +298,12 @@ class Site(object):
             fcgi_filename = os.path.join(htdocs_dir, "reviewboard.fcgi")
             self.process_template("cmdline/conf/reviewboard.fcgi.in",
                                   fcgi_filename)
-            os.chmod(fcgi_filename, 0755)
+            os.chmod(fcgi_filename, 0o755)
         elif enable_wsgi:
             wsgi_filename = os.path.join(htdocs_dir, "reviewboard.wsgi")
             self.process_template("cmdline/conf/reviewboard.wsgi.in",
                                   wsgi_filename)
-            os.chmod(wsgi_filename, 0755)
+            os.chmod(wsgi_filename, 0o755)
 
         # Generate a secret key based on Django's code.
         secret_key = ''.join([
@@ -673,7 +673,7 @@ class SiteList(object):
             # permissions for user but read and execute
             # only for others.
             try:
-                os.makedirs(os.path.dirname(self.path), 0755)
+                os.makedirs(os.path.dirname(self.path), 0o755)
             except:
                 # We shouldn't consider this an abort-worthy error
                 # We'll warn the user and just complete setup

@@ -51,7 +51,7 @@ class FileSSHStorageTests(SSHTestCase):
     def test_get_ssh_dir_with_ssh(self):
         """Testing FileSSHStorage.get_ssh_dir with ~/ssh"""
         sshdir = os.path.join(self.tempdir, 'ssh')
-        os.mkdir(sshdir, 0700)
+        os.mkdir(sshdir, 0o700)
 
         storage = FileSSHStorage()
         self.assertEqual(storage.get_ssh_dir(), sshdir)
@@ -66,7 +66,7 @@ class FileSSHStorageTests(SSHTestCase):
     def test_get_ssh_dir_with_ssh_and_localsite(self):
         """Testing FileSSHStorage.get_ssh_dir with ~/ssh and localsite"""
         sshdir = os.path.join(self.tempdir, 'ssh')
-        os.mkdir(sshdir, 0700)
+        os.mkdir(sshdir, 0o700)
         sshdir = os.path.join(sshdir, 'site-1')
 
         storage = FileSSHStorage(namespace='site-1')
