@@ -128,12 +128,3 @@ urlpatterns += patterns(
 )
 
 urlpatterns += localsite_urlpatterns
-
-
-# django.contrib
-urlpatterns += patterns(
-    'django.contrib',
-
-    url(r'^account/logout/$', 'auth.views.logout',
-        {'next_page': settings.LOGIN_URL}, name="logout")
-)

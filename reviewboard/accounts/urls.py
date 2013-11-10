@@ -22,6 +22,8 @@ urlpatterns += patterns(
 urlpatterns += patterns(
     "django.contrib.auth.views",
 
+    url(r'^logout/$', 'logout_then_login', name='logout'),
+
     url(r'^recover/$',
         'password_reset',
         {
