@@ -16,8 +16,7 @@ def check_login_required(view_func):
         siteconfig = SiteConfiguration.objects.get_current()
 
         if siteconfig.get("auth_require_sitewide_login"):
-            return login_required(view_func, redirect_field_name='next_page')(
-                *args, **kwargs)
+            return login_required(view_func)(*args, **kwargs)
         else:
             return view_func(*args, **kwargs)
 

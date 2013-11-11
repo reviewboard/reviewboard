@@ -37,7 +37,7 @@ def account_register(request, next_url='dashboard'):
     return HttpResponseRedirect(reverse("login"))
 
 
-@login_required(redirect_field_name='next_page')
+@login_required
 def user_preferences(request, template_name='accounts/prefs.html'):
     # TODO: We should just get rid of this redirect and have it show the
     # settings again with a "saved" message.

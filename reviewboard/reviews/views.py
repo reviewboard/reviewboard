@@ -223,7 +223,7 @@ fields_changed_name_map = {
 ##### View functions
 #####
 
-@login_required(redirect_field_name='next_page')
+@login_required
 def new_review_request(request,
                        local_site_name=None,
                        template_name='reviews/new_review_request.html'):
@@ -783,7 +783,7 @@ def group_list(request,
     return grid.render_to_response(template_name)
 
 
-@login_required(redirect_field_name='next_page')
+@login_required
 @valid_prefs_required
 def dashboard(request,
               template_name='reviews/dashboard.html',
