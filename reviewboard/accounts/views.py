@@ -1,10 +1,10 @@
 from django.conf import settings
 from django.contrib.auth import REDIRECT_FIELD_NAME
+from django.contrib.auth.decorators import login_required
 from django.core.urlresolvers import reverse
 from django.http import HttpResponseRedirect
 from django.shortcuts import render_to_response
 from django.template.context import RequestContext
-from djblets.auth.util import login_required
 from djblets.auth.views import register
 from djblets.siteconfig.models import SiteConfiguration
 
@@ -37,9 +37,10 @@ def account_register(request, next_url='dashboard'):
     return HttpResponseRedirect(reverse("login"))
 
 
-@login_required
+@login_required(redirect_field_name='next_page')
 def user_preferences(request, template_name='accounts/prefs.html'):
-    # TODO: Figure out the right place to redirect when using a LocalSite.
+    # TODO: We should just get rid of this redirect and have it show the
+    # settings again with a "saved" message.
     redirect_to = request.REQUEST.get(
         REDIRECT_FIELD_NAME, request.REQUEST.get('redirect_to', None))
 

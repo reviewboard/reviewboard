@@ -3,6 +3,7 @@ import logging
 import time
 
 from django.conf import settings
+from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.contrib.sites.models import Site
 from django.core.exceptions import MultipleObjectsReturned, ObjectDoesNotExist
@@ -21,8 +22,6 @@ from django.utils.safestring import mark_safe
 from django.utils.timezone import utc
 from django.utils.translation import ugettext as _
 from django.views.generic.list import ListView
-
-from djblets.auth.util import login_required
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.util.dates import get_latest_timestamp
 from djblets.util.decorators import augment_method_from
@@ -224,7 +223,7 @@ fields_changed_name_map = {
 ##### View functions
 #####
 
-@login_required
+@login_required(redirect_field_name='next_page')
 def new_review_request(request,
                        local_site_name=None,
                        template_name='reviews/new_review_request.html'):
@@ -784,7 +783,7 @@ def group_list(request,
     return grid.render_to_response(template_name)
 
 
-@login_required
+@login_required(redirect_field_name='next_page')
 @valid_prefs_required
 def dashboard(request,
               template_name='reviews/dashboard.html',
