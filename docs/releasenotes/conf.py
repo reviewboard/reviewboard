@@ -53,7 +53,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'Release Notes'
-copyright = u'2009-2011, Christian Hammond'
+copyright = u'2009-2013 Beanbag, Inc.'
 bugtracker_url = 'http://www.reviewboard.org/bugs/%s'
 
 # The version info for the project you're documenting, acts as replacement for
@@ -150,7 +150,7 @@ html_static_path = ['_static']
 #html_use_modindex = True
 
 # If false, no index is generated.
-#html_use_index = True
+html_use_index = False
 
 # If true, the index is split into individual pages for each letter.
 #html_split_index = False
