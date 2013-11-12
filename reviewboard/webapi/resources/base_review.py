@@ -12,11 +12,12 @@ from reviewboard.reviews.markdown_utils import markdown_set_field_escaped
 from reviewboard.reviews.models import Review
 from reviewboard.webapi.base import WebAPIResource
 from reviewboard.webapi.decorators import webapi_check_local_site
+from reviewboard.webapi.mixins import MarkdownFieldsMixin
 from reviewboard.webapi.resources import resources
 from reviewboard.webapi.resources.user import UserResource
 
 
-class BaseReviewResource(WebAPIResource):
+class BaseReviewResource(MarkdownFieldsMixin, WebAPIResource):
     """Base class for review resources.
 
     Provides common fields and functionality for all review resources.
@@ -270,16 +271,8 @@ class BaseReviewResource(WebAPIResource):
 
                 setattr(review, field, value)
 
-        if 'rich_text' in kwargs:
-            rich_text = kwargs['rich_text']
-
-            if rich_text != old_rich_text:
-                # rich_text has been changed, but new comment text has not.
-                # Escape or unescape the comment text as necessary.
-                for text_field in ('body_top', 'body_bottom'):
-                    if text_field not in kwargs:
-                        markdown_set_field_escaped(review, text_field,
-                                                   rich_text)
+        self.normalize_markdown_fields(review, ['body_top', 'body_bottom'],
+                                       old_rich_text, **kwargs)
 
         review.save()
 

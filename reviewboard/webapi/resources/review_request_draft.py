@@ -17,10 +17,11 @@ from reviewboard.reviews.models import Group, ReviewRequest, ReviewRequestDraft
 from reviewboard.webapi.base import WebAPIResource
 from reviewboard.webapi.decorators import webapi_check_local_site
 from reviewboard.webapi.encoder import status_to_string
+from reviewboard.webapi.mixins import MarkdownFieldsMixin
 from reviewboard.webapi.resources import resources
 
 
-class ReviewRequestDraftResource(WebAPIResource):
+class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
     """An editable draft of a review request.
 
     This resource is used to actually modify a review request. Anything made
@@ -365,30 +366,22 @@ class ReviewRequestDraftResource(WebAPIResource):
                 elif field_modified_objects:
                     modified_objects += field_modified_objects
 
-        if 'rich_text' in kwargs:
-            rich_text = kwargs['rich_text']
+        if draft.changedesc_id:
+            changedesc = draft.changedesc
+            modified_objects.append(draft.changedesc)
 
-            # If the caller has changed the rich_text setting, we will need to
-            # update any affected fields we already have stored that weren't
-            # changed in this request by escaping or unescaping their
-            # contents.
-            if rich_text != old_rich_text:
-                for text_field in ('description', 'testing_done'):
-                    if text_field not in kwargs:
-                        markdown_set_field_escaped(draft, text_field,
-                                                   rich_text)
+            if 'rich_text' in kwargs:
+                changedesc.rich_text = kwargs['rich_text']
 
-            if draft.changedesc_id and rich_text != old_changedesc_rich_text:
-                changedesc = draft.changedesc
-                changedesc.rich_text = rich_text
+            self.normalize_markdown_fields(changedesc, ['changedescription'],
+                                           old_changedesc_rich_text,
+                                           model_field_map={
+                                               'changedescription': 'text',
+                                           },
+                                           **kwargs)
 
-                if 'changedescription' not in kwargs:
-                    # The change description's rich_text was not necessarily
-                    # in sync with the draft's, so we're handling all this
-                    # separately.
-                    markdown_set_field_escaped(changedesc, 'text', rich_text)
-
-                modified_objects.append(draft.changedesc)
+        self.normalize_markdown_fields(draft, ['description', 'testing_done'],
+                                       old_rich_text, **kwargs)
 
         if always_save or not invalid_fields:
             for obj in set(modified_objects):

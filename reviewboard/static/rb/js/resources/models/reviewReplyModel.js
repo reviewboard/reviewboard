@@ -26,7 +26,8 @@ RB.ReviewReply = RB.BaseResource.extend({
         return {
             'public': this.get('public'),
             'body_top': this.get('bodyTop'),
-            'body_bottom': this.get('bodyBottom')
+            'body_bottom': this.get('bodyBottom'),
+            'rich_text': this.get('richText')
         };
     },
 
