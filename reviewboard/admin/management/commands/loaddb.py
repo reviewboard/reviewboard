@@ -44,55 +44,52 @@ Type 'yes' to continue, or 'no' to cancel: """)
         transaction_setup = False
 
         try:
-            f = open(filename, 'r')
-            line = f.readline()
+            with open(filename, 'r') as f:
+                line = f.readline()
 
-            m = re.match("^# dbdump v(\d+) - (\d+) objects$", line)
-            if not m:
-                raise CommandError("Unknown dump format\n")
+                m = re.match("^# dbdump v(\d+) - (\d+) objects$", line)
+                if not m:
+                    raise CommandError("Unknown dump format\n")
 
-            version = int(m.group(1))
-            totalobjs = int(m.group(2))
-            i = 0
-            prev_pct = -1
+                version = int(m.group(1))
+                totalobjs = int(m.group(2))
+                i = 0
+                prev_pct = -1
 
-            if version != 1:
-                raise CommandError("Unknown dump version\n")
+                if version != 1:
+                    raise CommandError("Unknown dump version\n")
 
-            transaction.commit_unless_managed()
-            transaction.enter_transaction_management()
-            transaction.managed(True)
-            transaction_setup = True
+                transaction.commit_unless_managed()
+                transaction.enter_transaction_management()
+                transaction.managed(True)
+                transaction_setup = True
 
-            self.stdout.write("Importing new style dump format (v%s)" %
-                              version)
-            for line in f.xreadlines():
-                if line[0] == "{":
-                    for obj in serializers.deserialize("json",
-                                                       "[%s]" % line):
-                        try:
-                            obj.save()
-                        except Exception as e:
-                            self.stderr.write("Error: %s\n" % e)
-                            self.stderr.write("Line %s: '%s'" % (i, line))
-                elif line[0] != "#":
-                    self.stderr.write("Junk data on line %s" % i)
+                self.stdout.write("Importing new style dump format (v%s)" %
+                                  version)
+                for line in f:
+                    if line[0] == "{":
+                        for obj in serializers.deserialize("json",
+                                                           "[%s]" % line):
+                            try:
+                                obj.save()
+                            except Exception as e:
+                                self.stderr.write("Error: %s\n" % e)
+                                self.stderr.write("Line %s: '%s'" % (i, line))
+                    elif line[0] != "#":
+                        self.stderr.write("Junk data on line %s" % i)
 
-                db.reset_queries()
+                    db.reset_queries()
 
-                i += 1
-                pct = (i * 100 / totalobjs)
-                if pct != prev_pct:
-                    self.stdout.write("  [%s%%]\r" % pct)
-                    self.stdout.flush()
-                    prev_pct = pct
-
-            f.close()
+                    i += 1
+                    pct = (i * 100 / totalobjs)
+                    if pct != prev_pct:
+                        self.stdout.write("  [%s%%]\r" % pct)
+                        self.stdout.flush()
+                        prev_pct = pct
 
             transaction.commit()
             transaction.leave_transaction_management()
         except Exception as e:
-            f.close()
             raise CommandError("Problem installing '%s': %s\n" %
                                (filename, str(e)))
 

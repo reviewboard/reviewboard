@@ -145,15 +145,12 @@ class FileSSHStorage(SSHStorage):
 
         if os.path.exists(filename):
             try:
-                fp = open(filename, 'r')
+                with open(filename, 'r') as f:
+                    for line in f:
+                        line = line.strip()
 
-                for line in fp.xreadlines():
-                    line = line.strip()
-
-                    if line and line[0] != '#':
-                        lines.append(line)
-
-                fp.close()
+                        if line and line[0] != '#':
+                            lines.append(line)
             except IOError as e:
                 logging.error('Unable to read host keys file %s: %s'
                               % (filename, e))
