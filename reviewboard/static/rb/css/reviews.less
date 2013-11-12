@@ -1587,6 +1587,10 @@
     ul, ol {
       margin-left: 2ch;
     }
+
+    &:last-child li:last-child p:last-child {
+      margin-bottom: 0;
+    }
   }
 
   ol {
@@ -1611,6 +1615,14 @@
 
   li {
     line-height: @textarea-line-height;
+
+    li:first-child {
+      margin-top: @textarea-line-height;
+    }
+
+    p {
+      margin-bottom: @textarea-line-height;
+    }
   }
 
   table {
@@ -1644,6 +1656,11 @@
 
         li {
           list-style: none;
+          margin: 0;
+
+          p {
+            margin: 0;
+          }
         }
       }
     }
