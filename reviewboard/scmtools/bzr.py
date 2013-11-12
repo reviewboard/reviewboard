@@ -118,9 +118,13 @@ class BZRTool(SCMTool):
                 revtree = revisionspec.RevisionSpec.from_string(revspec).as_tree(branch)
                 fileid = revtree.path2id(relpath)
                 if fileid:
-                    contents = revtree.get_file_text(fileid)
+                    # XXX: get_file_text returns str, which isn't Python 3
+                    # safe. According to the internet they have no immediate
+                    # plans to port to 3, so we may find it hard to support
+                    # that combination.
+                    contents = bytes(revtree.get_file_text(fileid))
                 else:
-                    contents = ""
+                    contents = b''
             except BzrError as e:
                 raise SCMError(e)
         finally:

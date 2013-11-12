@@ -17,10 +17,8 @@ class LocalFileTool(SCMTool):
             raise FileNotFoundError(path, revision)
 
         try:
-            fp = open(self.repopath + '/' + path, 'r')
-            data = fp.read()
-            fp.close()
-            return data
+            with open(self.repopath + '/' + path, 'rb') as f:
+                return f.read()
         except IOError as e:
             raise FileNotFoundError(path, revision, detail=str(e))
 

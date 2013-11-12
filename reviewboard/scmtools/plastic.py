@@ -91,11 +91,11 @@ class PlasticTool(SCMTool):
         logging.debug('Plastic: get_file %s revision %s' % (path, revision))
 
         if revision == PRE_CREATION:
-            return ''
+            return b''
 
         # Check for new files
         if revision == self.UNKNOWN_REV:
-            return ''
+            return b''
 
         return self.client.get_file(path, revision)
 
@@ -236,7 +236,7 @@ class PlasticClient(object):
             ['cm', 'cat', revision + '@' + repo, '--file=' + tmpfile],
             stderr=subprocess.PIPE, stdout=subprocess.PIPE,
             close_fds=(os.name != 'nt'))
-        errmsg = p.stderr.read()
+        errmsg = unicode(p.stderr.read())
         failure = p.wait()
 
         if failure:
@@ -245,7 +245,7 @@ class PlasticClient(object):
 
             raise SCMError(errmsg)
 
-        readtmp = open(tmpfile)
+        readtmp = open(tmpfile, 'rb')
         contents = readtmp.read()
         readtmp.close()
         os.unlink(tmpfile)

@@ -26,7 +26,7 @@ class MonotoneTool(SCMTool):
     def get_file(self, path, revision=None):
         # revision is actually the file id here...
         if not revision:
-            return ""
+            return b""
 
         return self.client.get_file(revision)
 
@@ -91,13 +91,13 @@ class MonotoneClient:
                              close_fds=(os.name != 'nt'))
 
         out = p.stdout.read()
-        err = p.stderr.read()
+        err = unicode(p.stderr.read())
         failure = p.wait()
 
         if not failure:
             return out
 
-        if "mtn: misuse: no file" in err:
+        if u"mtn: misuse: no file" in err:
             raise FileNotFoundError(fileid)
         else:
             raise SCMError(err)

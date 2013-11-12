@@ -234,7 +234,7 @@ class BeanstalkTests(ServiceTests):
                 'https://mydomain.beanstalkapp.com/api/repositories/'
                 'myrepo/blob?id=%s&name=path'
                 % expected_revision)
-            return 'My data', {}
+            return b'My data', {}
 
         account = self._get_hosting_account()
         service = account.service
@@ -252,6 +252,7 @@ class BeanstalkTests(ServiceTests):
         result = service.get_file(repository, '/path', revision,
                                   base_commit_id)
         self.assertTrue(service._http_get.called)
+        self.assertTrue(isinstance(result, bytes))
         self.assertEqual(result, 'My data')
 
     def _test_get_file_exists(self, tool_name, revision, base_commit_id,

@@ -439,11 +439,11 @@ class GitClient(SCMClient):
         p = self._run_git(['--git-dir=%s' % self.git_dir, 'cat-file',
                            option, commit])
         contents = p.stdout.read()
-        errmsg = p.stderr.read()
+        errmsg = unicode(p.stderr.read())
         failure = p.wait()
 
         if failure:
-            if errmsg.startswith("fatal: Not a valid object name"):
+            if errmsg.startswith(u"fatal: Not a valid object name"):
                 raise FileNotFoundError(commit)
             else:
                 raise SCMError(errmsg)

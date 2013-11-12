@@ -174,7 +174,7 @@ class RepositoryTests(DjangoTestCase):
         """Testing Repository.get_file caches result"""
         def get_file(self, path, revision):
             num_calls['get_file'] += 1
-            return 'file data'
+            return b'file data'
 
         num_calls = {
             'get_file': 0,
@@ -411,11 +411,13 @@ class CVSTests(SCMTestCase):
     def test_get_file(self):
         """Testing CVSTool.get_file"""
         expected = "test content\n"
-        file = 'test/testfile'
+        file = b'test/testfile'
         rev = Revision('1.1')
         badrev = Revision('2.1')
 
-        self.assertEqual(self.tool.get_file(file, rev), expected)
+        value = self.tool.get_file(file, rev)
+        self.assertTrue(isinstance(value, bytes))
+        self.assertEqual(value, expected)
         self.assertEqual(self.tool.get_file(file + ",v", rev), expected)
         self.assertEqual(self.tool.get_file(self.tool.repopath + '/' +
                                             file + ",v", rev), expected)
@@ -621,18 +623,20 @@ class SubversionTests(SCMTestCase):
 
     def test_get_file(self):
         """Testing SVNTool.get_file"""
-        expected = ('include ../tools/Makefile.base-vars\n'
-                    'NAME = misc-docs\n'
-                    'OUTNAME = svn-misc-docs\n'
-                    'INSTALL_DIR = $(DESTDIR)/usr/share/doc/subversion\n'
-                    'include ../tools/Makefile.base-rules\n')
+        expected = (b'include ../tools/Makefile.base-vars\n'
+                    b'NAME = misc-docs\n'
+                    b'OUTNAME = svn-misc-docs\n'
+                    b'INSTALL_DIR = $(DESTDIR)/usr/share/doc/subversion\n'
+                    b'include ../tools/Makefile.base-rules\n')
 
         # There are 3 versions of this test in order to get 100% coverage of
         # the svn module.
         rev = Revision('2')
         file = 'trunk/doc/misc-docs/Makefile'
 
-        self.assertEqual(self.tool.get_file(file, rev), expected)
+        value = self.tool.get_file(file, rev)
+        self.assertTrue(isinstance(value, bytes))
+        self.assertEqual(value, expected)
 
         self.assertEqual(self.tool.get_file('/' + file, rev), expected)
 
@@ -948,7 +952,7 @@ class PerforceTests(SCMTestCase):
     def test_get_file(self):
         """Testing PerforceTool.get_file"""
         file = self.tool.get_file('//depot/foo', PRE_CREATION)
-        self.assertEqual(file, '')
+        self.assertEqual(file, b'')
 
         file = self.tool.get_file('//public/perforce/api/python/P4Client/p4.py', 1)
         self.assertEqual(md5(file).hexdigest(),
@@ -1368,7 +1372,9 @@ class MercurialTests(SCMTestCase):
         rev = Revision('661e5dd3c493')
         file = 'doc/readme'
 
-        self.assertEqual(self.tool.get_file(file, rev), 'Hello\n\ngoodbye\n')
+        value = self.tool.get_file(file, rev)
+        self.assertTrue(isinstance(value, bytes))
+        self.assertEqual(value, b'Hello\n\ngoodbye\n')
 
         self.assertTrue(self.tool.file_exists('doc/readme'))
         self.assertTrue(not self.tool.file_exists('doc/readme2'))
@@ -1393,7 +1399,7 @@ class MercurialTests(SCMTestCase):
 
     @online_only
     def test_https_repo(self):
-        """Testing HgTool.get_file with an HTTPS-based repository"""
+        """Testing HgTool.file_exists with an HTTPS-based repository"""
         repo = Repository(name='Test HG2',
                           path='https://bitbucket.org/pypy/pypy',
                           tool=Tool.objects.get(name='Mercurial'))
@@ -1821,11 +1827,13 @@ class GitTests(SCMTestCase):
     def test_get_file(self):
         """Testing GitTool.get_file"""
 
-        self.assertEqual(self.tool.get_file("readme", PRE_CREATION), '')
-        self.assertEqual(self.tool.get_file("readme", "e965047"), 'Hello\n')
-        self.assertEqual(self.tool.get_file("readme", "d6613f5"), 'Hello there\n')
+        self.assertEqual(self.tool.get_file("readme", PRE_CREATION), b'')
+        self.assertTrue(
+            isinstance(self.tool.get_file("readme", "e965047"), bytes))
+        self.assertEqual(self.tool.get_file("readme", "e965047"), b'Hello\n')
+        self.assertEqual(self.tool.get_file("readme", "d6613f5"), b'Hello there\n')
 
-        self.assertEqual(self.tool.get_file("readme"), 'Hello there\n')
+        self.assertEqual(self.tool.get_file("readme"), b'Hello there\n')
 
         self.assertRaises(SCMError, lambda: self.tool.get_file(""))
 

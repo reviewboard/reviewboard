@@ -454,10 +454,9 @@ class DiffParserTest(TestCase):
         self.assertEqual(files[0].delete_count, 4)
 
     def _get_file(self, *relative):
-        f = open(os.path.join(*tuple([self.PREFIX] + list(relative))))
-        data = f.read()
-        f.close()
-        return data
+        path = os.path.join(*tuple([self.PREFIX] + list(relative)))
+        with open(path, 'rb') as f:
+            return f.read()
 
     def _test_move_detection(self, a, b, expected_i_moves, expected_r_moves):
         differ = MyersDiffer(a, b)

@@ -284,7 +284,7 @@ class CVSClient(object):
                            '-r', str(revision), '-p', filename],
                           self.local_site_name)
         contents = p.stdout.read()
-        errmsg = p.stderr.read()
+        errmsg = unicode(p.stderr.read())
         failure = p.wait()
 
         # Unfortunately, CVS is not consistent about exiting non-zero on
@@ -304,9 +304,9 @@ class CVSClient(object):
 
         # So, if nothing is in errmsg, or errmsg has a specific recognized
         # message, call it FileNotFound.
-        if not errmsg or \
-           errmsg.startswith('cvs checkout: cannot find module') or \
-           errmsg.startswith('cvs checkout: could not read RCS file'):
+        if (not errmsg or
+                errmsg.startswith(u'cvs checkout: cannot find module') or
+                errmsg.startswith(u'cvs checkout: could not read RCS file')):
             self.cleanup()
             raise FileNotFoundError(filename, revision)
 
@@ -315,8 +315,8 @@ class CVSClient(object):
         #
         # If the .cvspass file doesn't exist, CVS will return an error message
         # stating this. This is safe to ignore.
-        if (failure and not errmsg.startswith('==========')) and \
-           not ".cvspass does not exist - creating new file" in errmsg:
+        if ((failure and not errmsg.startswith(u'==========')) and
+                not u'.cvspass does not exist - creating new file' in errmsg):
             self.cleanup()
             raise SCMError(errmsg)
 
