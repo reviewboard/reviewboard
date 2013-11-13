@@ -7,7 +7,7 @@ from django.contrib.staticfiles.templatetags.staticfiles import static
 from django.utils.html import escape
 from django.utils.encoding import smart_str, force_unicode
 from django.utils.safestring import mark_safe
-from djblets.util.misc import cache_memoize
+from djblets.cache.backend import cache_memoize
 from djblets.util.templatetags.djblets_images import thumbnail
 from pipeline.storage import default_storage
 import docutils.core

@@ -70,8 +70,8 @@ def initialize():
 
     from django.conf import settings
     from django.db import DatabaseError
-    from djblets.util.misc import generate_ajax_serial
     from djblets import log
+    from djblets.cache.serials import generate_ajax_serial
 
     from reviewboard import signals
     from reviewboard.extensions.base import get_extension_manager

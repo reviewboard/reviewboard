@@ -5,8 +5,8 @@ import os
 from django.db import models
 from django.utils.encoding import smart_unicode
 from django.utils.translation import ugettext as _
+from djblets.db.fields import Base64DecodedValue
 from djblets.siteconfig.models import SiteConfiguration
-from djblets.util.fields import Base64DecodedValue
 
 from reviewboard.diffviewer.differ import DEFAULT_DIFF_COMPAT_VERSION
 from reviewboard.diffviewer.errors import DiffTooBigError, EmptyDiffError

@@ -7,9 +7,9 @@ from django.db import models
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.http import urlquote
 from django.utils.translation import ugettext_lazy as _
+from djblets.cache.backend import cache_memoize, make_cache_key
+from djblets.db.fields import JSONField
 from djblets.log import log_timed
-from djblets.util.fields import JSONField
-from djblets.util.misc import cache_memoize, make_cache_key
 
 from reviewboard.hostingsvcs.models import HostingServiceAccount
 from reviewboard.scmtools.managers import RepositoryManager, ToolManager

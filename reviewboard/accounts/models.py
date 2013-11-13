@@ -5,9 +5,9 @@ from django.db import models
 from django.utils import timezone
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
-from djblets.util.db import ConcurrencyManager
-from djblets.util.fields import CounterField, JSONField
-from djblets.util.forms import TIMEZONE_CHOICES
+from djblets.db.fields import CounterField, JSONField
+from djblets.db.managers import ConcurrencyManager
+from djblets.forms.fields import TIMEZONE_CHOICES
 
 from reviewboard.accounts.managers import ProfileManager
 from reviewboard.reviews.models import Group, ReviewRequest

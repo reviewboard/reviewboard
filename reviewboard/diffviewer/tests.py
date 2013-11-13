@@ -5,9 +5,9 @@ import unittest
 
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.http import HttpResponse
+from djblets.cache.backend import cache_memoize
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.util.compat.six.moves import zip_longest
-from djblets.util.misc import cache_memoize
 from kgb import SpyAgency
 import nose
 

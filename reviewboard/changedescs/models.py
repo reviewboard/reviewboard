@@ -4,7 +4,7 @@ from django.db import models
 from django.utils import six, timezone
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
-from djblets.util.fields import JSONField
+from djblets.db.fields import JSONField
 
 
 @python_2_unicode_compatible

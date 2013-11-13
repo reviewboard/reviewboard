@@ -3,8 +3,8 @@ from __future__ import unicode_literals
 import logging
 from xml.dom.minidom import parseString
 
+from djblets.cache.backend import cache_memoize
 from djblets.util.compat.six.moves import cStringIO as StringIO
-from djblets.util.misc import cache_memoize
 import markdown
 
 from reviewboard.reviews.ui.base import FileAttachmentReviewUI

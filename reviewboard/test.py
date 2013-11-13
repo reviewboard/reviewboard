@@ -50,7 +50,7 @@ except ImportError:
         pass
 
 from django.conf import settings
-from djblets.util.misc import generate_media_serial
+from djblets.cache.serials import generate_media_serial
 
 
 class RBTestRunner(DjangoTestSuiteRunner):

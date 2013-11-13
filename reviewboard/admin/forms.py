@@ -36,12 +36,12 @@ from django.conf import settings
 from django.core.cache import DEFAULT_CACHE_ALIAS
 from django.core.exceptions import ValidationError
 from django.utils.translation import ugettext as _
+from djblets.cache.backend_compat import normalize_cache_backend
+from djblets.forms.fields import TimeZoneField
 from djblets.log import restart_logging
 from djblets.siteconfig.forms import SiteSettingsForm
-from djblets.util.cache import normalize_cache_backend
 from djblets.util.compat import six
 from djblets.util.compat.six.moves.urllib.parse import urlparse
-from djblets.util.forms import TimeZoneField
 
 from reviewboard.accounts.forms import LegacyAuthModuleSettingsForm
 from reviewboard.admin.checks import (get_can_enable_search,

@@ -24,12 +24,12 @@ from django.utils.safestring import mark_safe
 from django.utils.timezone import utc
 from django.utils.translation import ugettext as _
 from django.views.generic.list import ListView
+from djblets.db.query import get_object_or_none
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.util.dates import get_latest_timestamp
 from djblets.util.decorators import augment_method_from
 from djblets.util.http import (set_last_modified, get_modified_since,
                                set_etag, etag_if_none_match)
-from djblets.util.misc import get_object_or_none
 
 from reviewboard.accounts.decorators import (check_login_required,
                                              valid_prefs_required)

@@ -100,11 +100,11 @@ TEMPLATE_CONTEXT_PROCESSORS = (
     'django.core.context_processors.media',
     'django.core.context_processors.request',
     'django.core.context_processors.static',
+    'djblets.cache.context_processors.ajax_serial',
+    'djblets.cache.context_processors.media_serial',
     'djblets.siteconfig.context_processors.siteconfig',
-    'djblets.util.context_processors.settingsVars',
-    'djblets.util.context_processors.siteRoot',
-    'djblets.util.context_processors.ajaxSerial',
-    'djblets.util.context_processors.mediaSerial',
+    'djblets.siteconfig.context_processors.settings_vars',
+    'djblets.urls.context_processors.site_root',
     'reviewboard.accounts.context_processors.auth_backends',
     'reviewboard.accounts.context_processors.profile',
     'reviewboard.admin.context_processors.version',
@@ -112,7 +112,7 @@ TEMPLATE_CONTEXT_PROCESSORS = (
 )
 
 SITE_ROOT_URLCONF = 'reviewboard.urls'
-ROOT_URLCONF = 'djblets.util.rooturl'
+ROOT_URLCONF = 'djblets.urls.root'
 
 REVIEWBOARD_ROOT = os.path.abspath(os.path.split(__file__)[0])
 

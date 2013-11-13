@@ -1,8 +1,8 @@
 from __future__ import unicode_literals
 
+from djblets.db.query import get_object_or_none
 from djblets.testing.decorators import add_fixtures
 from djblets.util.compat import six
-from djblets.util.misc import get_object_or_none
 from djblets.webapi.errors import PERMISSION_DENIED
 
 from reviewboard.reviews.models import Group, ReviewRequest

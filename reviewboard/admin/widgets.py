@@ -10,8 +10,8 @@ from django.db.models.aggregates import Count
 from django.template.context import RequestContext
 from django.template.loader import render_to_string
 from django.utils.translation import ugettext as _
+from djblets.cache.backend import cache_memoize
 from djblets.util.compat import six
-from djblets.util.misc import cache_memoize
 
 from reviewboard.admin.cache_stats import get_cache_stats
 from reviewboard.attachments.models import FileAttachment

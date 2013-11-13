@@ -7,7 +7,7 @@ from django.db import models
 from django.utils import timezone
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
-from djblets.util.fields import Base64Field
+from djblets.db.fields import Base64Field
 
 from reviewboard.diffviewer.managers import FileDiffDataManager, DiffSetManager
 from reviewboard.scmtools.core import PRE_CREATION

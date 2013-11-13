@@ -14,7 +14,7 @@ from django.contrib.auth import get_backends
 from django.contrib.auth import hashers
 from django.utils import six
 from django.utils.translation import ugettext as _
-from djblets.util.misc import get_object_or_none
+from djblets.db.query import get_object_or_none
 try:
     from ldap.filter import filter_format
 except ImportError:

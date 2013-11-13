@@ -2,7 +2,7 @@ from __future__ import unicode_literals
 
 from django_evolution.mutations import AddField
 from django.db import models
-from djblets.util.fields import JSONField
+from djblets.db.fields import JSONField
 
 
 MUTATIONS = [

@@ -11,10 +11,10 @@ from django.utils.encoding import python_2_unicode_compatible
 from django.utils.html import escape
 from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext_lazy as _
-from djblets.util.db import ConcurrencyManager
-from djblets.util.fields import (CounterField, JSONField,
-                                 ModificationTimestampField)
-from djblets.util.misc import get_object_or_none
+from djblets.db.fields import (CounterField, JSONField,
+                               ModificationTimestampField)
+from djblets.db.managers import ConcurrencyManager
+from djblets.db.query import get_object_or_none
 from djblets.util.templatetags.djblets_images import crop_image, thumbnail
 
 from reviewboard.changedescs.models import ChangeDescription
