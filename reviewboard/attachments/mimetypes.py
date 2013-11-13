@@ -1,3 +1,5 @@
+from __future__ import unicode_literals
+
 import logging
 import os
 
@@ -400,6 +402,6 @@ MIMETYPE_ICON_ALIASES = {
 # such as 'text/x-rst' or 'text/x-markdown', so we just go by the
 # extension name.
 MIMETYPE_EXTENSIONS = {
-    '.rst': (u'text', u'x-rst', {}),
-    '.md': (u'text', u'x-markdown', {}),
+    '.rst': ('text', 'x-rst', {}),
+    '.md': ('text', 'x-markdown', {}),
 }
