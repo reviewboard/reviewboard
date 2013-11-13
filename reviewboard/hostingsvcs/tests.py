@@ -1,10 +1,11 @@
-from __future__ import print_function
+from __future__ import print_function, unicode_literals
 
 import json
 from hashlib import md5
 from textwrap import dedent
 
 from django.contrib.sites.models import Site
+from djblets.util.compat import six
 from djblets.util.compat.six.moves import cStringIO as StringIO
 from djblets.util.compat.six.moves.urllib.error import HTTPError
 from djblets.util.compat.six.moves.urllib.parse import urlparse
@@ -267,7 +268,7 @@ class BeanstalkTests(ServiceTests):
             self.assertEqual(url, expected_url)
 
             if expected_found:
-                return '{}', {}
+                return b'{}', {}
             else:
                 raise HTTPError()
 
@@ -345,7 +346,7 @@ class BitbucketTests(ServiceTests):
             self.assertEqual(
                 url,
                 'https://bitbucket.org/api/1.0/repositories/myuser/myrepo')
-            return '{}', {}
+            return b'{}', {}
 
         account = self._get_hosting_account()
         service = account.service
@@ -405,7 +406,7 @@ class BitbucketTests(ServiceTests):
             self.assertEqual(
                 url,
                 'https://bitbucket.org/api/1.0/repositories/myteam/myrepo')
-            return '{}', {}
+            return b'{}', {}
 
         account = self._get_hosting_account()
         service = account.service
@@ -511,7 +512,7 @@ class BitbucketTests(ServiceTests):
                 'https://bitbucket.org/api/1.0/repositories/'
                 'myuser/myrepo/raw/%s/path'
                 % expected_revision)
-            return 'My data', {}
+            return b'My data', {}
 
         account = self._get_hosting_account()
         service = account.service
@@ -541,7 +542,7 @@ class BitbucketTests(ServiceTests):
                 % expected_revision)
 
             if expected_found:
-                return '{}', {}
+                return b'{}', {}
             else:
                 raise HTTPError()
 
@@ -813,7 +814,7 @@ class GitHubTests(ServiceTests):
             plan='public',
             github_public_repo_name='myrepo',
             http_status=404,
-            payload='{"message": "Not Found"}',
+            payload=b'{"message": "Not Found"}',
             expected_error='A repository with this name was not found, '
                            'or your user may not own it.')
 
@@ -824,7 +825,7 @@ class GitHubTests(ServiceTests):
             plan='private',
             github_private_repo_name='myrepo',
             http_status=404,
-            payload='{"message": "Not Found"}',
+            payload=b'{"message": "Not Found"}',
             expected_error='A repository with this name was not found, '
                            'or your user may not own it.')
 
@@ -836,7 +837,7 @@ class GitHubTests(ServiceTests):
             github_public_org_name='myorg',
             github_public_org_repo_name='myrepo',
             http_status=404,
-            payload='{"message": "Not Found"}',
+            payload=b'{"message": "Not Found"}',
             expected_error='A repository with this organization or name '
                            'was not found.')
 
@@ -848,7 +849,7 @@ class GitHubTests(ServiceTests):
             github_private_org_name='myorg',
             github_private_org_repo_name='myrepo',
             http_status=404,
-            payload='{"message": "Not Found"}',
+            payload=b'{"message": "Not Found"}',
             expected_error='A repository with this organization or name '
                            'was not found, or your user may not have access '
                            'to it.')
@@ -860,7 +861,7 @@ class GitHubTests(ServiceTests):
             plan='public',
             github_public_repo_name='myrepo',
             http_status=200,
-            payload='{"private": true}',
+            payload=b'{"private": true}',
             expected_error='This is a private repository, but you have '
                            'selected a public plan.')
 
@@ -871,7 +872,7 @@ class GitHubTests(ServiceTests):
             plan='private',
             github_private_repo_name='myrepo',
             http_status=200,
-            payload='{"private": false}',
+            payload=b'{"private": false}',
             expected_error='This is a public repository, but you have '
                            'selected a private plan.')
 
@@ -883,7 +884,7 @@ class GitHubTests(ServiceTests):
             github_public_org_name='myorg',
             github_public_org_repo_name='myrepo',
             http_status=200,
-            payload='{"private": true}',
+            payload=b'{"private": true}',
             expected_error='This is a private repository, but you have '
                            'selected a public plan.')
 
@@ -895,7 +896,7 @@ class GitHubTests(ServiceTests):
             github_private_org_name='myorg',
             github_private_org_repo_name='myrepo',
             http_status=200,
-            payload='{"private": false}',
+            payload=b'{"private": false}',
             expected_error='This is a public repository, but you have '
                            'selected a private plan.')
 
@@ -1236,7 +1237,7 @@ class GitHubTests(ServiceTests):
         change = service.get_change(repository, commit_sha)
 
         self.assertEqual(change.message, 'Move .clearfix to defs.less')
-        self.assertEqual(md5(change.diff).hexdigest(),
+        self.assertEqual(md5(change.diff.encode('utf-8')).hexdigest(),
                          '5f63bd4f1cd8c4d8b46f2f72ea8d33bc')
 
     def _test_check_repository(self, expected_user='myuser', **kwargs):
@@ -1245,7 +1246,7 @@ class GitHubTests(ServiceTests):
                 url,
                 'https://api.github.com/repos/%s/myrepo?access_token=123'
                 % expected_user)
-            return '{}', {}
+            return b'{}', {}
 
         account = self._get_hosting_account()
         service = account.service
@@ -1276,7 +1277,7 @@ class GitHubTests(ServiceTests):
             service.check_repository(**kwargs)
             saw_exception = False
         except Exception as e:
-            self.assertEqual(unicode(e), expected_error)
+            self.assertEqual(six.text_type(e), expected_error)
             saw_exception = True
 
         self.assertTrue(saw_exception)

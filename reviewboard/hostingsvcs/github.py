@@ -1,3 +1,5 @@
+from __future__ import unicode_literals
+
 import json
 import logging
 
@@ -7,6 +9,7 @@ from django.contrib.sites.models import Site
 from django.core.cache import cache
 from django.utils.translation import ugettext_lazy as _
 from djblets.siteconfig.models import SiteConfiguration
+from djblets.util.compat import six
 from djblets.util.compat.six.moves import http_client
 from djblets.util.compat.six.moves.urllib.error import HTTPError, URLError
 
@@ -191,7 +194,7 @@ class GitHub(HostingService):
                 self._get_repository_owner_raw(plan, kwargs),
                 self._get_repository_name_raw(plan, kwargs))
         except Exception as e:
-            if str(e) == 'Not Found':
+            if six.text_type(e) == 'Not Found':
                 if plan in ('public', 'private'):
                     raise RepositoryError(
                         _('A repository with this name was not found, or your '
@@ -266,7 +269,7 @@ class GitHub(HostingService):
             if rsp and 'message' in rsp:
                 raise AuthorizationError(rsp['message'])
             else:
-                raise AuthorizationError(str(e))
+                raise AuthorizationError(six.text_type(e))
 
         self.account.data['authorization'] = rsp
         self.account.save()
@@ -486,7 +489,7 @@ class GitHub(HostingService):
 
     def _get_repo_api_url_raw(self, owner, repo_name):
         return '%srepos/%s/%s' % (self.get_api_url(self.account.hosting_url),
-                                   owner, repo_name)
+                                  owner, repo_name)
 
     def _get_repository_owner_raw(self, plan, extra_data):
         if plan in ('public', 'private'):
@@ -518,4 +521,4 @@ class GitHub(HostingService):
             if rsp and 'message' in rsp:
                 raise Exception(rsp['message'])
             else:
-                raise Exception(str(e))
+                raise Exception(six.text_type(e))

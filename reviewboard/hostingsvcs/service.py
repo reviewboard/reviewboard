@@ -1,3 +1,5 @@
+from __future__ import unicode_literals
+
 import base64
 import json
 import logging
@@ -252,7 +254,7 @@ class HostingService(object):
         if content_type:
             headers['Content-Type'] = content_type
 
-        headers['Content-Length'] = str(len(body))
+        headers['Content-Length'] = '%d' % len(body)
 
         return self._http_request(url, body, headers, **kwargs)
 
@@ -261,9 +263,10 @@ class HostingService(object):
         r = URLRequest(url, body, headers)
 
         if username is not None and password is not None:
+            auth_key = username + ':' + password
             r.add_header(HTTPBasicAuthHandler.auth_header,
-                         'Basic %s' % base64.b64encode(username + ':' +
-                                                       password))
+                         'Basic %s' %
+                         base64.b64encode(auth_key.encode('utf-8')))
 
         return r
 
@@ -282,7 +285,7 @@ class HostingService(object):
             content += "--" + BOUNDARY + "\r\n"
             content += "Content-Disposition: form-data; name=\"%s\"\r\n" % key
             content += "\r\n"
-            content += str(fields[key]) + "\r\n"
+            content += six.text_type(fields[key]) + "\r\n"
 
         for key in files:
             filename = files[key]['filename']
