@@ -1,5 +1,6 @@
-from django.core.management.commands import loaddata
+from __future__ import unicode_literals
 
+from django.core.management.commands import loaddata
 from django_evolution import models as django_evolution
 
 from reviewboard.diffviewer.models import FileDiff

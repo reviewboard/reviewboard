@@ -1,3 +1,5 @@
+from __future__ import unicode_literals
+
 from reviewboard.admin.widgets import increment_sync_num
 
 

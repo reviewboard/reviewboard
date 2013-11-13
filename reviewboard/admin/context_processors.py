@@ -1,3 +1,5 @@
+from __future__ import unicode_literals
+
 from reviewboard import get_version_string, get_package_version, is_release
 
 

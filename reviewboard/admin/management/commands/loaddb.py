@@ -1,3 +1,5 @@
+from __future__ import unicode_literals
+
 import os
 import re
 
@@ -6,6 +8,7 @@ from django.core import serializers
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 from django.db.models import get_apps
+from djblets.util.compat import six
 from djblets.util.compat.six.moves import input
 
 
@@ -90,8 +93,7 @@ Type 'yes' to continue, or 'no' to cancel: """)
             transaction.commit()
             transaction.leave_transaction_management()
         except Exception as e:
-            raise CommandError("Problem installing '%s': %s\n" %
-                               (filename, str(e)))
+            raise CommandError("Problem installing '%s': %s\n" % (filename, e))
 
             if transaction_setup:
                 transaction.rollback()

@@ -1,3 +1,5 @@
+from __future__ import unicode_literals
+
 import base64
 import time
 from datetime import datetime
@@ -24,13 +26,13 @@ def get_support_url(request):
     if not support_url:
         support_data = base64.b64encode('\t'.join([
             get_install_key(),
-            str(int(request.user.is_staff)),
+            '%d' % int(request.user.is_staff),
             siteconfig.site.domain,
             siteconfig.get('site_admin_name'),
             siteconfig.get('site_admin_email'),
             get_package_version(),
-            str(User.objects.filter(is_active=True).count()),
-            str(int(time.mktime(datetime.now().timetuple()))),
+            '%d' % User.objects.filter(is_active=True).count(),
+            '%d' % int(time.mktime(datetime.now().timetuple())),
         ]))
 
         support_url = settings.DEFAULT_SUPPORT_URL % {

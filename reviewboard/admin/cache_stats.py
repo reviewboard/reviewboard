@@ -1,3 +1,5 @@
+from __future__ import unicode_literals
+
 import logging
 import socket
 
@@ -64,8 +66,8 @@ def get_cache_stats():
             s.close()
             continue
 
-        s.send("stats\r\n")
-        data = s.recv(2048)
+        s.send(b"stats\r\n")
+        data = s.recv(2048).decode('ascii')
         s.close()
 
         stats = {}
