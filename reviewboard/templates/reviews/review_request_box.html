@@ -97,8 +97,10 @@
   <thead>
    <tr>
     <th colspan="2">{% trans "Reviewers" %}
-{% if request.user == review_request.submitter or perms.reviews.can_edit_reviewrequest %}
-     <span class="required-flag" aria-label="This field is required" title="This field is required">*</span>
+{% if review_request.status == 'P' %}
+{%  if request.user == review_request.submitter or perms.reviews.can_edit_reviewrequest %}
+     <span class="required-flag" aria-label="{% trans 'This field is required' %}" title="{% trans 'This field is required' %}">*</span>
+{%  endif %}
 {% endif %}
     </th>
    </tr>
