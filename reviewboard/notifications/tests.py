@@ -1,3 +1,5 @@
+from __future__ import unicode_literals
+
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.core import mail
@@ -20,14 +22,14 @@ class EmailTestHelper(object):
         for user in user_list:
             self.assertTrue(get_email_address_for_user(
                 User.objects.get(username=user)) in recipient_list,
-                u"user %s was not found in the recipient list" % user)
+                "user %s was not found in the recipient list" % user)
 
         groups = Group.objects.filter(name__in=group_list, local_site=None)
         for group in groups:
             for address in get_email_addresses_for_group(group):
                 self.assertTrue(
                     address in recipient_list,
-                    u"group %s was not found in the recipient list" % address)
+                    "group %s was not found in the recipient list" % address)
 
 
 class UserEmailTests(TestCase, EmailTestHelper):

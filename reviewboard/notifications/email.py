@@ -1,3 +1,5 @@
+from __future__ import unicode_literals
+
 import logging
 
 from django.conf import settings
@@ -87,7 +89,7 @@ def build_email_address(fullname, email):
     if not fullname:
         return email
     else:
-        return u'"%s" <%s>' % (fullname, email)
+        return '"%s" <%s>' % (fullname, email)
 
 
 def get_email_address_for_user(u):
@@ -99,7 +101,7 @@ def get_email_addresses_for_group(g):
         if g.mailing_list.find(",") == -1:
             # The mailing list field has only one e-mail address in it,
             # so we can just use that and the group's display name.
-            return [u'"%s" <%s>' % (g.display_name, g.mailing_list)]
+            return ['"%s" <%s>' % (g.display_name, g.mailing_list)]
         else:
             # The mailing list field has multiple e-mail addresses in it.
             # We don't know which one should have the group's display name
@@ -278,8 +280,8 @@ def mail_review_request(review_request, changedesc=None, on_close=False):
         or (not on_close and review_request.status == 'D')):
         return
 
-    subject = u"Review Request %d: %s" % (review_request.display_id,
-                                          review_request.summary)
+    subject = "Review Request %d: %s" % (review_request.display_id,
+                                         review_request.summary)
     reply_message_id = None
 
     if review_request.email_message_id:
@@ -332,7 +334,7 @@ def mail_review(review):
     review.email_message_id = \
         send_review_mail(review.user,
                          review_request,
-                         u"Re: Review Request %d: %s" % (
+                         "Re: Review Request %d: %s" % (
                              review_request.display_id,
                              review_request.summary),
                          review_request.email_message_id,
@@ -369,7 +371,7 @@ def mail_reply(reply):
     reply.email_message_id = \
         send_review_mail(reply.user,
                          review_request,
-                         u"Re: Review Request %d: %s" % (
+                         "Re: Review Request %d: %s" % (
                              review_request.display_id,
                              review_request.summary),
                          review.email_message_id,

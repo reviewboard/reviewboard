@@ -1,3 +1,5 @@
+from __future__ import unicode_literals
+
 import markdown
 from django import template
 from django.utils import six
