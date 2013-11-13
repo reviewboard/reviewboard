@@ -1,3 +1,5 @@
+from __future__ import unicode_literals
+
 from reviewboard.accounts.backends import get_auth_backends
 from reviewboard.accounts.models import Profile
 

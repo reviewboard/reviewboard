@@ -1,3 +1,5 @@
+from __future__ import unicode_literals
+
 import logging
 import pkg_resources
 import re
@@ -260,7 +262,7 @@ class NISBackend(AuthBackend):
                 if len(names) > 1:
                     last_name = names[1]
 
-                email = u'%s@%s' % (username, settings.NIS_EMAIL_DOMAIN)
+                email = '%s@%s' % (username, settings.NIS_EMAIL_DOMAIN)
 
                 user = User(username=username,
                             password='',
@@ -385,7 +387,7 @@ class LDAPBackend(AuthBackend):
                     pass
 
                 if settings.LDAP_EMAIL_DOMAIN:
-                    email = u'%s@%s' % (username, settings.LDAP_EMAIL_DOMAIN)
+                    email = '%s@%s' % (username, settings.LDAP_EMAIL_DOMAIN)
                 elif settings.LDAP_EMAIL_ATTRIBUTE:
                     email = user_info[settings.LDAP_EMAIL_ATTRIBUTE][0]
                 else:
@@ -427,7 +429,7 @@ class ActiveDirectoryBackend(AuthBackend):
     settings_form = ActiveDirectorySettingsForm
 
     def get_domain_name(self):
-        return str(settings.AD_DOMAIN_NAME)
+        return six.text_type(settings.AD_DOMAIN_NAME)
 
     def get_ldap_search_root(self, userdomain=None):
         if getattr(settings, "AD_SEARCH_ROOT", None):
@@ -597,7 +599,7 @@ class ActiveDirectoryBackend(AuthBackend):
                 last_name = user_info.get('sn', [""])[0]
                 email = user_info.get(
                     'mail',
-                    [u'%s@%s' % (username, settings.AD_DOMAIN_NAME)])[0]
+                    ['%s@%s' % (username, settings.AD_DOMAIN_NAME)])[0]
 
                 user = User(username=username,
                             password='',

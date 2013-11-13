@@ -1,3 +1,5 @@
+from __future__ import unicode_literals
+
 from django.contrib.auth.models import User
 from django.db import models
 from django.utils import timezone
@@ -30,7 +32,7 @@ class ReviewRequestVisit(models.Model):
     objects = ConcurrencyManager()
 
     def __str__(self):
-        return u"Review request visit"
+        return "Review request visit"
 
     class Meta:
         unique_together = ("user", "review_request")
