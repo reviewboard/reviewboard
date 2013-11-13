@@ -463,6 +463,7 @@ def review_detail(request,
                 },
                 'timestamp': review.timestamp,
                 'class': state,
+                'collapsed': state == 'collapsed',
             }
             reviews_entry_map[review.pk] = entry
             entries.append(entry)
