@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from __future__ import print_function
+from __future__ import print_function, unicode_literals
 
 import getpass
 import imp
@@ -254,9 +254,8 @@ class Site(object):
         ])
 
         for dirname in (static_dir, media_dir):
-            fp = open(os.path.join(dirname, '.htaccess'), 'w')
-            fp.write(htaccess)
-            fp.close()
+            with open(os.path.join(dirname, '.htaccess'), 'w') as fp:
+                fp.write(htaccess)
 
     def setup_settings(self):
         # Make sure that we have our settings_local.py in our path for when
@@ -629,7 +628,7 @@ class Site(object):
             'siteroot_noslash': self.site_root[1:-1],
         }
 
-        template = re.sub("@([a-z_]+)@", lambda m: data.get(m.group(1)),
+        template = re.sub(r"@([a-z_]+)@", lambda m: data.get(m.group(1)),
                           template)
 
         fp = open(dest_filename, "w")
@@ -682,12 +681,9 @@ class SiteList(object):
                       self.path)
                 return
 
-        f = open(self.path, "w")
-
-        for site in ordered_sites:
-            f.write("%s\n" % site)
-
-        f.close()
+        with open(self.path, 'w') as f:
+            for site in ordered_sites:
+                f.write("%s\n" % site)
 
 
 class UIToolkit(object):
@@ -1309,7 +1305,7 @@ class GtkUI(UIToolkit):
             label.set_alignment(0, 0)
 
         for item in items:
-            self.text(page, u"    \u2022 %s" % item)
+            self.text(page, "    \u2022 %s" % item)
 
     def step(self, page, text, func):
         """
