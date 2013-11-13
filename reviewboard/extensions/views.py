@@ -1,3 +1,5 @@
+from __future__ import unicode_literals
+
 import djblets.extensions.views as djblets_ext_views
 
 from reviewboard.extensions.base import get_extension_manager

@@ -1,3 +1,5 @@
+from __future__ import unicode_literals
+
 from djblets.extensions.packaging import (
     BuildStaticFiles as DjbletsBuildStaticFiles,
     build_extension_cmdclass)

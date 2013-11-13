@@ -1,3 +1,5 @@
+from __future__ import unicode_literals
+
 from djblets.extensions.extension import Extension
 from djblets.extensions.manager import ExtensionManager
 

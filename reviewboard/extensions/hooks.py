@@ -1,3 +1,5 @@
+from __future__ import unicode_literals
+
 from djblets.extensions.hooks import (ExtensionHook, ExtensionHookPoint,
                                       TemplateHook, URLHook)
 from djblets.util.compat import six

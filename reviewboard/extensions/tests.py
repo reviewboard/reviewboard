@@ -1,3 +1,5 @@
+from __future__ import unicode_literals
+
 from django.template import Context, Template
 from django.test import TestCase
 from djblets.extensions.manager import ExtensionManager
