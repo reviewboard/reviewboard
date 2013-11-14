@@ -1,6 +1,9 @@
+from __future__ import unicode_literals
+
 import os
 
 import paramiko
+from djblets.util.compat import six
 
 from reviewboard.ssh.client import SSHClient
 from reviewboard.ssh.errors import (BadHostKeyError, SSHAuthenticationError,
@@ -81,10 +84,11 @@ def check_host(netloc, username=None, password=None, namespace=None):
 
         raise SSHAuthenticationError(allowed_types=allowed_types, user_key=key)
     except paramiko.SSHException as e:
-        if str(e) == 'No authentication methods available':
+        msg = six.text_type(e)
+        if msg == 'No authentication methods available':
             raise SSHAuthenticationError
         else:
-            raise SSHError(unicode(e))
+            raise SSHError(msg)
 
 
 def register_rbssh(envvar):

@@ -1,3 +1,5 @@
+from __future__ import unicode_literals
+
 import logging
 import os
 
@@ -162,10 +164,9 @@ class FileSSHStorage(SSHStorage):
         filename = self.get_host_keys_filename()
 
         try:
-            fp = open(filename, 'a')
-            fp.write('%s %s %s\n' % (hostname, key.get_name(),
-                                     key.get_base64()))
-            fp.close()
+            with open(filename, 'a') as fp:
+                fp.write('%s %s %s\n' % (hostname, key.get_name(),
+                                         key.get_base64()))
         except IOError as e:
             raise IOError(
                 _('Unable to write host keys file %(filename)s: %(error)s') % {
@@ -181,9 +182,8 @@ class FileSSHStorage(SSHStorage):
             return
 
         try:
-            fp = open(filename, 'r')
-            lines = fp.readlines()
-            fp.close()
+            with open(filename, 'r') as fp:
+                lines = fp.readlines()
 
             old_key_base64 = old_key.get_base64()
         except IOError as e:
@@ -194,18 +194,15 @@ class FileSSHStorage(SSHStorage):
                 })
 
         try:
-            fp = open(filename, 'w')
+            with open(filename, 'w') as fp:
+                for line in lines:
+                    parts = line.strip().split(" ")
 
-            for line in lines:
-                parts = line.strip().split(" ")
+                    if parts[-1] == old_key_base64:
+                        parts[1] = new_key.get_name()
+                        parts[-1] = new_key.get_base64()
 
-                if parts[-1] == old_key_base64:
-                    parts[1] = new_key.get_name()
-                    parts[-1] = new_key.get_base64()
-
-                fp.write(' '.join(parts) + '\n')
-
-            fp.close()
+                    fp.write(' '.join(parts) + '\n')
         except IOError as e:
             raise IOError(
                 _('Unable to write host keys file %(filename)s: %(error)s') % {

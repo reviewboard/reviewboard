@@ -1,3 +1,5 @@
+from __future__ import unicode_literals
+
 import os
 import shutil
 import tempfile
@@ -90,12 +92,11 @@ class FileSSHStorageTests(SSHTestCase):
         line2 = 'host2 ssh-dss %s' % self.key2_b64
 
         filename = storage.get_host_keys_filename()
-        fp = open(filename, 'w')
-        fp.write('%s\n' % line1)
-        fp.write('\n')
-        fp.write('# foo\n')
-        fp.write('%s  \n' % line2)
-        fp.close()
+        with open(filename, 'w') as fp:
+            fp.write('%s\n' % line1)
+            fp.write('\n')
+            fp.write('# foo\n')
+            fp.write('%s  \n' % line2)
 
         lines = storage.read_host_keys()
         self.assertEqual(len(lines), 2)
@@ -108,9 +109,8 @@ class FileSSHStorageTests(SSHTestCase):
         storage.add_host_key('host1', self.key1)
 
         filename = storage.get_host_keys_filename()
-        fp = open(filename, 'r')
-        lines = fp.readlines()
-        fp.close()
+        with open(filename, 'r') as fp:
+            lines = fp.readlines()
 
         self.assertEqual(len(lines), 1)
         self.assertEqual(lines[0], 'host1 ssh-rsa %s\n' % self.key1_b64)
@@ -122,9 +122,8 @@ class FileSSHStorageTests(SSHTestCase):
         storage.replace_host_key('host1', self.key1, self.key2)
 
         filename = storage.get_host_keys_filename()
-        fp = open(filename, 'r')
-        lines = fp.readlines()
-        fp.close()
+        with open(filename, 'r') as fp:
+            lines = fp.readlines()
 
         self.assertEqual(len(lines), 1)
         self.assertEqual(lines[0], 'host1 ssh-dss %s\n' % self.key2_b64)
@@ -135,9 +134,8 @@ class FileSSHStorageTests(SSHTestCase):
         storage.replace_host_key('host1', self.key1, self.key2)
 
         filename = storage.get_host_keys_filename()
-        fp = open(filename, 'r')
-        lines = fp.readlines()
-        fp.close()
+        with open(filename, 'r') as fp:
+            lines = fp.readlines()
 
         self.assertEqual(len(lines), 1)
         self.assertEqual(lines[0], 'host1 ssh-dss %s\n' % self.key2_b64)
@@ -192,9 +190,8 @@ class SSHClientTests(SSHTestCase):
         known_hosts_file = client.storage.get_host_keys_filename()
         self.assertTrue(os.path.exists(known_hosts_file))
 
-        f = open(known_hosts_file, 'r')
-        lines = f.readlines()
-        f.close()
+        with open(known_hosts_file, 'r') as f:
+            lines = f.readlines()
 
         self.assertEqual(len(lines), 1)
         self.assertEqual(lines[0].split(),
@@ -215,9 +212,8 @@ class SSHClientTests(SSHTestCase):
         known_hosts_file = client.storage.get_host_keys_filename()
         self.assertTrue(os.path.exists(known_hosts_file))
 
-        f = open(known_hosts_file, 'r')
-        lines = f.readlines()
-        f.close()
+        with open(known_hosts_file, 'r') as f:
+            lines = f.readlines()
 
         self.assertEqual(len(lines), 1)
         self.assertEqual(lines[0].split(),
