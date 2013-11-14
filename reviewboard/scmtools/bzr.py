@@ -1,3 +1,5 @@
+from __future__ import unicode_literals
+
 import calendar
 from datetime import datetime, timedelta
 import re
@@ -13,6 +15,7 @@ try:
     has_bzrlib = True
 except ImportError:
     has_bzrlib = False
+from djblets.util.compat import six
 
 from reviewboard.scmtools.core import SCMTool, HEAD, PRE_CREATION
 from reviewboard.scmtools.errors import RepositoryNotFoundError, SCMError
@@ -44,7 +47,7 @@ if has_bzrlib:
             args = [self.executable_path]
 
             if port is not None:
-                args.extend(['-p', str(port)])
+                args.extend(['-p', six.text_type(port)])
 
             if username is not None:
                 args.extend(['-l', username])
@@ -61,7 +64,7 @@ if has_bzrlib:
 
     class RBRemoteSSHTransport(RemoteSSHTransport):
         LOCAL_SITE_PARAM_RE = \
-            re.compile('\?rb-local-site-name=([A-Za-z0-9\-_.]+)')
+            re.compile(r'\?rb-local-site-name=([A-Za-z0-9\-_.]+)')
 
         def __init__(self, base, *args, **kwargs):
             m = self.LOCAL_SITE_PARAM_RE.search(base)
@@ -180,7 +183,8 @@ class BZRTool(SCMTool):
         elif revision.startswith('revid:'):
             revspec = revision
         else:
-            revspec = 'date:' + str(self._revision_timestamp_to_local(revision))
+            revspec = 'date:' + six.text_type(
+                self._revision_timestamp_to_local(revision))
 
         return revspec
 

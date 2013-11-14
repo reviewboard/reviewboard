@@ -1,3 +1,5 @@
+from __future__ import unicode_literals
+
 import imp
 import logging
 import sys
@@ -290,7 +292,7 @@ class RepositoryForm(forms.ModelForm):
             self.public_key = self.ssh_client.get_public_key(ssh_key)
             self.public_key_str = '%s %s' % (
                 ssh_key.get_name(),
-                ''.join(str(self.public_key).splitlines())
+                ''.join(six.text_type(self.public_key).splitlines())
             )
         else:
             self.public_key = None
@@ -341,7 +343,7 @@ class RepositoryForm(forms.ModelForm):
         hosting_info['planInfo'][repo_type_id] = plan_info
         hosting_info['plans'].append({
             'type': repo_type_id,
-            'label': unicode(repo_type_label),
+            'label': six.text_type(repo_type_label),
         })
 
     def _populate_repository_info_fields(self):
@@ -552,7 +554,7 @@ class RepositoryForm(forms.ModelForm):
                 hosting_account.username, hosting_account.hosting_url, plan,
                 tool_name, field_vars))
         except KeyError as e:
-            raise ValidationError([unicode(e)])
+            raise ValidationError([six.text_type(e)])
 
     def _clean_bug_tracker_info(self):
         """Clean the bug tracker information.
@@ -1121,9 +1123,9 @@ class RepositoryForm(forms.ModelForm):
                 raise ValidationError(e)
             except Exception as e:
                 try:
-                    text = unicode(e)
+                    text = six.text_type(e)
                 except UnicodeDecodeError:
-                    text = str(e).decode('ascii', 'replace')
+                    text = six.text_type(e, 'ascii', 'replace')
                 raise ValidationError(text)
 
     def _get_field_data(self, field):

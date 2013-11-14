@@ -1,9 +1,13 @@
+from __future__ import unicode_literals
+
 import logging
 import os
 import re
 import subprocess
 from tempfile import mkstemp
 
+from django.utils.translation import ugettext_lazy as _
+from djblets.util.compat import six
 from djblets.util.filesystem import is_exe_in_path
 
 from reviewboard.scmtools.core import (SCMTool, ChangeSet,
@@ -19,8 +23,8 @@ class PlasticTool(SCMTool):
     supports_pending_changesets = True
     uses_atomic_revisions = True
     field_help_text = {
-        'path': 'The Plastic repository spec in the form of '
-                '[repo]@[hostname]:[port].',
+        'path': _('The Plastic repository spec in the form of '
+                  '[repo]@[hostname]:[port].'),
     }
     dependencies = {
         'executables': ['cm'],
@@ -74,7 +78,7 @@ class PlasticTool(SCMTool):
                                   (self.CS_RE, line))
                     raise SCMError("Error looking up changeset")
 
-                if m.group("csid") != str(changesetid):
+                if m.group("csid") != six.text_type(changesetid):
                     logging.debug('Plastic: csid %s != %s' % (m.group("csid"),
                                                               changesetid))
                     raise SCMError("The server returned a changeset ID that was not requested")
@@ -236,7 +240,7 @@ class PlasticClient(object):
             ['cm', 'cat', revision + '@' + repo, '--file=' + tmpfile],
             stderr=subprocess.PIPE, stdout=subprocess.PIPE,
             close_fds=(os.name != 'nt'))
-        errmsg = unicode(p.stderr.read())
+        errmsg = six.text_type(p.stderr.read())
         failure = p.wait()
 
         if failure:
@@ -245,9 +249,8 @@ class PlasticClient(object):
 
             raise SCMError(errmsg)
 
-        readtmp = open(tmpfile, 'rb')
-        contents = readtmp.read()
-        readtmp.close()
+        with open(tmpfile, 'rb') as readtmp:
+            contents = readtmp.read()
         os.unlink(tmpfile)
 
         return contents
@@ -259,7 +262,7 @@ class PlasticClient(object):
                                            self.port)
 
         p = subprocess.Popen(['cm', 'find', 'revs', 'where',
-                              'changeset=' + str(changesetid), 'on',
+                              'changeset=' + six.text_type(changesetid), 'on',
                               'repository', '\'' + repo + '\'',
                               '--format={changeset} {owner} {id} {item}',
                               '--nototal'],
@@ -281,7 +284,7 @@ class PlasticClient(object):
                                            self.port)
 
         p = subprocess.Popen(['cm', 'find', 'changesets', 'where',
-                              'changesetid=' + str(changesetid),
+                              'changesetid=' + six.text_type(changesetid),
                               'on', 'repository', '\'' + repo + '\'',
                               '--format={comment}', '--nototal'],
                              stderr=subprocess.PIPE, stdout=subprocess.PIPE,

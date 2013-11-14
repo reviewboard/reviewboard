@@ -1,8 +1,11 @@
+from __future__ import unicode_literals
+
 import logging
 import os
 import re
 
 from django.utils.translation import ugettext_lazy as _
+from djblets.util.compat import six
 from djblets.util.compat.six.moves.urllib.parse import quote as urlquote
 from djblets.util.filesystem import is_exe_in_path
 
@@ -42,8 +45,9 @@ class ShortSHA1Error(InvalidRevisionFormatError):
             self,
             path=path,
             revision=revision,
-            detail='The SHA1 is too short. Make sure the diff is generated '
-                   'with `git diff --full-index`.',
+            detail=six.text_type(_('The SHA1 is too short. Make sure the diff '
+                                   'is generated with `git diff '
+                                   '--full-index`.')),
             *args, **kwargs)
 
 
@@ -57,9 +61,9 @@ class GitTool(SCMTool):
     supports_raw_file_urls = True
     supports_authentication = True
     field_help_text = {
-        'path': 'For local Git repositories, this should be the path to a '
-                '.git directory that Review Board can read from. For remote '
-                'Git repositories, it should be the clone URL.',
+        'path': _('For local Git repositories, this should be the path to a '
+                  '.git directory that Review Board can read from. For remote '
+                  'Git repositories, it should be the clone URL.'),
     }
     dependencies = {
         'executables': ['git']
@@ -443,11 +447,11 @@ class GitClient(SCMClient):
         p = self._run_git(['--git-dir=%s' % self.git_dir, 'cat-file',
                            option, commit])
         contents = p.stdout.read()
-        errmsg = unicode(p.stderr.read())
+        errmsg = six.text_type(p.stderr.read())
         failure = p.wait()
 
         if failure:
-            if errmsg.startswith(u"fatal: Not a valid object name"):
+            if errmsg.startswith("fatal: Not a valid object name"):
                 raise FileNotFoundError(commit)
             else:
                 raise SCMError(errmsg)
@@ -460,7 +464,7 @@ class GitClient(SCMClient):
                 raise SCMError("path must be supplied if revision is %s" % HEAD)
             return "HEAD:%s" % path
         else:
-            return str(revision)
+            return six.text_type(revision)
 
     def _normalize_git_url(self, path):
         if path.startswith('file://'):

@@ -1,3 +1,5 @@
+from __future__ import unicode_literals
+
 import re
 
 from reviewboard.scmtools.perforce import PerforceTool
@@ -75,7 +77,7 @@ class VMwarePerforceTool(PerforceTool):
             name = locations[start]
             if name == 'Merge to:':
                 # Include merge information in the branch field
-                m = re.match('Merge to: (?P<branch>[\w\-]+): (?P<type>[A-Z]+)',
+                m = re.match(r'Merge to: (?P<branch>[\w\-]+): (?P<type>[A-Z]+)',
                              lines[start])
                 if m:
                     if m.group('type') == 'YES':
@@ -86,7 +88,7 @@ class VMwarePerforceTool(PerforceTool):
             else:
                 sections[name] = '\n'.join(lines[start:end])[len(name):].strip()
 
-        changeset.branch = u' \u2192 '.join(branches)
+        changeset.branch = ' \u2192 '.join(branches)
 
         changeset.testing_done = sections.get('Testing Done:')
 

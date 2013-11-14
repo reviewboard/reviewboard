@@ -1,3 +1,5 @@
+from __future__ import unicode_literals
+
 import os
 import random
 import re
@@ -8,6 +10,8 @@ import subprocess
 import tempfile
 import time
 
+from django.utils.translation import ugettext_lazy as _
+from djblets.util.compat import six
 from djblets.util.filesystem import is_exe_in_path
 try:
     from P4 import P4Exception
@@ -58,9 +62,9 @@ class STunnelProxy(object):
         # It can sometimes be racy to immediately open the file. We therefore
         # have to wait a fraction of a second =/
         time.sleep(0.1)
-        f = open(filename)
-        self.pid = int(f.read())
-        f.close()
+        with open(filename) as f:
+            self.pid = int(f.read())
+            f.close()
         shutil.rmtree(tempdir)
 
     def shutdown(self):
@@ -146,14 +150,15 @@ class PerforceClient(object):
 
     @staticmethod
     def _convert_p4exception_to_scmexception(e):
-        error = str(e)
+        error = six.text_type(e)
 
         if 'Perforce password' in error or 'Password must be set' in error:
             raise AuthenticationError(msg=error)
         elif 'SSL library must be at least version' in error:
-            raise SCMError('The specified Perforce port includes ssl:, but '
-                           'the p4python library was built without SSL '
-                           'support or the system library path is incorrect. ')
+            raise SCMError(_('The specified Perforce port includes ssl:, but '
+                             'the p4python library was built without SSL '
+                             'support or the system library path is '
+                             'incorrect.'))
         elif ('check $P4PORT' in error or
               (error.startswith('[P4.connect()] TCP connect to') and
                'failed.' in error)):
@@ -183,7 +188,7 @@ class PerforceClient(object):
         return result
 
     def _get_changeset(self, changesetid):
-        return self.p4.run_describe('-s', str(changesetid))
+        return self.p4.run_describe('-s', six.text_type(changesetid))
 
     def get_changeset(self, changesetid):
         """
@@ -242,10 +247,11 @@ class PerforceTool(SCMTool):
     supports_ticket_auth = True
     supports_pending_changesets = True
     field_help_text = {
-        'path': 'The Perforce port identifier (P4PORT) for the repository. If '
-                'your server is set up to use SSL (2012.1+), prefix the port '
-                'with "ssl:". If your server connection is secured with '
-                'stunnel (2011.x or older), prefix the port with "stunnel:".',
+        'path': _('The Perforce port identifier (P4PORT) for the repository. If '
+                  'your server is set up to use SSL (2012.1+), prefix the port '
+                  'with "ssl:". If your server connection is secured with '
+                  'stunnel (2011.x or older), prefix the port with '
+                  '"stunnel:".'),
     }
     dependencies = {
         'modules': ['P4'],
@@ -255,10 +261,10 @@ class PerforceTool(SCMTool):
         SCMTool.__init__(self, repository)
 
         self.client = self._create_client(
-            str(repository.mirror_path or repository.path),
-            str(repository.username),
-            str(repository.password),
-            str(repository.encoding),
+            six.text_type(repository.mirror_path or repository.path),
+            six.text_type(repository.username),
+            six.text_type(repository.password),
+            six.text_type(repository.encoding),
             repository.extra_data.get('use_ticket_auth', False))
 
     @staticmethod
@@ -274,7 +280,7 @@ class PerforceTool(SCMTool):
 
     @staticmethod
     def _convert_p4exception_to_scmexception(e):
-        error = str(e)
+        error = six.text_type(e)
         if 'Perforce password' in error or 'Password must be set' in error:
             raise AuthenticationError(msg=error)
         elif 'check $P4PORT' in error:
@@ -301,7 +307,9 @@ class PerforceTool(SCMTool):
         # 'p4 info' will succeed even if the server requires ticket auth and we
         # don't run 'p4 login' first. We therefore don't go through all the
         # trouble of handling tickets here.
-        client = cls._create_client(str(path), str(username), str(password))
+        client = cls._create_client(six.text_type(path),
+                                    six.text_type(username),
+                                    six.text_type(password))
         client.get_info()
 
     def get_pending_changesets(self, userid):

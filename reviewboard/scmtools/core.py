@@ -1,3 +1,5 @@
+from __future__ import unicode_literals
+
 import base64
 import logging
 import os
@@ -5,6 +7,8 @@ import subprocess
 import sys
 
 from django.utils.encoding import python_2_unicode_compatible
+from django.utils.translation import ugettext_lazy as _
+from djblets.util.compat import six
 from djblets.util.compat.six.moves.urllib.error import HTTPError
 from djblets.util.compat.six.moves.urllib.parse import urlparse
 from djblets.util.compat.six.moves.urllib.request import (
@@ -41,10 +45,10 @@ class Revision(object):
         return self.name
 
     def __eq__(self, other):
-        return self.name == str(other)
+        return self.name == six.text_type(other)
 
     def __ne__(self, other):
-        return self.name != str(other)
+        return self.name != six.text_type(other)
 
     def __repr__(self):
         return '<Revision: %s>' % self.name
@@ -116,8 +120,8 @@ class SCMTool(object):
     supports_raw_file_urls = False
     supports_ticket_auth = False
     field_help_text = {
-        'path': 'The path to the repository. This will generally be the URL '
-                'you would use to check out the repository.',
+        'path': _('The path to the repository. This will generally be the URL '
+                  'you would use to check out the repository.'),
     }
 
     # A list of dependencies for this SCMTool. This should be overridden
@@ -256,7 +260,7 @@ class SCMTool(object):
             except SSHAuthenticationError as e:
                 # Represent an SSHAuthenticationError as a standard
                 # AuthenticationError.
-                raise AuthenticationError(e.allowed_types, unicode(e),
+                raise AuthenticationError(e.allowed_types, six.text_type(e),
                                           e.user_key)
             except:
                 # Re-raise anything else

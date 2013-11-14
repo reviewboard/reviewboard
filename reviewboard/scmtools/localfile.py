@@ -1,3 +1,7 @@
+from __future__ import unicode_literals
+
+from djblets.util.compat import six
+
 from reviewboard.scmtools.core import FileNotFoundError, SCMTool, HEAD
 
 
@@ -20,7 +24,7 @@ class LocalFileTool(SCMTool):
             with open(self.repopath + '/' + path, 'rb') as f:
                 return f.read()
         except IOError as e:
-            raise FileNotFoundError(path, revision, detail=str(e))
+            raise FileNotFoundError(path, revision, detail=six.text_type(e))
 
     def parse_diff_revision(self, file_str, revision_str, *args, **kwargs):
         return file_str, HEAD

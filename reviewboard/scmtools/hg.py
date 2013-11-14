@@ -1,6 +1,9 @@
+from __future__ import unicode_literals
+
 import logging
 import re
 
+from djblets.util.compat import six
 from djblets.util.compat.six.moves.urllib.parse import quote as urllib_quote
 from pkg_resources import parse_version
 
@@ -30,7 +33,7 @@ class HgTool(SCMTool):
         self.uses_atomic_revisions = True
 
     def get_file(self, path, revision=HEAD):
-        return self.client.cat_file(path, str(revision))
+        return self.client.cat_file(path, six.text_type(revision))
 
     def parse_diff_revision(self, file_str, revision_str, *args, **kwargs):
         revision = revision_str
@@ -283,4 +286,4 @@ class HgClient(object):
         except Exception as e:
             # LookupError moves from repo to revlog in hg v0.9.4, so we
             # catch the more general Exception to avoid the dependency.
-            raise FileNotFoundError(path, rev, detail=str(e))
+            raise FileNotFoundError(path, rev, detail=six.text_type(e))

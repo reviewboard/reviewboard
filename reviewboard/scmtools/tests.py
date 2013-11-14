@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+from __future__ import unicode_literals
+
 import os
 from errno import ECONNREFUSED
 from hashlib import md5
@@ -9,6 +11,7 @@ from django import forms
 from django.contrib.auth.models import AnonymousUser, User
 from django.core.cache import cache
 from django.test import TestCase as DjangoTestCase
+from djblets.util.compat import six
 from djblets.util.compat.six.moves import zip_longest
 from djblets.util.filesystem import is_exe_in_path
 import nose
@@ -410,8 +413,8 @@ class CVSTests(SCMTestCase):
 
     def test_get_file(self):
         """Testing CVSTool.get_file"""
-        expected = "test content\n"
-        file = b'test/testfile'
+        expected = b"test content\n"
+        file = 'test/testfile'
         rev = Revision('1.1')
         badrev = Revision('2.1')
 
@@ -441,9 +444,9 @@ class CVSTests(SCMTestCase):
         """Testing revision number parsing"""
         self.assertEqual(self.tool.parse_diff_revision('', 'PRE-CREATION')[1],
                          PRE_CREATION)
-        self.assertEqual(self.tool.parse_diff_revision('', '7 Nov 2005 13:17:07 -0000	1.2')[1],
+        self.assertEqual(self.tool.parse_diff_revision('', '7 Nov 2005 13:17:07 -0000\t1.2')[1],
                          '1.2')
-        self.assertEqual(self.tool.parse_diff_revision('', '7 Nov 2005 13:17:07 -0000	1.2.3.4')[1],
+        self.assertEqual(self.tool.parse_diff_revision('', '7 Nov 2005 13:17:07 -0000\t1.2.3.4')[1],
                          '1.2.3.4')
         self.assertRaises(SCMError,
                           lambda: self.tool.parse_diff_revision('', 'hello'))
@@ -455,17 +458,17 @@ class CVSTests(SCMTestCase):
 
     def test_simple_diff(self):
         """Testing parsing CVS simple diff"""
-        diff = ("Index: testfile\n"
-                "===================================================================\n"
-                "RCS file: %s/test/testfile,v\n"
-                "retrieving revision 1.1.1.1\n"
-                "diff -u -r1.1.1.1 testfile\n"
-                "--- testfile    26 Jul 2007 08:50:30 -0000      1.1.1.1\n"
-                "+++ testfile    26 Jul 2007 10:20:20 -0000\n"
-                "@@ -1 +1,2 @@\n"
-                "-test content\n"
-                "+updated test content\n"
-                "+added info\n")
+        diff = (b"Index: testfile\n"
+                b"===================================================================\n"
+                b"RCS file: %s/test/testfile,v\n"
+                b"retrieving revision 1.1.1.1\n"
+                b"diff -u -r1.1.1.1 testfile\n"
+                b"--- testfile    26 Jul 2007 08:50:30 -0000      1.1.1.1\n"
+                b"+++ testfile    26 Jul 2007 10:20:20 -0000\n"
+                b"@@ -1 +1,2 @@\n"
+                b"-test content\n"
+                b"+updated test content\n"
+                b"+added info\n")
         diff = diff % self.cvs_repo_path
 
         file = self.tool.get_parser(diff).parse()[0]
@@ -480,14 +483,14 @@ class CVSTests(SCMTestCase):
 
     def test_new_diff_revision_format(self):
         """Testing parsing CVS diff with new revision format"""
-        diff = ("Index: %s/test/testfile\n"
-                "diff -u %s/test/testfile:1.5.2.1 %s/test/testfile:1.5.2.2\n"
-                "--- test/testfile:1.5.2.1	Thu Dec 15 16:27:47 2011\n"
-                "+++ test/testfile	Tue Jan 10 10:36:26 2012\n"
-                "@@ -1 +1,2 @@\n"
-                "-test content\n"
-                "+updated test content\n"
-                "+added info\n")
+        diff = (b"Index: %s/test/testfile\n"
+                b"diff -u %s/test/testfile:1.5.2.1 %s/test/testfile:1.5.2.2\n"
+                b"--- test/testfile:1.5.2.1\tThu Dec 15 16:27:47 2011\n"
+                b"+++ test/testfile\tTue Jan 10 10:36:26 2012\n"
+                b"@@ -1 +1,2 @@\n"
+                b"-test content\n"
+                b"+updated test content\n"
+                b"+added info\n")
         diff = diff % (self.cvs_repo_path, self.cvs_repo_path, self.cvs_repo_path)
 
         file = self.tool.get_parser(diff).parse()[0]
@@ -502,41 +505,41 @@ class CVSTests(SCMTestCase):
 
     def test_bad_diff(self):
         """Testing parsing CVS diff with bad info"""
-        diff = ("Index: newfile\n"
-                "===================================================================\n"
-                "diff -N newfile\n"
-                "--- /dev/null	1 Jan 1970 00:00:00 -0000\n"
-                "+++ newfile	26 Jul 2007 10:11:45 -0000\n"
-                "@@ -0,0 +1 @@\n"
-                "+new file content")
+        diff = (b"Index: newfile\n"
+                b"===================================================================\n"
+                b"diff -N newfile\n"
+                b"--- /dev/null\t1 Jan 1970 00:00:00 -0000\n"
+                b"+++ newfile\t26 Jul 2007 10:11:45 -0000\n"
+                b"@@ -0,0 +1 @@\n"
+                b"+new file content")
 
         self.assertRaises(DiffParserError,
                           lambda: self.tool.get_parser(diff).parse())
 
     def test_bad_diff2(self):
         """Testing parsing CVS bad diff with new file"""
-        diff = ("Index: newfile\n"
-                "===================================================================\n"
-                "RCS file: newfile\n"
-                "diff -N newfile\n"
-                "--- /dev/null\n"
-                "+++ newfile	26 Jul 2007 10:11:45 -0000\n"
-                "@@ -0,0 +1 @@\n"
-                "+new file content")
+        diff = (b"Index: newfile\n"
+                b"===================================================================\n"
+                b"RCS file: newfile\n"
+                b"diff -N newfile\n"
+                b"--- /dev/null\n"
+                b"+++ newfile\t26 Jul 2007 10:11:45 -0000\n"
+                b"@@ -0,0 +1 @@\n"
+                b"+new file content")
 
         self.assertRaises(DiffParserError,
                           lambda: self.tool.get_parser(diff).parse())
 
     def test_newfile_diff(self):
         """Testing parsing CVS diff with new file"""
-        diff = ("Index: newfile\n"
-                "===================================================================\n"
-                "RCS file: newfile\n"
-                "diff -N newfile\n"
-                "--- /dev/null	1 Jan 1970 00:00:00 -0000\n"
-                "+++ newfile	26 Jul 2007 10:11:45 -0000\n"
-                "@@ -0,0 +1 @@\n"
-                "+new file content\n")
+        diff = (b"Index: newfile\n"
+                b"===================================================================\n"
+                b"RCS file: newfile\n"
+                b"diff -N newfile\n"
+                b"--- /dev/null\t1 Jan 1970 00:00:00 -0000\n"
+                b"+++ newfile\t26 Jul 2007 10:11:45 -0000\n"
+                b"@@ -0,0 +1 @@\n"
+                b"+new file content\n")
 
         file = self.tool.get_parser(diff).parse()[0]
         self.assertEqual(file.origFile, 'newfile')
@@ -549,18 +552,18 @@ class CVSTests(SCMTestCase):
 
     def test_inter_revision_diff(self):
         """Testing parsing CVS inter-revision diff"""
-        diff = ("Index: testfile\n"
-                "===================================================================\n"
-                "RCS file: %s/test/testfile,v\n"
-                "retrieving revision 1.1\n"
-                "retrieving revision 1.2\n"
-                "diff -u -p -r1.1 -r1.2\n"
-                "--- testfile    26 Jul 2007 08:50:30 -0000      1.1\n"
-                "+++ testfile    27 Sep 2007 22:57:16 -0000      1.2\n"
-                "@@ -1 +1,2 @@\n"
-                "-test content\n"
-                "+updated test content\n"
-                "+added info\n")
+        diff = (b"Index: testfile\n"
+                b"===================================================================\n"
+                b"RCS file: %s/test/testfile,v\n"
+                b"retrieving revision 1.1\n"
+                b"retrieving revision 1.2\n"
+                b"diff -u -p -r1.1 -r1.2\n"
+                b"--- testfile    26 Jul 2007 08:50:30 -0000      1.1\n"
+                b"+++ testfile    27 Sep 2007 22:57:16 -0000      1.2\n"
+                b"@@ -1 +1,2 @@\n"
+                b"-test content\n"
+                b"+updated test content\n"
+                b"+added info\n")
         diff = diff % self.cvs_repo_path
 
         file = self.tool.get_parser(diff).parse()[0]
@@ -647,12 +650,10 @@ class SubversionTests(SCMTestCase):
         self.assertTrue(
             not self.tool.file_exists('trunk/doc/misc-docs/Makefile2'))
 
-        self.assertRaises(FileNotFoundError,
-                          lambda: self.tool.get_file(''))
+        self.assertRaises(FileNotFoundError, lambda: self.tool.get_file(''))
 
         self.assertRaises(FileNotFoundError,
-                          lambda: self.tool.get_file('hello',
-                                                     PRE_CREATION))
+                          lambda: self.tool.get_file('hello', PRE_CREATION))
 
     def test_revision_parsing(self):
         """Testing revision number parsing"""
@@ -702,11 +703,11 @@ class SubversionTests(SCMTestCase):
 
     def test_binary_diff(self):
         """Testing parsing SVN diff with binary file"""
-        diff = ('Index: binfile\n'
-                '============================================================'
-                '=======\n'
-                'Cannot display: file marked as a binary type.\n'
-                'svn:mime-type = application/octet-stream\n')
+        diff = (b'Index: binfile\n'
+                b'============================================================'
+                b'=======\n'
+                b'Cannot display: file marked as a binary type.\n'
+                b'svn:mime-type = application/octet-stream\n')
 
         file = self.tool.get_parser(diff).parse()[0]
         self.assertEqual(file.origFile, 'binfile')
@@ -717,19 +718,19 @@ class SubversionTests(SCMTestCase):
         # 'svn cat' will expand special variables in svn:keywords,
         # but 'svn diff' doesn't expand anything.  This causes the
         # patch to fail if those variables appear in the patch context.
-        diff = ("Index: Makefile\n"
-                "==========================================================="
-                "========\n"
-                "--- Makefile    (revision 4)\n"
-                "+++ Makefile    (working copy)\n"
-                "@@ -1,6 +1,7 @@\n"
-                " # $Id$\n"
-                " # $Rev$\n"
-                " # $Revision::     $\n"
-                "+# foo\n"
-                " include ../tools/Makefile.base-vars\n"
-                " NAME = misc-docs\n"
-                " OUTNAME = svn-misc-docs\n")
+        diff = (b"Index: Makefile\n"
+                b"==========================================================="
+                b"========\n"
+                b"--- Makefile    (revision 4)\n"
+                b"+++ Makefile    (working copy)\n"
+                b"@@ -1,6 +1,7 @@\n"
+                b" # $Id$\n"
+                b" # $Rev$\n"
+                b" # $Revision::     $\n"
+                b"+# foo\n"
+                b" include ../tools/Makefile.base-vars\n"
+                b" NAME = misc-docs\n"
+                b" OUTNAME = svn-misc-docs\n")
 
         filename = 'trunk/doc/misc-docs/Makefile'
         rev = Revision('4')
@@ -738,20 +739,20 @@ class SubversionTests(SCMTestCase):
 
     def test_unterminated_keyword_diff(self):
         """Testing parsing SVN diff with unterminated keywords"""
-        diff = ("Index: Makefile\n"
-                "==========================================================="
-                "========\n"
-                "--- Makefile    (revision 4)\n"
-                "+++ Makefile    (working copy)\n"
-                "@@ -1,6 +1,7 @@\n"
-                " # $Id$\n"
-                " # $Id:\n"
-                " # $Rev$\n"
-                " # $Revision::     $\n"
-                "+# foo\n"
-                " include ../tools/Makefile.base-vars\n"
-                " NAME = misc-docs\n"
-                " OUTNAME = svn-misc-docs\n")
+        diff = (b"Index: Makefile\n"
+                b"==========================================================="
+                b"========\n"
+                b"--- Makefile    (revision 4)\n"
+                b"+++ Makefile    (working copy)\n"
+                b"@@ -1,6 +1,7 @@\n"
+                b" # $Id$\n"
+                b" # $Id:\n"
+                b" # $Rev$\n"
+                b" # $Revision::     $\n"
+                b"+# foo\n"
+                b" include ../tools/Makefile.base-vars\n"
+                b" NAME = misc-docs\n"
+                b" OUTNAME = svn-misc-docs\n")
 
         filename = 'trunk/doc/misc-docs/Makefile'
         rev = Revision('5')
@@ -761,23 +762,23 @@ class SubversionTests(SCMTestCase):
     def test_svn16_property_diff(self):
         """Testing parsing SVN 1.6 diff with property changes"""
         prop_diff = (
-            "Index:\n"
-            "======================================================"
-            "=============\n"
-            "--- (revision 123)\n"
-            "+++ (working copy)\n"
-            "Property changes on: .\n"
-            "______________________________________________________"
-            "_____________\n"
-            "Modified: reviewboard:url\n"
-            "## -1 +1 ##\n"
-            "-http://reviews.reviewboard.org\n"
-            "+http://reviews.reviewboard.org\n")
+            b"Index:\n"
+            b"======================================================"
+            b"=============\n"
+            b"--- (revision 123)\n"
+            b"+++ (working copy)\n"
+            b"Property changes on: .\n"
+            b"______________________________________________________"
+            b"_____________\n"
+            b"Modified: reviewboard:url\n"
+            b"## -1 +1 ##\n"
+            b"-http://reviews.reviewboard.org\n"
+            b"+http://reviews.reviewboard.org\n")
         bin_diff = (
-            "Index: binfile\n"
-            "======================================================="
-            "============\nCannot display: file marked as a "
-            "binary type.\nsvn:mime-type = application/octet-stream\n")
+            b"Index: binfile\n"
+            b"======================================================="
+            b"============\nCannot display: file marked as a "
+            b"binary type.\nsvn:mime-type = application/octet-stream\n")
         diff = prop_diff + bin_diff
 
         files = self.tool.get_parser(diff).parse()
@@ -790,27 +791,27 @@ class SubversionTests(SCMTestCase):
     def test_svn17_property_diff(self):
         """Testing parsing SVN 1.7+ diff with property changes"""
         prop_diff = (
-            "Index .:\n"
-            "======================================================"
-            "=============\n"
-            "--- .  (revision 123)\n"
-            "+++ .  (working copy)\n"
-            "\n"
-            "Property changes on: .\n"
-            "______________________________________________________"
-            "_____________\n"
-            "Modified: reviewboard:url\n"
-            "## -0,0 +1,3 ##\n"
-            "-http://reviews.reviewboard.org\n"
-            "+http://reviews.reviewboard.org\n"
-            "Added: myprop\n"
-            "## -0,0 +1 ##\n"
-            "+Property test.\n")
+            b"Index .:\n"
+            b"======================================================"
+            b"=============\n"
+            b"--- .  (revision 123)\n"
+            b"+++ .  (working copy)\n"
+            b"\n"
+            b"Property changes on: .\n"
+            b"______________________________________________________"
+            b"_____________\n"
+            b"Modified: reviewboard:url\n"
+            b"## -0,0 +1,3 ##\n"
+            b"-http://reviews.reviewboard.org\n"
+            b"+http://reviews.reviewboard.org\n"
+            b"Added: myprop\n"
+            b"## -0,0 +1 ##\n"
+            b"+Property test.\n")
         bin_diff = (
-            "Index: binfile\n"
-            "======================================================="
-            "============\nCannot display: file marked as a "
-            "binary type.\nsvn:mime-type = application/octet-stream\n")
+            b"Index: binfile\n"
+            b"======================================================="
+            b"============\nCannot display: file marked as a "
+            b"binary type.\nsvn:mime-type = application/octet-stream\n")
         diff = prop_diff + bin_diff
 
         files = self.tool.get_parser(diff).parse()
@@ -856,9 +857,9 @@ class SubversionTests(SCMTestCase):
         """Testing SVNTool.get_change"""
         commit = self.tool.get_change('5')
 
-        self.assertEqual(md5(commit.message).hexdigest(),
+        self.assertEqual(md5(commit.message.encode('utf-8')).hexdigest(),
                          '928336c082dd756e3f7af4cde4724ebf')
-        self.assertEqual(md5(commit.diff).hexdigest(),
+        self.assertEqual(md5(commit.diff.encode('utf-8')).hexdigest(),
                          '56e50374056931c03a333f234fa63375')
 
 
@@ -888,7 +889,7 @@ class PerforceTests(SCMTestCase):
         """Testing PerforceTool.get_changeset"""
         desc = self.tool.get_changeset(157)
         self.assertEqual(desc.changenum, 157)
-        self.assertEqual(md5(desc.description).hexdigest(),
+        self.assertEqual(md5(desc.description.encode('utf-8')).hexdigest(),
                          'b7eff0ca252347cc9b09714d07397e64')
 
         expected_files = [
@@ -902,7 +903,7 @@ class PerforceTests(SCMTestCase):
         for file, expected in zip_longest(desc.files, expected_files):
             self.assertEqual(file, expected)
 
-        self.assertEqual(md5(desc.summary).hexdigest(),
+        self.assertEqual(md5(desc.summary.encode('utf-8')).hexdigest(),
                          '99a335676b0e5821ffb2f7469d4d7019')
 
     @online_only
@@ -921,7 +922,8 @@ class PerforceTests(SCMTestCase):
             # public.perforce.com doesn't have unicode enabled. Getting this
             # error means we at least passed the charset through correctly
             # to the p4 client.
-            self.assertTrue('clients require a unicode enabled server' in str(e))
+            self.assertTrue('clients require a unicode enabled server' in
+                            six.text_type(e))
 
     @online_only
     def test_changeset_broken(self):
@@ -960,7 +962,7 @@ class PerforceTests(SCMTestCase):
 
     def test_empty_diff(self):
         """Testing Perforce empty diff parsing"""
-        diff = "==== //depot/foo/proj/README#2 ==M== /src/proj/README ====\n"
+        diff = b"==== //depot/foo/proj/README#2 ==M== /src/proj/README ====\n"
 
         file = self.tool.get_parser(diff).parse()[0]
         self.assertEqual(file.origFile, '//depot/foo/proj/README')
@@ -976,8 +978,8 @@ class PerforceTests(SCMTestCase):
 
     def test_binary_diff(self):
         """Testing Perforce binary diff parsing"""
-        diff = ("==== //depot/foo/proj/test.png#1 ==A== /src/proj/test.png "
-                "====\nBinary files /tmp/foo and /src/proj/test.png differ\n")
+        diff = (b"==== //depot/foo/proj/test.png#1 ==A== /src/proj/test.png "
+                b"====\nBinary files /tmp/foo and /src/proj/test.png differ\n")
 
         file = self.tool.get_parser(diff).parse()[0]
         self.assertEqual(file.origFile, '//depot/foo/proj/test.png')
@@ -993,8 +995,8 @@ class PerforceTests(SCMTestCase):
 
     def test_deleted_diff(self):
         """Testing Perforce deleted diff parsing"""
-        diff = ("==== //depot/foo/proj/test.png#1 ==D== /src/proj/test.png "
-                "====\n")
+        diff = (b"==== //depot/foo/proj/test.png#1 ==D== /src/proj/test.png "
+                b"====\n")
 
         file = self.tool.get_parser(diff).parse()[0]
         self.assertEqual(file.origFile, '//depot/foo/proj/test.png')
@@ -1011,14 +1013,14 @@ class PerforceTests(SCMTestCase):
     def test_moved_file_diff(self):
         """Testing Perforce moved file diff parsing"""
         diff = (
-            "Moved from: //depot/foo/proj/test.txt\n"
-            "Moved to: //depot/foo/proj/test2.txt\n"
-            "--- //depot/foo/proj/test.txt  //depot/foo/proj/test.txt#2\n"
-            "+++ //depot/foo/proj/test2.txt  01-02-03 04:05:06\n"
-            "@@ -1 +1,2 @@\n"
-            "-test content\n"
-            "+updated test content\n"
-            "+added info\n"
+            b"Moved from: //depot/foo/proj/test.txt\n"
+            b"Moved to: //depot/foo/proj/test2.txt\n"
+            b"--- //depot/foo/proj/test.txt  //depot/foo/proj/test.txt#2\n"
+            b"+++ //depot/foo/proj/test2.txt  01-02-03 04:05:06\n"
+            b"@@ -1 +1,2 @@\n"
+            b"-test content\n"
+            b"+updated test content\n"
+            b"+added info\n"
         )
 
         file = self.tool.get_parser(diff).parse()[0]
@@ -1036,8 +1038,8 @@ class PerforceTests(SCMTestCase):
 
     def test_moved_file_diff_no_changes(self):
         """Testing Perforce moved file diff parsing without changes"""
-        diff = ("==== //depot/foo/proj/test.png#5 ==MV== "
-                "//depot/foo/proj/test2.png ====\n")
+        diff = (b"==== //depot/foo/proj/test.png#5 ==MV== "
+                b"//depot/foo/proj/test2.png ====\n")
 
         file = self.tool.get_parser(diff).parse()[0]
         self.assertEqual(file.origFile, '//depot/foo/proj/test.png')
@@ -1053,14 +1055,14 @@ class PerforceTests(SCMTestCase):
 
     def test_empty_and_normal_diffs(self):
         """Testing Perforce empty and normal diff parsing"""
-        diff1_text = ("==== //depot/foo/proj/test.png#1 ==A== "
-                      "/src/proj/test.png ====\n")
-        diff2_text = ("--- test.c  //depot/foo/proj/test.c#2\n"
-                      "+++ test.c  01-02-03 04:05:06\n"
-                      "@@ -1 +1,2 @@\n"
-                      "-test content\n"
-                      "+updated test content\n"
-                      "+added info\n")
+        diff1_text = (b"==== //depot/foo/proj/test.png#1 ==A== "
+                      b"/src/proj/test.png ====\n")
+        diff2_text = (b"--- test.c  //depot/foo/proj/test.c#2\n"
+                      b"+++ test.c  01-02-03 04:05:06\n"
+                      b"@@ -1 +1,2 @@\n"
+                      b"-test content\n"
+                      b"+updated test content\n"
+                      b"+added info\n")
         diff = diff1_text + diff2_text
 
         files = self.tool.get_parser(diff).parse()
@@ -1135,7 +1137,7 @@ class PerforceStunnelTests(SCMTestCase):
         desc = self.tool.get_changeset(157)
 
         self.assertEqual(desc.changenum, 157)
-        self.assertEqual(md5(desc.description).hexdigest(),
+        self.assertEqual(md5(desc.description.encode('utf-8')).hexdigest(),
                          'b7eff0ca252347cc9b09714d07397e64')
 
         expected_files = [
@@ -1149,7 +1151,7 @@ class PerforceStunnelTests(SCMTestCase):
         for file, expected in zip_longest(desc.files, expected_files):
             self.assertEqual(file, expected)
 
-        self.assertEqual(md5(desc.summary).hexdigest(),
+        self.assertEqual(md5(desc.summary.encode('utf-8')).hexdigest(),
                          '99a335676b0e5821ffb2f7469d4d7019')
 
     def test_get_file(self):
@@ -1160,7 +1162,7 @@ class PerforceStunnelTests(SCMTestCase):
         try:
             file = self.tool.get_file('//public/perforce/api/python/P4Client/p4.py', 1)
         except Exception as e:
-            if str(e).startswith('Connect to server failed'):
+            if six.text_type(e).startswith('Connect to server failed'):
                 raise nose.SkipTest(
                     'Connection to public.perforce.com failed.  No internet?')
             else:
@@ -1283,9 +1285,9 @@ class MercurialTests(SCMTestCase):
     def test_diff_parser_new_file(self):
         """Testing HgDiffParser with a diff that creates a new file"""
 
-        diffContents = ('diff -r bf544ea505f8 readme\n'
-                        '--- /dev/null\n'
-                        '+++ b/readme\n')
+        diffContents = (b'diff -r bf544ea505f8 readme\n'
+                        b'--- /dev/null\n'
+                        b'+++ b/readme\n')
 
         file = self._first_file_in_diff(diffContents)
         self.assertEqual(file.origFile, "readme")
@@ -1293,9 +1295,9 @@ class MercurialTests(SCMTestCase):
     def test_diff_parser_uncommitted(self):
         """Testing HgDiffParser with a diff with an uncommitted change"""
 
-        diffContents = ('diff -r bf544ea505f8 readme\n'
-                        '--- a/readme\n'
-                        '+++ b/readme\n')
+        diffContents = (b'diff -r bf544ea505f8 readme\n'
+                        b'--- a/readme\n'
+                        b'+++ b/readme\n')
 
         file = self._first_file_in_diff(diffContents)
         self.assertEqual(file.origInfo, "bf544ea505f8")
@@ -1306,9 +1308,9 @@ class MercurialTests(SCMTestCase):
     def test_diff_parser_committed(self):
         """Testing HgDiffParser with a diff between committed revisions"""
 
-        diffContents = ('diff -r 356a6127ef19 -r 4960455a8e88 readme\n'
-                        '--- a/readme\n'
-                        '+++ b/readme\n')
+        diffContents = (b'diff -r 356a6127ef19 -r 4960455a8e88 readme\n'
+                        b'--- a/readme\n'
+                        b'+++ b/readme\n')
 
         file = self._first_file_in_diff(diffContents)
         self.assertEqual(file.origInfo, "356a6127ef19")
@@ -1319,17 +1321,17 @@ class MercurialTests(SCMTestCase):
     def test_diff_parser_with_preamble_junk(self):
         """Testing HgDiffParser with a diff that contains non-diff junk test as a preamble"""
 
-        diffContents = ('changeset:   60:3613c58ad1d5\n'
-                        'user:        Michael Rowe <mrowe@mojain.com>\n'
-                        'date:        Fri Jul 27 11:44:37 2007 +1000\n'
-                        'files:       readme\n'
-                        'description:\n'
-                        'Update the readme file\n'
-                        '\n'
-                        '\n'
-                        'diff -r 356a6127ef19 -r 4960455a8e88 readme\n'
-                        '--- a/readme\n'
-                        '+++ b/readme\n')
+        diffContents = (b'changeset:   60:3613c58ad1d5\n'
+                        b'user:        Michael Rowe <mrowe@mojain.com>\n'
+                        b'date:        Fri Jul 27 11:44:37 2007 +1000\n'
+                        b'files:       readme\n'
+                        b'description:\n'
+                        b'Update the readme file\n'
+                        b'\n'
+                        b'\n'
+                        b'diff -r 356a6127ef19 -r 4960455a8e88 readme\n'
+                        b'--- a/readme\n'
+                        b'+++ b/readme\n')
 
         file = self._first_file_in_diff(diffContents)
         self.assertEqual(file.origInfo, "356a6127ef19")
@@ -1340,12 +1342,12 @@ class MercurialTests(SCMTestCase):
     def test_git_diff_parsing(self):
         """Testing HgDiffParser git diff support"""
 
-        diffContents = ('# Node ID 4960455a8e88\n'
-                        '# Parent bf544ea505f8\n'
-                        'diff --git a/path/to file/readme.txt '
-                        'b/new/path to/readme.txt\n'
-                        '--- a/path/to file/readme.txt\n'
-                        '+++ b/new/path to/readme.txt\n')
+        diffContents = (b'# Node ID 4960455a8e88\n'
+                        b'# Parent bf544ea505f8\n'
+                        b'diff --git a/path/to file/readme.txt '
+                        b'b/new/path to/readme.txt\n'
+                        b'--- a/path/to file/readme.txt\n'
+                        b'+++ b/new/path to/readme.txt\n')
 
         file = self._first_file_in_diff(diffContents)
         self.assertEqual(file.origInfo, "bf544ea505f8")
@@ -1694,17 +1696,17 @@ class GitTests(SCMTestCase):
 
     def test_parse_diff_with_index_range(self):
         """Testing Git diff parsing with an index range"""
-        diff = ("diff --git a/foo/bar b/foo/bar2\n"
-                "similarity index 88%\n"
-                "rename from foo/bar\n"
-                "rename to foo/bar2\n"
-                "index 612544e4343bf04967eb5ea80257f6c64d6f42c7.."
-                "e88b7f15c03d141d0bb38c8e49bb6c411ebfe1f1 100644\n"
-                "--- a/foo/bar\n"
-                "+++ b/foo/bar2\n"
-                "@ -1,1 +1,1 @@\n"
-                "-blah blah\n"
-                "+blah\n")
+        diff = (b"diff --git a/foo/bar b/foo/bar2\n"
+                b"similarity index 88%\n"
+                b"rename from foo/bar\n"
+                b"rename to foo/bar2\n"
+                b"index 612544e4343bf04967eb5ea80257f6c64d6f42c7.."
+                b"e88b7f15c03d141d0bb38c8e49bb6c411ebfe1f1 100644\n"
+                b"--- a/foo/bar\n"
+                b"+++ b/foo/bar2\n"
+                b"@ -1,1 +1,1 @@\n"
+                b"-blah blah\n"
+                b"+blah\n")
         files = self.tool.get_parser(diff).parse()
         self.assertEqual(len(files), 1)
         self.assertEqual(files[0].origFile, 'foo/bar')
@@ -1718,12 +1720,12 @@ class GitTests(SCMTestCase):
 
     def test_parse_diff_with_deleted_binary_files(self):
         """Testing Git diff parsing with deleted binary files"""
-        diff = ("diff --git a/foo.bin b/foo.bin\n"
-                "deleted file mode 100644\n"
-                "Binary file foo.bin has changed\n"
-                "diff --git a/bar.bin b/bar.bin\n"
-                "deleted file mode 100644\n"
-                "Binary file bar.bin has changed\n")
+        diff = (b"diff --git a/foo.bin b/foo.bin\n"
+                b"deleted file mode 100644\n"
+                b"Binary file foo.bin has changed\n"
+                b"diff --git a/bar.bin b/bar.bin\n"
+                b"deleted file mode 100644\n"
+                b"Binary file bar.bin has changed\n")
         files = self.tool.get_parser(diff).parse()
         self.assertEqual(len(files), 2)
         self.assertEqual(files[0].origFile, 'foo.bin')
@@ -1742,40 +1744,40 @@ class GitTests(SCMTestCase):
     def test_parse_diff_with_all_headers(self):
         """Testing Git diff parsing and preserving all headers"""
         preamble = (
-            "From 38d8fa94a9aa0c5b27943bec31d94e880165f1e0 Mon Sep "
-            "17 00:00:00 2001\n"
-            "From: Example Joe <joe@example.com>\n"
-            "Date: Thu, 5 Apr 2012 00:41:12 -0700\n"
-            "Subject: [PATCH 1/1] Sample patch.\n"
-            "\n"
-            "This is a test summary.\n"
-            "\n"
-            "With a description.\n"
-            "---\n"
-            " foo/bar |   2 -+n"
-            " README  |   2 -+n"
-            " 2 files changed, 2 insertions(+), 2 deletions(-)\n"
-            "\n")
+            b"From 38d8fa94a9aa0c5b27943bec31d94e880165f1e0 Mon Sep "
+            b"17 00:00:00 2001\n"
+            b"From: Example Joe <joe@example.com>\n"
+            b"Date: Thu, 5 Apr 2012 00:41:12 -0700\n"
+            b"Subject: [PATCH 1/1] Sample patch.\n"
+            b"\n"
+            b"This is a test summary.\n"
+            b"\n"
+            b"With a description.\n"
+            b"---\n"
+            b" foo/bar |   2 -+n"
+            b" README  |   2 -+n"
+            b" 2 files changed, 2 insertions(+), 2 deletions(-)\n"
+            b"\n")
         diff1 = (
-            "diff --git a/foo/bar b/foo/bar2\n"
-            "index 612544e4343bf04967eb5ea80257f6c64d6f42c7.."
-            "e88b7f15c03d141d0bb38c8e49bb6c411ebfe1f1 100644\n"
-            "--- a/foo/bar\n"
-            "+++ b/foo/bar2\n"
-            "@ -1,1 +1,1 @@\n"
-            "-blah blah\n"
-            "+blah\n")
+            b"diff --git a/foo/bar b/foo/bar2\n"
+            b"index 612544e4343bf04967eb5ea80257f6c64d6f42c7.."
+            b"e88b7f15c03d141d0bb38c8e49bb6c411ebfe1f1 100644\n"
+            b"--- a/foo/bar\n"
+            b"+++ b/foo/bar2\n"
+            b"@ -1,1 +1,1 @@\n"
+            b"-blah blah\n"
+            b"+blah\n")
         diff2 = (
-            "diff --git a/README b/README\n"
-            "index 712544e4343bf04967eb5ea80257f6c64d6f42c7.."
-            "f88b7f15c03d141d0bb38c8e49bb6c411ebfe1f1 100644\n"
-            "--- a/README\n"
-            "+++ b/README\n"
-            "@ -1,1 +1,1 @@\n"
-            "-blah blah\n"
-            "+blah\n"
-            "-\n"
-            "1.7.1\n")
+            b"diff --git a/README b/README\n"
+            b"index 712544e4343bf04967eb5ea80257f6c64d6f42c7.."
+            b"f88b7f15c03d141d0bb38c8e49bb6c411ebfe1f1 100644\n"
+            b"--- a/README\n"
+            b"+++ b/README\n"
+            b"@ -1,1 +1,1 @@\n"
+            b"-blah blah\n"
+            b"+blah\n"
+            b"-\n"
+            b"1.7.1\n")
         diff = preamble + diff1 + diff2
 
         files = self.tool.get_parser(diff).parse()

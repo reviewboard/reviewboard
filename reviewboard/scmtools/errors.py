@@ -1,3 +1,5 @@
+from __future__ import unicode_literals
+
 from django.utils.translation import ugettext as _
 
 from reviewboard.ssh.errors import SSHAuthenticationError
@@ -31,7 +33,7 @@ class EmptyChangeSetError(ChangeSetError):
 class InvalidRevisionFormatError(SCMError):
     """Indicates that a revision isn't in a recognizable format."""
     def __init__(self, path, revision, detail=None):
-        msg = "The revision '%s' for '%s' isn't in a valid format" % \
+        msg = _("The revision '%s' for '%s' isn't in a valid format") % \
               (revision, path)
 
         if detail:
@@ -49,14 +51,13 @@ class FileNotFoundError(SCMError):
         from reviewboard.scmtools.core import HEAD
 
         if revision is None or revision == HEAD and base_commit_id is None:
-            msg = "The file '%s' could not be found in the repository" % path
+            msg = _("The file '%s' could not be found in the repository") % path
         elif base_commit_id is not None and base_commit_id != revision:
-            msg = ("The file '%s' (r%s, commit %s) could not be found in "
-                   "the repository"
-                   % (path, revision))
+            msg = (_("The file '%s' (r%s, commit %s) could not be found in "
+                     "the repository") % (path, revision))
         else:
-            msg = "The file '%s' (r%s) could not be found in the repository" \
-                % (path, revision)
+            msg = (_("The file '%s' (r%s) could not be found in the repository")
+                   % (path, revision))
 
         if detail:
             msg += ': ' + detail

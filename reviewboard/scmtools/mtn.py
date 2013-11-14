@@ -1,6 +1,9 @@
+from __future__ import unicode_literals
+
 import os
 import subprocess
 
+from djblets.util.compat import six
 from djblets.util.filesystem import is_exe_in_path
 
 from reviewboard.diffviewer.parser import DiffParser
@@ -91,13 +94,13 @@ class MonotoneClient:
                              close_fds=(os.name != 'nt'))
 
         out = p.stdout.read()
-        err = unicode(p.stderr.read())
+        err = six.text_type(p.stderr.read())
         failure = p.wait()
 
         if not failure:
             return out
 
-        if u"mtn: misuse: no file" in err:
+        if "mtn: misuse: no file" in err:
             raise FileNotFoundError(fileid)
         else:
             raise SCMError(err)
