@@ -1,5 +1,8 @@
+from __future__ import unicode_literals
+
 from django.core.exceptions import ObjectDoesNotExist
 from django.template.defaultfilters import timesince
+from djblets.util.compat import six
 from djblets.util.decorators import augment_method_from
 from djblets.webapi.decorators import webapi_request_fields
 
@@ -110,7 +113,7 @@ class BaseDiffCommentResource(BaseCommentResource):
                                'start on.',
             },
             'order-by': {
-                'type': str,
+                'type': six.text_type,
                 'description': 'Comma-separated list of fields to order by',
             },
         },

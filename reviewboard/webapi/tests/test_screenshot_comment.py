@@ -1,3 +1,5 @@
+from __future__ import unicode_literals
+
 from djblets.util.compat import six
 
 from reviewboard.webapi.resources import resources

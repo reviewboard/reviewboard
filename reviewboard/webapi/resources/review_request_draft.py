@@ -1,3 +1,5 @@
+from __future__ import unicode_literals
+
 import re
 
 from django.contrib import auth
@@ -60,17 +62,17 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
             'mutable': False,
         },
         'last_updated': {
-            'type': str,
+            'type': six.text_type,
             'description': 'The date and time that the draft was last updated '
                            '(in YYYY-MM-DD HH:MM:SS format).',
             'mutable': False,
         },
         'branch': {
-            'type': str,
+            'type': six.text_type,
             'description': 'The branch name.',
         },
         'bugs_closed': {
-            'type': str,
+            'type': six.text_type,
             'description': 'The new list of bugs closed or referenced by this '
                            'change.',
         },
@@ -81,13 +83,13 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
                            'review request depends on.',
         },
         'changedescription': {
-            'type': str,
+            'type': six.text_type,
             'description': 'A custom description of what changes are being '
                            'made in this update. It often will be used to '
                            'describe the changes in the diff.',
         },
         'description': {
-            'type': str,
+            'type': six.text_type,
             'description': 'The new review request description.',
         },
         'public': {
@@ -104,21 +106,21 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
                            'in rich-text (Markdown) format.',
         },
         'summary': {
-            'type': str,
+            'type': six.text_type,
             'description': 'The new review request summary.',
         },
         'target_groups': {
-            'type': str,
+            'type': six.text_type,
             'description': 'A comma-separated list of review groups '
                            'that will be on the reviewer list.',
         },
         'target_people': {
-            'type': str,
+            'type': six.text_type,
             'description': 'A comma-separated list of users that will '
                            'be on a reviewer list.',
         },
         'testing_done': {
-            'type': str,
+            'type': six.text_type,
             'description': 'The new testing done text.',
         },
     }
@@ -173,24 +175,24 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
     @webapi_request_fields(
         optional={
             'branch': {
-                'type': str,
+                'type': six.text_type,
                 'description': 'The new branch name.',
             },
             'bugs_closed': {
-                'type': str,
+                'type': six.text_type,
                 'description': 'A comma-separated list of bug IDs.',
             },
             'depends_on': {
-                'type': str,
+                'type': six.text_type,
                 'description': 'The new list of dependencies of this review '
                                'request.',
             },
             'changedescription': {
-                'type': str,
+                'type': six.text_type,
                 'description': 'The change description for this update.',
             },
             'description': {
-                'type': str,
+                'type': six.text_type,
                 'description': 'The new review request description.',
             },
             'public': {
@@ -207,21 +209,21 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
                                '(Markdown) format.',
             },
             'summary': {
-                'type': str,
+                'type': six.text_type,
                 'description': 'The new review request summary.',
             },
             'target_groups': {
-                'type': str,
+                'type': six.text_type,
                 'description': 'A comma-separated list of review groups '
                                'that will be on the reviewer list.',
             },
             'target_people': {
-                'type': str,
+                'type': six.text_type,
                 'description': 'A comma-separated list of users that will '
                                'be on a reviewer list.',
             },
             'testing_done': {
-                'type': str,
+                'type': six.text_type,
                 'description': 'The new testing done text.',
             },
         },
@@ -259,24 +261,24 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
     @webapi_request_fields(
         optional={
             'branch': {
-                'type': str,
+                'type': six.text_type,
                 'description': 'The new branch name.',
             },
             'bugs_closed': {
-                'type': str,
+                'type': six.text_type,
                 'description': 'A comma-separated list of bug IDs.',
             },
             'depends_on': {
-                'type': str,
+                'type': six.text_type,
                 'description': 'The new list of dependencies of this review '
                                'request.',
             },
             'changedescription': {
-                'type': str,
+                'type': six.text_type,
                 'description': 'The change description for this update.',
             },
             'description': {
-                'type': str,
+                'type': six.text_type,
                 'description': 'The new review request description.',
             },
             'public': {
@@ -294,21 +296,21 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
                                '(Markdown) format.',
             },
             'summary': {
-                'type': str,
+                'type': six.text_type,
                 'description': 'The new review request summary.',
             },
             'target_groups': {
-                'type': str,
+                'type': six.text_type,
                 'description': 'A comma-separated list of review groups '
                                'that will be on the reviewer list.',
             },
             'target_people': {
-                'type': str,
+                'type': six.text_type,
                 'description': 'A comma-separated list of users that will '
                                'be on a reviewer list.',
             },
             'testing_done': {
-                'type': str,
+                'type': six.text_type,
                 'description': 'The new testing done text.',
             },
         },

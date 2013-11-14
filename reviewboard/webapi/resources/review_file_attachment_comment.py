@@ -1,4 +1,7 @@
+from __future__ import unicode_literals
+
 from django.core.exceptions import ObjectDoesNotExist
+from djblets.util.compat import six
 from djblets.util.decorators import augment_method_from
 from djblets.webapi.decorators import (webapi_login_required,
                                        webapi_response_errors,
@@ -44,7 +47,7 @@ class ReviewFileAttachmentCommentResource(BaseFileAttachmentCommentResource):
                                'commented on.',
             },
             'text': {
-                'type': str,
+                'type': six.text_type,
                 'description': 'The comment text.',
             },
         },
@@ -135,7 +138,7 @@ class ReviewFileAttachmentCommentResource(BaseFileAttachmentCommentResource):
     @webapi_request_fields(
         optional={
             'text': {
-                'type': str,
+                'type': six.text_type,
                 'description': 'The comment text.',
             },
             'issue_opened': {

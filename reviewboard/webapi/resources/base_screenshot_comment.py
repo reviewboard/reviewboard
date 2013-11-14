@@ -1,5 +1,8 @@
+from __future__ import unicode_literals
+
 from django.db.models import Q
 from django.template.defaultfilters import timesince
+from djblets.util.compat import six
 from djblets.util.decorators import augment_method_from
 
 from reviewboard.reviews.models import ScreenshotComment
@@ -41,7 +44,7 @@ class BaseScreenshotCommentResource(BaseCommentResource):
                            'screenshot.',
         },
         'thumbnail_url': {
-            'type': str,
+            'type': six.text_type,
             'description': 'The URL to an image showing what was commented '
                            'on.',
         },

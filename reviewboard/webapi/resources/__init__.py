@@ -1,3 +1,5 @@
+from __future__ import unicode_literals
+
 import logging
 
 from django.contrib.auth.models import User

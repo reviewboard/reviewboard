@@ -1,5 +1,8 @@
+from __future__ import unicode_literals
+
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Q
+from djblets.util.compat import six
 from djblets.util.decorators import augment_method_from
 from djblets.webapi.decorators import (webapi_login_required,
                                        webapi_response_errors,
@@ -30,12 +33,12 @@ class ReviewGroupResource(WebAPIResource):
             'description': 'The numeric ID of the review group.',
         },
         'name': {
-            'type': str,
+            'type': six.text_type,
             'description': 'The short name of the group, used in the '
                            'reviewer list and the Dashboard.',
         },
         'display_name': {
-            'type': str,
+            'type': six.text_type,
             'description': 'The human-readable name of the group, sometimes '
                            'used as a short description.',
         },
@@ -46,12 +49,12 @@ class ReviewGroupResource(WebAPIResource):
                            'of the group.',
         },
         'mailing_list': {
-            'type': str,
+            'type': six.text_type,
             'description': 'The e-mail address that all posts on a review '
                            'group are sent to.',
         },
         'url': {
-            'type': str,
+            'type': six.text_type,
             'description': "The URL to the user's page on the site. "
                            "This is deprecated and will be removed in a "
                            "future version.",
@@ -127,7 +130,7 @@ class ReviewGroupResource(WebAPIResource):
     @webapi_request_fields(
         optional={
             'q': {
-                'type': str,
+                'type': six.text_type,
                 'description': 'The string that the group name (or the  '
                                'display name when using ``displayname``) '
                                'must start with in order to be included in '
@@ -168,17 +171,17 @@ class ReviewGroupResource(WebAPIResource):
     @webapi_request_fields(
         required={
             'name': {
-                'type': str,
+                'type': six.text_type,
                 'description': 'The name of the group.',
             },
             'display_name': {
-                'type': str,
+                'type': six.text_type,
                 'description': 'The human-readable name of the group.',
             },
         },
         optional={
             'mailing_list': {
-                'type': str,
+                'type': six.text_type,
                 'description': 'The e-mail address that all posts on a review '
                                'group are sent to.',
             },
@@ -233,15 +236,15 @@ class ReviewGroupResource(WebAPIResource):
     @webapi_request_fields(
         optional={
             'name': {
-                'type': str,
+                'type': six.text_type,
                 'description': 'The new name for the group.',
             },
             'display_name': {
-                'type': str,
+                'type': six.text_type,
                 'description': 'The human-readable name of the group.',
             },
             'mailing_list': {
-                'type': str,
+                'type': six.text_type,
                 'description': 'The e-mail address that all posts on a review '
                                'group are sent to.',
             },

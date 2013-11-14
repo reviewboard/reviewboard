@@ -1,4 +1,4 @@
-from __future__ import print_function
+from __future__ import print_function, unicode_literals
 
 import json
 import os
@@ -343,7 +343,7 @@ class BaseWebAPITestCase(TestCase, EmailTestHelper):
 
         self.apiDelete(
             get_screenshot_list_url(review_request, local_site_name) +
-            str(screenshot.id) + '/')
+            six.text_type(screenshot.id) + '/')
 
     def _postNewFileAttachmentComment(self, review_request, review_id,
                                       file_attachment, comment_text,

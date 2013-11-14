@@ -1,3 +1,5 @@
+from __future__ import unicode_literals
+
 import os
 
 from djblets.util.compat import six
@@ -119,12 +121,11 @@ class ResourceListTests(ReviewRequestChildListMixin, BaseWebAPITestCase):
 
         diff_filename = os.path.join(os.path.dirname(scmtools.__file__),
                                      'testdata', 'git_readme.diff')
-        f = open(diff_filename, "r")
-        rsp = self.apiPost(
-            get_diff_list_url(review_request),
-            {'path': f},
-            expected_status=400)
-        f.close()
+        with open(diff_filename, "r") as f:
+            rsp = self.apiPost(
+                get_diff_list_url(review_request),
+                {'path': f},
+                expected_status=400)
 
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], INVALID_FORM_DATA.code)
@@ -145,15 +146,14 @@ class ResourceListTests(ReviewRequestChildListMixin, BaseWebAPITestCase):
 
         diff_filename = os.path.join(os.path.dirname(scmtools.__file__),
                                      'testdata', 'git_readme.diff')
-        f = open(diff_filename, "r")
-
-        rsp = self.apiPost(
-            get_diff_list_url(review_request),
-            {
-                'path': f,
-                'basedir': "/trunk",
-            },
-            expected_status=400)
+        with open(diff_filename, "r") as f:
+            rsp = self.apiPost(
+                get_diff_list_url(review_request),
+                {
+                    'path': f,
+                    'basedir': "/trunk",
+                },
+                expected_status=400)
 
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], DIFF_TOO_BIG.code)

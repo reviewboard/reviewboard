@@ -1,3 +1,5 @@
+from __future__ import unicode_literals
+
 from djblets.util.compat import six
 from djblets.webapi.errors import PERMISSION_DENIED
 
@@ -110,16 +112,15 @@ class ResourceListTests(ReviewRequestChildListMixin, BaseWebAPITestCase):
         review_request = self.create_review_request()
         self.assertNotEqual(review_request.submitter, self.user)
 
-        f = open(self._getTrophyFilename(), "r")
-        self.assertTrue(f)
-        rsp = self.apiPost(
-            get_file_attachment_list_url(review_request),
-            {
-                'caption': 'Trophy',
-                'path': f,
-            },
-            expected_status=403)
-        f.close()
+        with open(self._getTrophyFilename(), "r") as f:
+            self.assertTrue(f)
+            rsp = self.apiPost(
+                get_file_attachment_list_url(review_request),
+                {
+                    'caption': 'Trophy',
+                    'path': f,
+                },
+                expected_status=403)
 
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)

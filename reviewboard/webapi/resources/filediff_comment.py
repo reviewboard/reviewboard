@@ -1,3 +1,5 @@
+from __future__ import unicode_literals
+
 from djblets.util.decorators import augment_method_from
 
 from reviewboard.webapi.resources.base_diff_comment import \

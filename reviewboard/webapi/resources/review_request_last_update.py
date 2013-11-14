@@ -1,6 +1,9 @@
+from __future__ import unicode_literals
+
 from django.core.exceptions import ObjectDoesNotExist
 from django.http import HttpResponseNotModified
 from django.utils.translation import ugettext as _
+from djblets.util.compat import six
 from djblets.util.http import get_modified_since, http_date
 from djblets.webapi.errors import DOES_NOT_EXIST
 from reviewboard.diffviewer.models import DiffSet
@@ -23,13 +26,13 @@ class ReviewRequestLastUpdateResource(WebAPIResource):
 
     fields = {
         'summary': {
-            'type': str,
+            'type': six.text_type,
             'description': 'A short summary of the update. This should be one '
                            'of "Review request updated", "Diff updated", '
                            '"New reply" or "New review".',
         },
         'timestamp': {
-            'type': str,
+            'type': six.text_type,
             'description': 'The timestamp of this most recent update '
                            '(YYYY-MM-DD HH:MM:SS format).',
         },
@@ -43,7 +46,7 @@ class ReviewRequestLastUpdateResource(WebAPIResource):
                            "a new review was posted.",
         },
         'user': {
-            'type': str,
+            'type': six.text_type,
             'description': 'The user who made the last update.',
         },
     }

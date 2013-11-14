@@ -1,3 +1,5 @@
+from __future__ import unicode_literals
+
 from django.core.exceptions import ObjectDoesNotExist, PermissionDenied
 from django.utils import six
 from django.utils.formats import localize
@@ -45,11 +47,11 @@ class BaseCommentResource(MarkdownFieldsMixin, WebAPIResource):
                            '(Markdown) format.',
         },
         'text': {
-            'type': str,
+            'type': six.text_type,
             'description': 'The comment text.',
         },
         'timestamp': {
-            'type': str,
+            'type': six.text_type,
             'description': 'The date and time that the comment was made '
                            '(in YYYY-MM-DD HH:MM:SS format).',
         },

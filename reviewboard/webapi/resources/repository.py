@@ -1,7 +1,10 @@
+from __future__ import unicode_literals
+
 import logging
 from time import time
 
 from django.core.exceptions import ObjectDoesNotExist
+from djblets.util.compat import six
 from djblets.util.decorators import augment_method_from
 from djblets.webapi.decorators import (webapi_login_required,
                                        webapi_response_errors,
@@ -48,17 +51,17 @@ class RepositoryResource(WebAPIResource):
             'description': 'The numeric ID of the repository.',
         },
         'name': {
-            'type': str,
+            'type': six.text_type,
             'description': 'The name of the repository.',
         },
         'path': {
-            'type': str,
+            'type': six.text_type,
             'description': 'The main path to the repository, which is used '
                            'for communicating with the repository and '
                            'accessing files.',
         },
         'mirror_path': {
-            'type': str,
+            'type': six.text_type,
             'description': 'An alternate path to the repository, for '
                            'lookup purposes.',
         },
@@ -68,7 +71,7 @@ class RepositoryResource(WebAPIResource):
                            'only).',
         },
         'tool': {
-            'type': str,
+            'type': six.text_type,
             'description': 'The name of the internal repository '
                            'communication class used to talk to the '
                            'repository. This is generally the type of the '
@@ -154,38 +157,38 @@ class RepositoryResource(WebAPIResource):
     @webapi_request_fields(
         required={
             'name': {
-                'type': str,
+                'type': six.text_type,
                 'description': 'The human-readable name of the repository.',
             },
             'path': {
-                'type': str,
+                'type': six.text_type,
                 'description': 'The path to the repository.',
             },
             'tool': {
-                'type': str,
+                'type': six.text_type,
                 'description': 'The ID of the SCMTool to use.',
             },
         },
         optional={
             'bug_tracker': {
-                'type': str,
+                'type': six.text_type,
                 'description': 'The URL to a bug in the bug tracker for '
                                'this repository, with ``%s`` in place of the '
                                'bug ID.',
             },
             'encoding': {
-                'type': str,
+                'type': six.text_type,
                 'description': 'The encoding used for files in the '
                                'repository. This is an advanced setting '
                                'and should only be used if you absolutely '
                                'need it.',
             },
             'mirror_path': {
-                'type': str,
+                'type': six.text_type,
                 'description': 'An alternate path to the repository.',
             },
             'password': {
-                'type': str,
+                'type': six.text_type,
                 'description': 'The password used to access the repository.',
             },
             'public': {
@@ -195,7 +198,7 @@ class RepositoryResource(WebAPIResource):
                                'by users on the site. The default is true.',
             },
             'raw_file_url': {
-                'type': str,
+                'type': six.text_type,
                 'description': "A URL mask used to check out a particular "
                                "file using HTTP. This is needed for "
                                "repository types that can't access files "
@@ -212,7 +215,7 @@ class RepositoryResource(WebAPIResource):
                                'certificate.',
             },
             'username': {
-                'type': str,
+                'type': six.text_type,
                 'description': 'The username used to access the repository.',
             },
             'visible': {
@@ -301,32 +304,32 @@ class RepositoryResource(WebAPIResource):
     @webapi_request_fields(
         optional={
             'bug_tracker': {
-                'type': str,
+                'type': six.text_type,
                 'description': 'The URL to a bug in the bug tracker for '
                                'this repository, with ``%s`` in place of the '
                                'bug ID.',
             },
             'encoding': {
-                'type': str,
+                'type': six.text_type,
                 'description': 'The encoding used for files in the '
                                'repository. This is an advanced setting '
                                'and should only be used if you absolutely '
                                'need it.',
             },
             'mirror_path': {
-                'type': str,
+                'type': six.text_type,
                 'description': 'An alternate path to the repository.',
             },
             'name': {
-                'type': str,
+                'type': six.text_type,
                 'description': 'The human-readable name of the repository.',
             },
             'password': {
-                'type': str,
+                'type': six.text_type,
                 'description': 'The password used to access the repository.',
             },
             'path': {
-                'type': str,
+                'type': six.text_type,
                 'description': 'The path to the repository.',
             },
             'public': {
@@ -336,7 +339,7 @@ class RepositoryResource(WebAPIResource):
                                'by users on the site. The default is true.',
             },
             'raw_file_url': {
-                'type': str,
+                'type': six.text_type,
                 'description': "A URL mask used to check out a particular "
                                "file using HTTP. This is needed for "
                                "repository types that can't access files "
@@ -353,7 +356,7 @@ class RepositoryResource(WebAPIResource):
                                'certificate.',
             },
             'username': {
-                'type': str,
+                'type': six.text_type,
                 'description': 'The username used to access the repository.',
             },
             'archive_name': {
@@ -489,7 +492,7 @@ class RepositoryResource(WebAPIResource):
                                                 e.raw_key)
                     except IOError as e:
                         return SERVER_CONFIG_ERROR, {
-                            'reason': str(e),
+                            'reason': six.text_type(e),
                         }
                 else:
                     return BAD_HOST_KEY, {
@@ -504,7 +507,7 @@ class RepositoryResource(WebAPIResource):
                         client.add_host_key(e.hostname, e.raw_key)
                     except IOError as e:
                         return SERVER_CONFIG_ERROR, {
-                            'reason': str(e),
+                            'reason': six.text_type(e),
                         }
                 else:
                     return UNVERIFIED_HOST_KEY, {
@@ -521,7 +524,7 @@ class RepositoryResource(WebAPIResource):
                             ret_cert.update(cert)
                     except IOError as e:
                         return SERVER_CONFIG_ERROR, {
-                            'reason': str(e),
+                            'reason': six.text_type(e),
                         }
                 else:
                     return UNVERIFIED_HOST_CERT, {
@@ -541,21 +544,21 @@ class RepositoryResource(WebAPIResource):
                     return MISSING_USER_KEY
                 else:
                     return REPO_AUTHENTICATION_ERROR, {
-                        'reason': str(e),
+                        'reason': six.text_type(e),
                     }
             except SSHError as e:
                 logging.error('Got unexpected SSHError when checking '
                               'repository: %s'
                               % e, exc_info=1, request=request)
                 return REPO_INFO_ERROR, {
-                    'error': str(e),
+                    'error': six.text_type(e),
                 }
             except SCMError as e:
                 logging.error('Got unexpected SCMError when checking '
                               'repository: %s'
                               % e, exc_info=1, request=request)
                 return REPO_INFO_ERROR, {
-                    'error': str(e),
+                    'error': six.text_type(e),
                 }
             except Exception as e:
                 logging.error('Unknown error in checking repository %s: %s',

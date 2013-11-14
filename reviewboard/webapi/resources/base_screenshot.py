@@ -1,7 +1,10 @@
+from __future__ import unicode_literals
+
 import os
 
 from django.core.exceptions import PermissionDenied, ObjectDoesNotExist
 from django.db.models import Q
+from djblets.util.compat import six
 from djblets.webapi.decorators import (webapi_login_required,
                                        webapi_response_errors,
                                        webapi_request_fields)
@@ -25,32 +28,32 @@ class BaseScreenshotResource(WebAPIResource):
             'description': 'The numeric ID of the screenshot.',
         },
         'caption': {
-            'type': str,
+            'type': six.text_type,
             'description': "The screenshot's descriptive caption.",
         },
         'path': {
-            'type': str,
+            'type': six.text_type,
             'description': "The path of the screenshot's image file, "
                            "relative to the media directory configured "
                            "on the Review Board server.",
         },
         'filename': {
-            'type': str,
+            'type': six.text_type,
             'description': "The base file name of the screenshot's image.",
         },
         'review_url': {
-            'type': str,
+            'type': six.text_type,
             'description': 'The URL to the review UI for this screenshot.',
         },
         'url': {
-            'type': str,
+            'type': six.text_type,
             'description': "The URL of the screenshot file. If this is not "
                            "an absolute URL (for example, if it is just a "
                            "path), then it's relative to the Review Board "
                            "server's URL.",
         },
         'thumbnail_url': {
-            'type': str,
+            'type': six.text_type,
             'description': "The URL of the screenshot's thumbnail file. "
                            "If this is not an absolute URL (for example, "
                            "if it is just a path), then it's relative to "
@@ -128,7 +131,7 @@ class BaseScreenshotResource(WebAPIResource):
         },
         optional={
             'caption': {
-                'type': str,
+                'type': six.text_type,
                 'description': 'The optional caption describing the '
                                'screenshot.',
             },
@@ -173,7 +176,7 @@ class BaseScreenshotResource(WebAPIResource):
         except ValueError as e:
             return INVALID_FORM_DATA, {
                 'fields': {
-                    'path': [str(e)],
+                    'path': [six.text_type(e)],
                 },
             }
 
@@ -186,7 +189,7 @@ class BaseScreenshotResource(WebAPIResource):
     @webapi_request_fields(
         optional={
             'caption': {
-                'type': str,
+                'type': six.text_type,
                 'description': 'The new caption for the screenshot.',
             },
         }

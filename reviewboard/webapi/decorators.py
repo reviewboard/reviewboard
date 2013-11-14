@@ -1,3 +1,5 @@
+from __future__ import unicode_literals
+
 from django.http import HttpRequest
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.webapi.core import WebAPIResponse, WebAPIResponseError

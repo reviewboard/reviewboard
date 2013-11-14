@@ -1,5 +1,8 @@
+from __future__ import unicode_literals
+
 from django.core.exceptions import ObjectDoesNotExist
 from django.http import HttpResponse
+from djblets.util.compat import six
 from djblets.util.compat.six.moves.urllib.parse import quote as urllib_quote
 from djblets.util.decorators import augment_method_from
 from djblets.util.http import get_http_requested_mimetype, set_last_modified
@@ -32,22 +35,22 @@ class FileDiffResource(WebAPIResource):
             'description': 'The numeric ID of the file diff.',
         },
         'source_file': {
-            'type': str,
+            'type': six.text_type,
             'description': 'The original name of the modified file in the '
                            'diff.',
         },
         'dest_file': {
-            'type': str,
+            'type': six.text_type,
             'description': 'The new name of the patched file. This may be '
                            'the same as the existing file.',
         },
         'source_revision': {
-            'type': str,
+            'type': six.text_type,
             'description': 'The revision of the file being modified. This '
                            'is a valid revision in the repository.',
         },
         'dest_detail': {
-            'type': str,
+            'type': six.text_type,
             'description': 'Additional information of the destination file. '
                            'This is parsed from the diff, but is usually '
                            'not used for anything.',

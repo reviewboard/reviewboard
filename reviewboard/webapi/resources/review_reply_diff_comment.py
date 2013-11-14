@@ -1,5 +1,8 @@
+from __future__ import unicode_literals
+
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Q
+from djblets.util.compat import six
 from djblets.util.decorators import augment_method_from
 from djblets.webapi.decorators import (webapi_login_required,
                                        webapi_response_errors,
@@ -54,7 +57,7 @@ class ReviewReplyDiffCommentResource(BaseDiffCommentResource):
                 'description': 'The ID of the comment being replied to.',
             },
             'text': {
-                'type': str,
+                'type': six.text_type,
                 'description': 'The comment text.',
             },
         },
@@ -139,7 +142,7 @@ class ReviewReplyDiffCommentResource(BaseDiffCommentResource):
                                '(Markdown) format. The default is false.',
             },
             'text': {
-                'type': str,
+                'type': six.text_type,
                 'description': 'The new comment text.',
             },
         },

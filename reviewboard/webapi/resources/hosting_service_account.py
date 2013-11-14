@@ -1,3 +1,6 @@
+from __future__ import unicode_literals
+
+from djblets.util.compat import six
 from djblets.util.decorators import augment_method_from
 from djblets.webapi.decorators import (webapi_login_required,
                                        webapi_response_errors,
@@ -33,11 +36,11 @@ class HostingServiceAccountResource(WebAPIResource):
             'description': 'The numeric ID of the hosting service account.',
         },
         'username': {
-            'type': str,
+            'type': six.text_type,
             'description': 'The username of the account.',
         },
         'service': {
-            'type': str,
+            'type': six.text_type,
             'description': 'The ID of the service this account is on.',
         },
     }
@@ -93,23 +96,23 @@ class HostingServiceAccountResource(WebAPIResource):
     @webapi_request_fields(
         required={
             'username': {
-                'type': str,
+                'type': six.text_type,
                 'description': 'The username on the account.',
             },
             'service_id': {
-                'type': str,
+                'type': six.text_type,
                 'description': 'The registered ID of the service for the '
                                'account.',
             },
         },
         optional={
             'hosting_url': {
-                'type': str,
+                'type': six.text_type,
                 'description': 'The hosting URL on the account, if the '
                                'hosting service is self-hosted.',
             },
             'password': {
-                'type': str,
+                'type': six.text_type,
                 'description': 'The password on the account, if the hosting '
                                'service needs it.',
             },
@@ -152,7 +155,7 @@ class HostingServiceAccountResource(WebAPIResource):
                                   local_site_name)
             except AuthorizationError as e:
                 return HOSTINGSVC_AUTH_ERROR, {
-                    'reason': str(e),
+                    'reason': six.text_type(e),
                 }
 
         service.save()

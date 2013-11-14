@@ -1,3 +1,5 @@
+from __future__ import unicode_literals
+
 from django.db.models import Q
 from django.utils import six
 from djblets.gravatars import get_gravatar_url
@@ -24,7 +26,7 @@ class UserResource(WebAPIResource, DjbletsUserResource):
 
     fields = dict({
         'avatar_url': {
-            'type': str,
+            'type': six.text_type,
             'description': 'The URL for an avatar representing the user.',
         },
     }, **DjbletsUserResource.fields)
@@ -91,7 +93,7 @@ class UserResource(WebAPIResource, DjbletsUserResource):
     @webapi_request_fields(
         optional={
             'q': {
-                'type': str,
+                'type': six.text_type,
                 'description': 'The string that the username (or the first '
                                'name or last name when using ``fullname``) '
                                'must start with in order to be included in '

@@ -1,3 +1,5 @@
+from __future__ import unicode_literals
+
 from django.template.defaultfilters import timesince
 from djblets.webapi.core import WebAPIEncoder
 
@@ -130,7 +132,7 @@ class DeprecatedReviewBoardAPIEncoder(WebAPIEncoder):
             return {
                 'id': o.id,
                 'caption': o.caption,
-                'title': u'Screenshot: %s' % (o.caption or o.image.name),
+                'title': 'Screenshot: %s' % (o.caption or o.image.name),
                 'image_url': o.get_absolute_url(),
                 'thumbnail_url': o.get_thumbnail_url(),
             }

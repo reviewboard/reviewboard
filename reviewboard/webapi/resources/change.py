@@ -1,3 +1,5 @@
+from __future__ import unicode_literals
+
 from django.contrib.auth.models import User
 from django.utils import six
 from djblets.util.decorators import augment_method_from
@@ -72,12 +74,12 @@ class ChangeResource(WebAPIResource):
                            '(Markdown) format.',
         },
         'text': {
-            'type': str,
+            'type': six.text_type,
             'description': 'The description of the change written by the '
                            'submitter.'
         },
         'timestamp': {
-            'type': str,
+            'type': six.text_type,
             'description': 'The date and time that the change was made '
                            '(in YYYY-MM-DD HH:MM:SS format).',
         },

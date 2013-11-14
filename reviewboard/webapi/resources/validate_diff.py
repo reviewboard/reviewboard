@@ -1,4 +1,7 @@
+from __future__ import unicode_literals
+
 from django.db.models import Q
+from djblets.util.compat import six
 from djblets.webapi.decorators import (webapi_login_required,
                                        webapi_response_errors,
                                        webapi_request_fields)
@@ -57,7 +60,7 @@ class ValidateDiffResource(DiffResource):
     @webapi_request_fields(
         required={
             'repository': {
-                'type': str,
+                'type': six.text_type,
                 'description': 'The path or ID of the repository.',
             },
             'path': {
@@ -67,7 +70,7 @@ class ValidateDiffResource(DiffResource):
         },
         optional={
             'basedir': {
-                'type': str,
+                'type': six.text_type,
                 'description': 'The base directory that will prepended to '
                                'all paths in the diff. This is needed for '
                                'some types of repositories. The directory '
@@ -126,29 +129,29 @@ class ValidateDiffResource(DiffResource):
         except FileNotFoundError as e:
             return REPO_FILE_NOT_FOUND, {
                 'file': e.path,
-                'revision': unicode(e.revision),
+                'revision': six.text_type(e.revision),
             }
         except EmptyDiffError:
             return DIFF_EMPTY
         except DiffTooBigError as e:
             return DIFF_TOO_BIG, {
-                'reason': str(e),
+                'reason': six.text_type(e),
                 'max_size': e.max_diff_size,
             }
         except DiffParserError as e:
             return DIFF_PARSE_ERROR, {
-                'reason': str(e),
+                'reason': six.text_type(e),
                 'linenum': e.linenum,
             }
         except ShortSHA1Error as e:
             return REPO_FILE_NOT_FOUND, {
-                'reason': str(e),
+                'reason': six.text_type(e),
                 'file': e.path,
-                'revision': unicode(e.revision),
+                'revision': six.text_type(e.revision),
             }
         except SCMError as e:
             return DIFF_PARSE_ERROR, {
-                'reason': str(e),
+                'reason': six.text_type(e),
             }
 
         return 200, {}

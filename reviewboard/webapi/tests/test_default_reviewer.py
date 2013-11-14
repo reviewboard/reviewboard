@@ -1,3 +1,5 @@
+from __future__ import unicode_literals
+
 from django.contrib.auth.models import User
 from djblets.testing.decorators import add_fixtures
 from djblets.util.compat import six
@@ -232,7 +234,8 @@ class ResourceListTests(BaseWebAPITestCase):
                 'file_regex': '.*',
                 'users': 'doc,dopey',
                 'groups': 'group1,group2',
-                'repositories': ','.join([str(repo1.pk), str(repo2.pk)]),
+                'repositories': ','.join([six.text_type(repo1.pk),
+                                          six.text_type(repo2.pk)]),
             }
         else:
             post_data = {}
@@ -435,7 +438,7 @@ class ResourceListTests(BaseWebAPITestCase):
             {
                 'name': 'default1',
                 'file_regex': '.*',
-                'repositories': str(repository.pk),
+                'repositories': six.text_type(repository.pk),
             },
             expected_status=400)
 
@@ -580,7 +583,8 @@ class ResourceItemTests(BaseWebAPITestCase):
                 'file_regex': '/foo/',
                 'users': 'doc,dopey',
                 'groups': 'group1,group2',
-                'repositories': ','.join([str(repo1.pk), str(repo2.pk)]),
+                'repositories': ','.join([six.text_type(repo1.pk),
+                                          six.text_type(repo2.pk)]),
             }
         else:
             put_data = {}
@@ -719,7 +723,7 @@ class ResourceItemTests(BaseWebAPITestCase):
 
         rsp = self.apiPut(
             get_default_reviewer_item_url(default_reviewer.pk),
-            {'repositories': str(repository.pk)},
+            {'repositories': six.text_type(repository.pk)},
             expected_status=400)
 
         self.assertTrue('fields' in rsp)

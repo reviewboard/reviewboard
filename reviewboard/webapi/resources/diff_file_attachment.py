@@ -1,4 +1,7 @@
+from __future__ import unicode_literals
+
 from django.db.models import Q
+from djblets.util.compat import six
 from djblets.util.decorators import augment_method_from
 from djblets.webapi.decorators import webapi_request_fields
 
@@ -28,12 +31,12 @@ class DiffFileAttachmentResource(BaseFileAttachmentResource):
 
     fields = dict({
         'repository_file_path': {
-            'type': str,
+            'type': six.text_type,
             'description': 'The file path inside the repository that this '
                            'file attachment represents.',
         },
         'repository_revision': {
-            'type': str,
+            'type': six.text_type,
             'description': 'The revision that introduced this version of the '
                            'file, if committed in the repository.',
         },
@@ -93,21 +96,21 @@ class DiffFileAttachmentResource(BaseFileAttachmentResource):
     @webapi_request_fields(
         optional=dict({
             'repository-file-path': {
-                'type': str,
+                'type': six.text_type,
                 'description': (
                     'Filter file attachments with the given path in the '
                     'repository.'
                 ),
             },
             'repository-revision': {
-                'type': str,
+                'type': six.text_type,
                 'description': (
                     'Filter file attachments for files with the given '
                     'revision.'
                 ),
             },
             'mimetype': {
-                'type': str,
+                'type': six.text_type,
                 'description': (
                     'Filter file attachments with the given mimetype.'
                 ),

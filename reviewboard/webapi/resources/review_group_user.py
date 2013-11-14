@@ -1,5 +1,8 @@
+from __future__ import unicode_literals
+
 from django.contrib.auth.models import User
 from django.core.exceptions import ObjectDoesNotExist
+from djblets.util.compat import six
 from djblets.util.decorators import augment_method_from
 from djblets.webapi.decorators import (webapi_login_required,
                                        webapi_response_errors,
@@ -43,7 +46,7 @@ class ReviewGroupUserResource(UserResource):
                             NOT_LOGGED_IN, PERMISSION_DENIED)
     @webapi_request_fields(required={
         'username': {
-            'type': str,
+            'type': six.text_type,
             'description': 'The user to add to the group.',
         },
     })

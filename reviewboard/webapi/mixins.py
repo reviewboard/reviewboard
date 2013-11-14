@@ -1,3 +1,5 @@
+from __future__ import unicode_literals
+
 from reviewboard.reviews.markdown_utils import markdown_set_field_escaped
 
 

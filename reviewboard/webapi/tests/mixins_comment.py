@@ -1,3 +1,5 @@
+from __future__ import unicode_literals
+
 from reviewboard.webapi.tests.mixins import test_template
 
 
@@ -57,7 +59,7 @@ class BaseCommentItemMixin(object):
         self._test_put_with_rich_text_and_not_text(
             True,
             '`Test` **diff** comment',
-            '\\`Test\\` \\*\\*diff\\*\\* comment')
+            r'\`Test\` \*\*diff\*\* comment')
 
     @test_template
     def test_put_with_rich_text_false_and_not_text(self):
@@ -66,7 +68,7 @@ class BaseCommentItemMixin(object):
         """
         self._test_put_with_rich_text_and_not_text(
             False,
-            '\\`Test\\` \\*\\*diff\\*\\* comment',
+            r'\`Test\` \*\*diff\*\* comment',
             '`Test` **diff** comment')
 
     @test_template

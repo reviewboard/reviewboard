@@ -1,3 +1,5 @@
+from __future__ import unicode_literals
+
 from django.contrib.auth.models import User, Permission
 from django.db.models import Q
 from djblets.testing.decorators import add_fixtures
@@ -495,7 +497,7 @@ class ResourceListTests(BaseWebAPITestCase):
 
         self.assertEqual(review_request.commit_id, None)
 
-        commit_id = str(review_request.changenum)
+        commit_id = six.text_type(review_request.changenum)
 
         rsp = self.apiGet(get_review_request_list_url(), {
             'repository': review_request.repository.id,

@@ -1,7 +1,10 @@
+from __future__ import unicode_literals
+
 import logging
 
 from django.core.exceptions import PermissionDenied, ObjectDoesNotExist
 from django.http import HttpResponse
+from djblets.util.compat import six
 from djblets.util.http import get_http_requested_mimetype, set_last_modified
 from djblets.webapi.decorators import (webapi_login_required,
                                        webapi_response_errors,
@@ -38,7 +41,7 @@ class DiffResource(WebAPIResource):
             'description': 'The numeric ID of the diff.',
         },
         'name': {
-            'type': str,
+            'type': six.text_type,
             'description': 'The name of the diff, usually the filename.',
         },
         'revision': {
@@ -47,7 +50,7 @@ class DiffResource(WebAPIResource):
                            'diffs. Draft diffs may be at 0.',
         },
         'timestamp': {
-            'type': str,
+            'type': six.text_type,
             'description': 'The date and time that the diff was uploaded '
                            '(in YYYY-MM-DD HH:MM:SS format).',
         },
@@ -57,7 +60,7 @@ class DiffResource(WebAPIResource):
             'description': 'The repository that the diff is applied against.',
         },
         'basedir': {
-            'type': str,
+            'type': six.text_type,
             'description': 'The base directory that will prepended to all '
                            'paths in the diff. This is needed for some types '
                            'of repositories. The directory must be between '
@@ -65,7 +68,7 @@ class DiffResource(WebAPIResource):
                            'referenced in the diff paths.',
         },
         'base_commit_id': {
-            'type': str,
+            'type': six.text_type,
             'description': 'The ID/revision this change is built upon. '
                            'If using a parent diff, then this is the base '
                            'for that diff. This may not be provided for all '
@@ -185,7 +188,7 @@ class DiffResource(WebAPIResource):
         },
         optional={
             'basedir': {
-                'type': str,
+                'type': six.text_type,
                 'description': 'The base directory that will prepended to '
                                'all paths in the diff. This is needed for '
                                'some types of repositories. The directory '
@@ -198,7 +201,7 @@ class DiffResource(WebAPIResource):
                 'description': 'The optional parent diff to upload.',
             },
             'base_commit_id': {
-                'type': str,
+                'type': six.text_type,
                 'description': 'The ID/revision this change is built upon. '
                                'If using a parent diff, then this is the base '
                                'for that diff. This may not be provided for '
@@ -268,13 +271,13 @@ class DiffResource(WebAPIResource):
         except FileNotFoundError as e:
             return REPO_FILE_NOT_FOUND, {
                 'file': e.path,
-                'revision': unicode(e.revision)
+                'revision': six.text_type(e.revision)
             }
         except EmptyDiffError as e:
             return DIFF_EMPTY
         except DiffTooBigError as e:
             return DIFF_TOO_BIG, {
-                'reason': str(e),
+                'reason': six.text_type(e),
                 'max_size': e.max_diff_size,
             }
         except Exception as e:
@@ -285,7 +288,7 @@ class DiffResource(WebAPIResource):
 
             return INVALID_FORM_DATA, {
                 'fields': {
-                    'path': [str(e)]
+                    'path': [six.text_type(e)]
                 }
             }
 

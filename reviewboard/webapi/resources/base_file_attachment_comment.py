@@ -1,5 +1,8 @@
+from __future__ import unicode_literals
+
 from django.db.models import Q
 from django.template.defaultfilters import timesince
+from djblets.util.compat import six
 from djblets.util.decorators import augment_method_from
 
 from reviewboard.reviews.models import FileAttachmentComment
@@ -25,17 +28,17 @@ class BaseFileAttachmentCommentResource(BaseCommentResource):
             'description': 'The file the comment was made on.',
         },
         'link_text': {
-            'type': str,
+            'type': six.text_type,
             'description': 'The text used to describe a link to the file. '
                            'This may differ depending on the comment.',
         },
         'review_url': {
-            'type': str,
+            'type': six.text_type,
             'description': 'The URL to the review UI for the comment on this '
                            'file attachment.',
         },
         'thumbnail_html': {
-            'type': str,
+            'type': six.text_type,
             'description': 'The HTML representing a thumbnail, if any, for '
                            'this comment.',
         },

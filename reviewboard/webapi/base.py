@@ -1,3 +1,5 @@
+from __future__ import unicode_literals
+
 from django.utils import six
 from django.utils.encoding import force_unicode
 from djblets.util.decorators import augment_method_from

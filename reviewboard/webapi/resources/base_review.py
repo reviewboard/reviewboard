@@ -1,3 +1,5 @@
+from __future__ import unicode_literals
+
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Q
 from django.utils import six
@@ -25,11 +27,11 @@ class BaseReviewResource(MarkdownFieldsMixin, WebAPIResource):
     model = Review
     fields = {
         'body_bottom': {
-            'type': str,
+            'type': six.text_type,
             'description': 'The review content below the comments.',
         },
         'body_top': {
-            'type': str,
+            'type': six.text_type,
             'description': 'The review content above the comments.',
         },
         'id': {
@@ -53,7 +55,7 @@ class BaseReviewResource(MarkdownFieldsMixin, WebAPIResource):
                            '"Ship It!"',
         },
         'timestamp': {
-            'type': str,
+            'type': six.text_type,
             'description': 'The date and time that the review was posted '
                            '(in YYYY-MM-DD HH:MM:SS format).',
         },
@@ -100,11 +102,11 @@ class BaseReviewResource(MarkdownFieldsMixin, WebAPIResource):
                 'description': 'Whether or not to mark the review "Ship It!"',
             },
             'body_top': {
-                'type': str,
+                'type': six.text_type,
                 'description': 'The review content above the comments.',
             },
             'body_bottom': {
-                'type': str,
+                'type': six.text_type,
                 'description': 'The review content below the comments.',
             },
             'public': {
@@ -180,11 +182,11 @@ class BaseReviewResource(MarkdownFieldsMixin, WebAPIResource):
                 'description': 'Whether or not to mark the review "Ship It!"',
             },
             'body_top': {
-                'type': str,
+                'type': six.text_type,
                 'description': 'The review content above the comments.',
             },
             'body_bottom': {
-                'type': str,
+                'type': six.text_type,
                 'description': 'The review content below the comments.',
             },
             'public': {

@@ -1,4 +1,7 @@
+from __future__ import unicode_literals
+
 from django.core.exceptions import ObjectDoesNotExist
+from djblets.util.compat import six
 from djblets.util.decorators import augment_method_from
 from djblets.webapi.decorators import (webapi_login_required,
                                        webapi_response_errors,
@@ -28,12 +31,12 @@ class ReviewReplyResource(BaseReviewResource):
     name_plural = 'replies'
     fields = {
         'body_bottom': {
-            'type': str,
+            'type': six.text_type,
             'description': 'The response to the review content below '
                            'the comments.',
         },
         'body_top': {
-            'type': str,
+            'type': six.text_type,
             'description': 'The response to the review content above '
                            'the comments.',
         },
@@ -53,7 +56,7 @@ class ReviewReplyResource(BaseReviewResource):
                            'format.',
         },
         'timestamp': {
-            'type': str,
+            'type': six.text_type,
             'description': 'The date and time that the reply was posted '
                            '(in YYYY-MM-DD HH:MM:SS format).',
         },
@@ -90,12 +93,12 @@ class ReviewReplyResource(BaseReviewResource):
     @webapi_request_fields(
         optional={
             'body_top': {
-                'type': str,
+                'type': six.text_type,
                 'description': 'The response to the review content above '
                                'the comments.',
             },
             'body_bottom': {
-                'type': str,
+                'type': six.text_type,
                 'description': 'The response to the review content below '
                                'the comments.',
             },
@@ -169,12 +172,12 @@ class ReviewReplyResource(BaseReviewResource):
     @webapi_request_fields(
         optional={
             'body_top': {
-                'type': str,
+                'type': six.text_type,
                 'description': 'The response to the review content above '
                                'the comments.',
             },
             'body_bottom': {
-                'type': str,
+                'type': six.text_type,
                 'description': 'The response to the review content below '
                                'the comments.',
             },

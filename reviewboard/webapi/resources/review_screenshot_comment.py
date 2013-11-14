@@ -1,4 +1,7 @@
+from __future__ import unicode_literals
+
 from django.core.exceptions import ObjectDoesNotExist
+from djblets.util.compat import six
 from djblets.util.decorators import augment_method_from
 from djblets.webapi.decorators import (webapi_login_required,
                                        webapi_response_errors,
@@ -56,7 +59,7 @@ class ReviewScreenshotCommentResource(BaseScreenshotCommentResource):
                 'description': 'The height of the comment region.',
             },
             'text': {
-                'type': str,
+                'type': six.text_type,
                 'description': 'The comment text.',
             },
         },
@@ -136,7 +139,7 @@ class ReviewScreenshotCommentResource(BaseScreenshotCommentResource):
                 'description': 'The height of the comment region.',
             },
             'text': {
-                'type': str,
+                'type': six.text_type,
                 'description': 'The comment text.',
             },
             'issue_opened': {

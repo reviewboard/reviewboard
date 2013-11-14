@@ -1,5 +1,8 @@
+from __future__ import unicode_literals
+
 from django.contrib.auth.models import User
 from django.core.exceptions import ObjectDoesNotExist
+from djblets.util.compat import six
 from djblets.util.decorators import augment_method_from
 from djblets.webapi.decorators import (webapi_login_required,
                                        webapi_response_errors,
@@ -41,27 +44,27 @@ class DefaultReviewerResource(WebAPIResource):
             'description': 'The numeric ID of the default reviewer.',
         },
         'name': {
-            'type': str,
+            'type': six.text_type,
             'description': 'The descriptive name of the entry.',
         },
         'file_regex': {
-            'type': str,
+            'type': six.text_type,
             'description': 'The regular expression that is used to match '
                            'files uploaded in a diff.',
         },
         'repositories': {
-            'type': str,
+            'type': six.text_type,
             'description': 'A comma-separated list of repository IDs that '
                            'this default reviewer will match against.',
         },
         'users': {
-            'type': str,
+            'type': six.text_type,
             'description': 'A comma-separated list of usernames that '
                            'this default reviewer applies to matched review '
                            'requests.',
         },
         'groups': {
-            'type': str,
+            'type': six.text_type,
             'description': 'A comma-separated list of group names that '
                            'this default reviewer applies to matched review '
                            'requests.',
@@ -161,26 +164,26 @@ class DefaultReviewerResource(WebAPIResource):
     @webapi_request_fields(
         required={
             'name': {
-                'type': str,
+                'type': six.text_type,
                 'description': 'The name of the default reviewer entry.',
             },
             'file_regex': {
-                'type': str,
+                'type': six.text_type,
                 'description': 'The regular expression used to match file '
                                'paths in newly uploaded diffs.',
             },
         },
         optional={
             'repositories': {
-                'type': str,
+                'type': six.text_type,
                 'description': 'A comma-separated list of repository IDs.',
             },
             'groups': {
-                'type': str,
+                'type': six.text_type,
                 'description': 'A comma-separated list of group names.',
             },
             'users': {
-                'type': str,
+                'type': six.text_type,
                 'description': 'A comma-separated list of usernames.',
             }
         },
@@ -211,24 +214,24 @@ class DefaultReviewerResource(WebAPIResource):
     @webapi_request_fields(
         optional={
             'name': {
-                'type': str,
+                'type': six.text_type,
                 'description': 'The name of the default reviewer entry.',
             },
             'file_regex': {
-                'type': str,
+                'type': six.text_type,
                 'description': 'The regular expression used to match file '
                                'paths in newly uploaded diffs.',
             },
             'repositories': {
-                'type': str,
+                'type': six.text_type,
                 'description': 'A comma-separated list of repository IDs.',
             },
             'groups': {
-                'type': str,
+                'type': six.text_type,
                 'description': 'A comma-separated list of group names.',
             },
             'users': {
-                'type': str,
+                'type': six.text_type,
                 'description': 'A comma-separated list of usernames.',
             }
         },

@@ -1,3 +1,5 @@
+from __future__ import unicode_literals
+
 from django.db.models import Q
 from djblets.webapi.resources import UserResource as DjbletsUserResource
 
