@@ -1,4 +1,7 @@
+from __future__ import unicode_literals
+
 from django.contrib.auth.context_processors import PermLookupDict, PermWrapper
+from djblets.util.compat import six
 
 from reviewboard.site.models import LocalSite
 
@@ -10,7 +13,7 @@ class AllPermsLookupDict(PermLookupDict):
         self.perms_wrapper = perms_wrapper
 
     def __repr__(self):
-        return str(self.user.get_all_permissions(
+        return six.text_type(self.user.get_all_permissions(
             self.perms_wrapper.get_local_site()))
 
     def __getitem__(self, perm_name):

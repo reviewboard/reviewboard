@@ -1,3 +1,5 @@
+from __future__ import unicode_literals
+
 from django import template
 from django.core.urlresolvers import NoReverseMatch, ViewDoesNotExist
 from django.template.defaulttags import url as django_url
