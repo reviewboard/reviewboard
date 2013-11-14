@@ -1,3 +1,5 @@
+from __future__ import unicode_literals
+
 import re
 
 from markdown import Markdown
@@ -6,8 +8,8 @@ from markdown import Markdown
 # NOTE: Any changes made here or in markdown_escape below should be
 #       reflected in reviewboard/static/rb/js/utils/textUtils.js.
 
-MARKDOWN_SPECIAL_CHARS = re.escape(''.join(Markdown.ESCAPED_CHARS))
-MARKDOWN_SPECIAL_CHARS_RE = re.compile('([%s])' % MARKDOWN_SPECIAL_CHARS)
+MARKDOWN_SPECIAL_CHARS = re.escape(r''.join(Markdown.ESCAPED_CHARS))
+MARKDOWN_SPECIAL_CHARS_RE = re.compile(r'([%s])' % MARKDOWN_SPECIAL_CHARS)
 
 # Markdown.ESCAPED_CHARS lists '.' as a character to escape, but it's not
 # that simple. We only want to escape this if it's after a number at the

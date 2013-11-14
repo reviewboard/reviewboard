@@ -1,3 +1,5 @@
+from __future__ import unicode_literals
+
 from django.utils.html import escape
 from djblets.util.templatetags.djblets_images import crop_image
 
@@ -57,8 +59,8 @@ class ImageReviewUI(FileAttachmentReviewUI):
         image_url = crop_image(comment.file_attachment.file,
                                x, y, width, height)
         image_html = (
-            u'<img class="modified-image" src="%s" width="%s" height="%s" '
-            u'alt="%s" />'
+            '<img class="modified-image" src="%s" width="%s" height="%s" '
+            'alt="%s" />'
             % (image_url, width, height, escape(comment.text)))
 
         if comment.diff_against_file_attachment_id:
@@ -67,8 +69,8 @@ class ImageReviewUI(FileAttachmentReviewUI):
                 x, y, width, height)
 
             diff_against_image_html = (
-                u'<img class="orig-image" src="%s" width="%s" '
-                u'height="%s" alt="%s" />'
+                '<img class="orig-image" src="%s" width="%s" '
+                'height="%s" alt="%s" />'
                 % (diff_against_image_url, width, height,
                    escape(comment.text)))
 

@@ -1,3 +1,5 @@
+from __future__ import unicode_literals
+
 import json
 import logging
 import os
@@ -9,6 +11,7 @@ from django.template.context import RequestContext
 from django.template.loader import render_to_string
 from django.utils.html import escape
 from django.utils.safestring import mark_safe
+from djblets.util.compat import six
 
 from reviewboard.attachments.mimetypes import MIMETYPE_EXTENSIONS, score_match
 from reviewboard.diffviewer.models import DiffSet
@@ -88,7 +91,7 @@ class ReviewUI(object):
             'review_request_details': review_request_details,
             'review_request': self.review_request,
             'review_ui': self,
-            'review_ui_uuid': str(uuid4()),
+            'review_ui_uuid': six.text_type(uuid4()),
             self.object_key: self.obj,
             self.diff_object_key: self.diff_against_obj,
         }

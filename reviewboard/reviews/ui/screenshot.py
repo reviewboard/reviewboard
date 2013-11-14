@@ -1,3 +1,5 @@
+from __future__ import unicode_literals
+
 from reviewboard.reviews.ui.base import ReviewUI
 from reviewboard.reviews.models import Screenshot, ScreenshotComment
 

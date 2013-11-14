@@ -1,3 +1,5 @@
+from __future__ import unicode_literals
+
 import os
 import re
 
@@ -199,7 +201,7 @@ class Screenshot(models.Model):
     thumb.allow_tags = True
 
     def __str__(self):
-        return u"%s (%s)" % (self.caption, self.image)
+        return "%s (%s)" % (self.caption, self.image)
 
     def get_review_request(self):
         if hasattr(self, '_review_request'):
@@ -463,7 +465,7 @@ class BaseReviewRequestDetails(models.Model):
         DiffSet.objects.create_from_data(
             repository=self.repository,
             diff_file_name='diff',
-            diff_file_contents=commit.diff.encode('utf-8'),
+            diff_file_contents=commit.diff.encode('utf-8'), ### XXX: check unicode
             parent_diff_file_name=None,
             parent_diff_file_contents=None,
             diffset_history=self.diffset_history,
@@ -490,7 +492,7 @@ class BaseReviewRequestDetails(models.Model):
         if self.summary:
             return self.summary
         else:
-            return six.text_type(_(u'(no summary)'))
+            return six.text_type(_('(no summary)'))
 
     class Meta:
         abstract = True
@@ -611,14 +613,14 @@ class ReviewRequest(BaseReviewRequestDetails):
         if self.commit_id is not None:
             return self.commit_id
         elif self.changenum is not None:
-            self.commit_id = str(self.changenum)
+            self.commit_id = six.text_type(self.changenum)
 
             # Update the state in the database, but don't save this
             # model, or we can end up with some state (if we haven't
             # properly loaded everything yet). This affects docs.db
             # generation, and may cause problems in the wild.
             ReviewRequest.objects.filter(pk=self.pk).update(
-                commit_id=str(self.changenum))
+                commit_id=six.text_type(self.changenum))
 
             return self.commit_id
 
@@ -1655,7 +1657,7 @@ class Comment(BaseComment):
     last_line = property(lambda self: self.first_line + self.num_lines - 1)
 
     def get_absolute_url(self):
-        revision_path = str(self.filediff.diffset.revision)
+        revision_path = six.text_type(self.filediff.diffset.revision)
         if self.interfilediff:
             revision_path += "-%s" % self.interfilediff.diffset.revision
 
@@ -1853,7 +1855,7 @@ class Review(models.Model):
                 self.review_request.is_accessible_by(user))
 
     def __str__(self):
-        return u"Review of '%s'" % self.review_request
+        return "Review of '%s'" % self.review_request
 
     def is_reply(self):
         """

@@ -1,3 +1,5 @@
+from __future__ import unicode_literals
+
 import pytz
 import logging
 
@@ -8,6 +10,7 @@ from django.utils.datastructures import SortedDict
 from django.utils.html import conditional_escape
 from django.utils.translation import ugettext_lazy as _
 from djblets.datagrid.grids import Column, DateTimeColumn, DataGrid
+from djblets.util.compat import six
 from djblets.util.templatetags.djblets_utils import ageid
 
 from reviewboard.accounts.models import Profile, LocalSiteProfile
@@ -23,7 +26,7 @@ class DateTimeSinceColumn(DateTimeColumn):
     number of minutes, hours, days, etc. ago is correct.
     """
     def render_data(self, obj):
-        return u'<time class="timesince" datetime="%s">%s</time>' % (
+        return '<time class="timesince" datetime="%s">%s</time>' % (
             date(getattr(obj, self.field_name), 'c'),
             super(DateTimeSinceColumn, self).render_data(obj))
 
@@ -118,10 +121,10 @@ class ShipItColumn(Column):
 
     def render_data(self, review_request):
         if review_request.shipit_count > 0:
-            return u'<span class="shipit-count">' \
-                   u' <div class="rb-icon rb-icon-shipit-checkmark"' \
-                   u'      title="%s"></div> %s' \
-                   u'</span>' % \
+            return '<span class="shipit-count">' \
+                   ' <div class="rb-icon rb-icon-shipit-checkmark"' \
+                   '      title="%s"></div> %s' \
+                   '</span>' % \
                 (self.image_alt, review_request.shipit_count)
 
         return ""
@@ -148,7 +151,7 @@ class MyCommentsColumn(Column):
             return queryset
 
         query_dict = {
-            'user_id': str(user.id),
+            'user_id': six.text_type(user.id),
         }
 
         return queryset.extra(select={
@@ -199,7 +202,7 @@ class MyCommentsColumn(Column):
                 icon_class = 'rb-icon-datagrid-comment'
                 image_alt = _("Comments published")
 
-        return u'<div class="rb-icon %s" title="%s"></div>' % \
+        return '<div class="rb-icon %s" title="%s"></div>' % \
                (icon_class, image_alt)
 
 
@@ -212,15 +215,15 @@ class ToMeColumn(Column):
     def __init__(self, *args, **kwargs):
         super(ToMeColumn, self).__init__(*args, **kwargs)
 
-        self.label = u"\u00BB"  # this is &raquo;
-        self.detailed_label = u"\u00BB To Me"
+        self.label = "\u00BB"  # this is &raquo;
+        self.detailed_label = "\u00BB To Me"
         self.shrink = True
 
     def render_data(self, review_request):
         user = self.datagrid.request.user
         if (user.is_authenticated() and
             review_request.target_people.filter(pk=user.pk).exists()):
-            return (u'<div title="%s"><b>&raquo;</b></div>'
+            return ('<div title="%s"><b>&raquo;</b></div>'
                     % (self.detailed_label))
 
         return ""
@@ -242,7 +245,7 @@ class NewUpdatesColumn(Column):
 
     def render_data(self, review_request):
         if review_request.new_review_count > 0:
-            return u'<div class="%s" title="%s" />' % \
+            return '<div class="%s" title="%s" />' % \
                    (self.image_class, self.image_alt)
 
         return ""
@@ -298,9 +301,9 @@ class SummaryColumn(Column):
         display_data = ''
 
         for label in labels:
-            display_data += u'<span class="%s">[%s] </span>' % (
+            display_data += '<span class="%s">[%s] </span>' % (
                 labels[label], label)
-        display_data += u'%s' % summary
+        display_data += summary
         return display_data
 
 
@@ -340,8 +343,9 @@ class PendingCountColumn(Column):
         super(PendingCountColumn, self).__init__(*args, **kwargs)
 
     def render_data(self, obj):
-        return str(getattr(obj, self.field_name).filter(public=True,
-                                                        status='P').count())
+        return six.text_type(
+            getattr(obj, self.field_name).filter(
+                public=True, status='P').count())
 
 
 class PeopleColumn(Column):
@@ -383,7 +387,7 @@ class GroupMemberCountColumn(Column):
         self.link_func = self.link_to_object
 
     def render_data(self, group):
-        return str(group.users.count())
+        return six.text_type(group.users.count())
 
     def link_to_object(self, group, value):
         return local_site_reverse('group_members',
@@ -405,7 +409,7 @@ class ReviewCountColumn(Column):
         self.link_func = self.link_to_object
 
     def render_data(self, review_request):
-        return str(review_request.publicreviewcount_count)
+        return six.text_type(review_request.publicreviewcount_count)
 
     def augment_queryset(self, queryset):
         return queryset.extra(select={
@@ -672,15 +676,15 @@ class DashboardDataGrid(ReviewRequestDataGrid):
         if view == 'outgoing':
             self.queryset = ReviewRequest.objects.from_user(
                 user, user, local_site=self.local_site)
-            self.title = _(u"All Outgoing Review Requests")
+            self.title = _("All Outgoing Review Requests")
         elif view == 'mine':
             self.queryset = ReviewRequest.objects.from_user(
                 user, user, None, local_site=self.local_site)
-            self.title = _(u"All My Review Requests")
+            self.title = _("All My Review Requests")
         elif view == 'to-me':
             self.queryset = ReviewRequest.objects.to_user_directly(
                 user, user, local_site=self.local_site)
-            self.title = _(u"Incoming Review Requests to Me")
+            self.title = _("Incoming Review Requests to Me")
         elif view == 'to-group':
             if group_name:
                 # to-group is special because we want to make sure that the
@@ -694,20 +698,20 @@ class DashboardDataGrid(ReviewRequestDataGrid):
 
                 self.queryset = ReviewRequest.objects.to_group(
                     group_name, self.local_site, user)
-                self.title = _(u"Incoming Review Requests to %s") % group_name
+                self.title = _("Incoming Review Requests to %s") % group_name
             else:
                 self.queryset = ReviewRequest.objects.to_user_groups(
                     user, user, local_site=self.local_site)
-                self.title = _(u"All Incoming Review Requests to My Groups")
+                self.title = _("All Incoming Review Requests to My Groups")
         elif view == 'starred':
             profile, is_new = Profile.objects.get_or_create(user=user)
             self.queryset = profile.starred_review_requests.public(
                 user=user, local_site=self.local_site, status=None)
-            self.title = _(u"Starred Review Requests")
+            self.title = _("Starred Review Requests")
         elif view == 'incoming':
             self.queryset = ReviewRequest.objects.to_user(
                 user, user, local_site=self.local_site)
-            self.title = _(u"All Incoming Review Requests")
+            self.title = _("All Incoming Review Requests")
         else:
             raise Http404
 

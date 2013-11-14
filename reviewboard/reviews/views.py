@@ -1,3 +1,5 @@
+from __future__ import unicode_literals
+
 import copy
 import logging
 import time
@@ -413,7 +415,7 @@ def review_detail(request,
     etag = "%s:%s:%s:%s:%s:%s:%s:%s" % (
         request.user, last_activity_time, draft_timestamp,
         review_timestamp, review_request.last_review_activity_timestamp,
-        ','.join([str(r.pk) for r in blocks]),
+        ','.join([six.text_type(r.pk) for r in blocks]),
         int(starred), settings.AJAX_SERIAL
     )
 
@@ -1175,7 +1177,7 @@ def raw_diff(request,
     if diffset.name == 'diff':
         filename = "rb%d.patch" % review_request.display_id
     else:
-        filename = unicode(diffset.name).encode('ascii', 'ignore')
+        filename = six.text_type(diffset.name).encode('ascii', 'ignore')
 
     resp['Content-Disposition'] = 'inline; filename=%s' % filename
     set_last_modified(resp, diffset.timestamp)
@@ -1716,11 +1718,13 @@ def user_infobox(request, username,
 
     show_profile = user.is_profile_visible(request.user)
 
-    etag = ':'.join([user.first_name.encode('ascii', 'replace'),
-                     user.last_name.encode('ascii', 'replace'),
-                     user.email.encode('ascii', 'replace'),
-                     str(user.last_login), str(settings.AJAX_SERIAL),
-                     str(show_profile)])
+    etag = ':'.join([user.first_name,
+                     user.last_name,
+                     user.email,
+                     six.text_type(user.last_login),
+                     six.text_type(settings.AJAX_SERIAL),
+                     six.text_type(show_profile)])
+    etag = etag.encode('ascii', 'replace')
 
     if etag_if_none_match(request, etag):
         return HttpResponseNotModified()

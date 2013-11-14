@@ -1,3 +1,5 @@
+from __future__ import unicode_literals
+
 import json
 import logging
 
@@ -8,6 +10,7 @@ from django.template.defaultfilters import stringfilter
 from django.template.loader import render_to_string
 from django.utils.html import escape
 from django.utils.translation import ugettext_lazy as _
+from djblets.util.compat import six
 from djblets.util.decorators import basictag, blocktag
 from djblets.util.humanize import humanize_list
 
@@ -34,7 +37,7 @@ def ifneatnumber(context, nodelist, rid):
     if rid is None or rid < 1000:
         return ""
 
-    ridstr = str(rid)
+    ridstr = six.text_type(rid)
     interesting = False
 
     context.push()
@@ -190,7 +193,7 @@ def reply_section(context, entry, comment, context_type, context_id):
         elif type(comment) is FileAttachmentComment:
             context_id += 'f'
 
-        context_id += str(comment.id)
+        context_id += six.text_type(comment.id)
 
     return {
         'entry': entry,

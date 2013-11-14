@@ -1,3 +1,5 @@
+from __future__ import unicode_literals
+
 import logging
 
 from django.contrib.auth.models import User
@@ -5,8 +7,8 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.db import connections, router, transaction
 from django.db.models import Manager, Q
 from django.db.models.query import QuerySet
-
 from djblets.util.db import ConcurrencyManager
+from djblets.util.compat import six
 
 from reviewboard.diffviewer.models import DiffSetHistory
 from reviewboard.scmtools.errors import ChangeNumberInUseError
@@ -76,7 +78,7 @@ class ReviewRequestQuerySet(QuerySet):
                         accounts_reviewrequestvisit.timestamp
                     AND reviews_review.user_id != %(user_id)s
             """ % {
-                'user_id': str(user.id)
+                'user_id': six.text_type(user.id)
             }
 
             queryset = self.extra(select=select_dict)

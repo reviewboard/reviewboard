@@ -1,5 +1,8 @@
+from __future__ import unicode_literals
+
 from django_evolution.mutations import AddField, ChangeField
 from django.db import models
+
 
 MUTATIONS = [
     AddField('ReviewRequest', 'local_site', models.ForeignKey, null=True,
