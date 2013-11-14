@@ -1,3 +1,5 @@
+from __future__ import unicode_literals
+
 import nose
 from djblets.util.decorators import simple_decorator
 
