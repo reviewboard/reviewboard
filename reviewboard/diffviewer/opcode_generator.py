@@ -1,3 +1,5 @@
+from __future__ import unicode_literals
+
 import re
 
 from djblets.util.compat import six

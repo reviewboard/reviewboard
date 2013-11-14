@@ -1,3 +1,6 @@
+from __future__ import unicode_literals
+
+
 class UserVisibleError(Exception):
     """A user-visible error shown in the rendered output."""
     pass

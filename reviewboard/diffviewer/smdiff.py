@@ -1,3 +1,5 @@
+from __future__ import unicode_literals
+
 from difflib import SequenceMatcher
 
 from reviewboard.diffviewer.differ import Differ

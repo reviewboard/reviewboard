@@ -1,3 +1,5 @@
+from __future__ import unicode_literals
+
 import os
 
 from django.db import models
@@ -152,7 +154,7 @@ class DiffSetManager(models.Manager):
                 parent_content = parent_file.data
                 source_rev = parent_file.origInfo
             else:
-                parent_content = ""
+                parent_content = b""
 
                 if parent_commit_id and f.origInfo != PRE_CREATION:
                     source_rev = parent_commit_id

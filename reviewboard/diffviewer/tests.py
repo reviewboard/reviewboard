@@ -1,3 +1,5 @@
+from __future__ import unicode_literals
+
 import os
 import unittest
 
@@ -156,13 +158,11 @@ class InterestingLinesTest(TestCase):
         self.assertEqual(lines[1][1], (3, '\tdef helloWorld()\n'))
 
     def __get_lines(self, filename):
-        f = open(os.path.join(self.PREFIX, "orig_src", filename), "r")
-        a = f.readlines()
-        f.close()
+        with open(os.path.join(self.PREFIX, "orig_src", filename), "r") as f:
+            a = f.readlines()
 
-        f = open(os.path.join(self.PREFIX, "new_src", filename), "r")
-        b = f.readlines()
-        f.close()
+        with open(os.path.join(self.PREFIX, "new_src", filename), "r") as f:
+            b = f.readlines()
 
         differ = MyersDiffer(a, b)
         differ.add_interesting_lines_for_headers(filename)
@@ -433,20 +433,20 @@ class DiffParserTest(TestCase):
     def test_line_counts(self):
         """Testing DiffParser with insert/delete line counts"""
         diff = (
-            '+ This is some line before the change\n'
-            '- And another line\n'
-            'Index: foo\n'
-            '- One last.\n'
-            '--- README  123\n'
-            '+++ README  (new)\n'
-            '@ -1,1 +1,1 @@\n'
-            '-blah blah\n'
-            '-blah\n'
-            '+blah!\n'
-            '-blah...\n'
-            '+blah?\n'
-            '-blah!\n'
-            '+blah?!\n')
+            b'+ This is some line before the change\n'
+            b'- And another line\n'
+            b'Index: foo\n'
+            b'- One last.\n'
+            b'--- README  123\n'
+            b'+++ README  (new)\n'
+            b'@ -1,1 +1,1 @@\n'
+            b'-blah blah\n'
+            b'-blah\n'
+            b'+blah!\n'
+            b'-blah...\n'
+            b'+blah?\n'
+            b'-blah!\n'
+            b'+blah?!\n')
         files = diffparser.DiffParser(diff).parse()
 
         self.assertEqual(len(files), 1)
@@ -484,21 +484,21 @@ class FileDiffMigrationTests(TestCase):
 
     def setUp(self):
         self.diff = (
-            'diff --git a/README b/README\n'
-            'index d6613f5..5b50866 100644\n'
-            '--- README\n'
-            '+++ README\n'
-            '@ -1,1 +1,1 @@\n'
-            '-blah blah\n'
-            '+blah!\n')
+            b'diff --git a/README b/README\n'
+            b'index d6613f5..5b50866 100644\n'
+            b'--- README\n'
+            b'+++ README\n'
+            b'@ -1,1 +1,1 @@\n'
+            b'-blah blah\n'
+            b'+blah!\n')
         self.parent_diff = (
-            'diff --git a/README b/README\n'
-            'index d6613f5..5b50866 100644\n'
-            '--- README\n'
-            '+++ README\n'
-            '@ -1,1 +1,1 @@\n'
-            '-blah..\n'
-            '+blah blah\n')
+            b'diff --git a/README b/README\n'
+            b'index d6613f5..5b50866 100644\n'
+            b'--- README\n'
+            b'+++ README\n'
+            b'@ -1,1 +1,1 @@\n'
+            b'-blah..\n'
+            b'+blah blah\n')
 
         repository = self.create_repository(tool_name='Test')
         diffset = DiffSet.objects.create(name='test',
@@ -683,10 +683,9 @@ class DbTests(TestCase):
         diffset = DiffSet.objects.create(name='test',
                                          revision=1,
                                          repository=repository)
-        f = open(os.path.join(self.PREFIX, "diffs", "context", "foo.c.diff"),
-                 "r")
-        data = f.read()
-        f.close()
+        with open(os.path.join(self.PREFIX, "diffs", "context",
+                               "foo.c.diff")) as f:
+            data = f.read()
 
         filediff1 = FileDiff(diff=data,
                              diffset=diffset)
@@ -705,13 +704,13 @@ class DiffSetManagerTests(SpyAgency, TestCase):
     def test_creating_with_diff_data(self):
         """Test creating a DiffSet from diff file data"""
         diff = (
-            'diff --git a/README b/README\n'
-            'index d6613f5..5b50866 100644\n'
-            '--- README\n'
-            '+++ README\n'
-            '@ -1,1 +1,1 @@\n'
-            '-blah..\n'
-            '+blah blah\n'
+            b'diff --git a/README b/README\n'
+            b'index d6613f5..5b50866 100644\n'
+            b'--- README\n'
+            b'+++ README\n'
+            b'@ -1,1 +1,1 @@\n'
+            b'-blah..\n'
+            b'+blah blah\n'
         )
 
         repository = self.create_repository(tool_name='Test')
@@ -732,13 +731,13 @@ class UploadDiffFormTests(SpyAgency, TestCase):
     def test_creating_diffsets(self):
         """Test creating a DiffSet from form data"""
         diff = (
-            'diff --git a/README b/README\n'
-            'index d6613f5..5b50866 100644\n'
-            '--- README\n'
-            '+++ README\n'
-            '@ -1,1 +1,1 @@\n'
-            '-blah..\n'
-            '+blah blah\n'
+            b'diff --git a/README b/README\n'
+            b'index d6613f5..5b50866 100644\n'
+            b'--- README\n'
+            b'+++ README\n'
+            b'@ -1,1 +1,1 @@\n'
+            b'-blah..\n'
+            b'+blah blah\n'
         )
 
         diff_file = SimpleUploadedFile('diff', diff,
@@ -774,31 +773,31 @@ class UploadDiffFormTests(SpyAgency, TestCase):
             return True
 
         diff = (
-            'diff --git a/README b/README\n'
-            'index d6613f5..5b50866 100644\n'
-            '--- README\n'
-            '+++ README\n'
-            '@ -1,1 +1,1 @@\n'
-            '-blah blah\n'
-            '+blah!\n'
+            b'diff --git a/README b/README\n'
+            b'index d6613f5..5b50866 100644\n'
+            b'--- README\n'
+            b'+++ README\n'
+            b'@ -1,1 +1,1 @@\n'
+            b'-blah blah\n'
+            b'+blah!\n'
         )
         parent_diff_1 = (
-            'diff --git a/README b/README\n'
-            'index d6613f4..5b50865 100644\n'
-            '--- README\n'
-            '+++ README\n'
-            '@ -1,1 +1,1 @@\n'
-            '-blah..\n'
-            '+blah blah\n'
+            b'diff --git a/README b/README\n'
+            b'index d6613f4..5b50865 100644\n'
+            b'--- README\n'
+            b'+++ README\n'
+            b'@ -1,1 +1,1 @@\n'
+            b'-blah..\n'
+            b'+blah blah\n'
         )
         parent_diff_2 = (
-            'diff --git a/UNUSED b/UNUSED\n'
-            'index 1234567..5b50866 100644\n'
-            '--- UNUSED\n'
-            '+++ UNUSED\n'
-            '@ -1,1 +1,1 @@\n'
-            '-foo\n'
-            '+bar\n'
+            b'diff --git a/UNUSED b/UNUSED\n'
+            b'index 1234567..5b50866 100644\n'
+            b'--- UNUSED\n'
+            b'+++ UNUSED\n'
+            b'@ -1,1 +1,1 @@\n'
+            b'-foo\n'
+            b'+bar\n'
         )
         parent_diff = parent_diff_1 + parent_diff_2
 
@@ -835,27 +834,27 @@ class UploadDiffFormTests(SpyAgency, TestCase):
     def test_mercurial_parent_diff_base_rev(self):
         """Testing that the correct base revision is used for Mercurial diffs"""
         diff = (
-            '# Node ID a6fc203fee9091ff9739c9c00cd4a6694e023f48\n'
-            '# Parent  7c4735ef51a7c665b5654f1a111ae430ce84ebbd\n'
-            'diff --git a/doc/readme b/doc/readme\n'
-            '--- a/doc/readme\n'
-            '+++ b/doc/readme\n'
-            '@@ -1,3 +1,3 @@\n'
-            ' Hello\n'
-            '-\n'
-            '+...\n'
-            ' goodbye\n'
+            b'# Node ID a6fc203fee9091ff9739c9c00cd4a6694e023f48\n'
+            b'# Parent  7c4735ef51a7c665b5654f1a111ae430ce84ebbd\n'
+            b'diff --git a/doc/readme b/doc/readme\n'
+            b'--- a/doc/readme\n'
+            b'+++ b/doc/readme\n'
+            b'@@ -1,3 +1,3 @@\n'
+            b' Hello\n'
+            b'-\n'
+            b'+...\n'
+            b' goodbye\n'
         )
 
         parent_diff = (
-            '# Node ID 7c4735ef51a7c665b5654f1a111ae430ce84ebbd\n'
-            '# Parent  661e5dd3c4938ecbe8f77e2fdfa905d70485f94c\n'
-            'diff --git a/doc/newfile b/doc/newfile\n'
-            'new file mode 100644\n'
-            '--- /dev/null\n'
-            '+++ b/doc/newfile\n'
-            '@@ -0,0 +1,1 @@\n'
-            '+Lorem ipsum\n'
+            b'# Node ID 7c4735ef51a7c665b5654f1a111ae430ce84ebbd\n'
+            b'# Parent  661e5dd3c4938ecbe8f77e2fdfa905d70485f94c\n'
+            b'diff --git a/doc/newfile b/doc/newfile\n'
+            b'new file mode 100644\n'
+            b'--- /dev/null\n'
+            b'+++ b/doc/newfile\n'
+            b'@@ -0,0 +1,1 @@\n'
+            b'+Lorem ipsum\n'
         )
 
         try:

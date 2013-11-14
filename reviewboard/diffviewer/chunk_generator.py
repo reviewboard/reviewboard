@@ -1,3 +1,5 @@
+from __future__ import unicode_literals
+
 import fnmatch
 import re
 from difflib import SequenceMatcher
@@ -8,6 +10,7 @@ from django.utils.translation import ugettext as _, get_language
 from djblets.log import log_timed
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.util.misc import cache_memoize
+from djblets.util.compat import six
 from djblets.util.compat.six.moves import range
 from pygments import highlight
 from pygments.lexers import get_lexer_for_filename
@@ -109,7 +112,7 @@ class DiffChunkGenerator(object):
             key += 'hl-'
 
         if not self.force_interdiff:
-            key += str(self.filediff.pk)
+            key += six.text_type(self.filediff.pk)
         elif self.interfilediff:
             key += 'interdiff-%s-%s' % (self.filediff.pk,
                                         self.interfilediff.pk)

@@ -1,3 +1,5 @@
+from __future__ import unicode_literals
+
 import hashlib
 import logging
 
@@ -234,8 +236,8 @@ class FileDiff(models.Model):
             self.diffset.repository.get_scmtool())
 
     def __str__(self):
-        return u"%s (%s) -> %s (%s)" % (self.source_file, self.source_revision,
-                                        self.dest_file, self.dest_detail)
+        return "%s (%s) -> %s (%s)" % (self.source_file, self.source_revision,
+                                       self.dest_file, self.dest_detail)
 
 
 @python_2_unicode_compatible
@@ -287,7 +289,7 @@ class DiffSet(models.Model):
         super(DiffSet, self).save()
 
     def __str__(self):
-        return u"[%s] %s r%s" % (self.id, self.name, self.revision)
+        return "[%s] %s r%s" % (self.id, self.name, self.revision)
 
     class Meta:
         get_latest_by = 'revision'
@@ -311,7 +313,7 @@ class DiffSetHistory(models.Model):
         default=None)
 
     def __str__(self):
-        return u'Diff Set History (%s revisions)' % self.diffsets.count()
+        return 'Diff Set History (%s revisions)' % self.diffsets.count()
 
     class Meta:
         verbose_name_plural = "Diff set histories"

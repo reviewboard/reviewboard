@@ -1,8 +1,11 @@
+from __future__ import unicode_literals
+
 from django.conf import settings
 from django.http import HttpResponse
 from django.template import Context
 from django.template.loader import render_to_string
 from django.utils.translation import ugettext as _, get_language
+from djblets.util.compat import six
 from djblets.util.misc import cache_memoize
 
 from reviewboard.diffviewer.chunk_generator import compute_chunk_last_header
@@ -52,7 +55,7 @@ class DiffRenderer(object):
 
             if self.chunk_index < 0 or self.chunk_index >= self.num_chunks:
                 raise UserVisibleError(
-                    _(u'Invalid chunk index %s specified.') % self.chunk_index)
+                    _('Invalid chunk index %s specified.') % self.chunk_index)
 
     def render_to_response(self):
         """Renders the diff to an HttpResponse."""
@@ -99,11 +102,11 @@ class DiffRenderer(object):
             key += 'interdiff-%s-' % filediff.pk
 
             if interfilediff:
-                key += str(interfilediff.pk)
+                key += six.text_type(interfilediff.pk)
             else:
                 key += 'none'
         else:
-            key += str(filediff.pk)
+            key += six.text_type(filediff.pk)
 
         if self.chunk_index is not None:
             key += '-chunk-%s' % self.chunk_index
