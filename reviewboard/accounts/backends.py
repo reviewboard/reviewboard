@@ -169,7 +169,7 @@ class StandardAuthBackend(AuthBackend, ModelBackend):
                     if site_perms:
                         perm_cache = set([
                             key
-                            for key, value in six.iteritems(site_perms):
+                            for key, value in six.iteritems(site_perms)
                             if value
                         ])
                 except LocalSiteProfile.DoesNotExist:
