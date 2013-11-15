@@ -1,4 +1,17 @@
 {% load staticfiles %}
 {% if not settings.PIPELINE_ENABLED %}
-<script type="text/javascript" src="{% static "lib/js/less-1.4.1.min.js" %}"></script>
+<script>
+    less = {
+        globalVars: {
+            '@DEBUG': '{{settings.DEBUG|lower}}',
+            '@RB_MAJOR_VERSION': '{{version_raw.0}}',
+            '@RB_MINOR_VERSION': '{{version_raw.1}}',
+            '@RB_MICRO_VERSION': '{{version_raw.2}}',
+            '@RB_PATCH_VERSION': '{{version_raw.3}}',
+            '@RB_IS_RELEASED': '{{version_raw.5}}',
+            '@STATIC_ROOT': '"{{settings.STATIC_URL}}"'
+        }
+    };
+</script>
+<script src="{% static "lib/js/less-1.5.1.min.js" %}"></script>
 {% endif %}
