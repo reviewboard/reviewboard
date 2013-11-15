@@ -155,16 +155,20 @@ class StandardAuthBackend(AuthBackend, ModelBackend):
                 user._local_site_perm_cache = {}
 
             if obj.pk not in user._local_site_perm_cache:
+                perm_cache = set()
+
                 try:
                     site_profile = user.get_site_profile(obj)
+                    site_perms = site_profile.permissions or {}
 
-                    perm_cache = set([
-                        key
-                        for key, value in site_profile.permissions.iteritems()
-                        if value
-                    ])
+                    if site_perms:
+                        perm_cache = set([
+                            key
+                            for key, value in site_perms.iteritems()
+                            if value
+                        ])
                 except LocalSiteProfile.DoesNotExist:
-                    perm_cache = set()
+                    pass
 
                 user._local_site_perm_cache[obj.pk] = perm_cache
 
