@@ -1377,6 +1377,7 @@ $.reviewForm = function(review) {
                 .inlineEditor({
                     cls: cls + "-editor",
                     extraHeight: 50,
+                    focusOnOpen: false,
                     forceOpen: true,
                     multiline: true,
                     notifyUnchangedCompletion: true,
@@ -1478,6 +1479,7 @@ $.fn.reviewFormCommentEditor = function(comment) {
     return this
         .inlineEditor({
             extraHeight: 50,
+            focusOnOpen: false,
             forceOpen: true,
             multiline: true,
             notifyUnchangedCompletion: true,
