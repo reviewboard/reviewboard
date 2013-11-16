@@ -329,7 +329,10 @@ class LDAPBackend(AuthBackend):
                 search = ldapo.search_s(settings.LDAP_BASE_DN,
                                         ldap.SCOPE_SUBTREE,
                                         uid)
-                userbinding = search[0][0]
+                if (len(search) > 0):
+                    userbinding = search[0][0]
+                else:
+                    userbinding = ','.join([uid,settings.LDAP_BASE_DN])
                 ldapo.bind_s(userbinding, password)
 
             return self.get_or_create_user(username, None, ldapo)
