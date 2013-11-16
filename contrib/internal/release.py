@@ -13,6 +13,8 @@ import sys
 import tempfile
 import urllib2
 
+from fabazon.s3 import S3Bucket
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 from reviewboard import __version__, __version_info__, is_release
 
@@ -23,11 +25,10 @@ LATEST_PY_VERSION = PY_VERSIONS[-1]
 
 PACKAGE_NAME = 'ReviewBoard'
 
-RELEASES_URL = \
-    'reviewboard.org:/var/www/downloads.reviewboard.org/' \
-    'htdocs/releases/%s/%s.%s/' % (PACKAGE_NAME,
-                                   __version_info__[0],
-                                   __version_info__[1])
+RELEASES_BUCKET_NAME = 'downloads.reviewboard.org'
+RELEASES_BUCKET_KEY = '/%s/%s.%s/' % (PACKAGE_NAME,
+                                      __version_info__[0],
+                                      __version_info__[1])
 RBWEBSITE_API_URL = 'http://www.reviewboard.org/api/'
 RELEASES_API_URL = '%sproducts/reviewboard/releases/' % RBWEBSITE_API_URL
 
@@ -116,20 +117,21 @@ def build_settings():
 
 def build_targets():
     for pyver in PY_VERSIONS:
-        run_setup("bdist_egg", pyver)
-        built_files.append("dist/%s-%s-py%s.egg" %
-                           (PACKAGE_NAME, __version__, pyver))
+        run_setup('bdist_egg', pyver)
+        built_files.append(('dist/%s-%s-py%s.egg'
+                            % (PACKAGE_NAME, __version__, pyver),
+                            'application/octet-stream'))
 
-    run_setup("sdist")
-    built_files.append("dist/%s-%s.tar.gz" %
-                       (PACKAGE_NAME, __version__))
+    run_setup('sdist')
+    built_files.append(('dist/%s-%s.tar.gz' % (PACKAGE_NAME, __version__),
+                        'application/x-tar'))
 
 
 def build_checksums():
     sha_filename = 'dist/%s-%s.sha256sum' % (PACKAGE_NAME, __version__)
     out_f = open(sha_filename, 'w')
 
-    for filename in built_files:
+    for filename, mimetype in built_files:
         m = hashlib.sha256()
 
         in_f = open(filename, 'r')
@@ -139,11 +141,24 @@ def build_checksums():
         out_f.write('%s  %s\n' % (m.hexdigest(), os.path.basename(filename)))
 
     out_f.close()
-    built_files.append(sha_filename)
+    built_files.append((sha_filename, 'text/plain'))
 
 
 def upload_files():
-    execute("scp %s %s" % (" ".join(built_files), RELEASES_URL))
+    bucket = S3Bucket(RELEASES_BUCKET_NAME)
+
+    for filename, mimetype in built_files:
+        bucket.upload(filename,
+                      '%s/%s' % (RELEASES_BUCKET_KEY,
+                                 filename.split('/')[-1]),
+                      mimetype=mimetype,
+                      public=True)
+
+    bucket.upload_directory_index(RELEASES_BUCKET_KEY)
+
+    # This may be a new directory, so rebuild the parent as well.
+    parent_key = '/'.join(RELEASES_BUCKET_KEY.split('/')[:-2])
+    bucket.upload_directory_index(parent_key)
 
 
 def tag_release():
