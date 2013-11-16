@@ -1,3 +1,5 @@
+from __future__ import unicode_literals
+
 from djblets.settings import (PIPELINE_JS as DJBLETS_PIPELINE_JS,
                               PIPELINE_CSS as DJBLETS_PIPELINE_CSS)
 

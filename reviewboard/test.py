@@ -23,6 +23,8 @@
 # SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #
 
+from __future__ import unicode_literals
+
 import os
 import sys
 import tempfile
@@ -102,7 +104,7 @@ class RBTestRunner(DjangoTestSuiteRunner):
             profiling = False
 
         # manage.py captures everything before "--"
-        if len(sys.argv) > 2 and sys.argv.__contains__("--"):
+        if len(sys.argv) > 2 and '--' in sys.argv:
             self.nose_argv += sys.argv[(sys.argv.index("--") + 1):]
 
         if profiling:

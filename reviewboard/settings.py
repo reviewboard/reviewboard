@@ -1,5 +1,7 @@
 # Django settings for reviewboard project.
 
+from __future__ import unicode_literals
+
 import os
 import sys
 

@@ -1,3 +1,5 @@
+from __future__ import unicode_literals
+
 import os
 
 from django.conf import settings
@@ -29,11 +31,6 @@ urlpatterns = patterns(
     (r'^admin/extensions/', include('djblets.extensions.urls'),
      {'extension_manager': extension_manager}),
     (r'^admin/', include('reviewboard.admin.urls')),
-)
-
-
-urlpatterns += patterns(
-    '',
 
     url(r'^jsi18n/', 'djblets.util.views.cached_javascript_catalog',
         {'packages': ('reviewboard',)}, name='js-catalog')
