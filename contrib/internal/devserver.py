@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+from __future__ import print_function, unicode_literals
+
 import getopt
 import os
 import sys
@@ -9,11 +11,11 @@ DEFAULT_PORT = "8080"
 
 
 def usage():
-    print "usage:  %s options" % sys.argv[0]
-    print
-    print "OPTIONS:"
-    print "   -h           Show this message"
-    print "   -p PORT      Set server port (defaults to %s)" % DEFAULT_PORT
+    print("usage:  %s options" % sys.argv[0])
+    print()
+    print("OPTIONS:")
+    print("   -h           Show this message")
+    print("   -p PORT      Set server port (defaults to %s)" % DEFAULT_PORT)
 
 
 def main():
@@ -53,9 +55,8 @@ def main():
         os.system("python ./setup.py egg_info")
 
     # And now just boot up the server
-    os.system(sys.executable +
-              ' ./reviewboard/manage.py runserver 0.0.0.0:%s --nostatic'
-              % server_port)
+    os.system('%s ./reviewboard/manage.py runserver 0.0.0.0:%s --nostatic'
+              % (sys.executable, server_port))
 
 if __name__ == "__main__":
     main()

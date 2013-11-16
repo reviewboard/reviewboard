@@ -3,6 +3,8 @@
 # Utility script to run pyflakes with the modules we care about and
 # exclude errors we know to be fine.
 
+from __future__ import print_function, unicode_literals
+
 import os
 import re
 import subprocess
@@ -46,13 +48,10 @@ def main():
 
     # Read in the exclusions file
     exclusions = {}
-    fp = open(os.path.join(cur_dir, "pyflakes.exclude"), "r")
-
-    for line in fp.readlines():
-        if not line.startswith("#"):
-            exclusions[line.rstrip()] = 1
-
-    fp.close()
+    with open(os.path.join(cur_dir, "pyflakes.exclude"), "r") as fp:
+        for line in fp:
+            if not line.startswith("#"):
+                exclusions[line.rstrip()] = 1
 
     # Now filter thin
     for line in contents:
@@ -61,7 +60,7 @@ def main():
         test_line = re.sub(r'line [0-9]+', r'line *', test_line)
 
         if test_line not in exclusions:
-            print line
+            print(line)
 
 
 if __name__ == "__main__":

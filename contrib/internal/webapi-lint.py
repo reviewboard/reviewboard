@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+from __future__ import print_function, unicode_literals
+
 import os
 import re
 import sys
@@ -37,15 +39,15 @@ counts = {
 
 class Linter(object):
     def warning(self, text):
-        print '[W] %s' % self.build_log_text(text)
+        print('[W] %s' % self.build_log_text(text))
         counts['warnings'] += 1
 
     def error(self, text):
-        print '[E] %s' % self.build_log_text(text)
+        print('[E] %s' % self.build_log_text(text))
         counts['errors'] += 1
 
     def critical(self, text):
-        print '[C] %s' % self.build_log_text(text)
+        print('[C] %s' % self.build_log_text(text))
         counts['criticals'] += 1
 
     def build_log_text(self, text):
@@ -400,12 +402,11 @@ def main():
             linter.lint()
 
     if counts['warnings'] or counts['errors']:
-        print
-        print ('%(warnings)s warnings, %(errors)s errors, '
-               '%(criticals)s criticals'
-               % counts)
+        print()
+        print('%(warnings)s warnings, %(errors)s errors, '
+              '%(criticals)s criticals' % counts)
     else:
-        print 'All tests pass.'
+        print('All tests pass.')
 
 if __name__ == '__main__':
     main()

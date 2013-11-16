@@ -1,4 +1,7 @@
 #!/usr/bin/env python
+
+from __future__ import print_function, unicode_literals
+
 import os
 import shutil
 import subprocess
@@ -26,9 +29,9 @@ def clone_git_tree(git_dir):
 
 def execute(cmdline, return_errcode=False, show_output=True):
     if isinstance(cmdline, list):
-        print ">>> %s" % subprocess.list2cmdline(cmdline)
+        print(">>> %s" % subprocess.list2cmdline(cmdline))
     else:
-        print ">>> %s" % cmdline
+        print(">>> %s" % cmdline)
 
     p = subprocess.Popen(cmdline,
                          shell=False,
@@ -107,7 +110,7 @@ def main():
     cur_dir = os.getcwd()
     git_dir = clone_git_tree(cur_dir)
 
-    print 'Review Board cloned to %s' % git_dir
+    print('Review Board cloned to %s' % git_dir)
 
     # Prepare for a dev installation
     run_python(['./contrib/internal/prepare-dev.py',
@@ -128,10 +131,10 @@ def main():
     os.chdir(cur_dir)
     shutil.rmtree(git_dir)
 
-    print
-    print "***"
-    print "*** Success!"
-    print "***"
+    print()
+    print("***")
+    print("*** Success!")
+    print("***")
 
 
 if __name__ == '__main__':

@@ -1,10 +1,14 @@
 #!/usr/bin/env python
+
+from __future__ import print_function, unicode_literals
+
 import os
 import re
 from optparse import OptionParser
 
 from jinja2 import Environment, PackageLoader
 
+from djblets.util.compat.six.moves import input
 from reviewboard import get_version_string
 
 
@@ -21,7 +25,7 @@ def get_confirmation(question):
     point it will return True if it was a 'y'.
     """
     while True:
-        response = raw_input("%s (y/n): " % question).lower()
+        response = input("%s (y/n): " % question).lower()
         if re.match(r'^[yn]', response) is not None:
             break
         print("Incorrect option '%s'" % response)
@@ -99,11 +103,11 @@ def get_formatted_string(string_type, string, fallback, case):
         question = "Do you wish to use %s as the %s?" % \
                    (string, string_type)
         if not get_confirmation(question):
-            string = raw_input("Please input a %s: " % string_type)
+            string = input("Please input a %s: " % string_type)
 
     while not case.formatted(string):
         print("'%s' is not a valid %s." % (string, string_type))
-        string = raw_input("Please input a valid %s: " % string_type)
+        string = input("Please input a valid %s: " % string_type)
 
     return string
 
@@ -129,7 +133,7 @@ def parse_options():
                       help="author of the extension")
     parser.add_option("--dashboard-link",
                       dest="dashboard_link", default=None,
-                      metavar="DASHBOARD_lINK_LABEL",
+                      metavar="DASHBOARD_LINK_LABEL",
                       help="creates a dashboard link with this name in the " \
                            "review requests sidebar (optional)")
     parser.add_option("--is-configurable",

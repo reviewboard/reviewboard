@@ -1,4 +1,7 @@
 # {{extension_name}} Extension for Review Board.
+
+from __future__ import unicode_literals
+
 from django.conf import settings
 from django.conf.urls.defaults import patterns, include
 from reviewboard.extensions.base import Extension

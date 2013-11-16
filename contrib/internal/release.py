@@ -4,6 +4,8 @@
 # developers with release permissions.
 #
 
+from __future__ import print_function, unicode_literals
+
 import hashlib
 import mimetools
 import os
@@ -66,9 +68,9 @@ def load_config():
 
 def execute(cmdline):
     if isinstance(cmdline, list):
-        print ">>> %s" % subprocess.list2cmdline(cmdline)
+        print(">>> %s" % subprocess.list2cmdline(cmdline))
     else:
-        print ">>> %s" % cmdline
+        print(">>> %s" % cmdline)
 
     p = subprocess.Popen(cmdline,
                          shell=True,
@@ -83,7 +85,7 @@ def execute(cmdline):
     rc = p.wait()
 
     if rc != 0:
-        print "!!! Error invoking command."
+        print("!!! Error invoking command.")
         sys.exit(1)
 
     return s
@@ -103,16 +105,15 @@ def clone_git_tree(git_dir):
 
 
 def build_settings():
-    f = open('settings_local.py', 'w')
-    f.write('DATABASES = {\n')
-    f.write('    "default": {\n')
-    f.write('        "ENGINE": "django.db.backends.sqlite3",\n')
-    f.write('        "NAME": "reviewboard.db",\n')
-    f.write('    }\n')
-    f.write('}\n\n')
-    f.write('PRODUCTION = True\n')
-    f.write('DEBUG = False\n')
-    f.close()
+    with open('settings_local.py', 'w') as f:
+        f.write('DATABASES = {\n')
+        f.write('    "default": {\n')
+        f.write('        "ENGINE": "django.db.backends.sqlite3",\n')
+        f.write('        "NAME": "reviewboard.db",\n')
+        f.write('    }\n')
+        f.write('}\n\n')
+        f.write('PRODUCTION = True\n')
+        f.write('DEBUG = False\n')
 
 
 def build_targets():
@@ -129,6 +130,7 @@ def build_targets():
 
 def build_checksums():
     sha_filename = 'dist/%s-%s.sha256sum' % (PACKAGE_NAME, __version__)
+    # XXX: Once we switch to Python 2.7+, use the multiple form of 'with'
     out_f = open(sha_filename, 'w')
 
     for filename, mimetype in built_files:
@@ -182,34 +184,34 @@ def register_release():
     }
 
     boundary = mimetools.choose_boundary()
-    content = ''
+    content = b''
 
     for key, value in data.iteritems():
-        content += '--%s\r\n' % boundary
-        content += 'Content-Disposition: form-data; name="%s"\r\n' % key
-        content += '\r\n'
-        content += str(value) + '\r\n'
+        content += b'--%s\r\n' % boundary
+        content += b'Content-Disposition: form-data; name="%s"\r\n' % key
+        content += b'\r\n'
+        content += bytes(value) + b'\r\n'
 
-    content += '--%s--\r\n' % boundary
-    content += '\r\n'
+    content += b'--%s--\r\n' % boundary
+    content += b'\r\n'
 
     headers = {
         'Content-Type': 'multipart/form-data; boundary=%s' % boundary,
         'Content-Length': str(len(content)),
     }
 
-    print 'Posting release to reviewboard.org'
+    print('Posting release to reviewboard.org')
     try:
         f = urllib2.urlopen(urllib2.Request(url=RELEASES_API_URL, data=content,
                                             headers=headers))
         f.read()
     except urllib2.HTTPError, e:
-        print "Error uploading. Got HTTP code %d:" % e.code
-        print e.read()
+        print("Error uploading. Got HTTP code %d:" % e.code)
+        print(e.read())
     except urllib2.URLError, e:
         try:
-            print "Error uploading. Got URL error:" % e.code
-            print e.read()
+            print("Error uploading. Got URL error:" % e.code)
+            print(e.read())
         except AttributeError:
             pass
 

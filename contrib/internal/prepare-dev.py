@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+from __future__ import print_function, unicode_literals
+
 import os
 import pkg_resources
 import platform
@@ -17,14 +19,15 @@ class SiteOptions(object):
 
 def create_settings():
     if not os.path.exists("settings_local.py"):
-        print "Creating a settings_local.py in the current directory."
-        print "This can be modified with custom settings."
+        print("Creating a settings_local.py in the current directory.")
+        print("This can be modified with custom settings.")
 
         src_path = os.path.join("contrib", "conf", "settings_local.py.tmpl")
+        # XXX: Once we switch to Python 2.7+, use the multiple form of 'with'
         in_fp = open(src_path, "r")
         out_fp = open("settings_local.py", "w")
 
-        for line in in_fp.xreadlines():
+        for line in in_fp:
             if line.startswith("SECRET_KEY = "):
                 secret_key = ''.join([
                     choice('abcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*(-_=+)')
@@ -54,7 +57,7 @@ def create_settings():
 
 
 def install_media(site):
-    print "Rebuilding media paths..."
+    print("Rebuilding media paths...")
 
     media_path = os.path.join("htdocs", "media")
     uploaded_path = os.path.join(site.install_dir, media_path, "uploaded")
@@ -121,13 +124,13 @@ def main():
         install_media(site)
 
     if options.sync_db:
-        print "Synchronizing database..."
+        print("Synchronizing database...")
         site.abs_install_dir = os.getcwd()
         site.sync_database(allow_input=True)
 
-    print
-    print "Your Review Board tree is ready for development."
-    print
+    print()
+    print("Your Review Board tree is ready for development.")
+    print()
 
 
 if __name__ == "__main__":

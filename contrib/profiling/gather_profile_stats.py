@@ -7,9 +7,13 @@ Note that the aggregated profiles must be read with pstats.Stats, not
 hotshot.stats (the formats are incompatible)
 """
 
-from hotshot import stats
+from __future__ import print_function, unicode_literals
+
+import os
 import pstats
-import sys, os
+import sys
+from hotshot import stats
+
 
 def gather_stats(p):
     profiles = {}
@@ -23,7 +27,7 @@ def gather_stats(p):
             prof = stats.load(os.path.join(p, f))
         else:
             continue
-        print "Processing %s" % f
+        print("Processing %s" % f)
         if path in profiles:
             profiles[path].add(prof)
         else:
@@ -31,7 +35,8 @@ def gather_stats(p):
         os.unlink(os.path.join(p, f))
     for (path, prof) in profiles.items():
         prof.dump_stats(os.path.join(p, "%s.agg.prof" % path))
-    
+
+
 if __name__ == '__main__':
     if len(sys.argv) == 2:
         dir = sys.argv[1]
