@@ -711,6 +711,8 @@ class ResourceItemTests(BaseWebAPITestCase):
     def compare_item(self, item_rsp, review_request):
         self.assertEqual(item_rsp['id'], review_request.display_id)
         self.assertEqual(item_rsp['summary'], review_request.summary)
+        self.assertEqual(item_rsp['absolute_url'],
+                         self.base_url + review_request.get_absolute_url())
 
     #
     # HTTP DELETE tests

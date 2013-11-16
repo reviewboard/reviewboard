@@ -172,7 +172,16 @@ class ReviewRequestResource(WebAPIResource):
         },
         'url': {
             'type': six.text_type,
-            'description': "The URL to the review request's page on the site.",
+            'description': "The URL to the review request's page on the site. "
+                           "This is deprecated and will be removed in a "
+                           "future version.",
+            'deprecated_in': '2.0',
+        },
+        'absolute_url': {
+            'type': six.text_type,
+            'description': "The absolute URL to the review request's page on "
+                           "the site.",
+            'added_in': '2.0',
         },
     }
     uri_object_key = 'review_request_id'
@@ -396,6 +405,9 @@ class ReviewRequestResource(WebAPIResource):
 
     def serialize_url_field(self, obj, **kwargs):
         return obj.get_absolute_url()
+
+    def serialize_absolute_url_field(self, obj, request, **kwargs):
+        return request.build_absolute_uri(obj.get_absolute_url())
 
     def serialize_commit_id_field(self, obj, **kwargs):
         return obj.commit

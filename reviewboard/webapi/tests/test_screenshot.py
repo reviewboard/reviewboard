@@ -126,6 +126,8 @@ class ResourceItemTests(ReviewRequestChildItemMixin, BaseWebAPITestCase):
     def compare_item(self, item_rsp, comment):
         self.assertEqual(item_rsp['id'], comment.pk)
         self.assertEqual(item_rsp['caption'], comment.caption)
+        self.assertEqual(item_rsp['absolute_url'],
+                         self.base_url + comment.image.url)
 
     #
     # HTTP DELETE tests

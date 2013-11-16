@@ -40,7 +40,16 @@ class BaseFileAttachmentResource(WebAPIResource):
             'type': six.text_type,
             'description': "The URL of the file, for downloading purposes. "
                            "If this is not an absolute URL, then it's "
-                           "relative to the Review Board server's URL.",
+                           "relative to the Review Board server's URL. "
+                           "This is deprecated and will be removed in a "
+                           "future version.",
+            'deprecated_in': '2.0',
+        },
+        'absolute_url': {
+            'type': six.text_type,
+            'description': "The absolute URL of the file, for downloading "
+                           "purposes.",
+            'added_in': '2.0',
         },
         'icon_url': {
             'type': six.text_type,
@@ -90,6 +99,9 @@ class BaseFileAttachmentResource(WebAPIResource):
 
     def serialize_url_field(self, obj, **kwargs):
         return obj.get_absolute_url()
+
+    def serialize_absolute_url_field(self, obj, request, **kwargs):
+        return request.build_absolute_uri(obj.get_absolute_url())
 
     def serialize_caption_field(self, obj, **kwargs):
         # We prefer 'caption' here, because when creating a new file

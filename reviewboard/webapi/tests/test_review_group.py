@@ -32,6 +32,8 @@ class ResourceListTests(BaseWebAPITestCase):
         self.assertEqual(item_rsp['mailing_list'], group.mailing_list)
         self.assertEqual(item_rsp['visible'], group.visible)
         self.assertEqual(item_rsp['invite_only'], group.invite_only)
+        self.assertEqual(item_rsp['absolute_url'],
+                         self.base_url + group.get_absolute_url())
 
     #
     # HTTP GET tests

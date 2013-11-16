@@ -58,6 +58,12 @@ class ReviewGroupResource(WebAPIResource):
             'description': "The URL to the user's page on the site. "
                            "This is deprecated and will be removed in a "
                            "future version.",
+            'deprecated_in': '2.0',
+        },
+        'absolute_url': {
+            'type': six.text_type,
+            'description': "The absolute URL to the user's page on the site.",
+            'added_in': '2.0',
         },
         'visible': {
             'type': bool,
@@ -109,6 +115,9 @@ class ReviewGroupResource(WebAPIResource):
 
     def serialize_url_field(self, group, **kwargs):
         return group.get_absolute_url()
+
+    def serialize_absolute_url_field(self, obj, request, **kwargs):
+        return request.build_absolute_uri(obj.get_absolute_url())
 
     def has_access_permissions(self, request, group, *args, **kwargs):
         return group.is_accessible_by(request.user)

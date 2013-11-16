@@ -50,7 +50,14 @@ class BaseScreenshotResource(WebAPIResource):
             'description': "The URL of the screenshot file. If this is not "
                            "an absolute URL (for example, if it is just a "
                            "path), then it's relative to the Review Board "
-                           "server's URL.",
+                           "server's URL. This is deprecated and will be "
+                           "removed in a future version.",
+            'deprecated_in': '2.0',
+        },
+        'absolute_url': {
+            'type': six.text_type,
+            'description': "The absolute URL of the screenshot file.",
+            'added_in': '2.0',
         },
         'thumbnail_url': {
             'type': six.text_type,
@@ -98,6 +105,9 @@ class BaseScreenshotResource(WebAPIResource):
 
     def serialize_url_field(self, obj, **kwargs):
         return obj.image.url
+
+    def serialize_absolute_url_field(self, obj, request, **kwargs):
+        return request.build_absolute_uri(obj.image.url)
 
     def serialize_thumbnail_url_field(self, obj, **kwargs):
         return obj.get_thumbnail_url()
