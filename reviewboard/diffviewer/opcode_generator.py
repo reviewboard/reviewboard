@@ -347,7 +347,8 @@ class DiffOpcodeGenerator(object):
             valid and
             (new_end_i - r_move_range[0] + 1 >=
                  self.MOVE_PREFERRED_MIN_LINES or
-             len(self.differ.a[r_move_range[0]]) >= self.MOVE_MIN_LINE_LENGTH))
+             len(self.differ.a[r_move_range[0]].strip()) >=
+                 self.MOVE_MIN_LINE_LENGTH))
 
         if not valid:
             return None
