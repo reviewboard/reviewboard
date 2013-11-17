@@ -52,9 +52,18 @@ originated.
 Bugs
 ----
 
-This :guilabel:`Bugs` field is a comma-separated list of bug IDs that
+The :guilabel:`Bugs` field is a comma-separated list of bug IDs that
 the change addresses. If the repository is configured with a bug tracker,
 the bug IDs will link to the reports on the bug tracker.
+
+
+Depends On
+----------
+
+The :guilabel:`Depends On` field is a comma-separated list of review request
+IDs which are used to indicate dependencies between changes. The IDs will link
+to the other review requests, allowing reviewers to take that information into
+account when reading the changes.
 
 
 Groups

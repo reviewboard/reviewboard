@@ -34,5 +34,11 @@ The advantage of pre-commit review over post-commit review is that mistakes
 are caught before they become part of the product. The downside is that
 development may take longer.
 
-Review Board supports pre-commit review in the web UI. To make use of
-post-commit review, you need to use the :command:`post-review` tool.
+Review Board supports both styles of code review. For pre-commit reviews, an
+uncommitted change can be uploaded either through the web UI, or using the
+:command:`post-review` tool.
+
+For post-commit reviews, depending on the repository type, Review Board allows
+you to browse the commit history and choose a change to review. All repository
+types are supported for post-commit review by using the :command:`post-review`
+tool to prepare a diff file for the change and upload it.

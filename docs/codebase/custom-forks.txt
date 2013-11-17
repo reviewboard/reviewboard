@@ -19,7 +19,7 @@ an entire loss of the fork if one of those copies was lost.
 
 If only one developer will ever be working with the codebase, and you have
 no need for a central fork in the organization, you can just use a single
-checkout as described in :ref:`Getting Started`.
+checkout as described in :ref:`gettingstarted`.
 
 If you maintain a fork and have code that you think would be useful to
 the project as a whole, we would appreciate that you contribute the code
