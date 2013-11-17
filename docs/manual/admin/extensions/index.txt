@@ -14,7 +14,7 @@ time. If you're interested in developing an extension, please read our
 `Writing Review Board Extensions`_ guide to get started.
 
 .. _`Writing Review Board Extensions`:
-   http://www.reviewboard.org/docs/codebase/dev/extending/extensions/
+   http://www.reviewboard.org/docs/manual/dev/extending/extensions/
 
 
 Installing Extensions
