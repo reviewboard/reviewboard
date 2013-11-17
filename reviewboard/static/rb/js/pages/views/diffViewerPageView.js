@@ -162,7 +162,7 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
         });
         this._paginationView1.render();
         this.listenTo(this._paginationView1, 'pageSelected',
-                      this._onPageSelected);
+                      _.partial(this._onPageSelected, false));
 
         this._paginationView2 = new RB.PaginationView({
             el: $('#pagination2'),
@@ -170,7 +170,7 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
         });
         this._paginationView2.render();
         this.listenTo(this._paginationView2, 'pageSelected',
-                      this._onPageSelected);
+                      _.partial(this._onPageSelected, true));
 
         $('#diffs').bindClass(RB.UserSession.instance,
                               'diffsShowExtraWhitespace', 'ewhl');
@@ -519,12 +519,16 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
      *
      * Navigates to the same revision with a different page number.
      */
-    _onPageSelected: function(page) {
+    _onPageSelected: function(scroll, page) {
         var revision = this.model.get('revision'),
             url = revision.get('revision');
 
         if (revision.get('interdiffRevision') !== null) {
             url += '-' + revision.get('interdiffRevision');
+        }
+
+        if (scroll) {
+            this.selectAnchorByName('index_header', true);
         }
 
         url += '/?page=' + page;
