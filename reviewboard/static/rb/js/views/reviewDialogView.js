@@ -96,6 +96,7 @@ BaseCommentView = Backbone.View.extend({
             el: this.$('.comment-text-field')
         });
         this.textEditor.render();
+        this.textEditor.show();
 
         this.$issueOpened = this.$('.issue-opened')
             .prop('checked', this.model.get('issueOpened'));
@@ -380,6 +381,7 @@ RB.ReviewDialogView = Backbone.View.extend({
             el: this.$('.body-top')
         });
         this._bodyTopEditor.render();
+        this._bodyTopEditor.show();
 
         this._bodyBottomEditor = new RB.MarkdownEditorView({
             el: this.$('.body-bottom')

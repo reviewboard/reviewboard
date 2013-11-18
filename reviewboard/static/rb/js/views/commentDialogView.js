@@ -225,6 +225,7 @@ RB.CommentDialogView = Backbone.View.extend({
             minHeight: 0
         });
         this._textEditor.render();
+        this._textEditor.show();
         this._textEditor.$el
             .keypress(_.bind(this._onTextKeyPress, this))
             .bindVisibility(this.model, 'canEdit');

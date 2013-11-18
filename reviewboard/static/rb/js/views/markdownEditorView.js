@@ -22,18 +22,86 @@ RB.MarkdownEditorView = Backbone.View.extend({
      */
     initialize: function(options) {
         this._codeMirror = null;
+        this._value = '';
 
         this.options = _.defaults(options || {}, this.defaultOptions);
     },
 
     /*
-     * Renders the view.
-     *
-     * This will create a CodeMirror editor internally, and will set any
-     * appropriate options on it, based on what was provided to
-     * MarkdownEditorView.
+     * Returns whether or not the editor's contents have changed.
      */
-    render: function() {
+    isDirty: function() {
+        return this._codeMirror ? !this._codeMirror.isClean() : false;
+    },
+
+    /*
+     * Sets the text in the editor.
+     */
+    setText: function(text) {
+        if (text !== this.getText()) {
+            if (this._codeMirror) {
+                this._codeMirror.setValue(text);
+            } else {
+                this._value = text;
+            }
+        }
+    },
+
+    /*
+     * Returns the text in the editor.
+     */
+    getText: function() {
+        return this._codeMirror ? this._codeMirror.getValue() : this._value;
+    },
+
+    /*
+     * Sets the size of the editor.
+     */
+    setSize: function(width, height) {
+        if (this._codeMirror) {
+            this._codeMirror.setSize(width, height);
+        }
+    },
+
+    /*
+     * Shows the editor.
+     */
+    show: function() {
+        this.$el.show();
+        this._showEditor();
+    },
+
+    /*
+     * Hides the editor.
+     */
+    hide: function() {
+        this._hideEditor();
+        this.$el.hide();
+    },
+
+    /*
+     * Focuses the editor.
+     */
+    focus: function() {
+        if (this._codeMirror) {
+            this._codeMirror.focus();
+        }
+    },
+
+    /*
+     * Blurs the editor.
+     */
+    blur: function() {
+        this.element.blur();
+    },
+
+    /*
+     * Shows the actual CodeMirror editor.
+     *
+     * Any stored text will be transferred to the editor, and the editor
+     * will take control over all operations.
+     */
+    _showEditor: function() {
         var codeMirrorOptions = {
             mode: 'gfm',
             lineWrapping: true,
@@ -47,72 +115,28 @@ RB.MarkdownEditorView = Backbone.View.extend({
         }
 
         this._codeMirror = CodeMirror(this.el, codeMirrorOptions);
+        this._codeMirror.setValue(this._value);
+        this._value = '';
 
         if (this.options.minHeight) {
             $(this._codeMirror.getWrapperElement())
                 .css('min-height', this.options.minHeight);
         }
 
-        return this;
+        this.focus();
     },
 
     /*
-     * Returns whether or not the editor's contents have changed.
+     * Hides the actual CodeMirror editor.
+     *
+     * The last value from the editor will be stored for later retrieval.
      */
-    isDirty: function() {
-        return !this._codeMirror.isClean();
-    },
-
-    /*
-     * Sets the text in the editor.
-     */
-    setText: function(text) {
-        if (text !== this._codeMirror.getValue()) {
-            this._codeMirror.setValue(text);
+    _hideEditor: function() {
+        if (this._codeMirror) {
+            this._value = this._codeMirror.getValue();
+            this.$el.empty();
+            this._codeMirror = null;
         }
-    },
-
-    /*
-     * Returns the text in the editor.
-     */
-    getText: function() {
-        return this._codeMirror.getValue();
-    },
-
-    /*
-     * Sets the size of the editor.
-     */
-    setSize: function(width, height) {
-        this._codeMirror.setSize(width, height);
-    },
-
-    /*
-     * Shows the editor.
-     */
-    show: function() {
-        this.$el.show();
-        this._codeMirror.refresh();
-    },
-
-    /*
-     * Hides the editor.
-     */
-    hide: function() {
-        this.$el.hide();
-    },
-
-    /*
-     * Focuses the editor.
-     */
-    focus: function() {
-        this._codeMirror.focus();
-    },
-
-    /*
-     * Blurs the editor.
-     */
-    blur: function() {
-        this.element.blur();
     }
 }, {
     /*
@@ -136,7 +160,11 @@ RB.MarkdownEditorView = Backbone.View.extend({
                 markdownEditor.render();
 
                 editor.element.on('beginEdit', function() {
-                    markdownEditor._codeMirror.refresh();
+                    markdownEditor._showEditor();
+                });
+
+                editor.element.on('cancel complete', function() {
+                    markdownEditor._hideEditor();
                 });
 
                 markdownEditor.$el.data('markdown-editor', markdownEditor);
