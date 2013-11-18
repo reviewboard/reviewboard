@@ -213,7 +213,7 @@ This is available if `Authentication Method`_ is set to
     This setting is required.
 
 
-.. _fixing-a-broken-authentication-setup
+.. _fixing-a-broken-authentication-setup:
 
 Fixing a Broken Authentication Setup
 ====================================

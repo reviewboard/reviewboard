@@ -36,9 +36,10 @@ development may take longer.
 
 Review Board supports both styles of code review. For pre-commit reviews, an
 uncommitted change can be uploaded either through the web UI, or using the
-:command:`post-review` tool.
+:ref:`rbt post <rbtools:rbt-post>` tool.
 
 For post-commit reviews, depending on the repository type, Review Board allows
 you to browse the commit history and choose a change to review. All repository
-types are supported for post-commit review by using the :command:`post-review`
-tool to prepare a diff file for the change and upload it.
+types are supported for post-commit review by using the
+:ref:`rbt post <rbtools:rbt-post>` tool to prepare a diff file for the change
+and upload it.

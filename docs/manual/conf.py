@@ -223,7 +223,8 @@ latex_show_urls = True
 latex_show_pagerefs = True
 
 
-# Example configuration for intersphinx: refer to the Python standard library.
-intersphinx_mapping = {'http://docs.python.org/dev': None}
+intersphinx_mapping = {
+    'rbtools': ('http://reviewboard.org/docs/rbtools/dev', None),
+}
 
 todo_include_todos = True

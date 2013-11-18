@@ -2,10 +2,7 @@
 Tools
 =====
 
-.. toctree::
-   :maxdepth: 2
+The documentation for the command-line tools has moved. See
+`RBTools Documentation`_.
 
-   post-review
-
-
-.. comment: vim: ft=rst et ts=3
+.. _`RBTools Documentation`: http://www.reviewboard.org/docs/rbtools/dev/

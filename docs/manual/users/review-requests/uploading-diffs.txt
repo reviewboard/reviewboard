@@ -15,10 +15,10 @@ See :ref:`review-requests-for-diffs` for more information on the fields.
 	  repository) and your change. You can't just upload a diff of the
 	  changes since the previous diff.
 
-.. note:: It's usually best to use :ref:`post-review` or another tool
-          to update a diff, instead of uploading using this dialog.
-          This will help guarantee a valid diff, and works around problems
-          in some diff formats.
+.. note:: It's usually best to use :ref:`rbt post <rbtools:rbt-post>` or
+          another tool to update a diff, instead of uploading using this
+	  dialog. This will help guarantee a valid diff, and works around
+	  problems in some diff formats.
 
 
 .. comment: vim: ft=rst et ts=3
