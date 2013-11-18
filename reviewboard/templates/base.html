@@ -99,21 +99,25 @@
 {% template_hook_point "base-before-navbar" %}
 
 {% block navbar %}
-   <ul id="navbar">
+   <div id="navbar-container">
+    <ul id="navbar">
 {%  if user.is_authenticated or not siteconfig.settings.auth_require_sitewide_login %}
 {%   if user.is_authenticated %}
-    <li><a href="{% url 'dashboard' %}">{% trans "My Dashboard" %}</a></li>
-    <li><a href="{% url 'new-review-request' %}">{% trans "New Review Request" %}</a></li>
+     <li><a href="{% url 'dashboard' %}">{% trans "My Dashboard" %}</a></li>
+     <li><a href="{% url 'new-review-request' %}">{% trans "New Review Request" %}</a></li>
 {%   endif %}
-    <li><a href="{% url 'all-review-requests' %}">{% trans "All Review Requests" %}</a></li>
-    <li><a href="{% url 'all-groups' %}">{% trans "Groups" %}</a></li>
-    <li><a href="{% url 'all-users' %}">{% trans "Submitters" %}</a></li>
+     <li><a href="{% url 'all-review-requests' %}">{% trans "All Review Requests" %}</a></li>
+     <li><a href="{% url 'all-groups' %}">{% trans "Groups" %}</a></li>
+     <li><a href="{% url 'all-users' %}">{% trans "Submitters" %}</a></li>
 {%   navigation_bar_hooks %}
 {%  endif %}
-   </ul>
+    </ul>
+{% endblock %}
+{% template_hook_point "base-after-navbar" %}
+{% block navbar_post %}{% endblock %}
+   </div>
 {% endblock %}
    <div id="page-container">
-{% endblock %}
     <noscript>
 {%  box "important" %}
      <h1>{% trans "JavaScript is turned off" %}</h1>
@@ -126,7 +130,6 @@
 {%  endbox %}
     </noscript>
     <div id="error"></div>
-    {% template_hook_point "base-after-navbar" %}
 	<div id="container">
      {% block contenttag %}<div id="content">{% endblock %}
 {% template_hook_point "base-before-content" %}
