@@ -6,7 +6,7 @@
  *       reflected in reviewboard/reviews/markdown_utils.py.
  */
 var MARKDOWN_SPECIAL_CHARS_RE = /([\\`\*_\{\}\[\]\(\)\>\#\+\-\.\!])/g,
-    ESCAPE_CHARS_RE = /(^\s*(\d+\.)+|[\\`\*_\{\}\[\]\(\)\>\#\+\-\!])/gm;
+    ESCAPE_CHARS_RE = /(^\s*(\d+\.)+|^\s*(\#)+|^\s*[-\+]+|[\\`\*_\{\}\[\]\(\)\>\!])/gm;
 
 
 // If `marked` is defined, initialize it with our preferred options
@@ -100,7 +100,7 @@ RB.escapeMarkdown = function(text) {
     return text.replace(ESCAPE_CHARS_RE, function(text, m1) {
         return m1.replace(MARKDOWN_SPECIAL_CHARS_RE, '\\$1');
     });
-}
+};
 
 
 }());

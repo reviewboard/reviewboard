@@ -2615,7 +2615,7 @@ class UserInfoboxTests(TestCase):
 
 class MarkdownUtilsTests(TestCase):
     UNESCAPED_TEXT = r'\`*_{}[]()>#+-.!'
-    ESCAPED_TEXT = r'\\\`\*\_\{\}\[\]\(\)\>\#\+\-.\!'
+    ESCAPED_TEXT = r'\\\`\*\_\{\}\[\]\(\)\>#+-.\!'
 
     def test_markdown_escape(self):
         """Testing markdown_escape"""
@@ -2633,6 +2633,40 @@ class MarkdownUtilsTests(TestCase):
              '1\\. Line. 2.\n'
              '1\\.2\\. Line. 3.\n'
              '  1\\. Line. 4.'))
+
+    def test_markdown_escape_atx_headers(self):
+        """Testing markdown_escape with '#' placement"""
+        self.assertEqual(
+            markdown_escape('### Header\n'
+                            '  ## Header ##\n'
+                            'Not # a header'),
+            ('\\#\\#\\# Header\n'
+             '  \\#\\# Header ##\n'
+             'Not # a header'))
+
+    def test_markdown_escape_hyphens(self):
+        """Testing markdown_escape with '-' placement"""
+        self.assertEqual(
+            markdown_escape('Header\n'
+                            '------\n'
+                            '\n'
+                            '- List item\n'
+                            '  - List item\n'
+                            'Just hyp-henated'),
+            ('Header\n'
+             '\\-\\-\\-\\-\\-\\-\n'
+             '\n'
+             '\\- List item\n'
+             '  \\- List item\n'
+             'Just hyp-henated'))
+
+    def test_markdown_escape_plusses(self):
+        """Testing markdown_escape with '+' placement"""
+        self.assertEqual(
+            markdown_escape('+ List item\n'
+                            'a + b'),
+            ('\\+ List item\n'
+             'a + b'))
 
     def test_markdown_unescape(self):
         """Testing markdown_unescape"""

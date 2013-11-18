@@ -11,17 +11,28 @@ from markdown import Markdown
 MARKDOWN_SPECIAL_CHARS = re.escape(r''.join(Markdown.ESCAPED_CHARS))
 MARKDOWN_SPECIAL_CHARS_RE = re.compile(r'([%s])' % MARKDOWN_SPECIAL_CHARS)
 
-# Markdown.ESCAPED_CHARS lists '.' as a character to escape, but it's not
-# that simple. We only want to escape this if it's after a number at the
-# beginning of the line (ignoring leading whitespace), indicating a
-# numbered list. We'll handle that specially.
-MARKDOWN_ESCAPED_CHARS = list(Markdown.ESCAPED_CHARS)
-MARKDOWN_ESCAPED_CHARS.remove('.')
+# Markdown.ESCAPED_CHARS lists several characters to escape, but it's not
+# that simple. We only want to escape certain things if they'll actually affect
+# the markdown rendering, because otherwise it's annoying to look at the
+# source.
+MARKDOWN_ESCAPED_CHARS = set(Markdown.ESCAPED_CHARS)
+MARKDOWN_ESCAPED_CHARS -= set(['.', '#', '-', '+'])
 
-ESCAPE_CHARS_RE = \
-    re.compile(r'(^\s*(\d+\.)+|[%s])'
-               % re.escape(''.join(MARKDOWN_ESCAPED_CHARS)),
-               re.M)
+ESCAPE_CHARS_RE = re.compile(r"""
+    (
+      ^\s*(\d+\.)+    # Numeric lists start with leading whitespace, one or
+                      # more digits, and then a period
+
+    | ^\s*(\#)+       # ATX-style headers start with a hash at the beginning of
+                      # the line.
+
+    | ^\s*[-\+]+      # + and - have special meaning (lists, headers, and rules),
+                      # but only if they're at the start of the line.
+
+    | [%s]            # All other special characters
+    )
+    """ % re.escape(''.join(MARKDOWN_ESCAPED_CHARS)),
+    re.M | re.VERBOSE)
 UNESCAPE_CHARS_RE = re.compile(r'\\([%s])' % MARKDOWN_SPECIAL_CHARS)
 
 
