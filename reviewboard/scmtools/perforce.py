@@ -112,19 +112,24 @@ class PerforceClient(object):
         This connects p4python to the remote server, optionally using a stunnel
         proxy.
         """
-        self.p4.user = self.username
-        self.p4.password = self.password
+        self.p4.user = self.username.encode('utf-8')
+        self.p4.password = self.password.encode('utf-8')
+
         if self.encoding:
-            self.p4.charset = self.encoding
+            self.p4.charset = self.encoding.encode('utf-8')
+
         self.p4.exception_level = 1
 
         if self.use_stunnel:
             # Spin up an stunnel client and then redirect through that
             self.proxy = STunnelProxy(STUNNEL_CLIENT, self.p4port)
             self.proxy.start_client()
-            self.p4.port = '127.0.0.1:%d' % self.proxy.port
+            p4_port = '127.0.0.1:%d' % self.proxy.port
         else:
-            self.p4.port = self.p4port
+            p4_port = self.p4port
+
+        self.p4.port = p4_port.encode('utf-8')
+
         self.p4.connect()
 
         if self.use_ticket_auth:
