@@ -75,7 +75,8 @@ if has_bzrlib:
             else:
                 self.local_site_name = None
 
-            super(RBRemoteSSHTransport, self).__init__(base, *args, **kwargs)
+            super(RBRemoteSSHTransport, self).__init__(
+                base.encode('ascii'), *args, **kwargs)
 
         def _build_medium(self):
             client_medium, auth = \
@@ -120,9 +121,11 @@ class BZRTool(SCMTool):
         branch = None
         try:
             try:
-                branch, relpath = bzrdir.BzrDir.open_containing_tree_or_branch(filepath)[1:]
+                branch, relpath = bzrdir.BzrDir.open_containing_tree_or_branch(
+                    filepath.encode('ascii'))[1:]
                 branch.lock_read()
-                revtree = revisionspec.RevisionSpec.from_string(revspec).as_tree(branch)
+                revtree = revisionspec.RevisionSpec.from_string(
+                    revspec.encode('ascii')).as_tree(branch)
                 fileid = revtree.path2id(relpath)
                 if fileid:
                     # XXX: get_file_text returns str, which isn't Python 3
@@ -229,7 +232,8 @@ class BZRTool(SCMTool):
 
         try:
             tree, branch, repository, relpath = \
-                bzrdir.BzrDir.open_containing_tree_branch_or_repository(path)
+                bzrdir.BzrDir.open_containing_tree_branch_or_repository(
+                    path.encode('ascii'))
         except AttributeError:
             raise RepositoryNotFoundError()
         except NotBranchError:
