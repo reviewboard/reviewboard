@@ -107,6 +107,7 @@ class ResourceDirective(Directive):
     type_mapping = {
         int: 'Integer',
         str: 'String',
+        unicode: 'String',
         bool: 'Boolean',
         dict: 'Dictionary',
         file: 'Uploaded File',
