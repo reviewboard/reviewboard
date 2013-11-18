@@ -1026,77 +1026,20 @@ td, th {
 .extensions {
   .border-radius(0 0 @box-border-radius @box-border-radius);
   .box-shadow(@box-shadow);
-  border: 1px #AAAAAA solid;
-  border-top: 0;
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  margin-bottom: 20px;
 
   .extension {
-    list-style: none;
     padding: @box-padding;
-    position: relative;
 
     &:last-child {
       .border-radius(0 0 @box-inner-border-radius @box-inner-border-radius);
     }
 
-    &.row1 {
-      border-top: 1px #E0E0E0 solid;
-      border-bottom: 1px #E0E0E0 solid;
-    }
-
-    h1 {
-      float: left;
-      font-size: 120%;
-      margin: 0;
-
-      .version {
-        color: #444;
-        font-weight: normal;
-        margin-left: 0.5em;
-      }
-    }
-
     .author {
-      float: right;
-      margin: 0;
-
       a {
         color: @link-color;
       }
     }
-
-    .description {
-      clear: both;
-      margin: 1.5em 10em 1.5em 1em;
-      padding: 0;
-    }
-
-    .extension-header {
-      .clearfix;
-    }
-  }
-
-  .object-tools {
-    float: none;
-    margin: 0 0 0 1em;
-
-    li {
-      display: inline;
-      float: none;
-      margin: 0 1em 0 0;
-
-      a {
-        display: inline;
-        float: none;
-        font-weight: normal;
-        margin: 0;
-        padding: 0;
-      }
-    }
-  }
+ }
 }
 
 
