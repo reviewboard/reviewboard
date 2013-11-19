@@ -1627,7 +1627,7 @@ class ReviewsSearchView(ListView):
 
     def get_context_data(self, **kwargs):
         query = self.request.GET.get('q', '')
-        context_data = super(ReviewsSearchView, self).get_context_data(kwargs)
+        context_data = super(ReviewsSearchView, self).get_context_data(**kwargs)
         context_data.update({
             'query': query,
             'extra_query': 'q=%s' % query,
