@@ -1592,6 +1592,33 @@ class PostCommitTests(SpyAgency, TestCase):
         self.assertEqual(fileDiff.source_file, '/readme')
         self.assertEqual(fileDiff.source_revision, 'd6613f5')
 
+    def test_update_from_committed_change_with_markdown_escaping(self):
+        """Testing post-commit update with markdown escaping"""
+        def get_change(repository, commit_to_get):
+            commit = Commit()
+            commit.message = '* No escaping\n\n* but this needs escaping'
+            diff_filename = os.path.join(self.testdata_dir, 'git_readme.diff')
+            with open(diff_filename, 'r') as f:
+                commit.diff = f.read()
+
+            return commit
+
+        def get_file_exists(repository, path, revision, base_commit_id=None,
+                            request=None):
+            return (path, revision) in [('/readme', 'd6613f5')]
+
+        self.spy_on(self.repository.get_change, call_fake=get_change)
+        self.spy_on(self.repository.get_file_exists, call_fake=get_file_exists)
+
+        review_request = ReviewRequest.objects.create(self.user,
+                                                      self.repository)
+        review_request.rich_text = True
+        review_request.update_from_commit_id('4')
+
+        self.assertEqual(review_request.summary, '* No escaping')
+        self.assertEqual(review_request.description,
+                         '\\* but this needs escaping')
+
     def test_update_from_committed_change_without_repository_support(self):
         """Testing post-commit update failure conditions"""
         self.spy_on(self.repository.__class__.supports_post_commit.fget,

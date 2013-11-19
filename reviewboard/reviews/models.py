@@ -25,6 +25,7 @@ from reviewboard.reviews.managers import (DefaultReviewerManager,
                                           ReviewGroupManager,
                                           ReviewRequestManager,
                                           ReviewManager)
+from reviewboard.reviews.markdown_utils import markdown_escape
 from reviewboard.reviews.signals import (review_request_published,
                                          review_request_reopened,
                                          review_request_closed,
@@ -435,11 +436,18 @@ class BaseReviewRequestDetails(models.Model):
         if hasattr(self, 'changenum'):
             self.update_commit_id(commit_id)
 
-        self.summary = changeset.summary
-        self.description = changeset.description
+        if self.rich_text:
+            description = markdown_escape(changeset.description)
+            testing_done = markdown_escape(changeset.testing_done)
+        else:
+            description = changeset.description
+            testing_done = changeset.testing_done
 
-        if changeset.testing_done:
-            self.testing_done = changeset.testing_done
+        self.summary = changeset.summary
+        self.description = description
+
+        if testing_done:
+            self.testing_done = testing_done
 
         if changeset.branch:
             self.branch = changeset.branch
@@ -460,7 +468,10 @@ class BaseReviewRequestDetails(models.Model):
             self.commit = commit_id
 
         self.summary = summary.strip()
-        self.description = message.strip()
+        if self.rich_text:
+            self.description = markdown_escape(message.strip())
+        else:
+            self.description = message.strip()
 
         DiffSet.objects.create_from_data(
             repository=self.repository,
