@@ -43,6 +43,7 @@ class AuthBackend(object):
     supports_change_name = False
     supports_change_email = False
     supports_change_password = False
+    login_instructions = None
 
     def authenticate(self, username, password):
         raise NotImplementedError
@@ -222,6 +223,8 @@ class NISBackend(AuthBackend):
     """Authenticate against a user on an NIS server."""
     name = _('NIS')
     settings_form = NISSettingsForm
+    login_instructions = \
+        _('Use your standard NIS username and password.')
 
     def authenticate(self, username, password):
         import crypt
@@ -282,6 +285,8 @@ class LDAPBackend(AuthBackend):
     """Authenticate against a user on an LDAP server."""
     name = _('LDAP')
     settings_form = LDAPSettingsForm
+    login_instructions = \
+        _('Use your standard LDAP username and password.')
 
     def authenticate(self, username, password):
         username = username.strip()
@@ -430,6 +435,8 @@ class ActiveDirectoryBackend(AuthBackend):
     """Authenticate a user against an Active Directory server."""
     name = _('Active Directory')
     settings_form = ActiveDirectorySettingsForm
+    login_instructions = \
+        _('Use your standard Active Directory username and password.')
 
     def get_domain_name(self):
         return six.text_type(settings.AD_DOMAIN_NAME)

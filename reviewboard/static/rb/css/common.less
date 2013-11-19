@@ -767,6 +767,145 @@ body.admin #navbar {
 
 
 /****************************************************************************
+ * Login/Register pages
+ ****************************************************************************/
+@auth-section-margin: 2em;
+@auth-label-width: 12em;
+@auth-field-width: 16em;
+
+
+#auth_container {
+  font-size: 120%;
+  margin: 7em 0 0 0;
+  text-align: center;
+
+  input[type="text"], input[type="password"] {
+    border: 1px #aaa solid;
+    font-size: inherit;
+    margin: 0;
+    padding: 0.5em;
+    width: @auth-field-width;
+    .border-radius(@box-border-radius);
+    .box-sizing(border-box);
+  }
+
+  .auth-button-container {
+    width: 16em;
+
+    input {
+      font-size: 120%;
+      margin: 0;
+      padding: 0.6em;
+      width: 100%;
+      .box-sizing(border-box);
+    }
+  }
+
+  .auth-form-row {
+    clear: both;
+    margin: 1.5em 0;
+    padding-left: @auth-label-width;
+
+    &.auth-field-row {
+      padding-left: 0;
+
+      label {
+        float: left;
+        font-weight: normal;
+        padding: 0.5em 1em 0.5em 0.5em;
+        text-align: right;
+        width: @auth-label-width;
+        .box-sizing(border-box);
+      }
+
+      .errorlist {
+        display: block;
+        margin: 0.5em 0 0 @auth-label-width;
+        width: @auth-field-width;
+
+        li {
+          font-weight: normal;
+          font-size: 9pt;
+        }
+      }
+    }
+  }
+
+  .auth-header {
+    margin: 0 0 1em 0;
+
+    h1 {
+      font-size: 120%;
+      margin: 1em 0;
+      padding: 0;
+    }
+
+    p {
+      color: #444;
+      margin: 1em 0;
+    }
+
+    .errorbox {
+      display: inline-block;
+      text-align: center;
+
+      .errorlist {
+        text-align: left;
+      }
+    }
+  }
+
+  .auth-section {
+    display: inline-block;
+    margin: 0 @auth-section-margin;
+    text-align: left;
+    vertical-align: top;
+
+    &.main-auth-section {
+      margin-left: (-@auth-label-width + @auth-section-margin);
+    }
+  }
+
+  .errorlist {
+    margin: 0;
+    padding: 0;
+
+    li {
+      display: block;
+      font-weight: normal;
+      margin: 0 0 1em 0;;
+    }
+  }
+}
+
+#auth_container #login_form {
+  .login-links {
+    margin-top: 2em;
+    text-align: center;
+
+    p {
+      width: @auth-field-width;
+
+      a {
+        color: blue;
+        text-decoration: none;
+      }
+    }
+  }
+}
+
+#auth_container #register_form {
+  .register-captcha-row {
+    padding-left: 0;
+
+    .register-captcha-container {
+      float: right;
+    }
+  }
+}
+
+
+/****************************************************************************
  * Auto-complete widget
  ****************************************************************************/
 

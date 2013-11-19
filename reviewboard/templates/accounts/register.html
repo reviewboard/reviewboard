@@ -1,69 +1,86 @@
 {% extends "base.html" %}
-{% load djblets_deco %}
-{% load i18n %}
+{% load djblets_deco djblets_extensions i18n %}
+
 {% block title %}{% trans "Register account" %}{% endblock %}
 
 {% block content %}
-{% box "registerform" %}
-<form method="post" action=".">
- <h1 class="title">{% trans "Register" %}</h1>
- <div class="main">
-  <table id="login_form">
-   <tr>
-    <td class="label"><label for="id_username">{% trans "Username:" %}</label></td>
-    <td class="field">{{form.username}}</td>
-    <td class="errorbox">{{form.errors.username}}</td>
-   </tr>
-   <tr>
-    <td class="label"><label for="id_password1">{% trans "Password:" %}</label></td>
-    <td class="field">{{form.password1}}</td>
-    <td class="errorbox">{{form.errors.password1}}</td>
-   </tr>
-   <tr>
-    <td class="label"><label for="id_password2">{% trans "Password (repeat):" %}</label></td>
-    <td class="field">{{form.password2}}</td>
-    <td class="errorbox">{{form.errors.password2}}</td>
-   </tr>
-   <tr>
-    <td class="label"><label for="id_email">{% trans "E-mail address:" %}</label></td>
-    <td class="field">{{form.email}}</td>
-    <td class="errorbox">{{form.errors.email}}</td>
-   </tr>
-   <tr>
-    <td class="label"><label for="id_first_name">{% trans "First name:" %}</label></td>
-    <td class="field">{{form.first_name}}</td>
-    <td class="errorbox">{{form.errors.first_name}}</td>
-   </tr>
-   <tr>
-    <td class="label"><label for="id_last_name">{% trans "Last name:" %}</label></td>
-    <td class="field">{{form.last_name}}</td>
-    <td class="errorbox">{{form.errors.last_name}}</td>
-   </tr>
-{% if siteconfig.settings.auth_registration_show_captcha %}
-   <tr>
-    <td></td>
-	<td colspan="2">
-	 <script type="text/javascript" src="{{form.recaptcha_url}}/challenge?k={{siteconfig.settings.recaptcha_public_key}}{{form.captcha_error_query_str}}">
-	 </script>
+<div id="auth_container">
+{%  template_hook_point "before-register-form" %}
 
-	 <noscript>
-	  <iframe src="{{form.recaptcha_url}}/noscript?k={{siteconfig.settings.recaptcha_public_key}}{{form.captcha_error_query_str}}"
-	          height="300" width="500" frameborder="0"></iframe>
-      <br />
-	  <textarea name="recaptcha_challenge_field" rows="3" cols="40">
-	  </textarea>
-	  <input type="hidden" name="recaptcha_response_field" value="manual_challenge" />
-	 </noscript>
-	</td>
-   </tr>
-{% endif %}
-   <tr>
-    <td><input type="submit" value="{% trans "Register" %}" /></td>
-    <td>&nbsp;</td>
-   </tr>
-  </table>
+ <div class="auth-header">
+  <h1>{% trans "Register an account" %}</h1>
+{%  if form.errors %}
+{%   errorbox %}{{form.non_field_errors}}{% enderrorbox %}
+{%  endif %}
  </div>
-</form>
-{% endbox %}
-{% endblock %}
 
+ <form method="post" action="." class="auth-section main-auth-section"
+       id="register_form">
+  <div class="auth-form-row auth-field-row">
+   {{form.username.label_tag}}
+   {{form.username}}
+   {{form.errors.username}}
+  </div>
+
+  <div class="auth-form-row auth-field-row">
+   {{form.password1.label_tag}}
+   {{form.password1}}
+   {{form.errors.password1}}
+  </div>
+
+  <div class="auth-form-row auth-field-row">
+   {{form.password2.label_tag}}
+   {{form.password2}}
+   {{form.errors.password2}}
+  </div>
+
+  <div class="auth-form-row auth-field-row">
+   {{form.email.label_tag}}
+   {{form.email}}
+   {{form.errors.email}}
+  </div>
+
+  <div class="auth-form-row auth-field-row">
+   {{form.first_name.label_tag}}
+   {{form.first_name}}
+   {{form.errors.first_name}}
+  </div>
+
+  <div class="auth-form-row auth-field-row">
+   {{form.last_name.label_tag}}
+   {{form.last_name}}
+   {{form.errors.last_name}}
+  </div>
+
+{% if siteconfig.settings.auth_registration_show_captcha %}
+  <div class="auth-form-row register-captcha-row clearfix">
+   <script>
+       var RecaptchaOptions = {
+           theme: 'white'
+       };
+   </script>
+   <div class="register-captcha-container">
+    <script type="text/javascript" src="{{form.recaptcha_url}}/challenge?k={{siteconfig.settings.recaptcha_public_key}}{{form.captcha_error_query_str}}"></script>
+
+    <noscript>
+     <iframe src="{{form.recaptcha_url}}/noscript?k={{siteconfig.settings.recaptcha_public_key}}{{form.captcha_error_query_str}}"
+             height="300" width="500" frameborder="0"></iframe>
+     <br />
+     <textarea name="recaptcha_challenge_field" rows="3" cols="40"></textarea>
+     <input type="hidden" name="recaptcha_response_field"
+            value="manual_challenge" />
+    </noscript>
+   </div>
+  </div>
+{% endif %}
+
+  <div class="auth-form-row">
+   <div class="auth-button-container">
+    <input type="submit" class="primary" value="{% trans "Register" %}" />
+   </div>
+  </div>
+ </form>
+
+{%  template_hook_point "after-register-form" %}
+</div>
+{% endblock %}
