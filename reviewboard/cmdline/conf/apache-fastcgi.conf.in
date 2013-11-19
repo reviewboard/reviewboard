@@ -53,5 +53,5 @@
 		RewriteRule ^/(errordocs.*)$ /$1 [QSA,L,PT]
 	</IfModule>
 	RewriteCond %{REQUEST_FILENAME} !-f
-	RewriteRule ^/(.*)$ /reviewboard.fcgi/$1 [QSA,L]
+	RewriteRule ^/(.*)$ /reviewboard.fcgi/$1 [QSA,E=HTTP_AUTHORIZATION:%{HTTP:Authorization},L]
 </VirtualHost>
