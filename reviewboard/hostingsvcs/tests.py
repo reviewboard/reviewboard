@@ -14,7 +14,7 @@ from kgb import SpyAgency
 from reviewboard.hostingsvcs.models import HostingServiceAccount
 from reviewboard.hostingsvcs.service import get_hosting_service
 from reviewboard.scmtools.core import Branch
-from reviewboard.scmtools.errors import FileNotFoundError
+from reviewboard.scmtools.errors import FileNotFoundError, SCMError
 from reviewboard.scmtools.models import Repository, Tool
 from reviewboard.testing import TestCase
 
@@ -1239,6 +1239,28 @@ class GitHubTests(ServiceTests):
         self.assertEqual(change.message, 'Move .clearfix to defs.less')
         self.assertEqual(md5(change.diff.encode('utf-8')).hexdigest(),
                          '5f63bd4f1cd8c4d8b46f2f72ea8d33bc')
+
+    def test_get_change_exception(self):
+        """Testing GitHub get_change exception types"""
+        def _http_get(service, url, *args, **kwargs):
+            raise Exception('Not Found')
+
+        self.service_class._http_get = _http_get
+
+        account = self._get_hosting_account()
+        account.data['authorization'] = {'token': 'abc123'}
+
+        repository = Repository(hosting_account=account)
+        repository.extra_data = {
+            'repository_plan': 'public',
+            'github_public_repo_name': 'myrepo',
+        }
+
+        service = account.service
+        commit_sha = '1c44b461cebe5874a857c51a4a13a849a4d1e52d'
+        self.assertRaisesMessage(
+            SCMError, 'Not Found',
+            lambda: service.get_change(repository, commit_sha))
 
     def _test_check_repository(self, expected_user='myuser', **kwargs):
         def _http_get(service, url, *args, **kwargs):

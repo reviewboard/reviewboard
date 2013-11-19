@@ -19,7 +19,9 @@ from reviewboard.hostingsvcs.errors import (AuthorizationError,
 from reviewboard.hostingsvcs.forms import HostingServiceForm
 from reviewboard.hostingsvcs.service import HostingService
 from reviewboard.scmtools.core import Branch, Commit
-from reviewboard.scmtools.errors import FileNotFoundError
+from reviewboard.scmtools.errors import (FileNotFoundError,
+                                         InvalidChangeNumberError,
+                                         SCMError)
 from reviewboard.site.urlresolvers import local_site_reverse
 
 
@@ -372,7 +374,10 @@ class GitHub(HostingService):
             url = self._build_api_url(repo_api_url, 'commits')
             url += '&sha=%s' % revision
 
-            commit = self._api_get(url)[0]
+            try:
+                commit = self._api_get(url)[0]
+            except Exception as e:
+                raise SCMError(six.text_type(e))
 
             author_name = commit['commit']['author']['name']
             date = commit['commit']['committer']['date'],
@@ -382,7 +387,10 @@ class GitHub(HostingService):
         # Step 2: fetch the "compare two commits" API to get the diff.
         url = self._build_api_url(
             repo_api_url, 'compare/%s...%s' % (parent_revision, revision))
-        comparison = self._api_get(url)
+        try:
+            comparison = self._api_get(url)
+        except Exception as e:
+            raise SCMError(six.text_type(e))
 
         tree_sha = comparison['base_commit']['commit']['tree']['sha']
         files = comparison['files']
