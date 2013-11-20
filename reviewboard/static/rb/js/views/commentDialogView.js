@@ -148,8 +148,7 @@ RB.CommentDialogView = Backbone.View.extend({
     render: function() {
         var userSession = RB.UserSession.instance,
             reviewRequest = this.model.get('reviewRequest'),
-            reviewRequestEditor = this.model.get('reviewRequestEditor'),
-            $grip;
+            reviewRequestEditor = this.model.get('reviewRequestEditor');
 
         this.options.animate = (this.options.animate !== false);
 
@@ -258,8 +257,9 @@ RB.CommentDialogView = Backbone.View.extend({
             });
         }
 
+        this.$('.title').css('cursor', 'move');
         this.$el.draggable({
-            handle: $(".title", this).css("cursor", "move")
+            handle: '.title'
         });
 
         this.model.on('change:dirty', function() {
@@ -278,8 +278,7 @@ RB.CommentDialogView = Backbone.View.extend({
 
         /* Add any hooks. */
         RB.CommentDialogHook.each(function(hook) {
-            var HookViewType = hook.get('viewType');
-            var
+            var HookViewType = hook.get('viewType'),
                 hookView = new HookViewType({
                     commentDialog: this,
                     commentEditor: this.model,
