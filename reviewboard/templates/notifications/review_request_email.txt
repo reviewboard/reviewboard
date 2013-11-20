@@ -1,4 +1,4 @@
-{% autoescape off %}{% load reviewtags %}{% load djblets_email %}{% load djblets_utils %}
+{% autoescape off %}{% load djblets_email djblets_utils markdown_email reviewtags %}
 -----------------------------------------------------------
 This is an automatically generated e-mail. To reply, visit:
 {{domain_method}}://{{domain}}{{review_request.get_absolute_url}}
@@ -46,7 +46,7 @@ Repository: {{review_request.repository.name}}
 Description{% if changes %}{% if changes.description %} (updated){% endif %}{% endif %}
 -------
 
-{{review_request.description}}
+{{review_request.description|markdown_email_text:review_request.rich_text}}
 
 
 Diffs{% if changes and changes.diff %} (updated){% endif %}
@@ -60,7 +60,7 @@ Diff: {{domain_method}}://{{domain}}{% url 'view_diff' review_request.display_id
 Testing{% if changes and changes.testing_done %} (updated){% endif %}
 -------
 
-{{ review_request.testing_done }}
+{{review_request.testing_done|markdown_email_text:review_request.rich_text}}
 {% if review_request.file_attachments.count %}
 
 File Attachments{% if changes and changes.files %} (updated){% endif %}

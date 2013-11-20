@@ -8,6 +8,8 @@ from markdown.extensions import Extension
 from markdown.treeprocessors import Treeprocessor
 from markdown.util import etree
 
+from reviewboard.reviews.markdown_utils import markdown_unescape
+
 
 register = template.Library()
 
@@ -94,3 +96,11 @@ def markdown_email_html(text, is_rich_text):
         output_format='xhtml1',
         safe_mode='escape')
     return mark_safe(marked)
+
+
+@register.filter
+def markdown_email_text(text, is_rich_text):
+    if not is_rich_text:
+        return text
+
+    return markdown_unescape(text)
