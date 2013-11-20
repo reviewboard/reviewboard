@@ -20,6 +20,7 @@ class RepositoryAdmin(admin.ModelAdmin):
                 'hosting_account',
                 'hosting_account_username',
                 'hosting_account_password',
+                'hosting_account_two_factor_auth_code',
             ),
             'classes': ('wide',),
         }),

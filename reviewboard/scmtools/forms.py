@@ -8,8 +8,9 @@ from django.utils.translation import ugettext_lazy as _
 from djblets.util.filesystem import is_exe_in_path
 
 from reviewboard.admin.validation import validate_bug_tracker
-from reviewboard.hostingsvcs.errors import AuthorizationError, \
-                                           SSHKeyAssociationError
+from reviewboard.hostingsvcs.errors import (AuthorizationError,
+                                            SSHKeyAssociationError,
+                                            TwoFactorAuthCodeRequiredError)
 from reviewboard.hostingsvcs.models import HostingServiceAccount
 from reviewboard.hostingsvcs.service import get_hosting_services, \
                                             get_hosting_service
@@ -88,6 +89,11 @@ class RepositoryForm(forms.ModelForm):
         label=_('Account password'),
         required=True,
         widget=forms.PasswordInput(attrs={'size': 30, 'autocomplete': 'off'}))
+
+    hosting_account_two_factor_auth_code = forms.CharField(
+        label=_('Two-factor auth code'),
+        required=True,
+        widget=forms.TextInput(attrs={'size': 30, 'autocomplete': 'off'}))
 
     # Repository Information fields
     tool = forms.ModelChoiceField(
@@ -223,6 +229,9 @@ class RepositoryForm(forms.ModelForm):
                 'supports_bug_trackers': hosting_service.supports_bug_trackers,
                 'supports_ssh_key_association':
                     hosting_service.supports_ssh_key_association,
+                'supports_two_factor_auth':
+                    hosting_service.supports_two_factor_auth,
+                'needs_two_factor_auth_code': False,
                 'accounts': [
                     {
                         'pk': account.pk,
@@ -458,6 +467,12 @@ class RepositoryForm(forms.ModelForm):
         else:
             hosting_url = None
 
+        if hosting_service_cls.supports_two_factor_auth:
+            two_factor_auth_code = \
+                self.cleaned_data['hosting_account_two_factor_auth_code']
+        else:
+            two_factor_auth_code = None
+
         if hosting_account and hosting_account.hosting_url != hosting_url:
             self.errors['hosting_account'] = self.error_class([
                 _('This account is not compatible with this hosting service '
@@ -518,7 +533,14 @@ class RepositoryForm(forms.ModelForm):
                 hosting_account.service.authorize(
                     username, password,
                     hosting_url,
+                    two_factor_auth_code=two_factor_auth_code,
                     local_site_name=self.local_site_name)
+            except TwoFactorAuthCodeRequiredError, e:
+                self.errors['hosting_account'] = \
+                    self.error_class([unicode(e)])
+                hosting_info = self.hosting_service_info[hosting_type]
+                hosting_info['needs_two_factor_auth_code'] = True
+                return
             except AuthorizationError, e:
                 self.errors['hosting_account'] = self.error_class([
                     _('Unable to link the account: %s') % e,
@@ -576,7 +598,10 @@ class RepositoryForm(forms.ModelForm):
             # exists.
             assert hosting_service_cls
 
-            if hosting_service_cls.supports_bug_trackers:
+            if (hosting_service_cls.supports_bug_trackers and
+                self.cleaned_data.get('hosting_account')):
+                # We have a valid hosting account linked up, so we can
+                # process this and copy over the account information.
                 form = self.repository_forms[hosting_type][plan]
                 new_data = self.cleaned_data.copy()
                 new_data.update(form.cleaned_data)
@@ -701,6 +726,11 @@ class RepositoryForm(forms.ModelForm):
                 hosting_service.needs_authorization and
                 (new_hosting_account or
                  (account and not account.is_authorized)))
+            self.fields['hosting_account_two_factor_auth_code'].required = (
+                hosting_service and
+                hosting_service.supports_two_factor_auth and
+                self.hosting_service_info[hosting_type]
+                    ['needs_two_factor_auth_code'])
 
             # Only require a URL if the hosting service is self-hosted.
             self.fields['hosting_url'].required = (

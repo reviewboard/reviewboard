@@ -11,7 +11,8 @@ from djblets.siteconfig.models import SiteConfiguration
 
 from reviewboard.hostingsvcs.errors import (AuthorizationError,
                                             InvalidPlanError,
-                                            RepositoryError)
+                                            RepositoryError,
+                                            TwoFactorAuthCodeRequiredError)
 from reviewboard.hostingsvcs.forms import HostingServiceForm
 from reviewboard.hostingsvcs.service import HostingService
 from reviewboard.scmtools.errors import FileNotFoundError
@@ -150,6 +151,7 @@ class GitHub(HostingService):
     needs_authorization = True
     supports_repositories = True
     supports_bug_trackers = True
+    supports_two_factor_auth = True
     supported_scmtools = ['Git']
 
     # This should be the prefix for every field on the plan forms.
@@ -217,7 +219,8 @@ class GitHub(HostingService):
                       'a private plan.'))
 
     def authorize(self, username, password, hosting_url,
-                  local_site_name=None, *args, **kwargs):
+                  two_factor_auth_code=None, local_site_name=None,
+                  *args, **kwargs):
         site = Site.objects.get_current()
         siteconfig = SiteConfiguration.objects.get_current()
 
@@ -246,10 +249,16 @@ class GitHub(HostingService):
                     'client_secret': settings.GITHUB_CLIENT_SECRET,
                 })
 
+            headers = {}
+
+            if two_factor_auth_code:
+                headers['X-GitHub-OTP'] = two_factor_auth_code
+
             rsp, headers = self._json_post(
                 url=self.get_api_url(hosting_url) + 'authorizations',
                 username=username,
                 password=password,
+                headers=headers,
                 body=simplejson.dumps(body))
         except (urllib2.HTTPError, urllib2.URLError), e:
             data = e.read()
@@ -260,6 +269,15 @@ class GitHub(HostingService):
                 rsp = None
 
             if rsp and 'message' in rsp:
+                response_info = e.info()
+                x_github_otp = response_info.get('X-GitHub-OTP', '')
+
+                if x_github_otp.startswith('required;'):
+                    raise TwoFactorAuthCodeRequiredError(
+                        _('Enter your two-factor authentication code '
+                          'and re-enter your password to link your account. '
+                          'This code will be sent to you by GitHub.'))
+
                 raise AuthorizationError(rsp['message'])
             else:
                 raise AuthorizationError(str(e))

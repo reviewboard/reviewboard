@@ -47,6 +47,7 @@ class HostingService(object):
     supports_bug_trackers = False
     supports_repositories = False
     supports_ssh_key_association = False
+    supports_two_factor_auth = False
     self_hosted = False
 
     # These values are defaults that can be overridden in repository_plans
