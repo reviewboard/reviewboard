@@ -216,7 +216,7 @@ class BaseWebAPITestCase(TestCase, EmailTestHelper):
         headers = {}
 
         if check_etags:
-            headers['If-None-Match'] = response['ETag']
+            headers['HTTP_IF_NONE_MATCH'] = response['ETag']
 
         if check_last_modified:
             headers['HTTP_IF_MODIFIED_SINCE'] = response['Last-Modified']
