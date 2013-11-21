@@ -117,6 +117,8 @@ $(document).ready(function() {
         hostingAccountRowEl = $("#row-hosting_account"),
         hostingAccountUserRowEl = $("#row-hosting_account_username"),
         hostingAccountPassRowEl = $("#row-hosting_account_password"),
+        hostingAccountTwoFactorAuthCodeRowEl =
+            $('#row-hosting_account_two_factor_auth_code'),
         hostingAccountRelinkEl = $("<p/>")
             .text('The authentication requirements for this account has ' +
                   'changed. You will need to re-authenticate.')
@@ -243,6 +245,7 @@ $(document).ready(function() {
     $([hostingTypeEl[0], hostingURLEl[0]])
         .change(function() {
             var hostingType = hostingTypeEl[0].value,
+                hostingInfo,
                 accounts,
                 foundSelected,
                 selectedAccount,
@@ -251,13 +254,22 @@ $(document).ready(function() {
                 i;
 
             if (hostingType !== "custom") {
-                accounts = HOSTING_SERVICES[hostingType].accounts;
+                hostingInfo = HOSTING_SERVICES[hostingType];
+                accounts = hostingInfo.accounts;
                 foundSelected = false;
 
                 /* Rebuild the list of accounts. */
                 selectedAccount = parseInt(hostingAccountEl.val(), 10);
                 selectedURL = hostingURLEl.val() || null;
                 hostingAccountEl.find('option[value!=""]').remove();
+
+                if (hostingInfo.needs_two_factor_auth_code) {
+                    /*
+                     * The first one will be selected automatically, which
+                     * we want. Don't select any below.
+                     */
+                    foundSelected = true;
+                }
 
                 for (i = 0; i < accounts.length; i++) {
                     account = accounts[i];
@@ -282,10 +294,12 @@ $(document).ready(function() {
     $([hostingTypeEl[0], hostingAccountEl[0]])
         .change(function() {
             var hostingType = hostingTypeEl.val(),
+                hostingInfo,
                 selectedOption,
                 account;
 
             hostingAccountRelinkEl.hide();
+            hostingAccountTwoFactorAuthCodeRowEl.hide();
 
             if (hostingType === "custom") {
                 hostingAccountRowEl.hide();
@@ -293,19 +307,25 @@ $(document).ready(function() {
                 hostingAccountUserRowEl.hide();
                 hostingAccountPassRowEl.hide();
             } else {
+                hostingInfo = HOSTING_SERVICES[hostingType];
+
                 hostingAccountRowEl.show();
 
-                if (HOSTING_SERVICES[hostingType].self_hosted) {
+                if (hostingInfo.self_hosted) {
                     hostingURLRowEl.show();
                 }
 
                 if (hostingAccountEl.val() === "") {
                     hostingAccountUserRowEl.show();
 
-                    if (HOSTING_SERVICES[hostingType].needs_authorization) {
+                    if (hostingInfo.needs_authorization) {
                         hostingAccountPassRowEl.show();
                     } else {
                         hostingAccountPassRowEl.hide();
+                    }
+
+                    if (hostingInfo.needs_two_factor_auth_code) {
+                        hostingAccountTwoFactorAuthCodeRowEl.show();
                     }
                 } else {
                     selectedOption = $(hostingAccountEl[0].options[
