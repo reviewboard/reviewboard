@@ -26,9 +26,9 @@ LATEST_PY_VERSION = PY_VERSIONS[-1]
 PACKAGE_NAME = 'ReviewBoard'
 
 RELEASES_BUCKET_NAME = 'downloads.reviewboard.org'
-RELEASES_BUCKET_KEY = '/%s/%s.%s/' % (PACKAGE_NAME,
-                                      __version_info__[0],
-                                      __version_info__[1])
+RELEASES_BUCKET_KEY = '/releases/%s/%s.%s/' % (PACKAGE_NAME,
+                                               __version_info__[0],
+                                               __version_info__[1])
 RBWEBSITE_API_URL = 'http://www.reviewboard.org/api/'
 RELEASES_API_URL = '%sproducts/reviewboard/releases/' % RBWEBSITE_API_URL
 
@@ -149,8 +149,8 @@ def upload_files():
 
     for filename, mimetype in built_files:
         bucket.upload(filename,
-                      '%s/%s' % (RELEASES_BUCKET_KEY,
-                                 filename.split('/')[-1]),
+                      '%s%s' % (RELEASES_BUCKET_KEY,
+                                filename.split('/')[-1]),
                       mimetype=mimetype,
                       public=True)
 
