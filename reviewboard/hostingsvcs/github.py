@@ -428,7 +428,10 @@ class GitHub(HostingService):
         for file in files:
             filename = file['filename']
             status = file['status']
-            patch = file['patch']
+            try:
+                patch = file['patch']
+            except KeyError:
+                continue
 
             diff.append('diff --git a/%s b/%s' % (filename, filename))
 
