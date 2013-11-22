@@ -1,0 +1,94 @@
+=================================
+Review Board 1.7.19 Release Notes
+=================================
+
+**Release date**: November 21, 2013
+
+
+New Features
+============
+
+* Added support for two-factor authentication for GitHub.
+
+  GitHub has support for two-factor authentication, which is a much more
+  secure way of logging in to your GitHub account. Previously, Review Board
+  did not support this when linking a GitHub account for new repositories,
+  requiring that two-factor authentication be disabled first.
+
+  Now if you have two-factor authentication enabled, you'll be prompted for a
+  token the first time you link an account. This token will be sent by GitHub
+  to your phone over SMS or through an app, depending on your configuration.
+  Enter the token, re-enter your password, and save.
+
+  You only have to link your account once, as we make use of revokable OAuth
+  tokens after the account is linked. If you already have accounts linked, you
+  can safely enable two-factor authentication and not be impacted.
+
+  Given the large number of attacks made on GitHub as of late, we **strongly**
+  encourage you to `turn on two-factor authentication
+  <https://github.com/blog/1614-two-factor-authentication>`_.
+
+
+Performance Improvements
+========================
+
+* Re-introduced browser caching on the review request page.
+
+  The review request page has had a bug for a while where the browser's cache
+  of the page would appear to be stale, due to a deprecated way of looking up
+  the appropriate request headers.
+
+  Now, loading the review request page subsequent times should use the
+  browser's cached version, if the page hasn't changed on the server.
+
+
+Web API Changes
+===============
+
+* Added the ``mirror_path`` field to
+  :ref:`Repository Resource <webapi2.0-repository-resource>`.
+
+  Patch by Edward Lee.
+
+
+Bug Fixes
+=========
+
+* Fixed the default focus on the Review dialog. The top-most field now
+  always has default focus.
+
+* Fixed LDAP authentication with LDAP servers that don't allow anonymous
+  searches.
+
+  Patch by Daniel Kan.
+
+* Fixed displaying review requests for groups on a Local Site.
+
+* Prevented rare crashes with Local Sites using the new permissions support
+  without any granted permissions.
+
+* Fixed HTTP basic authentication with the web API when using fastcgi.
+
+  This only takes effect for new installs. For existing ones, you need to
+  modify your Apache configuration to use::
+
+      RewriteRule ^/(.*)$ /reviewboard.fcgi/$1 [QSA,E=HTTP_AUTHORIZATION:%{HTTP:Authorization},L]
+
+  instead of::
+
+      RewriteRule ^/(.*)$ /reviewboard.fcgi/$1 [QSA,L]
+
+  Patch by George Prekas.
+
+
+Contributors
+============
+
+* Christian Hammond
+* Daniel Kan
+* David Trowbridge
+* Edward Lee
+* George Prekas
+
+
+.. comment: vim: ft=rst et
