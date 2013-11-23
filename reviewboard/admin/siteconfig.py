@@ -45,6 +45,7 @@ from djblets.siteconfig.models import SiteConfiguration
 from reviewboard.accounts.backends import get_registered_auth_backends
 from reviewboard.admin.checks import (get_can_enable_search,
                                       get_can_enable_syntax_highlighting)
+from reviewboard.signals import site_settings_loaded
 
 
 # A mapping of our supported storage backend names to backend class paths.
@@ -279,3 +280,5 @@ def load_site_config():
         settings.AWS_CALLING_FORMAT = int(siteconfig.get('aws_calling_format'))
     except ValueError:
         settings.AWS_CALLING_FORMAT = 0
+
+    site_settings_loaded.send(sender=None)
