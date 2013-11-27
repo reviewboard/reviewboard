@@ -26,8 +26,9 @@ the username.
 A form will appear with the following fields:
 
 * **Username** (required)
-    The username. This is limited to letters, numbers, underscores (``_``) and
-    periods (``.``).
+    The username. This is limited to letters, numbers, underscores (``_``),
+    periods (``.``), at signs (``@``), apostrophes (``'``), and plus signs
+    (``+``).
 
     This field is usually left unchanged.
 
