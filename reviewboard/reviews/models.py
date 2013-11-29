@@ -1733,7 +1733,10 @@ class FileAttachmentComment(BaseComment):
         The thumbnail will be generated from the appropriate ReviewUI,
         if there is one for this type of file.
         """
-        return self.file_attachment.review_ui.get_comment_thumbnail(self)
+        if self.file_attachment.review_ui:
+            return self.file_attachment.review_ui.get_comment_thumbnail(self)
+        else:
+            return ''
 
     def get_absolute_url(self):
         """Returns the URL for this comment."""
