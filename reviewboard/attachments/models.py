@@ -41,7 +41,7 @@ class FileAttachment(models.Model):
                                  blank=True,
                                  null=True)
     repo_revision = models.CharField(_('repository file revision'),
-                                     max_length=512,
+                                     max_length=64,
                                      blank=True,
                                      null=True,
                                      db_index=True)
