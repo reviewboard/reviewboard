@@ -37,7 +37,7 @@ class ReviewScreenshotCommentResource(BaseScreenshotCommentResource):
     @webapi_check_local_site
     @webapi_login_required
     @webapi_request_fields(
-        required={
+        required=dict({
             'screenshot_id': {
                 'type': int,
                 'description': 'The ID of the screenshot being commented on.',
@@ -58,22 +58,8 @@ class ReviewScreenshotCommentResource(BaseScreenshotCommentResource):
                 'type': int,
                 'description': 'The height of the comment region.',
             },
-            'text': {
-                'type': six.text_type,
-                'description': 'The comment text.',
-            },
-        },
-        optional={
-            'issue_opened': {
-                'type': bool,
-                'description': 'Whether or not the comment opens an issue.',
-            },
-            'rich_text': {
-                'type': bool,
-                'description': 'Whether the comment text is in rich-text '
-                               '(Markdown) format. The default is false.',
-            },
-        },
+        }, **BaseScreenshotCommentResource.REQUIRED_CREATE_FIELDS),
+        optional=BaseScreenshotCommentResource.OPTIONAL_CREATE_FIELDS,
         allow_unknown=True,
     )
     def create(self, request, screenshot_id, *args, **kwargs):
@@ -121,7 +107,7 @@ class ReviewScreenshotCommentResource(BaseScreenshotCommentResource):
     @webapi_login_required
     @webapi_response_errors(DOES_NOT_EXIST, NOT_LOGGED_IN, PERMISSION_DENIED)
     @webapi_request_fields(
-        optional={
+        optional=dict({
             'x': {
                 'type': int,
                 'description': 'The X location for the comment.',
@@ -138,24 +124,7 @@ class ReviewScreenshotCommentResource(BaseScreenshotCommentResource):
                 'type': int,
                 'description': 'The height of the comment region.',
             },
-            'text': {
-                'type': six.text_type,
-                'description': 'The comment text.',
-            },
-            'issue_opened': {
-                'type': bool,
-                'description': 'Whether or not the comment opens an issue.',
-            },
-            'issue_status': {
-                'type': ('dropped', 'open', 'resolved'),
-                'description': 'The status of an open issue.',
-            },
-            'rich_text': {
-                'type': bool,
-                'description': 'Whether the comment text is in rich-text '
-                               '(Markdown) format. The default is false.',
-            },
-        },
+        }, **BaseScreenshotCommentResource.OPTIONAL_UPDATE_FIELDS),
         allow_unknown=True
     )
     def update(self, request, *args, **kwargs):

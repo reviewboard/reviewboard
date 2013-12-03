@@ -43,7 +43,7 @@ class ReviewDiffCommentResource(BaseDiffCommentResource):
     @webapi_response_errors(DOES_NOT_EXIST, INVALID_FORM_DATA,
                             NOT_LOGGED_IN, PERMISSION_DENIED)
     @webapi_request_fields(
-        required={
+        required=dict({
             'filediff_id': {
                 'type': int,
                 'description': 'The ID of the file diff the comment is on.',
@@ -56,27 +56,14 @@ class ReviewDiffCommentResource(BaseDiffCommentResource):
                 'type': int,
                 'description': 'The number of lines the comment spans.',
             },
-            'text': {
-                'type': six.text_type,
-                'description': 'The comment text.',
-            },
-        },
-        optional={
+        }, **BaseDiffCommentResource.REQUIRED_CREATE_FIELDS),
+        optional=dict({
             'interfilediff_id': {
                 'type': int,
                 'description': 'The ID of the second file diff in the '
                                'interdiff the comment is on.',
             },
-            'issue_opened': {
-                'type': bool,
-                'description': 'Whether the comment opens an issue.',
-            },
-            'rich_text': {
-                'type': bool,
-                'description': 'Whether the comment text is in rich-text '
-                               '(Markdown) format. The default is false.',
-            },
-        },
+        }, **BaseDiffCommentResource.OPTIONAL_CREATE_FIELDS),
         allow_unknown=True,
     )
     def create(self, request, filediff_id, interfilediff_id=None,
@@ -145,7 +132,7 @@ class ReviewDiffCommentResource(BaseDiffCommentResource):
     @webapi_login_required
     @webapi_response_errors(DOES_NOT_EXIST, NOT_LOGGED_IN, PERMISSION_DENIED)
     @webapi_request_fields(
-        optional={
+        optional=dict({
             'first_line': {
                 'type': int,
                 'description': 'The line number the comment starts at.',
@@ -154,24 +141,7 @@ class ReviewDiffCommentResource(BaseDiffCommentResource):
                 'type': int,
                 'description': 'The number of lines the comment spans.',
             },
-            'text': {
-                'type': six.text_type,
-                'description': 'The comment text.',
-            },
-            'issue_opened': {
-                'type': bool,
-                'description': 'Whether or not the comment opens an issue.',
-            },
-            'issue_status': {
-                'type': ('dropped', 'open', 'resolved'),
-                'description': 'The status of an open issue.',
-            },
-            'rich_text': {
-                'type': bool,
-                'description': 'Whether the comment text is in rich-text '
-                               '(Markdown) format. The default is false.',
-            },
-        },
+        }, **BaseDiffCommentResource.OPTIONAL_UPDATE_FIELDS),
         allow_unknown=True,
     )
     def update(self, request, *args, **kwargs):

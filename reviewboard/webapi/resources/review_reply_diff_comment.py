@@ -51,23 +51,8 @@ class ReviewReplyDiffCommentResource(BaseDiffCommentResource):
     @webapi_response_errors(DOES_NOT_EXIST, INVALID_FORM_DATA,
                             NOT_LOGGED_IN, PERMISSION_DENIED)
     @webapi_request_fields(
-        required={
-            'reply_to_id': {
-                'type': int,
-                'description': 'The ID of the comment being replied to.',
-            },
-            'text': {
-                'type': six.text_type,
-                'description': 'The comment text.',
-            },
-        },
-        optional={
-            'rich_text': {
-                'type': bool,
-                'description': 'Whether the comment text is in rich-text '
-                               '(Markdown) format. The default is false.',
-            },
-        }
+        required=BaseDiffCommentResource.REPLY_REQUIRED_CREATE_FIELDS,
+        optional=BaseDiffCommentResource.REPLY_OPTIONAL_CREATE_FIELDS
     )
     def create(self, request, reply_to_id, *args, **kwargs):
         """Creates a new reply to a diff comment on the parent review.
@@ -135,17 +120,7 @@ class ReviewReplyDiffCommentResource(BaseDiffCommentResource):
     @webapi_login_required
     @webapi_response_errors(DOES_NOT_EXIST, NOT_LOGGED_IN, PERMISSION_DENIED)
     @webapi_request_fields(
-        optional={
-            'rich_text': {
-                'type': bool,
-                'description': 'Whether the comment text is in rich-text '
-                               '(Markdown) format. The default is false.',
-            },
-            'text': {
-                'type': six.text_type,
-                'description': 'The new comment text.',
-            },
-        },
+        optional=BaseDiffCommentResource.REPLY_OPTIONAL_UPDATE_FIELDS
     )
     def update(self, request, *args, **kwargs):
         """Updates a reply to a diff comment.

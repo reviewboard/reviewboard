@@ -62,6 +62,67 @@ class BaseCommentResource(MarkdownFieldsMixin, WebAPIResource):
     }
     last_modified_field = 'timestamp'
 
+    # Common field definitions for create/update requests
+    _COMMON_REQUIRED_CREATE_FIELDS = {
+        'text': {
+            'type': six.text_type,
+            'description': 'The comment text.',
+        },
+    }
+
+    _COMMON_OPTIONAL_CREATE_FIELDS = {
+        'rich_text': {
+            'type': bool,
+            'description': 'Whether the comment text is in rich-text '
+                           '(Markdown) format. The default is false.',
+        },
+    }
+
+    _COMMON_OPTIONAL_UPDATE_FIELDS = {
+        'rich_text': {
+            'type': bool,
+            'description': 'Whether the comment text is in rich-text '
+                           '(Markdown) format. The default is to leave '
+                           'this unchanged.',
+        },
+        'text': {
+            'type': six.text_type,
+            'description': 'The comment text.',
+        },
+    }
+
+    # Field definitions for top-level comment create/update requests
+    REQUIRED_CREATE_FIELDS = _COMMON_REQUIRED_CREATE_FIELDS
+
+    OPTIONAL_CREATE_FIELDS = dict({
+        'issue_opened': {
+            'type': bool,
+            'description': 'Whether the comment opens an issue.',
+        },
+    }, **_COMMON_OPTIONAL_CREATE_FIELDS)
+
+    OPTIONAL_UPDATE_FIELDS = dict({
+        'issue_opened': {
+            'type': bool,
+            'description': 'Whether or not the comment opens an issue.',
+        },
+        'issue_status': {
+            'type': ('dropped', 'open', 'resolved'),
+            'description': 'The status of an open issue.',
+        },
+    }, **_COMMON_OPTIONAL_UPDATE_FIELDS)
+
+    # Field definitions for comment reply create/update requests
+    REPLY_REQUIRED_CREATE_FIELDS = dict({
+        'reply_to_id': {
+            'type': int,
+            'description': 'The ID of the comment being replied to.',
+        },
+    }, **_COMMON_REQUIRED_CREATE_FIELDS)
+
+    REPLY_OPTIONAL_CREATE_FIELDS = _COMMON_OPTIONAL_CREATE_FIELDS
+    REPLY_OPTIONAL_UPDATE_FIELDS = _COMMON_OPTIONAL_UPDATE_FIELDS
+
     def has_access_permissions(self, request, obj, *args, **kwargs):
         return obj.is_accessible_by(request.user)
 

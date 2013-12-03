@@ -40,18 +40,14 @@ class ReviewFileAttachmentCommentResource(BaseFileAttachmentCommentResource):
     @webapi_response_errors(DOES_NOT_EXIST, INVALID_FORM_DATA,
                             PERMISSION_DENIED, NOT_LOGGED_IN)
     @webapi_request_fields(
-        required={
+        required=dict({
             'file_attachment_id': {
                 'type': int,
                 'description': 'The ID of the file attachment being '
                                'commented on.',
             },
-            'text': {
-                'type': six.text_type,
-                'description': 'The comment text.',
-            },
-        },
-        optional={
+        }, **BaseFileAttachmentCommentResource.REQUIRED_CREATE_FIELDS),
+        optional=dict({
             'diff_against_file_attachment_id': {
                 'type': int,
                 'description': 'The ID of the file attachment that '
@@ -59,16 +55,7 @@ class ReviewFileAttachmentCommentResource(BaseFileAttachmentCommentResource):
                                'applies to the diff between these two '
                                'attachments.',
             },
-            'issue_opened': {
-                'type': bool,
-                'description': 'Whether the comment opens an issue.',
-            },
-            'rich_text': {
-                'type': bool,
-                'description': 'Whether the comment text is in rich-text '
-                               '(Markdown) format. The default is false.',
-            },
-        },
+        }, **BaseFileAttachmentCommentResource.OPTIONAL_CREATE_FIELDS),
         allow_unknown=True
     )
     def create(self, request, file_attachment_id=None,
@@ -136,25 +123,7 @@ class ReviewFileAttachmentCommentResource(BaseFileAttachmentCommentResource):
     @webapi_login_required
     @webapi_response_errors(DOES_NOT_EXIST, NOT_LOGGED_IN, PERMISSION_DENIED)
     @webapi_request_fields(
-        optional={
-            'text': {
-                'type': six.text_type,
-                'description': 'The comment text.',
-            },
-            'issue_opened': {
-                'type': bool,
-                'description': 'Whether or not the comment opens an issue.',
-            },
-            'issue_status': {
-                'type': ('dropped', 'open', 'resolved'),
-                'description': 'The status of an open issue.',
-            },
-            'rich_text': {
-                'type': bool,
-                'description': 'Whether the comment text is in rich-text '
-                               '(Markdown) format. The default is false.',
-            },
-        },
+        optional=BaseFileAttachmentCommentResource.OPTIONAL_UPDATE_FIELDS,
         allow_unknown=True
     )
     def update(self, request, *args, **kwargs):
