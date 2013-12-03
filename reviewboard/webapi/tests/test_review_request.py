@@ -676,14 +676,15 @@ class ResourceListTests(BaseWebAPITestCase):
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
     def _test_post_with_submit_as(self, local_site=None):
-        if local_site:
-            local_site_name = local_site.name
-        else:
-            local_site_name = None
-
         submit_as_username = 'dopey'
 
         self.assertNotEqual(self.user.username, submit_as_username)
+
+        if local_site:
+            local_site_name = local_site.name
+            local_site.users.add(User.objects.get(username=submit_as_username))
+        else:
+            local_site_name = None
 
         rsp = self.apiPost(
             get_review_request_list_url(local_site_name),
