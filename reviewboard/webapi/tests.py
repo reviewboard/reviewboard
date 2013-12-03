@@ -2636,16 +2636,17 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
             LocalSite.objects.get(name=self.local_site_name))
 
     def _test_post_with_submit_as(self, local_site=None):
+        submit_as_username = 'dopey'
+
+        self.assertNotEqual(self.user.username, submit_as_username)
+
         if local_site:
             self.repository.local_site = local_site
             self.repository.save()
             local_site_name = local_site.name
+            local_site.users.add(User.objects.get(username=submit_as_username))
         else:
             local_site_name = None
-
-        submit_as_username = 'dopey'
-
-        self.assertNotEqual(self.user.username, submit_as_username)
 
         rsp = self.apiPost(self.get_list_url(local_site_name), {
             'repository': self.repository.path,

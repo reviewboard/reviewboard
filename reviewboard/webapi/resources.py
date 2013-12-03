@@ -7034,9 +7034,9 @@ class ReviewRequestResource(WebAPIResource):
                                  local_site):
                 return _no_access_error(request.user)
 
-            try:
-                user = User.objects.get(username=submit_as)
-            except User.DoesNotExist:
+            user = self._find_user(submit_as, local_site, request)
+
+            if not user:
                 return INVALID_USER
 
         if repository is not None:
@@ -7360,6 +7360,36 @@ class ReviewRequestResource(WebAPIResource):
             return dateutil.parser.parse(timestamp_str)
         except ValueError:
             return None
+
+    def _find_user(self, username, local_site, request):
+        """Finds a User object matching ``username``.
+
+        This will search all authentication backends, and may create the
+        User object if the authentication backend knows that the user exists.
+        """
+        username = username.strip()
+
+        if local_site:
+            users = local_site.users
+        else:
+            users = User.objects
+
+        try:
+            user = users.get(username=username)
+        except User.DoesNotExist:
+            user = None
+
+            if not local_site:
+                for backend in auth.get_backends():
+                    try:
+                        user = backend.get_or_create_user(username, request)
+                    except:
+                        pass
+
+                    if user:
+                        break
+
+        return user
 
 
 review_request_resource = ReviewRequestResource()
