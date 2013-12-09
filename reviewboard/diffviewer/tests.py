@@ -621,7 +621,7 @@ class UploadDiffFormTests(SpyAgency, TestCase):
 
         repository = Repository.objects.create(
             name='Test HG',
-            path='scmtools/testdata/hg_repo.bundle',
+            path='scmtools/testdata/hg_repo',
             tool=Tool.objects.get(name='Mercurial'))
 
         form = UploadDiffForm(
