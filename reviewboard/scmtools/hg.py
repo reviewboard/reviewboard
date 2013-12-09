@@ -207,29 +207,15 @@ class HgWebClient(SCMClient):
         raise FileNotFoundError(path, rev)
 
 
-class HgClient(object):
-    def __init__(self, repoPath, local_site):
-        from mercurial import hg, ui
-        from mercurial.__version__ import version
+class HgClient(SCMClient):
+    def __init__(self, path, local_site):
+        super(HgClient, self).__init__(path)
+        self.default_args = None
 
-        if parse_version(version) <= parse_version("1.2"):
-            hg_ui = ui.ui(interactive=False)
+        if local_site:
+            self.local_site_name = local_site.name
         else:
-            hg_ui = ui.ui()
-            hg_ui.setconfig('ui', 'interactive', 'off')
-
-        # Check whether ssh is configured for mercurial. Assume that any
-        # configured ssh is set up correctly for this repository.
-        hg_ssh = hg_ui.config('ui', 'ssh')
-
-        if not hg_ssh:
-            logging.debug('Using rbssh for mercurial')
-            hg_ui.setconfig('ui', 'ssh', 'rbssh --rb-local-site=%s'
-                            % local_site)
-        else:
-            logging.debug('Found configured ssh for mercurial: %s' % hg_ssh)
-
-        self.repo = hg.repository(hg_ui, path=repoPath)
+            self.local_site_name = None
 
     def cat_file(self, path, rev="tip"):
         if rev == HEAD:
@@ -237,9 +223,60 @@ class HgClient(object):
         elif rev == PRE_CREATION:
             rev = ""
 
-        try:
-            return self.repo.changectx(rev).filectx(path).data()
-        except Exception, e:
-            # LookupError moves from repo to revlog in hg v0.9.4, so we
-            # catch the more general Exception to avoid the dependency.
-            raise FileNotFoundError(path, rev, str(e))
+        if path:
+            p = self._run_hg(['cat', '--rev', rev, path])
+            contents = p.stdout.read()
+            failure = p.wait()
+
+            if not failure:
+                return contents
+
+        raise FileNotFoundError(path, rev)
+
+    def _calculate_default_args(self):
+        self.default_args = [
+            '--noninteractive',
+            '--repository', self.path,
+            '--cwd', self.path,
+        ]
+
+        # We need to query hg for the current SSH configuration. Note
+        # that _run_hg is calling this function, and this function is then
+        # (through _get_hg_config) calling _run_hg, but it's okay. Due to
+        # having set a good default for self.default_args above, there's no
+        # issue of an infinite loop.
+        hg_ssh = self._get_hg_config('ui.ssh')
+
+        if not hg_ssh:
+            logging.debug('Using rbssh for mercurial')
+
+            if self.local_site_name:
+                hg_ssh = 'rbssh --rb-local-site=%s' % self.local_site_name
+            else:
+                hg_ssh = 'rbssh'
+
+            self.default_args.extend([
+                '--config', 'ui.ssh=%s' % hg_ssh,
+            ])
+        else:
+            logging.debug('Found configured ssh for mercurial: %s' % hg_ssh)
+
+    def _get_hg_config(self, config_name):
+        p = self._run_hg(['showconfig', config_name])
+        contents = p.stdout.read()
+        failure = p.wait()
+
+        if failure:
+            # Just assume it's empty.
+            return None
+
+        return contents.strip()
+
+    def _run_hg(self, args):
+        """Runs the Mercurial command, returning a subprocess.Popen."""
+        if not self.default_args:
+            self._calculate_default_args()
+
+        return SCMTool.popen(
+            ['hg'] + self.default_args + args,
+            local_site_name=self.local_site_name)
