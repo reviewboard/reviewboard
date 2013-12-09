@@ -33,8 +33,11 @@ class EmptyChangeSetError(ChangeSetError):
 class InvalidRevisionFormatError(SCMError):
     """Indicates that a revision isn't in a recognizable format."""
     def __init__(self, path, revision, detail=None):
-        msg = _("The revision '%s' for '%s' isn't in a valid format") % \
-              (revision, path)
+        msg = _("The revision '%(revision)s' for '%(path)s' isn't in a valid "
+                "format") % {
+                  'revision': revision,
+                  'path': path,
+              }
 
         if detail:
             msg += ': ' + detail
@@ -53,11 +56,19 @@ class FileNotFoundError(SCMError):
         if revision is None or revision == HEAD and base_commit_id is None:
             msg = _("The file '%s' could not be found in the repository") % path
         elif base_commit_id is not None and base_commit_id != revision:
-            msg = (_("The file '%s' (r%s, commit %s) could not be found in "
-                     "the repository") % (path, revision))
+            msg = (_("The file '%(path)s' (r%(revision)s, commit "
+                     "%(base_commit_id)s) could not be found in the "
+                     "repository") % {
+                       'path': path,
+                       'revision': revision,
+                       'base_commit_id': base_commit_id,
+                   })
         else:
-            msg = (_("The file '%s' (r%s) could not be found in the repository")
-                   % (path, revision))
+            msg = (_("The file '%(path)s' (r%(revision)s) could not be found "
+                     "in the repository") % {
+                       'path': path,
+                       'revision': revision,
+                   })
 
         if detail:
             msg += ': ' + detail
