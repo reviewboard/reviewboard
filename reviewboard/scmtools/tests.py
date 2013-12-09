@@ -1262,7 +1262,7 @@ class MercurialTests(SCMTestCase):
         super(MercurialTests, self).setUp()
 
         hg_repo_path = os.path.join(os.path.dirname(__file__),
-                                    'testdata/hg_repo.bundle')
+                                    'testdata/hg_repo')
         self.repository = Repository(name='Test HG',
                                      path=hg_repo_path,
                                      tool=Tool.objects.get(name='Mercurial'))
