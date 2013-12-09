@@ -1,7 +1,7 @@
 /*
  * Handles editing a reply to a comment in a review.
  *
- * This will handle the "Add Comment" link and the draft banners for the
+ * This will handle the "New Comment" link and the draft banners for the
  * review.
  */
 RB.ReviewReplyEditorView = Backbone.View.extend({
@@ -41,7 +41,7 @@ RB.ReviewReplyEditorView = Backbone.View.extend({
      * Renders the comment section.
      *
      * If there were any draft comments found, then editors will be
-     * created for them, the Add Comment link will be hidden.
+     * created for them, the New Comment link will be hidden.
      */
     render: function() {
         var $draftComment,
@@ -177,7 +177,7 @@ RB.ReviewReplyEditorView = Backbone.View.extend({
     },
 
     /*
-     * Handler for when the Add Comment link is clicked.
+     * Handler for when the New Comment link is clicked.
      *
      * Creates a new comment form and editor.
      */
@@ -192,7 +192,7 @@ RB.ReviewReplyEditorView = Backbone.View.extend({
      * Handler for when the reply is published.
      *
      * Updates the draft comment to be a standard comment, and brings back
-     * the Add Comment link.
+     * the New Comment link.
      */
     _onPublished: function() {
         if (this._$draftComment) {

@@ -186,7 +186,7 @@
 {%   if file.review_ui %}
        <li class="{% if file.review_ui.allow_inline %}file-review-inline %}{% else %}file-review{% endif %}"><a href="{% url 'file_attachment' review_request.display_id file.pk %}">{% trans "Review" %}</a></li>
 {%   else %}
-       <li class="file-add-comment"><a href="#">{% trans "Add Comment" %}</a></li>
+       <li class="file-add-comment"><a href="#">{% trans "New Comment" %}</a></li>
 {%   endif %}
 {%  endif %}
       </ul>

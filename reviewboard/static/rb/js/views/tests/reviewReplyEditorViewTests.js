@@ -33,7 +33,7 @@ describe('views/ReviewReplyEditorView', function() {
 
         $container
             .append(view._$commentsList)
-            .append($('<a href="#" class="add_comment_link">Add Comment</a>'));
+            .append($('<a href="#" class="add_comment_link">New Comment</a>'));
     });
 
     describe('Construction', function() {

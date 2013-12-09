@@ -313,7 +313,7 @@ RB.FileAttachmentThumbnail = Backbone.View.extend({
 
         this._$actions.html(this.actionsTemplate(_.defaults({
             reviewText: gettext('Review'),
-            addCommentText: gettext('Add Comment')
+            addCommentText: gettext('New Comment')
         }, this.model.attributes)));
     },
 
@@ -338,7 +338,7 @@ RB.FileAttachmentThumbnail = Backbone.View.extend({
     },
 
     /*
-     * Handler for the Add Comment button.
+     * Handler for the New Comment button.
      *
      * Shows the comment dialog.
      */
