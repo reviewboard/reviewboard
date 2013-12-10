@@ -731,13 +731,16 @@ class ErrorDirective(Directive):
                           nodes.literal(text=error_obj.msg))
 
         if error_obj.headers:
+            if callable(error_obj.headers):
+                headers = error_obj.headers(DummyRequest())
+
             # HTTP Headers
-            if len(error_obj.headers) == 1:
-                content = nodes.literal(text=error_obj.headers.keys()[0])
+            if len(headers) == 1:
+                content = nodes.literal(text=headers.keys()[0])
             else:
                 content = nodes.bullet_list()
 
-                for header in error_obj.headers.iterkeys():
+                for header in headers.iterkeys():
                     item = nodes.list_item()
                     content += item
 
