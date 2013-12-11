@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2013-10-24 14:16-0700\n"
+"POT-Creation-Date: 2013-12-10 16:44-0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,10 +17,10 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: static/rb/js/common.js:129 static/rb/js/views/commentDialogView.js:169
+#: static/rb/js/common.js:129 static/rb/js/views/commentDialogView.js:168
 #: static/rb/js/views/draftReviewBannerView.js:113
-#: static/rb/js/views/reviewDialogView.js:533
-#: static/rb/js/views/reviewRequestEditorView.js:777
+#: static/rb/js/views/reviewDialogView.js:535
+#: static/rb/js/views/reviewRequestEditorView.js:1010
 msgid "Cancel"
 msgstr ""
 
@@ -36,11 +36,11 @@ msgstr ""
 msgid "Loading..."
 msgstr ""
 
-#: static/rb/js/repositoryform.js:382
+#: static/rb/js/repositoryform.js:402
 msgid "Hide SSH Public Key"
 msgstr ""
 
-#: static/rb/js/repositoryform.js:386
+#: static/rb/js/repositoryform.js:406
 msgid "Show SSH Public Key"
 msgstr ""
 
@@ -105,24 +105,24 @@ msgid ""
 "until you publish your draft."
 msgstr ""
 
-#: static/rb/js/diffviewer/views/paginationView.js:46
+#: static/rb/js/diffviewer/views/paginationView.js:45
 #, c-format
 msgid "This diff has been split across %s pages:"
 msgstr ""
 
-#: static/rb/js/diffviewer/views/paginationView.js:48
+#: static/rb/js/diffviewer/views/paginationView.js:47
 msgid "Previous Page"
 msgstr ""
 
-#: static/rb/js/diffviewer/views/paginationView.js:49
+#: static/rb/js/diffviewer/views/paginationView.js:48
 msgid "Next Page"
 msgstr ""
 
-#: static/rb/js/diffviewer/views/paginationView.js:50
+#: static/rb/js/diffviewer/views/paginationView.js:49
 msgid "Current Page"
 msgstr ""
 
-#: static/rb/js/diffviewer/views/paginationView.js:51
+#: static/rb/js/diffviewer/views/paginationView.js:50
 #, c-format
 msgid "Page %s"
 msgstr ""
@@ -131,28 +131,28 @@ msgstr ""
 msgid "This comment has unsaved changes."
 msgstr ""
 
-#: static/rb/js/models/reviewRequestEditorModel.js:150
+#: static/rb/js/models/reviewRequestEditorModel.js:151
 #, c-format
 msgid "Group %s does not exist."
 msgid_plural "Groups %s do not exist."
 msgstr[0] ""
 msgstr[1] ""
 
-#: static/rb/js/models/reviewRequestEditorModel.js:156
+#: static/rb/js/models/reviewRequestEditorModel.js:157
 #, c-format
 msgid "User %s does not exist."
 msgid_plural "Users %s do not exist."
 msgstr[0] ""
 msgstr[1] ""
 
-#: static/rb/js/models/reviewRequestEditorModel.js:162
+#: static/rb/js/models/reviewRequestEditorModel.js:163
 #, c-format
 msgid "Review Request %s does not exist."
 msgid_plural "Review Requests %s do not exist."
 msgstr[0] ""
 msgstr[1] ""
 
-#: static/rb/js/models/reviewRequestEditorModel.js:266
+#: static/rb/js/models/reviewRequestEditorModel.js:286
 msgid "There is an internal error balancing the edit count"
 msgstr ""
 
@@ -337,43 +337,43 @@ msgstr ""
 msgid "View"
 msgstr ""
 
-#: static/rb/js/views/commentDialogView.js:163
+#: static/rb/js/views/commentDialogView.js:162
 msgid "Other reviews"
 msgstr ""
 
-#: static/rb/js/views/commentDialogView.js:164
+#: static/rb/js/views/commentDialogView.js:163
 msgid "Your comment"
 msgstr ""
 
-#: static/rb/js/views/commentDialogView.js:165
+#: static/rb/js/views/commentDialogView.js:164
 msgid "You must <a href=\"<%= loginURL %>\">log in</a> to post a comment."
 msgstr ""
 
-#: static/rb/js/views/commentDialogView.js:166
+#: static/rb/js/views/commentDialogView.js:165
 msgid ""
 "The review request's current <a href=\"{{reviewRequestURL}}\">draft</a> "
 "needs to be published before you can comment."
 msgstr ""
 
-#: static/rb/js/views/commentDialogView.js:167
+#: static/rb/js/views/commentDialogView.js:166
 msgid "Open an <u>i</u>ssue"
 msgstr ""
 
-#: static/rb/js/views/commentDialogView.js:168
-#: static/rb/js/views/reviewDialogView.js:540
+#: static/rb/js/views/commentDialogView.js:167
+#: static/rb/js/views/reviewDialogView.js:542
 msgid "Save"
 msgstr ""
 
-#: static/rb/js/views/commentDialogView.js:170
-#: static/rb/js/views/reviewRequestEditorView.js:778
+#: static/rb/js/views/commentDialogView.js:169
+#: static/rb/js/views/reviewRequestEditorView.js:1011
 msgid "Delete"
 msgstr ""
 
-#: static/rb/js/views/commentDialogView.js:171
+#: static/rb/js/views/commentDialogView.js:170
 msgid "Close"
 msgstr ""
 
-#: static/rb/js/views/commentDialogView.js:299
+#: static/rb/js/views/commentDialogView.js:303
 msgid "Error saving comment: "
 msgstr ""
 
@@ -432,7 +432,7 @@ msgid "Review"
 msgstr ""
 
 #: static/rb/js/views/fileAttachmentThumbnailView.js:316
-msgid "Add Comment"
+msgid "New Comment"
 msgstr ""
 
 #: static/rb/js/views/imageReviewableView.js:161
@@ -478,19 +478,19 @@ msgstr ""
 msgid "Open an issue"
 msgstr ""
 
-#: static/rb/js/views/reviewDialogView.js:372
+#: static/rb/js/views/reviewDialogView.js:373
 msgid "Ship It"
 msgstr ""
 
-#: static/rb/js/views/reviewDialogView.js:507
+#: static/rb/js/views/reviewDialogView.js:509
 msgid "Review for: "
 msgstr ""
 
-#: static/rb/js/views/reviewDialogView.js:512
+#: static/rb/js/views/reviewDialogView.js:514
 msgid "Publish Review"
 msgstr ""
 
-#: static/rb/js/views/reviewDialogView.js:519
+#: static/rb/js/views/reviewDialogView.js:521
 msgid "Discard Review"
 msgstr ""
 
@@ -498,28 +498,64 @@ msgstr ""
 msgid "This reply is a draft."
 msgstr ""
 
-#: static/rb/js/views/reviewRequestEditorView.js:315
+#: static/rb/js/views/reviewRequestEditorView.js:108
+msgid "Reopen for Review"
+msgstr ""
+
+#: static/rb/js/views/reviewRequestEditorView.js:135
+msgid "This change has been discarded."
+msgstr ""
+
+#: static/rb/js/views/reviewRequestEditorView.js:136
+msgid "Describe the reason it's discarded (optional):"
+msgstr ""
+
+#: static/rb/js/views/reviewRequestEditorView.js:148
+msgid "This change has been marked as submitted."
+msgstr ""
+
+#: static/rb/js/views/reviewRequestEditorView.js:149
+msgid "Describe the submission (optional):"
+msgstr ""
+
+#: static/rb/js/views/reviewRequestEditorView.js:184
+msgid "Publish Changes"
+msgstr ""
+
+#: static/rb/js/views/reviewRequestEditorView.js:188
+msgid "Discard Draft"
+msgstr ""
+
+#: static/rb/js/views/reviewRequestEditorView.js:196
+msgid "Publish"
+msgstr ""
+
+#: static/rb/js/views/reviewRequestEditorView.js:200
+msgid "Discard Review Request"
+msgstr ""
+
+#: static/rb/js/views/reviewRequestEditorView.js:512
 msgid ""
 "You have unsaved changes that will be lost if you navigate away from this "
 "page."
 msgstr ""
 
-#: static/rb/js/views/reviewRequestEditorView.js:639
+#: static/rb/js/views/reviewRequestEditorView.js:936
 msgid "Press Tab to auto-complete."
 msgstr ""
 
-#: static/rb/js/views/reviewRequestEditorView.js:751
+#: static/rb/js/views/reviewRequestEditorView.js:986
 msgid ""
 "You have an unpublished draft. If you close this review request, the draft "
 "will be discarded. Are you sure you want to close the review request?"
 msgstr ""
 
-#: static/rb/js/views/reviewRequestEditorView.js:773
+#: static/rb/js/views/reviewRequestEditorView.js:1006
 msgid ""
 "This deletion cannot be undone. All diffs and reviews will be deleted as "
 "well."
 msgstr ""
 
-#: static/rb/js/views/reviewRequestEditorView.js:775
+#: static/rb/js/views/reviewRequestEditorView.js:1008
 msgid "Are you sure you want to delete this review request?"
 msgstr ""
