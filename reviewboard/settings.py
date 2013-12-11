@@ -148,6 +148,7 @@ RB_BUILTIN_APPS = [
     'django.contrib.sites',
     'django.contrib.sessions',
     'django.contrib.staticfiles',
+    'djblets',
     'djblets.datagrid',
     'djblets.extensions',
     'djblets.feedview',

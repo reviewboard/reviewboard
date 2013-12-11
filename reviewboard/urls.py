@@ -33,7 +33,8 @@ urlpatterns = patterns(
     (r'^admin/', include('reviewboard.admin.urls')),
 
     url(r'^jsi18n/', 'djblets.util.views.cached_javascript_catalog',
-        {'packages': ('reviewboard',)}, name='js-catalog')
+        {'packages': ('reviewboard', 'djblets')},
+        name='js-catalog')
 )
 
 

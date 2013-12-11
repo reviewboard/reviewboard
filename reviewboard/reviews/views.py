@@ -22,7 +22,7 @@ from django.utils.decorators import method_decorator
 from django.utils.http import http_date
 from django.utils.safestring import mark_safe
 from django.utils.timezone import utc
-from django.utils.translation import ugettext as _
+from django.utils.translation import ugettext_lazy as _
 from django.views.generic.list import ListView
 from djblets.db.query import get_object_or_none
 from djblets.siteconfig.models import SiteConfiguration

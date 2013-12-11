@@ -13,7 +13,7 @@ from django.contrib.auth.models import User
 from django.contrib.auth import get_backends
 from django.contrib.auth import hashers
 from django.utils import six
-from django.utils.translation import ugettext as _
+from django.utils.translation import ugettext_lazy as _
 from djblets.db.query import get_object_or_none
 try:
     from ldap.filter import filter_format

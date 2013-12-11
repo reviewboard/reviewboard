@@ -7,7 +7,7 @@ from django import forms
 from django.core.exceptions import ValidationError
 from django.forms import widgets
 from django.utils.safestring import mark_safe
-from django.utils.translation import ugettext as _
+from django.utils.translation import ugettext_lazy as _
 from djblets.auth.forms import RegistrationForm as DjbletsRegistrationForm
 from djblets.forms.fields import TimeZoneField
 from djblets.siteconfig.forms import SiteSettingsForm
