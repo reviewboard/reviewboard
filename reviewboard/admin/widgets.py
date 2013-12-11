@@ -359,7 +359,7 @@ def dynamic_activity_data(request):
         new_range_start = range_start
         new_range_end = range_end
     else:
-        new_range_end = datetime.date.today()
+        new_range_end = datetime.date.today() + datetime.timedelta(days=1)
         new_range_start = new_range_end - datetime.timedelta(days=days_total)
 
     response_data = {
