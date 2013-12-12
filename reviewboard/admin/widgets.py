@@ -345,20 +345,22 @@ def dynamic_activity_data(request):
     #
     # This takes the date from the request in YYYY-MM-DD format and
     # converts into a format suitable for QuerySet later on.
-    if range_end and range_start:
+    if range_end:
         range_end = datetime.datetime.fromtimestamp(
             time.mktime(time.strptime(range_end, "%Y-%m-%d")))
+
+    if range_start:
         range_start = datetime.datetime.fromtimestamp(
             time.mktime(time.strptime(range_start, "%Y-%m-%d")))
 
-    if direction == "next":
+    if direction == "next" and range_end:
         new_range_start = range_end
         new_range_end = \
             new_range_start + datetime.timedelta(days=days_total)
-    elif direction == "prev":
+    elif direction == "prev" and range_start:
         new_range_start = range_start - datetime.timedelta(days=days_total)
         new_range_end = range_start
-    elif direction == "same":
+    elif direction == "same" and range_start and range_end:
         new_range_start = range_start
         new_range_end = range_end
     else:
