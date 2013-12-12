@@ -27,6 +27,7 @@ features. However, we still recommend upgrading immediately.
 
 * Extensions making use of JSONField are now more protected from possible
   remote code exploits, if they're not already being careful of input.
+  This was reported and fixed by Frederik Braun from Mozilla.
   (:cve:`2013-4409`)
 
 For extension authors, see the Extensibility Changes below for how this
@@ -83,6 +84,7 @@ Contributors
 * David Trowbridge
 * Edward Lee
 * Emmanuel Gil Peyrot
+* Frederik Braun
 * German Galkin
 
 
