@@ -11,4 +11,5 @@ SEQUENCE = [
     'group_site',
     'repository_hosting_accounts',
     'repository_extra_data_null',
+    'unique_together_baseline',
 ]
