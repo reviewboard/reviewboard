@@ -217,7 +217,8 @@ class DiffOpcodeGenerator(object):
                 if r_move_range:
                     new_end_i = r_move_range[1] + 1
 
-                    if self.differ.a[new_end_i].strip() == '':
+                    if (new_end_i < len(self.differ.a) and
+                        self.differ.a[new_end_i].strip() == ''):
                         # There was a matching blank line on the other end
                         # of the range, so we should feel more confident about
                         # adding the blank line here.
