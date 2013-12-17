@@ -1,7 +1,6 @@
 from __future__ import unicode_literals
 
 import logging
-from time import time
 
 from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.db.models import Q
@@ -497,10 +496,7 @@ class RepositoryResource(WebAPIResource):
         # should usually be used just before issuing a DELETE call, which will
         # set the visibility flag to False
         if kwargs.get('archive_name', False):
-            # This should be sufficiently unlikely to create duplicates. time()
-            # will use up a max of 8 characters, so we slice the name down to
-            # make the result fit in 64 characters
-            repository.name = 'ar:%s:%x' % (repository.name[:50], int(time()))
+            repository.archive(save=False)
 
         try:
             repository.full_clean()

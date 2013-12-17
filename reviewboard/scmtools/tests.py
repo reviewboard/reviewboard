@@ -163,9 +163,10 @@ class RepositoryTests(TestCase):
 
         self.local_repo_path = os.path.join(os.path.dirname(__file__),
                                             'testdata', 'git_repo')
-        self.repository = Repository(name='Git test repo',
-                                     path=self.local_repo_path,
-                                     tool=Tool.objects.get(name='Git'))
+        self.repository = Repository.objects.create(
+            name='Git test repo',
+            path=self.local_repo_path,
+            tool=Tool.objects.get(name='Git'))
 
         self.scmtool_cls = self.repository.get_scmtool().__class__
         self.old_get_file = self.scmtool_cls.get_file
@@ -178,6 +179,36 @@ class RepositoryTests(TestCase):
 
         self.scmtool_cls.get_file = self.old_get_file
         self.scmtool_cls.file_exists = self.old_file_exists
+
+    def test_archive(self):
+        """Testing Repository.archive"""
+        self.repository.archive()
+        self.assertTrue(self.repository.name.startswith('ar:Git test repo:'))
+        self.assertTrue(self.repository.archived)
+        self.assertFalse(self.repository.public)
+        self.assertIsNotNone(self.repository.archived_timestamp)
+
+        repository = Repository.objects.get(pk=self.repository.pk)
+        self.assertEqual(repository.name, self.repository.name)
+        self.assertEqual(repository.archived, self.repository.archived)
+        self.assertEqual(repository.public, self.repository.public)
+        self.assertEqual(repository.archived_timestamp,
+                         self.repository.archived_timestamp)
+
+    def test_archive_no_save(self):
+        """Testing Repository.archive with save=False"""
+        self.repository.archive(save=False)
+        self.assertTrue(self.repository.name.startswith('ar:Git test repo:'))
+        self.assertTrue(self.repository.archived)
+        self.assertFalse(self.repository.public)
+        self.assertIsNotNone(self.repository.archived_timestamp)
+
+        repository = Repository.objects.get(pk=self.repository.pk)
+        self.assertNotEqual(repository.name, self.repository.name)
+        self.assertNotEqual(repository.archived, self.repository.archived)
+        self.assertNotEqual(repository.public, self.repository.public)
+        self.assertNotEqual(repository.archived_timestamp,
+                            self.repository.archived_timestamp)
 
     def test_get_file_caching(self):
         """Testing Repository.get_file caches result"""
