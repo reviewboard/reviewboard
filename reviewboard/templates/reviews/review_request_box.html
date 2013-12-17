@@ -148,11 +148,11 @@
  <div id="review_request_main">
   <div class="content" id="description-value-cell">
    <label class="textarea-label" for="description">{% trans "Description" %}</label>
-   <pre id="description" class="editable required{% if review_request_details.rich_text and review_request_details.description %} loading{% endif %}" data-rich-text="{{review_request_details.rich_text|yesno:'true,false'}}">{{review_request_details.description|escape}}</pre>
+   <pre id="description" class="editable required{% if review_request_details.description %} loading{% endif %}" data-rich-text="true">{{review_request_details.description|markdown_escape:review_request_details.rich_text}}</pre>
   </div>
   <div class="content" id="testing-done-value-cell">
    <label class="textarea-label" for="testing_done">{% trans "Testing Done" %}</label>
-   <pre id="testing_done" class="editable{% if review_request_details.rich_text and review_request_details.testing_done %} loading{% endif %}" data-rich-text="{{review_request_details.rich_text|yesno:'true,false'}}">{{review_request_details.testing_done|escape}}</pre>
+   <pre id="testing_done" class="editable{% if review_request_details.testing_done %} loading{% endif %}" data-rich-text="true">{{review_request_details.testing_done|markdown_escape:review_request_details.rich_text}}</pre>
   </div>
  </div>
 

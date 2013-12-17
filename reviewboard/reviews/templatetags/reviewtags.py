@@ -15,6 +15,7 @@ from djblets.util.decorators import basictag, blocktag
 from djblets.util.humanize import humanize_list
 
 from reviewboard.accounts.models import Profile
+from reviewboard.reviews.markdown_utils import markdown_escape
 from reviewboard.reviews.models import (BaseComment, Group,
                                         ReviewRequest, ScreenshotComment,
                                         FileAttachmentComment)
@@ -387,3 +388,16 @@ def comment_issue(context, review_request, comment, comment_type):
 def pretty_print_issue_status(status):
     """Turns an issue status code into a human-readable status string."""
     return BaseComment.issue_status_to_string(status)
+
+
+@register.filter('markdown_escape')
+def markdown_escape_filter(text, is_rich_text):
+    """Returns Markdown text, escaping if necessary.
+
+    If ``is_rich_text`` is ``True``, then the provided text will be
+    returned directly. Otherwise, it will first be escaped and then returned.
+    """
+    if is_rich_text:
+        return text
+    else:
+        return markdown_escape(text)

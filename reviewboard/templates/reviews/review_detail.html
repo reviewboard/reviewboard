@@ -78,7 +78,7 @@
  </div>
  <div class="banners"></div>
  <div class="body">
-   <pre class="body_top reviewtext" data-rich-text="{{entry.review.rich_text|yesno:'true,false'}}">{{entry.review.body_top|escape}}</pre>
+   <pre class="body_top reviewtext" data-rich-text="true">{{entry.review.body_top|markdown_escape:entry.review.rich_text}}</pre>
    {% reply_section entry "" "body_top" "rcbt" %}
 {% if entry.comments.diff_comments or entry.comments.screenshot_comments or entry.comments.file_attachment_comments %}
    <dl class="review-comments">
@@ -101,7 +101,7 @@
     </dt>
     <dd>
 {% comment_detail_display_hook comment "review" %}
-     <pre class="reviewtext comment-text" data-rich-text="{{comment.rich_text|yesno:'true,false'}}" id="{{comment.anchor_prefix}}{{comment.id}}">{{comment.text|escape}}</pre>
+     <pre class="reviewtext comment-text" data-rich-text="true" id="{{comment.anchor_prefix}}{{comment.id}}">{{comment.text|markdown_escape:comment.rich_text}}</pre>
 {% if comment.issue_opened %}
      <div class="issue-indicator">
        {% comment_issue review_request_details comment "screenshot_comments" %}
@@ -134,7 +134,7 @@
     </dt>
     <dd>
 {% comment_detail_display_hook comment "review" %}
-     <pre class="reviewtext comment-text" data-rich-text="{{comment.rich_text|yesno:'true,false'}}" id="{{comment.anchor_prefix}}{{comment.id}}">{{comment.text|escape}}</pre>
+     <pre class="reviewtext comment-text" data-rich-text="true" id="{{comment.anchor_prefix}}{{comment.id}}">{{comment.text|markdown_escape:comment.rich_text}}</pre>
 {% if comment.issue_opened %}
      <div class="issue-indicator">
        {% comment_issue review_request_details comment "file_attachment_comments" %}
@@ -174,7 +174,7 @@
     </dt>
     <dd>
 {% comment_detail_display_hook comment "review" %}
-     <pre class="reviewtext comment-text" data-rich-text="{{comment.rich_text|yesno:'true,false'}}" id="{{comment.anchor_prefix}}{{comment.id}}">{{comment.text|escape}}</pre>
+     <pre class="reviewtext comment-text" data-rich-text="true" id="{{comment.anchor_prefix}}{{comment.id}}">{{comment.text|markdown_escape:comment.rich_text}}</pre>
 {% if comment.issue_opened %}
      <div class="issue-indicator">
        {% comment_issue review_request_details comment "diff_comments" %}
@@ -186,7 +186,7 @@
    </dl>
 {% endif %}
   {% if entry.review.body_bottom %}
-   <pre class="body_bottom reviewtext" data-rich-text="{{entry.review.rich_text|yesno:'true,false'}}">{{entry.review.body_bottom|escape}}</pre>
+   <pre class="body_bottom reviewtext" data-rich-text="true">{{entry.review.body_bottom|markdown_escape:entry.review.rich_text}}</pre>
    {% reply_section entry "" "body_bottom" "rcbb" %}
   {% endif %}
  </div><!-- body -->
@@ -268,7 +268,7 @@
    </ul>
 {% if entry.changedesc.text %}
    <label>{% trans "Description:" %}</label>
-   <pre class="changedesc-text" data-rich-text="{{entry.changedesc.rich_text|yesno:'true,false'}}">{{entry.changedesc.text|escape}}</pre>
+   <pre class="changedesc-text" data-rich-text="true">{{entry.changedesc.text|markdown_escape:entry.changedesc.rich_text}}</pre>
 {% endif %}
   </div>
  </div>

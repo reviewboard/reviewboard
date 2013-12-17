@@ -28,7 +28,7 @@ describe('resources/models/DiffComment', function() {
                     id: 42,
                     issue_opened: true,
                     issue_status: 'resolved',
-                    rich_text: true,
+                    text_type: 'markdown',
                     text: 'foo',
                     first_line: 10,
                     num_lines: 5,

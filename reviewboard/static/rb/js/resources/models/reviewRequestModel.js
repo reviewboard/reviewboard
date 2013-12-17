@@ -36,6 +36,10 @@ RB.ReviewRequest = RB.BaseResource.extend({
 
     rspNamespace: 'review_request',
 
+    extraQueryArgs: {
+        'force-text-type': 'markdown'
+    },
+
     initialize: function() {
         RB.BaseResource.prototype.initialize.apply(this, arguments);
 
@@ -330,7 +334,7 @@ RB.ReviewRequest = RB.BaseResource.extend({
             lastUpdated: rsp.last_updated,
             public: rsp.public,
             reviewURL: rsp.url,
-            richText: rsp.rich_text,
+            richText: rsp.text_type === 'markdown',
             summary: rsp.summary,
             state: state,
             targetGroups: rsp.target_groups,

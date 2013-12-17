@@ -70,9 +70,7 @@ RB.ReviewReplyEditorView = Backbone.View.extend({
 
             if (this._$editor) {
                 RB.formatText(this._$editor, text,
-                              reviewRequest.get('bugTrackerURL'), {
-                    forceRichText: true
-                });
+                              reviewRequest.get('bugTrackerURL'));
             }
         }, this);
 

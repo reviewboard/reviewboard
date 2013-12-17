@@ -17,9 +17,13 @@ RB.Review = RB.BaseResource.extend({
 
     rspNamespace: 'review',
 
+    extraQueryArgs: {
+        'force-text-type': 'markdown'
+    },
+
     toJSON: function() {
         var data = {
-            rich_text: this.get('richText'),
+            text_type: this.get('richText') ? 'markdown' : 'plain',
             ship_it: this.get('shipIt'),
             body_top: this.get('bodyTop'),
             body_bottom: this.get('bodyBottom')
@@ -38,7 +42,7 @@ RB.Review = RB.BaseResource.extend({
             bodyTop: rsp.body_top,
             bodyBottom: rsp.body_bottom,
             public: rsp.public,
-            richText: rsp.rich_text,
+            richText: rsp.text_type === 'markdown',
             timestamp: rsp.timestamp
         };
     },

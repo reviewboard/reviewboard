@@ -24,6 +24,10 @@ RB.DraftReviewRequest = RB.BaseResource.extend(_.defaults({
 
     expandedFields: ['depends_on', 'target_people', 'target_groups'],
 
+    extraQueryArgs: {
+        'force-text-type': 'markdown'
+    },
+
     url: function() {
         return this.get('parentObject').get('links').draft.href;
     },
@@ -90,7 +94,7 @@ RB.DraftReviewRequest = RB.BaseResource.extend(_.defaults({
             dependsOn: rsp.depends_on,
             description: rsp.description,
             public: rsp.public,
-            richText: rsp.rich_text,
+            richText: rsp.text_type === 'markdown',
             summary: rsp.summary,
             targetGroups: rsp.target_groups,
             targetPeople: rsp.target_people,

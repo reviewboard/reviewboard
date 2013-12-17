@@ -101,15 +101,6 @@ BaseCommentView = Backbone.View.extend({
         this.$issueOpened = this.$('.issue-opened')
             .prop('checked', this.model.get('issueOpened'));
 
-        if (!this.model.get('richText')) {
-            /*
-             * If this comment is modified and saved, it'll be saved as
-             * Markdown. Escape it so that nothing currently there is
-             * unintentionally interpreted as Markdown later.
-             */
-            text = RB.escapeMarkdown(text);
-        }
-
         this.textEditor.setText(text);
 
         $editFields = this.$('.edit-fields');
@@ -402,15 +393,6 @@ RB.ReviewDialogView = Backbone.View.extend({
                 } else {
                     bodyBottom = this.model.get('bodyBottom') || '';
                     bodyTop = this.model.get('bodyTop') || '';
-
-                    if (!this.model.get('richText')) {
-                        /*
-                         * When saving, these will convert to Markdown,
-                         * so escape them before-hand.
-                         */
-                        bodyBottom = RB.escapeMarkdown(bodyBottom);
-                        bodyTop = RB.escapeMarkdown(bodyTop);
-                    }
 
                     this._bodyBottomEditor.setText(bodyBottom);
                     this._bodyTopEditor.setText(bodyTop);

@@ -43,7 +43,7 @@ describe('resources/models/BaseCommentReply', function() {
                 my_comment: {
                     id: 42,
                     text: 'foo',
-                    rich_text: true
+                    text_type: 'markdown'
                 }
             });
 
@@ -85,7 +85,7 @@ describe('resources/models/BaseCommentReply', function() {
 
                 model.set('richText', true);
                 data = model.toJSON();
-                expect(data.rich_text).toBe(true);
+                expect(data.text_type).toBe('markdown');
             });
         });
 

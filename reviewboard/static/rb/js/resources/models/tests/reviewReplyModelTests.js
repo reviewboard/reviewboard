@@ -391,7 +391,7 @@ describe('resources/models/ReviewReply', function() {
                     body_top: 'foo',
                     body_bottom: 'bar',
                     public: false,
-                    rich_text: true
+                    text_type: 'markdown'
                 }
             });
 

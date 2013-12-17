@@ -20,7 +20,7 @@ describe('resources/models/FileAttachmentComment', function() {
                     id: 42,
                     issue_opened: true,
                     issue_status: 'resolved',
-                    rich_text: true,
+                    text_type: 'markdown',
                     text: 'foo',
                     extra_data: {
                         my_int: 123,

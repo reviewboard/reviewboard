@@ -1,6 +1,5 @@
-{% load djblets_utils %}
-{% load i18n %}
-{% load tz %}
+{% load djblets_utils i18n reviewtags tz %}
+
    <li{% if draft %} class="draft"{% endif %}{% if comment_id %} data-comment-id="{{comment_id}}"{% endif %}>
     <dl>
      <dt>
@@ -9,6 +8,6 @@
       <span class="timestamp">{% localtime on %}{% blocktrans with timestamp as timestamp and timestamp|date:"c" as timestamp_raw %}<time class="timesince" datetime="{{timestamp_raw}}">{{timestamp}}</time> ({{timestamp}}){% endblocktrans %}{% endlocaltime %}</span>
       </label>
      </dt>
-     <dd><pre id="{% if draft %}draft{% endif %}comment_{{context_id}}-{{id}}" data-rich-text="{{rich_text|yesno:'true,false'}}" class="reviewtext">{{text|escape}}</pre></dd>
+     <dd><pre id="{% if draft %}draft{% endif %}comment_{{context_id}}-{{id}}" data-rich-text="true" class="reviewtext">{{text|markdown_escape:rich_text}}</pre></dd>
     </dl>
    </li>

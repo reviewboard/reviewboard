@@ -1,4 +1,4 @@
-{% load djblets_utils i18n %}
+{% load djblets_utils i18n reviewtags %}
 
 <div id="review_request_banners">
 {% if review_request.status == 'S' %}
@@ -8,9 +8,9 @@
   <input type="submit" id="btn-review-request-reopen"
          value="{% trans "Reopen for Review" %}" />
   <p><label for="changedescription">{% trans "Describe the submission (optional):" %}</label></p>
-  <pre id="changedescription" class="editable{% if close_description_rich_text and close_description %} loading{% endif %}" data-rich-text="{{close_description_rich_text|yesno:'true,false'}}">{{close_description}}</pre>
+  <pre id="changedescription" class="editable{% if close_description %} loading{% endif %}" data-rich-text="true">{{close_description|markdown_escape:close_description_rich_text}}</pre>
 {%  elif close_description %}
-  <pre id="changedescription"{% if close_description_rich_text and close_description %} class="loading"{% endif %} data-rich-text="{{close_description_rich_text|yesno:'true,false'}}">{{close_description}}</pre>
+  <pre id="changedescription"{% if close_description %} class="loading"{% endif %} data-rich-text="true">{{close_description|markdown_escape:close_description_rich_text}}</pre>
 {%  endif %}
  </div>
 {% elif review_request.status == 'D' %}
@@ -22,9 +22,9 @@
 {%  endif %}
 {%  if request.user.pk == review_request.submitter_id or perms.reviews.can_change_status %}
   <p><label for="changedescription">{% trans "Describe the reason it's discarded (optional):" %}</label></p>
-  <pre id="changedescription" class="editable{% if close_description_rich_text and close_description %} loading{% endif %}" data-rich-text="{{close_description_rich_text|yesno:'true,false'}}">{{close_description}}</pre>
+  <pre id="changedescription" class="editable{% if close_description %} loading{% endif %}" data-rich-text="true">{{close_description|markdown_escape:close_description_rich_text}}</pre>
 {%  elif close_description %}
-  <pre id="changedescription"{% if close_description_rich_text and close_description %} loading{% endif %} data-rich-text="{{close_description_rich_text|yesno:'true,false'}}">{{close_description}}</pre>
+  <pre id="changedescription"{% if close_description %} loading{% endif %} data-rich-text="true">{{close_description|markdown_escape:close_description_rich_text}}</pre>
 {%  endif %}
  </div>
 {% elif draft %}{# pending review #}
@@ -39,7 +39,7 @@
          value="{% trans "Discard Draft" %}" />
   <p><label for="changedescription">{% trans "Describe your changes (optional):" %}</label></p>
 {%    if draft.changedesc %}
-  <pre id="changedescription" class="editable{% if draft.changedesc.rich_text and draft.changedesc.text %} loading{% endif %}" data-rich-text="{{draft.changedesc.rich_text|yesno:'true,false'}}">{{draft.changedesc.text}}</pre>
+  <pre id="changedescription" class="editable{% if draft.changedesc.text %} loading{% endif %}" data-rich-text="true">{{draft.changedesc.text|markdown_escape:draft.changedesc.rich_text}}</pre>
 {%    else %}
   <pre id="changedescription" class="editable" data-rich-text="true"></pre>
 {%    endif %}

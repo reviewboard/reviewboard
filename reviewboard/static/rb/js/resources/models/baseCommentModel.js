@@ -27,6 +27,10 @@ RB.BaseComment = RB.BaseResource.extend({
         text: ''
     }, RB.BaseResource.prototype.defaults),
 
+    extraQueryArgs: {
+        'force-text-type': 'markdown'
+    },
+
     /*
      * Destroys the comment if and only if the text is empty.
      *
@@ -48,7 +52,7 @@ RB.BaseComment = RB.BaseResource.extend({
     toJSON: function() {
         var data = {
                 issue_opened: this.get('issueOpened'),
-                rich_text: this.get('richText'),
+                text_type: this.get('richText') ? 'markdown' : 'plain',
                 text: this.get('text')
             },
             parentObject,
@@ -88,7 +92,7 @@ RB.BaseComment = RB.BaseResource.extend({
             extraData: rsp.extra_data,
             issueOpened: rsp.issue_opened,
             issueStatus: rsp.issue_status,
-            richText: rsp.rich_text,
+            richText: rsp.text_type === 'markdown',
             text: rsp.text
         };
     },

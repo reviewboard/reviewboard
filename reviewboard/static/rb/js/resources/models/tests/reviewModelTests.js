@@ -45,7 +45,7 @@ describe('resources/models/Review', function() {
                     body_top: 'foo',
                     body_bottom: 'bar',
                     public: false,
-                    rich_text: true,
+                    text_type: 'markdown',
                     ship_it: false
                 }
             });
@@ -102,7 +102,7 @@ describe('resources/models/Review', function() {
 
                 model.set('richText', true);
                 data = model.toJSON();
-                expect(data.rich_text).toBe(true);
+                expect(data.text_type).toBe('markdown');
             });
         });
 

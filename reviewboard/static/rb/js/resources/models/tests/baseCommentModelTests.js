@@ -137,7 +137,7 @@ describe('resources/models/BaseComment', function() {
 
                 model.set('richText', true);
                 data = model.toJSON();
-                expect(data.rich_text).toBe(true);
+                expect(data.text_type).toBe('markdown');
             });
         });
 

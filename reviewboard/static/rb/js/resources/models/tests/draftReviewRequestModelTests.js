@@ -85,7 +85,7 @@ describe('resources/models/DraftReviewRequest', function() {
                 changedescription: 'changeDescription',
                 description: 'description',
                 public: 'public',
-                rich_text: true,
+                text_type: 'markdown',
                 summary: 'summary',
                 target_groups: 'targetGroups',
                 target_people: 'targetPeople',

@@ -26,6 +26,9 @@ RB.BaseResource = Backbone.Model.extend({
     /* The list of fields to expand in resource payloads. */
     expandedFields: [],
 
+    /* Extra query arguments for GET requests. */
+    extraQueryArgs: {},
+
     /*
      * Returns the URL for this resource's instance.
      *
@@ -562,6 +565,10 @@ RB.BaseResource = Backbone.Model.extend({
 
         if (method === 'read') {
             data = options.data || {};
+
+            if (this.extraQueryArgs.length > 0) {
+                _.extend(data, this.extraQueryArgs);
+            }
         } else {
             data = options.form ? null
                                 : (options.attrs || model.toJSON(options));

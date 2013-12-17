@@ -1,14 +1,6 @@
 (function() {
 
 
-/*
- * NOTE: Any changes made here or in escapeMarkdown below should be
- *       reflected in reviewboard/reviews/markdown_utils.py.
- */
-var MARKDOWN_SPECIAL_CHARS_RE = /([\\`\*_\{\}\[\]\(\)\>\#\+\-\.\!])/g,
-    ESCAPE_CHARS_RE = /(^\s*(\d+\.)+|^\s*(\#)+|^\s*[-\+]+|[\\`\*_\{\}\[\]\(\)\>\!])/gm;
-
-
 // If `marked` is defined, initialize it with our preferred options
 if (marked !== undefined) {
     marked.setOptions({
@@ -33,25 +25,13 @@ if (marked !== undefined) {
  * If the given element is expected to be rich text, this will format the text
  * using Markdown.
  *
- * If it's not expected to be rich text, but we want to force conversion to
- * rich text, this will escape the text and turn it into valid Markdown.
- *
  * Otherwise, if it's not expected and won't be converted, then it will add
  * links to review requests and bug trackers but otherwise leave the text alone.
  */
 RB.formatText = function($el, text, bugTrackerURL, options) {
-    var markedUp;
-        elRichText = $el.data('rich-text');
+    var markedUp = text;
 
-    if (options && options.forceRichText && !elRichText) {
-        text = RB.escapeMarkdown(text);
-        $el.data('rich-text', true);
-        elRichText = true;
-    }
-
-    markedUp = text;
-
-    if (elRichText) {
+    if ($el.data('rich-text')) {
         /*
          * If there's an inline editor attached to this element, set up some
          * options first. Primarily, we need to pass in the raw value of the
@@ -89,17 +69,6 @@ RB.formatText = function($el, text, bugTrackerURL, options) {
     } else {
         $el.html(RB.LinkifyUtils.linkifyText(text, bugTrackerURL));
     }
-};
-
-
-/*
- * Escapes text, turning it into valid Markdown, without causing any existing
- * characters to be interpreted as Markdown.
- */
-RB.escapeMarkdown = function(text) {
-    return text.replace(ESCAPE_CHARS_RE, function(text, m1) {
-        return m1.replace(MARKDOWN_SPECIAL_CHARS_RE, '\\$1');
-    });
 };
 
 

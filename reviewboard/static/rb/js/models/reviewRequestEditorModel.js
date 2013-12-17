@@ -104,11 +104,7 @@ RB.ReviewRequestEditor = Backbone.Model.extend({
         if (fieldName === 'changeDescription' ||
             fieldName === 'description' ||
             fieldName === 'testingDone') {
-            /*
-             * The client is responsible for specifying that the fields being
-             * sent are rich-text.
-             */
-            data.rich_text = true;
+            data.text_type = 'markdown';
         }
 
         jsonFieldName = this._jsonFieldMap[fieldName] || fieldName;

@@ -16,6 +16,10 @@ RB.ReviewReply = RB.BaseResource.extend({
     rspNamespace: 'reply',
     listKey: 'replies',
 
+    extraQueryArgs: {
+        'force-text-type': 'markdown'
+    },
+
     COMMENT_LINK_NAMES: [
         'diff_comments',
         'file_attachment_comments',
@@ -27,7 +31,7 @@ RB.ReviewReply = RB.BaseResource.extend({
             'public': this.get('public'),
             'body_top': this.get('bodyTop'),
             'body_bottom': this.get('bodyBottom'),
-            'rich_text': this.get('richText')
+            'text_type': this.get('richText') ? 'markdown' : 'plain'
         };
     },
 
@@ -36,7 +40,7 @@ RB.ReviewReply = RB.BaseResource.extend({
             bodyTop: rsp.body_top,
             bodyBottom: rsp.body_bottom,
             public: rsp.public,
-            richText: rsp.rich_text,
+            richText: rsp.text_type === 'markdown',
             timestamp: rsp.timestamp
         };
     },

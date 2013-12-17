@@ -38,7 +38,7 @@ RB.BaseCommentReply = RB.BaseResource.extend({
     toJSON: function() {
         var data = {
             text: this.get('text'),
-            rich_text: this.get('richText')
+            text_type: this.get('richText') ? 'markdown' : 'plain'
         };
 
         if (!this.get('loaded')) {
@@ -56,7 +56,7 @@ RB.BaseCommentReply = RB.BaseResource.extend({
     parseResourceData: function(rsp) {
         return {
             text: rsp.text,
-            richText: rsp.rich_text
+            richText: rsp.text_type === 'markdown'
         };
     },
 
