@@ -1,4 +1,4 @@
-codemirror-3.19.min.js is built with the minifier at
+codemirror-3.20.min.js is built with the minifier at
 http://codemirror.net/doc/compress.html
 
 It contains the following modules:
@@ -8,4 +8,5 @@ Modes:
   * markdown.js
 
 Add-ons:
+  * continuelist.js
   * overlay.js

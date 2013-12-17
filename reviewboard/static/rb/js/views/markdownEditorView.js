@@ -106,6 +106,8 @@ RB.MarkdownEditorView = Backbone.View.extend({
             mode: 'gfm',
             lineWrapping: true,
             extraKeys: {
+                'Enter': 'newlineAndIndentContinueMarkdownList',
+                'Shift-Tab': false,
                 'Tab': false
             }
         };
