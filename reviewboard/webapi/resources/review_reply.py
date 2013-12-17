@@ -12,6 +12,7 @@ from djblets.webapi.errors import (DOES_NOT_EXIST, NOT_LOGGED_IN,
 from reviewboard.reviews.markdown_utils import markdown_set_field_escaped
 from reviewboard.reviews.models import Review
 from reviewboard.webapi.decorators import webapi_check_local_site
+from reviewboard.webapi.mixins import MarkdownFieldsMixin
 from reviewboard.webapi.resources import resources
 from reviewboard.webapi.resources.base_review import BaseReviewResource
 from reviewboard.webapi.resources.user import UserResource
@@ -24,8 +25,13 @@ class ReviewReplyResource(BaseReviewResource):
     parent review. Every comment associated with a reply is also tied to
     a parent comment.
 
-    If the ``rich_text`` field is set to true, then ``body_top`` and
-    ``body_bottom`` should be interpreted by the client as Markdown text.
+    If the ``text_type`` field is set to ``markdown``, then the ``body_top``
+    and ``body_bottom` fields field should be interpreted by the client as
+    Markdown text.
+
+    The returned text in the payload can be provided in a different format
+    by passing ``?force-text-type=`` in the request. This accepts all the
+    possible values listed in the ``text_type`` field below.
     """
     name = 'reply'
     name_plural = 'replies'
@@ -49,11 +55,10 @@ class ReviewReplyResource(BaseReviewResource):
             'description': 'Whether or not the reply is currently '
                            'visible to other users.',
         },
-        'rich_text': {
-            'type': bool,
-            'description': 'Whether or not the review body_top and '
-                           'body_bottom fields are in rich-text (Markdown) '
-                           'format.',
+        'text_type': {
+            'type': MarkdownFieldsMixin.TEXT_TYPES,
+            'description': 'The mode for the body_top and body_bottom text '
+                           'fields.',
         },
         'timestamp': {
             'type': six.text_type,
@@ -108,11 +113,10 @@ class ReviewReplyResource(BaseReviewResource):
                                'If a reply is public, it cannot be made '
                                'private again.',
             },
-            'rich_text': {
-                'type': bool,
-                'description': 'Whether the body_top and body_bottom text '
-                               'is in rich-text (Markdown) format. '
-                               'The default is false.',
+            'text_type': {
+                'type': MarkdownFieldsMixin.SAVEABLE_TEXT_TYPES,
+                'description': 'The mode for the body_top and body_bottom text '
+                               'fields. The default is "plain".',
             },
         },
     )
@@ -127,8 +131,9 @@ class ReviewReplyResource(BaseReviewResource):
         any number of the fields. If nothing is provided, the reply will
         start off as blank.
 
-        If ``rich_text`` is provided and changed to true, then the ``body_top``
-        and ``body_bottom`` are expected to be in valid Markdown format.
+        If ``text_type`` is provided and set to ``markdown``, then the
+        ``body_top`` and ``body_bottom`` fields will be set to be interpreted
+        as Markdown. Otherwise, it will be interpreted as plain text.
 
         If the user submitting this reply already has a pending draft reply
         on this review, then this will update the existing draft and
@@ -187,11 +192,11 @@ class ReviewReplyResource(BaseReviewResource):
                                'If a reply is public, it cannot be made '
                                'private again.',
             },
-            'rich_text': {
-                'type': bool,
-                'description': 'Whether the body_top and body_bottom text '
-                               'is in rich-text (Markdown) format. '
-                               'The default is false.',
+            'text_type': {
+                'type': MarkdownFieldsMixin.SAVEABLE_TEXT_TYPES,
+                'description': 'The mode for the body_top and body_bottom text '
+                               'fields. This default is to leave the '
+                               'mode unchanged.',
             },
         },
     )
@@ -204,14 +209,16 @@ class ReviewReplyResource(BaseReviewResource):
         Only the owner of a reply can make changes. One or more fields can
         be updated at once.
 
-        If ``rich_text`` is provided and changed to true, then the ``body_top``
-        and ``body_bottom`` fields will be set to be interpreted as Markdown.
-        When setting to true and not specifying one or both of those fields,
-        the existing text will be escaped so as not to be unintentionally
+        If ``text_type`` is provided and changed from the original value, then
+        the ``body_top`` and ``body_bottom`` fields will be set to be
+        interpreted according to the new type.
+
+        When setting to ``markdown`` and not specifying any new text, the
+        existing text will be escaped so as not to be unintentionally
         interpreted as Markdown.
 
-        If ``rich_text`` is changed to false, and one or both of those fields
-        are not provided, the existing text will be unescaped.
+        When setting to ``plain``, and new text is not provided, the existing
+        text will be unescaped.
 
         The only special field is ``public``, which, if set to true, will
         publish the reply. The reply will then be made publicly visible. Once
@@ -265,8 +272,8 @@ class ReviewReplyResource(BaseReviewResource):
 
                 setattr(reply, '%s_reply_to' % field, reply_to)
 
-        if 'rich_text' in kwargs:
-            reply.rich_text = kwargs['rich_text']
+        if 'text_type' in kwargs:
+            reply.rich_text = (kwargs['text_type'] == self.TEXT_TYPE_MARKDOWN)
 
         self.normalize_markdown_fields(reply, ['body_top', 'body_bottom'],
                                        old_rich_text, **kwargs)

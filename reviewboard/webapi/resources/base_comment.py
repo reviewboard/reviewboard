@@ -5,7 +5,8 @@ from django.utils import six
 from django.utils.formats import localize
 from djblets.webapi.errors import DOES_NOT_EXIST
 
-from reviewboard.reviews.markdown_utils import markdown_set_field_escaped
+from reviewboard.reviews.markdown_utils import (markdown_escape,
+                                                markdown_set_field_escaped)
 from reviewboard.reviews.models import BaseComment
 from reviewboard.webapi.base import WebAPIResource
 from reviewboard.webapi.mixins import MarkdownFieldsMixin
@@ -41,14 +42,13 @@ class BaseCommentResource(MarkdownFieldsMixin, WebAPIResource):
             'description': 'Whether or not the comment is part of a public '
                            'review.',
         },
-        'rich_text': {
-            'type': bool,
-            'description': 'Whether or not the comment is in rich-text '
-                           '(Markdown) format.',
-        },
         'text': {
             'type': six.text_type,
             'description': 'The comment text.',
+        },
+        'text_type': {
+            'type': MarkdownFieldsMixin.TEXT_TYPES,
+            'description': 'The mode for the comment text field.',
         },
         'timestamp': {
             'type': six.text_type,
@@ -71,23 +71,22 @@ class BaseCommentResource(MarkdownFieldsMixin, WebAPIResource):
     }
 
     _COMMON_OPTIONAL_CREATE_FIELDS = {
-        'rich_text': {
-            'type': bool,
-            'description': 'Whether the comment text is in rich-text '
-                           '(Markdown) format. The default is false.',
+        'text_type': {
+            'type': MarkdownFieldsMixin.SAVEABLE_TEXT_TYPES,
+            'description': 'The content type for the comment text field. '
+                           'The default is "plain".',
         },
     }
 
     _COMMON_OPTIONAL_UPDATE_FIELDS = {
-        'rich_text': {
-            'type': bool,
-            'description': 'Whether the comment text is in rich-text '
-                           '(Markdown) format. The default is to leave '
-                           'this unchanged.',
-        },
         'text': {
             'type': six.text_type,
             'description': 'The comment text.',
+        },
+        'text_type': {
+            'type': MarkdownFieldsMixin.SAVEABLE_TEXT_TYPES,
+            'description': 'The new content type for the comment text field. '
+                           'The default is to leave the type unchanged.',
         },
     }
 
@@ -123,6 +122,12 @@ class BaseCommentResource(MarkdownFieldsMixin, WebAPIResource):
     REPLY_OPTIONAL_CREATE_FIELDS = _COMMON_OPTIONAL_CREATE_FIELDS
     REPLY_OPTIONAL_UPDATE_FIELDS = _COMMON_OPTIONAL_UPDATE_FIELDS
 
+    def serialize_issue_status_field(self, obj, **kwargs):
+        return BaseComment.issue_status_to_string(obj.issue_status)
+
+    def serialize_text_field(self, obj, **kwargs):
+        return self.normalize_text(obj, obj.text, **kwargs)
+
     def has_access_permissions(self, request, obj, *args, **kwargs):
         return obj.is_accessible_by(request.user)
 
@@ -133,10 +138,10 @@ class BaseCommentResource(MarkdownFieldsMixin, WebAPIResource):
         return obj.is_mutable_by(request.user)
 
     def create_comment(self, review, fields, text, issue_opened=False,
-                       rich_text=False, extra_fields={}, **kwargs):
+                       text_type=False, extra_fields={}, **kwargs):
         comment_kwargs = {
             'issue_opened': bool(issue_opened),
-            'rich_text': rich_text,
+            'rich_text': text_type == self.TEXT_TYPE_MARKDOWN,
             'text': text.strip(),
         }
 
@@ -172,7 +177,7 @@ class BaseCommentResource(MarkdownFieldsMixin, WebAPIResource):
 
         old_rich_text = comment.rich_text
 
-        for field in ('text', 'issue_opened', 'rich_text') + update_fields:
+        for field in ('text', 'issue_opened') + update_fields:
             value = kwargs.get(field, None)
 
             if value is not None:
@@ -180,6 +185,10 @@ class BaseCommentResource(MarkdownFieldsMixin, WebAPIResource):
                     value = value.strip()
 
                 setattr(comment, field, value)
+
+        if 'text_type' in kwargs:
+            comment.rich_text = \
+                (kwargs['text_type'] == self.TEXT_TYPE_MARKDOWN)
 
         self.normalize_markdown_fields(comment, ['text'], old_rich_text,
                                        **kwargs)
@@ -240,6 +249,3 @@ class BaseCommentResource(MarkdownFieldsMixin, WebAPIResource):
         return (comment.review.get().public and
                 (comment.issue_opened or issue_opened) and
                 issue_status != comment.issue_status)
-
-    def serialize_issue_status_field(self, obj, **kwargs):
-        return BaseComment.issue_status_to_string(obj.issue_status)

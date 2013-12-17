@@ -42,6 +42,7 @@ from reviewboard.webapi.errors import (CHANGE_NUMBER_IN_USE,
                                        MISSING_REPOSITORY,
                                        REPO_AUTHENTICATION_ERROR,
                                        REPO_INFO_ERROR)
+from reviewboard.webapi.mixins import MarkdownFieldsMixin
 from reviewboard.webapi.resources import resources
 from reviewboard.webapi.resources.repository import RepositoryResource
 from reviewboard.webapi.resources.review_group import ReviewGroupResource
@@ -50,7 +51,7 @@ from reviewboard.webapi.resources.review_request_draft import \
 from reviewboard.webapi.resources.user import UserResource
 
 
-class ReviewRequestResource(WebAPIResource):
+class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
     """Provides information on review requests.
 
     Review requests are one of the central concepts in Review Board. They
@@ -65,9 +66,13 @@ class ReviewRequestResource(WebAPIResource):
     then be updated, again through the Review Request Draft resource, or closed
     as submitted or discarded.
 
-    If the ``rich_text`` field is set to true, then the ``description`` and
-    ``testing_done`` fields should be interpreted by the client as Markdown
+    If the ``text_type`` field is set to ``markdown``, then the ``description``
+    and ``testing_done`` fields should be interpreted by the client as Markdown
     text.
+
+    The returned text in the payload can be provided in a different format
+    by passing ``?force-text-type=`` in the request. This accepts all the
+    possible values listed in the ``text_type`` field below.
     """
     model = ReviewRequest
     name = 'review_request'
@@ -103,11 +108,10 @@ class ReviewRequestResource(WebAPIResource):
             'description': 'The date and time that the review request was '
                            'last updated (in YYYY-MM-DD HH:MM:SS format).',
         },
-        'rich_text': {
-            'type': bool,
-            'description': 'Whether or not the review request description '
-                           'and testing_done fields are in rich-text '
-                           '(Markdown) format.',
+        'text_type': {
+            'type': MarkdownFieldsMixin.TEXT_TYPES,
+            'description': 'The mode for the review request description '
+                           'and testing_done fields.',
         },
         'status': {
             'type': ('discarded', 'pending', 'submitted'),
@@ -412,6 +416,12 @@ class ReviewRequestResource(WebAPIResource):
 
     def serialize_commit_id_field(self, obj, **kwargs):
         return obj.commit
+
+    def serialize_description_field(self, obj, **kwargs):
+        return self.normalize_text(obj, obj.description, **kwargs)
+
+    def serialize_testing_done_field(self, obj, **kwargs):
+        return self.normalize_text(obj, obj.testing_done, **kwargs)
 
     @webapi_check_local_site
     @webapi_login_required

@@ -49,7 +49,11 @@ class ResourceListTests(ReviewListMixin, ReviewRequestChildListMixin,
         self.assertEqual(item_rsp['id'], reply.pk)
         self.assertEqual(item_rsp['body_top'], reply.body_top)
         self.assertEqual(item_rsp['body_bottom'], reply.body_bottom)
-        self.assertEqual(item_rsp['rich_text'], reply.rich_text)
+
+        if reply.rich_text:
+            self.assertEqual(item_rsp['text_type'], 'markdown')
+        else:
+            self.assertEqual(item_rsp['text_type'], 'plain')
 
     #
     # HTTP GET tests
@@ -165,7 +169,11 @@ class ResourceItemTests(ReviewItemMixin, ReviewRequestChildItemMixin,
         self.assertEqual(item_rsp['id'], reply.pk)
         self.assertEqual(item_rsp['body_top'], reply.body_top)
         self.assertEqual(item_rsp['body_bottom'], reply.body_bottom)
-        self.assertEqual(item_rsp['rich_text'], reply.rich_text)
+
+        if reply.rich_text:
+            self.assertEqual(item_rsp['text_type'], 'markdown')
+        else:
+            self.assertEqual(item_rsp['text_type'], 'plain')
 
     #
     # HTTP DELETE tests
@@ -237,7 +245,7 @@ class ResourceItemTests(ReviewItemMixin, ReviewRequestChildItemMixin,
     def check_put_result(self, user, item_rsp, reply, *args):
         self.assertEqual(item_rsp['id'], reply.pk)
         self.assertEqual(item_rsp['body_top'], 'New body top')
-        self.assertFalse(item_rsp['rich_text'])
+        self.assertEqual(item_rsp['text_type'], 'plain')
 
         reply = Review.objects.get(pk=reply.pk)
         self.compare_item(item_rsp, reply)

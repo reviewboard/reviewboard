@@ -9,18 +9,23 @@ from reviewboard.diffviewer.models import DiffSet
 from reviewboard.reviews.models import Group, Screenshot
 from reviewboard.webapi.base import WebAPIResource
 from reviewboard.webapi.decorators import webapi_check_local_site
+from reviewboard.webapi.mixins import MarkdownFieldsMixin
 from reviewboard.webapi.resources import resources
 
 
-class ChangeResource(WebAPIResource):
+class ChangeResource(MarkdownFieldsMixin, WebAPIResource):
     """Provides information on a change made to a public review request.
 
     A change includes, optionally, text entered by the user describing the
     change, and also includes a list of fields that were changed on the
     review request.
 
-    If the ``rich_text`` field is set to true, then the provided ``text``
-    field shoud be interpreted by the client as Markdown text.
+    If the ``text_type`` field is set to ``markdown``, then the ``text``
+    field should be interpreted by the client as Markdown text.
+
+    The returned text in the payload can be provided in a different format
+    by passing ``?force-text-type=`` in the request. This accepts all the
+    possible values listed in the ``text_type`` field below.
 
     The list of fields changed are in ``fields_changed``. The keys are the
     names of the fields, and the values are details on that particular
@@ -68,15 +73,14 @@ class ChangeResource(WebAPIResource):
             'type': dict,
             'description': 'The fields that were changed.',
         },
-        'rich_text': {
-            'type': bool,
-            'description': 'Whether or not the text is in rich-text '
-                           '(Markdown) format.',
-        },
         'text': {
             'type': six.text_type,
             'description': 'The description of the change written by the '
                            'submitter.'
+        },
+        'text_type': {
+            'type': MarkdownFieldsMixin.TEXT_TYPES,
+            'description': 'The mode for the text field.',
         },
         'timestamp': {
             'type': six.text_type,
@@ -148,6 +152,9 @@ class ChangeResource(WebAPIResource):
                 pass
 
         return fields_changed
+
+    def serialize_text_field(self, obj, **kwargs):
+        return self.normalize_text(obj, obj.text, **kwargs)
 
     def has_access_permissions(self, request, obj, *args, **kwargs):
         return obj.review_request.get().is_accessible_by(request.user)

@@ -43,16 +43,15 @@ class BaseReviewResource(MarkdownFieldsMixin, WebAPIResource):
             'description': 'Whether or not the review is currently '
                            'visible to other users.',
         },
-        'rich_text': {
-            'type': bool,
-            'description': 'Whether or not the review body_top and '
-                           'body_bottom fields are in rich-text (Markdown) '
-                           'format.',
-        },
         'ship_it': {
             'type': bool,
             'description': 'Whether or not the review has been marked '
                            '"Ship It!"',
+        },
+        'text_type': {
+            'type': MarkdownFieldsMixin.TEXT_TYPES,
+            'description': 'The mode for the body_top and body_bottom text '
+                           'fields.',
         },
         'timestamp': {
             'type': six.text_type,
@@ -67,6 +66,12 @@ class BaseReviewResource(MarkdownFieldsMixin, WebAPIResource):
     last_modified_field = 'timestamp'
 
     allowed_methods = ('GET', 'POST', 'PUT', 'DELETE')
+
+    def serialize_body_top_field(self, obj, **kwargs):
+        return self.normalize_text(obj, obj.body_top, **kwargs)
+
+    def serialize_body_bottom_field(self, obj, **kwargs):
+        return self.normalize_text(obj, obj.body_bottom, **kwargs)
 
     def get_queryset(self, request, is_list=False, *args, **kwargs):
         review_request = resources.review_request.get_object(
@@ -115,11 +120,10 @@ class BaseReviewResource(MarkdownFieldsMixin, WebAPIResource):
                                'If a review is public, it cannot be made '
                                'private again.',
             },
-            'rich_text': {
-                'type': bool,
-                'description': 'Whether the body_top and body_bottom text '
-                               'is in rich-text (Markdown) format. '
-                               'The default is false.',
+            'text_type': {
+                'type': MarkdownFieldsMixin.SAVEABLE_TEXT_TYPES,
+                'description': 'The mode for the body_top and body_bottom '
+                               'text fields. The default is "plain".',
             },
         },
     )
@@ -134,8 +138,9 @@ class BaseReviewResource(MarkdownFieldsMixin, WebAPIResource):
         any number of the fields. If nothing is provided, the review will
         start off as blank.
 
-        If ``rich_text`` is provided and changed to true, then the ``body_top``
-        and ``body_bottom`` are expected to be in valid Markdown format.
+        If ``text_type`` is provided and set to ``markdown``, then the
+        ``body_top`` and ``body_bottom`` fields will be set to be interpreted
+        as Markdown. Otherwise, it will be interpreted as plain text.
 
         If the user submitting this review already has a pending draft review
         on this review request, then this will update the existing draft and
@@ -195,11 +200,10 @@ class BaseReviewResource(MarkdownFieldsMixin, WebAPIResource):
                                'If a review is public, it cannot be made '
                                'private again.',
             },
-            'rich_text': {
-                'type': bool,
-                'description': 'Whether the body_top and body_bottom text '
-                               'is in rich-text (Markdown) format. '
-                               'The default is false.',
+            'text_type': {
+                'type': MarkdownFieldsMixin.SAVEABLE_TEXT_TYPES,
+                'description': 'The mode for the body_top and body_bottom '
+                               'text fields. The default is "plain".',
             },
         },
     )
@@ -209,14 +213,16 @@ class BaseReviewResource(MarkdownFieldsMixin, WebAPIResource):
         Only the owner of a review can make changes. One or more fields can
         be updated at once.
 
-        If ``rich_text`` is provided and changed to true, then the ``body_top``
-        and ``body_bottom`` fields will be set to be interpreted as Markdown.
-        When setting to true and not specifying one or both of those fields,
-        the existing text will be escaped so as not to be unintentionally
+        If ``text_type`` is provided and changed from the original value, then
+        the ``body_top`` and ``body_bottom`` fields will be set to be
+        interpreted according to the new type.
+
+        When setting to ``markdown`` and not specifying any new text, the
+        existing text will be escaped so as not to be unintentionally
         interpreted as Markdown.
 
-        If ``rich_text`` is changed to false, and one or both of those fields
-        are not provided, the existing text will be unescaped.
+        When setting to ``plain``, and new text is not provided, the existing
+        text will be unescaped.
 
         The only special field is ``public``, which, if set to true, will
         publish the review. The review will then be made publicly visible. Once
@@ -264,7 +270,7 @@ class BaseReviewResource(MarkdownFieldsMixin, WebAPIResource):
 
         old_rich_text = review.rich_text
 
-        for field in ('ship_it', 'body_top', 'body_bottom', 'rich_text'):
+        for field in ('ship_it', 'body_top', 'body_bottom'):
             value = kwargs.get(field, None)
 
             if value is not None:
@@ -272,6 +278,10 @@ class BaseReviewResource(MarkdownFieldsMixin, WebAPIResource):
                     value = value.strip()
 
                 setattr(review, field, value)
+
+        if 'text_type' in kwargs:
+            review.rich_text = \
+                (kwargs['text_type'] == self.TEXT_TYPE_MARKDOWN)
 
         self.normalize_markdown_fields(review, ['body_top', 'body_bottom'],
                                        old_rich_text, **kwargs)

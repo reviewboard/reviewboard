@@ -26,8 +26,12 @@ class ReviewReplyScreenshotCommentResource(BaseScreenshotCommentResource):
     changed on this list. However, if the reply is already published,
     then no changed can be made.
 
-    If the ``rich_text`` field is set to true, then ``text`` should be
-    interpreted by the client as Markdown text.
+    If the ``text_type`` field is set to ``markdown``, then the ``text``
+    field should be interpreted by the client as Markdown text.
+
+    The returned text in the payload can be provided in a different format
+    by passing ``?force-text-type=`` in the request. This accepts all the
+    possible values listed in the ``text_type`` field below.
     """
     allowed_methods = ('GET', 'POST', 'PUT', 'DELETE')
     model_parent_key = 'review'
@@ -62,8 +66,9 @@ class ReviewReplyScreenshotCommentResource(BaseScreenshotCommentResource):
         The new comment will contain the same dimensions of the comment
         being replied to, but may contain new text.
 
-        If ``rich_text`` is provided and set to true, then the the ``text``
-        field is expected to be in valid Markdown format.
+        If ``text_type`` is provided and set to ``markdown``, then the ``text``
+        field will be set to be interpreted as Markdown. Otherwise, it will be
+        interpreted as plain text.
         """
         try:
             resources.review_request.get_object(request, *args, **kwargs)
@@ -134,13 +139,16 @@ class ReviewReplyScreenshotCommentResource(BaseScreenshotCommentResource):
         This can only update the text in the comment. The comment being
         replied to cannot change.
 
-        If ``rich_text`` is provided and changed to true, then the ``text``
-        field will be set to be interpreted as Markdown. When setting to true
-        and not specifying any new text, the existing text will be escaped so
-        as not to be unintentionally interpreted as Markdown.
+        If ``text_type`` is provided and changed from the original value, then
+        the ``text`` field will be set to be interpreted according to the new
+        type.
 
-        If ``rich_text`` is changed to false, and new text is not provided,
-        the existing text will be unescaped.
+        When setting to ``markdown`` and not specifying any new text, the
+        existing text will be escaped so as not to be unintentionally
+        interpreted as Markdown.
+
+        When setting to ``plain``, and new text is not provided, the existing
+        text will be unescaped.
         """
         try:
             resources.review_request.get_object(request, *args, **kwargs)

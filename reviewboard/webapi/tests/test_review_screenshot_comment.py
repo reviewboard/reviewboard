@@ -71,7 +71,11 @@ class ResourceListTests(CommentListMixin, ReviewRequestChildListMixin,
         self.assertEqual(item_rsp['y'], comment.y)
         self.assertEqual(item_rsp['w'], comment.w)
         self.assertEqual(item_rsp['h'], comment.h)
-        self.assertEqual(item_rsp['rich_text'], comment.rich_text)
+
+        if comment.rich_text:
+            self.assertEqual(item_rsp['text_type'], 'markdown')
+        else:
+            self.assertEqual(item_rsp['text_type'], 'plain')
 
     #
     # HTTP GET tests
@@ -208,7 +212,11 @@ class ResourceItemTests(CommentItemMixin, ReviewRequestChildItemMixin,
         self.assertEqual(item_rsp['y'], comment.y)
         self.assertEqual(item_rsp['w'], comment.w)
         self.assertEqual(item_rsp['h'], comment.h)
-        self.assertEqual(item_rsp['rich_text'], comment.rich_text)
+
+        if comment.rich_text:
+            self.assertEqual(item_rsp['text_type'], 'markdown')
+        else:
+            self.assertEqual(item_rsp['text_type'], 'plain')
 
     def setup_review_request_child_test(self, review_request):
         screenshot = self.create_screenshot(review_request)
@@ -295,7 +303,7 @@ class ResourceItemTests(CommentItemMixin, ReviewRequestChildItemMixin,
 
     def check_put_result(self, user, item_rsp, comment, *args):
         comment = ScreenshotComment.objects.get(pk=comment.pk)
-        self.assertFalse(item_rsp['rich_text'])
+        self.assertEqual(item_rsp['text_type'], 'plain')
         self.assertEqual(item_rsp['text'], 'Test comment')
         self.compare_item(item_rsp, comment)
 

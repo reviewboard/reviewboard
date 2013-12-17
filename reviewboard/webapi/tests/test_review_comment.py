@@ -105,7 +105,11 @@ class ResourceListTests(CommentListMixin, ReviewRequestChildListMixin,
         self.assertEqual(item_rsp['issue_opened'], comment.issue_opened)
         self.assertEqual(item_rsp['first_line'], comment.first_line)
         self.assertEqual(item_rsp['num_lines'], comment.num_lines)
-        self.assertEqual(item_rsp['rich_text'], comment.rich_text)
+
+        if comment.rich_text:
+            self.assertEqual(item_rsp['text_type'], 'markdown')
+        else:
+            self.assertEqual(item_rsp['text_type'], 'plain')
 
     #
     # HTTP GET tests
@@ -188,7 +192,7 @@ class ResourceListTests(CommentListMixin, ReviewRequestChildListMixin,
     def check_post_result(self, user, rsp, review):
         comment_rsp = rsp['diff_comment']
         self.assertEqual(comment_rsp['text'], 'My new text')
-        self.assertFalse(comment_rsp['rich_text'])
+        self.assertEqual(comment_rsp['text_type'], 'plain')
 
         comment = Comment.objects.get(pk=comment_rsp['id'])
         self.compare_item(comment_rsp, comment)
@@ -326,7 +330,11 @@ class ResourceItemTests(CommentItemMixin, ReviewRequestChildItemMixin,
         self.assertEqual(item_rsp['issue_opened'], comment.issue_opened)
         self.assertEqual(item_rsp['first_line'], comment.first_line)
         self.assertEqual(item_rsp['num_lines'], comment.num_lines)
-        self.assertEqual(item_rsp['rich_text'], comment.rich_text)
+
+        if comment.rich_text:
+            self.assertEqual(item_rsp['text_type'], 'markdown')
+        else:
+            self.assertEqual(item_rsp['text_type'], 'plain')
 
     #
     # HTTP DELETE tests
@@ -427,7 +435,7 @@ class ResourceItemTests(CommentItemMixin, ReviewRequestChildItemMixin,
     def check_put_result(self, user, item_rsp, comment, *args):
         self.assertEqual(item_rsp['id'], comment.pk)
         self.assertEqual(item_rsp['text'], 'My new text')
-        self.assertFalse(item_rsp['rich_text'])
+        self.assertEqual(item_rsp['text_type'], 'plain')
         self.compare_item(item_rsp, Comment.objects.get(pk=comment.pk))
 
     def test_put_with_issue(self):

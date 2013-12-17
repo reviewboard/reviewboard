@@ -5,16 +5,16 @@ from reviewboard.webapi.tests.mixins import test_template
 
 class ReviewListMixin(object):
     @test_template
-    def test_post_with_rich_text_true(self):
-        """Testing the POST <URL> API with rich_text=true"""
-        self._test_post_with_rich_text(False)
+    def test_post_with_text_type_markdown(self):
+        """Testing the POST <URL> API with text_type=markdown"""
+        self._test_post_with_text_type('markdown')
 
     @test_template
-    def test_post_with_rich_text_false(self):
-        """Testing the POST <URL> API with rich_text=false"""
-        self._test_post_with_rich_text(False)
+    def test_post_with_text_type_plain(self):
+        """Testing the POST <URL> API with text_type=plain"""
+        self._test_post_with_text_type('plain')
 
-    def _test_post_with_rich_text(self, rich_text):
+    def _test_post_with_text_type(self, text_type):
         body_top = '`This` is **body_top**'
         body_bottom = '`This` is **body_bottom**'
 
@@ -24,7 +24,7 @@ class ReviewListMixin(object):
 
         data['body_top'] = body_top
         data['body_bottom'] = body_bottom
-        data['rich_text'] = rich_text
+        data['text_type'] = text_type
 
         rsp = self.apiPost(url, data, expected_mimetype=mimetype)
 
@@ -32,81 +32,81 @@ class ReviewListMixin(object):
         review_rsp = rsp[self.resource.item_result_key]
         self.assertEqual(review_rsp['body_top'], body_top)
         self.assertEqual(review_rsp['body_bottom'], body_bottom)
-        self.assertEqual(review_rsp['rich_text'], rich_text)
+        self.assertEqual(review_rsp['text_type'], text_type)
         self.compare_item(review_rsp,
                           self.resource.model.objects.get(pk=review_rsp['id']))
 
 
 class ReviewItemMixin(object):
     @test_template
-    def test_put_with_rich_text_true_all_fields(self):
+    def test_put_with_text_type_markdown_all_fields(self):
         """Testing the PUT <URL> API
-        with rich_text=true and all fields specified
+        with text_type=markdown and all fields specified
         """
-        self._test_put_with_rich_text_all_fields(True)
+        self._test_put_with_text_type_all_fields('markdown')
 
-    def test_put_with_rich_text_false_all_fields(self):
+    def test_put_with_text_type_plain_all_fields(self):
         """Testing the PUT <URL> API
-        with rich_text=false and all fields specified
+        with text_type=plain and all fields specified
         """
-        self._test_put_with_rich_text_all_fields(False)
+        self._test_put_with_text_type_all_fields('plain')
 
     @test_template
-    def test_put_with_rich_text_true_escaping_all_fields(self):
+    def test_put_with_text_type_markdown_escaping_all_fields(self):
         """Testing the PUT <URL> API
-        with changing rich_text to true and escaping all fields
+        with changing text_type to markdown and escaping all fields
         """
-        self._test_put_with_rich_text_escaping_all_fields(
-            True,
+        self._test_put_with_text_type_escaping_all_fields(
+            'markdown',
             '`This` is **body_top**',
             '`This` is **body_bottom**',
             r'\`This\` is \*\*body\_top\*\*',
             r'\`This\` is \*\*body\_bottom\*\*')
 
     @test_template
-    def test_put_with_rich_text_false_escaping_all_fields(self):
+    def test_put_with_text_type_plain_escaping_all_fields(self):
         """Testing the PUT <URL> API
-        with changing rich_text to false and unescaping all fields
+        with changing text_type to plain and unescaping all fields
         """
-        self._test_put_with_rich_text_escaping_all_fields(
-            False,
+        self._test_put_with_text_type_escaping_all_fields(
+            'plain',
             r'\`This\` is \*\*body\_top\*\*',
             r'\`This\` is \*\*body\_bottom\*\*',
             '`This` is **body_top**',
             '`This` is **body_bottom**')
 
     @test_template
-    def test_put_with_rich_text_true_escaping_unspecified_fields(self):
+    def test_put_with_text_type_markdown_escaping_unspecified_fields(self):
         """Testing the PUT <URL> API
-        with changing rich_text to true and escaping unspecified fields
+        with changing text_type to markdown and escaping unspecified fields
         """
-        self._test_put_with_rich_text_escaping_unspecified_fields(
-            True,
+        self._test_put_with_text_type_escaping_unspecified_fields(
+            'markdown',
             '`This` is **body_top**',
             r'\`This\` is \*\*body\_top\*\*')
 
     @test_template
-    def test_put_with_rich_text_false_escaping_unspecified_fields(self):
+    def test_put_with_text_type_plain_escaping_unspecified_fields(self):
         """Testing the PUT <URL> API
-        with changing rich_text to false and unescaping unspecified fields
+        with changing text_type to plain and unescaping unspecified fields
         """
-        self._test_put_with_rich_text_escaping_unspecified_fields(
-            False,
+        self._test_put_with_text_type_escaping_unspecified_fields(
+            'plain',
             r'\`This\` is \*\*body\_top\*\*',
             '`This` is **body_top**')
 
     @test_template
-    def test_put_without_rich_text_and_escaping_provided_fields(self):
+    def test_put_without_text_type_and_escaping_provided_fields(self):
         """Testing the PUT <URL> API
-        without changing rich_text and with escaping provided fields
+        without changing text_type and with escaping provided fields
         """
         url, mimetype, data, review, objs = \
             self.setup_basic_put_test(self.user, False, None, True)
         review.rich_text = True
         review.save()
 
-        if 'rich_text' in data:
-            del data['rich_text']
+        if 'text_type' in data:
+            del data['text_type']
 
         data.update({
             'body_top': '`This` is **body_top**',
@@ -117,7 +117,7 @@ class ReviewItemMixin(object):
 
         self.assertEqual(rsp['stat'], 'ok')
         review_rsp = rsp[self.resource.item_result_key]
-        self.assertTrue(review_rsp['rich_text'])
+        self.assertEqual(review_rsp['text_type'], 'markdown')
         self.assertEqual(review_rsp['body_top'],
                          r'\`This\` is \*\*body\_top\*\*')
         self.assertEqual(review_rsp['body_bottom'],
@@ -125,7 +125,7 @@ class ReviewItemMixin(object):
         self.compare_item(review_rsp,
                           self.resource.model.objects.get(pk=review_rsp['id']))
 
-    def _test_put_with_rich_text_all_fields(self, rich_text):
+    def _test_put_with_text_type_all_fields(self, text_type):
         body_top = '`This` is **body_top**'
         body_bottom = '`This` is **body_bottom**'
 
@@ -133,7 +133,7 @@ class ReviewItemMixin(object):
             self.setup_basic_put_test(self.user, False, None, True)
 
         data.update({
-            'rich_text': rich_text,
+            'text_type': text_type,
             'body_top': body_top,
             'body_bottom': body_bottom,
         })
@@ -142,51 +142,63 @@ class ReviewItemMixin(object):
 
         self.assertEqual(rsp['stat'], 'ok')
         review_rsp = rsp[self.resource.item_result_key]
-        self.assertEqual(review_rsp['rich_text'], rich_text)
+        self.assertEqual(review_rsp['text_type'], text_type)
         self.assertEqual(review_rsp['body_top'], body_top)
         self.assertEqual(review_rsp['body_bottom'], body_bottom)
         self.compare_item(review_rsp,
                           self.resource.model.objects.get(pk=review_rsp['id']))
 
-    def _test_put_with_rich_text_escaping_all_fields(
-            self, rich_text, body_top, body_bottom,
+    def _test_put_with_text_type_escaping_all_fields(
+            self, text_type, body_top, body_bottom,
             expected_body_top, expected_body_bottom):
+        self.assertIn(text_type, ('markdown', 'plain'))
 
         url, mimetype, data, review, objs = \
             self.setup_basic_put_test(self.user, False, None, True)
-        review.rich_text = not rich_text
         review.body_top = body_top
         review.body_bottom = body_bottom
+
+        if text_type == 'markdown':
+            review.rich_text = False
+        elif text_type == 'plain':
+            review.rich_text = True
+
         review.save()
 
         for field in ('body_top', 'body_bottom'):
             if field in data:
                 del data[field]
 
-        data['rich_text'] = rich_text
+        data['text_type'] = text_type
 
         rsp = self.apiPut(url, data, expected_mimetype=mimetype)
 
         self.assertEqual(rsp['stat'], 'ok')
         review_rsp = rsp[self.resource.item_result_key]
-        self.assertEqual(review_rsp['rich_text'], rich_text)
+        self.assertEqual(review_rsp['text_type'], text_type)
         self.assertEqual(review_rsp['body_top'], expected_body_top)
         self.assertEqual(review_rsp['body_bottom'], expected_body_bottom)
         self.compare_item(review_rsp,
                           self.resource.model.objects.get(pk=review_rsp['id']))
 
-    def _test_put_with_rich_text_escaping_unspecified_fields(
-            self, rich_text, body_top, expected_body_top):
+    def _test_put_with_text_type_escaping_unspecified_fields(
+            self, text_type, body_top, expected_body_top):
+        self.assertIn(text_type, ('markdown', 'plain'))
 
         body_bottom = '`This` is **body_bottom**'
 
         url, mimetype, data, review, objs = \
             self.setup_basic_put_test(self.user, False, None, True)
-        review.rich_text = not rich_text
         review.body_top = body_top
+
+        if text_type == 'markdown':
+            review.rich_text = False
+        elif text_type == 'plain':
+            review.rich_text = True
+
         review.save()
 
-        data['rich_text'] = rich_text
+        data['text_type'] = text_type
         data['body_bottom'] = body_bottom
 
         if 'body_top' in data:
@@ -196,7 +208,7 @@ class ReviewItemMixin(object):
 
         self.assertEqual(rsp['stat'], 'ok')
         review_rsp = rsp[self.resource.item_result_key]
-        self.assertEqual(review_rsp['rich_text'], rich_text)
+        self.assertEqual(review_rsp['text_type'], text_type)
         self.assertEqual(review_rsp['body_top'], expected_body_top)
         self.assertEqual(review_rsp['body_bottom'], body_bottom)
         self.compare_item(review_rsp,

@@ -13,8 +13,12 @@ class FileDiffCommentResource(BaseDiffCommentResource):
     purely as a way to see existing comments that were made on a diff. These
     comments will span all public reviews.
 
-    If the ``rich_text`` field is set to true, then ``text`` should be
-    interpreted by the client as Markdown text.
+    If the ``text_type`` field is set to ``markdown``, then the ``text``
+    field should be interpreted by the client as Markdown text.
+
+    The returned text in the payload can be provided in a different format
+    by passing ``?force-text-type=`` in the request. This accepts all the
+    possible values listed in the ``text_type`` field below.
     """
     allowed_methods = ('GET',)
     model_parent_key = 'filediff'

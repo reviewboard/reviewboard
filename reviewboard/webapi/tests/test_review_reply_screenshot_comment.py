@@ -42,7 +42,11 @@ class ResourceListTests(CommentReplyListMixin, ReviewRequestChildListMixin,
     def compare_item(self, item_rsp, comment):
         self.assertEqual(item_rsp['id'], comment.pk)
         self.assertEqual(item_rsp['text'], comment.text)
-        self.assertEqual(item_rsp['rich_text'], comment.rich_text)
+
+        if comment.rich_text:
+            self.assertEqual(item_rsp['text_type'], 'markdown')
+        else:
+            self.assertEqual(item_rsp['text_type'], 'plain')
 
     #
     # HTTP GET tests
@@ -101,7 +105,7 @@ class ResourceListTests(CommentReplyListMixin, ReviewRequestChildListMixin,
             ScreenshotComment.objects.get(pk=rsp['screenshot_comment']['id'])
         self.assertEqual(reply_comment.text, 'Test comment')
         self.assertEqual(reply_comment.reply_to, comment)
-        self.assertFalse(reply_comment.rich_text)
+        self.assertEqual(reply_comment.rich_text, False)
         self.compare_item(rsp['screenshot_comment'], reply_comment)
 
     def test_post_with_http_303(self):
@@ -162,7 +166,11 @@ class ResourceItemTests(CommentReplyItemMixin, ReviewRequestChildItemMixin,
     def compare_item(self, item_rsp, comment):
         self.assertEqual(item_rsp['id'], comment.pk)
         self.assertEqual(item_rsp['text'], comment.text)
-        self.assertEqual(item_rsp['rich_text'], comment.rich_text)
+
+        if comment.rich_text:
+            self.assertEqual(item_rsp['text_type'], 'markdown')
+        else:
+            self.assertEqual(item_rsp['text_type'], 'plain')
 
     #
     # HTTP DELETE tests

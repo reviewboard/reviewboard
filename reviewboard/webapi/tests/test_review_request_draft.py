@@ -29,9 +29,13 @@ class ResourceTests(BaseWebAPITestCase):
 
         self.assertEqual(item_rsp['description'], draft.description)
         self.assertEqual(item_rsp['testing_done'], draft.testing_done)
-        self.assertEqual(item_rsp['rich_text'], draft.rich_text)
-        self.assertEqual(item_rsp['rich_text'], changedesc.rich_text)
         self.assertEqual(item_rsp['changedescription'], changedesc.text)
+        self.assertEqual(draft.rich_text, changedesc.rich_text)
+
+        if draft.rich_text:
+            self.assertEqual(item_rsp['text_type'], 'markdown')
+        else:
+            self.assertEqual(item_rsp['text_type'], 'plain')
 
     #
     # HTTP DELETE tests
@@ -133,57 +137,57 @@ class ResourceTests(BaseWebAPITestCase):
         self.assertNotEqual(draft.changedesc, None)
         self.assertEqual(draft.changedesc.text, changedesc)
 
-    def test_put_with_rich_text_true_all_fields(self):
+    def test_put_with_text_type_markdown_all_fields(self):
         """Testing the PUT review-requests/<id>/draft/ API
-        with rich_text=true and all fields specified
+        with text_type=markdown and all fields specified
         """
-        self._test_put_with_rich_text_all_fields(True)
+        self._test_put_with_text_type_all_fields('markdown')
 
-    def test_put_with_rich_text_false_all_fields(self):
+    def test_put_with_text_type_plain_all_fields(self):
         """Testing the PUT review-requests/<id>/draft/ API
-        with rich_text=false and all fields specified
+        with text_type=plain and all fields specified
         """
-        self._test_put_with_rich_text_all_fields(False)
+        self._test_put_with_text_type_all_fields('plain')
 
-    def test_put_with_rich_text_true_escaping_all_fields(self):
+    def test_put_with_text_type_markdown_escaping_all_fields(self):
         """Testing the PUT review-requests/<id>/draft/ API
-        with changing rich_text to true and escaping all fields
+        with changing text_type to 'markdown' and escaping all fields
         """
-        self._test_put_with_rich_text_escaping_all_fields(
-            True,
+        self._test_put_with_text_type_escaping_all_fields(
+            'markdown',
             '`This` is a **test**',
             '\\`This\\` is a \\*\\*test\\*\\*')
 
-    def test_put_with_rich_text_false_unescaping_all_fields(self):
+    def test_put_with_text_type_plain_unescaping_all_fields(self):
         """Testing the PUT review-requests/<id>/draft/ API
-        with changing rich_text to false and unescaping all fields
+        with changing text_type to 'plain' and unescaping all fields
         """
-        self._test_put_with_rich_text_escaping_all_fields(
-            False,
+        self._test_put_with_text_type_escaping_all_fields(
+            'plain',
             '\\`This\\` is a \\*\\*test\\*\\*',
             '`This` is a **test**')
 
-    def test_put_with_rich_text_true_escaping_unspecified_fields(self):
+    def test_put_with_text_type_markdown_escaping_unspecified_fields(self):
         """Testing the PUT review-requests/<id>/draft/ API
-        with changing rich_text to true and escaping unspecified fields
+        with changing text_type to 'markdown' and escaping unspecified fields
         """
-        self._test_put_with_rich_text_escaping_unspecified_fields(
-            True,
+        self._test_put_with_text_type_escaping_unspecified_fields(
+            'markdown',
             '`This` is a **test**',
             '\\`This\\` is a \\*\\*test\\*\\*')
 
-    def test_put_with_rich_text_false_unescaping_unspecified_fields(self):
+    def test_put_with_text_type_plain_unescaping_unspecified_fields(self):
         """Testing the PUT review-requests/<id>/draft/ API
-        with changing rich_text to false and unescaping unspecified fields
+        with changing text_type to 'plain' and unescaping unspecified fields
         """
-        self._test_put_with_rich_text_escaping_unspecified_fields(
-            False,
+        self._test_put_with_text_type_escaping_unspecified_fields(
+            'plain',
             '\\`This\\` is a \\*\\*test\\*\\*',
             '`This` is a **test**')
 
-    def test_put_without_rich_text_and_escaping_provided_fields(self):
+    def test_put_without_text_type_and_escaping_provided_fields(self):
         """Testing the PUT review-requests/<id>/draft/ API
-        without changing rich_text and with escaping provided fields
+        without changing text_type and with escaping provided fields
         """
         review_request = self.create_review_request(submitter=self.user,
                                                     publish=True)
@@ -207,7 +211,7 @@ class ResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['stat'], 'ok')
 
         draft_rsp = rsp['draft']
-        self.assertTrue(draft_rsp['rich_text'])
+        self.assertEqual(draft_rsp['text_type'], 'markdown')
         self.assertEqual(draft_rsp['description'],
                          'This is \*\*Description\*\*')
         self.assertEqual(draft_rsp['testing_done'],
@@ -519,7 +523,7 @@ class ResourceTests(BaseWebAPITestCase):
         return self._create_update_review_request(
             apiFunc, expected_status, review_request, self.local_site_name)
 
-    def _test_put_with_rich_text_all_fields(self, rich_text):
+    def _test_put_with_text_type_all_fields(self, text_type):
         text = '`This` is a **test**'
 
         review_request = self.create_review_request(submitter=self.user,
@@ -528,7 +532,7 @@ class ResourceTests(BaseWebAPITestCase):
         rsp = self.apiPut(
             get_review_request_draft_url(review_request),
             {
-                'rich_text': rich_text,
+                'text_type': text_type,
                 'changedescription': text,
                 'description': text,
                 'testing_done': text,
@@ -538,7 +542,7 @@ class ResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['stat'], 'ok')
 
         draft_rsp = rsp['draft']
-        self.assertEqual(draft_rsp['rich_text'], rich_text)
+        self.assertEqual(draft_rsp['text_type'], text_type)
         self.assertEqual(draft_rsp['changedescription'], text)
         self.assertEqual(draft_rsp['description'], text)
         self.assertEqual(draft_rsp['testing_done'], text)
@@ -546,8 +550,10 @@ class ResourceTests(BaseWebAPITestCase):
         draft = ReviewRequestDraft.objects.get(pk=rsp['draft']['id'])
         self.compare_item(draft_rsp, draft)
 
-    def _test_put_with_rich_text_escaping_all_fields(
-            self, rich_text, text, expected_text):
+    def _test_put_with_text_type_escaping_all_fields(
+            self, text_type, text, expected_text):
+        self.assertIn(text_type, ('markdown', 'plain'))
+        rich_text = (text_type == 'markdown')
 
         review_request = self.create_review_request(submitter=self.user,
                                                     publish=True)
@@ -563,14 +569,14 @@ class ResourceTests(BaseWebAPITestCase):
         rsp = self.apiPut(
             get_review_request_draft_url(review_request),
             {
-                'rich_text': rich_text,
+                'text_type': text_type,
             },
             expected_mimetype=review_request_draft_item_mimetype)
 
         self.assertEqual(rsp['stat'], 'ok')
 
         draft_rsp = rsp['draft']
-        self.assertEqual(draft_rsp['rich_text'], rich_text)
+        self.assertEqual(draft_rsp['text_type'], text_type)
         self.assertEqual(draft_rsp['changedescription'], expected_text)
         self.assertEqual(draft_rsp['description'], expected_text)
         self.assertEqual(draft_rsp['testing_done'], expected_text)
@@ -578,8 +584,10 @@ class ResourceTests(BaseWebAPITestCase):
         draft = ReviewRequestDraft.objects.get(pk=rsp['draft']['id'])
         self.compare_item(draft_rsp, draft)
 
-    def _test_put_with_rich_text_escaping_unspecified_fields(
-            self, rich_text, text, expected_text):
+    def _test_put_with_text_type_escaping_unspecified_fields(
+            self, text_type, text, expected_text):
+        self.assertIn(text_type, ('markdown', 'plain'))
+        rich_text = (text_type == 'markdown')
 
         description = '`This` is the **description**'
 
@@ -597,7 +605,7 @@ class ResourceTests(BaseWebAPITestCase):
         rsp = self.apiPut(
             get_review_request_draft_url(review_request),
             {
-                'rich_text': rich_text,
+                'text_type': text_type,
                 'description': description,
             },
             expected_mimetype=review_request_draft_item_mimetype)
@@ -605,7 +613,7 @@ class ResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['stat'], 'ok')
 
         draft_rsp = rsp['draft']
-        self.assertEqual(draft_rsp['rich_text'], rich_text)
+        self.assertEqual(draft_rsp['text_type'], text_type)
         self.assertEqual(draft_rsp['changedescription'], expected_text)
         self.assertEqual(draft_rsp['description'], description)
         self.assertEqual(draft_rsp['testing_done'], expected_text)
