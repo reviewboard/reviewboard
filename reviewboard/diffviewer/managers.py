@@ -3,6 +3,7 @@ from __future__ import unicode_literals
 import os
 
 from django.db import models
+from django.db.models import Q
 from django.utils.encoding import smart_unicode
 from django.utils.translation import ugettext as _
 from djblets.db.fields import Base64DecodedValue
@@ -11,6 +12,58 @@ from djblets.siteconfig.models import SiteConfiguration
 from reviewboard.diffviewer.differ import DEFAULT_DIFF_COMPAT_VERSION
 from reviewboard.diffviewer.errors import DiffTooBigError, EmptyDiffError
 from reviewboard.scmtools.core import PRE_CREATION, UNKNOWN, FileNotFoundError
+
+
+class FileDiffManager(models.Manager):
+    """A manager for FileDiff objects.
+
+    This contains utility methods for locating FileDiffs that haven't been
+    migrated to use FileDiffData.
+    """
+    def unmigrated(self):
+        """Queries FileDiffs that store their own diff content."""
+        return self.exclude(
+            Q(diff_hash__isnull=False) &
+            (Q(parent_diff_hash__isnull=False) | Q(parent_diff64='')))
+
+    def migrate_all(self):
+        """Migrates diff content in FileDiffs to use FileDiffData for storage.
+
+        This will run through all unmigrated FileDiffs and migrate them,
+        condensing their storage needs and removing the content from
+        FileDiffs.
+
+        This will return a dictionary with the result of the process.
+        """
+        filediffs = self.unmigrated()
+
+        total_diffs_migrated = 0
+        total_diff_size = 0
+        total_bytes_saved = 0
+
+        for filediff in filediffs:
+            total_diffs_migrated += 1
+
+            diff_size = len(filediff.diff64)
+            parent_diff_size = len(filediff.parent_diff64)
+
+            total_diff_size += diff_size + parent_diff_size
+
+            diff_hash_is_new, parent_diff_hash_is_new = \
+                filediff._migrate_diff_data(recalculate_counts=False)
+
+            if diff_size > 0 and not diff_hash_is_new:
+                total_bytes_saved += diff_size
+
+            if parent_diff_size > 0 and not parent_diff_hash_is_new:
+                total_bytes_saved += parent_diff_size
+
+        return {
+            'diffs_migrated': total_diffs_migrated,
+            'old_diff_size': total_diff_size,
+            'new_diff_size': total_diff_size - total_bytes_saved,
+            'bytes_saved': total_bytes_saved,
+        }
 
 
 class FileDiffDataManager(models.Manager):

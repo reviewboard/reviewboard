@@ -394,6 +394,12 @@ class Site(object):
                 (pkg_resources.parse_version(siteconfig.version) <
                  pkg_resources.parse_version("1.7")))
 
+    def get_diff_dedup_needed(self):
+        """Determines whether there's likely duplicate diff data stored."""
+        from reviewboard.diffviewer.models import FileDiff
+
+        return FileDiff.objects.unmigrated().count() > 0
+
     def get_settings_upgrade_needed(self):
         """Determines whether or not a settings upgrade is needed."""
         try:
@@ -1844,6 +1850,7 @@ class UpgradeCommand(Command):
     def run(self):
         site.setup_settings()
 
+        diff_dedup_needed = site.get_diff_dedup_needed()
         static_media_upgrade_needed = site.get_static_media_upgrade_needed()
         data_dir_exists = os.path.exists(
             os.path.join(site.install_dir, "data"))
@@ -1942,6 +1949,23 @@ class UpgradeCommand(Command):
             print()
             print("    $ rb-site manage %s resolve-check static-media" %
                   site.abs_install_dir)
+
+        if diff_dedup_needed:
+            print()
+            print('There are duplicate copies of diffs in your database that '
+                  'can be condensed.')
+            print('These are the result of posting several iterations of a '
+                  'change for review on')
+            print('older versions of Review Board.')
+            print()
+            print('Removing duplicate diff data will save space in your '
+                  'database and speed up')
+            print('future upgrades.')
+            print()
+            print('To condense duplicate diffs, type the following:')
+            print()
+            print('    $ rb-site manage %s condensediffs'
+                  % site.abs_install_dir)
 
 
 class ManageCommand(Command):
