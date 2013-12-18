@@ -983,6 +983,14 @@ body.admin #navbar {
     float: left;
   }
 
+  a {
+    text-decoration: none;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+
   p {
     font-size: 1.2em;
     margin: 0.5em 0;
@@ -993,7 +1001,10 @@ body.admin #navbar {
     font-size: 1.4em;
     margin: 0 0 0.5em 0;
     padding: 0;
-    text-decoration: none;
+
+    a {
+      color: inherit;
+    }
   }
 
   .logged-in {

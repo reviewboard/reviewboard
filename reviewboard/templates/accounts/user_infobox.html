@@ -1,19 +1,15 @@
-{% load i18n %}
-{% load djblets_deco %}
-{% load djblets_utils %}
 {% load gravatars %}
-{% load reviewtags %}
 
 <div class="infobox-content" class="vcard">
  <div class="infobox-pic" class="logo">
   {% gravatar requested_user 85 %}
  </div>
  <div class="infobox-text">
-  <h2 class="nickname">{{requested_user}}</h2>
+  <h2 class="nickname"><a href="{{requested_user.get_absolute_url}}">{{requested_user}}</a></h2>
 {% if show_profile %}
   <p class="fn">{{requested_user.first_name}} {{requested_user.last_name}}</p>
 {% if request.user.is_authenticated %}
-  <p class="email">{{requested_user.email}}</p>
+  <p class="email"><a href="mailto:{{requested_user.email}}">{{requested_user.email}}</a></p>
 {% endif %}
   <p class="logged-in">Last logged in {{requested_user.last_login|date:"F jS, Y"}}</p>
   <p class="joined">Joined {{requested_user.date_joined|date:"F jS, Y"}}</p>

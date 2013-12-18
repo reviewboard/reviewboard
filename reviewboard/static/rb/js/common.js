@@ -354,9 +354,10 @@ var gUserInfoBoxCache = {};
  * The infobox is displayed after a 1 second delay.
  */
 $.fn.user_infobox = function() {
-    var POPUP_DELAY_MS = 1000,
+    var POPUP_DELAY_MS = 500,
+        HIDE_DELAY_MS = 300,
         OFFSET_LEFT = -20,
-        OFFSET_TOP = -30,
+        OFFSET_TOP = 10,
         infobox = $("#user-infobox");
 
     if (infobox.length === 0) {
@@ -369,38 +370,53 @@ $.fn.user_infobox = function() {
             timeout = null,
             url = self.attr('href') + 'infobox/';
 
-        self.hover(
-            function() {
-                timeout = setTimeout(function() {
-                    var offset;
+        self.on('mouseover', function() {
+            timeout = setTimeout(function() {
+                var offset;
 
-                    if (!gUserInfoBoxCache[url]) {
-                        infobox
-                            .empty()
-                            .addClass("loading")
-                            .load(url, function(responseText) {
-                                gUserInfoBoxCache[url] = responseText;
-                                infobox.removeClass("loading");
-                                infobox.find('.gravatar').retinaGravatar();
-                            });
-                    } else {
-                        infobox.html(gUserInfoBoxCache[url]);
-                        infobox.find('.gravatar').retinaGravatar();
-                    }
-
-                    offset = self.offset();
-
+                if (!gUserInfoBoxCache[url]) {
                     infobox
-                        .move(offset.left + OFFSET_LEFT,
-                              offset.top - infobox.height() + OFFSET_TOP,
-                              "absolute")
-                        .show();
-                }, POPUP_DELAY_MS);
+                        .empty()
+                        .addClass("loading")
+                        .load(url, function(responseText) {
+                            gUserInfoBoxCache[url] = responseText;
+                            infobox.removeClass("loading");
+                            infobox.find('.gravatar').retinaGravatar();
+                        });
+                } else {
+                    infobox.html(gUserInfoBoxCache[url]);
+                    infobox.find('.gravatar').retinaGravatar();
+                }
+
+                offset = self.offset();
+
+                infobox
+                    .positionToSide(self, {
+                        side: 'tb',
+                        xOffset: OFFSET_LEFT,
+                        yDistance: OFFSET_TOP,
+                        fitOnScreen: true
+                    })
+                    .fadeIn();
+            }, POPUP_DELAY_MS);
+        });
+
+        $([self[0], infobox[0]]).on({
+            mouseover: function() {
+                if (infobox.is(':visible')) {
+                    clearTimeout(timeout);
+                }
             },
-            function() {
+            mouseout: function(e) {
                 clearTimeout(timeout);
-                infobox.hide();
-            });
+
+                if (infobox.is(':visible')) {
+                    timeout = setTimeout(function() {
+                        infobox.fadeOut();
+                    }, HIDE_DELAY_MS);
+                }
+            }
+        });
     });
 };
 
