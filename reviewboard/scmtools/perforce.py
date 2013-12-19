@@ -253,10 +253,12 @@ class PerforceTool(SCMTool):
     def __init__(self, repository):
         SCMTool.__init__(self, repository)
 
+        credentials = repository.get_credentials()
+
         self.client = self._create_client(
             str(repository.mirror_path or repository.path),
-            str(repository.username),
-            str(repository.password),
+            str(credentials['username']),
+            str(credentials['password'] or ''),
             str(repository.encoding),
             repository.extra_data.get('use_ticket_auth', False))
 

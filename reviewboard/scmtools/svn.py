@@ -86,8 +86,11 @@ class SVNTool(SCMTool):
         else:
             local_site_name = None
 
+        credentials = repository.get_credentials()
+
         self.config_dir, self.client = \
-            self.build_client(repository.username, repository.password,
+            self.build_client(credentials['username'],
+                              credentials['password'],
                               local_site_name)
 
         # If we assign a function to the pysvn Client that accesses anything
@@ -197,17 +200,17 @@ class SVNTool(SCMTool):
 
     def normalize_patch(self, patch, filename, revision=HEAD):
         """
-	If using Subversion, we need not only contract keywords in file, but
+        If using Subversion, we need not only contract keywords in file, but
         also in the patch. Otherwise, if a file with expanded keyword somehow
-	ends up in the repository (e.g. by first checking in a file without
-	svn:keywords and then setting svn:keywords in the repository), RB
-	won't be able to apply a patch to such file.
-	"""
+        ends up in the repository (e.g. by first checking in a file without
+        svn:keywords and then setting svn:keywords in the repository), RB
+        won't be able to apply a patch to such file.
+        """
         if revision != PRE_CREATION:
             keywords = self.get_keywords(filename, revision)
 
-	    if keywords:
-                return self.collapse_keywords(patch, keywords)
+        if keywords:
+            return self.collapse_keywords(patch, keywords)
 
         return patch
 
