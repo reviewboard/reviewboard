@@ -3,76 +3,68 @@
 
 {% block title %}{% trans "My Dashboard" %}{% endblock %}
 
+{% block bodytag %}<body id="dashboard_page">{% endblock %}
+
 {% block css %}
 {{block.super}}
-{% compressed_css "djblets-datagrid" %}
+{%  compressed_css "djblets-datagrid" %}
 {% endblock %}
 
 {% block content %}
-{% box "dashboard" %}
-<div id="dashboard-wrapper">
- <table class="datagrid" id="dashboard-navbar">
-  <colgroup>
-   <col class="summary" />
-   <col class="count" />
-  </colgroup>
-  <tbody>
-{% dashboard_entry "main-item" _("Starred Reviews")  "starred" %}
-{% dashboard_entry "main-item" _("Outgoing Reviews") "outgoing" %}
-{% dashboard_entry "main-item" _("Incoming Reviews") "incoming" %}
-{% dashboard_entry "sub-item"  _("To Me")            "to-me" %}
-{% for name, value in sidebar_counts.groups.items %}
-{%  dashboard_entry "sub-item" name "to-group" name %}
-{% endfor %}
-{% if sidebar_counts.starred_groups %}
-{%  dashboard_entry "main-item" _("Watched Groups") "watched-groups" %}
-{%  for name, value in sidebar_counts.starred_groups.items %}
-{%   dashboard_entry "sub-item" name "to-group" name %}
-{%  endfor %}
-{% endif %}
-{% dashboard_entry "main-item" _("All My Requests") "mine" %}
-{% for hook in sidebar_hooks %}
-{%  for main_entry in hook.entries %}
-{%   dashboard_entry "main-item" main_entry.label "url" main_entry.url %}
-{%   for sub_entry in main_entry.subitems %}
-{%    dashboard_entry "sub-item" sub_entry.label "url" sub_entry.url %}
+<div id="dashboard_container">
+{%  box "dashboard" %}
+ <div id="dashboard-wrapper">
+  <div id="dashboard_sidebar">
+   <table class="datagrid" id="dashboard-navbar">
+    <colgroup>
+     <col class="summary" />
+     <col class="count" />
+    </colgroup>
+    <tbody>
+{%   dashboard_entry "main-item" _("Starred Reviews")  "starred" %}
+{%   dashboard_entry "main-item" _("Outgoing Reviews") "outgoing" %}
+{%   dashboard_entry "main-item" _("Incoming Reviews") "incoming" %}
+{%   dashboard_entry "sub-item"  _("To Me")            "to-me" %}
+{%   for name, value in sidebar_counts.groups.items %}
+{%    dashboard_entry "sub-item" name "to-group" name %}
 {%   endfor %}
-{%  endfor %}
-{% endfor %}
-  </tbody>
- </table>
- <div id="dashboard-main" class="clearfix">
+{%   if sidebar_counts.starred_groups %}
+{%    dashboard_entry "main-item" _("Watched Groups") "watched-groups" %}
+{%    for name, value in sidebar_counts.starred_groups.items %}
+{%     dashboard_entry "sub-item" name "to-group" name %}
+{%    endfor %}
+{%   endif %}
+{%   dashboard_entry "main-item" _("All My Requests") "mine" %}
+{%   for hook in sidebar_hooks %}
+{%    for main_entry in hook.entries %}
+{%     dashboard_entry "main-item" main_entry.label "url" main_entry.url %}
+{%     for sub_entry in main_entry.subitems %}
+{%      dashboard_entry "sub-item" sub_entry.label "url" sub_entry.url %}
+{%     endfor %}
+{%    endfor %}
+{%   endfor %}
+    </tbody>
+   </table>
+  </div>
+  <div id="dashboard-main" class="clearfix">
 {{datagrid.render_listview}}
+  </div>
  </div>
+{%  endbox %}
 </div>
-{% endbox %}
 {% endblock content %}
 
 {% block scripts-post %}
 {{block.super}}
-{% compressed_js "djblets-datagrid" %}
+{%  compressed_js "djblets-datagrid" %}
+{%  compressed_js "dashboard" %}
 <script type="text/javascript">
     $(document).ready(function() {
-        var $dashboardWrapper = $('#dashboard-wrapper');
-
-        setInterval(function() {
-            var $editCols = $dashboardWrapper.find('.edit-columns');
-
-            $editCols
-                .width($editCols.width() - 1) {# Account for border #}
-                .children('img')
-                    .attr({
-                        src: '{% static "rb/images/spinner.gif" %}',
-                        width: 'auto',
-                        height: 'auto'
-                    });
-            $dashboardWrapper.load(window.location + ' #dashboard-wrapper',
-                                   function() {
-                $dashboardWrapper.find('time.timesince').timesince();
-                $dashboardWrapper.find('.datagrid-wrapper').datagrid();
-                $dashboardWrapper.find('.user').user_infobox();
-            });
-        }, 5 * 60 * 1000);
+        var dashboardView = new RB.DashboardView({
+            el: $('#dashboard_container'),
+            model: new RB.Dashboard()
+        });
+        dashboardView.render();
     });
 </script>
 {% endblock scripts-post %}

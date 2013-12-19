@@ -9,7 +9,8 @@ from django.template.defaultfilters import date
 from django.utils.datastructures import SortedDict
 from django.utils.html import conditional_escape
 from django.utils.translation import ugettext_lazy as _
-from djblets.datagrid.grids import Column, DateTimeColumn, DataGrid
+from djblets.datagrid.grids import (CheckboxColumn, Column, DateTimeColumn,
+                                    DataGrid)
 from djblets.util.compat import six
 from djblets.util.templatetags.djblets_utils import ageid
 
@@ -637,6 +638,7 @@ class DashboardDataGrid(ReviewRequestDataGrid):
     """
     new_updates = NewUpdatesColumn()
     my_comments = MyCommentsColumn()
+    selected = CheckboxColumn()
 
     def __init__(self, *args, **kwargs):
         local_site = kwargs.get('local_site', None)

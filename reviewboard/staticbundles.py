@@ -126,6 +126,13 @@ PIPELINE_JS = dict({
         ),
         'output_filename': 'rb/js/base.min.js',
     },
+    'dashboard': {
+        'source_filenames': (
+            'rb/js/dashboard/models/dashboardModel.js',
+            'rb/js/dashboard/views/dashboardView.js',
+        ),
+        'output_filename': 'rb/js/dashboard.min.js',
+    },
     'reviews': {
         'source_filenames': (
             # Note: These are roughly in dependency order.

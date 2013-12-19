@@ -1,14 +1,34 @@
 @import "defs.less";
 
 
+@dashboard-sidebar-width: 18em;
+
+
 /****************************************************************************
  * Dashboard
  ****************************************************************************/
+#dashboard_page {
+  overflow: hidden;
+
+  // This helps compensate for the shadow on the box.
+  padding-bottom: 3px;
+}
+
+#dashboard_container {
+  .box-container, .box, .box-inner, #dashboard-wrapper {
+    margin-bottom: 0;
+    height: 100%;
+  }
+
+  .box-sizing(border-box);
+}
+
 #dashboard-main {
   background: white;
   border-left: 1px @box-border-color solid;
+  height: 100%;
   vertical-align: top;
-  margin-left: 18em;
+  margin-left: @dashboard-sidebar-width;
   .border-radius(0 @box-inner-border-radius @box-inner-border-radius 0);
 
   table:after {
@@ -20,12 +40,20 @@
     color: @link-color;
   }
 
+  .datagrid-body-container {
+    overflow-y: auto;
+  }
+
   .datagrid-titlebox {
     .border-radius(0 @box-inner-border-radius 0 0);
   }
 
   .datagrid-title {
     background: transparent;
+  }
+
+  .datagrid-wrapper {
+    height: 100%;
   }
 
   .main {
@@ -37,10 +65,62 @@
   }
 }
 
-#dashboard-navbar {
-  float: left;
-  width: 18em;
 
+#dashboard_actions {
+  background: #333333;
+  color: white;
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  padding: 5.5em 0 0 0;
+  width: 100%;
+  .border-radius(@box-inner-border-radius 0 0 @box-inner-border-radius);
+  .box-sizing(border-box);
+  .opacity(98);
+
+  a {
+    color: white;
+    font-size: 110%;
+    text-decoration: none;
+  }
+
+  h2 {
+    font-size: 130%;
+  }
+
+  ul {
+    list-style: none;
+    margin: 3em 1em 1em 1em;
+    padding: 0;
+    text-align: right;
+
+    li {
+      margin: 1em 0;
+      padding: 0;
+    }
+  }
+
+  .count {
+    margin: 0 0 2em 0;
+    text-align: center;
+  }
+}
+
+#dashboard_actions_content {
+  padding: 8px;
+  position: fixed;
+  width: @dashboard-sidebar-width;
+  .box-sizing(border-box);
+}
+
+#dashboard_sidebar {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: @dashboard-sidebar-width;
+}
+
+#dashboard-navbar {
   td {
     padding: 5px 8px;
     word-break: break-all;
@@ -107,6 +187,7 @@
 
 #dashboard-wrapper {
   background-color: #E9E9E9;
+  position: relative;
   .border-radius(@box-inner-border-radius);
 }
 
