@@ -3261,11 +3261,46 @@ class RepositoryResource(WebAPIResource):
     allowed_methods = ('GET', 'POST', 'PUT', 'DELETE')
 
     @webapi_check_login_required
-    def get_queryset(self, request, local_site_name=None, *args, **kwargs):
+    def get_queryset(self, request, is_list=False, local_site_name=None,
+                     *args, **kwargs):
         local_site = _get_local_site(local_site_name)
-        return self.model.objects.accessible(request.user,
-                                             visible_only=True,
-                                             local_site=local_site)
+
+        queryset = self.model.objects.accessible(request.user,
+                                                 visible_only=True,
+                                                 local_site=local_site)
+
+        if is_list:
+            q = Q()
+
+            if 'name' in request.GET:
+                q = q & Q(name__in=request.GET.get('name').split(','))
+
+            if 'path' in request.GET:
+                paths = request.GET['path'].split(',')
+                q = q & (Q(path__in=paths) | Q(mirror_path__in=paths))
+
+            if 'name-or-path' in request.GET:
+                name_or_paths = request.GET['name-or-path'].split(',')
+                q = q & (Q(name__in=name_or_paths) |
+                         Q(path__in=name_or_paths) |
+                         Q(mirror_path__in=name_or_paths))
+
+            if 'tool' in request.GET:
+                q = q & Q(tool__name__in=request.GET['tool'].split(','))
+
+            if 'hosting-service' in request.GET:
+                q = q & Q(hosting_account__service_name__in=
+                          request.GET['hosting-service'].split(','))
+
+            if 'username' in request.GET:
+                usernames = request.GET['username'].split(',')
+
+                q = q & (Q(username__in=usernames) |
+                         Q(hosting_account__username__in=usernames))
+
+            queryset = queryset.filter(q).distinct()
+
+        return queryset
 
     def serialize_tool_field(self, obj, **kwargs):
         return obj.tool.name
@@ -3280,6 +3315,42 @@ class RepositoryResource(WebAPIResource):
         return repository.is_mutable_by(request.user)
 
     @webapi_check_local_site
+    @webapi_request_fields(
+        optional={
+            'name': {
+                'type': str,
+                'description': 'Filter repositories by one or more '
+                               'comma-separated names.',
+            },
+            'path': {
+                'type': str,
+                'description': 'Filter repositories by one or more '
+                               'comma-separated paths or mirror paths.',
+            },
+            'name-or-path': {
+                'type': str,
+                'description': 'Filter repositories by one or more '
+                               'comma-separated names, paths, or '
+                               'mirror paths.',
+            },
+            'tool': {
+                'type': str,
+                'description': 'Filter repositories by one or more '
+                               'comma-separated tool names.',
+            },
+            'hosting-service': {
+                'type': str,
+                'description': 'Filter repositories by one or more '
+                               'comma-separated hosting service IDs.',
+            },
+            'username': {
+                'type': str,
+                'description': 'Filter repositories by one or more '
+                               'comma-separated usernames.',
+            },
+        },
+        allow_unknown=True
+    )
     @augment_method_from(WebAPIResource)
     def get_list(self, request, *args, **kwargs):
         """Retrieves the list of repositories on the server.

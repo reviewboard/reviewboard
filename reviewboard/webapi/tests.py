@@ -18,6 +18,7 @@ from reviewboard.accounts.models import LocalSiteProfile
 from reviewboard.attachments.models import FileAttachment
 from reviewboard.changedescs.models import ChangeDescription
 from reviewboard.diffviewer.models import DiffSet
+from reviewboard.hostingsvcs.models import HostingServiceAccount
 from reviewboard.notifications.tests import EmailTestHelper
 from reviewboard.reviews.models import DefaultReviewer, \
                                        FileAttachmentComment, Group, \
@@ -668,6 +669,214 @@ class RepositoryResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(len(rsp['repositories']),
                          Repository.objects.accessible(self.user).count())
+
+    def test_get_repositories_with_name(self):
+        """Testing the GET repositories/?name= API"""
+        rsp = self.apiGet(self.get_list_url() + '?name=Review+Board+Git',
+                          expected_mimetype=self.list_mimetype)
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(len(rsp['repositories']), 1)
+        self.assertEqual(rsp['repositories'][0]['name'],
+                         'Review Board Git')
+
+    def test_get_repositories_with_name_many(self):
+        """Testing the GET repositories/?name= API and comma-separated list"""
+        rsp = self.apiGet(self.get_list_url() +
+                          '?name=Review+Board+Git,Review+Board+SVN',
+                          expected_mimetype=self.list_mimetype)
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(len(rsp['repositories']), 2)
+        self.assertEqual(rsp['repositories'][0]['name'],
+                         'Review Board Git')
+        self.assertEqual(rsp['repositories'][1]['name'],
+                         'Review Board SVN')
+
+    def test_get_repositories_with_path(self):
+        """Testing the GET repositories/?path= API"""
+        rsp = self.apiGet(self.get_list_url() +
+                          '?path=git://github.com/reviewboard/reviewboard.git',
+                          expected_mimetype=self.list_mimetype)
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(len(rsp['repositories']), 1)
+        self.assertEqual(rsp['repositories'][0]['name'],
+                         'Review Board Git')
+
+    def test_get_repositories_with_path_many(self):
+        """Testing the GET repositories/?path= API and comma-separated lists"""
+        rsp = self.apiGet(
+            self.get_list_url() +
+            '?path=git://github.com/reviewboard/reviewboard.git,'
+            'http://reviewboard.googlecode.com/svn',
+            expected_mimetype=self.list_mimetype)
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(len(rsp['repositories']), 2)
+        self.assertEqual(rsp['repositories'][0]['name'],
+                         'Review Board Git')
+        self.assertEqual(rsp['repositories'][1]['name'],
+                         'Review Board SVN')
+
+    def test_get_repositories_with_name_or_path(self):
+        """Testing the GET repositories/?name-or-path= API"""
+        rsp = self.apiGet(
+            self.get_list_url() + '?name-or-path=Review+Board+Git',
+            expected_mimetype=self.list_mimetype)
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(len(rsp['repositories']), 1)
+        self.assertEqual(rsp['repositories'][0]['name'],
+                         'Review Board Git')
+
+        rsp = self.apiGet(
+            self.get_list_url() +
+            '?name-or-path=git://github.com/reviewboard/reviewboard.git',
+            expected_mimetype=self.list_mimetype)
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(len(rsp['repositories']), 1)
+        self.assertEqual(rsp['repositories'][0]['name'],
+                         'Review Board Git')
+
+    def test_get_repositories_with_name_or_path_many(self):
+        """Testing the GET repositories/?name-or-path= API and comma-separated list"""
+        rsp = self.apiGet(
+            self.get_list_url() +
+            '?name-or-path=Review+Board+SVN,'
+            'git://github.com/reviewboard/reviewboard.git',
+            expected_mimetype=self.list_mimetype)
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(len(rsp['repositories']), 2)
+        self.assertEqual(rsp['repositories'][0]['name'],
+                         'Review Board SVN')
+        self.assertEqual(rsp['repositories'][1]['name'],
+                         'Review Board Git')
+
+    def test_get_repositories_with_tool(self):
+        """Testing the GET repositories/?tool= API"""
+        rsp = self.apiGet(self.get_list_url() + '?tool=Git',
+                          expected_mimetype=self.list_mimetype)
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(len(rsp['repositories']), 1)
+        self.assertEqual(rsp['repositories'][0]['name'],
+                         'Review Board Git')
+
+    def test_get_repositories_with_tool_many(self):
+        """Testing the GET repositories/?tool= API and comma-separated list"""
+        rsp = self.apiGet(self.get_list_url() + '?tool=Git,Subversion',
+                          expected_mimetype=self.list_mimetype)
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(len(rsp['repositories']), 4)
+        self.assertEqual(rsp['repositories'][0]['name'],
+                         'Review Board SVN')
+        self.assertEqual(rsp['repositories'][1]['name'],
+                         'Review Board Git')
+        self.assertEqual(rsp['repositories'][2]['name'],
+                         'V8 SVN')
+        self.assertEqual(rsp['repositories'][3]['name'],
+                         'Subversion SVN')
+
+    def test_get_repositories_with_hosting_service(self):
+        """Testing the GET repositories/?hosting-service= API"""
+        hosting_account = HostingServiceAccount.objects.create(
+            service_name='github',
+            username='my-username')
+
+        Repository.objects.create(
+            name='My New Repository',
+            path='https://example.com',
+            tool=Tool.objects.get(name='Git'),
+            hosting_account=hosting_account)
+
+        rsp = self.apiGet(self.get_list_url() + '?hosting-service=github',
+                          expected_mimetype=self.list_mimetype)
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(len(rsp['repositories']), 1)
+        self.assertEqual(rsp['repositories'][0]['name'],
+                         'My New Repository')
+
+    def test_get_repositories_with_hosting_service_many(self):
+        """Testing the GET repositories/?hosting-service= API and comma-separated list"""
+        hosting_account = HostingServiceAccount.objects.create(
+            service_name='github',
+            username='my-username')
+
+        Repository.objects.create(
+            name='My New Repository 1',
+            path='https://example.com',
+            tool=Tool.objects.get(name='Git'),
+            hosting_account=hosting_account)
+
+        hosting_account = HostingServiceAccount.objects.create(
+            service_name='beanstalk',
+            username='my-username')
+
+        Repository.objects.create(
+            name='My New Repository 2',
+            path='https://example.com',
+            tool=Tool.objects.get(name='Subversion'),
+            hosting_account=hosting_account)
+
+        rsp = self.apiGet(
+            self.get_list_url() + '?hosting-service=github,beanstalk',
+            expected_mimetype=self.list_mimetype)
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(len(rsp['repositories']), 2)
+        self.assertEqual(rsp['repositories'][0]['name'],
+                         'My New Repository 1')
+        self.assertEqual(rsp['repositories'][1]['name'],
+                         'My New Repository 2')
+
+    def test_get_repositories_with_username(self):
+        """Testing the GET repositories/?username= API"""
+        hosting_account = HostingServiceAccount.objects.create(
+            service_name='github',
+            username='my-username')
+
+        Repository.objects.create(
+            name='My New Repository 1',
+            path='https://example.com',
+            tool=Tool.objects.get(name='Git'),
+            hosting_account=hosting_account)
+
+        Repository.objects.create(
+            name='My New Repository 2',
+            path='https://example.com',
+            username='my-username',
+            tool=Tool.objects.get(name='Subversion'))
+
+        rsp = self.apiGet(self.get_list_url() + '?username=my-username',
+                          expected_mimetype=self.list_mimetype)
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(len(rsp['repositories']), 2)
+        self.assertEqual(rsp['repositories'][0]['name'],
+                         'My New Repository 1')
+        self.assertEqual(rsp['repositories'][1]['name'],
+                         'My New Repository 2')
+
+    def test_get_repositories_with_username_many(self):
+        """Testing the GET repositories/?username= API and comma-separated list"""
+        hosting_account = HostingServiceAccount.objects.create(
+            service_name='github',
+            username='my-username')
+
+        Repository.objects.create(
+            name='My New Repository 1',
+            path='https://example.com',
+            tool=Tool.objects.get(name='Git'),
+            hosting_account=hosting_account)
+
+        Repository.objects.create(
+            name='My New Repository 2',
+            path='https://example.com',
+            username='my-username-2',
+            tool=Tool.objects.get(name='Subversion'))
+
+        rsp = self.apiGet(
+            self.get_list_url() + '?username=my-username,my-username-2',
+            expected_mimetype=self.list_mimetype)
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(len(rsp['repositories']), 2)
+        self.assertEqual(rsp['repositories'][0]['name'],
+                         'My New Repository 1')
+        self.assertEqual(rsp['repositories'][1]['name'],
+                         'My New Repository 2')
 
     @add_fixtures(['test_site'])
     def test_get_repositories_with_site(self):
