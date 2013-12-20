@@ -66,6 +66,8 @@ class Group(models.Model):
     invite_only = models.BooleanField(_('invite only'), default=False)
     visible = models.BooleanField(default=True)
 
+    extra_data = JSONField(null=True)
+
     objects = ReviewGroupManager()
 
     def is_accessible_by(self, user):
@@ -264,6 +266,8 @@ class BaseReviewRequestDetails(models.Model):
     bugs_closed = models.CharField(_("bugs"), max_length=300, blank=True)
     branch = models.CharField(_("branch"), max_length=300, blank=True)
     rich_text = models.BooleanField(_("rich text"), default=False)
+
+    extra_data = JSONField(null=True)
 
     def _get_review_request(self):
         raise NotImplementedError
@@ -1827,6 +1831,8 @@ class Review(models.Model):
         blank=True)
 
     rich_text = models.BooleanField(_("rich text"), default=False)
+
+    extra_data = JSONField(null=True)
 
     # XXX Deprecated. This will be removed in a future release.
     reviewed_diffset = models.ForeignKey(

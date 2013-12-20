@@ -14,11 +14,14 @@ from reviewboard.webapi.tests.base import BaseWebAPITestCase
 from reviewboard.webapi.tests.mimetypes import \
     review_request_draft_item_mimetype
 from reviewboard.webapi.tests.mixins import BasicTestsMetaclass
+from reviewboard.webapi.tests.mixins_extra_data import (ExtraDataItemMixin,
+                                                        ExtraDataListMixin)
 from reviewboard.webapi.tests.urls import get_review_request_draft_url
 
 
 @six.add_metaclass(BasicTestsMetaclass)
-class ResourceTests(BaseWebAPITestCase):
+class ResourceTests(ExtraDataListMixin, ExtraDataItemMixin,
+                    BaseWebAPITestCase):
     """Testing the ReviewRequestDraftResource API tests."""
     fixtures = ['test_users']
     sample_api_url = 'review-requests/<id>/draft/'
@@ -29,6 +32,7 @@ class ResourceTests(BaseWebAPITestCase):
 
         self.assertEqual(item_rsp['description'], draft.description)
         self.assertEqual(item_rsp['testing_done'], draft.testing_done)
+        self.assertEqual(item_rsp['extra_data'], draft.extra_data)
         self.assertEqual(item_rsp['changedescription'], changedesc.text)
         self.assertEqual(draft.rich_text, changedesc.rich_text)
 
@@ -310,21 +314,6 @@ class ResourceTests(BaseWebAPITestCase):
 
         draft = review_request.get_draft()
         self.assertEqual(draft.depends_on.count(), 0)
-
-    def test_put_with_invalid_field_name(self):
-        """Testing the PUT review-requests/<id>/draft/ API
-        with Invalid Form Data error
-        """
-        review_request = self.create_review_request(submitter=self.user)
-
-        rsp = self.apiPut(
-            get_review_request_draft_url(review_request),
-            {'foobar': 'foo'},
-            expected_status=400)
-
-        self.assertEqual(rsp['stat'], 'fail')
-        self.assertEqual(rsp['err']['code'], INVALID_FORM_DATA.code)
-        self.assertTrue('foobar' in rsp['fields'])
 
     def test_put_with_permission_denied_error(self):
         """Testing the PUT review-requests/<id>/draft/ API

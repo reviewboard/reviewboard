@@ -16,6 +16,8 @@ from reviewboard.webapi.tests.base import BaseWebAPITestCase
 from reviewboard.webapi.tests.mimetypes import (review_request_item_mimetype,
                                                 review_request_list_mimetype)
 from reviewboard.webapi.tests.mixins import BasicTestsMetaclass
+from reviewboard.webapi.tests.mixins_extra_data import (ExtraDataItemMixin,
+                                                        ExtraDataListMixin)
 from reviewboard.webapi.tests.urls import (get_repository_item_url,
                                            get_review_request_item_url,
                                            get_review_request_list_url,
@@ -23,7 +25,7 @@ from reviewboard.webapi.tests.urls import (get_repository_item_url,
 
 
 @six.add_metaclass(BasicTestsMetaclass)
-class ResourceListTests(BaseWebAPITestCase):
+class ResourceListTests(ExtraDataListMixin, BaseWebAPITestCase):
     """Testing the ReviewRequestResource list API tests."""
     fixtures = ['test_users']
     basic_post_fixtures = ['test_scmtools']
@@ -33,6 +35,7 @@ class ResourceListTests(BaseWebAPITestCase):
     def compare_item(self, item_rsp, review_request):
         self.assertEqual(item_rsp['id'], review_request.display_id)
         self.assertEqual(item_rsp['summary'], review_request.summary)
+        self.assertEqual(item_rsp['extra_data'], review_request.extra_data)
 
     #
     # HTTP GET tests
@@ -702,16 +705,17 @@ class ResourceListTests(BaseWebAPITestCase):
 
 
 @six.add_metaclass(BasicTestsMetaclass)
-class ResourceItemTests(BaseWebAPITestCase):
+class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase):
     """Testing the ReviewRequestResource item API tests."""
     fixtures = ['test_users']
     sample_api_url = 'review-requests/<id>/'
     resource = resources.review_request
-    test_http_methods = ('DELETE', 'GET')
+    test_http_methods = ('DELETE', 'GET', 'PUT')
 
     def compare_item(self, item_rsp, review_request):
         self.assertEqual(item_rsp['id'], review_request.display_id)
         self.assertEqual(item_rsp['summary'], review_request.summary)
+        self.assertEqual(item_rsp['extra_data'], review_request.extra_data)
         self.assertEqual(item_rsp['absolute_url'],
                          self.base_url + review_request.get_absolute_url())
 
@@ -884,6 +888,25 @@ class ResourceItemTests(BaseWebAPITestCase):
     #
     # HTTP PUT tests
     #
+
+    def setup_basic_put_test(self, user, with_local_site, local_site_name,
+                             put_valid_data):
+        review_request = \
+            self.create_review_request(submitter=user, publish=True,
+                                       with_local_site=with_local_site)
+
+        return (get_review_request_item_url(review_request.display_id,
+                                            local_site_name),
+                review_request_item_mimetype,
+                {
+                    'extra_data.dummy': '',
+                },
+                review_request,
+                [])
+
+    def check_put_result(self, user, item_rsp, review_request):
+        review_request = ReviewRequest.objects.get(pk=review_request.pk)
+        self.compare_item(item_rsp, review_request)
 
     def test_put_status_discarded(self):
         """Testing the PUT review-requests/<id>/?status=discarded API"""

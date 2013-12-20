@@ -1,9 +1,11 @@
 from __future__ import unicode_literals
 
 from reviewboard.webapi.tests.mixins import test_template
+from reviewboard.webapi.tests.mixins_extra_data import (ExtraDataItemMixin,
+                                                        ExtraDataListMixin)
 
 
-class ReviewListMixin(object):
+class ReviewListMixin(ExtraDataListMixin):
     @test_template
     def test_post_with_text_type_markdown(self):
         """Testing the POST <URL> API with text_type=markdown"""
@@ -37,7 +39,7 @@ class ReviewListMixin(object):
                           self.resource.model.objects.get(pk=review_rsp['id']))
 
 
-class ReviewItemMixin(object):
+class ReviewItemMixin(ExtraDataItemMixin):
     @test_template
     def test_put_with_text_type_markdown_all_fields(self):
         """Testing the PUT <URL> API

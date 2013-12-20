@@ -13,12 +13,14 @@ from reviewboard.webapi.tests.base import BaseWebAPITestCase
 from reviewboard.webapi.tests.mimetypes import (review_group_item_mimetype,
                                                 review_group_list_mimetype)
 from reviewboard.webapi.tests.mixins import BasicTestsMetaclass
+from reviewboard.webapi.tests.mixins_extra_data import (ExtraDataItemMixin,
+                                                        ExtraDataListMixin)
 from reviewboard.webapi.tests.urls import (get_review_group_item_url,
                                            get_review_group_list_url)
 
 
 @six.add_metaclass(BasicTestsMetaclass)
-class ResourceListTests(BaseWebAPITestCase):
+class ResourceListTests(ExtraDataListMixin, BaseWebAPITestCase):
     """Testing the ReviewGroupResource list APIs."""
     fixtures = ['test_users']
     sample_api_url = 'groups/'
@@ -32,6 +34,7 @@ class ResourceListTests(BaseWebAPITestCase):
         self.assertEqual(item_rsp['mailing_list'], group.mailing_list)
         self.assertEqual(item_rsp['visible'], group.visible)
         self.assertEqual(item_rsp['invite_only'], group.invite_only)
+        self.assertEqual(item_rsp['extra_data'], group.extra_data)
         self.assertEqual(item_rsp['absolute_url'],
                          self.base_url + group.get_absolute_url())
 
@@ -151,7 +154,7 @@ class ResourceListTests(BaseWebAPITestCase):
 
 
 @six.add_metaclass(BasicTestsMetaclass)
-class ResourceItemTests(BaseWebAPITestCase):
+class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase):
     """Testing the ReviewGroupResource item APIs."""
     fixtures = ['test_users']
     sample_api_url = 'groups/<id>/'
@@ -166,6 +169,7 @@ class ResourceItemTests(BaseWebAPITestCase):
         self.assertEqual(item_rsp['mailing_list'], group.mailing_list)
         self.assertEqual(item_rsp['visible'], group.visible)
         self.assertEqual(item_rsp['invite_only'], group.invite_only)
+        self.assertEqual(item_rsp['extra_data'], group.extra_data)
 
     #
     # HTTP DELETE tests

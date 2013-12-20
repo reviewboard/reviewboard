@@ -46,6 +46,11 @@ class ReviewReplyResource(BaseReviewResource):
             'description': 'The response to the review content above '
                            'the comments.',
         },
+        'extra_data': {
+            'type': dict,
+            'description': 'Extra data as part of the reply. '
+                           'This can be set by the API or extensions.',
+        },
         'id': {
             'type': int,
             'description': 'The numeric ID of the reply.',
@@ -119,6 +124,7 @@ class ReviewReplyResource(BaseReviewResource):
                                'fields. The default is "plain".',
             },
         },
+        allow_unknown=True
     )
     def create(self, request, *args, **kwargs):
         """Creates a reply to a review.
@@ -141,6 +147,11 @@ class ReviewReplyResource(BaseReviewResource):
         return :http:`201`. Either way, this request will return without
         a payload and with a ``Location`` header pointing to the location of
         the new draft reply.
+
+        Extra data can be stored on the reply for later lookup by passing
+        ``extra_data.key_name=value``. The ``key_name`` and ``value`` can
+        be any valid strings. Passing a blank ``value`` will remove the key.
+        The ``extra_data.`` prefix is required.
         """
         try:
             review_request = \
@@ -199,6 +210,7 @@ class ReviewReplyResource(BaseReviewResource):
                                'mode unchanged.',
             },
         },
+        allow_unknown=True
     )
     def update(self, request, *args, **kwargs):
         """Updates a reply.
@@ -223,6 +235,11 @@ class ReviewReplyResource(BaseReviewResource):
         The only special field is ``public``, which, if set to true, will
         publish the reply. The reply will then be made publicly visible. Once
         public, the reply cannot be modified or made private again.
+
+        Extra data can be stored on the reply for later lookup by passing
+        ``extra_data.key_name=value``. The ``key_name`` and ``value`` can
+        be any valid strings. Passing a blank ``value`` will remove the key.
+        The ``extra_data.`` prefix is required.
         """
         try:
             resources.review_request.get_object(request, *args, **kwargs)
@@ -250,7 +267,8 @@ class ReviewReplyResource(BaseReviewResource):
         """
         pass
 
-    def _update_reply(self, request, reply, public=None, *args, **kwargs):
+    def _update_reply(self, request, reply, public=None, extra_fields={},
+                      *args, **kwargs):
         """Common function to update fields on a draft reply."""
         if not self.has_modify_permissions(request, reply):
             # Can't modify published replies or those not belonging
@@ -277,6 +295,8 @@ class ReviewReplyResource(BaseReviewResource):
 
         self.normalize_markdown_fields(reply, ['body_top', 'body_bottom'],
                                        old_rich_text, **kwargs)
+
+        self._import_extra_data(reply.extra_data, extra_fields)
 
         if public:
             reply.publish(user=request.user)

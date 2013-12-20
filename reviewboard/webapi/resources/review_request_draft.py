@@ -96,6 +96,11 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
             'type': six.text_type,
             'description': 'The new review request description.',
         },
+        'extra_data': {
+            'type': dict,
+            'description': 'Extra data as part of the draft. '
+                           'This can be set by the API or extensions.',
+        },
         'public': {
             'type': bool,
             'description': 'Whether or not the draft is public. '
@@ -235,6 +240,7 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
                                '"plain".',
             },
         },
+        allow_unknown=True
     )
     def create(self, *args, **kwargs):
         """Creates a draft of a review request.
@@ -248,6 +254,11 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
         ``changedescription``, ``description`` and ``testing_done`` fields
         will be set to be interpreted as Markdown. Otherwise, it will be
         interpreted as plain text.
+
+        Extra data can be stored on the review request for later lookup by
+        passing ``extra_data.key_name=value``. The ``key_name`` and ``value``
+        can be any valid strings. Passing a blank ``value`` will remove the
+        key.  The ``extra_data.`` prefix is required.
         """
         # A draft is a singleton. Creating and updating it are the same
         # operations in practice.
@@ -316,9 +327,10 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
                                'to leave the mode unchanged.',
             },
         },
+        allow_unknown=True
     )
     def update(self, request, always_save=False, local_site_name=None,
-               *args, **kwargs):
+               extra_fields={}, *args, **kwargs):
         """Updates a draft of a review request.
 
         This will update the draft with the newly provided data.
@@ -340,6 +352,11 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
 
         When setting to ``plain``, and new text is not provided, the existing
         text will be unescaped.
+
+        Extra data can be stored on the review request for later lookup by
+        passing ``extra_data.key_name=value``. The ``key_name`` and ``value``
+        can be any valid strings. Passing a blank ``value`` will remove the
+        key. The ``extra_data.`` prefix is required.
         """
         try:
             review_request = resources.review_request.get_object(
@@ -389,6 +406,8 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
 
         self.normalize_markdown_fields(draft, ['description', 'testing_done'],
                                        old_rich_text, **kwargs)
+
+        self._import_extra_data(draft.extra_data, extra_fields)
 
         if always_save or not invalid_fields:
             for obj in set(modified_objects):

@@ -34,6 +34,11 @@ class BaseReviewResource(MarkdownFieldsMixin, WebAPIResource):
             'type': six.text_type,
             'description': 'The review content above the comments.',
         },
+        'extra_data': {
+            'type': dict,
+            'description': 'Extra data as part of the review. '
+                           'This can be set by the API or extensions.',
+        },
         'id': {
             'type': int,
             'description': 'The numeric ID of the review.',
@@ -126,6 +131,7 @@ class BaseReviewResource(MarkdownFieldsMixin, WebAPIResource):
                                'text fields. The default is "plain".',
             },
         },
+        allow_unknown=True
     )
     def create(self, request, *args, **kwargs):
         """Creates a new review.
@@ -206,6 +212,7 @@ class BaseReviewResource(MarkdownFieldsMixin, WebAPIResource):
                                'text fields. The default is "plain".',
             },
         },
+        allow_unknown=True
     )
     def update(self, request, *args, **kwargs):
         """Updates the fields of an unpublished review.
@@ -261,7 +268,8 @@ class BaseReviewResource(MarkdownFieldsMixin, WebAPIResource):
         """
         pass
 
-    def _update_review(self, request, review, public=None, *args, **kwargs):
+    def _update_review(self, request, review, public=None, extra_fields={},
+                       *args, **kwargs):
         """Common function to update fields on a draft review."""
         if not self.has_modify_permissions(request, review):
             # Can't modify published reviews or those not belonging
@@ -285,6 +293,8 @@ class BaseReviewResource(MarkdownFieldsMixin, WebAPIResource):
 
         self.normalize_markdown_fields(review, ['body_top', 'body_bottom'],
                                        old_rich_text, **kwargs)
+
+        self._import_extra_data(review.extra_data, extra_fields)
 
         review.save()
 

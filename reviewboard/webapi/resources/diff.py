@@ -40,6 +40,11 @@ class DiffResource(WebAPIResource):
             'type': int,
             'description': 'The numeric ID of the diff.',
         },
+        'extra_data': {
+            'type': dict,
+            'description': 'Extra data as part of the diff. '
+                           'This can be set by the API or extensions.',
+        },
         'name': {
             'type': six.text_type,
             'description': 'The name of the diff, usually the filename.',
@@ -80,7 +85,7 @@ class DiffResource(WebAPIResource):
         resources.filediff,
     ]
 
-    allowed_methods = ('GET', 'POST')
+    allowed_methods = ('GET', 'POST', 'PUT')
 
     uri_object_key = 'diff_revision'
     model_object_key = 'revision'
@@ -208,9 +213,10 @@ class DiffResource(WebAPIResource):
                                'all diffs or repository types, depending on '
                                'how the diff was uploaded.',
             },
-        }
+        },
+        allow_unknown=True
     )
-    def create(self, request, *args, **kwargs):
+    def create(self, request, extra_fields={}, *args, **kwargs):
         """Creates a new diff by parsing an uploaded diff file.
 
         This will implicitly create the new Review Request draft, which can
@@ -241,6 +247,11 @@ class DiffResource(WebAPIResource):
 
             <Unified Diff Content Here>
             -- SoMe BoUnDaRy --
+
+        Extra data can be stored on the diff for later lookup by passing
+        ``extra_data.key_name=value``. The ``key_name`` and ``value`` can
+        be any valid strings. Passing a blank ``value`` will remove the key.
+        The ``extra_data.`` prefix is required.
         """
         # Prevent a circular dependency, as ReviewRequestDraftResource
         # needs DraftDiffResource, which needs DiffResource.
@@ -314,12 +325,51 @@ class DiffResource(WebAPIResource):
 
         draft.save()
 
+        if extra_fields:
+            self._import_extra_data(diffset.extra_data, extra_fields)
+            diffset.save(update_fields=['extra_data'])
+
         if discarded_diffset:
             discarded_diffset.delete()
 
         # E-mail gets sent when the draft is saved.
 
         return 201, {
+            self.item_result_key: diffset,
+        }
+
+    @webapi_login_required
+    @webapi_check_local_site
+    @webapi_response_errors(DOES_NOT_EXIST, NOT_LOGGED_IN, PERMISSION_DENIED)
+    @webapi_request_fields(
+        allow_unknown=True
+    )
+    def update(self, request, extra_fields={}, *args, **kwargs):
+        """Updates a diff.
+
+        This is used solely for updating extra data on a diff. The contents
+        of a diff cannot be modified.
+
+        Extra data can be stored on the diff for later lookup by passing
+        ``extra_data.key_name=value``. The ``key_name`` and ``value`` can
+        be any valid strings. Passing a blank ``value`` will remove the key.
+        The ``extra_data.`` prefix is required.
+        """
+        try:
+            review_request = \
+                resources.review_request.get_object(request, *args, **kwargs)
+            diffset = self.get_object(request, *args, **kwargs)
+        except ObjectDoesNotExist:
+            return DOES_NOT_EXIST
+
+        if not review_request.is_mutable_by(request.user):
+            return self._no_access_error(request.user)
+
+        if extra_fields:
+            self._import_extra_data(diffset.extra_data, extra_fields)
+            diffset.save(update_fields=['extra_data'])
+
+        return 200, {
             self.item_result_key: diffset,
         }
 

@@ -105,6 +105,7 @@ class ResourceListTests(CommentListMixin, ReviewRequestChildListMixin,
         self.assertEqual(item_rsp['issue_opened'], comment.issue_opened)
         self.assertEqual(item_rsp['first_line'], comment.first_line)
         self.assertEqual(item_rsp['num_lines'], comment.num_lines)
+        self.assertEqual(item_rsp['extra_data'], comment.extra_data)
 
         if comment.rich_text:
             self.assertEqual(item_rsp['text_type'], 'markdown')
@@ -257,50 +258,6 @@ class ResourceListTests(CommentListMixin, ReviewRequestChildListMixin,
         self.assertEqual(comment.filediff_id, filediff.pk)
         self.assertEqual(comment.interfilediff_id, interfilediff.pk)
 
-    def test_post_with_extra_fields(self):
-        """Testing the
-        POST review-requests/<id>/reviews/<id>/diff-comments/ API
-        with extra fields
-        """
-        comment_text = "This is a test comment."
-        extra_fields = {
-            'extra_data.foo': '123',
-            'extra_data.bar': '456',
-            'extra_data.baz': '',
-            'ignored': 'foo',
-        }
-
-        # Post the review request.
-        review_request = self.create_review_request(create_repository=True,
-                                                    submitter=self.user,
-                                                    publish=True)
-        diffset = self.create_diffset(review_request)
-        filediff = self.create_filediff(diffset)
-
-        # Post the review.
-        review = self.create_review(review_request, user=self.user)
-
-        rsp = self.apiPost(
-            get_review_diff_comment_list_url(review),
-            dict({
-                'filediff_id': filediff.pk,
-                'first_line': 1,
-                'num_lines': 5,
-                'text': comment_text,
-            }, **extra_fields),
-            expected_mimetype=review_diff_comment_item_mimetype)
-
-        comment = Comment.objects.get(pk=rsp['diff_comment']['id'])
-
-        self.assertTrue('foo' in comment.extra_data)
-        self.assertTrue('bar' in comment.extra_data)
-        self.assertFalse('baz' in comment.extra_data)
-        self.assertFalse('ignored' in comment.extra_data)
-        self.assertEqual(comment.extra_data['foo'],
-                         extra_fields['extra_data.foo'])
-        self.assertEqual(comment.extra_data['bar'],
-                         extra_fields['extra_data.bar'])
-
 
 @six.add_metaclass(BasicTestsMetaclass)
 class ResourceItemTests(CommentItemMixin, ReviewRequestChildItemMixin,
@@ -330,6 +287,7 @@ class ResourceItemTests(CommentItemMixin, ReviewRequestChildItemMixin,
         self.assertEqual(item_rsp['issue_opened'], comment.issue_opened)
         self.assertEqual(item_rsp['first_line'], comment.first_line)
         self.assertEqual(item_rsp['num_lines'], comment.num_lines)
+        self.assertEqual(item_rsp['extra_data'], comment.extra_data)
 
         if comment.rich_text:
             self.assertEqual(item_rsp['text_type'], 'markdown')
@@ -543,46 +501,3 @@ class ResourceItemTests(CommentItemMixin, ReviewRequestChildItemMixin,
             expected_mimetype=review_diff_comment_item_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(rsp['diff_comment']['issue_status'], '')
-
-    def test_put_with_extra_fields(self):
-        """Testing the
-        PUT review-requests/<id>/reviews/<id>/diff-comments/<id>/ API
-        with extra fields
-        """
-        extra_fields = {
-            'extra_data.foo': 'abc',
-            'extra_data.bar': '',
-            'ignored': 'foo',
-        }
-
-        comment_text = "This is a test comment."
-
-        review_request = self.create_review_request(create_repository=True,
-                                                    submitter=self.user,
-                                                    publish=True)
-        diffset = self.create_diffset(review_request)
-        filediff = self.create_filediff(diffset)
-        review = self.create_review(review_request, user=self.user)
-        comment = self.create_diff_comment(
-            review,
-            filediff,
-            text=comment_text,
-            extra_fields={
-                'foo': '123',
-                'bar': '456',
-            })
-
-        rsp = self.apiPut(
-            get_review_diff_comment_item_url(review, comment.pk),
-            extra_fields,
-            expected_mimetype=review_diff_comment_item_mimetype)
-        self.assertEqual(rsp['stat'], 'ok')
-
-        comment = Comment.objects.get(pk=rsp['diff_comment']['id'])
-
-        self.assertTrue('foo' in comment.extra_data)
-        self.assertFalse('bar' in comment.extra_data)
-        self.assertFalse('ignored' in comment.extra_data)
-        self.assertEqual(len(comment.extra_data), 1)
-        self.assertEqual(comment.extra_data['foo'],
-                         extra_fields['extra_data.foo'])

@@ -71,6 +71,11 @@ class ReviewGroupResource(WebAPIResource):
                            'who are not members. This does not prevent users '
                            'from accessing the group if they know it, though.',
         },
+        'extra_data': {
+            'type': dict,
+            'description': 'Extra data as part of the review group. '
+                           'This can be set by the API or extensions.',
+        },
     }
 
     item_child_resources = [
@@ -204,16 +209,22 @@ class ReviewGroupResource(WebAPIResource):
                 'description': 'Whether or not the group is invite-only. '
                                'The default is false.',
             },
-        }
+        },
+        allow_unknown=True
     )
     def create(self, request, name, display_name, mailing_list=None,
                visible=True, invite_only=False, local_site_name=None,
-               *args, **kargs):
+               extra_fields={}, *args, **kargs):
         """Creates a new review group.
 
         This will create a brand new review group with the given name
         and display name. The group will be public by default, unless
         specified otherwise.
+
+        Extra data can be stored on the group for later lookup by passing
+        ``extra_data.key_name=value``. The ``key_name`` and ``value`` can
+        be any valid strings. Passing a blank ``value`` will remove the key.
+        The ``extra_data.`` prefix is required.
         """
         local_site = self._get_local_site(local_site_name)
 
@@ -232,6 +243,10 @@ class ReviewGroupResource(WebAPIResource):
 
         if not is_new:
             return GROUP_ALREADY_EXISTS
+
+        if extra_fields:
+            self._import_extra_data(group.extra_data, extra_fields)
+            group.save(update_fields=['extra_data'])
 
         return 201, {
             self.item_result_key: group,
@@ -266,13 +281,19 @@ class ReviewGroupResource(WebAPIResource):
                 'type': bool,
                 'description': 'Whether or not the group is invite-only.'
             },
-        }
+        },
+        allow_unknown=True
     )
-    def update(self, request, name=None, *args, **kwargs):
+    def update(self, request, name=None, extra_fields={}, *args, **kwargs):
         """Updates an existing review group.
 
         All the fields of a review group can be modified, including the
         name, so long as it doesn't conflict with another review group.
+
+        Extra data can be stored on the group for later lookup by passing
+        ``extra_data.key_name=value``. The ``key_name`` and ``value`` can
+        be any valid strings. Passing a blank ``value`` will remove the key.
+        The ``extra_data.`` prefix is required.
         """
         try:
             group = self.get_object(request, *args, **kwargs)
@@ -299,6 +320,8 @@ class ReviewGroupResource(WebAPIResource):
 
             if val is not None:
                 setattr(group, field, val)
+
+        self._import_extra_data(group.extra_data, extra_fields)
 
         group.save()
 

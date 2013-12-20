@@ -103,6 +103,8 @@ class FileDiff(models.Model):
                                          related_name='parent_filediff_set')
     status = models.CharField(_("status"), max_length=1, choices=STATUSES)
 
+    extra_data = JSONField(null=True)
+
     objects = FileDiffManager()
 
     @property
@@ -292,6 +294,8 @@ class DiffSet(models.Model):
         _('commit ID'), max_length=64, blank=True, null=True, db_index=True,
         help_text=_('The ID/revision this change is built upon.'))
 
+    extra_data = JSONField(null=True)
+
     objects = DiffSetManager()
 
     def save(self, **kwargs):
@@ -338,6 +342,8 @@ class DiffSetHistory(models.Model):
         blank=True,
         null=True,
         default=None)
+
+    extra_data = JSONField(null=True)
 
     def __str__(self):
         return 'Diff Set History (%s revisions)' % self.diffsets.count()

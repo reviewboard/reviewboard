@@ -1,6 +1,8 @@
 from __future__ import unicode_literals
 
 from reviewboard.webapi.tests.mixins import test_template
+from reviewboard.webapi.tests.mixins_extra_data import (ExtraDataItemMixin,
+                                                        ExtraDataListMixin)
 
 
 class BaseCommentListMixin(object):
@@ -155,11 +157,11 @@ class BaseCommentItemMixin(object):
         self.compare_item(comment_rsp, comment)
 
 
-class CommentListMixin(BaseCommentListMixin):
+class CommentListMixin(ExtraDataListMixin, BaseCommentListMixin):
     pass
 
 
-class CommentItemMixin(BaseCommentItemMixin):
+class CommentItemMixin(ExtraDataItemMixin, BaseCommentItemMixin):
     pass
 
 

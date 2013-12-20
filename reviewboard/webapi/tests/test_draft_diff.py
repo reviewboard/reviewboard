@@ -13,12 +13,14 @@ from reviewboard.webapi.tests.base import BaseWebAPITestCase
 from reviewboard.webapi.tests.mimetypes import (diff_item_mimetype,
                                                 diff_list_mimetype)
 from reviewboard.webapi.tests.mixins import BasicTestsMetaclass
+from reviewboard.webapi.tests.mixins_extra_data import (ExtraDataItemMixin,
+                                                        ExtraDataListMixin)
 from reviewboard.webapi.tests.urls import (get_draft_diff_item_url,
                                            get_draft_diff_list_url)
 
 
 @six.add_metaclass(BasicTestsMetaclass)
-class ResourceListTests(BaseWebAPITestCase):
+class ResourceListTests(ExtraDataListMixin, BaseWebAPITestCase):
     """Testing the DraftDiffResource list APIs."""
     fixtures = ['test_users', 'test_scmtools']
     sample_api_url = 'review-requests/<id>/draft/diffs/'
@@ -30,6 +32,7 @@ class ResourceListTests(BaseWebAPITestCase):
         self.assertEqual(item_rsp['revision'], diffset.revision)
         self.assertEqual(item_rsp['basedir'], diffset.basedir)
         self.assertEqual(item_rsp['base_commit_id'], diffset.base_commit_id)
+        self.assertEqual(item_rsp['extra_data'], diffset.extra_data)
 
     #
     # HTTP GET tests
@@ -169,7 +172,7 @@ class ResourceListTests(BaseWebAPITestCase):
 
 
 @six.add_metaclass(BasicTestsMetaclass)
-class ResourceItemTests(BaseWebAPITestCase):
+class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase):
     """Testing the DraftDiffResource item APIs."""
     fixtures = ['test_users', 'test_scmtools']
     sample_api_url = 'review-requests/<id>/draft/diffs/<revision>/'
@@ -186,6 +189,7 @@ class ResourceItemTests(BaseWebAPITestCase):
         self.assertEqual(item_rsp['revision'], diffset.revision)
         self.assertEqual(item_rsp['basedir'], diffset.basedir)
         self.assertEqual(item_rsp['base_commit_id'], diffset.base_commit_id)
+        self.assertEqual(item_rsp['extra_data'], diffset.extra_data)
 
     #
     # HTTP GET tests
@@ -226,3 +230,26 @@ class ResourceItemTests(BaseWebAPITestCase):
         self.apiGet(
             get_draft_diff_item_url(review_request, diffset.revision),
             expected_status=403)
+
+    #
+    # HTTP PUT tests
+    #
+
+    def setup_basic_put_test(self, user, with_local_site, local_site_name,
+                             put_valid_data):
+        review_request = self.create_review_request(
+            create_repository=True,
+            with_local_site=with_local_site,
+            submitter=user)
+        diffset = self.create_diffset(review_request, draft=True)
+
+        return (get_draft_diff_item_url(review_request, diffset.revision,
+                                        local_site_name),
+                diff_item_mimetype,
+                {},
+                diffset,
+                [])
+
+    def check_put_result(self, user, item_rsp, diffset):
+        diffset = DiffSet.objects.get(pk=diffset.pk)
+        self.compare_item(item_rsp, diffset)

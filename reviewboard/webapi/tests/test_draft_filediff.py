@@ -7,13 +7,14 @@ from djblets.webapi.errors import INVALID_FORM_DATA
 
 from reviewboard import scmtools
 from reviewboard.attachments.models import FileAttachment
-from reviewboard.diffviewer.models import DiffSet
+from reviewboard.diffviewer.models import DiffSet, FileDiff
 from reviewboard.webapi.resources import resources
 from reviewboard.webapi.tests.base import BaseWebAPITestCase
 from reviewboard.webapi.tests.mimetypes import (diff_item_mimetype,
                                                 filediff_item_mimetype,
                                                 filediff_list_mimetype)
 from reviewboard.webapi.tests.mixins import BasicTestsMetaclass
+from reviewboard.webapi.tests.mixins_extra_data import ExtraDataItemMixin
 from reviewboard.webapi.tests.urls import (get_diff_list_url,
                                            get_draft_filediff_item_url,
                                            get_draft_filediff_list_url)
@@ -29,6 +30,7 @@ class ResourceListTests(BaseWebAPITestCase):
     def compare_item(self, item_rsp, filediff):
         self.assertEqual(item_rsp['id'], filediff.pk)
         self.assertEqual(item_rsp['source_file'], filediff.source_file)
+        self.assertEqual(item_rsp['extra_data'], filediff.extra_data)
 
     def setup_http_not_allowed_list_test(self, user):
         review_request = self.create_review_request(
@@ -75,12 +77,12 @@ class ResourceListTests(BaseWebAPITestCase):
 
 
 @six.add_metaclass(BasicTestsMetaclass)
-class ResourceItemTests(BaseWebAPITestCase):
+class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase):
     """Testing the DraftFileDiffResource item APIs."""
     fixtures = ['test_users', 'test_scmtools']
     sample_api_url = 'review-requests/<id>/draft/diffs/<revision>/files/<id>/'
     resource = resources.draft_filediff
-    test_http_methods = ('DELETE', 'GET')
+    test_http_methods = ('DELETE', 'GET', 'PUT')
 
     def setup_http_not_allowed_item_test(self, user):
         review_request = self.create_review_request(
@@ -94,6 +96,7 @@ class ResourceItemTests(BaseWebAPITestCase):
     def compare_item(self, item_rsp, filediff):
         self.assertEqual(item_rsp['id'], filediff.pk)
         self.assertEqual(item_rsp['source_file'], filediff.source_file)
+        self.assertEqual(item_rsp['extra_data'], filediff.extra_data)
 
     #
     # HTTP GET tests
@@ -129,6 +132,26 @@ class ResourceItemTests(BaseWebAPITestCase):
     #
     # HTTP PUT tests
     #
+
+    def setup_basic_put_test(self, user, with_local_site, local_site_name,
+                             put_valid_data):
+        review_request = self.create_review_request(
+            submitter=user,
+            with_local_site=with_local_site,
+            create_repository=True)
+        diffset = self.create_diffset(review_request, draft=True)
+        filediff = self.create_filediff(diffset)
+
+        return (get_draft_filediff_item_url(filediff, review_request,
+                                            local_site_name),
+                filediff_item_mimetype,
+                {},
+                filediff,
+                [])
+
+    def check_put_result(self, user, item_rsp, filediff):
+        filediff = FileDiff.objects.get(pk=filediff.pk)
+        self.compare_item(item_rsp, filediff)
 
     def test_put_with_new_file_and_dest_attachment_file(self):
         """Testing the PUT review-requests/<id>/diffs/<id>/files/<id>/ API

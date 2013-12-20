@@ -70,7 +70,7 @@ class DraftFileDiffResource(FileDiffResource):
     @webapi_login_required
     @webapi_response_errors(DOES_NOT_EXIST, NOT_LOGGED_IN, PERMISSION_DENIED)
     @webapi_request_fields(
-        required={
+        optional={
             'dest_attachment_file': {
                 'type': file,
                 'description': (
@@ -79,9 +79,20 @@ class DraftFileDiffResource(FileDiffResource):
                     'files.'
                 ),
             },
-        }
+        },
+        allow_unknown=True
     )
-    def update(self, request, *args, **kwargs):
+    def update(self, request, extra_fields={}, *args, **kwargs):
+        """Updates a per-file diff.
+
+        If this represents a binary file, then the contents of the binary
+        file can be uploaded before the review request is published.
+
+        Extra data can be stored for later lookup by passing
+        ``extra_data.key_name=value``. The ``key_name`` and ``value`` can be
+        any valid strings. Passing a blank ``value`` will remove the key. The
+        ``extra_data.`` prefix is required.
+        """
         try:
             filediff = self.get_object(request, *args, **kwargs)
             review_request_draft = filediff.diffset.review_request_draft.get()
@@ -131,6 +142,10 @@ class DraftFileDiffResource(FileDiffResource):
             form.create(dest_attachment_file,
                         review_request_draft.review_request,
                         filediff)
+
+        if extra_fields:
+            self._import_extra_data(filediff.extra_data, extra_fields)
+            filediff.save(update_fields=['extra_data'])
 
         return 200, {
             self.item_result_key: filediff,

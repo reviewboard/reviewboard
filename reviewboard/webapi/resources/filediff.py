@@ -7,7 +7,11 @@ from djblets.util.compat.six.moves.urllib.parse import quote as urllib_quote
 from djblets.util.decorators import augment_method_from
 from djblets.util.http import get_http_requested_mimetype, set_last_modified
 from djblets.webapi.core import WebAPIResponse
-from djblets.webapi.errors import DOES_NOT_EXIST
+from djblets.webapi.decorators import (webapi_login_required,
+                                       webapi_request_fields,
+                                       webapi_response_errors)
+from djblets.webapi.errors import (DOES_NOT_EXIST, INVALID_FORM_DATA,
+                                   NOT_LOGGED_IN, PERMISSION_DENIED)
 
 from reviewboard.attachments.models import FileAttachment
 from reviewboard.diffviewer.diffutils import (get_diff_files,
@@ -29,10 +33,16 @@ class FileDiffResource(WebAPIResource):
     """
     model = FileDiff
     name = 'file'
+    allowed_methods = ('GET', 'PUT')
     fields = {
         'id': {
             'type': int,
             'description': 'The numeric ID of the file diff.',
+        },
+        'extra_data': {
+            'type': dict,
+            'description': 'Extra data as part of the diff. '
+                           'This can be set by the API or extensions.',
         },
         'source_file': {
             'type': six.text_type,
@@ -331,6 +341,41 @@ class FileDiffResource(WebAPIResource):
             return self._get_diff_data(request, mimetype, *args, **kwargs)
         else:
             return super(FileDiffResource, self).get(request, *args, **kwargs)
+
+    @webapi_check_local_site
+    @webapi_login_required
+    @webapi_response_errors(DOES_NOT_EXIST, NOT_LOGGED_IN, PERMISSION_DENIED)
+    @webapi_request_fields(
+        allow_unknown=True
+    )
+    def update(self, request, extra_fields={}, *args, **kwargs):
+        """Updates a per-file diff.
+
+        This is used solely for updating extra data on a file's diff.
+        The contents of a diff cannot be modified.
+
+        Extra data can be stored for later lookup by passing
+        ``extra_data.key_name=value``. The ``key_name`` and ``value`` can be
+        any valid strings. Passing a blank ``value`` will remove the key. The
+        ``extra_data.`` prefix is required.
+        """
+        try:
+            review_request = \
+                resources.review_request.get_object(request, *args, **kwargs)
+            filediff = self.get_object(request, *args, **kwargs)
+        except ObjectDoesNotExist:
+            return DOES_NOT_EXIST
+
+        if not review_request.is_mutable_by(request.user):
+            return self._no_access_error(request.user)
+
+        if extra_fields:
+            self._import_extra_data(filediff.extra_data, extra_fields)
+            diffset.save(update_fields=['extra_data'])
+
+        return 200, {
+            self.item_result_key: filediff,
+        }
 
     def _get_patch(self, request, *args, **kwargs):
         try:

@@ -11,4 +11,5 @@ SEQUENCE = [
     'filediffdata_line_counts',
     'diffset_base_commit_id',
     'filediffdata_extra_data',
+    'all_extra_data',
 ]
