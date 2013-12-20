@@ -155,6 +155,8 @@ class HostingService(object):
 
         results = {}
 
+        assert tool_name in fields
+
         for field, value in fields[tool_name].iteritems():
             try:
                 results[field] = value % new_vars

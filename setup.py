@@ -148,6 +148,7 @@ setup(name=PACKAGE_NAME,
               'redmine = reviewboard.hostingsvcs.redmine:Redmine',
               'sourceforge = reviewboard.hostingsvcs.sourceforge:SourceForge',
               'trac = reviewboard.hostingsvcs.trac:Trac',
+              'unfuddle = reviewboard.hostingsvcs.unfuddle:Unfuddle',
               'versionone = reviewboard.hostingsvcs.versionone:VersionOne',
           ],
           'reviewboard.scmtools': [
