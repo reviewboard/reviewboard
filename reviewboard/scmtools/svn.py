@@ -209,8 +209,8 @@ class SVNTool(SCMTool):
         if revision != PRE_CREATION:
             keywords = self.get_keywords(filename, revision)
 
-        if keywords:
-            return self.collapse_keywords(patch, keywords)
+            if keywords:
+                return self.collapse_keywords(patch, keywords)
 
         return patch
 
