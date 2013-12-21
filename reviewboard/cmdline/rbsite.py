@@ -221,6 +221,9 @@ class Site(object):
         self.link_pkg_dir("reviewboard",
                           "htdocs/static/admin",
                           os.path.join(static_dir, 'admin'))
+        self.link_pkg_dir("djblets",
+                          "htdocs/static/djblets",
+                          os.path.join(static_dir, 'djblets'))
 
         # Remove any old media directories from old sites
         self.unlink_media_dir(os.path.join(media_dir, 'admin'))
