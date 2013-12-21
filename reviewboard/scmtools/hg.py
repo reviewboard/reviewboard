@@ -24,9 +24,11 @@ class HgTool(SCMTool):
     def __init__(self, repository):
         SCMTool.__init__(self, repository)
         if repository.path.startswith('http'):
+            credentials = repository.get_credentials()
+
             self.client = HgWebClient(repository.path,
-                                      repository.username,
-                                      repository.password)
+                                      credentials['username'],
+                                      credentials['password'])
         else:
             self.client = HgClient(repository.path, repository.local_site)
 

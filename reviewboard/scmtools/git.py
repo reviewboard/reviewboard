@@ -77,8 +77,11 @@ class GitTool(SCMTool):
         if repository.local_site:
             local_site_name = repository.local_site.name
 
+        credentials = repository.get_credentials()
+
         self.client = GitClient(repository.path, repository.raw_file_url,
-                                repository.username, repository.password,
+                                credentials['username'],
+                                credentials['password'],
                                 repository.encoding, local_site_name)
 
     def get_file(self, path, revision=HEAD):

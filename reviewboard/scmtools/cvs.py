@@ -38,10 +38,12 @@ class CVSTool(SCMTool):
     def __init__(self, repository):
         super(CVSTool, self).__init__(repository)
 
+        credentials = repository.get_credentials()
+
         self.cvsroot, self.repopath = \
             self.build_cvsroot(self.repository.path,
-                               self.repository.username,
-                               self.repository.password)
+                               credentials['username'],
+                               credentials['password'])
 
         local_site_name = None
 

@@ -86,6 +86,13 @@ class Beanstalk(HostingService):
         """
         return self.account.data.get('password', None) is not None
 
+    def get_password(self):
+        """Returns the password for this account.
+
+        This is needed for API calls and for Subversion.
+        """
+        return decrypt_password(self.account.data['password'])
+
     def get_file(self, repository, path, revision, base_commit_id=None,
                  *args, **kwargs):
         """Fetches a file from Beanstalk.
@@ -155,7 +162,7 @@ class Beanstalk(HostingService):
             data, headers = self._http_get(
                 url,
                 username=self.account.username,
-                password=decrypt_password(self.account.data['password']))
+                password=self.get_password())
 
             if raw_content:
                 return data

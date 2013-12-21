@@ -538,12 +538,23 @@ class RepositoryForm(forms.ModelForm):
 
         if (hosting_service_cls.needs_authorization and
             not hosting_account.is_authorized):
+            # Attempt to authorize the account.
+            hosting_service = None
+
+            if hosting_service_cls:
+                hosting_service = hosting_service_cls(hosting_account)
+
+            repository_extra_data = self._build_repository_extra_data(
+                hosting_service, hosting_type)
+
             try:
                 hosting_account.service.authorize(
                     username, password,
-                    hosting_url,
+                    hosting_url=hosting_url,
                     two_factor_auth_code=two_factor_auth_code,
-                    local_site_name=self.local_site_name)
+                    tool_name=tool_name,
+                    local_site_name=self.local_site_name,
+                    **repository_extra_data)
             except TwoFactorAuthCodeRequiredError as e:
                 self.errors['hosting_account'] = \
                     self.error_class([unicode(e)])
@@ -1085,16 +1096,13 @@ class RepositoryForm(forms.ModelForm):
         hosting_service_cls = get_hosting_service(hosting_type)
         hosting_service = None
         plan = None
-        repository_extra_data = {}
 
         if hosting_service_cls:
             hosting_service = hosting_service_cls(
                 self.cleaned_data['hosting_account'])
-            plan = self.cleaned_data['repository_plan'] or self.DEFAULT_PLAN_ID
 
-            if hosting_type in self.repository_forms:
-                repository_extra_data = \
-                    self.repository_forms[hosting_type][plan].cleaned_data
+        repository_extra_data = self._build_repository_extra_data(
+            hosting_service, hosting_type)
 
         while 1:
             # Keep doing this until we have an error we don't want
@@ -1106,6 +1114,7 @@ class RepositoryForm(forms.ModelForm):
                         username=username,
                         password=password,
                         scmtool_class=scmtool_class,
+                        tool_name=tool.name,
                         local_site_name=self.local_site_name,
                         plan=plan,
                         **repository_extra_data)
@@ -1157,6 +1166,19 @@ class RepositoryForm(forms.ModelForm):
                 except UnicodeDecodeError:
                     text = six.text_type(e, 'ascii', 'replace')
                 raise ValidationError(text)
+
+    def _build_repository_extra_data(self, hosting_service, hosting_type):
+        """Builds extra repository data to pass to HostingService functions."""
+        repository_extra_data = {}
+
+        if hosting_service:
+            plan = self.cleaned_data['repository_plan'] or self.DEFAULT_PLAN_ID
+
+            if hosting_type in self.repository_forms:
+                repository_extra_data = \
+                    self.repository_forms[hosting_type][plan].cleaned_data
+
+        return repository_extra_data
 
     def _get_field_data(self, field):
         return self[field].data or self.fields[field].initial

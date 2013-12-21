@@ -174,6 +174,27 @@ class Repository(models.Model):
         else:
             return self.get_scmtool().supports_post_commit
 
+    def get_credentials(self):
+        """Returns the credentials for this repository.
+
+        This returns a dictionary with 'username' and 'password' keys.
+        By default, these will be the values stored for the repository,
+        but if a hosting service is used and the repository doesn't have
+        values for one or both of these, the hosting service's credentials
+        (if available) will be used instead.
+        """
+        username = self.username
+        password = self.password
+
+        if self.hosting_account:
+            username = username or self.hosting_account.username
+            password = password or self.hosting_account.service.get_password()
+
+        return {
+            'username': username,
+            'password': password,
+        }
+
     def get_file(self, path, revision, base_commit_id=None, request=None):
         """Returns a file from the repository.
 

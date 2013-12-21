@@ -95,8 +95,11 @@ class SVNTool(SCMTool):
         else:
             local_site_name = None
 
+        credentials = repository.get_credentials()
+
         self.config_dir, self.client = \
-            self.build_client(repository.username, repository.password,
+            self.build_client(credentials['username'],
+                              credentials['password'],
                               local_site_name)
 
         # If we assign a function to the pysvn Client that accesses anything

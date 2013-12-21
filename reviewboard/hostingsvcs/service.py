@@ -62,6 +62,15 @@ class HostingService(object):
         """
         return False
 
+    def get_password(self):
+        """Returns the raw password for this hosting service.
+
+        Not all hosting services provide this, and not all would need it.
+        It's primarily used when building a Subversion client, or other
+        SCMTools that still need direct access to the repository itself.
+        """
+        return None
+
     def is_ssh_key_associated(self, repository, key):
         """Returns whether or not the key is associated with the repository.
 
@@ -164,6 +173,8 @@ class HostingService(object):
             new_vars['hosting_domain'] = urlparse(hosting_url)[1]
 
         results = {}
+
+        assert tool_name in fields
 
         for field, value in six.iteritems(fields[tool_name]):
             try:
