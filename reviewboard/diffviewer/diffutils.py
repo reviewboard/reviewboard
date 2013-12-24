@@ -22,6 +22,49 @@ ALPHANUM_RE = re.compile(r'\w')
 WHITESPACE_RE = re.compile(r'\s')
 
 
+def convert_to_unicode(s, encoding_list):
+    """Returns the passed string as a unicode object.
+
+    If conversion to unicode fails, we try the user-specified encoding, which
+    defaults to ISO 8859-15. This can be overridden by users inside the
+    repository configuration, which gives users repository-level control over
+    file encodings.
+
+    Ideally, we'd like to have per-file encodings, but this is hard. The best
+    we can do now is a comma-separated list of things to try.
+
+    Returns the encoding type which was used and the decoded unicode object.
+    """
+    if isinstance(s, six.text_type):
+        # Nothing to do
+        return s
+    elif isinstance(s, six.string_types):
+        try:
+            # First try strict utf-8
+            enc = 'utf-8'
+            return enc, unicode(s, enc)
+        except UnicodeError:
+            # Now try any candidate encodings
+            for e in encoding_list:
+                try:
+                    return e, unicode(s, e)
+                except UnicodeError:
+                    pass
+
+            # Finally, try to convert to unicode and replace all unknown
+            # characters.
+            try:
+                enc = 'utf-8'
+                return enc, unicode(s, enc, errors='replace')
+            except UnicodeError:
+                raise Exception(
+                    _("Diff content couldn't be converted to unicode using "
+                      "the following encodings: %s")
+                    % (['utf-8'] + encodings))
+    else:
+        raise TypeError('Value to convert is unexpected type %s', type(s))
+
+
 def convert_line_endings(data):
     # Files without a trailing newline come out of Perforce (and possibly
     # other systems) with a trailing \r. Diff will see the \r and
@@ -110,7 +153,7 @@ def patch(diff, file, filename, request=None):
     return data
 
 
-def get_original_file(filediff, request=None):
+def get_original_file(filediff, request, encoding_list):
     """
     Get a file either from the cache or the SCM, applying the parent diff if
     it exists.
@@ -127,6 +170,9 @@ def get_original_file(filediff, request=None):
             base_commit_id=filediff.diffset.base_commit_id,
             request=request)
 
+        # Convert to unicode before we do anything to manipulate the string.
+        encoding, data = convert_to_unicode(data, encoding_list)
+
         # Repository.get_file doesn't know or care about how we need line
         # endings to work. So, we'll just transform every time.
         #
@@ -139,6 +185,9 @@ def get_original_file(filediff, request=None):
         # duplicating the cached contents.
         data = convert_line_endings(data)
 
+        # Convert back to bytes using whichever encoding we used to decode.
+        data = data.encode(encoding)
+
     # If there's a parent diff set, apply it to the buffer.
     if filediff.parent_diff:
         data = patch(filediff.parent_diff, data, filediff.source_file,
@@ -147,7 +196,7 @@ def get_original_file(filediff, request=None):
     return data
 
 
-def get_patched_file(buffer, filediff, request=None):
+def get_patched_file(buffer, filediff, request):
     tool = filediff.diffset.repository.get_scmtool()
     diff = tool.normalize_patch(filediff.diff, filediff.source_file,
                                 filediff.source_revision)

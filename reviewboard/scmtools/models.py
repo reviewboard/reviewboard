@@ -421,6 +421,10 @@ class Repository(models.Model):
 
         return exists
 
+    def get_encoding_list(self):
+        """Returns a list of candidate text encodings for files"""
+        return self.encoding.split(',') or ['iso-8859-15']
+
     class Meta:
         verbose_name_plural = "Repositories"
         # TODO: the path:local_site unique constraint causes problems when

@@ -18,7 +18,8 @@ from pygments.formatters import HtmlFormatter
 
 from reviewboard.diffviewer.differ import get_differ
 from reviewboard.diffviewer.diffutils import (get_original_file,
-                                              get_patched_file)
+                                              get_patched_file,
+                                              convert_to_unicode)
 from reviewboard.diffviewer.opcode_generator import get_diff_opcode_generator
 
 
@@ -144,22 +145,24 @@ class DiffChunkGenerator(object):
 
     def _get_chunks_uncached(self):
         """Returns the list of chunks, bypassing the cache."""
-        old = get_original_file(self.filediff, self.request)
+        encoding_list = self.diffset.repository.get_encoding_list()
+
+        old = get_original_file(self.filediff, self.request, encoding_list)
         new = get_patched_file(old, self.filediff, self.request)
 
         if self.interfilediff:
             old = new
             interdiff_orig = get_original_file(self.interfilediff,
-                                               self.request)
+                                               self.request,
+                                               encoding_list)
             new = get_patched_file(interdiff_orig, self.interfilediff,
                                    self.request)
         elif self.force_interdiff:
             # Basically, revert the change.
             old, new = new, old
 
-        encoding = self.diffset.repository.encoding or 'iso-8859-15'
-        old = self._convert_to_utf8(old, encoding)
-        new = self._convert_to_utf8(new, encoding)
+        old = convert_to_unicode(old, encoding_list)[1]
+        new = convert_to_unicode(new, encoding_list)[1]
 
         # Normalize the input so that if there isn't a trailing newline, we add
         # it.
@@ -441,40 +444,6 @@ class DiffChunkGenerator(object):
         lexer.add_filter('codetagify')
 
         return highlight(data, lexer, NoWrapperHtmlFormatter()).splitlines()
-
-    def _convert_to_utf8(self, s, enc):
-        """Returns the passed string as a unicode string.
-
-        If conversion to UTF-8 fails, we try the user-specified encoding, which
-        defaults to ISO 8859-15.  This can be overridden by users inside the
-        repository configuration, which gives users repository-level control
-        over file encodings (file-level control is really, really hard).
-        """
-        if isinstance(s, unicode):
-            return s.encode('utf-8')
-        elif isinstance(s, basestring):
-            try:
-                # First try strict unicode (for when everything is valid utf-8)
-                return unicode(s, 'utf-8')
-            except UnicodeError:
-                # Now try any candidate encodings.
-                for e in enc.split(','):
-                    try:
-                        u = unicode(s, e)
-                        return u.encode('utf-8')
-                    except UnicodeError:
-                        pass
-
-                # Finally, try to convert to straight unicode and replace all
-                # unknown characters.
-                try:
-                    return unicode(s, 'utf-8', errors='replace')
-                except UnicodeError:
-                    raise Exception(
-                        _("Diff content couldn't be converted to UTF-8 "
-                          "using the following encodings: %s") % enc)
-        else:
-            raise TypeError("Value to convert is unexpected type %s", type(s))
 
     def _get_line_changed_regions(self, oldline, newline):
         """Returns regions of changes between two similar lines."""

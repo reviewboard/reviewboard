@@ -51,7 +51,9 @@ class OriginalFileResource(WebAPIResource):
             return DOES_NOT_EXIST
 
         try:
-            orig_file = get_original_file(filediff, request=request)
+            orig_file = get_original_file(
+                filediff, request,
+                filediff.diffset.repository.get_encoding_list())
         except Exception as e:
             logging.error("Error retrieving original file: %s", e, exc_info=1,
                           request=request)
