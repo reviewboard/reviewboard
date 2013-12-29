@@ -103,7 +103,7 @@
 
 <ul>
 {% for file in review_request.file_attachments.all %}
- <li><a href="{{domain_method}}://{{domain}}{{file.get_absolute_url}}">{{file.caption|default:file.filename}}</a></li>
+ <li><a href="{{file.get_absolute_url}}">{{file.caption|default:file.filename}}</a></li>
 {% endfor %}
 </ul>
 {% endif %}

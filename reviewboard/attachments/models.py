@@ -3,6 +3,7 @@ import os
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
+from djblets.siteconfig.models import SiteConfiguration
 
 from reviewboard.attachments.mimetypes import MimetypeHandler
 
@@ -96,4 +97,13 @@ class FileAttachment(models.Model):
         return self._comments
 
     def get_absolute_url(self):
-        return self.file.url
+        url = self.file.url
+
+        if url.startswith('http:') or url.startswith('https:'):
+            return url
+
+        siteconfig = SiteConfiguration.objects.get_current()
+
+        return '%s://%s%s' % (siteconfig.get('site_domain_method'),
+                              siteconfig.site.domain,
+                              url)
