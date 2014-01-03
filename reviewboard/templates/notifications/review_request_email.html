@@ -2,7 +2,6 @@
 {% load djblets_email %}
 {% load djblets_utils %}
 {% load reviewtags %}
-{% load staticfiles %}
 
 {% block content %}
 {% if changes and changes.status and review_request.status in "SD" %}
@@ -16,7 +15,7 @@
 <br />
 {% endif %}
 
-<table bgcolor="#fefadf" width="100%" cellspacing="0" cellpadding="8" style="background-image: url('{{domain_method}}://{{domain}}{% static "rb/images/review_request_box_top_bg.png" %}'); background-position: left top; background-repeat: repeat-x; border: 1px black solid;">
+<table bgcolor="#fefadf" width="100%" cellspacing="0" cellpadding="8" style="border: 1px black solid;">
  <tr>
   <td>
 
