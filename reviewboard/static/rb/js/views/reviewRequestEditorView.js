@@ -928,7 +928,8 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
                 },
                 url: SITE_ROOT + reviewRequest.get('localSitePrefix') +
                      'api/' + (options.resourceName || options.fieldName) + '/',
-                extraParams: options.extraParams
+                extraParams: options.extraParams,
+                width: 350
             })
             .on('autocompleteshow', function() {
                 /*

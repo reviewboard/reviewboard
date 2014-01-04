@@ -729,12 +729,16 @@ $.ui.rbautocomplete.select = function (options, input, select, config) {
             return this.visible() && (listItems.filter("." + CLASSES.ACTIVE)[0] || options.selectFirst && listItems[0]);
         },
         show: function() {
-            var offset = $(input).offset();
-            element.css({
-                width: typeof options.width == "string" || options.width > 0 ? options.width : $(input).width(),
-                top: offset.top + input.offsetHeight,
-                left: offset.left
-            }).show();
+            var $input = $(input),
+                $window = $(window),
+                $document = $(document),
+                offset = $input.offset(),
+                inputWidth = input.offsetWidth,
+                inputHeight = input.offsetHeight,
+                windowRight,
+                windowBottom,
+                width,
+                height;
 
             if(options.scroll) {
                 list.scrollTop(0);
@@ -760,6 +764,25 @@ $.ui.rbautocomplete.select = function (options, input, select, config) {
 
             $(input).triggerHandler("autocompleteshow", [{}, { options: options }], options["show"]);
 
+            width = (typeof options.width === "string" || options.width > 0
+                     ? options.width
+                     : inputWidth);
+            height = element.outerHeight(true);
+
+            windowBottom = $window.height() + $document.scrollTop();
+            windowRight = $window.width() + $document.scrollLeft();
+
+            element
+                .css({
+                    width: width,
+                    top: (offset.top + inputHeight + height > windowBottom
+                          ? offset.top - height
+                          : offset.top + inputHeight),
+                    left: (offset.left + width > windowRight
+                           ? offset.left + inputWidth - width
+                           : offset.left)
+                })
+                .show();
         },
         selected: function() {
             var selected = listItems && listItems.filter("." + CLASSES.ACTIVE).removeClass(CLASSES.ACTIVE);
