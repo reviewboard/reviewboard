@@ -23,6 +23,7 @@ RB.MarkdownEditorView = Backbone.View.extend({
     initialize: function(options) {
         this._codeMirror = null;
         this._value = '';
+        this._prevClientHeight = null;
 
         this.options = _.defaults(options || {}, this.defaultOptions);
     },
@@ -60,6 +61,7 @@ RB.MarkdownEditorView = Backbone.View.extend({
     setSize: function(width, height) {
         if (this._codeMirror) {
             this._codeMirror.setSize(width, height);
+            this._codeMirror.refresh();
         }
     },
 
@@ -119,11 +121,25 @@ RB.MarkdownEditorView = Backbone.View.extend({
         this._codeMirror = CodeMirror(this.el, codeMirrorOptions);
         this._codeMirror.setValue(this._value);
         this._value = '';
+        this._prevClientHeight = null;
 
         if (this.options.minHeight) {
             $(this._codeMirror.getWrapperElement())
                 .css('min-height', this.options.minHeight);
         }
+
+        this._codeMirror.on('viewportChange', _.bind(function() {
+            this.$el.triggerHandler('resize');
+        }, this));
+
+        this._codeMirror.on('change', _.bind(function() {
+            var clientHeight = this._codeMirror.getScrollInfo().clientHeight;
+
+            if (clientHeight !== this._prevClientHeight) {
+                this._prevClientHeight = clientHeight;
+                this.$el.triggerHandler('resize');
+            }
+        }, this));
 
         this.focus();
     },

@@ -367,6 +367,8 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
 
         this.draft = this.model.get('reviewRequest').draft;
         this.banner = null;
+        this._$main = null;
+        this._$extra = null;
 
         this.issueSummaryTableView = new RB.IssueSummaryTableView({
             el: $('#issue-summary'),
@@ -432,6 +434,8 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
         this._$attachments = $('#file-list');
         this._$attachmentsContainer = $(this._$attachments.parent()[0]);
         this._$bannersContainer = $('#review_request_banners');
+        this._$main = $('#review_request_main');
+        this._$extra = $('#review_request_extra');
 
         /*
          * Set up editors for every registered field.
@@ -458,6 +462,14 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
         this.dndUploader = new RB.DnDUploader({
             reviewRequestEditor: this.model
         });
+
+        /*
+         * Update the layout constraints any time these properties
+         * change. Also, right away.
+         */
+        $(window).resize(_.bind(this._resizeLayout, this));
+        this.model.on('change:editCount', this._resizeLayout, this);
+        this._resizeLayout();
 
         this.issueSummaryTableView.render();
 
@@ -828,10 +840,12 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
                 beginEdit: function() {
                     model.incr('editCount');
                 },
-                cancel: function() {
+                cancel: _.bind(function() {
+                    this._scheduleResizeLayout();
                     model.decr('editCount');
-                },
+                }, this),
                 complete: _.bind(function(e, value) {
+                    this._scheduleResizeLayout();
                     model.decr('editCount');
                     model.setDraftField(
                         fieldOptions.fieldName,
@@ -853,7 +867,8 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
                             }
                         }, fieldOptions),
                         this);
-                }, this)
+                }, this),
+                resize: _.bind(this._resizeLayout, this)
             });
 
         this.listenTo(
@@ -935,6 +950,87 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
                         .appendTo(resultsPane);
                 }
             });
+    },
+
+    /*
+     * Resizes the layout in response to size or position changes of fields.
+     *
+     * This will spread out the main text fields to cover the full height of
+     * the review request box's main area. That helps keep a consistent look
+     * and prevents a bunch of wasted-looking space.
+     */
+    _resizeLayout: function() {
+        var $lastContent = this._$main.children('.content:last-child'),
+            $lastEditable = $lastContent.children('.editable'),
+            lastContentTop = $lastContent.position().top,
+            editing = $lastEditable.inlineEditor('editing'),
+            $field = $lastEditable.inlineEditor('field'),
+            editor = $field.data('markdown-editor'),
+            contentHeight,
+            height;
+
+        /*
+         * Reset all the heights so we can do calculations based on their
+         * native sizes.
+         */
+        this._$main.height('auto')
+        $lastContent.height('auto');
+        editor.setSize(null, 'auto');
+        $lastEditable.height('auto');
+
+        /*
+         * Set the review request box's main height to take up the full
+         * amount of spaces between its top and the top of the "extra"
+         * pane (where the issue summary table and stuff live).
+         */
+        this._$main.outerHeight(this._$extra.offset().top -
+                                this._$main.offset().top);
+        height = this._$main.height();
+
+        if ($lastContent.outerHeight() + lastContentTop < height) {
+            $lastContent.outerHeight(height - lastContentTop);
+
+            /*
+             * Get the size of the content box, and factor in the padding at
+             * the bottom, to balance out position()'s calculation of the
+             * padding at the top. This ensures we get a height that matches
+             * the content area of the content box.
+             */
+            contentHeight = $lastContent.height() +
+                            $lastContent.getExtents('p', 't');
+
+            /*
+             * Set the height of the editor or the editable field placeholder,
+             * depending on whether we're in edit mode. There's no need to do
+             * both, since this logic will be called again when the state
+             * changes.
+             */
+            if (editing) {
+                editor.setSize(
+                    null,
+                    (contentHeight -
+                     $lastEditable.inlineEditor('buttons').outerHeight(true) -
+                     $field.position().top));
+            } else {
+                /*
+                 * It's possible to squish the editable element if we force
+                 * a size, so make sure it's always at least the natural
+                 * height.
+                 */
+                $lastEditable.outerHeight(
+                    Math.max($lastEditable.outerHeight(true),
+                             contentHeight -
+                             $lastEditable.position().top),
+                    true);
+            }
+        }
+    },
+
+    /*
+     * Schedules a layout resize after the stack unwinds.
+     */
+    _scheduleResizeLayout: function() {
+        _.defer(_.bind(this._resizeLayout, this));
     },
 
     /*
