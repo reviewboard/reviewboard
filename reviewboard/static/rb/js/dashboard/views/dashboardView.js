@@ -255,6 +255,7 @@ RB.DashboardView = Backbone.View.extend({
         this._$main = this._$wrapper.find('.datagrid-main');
 
         this._actionsView.$el.appendTo(this.$('#dashboard_sidebar'));
+        this._actionsView.delegateEvents();
 
         this.$('time.timesince').timesince();
         this.$('.user').user_infobox();
@@ -276,7 +277,7 @@ RB.DashboardView = Backbone.View.extend({
      */
     _startReloadTimer: function() {
         if (!this._reloadTimer) {
-            this._reloadTImer = setInterval(_.bind(this._reloadDashboard, this),
+            this._reloadTimer = setInterval(_.bind(this._reloadDashboard, this),
                                             this.RELOAD_INTERVAL_MS);
         }
     },
