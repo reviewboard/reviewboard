@@ -186,7 +186,7 @@ class Repository(models.Model):
         username = self.username
         password = self.password
 
-        if self.hosting_account:
+        if self.hosting_account and self.hosting_account.service:
             username = username or self.hosting_account.username
             password = password or self.hosting_account.service.get_password()
 
