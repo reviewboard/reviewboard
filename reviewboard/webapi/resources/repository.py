@@ -4,6 +4,7 @@ import logging
 from time import time
 
 from django.core.exceptions import ObjectDoesNotExist
+from django.db.models import Q
 from djblets.util.compat import six
 from djblets.util.decorators import augment_method_from
 from djblets.webapi.decorators import (webapi_login_required,
@@ -96,9 +97,40 @@ class RepositoryResource(WebAPIResource):
         local_site = self._get_local_site(local_site_name)
 
         if is_list:
-            return self.model.objects.accessible(request.user,
-                                                 visible_only=not show_invisible,
-                                                 local_site=local_site)
+            queryset = self.model.objects.accessible(
+                request.user,
+                visible_only=not show_invisible,
+                local_site=local_site)
+
+            q = Q()
+
+            if 'name' in request.GET:
+                q = q & Q(name__in=request.GET.get('name').split(','))
+
+            if 'path' in request.GET:
+                paths = request.GET['path'].split(',')
+                q = q & (Q(path__in=paths) | Q(mirror_path__in=paths))
+
+            if 'name-or-path' in request.GET:
+                name_or_paths = request.GET['name-or-path'].split(',')
+                q = q & (Q(name__in=name_or_paths) |
+                         Q(path__in=name_or_paths) |
+                         Q(mirror_path__in=name_or_paths))
+
+            if 'tool' in request.GET:
+                q = q & Q(tool__name__in=request.GET['tool'].split(','))
+
+            if 'hosting-service' in request.GET:
+                q = q & Q(hosting_account__service_name__in=
+                          request.GET['hosting-service'].split(','))
+
+            if 'username' in request.GET:
+                usernames = request.GET['username'].split(',')
+
+                q = q & (Q(username__in=usernames) |
+                         Q(hosting_account__username__in=usernames))
+
+            return queryset.filter(q).distinct()
         else:
             return self.model.objects.filter(local_site=local_site)
 
@@ -118,6 +150,37 @@ class RepositoryResource(WebAPIResource):
     @webapi_check_local_site
     @webapi_request_fields(
         optional=dict({
+            'name': {
+                'type': str,
+                'description': 'Filter repositories by one or more '
+                               'comma-separated names.',
+            },
+            'path': {
+                'type': str,
+                'description': 'Filter repositories by one or more '
+                               'comma-separated paths or mirror paths.',
+            },
+            'name-or-path': {
+                'type': str,
+                'description': 'Filter repositories by one or more '
+                               'comma-separated names, paths, or '
+                               'mirror paths.',
+            },
+            'tool': {
+                'type': str,
+                'description': 'Filter repositories by one or more '
+                               'comma-separated tool names.',
+            },
+            'hosting-service': {
+                'type': str,
+                'description': 'Filter repositories by one or more '
+                               'comma-separated hosting service IDs.',
+            },
+            'username': {
+                'type': str,
+                'description': 'Filter repositories by one or more '
+                               'comma-separated usernames.',
+            },
             'show-invisible': {
                 'type': bool,
                 'description': 'Whether to list only visible repositories or '
