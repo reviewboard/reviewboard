@@ -21,6 +21,7 @@ from reviewboard.changedescs.models import ChangeDescription
 from reviewboard.diffviewer.models import DiffSet, DiffSetHistory, FileDiff
 from reviewboard.attachments.models import FileAttachment
 from reviewboard.reviews.errors import PermissionError
+from reviewboard.reviews.fields import get_review_request_fields
 from reviewboard.reviews.managers import (DefaultReviewerManager,
                                           ReviewGroupManager,
                                           ReviewRequestManager,
@@ -269,7 +270,7 @@ class BaseReviewRequestDetails(models.Model):
 
     extra_data = JSONField(null=True)
 
-    def _get_review_request(self):
+    def get_review_request(self):
         raise NotImplementedError
 
     def get_bug_list(self):
@@ -299,7 +300,7 @@ class BaseReviewRequestDetails(models.Model):
         By accessing screenshots through this method, future review request
         lookups from the screenshots will be avoided.
         """
-        review_request = self._get_review_request()
+        review_request = self.get_review_request()
 
         for screenshot in self.screenshots.all():
             screenshot._review_request = review_request
@@ -314,7 +315,7 @@ class BaseReviewRequestDetails(models.Model):
         By accessing screenshots through this method, future review request
         lookups from the screenshots will be avoided.
         """
-        review_request = self._get_review_request()
+        review_request = self.get_review_request()
 
         for screenshot in self.inactive_screenshots.all():
             screenshot._review_request = review_request
@@ -328,7 +329,7 @@ class BaseReviewRequestDetails(models.Model):
         By accessing file attachments through this method, future review
         request lookups from the file attachments will be avoided.
         """
-        review_request = self._get_review_request()
+        review_request = self.get_review_request()
 
         for file_attachment in self.file_attachments.all():
             file_attachment._review_request = review_request
@@ -343,7 +344,7 @@ class BaseReviewRequestDetails(models.Model):
         By accessing file attachments through this method, future review
         request lookups from the file attachments will be avoided.
         """
-        review_request = self._get_review_request()
+        review_request = self.get_review_request()
 
         for file_attachment in self.inactive_file_attachments.all():
             file_attachment._review_request = review_request
@@ -871,6 +872,16 @@ class ReviewRequest(BaseReviewRequestDetails):
         except DiffSet.DoesNotExist:
             return None
 
+    def get_blocks(self):
+        """Returns the list of review request this one blocks.
+
+        The returned value will be cached for future lookups.
+        """
+        if not hasattr(self, '_blocks'):
+            self._blocks = list(self.blocks.all())
+
+        return self._blocks
+
     def save(self, update_counts=False, **kwargs):
         if update_counts or self.id is None:
             self._update_counts()
@@ -1137,10 +1148,12 @@ class ReviewRequest(BaseReviewRequestDetails):
                         profile__starred_review_requests=self,
                         local_site=local_site))
 
-    def _get_review_request(self):
+    def get_review_request(self):
         """Returns this review request.
 
-        This is an interface needed by ReviewRequestDetails.
+        This is provided so that consumers can be passed either a
+        ReviewRequest or a ReviewRequestDraft and retrieve the actual
+        ReviewRequest regardless of the object.
         """
         return self
 
@@ -1338,18 +1351,6 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
         if not self.changedesc and review_request.public:
             self.changedesc = ChangeDescription()
 
-        def update_field(a, b, name, record_changes=True):
-            # Apparently django models don't have __getattr__ or __setattr__,
-            # so we have to update __dict__ directly.  Sigh.
-            value = b.__dict__[name]
-            old_value = a.__dict__[name]
-
-            if old_value != value:
-                if record_changes and self.changedesc:
-                    self.changedesc.record_field_change(name, old_value, value)
-
-                a.__dict__[name] = value
-
         def update_list(a, b, name, record_changes=True, name_field=None):
             aset = set([x.id for x in a.all()])
             bset = set([x.id for x in b.all()])
@@ -1363,29 +1364,18 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
                 for item in b.all():
                     a.add(item)
 
-        update_field(review_request, self, 'summary')
-        update_field(review_request, self, 'description')
-        update_field(review_request, self, 'testing_done')
-        update_field(review_request, self, 'branch')
+        for field_cls in get_review_request_fields():
+            if field_cls.is_editable:
+                field = field_cls(review_request)
+                old_value = field.load_value(review_request)
+                new_value = field.load_value(self)
 
-        update_list(review_request.target_groups, self.target_groups,
-                    'target_groups', name_field="name")
-        update_list(review_request.target_people, self.target_people,
-                    'target_people', name_field="username")
-        update_list(review_request.depends_on, self.depends_on,
-                    'depends_on', name_field='summary')
+                if field.has_value_changed(old_value, new_value):
+                    field.save_value(new_value)
 
-        # Specifically handle bug numbers
-        old_bugs = review_request.get_bug_list()
-        new_bugs = self.get_bug_list()
-
-        if set(old_bugs) != set(new_bugs):
-            update_field(review_request, self, 'bugs_closed',
-                         record_changes=False)
-
-            if self.changedesc:
-                self.changedesc.record_field_change('bugs_closed',
-                                                    old_bugs, new_bugs)
+                    if self.changedesc:
+                        field.record_change_entry(self.changedesc,
+                                                  old_value, new_value)
 
         # Screenshots are a bit special.  The list of associated screenshots
         # can change, but so can captions within each screenshot.
@@ -1497,11 +1487,8 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
 
         return self.changedesc
 
-    def _get_review_request(self):
-        """Returns the associated review request.
-
-        This is an interface needed by ReviewRequestDetails.
-        """
+    def get_review_request(self):
+        """Returns the associated review request."""
         return self.review_request
 
     class Meta:

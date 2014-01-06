@@ -55,6 +55,7 @@ from reviewboard.reviews.datagrids import (DashboardDataGrid,
                                            SubmitterDataGrid,
                                            WatchedGroupDataGrid,
                                            get_sidebar_counts)
+from reviewboard.reviews.fields import get_review_request_field
 from reviewboard.reviews.models import (Comment,
                                         FileAttachmentComment,
                                         Group, ReviewRequest, Review,
@@ -410,7 +411,7 @@ def review_detail(request,
     else:
         draft_timestamp = ""
 
-    blocks = list(review_request.blocks.all())
+    blocks = review_request.get_blocks()
 
     etag = "%s:%s:%s:%s:%s:%s:%s:%s" % (
         request.user, last_activity_time, draft_timestamp,
@@ -616,66 +617,52 @@ def review_detail(request,
         fields_changed = []
 
         for name, info in six.iteritems(changedesc.fields_changed):
-            info = copy.deepcopy(info)
-            multiline = False
-            diff_revision = False
+            title = fields_changed_name_map.get(name, name)
+            field_cls = get_review_request_field(name)
+            change_info = {}
 
-            if 'added' in info or 'removed' in info:
-                change_type = 'add_remove'
-
-                # We don't hard-code URLs in the bug info, since the
-                # tracker may move, but we can do it here.
-                if (name == "bugs_closed" and
-                    review_request.repository and
-                    review_request.repository.bug_tracker):
-                    bug_url = review_request.repository.bug_tracker
-                    for field in info:
-                        for i, buginfo in enumerate(info[field]):
-                            try:
-                                full_bug_url = bug_url % buginfo[0]
-                                info[field][i] = (buginfo[0], full_bug_url)
-                            except TypeError:
-                                logging.warning("Invalid bugtracker url format")
-                elif name == "diff" and "added" in info:
-                    # Sets the incremental revision number for a review
-                    # request change, provided it is an updated diff.
-                    diff_revision = diffset_versions[info['added'][0][2]]
-
-            elif 'old' in info or 'new' in info:
-                change_type = 'changed'
-                multiline = (name == "description" or name == "testing_done")
-
-                # Branch text is allowed to have entities, so mark it safe.
-                if name == "branch":
-                    if 'old' in info:
-                        info['old'][0] = mark_safe(info['old'][0])
-
-                    if 'new' in info:
-                        info['new'][0] = mark_safe(info['new'][0])
-
+            if field_cls:
+                field = field_cls(review_request)
+                change_info['rendered_html'] = \
+                    mark_safe(field.render_change_entry_html(info))
+                title = field.label
+            elif name == 'diff':
+                # Sets the incremental revision number for a review
+                # request change, provided it is an updated diff.
+                added_diff_info = info['added'][0]
+                diff_revision = diffset_versions[added_diff_info[2]]
+                change_info.update({
+                    'diff_label': added_diff_info[0],
+                    'diff_url': added_diff_info[1],
+                    'past_revision': diff_revision - 1,
+                    'current_revision': diff_revision,
+                })
+            elif name == 'status':
                 # Make status human readable.
-                if name == 'status':
-                    if 'old' in info:
-                        info['old'][0] = status_to_string(info['old'][0])
+                if 'old' in info:
+                    change_info['old_status'] = \
+                        status_to_string(info['old'][0])
 
-                    if 'new' in info:
-                        info['new'][0] = status_to_string(info['new'][0])
-
-            elif name == "screenshot_captions":
-                change_type = 'screenshot_captions'
-            elif name == "file_captions":
-                change_type = 'file_captions'
+                if 'new' in info:
+                    change_info['new_status'] = \
+                        status_to_string(info['new'][0])
+            elif name in ('screenshot_captions', 'file_captions'):
+                change_info['captions'] = [
+                    {
+                        'old': caption['old'][0],
+                        'new': caption['new'][0],
+                    }
+                    for caption in six.itervalues(info)
+                ]
             else:
                 # No clue what this is. Bail.
                 continue
 
-            fields_changed.append({
-                'title': fields_changed_name_map.get(name, name),
-                'multiline': multiline,
-                'info': info,
-                'type': change_type,
-                'diff_revision': diff_revision,
+            change_info.update({
+                'name': name,
+                'title': title,
             })
+            fields_changed.append(change_info)
 
         # Expand the latest review change
         state = ''

@@ -9,12 +9,15 @@ from django.template import TemplateSyntaxError
 from django.template.defaultfilters import stringfilter
 from django.template.loader import render_to_string
 from django.utils.html import escape
+from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext_lazy as _
 from djblets.util.compat import six
 from djblets.util.decorators import basictag, blocktag
 from djblets.util.humanize import humanize_list
 
 from reviewboard.accounts.models import Profile
+from reviewboard.reviews.fields import (get_review_request_fieldset,
+                                        get_review_request_fieldsets)
 from reviewboard.reviews.markdown_utils import markdown_escape
 from reviewboard.reviews.models import (BaseComment, Group,
                                         ReviewRequest, ScreenshotComment,
@@ -269,6 +272,68 @@ def reviewer_list(review_request):
                           for group in review_request.target_groups.all()] +
                          [user.get_full_name() or user.username
                           for user in review_request.target_people.all()])
+
+
+@register.tag
+@blocktag(end_prefix='end_')
+def for_review_request_field(context, nodelist, review_request_details,
+                             fieldset):
+    """Loops through all fields in a fieldset.
+
+    This can take a fieldset instance or a fieldset ID.
+    """
+    s = []
+
+    if isinstance(fieldset, six.text_type):
+        fieldset = get_review_request_fieldset(fieldset)
+
+    for field_cls in fieldset.field_classes:
+        field = field_cls(review_request_details)
+
+        if field.should_render(field.value):
+            context.push()
+            context['field'] = field
+            s.append(nodelist.render(context))
+            context.pop()
+
+    return ''.join(s)
+
+
+@register.tag
+@blocktag(end_prefix='end_')
+def for_review_request_fieldset(context, nodelist, review_request_details):
+    """Loops through all fieldsets.
+
+    This skips the "main" fieldset, as that's handled separately by the
+    template.
+    """
+    s = []
+    is_first = True
+    review_request = review_request_details.get_review_request()
+    user = context['request'].user
+    fieldset_classes = get_review_request_fieldsets(include_main=False)
+
+    for fieldset_cls in fieldset_classes:
+        if not fieldset_cls.is_empty():
+            fieldset = fieldset_cls(review_request_details)
+
+            context.push()
+            context.update({
+                'fieldset': fieldset,
+                'show_fieldset_required': (
+                    fieldset.show_required and
+                    review_request.status == ReviewRequest.PENDING_REVIEW and
+                    review_request.is_mutable_by(user)),
+                'forloop': {
+                    'first': is_first,
+                }
+            })
+            s.append(nodelist.render(context))
+            context.pop()
+
+            is_first = False
+
+    return ''.join(s)
 
 
 @register.filter

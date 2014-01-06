@@ -69,7 +69,8 @@ class ChangeDescription(models.Model):
 
         if (type(old_value) != type(new_value) and
             not (isinstance(old_value, six.string_types) and
-                 isinstance(new_value, six.string_types))):
+                 isinstance(new_value, six.string_types)) and
+            old_value is not None and new_value is not None):
             raise ValueError("%s (%s) and %s (%s) are of two different value "
                              "types." % (old_value, type(old_value),
                                          new_value, type(new_value)))

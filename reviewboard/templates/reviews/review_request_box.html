@@ -41,119 +41,35 @@
    <col width="0%" />
    <col width="100%" />
   </colgroup>
-  <thead class="review-request-info">
-   <tr><th colspan="2">{% trans "Information" %}</tr>
-  </thead>
-  <tbody>
+{% for_review_request_fieldset review_request_details %}
+  <thead{% if forloop.first %} class="first-fieldset"{% endif %}>
    <tr>
-    <th><label for="submitter">{% trans "Submitter" %}:</label></th>
-    <td><span><a id="submitter" class="user" href="{% url 'user' review_request.submitter %}">{{review_request.submitter|user_displayname}}</a></span></td>
-   </tr>
-{% if review_request.repository %}
-   <tr>
-    <th><label for="repository">{% trans "Repository" %}:</label></th>
-    <td><span id="repository">{{review_request.repository}}</span></td>
-   </tr>
-{% endif %}
-   <tr>
-    <th><label for="branch">{% trans "Branch" %}:</label></th>
-    <td id="branch-value-cell"><span id="branch" class="editable">{{review_request_details.branch}}</span></td>
-   </tr>
-   <tr>
-    <th><label for="bugs_closed">{% trans "Bugs" %}:</label></th>
-    <td id="bugs-closed-value-cell"><span id="bugs_closed" class="editable comma-editable">{% spaceless %}
-{%  for bug in review_request_details.get_bug_list %}
-{%   with bug|bug_url:review_request as bug_url %}
-{%    if bug_url %}<a href="{{bug_url}}">{{bug}}</a>{% else %}{{bug}}{% endif %}{% if not forloop.last %}, {% endif %}
-{%   endwith %}
-{%  endfor %}
-{% endspaceless %}</span></td>
-   </tr>
-   <tr>
-    <th><label for="depends_on">{% trans "Depends On" %}:</label></th>
-    <td id="depends-value-cell"><span id="depends_on" class="editable comma-editable">
-{% spaceless %}
-{%  for dependency in review_request_details.depends_on.all %}
-     <a href="{{dependency.get_absolute_url}}">{{dependency.get_display_id}}</a>{% if not forloop.last %}, {% endif %}
-{%  endfor %}
-{% endspaceless %}
-    </span></td>
-   </tr>
-
-{% if blocks %}
-   <tr>
-    <th><label for="blocks">{% trans "Blocks" %}:</label></th>
-    <td id="blocks-value-cell"><span id="blocks">
-{%  spaceless %}
-{%   for dependency in blocks %}
-     <a href="{{dependency.get_absolute_url}}">{{dependency.get_display_id}}</a>{% if not forloop.last %}, {% endif %}
-{%   endfor %}
-{%  endspaceless %}
-    </span></td>
-   </tr>
-{% endif %}
-
-{% if review_request.commit %}
-   <tr>
-    <th><label for="commit">{% trans "Change" %}:</label></th>
-    <td><span id="commit">{{review_request.commit}}{% if review_request.changeset_is_pending %} {% trans "(pending)" %} {% endif %}</span></td>
-   </tr>
-{% endif %}
-  </tbody>
-  <thead>
-   <tr>
-    <th colspan="2">{% trans "Reviewers" %}
-{% if review_request.status == 'P' %}
-{%  if request.user == review_request.submitter or perms.reviews.can_edit_reviewrequest %}
+    <th colspan="2">{{fieldset.label}}
+{%  if show_fieldset_required %}
      <span class="required-flag" aria-label="{% trans 'This field is required' %}" title="{% trans 'This field is required' %}">*</span>
 {%  endif %}
-{% endif %}
-    </th>
    </tr>
   </thead>
   <tbody>
+{%  for_review_request_field review_request_details fieldset %}
    <tr>
-    <th><label for="target_groups">{% trans "Groups" %}:</label></th>
-    <td id="target-groups-value-cell"><span id="target_groups" class="editable">{% spaceless %}
-{%  for group in review_request_details.target_groups.all %}
-<a href="{% url 'group' group %}">{{group}}</a>{%if not forloop.last %}, {%endif %}
-{%  endfor %}
-{% endspaceless %}</span></td>
+    <th><label for="{{field.field_id}}">{{field.label}}:</label></th>
+    <td><span id="{{field.field_id}}"{% attr "class" %}{{field.css_classes|join:' '}}{% endattr %}>
+     {{field.as_html|safe}}
+    </span></td>
    </tr>
-   <tr>
-    <th><label for="target_people">{% trans "People" %}:</label></th>
-    <td id="target-people-value-cell"><span id="target_people" class="editable comma-editable">{% spaceless %}
-{%  for person in review_request_details.target_people.all %}
-<a href="{% url 'user' person %}" class="user{% if not person.is_active %} inactive{% endif %}">{{person}}</a>{% if not forloop.last %}, {% endif %}
-{%  endfor %}
-{% endspaceless %}</span></td>
-   </tr>
+{%  end_for_review_request_field %}
   </tbody>
-
-{% if detail_hooks %}
-  <thead>
-   <tr><th colspan="2">{% trans "Extra Fields" %}</th></tr>
-  </thead>
-  <tbody>
-{%  for hook in detail_hooks %}
-  <tr>
-   <th><label for="{{hook.get_field_id}}">{{hook.get_label}}:</label></th>
-   <td><span id="{{hook.get_field_id}}">{{hook.get_detail}}</span></td>
-  </tr>
-{%  endfor %}
-  </tbody>
-{% endif %}
+{% end_for_review_request_fieldset %}
  </table>
 
  <div id="review_request_main">
-  <div class="content" id="description-value-cell">
-   <label class="textarea-label" for="description">{% trans "Description" %}</label>
-   <pre id="description" class="editable required{% if review_request_details.description %} loading{% endif %}" data-rich-text="true">{{review_request_details.description|markdown_escape:review_request_details.rich_text}}</pre>
+{% for_review_request_field review_request_details 'main' %}
+  <div class="content">
+   <label class="textarea-label" for="{{field.field_id}}">{{field.label}}</label>
+   <{{field.tag_name|default:"div"}} id="{{field.field_id}}"{% attr "class" %}{{field.get_css_classes|join:' '}}{% endattr %}{% for key, value in field.get_data_attributes.items %} data-{{key}}="{{value}}"{% endfor %}>{{field.as_html|safe}}</{{field.tag_name|default:"div"}}>
   </div>
-  <div class="content" id="testing-done-value-cell">
-   <label class="textarea-label" for="testing_done">{% trans "Testing Done" %}</label>
-   <pre id="testing_done" class="editable{% if review_request_details.testing_done %} loading{% endif %}" data-rich-text="true">{{review_request_details.testing_done|markdown_escape:review_request_details.rich_text}}</pre>
-  </div>
+{% end_for_review_request_field %}
  </div>
 
  <div id="review_request_extra">

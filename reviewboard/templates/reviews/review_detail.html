@@ -209,57 +209,30 @@
    <ul>
 {% for fieldinfo in entry.changeinfo %}
     <li><label>{{fieldinfo.title}}</label>
-{%  if fieldinfo.type == "changed" %}
-{%   if fieldinfo.multiline %}
-     <p><label>{% trans "Changed from:" %}</label></p>
-     <pre>{{fieldinfo.info.old.0}}</pre>
-     <p><label>{% trans "Changed to:" %}</label></p>
-     <pre>{{fieldinfo.info.new.0}}</pre>
-{%   else %}
-{%    blocktrans with fieldinfo.info.old.0 as old_value and fieldinfo.info.new.0 as new_value %}changed from <i>{{old_value}}</i> to <i>{{new_value}}</i>{% endblocktrans %}
-{%   endif %}
-{%  endif %}
-{%  if fieldinfo.type == "add_remove" %}
+{%  if fieldinfo.rendered_html %}
+     {{fieldinfo.rendered_html}}
+{%  elif fieldinfo.name == "status" %}
+{%   blocktrans with fieldinfo.old_status as old_status and fieldinfo.new_status as new_status %}
+     changed from <i>{{old_status}}</i> to <i>{{new_status}}</i>
+{%   endblocktrans %}
+{%  elif fieldinfo.name == "diff" %}
+{%   definevar "added_values" %}
+      <a href="{{fieldinfo.diff_url}}">{{fieldinfo.diff_label}}</a>
+{%    if fieldinfo.past_revision != 0 %}
+      - <a href="{% url 'view_interdiff' review_request.display_id fieldinfo.past_revision fieldinfo.current_revision %}">{% trans "Show changes" %}</a>
+{%    endif %}
+{%   enddefinevar %}
      <ul>
-{%   if fieldinfo.info.removed %}
-{%    definevar "removed_values" %}
-{%     for item in fieldinfo.info.removed %}
-{%      if item.1 %}
-      <a href="{{item.1}}">{{item.0}}</a>
-{%      else %}
-          {{item.0}}
-{%      endif %}
-{%      if not forloop.last %}, {% endif %}
-{%     endfor %}
-{%    enddefinevar %}
-      <li>{% blocktrans %}removed {{removed_values}}{% endblocktrans %}</li>
-{%   endif %}
-{%   if fieldinfo.info.added %}
-{%    definevar "added_values" %}
-{%     for item in fieldinfo.info.added %}
-{%      if item.1 %}
-      <a href="{{item.1}}">{{item.0}}</a>
-{%       if fieldinfo.diff_revision %}
-{%        with fieldinfo.diff_revision|add:"-1" as past_revision and fieldinfo.diff_revision as current_revision %}
-{%         if  past_revision != 0 %}
-      - <a href="{% url 'view_interdiff' review_request.display_id past_revision current_revision %}">{% trans "Show changes" %}</a>
-{%         endif %}
-{%        endwith %}
-{%       endif %}
-{%      else %}
-         {{item.0}}
-{%      endif %}
-{%      if not forloop.last %}, {% endif %}
-{%     endfor %}
-{%    enddefinevar %}
       <li>{% blocktrans %}added {{added_values}}{% endblocktrans %}</li>
-{%   endif %}
      </ul>
-{%  endif %}
-{%  if fieldinfo.type == "screenshot_captions" or fieldinfo.type == "file_captions" %}
+{%  elif fieldinfo.name == "screenshot_captions" or fieldinfo.name == "file_captions" %}
      <ul>
-{%   for info in fieldinfo.info.values %}
-      <li>{% blocktrans with info.old.0 as old_value and info.new.0 as new_value %}changed from <i>{{old_value}}</i> to <i>{{new_value}}</i>{% endblocktrans %}</li>
+{%   for caption in fieldinfo.captions %}
+      <li>
+{%    blocktrans with caption.old as old_caption and caption.new as new_caption %}
+       changed from <i>{{old_caption}}</i> to <i>{{new_caption}}</i>
+{%    endblocktrans %}
+      </li>
 {%   endfor %}
      </ul>
 {%  endif %}
