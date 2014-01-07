@@ -10,7 +10,8 @@ from reviewboard.admin.siteconfig import load_site_config
 from reviewboard.notifications.email import (build_email_address,
                                              get_email_address_for_user,
                                              get_email_addresses_for_group)
-from reviewboard.reviews.models import Group, ReviewRequest
+from reviewboard.reviews.models import Group, Review, ReviewRequest
+from reviewboard.site.models import LocalSite
 from reviewboard.testing import TestCase
 
 
@@ -237,6 +238,81 @@ class ReviewRequestEmailTests(TestCase, EmailTestHelper):
                          % review_request.pk)
         self.assertValidRecipients([review_request.submitter.username],
                                    ['devgroup'])
+
+        message = mail.outbox[0].message()
+        self.assertEqual(message['Sender'],
+                         self._get_sender(review_request.submitter))
+
+    def test_local_site_user_filters(self):
+        """Testing sending e-mails and filtering out users not on a local site"""
+        test_site = LocalSite.objects.create(name='test')
+
+        site_user1 = User.objects.create(
+            username='site_user1',
+            email='site_user1@example.com')
+        site_user2 = User.objects.create(
+            username='site_user2',
+            email='site_user2@example.com')
+        site_user3 = User.objects.create(
+            username='site_user3',
+            email='site_user3@example.com')
+        site_user4 = User.objects.create(
+            username='site_user4',
+            email='site_user4@example.com')
+        site_user5 = User.objects.create(
+            username='site_user5',
+            email='site_user5@example.com')
+        non_site_user1 = User.objects.create(
+            username='non_site_user1',
+            email='non_site_user1@example.com')
+        non_site_user2 = User.objects.create(
+            username='non_site_user2',
+            email='non_site_user2@example.com')
+        non_site_user3 = User.objects.create(
+            username='non_site_user3',
+            email='non_site_user3@example.com')
+
+        test_site.admins.add(site_user1)
+        test_site.users.add(site_user2)
+        test_site.users.add(site_user3)
+        test_site.users.add(site_user4)
+        test_site.users.add(site_user5)
+
+        group = Group.objects.create(name='my-group',
+                                     display_name='My Group',
+                                     local_site=test_site)
+        group.users.add(site_user5)
+        group.users.add(non_site_user3)
+
+        review_request = ReviewRequest.objects.get(
+            summary='Made e-mail improvements')
+        review_request.local_site = test_site
+        review_request.local_id = 123
+        review_request.email_message_id = "junk"
+        review_request.target_people = [site_user1, site_user2, site_user3,
+                                        non_site_user1]
+        review_request.target_groups = [group]
+
+        review = Review.objects.create(review_request=review_request,
+                                       user=site_user4)
+        review.publish()
+
+        review = Review.objects.create(review_request=review_request,
+                                       user=non_site_user2)
+        review.publish()
+
+        from_email = get_email_address_for_user(review_request.submitter)
+
+        # Now that we're set up, send another e-mail.
+        mail.outbox = []
+        review_request.publish(review_request.submitter)
+
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(mail.outbox[0].from_email, self.sender)
+        self.assertEqual(mail.outbox[0].extra_headers['From'], from_email)
+        self.assertValidRecipients(
+            ['site_user1', 'site_user2', 'site_user3', 'site_user4',
+             'site_user5', review_request.submitter.username], [])
 
         message = mail.outbox[0].message()
         self.assertEqual(message['Sender'],

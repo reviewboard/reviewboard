@@ -540,12 +540,17 @@ class RepositoryForm(forms.ModelForm):
             not hosting_account.is_authorized):
             # Attempt to authorize the account.
             hosting_service = None
+            plan = None
 
             if hosting_service_cls:
                 hosting_service = hosting_service_cls(hosting_account)
 
+                if hosting_service:
+                    plan = (self.cleaned_data['repository_plan'] or
+                            self.DEFAULT_PLAN_ID)
+
             repository_extra_data = self._build_repository_extra_data(
-                hosting_service, hosting_type)
+                hosting_service, hosting_type, plan)
 
             try:
                 hosting_account.service.authorize(
@@ -1101,8 +1106,12 @@ class RepositoryForm(forms.ModelForm):
             hosting_service = hosting_service_cls(
                 self.cleaned_data['hosting_account'])
 
+            if hosting_service:
+                plan = (self.cleaned_data['repository_plan'] or
+                        self.DEFAULT_PLAN_ID)
+
         repository_extra_data = self._build_repository_extra_data(
-            hosting_service, hosting_type)
+            hosting_service, hosting_type, plan)
 
         while 1:
             # Keep doing this until we have an error we don't want
@@ -1167,16 +1176,14 @@ class RepositoryForm(forms.ModelForm):
                     text = six.text_type(e, 'ascii', 'replace')
                 raise ValidationError(text)
 
-    def _build_repository_extra_data(self, hosting_service, hosting_type):
+    def _build_repository_extra_data(self, hosting_service, hosting_type,
+                                     plan):
         """Builds extra repository data to pass to HostingService functions."""
         repository_extra_data = {}
 
-        if hosting_service:
-            plan = self.cleaned_data['repository_plan'] or self.DEFAULT_PLAN_ID
-
-            if hosting_type in self.repository_forms:
-                repository_extra_data = \
-                    self.repository_forms[hosting_type][plan].cleaned_data
+        if hosting_service and hosting_type in self.repository_forms:
+            repository_extra_data = \
+                self.repository_forms[hosting_type][plan].cleaned_data
 
         return repository_extra_data
 

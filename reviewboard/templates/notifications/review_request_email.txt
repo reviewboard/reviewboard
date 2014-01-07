@@ -67,7 +67,7 @@ File Attachments{% if changes and changes.files %} (updated){% endif %}
 ----------------
 {% for file in review_request.file_attachments.all %}
 {{file.caption}}
-  {{domain_method}}://{{domain}}{{file.get_absolute_url}}{% endfor %}
+  {{file.get_absolute_url}}{% endfor %}
 
 {% endif %}
 {% if review_request.screenshots.count %}

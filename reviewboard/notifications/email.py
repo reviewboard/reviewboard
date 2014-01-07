@@ -3,9 +3,11 @@ from __future__ import unicode_literals
 import logging
 
 from django.conf import settings
+from django.contrib.auth.models import User
 from django.contrib.sites.models import Site
 from django.core.mail import EmailMultiAlternatives
 from django.core.urlresolvers import reverse
+from django.db.models import Q
 from django.template.loader import render_to_string
 from django.utils import timezone
 from djblets.siteconfig.models import SiteConfiguration
@@ -108,8 +110,13 @@ def get_email_addresses_for_group(g):
             # attached to it, so just return their custom list as-is.
             return g.mailing_list.split(',')
     else:
+        local_site = g.local_site
+        users = g.users.filter(Q(is_active=True) &
+                               (Q(local_site=local_site) |
+                                Q(local_site_admins=local_site)))
+
         return [get_email_address_for_user(u)
-                for u in g.users.filter(is_active=True)]
+                for u in users]
 
 
 class SpiffyEmailMessage(EmailMultiAlternatives):
@@ -167,11 +174,23 @@ def send_review_mail(user, review_request, subject, in_reply_to,
     being added to the template context. Returns the resulting message ID.
     """
     current_site = Site.objects.get_current()
-
+    local_site = review_request.local_site
     from_email = get_email_address_for_user(user)
-
+    target_people = review_request.target_people.filter(is_active=True)
     recipients = set()
     to_field = set()
+
+    if local_site:
+        # Filter out users who are on the reviewer list in some form, but
+        # no longer part of the LocalSite.
+        local_site_q = (Q(local_site=local_site) |
+                        Q(local_site_admins=local_site))
+
+        target_people = target_people.filter(local_site_q)
+
+        if extra_recipients and local_site:
+            extra_recipients = User.objects.filter(
+                Q(username__in=extra_recipients) & local_site_q)
 
     if from_email:
         recipients.add(from_email)
@@ -179,9 +198,10 @@ def send_review_mail(user, review_request, subject, in_reply_to,
     if review_request.submitter.is_active:
         recipients.add(get_email_address_for_user(review_request.submitter))
 
-    for u in review_request.target_people.filter(is_active=True):
-        recipients.add(get_email_address_for_user(u))
-        to_field.add(get_email_address_for_user(u))
+    for u in target_people:
+        email_address = get_email_address_for_user(u)
+        recipients.add(email_address)
+        to_field.add(email_address)
 
     for group in review_request.target_groups.all():
         for address in get_email_addresses_for_group(group):
