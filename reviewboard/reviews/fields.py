@@ -546,7 +546,7 @@ def unregister_review_request_fieldset(fieldset):
     """Unregisteres a previously registered review request fieldset."""
     _populate_defaults()
 
-    fieldset_id = fieldset_cls.fieldset_id
+    fieldset_id = fieldset.fieldset_id
 
     if fieldset_id not in _fieldsets:
         logging.error('Failed to unregister unknown review request fieldset '

@@ -12,15 +12,32 @@ describe('views/ReviewRequestEditorView', function() {
             '  <a href="#" id="delete-review-request-link"></a>',
             ' </div>',
             ' <div class="review-request">',
-            '  <span id="summary" class="editable"></span>',
-            '  <span id="branch" class="editable"></span>',
-            '  <span id="bugs_closed" class="editable"></span>',
-            '  <span id="target_groups" class="editable"></span>',
-            '  <span id="target_people" class="editable"></span>',
-            '  <pre id="description" data-rich-text="true"',
-            '       class="editable"></pre>',
-            '  <pre id="testing_done" data-rich-text="true"',
-            '       class="editable"></pre>',
+            '  <span id="field_summary"',
+            '        data-field-id="summary"',
+            '        class="field editable"></span>',
+            '  <span id="field_branch"',
+            '        data-field-id="branch"',
+            '        class="field editable"></span>',
+            '  <span id="field_bugs_closed"',
+            '        data-field-id="bugs_closed"',
+            '        class="field editable comma-editable"></span>',
+            '  <span id="field_target_groups"',
+            '        data-field-id="target_groups"',
+            '        class="field editable comma-editable"></span>',
+            '  <span id="field_target_people"',
+            '        data-field-id="target_people"',
+            '        class="field editable"></span>',
+            '  <pre id="field_description"',
+            '       data-field-id="description"',
+            '       data-rich-text="true"',
+            '       class="field field-text-area editable"></pre>',
+            '  <pre id="field_testing_done"',
+            '       data-field-id="testing_done"',
+            '       data-rich-text="true"',
+            '       class="field field-text-area editable"></pre>',
+            '  <pre id="field_my_custom"',
+            '       data-field-id="my_custom"',
+            '       class="field editable"></pre>',
             ' </div>',
             ' <div>',
             '  <div id="file-list"><br /></div>',
@@ -299,16 +316,20 @@ describe('views/ReviewRequestEditorView', function() {
     });
 
     describe('Fields', function() {
-        var jsonFieldName,
+        var saveSpyFunc,
+            jsonFieldName,
             $field,
             $input;
 
         beforeEach(function() {
-            spyOn(reviewRequest.draft, 'save')
-                .andCallFake(function(options, context) {
+            if (!saveSpyFunc) {
+                saveSpyFunc = function(options, context) {
                     expect(options.data[jsonFieldName]).toBe('My Value');
                     options.success.call(context);
-                });
+                };
+            }
+
+            spyOn(reviewRequest.draft, 'save').andCallFake(saveSpyFunc);
 
             view.render();
         });
@@ -382,7 +403,7 @@ describe('views/ReviewRequestEditorView', function() {
         describe('Branch', function() {
             setupFieldTests({
                 jsonFieldName: 'branch',
-                selector: '#branch'
+                selector: '#field_branch'
             });
 
             hasEditorTest();
@@ -393,7 +414,7 @@ describe('views/ReviewRequestEditorView', function() {
         describe('Bugs Closed', function() {
             setupFieldTests({
                 jsonFieldName: 'bugs_closed',
-                selector: '#bugs_closed'
+                selector: '#field_bugs_closed'
             });
 
             hasEditorTest();
@@ -404,7 +425,7 @@ describe('views/ReviewRequestEditorView', function() {
                     reviewRequest.set('bugTrackerURL', 'http://issues/?id=%s');
                     reviewRequest.draft.set('bugsClosed', [1, 2, 3]);
 
-                    expect(view.$('#bugs_closed').html()).toBe(
+                    expect($field.html()).toBe(
                         '<a href="http://issues/?id=1">1</a>, ' +
                         '<a href="http://issues/?id=2">2</a>, ' +
                         '<a href="http://issues/?id=3">3</a>');
@@ -414,7 +435,7 @@ describe('views/ReviewRequestEditorView', function() {
                     reviewRequest.set('bugTrackerURL', '');
                     reviewRequest.draft.set('bugsClosed', [1, 2, 3]);
 
-                    expect(view.$('#bugs_closed').html()).toBe('1, 2, 3');
+                    expect($field.html()).toBe('1, 2, 3');
                 });
             });
 
@@ -437,7 +458,7 @@ describe('views/ReviewRequestEditorView', function() {
 
                 setupFieldTests({
                     jsonFieldName: 'changedescription',
-                    selector: bannerSel + ' #changedescription'
+                    selector: bannerSel + ' #field_changedescription'
                 });
 
                 hasEditorTest();
@@ -472,7 +493,7 @@ describe('views/ReviewRequestEditorView', function() {
                         reviewRequest.draft.set('changeDescription',
                                                 'Testing /r/123');
 
-                        expect(view.$('#changedescription').html()).toBe(
+                        expect($field.html()).toBe(
                             '<p>Testing <a href="/r/123/" target="_blank">' +
                             '/r/123</a></p>');
                     });
@@ -481,7 +502,7 @@ describe('views/ReviewRequestEditorView', function() {
                         reviewRequest.draft.set('changeDescription',
                                                 '`This` is a **test**');
 
-                        expect(view.$('#changedescription').html()).toBe(
+                        expect($field.html()).toBe(
                             '<p><code>This</code> is a ' +
                             '<strong>test</strong></p>');
                     });
@@ -502,7 +523,7 @@ describe('views/ReviewRequestEditorView', function() {
 
                 setupFieldTests({
                     jsonFieldName: 'changedescription',
-                    selector: '#draft-banner #changedescription'
+                    selector: '#draft-banner #field_changedescription'
                 });
 
                 hasEditorTest();
@@ -520,7 +541,7 @@ describe('views/ReviewRequestEditorView', function() {
         describe('Description', function() {
             setupFieldTests({
                 jsonFieldName: 'description',
-                selector: '#description'
+                selector: '#field_description'
             });
 
             hasEditorTest();
@@ -530,7 +551,7 @@ describe('views/ReviewRequestEditorView', function() {
                 it('Links', function() {
                     reviewRequest.draft.set('description', 'Testing /r/123');
 
-                    expect(view.$('#description').html()).toBe(
+                    expect($field.html()).toBe(
                         '<p>Testing <a href="/r/123/" target="_blank">' +
                         '/r/123</a></p>');
                 });
@@ -539,7 +560,7 @@ describe('views/ReviewRequestEditorView', function() {
                     reviewRequest.draft.set('description',
                                             '`This` is a **test**');
 
-                    expect(view.$('#description').html()).toBe(
+                    expect($field.html()).toBe(
                         '<p><code>This</code> is a <strong>test</strong></p>');
                 });
             });
@@ -550,7 +571,7 @@ describe('views/ReviewRequestEditorView', function() {
         describe('Summary', function() {
             setupFieldTests({
                 jsonFieldName: 'summary',
-                selector: '#summary'
+                selector: '#field_summary'
             });
 
             hasEditorTest();
@@ -561,7 +582,7 @@ describe('views/ReviewRequestEditorView', function() {
         describe('Testing Done', function() {
             setupFieldTests({
                 jsonFieldName: 'testing_done',
-                selector: '#testing_done'
+                selector: '#field_testing_done'
             });
 
             hasEditorTest();
@@ -571,7 +592,7 @@ describe('views/ReviewRequestEditorView', function() {
                 it('Links', function() {
                     reviewRequest.draft.set('testingDone', 'Testing /r/123');
 
-                    expect(view.$('#testing_done').html()).toBe(
+                    expect($field.html()).toBe(
                         '<p>Testing <a href="/r/123/" target="_blank">' +
                         '/r/123</a></p>');
                 });
@@ -580,7 +601,7 @@ describe('views/ReviewRequestEditorView', function() {
                     reviewRequest.draft.set('testingDone',
                                             '`This` is a **test**');
 
-                    expect(view.$('#testing_done').html()).toBe(
+                    expect($field.html()).toBe(
                         '<p><code>This</code> is a <strong>test</strong></p>');
                 });
             });
@@ -592,7 +613,7 @@ describe('views/ReviewRequestEditorView', function() {
             describe('Groups', function() {
                 setupFieldTests({
                     jsonFieldName: 'target_groups',
-                    selector: '#target_groups'
+                    selector: '#field_target_groups'
                 });
 
                 hasAutoCompleteTest();
@@ -611,7 +632,7 @@ describe('views/ReviewRequestEditorView', function() {
                         }
                     ]);
 
-                    expect(view.$('#target_groups').html()).toBe(
+                    expect($field.html()).toBe(
                         '<a href="/groups/group1/">group1</a>, ' +
                         '<a href="/groups/group2/">group2</a>');
                 });
@@ -622,7 +643,7 @@ describe('views/ReviewRequestEditorView', function() {
             describe('People', function() {
                 setupFieldTests({
                     jsonFieldName: 'target_people',
-                    selector: '#target_people'
+                    selector: '#field_target_people'
                 });
 
                 hasAutoCompleteTest();
@@ -641,13 +662,34 @@ describe('views/ReviewRequestEditorView', function() {
                         }
                     ]);
 
-                    expect(view.$('#target_people').html()).toBe(
+                    expect($field.html()).toBe(
                         '<a href="/users/user1/" class="user">user1</a>, ' +
                         '<a href="/users/user2/" class="user">user2</a>');
                 });
 
                 editCountTests();
             });
+        });
+
+        describe('Custom fields', function() {
+            beforeEach(function() {
+                saveSpyFunc = function(options, context) {
+                    expect(options.data['extra_data.' + jsonFieldName])
+                        .toBe('My Value');
+                    options.success.call(context);
+                };
+            });
+
+            setupFieldTests({
+                fieldID: 'my_custom',
+                jsonFieldName: 'my_custom',
+                selector: '#field_my_custom',
+                useExtraData: true
+            });
+
+            hasEditorTest();
+            savingTest();
+            editCountTests();
         });
     });
 

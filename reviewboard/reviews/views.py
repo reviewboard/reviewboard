@@ -41,7 +41,6 @@ from reviewboard.diffviewer.models import DiffSet
 from reviewboard.diffviewer.views import (DiffFragmentView, DiffViewerView,
                                           exception_traceback_string)
 from reviewboard.extensions.hooks import (DashboardHook,
-                                          ReviewRequestDetailHook,
                                           UserPageSidebarHook)
 from reviewboard.reviews.ui.screenshot import LegacyScreenshotReviewUI
 from reviewboard.reviews.context import (comment_counts,
@@ -694,7 +693,6 @@ def review_detail(request,
     context_data = make_review_request_context(request, review_request, {
         'blocks': blocks,
         'draft': draft,
-        'detail_hooks': ReviewRequestDetailHook.hooks,
         'review_request_details': review_request_details,
         'entries': entries,
         'last_activity_time': last_activity_time,

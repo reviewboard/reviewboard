@@ -21,6 +21,7 @@ RB.DraftReviewRequest = RB.BaseResource.extend(_.defaults({
 
     rspNamespace: 'draft',
     listKey: 'draft',
+    supportsExtraData: true,
 
     expandedFields: ['depends_on', 'target_people', 'target_groups'],
 
@@ -70,20 +71,24 @@ RB.DraftReviewRequest = RB.BaseResource.extend(_.defaults({
     },
 
     validate: function(attrs, options) {
+        var strings = RB.DraftReviewRequest.strings;
+
         if (options.publishing) {
             if (attrs.targetGroups.length === 0 &&
                 attrs.targetPeople.length === 0) {
-                return RB.DraftReviewRequest.strings.REVIEWERS_REQUIRED;
+                return strings.REVIEWERS_REQUIRED;
             }
 
             if ($.trim(attrs.summary) === '') {
-                return RB.DraftReviewRequest.strings.SUMMARY_REQUIRED;
+                return strings.SUMMARY_REQUIRED;
             }
 
             if ($.trim(attrs.description) === '') {
-                return RB.DraftReviewRequest.strings.DESCRIPTION_REQUIRED;
+                return strings.DESCRIPTION_REQUIRED;
             }
         }
+
+        return _.super(this).validate.call(this, attrs, options);
     },
 
     parseResourceData: function(rsp) {

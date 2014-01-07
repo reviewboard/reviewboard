@@ -6,6 +6,10 @@ from djblets.util.compat import six
 
 from reviewboard.attachments.mimetypes import (register_mimetype_handler,
                                                unregister_mimetype_handler)
+from reviewboard.reviews.fields import (get_review_request_fieldset,
+                                        register_review_request_fieldset,
+                                        unregister_review_request_fieldset)
+
 from reviewboard.reviews.ui.base import register_ui, unregister_ui
 
 
@@ -65,19 +69,68 @@ class NavigationBarHook(ExtensionHook):
 
 
 @six.add_metaclass(ExtensionHookPoint)
-class ReviewRequestDetailHook(ExtensionHook):
-    def get_field_id(self):
-        raise NotImplementedError
+class ReviewRequestFieldSetsHook(ExtensionHook):
+    """A hook for creating fieldsets on the side of the review request page.
 
-    def get_label(self):
-        raise NotImplementedError
+    A fieldset contains one or more fields, and is mainly used to separate
+    groups of fields from each other.
 
-    def get_detail(self):
-        raise NotImplementedError
+    This takes a list of fieldset classes as parameters, which it will
+    later instantiate as necessary. Each fieldset can be pre-populated with
+    one or more custom field classes.
+    """
+    def __init__(self, extension, fieldsets):
+        super(ReviewRequestFieldSetsHook, self).__init__(extension)
 
-    def get_wide(self):
-        """Returns whether or not this detail spans multiple columns."""
-        return False
+        self.fieldsets = fieldsets
+
+        for fieldset in fieldsets:
+            register_review_request_fieldset(fieldset)
+
+    def shutdown(self):
+        for fieldset in self.fieldsets:
+            unregister_review_request_fieldset(fieldset)
+
+
+@six.add_metaclass(ExtensionHookPoint)
+class ReviewRequestFieldsHook(ExtensionHook):
+    """A hook for creating fields on the review request page.
+
+    This is used to create custom fields on a review request page for
+    requesting and storing data. A field can be editable, or it can be only
+    for display purposes. See the classes in
+    :py:mod:`reviewboard.reviews.fields` for more information and
+    documentation.
+
+    This hook takes the ID of a registered fieldset where the provided
+    field classes should be added. Review Board supplies three built-in
+    fieldset IDs:
+
+        * ``main``      - The fieldset with Description and Testing Done.
+        * ``info``      - The "Information" fieldset on the side.
+        * ``reviewers`` - The "Reviewers" fieldset on the side.
+
+    Any registered fieldset ID can be provided, whether from this extension
+    or another.
+
+    Field classes can only be added to a single fieldset.
+    """
+    def __init__(self, extension, fieldset_id, fields):
+        super(ReviewRequestFieldsHook, self).__init__(extension)
+
+        self.fieldset_id = fieldset_id
+        self.fields = fields
+
+        fieldset = get_review_request_fieldset(fieldset_id)
+
+        for field_cls in fields:
+            fieldset.add_field(field_cls)
+
+    def shutdown(self):
+        fieldset = get_review_request_fieldset(self.fieldset_id)
+
+        for field_cls in self.fields:
+            fieldset.remove_field(field_cls)
 
 
 @six.add_metaclass(ExtensionHookPoint)

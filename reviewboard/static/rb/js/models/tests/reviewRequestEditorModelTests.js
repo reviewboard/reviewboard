@@ -131,7 +131,9 @@ describe('models/ReviewRequestEditor', function() {
                                 }
                             });
                         });
-                    editor.setDraftField('summary', 'My Summary', callbacks);
+                    editor.setDraftField('summary', 'My Summary', _.defaults({
+                        jsonFieldName: 'summary'
+                    }, callbacks));
 
                     expect(callbacks.error).toHaveBeenCalled();
                     expect(editor.get('publishing')).toBe(false);
@@ -225,7 +227,9 @@ describe('models/ReviewRequestEditor', function() {
                             });
 
                         editor.setDraftField('targetGroups', 'group1, group2',
-                                             callbacks);
+                                             _.defaults({
+                            jsonFieldName: 'target_groups'
+                        }, callbacks));
 
                         expect(callbacks.error).toHaveBeenCalledWith({
                             errorText: "Groups 'group1' and 'group2' do " +
@@ -241,7 +245,9 @@ describe('models/ReviewRequestEditor', function() {
                                 options.success.call(context);
                             });
 
-                        editor.setDraftField('targetPeople', '', callbacks);
+                        editor.setDraftField('targetPeople', '', _.defaults({
+                            jsonFieldName: 'target_people'
+                        }, callbacks));
 
                         expect(callbacks.success).toHaveBeenCalled();
                     });
@@ -252,8 +258,11 @@ describe('models/ReviewRequestEditor', function() {
                                 options.success.call(context);
                             });
 
-                        editor.setDraftField('targetPeople', 'user1, user2',
-                                             callbacks);
+                        editor.setDraftField(
+                            'targetPeople', 'user1, user2',
+                            _.defaults({
+                                jsonFieldName: 'target_people'
+                            }, callbacks));
 
                         expect(callbacks.success).toHaveBeenCalled();
                     });
@@ -270,8 +279,11 @@ describe('models/ReviewRequestEditor', function() {
                                 });
                             });
 
-                        editor.setDraftField('targetPeople', 'user1, user2',
-                                             callbacks);
+                        editor.setDraftField(
+                            'targetPeople', 'user1, user2',
+                            _.defaults({
+                                jsonFieldName: 'target_people'
+                            }, callbacks));
 
                         expect(callbacks.error).toHaveBeenCalledWith({
                             errorText: "Users 'user1' and 'user2' do not exist."

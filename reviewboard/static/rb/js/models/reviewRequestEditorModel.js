@@ -19,15 +19,6 @@ RB.ReviewRequestEditor = Backbone.Model.extend({
         statusMutableByUser: false
     },
 
-    _jsonFieldMap: {
-        bugsClosed: 'bugs_closed',
-        changeDescription: 'changedescription',
-        dependsOn: 'depends_on',
-        targetGroups: 'target_groups',
-        targetPeople: 'target_people',
-        testingDone: 'testing_done'
-    },
-
     initialize: function() {
         var reviewRequest = this.get('reviewRequest');
 
@@ -101,13 +92,18 @@ RB.ReviewRequestEditor = Backbone.Model.extend({
             return;
         }
 
-        if (fieldName === 'changeDescription' ||
-            fieldName === 'description' ||
-            fieldName === 'testingDone') {
-            data.text_type = 'markdown';
+        if (options.useExtraData) {
+            jsonFieldName = 'extra_data.' + options.fieldID;
+        } else {
+            if (fieldName === 'changeDescription' ||
+                fieldName === 'description' ||
+                fieldName === 'testingDone') {
+                data.text_type = 'markdown';
+            }
+
+            jsonFieldName = options.jsonFieldName;
         }
 
-        jsonFieldName = this._jsonFieldMap[fieldName] || fieldName;
         data[jsonFieldName] = value;
 
         reviewRequest.draft.save({

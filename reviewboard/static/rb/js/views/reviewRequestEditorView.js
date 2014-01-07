@@ -29,9 +29,12 @@ BannerView = Backbone.View.extend({
         '        value="<%- action.label %>" />',
         '<% }); %>',
         '<% if (showChangesField) { %>',
-        ' <p><label for="changedescription"><%- describeText %></label></p>',
-        ' <pre id="changedescription" class="editable"',
-        '      data-rich-text="true"><%- closeDescription %></pre>',
+        ' <p><label for="field_changedescription">',
+        '<%- describeText %></label></p>',
+        ' <pre id="field_changedescription"',
+        '      class="editable field-text-area field"',
+        '      data-rich-text="true" data-field-id="changedescription">',
+        '<%- closeDescription %></pre>',
         '<% } %>'
     ].join('')),
 
@@ -44,11 +47,11 @@ BannerView = Backbone.View.extend({
             this.reviewRequestEditorView.model.get('reviewRequest');
 
         this.reviewRequestEditorView.registerField(_.defaults({
+            fieldID: 'changedescription',
             fieldName: 'changeDescription',
-            selector: '#changedescription',
-            jsonFieldName: 'changedescription',
             elementOptional: true,
             editMarkdown: true,
+            useExtraData: false,
             formatter: function(view, data, $el) {
                 view.formatText($el, data);
             }
@@ -88,7 +91,7 @@ BannerView = Backbone.View.extend({
             this.$buttons.prop('disabled', false);
         }, this);
 
-        this.reviewRequestEditorView.setupFieldEditor('changeDescription');
+        this.reviewRequestEditorView.setupFieldEditor('changedescription');
 
         return this;
     }
@@ -257,12 +260,12 @@ DraftBannerView = BannerView.extend({
 RB.ReviewRequestEditorView = Backbone.View.extend({
     defaultFields: [
         {
-            fieldName: 'branch'
+            fieldID: 'branch'
         },
         {
+            fieldID: 'bugs_closed',
             fieldName: 'bugsClosed',
-            jsonFieldName: 'bugs_closed',
-            selector: '#bugs_closed',
+            selector: '#field_bugs_closed',
             useEditIconOnly: true,
             formatter: function(view, data, $el) {
                 var reviewRequest = view.model.get('reviewRequest'),
@@ -280,9 +283,8 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
             }
         },
         {
+            fieldID: 'depends_on',
             fieldName: 'dependsOn',
-            selector: '#depends_on',
-            jsonFieldName: 'depends_on',
             useEditIconOnly: true,
             formatter: function(view, data, $el) {
                 $el.html(view.urlizeList(
@@ -293,19 +295,18 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
             }
         },
         {
-            fieldName: 'description',
+            fieldID: 'description',
             editMarkdown: true,
             formatter: function(view, data, $el) {
                 view.formatText($el, data);
             }
         },
         {
-            fieldName: 'summary'
+            fieldID: 'summary'
         },
         {
+            fieldID: 'target_groups',
             fieldName: 'targetGroups',
-            selector: '#target_groups',
-            jsonFieldName: 'target_groups',
             useEditIconOnly: true,
             autocomplete: {
                 fieldName: 'groups',
@@ -324,9 +325,8 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
             }
         },
         {
+            fieldID: 'target_people',
             fieldName: 'targetPeople',
-            selector: '#target_people',
-            jsonFieldName: 'target_people',
             useEditIconOnly: true,
             autocomplete: {
                 fieldName: 'users',
@@ -350,9 +350,8 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
             }
         },
         {
+            fieldID: 'testing_done',
             fieldName: 'testingDone',
-            selector: '#testing_done',
-            jsonFieldName: 'testing_done',
             editMarkdown: true,
             formatter: function(view, data, $el) {
                 view.formatText($el, data);
@@ -363,7 +362,11 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
     initialize: function() {
         this._fieldEditors = {};
 
-        _.each(this.defaultFields, this.registerField, this);
+        _.each(this.defaultFields, function(fieldInfo) {
+            this.registerField(_.defaults({
+                useExtraData: false
+            }, fieldInfo));
+        }, this);
 
         this.draft = this.model.get('reviewRequest').draft;
         this.banner = null;
@@ -405,16 +408,25 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
      *     * useEditIconOnly
      *       - If true, only clicking the edit icon will begin editing.
      *         Defaults to false.
+     *
+     *     * useExtraData
+     *       - If true, field values will be stored in extraData.
+     *         Defaults to true for non-builtin fields.
      */
     registerField: function(options) {
-        console.assert(_.has(options, 'fieldName'));
+        var fieldID = options.fieldID;
 
-        this._fieldEditors[options.fieldName] = _.extend({
-            selector: '#' + options.fieldName,
+        console.assert(fieldID);
+
+        this._fieldEditors[fieldID] = _.extend({
+            selector: '#field_' + fieldID,
             elementOptional: false,
+            fieldID: fieldID,
+            fieldName: fieldID,
             formatter: null,
-            jsonFieldName: options.fieldName,
-            useEditIconOnly: false
+            jsonFieldName: fieldID,
+            useEditIconOnly: false,
+            useExtraData: true
         }, options);
     },
 
@@ -438,10 +450,44 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
         this._$extra = $('#review_request_extra');
 
         /*
+         * Find any editors that weren't registered. These may be from
+         * extensions.
+         */
+        _.each(this.$('.field.editable'), function(field) {
+            var $field = $(field),
+                fieldID = $field.data('field-id'),
+                isCommaEditable,
+                fieldInfo;
+
+            if (!this._fieldEditors[fieldID] && $field.hasClass('editable')) {
+                isCommaEditable = $field.hasClass('comma-editable');
+
+                fieldInfo = {
+                    fieldID: fieldID
+                };
+
+                if (isCommaEditable) {
+                    fieldInfo.useEditIconOnly = true;
+                    fieldInfo.formatter = function(view, data, $el) {
+                        data = data || [];
+                        $el.html(data.join(', '));
+                    };
+                } else if ($field.data('rich-text')) {
+                    fieldInfo.editMarkdown = true;
+                    fieldInfo.formatter = function(view, data, $el) {
+                        view.formatText($el, data);
+                    };
+                }
+
+                this.registerField(fieldInfo);
+            }
+        }, this);
+
+        /*
          * Set up editors for every registered field.
          */
-        _.each(this._fieldEditors, function(fieldOptions, name) {
-            this.setupFieldEditor(name);
+        _.each(this._fieldEditors, function(fieldOptions, fieldID) {
+            this.setupFieldEditor(fieldID);
         }, this);
 
         /*
@@ -452,8 +498,7 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
          * too long. It must be done after the fields are set up,
          * though.
          */
-        _.each($("#description, #testing_done, #changedescription"),
-               function(el) {
+        _.each(this.$('.field-text-area'), function(el) {
             var $el = $(el);
 
             this.formatText($el, $el.text());
@@ -538,8 +583,8 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
      * This will build the editor for a field and update the field contents
      * any time the matching field changes on a draft.
      */
-    setupFieldEditor: function(fieldName) {
-        var fieldOptions = this._fieldEditors[fieldName],
+    setupFieldEditor: function(fieldID) {
+        var fieldOptions = this._fieldEditors[fieldID],
             $el = this.$(fieldOptions.selector);
 
         if ($el.length === 0) {
@@ -817,7 +862,7 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
             editableProp = (fieldOptions.statusField
                             ? 'statusEditable'
                             : 'editable'),
-            multiline = (el.tagName === 'PRE'),
+            multiline = $el.hasClass('field-text-area'),
             options = {
                 cls: id + '-editor',
                 editIconClass: 'rb-icon rb-icon-edit',
@@ -1044,7 +1089,13 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
         var formatter = fieldOptions.formatter,
             $el = this.$(fieldOptions.selector),
             reviewRequest = this.model.get('reviewRequest'),
+            value;
+
+        if (fieldOptions.useExtraData) {
+            value = reviewRequest.draft.get('extraData')[fieldOptions.fieldID];
+        } else {
             value = reviewRequest.draft.get(fieldOptions.fieldName);
+        }
 
         if (_.isFunction(formatter)) {
             formatter.call(fieldOptions.context || this, this, value, $el);

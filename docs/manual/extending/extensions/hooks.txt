@@ -298,45 +298,96 @@ Example usage in an Extension::
             )
 
 
-ReviewRequestDetailHook
------------------------
+ReviewRequestFieldSetsHook
+--------------------------
 
-:py:class:`reviewboard.extensions.hooks.ReviewRequestDetailHook` provides a way
-for extensions to augment the information shown in the review request box,
-alongside fields like :guilabel:`Submitter` and :guilabel:`Bugs`.
+:py:class:`reviewboard.extensions.hooks.ReviewRequestFieldSetsHook` allows
+extensions to create grouped sets of fields on the review request page.
+These are equivalent to the :guilabel:`Information` and :guilabel:`Reviewers`
+sections.
 
-This hook is intended to be subclassed. There are four methods that can be
-implemented:
+A caller must subclass
+:py:class:`reviewboard.reviews.fields.BaseReviewRequestFieldSet` and fill in
+the required fields, :py:attr:`fieldset_id` and :py:attr:`label`. It may also
+include a hard-coded list of default field classes in the
+:py:attr:`field_classes` attribute.
 
-*
-    **get_field_id**: Returns an ID used for the field's id in HTML.
+A custom fieldset class can be added by instantiating the hook, passing in
+a list of fieldset classes.
 
-*
-    **get_label**: Returns the text used for the label (like "Branch:").
-
-*
-    **get_detail**: Returns the text used for the detail.
-
-*
-    **get_wide**: Returns True or False depending on whether the field should span across both columns.
+Fieldset IDs must be unique. It is best to choose a fieldset ID that contains
+some sort of extension-specific information, such as the vendor or the
+extension ID. Fieldset IDs are used when registering new fields (using
+:ref:`ReviewRequestFIeldSetHook`) in order to specify where the field should
+appear.
 
 Example usage in an Extension::
 
-    class SampleDetailHook(ReviewRequestDetailHook):
-        def get_field_id(self):
-	    return 'sample-detail'
-
-	def get_label(self):
-	    return 'Label:'
-
-	def get_detail(self):
-	    return 'detail'
+    class SampleFieldSet(BaseReviewRequestFieldSet):
+        fieldset_id = 'myvendor_my_fields'
+        label = 'My Fields'
 
 
     class SampleExtension(Extension):
         def __init__(self, *args, **kwargs):
-	    super(SampleExtension, self).__init__(*args, **kwargs)
-	    SampleDetailHook(self)
+            super(SampleExtension, self).__init__(*args, **kwargs)
+
+            ReviewRequestFieldSetsHook(self, [SampleFieldSet])
+
+
+.. _reviewrequestfieldsethook:
+
+ReviewRequestFieldsHook
+-----------------------
+
+:py:class:`reviewboard.extensions.hooks.ReviewRequestFieldsHook` allows
+extensions to add new fields to a review request. These fields will act like
+any other field on a review request. They can be edited, saved along with a
+draft, published, and their history can be shown in the "Review request
+changed" boxes. Their data can also be accessed through the
+``extra_data`` fields of :ref:`webapi2.0-review-request-resource` and
+:ref:`webapi2.0-review-request-draft-resource`.
+
+There are many types of fields that can be created, and developers are
+encouraged to look at the documentation in
+:py:mod:`reviewboard.reviews.fields` for more information on these.
+
+When registering one or more fields through the hook, a fieldset ID must be
+specified. This can be a custom fieldset registered by the extension, or it
+can be one of the built-in fieldsets:
+
+* ``main`` -
+  The main fieldset containing :guilabel:`Description` and
+  :guilabel:`Testing Done`.
+
+* ``info`` -
+  The :guilabel:`Information` fieldset on the side.
+
+* ``reviewers`` -
+  The :guilabel:`Reviewers` fieldset on the side.
+
+Field IDs must be unique, and a field cannot be added to more than one
+fieldset. It is best to choose a field ID that contains some sort of
+extension-specific information, such as the vendor or the extension ID.
+
+Example usage in an Extension::
+
+    class MilestoneField(BaseEditableField):
+        fieldset_id = 'myvendor_milestone'
+        label = 'Milestone'
+
+
+    class NotesField(BaseTextAreaField):
+        fieldset_id = 'myvendor_notes'
+        label = 'Notes'
+
+
+    class SampleExtension(Extension):
+        def __init__(self, *args, **kwargs):
+            super(SampleExtension, self).__init__(*args, **kwargs)
+
+            ReviewRequestFieldsHook(self, 'info', [MilestoneField])
+            ReviewRequestFieldsHook(self, 'main', [NotesField])
 
 
 ReviewUIHook
@@ -505,3 +556,6 @@ Example usage with subitems in an Extension::
                     }
                 ]
             )
+
+
+.. comment: vim: ft=rst et ts=3

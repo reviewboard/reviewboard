@@ -3,7 +3,7 @@
 {% include "reviews/review_request_dlgs.html" %}
 
  <div class="header">
-  <div id="summary_wrapper"><label for="summary">{% trans "Summary" %}:</label><h1 id="summary" class="editable required">{{review_request_details.summary|escape}}</h1></div>
+  <div id="summary_wrapper"><label for="field_summary">{% trans "Summary" %}:</label><h1 id="field_summary" class="field editable required" data-field-id="summary">{{review_request_details.summary|escape}}</h1></div>
   <p id="status">
 {% with review_request_details.time_added|date as dateadded and review_request_details.last_updated as lastupdated and review_request_details.last_updated|date:"c" as lastupdatedraw and latest_diffset.timestamp|date:"c" as lastdiffdateraw and latest_diffset.timestamp as lastdiffdate %}
 {%  blocktrans with review_request.display_id as review_request_id and review_request.get_absolute_url as review_request_url %}
@@ -53,8 +53,9 @@
   <tbody>
 {%  for_review_request_field review_request_details fieldset %}
    <tr>
-    <th><label for="{{field.field_id}}">{{field.label}}:</label></th>
-    <td><span id="{{field.field_id}}"{% attr "class" %}{{field.css_classes|join:' '}}{% endattr %}>
+    <th><label for="field_{{field.field_id}}">{{field.label}}:</label></th>
+    <td><span id="field_{{field.field_id}}" data-field-id="{{field.field_id}}"
+              class="field {{field.get_css_classes|join:' '}}"{% for key, value in field.get_data_attributes.items %} data-{{key}}="{{value}}"{% endfor %}>
      {{field.as_html|safe}}
     </span></td>
    </tr>
@@ -66,8 +67,8 @@
  <div id="review_request_main">
 {% for_review_request_field review_request_details 'main' %}
   <div class="content">
-   <label class="textarea-label" for="{{field.field_id}}">{{field.label}}</label>
-   <{{field.tag_name|default:"div"}} id="{{field.field_id}}"{% attr "class" %}{{field.get_css_classes|join:' '}}{% endattr %}{% for key, value in field.get_data_attributes.items %} data-{{key}}="{{value}}"{% endfor %}>{{field.as_html|safe}}</{{field.tag_name|default:"div"}}>
+   <label class="textarea-label" for="field_{{field.field_id}}">{{field.label}}</label>
+   <{{field.tag_name|default:"div"}} id="field_{{field.field_id}}" class="field {{field.get_css_classes|join:' '}}" data-field-id="{{field.field_id}}"{% for key, value in field.get_data_attributes.items %} data-{{key}}="{{value}}"{% endfor %}>{{field.as_html|safe}}</{{field.tag_name|default:"div"}}>
   </div>
 {% end_for_review_request_field %}
  </div>
