@@ -7,9 +7,6 @@
  */
 RB.BaseComment = RB.BaseResource.extend({
     defaults: _.defaults({
-        /* Extra data for the comment. */
-        extraData: {},
-
         /* Whether or not an issue is opened. */
         issueOpened: true,
 
@@ -31,6 +28,8 @@ RB.BaseComment = RB.BaseResource.extend({
         'force-text-type': 'markdown'
     },
 
+    supportsExtraData: true,
+
     /*
      * Destroys the comment if and only if the text is empty.
      *
@@ -50,17 +49,13 @@ RB.BaseComment = RB.BaseResource.extend({
      * This must be overloaded by subclasses, and the parent version called.
      */
     toJSON: function() {
-        var data = {
+        var data = _.defaults({
                 issue_opened: this.get('issueOpened'),
                 text_type: this.get('richText') ? 'markdown' : 'plain',
                 text: this.get('text')
-            },
+            }, RB.BaseResource.prototype.toJSON.call(this)),
             parentObject,
             isPublic;
-
-        _.each(this.get('extraData'), function(value, key) {
-            data['extra_data.' + key] = value;
-        }, this);
 
         if (this.get('loaded')) {
             parentObject = this.get('parentObject');
@@ -89,7 +84,6 @@ RB.BaseComment = RB.BaseResource.extend({
      */
     parseResourceData: function(rsp) {
         return {
-            extraData: rsp.extra_data,
             issueOpened: rsp.issue_opened,
             issueStatus: rsp.issue_status,
             richText: rsp.text_type === 'markdown',
@@ -115,6 +109,8 @@ RB.BaseComment = RB.BaseResource.extend({
             attrs.issueStatus !== RB.BaseComment.STATE_RESOLVED) {
             return RB.BaseComment.strings.INVALID_ISSUE_STATUS;
         }
+
+        return RB.BaseResource.prototype.validate.apply(this, arguments);
     }
 }, {
     STATE_DROPPED: 'dropped',

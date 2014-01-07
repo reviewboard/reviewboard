@@ -1,5 +1,6 @@
 describe('resources/models/FileAttachmentComment', function() {
     var strings = RB.FileAttachmentComment.strings,
+        baseStrings = RB.BaseResource.strings,
         model;
 
     beforeEach(function() {
@@ -117,7 +118,7 @@ describe('resources/models/FileAttachmentComment', function() {
             });
 
             describe('Invalid values', function() {
-                var errStr = strings.INVALID_EXTRADATA_TYPE;
+                var errStr = baseStrings.INVALID_EXTRADATA_TYPE;
 
                 it('Array', function() {
                     expect(model.validate({
@@ -187,7 +188,7 @@ describe('resources/models/FileAttachmentComment', function() {
             });
 
             describe('Invalid values', function() {
-                var errStr = strings.INVALID_EXTRADATA_VALUE_TYPE
+                var errStr = baseStrings.INVALID_EXTRADATA_VALUE_TYPE
                     .replace('{key}', 'value');
 
                 it('Arrays', function() {

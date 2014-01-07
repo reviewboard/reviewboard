@@ -11,6 +11,7 @@
  */
 RB.BaseResource = Backbone.Model.extend({
     defaults: {
+        extraData: {},
         links: null,
         loaded: false,
         parentObject: null
@@ -28,6 +29,9 @@ RB.BaseResource = Backbone.Model.extend({
 
     /* Extra query arguments for GET requests. */
     extraQueryArgs: {},
+
+    /* Whether or not extra data can be associated on the resource. */
+    supportsExtraData: false,
 
     /*
      * Returns the URL for this resource's instance.
@@ -518,6 +522,7 @@ RB.BaseResource = Backbone.Model.extend({
         }
 
         return _.defaults({
+            extraData: rsp.extra_data,
             id: rsp.id,
             links: rsp.links,
             loaded: true
@@ -541,7 +546,15 @@ RB.BaseResource = Backbone.Model.extend({
      * must override this to specify what data they need to provide the API.
      */
     toJSON: function() {
-        return {};
+        var data = {};
+
+        if (this.supportsExtraData) {
+            _.each(this.get('extraData'), function(value, key) {
+                data['extra_data.' + key] = value;
+            }, this);
+        }
+
+        return data;
     },
 
     /*
@@ -614,9 +627,44 @@ RB.BaseResource = Backbone.Model.extend({
         }, this);
 
         return Backbone.sync.call(this, method, model, syncOptions);
+    },
+
+    /*
+     * Performs validation on the attributes of the resource.
+     *
+     * By default, this validates the extraData field, if provided.
+     */
+    validate: function(attrs, options) {
+        var strings = RB.BaseResource.strings,
+            value,
+            key;
+
+        if (this.supportsExtraData && attrs.extraData !== undefined) {
+            if (!_.isObject(attrs.extraData)) {
+                return strings.INVALID_EXTRADATA_TYPE;
+            }
+
+            for (key in attrs.extraData) {
+                if (attrs.extraData.hasOwnProperty(key)) {
+                    value = attrs.extraData[key];
+
+                    if (!_.isNull(value) &&
+                        (!_.isNumber(value) || _.isNaN(value)) &&
+                        !_.isBoolean(value) &&
+                        !_.isString(value)) {
+                        return strings.INVALID_EXTRADATA_VALUE_TYPE
+                            .replace('{key}', key);
+                    }
+                }
+            }
+        }
     }
 }, {
     strings: {
-        UNSET_PARENT_OBJECT: 'parentObject must be set'
+        UNSET_PARENT_OBJECT: 'parentObject must be set',
+        INVALID_EXTRADATA_TYPE:
+            'extraData must be an object, null, or undefined',
+        INVALID_EXTRADATA_VALUE_TYPE:
+            'extraData.{key} must be null, a number, boolean, or string'
     }
 });
