@@ -85,7 +85,7 @@ describe('views/ReviewReplyEditorView', function() {
             $el = view.$('.reply-comments li');
             expect($el.length).toBe(1);
 
-            reviewReply.trigger('destroy');
+            reviewReply.trigger('destroyed');
 
             $el = view.$('.reply-comments li');
             expect($el.length).toBe(0);

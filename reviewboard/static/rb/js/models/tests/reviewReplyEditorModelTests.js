@@ -47,7 +47,7 @@ describe('models/ReviewReplyEditor', function() {
 
                 editor.set('reviewReply', reviewReply);
                 expect(reviewReply.on.calls.length).toBe(2);
-                expect(reviewReply.on.calls[0].args[0]).toBe('destroy');
+                expect(reviewReply.on.calls[0].args[0]).toBe('destroyed');
                 expect(reviewReply.on.calls[1].args[0]).toBe('published');
             });
 

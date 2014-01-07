@@ -101,6 +101,11 @@ describe('views/ReviewBoxView', function() {
             it('Discard', function() {
                 spyOn(view, '_setupNewReply');
 
+                spyOn(reviewReply, 'discardIfEmpty')
+                    .andCallFake(function(options, context) {
+                        options.success.call(context);
+                    });
+
                 reviewReply.trigger('destroyed');
                 expect(view._setupNewReply).toHaveBeenCalled();
             });

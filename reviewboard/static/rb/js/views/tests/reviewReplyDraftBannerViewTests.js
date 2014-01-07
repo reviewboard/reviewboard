@@ -51,7 +51,7 @@ describe('views/ReviewReplyDraftBannerView', function() {
                 it('When saved', function() {
                     $buttons.prop('disabled', true);
                     reviewReply.trigger('saved');
-                    expect($buttons.prop('disabled')).toBe(true);
+                    expect($buttons.prop('disabled')).toBe(false);
                 });
             });
         });
