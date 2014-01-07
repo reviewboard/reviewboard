@@ -569,12 +569,9 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
         except User.DoesNotExist:
             for backend in auth.get_backends():
                 try:
-                    user = backend.get_or_create_user(username, request)
+                    return backend.get_or_create_user(username, request)
                 except:
                     pass
-
-                if user:
-                    return user
 
         return None
 
