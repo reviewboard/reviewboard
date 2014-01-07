@@ -143,7 +143,7 @@ class ResourceItemTests(ReviewRequestChildItemMixin, BaseWebAPITestCase):
         self.assertEqual(item_rsp['id'], attachment.pk)
         self.assertEqual(item_rsp['filename'], attachment.filename)
         self.assertEqual(item_rsp['absolute_url'],
-                         self.base_url + attachment.get_absolute_url())
+                         attachment.get_absolute_url())
 
     #
     # HTTP DELETE tests

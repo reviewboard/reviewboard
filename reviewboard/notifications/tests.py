@@ -245,7 +245,7 @@ class ReviewRequestEmailTests(TestCase, EmailTestHelper):
 
     def test_local_site_user_filters(self):
         """Testing sending e-mails and filtering out users not on a local site"""
-        test_site = LocalSite.objects.create(name='test')
+        test_site = LocalSite.objects.create(name=self.local_site_name)
 
         site_user1 = User.objects.create(
             username='site_user1',
@@ -284,10 +284,8 @@ class ReviewRequestEmailTests(TestCase, EmailTestHelper):
         group.users.add(site_user5)
         group.users.add(non_site_user3)
 
-        review_request = ReviewRequest.objects.get(
-            summary='Made e-mail improvements')
-        review_request.local_site = test_site
-        review_request.local_id = 123
+        review_request = self.create_review_request(with_local_site=True,
+                                                    local_id=123)
         review_request.email_message_id = "junk"
         review_request.target_people = [site_user1, site_user2, site_user3,
                                         non_site_user1]
