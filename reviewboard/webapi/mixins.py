@@ -23,7 +23,7 @@ class MarkdownFieldsMixin(object):
     TEXT_TYPE_PLAIN = 'plain'
     TEXT_TYPE_MARKDOWN = 'markdown'
 
-    TEXT_TYPES = [TEXT_TYPE_PLAIN, TEXT_TYPE_MARKDOWN]
+    TEXT_TYPES = (TEXT_TYPE_PLAIN, TEXT_TYPE_MARKDOWN)
     SAVEABLE_TEXT_TYPES = TEXT_TYPES
 
     def serialize_text_type_field(self, obj, request=None, **kwargs):
