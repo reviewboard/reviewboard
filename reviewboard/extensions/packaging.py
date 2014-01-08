@@ -1,6 +1,7 @@
 from __future__ import unicode_literals
 
 import os
+import sys
 
 from djblets.extensions.packaging import (
     BuildStaticFiles as DjbletsBuildStaticFiles,
@@ -30,6 +31,11 @@ class BuildStaticFiles(DjbletsBuildStaticFiles):
 
 
 def setup(**setup_kwargs):
+    # Add the included conf directory so that there's a settings_local.py
+    # file that can be used to package the static media.
+    extensions_dir = os.path.abspath(os.path.dirname(__file__))
+    sys.path.insert(0, os.path.join(extensions_dir, 'conf'))
+
     os.environ['FORCE_BUILD_MEDIA'] = '1'
 
     setup_kwargs.update({
