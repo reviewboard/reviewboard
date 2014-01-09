@@ -34,6 +34,9 @@ class ResourceTests(BaseWebAPITestCase):
         self.assertTrue(diffs_caps['moved_files'])
         self.assertTrue(diffs_caps['base_commit_ids'])
 
+        text_caps = caps['text']
+        self.assertTrue(text_caps['markdown'])
+
     #
     # HTTP GET tests
     #

@@ -59,6 +59,9 @@ class ServerInfoResource(WebAPIResource):
                             'moved_files': True,
                         },
                     },
+                    'text': {
+                        'markdown': True,
+                    },
                 },
             },
         }
