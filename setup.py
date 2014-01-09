@@ -164,6 +164,7 @@ setup(name=PACKAGE_NAME,
               'fedorahosted = '
                   'reviewboard.hostingsvcs.fedorahosted:FedoraHosted',
               'github = reviewboard.hostingsvcs.github:GitHub',
+              'gitlab = reviewboard.hostingsvcs.gitlab:GitLab',
               'gitorious = reviewboard.hostingsvcs.gitorious:Gitorious',
               'googlecode = reviewboard.hostingsvcs.googlecode:GoogleCode',
               'redmine = reviewboard.hostingsvcs.redmine:Redmine',
