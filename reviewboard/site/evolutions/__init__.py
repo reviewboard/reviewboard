@@ -1,0 +1,3 @@
+SEQUENCE = [
+    'localsite_public',
+]

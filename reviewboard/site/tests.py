@@ -15,14 +15,20 @@ class BasicTests(TestCase):
         """Test LocalSite.is_accessible_by"""
         doc = User.objects.get(username="doc")
         dopey = User.objects.get(username="dopey")
-        self.assertTrue(doc)
-        self.assertTrue(dopey)
-
         site = LocalSite.objects.get(name="local-site-1")
-        self.assertTrue(site)
 
         self.assertTrue(site.is_accessible_by(doc))
-        self.assertTrue(not site.is_accessible_by(dopey))
+        self.assertFalse(site.is_accessible_by(dopey))
+
+    def test_access_with_public(self):
+        """Test LocalSite.is_accessible_by with public LocalSites"""
+        doc = User.objects.get(username="doc")
+        dopey = User.objects.get(username="dopey")
+        site = LocalSite.objects.get(name="local-site-1")
+        site.public = True
+
+        self.assertTrue(site.is_accessible_by(doc))
+        self.assertTrue(site.is_accessible_by(dopey))
 
     def test_local_site_reverse_with_no_local_site(self):
         """Testing local_site_reverse with no local site"""

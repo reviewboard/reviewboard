@@ -43,6 +43,10 @@ class LocalSite(models.Model):
     is enforced through a liberal sprinkling of assertions and unit tests.
     """
     name = models.SlugField(_('name'), max_length=32, blank=False, unique=True)
+    public = models.BooleanField(
+        default=False,
+        help_text=_('Allow people outside the team to access and post '
+                    'review requests and reviews.'))
     users = models.ManyToManyField(User, blank=True,
                                    related_name='local_site')
     admins = models.ManyToManyField(User, blank=True,
@@ -55,7 +59,8 @@ class LocalSite(models.Model):
         'users' field.
         """
         return (user.is_authenticated() and
-                (user.is_staff or self.users.filter(pk=user.pk).exists()))
+                (user.is_staff or self.public or
+                 self.users.filter(pk=user.pk).exists()))
 
     def is_mutable_by(self, user, perm='site.change_localsite'):
         """Returns whether or not a user can modify settings in a LocalSite.
