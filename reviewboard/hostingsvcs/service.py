@@ -293,7 +293,7 @@ class HostingService(object):
 
         content_type = "multipart/form-data; boundary=%s" % BOUNDARY
 
-        return content_type, content
+        return content, content_type
 
 
 _hosting_services = {}

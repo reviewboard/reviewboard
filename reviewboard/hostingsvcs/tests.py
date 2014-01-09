@@ -1025,6 +1025,187 @@ class GitHubTests(ServiceTests):
         return service._get_repo_api_url(repository)
 
 
+class GitLabTests(ServiceTests):
+    """Unit tests for the GitLab hosting service."""
+    service_name = 'gitlab'
+
+    def test_service_support(self):
+        """Testing the GitLab service support capabilities"""
+        self.assertTrue(self.service_class.supports_bug_trackers)
+        self.assertTrue(self.service_class.supports_repositories)
+        self.assertFalse(self.service_class.supports_ssh_key_association)
+
+    def test_personal_field_values(self):
+        """Testing the GitLab personal plan repository field values"""
+        fields = self._get_repository_fields('Git', plan='personal', fields={
+            'hosting_url': 'https://example.com',
+            'gitlab_personal_repo_name': 'myrepo',
+        })
+        self.assertEqual(fields['path'],
+                         'git@example.com:myuser/myrepo.git')
+        self.assertEqual(fields['mirror_path'],
+                         'https://example.com/myuser/myrepo.git')
+
+    def test_personal_bug_tracker_field(self):
+        """Testing the GitLab personal repository bug tracker field value"""
+        self.assertTrue(
+            self.service_class.get_bug_tracker_requires_username('personal'))
+        self.assertEqual(
+            self.service_class.get_bug_tracker_field('personal', {
+                'hosting_url': 'https://example.com',
+                'gitlab_personal_repo_name': 'myrepo',
+                'hosting_account_username': 'myuser',
+            }),
+            'https://example.com/myuser/myrepo/issues/%s')
+
+    def test_group_field_values(self):
+        """Testing the GitLab group plan repository field values"""
+        fields = self._get_repository_fields('Git', plan='group', fields={
+            'hosting_url': 'https://example.com',
+            'gitlab_group_repo_name': 'myrepo',
+            'gitlab_group_name': 'mygroup',
+        })
+        self.assertEqual(fields['path'],
+                         'git@example.com:mygroup/myrepo.git')
+        self.assertEqual(fields['mirror_path'],
+                         'https://example.com/mygroup/myrepo.git')
+
+    def test_group_bug_tracker_field(self):
+        """Testing the GitLab group repository bug tracker field value"""
+        self.assertFalse(
+            self.service_class.get_bug_tracker_requires_username('group'))
+        self.assertEqual(
+            self.service_class.get_bug_tracker_field('group', {
+                'hosting_url': 'https://example.com',
+                'gitlab_group_name': 'mygroup',
+                'gitlab_group_repo_name': 'myrepo',
+            }),
+            'https://example.com/mygroup/myrepo/issues/%s')
+
+    def test_check_repository_personal(self):
+        """Testing GitLab check_repository with personal repository"""
+        self._test_check_repository(plan='personal',
+                                    gitlab_personal_repo_name='myrepo')
+
+    def test_check_repository_group(self):
+        """Testing GitLab check_repository with group repository"""
+        self._test_check_repository(plan='group',
+                                    gitlab_group_name='mygroup',
+                                    gitlab_group_repo_name='myrepo',
+                                    expected_user='mygroup')
+
+    def test_check_repository_personal_not_found(self):
+        """Testing GitLab check_repository with not found error and personal
+        repository"""
+        self._test_check_repository_error(
+            plan='personal',
+            gitlab_personal_repo_name='myrepo',
+            expected_error='A repository with this name was not found, '
+                           'or your user may not own it.')
+
+    def test_check_repository_group_not_found(self):
+        """Testing GitLab check_repository with not found error and
+        group repository"""
+        self._test_check_repository_error(
+            plan='group',
+            gitlab_group_name='mygroup',
+            gitlab_group_repo_name='myrepo',
+            expected_error='A repository with this name was not found on '
+                           'this group, or your user may not have access '
+                           'to it.')
+
+    def test_authorization(self):
+        """Testing that GitLab account authorization sends expected data"""
+        http_post_data = {}
+
+        def _http_post(self, *args, **kwargs):
+            http_post_data['args'] = args
+            http_post_data['kwargs'] = kwargs
+
+            return simplejson.dumps({
+                'id': 1,
+                'private_token': 'abc123',
+            }), {}
+
+        self.service_class._http_post = _http_post
+
+        account = HostingServiceAccount(service_name=self.service_name,
+                                        username='myuser')
+        service = account.service
+        self.assertFalse(account.is_authorized)
+
+        service.authorize('myuser', 'mypass',
+                          hosting_url='https://example.com')
+        self.assertTrue(account.is_authorized)
+
+        self.assertEqual(http_post_data['kwargs']['url'],
+                         'https://example.com/api/v3/session')
+        self.assertIn('fields', http_post_data['kwargs'])
+
+        fields = http_post_data['kwargs']['fields']
+        self.assertEqual(fields['login'], 'myuser')
+        self.assertEqual(fields['password'], 'mypass')
+
+    def _test_check_repository(self, expected_user='myuser', **kwargs):
+        def _http_get(service, url, *args, **kwargs):
+            if url == 'https://example.com/api/v3/projects?per_page=100':
+                payload = [
+                    {
+                        'id': 1,
+                        'path': 'myrepo',
+                        'namespace': {
+                            'path': expected_user,
+                        },
+                    }
+                ]
+            elif url == 'https://example.com/api/v3/projects/1':
+                # We don't care about the contents. Just that it exists.
+                payload = {}
+            else:
+                self.fail('Unexpected URL %s' % url)
+
+            return simplejson.dumps(payload), {}
+
+        account = self._get_hosting_account(use_url=True)
+        service = account.service
+        self.spy_on(service._http_get, call_fake=_http_get)
+        account.data['private_token'] = encrypt_password('abc123')
+
+        service.check_repository(**kwargs)
+        self.assertTrue(service._http_get.called)
+
+    def _test_check_repository_error(self, expected_error, **kwargs):
+        def _http_get(service, url, *args, **kwargs):
+            return '[]', {}
+
+        account = self._get_hosting_account(use_url=True)
+        service = account.service
+        self.spy_on(service._http_get, call_fake=_http_get)
+        account.data['private_token'] = encrypt_password('abc123')
+
+        try:
+            service.check_repository(**kwargs)
+            saw_exception = False
+        except Exception, e:
+            self.assertEqual(unicode(e), expected_error)
+            saw_exception = True
+
+        self.assertTrue(saw_exception)
+
+    def _get_repo_api_url(self, plan, fields):
+        account = self._get_hosting_account(use_url=True)
+        service = account.service
+        self.assertNotEqual(service, None)
+
+        repository = Repository(hosting_account=account)
+        repository.extra_data['repository_plan'] = plan
+
+        form = self._get_form(plan, fields)
+        form.save(repository)
+
+        return service._get_repo_api_url(repository)
+
+
 class GitoriousTests(ServiceTests):
     """Unit tests for the Gitorious hosting service."""
     service_name = 'gitorious'
