@@ -6,7 +6,7 @@ from django.utils.translation import ugettext as _
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.util.fields import Base64DecodedValue
 
-from reviewboard.diffviewer.differ import DEFAULT_DIFF_COMPAT_VERSION
+from reviewboard.diffviewer.differ import DiffCompatVersion
 from reviewboard.diffviewer.errors import DiffTooBigError, EmptyDiffError
 from reviewboard.scmtools.core import PRE_CREATION, UNKNOWN, FileNotFoundError
 
@@ -140,7 +140,7 @@ class DiffSetManager(models.Manager):
             basedir=basedir,
             history=diffset_history,
             repository=repository,
-            diffcompat=DEFAULT_DIFF_COMPAT_VERSION,
+            diffcompat=DiffCompatVersion.DEFAULT,
             base_commit_id=base_commit_id)
 
         if save:
