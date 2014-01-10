@@ -1,5 +1,5 @@
 {% extends "reviews/reviewable_base.html" %}
-{% load djblets_deco djblets_js i18n reviewtags tz %}
+{% load djblets_deco djblets_js djblets_utils i18n reviewtags tz %}
 
 {% block title %}
  {{review_ui.name}}{% if caption %}: {{caption}}{% endif %}
@@ -11,7 +11,9 @@
 {% endblock %}
 
 {% block content %}
-<div id="review_request">
+{%  definevar "review_ui_box_content" %}{% block review_ui_box_content %}{% endblock %}{% enddefinevar %}
+
+<div id="review_request" class="review-ui-box{% if review_ui_box_content %} has-review-ui-box-content{% endif %}">
 {%  box "review-request" %}
 <div class="actions-container">
  {% star review_request %}
@@ -29,14 +31,8 @@
 </div>
 {%   include "reviews/review_request_dlgs.html" %}
 
- <div class="main">
-  <div class="header">
-   <div id="summary_wrapper">
-    <h1 id="summary">{{caption}}</h1>
-   </div>
-  </div>
-  <div class="content">
-{%   block review_ui_box_content %}{% endblock %}
+  <div class="content review-ui-box-content">
+   {{review_ui_box_content}}
   </div>
  </div>
 {%  endbox %}

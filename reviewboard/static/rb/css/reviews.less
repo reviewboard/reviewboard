@@ -451,6 +451,33 @@
 
 
 /****************************************************************************
+ * Review UIs
+ ****************************************************************************/
+.review-ui-box {
+  &.has-review-ui-box-content .actions-container {
+    .border-radius(@box-inner-border-radius @box-inner-border-radius 0 0);
+
+    .actions > li:last-child {
+      .border-radius(0 @box-inner-border-radius 0 0);
+    }
+  }
+
+  .actions-container {
+    .border-radius(@box-inner-border-radius);
+
+    .actions > li:last-child {
+      .border-radius(0 @box-inner-border-radius @box-inner-border-radius 0);
+    }
+  }
+
+  .review-ui-box-content {
+    clear: both;
+    padding: 0;
+  }
+}
+
+
+/****************************************************************************
  * Reviews
  ****************************************************************************/
 

@@ -97,7 +97,10 @@ class ReviewUI(object):
         }
 
         if inline:
-            context['base_template'] = 'reviews/ui/base_inline.html'
+            context.update({
+                'base_template': 'reviews/ui/base_inline.html',
+                'review_ui_inline': True,
+            })
         else:
             if self.review_request.repository_id:
                 diffset_count = DiffSet.objects.filter(
@@ -109,6 +112,7 @@ class ReviewUI(object):
                 'base_template': 'reviews/ui/base.html',
                 'has_diffs': (draft and draft.diffset) or diffset_count > 0,
                 'review': self.review_request.get_pending_review(request.user),
+                'review_ui_inline': False,
             })
 
         return render_to_string(

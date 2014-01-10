@@ -20,18 +20,24 @@
 }
 
 .image-review-ui {
-  border: 1px #777777 solid;
+  background: white;
+  padding: 2em;
   position: relative;
+  .border-radius(0 0 @box-border-radius @box-border-radius);
 
   .review-ui-inline & {
-    border: 0;
-    .border-radius(0 0 @box-border-radius @box-border-radius);
+    padding: 0;
   }
 
   img {
     display: block;
     margin: 0 auto;
     padding: 0;
+  }
+
+  .caption {
+    margin-bottom: 1em;
+    text-align: center;
   }
 
   .image-diffs {

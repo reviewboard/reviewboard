@@ -17,13 +17,16 @@ RB.AbstractReviewableView = Backbone.View.extend({
     /*
      * Initializes AbstractReviewableView.
      */
-    initialize: function() {
+    initialize: function(options) {
+        options = options || {};
+
         console.assert(this.commentBlockView,
                        'commentBlockView must be defined by the subclass');
         console.assert(this.commentsListName,
                        'commentsListName must be defined by the subclass');
 
         this.commentDlg = null;
+        this.renderedInline = options.renderedInline || false;
     },
 
     /*

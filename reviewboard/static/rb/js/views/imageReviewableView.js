@@ -546,8 +546,9 @@ RB.ImageReviewableView = RB.FileAttachmentReviewableView.extend({
     /*
      * Initializes the view.
      */
-    initialize: function() {
-        RB.AbstractReviewableView.prototype.initialize.call(this);
+    initialize: function(options) {
+        RB.FileAttachmentReviewableView.prototype.initialize.call(
+            this, options);
 
         _.bindAll(this, '_adjustPos');
 
@@ -585,6 +586,11 @@ RB.ImageReviewableView = RB.FileAttachmentReviewableView.extend({
             .prependTo(this._$selectionArea)
             .proxyTouchEvents()
             .hide();
+
+        if (!this.renderedInline) {
+            this.$el.append(
+                $('<h1 class="caption"/>').text(this.model.get('caption')));
+        }
 
         this.$el
             /*

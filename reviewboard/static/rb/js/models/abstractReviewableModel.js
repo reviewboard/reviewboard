@@ -9,6 +9,8 @@
  */
 RB.AbstractReviewable = Backbone.Model.extend({
     defaults: {
+        caption: null,
+        renderedInline: false,
         reviewRequest: null,
         review: null,
         serializedCommentBlocks: []
