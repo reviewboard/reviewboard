@@ -17,8 +17,10 @@ RB.ReviewRequestPageView = RB.ReviewablePageView.extend({
             reviewRequest: this.reviewRequest
         });
 
-        this.reviewRequestEditorView.issueSummaryTableView
-            .on('issueClicked', _.bind(this._expandIssueBox, this));
+        if (this.reviewRequestEditorView.issueSummaryTableView) {
+            this.reviewRequestEditorView.issueSummaryTableView
+                .on('issueClicked', _.bind(this._expandIssueBox, this));
+        }
     },
 
     /*

@@ -360,23 +360,32 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
     ],
 
     initialize: function() {
-        this._fieldEditors = {};
+        var $issueSummary = $('#issue-summary');
 
-        _.each(this.defaultFields, function(fieldInfo) {
-            this.registerField(_.defaults({
-                useExtraData: false
-            }, fieldInfo));
-        }, this);
+        _.bindAll(this, '_resizeLayout');
+
+        this._fieldEditors = {};
+        this._hasFields = (this.$('.editable').length > 0);
+
+        if (this._hasFields) {
+            _.each(this.defaultFields, function(fieldInfo) {
+                this.registerField(_.defaults({
+                    useExtraData: false
+                }, fieldInfo));
+            }, this);
+        }
 
         this.draft = this.model.get('reviewRequest').draft;
         this.banner = null;
         this._$main = null;
         this._$extra = null;
 
-        this.issueSummaryTableView = new RB.IssueSummaryTableView({
-            el: $('#issue-summary'),
-            model: this.model.get('commentIssueManager')
-        });
+        if ($issueSummary.length > 0) {
+            this.issueSummaryTableView = new RB.IssueSummaryTableView({
+                el: $('#issue-summary'),
+                model: this.model.get('commentIssueManager')
+            });
+        }
     },
 
     /*
@@ -453,76 +462,95 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
          * Find any editors that weren't registered. These may be from
          * extensions.
          */
-        _.each(this.$('.field.editable'), function(field) {
-            var $field = $(field),
-                fieldID = $field.data('field-id'),
-                isCommaEditable,
-                fieldInfo;
+        if (this._hasFields) {
+            _.each(this.$('.field.editable'), function(field) {
+                var $field = $(field),
+                    fieldID = $field.data('field-id'),
+                    isCommaEditable,
+                    fieldInfo;
 
-            if (!this._fieldEditors[fieldID] && $field.hasClass('editable')) {
-                isCommaEditable = $field.hasClass('comma-editable');
+                if (!this._fieldEditors[fieldID] &&
+                    $field.hasClass('editable')) {
+                    isCommaEditable = $field.hasClass('comma-editable');
 
-                fieldInfo = {
-                    fieldID: fieldID
-                };
-
-                if (isCommaEditable) {
-                    fieldInfo.useEditIconOnly = true;
-                    fieldInfo.formatter = function(view, data, $el) {
-                        data = data || [];
-                        $el.html(data.join(', '));
+                    fieldInfo = {
+                        fieldID: fieldID
                     };
-                } else if ($field.data('rich-text')) {
-                    fieldInfo.editMarkdown = true;
-                    fieldInfo.formatter = function(view, data, $el) {
-                        view.formatText($el, data);
-                    };
+
+                    if (isCommaEditable) {
+                        fieldInfo.useEditIconOnly = true;
+                        fieldInfo.formatter = function(view, data, $el) {
+                            data = data || [];
+                            $el.html(data.join(', '));
+                        };
+                    } else if ($field.data('rich-text')) {
+                        fieldInfo.editMarkdown = true;
+                        fieldInfo.formatter = function(view, data, $el) {
+                            view.formatText($el, data);
+                        };
+                    }
+
+                    this.registerField(fieldInfo);
                 }
+            }, this);
 
-                this.registerField(fieldInfo);
+            /*
+             * Set up editors for every registered field.
+             */
+            _.each(this._fieldEditors, function(fieldOptions, fieldID) {
+                this.setupFieldEditor(fieldID);
+            }, this);
+
+            /*
+             * Linkify any text in the description, testing done, and change
+             * description fields.
+             *
+             * Do this as soon as possible, so that we don't show spinners for
+             * too long. It must be done after the fields are set up,
+             * though.
+             */
+            _.each(this.$('.field-text-area'), function(el) {
+                var $el = $(el);
+
+                this.formatText($el, $el.text());
+            }, this);
+
+            this.dndUploader = new RB.DnDUploader({
+                reviewRequestEditor: this.model
+            });
+
+            /*
+             * Update the layout constraints any time these properties
+             * change. Also, right away.
+             */
+            $(window).resize(this._resizeLayout);
+            this.listenTo(this.model, 'change:editCount', this._resizeLayout);
+            this._resizeLayout();
+
+            if (this.issueSummaryTableView) {
+                this.issueSummaryTableView.render();
             }
-        }, this);
 
-        /*
-         * Set up editors for every registered field.
-         */
-        _.each(this._fieldEditors, function(fieldOptions, fieldID) {
-            this.setupFieldEditor(fieldID);
-        }, this);
+            this.model.fileAttachments.on('add',
+                                          this._buildFileAttachmentThumbnail,
+                                          this);
 
-        /*
-         * Linkify any text in the description, testing done, and change
-         * description fields.
-         *
-         * Do this as soon as possible, so that we don't show spinners for
-         * too long. It must be done after the fields are set up,
-         * though.
-         */
-        _.each(this.$('.field-text-area'), function(el) {
-            var $el = $(el);
-
-            this.formatText($el, $el.text());
-        }, this);
-
-        this.dndUploader = new RB.DnDUploader({
-            reviewRequestEditor: this.model
-        });
-
-        /*
-         * Update the layout constraints any time these properties
-         * change. Also, right away.
-         */
-        $(window).resize(_.bind(this._resizeLayout, this));
-        this.model.on('change:editCount', this._resizeLayout, this);
-        this._resizeLayout();
-
-        this.issueSummaryTableView.render();
+            /*
+             * Import all the screenshots and file attachments rendered onto
+             * the page.
+             */
+            _.each(this._$screenshots.find('.screenshot-container'),
+                   this._importScreenshotThumbnail,
+                   this);
+            _.each(this._$attachments.find('.file-container'),
+                   this._importFileAttachmentThumbnail,
+                   this);
+            _.each($('.binary'),
+                   this._importFileAttachmentThumbnail,
+                   this);
+        }
 
         this._setupActions();
-
-        this.model.fileAttachments.on('add',
-                                      this._buildFileAttachmentThumbnail,
-                                      this);
 
         if (this._$bannersContainer.children().length > 0) {
             this.showBanner();
@@ -536,20 +564,6 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
         this.model.on('published', this._refreshPage, this);
         reviewRequest.on('closed reopened', this._refreshPage, this);
         draft.on('destroyed', this._refreshPage, this);
-
-        /*
-         * Import all the screenshots and file attachments rendered onto
-         * the page.
-         */
-        _.each(this._$screenshots.find('.screenshot-container'),
-               this._importScreenshotThumbnail,
-               this);
-        _.each(this._$attachments.find('.file-container'),
-               this._importFileAttachmentThumbnail,
-               this);
-        _.each($('.binary'),
-               this._importFileAttachmentThumbnail,
-               this);
 
         /*
          * Warn the user if they try to navigate away with unsaved comments.
@@ -711,6 +725,8 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
         var reviewRequest = this.model.get('reviewRequest');
 
         RB.formatText($el, text || '', reviewRequest.get('bugTrackerURL'));
+
+        $el.find('img').load(this._resizeLayout);
     },
 
     /*
@@ -913,7 +929,7 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
                         }, fieldOptions),
                         this);
                 }, this),
-                resize: _.bind(this._resizeLayout, this)
+                resize: this._resizeLayout
             });
 
         this.listenTo(
@@ -1021,8 +1037,11 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
          */
         this._$main.height('auto')
         $lastContent.height('auto');
-        editor.setSize(null, 'auto');
         $lastEditable.height('auto');
+
+        if (editor) {
+          editor.setSize(null, 'auto');
+        }
 
         /*
          * Set the review request box's main height to take up the full
@@ -1051,7 +1070,7 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
              * both, since this logic will be called again when the state
              * changes.
              */
-            if (editing) {
+            if (editing && editor) {
                 editor.setSize(
                     null,
                     (contentHeight -
@@ -1076,7 +1095,7 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
      * Schedules a layout resize after the stack unwinds.
      */
     _scheduleResizeLayout: function() {
-        _.defer(_.bind(this._resizeLayout, this));
+        _.defer(this._resizeLayout);
     },
 
     /*
