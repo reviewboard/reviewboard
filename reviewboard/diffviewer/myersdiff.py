@@ -2,7 +2,7 @@ from __future__ import unicode_literals
 
 from djblets.util.compat.six.moves import range
 
-from reviewboard.diffviewer.differ import Differ
+from reviewboard.diffviewer.differ import Differ, DiffCompatVersion
 
 
 class MyersDiffer(Differ):
@@ -365,11 +365,10 @@ class MyersDiffer(Differ):
                 if best > 0:
                     return ret_x, ret_y, False, True
 
-            continue  # XXX
-
-            # If we've reached or gone past the max cost, just give up now
-            # and report the halfway point between our best results.
-            if cost >= max_cost:
+            if (cost >= max_cost and
+                self.compat_version >= DiffCompatVersion.MYERS_SMS_COST_BAIL):
+                # We've reached or gone past the max cost. Just give up now
+                # and report the halfway point between our best results.
                 fx_best = bx_best = 0
 
                 # Find the forward diagonal that maximized x + y

@@ -7,18 +7,34 @@ from reviewboard.diffviewer.filetypes import (HEADER_REGEXES,
                                               HEADER_REGEX_ALIASES)
 
 
-DEFAULT_DIFF_COMPAT_VERSION = 1
+# Compatibility versions:
+#
+class DiffCompatVersion(object):
+    # Python SequenceMatcher differ.
+    SMDIFFER = 0
+
+    # Myers differ
+    MYERS = 1
+
+    # Myers differ with bailing on a too high SMS cost
+    # (prevents very long diff times for certain files)
+    MYERS_SMS_COST_BAIL = 2
+
+    DEFAULT = MYERS_SMS_COST_BAIL
+
+    MYERS_VERSIONS = (MYERS, MYERS_SMS_COST_BAIL)
 
 
 class Differ(object):
     """Base class for differs."""
-    def __init__(self, a, b, ignore_space=False):
+    def __init__(self, a, b, ignore_space=False, compat_version=None):
         if type(a) is not type(b):
             raise TypeError
 
         self.a = a
         self.b = b
         self.ignore_space = ignore_space
+        self.compat_version = compat_version
         self.interesting_line_regexes = []
         self.interesting_lines = [{}, {}]
 
@@ -69,7 +85,7 @@ class Differ(object):
 
 
 def get_differ(a, b, ignore_space=False,
-               compat_version=DEFAULT_DIFF_COMPAT_VERSION):
+               compat_version=DiffCompatVersion.DEFAULT):
     """Returns a differ for with the given settings.
 
     By default, this will return the MyersDiffer. Older differs can be used
@@ -78,10 +94,10 @@ def get_differ(a, b, ignore_space=False,
     """
     cls = None
 
-    if compat_version == 1:
+    if compat_version in DiffCompatVersion.MYERS_VERSIONS:
         from reviewboard.diffviewer.myersdiff import MyersDiffer
         cls = MyersDiffer
-    elif compat_version == 0:
+    elif compat_version == DiffCompatVersion.SMDIFFER:
         from reviewboard.diffviewer.smdiff import SMDiffer
         cls = SMDiffer
     else:
@@ -89,4 +105,4 @@ def get_differ(a, b, ignore_space=False,
             'Invalid diff compatibility version (%s) passed to Differ' %
             compat_version)
 
-    return cls(a, b, ignore_space)
+    return cls(a, b, ignore_space, compat_version=compat_version)
