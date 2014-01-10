@@ -13,7 +13,7 @@ from django.core.urlresolvers import reverse
 from django.db.models import Q
 from django.http import (HttpResponse, HttpResponseRedirect, Http404,
                          HttpResponseNotModified, HttpResponseServerError)
-from django.shortcuts import (get_object_or_404, get_list_or_404,
+from django.shortcuts import (get_object_or_404, get_list_or_404, render,
                               render_to_response)
 from django.template.context import RequestContext
 from django.template.loader import render_to_string
@@ -23,13 +23,13 @@ from django.utils.http import http_date
 from django.utils.safestring import mark_safe
 from django.utils.timezone import utc
 from django.utils.translation import ugettext_lazy as _
-from django.views.generic.list import ListView
-from djblets.db.query import get_object_or_none
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.util.dates import get_latest_timestamp
 from djblets.util.decorators import augment_method_from
 from djblets.util.http import (set_last_modified, get_modified_since,
                                set_etag, etag_if_none_match)
+from haystack.query import SearchQuerySet
+from haystack.views import SearchView
 
 from reviewboard.accounts.decorators import (check_login_required,
                                              valid_prefs_required)
@@ -1608,81 +1608,62 @@ def view_screenshot(request,
     return review_ui.render_to_response(request)
 
 
-class ReviewsSearchView(ListView):
-    template_name = 'reviews/search.html'
+class ReviewRequestSearchView(SearchView):
+    template = 'reviews/search.html'
 
-    def get_context_data(self, **kwargs):
-        query = self.request.GET.get('q', '')
-        context_data = super(ReviewsSearchView, self).get_context_data(**kwargs)
-        context_data.update({
-            'query': query,
-            'extra_query': 'q=%s' % query,
-        })
-
-        return context_data
-
-    def get_queryset(self):
-        query = self.request.GET.get('q', '')
+    def __call__(self, request):
         siteconfig = SiteConfiguration.objects.get_current()
 
         if not siteconfig.get("search_enable"):
-            # FIXME: show something useful
-            raise Http404
+            return render(request, 'search/search_disabled.html')
 
-        if not query:
-            # FIXME: I'm not super thrilled with this
-            return HttpResponseRedirect(reverse("root"))
+        self.max_search_results = siteconfig.get("max_search_results")
+        ReviewRequestSearchView.results_per_page = \
+            siteconfig.get("search_results_per_page")
 
-        if query.isdigit():
-            query_review_request = get_object_or_none(ReviewRequest, pk=query)
-            if query_review_request:
-                return HttpResponseRedirect(
-                    query_review_request.get_absolute_url())
+        return super(ReviewRequestSearchView, self).__call__(request)
 
-        import lucene
-        lv = [int(x) for x in lucene.VERSION.split('.')]
-        lucene_is_2x = lv[0] == 2 and lv[1] < 9
-        lucene_is_3x = lv[0] == 3 or (lv[0] == 2 and lv[1] == 9)
+    def get_query(self):
+        return self.request.GET.get('q', '').strip()
 
-        # We may have already initialized lucene
-        try:
-            lucene.initVM(lucene.CLASSPATH)
-        except ValueError:
-            pass
-
-        index_file = siteconfig.get("search_index_file")
-        if lucene_is_2x:
-            store = lucene.FSDirectory.getDirectory(index_file, False)
-        elif lucene_is_3x:
-            store = lucene.FSDirectory.open(lucene.File(index_file))
+    def get_results(self):
+        # XXX: SearchQuerySet does not provide an API to limit the number of
+        # results returned. Unlike QuerySet, slicing a SearchQuerySet does not
+        # limit the number of results pulled from the database. There is a
+        # potential performance issue with this that needs to be addressed.
+        if self.query.isdigit():
+            sqs = SearchQuerySet().filter(
+                review_request_id=self.query).load_all()
         else:
-            assert False
+            sqs = SearchQuerySet().raw_search(self.query).load_all()
 
-        try:
-            searcher = lucene.IndexSearcher(store)
-        except lucene.JavaError as e:
-            # FIXME: show a useful error
-            raise e
+        self.total_hits = len(sqs)
+        return sqs[:self.max_search_results]
 
-        if lucene_is_2x:
-            parser = lucene.QueryParser('text', lucene.StandardAnalyzer())
-            result_ids = [int(lucene.Hit.cast_(hit).getDocument().get('id'))
-                          for hit in searcher.search(parser.parse(query))]
-        elif lucene_is_3x:
-            parser = lucene.QueryParser(
-                lucene.Version.LUCENE_CURRENT, 'text',
-                lucene.StandardAnalyzer(lucene.Version.LUCENE_CURRENT))
+    def extra_context(self):
+        return {
+            'hits_returned': len(self.results),
+            'total_hits': self.total_hits,
+        }
 
-            result_ids = [
-                searcher.doc(hit.doc).get('id')
-                for hit in searcher.search(parser.parse(query), 100).scoreDocs
-            ]
+    def create_response(self):
+        if not self.query:
+            return HttpResponseRedirect(reverse("all-review-requests"))
 
-        searcher.close()
+        if self.query.isdigit() and self.results:
+            return HttpResponseRedirect(
+                self.results[0].object.get_absolute_url())
 
-        return ReviewRequest.objects.filter(
-            id__in=result_ids,
-            local_site__name=self.kwargs['local_site_name'])
+        paginator, page = self.build_page()
+        context = {
+            'query': self.query,
+            'page': page,
+            'paginator': paginator,
+        }
+        context.update(self.extra_context())
+
+        return render_to_response(self.template, context,
+            context_instance=self.context_class(self.request))
 
 
 @check_login_required

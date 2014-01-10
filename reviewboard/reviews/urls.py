@@ -4,7 +4,7 @@ from django.conf.urls import patterns, url
 
 from reviewboard.reviews.views import (ReviewsDiffFragmentView,
                                        ReviewsDiffViewerView,
-                                       ReviewsSearchView)
+                                       ReviewRequestSearchView)
 
 
 urlpatterns = patterns(
@@ -71,5 +71,5 @@ urlpatterns = patterns(
      'preview_reply_email'),
 
     # Search
-    url(r'^search/$', ReviewsSearchView.as_view(), name="search"),
+    url(r'^search/$', ReviewRequestSearchView(), name="search"),
 )

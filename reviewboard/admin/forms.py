@@ -44,8 +44,7 @@ from djblets.util.compat import six
 from djblets.util.compat.six.moves.urllib.parse import urlparse
 
 from reviewboard.accounts.forms import LegacyAuthModuleSettingsForm
-from reviewboard.admin.checks import (get_can_enable_search,
-                                      get_can_enable_syntax_highlighting,
+from reviewboard.admin.checks import (get_can_enable_syntax_highlighting,
                                       get_can_use_amazon_s3,
                                       get_can_use_couchdb)
 from reviewboard.admin.siteconfig import load_site_config
@@ -110,6 +109,18 @@ class GeneralSettingsForm(SiteSettingsForm):
                     "review requests."),
         required=False)
 
+    max_search_results = forms.IntegerField(
+        label=_("Max number of results"),
+        help_text=_("Maximum number of search results to display."),
+        min_value=1,
+        required=False)
+
+    search_results_per_page = forms.IntegerField(
+        label=_("Search results per page"),
+        help_text=_("Number of search results to show per page."),
+        min_value=1,
+        required=False)
+
     search_index_file = forms.CharField(
         label=_("Search index directory"),
         help_text=_("The directory that search index data should be stored "
@@ -140,12 +151,6 @@ class GeneralSettingsForm(SiteSettingsForm):
     def load(self):
         domain_method = self.siteconfig.get("site_domain_method")
         site = Site.objects.get_current()
-
-        can_enable_search, reason = get_can_enable_search()
-        if not can_enable_search:
-            self.disabled_fields['search_enable'] = True
-            self.disabled_fields['search_index_file'] = True
-            self.disabled_reasons['search_enable'] = reason
 
         # Load the rest of the settings from the form.
         super(GeneralSettingsForm, self).load()
@@ -295,7 +300,8 @@ class GeneralSettingsForm(SiteSettingsForm):
             {
                 'classes': ('wide',),
                 'title': _("Search"),
-                'fields': ('search_enable', 'search_index_file'),
+                'fields': ('search_enable', 'max_search_results',
+                           'search_results_per_page', 'search_index_file'),
             },
         )
 

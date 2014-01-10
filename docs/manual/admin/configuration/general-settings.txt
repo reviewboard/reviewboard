@@ -76,7 +76,7 @@ Cache Settings
 
 * **Cache Hosts:**
     The list of Memcached servers to use for all cache storage. More than
-    one server can be listed by seperating the servers with semicolons.
+    one server can be listed by separating the servers with semicolons.
 
     Servers should be in ``hostname:port`` format.
 
@@ -98,8 +98,8 @@ Search
     If enabled, a search field is provided at the top of every page to
     quickly search through review requests.
 
-    This feature depends on a working :ref:`installing-pylucene` and
-    regular :ref:`search-indexing` to work.
+    An up-to-date index is required to provide useful search results. See
+    :ref:`search-indexing` for more information.
 
 
 .. _search-index-directory:

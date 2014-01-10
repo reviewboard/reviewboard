@@ -27,22 +27,23 @@ And to retrieve information on a specific management command::
 Search Indexing
 ---------------
 
-Review Board installations set up with Lucene search must periodically
-index the database. This is done through the ``index`` management command.
-There are two indexing methods: incremental and full.
+Review Board installations with indexed search enabled must periodically
+index the database. This is done through the ``rebuild_index`` and
+``update_index`` management commands (The ``index`` command will be
+deprecated in a future release).
 
-To perform an incremental index::
+To perform an index update::
 
-    $ rb-site manage /path/to/site index
+    $ rb-site manage /path/to/site update_index
 
 
 To perform a full index::
 
-    $ rb-site manage /path/to/site index -- --full
+    $ rb-site manage /path/to/site rebuild_index
 
 
 These commands should be run periodically in a task scheduler, such as
-:command:`cron` on Linux. It is advisable to do an incremental index
+:command:`cron` on Linux. It is advisable to update the index
 roughly every 10 minutes, and a full index once a week during off-peak
 hours.
 

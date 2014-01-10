@@ -158,6 +158,7 @@ RB_BUILTIN_APPS = [
     'djblets.siteconfig',
     'djblets.util',
     'djblets.webapi',
+    'haystack',
     'pipeline',  # Must be after djblets.pipeline
     'reviewboard',
     'reviewboard.accounts',
@@ -267,12 +268,25 @@ if not LOCAL_ROOT:
         # This is likely a site install. Get the parent directory.
         LOCAL_ROOT = os.path.dirname(local_dir)
 
+if PRODUCTION:
+    SITE_DATA_DIR = os.path.join(LOCAL_ROOT, 'data')
+else:
+    SITE_DATA_DIR = os.path.dirname(LOCAL_ROOT)
+
 HTDOCS_ROOT = os.path.join(LOCAL_ROOT, 'htdocs')
 STATIC_ROOT = os.path.join(HTDOCS_ROOT, 'static')
 MEDIA_ROOT = os.path.join(HTDOCS_ROOT, 'media')
 EXTENSIONS_STATIC_ROOT = os.path.join(MEDIA_ROOT, 'ext')
 ADMIN_MEDIA_ROOT = STATIC_ROOT + 'admin/'
 
+# Haystack requires this to be defined here, otherwise it will throw errors.
+# The actual PATH will be loaded through load_site_config()
+HAYSTACK_CONNECTIONS = {
+    'default': {
+        'ENGINE': 'haystack.backends.whoosh_backend.WhooshEngine',
+        'PATH': os.path.join(SITE_DATA_DIR, 'search-index'),
+    },
+}
 
 # Make sure that we have a staticfiles cache set up for media generation.
 # By default, we want to store this in local memory and not memcached or

@@ -2,9 +2,6 @@
 Search Indexing
 ===============
 
-To enable full-text search indexing, first make sure you've installed
-PyLucene as per the installation guide.
-
 You can enable search indexing by going into hte :ref:`general-settings`
 page and toggling :guilabel:`Enable search`. The
 :guilabel:`Search index file` field must be filled out to specify the
@@ -28,7 +25,7 @@ a full index every week on Sunday at 2AM.
 You will want to perform one full index before you can use this. To do
 this, type the following as the user who owns the cronjob::
 
-    $ rb-site manage /path/to/site index -- --full
+    $ rb-site manage /path/to/site rebuild_index
 
 For more information on generating search indexes, see the section on the
 :ref:`search-indexing` management command.

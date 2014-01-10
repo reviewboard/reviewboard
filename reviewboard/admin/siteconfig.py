@@ -41,10 +41,10 @@ from djblets.siteconfig.django_settings import (apply_django_settings,
                                                 get_django_defaults,
                                                 get_django_settings_map)
 from djblets.siteconfig.models import SiteConfiguration
+from haystack import connections
 
 from reviewboard.accounts.backends import get_registered_auth_backends
-from reviewboard.admin.checks import (get_can_enable_search,
-                                      get_can_enable_syntax_highlighting)
+from reviewboard.admin.checks import get_can_enable_syntax_highlighting
 from reviewboard.signals import site_settings_loaded
 
 
@@ -134,8 +134,10 @@ defaults.update({
     'site_domain_method':                  'http',
 
     # TODO: Allow relative paths for the index file later on.
-    'search_index_file': os.path.join(settings.REVIEWBOARD_ROOT,
+    'search_index_file': os.path.join(settings.SITE_DATA_DIR,
                                       'search-index'),
+    'search_results_per_page': 20,
+    'max_search_results': 200,
 
     # Overwrite this.
     'site_media_url': settings.SITE_ROOT + "media/"
@@ -169,6 +171,21 @@ def load_site_config():
             setattr(settings, settings_key, db_value)
         elif default:
             setattr(settings, settings_key, default)
+
+    def update_haystack_settings():
+        """Updates the haystack settings with settings in site config."""
+        apply_setting("HAYSTACK_CONNECTIONS", None, {
+            'default': {
+                'ENGINE': settings.HAYSTACK_CONNECTIONS['default']['ENGINE'],
+                'PATH': siteconfig.get("search_index_file",
+                                       defaults['search_index_file']),
+            },
+        })
+
+        # Re-initialize Haystack's connection information to use the updated
+        # settings.
+        connections.connections_info = settings.HAYSTACK_CONNECTIONS
+        connections._connections = {}
 
     try:
         siteconfig = SiteConfiguration.objects.get_current()
@@ -217,10 +234,9 @@ def load_site_config():
 
     # Now for some more complicated stuff...
 
-    # Do some dependency checks and disable things if we don't support them.
-    if not get_can_enable_search()[0]:
-        siteconfig.set('search_enable', False)
+    update_haystack_settings()
 
+    # Do some dependency checks and disable things if we don't support them.
     if not get_can_enable_syntax_highlighting()[0]:
         siteconfig.set('diffviewer_syntax_highlighting', False)
 

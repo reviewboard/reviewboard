@@ -207,21 +207,6 @@ def reset_check_cache():
     _install_fine = False
 
 
-def get_can_enable_search():
-    """Checks whether the search functionality can be enabled."""
-    try:
-        imp.find_module("lucene")
-        return (True, None)
-    except ImportError:
-        return (False, _(
-            'PyLucene (with JCC) is required to enable search. See the '
-            '<a href="%(url)s">documentation</a> for instructions.'
-        ) % {
-            'url': 'http://www.reviewboard.org/docs/manual/dev/admin/'
-                   'installation/linux/#installing-pylucene'
-        })
-
-
 def get_can_enable_syntax_highlighting():
     """Checks whether syntax highlighting can be enabled."""
     try:

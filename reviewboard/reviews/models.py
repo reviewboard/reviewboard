@@ -864,6 +864,12 @@ class ReviewRequest(BaseReviewRequestDetails):
 
         return self._diffsets
 
+    def get_all_diff_filenames(self):
+        """Returns a set of filenames from files in all diffsets."""
+        q = FileDiff.objects.filter(
+            diffset__history__id=self.diffset_history_id)
+        return set(q.values_list('source_file', 'dest_file'))
+
     def get_latest_diffset(self):
         """Returns the latest diffset for this review request."""
         try:

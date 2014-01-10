@@ -1,0 +1,9 @@
+{# Haystack data template for ReviewRequestIndex #}
+{{object.id}}
+{{object.summary}}
+{{object.description}}
+{{object.testing_done}}
+{{object.bugs_closed}}
+{{object.submitter.username}}
+{{object.submitter.get_full_name}}
+{{object.get_all_diff_filenames}}

@@ -74,6 +74,7 @@ def initialize():
     from djblets.cache.serials import generate_ajax_serial
 
     from reviewboard import signals
+    from reviewboard.admin.siteconfig import load_site_config
     from reviewboard.extensions.base import get_extension_manager
 
     # This overrides a default django templatetag (url), and we want to make
@@ -86,6 +87,8 @@ def initialize():
     if settings.DEBUG:
         logging.debug("Log file for Review Board v%s (PID %s)" %
                       (get_version_string(), os.getpid()))
+
+    load_site_config()
 
     # Generate the AJAX serial, used for AJAX request caching.
     generate_ajax_serial()

@@ -80,7 +80,7 @@ Fedora, simply run::
 
 You can then skip the rest of this guide for the required components. You may
 still want to install optional components, such as
-:ref:`PyLucene <installing-pylucene>`.
+:ref:`Amazon S3 Support <linux-installing-amazon-s3-support>`.
 
 You will still need to install your site. See :ref:`creating-sites` for
 details.
@@ -100,7 +100,7 @@ Once added, you can install Review Board and its dependencies by running::
 
 You can then skip the rest of this guide for the required components. You may
 still want to install optional components, such as
-:ref:`PyLucene <installing-pylucene>`.
+:ref:`Amazon S3 Support <linux-installing-amazon-s3-support>`.
 
 You will still need to install your site. See :ref:`creating-sites` for
 details.
@@ -376,83 +376,6 @@ to configure this. See the :ref:`file-storage-settings` documentation for
 more information.
 
 .. _`Amazon S3`: http://aws.amazon.com/s3/
-
-
-.. _installing-pylucene:
-
-Installing PyLucene (optional)
-==============================
-
-This is an optional step.
-
-We use PyLucene_ for our search functionality. It can be complicated to
-install, and requires a working Java installation.
-
-
-Ubuntu 9.04+ and Debian Testing
---------------------------------
-
-If you're using Ubuntu_ (9.04 or newer) or Debian_ Testing, you can simply
-install this by typing::
-
-    $ sudo apt-get install pylucene
-
-Otherwise, you'll have to perform a manual installation.
-
-
-Manual Installation
--------------------
-
-You'll need the following dependencies to build PyLucene:
-
-* gcc/g++
-* Sun's JDK
-* Ant_
-
-On Debian_ and Ubuntu_, you can install these by typing::
-
-    $ sudo apt-get install gcc g++ sun-java6-jdk ant
-
-Once these are installed, you'll need to download the `latest version
-<http://lucene.apache.org/pylucene/>`_ of PyLucene and extract
-the tarball.
-
-.. _Ant: http://ant.apache.org/
-.. _PyLucene: http://lucene.apache.org/pylucene/
-
-
-Compile JCC
-~~~~~~~~~~~
-
-JCC is needed to compile PyLucene, and is bundled along with PyLucene.
-
-First, change to the directory containing the extracted PyLucene files, and
-then type, as root::
-
-    $ cd jcc
-    $ python setup.py install
-
-If your JDK is in an unexpected place (such as using openjdk on older versions
-of Ubuntu), you may need to tweak the setup.py file to point to it instead of
-java-6-sun.
-
-
-Compile PyLucene
-~~~~~~~~~~~~~~~~
-
-Once JCC is installed, you can compile PyLucene. Change back to the
-PyLucene directory and type, as root::
-
-    $ make
-    $ make install
-
-Cleaning Up
-~~~~~~~~~~~
-
-Optionally, you can now remove your JDK and install a JRE in order to save
-space. This won't make any difference to the PyLucene installation either way.
-
-You can also remove your PyLucene tarball and the source directory.
 
 
 Installing Development Tools (optional)

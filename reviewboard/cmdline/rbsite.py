@@ -1978,6 +1978,9 @@ class ManageCommand(Command):
     def run(self):
         site.setup_settings()
 
+        from reviewboard.admin.siteconfig import load_site_config
+        load_site_config()
+
         if len(args) == 0:
             ui.error("A manage command is needed.",
                      done_func=lambda: sys.exit(1))

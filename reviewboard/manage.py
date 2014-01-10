@@ -86,12 +86,10 @@ def check_dependencies(settings):
     except ImportError:
         dependency_warning('bzrlib not found.  Bazaar integration will not work.')
 
-    for check_func in (checks.get_can_enable_search,
-                       checks.get_can_enable_syntax_highlighting):
-        success, reason = check_func()
+    success, reason = checks.get_can_enable_syntax_highlighting()
 
-        if not success:
-            dependency_warning(striptags(reason))
+    if not success:
+        dependency_warning(striptags(reason))
 
     if not is_exe_in_path('cvs'):
         dependency_warning('cvs binary not found.  CVS integration '

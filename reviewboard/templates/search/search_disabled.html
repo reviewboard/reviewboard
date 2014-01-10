@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% load djblets_deco i18n %}
+
+{% block title %}{% trans "Indexed searched not enabled" %}{% endblock %}
+
+{% block content %}
+{%  box "important" %}
+<h1>{% trans "Indexed Search is not enabled" %}</h1>
+<p>{% trans "Enable Search under General Settings in the Administration UI, or contact your administrator." %}</p>
+{%  endbox %}
+{% endblock %}

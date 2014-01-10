@@ -17,23 +17,23 @@ Query Syntax
 ============
 
 There are a variety of ways to combine terms in the search field. By default,
-the search results will be an "OR" of any words entered in the box. This means
-searching for ``window javascript`` will give pages that have either of those
+the search results will be an "AND" of any words entered in the box. This means
+searching for ``window javascript`` will give pages that have both of those
 terms in them.
 
 In order to narrow down your results, there are a few useful operators you can
 use.
 
-* **AND**:
+* **OR**:
 
-  This operator will change the relationship from "OR" to "AND". This will
-  make it so search results will contain all of the words instead of any.
-  Searching for ``window AND javascript`` will yield only review requests that
-  contain both of those words.
+  This operator will change the relationship from "AND" to "OR". This will
+  make it so search results will contain any of the words instead of all.
+  Searching for ``window OR javascript`` will yield all review requests that
+  contain either of those words.
 
 * **NOT**:
 
-  This works a lot like ``AND``, except it will filter out results containing
+  This works a lot like ``OR``, except it will filter out results containing
   the NOT term. For example, ``window NOT javascript`` will return matches
   that have "window" but not "javascript".
 
@@ -43,12 +43,12 @@ use.
   of splitting it up into terms.
 
 There are a number of other operators you can use to tweak the results. For a
-full explanation of the Lucene query syntax (including a couple features not
-mentioned here), see `Lucene Query Parser Syntax`_.
+full explanation of the Whoosh query syntax (including a couple features not
+mentioned here), see `The default query language`_.
 
 
-.. _`Lucene Query Parser Syntax`:
-   http://lucene.apache.org/java/2_2_0/queryparsersyntax.html
+.. _`The default query language`:
+   http://pythonhosted.org/Whoosh/querylang.html
 
 
 Fields
@@ -62,6 +62,16 @@ field, prefix that term with *field*:, where *field* is one of the below:
 
   This field searches only the summary. ``summary: window`` will match
   requests with window in the summary only.
+
+* ``description``:
+
+  This field searches only the description. ``description: javascript`` will
+  match requests with javascript in the description only.
+
+* ``testing_done``:
+
+  This field searches only Testing Done. ``testing_done: tested`` will match
+  requests with tested in Testing Done only
 
 * ``author`` and ``username``:
 
