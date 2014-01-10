@@ -1,0 +1,14 @@
+<table class="sidebyside text-review-ui-table text-review-ui-comment-thumbnail {{review_ui.extra_css_classes|join:' '}}">
+ <colgroup>
+  <col class="line" />
+  <col class="right" />
+ </colgroup>
+ <tbody>
+{% for line in lines %}
+  <tr>
+   <th>{{line.line_num}}</th>
+   <td>{{line.text}}</td>
+  </tr>
+{% endfor %}
+ </tbody>
+</table>

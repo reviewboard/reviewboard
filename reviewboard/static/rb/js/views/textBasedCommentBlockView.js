@@ -9,50 +9,114 @@
  * This is meant to be used with a TextCommentBlock model.
  */
 RB.TextBasedCommentBlockView = RB.AbstractCommentBlockView.extend({
-    className: 'selection',
+    tagName: 'span',
+    className: 'commentflag',
 
     template: _.template([
-        '<span class="commentflag">',
-        ' <span class="commentflag-shadow"></span>',
-        ' <span class="commentflag-inner">',
-        '  <span class="commentflag-count"></span>',
-        ' </span>',
-        '</span>'
+        '<span class="commentflag-shadow"></span>',
+        '<span class="commentflag-inner">',
+        ' <span class="commentflag-count"></span>',
+        '</span>',
+        '<a name="<%= anchorName %>" class="commentflag-anchor"></a>'
     ].join('')),
 
     /*
-     * Renders the comment block.
-     *
-     * Along with the block's flag icon, a floating tooltip will also be
-     * created that displays summaries of the comments.
-     *
-     * After rendering, the block's style and count will be updated whenever
-     * the appropriate state is changed in the model.
+     * Initializes the view.
      */
-    renderContent: function() {
-        this.$el.html(this.template());
+    initialize: function() {
+        this.$beginRow = null;
+        this.$endRow = null;
 
-        this._$ghostCommentFlag = this.$('.commentflag');
-        this._$count = this.$('.commentflag-count');
-
-        this.model.on('change:count', this._updateCount, this);
-        this._updateCount();
+        _.bindAll(this, '_updateSize');
     },
 
     /*
-     * Positions the comment dlg to the side of the flag.
+     * Renders the contents of the comment flag.
+     *
+     * This will display the comment flag and then start listening for
+     * events for updating the comment count or repositioning the comment
+     * (for zoom level changes and wrapping changes).
+     */
+    renderContent: function() {
+        this.$el.html(this.template(_.defaults(this.model.attributes, {
+            anchorName: this.buildAnchorName()
+        })));
+
+        this.$('.commentflag-count')
+            .bindProperty('text', this.model, 'count', {
+                elementToModel: false
+            });
+
+        $(window).on('resize', this._updateSize);
+    },
+
+    /*
+     * Removes the comment from the page.
+     */
+    remove: function() {
+        _.super(this).remove.call(this);
+
+        $(window).off('resize', this._updateSize);
+    },
+
+    /*
+     * Sets the row span for the comment flag.
+     *
+     * The comment will update to match the row of lines.
+     */
+    setRows: function($beginRow, $endRow) {
+        this.$beginRow = $beginRow;
+        this.$endRow = $endRow;
+
+        this._updateSize();
+    },
+
+    /*
+     * Positions the comment dialog relative to the comment flag position.
+     *
+     * The dialog will be positioned in the center of the page (horizontally),
+     * just to the bottom of the flag.
      */
     positionCommentDlg: function(commentDlg) {
-        commentDlg.positionBeside(this._$ghostCommentFlag, {
-            side: 'r',
-            fitOnScreen: true
+        commentDlg.$el.css({
+            left: $(document).scrollLeft() +
+                  ($(window).width() - commentDlg.$el.width()) / 2,
+            top: this.$endRow.offset().top + this.$endRow.height()
         });
     },
 
     /*
-     * Updates the displayed count of comments.
+     * Positions the comment update notifications bubble.
+     *
+     * The bubble will be positioned just to the top-right of the flag.
      */
-    _updateCount: function() {
-        this._$count.text(this.model.get('count'));
+    positionNotifyBubble: function($bubble) {
+        $bubble.css({
+            left: this.$el.width(),
+            top: 0
+        });
+    },
+
+    /*
+     * Builds the name for the comment flag anchor.
+     */
+    buildAnchorName: function() {
+        return 'line' + this.model.get('beginLineNum');
+    },
+
+    /*
+     * Updates the size of the comment flag.
+     */
+    _updateSize: function() {
+        if (this.$beginRow && this.$endRow) {
+            /*
+             * On IE and Safari, the marginTop in getExtents may be wrong.
+             * We force a value that ends up working for us.
+             */
+            this.$el.height(this.$endRow.offset().top +
+                            this.$endRow.outerHeight() -
+                            this.$beginRow.offset().top -
+                            (this.$el.getExtents('m', 't') || -4));
+        }
     }
 });

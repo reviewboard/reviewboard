@@ -1,0 +1,73 @@
+{% extends "reviews/ui/default.html" %}
+{% load i18n %}
+
+{# We reuse the diff styles in order to get the same look and remain #}
+{# compatible with the diffviewer JavaScript for comment selection.  #}
+
+{% block review_ui_box_content_inner %}
+ <div id="diffs">
+  <div class="diff-container text-review-ui {{review_ui.extra_css_classes|join:' '}}">
+   <div class="text-review-ui-header">
+    <h1 class="caption">
+{%  if filename == caption %}
+     {{filename}}
+{%  else %}
+{%   blocktrans %}
+     {{filename}} - {{caption}}
+{%   endblocktrans %}
+{%  endif %}
+    </h1>
+
+{%  if review_ui.can_render_text %}
+    <ul class="text-review-ui-views">
+     <li class="active" data-view-mode="rendered"><a href="#rendered">{% trans "Rendered" %}</a></li>
+     <li data-view-mode="source"><a href="#source">{% trans "Source" %}</a></li>
+    </ul>
+{%  endif %}
+   </div>
+
+{%  if review_ui.can_render_text %}
+   <table class="sidebyside text-review-ui-rendered-table">
+    <colgroup>
+     <col class="line" />
+     <col class="right" />
+    </colgroup>
+    <tbody>
+{%   for line in rendered_lines %}
+     <tr line="{{forloop.counter}}">
+      <th>{{forloop.counter}}</th>
+      <td>{{line}}</td>
+     </tr>
+{%   endfor %}
+    </tbody>
+   </table>
+{%  endif %}
+
+   <table class="sidebyside text-review-ui-text-table"{% if review_ui.can_render_text %} style="display:none"{% endif %}>
+    <colgroup>
+     <col class="line" />
+     <col class="right" />
+    </colgroup>
+    <tbody>
+{%  for line in text_lines %}
+     <tr line="{{forloop.counter}}">
+      <th>{{forloop.counter}}</th>
+      <td>{{line}}</td>
+     </tr>
+{%  endfor %}
+    </tbody>
+   </table>
+  </div>
+ </div>
+{% endblock %}
+
+{# We're rendering much of the review UI in the template, so we don't #}
+{# want to create a new element for it and append it.                 #}
+
+{% block review_ui_view_params %}
+    el: $('#review_ui_{{review_ui_uuid}}'),
+{% endblock %}
+
+{% block review_ui_render %}
+view.render();
+{% endblock %}

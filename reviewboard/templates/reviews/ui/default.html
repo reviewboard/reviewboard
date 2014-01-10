@@ -20,6 +20,7 @@
         RB.PageManager.ready(function(page) {
 {%  block review_ui_setup %}
             var view = new {{review_ui.js_view_class}}({
+{%   block review_ui_view_params %}{% endblock %}
 {%   for key, value in review_ui.get_js_view_data.items %}
                 {{key|json_dumps}}: {{value|json_dumps}},
 {%   endfor %}
@@ -45,5 +46,7 @@
 {% endblock %}
 
 {% block review_ui_box_content %}
-<div id="review_ui_{{review_ui_uuid}}"></div>
+<div id="review_ui_{{review_ui_uuid}}">
+{%  block review_ui_box_content_inner %}{% endblock %}
+</div>
 {% endblock %}

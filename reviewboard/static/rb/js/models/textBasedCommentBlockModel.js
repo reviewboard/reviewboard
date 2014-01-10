@@ -6,10 +6,14 @@
  */
 RB.TextCommentBlock = RB.FileAttachmentCommentBlock.extend({
     defaults: _.defaults({
-        child_id: null
+        beginLineNum: null,
+        endLineNum: null,
+        viewMode: false,
+        $beginRow: null,
+        $endRow: null
     }, RB.FileAttachmentCommentBlock.prototype.defaults),
 
-    serializedFields: ['child_id'],
+    serializedFields: ['beginLineNum', 'endLineNum', 'viewMode'],
 
     /*
      * Parses the incoming attributes for the comment block.
@@ -18,7 +22,9 @@ RB.TextCommentBlock = RB.FileAttachmentCommentBlock.extend({
      * them back to integers where appropriate.
      */
     parse: function(fields) {
-        fields.child_id = parseInt(fields.child_id, 10) || undefined;
+        fields.beginLineNum = parseInt(fields.beginLineNum, 10);
+        fields.endLineNum = parseInt(fields.endLineNum, 10);
+
         return fields;
     }
 });

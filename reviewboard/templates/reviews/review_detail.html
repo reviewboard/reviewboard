@@ -115,16 +115,18 @@
     <dt>
      <a class="comment-anchor" name="{{comment.anchor_prefix}}{{comment.id}}"></a>
      <div class="file-attachment">
-      <a href="{{comment.get_absolute_url}}">{% spaceless %}
-       <img src="{{comment.file_attachment.icon_url}}" />
-       <span class="filename">{{comment.get_link_text}}</span>
-      </a>
+      <div class="file-attachment-comment-header">
+       <a href="{{comment.get_absolute_url}}">{% spaceless %}
+        <img src="{{comment.file_attachment.icon_url}}" />
+        <span class="filename">{{comment.get_link_text}}</span>
+       </a>
 {% if draft and comment.file_attachment.draft_caption %}
-      <p class="caption">{{comment.file_attachment.draft_caption}}</p>
+       <p class="caption">{{comment.file_attachment.draft_caption}}</p>
 {% elif comment.file_attachment.caption %}
-      <p class="caption">{{comment.file_attachment.caption}}</p>
+       <p class="caption">{{comment.file_attachment.caption}}</p>
 {% endif %}
 {% endspaceless %}</a>
+      </div>
 {% with comment.thumbnail as thumbnail %}
 {%  if thumbnail %}
       <div class="thumbnail">{{thumbnail|default:''|safe}}</div>

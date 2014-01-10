@@ -7,7 +7,7 @@ from uuid import uuid4
 
 import mimeparse
 from django.http import HttpResponse
-from django.template.context import RequestContext
+from django.template.context import Context, RequestContext
 from django.template.loader import render_to_string
 from django.utils.html import escape
 from django.utils.safestring import mark_safe
@@ -115,13 +115,14 @@ class ReviewUI(object):
                 'review_ui_inline': False,
             })
 
+        context.update(self.get_extra_context(request))
+
         return render_to_string(
             self.template_name,
             RequestContext(
                 request,
                 make_review_request_context(request, self.review_request,
-                                            context),
-                **self.get_extra_context(request)))
+                                            context)))
 
     def get_comments(self):
         return self.obj.get_comments()

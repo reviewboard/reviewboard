@@ -9,76 +9,156 @@
 RB.TextBasedReviewableView = RB.FileAttachmentReviewableView.extend({
     commentBlockView: RB.TextBasedCommentBlockView,
 
-    events: {
-        'click .text-review-ui-container': '_onClick'
-    },
-
     /*
      * Initializes the view.
      */
-    initialize: function() {
-        RB.FileAttachmentReviewableView.prototype.initialize.call(this);
-        this.on('commentBlockViewAdded', this._addCommentBlock, this);
+    initialize: function(options) {
+        RB.FileAttachmentReviewableView.prototype.initialize.call(
+            this, options);
+
+        this._$viewTabs = null;
+        this._$textTable = null;
+        this._$renderedTable = null;
+        this._textSelector = null;
+        this._renderedSelector = null;
+
+        this.on('commentBlockViewAdded', this._placeCommentBlockView, this);
+
+        this.router = new Backbone.Router({
+            routes: {
+                ':viewMode(/line:lineNum)': 'viewMode'
+            }
+        });
+        this.listenTo(
+            this.router, 'route:viewMode',
+            function(viewMode, lineNum) {
+                this.model.set('viewMode', viewMode);
+
+                if (lineNum) {
+                    this._scrollToLine(lineNum);
+                }
+            });
+    },
+
+    /*
+     * Removes the reviewable from the DOM.
+     */
+    remove: function() {
+        _.super(this).remove.call(this);
+
+        this._textSelector.remove();
+        this._renderedSelector.remove();
     },
 
     /*
      * Renders the view.
-     *
-     * This will wrap each parent in the rendered HTML with a 'div' tag. The
-     * wrapper will be used to apply styling and handle events related to
-     * showing and creating comments.
      */
     renderContent: function() {
-        this._$rendered = $(this.model.get('rendered'));
-        this._applyCommentWrapper();
+        this._$viewTabs = this.$('.text-review-ui-views li');
 
-        return this;
-    },
+        /* Set up the source text table. */
+        this._$textTable = this.$('.text-review-ui-text-table');
 
-    /*
-     * Wrap each parent element in a 'div'. A class is also used for the wrapper
-     * to identify it as a comment wrapper. Each wrapper also has a unique,
-     * auto-incremented id to distinguish the child element from other elements.
-     */
-    _applyCommentWrapper: function() {
-        var child_id = 0,
-            wrapped_elements = $('<div/>');
-
-        this._$rendered.each(function() {
-            $('<div />')
-                .attr('class', 'text-review-ui-container')
-                .attr('data-child-id', child_id++)
-                .append($(this))
-                .appendTo(wrapped_elements);
+        this._textSelector = new RB.TextCommentRowSelector({
+            el: this._$textTable,
+            reviewableView: this
         });
+        this._textSelector.render();
 
-        this.$el.html(wrapped_elements.children());
-    },
+        if (this.model.get('hasRenderedView')) {
+            /* Set up the rendered table. */
+            this._$renderedTable = this.$('.text-review-ui-rendered-table');
 
-    /*
-     * Adds the comment view to the element the comment was created on.
-     */
-    _addCommentBlock: function(commentBlockView) {
-        var child_id = commentBlockView.model.get('child_id'),
-            child = this.$el.children("[data-child-id='" + child_id + "']");
-
-        child.prepend(commentBlockView.$el);
-    },
-
-    /*
-     * When an element is clicked, display the comment dialog if the element
-     * has no comments so far.
-     */
-    _onClick: function(evt) {
-        var wrapper = $(evt.target).closest('.text-review-ui-container'),
-            child_id;
-
-        if (wrapper.has('.commentflag').length === 0) {
-            child_id = wrapper.data('child-id');
-
-            this.createAndEditCommentBlock({
-                child_id: child_id
+            this._renderedSelector = new RB.TextCommentRowSelector({
+                el: this._$renderedTable,
+                reviewableView: this
             });
+            this._renderedSelector.render();
         }
+
+        this.listenTo(this.model, 'change:viewMode', this._onViewChanged);
+
+        Backbone.history.start({
+            root: window.location
+        });
+    },
+
+    /*
+     * Scrolls the page to the top of the specified line number.
+     */
+    _scrollToLine: function(lineNum) {
+        var $table = this._getTableForViewMode(this.model.get('viewMode')),
+            rows = $table[0].tBodies[0].rows,
+            $row;
+
+        /* Normalize this to a valid row index. */
+        lineNum--;
+        lineNum = Math.max(0, Math.min(lineNum, rows.length - 1));
+
+        $row = $($table[0].tBodies[0].rows[lineNum]);
+        $(window).scrollTop($row.offset().top);
+    },
+
+    /*
+     * Returns the table element for the given view mode.
+     */
+    _getTableForViewMode: function(viewMode) {
+        if (viewMode === 'source') {
+            return this._$textTable;
+        } else if (viewMode === 'rendered' &&
+                   this.model.get('hasRenderedView')) {
+            return this._$renderedTable;
+        } else {
+            console.assert(false, 'Unexpected viewMode ' + viewMode);
+            return null;
+        }
+    },
+
+    /*
+     * Adds the comment view to the line the comment was created on.
+     */
+    _placeCommentBlockView: function(commentBlockView) {
+        var commentBlock = commentBlockView.model,
+            beginLineNum = commentBlock.get('beginLineNum'),
+            endLineNum = commentBlock.get('endLineNum'),
+            $table,
+            viewMode,
+            rows;
+
+        if (beginLineNum && endLineNum) {
+            viewMode = commentBlock.get('viewMode');
+            $table = this._getTableForViewMode(viewMode);
+
+            if ($table !== null) {
+                rows = $table[0].tBodies[0].rows;
+
+                /* The line numbers are 1-based, so normalize for the rows. */
+                commentBlockView.setRows($(rows[beginLineNum - 1]),
+                                         $(rows[endLineNum - 1]));
+                commentBlockView.$el.appendTo(
+                    commentBlockView.$beginRow[0].cells[0]);
+            }
+        }
+    },
+
+    /*
+     * Handler for when the view changes.
+     *
+     * This will set the correct tab to be active and switch which table of
+     * text is shown.
+     */
+    _onViewChanged: function() {
+        var viewMode = this.model.get('viewMode');
+
+        this._$viewTabs
+            .removeClass('active')
+            .filter('[data-view-mode=' + viewMode + ']')
+                .addClass('active');
+
+        this._$textTable.setVisible(viewMode === 'source');
+        this._$renderedTable.setVisible(viewMode === 'rendered');
+
+        /* Cause all comments to recalculate their sizes. */
+        $(window).triggerHandler('resize');
     }
 });

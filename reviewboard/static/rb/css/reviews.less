@@ -577,29 +577,32 @@
     .file-attachment {
       background: #F0F0F0;
       border: 1px #C0C0C0 solid;
-      font-size: 120%;
       padding: 5px;
-      white-space: nowrap;
 
-      a {
-        text-decoration: none;
-      }
+      .file-attachment-comment-header {
+        font-size: 120%;
+        white-space: nowrap;
 
-      img {
-        padding-right: 10px;
-        vertical-align: middle;
-      }
+        a {
+          text-decoration: none;
+        }
 
-      .caption {
-        color: black;
-        margin: 5px 0 0 32px;
-      }
+        img {
+          padding-right: 10px;
+          vertical-align: middle;
+        }
 
-      .filename {
-        color: black;
-        font-weight: bold;
-        margin: 0;
-        vertical-align: middle;
+        .caption {
+          color: black;
+          margin: 5px 0 0 32px;
+        }
+
+        .filename {
+          color: black;
+          font-weight: bold;
+          margin: 0;
+          vertical-align: middle;
+        }
       }
 
       .thumbnail {
@@ -1550,33 +1553,6 @@
         margin: 0 4px;
       }
     }
-  }
-}
-
-
-/****************************************************************************
- * Rendered UI
- ****************************************************************************/
-
-.text-review-ui-container {
-  padding-left: 8px;
-
-  &:hover {
-    background-color: #F0F0F0;
-  }
-
-  .commentflag .commentflag-inner {
-    background-color: @comment-flag-color;
-  }
-
-  .commentflag .commentflag-inner,
-  .commentflag .commentflag-inner:hover {
-    background-color: @comment-flag-hover-color;
-  }
-
-  .commentflag.draft .commentflag-inner,
-  .commentflag.draft .commentflag-inner:hover {
-    background-color: @comment-flag-draft-hover-color;
   }
 }
 
