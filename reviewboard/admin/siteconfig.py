@@ -177,8 +177,8 @@ def load_site_config():
         apply_setting("HAYSTACK_CONNECTIONS", None, {
             'default': {
                 'ENGINE': settings.HAYSTACK_CONNECTIONS['default']['ENGINE'],
-                'PATH': siteconfig.get("search_index_file",
-                                       defaults['search_index_file']),
+                'PATH': (siteconfig.get('search_index_file') or
+                         defaults['search_index_file']),
             },
         })
 
