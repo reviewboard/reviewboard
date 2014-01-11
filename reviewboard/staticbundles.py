@@ -181,6 +181,7 @@ PIPELINE_JS = dict({
             'rb/js/views/imageReviewableView.js',
             'rb/js/views/textBasedCommentBlockView.js',
             'rb/js/views/textBasedReviewableView.js',
+            'rb/js/views/textCommentRowSelector.js',
             'rb/js/views/markdownReviewableView.js',
             'rb/js/diffviewer/models/diffCommentBlockModel.js',
             'rb/js/diffviewer/models/diffCommentsHintModel.js',
