@@ -889,31 +889,60 @@
  * Uploaded files
  ****************************************************************************/
 .file-container .file {
-  background-color: #F6F6F6;
-  border: 1px black solid;
+  @file-attachment-width: 300px;
+
+  background-color: #FEFEFE;
+  border: 1px #CCCCCC solid;
   display: block;
   float: left;
   position: relative;
-  margin: 0 2em 2em 0;
+  margin: 0 1.5em 1.5em 0;
+  max-width: @file-attachment-width;
+  width: @file-attachment-width;
   .border-radius(@box-border-radius);
+  .box-shadow(@box-shadow);
 
   .actions {
     li {
-      a {
+      line-height: 16px;
+
+      &:first-child a {
+        .border-radius(0 0 0 @box-inner-border-radius);
+      }
+
+      &:last-child a {
+        .border-radius(0 @box-inner-border-radius 0 0);
+      }
+
+      &:first-child:last-child a {
         .border-radius(0 @box-inner-border-radius 0 @box-inner-border-radius);
-        border-left: 1px @review-request-action-border-color solid;
-        border-bottom: 1px @review-request-action-border-color solid;
+      }
+
+      &:hover {
+        background: transparent;
+      }
+
+      a {
+        border-left: 1px #DDD solid;
+        border-bottom: 1px #DDD solid;
+        padding: 6px 8px;
+
+        &:hover {
+          background: #EEEEEE;
+        }
       }
     }
   }
 
   .file-header {
+    @file-header-height: 2.5em;
+
     background: white;
-    padding: 0 10em 0 0.5em;
-    line-height: 2.5em;
-    height: 2.5em;
-    white-space: nowrap;
+    padding: 0 0.5em;
+    line-height: @file-header-height;
+    height: @file-header-height;
     .border-radius(@box-border-radius @box-border-radius 0 0);
+    .ellipsize();
 
     a {
       color: blue;
@@ -927,9 +956,11 @@
   }
 
   .file-thumbnail-container {
+    @thumbnail-height: 100px;
+
     background: white;
-    height: 100px;
-    padding: 0 1em 1em 1em;
+    height: @thumbnail-height;
+    padding: 1em;
     text-align: center;
 
     a {
@@ -942,8 +973,8 @@
     }
 
     .thumbnail-properties () {
-      max-height: 100px;
-      max-width: 25em;
+      max-height: @thumbnail-height;
+      max-width: @file-attachment-width;
       margin: 0;
       padding: 0;
     }
@@ -983,11 +1014,13 @@
     }
   }
 
-  .file-caption {
-    border-top: 1px #CCCCCC solid;
+  .file-caption-container {
+    @caption-height: 27px;
+
+    border-top: 1px #EEEEEE solid;
     line-height: 2.5em;
-    height: 2.5em;
-    padding: 0 0.5em;
+    padding: 0 25px;
+    position: relative;
     text-align: center;
     .border-radius(0 0 7px 7px);
 
@@ -1001,12 +1034,38 @@
       }
     }
 
+    .file-caption {
+      line-height: @caption-height;
+      height: @caption-height;
+      .ellipsize();
+    }
+
     .inline-editor-form > input {
-      margin-top: 0.4em;
+      border: 0;
+      font-family: inherit;
+      font-size: inherit;
+      height: @caption-height;
+      margin: 0;
+      padding-top: 0;
+      padding-bottom: 0;
+      text-align: inherit;
+      vertical-align: bottom;
+      .box-sizing(border-box);
+
+      &:focus {
+        outline: 0;
+      }
+
+      &::-ms-clear {
+        display: none;
+      }
     }
 
     .rb-icon-edit {
-      vertical-align: text-bottom;
+      vertical-align: middle;
+      position: absolute;
+      right: 4px;
+      bottom: 4px;
     }
   }
 }
@@ -1095,7 +1154,7 @@
  ****************************************************************************/
 #file-list {
   margin: 2px;
-  padding: 0.5em;
+  padding: 1em 0.5em 0.5em 0.5em;
 
   &.dragover {
     border: 2px green dashed;

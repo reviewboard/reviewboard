@@ -30,7 +30,7 @@ RB.FileAttachmentThumbnail = Backbone.View.extend({
     className: 'file-container',
 
     events: {
-        'click a.delete': '_onDeleteClicked',
+        'click .delete': '_onDeleteClicked',
         'click .file-add-comment a': '_onAddCommentClicked'
     },
 
@@ -42,15 +42,15 @@ RB.FileAttachmentThumbnail = Backbone.View.extend({
         '   <img class="icon" src="<%= iconURL %>" />',
         '   <span class="filename"><%= filename %></span>',
         '  </a>',
-        '  <a href="#" class="delete rb-icon rb-icon-delete"',
-        '     title="<%- deleteFileText %>"></a>',
         ' </div>',
         ' <div class="file-thumbnail-container" />',
-        ' <div class="file-caption">',
-        '  <a href="<%= downloadURL %>" "',
-        '     class="edit <% if (!caption) { %>empty-caption<% } %>">',
-        '   <% if (caption) { %><%= caption %><% } else { %><%- noCaptionText %><% } %>',
-        '  </a>',
+        ' <div class="file-caption-container">',
+        '  <div class="file-caption can-edit">',
+        '   <a href="<%= downloadURL %>" "',
+        '      class="edit <% if (!caption) { %>empty-caption<% } %>">',
+        '    <% if (caption) { %><%= caption %><% } else { %><%- noCaptionText %><% } %>',
+        '   </a>',
+        '  </div>',
         ' </div>',
         '</div>'
     ].join('')),
@@ -62,6 +62,12 @@ RB.FileAttachmentThumbnail = Backbone.View.extend({
         '<%   } else { %>',
         ' <li class="file-add-comment"><a href="#"><%- addCommentText %></a></li>',
         '<%   } %>',
+        ' <li class="delete">',
+        '  <a href="#" alt="<%- deleteFileText %>"',
+        '     title="<%- deleteFileText %>">',
+        '   <span class="ui-icon ui-icon-trash"></span>',
+        '  </a>',
+        ' </li>',
         '<% } %>'
     ].join('')),
 
@@ -71,7 +77,8 @@ RB.FileAttachmentThumbnail = Backbone.View.extend({
               'src="<%= spinnerURL %>" />',
         '<% } else { %>',
         '<%   if (reviewURL) { %>',
-        ' <a href="<%= reviewURL %>" class="file-thumbnail-overlay"> </a>',
+        ' <a href="<%= reviewURL %>" class="file-thumbnail-overlay"',
+        '    alt="<%- reviewAltText %>" title="<%- reviewAltText %>"> </a>',
         '<%   } %>',
         '<%=  thumbnailHTML %>',
         '<% } %>'
@@ -276,7 +283,6 @@ RB.FileAttachmentThumbnail = Backbone.View.extend({
     _renderContents: function() {
         this.$el
             .html(this.template(_.defaults({
-                deleteFileText: gettext('Delete File'),
                 noCaptionText: gettext('No caption')
             }, this.model.attributes)))
             .addClass(this.className);
@@ -288,6 +294,7 @@ RB.FileAttachmentThumbnail = Backbone.View.extend({
     _renderThumbnail: function() {
         this._$thumbnailContainer.html(
             this.thumbnailContainerTemplate(_.extend({
+                reviewAltText: gettext('Click to review'),
                 spinnerURL: STATIC_URLS['rb/images/spinner.gif']
             }, this.model.attributes)));
     },
@@ -312,6 +319,7 @@ RB.FileAttachmentThumbnail = Backbone.View.extend({
         }
 
         this._$actions.html(this.actionsTemplate(_.defaults({
+            deleteFileText: gettext('Delete this file'),
             reviewText: gettext('Review'),
             addCommentText: gettext('New Comment')
         }, this.model.attributes)));
