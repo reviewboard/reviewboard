@@ -10,6 +10,8 @@ from django.utils.safestring import mark_safe
 from djblets.cache.backend import cache_memoize
 from djblets.util.templatetags.djblets_images import thumbnail
 from pipeline.storage import default_storage
+from pygments import highlight
+from pygments.lexers import guess_lexer_for_filename
 import docutils.core
 import markdown
 import mimeparse
@@ -215,19 +217,20 @@ class TextMimetype(MimetypeHandler):
     # the file attachment to prevent long reads caused by malicious
     # or auto-generated files.
     FILE_CROP_CHAR_LIMIT = 2000
-    TEXT_CROP_NUM_HEIGHT = 4
-    TEXT_CROP_NUM_LENGTH = 50
+    TEXT_CROP_NUM_HEIGHT = 8
 
-    def _generate_preview_html(self, data_string):
+    def _generate_preview_html(self, data):
         """Returns the first few truncated lines of the text file."""
+        from reviewboard.diffviewer.chunk_generator import \
+            NoWrapperHtmlFormatter
 
-        preview_lines = data_string.splitlines()[:self.TEXT_CROP_NUM_HEIGHT]
+        lexer = guess_lexer_for_filename(self.attachment.filename, data)
+        lines = highlight(data, lexer, NoWrapperHtmlFormatter()).splitlines()
 
-        for i in range(min(self.TEXT_CROP_NUM_HEIGHT, len(preview_lines))):
-            preview_lines[i] = \
-                escape(preview_lines[i][:self.TEXT_CROP_NUM_LENGTH])
-
-        return '<br />'.join(preview_lines)
+        return ''.join([
+            '<pre>%s</pre>' % line
+            for line in lines[:self.TEXT_CROP_NUM_HEIGHT]
+        ])
 
     def _generate_thumbnail(self):
         """Returns the HTML for a thumbnail preview for a text file."""
