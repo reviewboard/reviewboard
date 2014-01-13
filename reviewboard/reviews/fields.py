@@ -369,6 +369,7 @@ class BaseTextAreaField(BaseEditableField):
     """
     default_css_classes = ['editable', 'field-text-area']
     enable_markdown = True
+    always_render_markdown = False
     tag_name = 'pre'
 
     def is_text_markdown(self, value):
@@ -388,7 +389,8 @@ class BaseTextAreaField(BaseEditableField):
         css_classes = super(BaseTextAreaField, self).get_css_classes()
 
         if (self.enable_markdown and self.value and
-            self.is_text_markdown(self.value)):
+            (self.always_render_markdown or
+             self.is_text_markdown(self.value))):
             # Only display a loading indicator if there's some processing
             # to be done on this field.
             css_classes.add('loading')
@@ -398,7 +400,7 @@ class BaseTextAreaField(BaseEditableField):
     def get_data_attributes(self):
         attrs = super(BaseTextAreaField, self).get_data_attributes()
 
-        if self.is_text_markdown(self.value):
+        if self.always_render_markdown or self.is_text_markdown(self.value):
             attrs['rich-text'] = True
 
         return attrs

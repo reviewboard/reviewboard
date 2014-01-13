@@ -29,9 +29,6 @@ class BuiltinFieldMixin(object):
             self.review_request_details = \
                 self.review_request_details.get_review_request()
 
-    def is_text_markdown(self, value):
-        return self.review_request_details.rich_text
-
     def load_value(self, review_request_details):
         value = getattr(review_request_details, self.field_id)
 
@@ -42,6 +39,20 @@ class BuiltinFieldMixin(object):
 
     def save_value(self, value):
         setattr(self.review_request_details, self.field_id, value)
+
+
+class BuiltinTextAreaFieldMixin(BuiltinFieldMixin):
+    """Mixin for buit-in text area fields.
+
+    This will ensure that the text is always rendered in Markdown,
+    no matter whether the source text is plain or Markdown. It will
+    still escape the text if it's not in Markdown format before
+    rendering.
+    """
+    always_render_markdown = True
+
+    def is_text_markdown(self, value):
+        return self.review_request_details.rich_text
 
 
 class BaseModelListEditableField(BaseCommaEditableField):
@@ -86,14 +97,14 @@ class SummaryField(BuiltinFieldMixin, BaseEditableField):
         return False
 
 
-class DescriptionField(BuiltinFieldMixin, BaseTextAreaField):
+class DescriptionField(BuiltinTextAreaFieldMixin, BaseTextAreaField):
     """The Description field on a review request."""
     field_id = 'description'
     label = _('Description')
     is_required = True
 
 
-class TestingDoneField(BuiltinFieldMixin, BaseTextAreaField):
+class TestingDoneField(BuiltinTextAreaFieldMixin, BaseTextAreaField):
     """The Testing Done field on a review request."""
     field_id = 'testing_done'
     label = _('Testing Done')
