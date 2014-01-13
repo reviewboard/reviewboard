@@ -56,8 +56,8 @@ RB.ReviewRequestEditor = Backbone.Model.extend({
      * for any existing or newly uploaded file attachments.
      */
     createFileAttachment: function(attributes) {
-        var reviewRequest = this.get('reviewRequest'),
-            fileAttachment = reviewRequest.createFileAttachment(attributes);
+        var draft = this.get('reviewRequest').draft,
+            fileAttachment = draft.createFileAttachment(attributes);
 
         this.fileAttachments.add(fileAttachment);
 

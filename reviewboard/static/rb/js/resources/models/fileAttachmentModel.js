@@ -1,6 +1,5 @@
 /*
  * A new or existing file attachment.
- *
  */
 RB.FileAttachment = RB.BaseResource.extend({
     defaults: _.defaults({

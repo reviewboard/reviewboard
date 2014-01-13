@@ -827,7 +827,7 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
             id = $thumbnail.data('file-id'),
             $caption = $thumbnail.find('.file-caption .edit'),
             reviewRequest = this.model.get('reviewRequest'),
-            fileAttachment = reviewRequest.createFileAttachment({
+            fileAttachment = reviewRequest.draft.createFileAttachment({
                 id: id
             });
 

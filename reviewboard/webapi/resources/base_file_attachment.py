@@ -201,7 +201,8 @@ class BaseFileAttachmentResource(WebAPIResource):
             }
 
         return 201, {
-            self.item_result_key: file,
+            self.item_result_key: self.serialize_object(
+                file, request=request, *args, **kwargs),
         }
 
     @webapi_check_local_site
@@ -264,7 +265,8 @@ class BaseFileAttachmentResource(WebAPIResource):
                 }
 
         return 200, {
-            self.item_result_key: file,
+            self.item_result_key: self.serialize_object(
+                file, request=request, *args, **kwargs),
         }
 
     @webapi_check_local_site

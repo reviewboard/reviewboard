@@ -34,6 +34,15 @@ RB.DraftReviewRequest = RB.BaseResource.extend(_.defaults({
     },
 
     /*
+     * Creates a FileAttachment object for this draft.
+     */
+    createFileAttachment: function(attributes) {
+        return new RB.DraftFileAttachment(_.defaults({
+            parentObject: this
+        }, attributes));
+    },
+
+    /*
      * Publishes the draft.
      *
      * The contents of the draft will be validated before being sent to the
