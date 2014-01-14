@@ -49,7 +49,8 @@ class Beanstalk(HostingService):
     repository_fields = {
         'Git': {
             'path': 'git@%(beanstalk_account_domain)s'
-                    '.beanstalkapp.com:/%(beanstalk_repo_name)s.git',
+                    '.beanstalkapp.com:/%(beanstalk_account_domain)s/'
+                    '%(beanstalk_repo_name)s.git',
             'mirror_path': 'https://%(beanstalk_account_domain)s'
                            '.git.beanstalkapp.com/%(beanstalk_repo_name)s.git',
         },
@@ -135,21 +136,37 @@ class Beanstalk(HostingService):
         # than the file contents in most cases. However, we can only do that
         # with a base_commit_id. If we don't have that, we fall back on
         # fetching the full file contents.
-        raw_content = (contents or not base_commit_id)
+        is_git = (repository.tool.name == 'Git')
 
-        if raw_content:
+        if is_git and (contents or not base_commit_id):
             url_path = ('blob?id=%s&name=%s'
                         % (quote(revision), quote(os.path.basename(path))))
+            raw_content = True
         else:
-            url_path = ('node.json?path=%s&revision=%s&contents=0'
-                        % (quote(path), quote(base_commit_id)))
+            if is_git:
+                expected_revision = base_commit_id
+            else:
+                expected_revision = revision
+
+            url_path = ('node.json?path=%s&revision=%s'
+                        % (quote(path), quote(expected_revision)))
+
+            if contents:
+                url_path += '&contents=1'
+
+            raw_content = False
 
         url = self._build_api_url(
             self._get_repository_account_domain(repository),
             'repositories/%s/%s'
             % (repository.extra_data['beanstalk_repo_name'], url_path))
 
-        return self._api_get(url, raw_content=True)
+        result = self._api_get(url, raw_content=raw_content)
+
+        if not raw_content and contents:
+            result = result['contents']
+
+        return result
 
     def _build_api_url(self, account_domain, url):
         return 'https://%s.beanstalkapp.com/api/%s' % (account_domain, url)
