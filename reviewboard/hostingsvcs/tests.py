@@ -107,7 +107,7 @@ class BeanstalkTests(ServiceTests):
         })
         self.assertEqual(
             fields['path'],
-            'git@mydomain.beanstalkapp.com:/myrepo.git')
+            'git@mydomain.beanstalkapp.com:/mydomain/myrepo.git')
         self.assertEqual(
             fields['mirror_path'],
             'https://mydomain.git.beanstalkapp.com/myrepo.git')
@@ -194,7 +194,7 @@ class BeanstalkTests(ServiceTests):
             tool_name='Subversion',
             revision='123',
             base_commit_id='456',
-            expected_revision='456',
+            expected_revision='123',
             expected_found=True)
 
     def test_get_file_exists_with_svn_and_revision(self):
@@ -227,12 +227,22 @@ class BeanstalkTests(ServiceTests):
     def _test_get_file(self, tool_name, revision, base_commit_id,
                        expected_revision):
         def _http_get(service, url, *args, **kwargs):
-            self.assertEqual(
-                url,
-                'https://mydomain.beanstalkapp.com/api/repositories/'
-                'myrepo/blob?id=%s&name=path'
-                % expected_revision)
-            return 'My data', {}
+            if tool_name == 'Git':
+                self.assertEqual(
+                    url,
+                    'https://mydomain.beanstalkapp.com/api/repositories/'
+                    'myrepo/blob?id=%s&name=path'
+                    % expected_revision)
+                payload = 'My data'
+            else:
+                self.assertEqual(
+                    url,
+                    'https://mydomain.beanstalkapp.com/api/repositories/'
+                    'myrepo/node.json?path=/path&revision=%s&contents=1'
+                    % expected_revision)
+                payload = '{"contents": "My data"}'
+
+            return payload, {}
 
         account = self._get_hosting_account()
         service = account.service
@@ -258,11 +268,11 @@ class BeanstalkTests(ServiceTests):
             expected_url = ('https://mydomain.beanstalkapp.com/api/'
                             'repositories/myrepo/')
 
-            if base_commit_id:
-                expected_url += ('node.json?path=/path&revision=%s&contents=0'
-                                 % expected_revision)
-            else:
+            if not base_commit_id and tool_name == 'Git':
                 expected_url += 'blob?id=%s&name=path' % expected_revision
+            else:
+                expected_url += ('node.json?path=/path&revision=%s'
+                                 % expected_revision)
 
             self.assertEqual(url, expected_url)
 
