@@ -37,7 +37,7 @@ def convert_to_unicode(s, encoding_list):
     """
     if isinstance(s, six.text_type):
         # Nothing to do
-        return s
+        return 'utf-8', s
     elif isinstance(s, six.string_types):
         try:
             # First try strict utf-8
