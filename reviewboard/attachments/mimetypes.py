@@ -11,7 +11,8 @@ from djblets.cache.backend import cache_memoize
 from djblets.util.templatetags.djblets_images import thumbnail
 from pipeline.storage import default_storage
 from pygments import highlight
-from pygments.lexers import guess_lexer_for_filename
+from pygments.lexers import (ClassNotFound, guess_lexer_for_filename,
+                             TextLexer)
 import docutils.core
 import markdown
 import mimeparse
@@ -224,7 +225,11 @@ class TextMimetype(MimetypeHandler):
         from reviewboard.diffviewer.chunk_generator import \
             NoWrapperHtmlFormatter
 
-        lexer = guess_lexer_for_filename(self.attachment.filename, data)
+        try:
+            lexer = guess_lexer_for_filename(self.attachment.filename, data)
+        except ClassNotFound:
+            lexer = TextLexer()
+
         lines = highlight(data, lexer, NoWrapperHtmlFormatter()).splitlines()
 
         return ''.join([

@@ -7,7 +7,8 @@ from django.template.loader import render_to_string
 from django.utils.safestring import mark_safe
 from djblets.cache.backend import cache_memoize
 from pygments import highlight
-from pygments.lexers import guess_lexer_for_filename
+from pygments.lexers import (ClassNotFound, guess_lexer_for_filename,
+                             TextLexer)
 
 from reviewboard.diffviewer.chunk_generator import NoWrapperHtmlFormatter
 from reviewboard.reviews.ui.base import FileAttachmentReviewUI
@@ -90,7 +91,11 @@ class TextBasedReviewUI(FileAttachmentReviewUI):
         data = self.obj.file.read()
         self.obj.file.close()
 
-        lexer = guess_lexer_for_filename(self.obj.filename, data)
+        try:
+            lexer = guess_lexer_for_filename(self.obj.filename, data)
+        except ClassNotFound:
+            lexer = TextLexer()
+
         lines = highlight(data, lexer, NoWrapperHtmlFormatter()).splitlines()
 
         return [
