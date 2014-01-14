@@ -1938,17 +1938,9 @@ class Review(models.Model):
         self.public = True
         self.save()
 
-        for comment in self.comments.all():
-            comment.timetamp = self.timestamp
-            comment.save()
-
-        for comment in self.screenshot_comments.all():
-            comment.timetamp = self.timestamp
-            comment.save()
-
-        for comment in self.file_attachment_comments.all():
-            comment.timetamp = self.timestamp
-            comment.save()
+        self.comments.update(timestamp=self.timestamp)
+        self.screenshot_comments.update(timestamp=self.timestamp)
+        self.file_attachment_comments.update(timestamp=self.timestamp)
 
         # Update the last_updated timestamp and the last review activity
         # timestamp on the review request.
@@ -1973,14 +1965,9 @@ class Review(models.Model):
 
         This will enforce that all contained comments are also deleted.
         """
-        for comment in self.comments.all():
-            comment.delete()
-
-        for comment in self.screenshot_comments.all():
-            comment.delete()
-
-        for comment in self.file_attachment_comments.all():
-            comment.delete()
+        self.comments.all().delete()
+        self.screenshot_comments.all().delete()
+        self.file_attachment_comments.all().delete()
 
         super(Review, self).delete()
 
