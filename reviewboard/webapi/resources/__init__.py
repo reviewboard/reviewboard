@@ -8,14 +8,16 @@ from djblets.extensions.resources import ExtensionResource
 from djblets.webapi.resources import register_resource_for_model
 
 from reviewboard.attachments.models import FileAttachment
+from reviewboard.diffviewer.models import DiffSet, FileDiff
 from reviewboard.changedescs.models import ChangeDescription
 from reviewboard.extensions.base import get_extension_manager
 from reviewboard.hostingsvcs.models import HostingServiceAccount
 from reviewboard.reviews.models import (Comment, DefaultReviewer,
-                                        DiffSet, FileDiff, Group, Repository,
-                                        ReviewRequest, ReviewRequestDraft,
-                                        Review, ScreenshotComment, Screenshot,
+                                        Group, ReviewRequest,
+                                        ReviewRequestDraft, Review,
+                                        ScreenshotComment, Screenshot,
                                         FileAttachmentComment)
+from reviewboard.scmtools.models import Repository
 from reviewboard.webapi.base import WebAPIResource
 
 
