@@ -1,5 +1,7 @@
 from __future__ import unicode_literals
 
+import logging
+
 from django.db import models
 from django.utils.html import escape
 from django.utils.translation import ugettext_lazy as _
@@ -81,7 +83,7 @@ class BaseModelListEditableField(BaseCommaEditableField):
             return label
 
     def save_value(self, value):
-        setattr(self, field_id, value)
+        setattr(self, self.field_id, value)
 
 
 class SummaryField(BuiltinFieldMixin, BaseEditableField):

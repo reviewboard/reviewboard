@@ -6,7 +6,7 @@ from django.utils.html import escape
 from reviewboard.attachments.forms import CommentFileForm, UploadFileForm
 from reviewboard.diffviewer.models import DiffSet
 from reviewboard.reviews.forms import UploadDiffForm, UploadScreenshotForm
-from reviewboard.reviews.models import BaseComment, ReviewRequest
+from reviewboard.reviews.models import BaseComment
 
 
 def comment_counts(user, all_comments, filediff, interfilediff=None):

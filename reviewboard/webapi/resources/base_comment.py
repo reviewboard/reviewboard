@@ -5,8 +5,6 @@ from django.utils import six
 from django.utils.formats import localize
 from djblets.webapi.errors import DOES_NOT_EXIST
 
-from reviewboard.reviews.markdown_utils import (markdown_escape,
-                                                markdown_set_field_escaped)
 from reviewboard.reviews.models import BaseComment
 from reviewboard.webapi.base import WebAPIResource
 from reviewboard.webapi.mixins import MarkdownFieldsMixin

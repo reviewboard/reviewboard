@@ -209,9 +209,6 @@ class Site(object):
             "htdocs/errordocs",
             os.path.join(self.install_dir, "htdocs", "errordocs"))
 
-        rb_djblets_src = "htdocs/static/djblets"
-        rb_djblets_dest = os.path.join(static_dir, "djblets")
-
         self.link_pkg_dir("reviewboard",
                           "htdocs/static/lib",
                           os.path.join(static_dir, 'lib'))

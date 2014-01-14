@@ -22,7 +22,6 @@ class ReviewListMixin(ExtraDataListMixin):
 
         url, mimetype, data, objs = \
             self.setup_basic_post_test(self.user, False, None, True)
-        review_request = objs[0]
 
         data['body_top'] = body_top
         data['body_bottom'] = body_bottom

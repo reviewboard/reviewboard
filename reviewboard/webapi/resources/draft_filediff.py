@@ -115,7 +115,7 @@ class DraftFileDiffResource(FileDiffResource):
 
             try:
                 # Check if there's already an attachment. If so, bail.
-                attachment = FileAttachment.objects.get_for_filediff(filediff)
+                FileAttachment.objects.get_for_filediff(filediff)
 
                 return INVALID_FORM_DATA, {
                     'fields': {

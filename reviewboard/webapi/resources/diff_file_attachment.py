@@ -5,7 +5,6 @@ from djblets.util.compat import six
 from djblets.util.decorators import augment_method_from
 from djblets.webapi.decorators import webapi_request_fields
 
-from reviewboard.diffviewer.models import FileDiff
 from reviewboard.webapi.decorators import webapi_check_local_site
 from reviewboard.webapi.resources import resources
 from reviewboard.webapi.resources.base_file_attachment import \

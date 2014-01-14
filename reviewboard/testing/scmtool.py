@@ -3,8 +3,7 @@ from __future__ import unicode_literals
 from djblets.util.compat import six
 from djblets.util.compat.six.moves import range
 
-from reviewboard.scmtools.core import Branch, Commit, HEAD, SCMTool
-from reviewboard.scmtools.errors import FileNotFoundError
+from reviewboard.scmtools.core import Branch, Commit
 from reviewboard.scmtools.git import GitTool
 
 

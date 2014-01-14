@@ -1,7 +1,7 @@
 from __future__ import unicode_literals
 
 from django.core import serializers
-from django.core.management.base import CommandError, NoArgsCommand
+from django.core.management.base import NoArgsCommand
 from django.db.models import get_apps, get_models
 
 

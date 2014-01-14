@@ -60,7 +60,7 @@ def convert_to_unicode(s, encoding_list):
                 raise Exception(
                     _("Diff content couldn't be converted to unicode using "
                       "the following encodings: %s")
-                    % (['utf-8'] + encodings))
+                    % (['utf-8'] + encoding_list))
     else:
         raise TypeError('Value to convert is unexpected type %s', type(s))
 

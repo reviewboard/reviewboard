@@ -7,7 +7,7 @@ from uuid import uuid4
 
 import mimeparse
 from django.http import HttpResponse
-from django.template.context import Context, RequestContext
+from django.template.context import RequestContext
 from django.template.loader import render_to_string
 from django.utils.html import escape
 from django.utils.safestring import mark_safe

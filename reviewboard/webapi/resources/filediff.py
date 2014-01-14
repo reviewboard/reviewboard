@@ -10,8 +10,8 @@ from djblets.webapi.core import WebAPIResponse
 from djblets.webapi.decorators import (webapi_login_required,
                                        webapi_request_fields,
                                        webapi_response_errors)
-from djblets.webapi.errors import (DOES_NOT_EXIST, INVALID_FORM_DATA,
-                                   NOT_LOGGED_IN, PERMISSION_DENIED)
+from djblets.webapi.errors import (DOES_NOT_EXIST, NOT_LOGGED_IN,
+                                   PERMISSION_DENIED)
 
 from reviewboard.attachments.models import FileAttachment
 from reviewboard.diffviewer.diffutils import (get_diff_files,
@@ -371,7 +371,7 @@ class FileDiffResource(WebAPIResource):
 
         if extra_fields:
             self._import_extra_data(filediff.extra_data, extra_fields)
-            diffset.save(update_fields=['extra_data'])
+            filediff.save(update_fields=['extra_data'])
 
         return 200, {
             self.item_result_key: filediff,

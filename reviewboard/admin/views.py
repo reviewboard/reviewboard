@@ -107,9 +107,9 @@ def manual_updates_required(
     performing the necessary updates.
     """
     return render_to_response(template_name, RequestContext(request, {
-        'updates': [render_to_string(template_name,
+        'updates': [render_to_string(update_template_name,
                                      RequestContext(request, extra_context))
-                    for (template_name, extra_context) in updates],
+                    for (update_template_name, extra_context) in updates],
     }))
 
 

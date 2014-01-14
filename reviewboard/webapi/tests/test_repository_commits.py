@@ -1,13 +1,9 @@
 from __future__ import unicode_literals
 
-import os
-
 from djblets.testing.decorators import add_fixtures
 from djblets.util.compat import six
 from djblets.webapi.errors import INVALID_FORM_DATA
 
-from reviewboard import scmtools
-from reviewboard.scmtools.models import Repository, Tool
 from reviewboard.webapi.resources import resources
 from reviewboard.webapi.errors import REPO_NOT_IMPLEMENTED
 from reviewboard.webapi.tests.base import BaseWebAPITestCase

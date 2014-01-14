@@ -163,7 +163,7 @@ def get_filediff_list_url(diffset, review_request, local_site_name=None):
     return resources.filediff.get_list_url(
         local_site_name=local_site_name,
         review_request_id=review_request.display_id,
-        diff_revision=filediff.diffset.revision)
+        diff_revision=diffset.revision)
 
 
 def get_filediff_item_url(filediff, review_request, local_site_name=None):

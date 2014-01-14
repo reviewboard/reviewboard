@@ -23,7 +23,6 @@ class BaseCommentListMixin(object):
             self.setup_basic_post_test(self.user, False, None, True)
         data['text'] = comment_text
         data['text_type'] = text_type
-        reply = objs[0]
 
         rsp = self.apiPost(url, data, expected_mimetype=mimetype)
         self.assertEqual(rsp['stat'], 'ok')
@@ -130,8 +129,6 @@ class BaseCommentItemMixin(object):
         self.assertIn(text_type, ('markdown', 'plain'))
 
         rich_text = (text_type == 'markdown')
-
-        comment_text = '`Test` **diff** comment'
 
         url, mimetype, data, reply_comment, objs = \
             self.setup_basic_put_test(self.user, False, None, True)

@@ -1,12 +1,8 @@
 from __future__ import unicode_literals
 
-from djblets.testing.decorators import add_fixtures
 from djblets.util.compat import six
-from djblets.webapi.errors import INVALID_FORM_DATA, PERMISSION_DENIED
+from djblets.webapi.errors import PERMISSION_DENIED
 
-from reviewboard import scmtools
-from reviewboard.attachments.models import FileAttachment
-from reviewboard.diffviewer.models import DiffSet, FileDiff
 from reviewboard.webapi.resources import resources
 from reviewboard.webapi.tests.base import BaseWebAPITestCase
 from reviewboard.webapi.tests.mimetypes import (

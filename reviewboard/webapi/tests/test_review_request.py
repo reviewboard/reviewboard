@@ -785,7 +785,7 @@ class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase):
 
         review_request = self.create_review_request(with_local_site=True)
 
-        rsp = self.apiDelete(
+        self.apiDelete(
             get_review_request_item_url(review_request.display_id,
                                         self.local_site_name),
             expected_status=403)
@@ -795,14 +795,10 @@ class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase):
         """Testing the DELETE review-requests/<id>/ API
         with a local site and a site admin is not allowed
         """
-        user = User.objects.get(username='doc')
-
         self.user = self._login_user(local_site=True, admin=True)
-        local_site = LocalSite.objects.get(name=self.local_site_name)
-
         review_request = self.create_review_request(with_local_site=True)
 
-        rsp = self.apiDelete(
+        self.apiDelete(
             get_review_request_item_url(review_request.display_id,
                                         self.local_site_name),
             expected_status=403)

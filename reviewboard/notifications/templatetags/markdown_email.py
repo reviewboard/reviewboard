@@ -6,7 +6,6 @@ from django.utils import six
 from django.utils.safestring import mark_safe
 from markdown.extensions import Extension
 from markdown.treeprocessors import Treeprocessor
-from markdown.util import etree
 
 from reviewboard.reviews.markdown_utils import markdown_unescape
 
@@ -23,9 +22,6 @@ class InlineStyleProcessor(Treeprocessor):
         # we're at the mercy of whatever the email client is going to do. The
         # end result is that the email will look similar but not identical to
         # the page.
-        textarea_font_size = '13px'
-        textarea_line_height = '15px'
-
         style = {
             'margin': 0,
             'padding': 0,

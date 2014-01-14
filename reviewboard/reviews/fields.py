@@ -1,5 +1,7 @@
 from __future__ import unicode_literals
 
+import logging
+
 from django.utils import six
 from django.utils.datastructures import SortedDict
 from django.utils.html import escape
@@ -536,7 +538,7 @@ def register_review_request_fieldset(fieldset):
 
     if fieldset_id in _fieldsets:
         raise KeyError('"%s" is already a registered review request fieldset'
-                       % field_id)
+                       % fieldset_id)
 
     _fieldsets[fieldset_id] = fieldset
 

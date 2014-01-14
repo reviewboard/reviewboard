@@ -4,10 +4,8 @@ import logging
 
 from django.template.context import Context
 from django.template.loader import render_to_string
-from django.utils.html import escape
 from django.utils.safestring import mark_safe
 from djblets.cache.backend import cache_memoize
-from djblets.util.compat.six.moves import cStringIO as StringIO
 from pygments import highlight
 from pygments.lexers import guess_lexer_for_filename
 
@@ -195,7 +193,6 @@ class TextBasedReviewUI(FileAttachmentReviewUI):
 
         try:
             begin_line_num = int(comment.extra_data['beginLineNum'])
-            end_line_num = int(comment.extra_data['endLineNum'])
             view_mode = comment.extra_data['viewMode']
         except (KeyError, ValueError):
             # This may be a comment from before we had review UIs. Or,

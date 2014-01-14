@@ -1,7 +1,7 @@
 from __future__ import unicode_literals
 
+import imp
 import os
-import unittest
 
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.http import HttpResponse
@@ -466,7 +466,6 @@ class DiffParserTest(TestCase):
         i_moves = []
 
         for opcodes in opcode_generator:
-            tag = opcodes[0]
             meta = opcodes[-1]
 
             if 'moved-to' in meta:
@@ -858,7 +857,7 @@ class UploadDiffFormTests(SpyAgency, TestCase):
         )
 
         try:
-            import mercurial
+            imp.find_module('mercurial')
         except ImportError:
             raise nose.SkipTest("Hg is not installed")
 

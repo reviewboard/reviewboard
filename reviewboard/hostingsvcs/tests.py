@@ -4,7 +4,6 @@ import json
 from hashlib import md5
 from textwrap import dedent
 
-from django.contrib.sites.models import Site
 from djblets.util.compat import six
 from djblets.util.compat.six.moves import cStringIO as StringIO
 from djblets.util.compat.six.moves.urllib.error import HTTPError

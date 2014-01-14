@@ -1,7 +1,6 @@
 from __future__ import unicode_literals
 
 from django.core.exceptions import ObjectDoesNotExist
-from djblets.util.compat import six
 from djblets.util.decorators import augment_method_from
 from djblets.webapi.decorators import (webapi_login_required,
                                        webapi_response_errors,
@@ -10,7 +9,6 @@ from djblets.webapi.errors import (DOES_NOT_EXIST, INVALID_FORM_DATA,
                                    NOT_LOGGED_IN, PERMISSION_DENIED)
 
 from reviewboard.attachments.models import FileAttachment
-from reviewboard.reviews.models import BaseComment
 from reviewboard.webapi.decorators import webapi_check_local_site
 from reviewboard.webapi.resources import resources
 from reviewboard.webapi.resources.base_file_attachment_comment import \

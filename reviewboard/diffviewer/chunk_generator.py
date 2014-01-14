@@ -6,7 +6,7 @@ from difflib import SequenceMatcher
 
 from django.utils.html import escape
 from django.utils.safestring import mark_safe
-from django.utils.translation import ugettext as _, get_language
+from django.utils.translation import get_language
 from djblets.log import log_timed
 from djblets.cache.backend import cache_memoize
 from djblets.siteconfig.models import SiteConfiguration

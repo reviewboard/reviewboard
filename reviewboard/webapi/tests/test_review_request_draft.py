@@ -4,7 +4,7 @@ from django.contrib.auth.models import Permission, User
 from django.core import mail
 from djblets.testing.decorators import add_fixtures
 from djblets.util.compat import six
-from djblets.webapi.errors import INVALID_FORM_DATA, PERMISSION_DENIED
+from djblets.webapi.errors import PERMISSION_DENIED
 
 from reviewboard.accounts.models import LocalSiteProfile
 from reviewboard.reviews.models import ReviewRequest, ReviewRequestDraft

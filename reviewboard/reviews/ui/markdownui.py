@@ -3,7 +3,6 @@ from __future__ import unicode_literals
 import logging
 from xml.dom.minidom import parseString
 
-from djblets.cache.backend import cache_memoize
 from djblets.util.compat.six.moves import cStringIO as StringIO
 import markdown
 

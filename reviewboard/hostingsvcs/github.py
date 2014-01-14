@@ -20,9 +20,7 @@ from reviewboard.hostingsvcs.errors import (AuthorizationError,
 from reviewboard.hostingsvcs.forms import HostingServiceForm
 from reviewboard.hostingsvcs.service import HostingService
 from reviewboard.scmtools.core import Branch, Commit
-from reviewboard.scmtools.errors import (FileNotFoundError,
-                                         InvalidChangeNumberError,
-                                         SCMError)
+from reviewboard.scmtools.errors import FileNotFoundError, SCMError
 from reviewboard.site.urlresolvers import local_site_reverse
 
 

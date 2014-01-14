@@ -94,11 +94,8 @@ class Unfuddle(HostingService):
         information on the repository. This will throw an exception if
         the repository was not found, and return cleanly if it was found.
         """
-        try:
-            self._api_get_repository(unfuddle_account_domain, unfuddle_repo_name,
-                                     tool_name)
-        except Exception, e:
-            raise
+        self._api_get_repository(unfuddle_account_domain, unfuddle_repo_name,
+                                 tool_name)
 
     def authorize(self, username, password, unfuddle_account_domain=None,
                   *args, **kwargs):

@@ -10,7 +10,6 @@ from djblets.webapi.decorators import (webapi_login_required,
 from djblets.webapi.errors import (DOES_NOT_EXIST, NOT_LOGGED_IN,
                                    PERMISSION_DENIED)
 
-from reviewboard.reviews.markdown_utils import markdown_set_field_escaped
 from reviewboard.reviews.models import Review
 from reviewboard.webapi.base import WebAPIResource
 from reviewboard.webapi.decorators import webapi_check_local_site

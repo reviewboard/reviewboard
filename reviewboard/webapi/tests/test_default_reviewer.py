@@ -6,7 +6,6 @@ from djblets.util.compat import six
 from djblets.webapi.errors import INVALID_FORM_DATA
 
 from reviewboard.reviews.models import DefaultReviewer, Group
-from reviewboard.scmtools.models import Repository, Tool
 from reviewboard.site.models import LocalSite
 from reviewboard.webapi.resources import resources
 from reviewboard.webapi.tests.base import BaseWebAPITestCase

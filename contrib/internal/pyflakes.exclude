@@ -9,6 +9,8 @@ reviewboard/admin/checks.py:*: 'S3Storage' imported but unused
 reviewboard/admin/checks.py:*: 'S3BotoStorage' imported but unused
 reviewboard/admin/middleware.py:*: redefinition of unused 'ModPythonRequest' from line *
 reviewboard/admin/middleware.py:*: redefinition of unused 'WSGIRequest' from line *
+reviewboard/extensions/hooks.py:*: 'TemplateHook' imported but unused
+reviewboard/extensions/hooks.py:*: 'URLHook' imported but unused
 reviewboard/manage.py:*: 'recaptcha' imported but unused
 reviewboard/reviews/ui/markdownui.py:*: redefinition of unused 'StringIO' from line *
 reviewboard/scmtools/clearcase.py:*: redefinition of unused 'cpath' from line *
@@ -17,6 +19,8 @@ reviewboard/scmtools/hg.py:*: redefinition of unused 'urllib_quote' from line *
 reviewboard/scmtools/tests.py:*: redefinition of unused 'md5' from line *
 reviewboard/scmtools/tests.py:*: redefinition of unused 'P4Error' from line *
 reviewboard/settings.py:*: 'from settings_local import *' used; unable to detect undefined names
+reviewboard/settings.py:*: 'PIPELINE_CSS' imported but unused
+reviewboard/settings.py:*: 'PIPELINE_JS' imported but unused
 reviewboard/test.py:*: redefinition of unused 'profile' from line *
 reviewboard/site/tests.py:*: 'templatetags' imported but unused
 reviewboard/ssh/client.py:*: redefinition of unused 'StringIO' from line *
