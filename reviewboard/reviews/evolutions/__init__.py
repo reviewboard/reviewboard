@@ -23,4 +23,5 @@ SEQUENCE = [
     'base_comment_extra_data',
     'unique_together_baseline',
     'extra_data',
+    'review_request_issue_counts',
 ]

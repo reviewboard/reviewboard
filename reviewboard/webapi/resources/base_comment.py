@@ -217,11 +217,13 @@ class BaseCommentResource(MarkdownFieldsMixin, WebAPIResource):
         if not comment.issue_opened:
             raise PermissionDenied
 
+        comment._review_request = review_request
+
         # We can only update the status of the issue
         issue_status = \
             BaseComment.issue_string_to_status(kwargs.get('issue_status'))
         comment.issue_status = issue_status
-        comment.save()
+        comment.save(update_fields=['issue_status'])
 
         last_activity_time, updated_object = review_request.get_last_activity()
         comment.timestamp = localize(comment.timestamp)

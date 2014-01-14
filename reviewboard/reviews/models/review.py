@@ -6,15 +6,17 @@ from django.db.models import Q
 from django.utils import timezone
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
-from djblets.db.fields import JSONField
+from djblets.db.fields import CounterField, JSONField
 from djblets.db.query import get_object_or_none
 
 from reviewboard.diffviewer.models import DiffSet
 from reviewboard.reviews.managers import ReviewManager
+from reviewboard.reviews.models.base_comment import BaseComment
 from reviewboard.reviews.models.diff_comment import Comment
 from reviewboard.reviews.models.file_attachment_comment import \
     FileAttachmentComment
-from reviewboard.reviews.models.review_request import ReviewRequest
+from reviewboard.reviews.models.review_request import (ReviewRequest,
+                                                       fetch_issue_counts)
 from reviewboard.reviews.models.screenshot_comment import ScreenshotComment
 from reviewboard.reviews.signals import reply_published, review_published
 
@@ -195,9 +197,27 @@ class Review(models.Model):
         self.review_request.save(
             update_fields=['last_review_activity_timestamp'])
 
-        # Atomicly update the shipit_count
+        issue_counts = fetch_issue_counts(self.review_request, Q(pk=self.pk))
+
+        # Since we're publishing the review, all filed issues should be
+        # open.
+        assert issue_counts[BaseComment.RESOLVED] == 0
+        assert issue_counts[BaseComment.DROPPED] == 0
+
         if self.ship_it:
-            self.review_request.increment_shipit_count()
+            ship_it_value = 1
+        else:
+            ship_it_value = 0
+
+        # Atomically update the issue count and Ship It count.
+        CounterField.increment_many(
+            self.review_request,
+            {
+                'issue_open_count': issue_counts[BaseComment.OPEN],
+                'issue_dropped_count': 0,
+                'issue_resolved_count': 0,
+                'shipit_count': ship_it_value,
+            })
 
         if self.is_reply():
             reply_published.send(sender=self.__class__,

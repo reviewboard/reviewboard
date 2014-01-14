@@ -6,7 +6,7 @@ from django.db.models import Q
 from django.utils import timezone
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
-from djblets.db.fields import JSONField
+from djblets.db.fields import CounterField, JSONField
 from djblets.db.managers import ConcurrencyManager
 
 
@@ -62,6 +62,11 @@ class BaseComment(models.Model):
             return "D"
         else:
             raise Exception("Invalid issue status '%s'" % status)
+
+    def __init__(self, *args, **kwargs):
+        super(BaseComment, self).__init__(*args, **kwargs)
+
+        self._loaded_issue_status = self.issue_status
 
     def get_review_request(self):
         if hasattr(self, '_review_request'):
@@ -133,7 +138,20 @@ class BaseComment(models.Model):
             # the review.
             review = self.get_review()
 
-            if not review.public:
+            if review.public:
+                if self._loaded_issue_status != self.issue_status:
+                    old_field = ReviewRequest.ISSUE_COUNTER_FIELDS[
+                        self._loaded_issue_status]
+                    new_field = ReviewRequest.ISSUE_COUNTER_FIELDS[
+                        self.issue_status]
+
+                    CounterField.increment_many(
+                        self.get_review_request(),
+                        {
+                            old_field: -1,
+                            new_field: 1,
+                        })
+            else:
                 review.timestamp = self.timestamp
                 review.save()
 

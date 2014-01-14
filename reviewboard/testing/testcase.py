@@ -125,6 +125,7 @@ class TestCase(DjbletsTestCase):
 
     def create_diff_comment(self, review, filediff, interfilediff=None,
                             text='My comment', issue_opened=False,
+                            issue_status=None,
                             first_line=1, num_lines=5, extra_fields=None,
                             reply_to=None, **kwargs):
         """Creates a Comment for testing.
@@ -133,10 +134,8 @@ class TestCase(DjbletsTestCase):
         an interfilediff). It's populated with default data that can be
         overridden by the caller.
         """
-        if issue_opened:
+        if issue_opened and not issue_status:
             issue_status = Comment.OPEN
-        else:
-            issue_status = None
 
         comment = Comment(
             filediff=filediff,
@@ -315,8 +314,11 @@ class TestCase(DjbletsTestCase):
             diffset_history=DiffSetHistory.objects.create(),
             repository=repository,
             public=public,
-            status=status,
-            id=id)
+            status=status)
+
+        # Set this separately to avoid issues with CounterField updates.
+        review_request.id = id
+
         review_request.save()
 
         if publish:

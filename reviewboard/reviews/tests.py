@@ -1873,7 +1873,7 @@ class IfNeatNumberTagTests(TestCase):
         self.assertEqual(t.render(Context({})), expected)
 
 
-class CounterTests(TestCase):
+class ReviewRequestCounterTests(TestCase):
     fixtures = ['test_scmtools']
 
     def setUp(self):
@@ -2401,6 +2401,137 @@ class CounterTests(TestCase):
         self.site_profile2 = \
             LocalSiteProfile.objects.get(pk=self.site_profile2.pk)
         self.group = Group.objects.get(pk=self.group.pk)
+
+
+class IssueCounterTests(TestCase):
+    fixtures = ['test_users']
+
+    def setUp(self):
+        self.review_request = self.create_review_request(publish=True)
+        self.assertEqual(self.review_request.issue_open_count, 0)
+        self.assertEqual(self.review_request.issue_resolved_count, 0)
+        self.assertEqual(self.review_request.issue_dropped_count, 0)
+
+        self._reset_counts()
+
+    @add_fixtures(['test_scmtools'])
+    def test_init_with_diff_comments(self):
+        """Testing ReviewRequest issue counter initialization
+        from diff comments
+        """
+        self.review_request.repository = self.create_repository()
+
+        diffset = self.create_diffset(self.review_request)
+        filediff = self.create_filediff(diffset)
+
+        self._test_issue_counts(
+            lambda review, issue_opened: self.create_diff_comment(
+                review, filediff, issue_opened=issue_opened))
+
+    def test_file_attachment_comments(self):
+        """Testing ReviewRequest issue counter initialization
+        from file attachment comments
+        """
+        file_attachment = self.create_file_attachment(self.review_request)
+
+        self._test_issue_counts(
+            lambda review, issue_opened: self.create_file_attachment_comment(
+                review, file_attachment, issue_opened=issue_opened))
+
+    def test_screenshot_comments(self):
+        """Testing ReviewRequest issue counter initialization
+        from screenshot comments
+        """
+        screenshot = self.create_screenshot(self.review_request)
+
+        self._test_issue_counts(
+            lambda review, issue_opened: self.create_screenshot_comment(
+                review, screenshot, issue_opened=issue_opened))
+
+    def _test_issue_counts(self, create_comment_func):
+        review = self.create_review(self.review_request)
+
+        # One comment without an issue opened.
+        create_comment_func(review, issue_opened=False)
+
+        # Three comments with an issue opened.
+        open_comments = [
+            create_comment_func(review, issue_opened=True)
+            for i in range(3)
+        ]
+
+        # Two comments with an issue dropped.
+        dropped_comments = [
+            create_comment_func(review, issue_opened=True)
+            for i in range(2)
+        ]
+
+        # One comment with an issue fixed.
+        resolved_comments = [
+            create_comment_func(review, issue_opened=True)
+        ]
+
+        # The issue counts should be end up being 0, since they'll initialize
+        # during load.
+        self._reload_object(clear_counters=True)
+        self.assertEqual(self.review_request.issue_open_count, 0)
+        self.assertEqual(self.review_request.issue_resolved_count, 0)
+        self.assertEqual(self.review_request.issue_dropped_count, 0)
+
+        # Now publish. We should have 6 open issues, by way of incrementing
+        # during publish.
+        review.publish()
+
+        self._reload_object()
+        self.assertEqual(self.review_request.issue_open_count, 6)
+        self.assertEqual(self.review_request.issue_dropped_count, 0)
+        self.assertEqual(self.review_request.issue_resolved_count, 0)
+
+        # Make sure we get the same number back when initializing counters.
+        self._reload_object(clear_counters=True)
+        self.assertEqual(self.review_request.issue_open_count, 6)
+        self.assertEqual(self.review_request.issue_dropped_count, 0)
+        self.assertEqual(self.review_request.issue_resolved_count, 0)
+
+        # Set the issue statuses.
+        for comment in dropped_comments:
+            comment.issue_status = Comment.DROPPED
+            comment.save()
+
+        for comment in resolved_comments:
+            comment.issue_status = Comment.RESOLVED
+            comment.save()
+
+        self._reload_object()
+        self.assertEqual(self.review_request.issue_open_count, 3)
+        self.assertEqual(self.review_request.issue_dropped_count, 2)
+        self.assertEqual(self.review_request.issue_resolved_count, 1)
+
+        # Make sure we get the same number back when initializing counters.
+        self._reload_object(clear_counters=True)
+        self.assertEqual(self.review_request.issue_open_count, 3)
+        self.assertEqual(self.review_request.issue_dropped_count, 2)
+        self.assertEqual(self.review_request.issue_resolved_count, 1)
+
+    def _reload_object(self, clear_counters=False):
+        if clear_counters:
+            # 3 queries: One for the review request fetch, one for
+            # the issue status load, and one for updating the issue counts.
+            expected_query_count = 3
+            self._reset_counts()
+        else:
+            # One query for the review request fetch.
+            expected_query_count = 1
+
+        with self.assertNumQueries(expected_query_count):
+            self.review_request = \
+                ReviewRequest.objects.get(pk=self.review_request.pk)
+
+    def _reset_counts(self):
+        self.review_request.issue_open_count = None
+        self.review_request.issue_resolved_count = None
+        self.review_request.issue_dropped_count = None
+        self.review_request.save()
 
 
 class PolicyTests(TestCase):

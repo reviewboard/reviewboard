@@ -14,6 +14,7 @@ from reviewboard.changedescs.models import ChangeDescription
 from reviewboard.diffviewer.models import DiffSet, DiffSetHistory, FileDiff
 from reviewboard.reviews.errors import PermissionError
 from reviewboard.reviews.managers import ReviewRequestManager
+from reviewboard.reviews.models.base_comment import BaseComment
 from reviewboard.reviews.models.base_review_request_details import \
     BaseReviewRequestDetails
 from reviewboard.reviews.models.group import Group
@@ -24,6 +25,66 @@ from reviewboard.reviews.signals import (review_request_published,
 from reviewboard.scmtools.models import Repository
 from reviewboard.site.models import LocalSite
 from reviewboard.site.urlresolvers import local_site_reverse
+
+
+def fetch_issue_counts(review_request, extra_query=None):
+    """Fetches all issue counts for a review request.
+
+    This queries all opened issues across all public comments on a
+    review request and returns them.
+    """
+    issue_counts = {
+        BaseComment.OPEN: 0,
+        BaseComment.RESOLVED: 0,
+        BaseComment.DROPPED: 0
+    }
+
+    q = Q(public=True)
+
+    if extra_query:
+        q = q & extra_query
+
+    issue_statuses = review_request.reviews.filter(q).values(
+        'comments__issue_status',
+        'file_attachment_comments__issue_status',
+        'screenshot_comments__issue_status')
+
+    for issue_fields in issue_statuses:
+        for issue_status in issue_fields.itervalues():
+            if issue_status:
+                issue_counts[issue_status] += 1
+
+    return issue_counts
+
+
+def _initialize_issue_counts(review_request):
+    """Initializes the issue counter fields for a review request.
+
+    This will fetch all the issue counts and populate the counter fields.
+
+    Due to the way that CounterField works, this will only be called once
+    per review request, instead of once per field, due to all the fields
+    being set at once. This will also take care of the actual saving of
+    fields, rather than leaving that up to CounterField, in order to save
+    all at once,
+    """
+    if review_request.pk is None:
+        return 0
+
+    issue_counts = fetch_issue_counts(review_request)
+
+    review_request.issue_open_count = issue_counts[BaseComment.OPEN]
+    review_request.issue_resolved_count = issue_counts[BaseComment.RESOLVED]
+    review_request.issue_dropped_count = issue_counts[BaseComment.DROPPED]
+
+    review_request.save(update_fields=[
+        'issue_open_count',
+        'issue_resolved_count',
+        'issue_dropped_count'
+    ])
+
+    # Tell CounterField not to set or save any values.
+    return None
 
 
 class ReviewRequest(BaseReviewRequestDetails):
@@ -45,6 +106,12 @@ class ReviewRequest(BaseReviewRequestDetails):
         (SUBMITTED,      _('Submitted')),
         (DISCARDED,      _('Discarded')),
     )
+
+    ISSUE_COUNTER_FIELDS = {
+        BaseComment.OPEN: 'issue_open_count',
+        BaseComment.RESOLVED: 'issue_resolved_count',
+        BaseComment.DROPPED: 'issue_dropped_count',
+    }
 
     submitter = models.ForeignKey(User, verbose_name=_("submitter"),
                                   related_name="review_requests")
@@ -129,6 +196,18 @@ class ReviewRequest(BaseReviewRequestDetails):
         default=None,
         blank=True)
     shipit_count = CounterField(_("ship-it count"), default=0)
+
+    issue_open_count = CounterField(
+        _('open issue count'),
+        initializer=_initialize_issue_counts)
+
+    issue_resolved_count = CounterField(
+        _('resolved issue count'),
+        initializer=_initialize_issue_counts)
+
+    issue_dropped_count = CounterField(
+        _('dropped issue count'),
+        initializer=_initialize_issue_counts)
 
     local_site = models.ForeignKey(LocalSite, blank=True, null=True)
     local_id = models.IntegerField('site-local ID', blank=True, null=True)

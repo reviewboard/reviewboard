@@ -133,7 +133,9 @@ class ReviewRequestAdmin(admin.ModelAdmin):
                              'modified unless something is wrong.</p>'),
             'fields': ('email_message_id', 'time_emailed',
                        'last_review_activity_timestamp',
-                       'shipit_count', 'local_id'),
+                       'shipit_count', 'issue_open_count',
+                       'issue_resolved_count', 'issue_dropped_count',
+                       'local_id'),
             'classes': ['collapse'],
         }),
     )
