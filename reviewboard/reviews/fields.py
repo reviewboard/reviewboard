@@ -149,28 +149,30 @@ class BaseReviewRequestField(object):
         coming from a field or any other form of user input must be
         properly escaped.
 
-        Subclasses can override ``render_change_entry_value`` to
+        Subclasses can override ``render_change_entry_value_html`` to
         change how the value itself will be rendered in the string.
         """
-        old_value = ''
-        new_value = ''
+        old_value_html = ''
+        new_value_html = ''
 
         if 'old' in info:
-            old_value = self.render_change_entry_value(info, info['old'][0])
+            old_value_html = \
+                self.render_change_entry_value_html(info, info['old'][0])
 
         if 'new' in info:
-            new_value = self.render_change_entry_value(info, info['new'][0])
+            new_value_html = \
+                self.render_change_entry_value_html(info, info['new'][0])
 
         return (
             _('changed from <i>%(old_value)s</i> to <i>%(new_value)s</i>')
             % {
-                'old_value': escape(old_value),
-                'new_value': escape(new_value),
+                'old_value': old_value_html,
+                'new_value': new_value_html,
             }
         )
 
-    def render_change_entry_value(self, info, value):
-        """Renders the value for a change description string.
+    def render_change_entry_value_html(self, info, value):
+        """Renders the value for a change description string to HTML.
 
         By default, this just converts the value to text and escapes it.
         This can be overridden to customize how the value is displayed.
@@ -315,46 +317,46 @@ class BaseCommaEditableField(BaseEditableField):
         coming from a field or any other form of user input must be
         properly escaped.
         """
-        old_value = ''
-        new_value = ''
         s = ['<ul>']
 
         if 'removed' in info:
-            old_value = self.render_change_entry_value(info, info['removed'])
+            old_value_html = \
+                self.render_change_entry_value_html(info, info['removed'])
 
-            if old_value:
+            if old_value_html:
                 s.append('<li>%s</li>' %
                          _('removed %(values)s') % {
-                             'values': escape(old_value),
+                             'values': old_value_html,
                          })
 
         if 'added' in info:
-            new_value = self.render_change_entry_value(info, info['added'])
+            new_value_html = \
+                self.render_change_entry_value_html(info, info['added'])
 
-            if new_value:
+            if new_value_html:
                 s.append('<li>%s</li>' %
                          _('added %(values)s') % {
-                             'values': escape(new_value),
+                             'values': new_value_html,
                          })
 
         s.append('</ul>')
 
         return '\n'.join(s)
 
-    def render_change_entry_value(self, info, values):
-        """Renders a list of items for a change description string.
+    def render_change_entry_value_html(self, info, values):
+        """Renders a list of items for change description HTML.
 
-        By default, this will call ``render_change_entry_item`` for every
+        By default, this will call ``render_change_entry_item_html`` for every
         item in the list. The list of rendered items will be separated by a
         comma and a space.
         """
         return ', '.join([
-            self.render_change_entry_item(info, item)
+            self.render_change_entry_item_html(info, item)
             for item in values
         ])
 
-    def render_change_entry_item(self, info, item):
-        """Renders an item for a change description string.
+    def render_change_entry_item_html(self, info, item):
+        """Renders an item for change description HTML.
 
         By default, this just converts the value to text and escapes it.
         This can be overridden to customize how the value is displayed.
@@ -421,14 +423,16 @@ class BaseTextAreaField(BaseEditableField):
             return text
 
     def render_change_entry_html(self, info):
-        old_value = ''
-        new_value = ''
+        old_value_html = ''
+        new_value_html = ''
 
         if 'old' in info:
-            old_value = self.render_change_entry_value(info, info['old'][0])
+            old_value_html = \
+                self.render_change_entry_value_html(info, info['old'][0])
 
         if 'new' in info:
-            new_value = self.render_change_entry_value(info, info['new'][0])
+            new_value_html = \
+                self.render_change_entry_value_html(info, info['new'][0])
 
         return (
             '<p><label>%(changed_from_text)s</label></p>\n'
@@ -438,8 +442,8 @@ class BaseTextAreaField(BaseEditableField):
             % {
                 'changed_from_text': escape(_('Changed from:')),
                 'changed_to_text': escape(_('Changed to:')),
-                'old_value': old_value,
-                'new_value': new_value,
+                'old_value': old_value_html,
+                'new_value': new_value_html,
             }
         )
 

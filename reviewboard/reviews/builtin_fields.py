@@ -74,13 +74,13 @@ class BaseModelListEditableField(BaseCommaEditableField):
         changedesc.record_field_change(self.field_id, old_value, new_value,
                                        self.model_name_attr)
 
-    def render_change_entry_item(self, info, item):
+    def render_change_entry_item_html(self, info, item):
         label, url, pk = item
 
         if url:
             return '<a href="%s">%s</a>' % (escape(url), escape(label))
         else:
-            return label
+            return escape(label)
 
     def save_value(self, value):
         setattr(self, self.field_id, value)
@@ -154,7 +154,7 @@ class BugsField(BuiltinFieldMixin, BaseCommaEditableField):
         else:
             return escape(bug_id)
 
-    def render_change_entry_item(self, info, item):
+    def render_change_entry_item_html(self, info, item):
         return self.render_item(item[0])
 
     def _get_bug_url(self, bug_id):
