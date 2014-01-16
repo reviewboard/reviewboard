@@ -1,0 +1,541 @@
+=====================================
+Review Board 2.0 Beta 2 Release Notes
+=====================================
+
+**Release date:** January 16, 2014
+
+This release contains all bug fixes and features found in Review Board version
+:doc:`1.7.21 <1.7.21>`.
+
+
+Installation
+============
+
+To install this release, run the following::
+
+    $ sudo easy_install \
+        -f http://downloads.reviewboard.org/releases/ReviewBoard/2.0/ \
+        -U ReviewBoard
+
+We **do not** recommend upgrading a production server with this version of
+Review Board. It's best to install on a test server, in case there are any
+major problems.
+
+
+Important Upgrade Notes
+=======================
+
+**Make a backup of your database!**
+
+Substantial changes were made to database migration. While our testing has
+shown it to work, it *could* leave your database in a bad state.
+
+Do **not** upgrade a production database. Make a backup first of any database
+you want to upgrade.
+
+Please let us know if you have any problems with the upgrade.
+
+
+New User Features
+=================
+
+Visual Refreshes
+----------------
+
+Review Request Page
+~~~~~~~~~~~~~~~~~~~
+
+The layout of the information for review requests has been redesigned. There
+are now two columns. The summary, description, and testing fields are on the
+left, and all the other information is on the right.
+
+This simplifies the view, shows more of the important information at a glance,
+fixes up some confusing nesting issues, and will allow extensions to add new
+fields.
+
+
+Review UIs
+~~~~~~~~~~
+
+Review UIs now look a lot cleaner and more compact. In previous releases, a
+mostly empty review request box would appear above the review UI, taking up
+valuable space. This has been removed, providing more focus on the text,
+image, or `PDF <http://www.reviewboard.org/powerpack/>`_ being reviewed.
+
+
+File Attachment Thumbnails
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+File attachment thumbnails no longer appear scattered. They have a consistent
+look and size. Long filenames and captions are ellipsized, and the delete
+and pencil icons are now in consistent places.
+
+The thumbnails now do a nicer job rendering the contents. Text files in
+particular now have a better preview. The text contents are syntax-highlighted
+in the thumbnail.
+
+
+Login and Registration Pages
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The user login and registration pages were looking pretty outdated. The
+redesign makes them much prettier, and extensible!
+
+We'll be announcing some new extensions in the future that take advantage of
+the redesign to allow for logging in with services like GitHub and Google.
+
+
+Bulk Close for Review Requests
+------------------------------
+
+There's a new column available in the dashboard that provides a checkbox for
+selecting rows of review requests. This allows for selecting one or more
+review requests and closing them, right from the dashboard.
+
+This is particularly useful for administrators, or users with close
+privileges, to clean up review requests left open by other users.
+
+You can find the new column by clicking the pencil icon on the upper-right of
+the dashboard.
+
+:bug:`579`
+
+
+Review UIs
+----------
+
+
+Generic Text Review
+~~~~~~~~~~~~~~~~~~~
+
+Text files attached to review requests can now be reviewed just like a diff.
+Their contents will be syntax-highlighted when possible, allowing for
+easier review of standalone snippets of code, SQL data dumps, XML files, or
+anything else.
+
+Comments can be made on single lines, or they can span multiple lines. Any
+commented lines will appear along with the comment in the review.
+
+:bug:`1702`
+
+
+Enhanced Markdown Review
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+The Markdown file review UI has been updated to show both the source text and
+the rendered results. Comments can be added to either source or text, and the
+corresponding lines will appear in the review.
+
+
+Other User Features
+-------------------
+
+* Added "Last Diff" timestamp to Review Requests.
+
+  This change adds an additional timestamp to the top of the review request
+  to show the timestamp of the most recent diff update.
+
+  Patch by Vlad Safronov.
+
+* The dashboard frame now takes up the full page size, instead of fitting
+  the content and possibly scrolling parts off the page.
+
+
+New Administration Features
+===========================
+
+Easy Search Setup
+-----------------
+
+The old and often broken PyLucene search backend has been removed. It's been
+replaced with a new search using Haystack_ and Whoosh_. These are
+pure-Python and should make sure much easier to set up.
+
+Note that an existing PyLucene install will no longer be used. The new search
+should work automatically, though, after doing a full re-index.
+
+.. _Haystack: http://haystacksearch.org/
+.. _Whoosh: https://bitbucket.org/mchaput/whoosh/wiki/Home
+
+
+Security Checklist
+------------------
+
+There's a new Security Checklist page under System Information on the side of
+the administration UI. This will run through a series of tests and see if
+there are any immediate problems you need to solve to tighten security on your
+Review Board installation.
+
+Over time, we'll add more checks to this. For now, it tests for your
+``ALLOWED_HOSTS`` setting and for security problems with file attachments.
+
+
+New Manage Extensions Page
+--------------------------
+
+The Manage Extensions page has been rewritten with the following features:
+
+* Provides visual hints for enabled, disabled, and broken extensions.
+* Extensions can be dynamically enabled or disabled without reloading the
+  page.
+* A new "Scan for new extensions" button updates the list of known extensions.
+* When an extension fails to load, the error and traceback are shown with
+  the extension, to help with debugging.
+
+
+``condensediffs`` Management Command
+------------------------------------
+
+A new management command has been introduced to squash duplicate diff data in
+the database. This can often result in a 50% or greater reduction in the size
+of the diff tables.
+
+To run the command, type::
+
+    $ rb-site manage /path/to/site condensediffs
+
+This may take some time, but you can continue to use Review Board while this
+is working. A maintenance window is not required. It may, however, slow down
+access to the database while working.
+
+
+Better Feedback on Admin Changes
+--------------------------------
+
+When saving or otherwise modifying a database entry, or performing some
+other action in the administration UI, you will now see a message confirming
+what you did.
+
+Note that the first time you view the administration UI, you may see many
+messages from previous actions prior to the upgrade. This will only happen
+once, and can be ignored.
+
+
+Extensibility
+=============
+
+New Hooks
+---------
+
+Field and FieldSets
+~~~~~~~~~~~~~~~~~~~
+
+Extensions can now add additional fields and groups of fields to review
+requests through :ref:`review-request-fields-hook`
+and :ref:`review-request-fieldsets-hook`.
+See the documentation for more information on using these.
+
+Custom fields will have their contents saved and published along with
+drafts. They will also be shown in the "Review request changed" boxes.
+Fields can provide custom rendering for their changed in these boxes
+if they need to.
+
+
+Template Hooks for Login and Registration Pages
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+There are new ``before-login-form``, ``after-login-form``,
+``before-register-form``, and ``after-register-form`` template hooks that
+can be used to render content before or after the login or registration
+forms.  This can be used to provide further instructions or other options.
+
+
+LessCSS Files
+-------------
+
+Buit-In Constants
+~~~~~~~~~~~~~~~~~
+
+Any :file:`.less` file can now make use of ``@RB_MAJOR_VERSION``,
+``@RB_MINOR_VERSION``, ``@RB_MICRO_VERSION``, ``@RB_PATCH_VERSION``,
+``@RB_IS_RELEASED``, ``@DEBUG``, and ``@STATIC_ROOT`` macros.
+
+These are useful in LessCSS macro guards when you may need to alter a rule
+depending on the version of Review Board or whether it's a production
+install.
+
+Extensions can also use ``@STATIC_ROOT`` as the base path for loading in
+definition files provided by Review Board. For example,
+``@{STATIC_ROOT}/rb/css/defs.less``.
+
+These apply to extensions when running in development mode and or when
+packaging the extension.
+
+
+Bundled Definitions
+~~~~~~~~~~~~~~~~~~~
+
+LessCSS files can now import ``@{STATIC_ROOT}/rb/css/defs.less``, which
+provides a number of definitions and macros to help match the style of
+Review Board.
+
+
+New ``extra_data`` Fields
+-------------------------
+
+``extra_data`` fields have been added to :py:class:`DiffSet`,
+:py:class:`DiffSetHistory`, :py:class:`FileDiff`, :py:class:`Group`,
+:py:class:`Review`, :py:class:`ReviewRequest`, and
+:py:class:`ReviewRequestDraft`.
+
+These fields accept structured Python data and serialize it to JSON.
+They accompany the existing ``extra_data`` fields on
+:py:class:`Profile` and :py:class:`Repository`.
+
+Extensions can now store state on any of these objects for later use.
+The values can also be accessed and manipulated through the API. See below.
+
+
+Custom Login Instructions on Authentication Backends
+----------------------------------------------------
+
+Any custom authentication backend can now set ``login_instructions``
+to the text to display on the login page. Installations that need
+something beyond the default instructions can subclass their preferred
+authentication backend and override these.
+
+
+Signals for Loading Site and Extension Settings
+-----------------------------------------------
+
+There are two new signals that can be used by extensions to operate when
+settings have been changed.
+
+* ``site_settings_loaded signal`` (provided by :py:mod:`reviewboard.signals`)
+  is emitted after Review Board loads its settings.
+
+* ``settings_saved`` (provided by :py:mod:`djblets.extensions.signals`)
+  is emitted for an extension when its settings have been saved.
+
+
+Custom Context Processors
+-------------------------
+
+Extensions can now provide custom Django context processors, which will add
+variables to all rendered templates. This is useful when you need to provide
+data to pages not directly rendered by an extension, such as the login page.
+
+
+Improves to Configuration Pages
+-------------------------------
+
+Configuration pages for an extension can now use the Django admin widgets that
+are normally reserved for forms in the Django administration UI. These contain
+useful widgets such as ``SplitDateTimeWidget`` and the side-by-side,
+filterable lists of items.
+
+
+Other Changes
+-------------
+
+* Moved the ``base-after-navbar`` template hook.
+
+  This has now been moved to right after the navbar, instead of further
+  down the page, allowing extensions to provide new UI immediately below
+  the navbar.
+
+* Custom middleware can now take an optional extension parameter.
+
+
+Web API
+=======
+
+Improved Markdown Support
+-------------------------
+
+* Added support for forcing Markdown-capable text fields to show Markdown
+  or plain text.
+
+  Fields such as a review request's description or testing done may be
+  in either Markdown or text format. Clients can now specify which they
+  want to receive by passing ``?force-text-type=``. Valid arguments are
+  ``markdown`` or ``plain``.
+
+  When using ``markdown``, all Markdown-capable fields will be provided
+  as valid Markdown, escaping the text if necessary.
+
+  When using ``plain``, all Markdown-capable fields will be provided as
+  plain text, unescaping if necessary. Any Markdown syntax (such as
+  for links) will remain as-is.
+
+* Added a ``text_type`` field for Markdown-capable resources.
+
+  ``text_type`` shows the type of text used for all Markdown-capable
+  fields in that resource. This will be either ``markdown`` or ``plain``.
+
+  If using ``?force-text-type=``, this will reflect the type provided.
+
+  This field replaces the ``rich_text`` boolean field introduced in
+  2.0 beta 1.
+
+* Added a ``text.markdown`` capability.
+
+  :ref:`webapi2.0-server-info-resource` now lists ``text.markdown: true``
+  in the capabilities list, allowing clients to make smart decisions
+  up-front about Markdown support.
+
+
+Extra Data for Resources
+------------------------
+
+Added support for accessing and manipulating extra data for many resources.
+
+Various resources now support attaching and accessing extra custom data
+through the API. By setting ``extra_data.custom_key=custom_value`` in
+a request, the caller can set a ``custom_key`` that can later be accessed
+when retrieving the resource.
+
+Extensions can also make use of this data.
+
+The following resources support attaching extra data:
+
+* :ref:`webapi2.0-diff-resource`
+* :ref:`webapi2.0-review-diff-comment-resource`
+* :ref:`webapi2.0-draft-file-diff-resource`
+* :ref:`webapi2.0-review-file-attachment-comment-resource`
+* :ref:`webapi2.0-review-group-resource`
+* :ref:`webapi2.0-review-resource`
+* :ref:`webapi2.0-review-reply-resource`
+* :ref:`webapi2.0-review-reply-diff-comment-resource`
+* :ref:`webapi2.0-review-reply-file-attachment-comment-resource`
+* :ref:`webapi2.0-review-reply-screenshot-comment-resource`
+* :ref:`webapi2.0-review-request-resource`
+* :ref:`webapi2.0-review-request-draft-resource`
+* :ref:`webapi2.0-review-screenshot-comment-resource`
+
+
+Other Changes
+-------------
+
+* Added an ``absolute_url`` field to various web API resources.
+
+  This field contains an absolute URL to the user-facing page that the
+  content represents.
+
+  This is available for the various file attachment and screenshot resources,
+  :ref:`webapi2.0-review-group-resource`, and
+  :ref:`webapi2.0-review-request-resource`.
+
+  Patch by Edward Lee.
+
+* Fixed a breakage when encountering errors looking up users in
+  authentication backends. Patch by Crystal Lok Koo.
+
+
+Performance Improvements
+========================
+
+* Reduced the memory requirements on the review request and diff viewer pages.
+
+  The memory requirements have been dropped a fair amount compared to beta 1.
+
+* Sped up publishing and discarding of reviews.
+
+
+Bug Fixes
+=========
+
+General
+-------
+
+* Fixed the user info box to handle mouse motion better.
+
+  The user info popup that shows up when hovering over a user's name wasn't
+  very easy to use. It took too long to appear, and as soon as the mouse
+  moved, it would disappear.
+
+  It now appears quicker, stays open while the mouse is over it, and has a
+  short delay before disappearing.
+
+* Fixed some z-index issues throughout the UI.
+
+
+Installation
+------------
+
+* Fixed a database evolution issue when upgrading to 2.0 beta 1.
+
+  The ``repo_revision`` field for FileAttachments was too long in beta 1,
+  which would cause some key length issues on MySQL when upgrading on
+  some setups.
+
+
+Markdown Support
+----------------
+
+* Fixed broken styles in the text editors, preventing the editor from
+  rendering correctly.
+
+* Fixed some issues with saving Markdown content.
+
+* Improved automatic Markdown escaping when posting a change.
+
+  It's no longer as eager to escape all Markdown characters. It mostly
+  escapes only those that it knows will trigger Markdown processing.
+
+* Fixed rendering of Markdown in e-mails.
+
+
+Reviews
+-------
+
+* Fixed a regression in comment dialog dragging.
+
+* Fixed the Publish/Discard buttons after replying twice.
+
+  The buttons were staying disabled ater saving a reply to a comment twice.
+  They now re-enable themselves.
+
+* Fixed the icon for the expand/collapse buttons on reviews.
+
+
+Diff Viewer
+-----------
+
+* Fixed scrolling in the diff viewer when switching pages.
+
+  The new diff viewer page implementation in beta 1 was not scrolling back to
+  the top when switching pages.
+
+* Improved the logic for move detection to not factor in whitespace when
+  deciding on lines.
+
+* Fixed a breakage when moving a line from the very end of a file.
+
+
+New Review Request Page
+-----------------------
+
+* Fixed showing meaningful errors when failing to fetch files from GitHub
+  for post-commit review.
+
+  This can happen when GitHub's API is having problems, or the API is
+  rate-limited.
+
+* Fixed GitHub post-commit review when a commit deals with a file that
+  doesn't have a patch associated.
+
+
+Extensions
+----------
+
+* Fixed a breakage when building static media for extensions.
+
+* If two extensions depend on the same third-party app, Review Board won't
+  break if one of the extensions is disabled.
+
+* The extension list API no longer breaks if an extension can't be loaded.
+
+
+Contributors
+============
+
+* Christian Hammond
+* Crystal Lok Koo
+* David Trowbridge
+* Edward Lee
+* Steven MacLeod
+* Vlad Safronov
+
+
+.. comment: vim: ft=rst et

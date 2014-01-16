@@ -320,7 +320,7 @@ a list of fieldset classes.
 Fieldset IDs must be unique. It is best to choose a fieldset ID that contains
 some sort of extension-specific information, such as the vendor or the
 extension ID. Fieldset IDs are used when registering new fields (using
-:ref:`review-request-fieldsets-hook`) in order to specify where the field
+:ref:`review-request-fields-hook`) in order to specify where the field
 should appear.
 
 Example usage in an Extension::
