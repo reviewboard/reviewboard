@@ -298,6 +298,8 @@ Example usage in an Extension::
             )
 
 
+.. _reviewrequestfieldsetshook:
+
 ReviewRequestFieldSetsHook
 --------------------------
 
