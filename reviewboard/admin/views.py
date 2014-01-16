@@ -15,6 +15,7 @@ from djblets.siteconfig.views import site_settings as djblets_site_settings
 
 from reviewboard.admin.cache_stats import get_cache_stats
 from reviewboard.admin.forms import SSHSettingsForm
+from reviewboard.admin.security_checks import SecurityCheckRunner
 from reviewboard.admin.support import get_support_url
 from reviewboard.admin.widgets import (dynamic_activity_data,
                                        primary_widgets,
@@ -50,6 +51,16 @@ def cache_stats(request, template_name="admin/cache_stats.html"):
         'cache_backend': settings.CACHES['default']['BACKEND'],
         'title': _("Server Cache"),
         'root_path': settings.SITE_ROOT + "admin/db/"
+    }))
+
+
+@staff_member_required
+def security(request, template_name="admin/security.html"):
+    runner = SecurityCheckRunner()
+    results = runner.run()
+    return render_to_response(template_name, RequestContext(request, {
+        'test_results': results,
+        'title': _("Security Checklist"),
     }))
 
 
