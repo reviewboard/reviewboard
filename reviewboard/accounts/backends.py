@@ -552,6 +552,15 @@ class ActiveDirectoryBackend(AuthBackend):
         connections = self.get_ldap_connections(userdomain)
         required_group = settings.AD_GROUP_NAME
 
+        if isinstance(username, six.text_type):
+            username = username.encode('utf-8')
+
+        if isinstance(user_subdomain, six.text_type):
+            user_subdomain = user_subdomain.encode('utf-8')
+
+        if isinstance(password, six.text_type):
+            password = password.encode('utf-8')
+
         for con in connections:
             try:
                 bind_username = '%s@%s' % (username, userdomain)
