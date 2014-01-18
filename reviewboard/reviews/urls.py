@@ -7,6 +7,13 @@ from reviewboard.reviews.views import (ReviewsDiffFragmentView,
                                        ReviewRequestSearchView)
 
 
+download_diff_urls = patterns(
+    'reviewboard.reviews.views',
+
+    url(r'^orig/$', 'download_orig_file', name='download-orig-file'),
+    url(r'^new/$', 'download_modified_file', name='download-modified-file'),
+)
+
 diffviewer_revision_urls = patterns(
     'reviewboard.reviews.views',
 
@@ -23,6 +30,8 @@ diffviewer_revision_urls = patterns(
 
     url(r'^fragment/(?P<filediff_id>[0-9]+)/chunk/(?P<chunkindex>[0-9]+)/$',
         ReviewsDiffFragmentView.as_view()),
+
+    url(r'^download/(?P<filediff_id>[0-9]+)/', include(download_diff_urls)),
 )
 
 diffviewer_interdiff_urls = patterns(
@@ -42,10 +51,7 @@ diffviewer_interdiff_urls = patterns(
 diffviewer_urls = patterns(
     'reviewboard.reviews.views',
 
-    url(r'^$',
-        ReviewsDiffViewerView.as_view(),
-        name="view_diff"),
-
+    url(r'^$', ReviewsDiffViewerView.as_view(), name="view_diff"),
     url(r'^raw/$', 'raw_diff', name='raw_diff'),
 
     url(r'^(?P<revision>[0-9]+)/', include(diffviewer_revision_urls)),

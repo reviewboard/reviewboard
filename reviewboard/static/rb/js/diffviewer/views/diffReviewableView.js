@@ -15,6 +15,7 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
     commentsListName: 'diff_comments',
 
     events: {
+        'click .download-link': '_onDownloadLinkClicked',
         'click thead tr': '_onFileHeaderClicked',
         'click .moved-to, .moved-from': '_onMovedLineClicked',
         'click .diff-collapse-btn': '_onCollapseChunkClicked',
@@ -546,6 +547,16 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
                 this.trigger('chunkExpansionChanged');
             }
         }, this);
+    },
+
+    /*
+     * Handler for when a file download link is clicked.
+     *
+     * Prevents the event from bubbling up and being caught by
+     * _onFileHeaderClicked.
+     */
+    _onDownloadLinkClicked: function(e) {
+        e.stopPropagation();
     },
 
     /*

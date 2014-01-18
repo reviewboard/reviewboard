@@ -87,10 +87,20 @@
 {%   else %}
 {%    if not file.is_new_file %}
    <th></th>
-   <th>{{file.revision}}</th>
+   <th>
+{%     if download_orig_url %}
+    <a class="rb-icon rb-icon-download download-link" href="{{download_orig_url}}" alt="{% trans 'Download' %}" title="{% trans 'Download' %}"></a>
+{%     endif %}
+    {{file.revision}}
+    </th>
 {%    endif %}
    <th></th>
-   <th>{{file.dest_revision}}</th>
+   <th>
+{%    if download_modified_url %}
+    <a class="rb-icon rb-icon-download download-link" href="{{download_modified_url}}" alt="{% trans 'Download' %}" title="{% trans 'Download' %}"></a>
+{%    endif %}
+    {{file.dest_revision}}
+   </th>
 {%   endif %}{# num_changes and moved #}
   </tr>
  </thead>
@@ -105,9 +115,6 @@
    <td colspan="2">
     <div class="inline-actions-container clearfix">
      <ul class="actions inline-actions-left">
-{%     if orig_diff_file_attachment %}
-      <li class="download"><a href="{{orig_diff_file_attachment.get_absolute_url}}">{% trans "Download" %}</a></li>
-{%     endif %}
      </ul>
     </div>
    </td>
@@ -116,7 +123,6 @@
     <div class="inline-actions-container clearfix">
      <ul class="actions inline-actions-right">
 {%   if modified_diff_file_attachment %}
-      <li><a href="{{modified_diff_file_attachment.get_absolute_url}}">{% trans "Download" %}</a></li>
 {%    if not modified_attachment_review_ui_html and not diff_attachment_review_ui_html %}
 {%     if modified_diff_file_attachment.review_ui %}
       <li class="file-review"><a href="{% url 'file_attachment' modified_diff_file_attachment.get_review_request.display_id modified_diff_file_attachment.pk %}">{% trans "Review" %}</a></li>

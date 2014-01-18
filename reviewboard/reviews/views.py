@@ -35,7 +35,10 @@ from reviewboard.accounts.decorators import (check_login_required,
 from reviewboard.accounts.models import ReviewRequestVisit, Profile
 from reviewboard.attachments.models import FileAttachment
 from reviewboard.changedescs.models import ChangeDescription
-from reviewboard.diffviewer.diffutils import get_file_chunks_in_range
+from reviewboard.diffviewer.diffutils import (convert_to_unicode,
+                                              get_file_chunks_in_range,
+                                              get_original_file,
+                                              get_patched_file)
 from reviewboard.diffviewer.models import DiffSet
 from reviewboard.diffviewer.views import (DiffFragmentView, DiffViewerView,
                                           exception_traceback_string)
@@ -1268,21 +1271,22 @@ class ReviewsDiffFragmentView(DiffFragmentView):
         This will look up the review request and DiffSets, given the
         provided information, and pass them to the parent class for rendering.
         """
-        review_request, response = \
+        self.review_request, response = \
             _find_review_request(request, review_request_id, local_site_name)
 
-        if not review_request:
+        if not self.review_request:
             return response
 
-        draft = review_request.get_draft(request.user)
+        draft = self.review_request.get_draft(request.user)
 
         if interdiff_revision is not None:
-            interdiffset = _query_for_diff(review_request, request.user,
+            interdiffset = _query_for_diff(self.review_request, request.user,
                                            interdiff_revision, draft)
         else:
             interdiffset = None
 
-        diffset = _query_for_diff(review_request, request.user, revision, draft)
+        diffset = _query_for_diff(self.review_request, request.user,
+                                  revision, draft)
 
         return super(ReviewsDiffFragmentView, self).get(
             request,
@@ -1368,7 +1372,54 @@ class ReviewsDiffFragmentView(DiffFragmentView):
                 'diff_attachment_review_ui_html': diff_review_ui_html,
             })
 
+        renderer.extra_context.update(self._get_download_links(renderer))
+
         return renderer
+
+    def get_context_data(self, **kwargs):
+        return {
+            'review_request': self.review_request,
+        }
+
+    def _get_download_links(self, renderer):
+        if self.diff_file['binary']:
+            orig_attachment = \
+                renderer.extra_context['orig_diff_file_attachment']
+            modified_attachment = \
+                renderer.extra_context['modified_diff_file_attachment']
+
+            download_orig_url = orig_attachment.get_absolute_url()
+            download_modified_url = modified_attachment.get_absolute_url()
+        else:
+            filediff = self.diff_file['filediff']
+            interfilediff = self.diff_file['interfilediff']
+            diffset = filediff.diffset
+
+            if interfilediff:
+                orig_url_name = 'download-modified-file'
+                modified_revision = interfilediff.diffset.revision
+                modified_filediff_id = interfilediff.pk
+            else:
+                orig_url_name = 'download-orig-file'
+                modified_revision = diffset.revision
+                modified_filediff_id = filediff.pk
+
+            download_orig_url = reverse(orig_url_name, kwargs={
+                'review_request_id': self.review_request.display_id,
+                'revision': diffset.revision,
+                'filediff_id': filediff.pk,
+            })
+
+            download_modified_url = reverse('download-modified-file', kwargs={
+                'review_request_id': self.review_request.display_id,
+                'revision': modified_revision,
+                'filediff_id': modified_filediff_id,
+            })
+
+        return {
+            'download_orig_url': download_orig_url,
+            'download_modified_url': download_modified_url,
+        }
 
     def _render_review_ui(self, review_ui, inline_only=True):
         """Renders the review UI for a file attachment."""
@@ -1702,3 +1753,40 @@ def user_infobox(request, username,
     set_etag(response, etag)
 
     return response
+
+
+def _download_diff_file(modified, request, review_request_id, revision,
+                        filediff_id, local_site_name=None):
+    """Downloads an original or modified file from a diff.
+
+    This will fetch the file from a FileDiff, optionally patching it,
+    and return the result as an HttpResponse.
+    """
+    review_request, response = \
+        _find_review_request(request, review_request_id, local_site_name)
+
+    if not review_request:
+        return response
+
+    draft = review_request.get_draft(request.user)
+    diffset = _query_for_diff(review_request, request.user, revision, draft)
+    filediff = get_object_or_404(diffset.files, pk=filediff_id)
+    encoding_list = diffset.repository.get_encoding_list()
+    data = get_original_file(filediff, request, encoding_list)
+
+    if modified:
+        data = get_patched_file(data, filediff, request)
+
+    data = convert_to_unicode(data, encoding_list)[1]
+
+    return HttpResponse(data, mimetype='text/plain; charset=utf-8')
+
+
+def download_orig_file(*args, **kwargs):
+    """Downloads an original file from a diff."""
+    return _download_diff_file(False, *args, **kwargs)
+
+
+def download_modified_file(*args, **kwargs):
+    """Downloads a modified file from a diff."""
+    return _download_diff_file(True, *args, **kwargs)
