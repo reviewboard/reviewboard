@@ -226,6 +226,7 @@ class Repository(models.Model):
             return False
 
         return (self.public or
+                user.is_superuser or
                 (user.is_authenticated() and
                  (self.review_groups.filter(users__pk=user.pk).count() > 0 or
                   self.users.filter(pk=user.pk).count() > 0)))
