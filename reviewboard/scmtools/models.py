@@ -1,6 +1,6 @@
 from django.contrib.auth.models import User
 from django.core.cache import cache
-from django.core.exceptions import ImproperlyConfigured
+from django.core.exceptions import ImproperlyConfigured, ValidationError
 from django.db import models
 from django.utils.http import urlquote
 from django.utils.translation import ugettext_lazy as _
@@ -340,6 +340,29 @@ class Repository(models.Model):
                                      exists=exists)
 
         return exists
+
+    def clean(self):
+        """Clean method for checking null unique_together constraints.
+
+        Django has a bug where unique_together constraints for foreign keys
+        aren't checked properly if one of the relations is null. This means
+        that users who aren't using local sites could create multiple groups
+        with the same name.
+        """
+        super(Repository, self).clean()
+
+        if self.local_site is None:
+            q = Repository.objects.exclude(pk=self.pk)
+
+            if q.filter(name=self.name).exists():
+                raise ValidationError(
+                    _('A repository with this name already exists'),
+                    params={'field': 'name'})
+
+            if q.filter(path=self.path).exists():
+                raise ValidationError(
+                    _('A repository with this path already exists'),
+                    parames={'field': 'path'})
 
     class Meta:
         verbose_name_plural = "Repositories"

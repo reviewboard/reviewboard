@@ -9,7 +9,8 @@ from django.conf import settings
 from django.contrib import auth
 from django.contrib.auth.models import User
 from django.contrib.sites.models import Site
-from django.core.exceptions import PermissionDenied, ObjectDoesNotExist
+from django.core.exceptions import (PermissionDenied, ObjectDoesNotExist,
+                                    ValidationError)
 from django.db.models import Q
 from django.http import HttpResponseRedirect, HttpResponse, \
                         HttpResponseNotModified
@@ -3506,6 +3507,15 @@ class RepositoryResource(WebAPIResource):
         if cert:
             repository.extra_data['cert'] = cert
 
+        try:
+            repository.full_clean()
+        except ValidationError, e:
+            return INVALID_FORM_DATA, {
+                'fields': {
+                    e.params['field']: e.message,
+                },
+            }
+
         repository.save()
 
         return 201, {
@@ -3643,6 +3653,15 @@ class RepositoryResource(WebAPIResource):
             # will use up a max of 8 characters, so we slice the name down to
             # make the result fit in 64 characters
             repository.name = 'ar:%s:%x' % (repository.name[:50], int(time()))
+
+        try:
+            repository.full_clean()
+        except ValidationError, e:
+            return INVALID_FORM_DATA, {
+                'fields': {
+                    e.params['field']: e.message,
+                },
+            }
 
         repository.save()
 
