@@ -84,6 +84,22 @@ class Group(models.Model):
         return local_site_reverse('group', local_site_name=local_site_name,
                                   kwargs={'name': self.name})
 
+    def clean(self):
+        """Clean method for checking null unique_together constraints.
+
+        Django has a bug where unique_together constraints for foreign keys
+        aren't checked properly if one of the relations is null. This means
+        that users who aren't using local sites could create multiple groups
+        with the same name.
+        """
+        super(Group, self).clean()
+
+        if (self.local_site is None and
+            Group.objects.filter(name=self.name).exclude(pk=self.pk).exists()):
+            raise ValidationError(
+                _('A group with this name already exists'),
+                params={'field': 'name'})
+
     class Meta:
         app_label = 'reviews'
         unique_together = (('name', 'local_site'),)
