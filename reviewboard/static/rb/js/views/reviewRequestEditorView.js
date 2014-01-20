@@ -609,6 +609,7 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
 
         if (_.has(fieldOptions, 'autocomplete')) {
             this._buildAutoComplete($el, fieldOptions.autocomplete);
+            $el.inlineEditor('setupEvents');
         }
 
         this.listenTo(this.draft, 'change:' + fieldOptions.fieldName,
@@ -886,7 +887,8 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
                 multiline: multiline,
                 showButtons: multiline,
                 useEditIconOnly: fieldOptions.useEditIconOnly,
-                showRequiredFlag: $el.hasClass('required')
+                showRequiredFlag: $el.hasClass('required'),
+                deferEventSetup: _.has(fieldOptions, 'autocomplete')
             };
 
         if (fieldOptions.editMarkdown) {
