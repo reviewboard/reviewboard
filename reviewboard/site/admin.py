@@ -31,7 +31,7 @@ from reviewboard.site.models import LocalSite
 
 
 class LocalSiteAdmin(admin.ModelAdmin):
-    list_display = ('name',)
+    list_display = ('name', 'public')
     filter_horizontal = ('users', 'admins')
 
 admin.site.register(LocalSite, LocalSiteAdmin)
