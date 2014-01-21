@@ -99,7 +99,7 @@ RB.apiCall = function(options) {
                 !options.noActivityIndicator &&
                 !activityIndicator.hasClass("error")) {
                 activityIndicator
-                    .delay(1000)
+                    .delay(250)
                     .fadeOut("fast");
             }
 
