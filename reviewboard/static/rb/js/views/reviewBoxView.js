@@ -6,11 +6,13 @@
  */
 RB.ReviewBoxView = RB.CollapsableBoxView.extend({
     initialize: function() {
+        this._$shipIt = null;
         this._reviewReply = null;
         this._replyEditors = [];
         this._replyEditorViews = [];
         this._draftBannerShown = false;
         this._$banners = null;
+        this._openIssueCount = 0
 
         this._setupNewReply(this.options.reviewReply);
     },
@@ -32,6 +34,7 @@ RB.ReviewBoxView = RB.CollapsableBoxView.extend({
         RB.CollapsableBoxView.prototype.render.call(this);
 
         this._$banners = this.$('.banners');
+        this._$shipIt = this.$('.shipit');
 
         this._reviewReply.on('destroyed published', function() {
             this._setupNewReply();
@@ -39,6 +42,7 @@ RB.ReviewBoxView = RB.CollapsableBoxView.extend({
 
         _.each(this.$('.review-comments .issue-indicator'), function(el) {
             var $issueState = $('.issue-state', el),
+                issueStatus,
                 issueBar;
 
             /*
@@ -46,6 +50,12 @@ RB.ReviewBoxView = RB.CollapsableBoxView.extend({
              * the issue bar.
              */
             if ($issueState.length > 0) {
+                issueStatus = $issueState.data('issue-status');
+
+                if (issueStatus === RB.BaseComment.STATE_OPEN) {
+                    this._openIssueCount++;
+                }
+
                 issueBar = new RB.CommentIssueBarView({
                     el: el,
                     reviewID: this.model.id,
@@ -56,6 +66,9 @@ RB.ReviewBoxView = RB.CollapsableBoxView.extend({
                 });
 
                 issueBar.render();
+
+                this.listenTo(issueBar, 'statusChanged',
+                              this._onIssueStatusChanged);
             }
         }, this);
 
@@ -175,5 +188,41 @@ RB.ReviewBoxView = RB.CollapsableBoxView.extend({
         }
 
         this._reviewReply = reviewReply;
+    },
+
+    /*
+     * Handler for when the issue status of a comment changes.
+     *
+     * This will update the number of open issues, and, if there's a
+     * Ship It!, will update the label.
+     */
+    _onIssueStatusChanged: function(issueStatus) {
+        if (issueStatus === RB.BaseComment.STATE_OPEN) {
+            this._openIssueCount++;
+        } else {
+            this._openIssueCount--;
+        }
+
+        if (this._$shipIt.length > 0) {
+            this._updateShipItLabel();
+        }
+    },
+
+    /*
+     * Updates the Ship It label based on the open issue counts.
+     *
+     * If there are open issues, the label will say "Fix it, then Ship it!"
+     * If all open issues are closed, it will say "Ship it!"
+     */
+    _updateShipItLabel: function() {
+        if (this._openIssueCount === 0) {
+            this._$shipIt
+                .removeClass('with-issues')
+                .text(gettext('Ship it!'));
+        } else {
+            this._$shipIt
+                .addClass('with-issues')
+                .text(gettext('Fix it, then Ship it!'));
+        }
     }
 });

@@ -335,18 +335,36 @@ h1.title,
     border-right: 0;
   }
 
+  .issue-count,
+  .shipit-count {
+    display: inline-block;
+    font-weight: bold;
+    padding: 0.05em 0.8em;
+    white-space: nowrap;
+    .border-radius(10px);
+  }
+
+  .issue-count {
+    border: 1px darken(@issue-opened-bg, 50%) solid;
+    color: #205003;
+    #gradient > .vertical-three-colors(@issue-opened-bg, @issue-opened-bg, 25%,
+                                       darken(@issue-opened-bg, 30%));
+
+    .issue-icon {
+      color: darken(@issue-opened-bg, 60%);
+      display: inline-block;
+      padding: 0 3px 0 1px;
+      text-align: center;
+    }
+  }
+
   .shipit-count {
     background-image: url("../images/shipit_bg.png");
     background-position: top left;
     background-repeat: repeat-x;
     background-color: #6bc810;
     border: 1px #478a06 solid;
-    display: block;
     color: #205003;
-    font-weight: bold;
-    padding: 0.05em 0.5em;
-    white-space: nowrap;
-    .border-radius(10px);
   }
 }
 

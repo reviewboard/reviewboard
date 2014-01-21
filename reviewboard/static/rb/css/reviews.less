@@ -708,6 +708,14 @@
     width: 4.5em;
     top: -8px;
     .border-radius(@box-border-radius 0 @box-border-radius 0);
+
+    &.with-issues {
+      border: 1px darken(@issue-opened-bg, 70%) solid;
+      color: #205003;
+      width: 11em;
+      #gradient > .vertical-three-colors(@issue-opened-bg, @issue-opened-bg, 25%,
+                                         darken(@issue-opened-bg, 30%));
+    }
   }
 }
 

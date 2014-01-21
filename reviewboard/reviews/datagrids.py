@@ -121,14 +121,19 @@ class ShipItColumn(Column):
         self.shrink = True
 
     def render_data(self, review_request):
-        if review_request.shipit_count > 0:
+        if review_request.issue_open_count > 0:
+            return ('<span class="issue-count">'
+                    ' <span class="issue-icon">!</span> %s'
+                    '</span>'
+                    % review_request.issue_open_count)
+        elif review_request.shipit_count > 0:
             return '<span class="shipit-count">' \
                    ' <div class="rb-icon rb-icon-shipit-checkmark"' \
                    '      title="%s"></div> %s' \
                    '</span>' % \
                 (self.image_alt, review_request.shipit_count)
-
-        return ""
+        else:
+            return ""
 
 
 class MyCommentsColumn(Column):

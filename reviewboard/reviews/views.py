@@ -57,7 +57,7 @@ from reviewboard.reviews.datagrids import (DashboardDataGrid,
                                            WatchedGroupDataGrid,
                                            get_sidebar_counts)
 from reviewboard.reviews.fields import get_review_request_field
-from reviewboard.reviews.models import (Comment,
+from reviewboard.reviews.models import (BaseComment, Comment,
                                         FileAttachmentComment,
                                         Group, ReviewRequest, Review,
                                         Screenshot, ScreenshotComment)
@@ -468,6 +468,7 @@ def review_detail(request,
                 'timestamp': review.timestamp,
                 'class': state,
                 'collapsed': state == 'collapsed',
+                'issue_open_count': 0,
             }
             reviews_entry_map[review.pk] = entry
             entries.append(entry)
@@ -611,6 +612,9 @@ def review_detail(request,
                         comment.issue_status_to_string(comment.issue_status)
                     issues[status_key] += 1
                     issues['total'] += 1
+
+                    if comment.issue_status == BaseComment.OPEN:
+                        entry['issue_open_count'] += 1
 
     # Sort all the reviews and ChangeDescriptions into a single list, for
     # display.

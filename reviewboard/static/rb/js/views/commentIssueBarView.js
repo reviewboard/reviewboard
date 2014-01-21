@@ -124,6 +124,8 @@ RB.CommentIssueBarView = Backbone.View.extend({
             this._$buttons.filter(statusInfo.visibleButtons.join(',')).show();
             this._$buttons.prop('disabled', false);
         }
+
+        this.trigger('statusChanged', issueStatus);
     },
 
     /*
