@@ -1388,8 +1388,15 @@ class ReviewsDiffFragmentView(DiffFragmentView):
             modified_attachment = \
                 renderer.extra_context['modified_diff_file_attachment']
 
-            download_orig_url = orig_attachment.get_absolute_url()
-            download_modified_url = modified_attachment.get_absolute_url()
+            if orig_attachment:
+                download_orig_url = orig_attachment.get_absolute_url()
+            else:
+                download_orig_url = None
+
+            if modified_attachment:
+                download_modified_url = modified_attachment.get_absolute_url()
+            else:
+                download_modified_url = None
         else:
             filediff = self.diff_file['filediff']
             interfilediff = self.diff_file['interfilediff']
