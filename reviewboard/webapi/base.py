@@ -1,5 +1,6 @@
 from __future__ import unicode_literals
 
+from django.db.models import Q
 from django.utils import six
 from django.utils.encoding import force_unicode
 from djblets.util.decorators import augment_method_from
@@ -120,6 +121,31 @@ class WebAPIResource(DjbletsWebAPIResource):
         arguments for the URL pattern.
         """
         return self._get_resource_url(self.name, **kwargs)
+
+    def build_queries_for_int_field(self, request, field_name,
+                                    query_param_name=None):
+        """Builds queries based on request parameters for an int field.
+
+        get_queryset() implementations can use this to allow callers to
+        filter results through range matches. Callers can search for exact
+        matches, or can do <, <=, >, or >= matches.
+        """
+        if not query_param_name:
+            query_param_name = field_name.replace('_', '-')
+
+        q = Q()
+
+        if query_param_name in request.GET:
+            q = q & Q(**{field_name: request.GET[query_param_name]})
+
+        for op in ('gt', 'gte', 'lt', 'lte'):
+            param = '%s-%s' % (query_param_name, op)
+
+            if param in request.GET:
+                query_field = '%s__%s' % (field_name, op)
+                q = q & Q(**{query_field: request.GET[param]})
+
+        return q
 
     def _get_resource_url(self, name, local_site_name=None, request=None,
                           **kwargs):

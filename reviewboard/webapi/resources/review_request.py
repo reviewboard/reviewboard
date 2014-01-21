@@ -98,6 +98,24 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
             'type': dict,
             'description': 'Extra data as part of the review request. '
                            'This can be set by the API or extensions.',
+            'added_in': '2.0',
+        },
+        'issue_dropped_count': {
+            'type': int,
+            'description': 'The number of dropped issues on this '
+                           'review request',
+            'added_in': '2.0',
+        },
+        'issue_open_count': {
+            'type': int,
+            'description': 'The number of open issues on this review request',
+            'added_in': '2.0',
+        },
+        'issue_resolved_count': {
+            'type': int,
+            'description': 'The number of resolved issues on this '
+                           'review request',
+            'added_in': '2.0',
         },
         'submitter': {
             'type': UserResource,
@@ -117,6 +135,7 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
             'type': MarkdownFieldsMixin.TEXT_TYPES,
             'description': 'The mode for the review request description '
                            'and testing_done fields.',
+            'added_in': '2.0',
         },
         'status': {
             'type': ('discarded', 'pending', 'submitted'),
@@ -145,6 +164,12 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
             'type': RepositoryResource,
             'description': "The repository that the review request's code "
                            "is stored on.",
+        },
+        'ship_it_count': {
+            'type': int,
+            'description': 'The number of Ship Its given to this '
+                           'review request.',
+            'added_in': '2.0',
         },
         'summary': {
             'type': six.text_type,
@@ -223,72 +248,8 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
         review requests.
 
         If the queryset is being used for a list of review request
-        resources, then it can be further filtered by one or more of the
-        following arguments in the URL:
-
-          * ``changenum``
-              - The change number the review requests must be
-                against. This will only return one review request
-                per repository, and only works for repository
-                types that support server-side changesets.
-
-          * ``commit_id``
-              - The commit_id of review requests. This will only return one
-                review request per repository.
-
-          * ``time-added-to``
-              - The date/time that all review requests must be added before.
-                This is compared against the review request's ``time_added``
-                field. See below for information on date/time formats.
-
-          * ``time-added-from``
-              - The earliest date/time the review request could be added.
-                This is compared against the review request's ``time_added``
-                field. See below for information on date/time formats.
-
-          * ``last-updated-to``
-              - The date/time that all review requests must be last updated
-                before. This is compared against the review request's
-                ``last_updated`` field. See below for information on date/time
-                formats.
-
-          * ``last-updated-from``
-              - The earliest date/time the review request could be last
-                updated. This is compared against the review request's
-                ``last_updated`` field. See below for information on date/time
-                formats.
-
-          * ``from-user``
-              - The username that the review requests must be owned by.
-
-          * ``repository``
-              - The ID of the repository that the review requests must be on.
-
-          * ``ship-it``
-              - The review request must have at least one review with Ship It
-                set, if this is 1. Otherwise, if 0, it must not have any marked
-                Ship It.
-
-          * ``status``
-              - The status of the review requests. This can be ``pending``,
-                ``submitted`` or ``discarded``.
-
-          * ``to-groups``
-              - A comma-separated list of review group names that the review
-                requests must have in the reviewer list.
-
-          * ``to-user-groups``
-              - A comma-separated list of usernames who are in groups that the
-                review requests must have in the reviewer list.
-
-          * ``to-users``
-              - A comma-separated list of usernames that the review requests
-                must either have in the reviewer list specifically or by way
-                of a group.
-
-          * ``to-users-directly``
-              - A comma-separated list of usernames that the review requests
-                must have in the reviewer list specifically.
+        resources, then it can be further filtered by one or more arguments
+        in the URL. These are listed in @webapi_request_fields for get_list().
 
         Some arguments accept dates. The handling of dates is quite flexible,
         accepting a variety of date/time formats, but we recommend sticking
@@ -360,6 +321,14 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
                 elif ship_it in ('0', 'false', 'False'):
                     q = q & Q(shipit_count=0)
 
+            q = q & self.build_queries_for_int_field(
+                request, 'shipit_count', 'ship-it-count')
+
+            for issue_field in ('issue_open_count', 'issue_dropped_count',
+                                'issue_resolved_count'):
+                q = q & self.build_queries_for_int_field(
+                    request, issue_field)
+
             if 'time-added-from' in request.GET:
                 date = self._parse_date(request.GET['time-added-from'])
 
@@ -406,6 +375,9 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
 
     def serialize_bugs_closed_field(self, obj, **kwargs):
         return obj.get_bug_list()
+
+    def serialize_ship_it_count_field(self, obj, **kwargs):
+        return obj.shipit_count
 
     def serialize_status_field(self, obj, **kwargs):
         return status_to_string(obj.status)
@@ -791,12 +763,133 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
                 'description': 'The ID of the repository that the review '
                                'requests must be on.',
             },
+            'issue-dropped-count': {
+                'type': bool,
+                'description': 'The review request must have exactly the '
+                               'provided number of dropped issues.',
+                'added_in': '2.0',
+            },
+            'issue-dropped-count-lt': {
+                'type': bool,
+                'description': 'The review request must have less than the '
+                               'provided number of dropped issues.',
+                'added_in': '2.0',
+            },
+            'issue-dropped-count-lte': {
+                'type': bool,
+                'description': 'The review request must have at most the '
+                               'provided number of dropped issues.',
+                'added_in': '2.0',
+            },
+            'issue-dropped-count-gt': {
+                'type': bool,
+                'description': 'The review request must have more than the '
+                               'provided number of dropped issues.',
+                'added_in': '2.0',
+            },
+            'issue-dropped-count-gte': {
+                'type': bool,
+                'description': 'The review request must have at least the '
+                               'provided number of dropped issues.',
+                'added_in': '2.0',
+            },
+            'issue-open-count': {
+                'type': bool,
+                'description': 'The review request must have exactly the '
+                               'provided number of open issues.',
+                'added_in': '2.0',
+            },
+            'issue-open-count-lt': {
+                'type': bool,
+                'description': 'The review request must have less than the '
+                               'provided number of open issues.',
+                'added_in': '2.0',
+            },
+            'issue-open-count-lte': {
+                'type': bool,
+                'description': 'The review request must have at most the '
+                               'provided number of open issues.',
+                'added_in': '2.0',
+            },
+            'issue-open-count-gt': {
+                'type': bool,
+                'description': 'The review request must have more than the '
+                               'provided number of open issues.',
+                'added_in': '2.0',
+            },
+            'issue-open-count-gte': {
+                'type': bool,
+                'description': 'The review request must have at least the '
+                               'provided number of open issues.',
+                'added_in': '2.0',
+            },
+            'issue-resolved-count': {
+                'type': bool,
+                'description': 'The review request must have exactly the '
+                               'provided number of resolved issues.',
+                'added_in': '2.0',
+            },
+            'issue-resolved-count-lt': {
+                'type': bool,
+                'description': 'The review request must have less than the '
+                               'provided number of resolved issues.',
+                'added_in': '2.0',
+            },
+            'issue-resolved-count-lte': {
+                'type': bool,
+                'description': 'The review request must have at most the '
+                               'provided number of resolved issues.',
+                'added_in': '2.0',
+            },
+            'issue-resolved-count-gt': {
+                'type': bool,
+                'description': 'The review request must have more than the '
+                               'provided number of resolved issues.',
+                'added_in': '2.0',
+            },
+            'issue-resolved-count-gte': {
+                'type': bool,
+                'description': 'The review request must have at least the '
+                               'provided number of resolved issues.',
+                'added_in': '2.0',
+            },
             'ship-it': {
                 'type': bool,
                 'description': 'The review request must have at least one '
                                'review with Ship It set, if this is 1. '
                                'Otherwise, if 0, it must not have any marked '
                                'Ship It.',
+                'deprecated_in': '2.0',
+            },
+            'ship-it-count': {
+                'type': bool,
+                'description': 'The review request must have exactly the '
+                               'provided number of Ship Its.',
+                'added_in': '2.0',
+            },
+            'ship-it-count-lt': {
+                'type': bool,
+                'description': 'The review request must have less than the '
+                               'provided number of Ship Its.',
+                'added_in': '2.0',
+            },
+            'ship-it-count-lte': {
+                'type': bool,
+                'description': 'The review request must have at most the '
+                               'provided number of Ship Its.',
+                'added_in': '2.0',
+            },
+            'ship-it-count-gt': {
+                'type': bool,
+                'description': 'The review request must have more than the '
+                               'provided number of Ship Its.',
+                'added_in': '2.0',
+            },
+            'ship-it-count-gte': {
+                'type': bool,
+                'description': 'The review request must have at least the '
+                               'provided number of Ship Its.',
+                'added_in': '2.0',
             },
             'status': {
                 'type': ('all', 'discarded', 'pending', 'submitted'),

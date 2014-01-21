@@ -8,7 +8,7 @@ from djblets.util.compat import six
 from djblets.webapi.errors import DOES_NOT_EXIST, PERMISSION_DENIED
 
 from reviewboard.accounts.models import LocalSiteProfile
-from reviewboard.reviews.models import ReviewRequest
+from reviewboard.reviews.models import BaseComment, ReviewRequest
 from reviewboard.site.models import LocalSite
 from reviewboard.webapi.errors import INVALID_REPOSITORY
 from reviewboard.webapi.resources import resources
@@ -318,6 +318,193 @@ class ResourceListTests(ExtraDataListMixin, BaseWebAPITestCase):
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(rsp['count'],
                          ReviewRequest.objects.from_user("grumpy").count())
+
+    # Tests for ?issue-dropped-count*= query parameters.
+    def _setup_issue_dropped_count_tests(self):
+        review_request = self.create_review_request(publish=True)
+        file_attachment = self.create_file_attachment(review_request)
+        review = self.create_review(review_request)
+        comments = [
+            self.create_file_attachment_comment(review, file_attachment,
+                                                issue_opened=True),
+            self.create_file_attachment_comment(review, file_attachment,
+                                                issue_opened=True),
+        ]
+        review.publish()
+
+        for comment in comments:
+            comment.issue_status = BaseComment.DROPPED
+            comment.save()
+
+    def test_get_with_issue_dropped_count_equals(self):
+        """Testing the GET review-requests/?issue-dropped-count= API"""
+        self._setup_issue_dropped_count_tests()
+        self._test_get_with_field_count('issue-dropped-count', 2, 1)
+        self._test_get_with_field_count('issue-dropped-count', 1, 0)
+
+    def test_get_with_issue_dropped_count_lt(self):
+        """Testing the GET review-requests/?issue-dropped-count-lt= API"""
+        self._setup_issue_dropped_count_tests()
+        self._test_get_with_field_count('issue-dropped-count-lt', 1, 0)
+        self._test_get_with_field_count('issue-dropped-count-lt', 2, 0)
+        self._test_get_with_field_count('issue-dropped-count-lt', 3, 1)
+
+    def test_get_with_issue_dropped_count_lte(self):
+        """Testing the GET review-requests/?issue-dropped-count-lte= API"""
+        self._setup_issue_dropped_count_tests()
+        self._test_get_with_field_count('issue-dropped-count-lte', 1, 0)
+        self._test_get_with_field_count('issue-dropped-count-lte', 2, 1)
+        self._test_get_with_field_count('issue-dropped-count-lte', 3, 1)
+
+    def test_get_with_issue_dropped_count_gt(self):
+        """Testing the GET review-requests/?issue-dropped-count-gt= API"""
+        self._setup_issue_dropped_count_tests()
+        self._test_get_with_field_count('issue-dropped-count-gt', 1, 1)
+        self._test_get_with_field_count('issue-dropped-count-gt', 2, 0)
+        self._test_get_with_field_count('issue-dropped-count-gt', 3, 0)
+
+    def test_get_with_issue_dropped_count_gte(self):
+        """Testing the GET review-requests/?issue-dropped-count-gte= API"""
+        self._setup_issue_dropped_count_tests()
+        self._test_get_with_field_count('issue-dropped-count-gte', 1, 1)
+        self._test_get_with_field_count('issue-dropped-count-gte', 2, 1)
+        self._test_get_with_field_count('issue-dropped-count-gte', 3, 0)
+
+    # Tests for ?issue-open-count*= query parameters.
+    def _setup_issue_open_count_tests(self):
+        review_request = self.create_review_request(publish=True)
+        file_attachment = self.create_file_attachment(review_request)
+        review = self.create_review(review_request)
+        self.create_file_attachment_comment(review, file_attachment,
+                                            issue_opened=True)
+        self.create_file_attachment_comment(review, file_attachment,
+                                            issue_opened=True)
+        review.publish()
+
+    def test_get_with_issue_open_count_equals(self):
+        """Testing the GET review-requests/?issue-open-count= API"""
+        self._setup_issue_open_count_tests()
+        self._test_get_with_field_count('issue-open-count', 2, 1)
+        self._test_get_with_field_count('issue-open-count', 1, 0)
+
+    def test_get_with_issue_open_count_lt(self):
+        """Testing the GET review-requests/?issue-open-count-lt= API"""
+        self._setup_issue_open_count_tests()
+        self._test_get_with_field_count('issue-open-count-lt', 1, 0)
+        self._test_get_with_field_count('issue-open-count-lt', 2, 0)
+        self._test_get_with_field_count('issue-open-count-lt', 3, 1)
+
+    def test_get_with_issue_open_count_lte(self):
+        """Testing the GET review-requests/?issue-open-count-lte= API"""
+        self._setup_issue_open_count_tests()
+        self._test_get_with_field_count('issue-open-count-lte', 1, 0)
+        self._test_get_with_field_count('issue-open-count-lte', 2, 1)
+        self._test_get_with_field_count('issue-open-count-lte', 3, 1)
+
+    def test_get_with_issue_open_count_gt(self):
+        """Testing the GET review-requests/?issue-open-count-gt= API"""
+        self._setup_issue_open_count_tests()
+        self._test_get_with_field_count('issue-open-count-gt', 1, 1)
+        self._test_get_with_field_count('issue-open-count-gt', 2, 0)
+        self._test_get_with_field_count('issue-open-count-gt', 3, 0)
+
+    def test_get_with_issue_open_count_gte(self):
+        """Testing the GET review-requests/?issue-open-count-gte= API"""
+        self._setup_issue_open_count_tests()
+        self._test_get_with_field_count('issue-open-count-gte', 1, 1)
+        self._test_get_with_field_count('issue-open-count-gte', 2, 1)
+        self._test_get_with_field_count('issue-open-count-gte', 3, 0)
+
+    # Tests for ?issue-resolved-count*= query parameters.
+    def _setup_issue_resolved_count_tests(self):
+        review_request = self.create_review_request(publish=True)
+        file_attachment = self.create_file_attachment(review_request)
+        review = self.create_review(review_request)
+        comments = [
+            self.create_file_attachment_comment(review, file_attachment,
+                                                issue_opened=True),
+            self.create_file_attachment_comment(review, file_attachment,
+                                                issue_opened=True),
+        ]
+        review.publish()
+
+        for comment in comments:
+            comment.issue_status = BaseComment.RESOLVED
+            comment.save()
+
+    def test_get_with_issue_resolved_count_equals(self):
+        """Testing the GET review-requests/?issue-resolved-count= API"""
+        self._setup_issue_resolved_count_tests()
+        self._test_get_with_field_count('issue-resolved-count', 2, 1)
+        self._test_get_with_field_count('issue-resolved-count', 1, 0)
+
+    def test_get_with_issue_resolved_count_lt(self):
+        """Testing the GET review-requests/?issue-resolved-count-lt= API"""
+        self._setup_issue_resolved_count_tests()
+        self._test_get_with_field_count('issue-resolved-count-lt', 1, 0)
+        self._test_get_with_field_count('issue-resolved-count-lt', 2, 0)
+        self._test_get_with_field_count('issue-resolved-count-lt', 3, 1)
+
+    def test_get_with_issue_resolved_count_lte(self):
+        """Testing the GET review-requests/?issue-resolved-count-lte= API"""
+        self._setup_issue_resolved_count_tests()
+        self._test_get_with_field_count('issue-resolved-count-lte', 1, 0)
+        self._test_get_with_field_count('issue-resolved-count-lte', 2, 1)
+        self._test_get_with_field_count('issue-resolved-count-lte', 3, 1)
+
+    def test_get_with_issue_resolved_count_gt(self):
+        """Testing the GET review-requests/?issue-resolved-count-gt= API"""
+        self._setup_issue_resolved_count_tests()
+        self._test_get_with_field_count('issue-resolved-count-gt', 1, 1)
+        self._test_get_with_field_count('issue-resolved-count-gt', 2, 0)
+        self._test_get_with_field_count('issue-resolved-count-gt', 3, 0)
+
+    def test_get_with_issue_resolved_count_gte(self):
+        """Testing the GET review-requests/?issue-resolved-count-gte= API"""
+        self._setup_issue_resolved_count_tests()
+        self._test_get_with_field_count('issue-resolved-count-gte', 1, 1)
+        self._test_get_with_field_count('issue-resolved-count-gte', 2, 1)
+        self._test_get_with_field_count('issue-resolved-count-gte', 3, 0)
+
+    # Tests for ?ship-it-count*= query parameters.
+    def _setup_ship_it_count_tests(self):
+        review_request = self.create_review_request(publish=True)
+        self.create_review(review_request, ship_it=True, publish=True)
+        self.create_review(review_request, ship_it=True, publish=True)
+
+    def test_get_with_ship_it_count_equals(self):
+        """Testing the GET review-requests/?ship-it-count= API"""
+        self._setup_ship_it_count_tests()
+        self._test_get_with_field_count('ship-it-count', 2, 1)
+        self._test_get_with_field_count('ship-it-count', 1, 0)
+
+    def test_get_with_ship_it_count_lt(self):
+        """Testing the GET review-requests/?ship-it-count-lt= API"""
+        self._setup_ship_it_count_tests()
+        self._test_get_with_field_count('ship-it-count-lt', 1, 0)
+        self._test_get_with_field_count('ship-it-count-lt', 2, 0)
+        self._test_get_with_field_count('ship-it-count-lt', 3, 1)
+
+    def test_get_with_ship_it_count_lte(self):
+        """Testing the GET review-requests/?ship-it-count-lte= API"""
+        self._setup_ship_it_count_tests()
+        self._test_get_with_field_count('ship-it-count-lte', 1, 0)
+        self._test_get_with_field_count('ship-it-count-lte', 2, 1)
+        self._test_get_with_field_count('ship-it-count-lte', 3, 1)
+
+    def test_get_with_ship_it_count_gt(self):
+        """Testing the GET review-requests/?ship-it-count-gt= API"""
+        self._setup_ship_it_count_tests()
+        self._test_get_with_field_count('ship-it-count-gt', 1, 1)
+        self._test_get_with_field_count('ship-it-count-gt', 2, 0)
+        self._test_get_with_field_count('ship-it-count-gt', 3, 0)
+
+    def test_get_with_ship_it_count_gte(self):
+        """Testing the GET review-requests/?ship-it-count-gte= API"""
+        self._setup_ship_it_count_tests()
+        self._test_get_with_field_count('ship-it-count-gte', 1, 1)
+        self._test_get_with_field_count('ship-it-count-gte', 2, 1)
+        self._test_get_with_field_count('ship-it-count-gte', 3, 0)
 
     def test_get_with_ship_it_0(self):
         """Testing the GET review-requests/?ship-it=0 API"""
@@ -677,6 +864,13 @@ class ResourceListTests(ExtraDataListMixin, BaseWebAPITestCase):
             expected_status=403)
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
+
+    def _test_get_with_field_count(self, query_arg, value, expected_count):
+        rsp = self.apiGet(get_review_request_list_url(), {
+            query_arg: value,
+        }, expected_mimetype=review_request_list_mimetype)
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(len(rsp['review_requests']), expected_count)
 
     def _test_post_with_submit_as(self, local_site=None):
         submit_as_username = 'dopey'
