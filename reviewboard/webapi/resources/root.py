@@ -3,6 +3,7 @@ from __future__ import unicode_literals
 from djblets.util.decorators import augment_method_from
 from djblets.webapi.resources import RootResource as DjbletsRootResource
 
+from reviewboard.webapi.server_info import get_server_info
 from reviewboard.webapi.decorators import (webapi_check_login_required,
                                            webapi_check_local_site)
 from reviewboard.webapi.resources import resources
@@ -16,6 +17,10 @@ class RootResource(DjbletsRootResource):
     any resources in the API. By browsing through the resource tree instead of
     hard-coding paths, your client can remain compatible with any changes in
     the resource URI scheme.
+
+    This also contains information on the server and the capabilities of
+    the API. This information was formerly provided only by the Server Info
+    resource, but has been moved here as a convenience to clients.
     """
     mimetype_vendor = 'reviewboard.org'
 
@@ -40,6 +45,13 @@ class RootResource(DjbletsRootResource):
     def get(self, request, *args, **kwargs):
         """Retrieves the list of top-level resources and templates."""
         pass
+
+    def serialize_root(self, request, *args, **kwargs):
+        root = super(RootResource, self).serialize_root(request, *args,
+                                                        **kwargs)
+        root.update(get_server_info(request))
+
+        return root
 
 
 root_resource = RootResource()

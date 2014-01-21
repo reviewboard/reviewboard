@@ -34,6 +34,8 @@ class ResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['uri_templates']['repository'],
                          'http://testserver/api/repositories/{repository_id}/')
 
+        self._check_common_root_fields(rsp)
+
     @add_fixtures(['test_users', 'test_site'])
     def test_get_with_site(self):
         """Testing the GET / API with local sites"""
@@ -46,6 +48,8 @@ class ResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['uri_templates']['repository'],
                          'http://testserver/s/local-site-1/api/'
                          'repositories/{repository_id}/')
+
+        self._check_common_root_fields(rsp)
 
     @add_fixtures(['test_users', 'test_site'])
     def test_get_with_site_no_access(self):
@@ -69,3 +73,18 @@ class ResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['uri_templates']['repository'],
                          'http://testserver/s/local-site-2/api/'
                          'repositories/{repository_id}/')
+
+    def _check_common_root_fields(self, item_rsp):
+        self.assertTrue('product' in item_rsp)
+        self.assertTrue('site' in item_rsp)
+        self.assertTrue('capabilities' in item_rsp)
+
+        caps = item_rsp['capabilities']
+        self.assertTrue('diffs' in caps)
+
+        diffs_caps = caps['diffs']
+        self.assertTrue(diffs_caps['moved_files'])
+        self.assertTrue(diffs_caps['base_commit_ids'])
+
+        text_caps = caps['text']
+        self.assertTrue(text_caps['markdown'])

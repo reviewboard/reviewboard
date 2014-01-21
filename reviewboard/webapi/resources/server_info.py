@@ -7,10 +7,10 @@ from djblets.webapi.decorators import webapi_response_errors
 from djblets.webapi.errors import NOT_LOGGED_IN, PERMISSION_DENIED
 
 from reviewboard import get_version_string, get_package_version, is_release
-from reviewboard.site.urlresolvers import local_site_reverse
 from reviewboard.webapi.base import WebAPIResource
 from reviewboard.webapi.decorators import (webapi_check_login_required,
                                            webapi_check_local_site)
+from reviewboard.webapi.server_info import get_server_info
 
 
 class ServerInfoResource(WebAPIResource):
@@ -19,6 +19,8 @@ class ServerInfoResource(WebAPIResource):
     This contains product information, such as the version, and
     site-specific information, such as the main URL and list of
     administrators.
+
+    This is deprecated in favor of the data in the root resource.
     """
     name = 'info'
     singleton = True
@@ -29,41 +31,8 @@ class ServerInfoResource(WebAPIResource):
     @webapi_check_login_required
     def get(self, request, *args, **kwargs):
         """Returns the information on the Review Board server."""
-        site = Site.objects.get_current()
-        siteconfig = SiteConfiguration.objects.get_current()
-
-        url = '%s://%s%s' % (siteconfig.get('site_domain_method'), site.domain,
-                             local_site_reverse('root', request=request))
-
         return 200, {
-            self.item_result_key: {
-                'product': {
-                    'name': 'Review Board',
-                    'version': get_version_string(),
-                    'package_version': get_package_version(),
-                    'is_release': is_release(),
-                },
-                'site': {
-                    'url': url,
-                    'administrators': [{'name': name, 'email': email}
-                                       for name, email in settings.ADMINS],
-                    'time_zone': settings.TIME_ZONE,
-                },
-                'capabilities': {
-                    'diffs': {
-                        'base_commit_ids': True,
-                        'moved_files': True,
-                    },
-                    'scmtools': {
-                        'perforce': {
-                            'moved_files': True,
-                        },
-                    },
-                    'text': {
-                        'markdown': True,
-                    },
-                },
-            },
+            self.item_result_key: get_server_info(request),
         }
 
 
