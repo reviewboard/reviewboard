@@ -154,6 +154,9 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
                 attachment.save()
                 draft.inactive_file_attachments.add(attachment)
 
+            for dependency in review_request.depends_on.all():
+                draft.depends_on.add(dependency)
+
             draft.save()
 
         return draft

@@ -11,7 +11,7 @@ from reviewboard.reviews.fields import (BaseCommaEditableField,
                                         BaseReviewRequestField,
                                         BaseReviewRequestFieldSet,
                                         BaseTextAreaField)
-from reviewboard.reviews.models import ReviewRequestDraft
+from reviewboard.reviews.models import ReviewRequest, ReviewRequestDraft
 
 
 class BuiltinFieldMixin(object):
@@ -178,6 +178,9 @@ class DependsOnField(BuiltinFieldMixin, BaseModelListEditableField):
     field_id = 'depends_on'
     label = _('Depends On')
     model_name_attr = 'summary'
+
+    def render_change_entry_item_html(self, info, item):
+        return self.render_item(ReviewRequest.objects.get(pk=item[2]))
 
     def render_item(self, item):
         return ('<a href="%s">%s</a>'
