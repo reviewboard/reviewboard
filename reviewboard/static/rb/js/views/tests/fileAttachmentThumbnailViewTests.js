@@ -16,7 +16,8 @@ describe('views/FileAttachmentThumbnail', function() {
 
     describe('Rendering', function() {
         function expectElements() {
-            expect(view.$('a.delete').length).toBe(1);
+            expect(view.$('.delete').length).toBe(
+                model.get('loaded') ? 1 : 0);
             expect(view.$('a.edit').length).toBe(1);
             expect(view.$('.file-caption').length).toBe(1);
             expect(view.$('.file-header').length).toBe(1);
@@ -51,7 +52,10 @@ describe('views/FileAttachmentThumbnail', function() {
                         noCaptionText: 'No caption'
                     }, model.attributes)));
 
+            model.set('loaded', true);
+
             view = new RB.FileAttachmentThumbnail({
+                renderThumbnail: true,
                 reviewRequest: reviewRequest,
                 el: $el,
                 model: model
@@ -106,7 +110,7 @@ describe('views/FileAttachmentThumbnail', function() {
                 expectAttributeMatches();
                 expectVisibility(true);
 
-                expect(view.$('.actions').children().length).toBe(1);
+                expect(view.$('.actions').children().length).toBe(2);
                 expect(view.$('.spinner').length).toBe(0);
                 expect(view.$('.file-review').length).toBe(1);
                 expect(view.$('.file-add-comment').length).toBe(0);
@@ -125,7 +129,7 @@ describe('views/FileAttachmentThumbnail', function() {
                 expectAttributeMatches();
                 expectVisibility(true);
 
-                expect(view.$('.actions').children().length).toBe(1);
+                expect(view.$('.actions').children().length).toBe(2);
                 expect(view.$('.spinner').length).toBe(0);
                 expect(view.$('.file-review').length).toBe(0);
                 expect(view.$('.file-add-comment').length).toBe(1);
@@ -190,7 +194,7 @@ describe('views/FileAttachmentThumbnail', function() {
 
             spyOn(view, 'remove');
 
-            view.$('a.delete').click();
+            view.$('.delete').click();
 
             expect($.ajax).toHaveBeenCalled();
             expect(model.destroy).toHaveBeenCalled();
