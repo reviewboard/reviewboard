@@ -36,6 +36,13 @@ class ReviewGroupUserResource(UserResource):
         group = resources.review_group.get_object(request, *args, **kwargs)
         return group.is_accessible_by(request.user)
 
+    def has_modify_permissions(self, request, group, username, local_site):
+        return (
+            resources.review_group.has_modify_permissions(request, group) or
+            (request.user.username == username and
+             group.is_accessible_by(request.user))
+        )
+
     def has_delete_permissions(self, request, user, *args, **kwargs):
         group = resources.review_group.get_object(request, *args, **kwargs)
         return group.is_mutable_by(request.user)
@@ -52,18 +59,25 @@ class ReviewGroupUserResource(UserResource):
     })
     def create(self, request, username, *args, **kwargs):
         """Adds a user to a review group."""
+        group_resource = resources.review_group
+
         try:
-            group = resources.review_group.get_object(request, *args, **kwargs)
+            group = group_resource.get_object(request, *args, **kwargs)
         except ObjectDoesNotExist:
             return DOES_NOT_EXIST
 
-        if not resources.review_group.has_modify_permissions(request, group):
-            return self._no_access_error(request.user)
-
         local_site = self._get_local_site(kwargs.get('local_site_name', None))
 
+        if (not group_resource.has_access_permissions(request, group) or
+            not self.has_modify_permissions(request, group, username,
+                                            local_site)):
+            return self._no_access_error(request.user)
+
         try:
-            user = User.objects.get(username=username, local_site=local_site)
+            if local_site:
+                user = local_site.users.get(username=username)
+            else:
+                user = User.objects.get(username=username)
         except ObjectDoesNotExist:
             return INVALID_USER
 
@@ -79,13 +93,19 @@ class ReviewGroupUserResource(UserResource):
                             NOT_LOGGED_IN, PERMISSION_DENIED)
     def delete(self, request, *args, **kwargs):
         """Removes a user from a review group."""
+        group_resource = resources.review_group
+
         try:
-            group = resources.review_group.get_object(request, *args, **kwargs)
+            group = group_resource.get_object(request, *args, **kwargs)
             user = self.get_object(request, *args, **kwargs)
         except ObjectDoesNotExist:
             return DOES_NOT_EXIST
 
-        if not resources.review_group.has_modify_permissions(request, group):
+        local_site = self._get_local_site(kwargs.get('local_site_name', None))
+
+        if (not group_resource.has_access_permissions(request, group) or
+            not self.has_modify_permissions(request, group, user.username,
+                                            local_site)):
             return self._no_access_error(request.user)
 
         group.users.remove(user)

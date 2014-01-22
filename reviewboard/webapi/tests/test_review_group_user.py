@@ -1,9 +1,11 @@
 from __future__ import unicode_literals
 
 from django.contrib.auth.models import User
+from djblets.testing.decorators import add_fixtures
 from djblets.util.compat import six
 from djblets.webapi.errors import PERMISSION_DENIED
 
+from reviewboard.site.models import LocalSite
 from reviewboard.webapi.resources import resources
 from reviewboard.webapi.errors import INVALID_USER
 from reviewboard.webapi.tests.base import BaseWebAPITestCase
@@ -111,6 +113,78 @@ class ResourceListTests(BaseWebAPITestCase):
 
         self.assertEqual(group.users.count(), 0)
 
+    def test_post_with_self(self):
+        """Testing the POST groups/<name>/users/ API
+        with the requesting user
+        """
+        group = self.create_review_group()
+
+        self.assertFalse(self.user.is_superuser)
+
+        rsp = self.apiPost(
+            get_review_group_user_list_url(group.name),
+            {'username': self.user.username},
+            expected_mimetype=user_item_mimetype)
+        self.assertEqual(rsp['stat'], 'ok')
+
+        self.assertEqual(group.users.count(), 1)
+
+    def test_post_with_self_and_private_group(self):
+        """Testing the POST groups/<name>/users/ API
+        with the requesting user and private group
+        """
+        group = self.create_review_group(invite_only=True)
+        self.assertFalse(group.is_accessible_by(self.user))
+
+        rsp = self.apiPost(
+            get_review_group_user_list_url(group.name),
+            {'username': self.user.username},
+            expected_status=403)
+        self.assertEqual(rsp['stat'], 'fail')
+
+        self.assertEqual(group.users.count(), 0)
+
+    @add_fixtures(['test_site'])
+    def test_post_with_self_and_site(self):
+        """Testing the POST groups/<name>/users/ API
+        with the requesting user on a local site
+        """
+        self.assertFalse(self.user.is_superuser)
+
+        local_site = LocalSite.objects.get(name=self.local_site_name)
+        local_site.users.add(self.user)
+
+        group = self.create_review_group(with_local_site=True)
+
+        self.assertEqual(group.users.count(), 0)
+
+        rsp = self.apiPost(
+            get_review_group_user_list_url(group.name, self.local_site_name),
+            {'username': self.user.username},
+            expected_mimetype=user_item_mimetype)
+        self.assertEqual(rsp['stat'], 'ok')
+
+        self.assertEqual(group.users.count(), 1)
+
+    @add_fixtures(['test_site'])
+    def test_post_with_self_and_unjoined_site(self):
+        """Testing the POST groups/<name>/users/ API
+        with the requesting user on an unjoined local site
+        """
+        self.assertFalse(self.user.is_superuser)
+
+        group = self.create_review_group(with_local_site=True)
+
+        self.assertEqual(group.users.count(), 0)
+
+        rsp = self.apiPost(
+            get_review_group_user_list_url(group.name, self.local_site_name),
+            {'username': self.user.username},
+            expected_status=403)
+        self.assertEqual(rsp['stat'], 'fail')
+
+        self.assertEqual(group.users.count(), 0)
+
 
 @six.add_metaclass(BasicTestsMetaclass)
 class ResourceItemTests(BaseWebAPITestCase):
@@ -145,6 +219,41 @@ class ResourceItemTests(BaseWebAPITestCase):
 
     def check_delete_result(self, user, group, doc):
         self.assertNotIn(doc, group.users.all())
+
+    def test_delete_with_self(self):
+        """Testing the DELETE groups/<name>/users/<username>/ API
+        with the requesting user
+        """
+        group = self.create_review_group()
+        group.users.add(self.user)
+
+        self.assertFalse(self.user.is_superuser)
+
+        self.apiDelete(
+            get_review_group_user_item_url(group.name, self.user.username))
+
+        self.assertEqual(group.users.count(), 0)
+
+    @add_fixtures(['test_site'])
+    def test_delete_with_self_with_site(self):
+        """Testing the DELETE groups/<name>/users/<username>/ API
+        with the requesting user on local site
+        """
+        self.assertFalse(self.user.is_superuser)
+
+        local_site = LocalSite.objects.get(name=self.local_site_name)
+        local_site.users.add(self.user)
+
+        group = self.create_review_group(with_local_site=True)
+        group.users.add(self.user)
+
+        self.assertEqual(group.users.count(), 1)
+
+        self.apiDelete(
+            get_review_group_user_item_url(group.name, self.user.username,
+                                           self.local_site_name))
+
+        self.assertEqual(group.users.count(), 0)
 
     #
     # HTTP GET tests
