@@ -32,9 +32,10 @@ class Group(models.Model):
     """
     name = models.SlugField(_("name"), max_length=64, blank=False)
     display_name = models.CharField(_("display name"), max_length=64)
-    mailing_list = models.EmailField(
+    mailing_list = models.CharField(
         _("mailing list"),
         blank=True,
+        max_length=254,
         help_text=_("The mailing list review requests and discussions "
                     "are sent to."))
     users = models.ManyToManyField(User, blank=True,

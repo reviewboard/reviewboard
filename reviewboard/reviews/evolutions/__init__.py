@@ -24,4 +24,5 @@ SEQUENCE = [
     'unique_together_baseline',
     'extra_data',
     'review_request_issue_counts',
+    'group_mailing_list_charfield',
 ]
