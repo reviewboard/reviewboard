@@ -217,6 +217,10 @@ class CommitField(BuiltinFieldMixin, BaseReviewRequestField):
     def render_value(self, commit):
         review_request = self.review_request_details.get_review_request()
 
+        # Abbreviate SHA-1s
+        if len(commit) == 40:
+            commit = commit[:7] + '...'
+
         if review_request.changeset_is_pending():
             return escape(_('%s (pending)') % commit)
         else:
