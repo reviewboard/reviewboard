@@ -11,7 +11,8 @@ from djblets.auth.views import register
 from djblets.siteconfig.models import SiteConfiguration
 
 from reviewboard.accounts.backends import get_auth_backends
-from reviewboard.accounts.forms import PreferencesForm, RegistrationForm
+from reviewboard.accounts.forms.account import PreferencesForm
+from reviewboard.accounts.forms.registration import RegistrationForm
 from reviewboard.accounts.models import Profile
 from reviewboard.accounts.signals import user_registered
 

@@ -20,11 +20,11 @@ try:
 except ImportError:
     pass
 
-from reviewboard.accounts.forms import (ActiveDirectorySettingsForm,
-                                        LDAPSettingsForm,
-                                        NISSettingsForm,
-                                        StandardAuthSettingsForm,
-                                        X509SettingsForm)
+from reviewboard.accounts.forms.auth import (ActiveDirectorySettingsForm,
+                                             LDAPSettingsForm,
+                                             NISSettingsForm,
+                                             StandardAuthSettingsForm,
+                                             X509SettingsForm)
 from reviewboard.accounts.models import LocalSiteProfile
 from reviewboard.site.models import LocalSite
 

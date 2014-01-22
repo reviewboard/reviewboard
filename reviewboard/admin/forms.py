@@ -43,7 +43,7 @@ from djblets.siteconfig.forms import SiteSettingsForm
 from djblets.util.compat import six
 from djblets.util.compat.six.moves.urllib.parse import urlparse
 
-from reviewboard.accounts.forms import LegacyAuthModuleSettingsForm
+from reviewboard.accounts.forms.auth import LegacyAuthModuleSettingsForm
 from reviewboard.admin.checks import (get_can_enable_syntax_highlighting,
                                       get_can_use_amazon_s3,
                                       get_can_use_couchdb)
