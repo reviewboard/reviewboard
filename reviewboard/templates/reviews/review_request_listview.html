@@ -7,9 +7,9 @@
 {{block.super}}
  <ul>
 {% if datagrid.show_submitted %}
-  <li><a href="?show_submitted=0">{% trans "Hide submitted" %}</a></li>
+  <li><a href="?show_submitted=0">{% trans "Hide closed" %}</a></li>
 {% else %}
-  <li><a href="?show_submitted=1">{% trans "Show submitted" %}</a></li>
+  <li><a href="?show_submitted=1">{% trans "Show closed" %}</a></li>
 {% endif %}
  </ul>
 {% endblock %}

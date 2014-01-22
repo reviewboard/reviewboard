@@ -607,12 +607,7 @@ class ReviewRequestDataGrid(DataGrid):
             # do nothing
             pass
 
-        if self.show_submitted:
-            # There are only three states: Published, Submitted and Discarded.
-            # We want the first two, but it's faster to just search for not
-            # discarded.
-            self.queryset = self.queryset.exclude(status='D')
-        else:
+        if not self.show_submitted:
             self.queryset = self.queryset.filter(status='P')
 
         self.queryset = self.queryset.filter(local_site=self.local_site)
