@@ -133,6 +133,13 @@ PIPELINE_JS = dict({
         ),
         'output_filename': 'rb/js/base.min.js',
     },
+    'account-page': {
+        'source_filenames': (
+            'rb/js/accountPrefsPage/views/accountPrefsPageView.js',
+            'rb/js/accountPrefsPage/views/joinedGroupsView.js',
+        ),
+        'output_filename': 'rb/js/account-page.min.js',
+    },
     'config-forms': {
         'source_filenames': (
             'rb/js/configForms/base.js',

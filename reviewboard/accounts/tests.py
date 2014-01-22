@@ -3,7 +3,12 @@ from __future__ import unicode_literals
 from django.contrib.auth.models import User
 from djblets.testing.decorators import add_fixtures
 
+from reviewboard.accounts.forms.account import AccountForm
 from reviewboard.accounts.models import LocalSiteProfile
+from reviewboard.accounts.pages import (AccountPage, get_page_classes,
+                                        register_account_page_class,
+                                        unregister_account_page_class,
+                                        _clear_page_defaults)
 from reviewboard.testing import TestCase
 
 
@@ -55,3 +60,118 @@ class ProfileTests(TestCase):
         self.assertFalse(review_request in
                          profile1.starred_review_requests.all())
         self.assertEqual(site_profile.starred_public_request_count, 0)
+
+
+class AccountPageTests(TestCase):
+    """Testing account page functionality."""
+    def tearDown(self):
+        # Force the next request to re-populate the list of default pages.
+        _clear_page_defaults()
+
+    def test_default_pages(self):
+        """Testing default list of account pages"""
+        page_classes = list(get_page_classes())
+        self.assertEqual(len(page_classes), 4)
+
+        page_class_ids = [page_cls.page_id for page_cls in page_classes]
+        self.assertEqual(
+            set(page_class_ids),
+            set(['settings', 'authentication', 'profile', 'groups']))
+
+    def test_register_account_page_class(self):
+        """Testing register_account_page_class"""
+        class MyPage(AccountPage):
+            page_id = 'test-page'
+            page_title = 'Test Page'
+
+        register_account_page_class(MyPage)
+
+        page_classes = list(get_page_classes())
+        self.assertEqual(len(page_classes), 5)
+        self.assertEqual(page_classes[-1], MyPage)
+
+    def test_register_account_page_class_with_duplicate(self):
+        """Testing register_account_page_class with duplicate page"""
+        class MyPage(AccountPage):
+            page_id = 'test-page'
+            page_title = 'Test Page'
+
+        register_account_page_class(MyPage)
+        self.assertRaises(KeyError,
+                          lambda: register_account_page_class(MyPage))
+
+    def test_unregister_account_page_class(self):
+        """Testing unregister_account_page_class"""
+        class MyPage(AccountPage):
+            page_id = 'test-page'
+            page_title = 'Test Page'
+
+        register_account_page_class(MyPage)
+        unregister_account_page_class(MyPage)
+
+        page_classes = list(get_page_classes())
+        self.assertEqual(len(page_classes), 4)
+
+    def test_unregister_unknown_account_page_class(self):
+        """Testing unregister_account_page_class with unknown page"""
+        class MyPage(AccountPage):
+            page_id = 'test-page'
+            page_title = 'Test Page'
+
+        self.assertRaises(KeyError,
+                          lambda: unregister_account_page_class(MyPage))
+
+    def test_add_form_to_page(self):
+        """Testing AccountPage.add_form"""
+        class MyPage(AccountPage):
+            page_id = 'test-page'
+            page_title = 'Test Page'
+
+        class MyForm(AccountForm):
+            form_id = 'test-form'
+
+        register_account_page_class(MyPage)
+        MyPage.add_form(MyForm)
+
+        self.assertEqual(MyPage.form_classes, [MyForm])
+
+    def test_add_duplicate_form_to_page(self):
+        """Testing AccountPage.add_form with duplicate form ID"""
+        class MyForm(AccountForm):
+            form_id = 'test-form'
+
+        class MyPage(AccountPage):
+            page_id = 'test-page'
+            page_title = 'Test Page'
+            form_classes = [MyForm]
+
+        register_account_page_class(MyPage)
+        self.assertRaises(KeyError, lambda: MyPage.add_form(MyForm))
+        self.assertEqual(MyPage.form_classes, [MyForm])
+
+    def test_remove_form_from_page(self):
+        """Testing AccountPage.remove_form"""
+        class MyForm(AccountForm):
+            form_id = 'test-form'
+
+        class MyPage(AccountPage):
+            page_id = 'test-page'
+            page_title = 'Test Page'
+            form_classes = [MyForm]
+
+        register_account_page_class(MyPage)
+        MyPage.remove_form(MyForm)
+
+        self.assertEqual(MyPage.form_classes, [])
+
+    def test_remove_unknown_form_from_page(self):
+        """Testing AccountPage.remove_form with unknown form"""
+        class MyForm(AccountForm):
+            form_id = 'test-form'
+
+        class MyPage(AccountPage):
+            page_id = 'test-page'
+            page_title = 'Test Page'
+
+        register_account_page_class(MyPage)
+        self.assertRaises(KeyError, lambda: MyPage.remove_form(MyForm))

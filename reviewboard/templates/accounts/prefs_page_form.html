@@ -1,0 +1,26 @@
+{% load djblets_forms %}
+
+{% for field in form %}
+{%  if field.is_hidden %}
+{{field}}
+{%  else %}
+{%   with field|form_field_has_label_first as label_first %}
+<div class="fields-row{% if not label_first %} checkbox-row{% endif %}">
+ <div class="field">
+{%    if label_first %}
+  {{field.label_tag}}
+  {{field}}
+{%    else %}
+  {{field}}
+  {{field.label_tag}}
+{%    endif %}
+  {{field.errors}}
+ </div>
+</div>
+{%   endwith %}
+{%  endif %}
+{% endfor %}
+
+{% if form.save_label %}
+<input type="submit" clas="btn" value="{{form.save_label}}" />
+{% endif %}
