@@ -60,9 +60,12 @@ def check_dependencies(settings):
         warnings_found += 1
 
     try:
-        imp.find_module('pysvn')
+        imp.find_module('subvertpy')
     except ImportError:
-        dependency_warning('pysvn not found.  SVN integration will not work.')
+        try:
+            imp.find_module('pysvn')
+        except ImportError:
+            dependency_warning('Neither subvertpy nor pysvn found.  SVN integration will not work.')
 
     try:
         imp.find_module('P4')

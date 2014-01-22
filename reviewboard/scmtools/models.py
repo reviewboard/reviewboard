@@ -10,6 +10,7 @@ from django.utils.translation import ugettext_lazy as _
 from djblets.cache.backend import cache_memoize, make_cache_key
 from djblets.db.fields import JSONField
 from djblets.log import log_timed
+from djblets.util.compat import six
 
 from reviewboard.hostingsvcs.models import HostingServiceAccount
 from reviewboard.scmtools.managers import RepositoryManager, ToolManager
@@ -50,7 +51,8 @@ class Tool(models.Model):
             module, attr = path[:i], path[i + 1:]
 
             try:
-                mod = __import__(module, {}, {}, [attr])
+                mod = __import__(six.binary_type(module), {}, {},
+                                 [six.binary_type(attr)])
             except ImportError as e:
                 raise ImproperlyConfigured(
                     'Error importing SCM Tool %s: "%s"' % (module, e))
