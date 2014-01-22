@@ -262,7 +262,8 @@ RB.ReviewablePageView = Backbone.View.extend({
                 ready: function() {
                     this.pendingReview.set({
                         shipIt: true,
-                        bodyTop: gettext('Ship It!')
+                        bodyTop: gettext('Ship It!'),
+                        richText: true
                     });
                     this.pendingReview.publish();
                 }
