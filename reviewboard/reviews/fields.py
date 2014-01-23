@@ -483,7 +483,7 @@ def get_review_request_fields():
     """Returns a list of all registered field classes."""
     _populate_defaults()
 
-    return _all_fields.itervalues()
+    return six.itervalues(_all_fields)
 
 
 def get_review_request_fieldsets(include_main=False):
@@ -499,7 +499,7 @@ def get_review_request_fieldsets(include_main=False):
     else:
         return [
             fieldset
-            for fieldset in _fieldsets.itervalues()
+            for fieldset in six.itervalues(_fieldsets)
             if fieldset.fieldset_id != 'main'
         ]
 

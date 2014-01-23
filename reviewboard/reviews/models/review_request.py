@@ -50,7 +50,7 @@ def fetch_issue_counts(review_request, extra_query=None):
         'screenshot_comments__issue_status')
 
     for issue_fields in issue_statuses:
-        for issue_status in issue_fields.itervalues():
+        for issue_status in six.itervalues(issue_fields):
             if issue_status:
                 issue_counts[issue_status] += 1
 

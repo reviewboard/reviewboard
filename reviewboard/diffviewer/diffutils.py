@@ -5,10 +5,10 @@ import re
 import subprocess
 import tempfile
 
-from django.utils import six
 from django.utils.translation import ugettext as _
 from djblets.log import log_timed
 from djblets.siteconfig.models import SiteConfiguration
+from djblets.util.compat import six
 from djblets.util.contextmanagers import controlled_subprocess
 
 from reviewboard.accounts.models import Profile
@@ -42,12 +42,12 @@ def convert_to_unicode(s, encoding_list):
         try:
             # First try strict utf-8
             enc = 'utf-8'
-            return enc, unicode(s, enc)
+            return enc, six.text_type(s, enc)
         except UnicodeError:
             # Now try any candidate encodings
             for e in encoding_list:
                 try:
-                    return e, unicode(s, e)
+                    return e, six.text_type(s, e)
                 except UnicodeError:
                     pass
 
@@ -55,7 +55,7 @@ def convert_to_unicode(s, encoding_list):
             # characters.
             try:
                 enc = 'utf-8'
-                return enc, unicode(s, enc, errors='replace')
+                return enc, six.text_type(s, enc, errors='replace')
             except UnicodeError:
                 raise Exception(
                     _("Diff content couldn't be converted to unicode using "

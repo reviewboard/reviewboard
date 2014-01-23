@@ -393,7 +393,7 @@ class Repository(models.Model):
         file_cache_key = make_cache_key(
             self._make_file_cache_key(path, revision, base_commit_id))
 
-        if cache.has_key(file_cache_key):
+        if file_cache_key in cache:
             exists = True
         else:
             # We didn't have that in the cache, so check from the repository.

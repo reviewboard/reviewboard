@@ -23,6 +23,9 @@ class AllPermsLookupDict(PermLookupDict):
     def __nonzero__(self):
         return super(AllPermsLookupDict, self).__nonzero__()
 
+    def __bool__(self):
+        return super(AllPermsLookupDict, self).__bool__()
+
 
 class AllPermsWrapper(PermWrapper):
     def __init__(self, user, local_site_name):

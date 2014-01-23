@@ -1,11 +1,11 @@
 from __future__ import unicode_literals
 
 import json
-from urllib import quote
-from urllib2 import HTTPError, URLError
 
 from django import forms
 from django.utils.translation import ugettext_lazy as _, ugettext
+from djblets.util.compat.six.moves.urllib.error import HTTPError, URLError
+from djblets.util.compat.six.moves.urllib.parse import quote
 
 from reviewboard.hostingsvcs.errors import (AuthorizationError,
                                             HostingServiceError,
@@ -116,7 +116,7 @@ class GitLab(HostingService):
                     'login': username,
                     'password': password,
                 })
-        except HTTPError, e:
+        except HTTPError as e:
             if e.code == 404:
                 raise HostingServiceError(
                     ugettext('A GitLab server was not found at the '
@@ -317,7 +317,7 @@ class GitLab(HostingService):
                 return data
             else:
                 return json.loads(data)
-        except HTTPError, e:
+        except HTTPError as e:
             if e.code == 401:
                 raise AuthorizationError(
                     ugettext('The login or password is incorrect.'))

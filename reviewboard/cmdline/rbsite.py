@@ -561,9 +561,12 @@ class Site(object):
                 # Yes, this is a bit of a hack.
                 from django.core.management import _commands
 
-                for f in os.listdir(commands_dir):
+                for command in os.listdir(commands_dir):
                     module_globals = {}
-                    execfile(os.path.join(commands_dir, f), module_globals)
+                    filename = os.path.join(commands_dir, command)
+                    with open(filename) as f:
+                        code = compile(f.read(), filename, 'exec')
+                        exec(code, module_globals)
 
                     if 'Command' in module_globals:
                         name = os.path.splitext(f)[0]

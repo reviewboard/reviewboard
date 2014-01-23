@@ -562,7 +562,7 @@ class RepositoryForm(forms.ModelForm):
                     **repository_extra_data)
             except TwoFactorAuthCodeRequiredError as e:
                 self.errors['hosting_account'] = \
-                    self.error_class([unicode(e)])
+                    self.error_class([six.text_type(e)])
                 hosting_info = self.hosting_service_info[hosting_type]
                 hosting_info['needs_two_factor_auth_code'] = True
                 return

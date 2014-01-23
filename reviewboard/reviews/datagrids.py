@@ -12,6 +12,7 @@ from django.utils.translation import ugettext_lazy as _
 from djblets.datagrid.grids import (CheckboxColumn, Column, DateTimeColumn,
                                     DataGrid)
 from djblets.util.compat import six
+from djblets.util.compat.six.moves import reduce
 from djblets.util.templatetags.djblets_utils import ageid
 
 from reviewboard.accounts.models import Profile, LocalSiteProfile

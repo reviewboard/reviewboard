@@ -1489,8 +1489,8 @@ class GitLabTests(ServiceTests):
         try:
             service.check_repository(**kwargs)
             saw_exception = False
-        except Exception, e:
-            self.assertEqual(unicode(e), expected_error)
+        except Exception as e:
+            self.assertEqual(six.text_type(e), expected_error)
             saw_exception = True
 
         self.assertTrue(saw_exception)

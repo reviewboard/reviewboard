@@ -1,7 +1,6 @@
 from __future__ import unicode_literals
 
 import os
-import urllib2
 
 from django.conf import settings
 from django.contrib.sites.models import Site
@@ -11,6 +10,7 @@ from django.utils.translation import ngettext
 from django.utils.translation import ugettext_lazy as _
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.util.compat import six
+from djblets.util.compat.six.moves.urllib.request import urlopen
 
 
 _security_checks = {}
@@ -133,7 +133,7 @@ class ExecutableCodeCheck(BaseSecurityCheck):
                     self.storage.delete('exec_check' + ext)
 
     def download_and_compare(self, to_download):
-        data = urllib2.urlopen(_get_url(self.directory) + to_download).read()
+        data = urlopen(_get_url(self.directory) + to_download).read()
         with self.storage.open(to_download, 'r') as f:
             return data == f.read()
 
