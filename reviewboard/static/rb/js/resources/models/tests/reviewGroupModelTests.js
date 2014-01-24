@@ -66,4 +66,105 @@ describe('resources/models/ReviewGroup', function() {
             expect(callbacks.error).not.toHaveBeenCalled();
         });
     });
+
+    describe('addUser', function() {
+        var url = '/api/groups/test-group/users/',
+            callbacks,
+            group;
+
+        beforeEach(function() {
+            group = new RB.ReviewGroup({
+                id: 1,
+                name: 'test-group'
+            });
+
+            callbacks = {
+                success: function() {},
+                error: function() {}
+            };
+
+            spyOn(RB, 'apiCall').andCallThrough();
+            spyOn(callbacks, 'success');
+            spyOn(callbacks, 'error');
+        });
+
+        it('Loaded group', function() {
+            spyOn($, 'ajax').andCallFake(function(request) {
+                expect(request.type).toBe('POST');
+                expect(request.data.username).toBe('my-user');
+
+                request.success({
+                    stat: 'ok'
+                });
+            });
+
+            group.addUser('my-user', callbacks);
+
+            expect(RB.apiCall).toHaveBeenCalled();
+            expect($.ajax).toHaveBeenCalled();
+            expect(callbacks.success).toHaveBeenCalled()
+        });
+
+        it('Unloaded group', function() {
+            spyOn($, 'ajax');
+
+            group.set('id', null);
+            expect(group.isNew()).toBe(true);
+
+            group.addUser('my-user', callbacks);
+
+            expect(RB.apiCall).not.toHaveBeenCalled();
+            expect($.ajax).not.toHaveBeenCalled();
+            expect(callbacks.error).toHaveBeenCalled();
+        });
+    });
+
+    describe('removeUser', function() {
+        var url = '/api/groups/test-group/users/my-user/',
+            callbacks,
+            group;
+
+        beforeEach(function() {
+            group = new RB.ReviewGroup({
+                id: 1,
+                name: 'test-group'
+            });
+
+            callbacks = {
+                success: function() {},
+                error: function() {}
+            };
+
+            spyOn(RB, 'apiCall').andCallThrough();
+            spyOn(callbacks, 'success');
+            spyOn(callbacks, 'error');
+        });
+
+        it('Loaded group', function() {
+            spyOn($, 'ajax').andCallFake(function(request) {
+                expect(request.type).toBe('DELETE');
+
+                request.success();
+            });
+
+            group.removeUser('my-user', callbacks);
+
+            expect(RB.apiCall).toHaveBeenCalled();
+            expect($.ajax).toHaveBeenCalled();
+            expect(callbacks.success).toHaveBeenCalled()
+        });
+
+        it('Unloaded group', function() {
+            spyOn($, 'ajax');
+
+            group.set('id', null);
+            expect(group.isNew()).toBe(true);
+
+            group.removeUser('my-user', callbacks);
+
+            expect(RB.apiCall).not.toHaveBeenCalled();
+            expect($.ajax).not.toHaveBeenCalled();
+            expect(callbacks.error).toHaveBeenCalled();
+        });
+    });
 });
