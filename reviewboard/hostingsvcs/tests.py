@@ -30,11 +30,15 @@ class ServiceTests(SpyAgency, TestCase):
         self.service_class = get_hosting_service(self.service_name)
 
     def setUp(self):
+        super(ServiceTests, self).setUp()
+
         self.assertNotEqual(self.service_class, None)
         self._old_http_post = self.service_class._http_post
         self._old_http_get = self.service_class._http_get
 
     def tearDown(self):
+        super(ServiceTests, self).tearDown()
+
         self.service_class._http_post = self._old_http_post
         self.service_class._http_get = self._old_http_get
 

@@ -10,7 +10,6 @@ from tempfile import mkdtemp
 from django import forms
 from django.contrib.auth.models import AnonymousUser, User
 from django.core.cache import cache
-from django.test import TestCase as DjangoTestCase
 from djblets.util.compat import six
 from djblets.util.compat.six.moves import zip_longest
 from djblets.util.filesystem import is_exe_in_path
@@ -40,6 +39,7 @@ from reviewboard.site.models import LocalSite
 from reviewboard.ssh.client import SSHClient
 from reviewboard.ssh.tests import SSHTestCase
 from reviewboard.testing import online_only
+from reviewboard.testing.testcase import TestCase
 
 
 class SCMTestCase(SSHTestCase):
@@ -137,7 +137,7 @@ class SCMTestCase(SSHTestCase):
                 self.assertNotEqual(tool.get_file(filename, HEAD), None)
 
 
-class CoreTests(DjangoTestCase):
+class CoreTests(TestCase):
     """Tests for the scmtools.core module"""
 
     def test_interface(self):
@@ -153,10 +153,12 @@ class CoreTests(DjangoTestCase):
         self.assertTrue(len(cs.files) == 0)
 
 
-class RepositoryTests(DjangoTestCase):
+class RepositoryTests(TestCase):
     fixtures = ['test_scmtools']
 
     def setUp(self):
+        super(RepositoryTests, self).setUp()
+
         self.local_repo_path = os.path.join(os.path.dirname(__file__),
                                             'testdata', 'git_repo')
         self.repository = Repository(name='Git test repo',
@@ -168,6 +170,8 @@ class RepositoryTests(DjangoTestCase):
         self.old_file_exists = self.scmtool_cls.file_exists
 
     def tearDown(self):
+        super(RepositoryTests, self).tearDown()
+
         cache.clear()
 
         self.scmtool_cls.get_file = self.old_get_file
@@ -1130,6 +1134,8 @@ class PerforceStunnelTests(SCMTestCase):
             raise nose.SkipTest('perforce/p4python is not installed')
 
     def tearDown(self):
+        super(PerforceStunnelTests, self).tearDown()
+
         self.proxy.shutdown()
 
     def test_changeset(self):
@@ -1859,7 +1865,7 @@ class GitTests(SCMTestCase):
             lambda: self.remote_tool.get_file('README', 'd7e96b3'))
 
 
-class PolicyTests(DjangoTestCase):
+class PolicyTests(TestCase):
     fixtures = ['test_scmtools']
 
     def setUp(self):
@@ -2023,7 +2029,7 @@ class SelfHostedTestService(TestService):
     }
 
 
-class RepositoryFormTests(DjangoTestCase):
+class RepositoryFormTests(TestCase):
     fixtures = ['test_scmtools']
 
     def setUp(self):

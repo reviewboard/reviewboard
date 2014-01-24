@@ -138,6 +138,8 @@ class Test3StarMimetype(MimetypeHandler):
 
 class MimetypeHandlerTests(TestCase):
     def setUp(self):
+        super(MimetypeHandlerTests, self).setUp()
+
         # Register test cases in same order as they are defined
         # in this test
         register_mimetype_handler(MimetypeTest)
@@ -151,6 +153,8 @@ class MimetypeHandlerTests(TestCase):
         register_mimetype_handler(Test3StarMimetype)
 
     def tearDown(self):
+        super(MimetypeHandlerTests, self).tearDown()
+
         # Unregister test cases in same order as they are defined
         # in this test
         unregister_mimetype_handler(MimetypeTest)
@@ -319,6 +323,8 @@ class DiffViewerFileAttachmentTests(BaseFileAttachmentTestCase):
     fixtures = ['test_users', 'test_scmtools', 'test_site']
 
     def setUp(self):
+        super(DiffViewerFileAttachmentTests, self).setUp()
+
         # The diff viewer's caching breaks the result of these tests,
         # so be sure we clear before each one.
         cache.clear()

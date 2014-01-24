@@ -1,7 +1,6 @@
 from __future__ import unicode_literals
 
 from django.template import Context, Template
-from django.test import TestCase
 from djblets.extensions.manager import ExtensionManager
 from djblets.extensions.models import RegisteredExtension
 
@@ -13,6 +12,7 @@ from reviewboard.extensions.hooks import (DashboardHook, DiffViewerActionHook,
                                           ReviewRequestActionHook,
                                           ReviewRequestDropdownActionHook,
                                           UserPageSidebarHook)
+from reviewboard.testing.testcase import TestCase
 
 
 class DummyExtension(Extension):
@@ -22,10 +22,14 @@ class DummyExtension(Extension):
 class HookTests(TestCase):
     """Tests the extension hooks."""
     def setUp(self):
+        super(HookTests, self).setUp()
+
         manager = ExtensionManager('')
         self.extension = DummyExtension(extension_manager=manager)
 
     def tearDown(self):
+        super(HookTests, self).tearDown()
+
         self.extension.shutdown()
 
     def test_dashboard_hook(self):

@@ -5,7 +5,6 @@ from django.contrib.auth.models import User
 from django.core import mail
 from djblets.siteconfig.models import SiteConfiguration
 
-from reviewboard import initialize
 from reviewboard.admin.siteconfig import load_site_config
 from reviewboard.notifications.email import (build_email_address,
                                              get_email_address_for_user,
@@ -35,7 +34,7 @@ class EmailTestHelper(object):
 
 class UserEmailTests(TestCase, EmailTestHelper):
     def setUp(self):
-        initialize()
+        super(UserEmailTests, self).setUp()
 
         mail.outbox = []
         self.sender = 'noreply@example.com'
@@ -83,7 +82,7 @@ class ReviewRequestEmailTests(TestCase, EmailTestHelper):
     fixtures = ['test_users']
 
     def setUp(self):
-        initialize()
+        super(ReviewRequestEmailTests, self).setUp()
 
         mail.outbox = []
         self.sender = 'noreply@example.com'

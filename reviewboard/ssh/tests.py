@@ -4,16 +4,18 @@ import os
 import shutil
 import tempfile
 
-from django.test import TestCase as DjangoTestCase
 import paramiko
 
 from reviewboard.ssh.client import SSHClient
 from reviewboard.ssh.errors import UnsupportedSSHKeyError
 from reviewboard.ssh.storage import FileSSHStorage
+from reviewboard.testing.testcase import TestCase
 
 
-class SSHTestCase(DjangoTestCase):
+class SSHTestCase(TestCase):
     def setUp(self):
+        super(SSHTestCase, self).setUp()
+
         self.old_home = os.getenv('HOME')
         self.tempdir = None
         os.environ['RBSSH_ALLOW_AGENT'] = '0'
@@ -26,6 +28,8 @@ class SSHTestCase(DjangoTestCase):
             SSHTestCase.key2_b64 = SSHTestCase.key2.get_base64()
 
     def tearDown(self):
+        super(SSHTestCase, self).tearDown()
+
         self._set_home(self.old_home)
 
         if self.tempdir:

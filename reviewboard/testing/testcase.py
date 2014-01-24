@@ -15,7 +15,7 @@ from django.db import (DatabaseError, DEFAULT_DB_ALIAS, IntegrityError,
 from django.db.models import get_apps
 from djblets.testing.testcases import TestCase as DjbletsTestCase
 
-from reviewboard import scmtools
+from reviewboard import scmtools, initialize
 from reviewboard.attachments.models import FileAttachment
 from reviewboard.diffviewer.models import DiffSet, DiffSetHistory, FileDiff
 from reviewboard.reviews.models import (Comment, FileAttachmentComment,
@@ -46,6 +46,8 @@ class TestCase(DjbletsTestCase):
 
     def setUp(self):
         super(TestCase, self).setUp()
+
+        initialize()
 
         # Clear the cache so that previous tests don't impact this one.
         cache.clear()

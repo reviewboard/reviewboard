@@ -482,6 +482,8 @@ class FileDiffMigrationTests(TestCase):
     fixtures = ['test_scmtools']
 
     def setUp(self):
+        super(FileDiffMigrationTests, self).setUp()
+
         self.diff = (
             b'diff --git a/README b/README\n'
             b'index d6613f5..5b50866 100644\n'
@@ -591,6 +593,8 @@ class FileDiffMigrationTests(TestCase):
 
 class HighlightRegionTest(TestCase):
     def setUp(self):
+        super(HighlightRegionTest, self).setUp()
+
         siteconfig = SiteConfiguration.objects.get_current()
         siteconfig.set('diffviewer_syntax_highlighting', True)
 

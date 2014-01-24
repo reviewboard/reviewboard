@@ -551,6 +551,8 @@ class ViewTests(TestCase):
     fixtures = ['test_users', 'test_scmtools', 'test_site']
 
     def setUp(self):
+        super(ViewTests, self).setUp()
+
         self.siteconfig = SiteConfiguration.objects.get_current()
         self.siteconfig.set("auth_require_sitewide_login", False)
         self.siteconfig.save()
@@ -1527,6 +1529,8 @@ class PostCommitTests(SpyAgency, TestCase):
     fixtures = ['test_users', 'test_scmtools']
 
     def setUp(self):
+        super(PostCommitTests, self).setUp()
+
         self.user = User.objects.create(username='testuser', password='')
         self.profile, is_new = Profile.objects.get_or_create(user=self.user)
         self.profile.save()
@@ -1877,6 +1881,8 @@ class ReviewRequestCounterTests(TestCase):
     fixtures = ['test_scmtools']
 
     def setUp(self):
+        super(ReviewRequestCounterTests, self).setUp()
+
         tool = Tool.objects.get(name='Subversion')
         repository = Repository.objects.create(name='Test1', path='path1',
                                                tool=tool)
@@ -2407,6 +2413,8 @@ class IssueCounterTests(TestCase):
     fixtures = ['test_users']
 
     def setUp(self):
+        super(IssueCounterTests, self).setUp()
+
         self.review_request = self.create_review_request(publish=True)
         self.assertEqual(self.review_request.issue_open_count, 0)
         self.assertEqual(self.review_request.issue_resolved_count, 0)
@@ -2538,6 +2546,8 @@ class PolicyTests(TestCase):
     fixtures = ['test_users']
 
     def setUp(self):
+        super(PolicyTests, self).setUp()
+
         self.user = User.objects.create(username='testuser', password='')
         self.anonymous = AnonymousUser()
 
