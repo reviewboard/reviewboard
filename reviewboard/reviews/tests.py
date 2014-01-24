@@ -2436,7 +2436,7 @@ class IssueCounterTests(TestCase):
             lambda review, issue_opened: self.create_diff_comment(
                 review, filediff, issue_opened=issue_opened))
 
-    def test_file_attachment_comments(self):
+    def test_init_with_file_attachment_comments(self):
         """Testing ReviewRequest issue counter initialization
         from file attachment comments
         """
@@ -2446,7 +2446,7 @@ class IssueCounterTests(TestCase):
             lambda review, issue_opened: self.create_file_attachment_comment(
                 review, file_attachment, issue_opened=issue_opened))
 
-    def test_screenshot_comments(self):
+    def test_init_with_screenshot_comments(self):
         """Testing ReviewRequest issue counter initialization
         from screenshot comments
         """
@@ -2455,6 +2455,58 @@ class IssueCounterTests(TestCase):
         self._test_issue_counts(
             lambda review, issue_opened: self.create_screenshot_comment(
                 review, screenshot, issue_opened=issue_opened))
+
+    def test_init_with_replies(self):
+        """Testing ReviewRequest issue counter initialization and replies."""
+        file_attachment = self.create_file_attachment(self.review_request)
+
+        review = self.create_review(self.review_request)
+        comment = self.create_file_attachment_comment(review, file_attachment,
+                                                      issue_opened=True)
+        review.publish()
+
+        reply = self.create_reply(review)
+        self.create_file_attachment_comment(reply, file_attachment,
+                                            reply_to=comment,
+                                            issue_opened=True)
+        reply.publish()
+
+        self._reload_object(clear_counters=True)
+        self.assertEqual(self.review_request.issue_open_count, 1)
+        self.assertEqual(self.review_request.issue_resolved_count, 0)
+        self.assertEqual(self.review_request.issue_dropped_count, 0)
+
+    def test_save_reply_comment(self):
+        """Testing ReviewRequest issue counter and saving reply comments."""
+        file_attachment = self.create_file_attachment(self.review_request)
+
+        review = self.create_review(self.review_request)
+        comment = self.create_file_attachment_comment(review, file_attachment,
+                                                      issue_opened=True)
+        review.publish()
+
+        self._reload_object(clear_counters=True)
+        self.assertEqual(self.review_request.issue_open_count, 1)
+        self.assertEqual(self.review_request.issue_resolved_count, 0)
+        self.assertEqual(self.review_request.issue_dropped_count, 0)
+
+        reply = self.create_reply(review)
+        reply_comment = self.create_file_attachment_comment(
+            reply, file_attachment,
+            reply_to=comment,
+            issue_opened=True)
+        reply.publish()
+
+        self._reload_object()
+        self.assertEqual(self.review_request.issue_open_count, 1)
+        self.assertEqual(self.review_request.issue_resolved_count, 0)
+        self.assertEqual(self.review_request.issue_dropped_count, 0)
+
+        reply_comment.save()
+        self._reload_object()
+        self.assertEqual(self.review_request.issue_open_count, 1)
+        self.assertEqual(self.review_request.issue_resolved_count, 0)
+        self.assertEqual(self.review_request.issue_dropped_count, 0)
 
     def _test_issue_counts(self, create_comment_func):
         review = self.create_review(self.review_request)

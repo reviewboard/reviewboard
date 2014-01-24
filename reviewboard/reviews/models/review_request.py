@@ -39,7 +39,7 @@ def fetch_issue_counts(review_request, extra_query=None):
         BaseComment.DROPPED: 0
     }
 
-    q = Q(public=True)
+    q = Q(public=True) & Q(base_reply_to__isnull=True)
 
     if extra_query:
         q = q & extra_query

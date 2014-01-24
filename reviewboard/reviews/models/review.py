@@ -197,32 +197,32 @@ class Review(models.Model):
         self.review_request.save(
             update_fields=['last_review_activity_timestamp'])
 
-        issue_counts = fetch_issue_counts(self.review_request, Q(pk=self.pk))
-
-        # Since we're publishing the review, all filed issues should be
-        # open.
-        assert issue_counts[BaseComment.RESOLVED] == 0
-        assert issue_counts[BaseComment.DROPPED] == 0
-
-        if self.ship_it:
-            ship_it_value = 1
-        else:
-            ship_it_value = 0
-
-        # Atomically update the issue count and Ship It count.
-        CounterField.increment_many(
-            self.review_request,
-            {
-                'issue_open_count': issue_counts[BaseComment.OPEN],
-                'issue_dropped_count': 0,
-                'issue_resolved_count': 0,
-                'shipit_count': ship_it_value,
-            })
-
         if self.is_reply():
             reply_published.send(sender=self.__class__,
                                  user=user, reply=self)
         else:
+            issue_counts = fetch_issue_counts(self.review_request, Q(pk=self.pk))
+
+            # Since we're publishing the review, all filed issues should be
+            # open.
+            assert issue_counts[BaseComment.RESOLVED] == 0
+            assert issue_counts[BaseComment.DROPPED] == 0
+
+            if self.ship_it:
+                ship_it_value = 1
+            else:
+                ship_it_value = 0
+
+            # Atomically update the issue count and Ship It count.
+            CounterField.increment_many(
+                self.review_request,
+                {
+                    'issue_open_count': issue_counts[BaseComment.OPEN],
+                    'issue_dropped_count': 0,
+                    'issue_resolved_count': 0,
+                    'shipit_count': ship_it_value,
+                })
+
             review_published.send(sender=self.__class__,
                                   user=user, review=self)
 

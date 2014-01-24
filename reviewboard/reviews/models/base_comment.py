@@ -138,8 +138,14 @@ class BaseComment(models.Model):
             # the review.
             review = self.get_review()
 
-            if review.public:
-                if self._loaded_issue_status != self.issue_status:
+            if not review.public:
+                review.timestamp = self.timestamp
+                review.save()
+            else:
+                if (not self.is_reply() and
+                    self._loaded_issue_status != self.issue_status):
+                    # The user has toggled the issue status of this comment,
+                    # so update the issue counts for the review request.
                     old_field = ReviewRequest.ISSUE_COUNTER_FIELDS[
                         self._loaded_issue_status]
                     new_field = ReviewRequest.ISSUE_COUNTER_FIELDS[
@@ -151,12 +157,9 @@ class BaseComment(models.Model):
                             old_field: -1,
                             new_field: 1,
                         })
-            else:
-                review.timestamp = self.timestamp
-                review.save()
 
-            ReviewRequest.objects.filter(pk=review.review_request_id).update(
-                last_review_activity_timestamp=self.timestamp)
+                q = ReviewRequest.objects.filter(pk=review.review_request_id)
+                q.update(last_review_activity_timestamp=self.timestamp)
         except ObjectDoesNotExist:
             pass
 
