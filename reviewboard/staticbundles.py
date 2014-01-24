@@ -31,6 +31,9 @@ PIPELINE_JS = dict({
             'lib/js/jasmine-1.3.1.js',
             'lib/js/jasmine-html-1.3.1.js',
             'rb/js/collections/tests/filteredCollectionTests.js',
+            'rb/js/configForms/models/tests/listItemModelTests.js',
+            'rb/js/configForms/views/tests/listItemViewTests.js',
+            'rb/js/configForms/views/tests/listViewTests.js',
             'rb/js/diffviewer/models/tests/diffFileModelTests.js',
             'rb/js/diffviewer/models/tests/diffReviewableModelTests.js',
             'rb/js/diffviewer/models/tests/diffRevisionModelTests.js',
@@ -129,6 +132,17 @@ PIPELINE_JS = dict({
             'rb/js/models/userSessionModel.js',
         ),
         'output_filename': 'rb/js/base.min.js',
+    },
+    'config-forms': {
+        'source_filenames': (
+            'rb/js/configForms/base.js',
+            'rb/js/configForms/collections/listItemsCollection.js',
+            'rb/js/configForms/models/listItemModel.js',
+            'rb/js/configForms/models/listModel.js',
+            'rb/js/configForms/views/listItemView.js',
+            'rb/js/configForms/views/listView.js',
+        ),
+        'output_filename': 'rb/js/config-forms.min.js',
     },
     'dashboard': {
         'source_filenames': (
@@ -265,6 +279,13 @@ PIPELINE_CSS = dict({
             'rb/css/js-tests.less',
         ),
         'output_filename': 'rb/css/js-tests.min.css',
+        'absolute_paths': False,
+    },
+    'config-forms': {
+        'source_filenames': (
+            'rb/css/config-forms.less',
+        ),
+        'output_filename': 'rb/css/config-forms.min.css',
         'absolute_paths': False,
     },
     'reviews': {
