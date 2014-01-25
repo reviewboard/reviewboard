@@ -2873,6 +2873,37 @@ class MarkdownUtilsTests(TestCase):
             ('\\+ List item\n'
              'a + b'))
 
+    def test_markdown_escape_underscores(self):
+        """Testing markdown_escape with '_' placement"""
+        self.assertEqual(markdown_escape('_foo_'), r'\_foo\_')
+        self.assertEqual(markdown_escape('__foo__'), r'\_\_foo\_\_')
+        self.assertEqual(markdown_escape(' _foo_ '), r' \_foo\_ ')
+        self.assertEqual(markdown_escape('f_o_o'), r'f_o_o')
+        self.assertEqual(markdown_escape('f_o_o_'), r'f_o_o\_')
+        self.assertEqual(markdown_escape('foo_ _bar'), r'foo\_ \_bar')
+        self.assertEqual(markdown_escape('foo__bar'), r'foo__bar')
+        self.assertEqual(markdown_escape('foo\n_bar'), 'foo\n\\_bar')
+        self.assertEqual(markdown_escape('(_foo_)'), r'(\_foo\_)')
+
+    def test_markdown_escape_asterisks(self):
+        """Testing markdown_escape with '*' placement"""
+        self.assertEqual(markdown_escape('*foo*'), r'\*foo\*')
+        self.assertEqual(markdown_escape('**foo**'), r'\*\*foo\*\*')
+        self.assertEqual(markdown_escape(' *foo* '), r' \*foo\* ')
+        self.assertEqual(markdown_escape('f*o*o'), r'f*o*o')
+        self.assertEqual(markdown_escape('f*o*o*'), r'f*o*o\*')
+        self.assertEqual(markdown_escape('foo* *bar'), r'foo\* \*bar')
+        self.assertEqual(markdown_escape('foo**bar'), r'foo**bar')
+        self.assertEqual(markdown_escape('foo\n*bar'), 'foo\n\\*bar')
+
+    def test_markdown_escape_parens(self):
+        """Testing markdown_escape with '(' and ')' placement"""
+        self.assertEqual(markdown_escape('[name](link)'), r'\[name\]\(link\)')
+        self.assertEqual(markdown_escape('(link)'), r'(link)')
+        self.assertEqual(markdown_escape('](link)'), r'\](link)')
+        self.assertEqual(markdown_escape('[foo] ](link)'),
+                         r'\[foo\] \](link)')
+
     def test_markdown_unescape(self):
         """Testing markdown_unescape"""
         self.assertEqual(markdown_unescape(self.ESCAPED_TEXT),

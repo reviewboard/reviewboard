@@ -16,20 +16,35 @@ MARKDOWN_SPECIAL_CHARS_RE = re.compile(r'([%s])' % MARKDOWN_SPECIAL_CHARS)
 # the markdown rendering, because otherwise it's annoying to look at the
 # source.
 MARKDOWN_ESCAPED_CHARS = set(Markdown.ESCAPED_CHARS)
-MARKDOWN_ESCAPED_CHARS -= set(['.', '#', '-', '+'])
+MARKDOWN_ESCAPED_CHARS -= set(['.', '#', '-', '+', '_', '(', ')', '*'])
 
 ESCAPE_CHARS_RE = re.compile(r"""
     (
-      ^\s*(\d+\.)+    # Numeric lists start with leading whitespace, one or
-                      # more digits, and then a period
+    # Numeric lists start with leading whitespace, one or more digits,
+    # and then a period
+      ^\s*(\d+\.)+
 
-    | ^\s*(\#)+       # ATX-style headers start with a hash at the beginning of
-                      # the line.
+    # ATX-style headers start with a hash at the beginning of the line.
+    | ^\s*(\#)+
 
-    | ^\s*[-\+]+      # + and - have special meaning (lists, headers, and rules),
-                      # but only if they're at the start of the line.
+    # + and - have special meaning (lists, headers, and rules), but only if
+    # they're at the start of the line.
+    | ^\s*[-\+]+
 
-    | [%s]            # All other special characters
+    # _ indicates italic, and __ indicates bold, but not when in the middle
+    # of a word.
+    | (?<!\w|_)(__?)
+    | (__?)(?!\w|_)
+
+    # This is an alternate format for italic and bold, using * instead of _.
+    | (?<!\w|\*)(\*\*?)
+    | (\*\*?)(?!\w|\*)
+
+    # Named links are in the form of [name](url).
+    | (\[) [^\]]* (\]) (\() [^\)]* (\))
+
+    # All other special characters
+    | [%s]
     )
     """ % re.escape(''.join(MARKDOWN_ESCAPED_CHARS)),
     re.M | re.VERBOSE)
