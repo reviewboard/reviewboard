@@ -6,12 +6,29 @@
  */
 RB.DraftResourceChildModelMixin = {
     /*
+     * Deletes the object's resource on the server.
+     *
+     * This will ensure the draft is created before deleting the object,
+     * in order to record the deletion as part of the draft.
+     */
+    destroy: function(options, context) {
+        options = options || {};
+
+        this.get('parentObject').ensureCreated({
+            success: _.bind(_.super(this).destroy, this, options, context),
+            error: options.error
+        }, context);
+    },
+
+    /*
      * Calls a function when the object is ready to use.
      *
      * This will ensure the draft is created before ensuring the object
      * is ready.
      */
     ready: function(options, context) {
+        options = options || {};
+
         this.get('parentObject').ensureCreated({
             success: _.bind(_.super(this).ready, this, options, context),
             error: options.error
