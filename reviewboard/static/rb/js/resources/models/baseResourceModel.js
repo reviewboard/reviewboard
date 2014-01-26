@@ -599,7 +599,7 @@ RB.BaseResource = Backbone.Model.extend({
             syncOptions.data.expand = this.expandedFields.join(',');
         }
 
-        syncOptions.error = _.bind(function(model, xhr) {
+        syncOptions.error = _.bind(function(xhr) {
             var rsp = null,
                 text;
 
@@ -622,7 +622,7 @@ RB.BaseResource = Backbone.Model.extend({
             if (_.isFunction(options.error)) {
                 xhr.errorText = text;
                 xhr.errorPayload = rsp;
-                options.error(model, xhr, options);
+                options.error(xhr);
             }
         }, this);
 

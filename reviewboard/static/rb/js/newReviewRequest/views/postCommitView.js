@@ -109,9 +109,11 @@ RB.PostCommitView = Backbone.View.extend({
             success: function() {
                 window.location = reviewRequest.get('reviewURL');
             },
-            error: function() {
-                // TODO: handle errors
+            error: function(model, xhr) {
+                this._commitsView.setPending(null);
+                this._createPending = false;
+                alert(xhr.errorText);
             }
-        });
+        }, this);
     }
 });
