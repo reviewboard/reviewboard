@@ -86,5 +86,8 @@ class ResourceTests(BaseWebAPITestCase):
         self.assertTrue(diffs_caps['moved_files'])
         self.assertTrue(diffs_caps['base_commit_ids'])
 
+        review_request_caps = caps['review_requests']
+        self.assertTrue(review_request_caps['commit_ids'])
+
         text_caps = caps['text']
         self.assertTrue(text_caps['markdown'])

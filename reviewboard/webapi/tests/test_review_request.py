@@ -655,6 +655,10 @@ class ResourceListTests(ExtraDataListMixin, BaseWebAPITestCase):
     @add_fixtures(['test_scmtools'])
     def test_get_with_repository_and_changenum(self):
         """Testing the GET review-requests/?repository=&changenum= API"""
+        # Create a fake first one so that we can check that the query went
+        # through.
+        self.create_review_request(create_repository=True, publish=True)
+
         review_request = self.create_review_request(create_repository=True,
                                                     publish=True)
         review_request.changenum = 1234
@@ -677,9 +681,13 @@ class ResourceListTests(ExtraDataListMixin, BaseWebAPITestCase):
 
     @add_fixtures(['test_scmtools'])
     def test_get_with_repository_and_commit_id(self):
-        """Testing the GET review-requests/?repository=&commit_id= API
+        """Testing the GET review-requests/?repository=&commit-id= API
         with changenum backwards-compatibility
         """
+        # Create a fake first one so that we can check that the query went
+        # through.
+        self.create_review_request(create_repository=True, publish=True)
+
         review_request = self.create_review_request(create_repository=True,
                                                     publish=True)
         review_request.changenum = 1234
@@ -691,7 +699,7 @@ class ResourceListTests(ExtraDataListMixin, BaseWebAPITestCase):
 
         rsp = self.apiGet(get_review_request_list_url(), {
             'repository': review_request.repository.id,
-            'commit_id': review_request.commit,
+            'commit-id': review_request.commit,
         }, expected_mimetype=review_request_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(len(rsp['review_requests']), 1)
@@ -801,6 +809,53 @@ class ResourceListTests(ExtraDataListMixin, BaseWebAPITestCase):
             expected_status=400)
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], INVALID_REPOSITORY.code)
+
+    @add_fixtures(['test_scmtools'])
+    def test_post_with_commit_id(self):
+        """Testing the POST review-requests/ API with commit_id"""
+        repository = self.create_repository()
+        commit_id = 'abc123'
+
+        rsp = self.apiPost(
+            get_review_request_list_url(),
+            {
+                'repository': repository.name,
+                'commit_id': commit_id,
+            },
+            expected_mimetype=review_request_item_mimetype)
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(rsp['review_request']['commit_id'], commit_id)
+        self.assertEqual(rsp['review_request']['summary'], '')
+
+        review_request = \
+            ReviewRequest.objects.get(pk=rsp['review_request']['id'])
+        self.assertEqual(review_request.commit, commit_id)
+
+    @add_fixtures(['test_scmtools'])
+    def test_post_with_commit_id_and_create_from_commit_id(self):
+        """Testing the POST review-requests/ API with
+        commit_id and create_from_commit_id
+        """
+        repository = self.create_repository(tool_name='Test')
+        commit_id = 'abc123'
+
+        rsp = self.apiPost(
+            get_review_request_list_url(),
+            {
+                'repository': repository.name,
+                'commit_id': commit_id,
+                'create_from_commit_id': True,
+            },
+            expected_mimetype=review_request_item_mimetype)
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(rsp['review_request']['commit_id'], commit_id)
+        self.assertEqual(rsp['review_request']['summary'], 'Commit summary')
+        self.assertEqual(rsp['review_request']['description'],
+                         'Commit description.')
+
+        review_request = \
+            ReviewRequest.objects.get(pk=rsp['review_request']['id'])
+        self.assertEqual(review_request.commit, commit_id)
 
     def test_post_with_submit_as_and_permission(self):
         """Testing the POST review-requests/?submit_as= API

@@ -15,6 +15,7 @@ from djblets.webapi.errors import (DOES_NOT_EXIST, INVALID_FORM_DATA,
                                    NOT_LOGGED_IN, PERMISSION_DENIED)
 
 from reviewboard.reviews.models import Group, ReviewRequest, ReviewRequestDraft
+from reviewboard.scmtools.errors import InvalidChangeNumberError
 from reviewboard.webapi.base import WebAPIResource
 from reviewboard.webapi.decorators import webapi_check_local_site
 from reviewboard.webapi.encoder import status_to_string
@@ -91,6 +92,12 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
                            'made in this update. It often will be used to '
                            'describe the changes in the diff.',
         },
+        'commit_id': {
+            'type': six.text_type,
+            'description': 'The updated ID of the commit this review request '
+                           'is based upon.',
+            'added_in': '2.0',
+        },
         'description': {
             'type': six.text_type,
             'description': 'The new review request description.',
@@ -140,6 +147,74 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
         resources.draft_file_attachment,
     ]
 
+    CREATE_UPDATE_OPTIONAL_FIELDS = {
+        'branch': {
+            'type': six.text_type,
+            'description': 'The new branch name.',
+        },
+        'bugs_closed': {
+            'type': six.text_type,
+            'description': 'A comma-separated list of bug IDs.',
+        },
+        'commit_id': {
+            'type': six.text_type,
+            'description': 'The updated ID of the commit this review request '
+                           'is based upon.',
+            'added_in': '2.0',
+        },
+        'depends_on': {
+            'type': six.text_type,
+            'description': 'The new list of dependencies of this review '
+                           'request.',
+        },
+        'changedescription': {
+            'type': six.text_type,
+            'description': 'The change description for this update.',
+        },
+        'description': {
+            'type': six.text_type,
+            'description': 'The new review request description.',
+        },
+        'public': {
+            'type': bool,
+            'description': 'Whether or not to make the review public. '
+                           'If a review is public, it cannot be made '
+                           'private again.',
+        },
+        'summary': {
+            'type': six.text_type,
+            'description': 'The new review request summary.',
+        },
+        'target_groups': {
+            'type': six.text_type,
+            'description': 'A comma-separated list of review groups '
+                           'that will be on the reviewer list.',
+        },
+        'target_people': {
+            'type': six.text_type,
+            'description': 'A comma-separated list of users that will '
+                           'be on a reviewer list.',
+        },
+        'testing_done': {
+            'type': six.text_type,
+            'description': 'The new testing done text.',
+        },
+        'text_type': {
+            'type': MarkdownFieldsMixin.SAVEABLE_TEXT_TYPES,
+            'description': 'The mode for the review request description '
+                           'and testing_done fields. the default is '
+                           '"plain".',
+        },
+        'update_from_commit_id': {
+            'type': bool,
+            'description': 'If true, and if ``commit_id`` is provided, '
+                           'the review request information and (when '
+                           'supported) the diff will be updated based '
+                           'on the commit ID.',
+            'added_in': '2.0',
+        },
+    }
+
     @classmethod
     def prepare_draft(self, request, review_request):
         """Creates a draft, if the user has permission to."""
@@ -186,59 +261,7 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
     @webapi_check_local_site
     @webapi_login_required
     @webapi_request_fields(
-        optional={
-            'branch': {
-                'type': six.text_type,
-                'description': 'The new branch name.',
-            },
-            'bugs_closed': {
-                'type': six.text_type,
-                'description': 'A comma-separated list of bug IDs.',
-            },
-            'depends_on': {
-                'type': six.text_type,
-                'description': 'The new list of dependencies of this review '
-                               'request.',
-            },
-            'changedescription': {
-                'type': six.text_type,
-                'description': 'The change description for this update.',
-            },
-            'description': {
-                'type': six.text_type,
-                'description': 'The new review request description.',
-            },
-            'public': {
-                'type': bool,
-                'description': 'Whether or not to make the review public. '
-                               'If a review is public, it cannot be made '
-                               'private again.',
-            },
-            'summary': {
-                'type': six.text_type,
-                'description': 'The new review request summary.',
-            },
-            'target_groups': {
-                'type': six.text_type,
-                'description': 'A comma-separated list of review groups '
-                               'that will be on the reviewer list.',
-            },
-            'target_people': {
-                'type': six.text_type,
-                'description': 'A comma-separated list of users that will '
-                               'be on a reviewer list.',
-            },
-            'testing_done': {
-                'type': six.text_type,
-                'description': 'The new testing done text.',
-            },
-            'text_type': {
-                'type': MarkdownFieldsMixin.SAVEABLE_TEXT_TYPES,
-                'description': 'The mode for the review request description '
-                               'and testing_done fields. the default is '
-                               '"plain".',
-            },
-        },
+        optional=CREATE_UPDATE_OPTIONAL_FIELDS,
         allow_unknown=True
     )
     def create(self, *args, **kwargs):
@@ -246,18 +269,7 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
 
         If a draft already exists, this will just reuse the existing draft.
 
-        All fields from the review request will be copied over to the draft,
-        unless overridden in the request.
-
-        If ``text_type`` is provided and set to ``markdown``, then the
-        ``changedescription``, ``description`` and ``testing_done`` fields
-        will be set to be interpreted as Markdown. Otherwise, it will be
-        interpreted as plain text.
-
-        Extra data can be stored on the review request for later lookup by
-        passing ``extra_data.key_name=value``. The ``key_name`` and ``value``
-        can be any valid strings. Passing a blank ``value`` will remove the
-        key.  The ``extra_data.`` prefix is required.
+        See the documentation on updating a draft for all the details.
         """
         # A draft is a singleton. Creating and updating it are the same
         # operations in practice.
@@ -272,64 +284,11 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
     @webapi_check_local_site
     @webapi_login_required
     @webapi_request_fields(
-        optional={
-            'branch': {
-                'type': six.text_type,
-                'description': 'The new branch name.',
-            },
-            'bugs_closed': {
-                'type': six.text_type,
-                'description': 'A comma-separated list of bug IDs.',
-            },
-            'depends_on': {
-                'type': six.text_type,
-                'description': 'The new list of dependencies of this review '
-                               'request.',
-            },
-            'changedescription': {
-                'type': six.text_type,
-                'description': 'The change description for this update.',
-            },
-            'description': {
-                'type': six.text_type,
-                'description': 'The new review request description.',
-            },
-            'public': {
-                'type': bool,
-                'description': 'Whether or not to make the changes public. '
-                               'The new changes will be applied to the '
-                               'review request, and the old draft will be '
-                               'deleted.',
-            },
-            'summary': {
-                'type': six.text_type,
-                'description': 'The new review request summary.',
-            },
-            'target_groups': {
-                'type': six.text_type,
-                'description': 'A comma-separated list of review groups '
-                               'that will be on the reviewer list.',
-            },
-            'target_people': {
-                'type': six.text_type,
-                'description': 'A comma-separated list of users that will '
-                               'be on a reviewer list.',
-            },
-            'testing_done': {
-                'type': six.text_type,
-                'description': 'The new testing done text.',
-            },
-            'text_type': {
-                'type': MarkdownFieldsMixin.SAVEABLE_TEXT_TYPES,
-                'description': 'The mode for the review request description '
-                               'and testing_done fields. the default is '
-                               'to leave the mode unchanged.',
-            },
-        },
+        optional=CREATE_UPDATE_OPTIONAL_FIELDS,
         allow_unknown=True
     )
     def update(self, request, always_save=False, local_site_name=None,
-               extra_fields={}, *args, **kwargs):
+               update_from_commit_id=False, extra_fields={}, *args, **kwargs):
         """Updates a draft of a review request.
 
         This will update the draft with the newly provided data.
@@ -387,6 +346,14 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
                     invalid_fields[field_name] = invalid
                 elif field_modified_objects:
                     modified_objects += field_modified_objects
+
+        commit_id = kwargs.get('commit_id', None)
+
+        if commit_id and update_from_commit_id:
+            try:
+                draft.update_from_commit_id(commit_id)
+            except InvalidChangeNumberError:
+                return INVALID_CHANGE_NUMBER
 
         if draft.changedesc_id:
             changedesc = draft.changedesc

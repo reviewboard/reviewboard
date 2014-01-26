@@ -91,6 +91,9 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
     # Set this up with a ConcurrencyManager to help prevent race conditions.
     objects = ConcurrencyManager()
 
+    commit = property(lambda self: self.commit_id,
+                      lambda self, value: setattr(self, 'commit_id', value))
+
     def get_latest_diffset(self):
         """Returns the diffset for this draft."""
         return self.diffset
@@ -121,6 +124,7 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
                     'bugs_closed': review_request.bugs_closed,
                     'branch': review_request.branch,
                     'rich_text': review_request.rich_text,
+                    'commit_id': review_request.commit_id,
                 })
 
         if draft.changedesc is None and review_request.public:
@@ -219,8 +223,9 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
                     a.add(item)
 
         for field_cls in get_review_request_fields():
-            if field_cls.is_editable:
-                field = field_cls(review_request)
+            field = field_cls(review_request)
+
+            if field.can_record_change_entry:
                 old_value = field.load_value(review_request)
                 new_value = field.load_value(self)
 

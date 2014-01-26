@@ -43,6 +43,9 @@ def get_server_info(request=None):
                 'base_commit_ids': True,
                 'moved_files': True,
             },
+            'review_requests': {
+                'commit_ids': True,
+            },
             'scmtools': {
                 'perforce': {
                     'moved_files': True,

@@ -74,6 +74,24 @@ RB.ReviewRequest = RB.BaseResource.extend({
     },
 
     /*
+     * Creates the review request from an existing commit.
+     *
+     * This can only be used for new ReviewRequest instances, and requires
+     * a commitID option.
+     */
+    createFromCommit: function(options, context) {
+        console.assert(options.commitID);
+        console.assert(this.isNew());
+
+        this.set('commitID', options.commitID);
+        this.save(
+            _.extend({
+                createFromCommit: true
+            }, options),
+            context);
+    },
+
+    /*
      * Creates a Diff object for this review request.
      */
     createDiff: function() {
@@ -298,18 +316,26 @@ RB.ReviewRequest = RB.BaseResource.extend({
     /*
      * Serialize for sending to the server.
      */
-    toJSON: function() {
+    toJSON: function(options) {
         var commitID = this.get('commitID'),
             repository = this.get('repository'),
             result = {};
 
+        options = options || {};
+
         if (this.isNew()) {
             if (commitID) {
                 result.commit_id = commitID;
+
+                if (options.createFromCommit) {
+                    result.create_from_commit_id = true;
+                }
             }
+
             if (repository) {
                 result.repository = repository;
             }
+
             return result;
         } else {
             return _.super(this).toJSON.apply(this, arguments);

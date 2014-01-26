@@ -211,25 +211,58 @@ class BlocksField(BuiltinFieldMixin, BaseReviewRequestField):
         ])
 
 
-class CommitField(BuiltinFieldMixin, BaseReviewRequestField):
-    """The Commit field on a review request."""
-    field_id = 'commit'
+class ChangeField(BuiltinFieldMixin, BaseReviewRequestField):
+    """The Change field on a review request.
+
+    This is shown for repositories supporting changesets. The change
+    number is similar to a commit ID, with the exception that it's only
+    ever stored on the ReviewRequest and never changes.
+
+    If both ``changenum`` and ``commit_id`` are provided on the review
+    request, only this field will be shown, as both are likely to have
+    values.
+    """
+    field_id = 'changenum'
     label = _('Change')
 
-    def should_render(self, commit):
-        return bool(commit)
+    def load_value(self, review_request_details):
+        return review_request_details.get_review_request().changenum
 
-    def render_value(self, commit):
+    def should_render(self, changenum):
+        return bool(changenum)
+
+    def render_value(self, changenum):
         review_request = self.review_request_details.get_review_request()
 
-        # Abbreviate SHA-1s
-        if len(commit) == 40:
-            commit = commit[:7] + '...'
-
         if review_request.changeset_is_pending():
-            return escape(_('%s (pending)') % commit)
+            return escape(_('%s (pending)') % changenum)
         else:
-            return commit
+            return changenum
+
+
+class CommitField(BuiltinFieldMixin, BaseReviewRequestField):
+    """The Commit field on a review request.
+
+    This displays the ID of the commit the review request is representing.
+
+    Since the ``commit_id`` and ``changenum`` fields are both populated, we
+    let ChangeField take precedence. It knows how to render information based
+    on a changeset ID.
+    """
+    field_id = 'commit_id'
+    label = _('Commit')
+    can_record_change_entry = True
+
+    def should_render(self, commit_id):
+        return (bool(commit_id) and
+                not self.review_request_details.get_review_request().changenum)
+
+    def render_value(self, commit_id):
+        # Abbreviate SHA-1s
+        if len(commit_id) == 40:
+            commit_id = commit_id[:7] + '...'
+
+        return commit_id
 
 
 class TargetGroupsField(BuiltinFieldMixin, BaseModelListEditableField):
@@ -280,6 +313,7 @@ class InformationFieldSet(BaseReviewRequestFieldSet):
         BugsField,
         DependsOnField,
         BlocksField,
+        ChangeField,
         CommitField,
     ]
 

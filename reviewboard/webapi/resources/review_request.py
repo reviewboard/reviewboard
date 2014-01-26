@@ -151,14 +151,18 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
             'description': 'The change number that the review request '
                            'represents. These are server-side repository-'
                            'specific change numbers, and are not supported '
-                           'by all types of repositories. This may be '
-                           '``null``. This is deprecated in favor of the '
-                           '``commit_id`` field.',
+                           'by all types of repositories. It may be '
+                           '``null``.\n'
+                           '\n'
+                           'This is deprecated in favor of the ``commit_id`` '
+                           'field.',
+            'deprecated_in': '2.0',
         },
         'commit_id': {
             'type': six.text_type,
             'description': 'The commit that the review request represents. '
                            'This obsoletes the ``changenum`` field.',
+            'added_in': '2.0',
         },
         'repository': {
             'type': RepositoryResource,
@@ -306,7 +310,7 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
                 except (TypeError, ValueError):
                     pass
 
-            commit_id = request.GET.get('commit_id', None)
+            commit_id = request.GET.get('commit-id', None)
             if commit_id is not None:
                 commit_q = commit_q | Q(commit_id=commit_id)
 
@@ -412,17 +416,33 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
         optional={
             'changenum': {
                 'type': int,
-                'description': 'The optional changenumber to look up for the '
+                'description': 'The optional change number to look up for the '
                                'review request details. This only works with '
                                'repositories that support server-side '
-                               'changesets. This is deprecated in favor of '
-                               'the ``commit_id`` field.',
+                               'changesets.\n'
+                               '\n'
+                               'This is deprecated in favor of the '
+                               '``commit_id`` field.',
+                'deprecated_in': '2.0',
             },
             'commit_id': {
                 'type': six.text_type,
                 'description': 'The optional commit to create the review '
-                               'request for. This can be used in place of '
-                               'the ``changenum`` field.',
+                               'request for. This should be used in place of '
+                               'the ``changenum`` field.\n'
+                               '\n'
+                               'If ``create_from_commit_id=1`` is passed, '
+                               'then the review request information and diff '
+                               'will be based on this commit ID.',
+                'added_in': '2.0',
+            },
+            'create_from_commit_id': {
+                'type': bool,
+                'description': 'If true, and if ``commit_id`` is provided, '
+                               'the review request information and (when '
+                               'supported) the idff will be based on the '
+                               'commit ID.',
+                'added_in': '2.0',
             },
             'repository': {
                 'type': six.text_type,
@@ -441,16 +461,17 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
         allow_unknown=True
     )
     def create(self, request, repository=None, submit_as=None, changenum=None,
-               commit_id=None, local_site_name=None, extra_fields={},
-               *args, **kwargs):
+               commit_id=None, local_site_name=None,
+               create_from_commit_id=False, extra_fields={}, *args, **kwargs):
         """Creates a new review request.
 
         The new review request will start off as private and pending, and
-        will normally be blank. However, if ``changenum`` or ``commit_id`` is
-        passed and the given repository both supports server-side changesets
-        and has changeset support in Review Board, some details (Summary,
-        Description and Testing Done sections, for instance) may be
-        automatically filled in from the server.
+        will normally be blank. However, if ``changenum`` or both
+        ``commit_id`` and ``create_from_commit_id=1`` is passed and the given
+        repository both supports server-side changesets and has changeset
+        support in Review Board, some details (Summary, Description and
+        Testing Done sections, for instance) may be automatically filled in
+        from the server.
 
         Any new review request will have an associated draft (reachable
         through the ``draft`` link). All the details of the review request
@@ -484,6 +505,9 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
         if changenum is not None and commit_id is None:
             commit_id = six.text_type(changenum)
 
+            # Preserve the old changenum behavior.
+            create_from_commit_id = True
+
         if submit_as and user.username != submit_as:
             if not user.has_perm('reviews.can_submit_as_another_user',
                                  local_site):
@@ -516,7 +540,8 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
 
         try:
             review_request = ReviewRequest.objects.create(
-                user, repository, commit_id, local_site)
+                user, repository, commit_id, local_site,
+                create_from_commit_id=create_from_commit_id)
 
             if extra_fields:
                 self._import_extra_data(review_request.extra_data,
@@ -571,24 +596,20 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
             },
             'changenum': {
                 'type': int,
-                'description': 'The optional changenumber to set or update. '
+                'description': 'The optional change number to set or update.\n'
+                               '\n'
                                'This can be used to re-associate with a new '
                                'change number, or to create/update a draft '
                                'with new information from the current '
-                               'change number. This only works with '
-                               'repositories that support server-side '
-                               'changesets. This is deprecated by the '
-                               '``commit_id`` field.',
-            },
-            'commit_id': {
-                'type': six.text_type,
-                'description': 'The commit to set or update. This can be used '
-                               'to re-associate with a new commit ID, or to '
-                               'create/update a draft with new information '
-                               'from the current change number. This only '
-                               'works with repositories that support server-'
-                               'side changesets. This field obsoletes the '
-                               '``changenum`` field.',
+                               'change number.\n'
+                               '\n'
+                               'This only works with repositories that '
+                               'support server-side changesets.\n'
+                               '\n'
+                               'This is deprecated. Instead, set '
+                               '``commit_id`` and ``update_from_commit_id=1`` '
+                               ' on the draft.',
+                'deprecated_in': '2.0',
             },
             'description': {
                 'type': six.text_type,
@@ -599,8 +620,8 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
         },
         allow_unknown=True
     )
-    def update(self, request, status=None, changenum=None, commit_id=None,
-               description=None, extra_fields={}, *args, **kwargs):
+    def update(self, request, status=None, changenum=None, description=None,
+               extra_fields={}, *args, **kwargs):
         """Updates the status of the review request.
 
         The only supported update to a review request's resource is to change
@@ -610,10 +631,11 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
         The status can be set in order to close the review request as
         discarded or submitted, or to reopen as pending.
 
-        The change number can either be changed to a new number, or the
-        current change number can be passed. In either case, a new draft will
-        be created or an existing one updated to include information from
-        the server based on the change number.
+        For Perforce, a change number can either be changed to a new number, or
+        the current change number can be passed. In either case, a new draft
+        will be created or an existing one updated to include information from
+        the server based on the change number. This behavior is deprecated,
+        and instead, the commit_id field should be set on the draft.
 
         Changes to a review request's fields, such as the summary or the
         list of reviewers, is made on the Review Request Draft resource.
@@ -633,7 +655,6 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
 
         is_mutating_field = (
             changenum is not None or
-            commit_id is not None or
             extra_fields
         )
 
@@ -658,12 +679,10 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
             except PermissionError:
                 return self._no_access_error(request.user)
 
-        if changenum is not None and commit_id is None:
-            commit_id = six.text_type(changenum)
-
-        if commit_id is not None:
-            if commit_id != review_request.commit:
-                review_request.update_commit_id(commit_id, request.user)
+        # Preserve the old changenum behavior.
+        if changenum is not None:
+            if changenum != review_request.changenum:
+                review_request.commit = changenum
 
             try:
                 draft = ReviewRequestDraftResource.prepare_draft(
@@ -672,7 +691,7 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
                 return PERMISSION_DENIED
 
             try:
-                draft.update_from_commit_id(commit_id)
+                draft.update_from_commit_id(six.text_type(changenum))
             except InvalidChangeNumberError:
                 return INVALID_CHANGE_NUMBER
 
@@ -716,12 +735,14 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
                                'changesets. This is deprecated in favor of '
                                'the ``commit_id`` field.',
             },
-            'commit_id': {
+            'commit-id': {
                 'type': six.text_type,
                 'description': 'The commit that review requests must have '
                                'set. This will only return one review request '
-                               'per repository. This obsoletes the '
-                               '``changenum`` field.',
+                               'per repository.\n'
+                               '\n'
+                               'This obsoletes the ``changenum`` field.',
+                'added_in': '2.0',
             },
             'time-added-to': {
                 'type': six.text_type,

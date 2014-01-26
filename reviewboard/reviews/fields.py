@@ -107,6 +107,8 @@ class BaseReviewRequestField(object):
     is_required = False
     default_css_classes = set()
 
+    can_record_change_entry = property(lambda self: self.is_editable)
+
     def __init__(self, review_request_details):
         self.review_request_details = review_request_details
 

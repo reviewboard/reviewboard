@@ -122,8 +122,6 @@ class ReviewRequest(BaseReviewRequestDetails):
     public = models.BooleanField(_("public"), default=False)
     changenum = models.PositiveIntegerField(_("change number"), blank=True,
                                             null=True, db_index=True)
-    commit_id = models.CharField(_('commit ID'), max_length=64, blank=True,
-                                 null=True, db_index=True)
     repository = models.ForeignKey(Repository,
                                    related_name="review_requests",
                                    verbose_name=_("repository"),
@@ -611,12 +609,6 @@ class ReviewRequest(BaseReviewRequestDetails):
 
         review_request_reopened.send(sender=self.__class__, user=user,
                                      review_request=self)
-
-    def update_commit_id(self, commit_id, user=None):
-        if (user and not self.is_mutable_by(user)):
-            raise PermissionError
-
-        self.commit = commit_id
 
     def publish(self, user):
         """Publishes the current draft attached to this review request.

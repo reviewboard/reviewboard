@@ -101,11 +101,11 @@ RB.PostCommitView = Backbone.View.extend({
         this._commitsView.setPending(commit);
 
         reviewRequest = new RB.ReviewRequest({
-            commitID: commit.get('id'),
-            repository: repository.get('id')
+            repository: repository.id
         });
 
-        reviewRequest.save({
+        reviewRequest.createFromCommit({
+            commitID: commit.id,
             success: function() {
                 window.location = reviewRequest.get('reviewURL');
             },

@@ -226,6 +226,53 @@ class ResourceTests(ExtraDataListMixin, ExtraDataItemMixin,
         draft = ReviewRequestDraft.objects.get(pk=rsp['draft']['id'])
         self.compare_item(draft_rsp, draft)
 
+    def test_put_with_commit_id(self):
+        """Testing the PUT review-requests/<id>/draft/ API with commit_id"""
+        review_request = self.create_review_request(submitter=self.user,
+                                                    publish=True)
+        commit_id = 'abc123'
+
+        rsp = self.apiPut(
+            get_review_request_draft_url(review_request),
+            {
+                'commit_id': commit_id,
+            },
+            expected_mimetype=review_request_draft_item_mimetype)
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(rsp['draft']['commit_id'], commit_id)
+        self.assertEqual(rsp['draft']['summary'], review_request.summary)
+        self.assertEqual(rsp['draft']['description'],
+                         review_request.description)
+
+        review_request = ReviewRequest.objects.get(pk=review_request.pk)
+        self.assertNotEqual(review_request.commit_id, commit_id)
+
+    @add_fixtures(['test_scmtools'])
+    def test_put_with_commit_id_with_update_from_commit_id(self):
+        """Testing the PUT review-requests/<id>/draft/ API with
+        commit_id and update_from_commit_id=1
+        """
+        repository = self.create_repository(tool_name='Test')
+        review_request = self.create_review_request(submitter=self.user,
+                                                    repository=repository,
+                                                    publish=True)
+        commit_id = 'abc123'
+
+        rsp = self.apiPut(
+            get_review_request_draft_url(review_request),
+            {
+                'commit_id': commit_id,
+                'update_from_commit_id': True,
+            },
+            expected_mimetype=review_request_draft_item_mimetype)
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(rsp['draft']['commit_id'], commit_id)
+        self.assertEqual(rsp['draft']['summary'], 'Commit summary')
+        self.assertEqual(rsp['draft']['description'], 'Commit description.')
+
+        review_request = ReviewRequest.objects.get(pk=review_request.pk)
+        self.assertNotEqual(review_request.commit_id, commit_id)
+
     def test_put_with_depends_on(self):
         """Testing the PUT review-requests/<id>/draft/ API
         with depends_on field

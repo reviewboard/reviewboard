@@ -67,7 +67,8 @@ class Branch(object):
 
 
 class Commit(object):
-    def __init__(self, author_name='', id='', date='', message='', parent=''):
+    def __init__(self, author_name='', id='', date='', message='', parent='',
+                 diff=None):
         self.author_name = author_name
         self.id = id
         self.date = date
@@ -77,7 +78,7 @@ class Commit(object):
         # This field is only used when we're actually fetching the commit from
         # the server to create a new review request, and isn't part of the
         # equality test.
-        self.diff = None
+        self.diff = diff
 
     def __eq__(self, other):
         return (self.author_name == other.author_name and
@@ -186,11 +187,11 @@ class SCMTool(object):
         """
         raise NotImplementedError
 
-    def get_change(self, repository, revision):
+    def get_change(self, revision):
         """Get an individual change.
 
         This should be implemented by subclasses, and is expected to return a
-        tuple of (commit message, diff), both strings.
+        Commit object containing the details of the commit.
         """
         raise NotImplementedError
 

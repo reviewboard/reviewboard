@@ -471,9 +471,8 @@ class GitHub(HostingService):
         if not diff.endswith('\n'):
             diff += '\n'
 
-        commit = Commit(author_name, revision, date, message, parent_revision)
-        commit.diff = diff
-        return commit
+        return Commit(author_name, revision, date, message, parent_revision,
+                      diff=diff)
 
     def _get_api_error_message(self, rsp, status_code):
         """Return the error(s) reported by the GitHub API, as a string

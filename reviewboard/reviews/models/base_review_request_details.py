@@ -28,6 +28,8 @@ class BaseReviewRequestDetails(models.Model):
     bugs_closed = models.CharField(_("bugs"), max_length=300, blank=True)
     branch = models.CharField(_("branch"), max_length=300, blank=True)
     rich_text = models.BooleanField(_("rich text"), default=False)
+    commit_id = models.CharField(_('commit ID'), max_length=64, blank=True,
+                                 null=True, db_index=True)
 
     extra_data = JSONField(null=True)
 
@@ -199,8 +201,7 @@ class BaseReviewRequestDetails(models.Model):
         # summary and description, parsed from the changeset description. Some
         # specialized systems may support the other fields, but we don't want
         # to clobber the user-entered values if they don't.
-        if hasattr(self, 'changenum'):
-            self.update_commit_id(commit_id)
+        self.commit = commit_id
 
         if self.rich_text:
             description = markdown_escape(changeset.description)
@@ -230,8 +231,7 @@ class BaseReviewRequestDetails(models.Model):
         commit = self.repository.get_change(commit_id)
         summary, message = commit.split_message()
 
-        if hasattr(self, 'commit_id'):
-            self.commit = commit_id
+        self.commit = commit_id
 
         self.summary = summary.strip()
         if self.rich_text:
@@ -245,7 +245,7 @@ class BaseReviewRequestDetails(models.Model):
             diff_file_contents=commit.diff.encode('utf-8'), ### XXX: check unicode
             parent_diff_file_name=None,
             parent_diff_file_contents=None,
-            diffset_history=self.diffset_history,
+            diffset_history=self.get_review_request().diffset_history,
             basedir='/',
             request=None)
 

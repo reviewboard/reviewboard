@@ -40,6 +40,31 @@ class TestTool(GitTool):
             for i in range(int(start), 0, -1)
         ]
 
+    def get_change(self, commit_id):
+        return Commit(
+            author_name='user1',
+            id=commit_id,
+            date='2013-01-01T00:00:00.0000000',
+            message='Commit summary\n\nCommit description.',
+            diff=b'\n'.join([
+                b"diff --git a/FILE_FOUND b/FILE_FOUND",
+                b"index 712544e4343bf04967eb5ea80257f6c64d6f42c7.."
+                b"f88b7f15c03d141d0bb38c8e49bb6c411ebfe1f1 100644",
+                b"--- a/FILE_FOUND",
+                b"+++ b/FILE_FOUND",
+                b"@ -1,1 +1,1 @@",
+                b"-blah blah",
+                b"+blah",
+                b"-",
+                b"1.7.1",
+            ]))
+
+    def file_exists(self, path, revision):
+        if path == '/FILE_FOUND':
+            return True
+
+        return super(TestTool, self).file_exists(path, revision)
+
     @classmethod
     def check_repository(cls, path, *args, **kwargs):
         pass

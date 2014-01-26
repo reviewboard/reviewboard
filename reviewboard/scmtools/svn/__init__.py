@@ -129,7 +129,7 @@ class SVNTool(SCMTool):
     def get_change(self, revision):
         """Get an individual change.
 
-        This returns a tuple with the commit message and the diff contents.
+        This returns a Commit object containing the details of the commit.
         """
         cache_key = self.repository.get_commit_cache_key(revision)
 
