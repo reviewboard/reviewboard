@@ -297,7 +297,13 @@ describe('models/ReviewRequestEditor', function() {
     describe('Reviewed objects', function() {
         describe('File attachments', function() {
             it('Removed when destroyed', function() {
-                var fileAttachment = editor.createFileAttachment();
+                var fileAttachment = editor.createFileAttachment(),
+                    draft = editor.get('reviewRequest').draft;
+
+                spyOn(draft, 'ensureCreated')
+                    .andCallFake(function(options, context) {
+                        options.success.call(context);
+                    });
 
                 expect(editor.fileAttachments.at(0)).toBe(fileAttachment);
 
@@ -333,7 +339,13 @@ describe('models/ReviewRequestEditor', function() {
             });
 
             it('When file attachment destroyed', function() {
-                var fileAttachment = editor.createFileAttachment();
+                var fileAttachment = editor.createFileAttachment(),
+                    draft = editor.get('reviewRequest').draft;
+
+                spyOn(draft, 'ensureCreated')
+                    .andCallFake(function(options, context) {
+                        options.success.call(context);
+                    });
 
                 spyOn(editor, 'trigger');
                 fileAttachment.destroy();
