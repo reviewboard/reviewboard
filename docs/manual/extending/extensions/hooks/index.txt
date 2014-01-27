@@ -1,0 +1,34 @@
+.. _extension-hooks:
+
+===============
+Extension Hooks
+===============
+
+Extension hooks are the primary mechanism for customizing Review Board's
+appearance and behavior.
+
+Hooks need only be instantiated for Review Board to "notice" them, and are
+automatically removed when the extension shuts down.
+
+The following hooks are available for use by extensions.
+
+
+.. toctree::
+   :maxdepth: 1
+
+   account-pages-hook
+   account-page-forms-hook
+   action-hooks
+   comment-detail-display-hook
+   dashboard-hook
+   file-attachment-thumbnail-hook
+   navigation-bar-hook
+   review-request-fieldsets-hook
+   review-request-fields-hook
+   review-ui-hook
+   template-hook
+   url-hook
+   user-page-sidebar-hook
+
+
+.. comment: vim: ft=rst et ts=3
