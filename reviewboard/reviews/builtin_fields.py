@@ -128,6 +128,11 @@ class RepositoryField(BuiltinFieldMixin, BaseReviewRequestField):
     field_id = 'repository'
     label = _('Repository')
 
+    def should_render(self, value):
+        review_request = self.review_request_details.get_review_request()
+
+        return review_request.repository_id is not None
+
 
 class BranchField(BuiltinFieldMixin, BaseEditableField):
     """The Branch field on a review request."""
