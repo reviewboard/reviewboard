@@ -81,25 +81,26 @@ def initialize():
     # sure it will always get loaded in every python instance.
     import reviewboard.site.templatetags
 
-    # Set up logging.
-    log.init_logging()
-
-    if settings.DEBUG:
-        logging.debug("Log file for Review Board v%s (PID %s)" %
-                      (get_version_string(), os.getpid()))
-
     load_site_config()
 
-    # Generate the AJAX serial, used for AJAX request caching.
-    generate_ajax_serial()
+    if not getattr(settings, 'RUNNING_TEST', False):
+        # Set up logging.
+        log.init_logging()
 
-    # Load all extensions
-    try:
-        get_extension_manager().load()
-    except DatabaseError:
-        # This database is from a time before extensions, so don't attempt to
-        # load any extensions yet.
-        pass
+        if settings.DEBUG:
+            logging.debug("Log file for Review Board v%s (PID %s)" %
+                          (get_version_string(), os.getpid()))
+
+        # Generate the AJAX serial, used for AJAX request caching.
+        generate_ajax_serial()
+
+        # Load all extensions
+        try:
+            get_extension_manager().load()
+        except DatabaseError:
+            # This database is from a time before extensions, so don't attempt to
+            # load any extensions yet.
+            pass
 
     signals.initializing.send(sender=None)
 
