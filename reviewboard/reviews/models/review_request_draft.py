@@ -2,6 +2,7 @@ from __future__ import unicode_literals
 
 from django.contrib.auth.models import User
 from django.db import models
+from django.db.models import F
 from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
 from djblets.db.fields import ModificationTimestampField
@@ -123,41 +124,31 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
                 })
 
         if draft.changedesc is None and review_request.public:
-            changedesc = ChangeDescription(rich_text=draft.rich_text)
-            changedesc.save()
-            draft.changedesc = changedesc
+            draft.changedesc = ChangeDescription.objects.create(
+                rich_text=draft.rich_text)
 
         if draft_is_new:
-            for group in review_request.target_groups.all():
-                draft.target_groups.add(group)
-
-            for person in review_request.target_people.all():
-                draft.target_people.add(person)
-
-            for screenshot in review_request.screenshots.all():
-                screenshot.draft_caption = screenshot.caption
-                screenshot.save()
-                draft.screenshots.add(screenshot)
-
-            for screenshot in review_request.inactive_screenshots.all():
-                screenshot.draft_caption = screenshot.caption
-                screenshot.save()
-                draft.inactive_screenshots.add(screenshot)
-
-            for attachment in review_request.file_attachments.all():
-                attachment.draft_caption = attachment.caption
-                attachment.save()
-                draft.file_attachments.add(attachment)
-
-            for attachment in review_request.inactive_file_attachments.all():
-                attachment.draft_caption = attachment.caption
-                attachment.save()
-                draft.inactive_file_attachments.add(attachment)
-
-            for dependency in review_request.depends_on.all():
-                draft.depends_on.add(dependency)
-
+            draft.target_groups = review_request.target_groups.all()
+            draft.target_people = review_request.target_people.all()
+            draft.depends_on = review_request.depends_on.all()
+            draft.extra_data = review_request.extra_data
             draft.save()
+
+            review_request.screenshots.update(draft_caption=F('caption'))
+            draft.screenshots = review_request.screenshots.all()
+
+            review_request.inactive_screenshots.update(
+                draft_caption=F('caption'))
+            draft.inactive_screenshots = \
+                review_request.inactive_screenshots.all()
+
+            review_request.file_attachments.update(draft_caption=F('caption'))
+            draft.file_attachments = review_request.file_attachments.all()
+
+            review_request.inactive_file_attachments.update(
+                draft_caption=F('caption'))
+            draft.inactive_file_attachments = \
+                review_request.inactive_file_attachments.all()
 
         return draft
 
@@ -253,7 +244,7 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
                 }
 
                 s.caption = s.draft_caption
-                s.save()
+                s.save(update_fields=['caption'])
 
         # Now scan through again and set the caption correctly for newly-added
         # screenshots by copying the draft_caption over. We don't need to
@@ -262,7 +253,7 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
         for s in screenshots:
             if s.caption != s.draft_caption:
                 s.caption = s.draft_caption
-                s.save()
+                s.save(update_fields=['caption'])
 
         if caption_changes and self.changedesc:
             self.changedesc.fields_changed['screenshot_captions'] = \
@@ -272,9 +263,7 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
                     'screenshots', name_field="caption")
 
         # There's no change notification required for this field.
-        review_request.inactive_screenshots.clear()
-        for screenshot in self.inactive_screenshots.all():
-            review_request.inactive_screenshots.add(screenshot)
+        review_request.inactive_screenshots = self.inactive_screenshots.all()
 
         # Files are treated like screenshots. The list of files can
         # change, but so can captions within each file.
@@ -289,7 +278,7 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
                 }
 
                 f.caption = f.draft_caption
-                f.save()
+                f.save(update_fields['caption'])
 
         # Now scan through again and set the caption correctly for newly-added
         # files by copying the draft_caption over. We don't need to include
@@ -298,19 +287,17 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
         for f in files:
             if f.caption != f.draft_caption:
                 f.caption = f.draft_caption
-                f.save()
+                f.save(update_fields['caption'])
 
         if caption_changes and self.changedesc:
-            self.changedesc.fields_changed['file_captions'] = \
-                caption_changes
+            self.changedesc.fields_changed['file_captions'] = caption_changes
 
         update_list(review_request.file_attachments, self.file_attachments,
                     'files', name_field="display_name")
 
         # There's no change notification required for this field.
-        review_request.inactive_file_attachments.clear()
-        for attachment in self.inactive_file_attachments.all():
-            review_request.inactive_file_attachments.add(attachment)
+        review_request.inactive_file_attachments = \
+            self.inactive_file_attachments.all()
 
         if self.diffset:
             if self.changedesc:
@@ -330,7 +317,7 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
                 }
 
             self.diffset.history = review_request.diffset_history
-            self.diffset.save()
+            self.diffset.save(update_fields=['history'])
 
         if self.changedesc:
             self.changedesc.timestamp = timezone.now()
