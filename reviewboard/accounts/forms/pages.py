@@ -16,10 +16,10 @@ from reviewboard.reviews.models import Group
 from reviewboard.site.urlresolvers import local_site_reverse
 
 
-class AccountForm(forms.Form):
+class AccountPageForm(forms.Form):
     """Base class for a form on the My Account page.
 
-    AccountForms belong to AccountPages, and will be displayed on the
+    AccountPageForms belong to AccountPages, and will be displayed on the
     My Account page for a user.
 
     A simple form presents fields that can be filled out and posted.
@@ -44,7 +44,7 @@ class AccountForm(forms.Form):
         widget=forms.HiddenInput)
 
     def __init__(self, page, request, user, *args, **kwargs):
-        super(AccountForm, self).__init__(*args, **kwargs)
+        super(AccountPageForm, self).__init__(*args, **kwargs)
         self.page = page
         self.request = request
         self.user = user
@@ -111,7 +111,7 @@ class AccountForm(forms.Form):
         raise NotImplementedError
 
 
-class AccountSettingsForm(AccountForm):
+class AccountSettingsForm(AccountPageForm):
     """Form for the Settings page for an account."""
     form_id = 'settings'
     form_title = _('Settings')
@@ -159,7 +159,7 @@ class AccountSettingsForm(AccountForm):
                              _('Your settings have been saved.'))
 
 
-class ChangePasswordForm(AccountForm):
+class ChangePasswordForm(AccountPageForm):
     """Form for changing a user's password."""
     form_id = 'change_password'
     form_title = _('Change Password')
@@ -204,7 +204,7 @@ class ChangePasswordForm(AccountForm):
                              _('Your password has been changed.'))
 
 
-class ProfileForm(AccountForm):
+class ProfileForm(AccountPageForm):
     """Form for the Profile page for an account."""
     form_id = 'profile'
     form_title = _('Profile')
@@ -264,7 +264,7 @@ class ProfileForm(AccountForm):
                              _('Your profile has been saved.'))
 
 
-class GroupsForm(AccountForm):
+class GroupsForm(AccountPageForm):
     """Form for the group membership page.
 
     Unlike most forms, this doesn't deal with fields or saving to the database.

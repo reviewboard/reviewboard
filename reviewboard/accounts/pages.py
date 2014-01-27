@@ -202,6 +202,19 @@ def unregister_account_page_class(page_cls):
     del _registered_page_classes[page_id]
 
 
+def get_page_class(page_id):
+    """Returns the My Account page class with the specified ID.
+
+    If the page could not be found, this will return None.
+    """
+    _populate_defaults()
+
+    try:
+        return _registered_page_classes[page_id]
+    except KeyError:
+        return None
+
+
 def get_page_classes():
     """Returns all registered page classes."""
     _populate_defaults()

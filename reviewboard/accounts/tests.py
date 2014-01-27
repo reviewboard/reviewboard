@@ -3,7 +3,7 @@ from __future__ import unicode_literals
 from django.contrib.auth.models import User
 from djblets.testing.decorators import add_fixtures
 
-from reviewboard.accounts.forms.account import AccountForm
+from reviewboard.accounts.forms import AccountPageForm
 from reviewboard.accounts.models import LocalSiteProfile
 from reviewboard.accounts.pages import (AccountPage, get_page_classes,
                                         register_account_page_class,
@@ -127,7 +127,7 @@ class AccountPageTests(TestCase):
             page_id = 'test-page'
             page_title = 'Test Page'
 
-        class MyForm(AccountForm):
+        class MyForm(AccountPageForm):
             form_id = 'test-form'
 
         register_account_page_class(MyPage)
@@ -137,7 +137,7 @@ class AccountPageTests(TestCase):
 
     def test_add_duplicate_form_to_page(self):
         """Testing AccountPage.add_form with duplicate form ID"""
-        class MyForm(AccountForm):
+        class MyForm(AccountPageForm):
             form_id = 'test-form'
 
         class MyPage(AccountPage):
@@ -151,7 +151,7 @@ class AccountPageTests(TestCase):
 
     def test_remove_form_from_page(self):
         """Testing AccountPage.remove_form"""
-        class MyForm(AccountForm):
+        class MyForm(AccountPageForm):
             form_id = 'test-form'
 
         class MyPage(AccountPage):
@@ -166,7 +166,7 @@ class AccountPageTests(TestCase):
 
     def test_remove_unknown_form_from_page(self):
         """Testing AccountPage.remove_form with unknown form"""
-        class MyForm(AccountForm):
+        class MyForm(AccountPageForm):
             form_id = 'test-form'
 
         class MyPage(AccountPage):

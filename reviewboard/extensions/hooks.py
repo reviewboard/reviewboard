@@ -4,13 +4,79 @@ from djblets.extensions.hooks import (ExtensionHook, ExtensionHookPoint,
                                       TemplateHook, URLHook)
 from djblets.util.compat import six
 
+from reviewboard.accounts.pages import (get_page_class,
+                                        register_account_page_class,
+                                        unregister_account_page_class)
 from reviewboard.attachments.mimetypes import (register_mimetype_handler,
                                                unregister_mimetype_handler)
 from reviewboard.reviews.fields import (get_review_request_fieldset,
                                         register_review_request_fieldset,
                                         unregister_review_request_fieldset)
-
 from reviewboard.reviews.ui.base import register_ui, unregister_ui
+
+
+@six.add_metaclass(ExtensionHookPoint)
+class AccountPagesHook(ExtensionHook):
+    """A hook for adding new pages to the My Account page.
+
+    A page can contain one or more forms or even a custom template allowing
+    for configuration of an extension.
+
+    This takes a list of AccountPage classes as parameters, which it will
+    later instantiate as necessary. Each page can be pre-populated with
+    one or more custom AccountPageForm classes.
+    """
+    def __init__(self, extension, page_classes):
+        super(AccountPagesHook, self).__init__(extension)
+
+        self.page_classes = page_classes
+
+        for page_class in page_classes:
+            register_account_page_class(page_class)
+
+    def shutdown(self):
+        for page_class in self.page_classes:
+            unregister_account_page_class(page_class)
+
+
+@six.add_metaclass(ExtensionHookPoint)
+class AccountPageFormsHook(ExtensionHook):
+    """A hook for adding new forms to a page in the My Account page.
+
+    This is used to add custom forms to a page in the My Account page. The
+    form can be used to provide user-level customization of an extension,
+    through a traditional form-based approach or even through custom
+    JavaScript.
+
+    This hook takes the ID of a registered page where the form should be
+    placed. Review Board supplies the following built-in page IDs:
+
+        * ``settings``
+        * ``authentication``
+        * ``profile``
+        * ``groups``
+
+    Any registered page ID can be provided, whether from this extension
+    or another.
+
+    Form classes can only be added to a single page.
+    """
+    def __init__(self, extension, page_id, form_classes):
+        super(AccountPageFormsHook, self).__init__(extension)
+
+        self.page_id = page_id
+        self.form_classes = form_classes
+
+        page_class = get_page_class(page_id)
+
+        for form_class in form_classes:
+            page_class.add_form(form_class)
+
+    def shutdown(self):
+        page_class = get_page_class(self.page_id)
+
+        for form_class in self.form_classes:
+            page_class.remove_form(form_class)
 
 
 @six.add_metaclass(ExtensionHookPoint)
