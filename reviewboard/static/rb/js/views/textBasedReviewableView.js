@@ -32,7 +32,21 @@ RB.TextBasedReviewableView = RB.FileAttachmentReviewableView.extend({
         this.listenTo(
             this.router, 'route:viewMode',
             function(viewMode, lineNum) {
-                this.model.set('viewMode', viewMode);
+                /*
+                 * Router's pattern matching isn't very good. Since we don't
+                 * want to stick "view" or something before the view mode,
+                 * and we want to allow for view, line, or view + line, we need
+                 * to check and transform viewMode if it seems to be a line
+                 * reference.
+                 */
+                if (viewMode.indexOf('line') === 0) {
+                    lineNum = viewMode.substr(4);
+                    viewMode = null;
+                }
+
+                if (viewMode) {
+                    this.model.set('viewMode', viewMode);
+                }
 
                 if (lineNum) {
                     this._scrollToLine(lineNum);
