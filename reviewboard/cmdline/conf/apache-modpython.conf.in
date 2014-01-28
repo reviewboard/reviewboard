@@ -48,7 +48,7 @@
 	<Directory "@sitedir@/htdocs">
 		AllowOverride All
 		Options -Indexes +FollowSymLinks
-		Allow from all
+		@apache_auth@
 	</Directory>
 
 	# Alias static media requests to filesystem

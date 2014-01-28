@@ -12,6 +12,7 @@ import shutil
 import sys
 import textwrap
 import warnings
+import subprocess
 from optparse import OptionGroup, OptionParser
 from random import choice
 
@@ -263,6 +264,23 @@ class Site(object):
         sys.path.insert(0, os.path.join(self.abs_install_dir, "conf"))
         os.environ['DJANGO_SETTINGS_MODULE'] = 'reviewboard.settings'
 
+    def get_apache_version(self):
+        try:
+            apache_version = subprocess.check_output(['httpd', '-v'])
+            # Extract the major and minor version from the string
+            m = re.search('Apache\/(\d+).(\d+)', apache_version)
+            if m:
+                return m.group(1, 2)
+            else:
+                # Raise a generic regex error so we go to the
+                # exception handler to pick a default
+                raise re.error
+        except:
+            # Version check returned an error or the regular
+            # expression did not match. Guess 2.2 for historic
+            # compatibility
+            return (2, 2)
+
     def generate_config_files(self):
         web_conf_filename = ""
         enable_fastcgi = False
@@ -280,6 +298,15 @@ class Site(object):
             else:
                 # Should never be reached.
                 assert False
+
+            # Get the Apache version so we know which
+            # authorization directive to use
+            apache_version = self.get_apache_version()
+            if apache_version[0] >= 2 and apache_version[1] >= 4:
+                self.apache_auth = "Require all granted"
+            else:
+                self.apache_auth = "Allow from all"
+
         elif self.web_server_type == "lighttpd":
             web_conf_filename = "lighttpd.conf"
             enable_fastcgi = True
@@ -635,6 +662,7 @@ class Site(object):
             'siteid': self.site_id,
             'siteroot': self.site_root,
             'siteroot_noslash': self.site_root[1:-1],
+            'apache_auth': self.apache_auth,
         }
 
         template = re.sub(r"@([a-z_]+)@", lambda m: data.get(m.group(1)),
