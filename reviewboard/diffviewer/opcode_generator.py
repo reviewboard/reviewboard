@@ -1,5 +1,6 @@
 from __future__ import unicode_literals
 
+import os
 import re
 
 from djblets.util.compat import six
@@ -15,6 +16,8 @@ class DiffOpcodeGenerator(object):
 
     MOVE_PREFERRED_MIN_LINES = 2
     MOVE_MIN_LINE_LENGTH = 20
+
+    TAB_SIZE = 8
 
     def __init__(self, differ, filediff=None, interfilediff=None):
         self.differ = differ
@@ -35,7 +38,12 @@ class DiffOpcodeGenerator(object):
         self.removes = {}
         self.inserts = []
 
-        self._precompute_opcodes()
+        # Run the opcodes through the chain.
+        opcodes = self.differ.get_opcodes()
+        opcodes = self._apply_processors(opcodes)
+        opcodes = self._generate_opcode_meta(opcodes)
+
+        self._group_opcodes(opcodes)
         self._compute_moves()
 
         for opcodes in self.groups:
@@ -55,15 +63,13 @@ class DiffOpcodeGenerator(object):
         for opcode in opcodes:
             yield opcode
 
-    def _precompute_opcodes(self):
-        opcodes = self._apply_processors(self.differ.get_opcodes())
-
+    def _generate_opcode_meta(self, opcodes):
         for tag, i1, i2, j1, j2 in opcodes:
             meta = {
                 # True if this chunk is only whitespace.
                 'whitespace_chunk': False,
 
-                # List of tuples (x,y), with whitespace changes.
+                # List of tuples (i, j), with whitespace changes.
                 'whitespace_lines': [],
             }
 
@@ -83,7 +89,25 @@ class DiffOpcodeGenerator(object):
                 # the whole chunk is considered a whitespace-only chunk.
                 if len(meta['whitespace_lines']) == (i2 - i1):
                     meta['whitespace_chunk'] = True
+            elif tag == 'equal':
+                for group in self._compute_chunk_indentation(i1, i2, j1, j2):
+                    ii1, ii2, ij1, ij2, indentation_changes = group
 
+                    if indentation_changes:
+                        new_meta = dict({
+                            'indentation_changes': indentation_changes,
+                        }, **meta)
+                    else:
+                        new_meta = meta
+
+                    yield 'equal', ii1, ii2, ij1, ij2, new_meta
+
+                continue
+
+            yield tag, i1, i2, j1, j2, meta
+
+    def _group_opcodes(self, opcodes):
+        for tag, i1, i2, j1, j2, meta in opcodes:
             group = (tag, i1, i2, j1, j2, meta)
             self.groups.append(group)
 
@@ -103,6 +127,120 @@ class DiffOpcodeGenerator(object):
 
             if tag in ('insert', 'replace'):
                 self.inserts.append(group)
+
+    def _compute_chunk_indentation(self, i1, i2, j1, j2):
+        # We'll be going through all the opcodes in this equals chunk and
+        # grouping with adjacent opcodes based on whether they have
+        # indentation changes or not. This allows us to keep the lines with
+        # indentation changes from being collapsed in the diff viewer.
+        indentation_changes = {}
+        prev_has_indent = False
+        prev_start_i = i1
+        prev_start_j = j1
+
+        for i, j in zip(range(i1, i2), range(j1, j2)):
+            old_line = self.differ.a[i]
+            new_line = self.differ.b[j]
+            new_indentation_changes = {}
+
+            indent_info = self._compute_line_indentation(old_line, new_line)
+            has_indent = indent_info is not None
+
+            if has_indent:
+                new_indentation_changes[(i + 1, j + 1)] = indent_info
+
+            if has_indent != prev_has_indent:
+                if prev_start_i != i or prev_start_j != j:
+                    # Yield the previous group.
+                    yield prev_start_i, i, prev_start_j, j, indentation_changes
+
+                # We have a new group. Set it up, starting with the current
+                # calculated state.
+                prev_start_i = i
+                prev_start_j = j
+                prev_has_indent = has_indent
+                indentation_changes = new_indentation_changes
+            elif has_indent:
+                indentation_changes.update(new_indentation_changes)
+
+        # Yield the last group, if we haven't already yielded it.
+        if prev_start_i != i2 or prev_start_j != j2:
+            yield prev_start_i, i2, prev_start_j, j2, indentation_changes
+
+    def _compute_line_indentation(self, old_line, new_line):
+        if old_line == new_line:
+            return None
+
+        old_line_stripped = old_line.lstrip()
+        new_line_stripped = new_line.lstrip()
+
+        # These are fake-equal. They really have some indentation changes.
+        # We want to mark those up.
+        #
+        # Our goal for this function from here on out is to figure out whether
+        # the new line has increased or decreased its indentation, and then
+        # to determine how much that has increased or decreased by.
+        #
+        # Since we may be dealing with the additional or removal of tabs,
+        # we have some challenges here. We need to expand those tabs in
+        # order to determine if the new line is indented further or not,
+        # and then we need to figure out how much of the leading whitespace
+        # on either side represents new indentation levels.
+        #
+        # We do this by chopping off all leading whitespace and expanding
+        # any tabs, and then figuring out the total line lengths. That gives
+        # us a basis for comparison to determine whether we've indented
+        # or unindented.
+        #
+        # We can then later figure out exactly which indentation characters
+        # were added or removed, and then store that information.
+        old_line_indent_len = len(old_line) - len(old_line_stripped)
+        new_line_indent_len = len(new_line) - len(new_line_stripped)
+        old_line_indent = old_line[:old_line_indent_len]
+        new_line_indent = new_line[:new_line_indent_len]
+
+        norm_old_line_indent = old_line_indent.expandtabs(self.TAB_SIZE)
+        norm_new_line_indent = new_line_indent.expandtabs(self.TAB_SIZE)
+        norm_old_line_len = (len(norm_old_line_indent) +
+                             len(old_line_stripped))
+        norm_new_line_len = (len(norm_new_line_indent) +
+                             len(new_line_stripped))
+        line_len_diff = norm_new_line_len - norm_old_line_len
+
+        if line_len_diff == 0:
+            return None
+
+        # We know that a spacing change did take place. We need to figure
+        # out now how many characters of indentation were actually
+        # added or removed.
+        is_indent = (line_len_diff > 0)
+
+        if is_indent:
+            raw_indent_len = new_line_indent_len
+        else:
+            raw_indent_len = old_line_indent_len
+
+        # Figure out how many characters of indentation were in common
+        # at the end of the strings. We'll want to exclude these
+        # characters when showing indentation changes.
+        #
+        # This is the area after any new indentation. If the indentation
+        # style changed (such as going from tabs to spaces), then nothing
+        # will be in common.
+        #
+        # We figure out the common trailing indentation by reversing both
+        # strings and then finding the common prefix. We only care about
+        # the length, so we can throw the string away.
+        #
+        # It may seem odd that we're using os.path.commonprefix, but this
+        # isn't really limited to paths. Certainly not in our case. It's
+        # worth not re-implementing that logic.
+        raw_indent_len -= len(os.path.commonprefix([
+            old_line_indent[::-1],
+            new_line_indent[::-1],
+        ]))
+
+        return is_indent, raw_indent_len
 
     def _compute_moves(self):
         # We now need to figure out all the moved locations.

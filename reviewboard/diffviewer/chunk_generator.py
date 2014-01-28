@@ -20,7 +20,8 @@ from reviewboard.diffviewer.differ import get_differ
 from reviewboard.diffviewer.diffutils import (get_original_file,
                                               get_patched_file,
                                               convert_to_unicode)
-from reviewboard.diffviewer.opcode_generator import get_diff_opcode_generator
+from reviewboard.diffviewer.opcode_generator import (DiffOpcodeGenerator,
+                                                     get_diff_opcode_generator)
 
 
 class NoWrapperHtmlFormatter(HtmlFormatter):
@@ -84,6 +85,9 @@ class DiffChunkGenerator(object):
     # The maximum size a line can be before we start shutting off styling.
     STYLED_MAX_LINE_LEN = 1000
     STYLED_MAX_LIMIT_BYTES = 200000  # 200KB
+
+    # Default tab size used in browsers.
+    TAB_SIZE = DiffOpcodeGenerator.TAB_SIZE
 
     def __init__(self, request, filediff, interfilediff=None,
                  force_interdiff=False, enable_syntax_highlighting=True):
@@ -329,13 +333,24 @@ class DiffChunkGenerator(object):
         else:
             old_region = new_region = []
 
+        old_markup = old_markup or ''
+        new_markup = new_markup or ''
+
         meta = self._cur_meta
+        line_pair = (old_line_num, new_line_num)
+
+        indentation_changes = meta.get('indentation_changes', {})
+
+        if line_pair in indentation_changes:
+            old_markup, new_markup = \
+                self._highlight_indentation(old_markup, new_markup,
+                                            *indentation_changes[line_pair])
 
         result = [
             v_line_num,
-            old_line_num or '', mark_safe(old_markup or ''), old_region,
-            new_line_num or '', mark_safe(new_markup or ''), new_region,
-            (old_line_num, new_line_num) in meta['whitespace_lines']
+            old_line_num or '', mark_safe(old_markup), old_region,
+            new_line_num or '', mark_safe(new_markup), new_region,
+            line_pair in meta['whitespace_lines']
         ]
 
         moved_info = {}
@@ -350,6 +365,90 @@ class DiffChunkGenerator(object):
             result.append(moved_info)
 
         return result
+
+    def _highlight_indentation(self, old_markup, new_markup, is_indent,
+                               raw_indent_len):
+        """Highlights indentation in an HTML-formatted line.
+
+        This will wrap the indentation in <span> tags, and format it in
+        a way that makes it clear how many spaces or tabs were used.
+        """
+        if is_indent:
+            new_markup = '<span class="indent">%s</span>%s' % (
+                self._serialize_indentation(new_markup[:raw_indent_len]),
+                new_markup[raw_indent_len:])
+        else:
+            old_markup = '<span class="unindent">%s</span>%s' % (
+                self._serialize_unindentation(old_markup[:raw_indent_len]),
+                old_markup[raw_indent_len:])
+
+        return old_markup, new_markup
+
+    def _serialize_indentation(self, chars):
+        """Serializes an indentation string into an HTML representation.
+
+        This will show every space as ">", and every tab as "------>|".
+        In the case of tabs, we display as much of it as possible (anchoring
+        to the right-hand side) given the space we have within the tab
+        boundary.
+        """
+        s = ''
+        i = 0
+
+        for c in chars:
+            if c == ' ':
+                s += '&gt;'
+                i += 1
+            elif c == '\t':
+                # Build "------>|" with the room we have available.
+                in_tab_pos = i % self.TAB_SIZE
+
+                if in_tab_pos < self.TAB_SIZE - 1:
+                    if in_tab_pos < self.TAB_SIZE - 2:
+                        num_dashes = (self.TAB_SIZE - 2 - in_tab_pos)
+                        s += '&mdash;' * num_dashes
+                        i += num_dashes
+
+                    s += '&gt;'
+                    i += 1
+
+                s += '|'
+                i += 1
+
+        return s
+
+    def _serialize_unindentation(self, chars):
+        """Serializes an unindentation string into an HTML representation.
+
+        This will show every space as "<", and every tab as "|<------".
+        In the case of tabs, we display as much of it as possible (anchoring
+        to the left-hand side) given the space we have within the tab
+        boundary.
+        """
+        s = ''
+        i = 0
+
+        for c in chars:
+            if c == ' ':
+                s += '&lt;'
+                i += 1
+            elif c == '\t':
+                # Build "|<------" with the room we have available.
+                in_tab_pos = i % self.TAB_SIZE
+
+                s += '|'
+                i += 1
+
+                if in_tab_pos < self.TAB_SIZE - 1:
+                    s += '&lt;'
+                    i += 1
+
+                    if in_tab_pos < self.TAB_SIZE - 2:
+                        num_dashes = (self.TAB_SIZE - 2 - in_tab_pos)
+                        s += '&mdash;' * num_dashes
+                        i += num_dashes
+
+        return s
 
     def _new_chunk(self, all_lines, start, end, collapsable=False,
                    tag='equal', meta=None):
