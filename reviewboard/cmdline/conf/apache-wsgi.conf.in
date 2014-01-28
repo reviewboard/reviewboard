@@ -11,7 +11,7 @@
 	<Directory "@sitedir@/htdocs">
 		AllowOverride All
 		Options -Indexes +FollowSymLinks
-		Allow from all
+		@apache_auth@
 	</Directory>
 
 	# Prevent the server from processing or allowing the rendering of
