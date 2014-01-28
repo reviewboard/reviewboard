@@ -400,15 +400,24 @@ class GitHub(HostingService):
             parent_revision = commit['parents'][0]['sha']
             message = commit['commit']['message']
 
-        # Step 2: fetch the "compare two commits" API to get the diff.
-        url = self._build_api_url(
-            repo_api_url, 'compare/%s...%s' % (parent_revision, revision))
+        # Step 2: fetch the "compare two commits" API to get the diff if the
+        # commit has a parent commit. Otherwise, fetch the commit itself.
+        if parent_revision:
+            url = self._build_api_url(
+                repo_api_url, 'compare/%s...%s' % (parent_revision, revision))
+        else:
+            url = self._build_api_url(repo_api_url, 'commits/%s' % revision)
+
         try:
             comparison = self._api_get(url)
         except Exception as e:
             raise SCMError(six.text_type(e))
 
-        tree_sha = comparison['base_commit']['commit']['tree']['sha']
+        if parent_revision:
+            tree_sha = comparison['base_commit']['commit']['tree']['sha']
+        else:
+            tree_sha = comparison['commit']['tree']['sha']
+
         files = comparison['files']
 
         # Step 3: fetch the tree for the original commit, so that we can get
