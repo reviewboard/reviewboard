@@ -290,14 +290,23 @@ class LDAPBackend(AuthBackend):
 
     def authenticate(self, username, password):
         username = username.strip()
-        uid = settings.LDAP_UID_MASK % username
+
+        uidfilter = "(%(userattr)s=%(username)s)" % {
+                    'userattr': settings.LDAP_UID,
+                    'username': username
+        }
+
+        # If the UID mask has been explicitly set, override
+        # the standard search filter
+        if settings.LDAP_UID_MASK:
+            uidfilter = settings.LDAP_UID_MASK % username
 
         if len(password) == 0:
             # Don't try to bind using an empty password; the server will
             # return success, which doesn't mean we have authenticated.
             # http://tools.ietf.org/html/rfc4513#section-5.1.2
             # http://tools.ietf.org/html/rfc4513#section-6.3.1
-            logging.warning("Empty password for: %s" % uid)
+            logging.warning("Empty password for: %s" % username)
             return None
 
         try:
@@ -314,16 +323,17 @@ class LDAPBackend(AuthBackend):
                                     settings.LDAP_ANON_BIND_PASSWD)
                 search = ldapo.search_s(settings.LDAP_BASE_DN,
                                         ldap.SCOPE_SUBTREE,
-                                        uid)
+                                        uidfilter)
                 if not search:
                     # No such a user, return early, no need for bind attempts
                     logging.warning("LDAP error: The specified object does "
-                                    "not exist in the Directory: %s" % uid)
+                                    "not exist in the Directory: "
+                                    "%s" % username)
                     return None
                 else:
                     # Having found the user anonymously, attempt bind with the
-                    # password
-                    ldapo.bind_s(search[0][0], password)
+                    # password below
+                    userdn = search[0][0]
 
             else :
                 # Bind anonymously to the server, then search for the user with
@@ -333,21 +343,29 @@ class LDAPBackend(AuthBackend):
                 ldapo.simple_bind_s()
                 search = ldapo.search_s(settings.LDAP_BASE_DN,
                                         ldap.SCOPE_SUBTREE,
-                                        uid)
-                if (len(search) > 0):
-                    userbinding = search[0][0]
+                                        uidfilter)
+                if not search:
+                    # No such user, return early, no need for bind attempts
+                    logging.warning("LDAP error: The specified object does "
+                                    "not exist in the Directory: "
+                                    "%s" % username)
+                    return None
                 else:
-                    userbinding = ','.join([uid,settings.LDAP_BASE_DN])
-                ldapo.bind_s(userbinding, password)
+                    userdn = search[0][0]
 
-            return self.get_or_create_user(username, None, ldapo)
+            # Now that we have the user, attempt to bind to verify
+            # authentication
+            logging.debug("Attempting to authenticate as %s" % userdn)
+            ldapo.bind_s(userdn, password)
+
+            return self.get_or_create_user(username, None, ldapo, userdn)
 
         except ImportError:
             pass
         except ldap.INVALID_CREDENTIALS:
             logging.warning("LDAP error: The specified object does not exist "
                             "in the Directory or provided invalid "
-                            "credentials: %s" % uid)
+                            "credentials: %s" % username)
         except ldap.LDAPError as e:
             logging.warning("LDAP error: %s" % e)
         except:
@@ -359,7 +377,7 @@ class LDAPBackend(AuthBackend):
 
         return None
 
-    def get_or_create_user(self, username, request, ldapo):
+    def get_or_create_user(self, username, request, ldapo, userdn):
         username = username.strip()
 
         try:
@@ -368,10 +386,11 @@ class LDAPBackend(AuthBackend):
         except User.DoesNotExist:
             try:
                 import ldap
-                search_result = ldapo.search_s(
-                    settings.LDAP_BASE_DN,
-                    ldap.SCOPE_SUBTREE,
-                    "(%s)" % settings.LDAP_UID_MASK % username)
+
+                # Perform a BASE search since we already know the DN of
+                # the user
+                search_result = ldapo.search_s(userdn,
+                                               ldap.SCOPE_BASE)
                 user_info = search_result[0][1]
 
                 given_name_attr = getattr(
@@ -422,9 +441,8 @@ class LDAPBackend(AuthBackend):
                 pass
             except ldap.NO_SUCH_OBJECT as e:
                 logging.warning("LDAP error: %s settings.LDAP_BASE_DN: %s "
-                                "settings.LDAP_UID_MASK: %s" %
-                                (e, settings.LDAP_BASE_DN,
-                                 settings.LDAP_UID_MASK % username))
+                                "User DN: %s" %
+                                (e, settings.LDAP_BASE_DN, userdn))
             except ldap.LDAPError as e:
                 logging.warning("LDAP error: %s" % e)
 

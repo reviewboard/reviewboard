@@ -157,6 +157,12 @@ class LDAPSettingsForm(SiteSettingsForm):
         required=True,
         widget=forms.TextInput(attrs={'size': '40'}))
 
+    auth_ldap_uid = forms.CharField(
+        label=_("Username Attribute"),
+        help_text=_("The attribute in the LDAP server that stores a user's "
+                    "login name."),
+        required=True)
+
     auth_ldap_given_name_attribute = forms.CharField(
         label=_("Given Name Attribute"),
         initial="givenName",
@@ -175,7 +181,7 @@ class LDAPSettingsForm(SiteSettingsForm):
         label=_("Full Name Attribute"),
         help_text=_("The attribute in the LDAP server that stores the user's "
                     "full name.  This takes precedence over the "
-                    '"Full Name Attribute" and "Surname Attribute."'),
+                    '"Given Name Attribute" and "Surname Attribute."'),
         required=False)
 
     auth_ldap_email_domain = forms.CharField(
@@ -197,25 +203,31 @@ class LDAPSettingsForm(SiteSettingsForm):
         required=False)
 
     auth_ldap_uid_mask = forms.CharField(
-        label=_("User Mask"),
-        initial="uid=%s,ou=users,dc=example,dc=com",
-        help_text=_("The string representing the user. Use \"%(varname)s\" "
-                    "where the username would normally go. For example: "
-                    "(uid=%(varname)s) or (sAMAccountName=%(varname)s) "
-                    "[for active directory LDAP]") % {'varname': '%s'},
+        label=_("Custom LDAP User Search Filter"),
+        help_text=_("A custom LDAP search filter, corresponding to RFC 2254. "
+                    "If left unset, this option is equivalent to "
+                    "<tt>(usernameattribute=%(varname)s)</tt>. Use "
+                    "<tt>\"%(varname)s\"</tt> "
+                    "wherever the username would normally go. "
+                    "Specify this value only if the default cannot locate "
+                    "all users.") % {'varname': '%s'},
+        required=False,
         widget=forms.TextInput(attrs={'size': '40'}))
 
     auth_ldap_anon_bind_uid = forms.CharField(
-        label=_("Anonymous User Mask"),
-        help_text=_("The user mask string for anonymous users. If specified, "
-                    "this should be in the same format as User Mask."),
+        label=_("Review Board LDAP Bind Account"),
+        help_text=_("The full distinguished name of a user account with "
+                    "sufficient access to perform lookups of users and "
+                    "groups in the LDAP server. If the LDAP server permits "
+                    "such lookups via anonymous bind, you may leave this "
+                    "field blank."),
         required=False,
         widget=forms.TextInput(attrs={'size': '40'}))
 
     auth_ldap_anon_bind_passwd = forms.CharField(
-        label=_("Anonymous User Password"),
+        label=_("Review Board LDAP Bind Password"),
         widget=forms.PasswordInput(attrs={'size': '30'}),
-        help_text=_("The optional password for the anonymous user."),
+        help_text=_("The password for the Review Board LDAP Bind Account."),
         required=False)
 
     def load(self):
@@ -230,6 +242,7 @@ class LDAPSettingsForm(SiteSettingsForm):
             self.disabled_fields['auth_ldap_email_attribute'] = True
             self.disabled_fields['auth_ldap_tls'] = True
             self.disabled_fields['auth_ldap_base_dn'] = True
+            self.disabled_fields['auth_ldap_uid'] = True
             self.disabled_fields['auth_ldap_uid_mask'] = True
             self.disabled_fields['auth_ldap_anon_bind_uid'] = True
             self.disabled_fields['auth_ldap_anon_bind_password'] = True
