@@ -318,40 +318,27 @@ class LDAPBackend(AuthBackend):
                 ldapo.start_tls_s()
 
             if settings.LDAP_ANON_BIND_UID:
-                # Log in as the anonymous user before searching.
+                # Log in as the service account before searching.
                 ldapo.simple_bind_s(settings.LDAP_ANON_BIND_UID,
                                     settings.LDAP_ANON_BIND_PASSWD)
-                search = ldapo.search_s(settings.LDAP_BASE_DN,
-                                        ldap.SCOPE_SUBTREE,
-                                        uidfilter)
-                if not search:
-                    # No such a user, return early, no need for bind attempts
-                    logging.warning("LDAP error: The specified object does "
-                                    "not exist in the Directory: "
-                                    "%s" % username)
-                    return None
-                else:
-                    # Having found the user anonymously, attempt bind with the
-                    # password below
-                    userdn = search[0][0]
-
             else :
-                # Bind anonymously to the server, then search for the user with
-                # the given base DN and uid. If the user is found, a fully
-                # qualified DN is returned. Authentication is then done with
-                # bind using this fully qualified DN.
+                # Bind anonymously to the server
                 ldapo.simple_bind_s()
-                search = ldapo.search_s(settings.LDAP_BASE_DN,
-                                        ldap.SCOPE_SUBTREE,
-                                        uidfilter)
-                if not search:
-                    # No such user, return early, no need for bind attempts
-                    logging.warning("LDAP error: The specified object does "
-                                    "not exist in the Directory: "
-                                    "%s" % username)
-                    return None
-                else:
-                    userdn = search[0][0]
+
+            # Search for the user with the given base DN and uid. If the user
+            # is found, a fully qualified DN is returned. Authentication is
+            # then done with bind using this fully qualified DN.
+            search = ldapo.search_s(settings.LDAP_BASE_DN,
+                                    ldap.SCOPE_SUBTREE,
+                                    uidfilter)
+            if not search:
+                # No such user, return early, no need for bind attempts
+                logging.warning("LDAP error: The specified object does "
+                                "not exist in the Directory: "
+                                "%s" % username)
+                return None
+            else:
+                userdn = search[0][0]
 
             # Now that we have the user, attempt to bind to verify
             # authentication
