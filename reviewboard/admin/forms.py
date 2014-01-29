@@ -470,7 +470,8 @@ class EMailSettingsForm(SiteSettingsForm):
         required=False,
         widget=forms.TextInput(attrs={'size': '30', 'autocomplete': 'off'}))
     mail_host_password = forms.CharField(
-        widget=forms.PasswordInput(attrs={'size': '30', 'autocomplete': 'off'}),
+        widget=forms.PasswordInput(attrs={'size': '30', 'autocomplete': 'off'},
+                                   render_value=True),
         label=_("Password"),
         required=False)
     mail_use_tls = forms.BooleanField(

@@ -226,7 +226,7 @@ class LDAPSettingsForm(SiteSettingsForm):
 
     auth_ldap_anon_bind_passwd = forms.CharField(
         label=_("Review Board LDAP Bind Password"),
-        widget=forms.PasswordInput(attrs={'size': '30'}),
+        widget=forms.PasswordInput(attrs={'size': '30'}, render_value=True),
         help_text=_("The password for the Review Board LDAP Bind Account."),
         required=False)
 
