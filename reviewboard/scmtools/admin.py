@@ -1,8 +1,11 @@
 from __future__ import unicode_literals
 
 from django.contrib import admin
+from django.db.models.signals import pre_delete
+from django.dispatch import receiver
 from django.utils.translation import ugettext_lazy as _
 
+from reviewboard.accounts.admin import fix_review_counts
 from reviewboard.scmtools.forms import RepositoryForm
 from reviewboard.scmtools.models import Repository, Tool
 
@@ -82,6 +85,20 @@ class RepositoryAdmin(admin.ModelAdmin):
 
         return ''
 
+
+@receiver(pre_delete, sender=Repository,
+          dispatch_uid='repository_delete_reset_review_counts')
+def repository_delete_reset_review_counts(sender, instance, using, **kwargs):
+    """Reset review counts in the dashboard when deleting repository objects.
+
+    There doesn't seem to be a good way to get notified on cascaded delete
+    operations, which means that when deleting a repository, there's no
+    good way to update the review counts that are shown to users. This
+    method clears them out entirely to be regenerated. Deleting
+    repositories should be a very rare occurrance, so it's not too
+    upsetting to do this.
+    """
+    fix_review_counts()
 
 class ToolAdmin(admin.ModelAdmin):
     list_display = ('__str__', 'class_name')
