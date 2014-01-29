@@ -88,7 +88,8 @@ class RepositoryForm(forms.ModelForm):
     hosting_account_password = forms.CharField(
         label=_('Account password'),
         required=True,
-        widget=forms.PasswordInput(attrs={'size': 30, 'autocomplete': 'off'}))
+        widget=forms.PasswordInput(attrs={'size': 30, 'autocomplete': 'off'},
+                                   render_value=True))
 
     hosting_account_two_factor_auth_code = forms.CharField(
         label=_('Two-factor auth code'),
@@ -1190,7 +1191,8 @@ class RepositoryForm(forms.ModelForm):
             'username': forms.TextInput(attrs={'size': '30',
                                                'autocomplete': 'off'}),
             'password': forms.PasswordInput(attrs={'size': '30',
-                                                   'autocomplete': 'off'}),
+                                                   'autocomplete': 'off'},
+                                            render_value=True),
             'users': FilteredSelectMultiple(_('users with access'), False),
             'review_groups': FilteredSelectMultiple(
                 _('review groups with access'), False),
