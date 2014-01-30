@@ -658,17 +658,6 @@ class DashboardDataGrid(ReviewRequestDataGrid):
         ]
         self.counts = {}
 
-        group = self.request.GET.get('group', None)
-        view = self.request.GET.get('view', None)
-        extra_query = []
-
-        if view:
-            extra_query.append("view=%s" % view)
-
-        if group:
-            extra_query.append("group=%s" % group)
-
-        self.extra_context['extra_query'] = "&".join(extra_query)
         self.local_site = local_site
 
     def load_extra_state(self, profile):
