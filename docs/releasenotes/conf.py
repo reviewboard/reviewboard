@@ -43,7 +43,7 @@ extensions = ['sphinx.ext.intersphinx', 'extralinks']
 templates_path = ['_templates']
 
 # The suffix of source filenames.
-source_suffix = '.txt'
+source_suffix = '.rst'
 
 # The encoding of source files.
 #source_encoding = 'utf-8'
@@ -53,7 +53,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'Release Notes'
-copyright = u'2009-2013 Beanbag, Inc.'
+copyright = u'2009-2014 Beanbag, Inc.'
 bugtracker_url = 'http://www.reviewboard.org/bugs/%s'
 
 # The version info for the project you're documenting, acts as replacement for
