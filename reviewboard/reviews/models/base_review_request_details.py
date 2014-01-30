@@ -41,7 +41,7 @@ class BaseReviewRequestDetails(models.Model):
         if self.bugs_closed == "":
             return []
 
-        bugs = re.split(r"[, ]+", self.bugs_closed)
+        bugs = list(set(re.split(r"[, ]+", self.bugs_closed)))
 
         # First try a numeric sort, to show the best results for the majority
         # case of bug trackers with numeric IDs.  If that fails, sort
