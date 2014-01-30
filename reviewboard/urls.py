@@ -71,9 +71,7 @@ if settings.DEBUG or getattr(settings, 'RUNNING_TEST', False):
     )
 
 localsite_urlpatterns = patterns('',
-    url(r'^$', 'django.views.generic.simple.redirect_to',
-        {'url': 'dashboard/'},
-        name="root"),
+    url(r'^$', 'reviewboard.reviews.views.root', name="root"),
 
     (r'^api/', include(root_resource.get_url_patterns())),
     (r'^r/', include('reviewboard.reviews.urls')),

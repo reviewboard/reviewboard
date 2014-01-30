@@ -37,17 +37,18 @@ def valid_prefs_required(view_func):
     def _check_valid_prefs(request, *args, **kwargs):
         # Fetch the profile. If it exists, we're done, and it's cached for
         # later. If not, try to create it.
-        try:
-            request.user.get_profile()
-        except Profile.DoesNotExist:
-            # Inbetween the request and now, the profile may have been
-            # created. That's okay, because we don't have anything special
-            # to set, so just ignore it.
+        if request.user.is_authenticated():
             try:
-                Profile.objects.create(user=request.user)
-            except IntegrityError:
-                # It was created already. We're satisfied, so bail.
-                pass
+                request.user.get_profile()
+            except Profile.DoesNotExist:
+                # Inbetween the request and now, the profile may have been
+                # created. That's okay, because we don't have anything special
+                # to set, so just ignore it.
+                try:
+                    Profile.objects.create(user=request.user)
+                except IntegrityError:
+                    # It was created already. We're satisfied, so bail.
+                    pass
 
         return view_func(request, *args, **kwargs)
 

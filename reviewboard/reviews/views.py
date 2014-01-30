@@ -55,7 +55,8 @@ from reviewboard.reviews.models import Comment, \
                                        Screenshot, ScreenshotComment
 from reviewboard.scmtools.core import PRE_CREATION
 from reviewboard.scmtools.errors import SCMError
-from reviewboard.site.models import LocalSite
+from reviewboard.site.decorators import check_local_site_access
+from reviewboard.site.urlresolvers import local_site_reverse
 from reviewboard.ssh.errors import SSHError
 from reviewboard.webapi.encoder import status_to_string
 
@@ -75,7 +76,7 @@ def _render_permission_denied(
     return response
 
 
-def _find_review_request(request, review_request_id, local_site_name):
+def _find_review_request(request, review_request_id, local_site):
     """
     Find a review request based on an ID, optional LocalSite name and optional
     select related query.
@@ -88,11 +89,7 @@ def _find_review_request(request, review_request_id, local_site_name):
     """
     q = ReviewRequest.objects.all()
 
-    if local_site_name:
-        local_site = get_object_or_404(LocalSite, name=local_site_name)
-        if not local_site.is_accessible_by(request.user):
-            return None, _render_permission_denied(request)
-
+    if local_site:
         q = q.filter(local_site=local_site,
                      local_id=review_request_id)
     else:
@@ -220,22 +217,36 @@ fields_changed_name_map = {
 ##### View functions
 #####
 
+@check_login_required
+@valid_prefs_required
+def root(request, local_site_name=None):
+    """Handles the root URL of Review Board or a Local Site.
+
+    If the user is authenticated, this will redirect to their Dashboard.
+    Otherwise, they'll be redirected to the All Review Requests page.
+
+    Either page may then redirect for login or show a Permission Denied,
+    depending on the settings.
+    """
+    if request.user.is_authenticated():
+        url_name = 'dashboard'
+    else:
+        url_name = 'all-review-requests'
+
+    return HttpResponseRedirect(
+        local_site_reverse(url_name, local_site_name=local_site_name))
+
+
 @login_required
+@check_local_site_access
 def new_review_request(request,
-                       local_site_name=None,
+                       local_site=None,
                        template_name='reviews/new_review_request.html'):
     """
     Displays a New Review Request form and handles the creation of a
     review request based on either an existing changeset or the provided
     information.
     """
-    if local_site_name:
-        local_site = get_object_or_404(LocalSite, name=local_site_name)
-        if not local_site.is_accessible_by(request.user):
-            return _render_permission_denied(request)
-    else:
-        local_site = None
-
     if request.method == 'POST':
         form = NewReviewRequestForm(request, request.user, local_site,
                                     request.POST, request.FILES)
@@ -260,9 +271,10 @@ def new_review_request(request,
 
 
 @check_login_required
+@check_local_site_access
 def review_detail(request,
                   review_request_id,
-                  local_site_name=None,
+                  local_site=None,
                   template_name="reviews/review_detail.html"):
     """
     Main view for review requests. This covers the review request information
@@ -273,7 +285,7 @@ def review_detail(request,
     # local_site configured to have its own review request ID namespace
     # starting from 1.
     review_request, response = _find_review_request(
-        request, review_request_id, local_site_name)
+        request, review_request_id, local_site)
 
     if not review_request:
         return response
@@ -712,13 +724,14 @@ def review_detail(request,
 
 
 @login_required
+@check_local_site_access
 @cache_control(no_cache=True, no_store=True, max_age=0, must_revalidate=True)
 def review_draft_inline_form(request,
                              review_request_id,
                              template_name,
-                             local_site_name=None):
+                             local_site=None):
     review_request, response = \
-        _find_review_request(request, review_request_id, local_site_name)
+        _find_review_request(request, review_request_id, local_site)
 
     if not review_request:
         return response
@@ -738,18 +751,13 @@ def review_draft_inline_form(request,
 
 
 @check_login_required
+@check_local_site_access
 def all_review_requests(request,
-                        local_site_name=None,
+                        local_site=None,
                         template_name='reviews/datagrid.html'):
     """
     Displays a list of all review requests.
     """
-    if local_site_name:
-        local_site = get_object_or_404(LocalSite, name=local_site_name)
-        if not local_site.is_accessible_by(request.user):
-            return _render_permission_denied(request)
-    else:
-        local_site = None
     datagrid = ReviewRequestDataGrid(
         request,
         ReviewRequest.objects.public(user=request.user,
@@ -762,44 +770,35 @@ def all_review_requests(request,
 
 
 @check_login_required
+@check_local_site_access
 def submitter_list(request,
-                   local_site_name=None,
+                   local_site=None,
                    template_name='reviews/datagrid.html'):
     """
     Displays a list of all users.
     """
-    if local_site_name:
-        local_site = get_object_or_404(LocalSite, name=local_site_name)
-        if not local_site.is_accessible_by(request.user):
-            return _render_permission_denied(request)
-    else:
-        local_site = None
     grid = SubmitterDataGrid(request, local_site=local_site)
     return grid.render_to_response(template_name)
 
 
 @check_login_required
+@check_local_site_access
 def group_list(request,
-               local_site_name=None,
+               local_site=None,
                template_name='reviews/datagrid.html'):
     """
     Displays a list of all review groups.
     """
-    if local_site_name:
-        local_site = get_object_or_404(LocalSite, name=local_site_name)
-        if not local_site.is_accessible_by(request.user):
-            return _render_permission_denied(request)
-    else:
-        local_site = None
     grid = GroupDataGrid(request, local_site=local_site)
     return grid.render_to_response(template_name)
 
 
 @login_required
+@check_local_site_access
 @valid_prefs_required
 def dashboard(request,
               template_name='reviews/dashboard.html',
-              local_site_name=None):
+              local_site=None):
     """
     The dashboard view, showing review requests organized by a variety of
     lists, depending on the 'view' parameter.
@@ -816,13 +815,6 @@ def dashboard(request,
     """
     view = request.GET.get('view', None)
     context = {}
-
-    if local_site_name:
-        local_site = get_object_or_404(LocalSite, name=local_site_name)
-        if not local_site.is_accessible_by(request.user):
-            return _render_permission_denied(request)
-    else:
-        local_site = None
 
     if view == "watched-groups":
         # This is special. We want to return a list of groups, not
@@ -841,20 +833,15 @@ def dashboard(request,
 
 
 @check_login_required
+@check_local_site_access
 def group(request,
           name,
           template_name='reviews/datagrid.html',
-          local_site_name=None):
+          local_site=None):
     """
     A list of review requests belonging to a particular group.
     """
     # Make sure the group exists
-    if local_site_name:
-        local_site = get_object_or_404(LocalSite, name=local_site_name)
-        if not local_site.is_accessible_by(request.user):
-            return _render_permission_denied(request)
-    else:
-        local_site = None
     group = get_object_or_404(Group, name=name, local_site=local_site)
 
     if not group.is_accessible_by(request.user):
@@ -874,20 +861,14 @@ def group(request,
 
 
 @check_login_required
+@check_local_site_access
 def group_members(request,
                   name,
                   template_name='reviews/datagrid.html',
-                  local_site_name=None):
+                  local_site=None):
     """
     A list of users registered for a particular group.
     """
-    if local_site_name:
-        local_site = get_object_or_404(LocalSite, name=local_site_name)
-        if not local_site.is_accessible_by(request.user):
-            return _render_permission_denied(request)
-    else:
-        local_site = None
-
     # Make sure the group exists
     group = get_object_or_404(Group,
                               name=name,
@@ -905,20 +886,14 @@ def group_members(request,
 
 
 @check_login_required
+@check_local_site_access
 def submitter(request,
               username,
               template_name='reviews/user_page.html',
-              local_site_name=None):
+              local_site=None):
     """
     A list of review requests owned by a particular user.
     """
-    if local_site_name:
-        local_site = get_object_or_404(LocalSite, name=local_site_name)
-        if not local_site.is_accessible_by(request.user):
-            return _render_permission_denied(request)
-    else:
-        local_site = None
-
     # Make sure the user exists
     if local_site:
         try:
@@ -946,11 +921,12 @@ def submitter(request,
 
 
 @check_login_required
+@check_local_site_access
 def diff(request,
          review_request_id,
          revision=None,
          interdiff_revision=None,
-         local_site_name=None,
+         local_site=None,
          template_name='diffviewer/view_diff.html'):
     """
     A wrapper around diffviewer.views.view_diff that handles querying for
@@ -958,7 +934,7 @@ def diff(request,
     providing the user's current review of the diff if it exists.
     """
     review_request, response = \
-        _find_review_request(request, review_request_id, local_site_name)
+        _find_review_request(request, review_request_id, local_site)
 
     if not review_request:
         return response
@@ -1058,16 +1034,14 @@ def diff(request,
 
 
 @check_login_required
-def raw_diff(request,
-             review_request_id,
-             revision=None,
-             local_site_name=None):
+@check_local_site_access
+def raw_diff(request, review_request_id, revision=None, local_site=None):
     """
     Displays a raw diff of all the filediffs in a diffset for the
     given review request.
     """
     review_request, response = \
-        _find_review_request(request, review_request_id, local_site_name)
+        _find_review_request(request, review_request_id, local_site)
 
     if not review_request:
         return response
@@ -1092,6 +1066,7 @@ def raw_diff(request,
 
 
 @check_login_required
+@check_local_site_access
 def comment_diff_fragments(
     request,
     review_request_id,
@@ -1099,7 +1074,7 @@ def comment_diff_fragments(
     template_name='reviews/load_diff_comment_fragments.js',
     comment_template_name='reviews/diff_comment_fragment.html',
     error_template_name='diffviewer/diff_fragment_error.html',
-    local_site_name=None):
+    local_site=None):
     """
     Returns the fragment representing the parts of a diff referenced by the
     specified list of comment IDs. This is used to allow batch lazy-loading
@@ -1109,7 +1084,7 @@ def comment_diff_fragments(
     # While we don't actually need the review request, we still want to do this
     # lookup in order to get the permissions checking.
     review_request, response = \
-        _find_review_request(request, review_request_id, local_site_name)
+        _find_review_request(request, review_request_id, local_site)
 
     if not review_request:
         return response
@@ -1145,6 +1120,7 @@ def comment_diff_fragments(
 
 
 @check_login_required
+@check_local_site_access
 def diff_fragment(request,
                   review_request_id,
                   revision,
@@ -1152,7 +1128,7 @@ def diff_fragment(request,
                   interdiff_revision=None,
                   chunkindex=None,
                   template_name='diffviewer/diff_file_fragment.html',
-                  local_site_name=None):
+                  local_site=None):
     """
     Wrapper around diffviewer.views.view_diff_fragment that takes a review
     request.
@@ -1162,7 +1138,7 @@ def diff_fragment(request,
     diff.
     """
     review_request, response = \
-        _find_review_request(request, review_request_id, local_site_name)
+        _find_review_request(request, review_request_id, local_site)
 
     if not review_request:
         return response
@@ -1183,6 +1159,7 @@ def diff_fragment(request,
 
 
 @check_login_required
+@check_local_site_access
 def preview_review_request_email(
     request,
     review_request_id,
@@ -1190,7 +1167,7 @@ def preview_review_request_email(
     text_template_name='notifications/review_request_email.txt',
     html_template_name='notifications/review_request_email.html',
     changedesc_id=None,
-    local_site_name=None):
+    local_site=None):
     """
     Previews the e-mail message that would be sent for an initial
     review request or an update.
@@ -1198,7 +1175,7 @@ def preview_review_request_email(
     This is mainly used for debugging.
     """
     review_request, response = \
-        _find_review_request(request, review_request_id, local_site_name)
+        _find_review_request(request, review_request_id, local_site)
 
     if not review_request:
         return response
@@ -1232,11 +1209,12 @@ def preview_review_request_email(
 
 
 @check_login_required
+@check_local_site_access
 def preview_review_email(request, review_request_id, review_id, format,
                          text_template_name='notifications/review_email.txt',
                          html_template_name='notifications/review_email.html',
                          extra_context={},
-                         local_site_name=None):
+                         local_site=None):
     """
     Previews the e-mail message that would be sent for a review of a
     review request.
@@ -1244,7 +1222,7 @@ def preview_review_email(request, review_request_id, review_id, format,
     This is mainly used for debugging.
     """
     review_request, response = \
-        _find_review_request(request, review_request_id, local_site_name)
+        _find_review_request(request, review_request_id, local_site)
 
     if not review_request:
         return response
@@ -1285,11 +1263,12 @@ def preview_review_email(request, review_request_id, review_id, format,
 
 
 @check_login_required
+@check_local_site_access
 def preview_reply_email(request, review_request_id, review_id, reply_id,
                         format,
                         text_template_name='notifications/reply_email.txt',
                         html_template_name='notifications/reply_email.html',
-                        local_site_name=None):
+                        local_site=None):
     """
     Previews the e-mail message that would be sent for a reply to a
     review of a review request.
@@ -1297,7 +1276,7 @@ def preview_reply_email(request, review_request_id, review_id, reply_id,
     This is mainly used for debugging.
     """
     review_request, response = \
-        _find_review_request(request, review_request_id, local_site_name)
+        _find_review_request(request, review_request_id, local_site)
 
     if not review_request:
         return response
@@ -1339,13 +1318,12 @@ def preview_reply_email(request, review_request_id, review_id, reply_id,
 
 
 @check_login_required
-def review_file_attachment(request,
-                           review_request_id,
-                           file_attachment_id,
-                           local_site_name=None):
+@check_local_site_access
+def review_file_attachment(request, review_request_id, file_attachment_id,
+                           local_site=None):
     """Displays a file attachment with a review UI."""
     review_request, response = \
-        _find_review_request(request, review_request_id, local_site_name)
+        _find_review_request(request, review_request_id, local_site)
 
     if not review_request:
         return response
@@ -1360,15 +1338,14 @@ def review_file_attachment(request,
 
 
 @check_login_required
-def view_screenshot(request,
-                    review_request_id,
-                    screenshot_id,
-                    local_site_name=None):
+@check_local_site_access
+def view_screenshot(request, review_request_id, screenshot_id,
+                    local_site=None):
     """
     Displays a screenshot, along with any comments that were made on it.
     """
     review_request, response = \
-        _find_review_request(request, review_request_id, local_site_name)
+        _find_review_request(request, review_request_id, local_site)
 
     if not review_request:
         return response
@@ -1380,9 +1357,10 @@ def view_screenshot(request,
 
 
 @check_login_required
+@check_local_site_access
 def search(request,
            template_name='reviews/search.html',
-           local_site_name=None):
+           local_site=None):
     """
     Searches review requests on Review Board based on a query string.
     """
@@ -1440,7 +1418,7 @@ def search(request,
     searcher.close()
 
     results = ReviewRequest.objects.filter(id__in=result_ids,
-                                           local_site__name=local_site_name)
+                                           local_site=local_site)
 
     return object_list(request=request,
                        queryset=results,
@@ -1452,22 +1430,16 @@ def search(request,
 
 
 @check_login_required
+@check_local_site_access
 def user_infobox(request, username,
                  template_name='accounts/user_infobox.html',
-                 local_site_name=None):
+                 local_site=None):
     """Displays a user info popup.
 
     This is meant to be embedded in other pages, rather than being
     a standalone page.
     """
     user = get_object_or_404(User, username=username)
-
-    if local_site_name:
-        local_site = get_object_or_404(LocalSite, name=local_site_name)
-
-        if not local_site.is_accessible_by(request.user):
-            return _render_permission_denied(request)
-
     show_profile = user.is_profile_visible(request.user)
 
     etag = ':'.join([user.first_name.encode('ascii', 'replace'),
