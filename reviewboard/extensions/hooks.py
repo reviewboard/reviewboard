@@ -1,7 +1,8 @@
 from __future__ import unicode_literals
 
-from djblets.extensions.hooks import (ExtensionHook, ExtensionHookPoint,
-                                      TemplateHook, URLHook)
+from djblets.extensions.hooks import (DataGridColumnsHook, ExtensionHook,
+                                      ExtensionHookPoint, TemplateHook,
+                                      URLHook)
 from djblets.util.compat import six
 
 from reviewboard.accounts.pages import (get_page_class,
@@ -9,6 +10,7 @@ from reviewboard.accounts.pages import (get_page_class,
                                         unregister_account_page_class)
 from reviewboard.attachments.mimetypes import (register_mimetype_handler,
                                                unregister_mimetype_handler)
+from reviewboard.reviews.datagrids import DashboardDataGrid
 from reviewboard.reviews.fields import (get_review_request_fieldset,
                                         register_review_request_fieldset,
                                         unregister_review_request_fieldset)
@@ -84,6 +86,27 @@ class DashboardHook(ExtensionHook):
     def __init__(self, extension, entries=[], *args, **kwargs):
         super(DashboardHook, self).__init__(extension, *args, **kwargs)
         self.entries = entries
+
+
+# We don't use the ExtensionHookPoint metaclass here, because we actually
+# want these to register in the base DataGridColumnsHook point.
+class DashboardColumnsHook(DataGridColumnsHook):
+    """A hook for adding custom columns to the dashboard.
+
+    Extensions can use this hook to provide one or more custom columns
+    in the dashboard. These columns can be added by users, moved around,
+    and even sorted, like other columns.
+
+    Each value passed to ``columns`` must be an instance of
+    :py:class:`djblets.datagrid.grids.Column`.
+
+    It also must have an ``id`` attribute set. This must be unique within
+    the dashboard. It is recommended to use a vendor-specific prefix to the
+    ID, in order to avoid conflicts.
+    """
+    def __init__(self, extension, columns):
+        super(DashboardColumnsHook, self).__init__(
+            extension, DashboardDataGrid, columns)
 
 
 @six.add_metaclass(ExtensionHookPoint)
