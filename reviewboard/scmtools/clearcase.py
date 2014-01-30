@@ -1,5 +1,6 @@
 from __future__ import unicode_literals
 
+import logging
 import os
 import re
 import subprocess
@@ -281,7 +282,9 @@ class ClearCaseTool(SCMTool):
         return ['basedir', 'diff_path']
 
     def get_parser(self, data):
-        return ClearCaseDiffParser(data, self.repopath)
+        return ClearCaseDiffParser(data,
+                                   self.repopath,
+                                   self._get_vobs_tag(self.repopath))
 
 
 class ClearCaseDiffParser(DiffParser):
@@ -291,8 +294,9 @@ class ClearCaseDiffParser(DiffParser):
 
     SPECIAL_REGEX = re.compile(r'^==== (\S+) (\S+) ====$')
 
-    def __init__(self, data, repopath):
+    def __init__(self, data, repopath, vobstag):
         self.repopath = repopath
+        self.vobstag = vobstag
         super(ClearCaseDiffParser, self).__init__(data)
 
     def parse_diff_header(self, linenum, info):
@@ -310,8 +314,32 @@ class ClearCaseDiffParser(DiffParser):
         m = self.SPECIAL_REGEX.match(self.lines[linenum])
 
         if m:
-            info['origFile'] = self._oid2filename(m.group(1))
-            info['newFile'] = self._oid2filename(m.group(2))
+            # When using ClearCase in multi-site mode, data replication takes
+            # much time, including oid. As said above, oid is used to retrieve
+            # filename path independent of developer view.
+            # When an oid is not found on server side an exception is thrown
+            # and review request submission fails.
+            # However at this time origFile and newFile info have already been
+            # filled by super.parse_diff_header and contain client side paths,
+            # client side paths are enough to start reviewing.
+            # So we can safely catch exception and restore client side paths
+            # if not found.
+            currentFilename = info['origFile']
+            try:
+                info['origFile'] = self._oid2filename(m.group(1))
+            except:
+                logging.debug("oid (%s) not found, get filename from client",
+                              m.group(1))
+                info['origFile'] = self.client_relpath(currentFilename)
+
+            currentFilename = info['newFile']
+            try:
+               info['newFile'] = self._oid2filename(m.group(2))
+            except:
+                logging.debug("oid (%s) not found, get filename from client",
+                              m.group(2))
+                info['newFile'] = self.client_relpath(currentFilename)
+
             linenum += 1
             if (linenum < len(self.lines) and
                 (self.lines[linenum].startswith("Binary files ") or
@@ -351,6 +379,31 @@ class ClearCaseDiffParser(DiffParser):
             res = os.path.join(drive, res)
 
         return ClearCaseTool.relpath(res, self.repopath)
+
+    def client_relpath(self, filename):
+        """Normalize any path sent from client view and return relative path
+        against vobtag
+        """
+	path, revision = filename.split("@@", 1)
+        relpath = ""
+        logging.debug("vobstag: %s, path: %s", self.vobstag, path)
+        while True:
+            # An error should be raised if vobstag cannot be reached.
+            if path == "/":
+                logging.debug("vobstag not found in path, use client filename")
+                return filename
+            # Vobstag reach, relpath can be returned.
+            if path.endswith(self.vobstag):
+                break
+            path, basename = os.path.split(path)
+            # Init relpath with basename.
+            if len(relpath) == 0:
+                relpath = basename
+            else:
+                relpath = os.path.join(basename, relpath)
+
+        logging.debug("relpath: %s", relpath)
+        return relpath + "@@" + revision
 
 
 class ClearCaseDynamicViewClient(object):
