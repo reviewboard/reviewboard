@@ -3,7 +3,7 @@ from __future__ import unicode_literals
 from django.contrib.auth.models import User
 from djblets.testing.decorators import add_fixtures
 
-from reviewboard.accounts.forms import AccountPageForm
+from reviewboard.accounts.forms.pages import AccountPageForm
 from reviewboard.accounts.models import LocalSiteProfile
 from reviewboard.accounts.pages import (AccountPage, get_page_classes,
                                         register_account_page_class,

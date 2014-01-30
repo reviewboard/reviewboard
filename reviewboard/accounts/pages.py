@@ -6,10 +6,10 @@ from django.utils.datastructures import SortedDict
 from django.utils.translation import ugettext_lazy as _
 from djblets.util.compat import six
 
-from reviewboard.accounts.forms.account import (AccountSettingsForm,
-                                                ChangePasswordForm,
-                                                ProfileForm,
-                                                GroupsForm)
+from reviewboard.accounts.forms.pages import (AccountSettingsForm,
+                                              ChangePasswordForm,
+                                              ProfileForm,
+                                              GroupsForm)
 
 
 _populated = False
