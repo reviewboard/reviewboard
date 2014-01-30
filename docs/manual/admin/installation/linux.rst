@@ -238,7 +238,8 @@ To install, type::
     $ easy_install mysql-python
 
 
-Distributions may provide native packages.
+Distributions may provide native packages. You may also need to install a mysql
+development package first.
 
 To install on Debian_ or Ubuntu_, type::
 
