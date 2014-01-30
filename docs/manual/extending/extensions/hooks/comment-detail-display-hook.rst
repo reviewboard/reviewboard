@@ -42,6 +42,3 @@ Example
                 return '<p>Severity: %s</p>' % comment.extra_data['severity']
             else:
                 return 'Severity: %s\n' % comment.extra_data['severity']
-
-
-.. comment: vim: ft=rst et ts=3

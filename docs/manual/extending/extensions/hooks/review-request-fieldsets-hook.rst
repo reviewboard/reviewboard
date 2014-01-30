@@ -43,6 +43,3 @@ Example
     class SampleExtension(Extension):
         def initialize(self):
             ReviewRequestFieldSetsHook(self, [SampleFieldSet])
-
-
-.. comment: vim: ft=rst et ts=3

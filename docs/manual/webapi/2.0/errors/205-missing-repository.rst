@@ -3,5 +3,3 @@
 
    A repository path was specified that didn't seem to contain a valid
    repository.
-
-.. comment: vim: ft=rst et ts=3

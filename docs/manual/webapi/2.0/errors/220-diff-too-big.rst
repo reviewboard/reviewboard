@@ -12,5 +12,3 @@
 
    The specific reason it failed is provided in ``reason``, and the
    maximum diff size in bytes is provided in ``max_size``.
-
-.. comment: vim: ft=rst et ts=3

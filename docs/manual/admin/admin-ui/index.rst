@@ -8,6 +8,3 @@ Administration UI
    overview
    dashboard
    database
-
-
-.. comment: vim: ft=rst et

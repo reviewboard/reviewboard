@@ -113,6 +113,3 @@ Search
     always be relative to the site directory.
 
     This option is only available if search is enabled.
-
-
-.. comment: vim: ft=rst et

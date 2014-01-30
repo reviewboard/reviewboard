@@ -2,5 +2,3 @@
 .. webapi-resource::
    :classname: reviewboard.webapi.resources.change.ChangeResource
    :is-list:
-
-.. comment: vim: ft=rst et ts=3

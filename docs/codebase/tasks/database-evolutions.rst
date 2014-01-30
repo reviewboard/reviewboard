@@ -162,6 +162,3 @@ I ran evolve --hint --execute
 
 Hopefully you have a backup of the database. If not, you will need to
 re-create it. See the :ref:`instructions <recreate-db>` above.
-
-
-.. comment: vim: ft=rst et ts=3

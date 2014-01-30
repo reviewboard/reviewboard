@@ -14,5 +14,3 @@
 
    This comes with a ``fields`` key containing a mapping of field names to
    lists of error texts.
-
-.. comment: vim: ft=rst et ts=3

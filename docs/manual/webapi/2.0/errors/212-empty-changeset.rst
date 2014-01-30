@@ -5,5 +5,3 @@
    changeset that doesn't contain any files. You will only ever see this for
    repositories that implement server-side changesets, such as Perforce. Add
    some files to the changeset and try again.
-
-.. comment: vim: ft=rst et ts=3

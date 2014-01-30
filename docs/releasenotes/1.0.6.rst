@@ -68,5 +68,3 @@ Contributors
 * Kay Röpke
 * Laurent Nicolas
 * Simon Morley
-
-.. comment: vim: ft=rst et

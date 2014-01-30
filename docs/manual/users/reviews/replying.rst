@@ -23,5 +23,3 @@ all people involved in that review. This is displayed as part of a threaded
 discussion in the e-mail clients. Because of this, you must publish replies on
 a per-review basis. It's like replying to separate e-mail threads in a mail
 client.
-
-.. comment: vim: ft=rst et ts=3

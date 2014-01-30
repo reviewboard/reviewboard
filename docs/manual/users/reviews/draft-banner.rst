@@ -23,6 +23,3 @@ Clicking :guilabel:`Publish Review` will immediately
 :ref:`publish your review <publishing-reviews>`.
 
 Clicking :guilabel:`Discard Review` will immediately discard your review.
-
-
-.. comment: vim: ft=rst et ts=3

@@ -16,6 +16,3 @@ Contributors
 ============
 
 * Christian Hammond
-
-
-.. comment: vim: ft=rst et

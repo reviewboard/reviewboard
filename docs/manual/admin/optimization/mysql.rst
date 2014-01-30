@@ -57,5 +57,3 @@ to review and can slow down the server in other ways. Reviews with such large
 diffs are almost always caused by some intermediate build step such as
 auto-generated or emitted code. A better solution is to be more careful about
 posting reviews that may contain these sorts of files.
-
-.. comment: vim: ft=rst et

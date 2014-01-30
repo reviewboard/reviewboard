@@ -238,6 +238,3 @@ Where do I submit patches for Review Board?
 Patches to Review Board or Djblets should be submitted to our own Review Board
 instance, http://reviews.reviewboard.org. If you submit patches to the
 mailing list or bug tracker, we'll ask you to move them here for review.
-
-
-.. comment: vim: ft=rst et ts=3

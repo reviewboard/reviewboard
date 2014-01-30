@@ -13,5 +13,3 @@
 
    The resource information for the review request that's associated with the
    change number will be returned in the ``review_request`` key.
-
-.. comment: vim: ft=rst et ts=3

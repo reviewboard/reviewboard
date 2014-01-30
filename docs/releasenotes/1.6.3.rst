@@ -20,6 +20,3 @@ Contributors
 
 * Christian Hammond
 * Damian Johnson
-
-
-.. comment: vim: ft=rst et

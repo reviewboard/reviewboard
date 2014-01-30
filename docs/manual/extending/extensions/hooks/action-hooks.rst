@@ -98,6 +98,3 @@ Example
                     },
                 ],
             ])
-
-
-.. comment: vim: ft=rst et ts=3

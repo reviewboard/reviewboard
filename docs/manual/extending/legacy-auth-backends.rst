@@ -131,6 +131,3 @@ that includes your authentication backend.
 Once this is Python package is installed on the system running Review Board,
 you can change the Authentication type in Review Board to :guilabel:`Custom`
 and specify the Python path for your authentication backend class.
-
-
-.. comment: vim: ft=rst et ts=3

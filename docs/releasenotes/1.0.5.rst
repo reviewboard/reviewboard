@@ -57,6 +57,3 @@ Contributors
 * Solomon Matthews
 * Thilo-Alexander Ginkel
 * Vladimir Sitnikov
-
-
-.. comment: vim: ft=rst et

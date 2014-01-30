@@ -83,6 +83,3 @@ Contributors
 * Surya Nallu
 * Tao Zhou
 * Tetsuya Morimoto
-
-
-.. comment: vim: ft=rst et

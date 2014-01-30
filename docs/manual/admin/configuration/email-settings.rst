@@ -47,6 +47,3 @@ E-Mail Settings
 * **Use TLS for authentication:**
     If enabled, TLS is used for mail server authentication. This is more
     secure, but requires TLS support on the mail server.
-
-
-.. comment: vim: ft=rst et

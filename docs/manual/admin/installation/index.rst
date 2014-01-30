@@ -9,5 +9,3 @@ Installation
    windows
    development-releases
    creating-sites
-
-.. comment: vim: ft=rst et

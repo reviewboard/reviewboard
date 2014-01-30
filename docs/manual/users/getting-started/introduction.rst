@@ -24,6 +24,3 @@ The following browsers are unsupported but known to work:
 
 Review Board is designed to fit in with existing :term:`pre-commit review`
 and :term:`post-commit review` methods.
-
-
-.. comment: vim: ft=rst et ts=3

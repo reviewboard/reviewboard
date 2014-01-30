@@ -13,6 +13,3 @@ Configuration
    repositories
    review-groups
    users
-
-
-.. comment: vim: ft=rst et

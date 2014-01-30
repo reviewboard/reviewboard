@@ -73,6 +73,3 @@ Contributors
 * Raja Venkataraman
 * Stephen Gallagher
 * Surya Nallu
-
-
-.. comment: vim: ft=rst et

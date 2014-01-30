@@ -122,6 +122,3 @@ change.
 
 This field supports rich text using the :term:`Markdown` language. See
 :ref:`using-markdown` for more information.
-
-
-.. comment: vim: ft=rst et ts=3

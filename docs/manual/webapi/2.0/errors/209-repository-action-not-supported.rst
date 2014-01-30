@@ -5,5 +5,3 @@
    The request made on a repository's resource can't be performed by that type
    of repository. That particular action is invalid for that repository type.
    There is no sense in retrying this request on the same repository.
-
-.. comment: vim: ft=rst et ts=3

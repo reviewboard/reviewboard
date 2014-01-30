@@ -142,5 +142,3 @@ guide`_. The above is all that's generally needed for file paths, though.
 
 .. _`About.com's Python Regular Expressions guide`:
    http://python.about.com/od/regularexpressions/a/regexprimer.htm
-
-.. comment: vim: ft=rst et

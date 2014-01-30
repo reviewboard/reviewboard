@@ -16,6 +16,3 @@ The Administration UI is composed of four main areas:
 * :ref:`Database <database-management>`
 * :ref:`Extensions <extensions>`
 * :ref:`Settings <settings>`
-
-
-.. comment: vim: ft=rst et

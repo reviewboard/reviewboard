@@ -259,6 +259,3 @@ To Me
 
 Shows a chevron for review requests which directly list you in the "people"
 field.
-
-
-.. comment: vim: ft=rst et ts=3

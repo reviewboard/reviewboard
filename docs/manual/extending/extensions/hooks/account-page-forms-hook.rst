@@ -44,6 +44,3 @@ Example
     class SampleExtension(Extension):
         def initialize(self):
             AccountPageFormsHook(self, [SamplePageForm])
-
-
-.. comment: vim: ft=rst et ts=3

@@ -34,5 +34,3 @@ You can enter the text here and click :guilabel:`OK`. The description will
 be saved immediately, and other users will be able to see it.
 
 .. image:: submitted-banner.png
-
-.. comment: vim: ft=rst et ts=3

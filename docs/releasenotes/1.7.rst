@@ -696,6 +696,3 @@ Contributors
 * Wesley Ellis
 * Wilson Yeung
 * Yazan Medanat
-
-
-.. comment: vim: ft=rst et

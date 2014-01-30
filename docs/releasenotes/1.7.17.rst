@@ -125,6 +125,3 @@ Contributors
 * Frederik Braun
 * Garrett Cooper
 * Stephen Gallagher
-
-
-.. comment: vim: ft=rst et

@@ -102,6 +102,3 @@ You can fix these counters by running::
     $ rb-site manage /path/to/site fixreviewcounts
 
 This is done automatically when upgrading a site.
-
-
-.. comment: vim: ft=rst et tw=75

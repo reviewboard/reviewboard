@@ -145,6 +145,3 @@ Contributors
 * Jan Koprowski
 * Mike Conley
 * Phil Orwig
-
-
-.. comment: vim: ft=rst et

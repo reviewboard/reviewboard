@@ -121,6 +121,3 @@ Contributors
 * Michelle Chuang
 * Paul Hobb
 * Stephen Holsappie
-
-
-.. comment: vim: ft=rst et

@@ -113,5 +113,3 @@ Contributors
 * Eric Huss
 * Marc Bee
 * Thilo-Alexander Ginkel
-
-.. comment: vim: ft=rst et

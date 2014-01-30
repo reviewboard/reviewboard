@@ -73,6 +73,3 @@ Clicking the :guilabel:`Status` drop-down will allow you to choose between
 :guilabel:`All issues`. Clicking the :guilabel:`From` drop-down will allow
 you to filter the list by individual reviewers. Clicking on a row will jump
 to the comment.
-
-
-.. comment: vim: ft=rst et ts=3

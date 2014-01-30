@@ -24,6 +24,3 @@ their code.
 .. _`Git repository`: http://github.com/reviewboard/reviewboard/
 .. _`mailing lists`: http://www.reviewboard.org/mailing-lists/
 .. _`bug tracker`: http://www.reviewboard.org/bugs/
-
-
-.. comment: vim: ft=rst et ts=3

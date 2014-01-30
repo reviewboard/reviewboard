@@ -563,6 +563,3 @@ In Subversion setups where there's a public anonymous URL and a secured
 developer URL (such as one using ``https`` or ``svn+ssh``), you
 should put the public URL in :guilabel:`Path` field and
 your developer URL in the :guilabel:`Mirror Path`.
-
-
-.. comment: vim: ft=rst et

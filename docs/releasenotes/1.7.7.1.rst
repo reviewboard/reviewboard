@@ -25,6 +25,3 @@ Contributors
 
 * Christian Hammond
 * Jeff Schroeder
-
-
-.. comment: vim: ft=rst et

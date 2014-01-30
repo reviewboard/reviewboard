@@ -28,6 +28,3 @@ They include:
 
 You can also get an overview of a few key settings near the bottom of the side
 panel as well, under :guilabel:`System Information`.
-
-
-.. comment: vim: ft=rst et

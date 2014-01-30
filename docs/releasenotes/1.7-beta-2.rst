@@ -59,6 +59,3 @@ Contributors
 * David Trowbridge
 * Karl Leuschen
 * Steven MacLeod
-
-
-.. comment: vim: ft=rst et

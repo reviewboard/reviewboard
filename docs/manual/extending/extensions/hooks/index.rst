@@ -29,6 +29,3 @@ The following hooks are available for use by extensions.
    template-hook
    url-hook
    user-page-sidebar-hook
-
-
-.. comment: vim: ft=rst et ts=3

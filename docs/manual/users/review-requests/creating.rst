@@ -145,6 +145,3 @@ review request by clicking :guilabel:`Discard`.
 Depending on your particular setup, publishing a review request may send
 an e-mail out to the reviewers, letting them know your change is ready to
 review.
-
-
-.. comment: vim: ft=rst et ts=3

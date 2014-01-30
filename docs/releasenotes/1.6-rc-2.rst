@@ -193,6 +193,3 @@ Contributors
 * Paul Schulz
 * Philipp Henkel
 * Tucker Dewitt
-
-
-.. comment: vim: ft=rst et

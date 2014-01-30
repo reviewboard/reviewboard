@@ -14,5 +14,3 @@ Administration Guide
    configuration/index
    extensions/index
    sites/index
-
-.. comment: vim: ft=rst et

@@ -134,6 +134,3 @@ There are many keyboard shortcuts for navigating around the diff viewer:
   :kbd:`[`, :kbd:`x`
 * Next comment:
   :kbd:`]`, :kbd:`c`
-
-
-.. comment: vim: ft=rst et ts=3

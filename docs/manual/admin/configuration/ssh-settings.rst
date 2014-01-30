@@ -41,6 +41,3 @@ on that key. Those details cover:
 
 The public key can be used on other repositories to grant permission to
 Review Board in order to access its files.
-
-
-.. comment: vim: ft=rst et

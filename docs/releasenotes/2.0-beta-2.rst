@@ -536,6 +536,3 @@ Contributors
 * Edward Lee
 * Steven MacLeod
 * Vlad Safronov
-
-
-.. comment: vim: ft=rst et

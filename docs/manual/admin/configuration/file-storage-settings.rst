@@ -61,6 +61,3 @@ Amazon S3 Settings
       vanity domain in the format of
       ``http://{vanity_domain}}/key``. The vanity domain is configured in
       your Amazon S3 account.
-
-
-.. comment: vim: ft=rst et

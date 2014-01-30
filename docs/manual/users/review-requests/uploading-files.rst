@@ -34,6 +34,3 @@ There are two ways to upload a file attachment:
 
    Note that this requires a modern HTML5-capable browser, such as
    Google Chrome or Firefox 3.6+.
-
-
-.. comment: vim: ft=rst et ts=3

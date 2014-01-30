@@ -7,5 +7,3 @@ Upgrading
 
    upgrading-reviewboard
    upgrading-sites
-
-.. comment: vim: ft=rst et

@@ -172,6 +172,3 @@ source directory of your extension. This is accomplished by running::
 If changes are made to the setup.py file this should be executed again.
 
 See the `Setuptools`_ documentation for more information.
-
-
-.. comment: vim: ft=rst et ts=3

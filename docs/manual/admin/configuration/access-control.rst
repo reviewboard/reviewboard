@@ -79,6 +79,3 @@ conditions are met:
   user has access to one or more groups listed as requested reviewers
   (either by being a member of an invite-only group, or by the group being
   public).
-
-
-.. comment: vim: ft=rst et

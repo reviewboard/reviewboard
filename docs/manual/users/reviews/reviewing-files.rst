@@ -31,6 +31,3 @@ The file attachment comment dialog supports issue tracking. See the section on
 As of Review Board 1.6.0, there's no visual indication of an existing comment
 on the file attachment. However, you can see your comment and edit it by
 clicking :guilabel:`Add Comment` again.
-
-
-.. comment: vim: ft=rst et ts=3

@@ -23,6 +23,3 @@ Bugs Fixed in post-review
 
 * post-review should now work with SVN regardless of the locale set.
   (:bug:`888`)
-
-
-.. comment: vim: ft=rst et

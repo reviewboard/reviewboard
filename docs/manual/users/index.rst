@@ -13,6 +13,3 @@ Users Guide
    reviews/index
    searching/index
    markdown
-
-
-.. comment: vim: ft=rst et ts=3

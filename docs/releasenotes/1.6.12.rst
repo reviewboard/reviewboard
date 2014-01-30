@@ -143,6 +143,3 @@ Contributors
 * Stephen Gallagher
 * Tomasz Moń
 * Tommy Beadle
-
-
-.. comment: vim: ft=rst et

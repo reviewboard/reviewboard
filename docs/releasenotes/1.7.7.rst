@@ -100,6 +100,3 @@ Contributors
 * Michiel van Baak
 * Surya Nallu
 * Victoria Ponce (BitNami)
-
-
-.. comment: vim: ft=rst et

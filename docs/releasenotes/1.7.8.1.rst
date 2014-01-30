@@ -24,6 +24,3 @@ Contributors
 * Adam Collard
 * Christian Hammond
 * David Trowbridge
-
-
-.. comment: vim: ft=rst et

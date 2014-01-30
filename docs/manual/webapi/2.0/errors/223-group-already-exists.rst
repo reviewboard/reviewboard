@@ -4,6 +4,3 @@
 
    An attempt was made to create a review group, but that group already
    exists.
-
-.. comment: vim: ft=rst et ts=3
-

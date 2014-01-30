@@ -63,5 +63,3 @@ Contributors
 * David Trowbridge
 * Eric Huss
 * Helder Ribeiro
-
-.. comment: vim: ft=rst et

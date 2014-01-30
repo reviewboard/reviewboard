@@ -30,6 +30,3 @@ Contributors
 
 * Christian Hammond
 * Mike Conley
-
-
-.. comment: vim: ft=rst et

@@ -31,5 +31,3 @@ Contributors
 
 * Christian Hammond
 * Dan Savilonis
-
-.. comment: vim: ft=rst et

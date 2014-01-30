@@ -116,6 +116,3 @@ Contributors
 * David Trowbridge
 * Nicolas Dély
 * Victoria Ponce
-
-
-.. comment: vim: ft=rst et

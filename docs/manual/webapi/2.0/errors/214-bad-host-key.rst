@@ -13,5 +13,3 @@
 
    The hostname, key (in base64) and the key we expected to find (also in
    base64) will be returned along with the error.
-
-.. comment: vim: ft=rst et ts=3

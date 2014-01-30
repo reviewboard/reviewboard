@@ -275,6 +275,3 @@ An example of an error response payload would be:
       <msg>A repository path must be specified</msg>
      </err>
     </rsp>
-
-
-.. comment: vim: ft=rst et ts=3

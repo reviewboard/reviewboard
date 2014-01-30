@@ -172,6 +172,3 @@ Bugs Fixed
 * Changed the text when attempting to publish a review request without any
   reviewers to be slightly more clear in that either a person or a group
   is required. Patch by Helder Ribeiro.
-
-
-.. comment: vim: ft=rst et

@@ -12,5 +12,3 @@
 
    This will provide ``file`` and ``revision`` keys containing the file path
    and revision that failed.
-
-.. comment: vim: ft=rst et ts=3

@@ -30,6 +30,3 @@ Alternatively, we can host your Review Board server at RBCommons_.
 .. _`old installation instructions`:
    http://www.reviewboard.org/docs/manual/1.6/admin/installation/windows/
 .. _RBCommons: http://www.rbcommons.com/
-
-
-.. comment: vim: ft=rst et

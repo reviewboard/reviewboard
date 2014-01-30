@@ -60,6 +60,3 @@ Example
     class XMLThumbnailExtension(Extension):
         def initialize(self):
             FileAttachmentThumbnailHook(self, [XMLMimetype])
-
-
-.. comment: vim: ft=rst et ts=3

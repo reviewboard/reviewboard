@@ -107,6 +107,3 @@ Bugs Fixed
   anonymous access is enabled on the site. (:bug:`767`)
 
 * Fixed some small breakages with Django 1.1.
-
-
-.. comment: vim: ft=rst et

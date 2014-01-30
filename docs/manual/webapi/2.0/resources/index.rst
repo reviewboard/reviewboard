@@ -188,6 +188,3 @@ Validation
 
    validation
    validate-diff
-
-
-.. comment: vim: ft=rst et ts=3

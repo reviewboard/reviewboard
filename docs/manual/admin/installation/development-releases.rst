@@ -68,6 +68,3 @@ From then on, you can simply type::
     $ easy_install -U ReviewBoard
 
 And any new versions found in that directory will be installed.
-
-
-.. comment: vim: ft=rst et

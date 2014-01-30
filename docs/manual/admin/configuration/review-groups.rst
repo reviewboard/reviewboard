@@ -131,6 +131,3 @@ bottom of the page.
    It is recommended that you not delete review groups, as it will affect
    existing review requests. It is generally best to keep old groups around
    to keep the review histories intact.
-
-
-.. comment: vim: ft=rst et

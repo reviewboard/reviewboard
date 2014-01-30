@@ -128,6 +128,3 @@ Site configurations      Stored configuration for the site.
 Sites                    Basic site information.
 
 ======================== ==================================================
-
-
-.. comment: vim: ft=rst et

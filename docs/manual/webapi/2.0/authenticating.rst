@@ -37,6 +37,3 @@ Basic HTTP Authentication doesn't really provide a way to log clients out,
 so it's up to the client to simply stop storing the ``rbsessionid`` cookie
 and stop sending a populated ``Authorization`` header. Nothing needs to be
 done on the server to tell Review Board you're no longer logged in.
-
-
-.. comment: vim: ft=rst et ts=3

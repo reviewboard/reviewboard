@@ -3,5 +3,3 @@
    :instance: reviewboard.webapi.errors.DIFF_PARSE_ERROR
 
    The specified diff file could not be parsed.
-
-.. comment: vim: ft=rst et ts=3

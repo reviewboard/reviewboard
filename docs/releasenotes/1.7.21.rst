@@ -119,6 +119,3 @@ Contributors
 * David Trowbridge
 * Leo Shklovskii
 * Michael Zhilin
-
-
-.. comment: vim: ft=rst et

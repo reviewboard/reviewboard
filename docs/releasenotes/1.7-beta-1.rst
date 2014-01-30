@@ -233,6 +233,3 @@ Contributors
 * Vlad Filippov
 * Wilson Yeung
 * Yazan Medanat
-
-
-.. comment: vim: ft=rst et

@@ -232,6 +232,3 @@ Standard authentication will use the password specified for the user.
 LDAP and NIS authentication set a dummy password in the password field for
 the user. Instead of authenticating against that password field,
 authentication will happen against the server.
-
-
-.. comment: vim: ft=rst et

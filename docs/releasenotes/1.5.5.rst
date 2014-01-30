@@ -78,6 +78,3 @@ Contributors
 * Evan Dower
 * Jan Koprowski
 * Vignesh Srinivasan
-
-
-.. comment: vim: ft=rst et

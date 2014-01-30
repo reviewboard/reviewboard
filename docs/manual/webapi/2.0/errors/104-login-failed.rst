@@ -6,5 +6,3 @@
    can try again.
 
    See :ref:`2.0-authenticating` for more information.
-
-.. comment: vim: ft=rst et ts=3

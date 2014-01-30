@@ -234,6 +234,3 @@ Contributors
 * Lance Hudson
 * Mikhail Rogozhin
 * Severin Gehwolf
-
-
-.. comment: vim: ft=rst et

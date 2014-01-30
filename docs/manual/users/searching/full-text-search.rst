@@ -105,6 +105,3 @@ not.
 Reviews are not indexed.
 
 :term:`Private review requests` are not indexed.
-
-
-.. comment: vim: ft=rst et ts=3

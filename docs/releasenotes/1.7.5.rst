@@ -54,6 +54,3 @@ Contributors
 * Ionut Prunache
 * Katherine Schramm
 * Raja Venkataraman
-
-
-.. comment: vim: ft=rst et

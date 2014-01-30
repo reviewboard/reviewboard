@@ -16,6 +16,3 @@ Upgrading Review Board is pretty simple. It's essentially a three-step
 
 If you're on Linux and behind a proxy server, see the installation
 instructions for :ref:`linux-http-proxy`.
-
-
-.. comment: vim: ft=rst et

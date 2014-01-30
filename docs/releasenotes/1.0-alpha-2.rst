@@ -131,6 +131,3 @@ Bugs Fixed in rb-site
 
 * rb-site should now generate config files that work correctly on
   Windows servers.
-
-
-.. comment: vim: ft=rst et

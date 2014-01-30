@@ -105,6 +105,3 @@ Bug Fixes
 
 * Gecos fields on NIS backends no longer causes authentication failures.
   (:bug:`1793`)
-
-
-.. comment: vim: ft=rst et

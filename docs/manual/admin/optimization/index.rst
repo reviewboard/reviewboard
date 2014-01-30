@@ -8,5 +8,3 @@ Optimization
    general
    memcached
    mysql
-
-.. comment: vim: ft=rst et

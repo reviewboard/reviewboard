@@ -9,6 +9,3 @@ Getting Started
    what-is-code-review
    workflow
    settings
-
-
-.. comment: vim: ft=rst et ts=3

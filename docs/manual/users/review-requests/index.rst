@@ -11,6 +11,3 @@ Working with Review Requests
    uploading-files
    publishing
    closing
-
-
-.. comment: vim: ft=rst et ts=3

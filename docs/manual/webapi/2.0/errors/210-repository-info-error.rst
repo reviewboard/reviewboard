@@ -6,5 +6,3 @@
    some unknown reason. This may be a temporary outage. The request should be
    tried again, once you've checked that the repository's server is up and
    running.
-
-.. comment: vim: ft=rst et ts=3

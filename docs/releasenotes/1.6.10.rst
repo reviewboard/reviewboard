@@ -83,6 +83,3 @@ Contributors
 * David Trowbridge
 * Dean Prichard
 * Nate Skulic
-
-
-.. comment: vim: ft=rst et

@@ -61,6 +61,3 @@ There are many guides out there for DKIM. See the following:
 * `DKIM DNS wizard <http://www.dnswatch.info/dkim/create-dns-record>`_
 * `Postfix DKIM on Ubuntu <https://help.ubuntu.com/community/Postfix/DKIM>`_
 * `Configuring DKIM and Sendmail on Fedora 13 <http://www.rickwargo.com/2010/11/19/configuring-dkim-and-sendmail-on-fedora-13/>`_
-
-
-.. comment: vim: ft=rst et

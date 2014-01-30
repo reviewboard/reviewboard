@@ -11,5 +11,3 @@
 
    The specific reason it failed is returned in ``reason`` along with the
    error.
-
-.. comment: vim: ft=rst et ts=3

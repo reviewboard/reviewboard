@@ -23,7 +23,3 @@ The following can be searched using Quick Search:
 * Users' first/last names
 * Group names
 * Group display names
-
-
-.. comment: vim: ft=rst et ts=3
-

@@ -57,6 +57,3 @@ Contributors
 * Lance Chen
 * Manu Cupcic
 * Raja Venkataraman
-
-
-.. comment: vim: ft=rst et

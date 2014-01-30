@@ -74,6 +74,3 @@ Glossary
        (``-``) to show removed lines or a plus sign (``+``) to show added
        lines. Replaced lines are shown by a remove line followed by an add
        line.
-
-
-.. comment: vim: ft=rst et

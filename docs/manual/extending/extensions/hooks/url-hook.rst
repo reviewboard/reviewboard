@@ -38,6 +38,3 @@ is the module that contains the patterns::
     urlpatterns = patterns('sample_extension.views',
         url(r'^$', 'dashboard', name='myvendor-urlname'),
     )
-
-
-.. comment: vim: ft=rst et ts=3

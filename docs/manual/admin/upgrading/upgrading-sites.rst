@@ -30,6 +30,3 @@ Troubleshooting Upgrades
 It's possible after a site upgrade that cached data may be out of date,
 either in memcached or in the users' browsers. If you do notice problems,
 try restarting memcached, and tell the users to clear their browser cache.
-
-
-.. comment: vim: ft=rst et tw=75

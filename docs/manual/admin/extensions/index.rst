@@ -46,7 +46,3 @@ buttons:
 * **Database** - Opens a page for editing the extension's internal database.
   (This is an advanced feature and should only be used if you know what you're
   doing.)
-
-
-
-.. comment: vim: ft=rst et

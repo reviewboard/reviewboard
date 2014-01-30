@@ -7,6 +7,3 @@ Searching
 
    quick-search
    full-text-search
-
-
-.. comment: vim: ft=rst et ts=3

@@ -74,6 +74,3 @@ Contributors
 * Jim Chen
 * Stephen Gallagher
 * Steven MacLeod
-
-
-.. comment: vim: ft=rst et

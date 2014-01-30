@@ -82,6 +82,3 @@ Contributors
 * Luis Rodriguez
 * Po-Chien Lin
 * Yazan Medanat
-
-
-.. comment: vim: ft=rst et

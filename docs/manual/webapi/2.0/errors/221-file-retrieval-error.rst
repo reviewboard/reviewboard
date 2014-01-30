@@ -4,5 +4,3 @@
 
    There was an unexpected error fetching the requested file from a
    repository.
-
-.. comment: vim: ft=rst et ts=3

@@ -369,6 +369,3 @@ form, and must not conflict with any other authentication modules.
 The authentication module can then be installed by typing (as root)::
 
     $ python setup.py install
-
-
-.. comment: vim: ft=rst et ts=3

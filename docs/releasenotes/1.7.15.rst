@@ -86,6 +86,3 @@ Contributors
 * Emmanuel Gil Peyrot
 * Frederik Braun
 * German Galkin
-
-
-.. comment: vim: ft=rst et

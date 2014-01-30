@@ -8,6 +8,3 @@ Site Maintenance
    rb-site
    search-indexing
    management-commands
-
-
-.. comment: vim: ft=rst et

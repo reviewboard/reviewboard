@@ -68,6 +68,3 @@ Contributors
 * Cory McWilliams
 * David Trowbridge
 * Nikolai Prokoschenko
-
-
-.. comment: vim: ft=rst et

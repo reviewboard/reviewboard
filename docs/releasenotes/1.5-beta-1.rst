@@ -139,6 +139,3 @@ Contributors
 * Eduardo Felipe Castegnaro
 * Ryan Oblak
 * Simon Morley
-
-
-.. comment: vim: ft=rst et

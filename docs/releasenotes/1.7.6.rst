@@ -89,6 +89,3 @@ Contributors
 * Raja Venkataraman
 * Stephen Gallagher
 * Yuri Honami
-
-
-.. comment: vim: ft=rst et

@@ -695,6 +695,3 @@ Contributors
 * Tucker Dewitt
 * Vignesh Srinivasan
 * Vlad Filippov
-
-
-.. comment: vim: ft=rst et

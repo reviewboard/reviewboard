@@ -117,6 +117,3 @@ This will ensure that your variables do not leak and interfere with other
 extensions or the Review Board codebase.
 
 When bundling, your JavaScript files will be minified using UglifyJS_.
-
-
-.. comment: vim: ft=rst et ts=3

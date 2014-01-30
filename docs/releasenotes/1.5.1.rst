@@ -91,6 +91,3 @@ Contributors
 * Christian Hammond
 * David Trowbridge
 * Mike Stoddart
-
-
-.. comment: vim: ft=rst et

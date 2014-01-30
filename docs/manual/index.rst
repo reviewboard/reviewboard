@@ -21,6 +21,3 @@ Indices, glossary and tables
 * :ref:`tableofcontents`
 * :ref:`genindex`
 * :ref:`glossary`
-
-
-.. comment: vim: ft=rst et

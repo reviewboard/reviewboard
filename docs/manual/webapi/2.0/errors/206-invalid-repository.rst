@@ -8,5 +8,3 @@
 
    This will provide a ``repository`` key containing the path or ID that
    failed.
-
-.. comment: vim: ft=rst et ts=3

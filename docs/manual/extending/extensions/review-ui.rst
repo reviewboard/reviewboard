@@ -193,6 +193,3 @@ Most extensions that add Review UIs will also want to render custom thumbnails
 for the attachments on the review request page. See
 :ref:`extension-file-attachment-thumbnail-hook` for information on how to
 implement custom thumbnailers.
-
-
-.. comment: vim: ft=rst et ts=3

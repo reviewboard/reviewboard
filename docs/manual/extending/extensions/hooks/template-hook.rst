@@ -108,6 +108,3 @@ Example
                          apply_to=['view_diff', 'view_diff_revision'])
             TemplateHook(self, 'base-scripts-post', 'diff-extension-js.html',
                          apply_to=['view_diff', 'view_diff_revision'])
-
-
-.. comment: vim: ft=rst et ts=3

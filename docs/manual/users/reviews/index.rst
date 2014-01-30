@@ -15,6 +15,3 @@ Reviewing
    publishing
    approving-changes
    replying
-
-
-.. comment: vim: ft=rst et ts=3

@@ -524,6 +524,3 @@ Contributors
 * Steven MacLeod
 * Tomasz Moń
 * Yazan Medanat
-
-
-.. comment: vim: ft=rst et

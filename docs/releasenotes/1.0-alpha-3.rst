@@ -76,6 +76,3 @@ Bugs Fixed in rb-site
   now set the ``PYTHON_EGG_CACHE`` directory and default to processing
   :file:`.htaccess` files in :file:`htdocs` (which some distros don't have
   enabled by default).
-
-
-.. comment: vim: ft=rst et

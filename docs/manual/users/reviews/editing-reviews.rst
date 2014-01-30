@@ -47,6 +47,3 @@ dialog, but keep your review around if this wasn't a new one.
 
 Clicking :guilabel:`Save` will save any comments you have made on your
 review and close the dialog.
-
-
-.. comment: vim: ft=rst et ts=3

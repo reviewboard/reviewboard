@@ -65,6 +65,3 @@ Corresponding template :file:`dashboard.html`:
      </div>
     {%  endbox %}
     {% endblock %}
-
-
-.. comment: vim: ft=rst et ts=3

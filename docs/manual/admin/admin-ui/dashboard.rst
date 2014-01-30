@@ -96,6 +96,3 @@ reloading the news box, and subscribing to an RSS feed for the news.
           In the meantime, you can visit the `Review Board News`_ page.
 
 .. _`Review Board News`: http://www.reviewboard.org/news/
-
-
-.. comment: vim: ft=rst et

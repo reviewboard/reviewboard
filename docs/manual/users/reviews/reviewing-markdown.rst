@@ -59,6 +59,3 @@ other people have already said what you plan to say. The comment box is
 **not** the place to reply to those comments. Instead, you can click the
 :guilabel:`Reply` link next to the particular comment, which will take you
 back to the review request page and open a reply box.
-
-
-.. comment: vim: ft=rst et ts=3

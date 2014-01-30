@@ -448,6 +448,3 @@ After Installation
 
 Once you've finished getting Review Board itself installed, you'll want to
 create your site. See :ref:`creating-sites` for details.
-
-
-.. comment: vim: ft=rst et

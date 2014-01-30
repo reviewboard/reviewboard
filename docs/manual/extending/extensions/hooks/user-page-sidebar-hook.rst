@@ -72,5 +72,3 @@ If you want to include sub-items in the sidebar::
                     }
                 ]
             )
-
-.. comment: vim: ft=rst et ts=3

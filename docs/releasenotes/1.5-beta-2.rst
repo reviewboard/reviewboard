@@ -170,6 +170,3 @@ Contributors
 * David Trowbridge
 * Laurent Nicolas
 * Mike Conley
-
-
-.. comment: vim: ft=rst et

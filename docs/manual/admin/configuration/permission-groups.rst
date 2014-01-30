@@ -82,6 +82,3 @@ Deleting Permission Groups
 To delete a permission group, follow the instructions in
 :ref:`editing-permission-groups` to find the group you want to get rid of.
 Then click :guilabel:`Delete` at the bottom of the page.
-
-
-.. comment: vim: ft=rst et

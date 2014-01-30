@@ -525,5 +525,3 @@ Contributors
 .. _`Amazon S3`: https://s3.amazonaws.com/
 .. _`Amazon EC2`: http://aws.amazon.com/ec2/
 .. _`reCAPTCHA`: http://www.recaptcha.net/
-
-.. comment: vim: ft=rst et

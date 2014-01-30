@@ -93,6 +93,3 @@ Contributors
 * nn1436401
 * Pi Bi
 * Raja Venkataraman
-
-
-.. comment: vim: ft=rst et

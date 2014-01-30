@@ -89,6 +89,3 @@ Contributors
 * David Trowbridge
 * Edward Lee
 * George Prekas
-
-
-.. comment: vim: ft=rst et

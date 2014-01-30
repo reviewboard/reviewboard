@@ -74,6 +74,3 @@ Contributors
 * Christian Hammond
 * David Trowbridge
 * Robert Munteanu
-
-.. comment: vim: ft=rst et
-

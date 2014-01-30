@@ -101,6 +101,3 @@ Contributors
 * Colin Caughie
 * David Trowbridge
 * Stephen Gallagher
-
-
-.. comment: vim: ft=rst et

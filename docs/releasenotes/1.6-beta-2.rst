@@ -211,6 +211,3 @@ Contributors
 * Philipp Henkel
 * Steve Sutcliffe
 * Vignesh Srinivasan
-
-
-.. comment: vim: ft=rst et

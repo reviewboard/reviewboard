@@ -215,5 +215,3 @@ For more information, and some useful subcommands, see
 
 
 .. _Django: http://www.djangoproject.com/
-
-.. comment: vim: ft=rst et tw=75

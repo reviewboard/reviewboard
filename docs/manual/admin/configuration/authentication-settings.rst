@@ -223,6 +223,3 @@ Board server to fix it. In this case, you can reset the authentication backend
 back to the builtin database method with the :command:`rb-site` command::
 
     $ rb-site manage /path/to/site set-siteconfig -- --key=auth_backend --value=builtin
-
-
-.. comment: vim: ft=rst et

@@ -145,6 +145,3 @@ Contributors
 * Nathan Auch
 * Nathan Heijermans
 * Nikolai Prokoschenko
-
-
-.. comment: vim: ft=rst et

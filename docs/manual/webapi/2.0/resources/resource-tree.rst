@@ -7,6 +7,3 @@ resources are children of others.
 
 
 .. webapi-resource-tree::
-
-
-.. comment: vim: ft=rst et ts=3

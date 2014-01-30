@@ -81,6 +81,3 @@ Advanced
     this was set to 10, then the files would be shortened into two pages.
 
     This defaults to 10.
-
-
-.. comment: vim: ft=rst et

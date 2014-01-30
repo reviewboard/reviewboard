@@ -93,6 +93,3 @@ Contributors
 * Ingo Proetel
 * Jan Koprowski
 * Stephen Gallagher
-
-
-.. comment: vim: ft=rst et

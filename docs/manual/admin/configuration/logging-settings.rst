@@ -40,6 +40,3 @@ Advanced
 	increase the size of log files.
 
 	This defaults to being disabled.
-
-
-.. comment: vim: ft=rst et

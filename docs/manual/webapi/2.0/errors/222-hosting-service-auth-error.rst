@@ -9,5 +9,3 @@
    There was an error authenticating with a hosting service.
 
    The specific reason it failed is provided in ``reason``.
-
-.. comment: vim: ft=rst et ts=3

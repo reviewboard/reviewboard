@@ -39,6 +39,3 @@ Documentation for the old API is `still available
    :hidden:
 
    2.0/index
-
-
-.. comment: vim: ft=rst et ts=3

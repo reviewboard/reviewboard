@@ -6,5 +6,3 @@
    authentication, but rather for usernames that are
    passed as parameters in some request, such as when
    creating a review request as another user.
-
-.. comment: vim: ft=rst et ts=3

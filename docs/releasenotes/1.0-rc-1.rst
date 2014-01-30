@@ -132,6 +132,3 @@ Bugs Fixed
 
 * Clicking the edit icon (the pencil) on review requests sometimes
   caused the browser to scroll. (:bug:`1057`)
-
-
-.. comment: vim: ft=rst et

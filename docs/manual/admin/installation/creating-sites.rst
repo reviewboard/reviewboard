@@ -163,5 +163,3 @@ You should either add the contents of this file to your
 `lighttpd documentation`_ for more information.
 
 .. _`lighttpd documentation`: http://redmine.lighttpd.net/wiki/lighttpd
-
-.. comment: vim: ft=rst et tw=75

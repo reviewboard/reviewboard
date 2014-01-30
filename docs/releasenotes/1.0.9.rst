@@ -70,5 +70,3 @@ Contributors
 * Laurent Nicolas
 * Masakazu Hamaji
 * Taro Muraoka
-
-.. comment: vim: ft=rst et

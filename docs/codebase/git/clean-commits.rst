@@ -337,6 +337,3 @@ That isn't to say that you won't find flaws in your commits that you wish
 you could fix. That is bound to happen. However, by ensuring the history
 is clean before you push, you will find it easier to reduce the number
 of spurious commits in your branch.
-
-
-.. comment: vim: ft=rst et ts=3

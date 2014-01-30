@@ -206,6 +206,3 @@ Contributors
 * Tina Yang
 * Wesley Ellis
 * Yazan Medanat
-
-
-.. comment: vim: ft=rst et

@@ -19,6 +19,3 @@ See :ref:`review-requests-for-diffs` for more information on the fields.
           another tool to update a diff, instead of uploading using this
 	  dialog. This will help guarantee a valid diff, and works around
 	  problems in some diff formats.
-
-
-.. comment: vim: ft=rst et ts=3

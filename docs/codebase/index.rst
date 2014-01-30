@@ -63,6 +63,3 @@ Related Resources
 .. _`Django documentation`: http://docs.djangoproject.com/
 .. _`The Django Book`: http://djangobook.com/
 .. _`Git Cheat Sheets`: http://help.github.com/git-cheat-sheets/
-
-
-.. comment: vim: ft=rst et ts=3

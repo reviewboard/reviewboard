@@ -17,5 +17,3 @@ Indices, glossary and tables
 
 * :ref:`genindex`
 * :ref:`modindex`
-
-.. comment: vim: ft=rst et ts=3

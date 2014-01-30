@@ -23,6 +23,3 @@ passed along with ``-m``. This value is in megabytes. For example, to specify
 
 Your setup most likely has a configuration file where you can set this. On
 Linux, memcached stores its settings in :file:`/etc/memcached.conf`.
-
-
-.. comment: vim: ft=rst et

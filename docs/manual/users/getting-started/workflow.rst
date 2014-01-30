@@ -25,6 +25,3 @@ This workflow assumes a :term:`pre-commit review` model.
 :term:`post-commit review` and decentralized version control models may be
 different. If you're unsure about your process, talk to your system
 administrator for detailed instructions.
-
-
-.. comment: vim: ft=rst et

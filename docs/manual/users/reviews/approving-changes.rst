@@ -27,6 +27,3 @@ If you're approving a change and you don't have any other comments to add, you
 can click the :guilabel:`Ship It!` button on the review request action bar
 instead. A confirmation dialog will appear asking if you're sure, and once
 given permission, it will create and publish a new review saying "Ship It!"
-
-
-.. comment: vim: ft=rst et ts=3

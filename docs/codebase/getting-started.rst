@@ -398,6 +398,3 @@ summary. The rest of the text of all your combined commits on that branch
 will be used as the description, which you can edit before publishing.
 
 See our guidelines on :ref:`Contributing Patches` for more information.
-
-
-.. comment: vim: ft=rst et

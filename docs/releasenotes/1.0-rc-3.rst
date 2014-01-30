@@ -78,6 +78,3 @@ Bugs Fixed
 
 * Fixed the link for deleting a screenshot when on the diff viewer
   page. It was pointing to the wrong path. (:bug:`1147`)
-
-
-.. comment: vim: ft=rst et

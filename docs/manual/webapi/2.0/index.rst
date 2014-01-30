@@ -11,6 +11,3 @@ REST API 2.0
    resources/index
    errors/index
    glossary
-
-
-.. comment: vim: ft=rst et ts=3

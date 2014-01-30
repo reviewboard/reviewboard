@@ -59,6 +59,3 @@ Example
         def initialize(self):
             ReviewRequestFieldsHook(self, 'info', [MilestoneField])
             ReviewRequestFieldsHook(self, 'main', [NotesField])
-
-
-.. comment: vim: ft=rst et ts=3

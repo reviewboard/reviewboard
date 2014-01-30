@@ -11,5 +11,3 @@
    the host.
 
    The hostname and key (in base64) will be returned along with the error.
-
-.. comment: vim: ft=rst et ts=3

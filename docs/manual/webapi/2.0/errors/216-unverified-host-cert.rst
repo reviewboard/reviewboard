@@ -20,6 +20,3 @@
    Review Board can access the host.
 
    The certificate information will be returned along with the error.
-
-.. comment: vim: ft=rst et ts=3
-

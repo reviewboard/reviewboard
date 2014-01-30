@@ -18,5 +18,3 @@ instead.
 Depending on your particular setup, publishing a draft may send
 an e-mail out to the reviewers, letting them know your change is ready to
 reviewed again.
-
-.. comment: vim: ft=rst et ts=3

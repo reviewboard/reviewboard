@@ -9,5 +9,3 @@
    Review Board attempted to store data in the database or a configuration
    file as needed to fulfill this request, but wasn't able to. The reason for
    this will be stored in ``reason``.
-
-.. comment: vim: ft=rst et ts=3

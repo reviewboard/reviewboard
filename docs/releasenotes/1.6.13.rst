@@ -84,6 +84,3 @@ Contributors
 * Tomasz Moń
 * Sampson Chen
 * Tina Yang
-
-
-.. comment: vim: ft=rst et

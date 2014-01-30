@@ -164,6 +164,3 @@ Contributors
 * David Trowbridge
 * Jon Demelo
 * Raja Venkataraman
-
-
-.. comment: vim: ft=rst et

@@ -25,6 +25,3 @@ Contributors
 
 * Bartek Celary
 * Christian Hammond
-
-
-.. comment: vim: ft=rst et

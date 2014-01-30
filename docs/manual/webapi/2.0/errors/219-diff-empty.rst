@@ -3,5 +3,3 @@
    :instance: reviewboard.webapi.errors.DIFF_EMPTY
 
    An empty diff was uploaded.
-
-.. comment: vim: ft=rst et ts=3

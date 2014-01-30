@@ -170,6 +170,3 @@ Contributors
 * David Trowbridge
 * Jim Chen
 * Steven MacLeod
-
-
-.. comment: vim: ft=rst et

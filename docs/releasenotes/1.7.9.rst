@@ -29,7 +29,3 @@ Contributors
 
 * Christian Hammond
 * Stephen Gallagher
-
-
-.. comment: vim: ft=rst et
-

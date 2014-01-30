@@ -29,6 +29,3 @@ Bugs Fixed
 
 * Apache configuration files with spaces in filenames were still
   broken. (:bug:`1111`)
-
-
-.. comment: vim: ft=rst et

@@ -216,5 +216,3 @@ Contributors
 * Dick Porter
 * Hongbin Lu
 * Kevin Quinn
-
-.. comment: vim: ft=rst et

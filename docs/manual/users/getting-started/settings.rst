@@ -48,6 +48,3 @@ Gravatar Images
 Review Board uses the gravatar system to associate photos or pictures with user
 accounts. To set your gravatar, go to http://gravatar.com/ and enter the email
 address used on your Review Board account.
-
-
-.. comment: vim: ft=rst et

@@ -96,6 +96,3 @@ out along with the web server.
    You will also need to ensure that your :file:`{sitedir}/data/` directory
    is shared across all instances. This is mainly due to each server needing
    access to your SSH keys.
-
-
-.. comment: vim: ft=rst et

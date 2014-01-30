@@ -18,6 +18,3 @@ Indices, glossary and tables
 ============================
 
 * :ref:`genindex`
-
-
-.. comment: vim: ft=rst et

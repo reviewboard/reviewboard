@@ -515,6 +515,3 @@ code for a new extension. This script is part of the Review Board tree and is
 located here::
 
    ./contrib/tools/generate_extension.py
-
-
-.. comment: vim: ft=rst et ts=3

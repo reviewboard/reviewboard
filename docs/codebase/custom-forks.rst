@@ -121,6 +121,3 @@ type::
 
     $ git checkout branch-name
     $ git push REMOTE_NAME branch-name
-
-
-.. comment: vim: ft=rst et ts=3
