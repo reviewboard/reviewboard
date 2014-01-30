@@ -341,10 +341,12 @@ class DiffChunkGenerator(object):
 
         indentation_changes = meta.get('indentation_changes', {})
 
-        if line_pair in indentation_changes:
-            old_markup, new_markup = \
-                self._highlight_indentation(old_markup, new_markup,
-                                            *indentation_changes[line_pair])
+        if line_pair[0] is not None and line_pair[1] is not None:
+            indentation_change = indentation_changes.get('%d-%d' % line_pair)
+
+            if indentation_change:
+                old_markup, new_markup = self._highlight_indentation(
+                    old_markup, new_markup, *indentation_change)
 
         result = [
             v_line_num,

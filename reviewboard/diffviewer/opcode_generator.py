@@ -147,7 +147,8 @@ class DiffOpcodeGenerator(object):
             has_indent = indent_info is not None
 
             if has_indent:
-                new_indentation_changes[(i + 1, j + 1)] = indent_info
+                key = '%d-%d' % (i + 1, j + 1)
+                new_indentation_changes[key] = indent_info
 
             if has_indent != prev_has_indent:
                 if prev_start_i != i or prev_start_j != j:
