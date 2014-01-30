@@ -81,12 +81,15 @@ def initialize():
     # sure it will always get loaded in every python instance.
     import reviewboard.site.templatetags
 
-    load_site_config()
+    is_running_test = getattr(settings, 'RUNNING_TEST', False)
 
-    if not getattr(settings, 'RUNNING_TEST', False):
+    if not is_running_test:
         # Set up logging.
         log.init_logging()
 
+    load_site_config()
+
+    if not is_running_test:
         if settings.DEBUG:
             logging.debug("Log file for Review Board v%s (PID %s)" %
                           (get_version_string(), os.getpid()))
