@@ -188,8 +188,14 @@ class DependsOnField(BuiltinFieldMixin, BaseModelListEditableField):
         return self.render_item(ReviewRequest.objects.get(pk=item[2]))
 
     def render_item(self, item):
-        return ('<a href="%s">%s</a>'
-                % (escape(item.get_absolute_url()), escape(item.display_id)))
+        rendered_item = (
+            '<a href="%s">%s</a>'
+            % (escape(item.get_absolute_url()), escape(item.display_id)))
+
+        if item.status == ReviewRequest.SUBMITTED:
+            return '<s>%s</s>' % rendered_item
+        else:
+            return rendered_item
 
 
 class BlocksField(BuiltinFieldMixin, BaseReviewRequestField):
