@@ -22,7 +22,8 @@ Custom columns can also be created by subclassing
 :py:class:`djblets.datagrid.grids.Column`.
 
 If you want to add to the dashboard specifically, you can use
-:ref:`dashboard-columns-hook`.
+:ref:`dashboard-columns-hook`. Columns added using that hook will appear
+only on the dashboard's datagrid.
 
 
 Example
