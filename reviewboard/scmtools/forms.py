@@ -843,9 +843,11 @@ class RepositoryForm(forms.ModelForm):
 
             # The clean/validation functions could create new errors, so
             # skip validating the repository path if everything else isn't
-            # clean.
+            # clean. Also skip in the case where the user is hiding the
+            # repository.
             if (not self.errors and
                 not self.cleaned_data['reedit_repository'] and
+                self.cleaned_data['visible'] and
                 self.validate_repository):
                 self._verify_repository_path()
 
