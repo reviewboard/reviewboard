@@ -2733,8 +2733,6 @@ class ReviewGroupResource(WebAPIResource):
 
     Review groups are groups of users that can be listed as an intended
     reviewer on a review request.
-
-    Review groups cannot be created or modified through the API.
     """
     model = Group
     fields = {
