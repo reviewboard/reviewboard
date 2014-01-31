@@ -1,6 +1,6 @@
 from __future__ import unicode_literals
 
-from django.core.management.commands import loaddata
+from django.core.management import call_command
 from django_evolution import models as django_evolution
 
 from reviewboard.diffviewer.models import FileDiff
@@ -55,5 +55,5 @@ def init_evolutions(app, created_models, **kwargs):
 
     # Load the Django Evolution fixture describing the database at the time
     # of the Django Evolution addition.
-    loaddata.Command().handle("admin/fixtures/initial_evolution_schema.json",
-                              verbosity=0)
+    call_command('loaddata', 'admin/fixtures/initial_evolution_schema.json',
+                 verbosity=0)
