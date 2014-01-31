@@ -19,6 +19,24 @@ handler404 = 'django.views.defaults.page_not_found'
 handler500 = 'django.views.defaults.server_error'
 
 
+# Useful collections of URL names that may be interesting to callers.
+# This is especially useful for any apply_to lists in hooks.
+diffviewer_url_names = [
+    'view_diff',
+    'view_interdiff',
+    'view_diff_revision',
+]
+
+reviewable_url_names = diffviewer_url_names + [
+    'file_attachment',
+    'screenshot',
+]
+
+review_request_url_names = diffviewer_url_names + [
+    'review-request-detail',
+]
+
+
 # Load in all the models for the admin UI.
 if not admin.site._registry:
     admin.autodiscover()
