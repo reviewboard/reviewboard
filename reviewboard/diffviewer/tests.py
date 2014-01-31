@@ -129,9 +129,10 @@ class InterestingLinesTest(TestCase):
         self.assertEqual(lines[0][0], (1, 'class HelloWorld {\n'))
         self.assertEqual(lines[0][1], (2, '\tfunction helloWorld() {\n'))
 
-        self.assertEqual(len(lines[1]), 2)
+        self.assertEqual(len(lines[1]), 3)
         self.assertEqual(lines[1][0], (4, 'class HelloWorld\n'))
         self.assertEqual(lines[1][1], (9, '\tfunction helloWorld()\n'))
+        self.assertEqual(lines[1][2], (14, '\tpublic function foo() {\n'))
 
     def testPython(self):
         """Testing interesting lines scanner with a Python file"""

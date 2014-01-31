@@ -11,5 +11,9 @@ class HelloWorld
 	{
 		print "Hello world!";
 	}
+
+	public function foo() {
+		print "Hello world!";
+	}
 }
 ?>

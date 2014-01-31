@@ -50,7 +50,8 @@ HEADER_REGEXES = {
         re.compile(r'^[A-Za-z0-9$_]'),
     ],
     '.php': [
-        re.compile(r'^\s*(class|function) [A-Za-z0-9_]+'),
+        re.compile(r'^\s*(public|private|protected)?\s*'
+                   r'(class|function) [A-Za-z0-9_]+'),
     ],
     '.pl': [
         re.compile(r'^\s*sub [A-Za-z0-9_]+'),
