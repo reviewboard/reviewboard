@@ -551,8 +551,8 @@ def register_review_request_fieldset(fieldset):
     # Set the field_classes to an empty list by default if it doesn't
     # explicitly provide its own, so that entries don't go into
     # BaseReviewRequestFieldSet's global list.
-    if field_cls.field_classes is None:
-        field_cls.field_classes = []
+    if fieldset.field_classes is None:
+        fieldset.field_classes = []
 
     for field_cls in fieldset.field_classes:
         _register_field(field_cls)
