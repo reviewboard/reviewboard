@@ -200,7 +200,7 @@ class CVSDiffParser(DiffParser):
     def parse_diff_header(self, linenum, info):
         linenum = super(CVSDiffParser, self).parse_diff_header(linenum, info)
 
-        if info.get('origFile') == '/dev/null':
+        if info.get('origFile') in ('/dev/null', 'nul:'):
             info['origFile'] = info['newFile']
             info['origInfo'] = 'PRE-CREATION'
         elif 'filename' in info:
