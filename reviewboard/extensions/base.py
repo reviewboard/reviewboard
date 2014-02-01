@@ -1,10 +1,12 @@
 from __future__ import unicode_literals
 
-from djblets.extensions.extension import Extension
+from djblets.extensions.extension import Extension, JSExtension
 from djblets.extensions.manager import ExtensionManager
 
 
-__all__ = ['ExtensionManager', 'Extension', 'get_extension_manager']
+__all__ = [
+    'ExtensionManager', 'Extension', 'JSExtension', 'get_extension_manager'
+]
 
 
 _extension_manager = None
