@@ -84,7 +84,7 @@ if settings.DEBUG or getattr(settings, 'RUNNING_TEST', False):
 localsite_urlpatterns = patterns(
     '',
 
-    url(r'^$', RedirectView.as_view(url='dashboard/'), name="root"),
+    url(r'^$', 'reviewboard.reviews.views.root', name="root"),
 
     (r'^api/', include(resources.root.get_url_patterns())),
     (r'^r/', include('reviewboard.reviews.urls')),

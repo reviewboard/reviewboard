@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% load djblets_deco i18n %}
+
+{% block title %}{% trans "Permission Denied" %}{% endblock %}
+
+{% block content %}
+ <div class="permissions-offset">
+{%  box "important" %}
+  <h1>{% trans "Permission Denied" %}</h1>
+  <p>{% trans "You do not have permission to access this page." %}</p>
+{%  endbox %}
+ </div>
+{% endblock %}

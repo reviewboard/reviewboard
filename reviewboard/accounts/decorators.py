@@ -36,7 +36,11 @@ def valid_prefs_required(view_func):
     be used with @check_login_required.
     """
     def _check_valid_prefs(request, *args, **kwargs):
-        Profile.objects.get_or_create(user=request.user)
+        # Fetch the profile. If it exists, we're done, and it's cached for
+        # later. If not, try to create it.
+        if request.user.is_authenticated():
+            Profile.objects.get_or_create(user=request.user)
+
         return view_func(request, *args, **kwargs)
 
     return _check_valid_prefs
