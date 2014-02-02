@@ -4,30 +4,33 @@
 Overview
 ========
 
-.. versionadded:: 1.7
-   Many of the features here are new in Review Board 1.7
-
-
-Review Board's functionality can be enhanced by installing a Review Board
-extension. Writing and installing an extension is an excellent way to tailor
+Review Board's functionality can be enhanced by installing one or more
+extensions. Writing and installing an extension is an excellent way to tailor
 Review Board to your exact needs. Here are a few examples of the many things
 you can accomplish by writing an extension:
 
-*  Modify the user interface, providing new links or buttons.
-*  Generate statistics for report gathering.
-*  Interface Review Board with other systems (e.g. an IRC bot).
+* Modify the user interface, providing new links or buttons.
+* Generate statistics for report gathering.
+* Interface Review Board with other systems (e.g. an IRC bot).
+* Add new API for efficiently gathering custom data from the database.
+* Provide review UIs for previously unsupported types of files.
+
+Extensions were introduced as an experimental feature in Review Board 1.7.
+However, many of the features discussed here were added or changed in Review
+Board 2.0.
 
 
 Extension Structure
 ===================
 
-Extensions must follow a certain structure to be recognized and loaded
-by Review Board. They are distributed inside Python Eggs following a few
-conventions. See :ref:`extension-python-egg` for more information.
+Extensions must follow a certain structure in order to be recognized and
+loaded by Review Board. They are distributed inside Python Egg packages,
+which must follow a few conventions. See :ref:`extension-python-egg` for more
+information.
 
 .. note::
    The Review Board extension system has been designed to follow many
-   of Django's conventions. The structure of an extension package tries
+   of Django_'s conventions. The structure of an extension package tries
    to mirror that of Django apps.
 
 The main constituent of an extension is a class which inherits from the
@@ -38,8 +41,11 @@ initial code an extension requires. See :ref:`extension-generator` for
 more information.
 
 
-Minimum Extension Structure
----------------------------
+.. _Django: https://www.djangoproject.com/
+
+
+Required Files
+--------------
 
 At minimum, an extension requires the following files:
 
@@ -50,16 +56,15 @@ At minimum, an extension requires the following files:
 
 The following are a description and example of each file. In each example
 *extensiondir* has been replaced with the extension's package,
-'sample_extension':
+`'sample_extension'`:
 
 .. _extension-example-files-setup.py:
 
 **setup.py**
-
    This is the file used to create the Python Egg. It defines the
    :ref:`extension-entry-point` along with other meta-data. See
    :ref:`extension-distribution` for a description of features relevant to
-   Review Board extensions. Example::
+   Review Board extensions. For example::
 
       from reviewboard.extensions.packaging import setup
 
@@ -70,9 +75,9 @@ The following are a description and example of each file. In each example
       setup(
           name=PACKAGE,
           version=VERSION,
-          description="description of extension",
-          author="Your Name",
-          packages=["sample_extension"],
+          description='Description of extension package.',
+          author='Your Name',
+          packages=['sample_extension'],
           entry_points={
               'reviewboard.extensions':
                   '%s = sample_extension.extension:SampleExtension' % PACKAGE,
@@ -85,49 +90,57 @@ The following are a description and example of each file. In each example
 .. _extension-example-files-__init__.py:
 
 sample_extension/**__init__.py**
-
-   This file indicates the sample_extension is a Python package.
+   This file indicates the sample_extension is a Python package. It is
+   generally left blank.
 
 .. _extension-example-files-extension.py:
 
 sample_extension/**extension.py**
-
    This is the main module of the extension. The Extension subclass should
-   be defined here. Example::
+   be defined here. For example::
 
       from reviewboard.extensions.base import Extension
 
 
       class SampleExtension(Extension):
           def initialize(self):
-              # Your extension initialization code here.
+              # Your extension initialization code belongs here.
+
+   This file will often be where you'll define any hooks, utility functions,
+   and extension metadata you may need. Throughout this guide, we'll cover
+   the various things you may place in this file.
 
 
-Other Structure
----------------
+Optional Files
+--------------
 
 Review Board also expects extensions to follow a few other conventions when
 naming files. The following files serve a special purpose:
 
 **models.py**
-   An extension may define Django models in this file. The
-   corresponding tables will be created in the database when the extension is
-   loaded. See :ref:`extension-models` for more information.
+   An extension may define Django models in this file. The corresponding
+   tables will be created in the database when the extension is loaded. See
+   :ref:`extension-models` for more information.
 
 **models/**
-   As an alternative to using models.py, a Python package may
-   be created in models/, which may define models in its modules.
+   As an alternative to using :file:`models.py`, a Python package may be
+   created in a :file:`models/` directory, which may contain files with other
+   models. Like any Python module directory, it must also contain an
+   :file:`__init__.py`.
 
 **admin_urls.py**
-   An extension may define urls for
-   configuration in the admin panel. It is only used when
-   :py:attr:`is_configurable` is set ``True``. For more information, see
-   :ref:`extension-configuration-urls`.
+   An extension may define URLs for configuration in the administration UI.
+
+   This file is only used when :py:attr:`is_configurable` is set ``True``.
+   For more information, see :ref:`extension-configuration-urls`.
 
 **admin.py**
-   This file allows an extension to register models in its own Django admin
-   site. It is only used when :py:attr:`has_admin_site` is set ``True``. For
-   more information, see :ref:`extension-admin-site`.
+   This file allows an extension to register its models in its own section
+   of the administration UI, allowing administrators to browse the content
+   in the database.
+
+   This file is only used when :py:attr:`has_admin_site` is set ``True``.
+   For more information, see :ref:`extension-admin-site`.
 
 
 .. _extension-class:
@@ -137,65 +150,188 @@ Extension Class
 
 The main component of an extension is a class inheriting from
 :py:class:`reviewboard.extensions.base.Extension`. It can optionally set
-the following attributes:
+the following attributes on the class:
 
-* :py:attr:`is_configurable`
-* :py:attr:`has_admin_site`
+* :py:attr:`apps`
+* :py:attr:`context_processors`
+* :py:attr:`css_bundles`
 * :py:attr:`default_settings`
+* :py:attr:`has_admin_site`
+* :py:attr:`is_configurable`
+* :py:attr:`js_bundles`
+* :py:attr:`js_extensions`
+* :py:attr:`metadata`
+* :py:attr:`middleware`
 * :py:attr:`requirements`
+* :py:attr:`resources`
 
-The base class also provides the following attributes:
+The following are also available on an extension instance:
 
 * :py:attr:`settings`
 
 
 .. py:class:: reviewboard.extensions.base.Extension
 
-   .. py:attribute:: is_configurable
+   .. py:attribute:: apps
 
-      A Boolean indicating whether the extension supports configuration in
-      the Review Board admin panel. The default is ``False``. See
-      :ref:`extension-configuration` for more information.
+      A list of `Django apps`_ that the extension either provides or depends
+      upon.
 
-   .. py:attribute:: has_admin_site
+      Each "app" is a Python module path that Django will use when looking for
+      models, template tags, and more.
 
-      A Boolean that indicates whether a Django admin site should be generated
-      for the extension. The default is ``False``. See
-      :ref:`extension-admin-site` for more information.
+      This does not need to include the app for the extension itself, but
+      if the extension is grouped into separate Django apps, it can list
+      those.
+
+      This setting is equivalent to modifying ``settings.INSTALLED_APPS``
+      in Django.
+
+   .. py:attribute:: context_processors
+
+      A list of `Django context processors`_, which inject variables into
+      every rendered template. Certain third-party apps depend on context
+      processors.
+
+      This setting is equivalent to modifying
+      ``settings.TEMPLATE_CONTEXT_PROCESSORS`` in Django.
+
+   .. py:attribute:: css_bundles
+
+      A list of custom CSS media bundles that can be used when rendering
+      pages.
+
+      See :ref:`extension-static-files` for more information.
 
    .. py:attribute:: default_settings
 
-      A Dictionary which acts as a default for :py:attr:`settings`. The default
-      is ``{}``, an empty dictionary. See :ref:`extension-settings-defaults`
-      for more information.
+      A dictionary of default settings for the extension. These defaults
+      are used when accessing :py:attr:`settings`, if the user hasn't
+      provided a custom value. By default, this is empt.
+
+      See :ref:`extension-settings-defaults` for more information.
+
+   .. py:attribute:: has_admin_site
+
+      A boolean that indicates whether a Django admin site should be generated
+      for the extension.
+
+      If ``True``, a :guilabel:`Database` link will be shown for the
+      extension, allowing the user to inspect and modify the extension's
+      database entries. The default is ``False``.
+
+      See :ref:`extension-admin-site` for more information.
+
+   .. py:attribute:: is_configurable
+
+      A boolean indicating whether the extension supports global
+      configuration by a system administrator.
+
+      If ``True``, a :guilabel:`Configure` link will be shown for the
+      extension when enabled, taking them to the configuration page provided
+      by the extension. The default is ``False``.
+
+      See :ref:`extension-configuration` for more information.
+
+   .. py:attribute:: js_bundles
+
+      A list of custom JavaScript media bundles that can be used when
+      rendering pages.
+
+      See :ref:`extension-static-files` for more information.
+
+   .. py:attribute:: js_extensions
+
+      A list of :py:class:`reviewboard.extensions.base.JSExtension`
+      subclasses used for providing JavaScript-side extensions.
+
+      See :ref:`js-extensions` for more information.
+
+   .. py:attribute:: metadata
+
+      A dictionary providing additional information on the extension,
+      such as the name or a description.
+
+      By default, the metadata from :file:`setup.py` is used when displaying
+      information about the extension inside the administration UI. Extensions
+      can override what the user sees by setting the values in this
+      dictionary.
+
+      The following metadata keys are supported:
+
+      ``Name``
+         The human-readable name of the extension, shown in the extension
+         list.
+
+      ``Version``
+         The version of the extension. Usually, the version specified in
+         :file:`setup.py` suffices.
+
+      ``Summary``
+         A brief summary of the extension, shown in the extension list.
+
+      ``Description``
+         A longer description of the extension. As of Review Board 2.0, this
+         is not shown to the user, but it may be used in a future release.
+
+      ``Author``
+         The individual or company that authored the extension.
+
+      ``Author-email``
+         The contact e-mail address for the author of the extension.
+
+      ``Author-home-page``
+         The URL to the author's public site.
+
+      ``Home-page``
+         The URL to the extension's public site.
+
+      We generally recommend setting ``Name``, ``Summary``, and the
+      author information. ``Version`` is usually best left to the package,
+      unless there's a special way it should be presented.
+
+   .. py:attribute:: middleware
+
+      A list of `Django middleware`_ classes, which hook into various levels
+      of the HTTP request/response and page render process.
+
+      This is an advanced feature, and is generally not needed by most
+      extensions. Certain third-party apps may depend on middleware,
+      though.
+
+      This setting is equivalent to modifying
+      ``settings.MIDDLEWARE_CLASSES`` in Django.
 
    .. py:attribute:: requirements
 
       A list of strings providing the names of other extensions the
-      extension requires. An extension may only be enabled if all
-      other extensions in its requirements list are also enabled.
+      extension requires. Enabling the extension will in turn enable
+      all required extensions, and can only be enabled if the required
+      extensions can also be enabled.
+
       See :ref:`extension-egg-dependencies` for more information.
 
    .. py:attribute:: settings
 
       An instance of :py:class:`djblets.extensions.settings.Settings`. This
       attribute gives each extension an easy-to-use and persistent data store
-      for settings. See :ref:`extension-settings` for more information.
+      for settings.
 
-   .. py:attribute:: metadata
-
-      A dictionary which can contain extra package metadata. Normally, the
-      metadata from `setup.py` is used when displaying information about the
-      extension inside the administration UI. Defining this dictionary allows
-      you to override what gets displayed to the user, which is useful for
-      providing human-readable names. In particular, the `Name` and
-      `Description` fields in this dictionary are very useful.
+      See :ref:`extension-settings` for more information.
 
    .. py:attribute:: resources
 
-      A list of resource class names. This is used to extend the Web API with
-      additional endpoints. See :ref:`extension-resources` for more
-      information.
+      A list of :py:class:`reviewboard.webapi.resources.WebAPIResource`
+      subclasses. This is used to extend the Web API.
+
+      See :ref:`extension-resources` for more information.
+
+
+.. _`Django apps`: https://docs.djangoproject.com/en/dev/intro/reusable-apps/
+.. _`Django context processors`:
+   https://docs.djangoproject.com/en/dev/ref/templates/api/#subclassing-context-requestcontext
+.. _`Django middleware`:
+   https://docs.djangoproject.com/en/dev/topics/http/middleware/
 
 
 .. _extension-models:
@@ -203,18 +339,14 @@ The base class also provides the following attributes:
 Models
 ======
 
-Extensions are able to define Django Models to expand the database schema.
-When an extension is loaded, it is added to :py:attr:`INSTALLED_APPS`
-automatically. New Models are then written to the database by Review Board,
-which runs syncdb programmatically.
+Extensions are able to provide `Django Models`_, which are database tables
+under the control of the extension. Review Board handles registering these
+models, creating the database tables, and performing any database schema
+migrations the extension defines.
 
-.. note::
-   Review Board is also able to evolve the database programmatically. This
-   allows a developer to make changes to an extension's models after release.
-
-Extensions use the same convention as Django applications when defining
+Extensions use the same convention as `Django apps`_ when defining
 Models. In order to define new Models, a :file:`models.py` file, or a
-:file:`models/` directory constituting a Python package should be created.
+:file:`models/` directory constituting a Python package needs to be created.
 
 Here is an example :file:`models.py` file::
 
@@ -223,19 +355,19 @@ Here is an example :file:`models.py` file::
 
    class MyExtensionsSampleModel(models.Model):
        name = models.CharField(max_length=128)
-       enabled = models.BooleanField()
+       enabled = models.BooleanField(default=False)
+
+See the `Django Models`_ documentation for more information on how to
+write a model, and `Django Evolution`_ for information on how to write
+database schema migrations.
 
 .. note::
-   When an extension is disabled, tables for its models are not dropped.
-   For a development installation, an evolution to drop these tables may be
-   generated using::
+   When an extension is disabled, tables for its models remain in the
+   database. These should generally not interfere with anything.
 
-      ./reviewboard/manage.py evolve --purge
 
-   Alternativley, when developing against a Review Board install, rb-site
-   may be used::
-
-      rb-site manage /path/to/site evolve -- --purge
+.. _`Django Models`: https://docs.djangoproject.com/en/dev/topics/db/models/
+.. _`Django Evolution`: http://django-evolution.googlecode.com/
 
 
 .. _extension-settings:
@@ -243,35 +375,20 @@ Here is an example :file:`models.py` file::
 Settings
 ========
 
-Each extension is given a settings dictionary which it can load from the
-database using :py:meth:`load` and save to the database using :py:meth:`save`.
-This is found in the :py:attr:`settings` attribute and is an instance of the
-:py:class:`djblets.extensions.settings.Settings` class.
+Extensions are able to access, store, and modify settings that define their
+behavior.
 
-A set of defaults may be provided in :py:attr:`default_settings` to make
-initialization of the dictionary simple. See :ref:`extension-settings-defaults`
-for more information.
+When an extension is enabled, Review Board will load any stored settings from
+the database, making them available through the :py:attr:`settings` attribute
+on the Extension.
 
-.. py:class:: djblets.extensions.settings.Settings
+Extensions can modify the settings by changing the contents of the dictionary
+and calling :py:meth:`save`. For example::
 
-   .. py:method:: load()
-
-      Retrieves the dictionary entries from the database.
-
-   .. py:method:: save()
-
-      Stores the dictionary entries to the database.
-
-
-Here is an example of how to save settings::
-
-   settings['mysetting'] = "New Setting Value"
-   settings.save()  # Store the settings in the database.
-
-And an example of how to load settings::
-
-   settings.load()  # Retrieve the settings from the database.
-   mysetting = settings['mysetting']  # Read the setting value.
+   self.settings['mybool'] = True
+   self.settings['myint'] = 42
+   self.settings['mystring'] = 'New Setting Value'
+   self.settings.save()
 
 
 .. _extension-settings-defaults:
@@ -279,23 +396,22 @@ And an example of how to load settings::
 Default Settings
 ----------------
 
-To provide defaults for the :py:attr:`settings` dictionary, an extension
-may use the :py:attr:`default_settings` attribute. If a key is not
-found in :py:attr:`settings`, :py:attr:`default_settings` will be checked.
-If neither dictionary contains the key, a :py:exc:`KeyError` exception
-will be thrown.
+Any settings not explicitly saved by the extension or loaded from the database
+will be looked up in :py:attr:`default_settings`. This can be defined on the
+Extension class. For example::
 
 Here is an example extension setting :py:attr:`default_settings`::
 
    class SampleExtension(Extension):
-      default_settings = {
-         'mysetting': 1,
-         'anothersetting': 4,
-         'stringsetting': "I'm a string setting",
-      }
+       default_settings = {
+           'mybool': True,
+           'myint': 4,
+           'mystring': 'I'm a string setting',
+       }
 
-      def __init__(self, *args, **kwargs):
-        super(SampleExtension, self).__init__(*args, **kwargs)
+
+If neither :py:attr:`settings` nor py:attr:`default_settings` contains the
+key, a :py:exc:`KeyError` exception will be thrown.
 
 
 .. _extension-configuration:
@@ -303,38 +419,33 @@ Here is an example extension setting :py:attr:`default_settings`::
 Configuration
 =============
 
-For administrative configuration, extensions are able to hook into the
-Review Board admin panel.
+Extensions can provide a configuration page, allowing Review Board
+administrators to customize the behavior of the extension.
 
-By setting :py:attr:`is_configurable` to ``True``, an extension is assigned
-a URL namespace under the admin path. New URLs are added to this namespace
-using an admin_urls.py file. See :ref:`extension-configuration-urls` for
-more information.
+By setting :py:attr:`is_configurable` to ``True`` and providing a
+:file:`admin_urls.py` file, a :guilabel:`Configure` link will be shown in the
+extension list for the extension. This is only shown when the extension is
+enabled.
 
-Review Board also supplies views, templates, and forms, making management
-of :ref:`extension-settings` painless. See
-:ref:`extension-configuration-settings-form` for more information.
+The extension will then need to create a page to present to the user for any
+customizable settings. Review Board provides some helpers for this, which
+will be described below.
+
 
 .. _extension-configuration-urls:
 
-Admin URLs
-----------
+Configuration URLs
+------------------
 
-If an extension has :py:attr:`is_configurable` set to ``True``, it will
-be assigned a URL namespace under the admin path. A button labeled
-:guilabel:`Configure` will appear in the list of installed extensions,
-linking to the base path of this namespace.
+When an extension is configurable, Review Board will load the extension's
+:file:`admin_urls.py`, making those URLs available. An extension can provide
+whatever it wants in here, but it's expected to proivide at least the root
+URL, designated by ``url(r'^$', ...)``. This should point to the main
+configuration page.
 
-To specify URLs in the namespace, an :file:`admin_urls.py` file should be
-created, taking the form of a Django URLconf module. This module should
-follow Django's conventions, defining a :py:data:`urlpatterns` variable.
-
-.. py:data:: urlpatterns
-
-   Used to specify URLs. This should be a Python list, in the format returned
-   by the function :py:func:`django.conf.urls.patterns`.
-
-The following is an example :file:`admin_urls.py` file::
+This file follows the `Django URLs`_ format. It must provide a
+``urlpatterns`` variable, which will contain all the URL patterns.
+For example::
 
    from django.conf.urls.defaults import patterns, url
 
@@ -343,31 +454,29 @@ The following is an example :file:`admin_urls.py` file::
        url(r'^$', 'configure')
    )
 
-This would direct the base URL of the namespace to the configure view.
+This will call the ``configure`` function in ``sample_extension.views``
+when clickin the :guilabel:`Configure` link.
 
-For a more in depth explanation of URLconfs please see the
-`Django URLs`_ documentation.
+.. _`Django URLs`: https://docs.djangoproject.com/en/dev/topics/http/urls/
 
-.. _`Django URLs`: https://docs.djangoproject.com/en/1.4/topics/http/urls/
 
 .. _extension-configuration-settings-form:
 
 Settings Form
 -------------
 
-Review Board supplies the views, templates, and a base Django form to make
-creating a configuration UI for :ref:`extension-settings` painless. To take
-advantage of this feature, do the following:
+Review Board makes it easy to create a basic configuration form for an
+extension. It provides views, templates, and a form class that does the hard
+work of loading settings, presenting them to the user, and saving them.
 
-*
-   Define a new form class inheriting from
+To make use of the provided configuration forms, you'll want to:
+
+1. Define a new form class that inherits from
    :py:class:`djblets.extensions.forms.SettingsForm`
 
-*
-   Create a new URL pattern to
-   `reviewboard.extensions.views.configure_extension`, providing the extension
-   class and form class. See :ref:`extension-configuration-urls` for more
-   information on creating URL patterns.
+2. Create a new ``url()`` entry in :File:`admin_urls.py` that makes use
+   of the provided configuration view, passing your extension and form
+   classes.
 
 Here is an example form class::
 
@@ -376,38 +485,45 @@ Here is an example form class::
 
 
    class SampleExtensionSettingsForm(SettingsForm):
-       field1 = forms.IntegerField(min_value=0, initial=1, help_text="Field 1")
+       field1 = forms.IntegerField(min_value=0, initial=1,
+                                  help_text="Field 1")
 
-Here is an example URL pattern for the form::
 
-   from django.conf.urls.defaults import patterns
+And here is an example URL pattern for the form::
+
+   from django.conf.urls.defaults import patterns, url
 
    from sample_extension.extension import SampleExtension
    from sample_extension.forms import SampleExtensionSettingsForm
 
 
    urlpatterns = patterns('',
-       (r'^$', 'reviewboard.extensions.views.configure_extension',
-        {'ext_class': SampleExtension,
-         'form_class': SampleExtensionSettingsForm,
-        }),
+       url(r'^$',
+           'reviewboard.extensions.views.configure_extension',
+           {
+               'ext_class': SampleExtension,
+               'form_class': SampleExtensionSettingsForm,
+           }),
    )
 
 
 .. _extension-admin-site:
 
-Admin Site
-==========
+Admin Site (Database Browser)
+=============================
 
 By setting :py:attr:`has_admin_site` to ``True``, an extension will be given
-its own Django admin site. A button labeled :guilabel:`Database` will appear
-in the list of installed extensions, linking to the base path of the admin site.
+its own Django database administration site. A button labeled
+:guilabel:`Database` will appear in the list of installed extensions, linking
+to that site.
 
-The extension's instance of :py:class:`django.contrib.admin.sites.AdminSite`
-will exist in the :py:attr:`admin_site` attribute of the Extension.
+The extension will also have a :py:attr:`admin_site` attribute that points to
+the :py:class:`django.contrib.admin.sites.AdminSite` used. This is provided
+automatically, and is used primarily for the registration of models.
 
-Models should be registered to the Admin site in an :file:`admin.py` file.
-Here is an example :file:`admin.py` file::
+Only models that are registered will appear in the database browser. You can
+see the documentation on the `Django admin site`_ for details on how this
+works. For example::
 
    from reviewboard.extensions.base import get_extension_manager
 
@@ -420,13 +536,12 @@ Here is an example :file:`admin.py` file::
    extension_manager = get_extension_manager()
    extension = extension_manager.get_enabled_extension(SampleExtension.id)
 
-   # Register the Model to the sample_extensions admin site.
+   # Register the Model so it will show up in the admin site.
    extension.admin_site.register(SampleModel)
 
-For more information on Django admin sites, please see the `Django Admin Site`_
-documentation.
 
-.. _`Django Admin Site`: https://docs.djangoproject.com/en/1.4/ref/contrib/admin/
+.. _`Django Admin Site`:
+   https://docs.djangoproject.com/en/dev/ref/contrib/admin/
 
 
 .. _extension-resources:
@@ -434,12 +549,24 @@ documentation.
 Extending the Web API
 =====================
 
-Each extension is given a location in the Web API which is used to get
-information about the extension and enable or disable it. Extensions can add
-child resources to this location by defining the :py:attr:`resources`
-attribute.
+Each extension has a very basic API resource that clients can use to fetch
+details on the extension, such as the name, URLs, and whether it's enabled.
 
-Here is an example resource class::
+Extensions can extend this to provide even more resources, which can be used
+to retrieve or modify any information the extension chooses. They do this by
+creating :py:class:`reviewboard.webapi.resources.WebAPIResource` subclasses
+and listing an instance of each that you want as a child of the extension's
+resource in :py:attr:`resources` attribute.
+
+Resources are complex, but are explained in detail in the Djblets
+`WebAPIResource code`_.
+
+.. _`WebAPIResource code`:
+   https://github.com/djblets/djblets/blob/master/djblets/webapi/resources.py
+
+
+For example, a resource for creating and publishing a simplified review may
+look like::
 
    from django.core.exceptions import ObjectDoesNotExist
    from djblets.webapi.decorators import (webapi_login_required,
@@ -454,7 +581,11 @@ Here is an example resource class::
    class SampleExtensionResource(WebAPIResource):
        """Resource for creating reviews"""
        name = 'sample_extension_review'
+       uri_name = 'review'
        allowed_methods = ('POST',)
+
+       def has_access_permissions(self, request, *args, **kwargs):
+           return review_request.is_accessible_by(request.user)
 
        @webapi_check_local_site
        @webapi_login_required
@@ -484,25 +615,19 @@ Here is an example resource class::
                self.item_result_key: new_review
            }
 
-       def has_access_permissions(self, request, *args, **kwargs):
-           return review_request.is_accessible_by(request.user)
-
    sample_review_resource = SampleExtensionResource()
 
 
-And the corresponding extension::
+The extension would then make use of this with::
 
    class SampleExtension(Extension):
        resources = [sample_review_resource]
-
-       def __init__(self, *args, **kwargs):
-           super(SampleExtension, self).__init__(*args, **kwargs)
 
 
 With this, one would be able to POST to this resource to create reviews that
 contained the text "Sample review body". This API endpoint would be registered
 at
-``/api/extensions/sample_extension.extension.SampleExtension/sample-extension-reviews/``.
+``/api/extensions/sample_extension.extension.SampleExtension/reviews/``.
 
 
 .. _extension-generator:
@@ -511,7 +636,7 @@ Extension Boilerplate Generator
 ===============================
 
 The Review Board repository contains a script for generating the boilerplate
-code for a new extension. This script is part of the Review Board tree and is
-located here::
+code for a new extension. This script is part of the Review Board tree and can
+be run by typing::
 
    ./contrib/tools/generate_extension.py
