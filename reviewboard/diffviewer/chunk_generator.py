@@ -376,15 +376,55 @@ class DiffChunkGenerator(object):
         a way that makes it clear how many spaces or tabs were used.
         """
         if is_indent:
-            new_markup = '<span class="indent">%s</span>%s' % (
-                self._serialize_indentation(new_markup[:raw_indent_len]),
-                new_markup[raw_indent_len:])
+            new_markup = self._wrap_indentation_chars(
+                'indent',
+                new_markup,
+                raw_indent_len,
+                self._serialize_indentation)
         else:
-            old_markup = '<span class="unindent">%s</span>%s' % (
-                self._serialize_unindentation(old_markup[:raw_indent_len]),
-                old_markup[raw_indent_len:])
+            old_markup = self._wrap_indentation_chars(
+                'unindent',
+                old_markup,
+                raw_indent_len,
+                self._serialize_unindentation)
 
         return old_markup, new_markup
+
+    def _wrap_indentation_chars(self, class_name, markup, raw_indent_len,
+                                serializer):
+        """Wraps characters in a string with indentation markers.
+
+        This will insert the indentation markers and its wrapper in the
+        markup string. It's careful not to interfere with any tags that
+        may be used to highlight that line.
+        """
+        start_pos = 0
+
+        # There may be a tag wrapping this whitespace. If so, we need to
+        # find where the actual whitespace chars begin.
+        while markup[start_pos] == '<':
+            end_tag_pos = markup.find('>', start_pos + 1)
+
+            # We'll only reach this if some corrupted HTML was generated.
+            # We want to know about that.
+            assert end_tag_pos != -1
+
+            start_pos = end_tag_pos + 1
+
+        end_pos = start_pos + raw_indent_len
+
+        indentation = markup[start_pos:end_pos]
+
+        if indentation.strip() != '':
+            # There may be other things in here we didn't expect. It's not
+            # a straight sequence of characters. Give up on highlighting it.
+            return markup
+
+        return '%s<span class="%s">%s</span>%s' % (
+            markup[:start_pos],
+            class_name,
+            serializer(indentation),
+            markup[end_pos:])
 
     def _serialize_indentation(self, chars):
         """Serializes an indentation string into an HTML representation.

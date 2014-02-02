@@ -1170,6 +1170,27 @@ class DiffChunkGeneratorTests(TestCase):
             self.generator._highlight_indentation('', '        foo', True, 4),
             ('', '<span class="indent">&gt;&gt;&gt;&gt;</span>    foo'))
 
+    def test_highlight_indent_with_adjacent_tag(self):
+        """Testing DiffChunkGenerator._highlight_indentation
+        with indentation and adjacent tag wrapping whitespace
+        """
+        self.assertEqual(
+            self.generator._highlight_indentation(
+                '',
+                '<span class="s"> </span>foo',
+                True, 1),
+            ('',
+             '<span class="s"><span class="indent">&gt;</span></span>foo'))
+
+    def test_highlight_indent_with_unexpected_chars(self):
+        """Testing DiffChunkGenerator._highlight_indentation
+        with indentation and unexpected markup chars
+        """
+        self.assertEqual(
+            self.generator._highlight_indentation(
+                '', ' <span>  </span> foo', True, 4),
+            ('', ' <span>  </span> foo'))
+
     def test_highlight_unindent(self):
         """Testing DiffChunkGenerator._highlight_indentation
         with unindentation
@@ -1177,6 +1198,27 @@ class DiffChunkGeneratorTests(TestCase):
         self.assertEqual(
             self.generator._highlight_indentation('        foo', '', False, 4),
             ('<span class="unindent">&lt;&lt;&lt;&lt;</span>    foo', ''))
+
+    def test_highlight_unindent_with_adjacent_tag(self):
+        """Testing DiffChunkGenerator._highlight_indentation
+        with unindentation and adjacent tag wrapping whitespace
+        """
+        self.assertEqual(
+            self.generator._highlight_indentation(
+                '<span class="s"> </span>foo',
+                '',
+                False, 1),
+            ('<span class="s"><span class="unindent">&lt;</span></span>foo',
+             ''))
+
+    def test_highlight_unindent_with_unexpected_chars(self):
+        """Testing DiffChunkGenerator._highlight_indentation
+        with unindentation and unexpected markup chars
+        """
+        self.assertEqual(
+            self.generator._highlight_indentation(
+                ' <span>  </span> foo', '', False, 4),
+            (' <span>  </span> foo', ''))
 
 
 class DiffOpcodeGeneratorTests(TestCase):
