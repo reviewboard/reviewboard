@@ -507,6 +507,18 @@ class BugsColumn(Column):
         return (", ").join(bugs)
 
 
+class ReviewRequestIDColumn(Column):
+    """Displays the ID of the review request."""
+    def __init__(self, *args, **kwargs):
+        super(ReviewRequestIDColumn, self).__init__(
+            label=_('ID'),
+            detailed_label=_('Review Request ID'),
+            shrink=True, link=True)
+
+    def render_data(self, review_request):
+        return review_request.display_id
+
+
 class ReviewRequestDataGrid(DataGrid):
     """A datagrid that displays a list of review requests.
 
@@ -559,20 +571,10 @@ class ReviewRequestDataGrid(DataGrid):
     target_people = PeopleColumn()
     to_me = ToMeColumn()
 
-    review_id = Column(_("Review ID"),
-                       shrink=True, sortable=True, link=True)
+    review_id = ReviewRequestIDColumn()
 
     def __init__(self, *args, **kwargs):
         self.local_site = kwargs.pop('local_site', None)
-
-        if self.local_site:
-            review_id_field = 'local_id'
-        else:
-            review_id_field = 'pk'
-
-        self.review_id = Column(_("Review ID"),
-                                field_name=review_id_field,
-                                shrink=True, sortable=True, link=True)
 
         super(ReviewRequestDataGrid, self).__init__(*args, **kwargs)
 
