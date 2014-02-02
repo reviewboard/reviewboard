@@ -283,7 +283,7 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
                 }
 
                 f.caption = f.draft_caption
-                f.save(update_fields['caption'])
+                f.save(update_fields=['caption'])
 
         # Now scan through again and set the caption correctly for newly-added
         # files by copying the draft_caption over. We don't need to include
@@ -292,7 +292,7 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
         for f in files:
             if f.caption != f.draft_caption:
                 f.caption = f.draft_caption
-                f.save(update_fields['caption'])
+                f.save(update_fields=['caption'])
 
         if caption_changes and self.changedesc:
             self.changedesc.fields_changed['file_captions'] = caption_changes
