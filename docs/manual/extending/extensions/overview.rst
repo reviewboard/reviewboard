@@ -99,8 +99,8 @@ sample_extension/**extension.py**
 
 
       class SampleExtension(Extension):
-          def __init__(self, *args, **kwargs):
-              super(SampleExtension, self).__init__(*args, **kwargs)
+          def initialize(self):
+              # Your extension initialization code here.
 
 
 Other Structure

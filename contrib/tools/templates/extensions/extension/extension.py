@@ -9,6 +9,7 @@ from reviewboard.extensions.base import Extension
 from reviewboard.extensions.hooks import DashboardHook, URLHook
 {% endif %}
 
+
 {%- if dashboard_link is not none %}
 class {{class_name}}URLHook(URLHook):
     def __init__(self, extension, *args, **kwargs):
@@ -27,15 +28,22 @@ class {{class_name}}DashboardHook(DashboardHook):
                 entries=entries, *args, **kwargs)
 {%- endif %}
 
+
 class {{class_name}}(Extension):
+    metadata = {
+        'Name': '{{extension_name}}',
+        'Summary': 'Describe your extension here.',
+    }
+
 {%- if is_configurable %}
     is_configurable = True
-
 {%- endif %}
-    def __init__(self, *args, **kwargs):
-        super({{class_name}}, self).__init__(*args, **kwargs)
+
+    def initialize(self):
+        # Your extension initialization is done here.
 {%- if dashboard_link is not none %}
         self.url_hook = {{class_name}}URLHook(self)
         self.dashboard_hook = {{class_name}}DashboardHook(self)
+{%- else %}
+        pass
 {%- endif %}
-
