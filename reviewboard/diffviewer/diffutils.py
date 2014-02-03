@@ -112,13 +112,11 @@ def patch(diff, file, filename, request=None):
 
     process = subprocess.Popen(['patch', '-o', newfile, oldfile],
                                stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-                               stderr=subprocess.STDOUT, cwd=tempdir)
+                               stderr=subprocess.PIPE, cwd=tempdir)
 
     with controlled_subprocess("patch", process) as p:
-        p.stdin.write(diff)
-        p.stdin.close()
-        patch_output = p.stdout.read()
-        failure = p.wait()
+        stdout, stderr = p.communicate(diff)
+        failure = p.returncode
 
     if failure:
         absolute_path = os.path.join(tempdir, os.path.basename(filename))
@@ -138,7 +136,7 @@ def patch(diff, file, filename, request=None):
             % {
                 'filename': filename,
                 'tempdir': tempdir,
-                'output': patch_output,
+                'output': stderr,
             })
 
     with open(newfile, "r") as f:
