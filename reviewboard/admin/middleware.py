@@ -53,7 +53,7 @@ class CheckUpdatesRequiredMiddleware(object):
     URL will be redirected to the updates page (or an appropriate
     error response for API calls.
     """
-    def process_request(self, request):
+    def process_view(self, request, view_func, view_args, view_kwargs):
         """
         Checks whether updates are required and returns the appropriate
         response if they are.
