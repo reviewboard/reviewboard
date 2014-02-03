@@ -26,6 +26,7 @@
 from __future__ import unicode_literals
 
 import os
+import stat
 import sys
 import tempfile
 
@@ -102,6 +103,14 @@ class RBTestRunner(DjangoTestSuiteRunner):
             profiling = True
         else:
             profiling = False
+
+        # If the test files are executable on the file system, nose will need the
+        #  --exe argument to run them
+        known_file = os.path.join(os.path.dirname(__file__), 'settings.py')
+
+        if (os.path.exists(known_file) and
+            os.stat(known_file).st_mode & stat.S_IXUSR):
+            self.nose_argv.append('--exe')
 
         # manage.py captures everything before "--"
         if len(sys.argv) > 2 and '--' in sys.argv:
