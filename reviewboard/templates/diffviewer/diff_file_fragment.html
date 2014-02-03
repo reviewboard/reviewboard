@@ -95,10 +95,12 @@
 {%   endif %}
    <th></th>
    <th>
-{%   if download_modified_url %}
+{%   if not file.deleted %}
+{%    if download_modified_url %}
     <a class="rb-icon rb-icon-download download-link" href="{{download_modified_url}}" alt="{% trans 'Download' %}" title="{% trans 'Download' %}"></a>
-{%   endif %}
+{%    endif %}
     {{file.dest_revision}}
+{%   endif %}
    </th>
 {%  endif %}{# num_changes and moved #}
   </tr>
