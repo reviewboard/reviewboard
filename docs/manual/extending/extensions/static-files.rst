@@ -13,7 +13,9 @@ bundles, listed in the extension class's :py:attr:`css_bundles` or
 the same type that are grouped together under a name.
 
 The format for a bundle is the same for CSS and JavaScript. Here's an
-example::
+example:
+
+.. code-block:: python
 
     class MyExtension(Extension):
         css_bundles = {
@@ -55,7 +57,9 @@ node.js_, LESS_, and UglifyJS_.
 Most Linux distributions have a package for node.js. Otherwise, follow the
 instructions on the node.js_ home page.
 
-Once you install node.js, run::
+Once you install node.js, run:
+
+.. code-block:: sh
 
     $ sudo npm install -g less uglifyjs
 
@@ -68,12 +72,12 @@ Once you install node.js, run::
 Loading Bundles in Templates
 ----------------------------
 
-.. highlight:: django
-
 When creating a template for a :ref:`extensions-template-hook`, you may need
 to load one of your bundles. This can be done through the ``ext_css_bundle``
 or ``ext_js_bundle`` template tags, by passing the extension variable
-(provided to your template) and the bundle name to load. For example::
+(provided to your template) and the bundle name to load. For example:
+
+.. code-block:: django
 
     {% ext_css_bundle extension "my-bundle" %}
 
@@ -99,13 +103,13 @@ not conflict with other extensions' rules.
 JavaScript
 ----------
 
-.. highlight:: javascript
-
 JavaScript files have access to the Review Board JavaScript codebase,
 jQuery, Backbone.js, and other shipped libraries.
 
 It is recommended that you namespace all the code in your JavaScript file, and
-wrap the file in a closure, as so::
+wrap the file in a closure, as so:
+
+.. code-block:: javascript
 
     (function() {
 

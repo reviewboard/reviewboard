@@ -29,7 +29,9 @@ UIs.  This can be using :py:class:`reviewboard.extensions.hooks.ReviewUIHook`
 directly, using a subclass of it. :py:class:`ReviewUIHook` expects a list of
 Review UIs as argument in addition to the extension instance.
 
-Example: **XMLReviewUIExtension**::
+Example: **XMLReviewUIExtension**:
+
+.. code-block:: python
 
     class XMLReviewUIExtension(Extension):
         def __init__(self, *args, **kwargs):
@@ -57,7 +59,9 @@ define the following class variables:
 *
     **object_key**: a unique name to identify this Review UI
 
-Example: **XMLReviewUI**::
+Example: **XMLReviewUI**:
+
+.. code-block:: python
 
     import logging
 
@@ -79,7 +83,9 @@ function or what it returns, but it should be in agreement with logic specified
 in its corresponding template.
 
 Example: **render()** in **XMLReviewUI**. This simply uses the pygments API
-to convert raw XML into syntax-highlighted HTML::
+to convert raw XML into syntax-highlighted HTML:
+
+.. code-block:: python
 
     def render(self):
         data_string = ""
@@ -104,11 +110,11 @@ to convert raw XML into syntax-highlighted HTML::
 ReviewUI Template
 -----------------
 
-.. highlight:: html
-
 Here is the template that corresponds to the above Review UI:
 
-:file:`xml_review_ui_extension/templates/xml_review_ui_extension/xml.html`::
+:file:`xml_review_ui_extension/templates/xml_review_ui_extension/xml.html`:
+
+.. code-block:: html+django
 
     {% extends base_template %}
     {% load i18n %}
@@ -151,11 +157,11 @@ Here is the template that corresponds to the above Review UI:
 ReviewUI JavaScript
 -------------------
 
-.. highlight:: javascript
-
 Here are the corresponding JavaScript used in the above template.
 
-:file:`xml_review_ui_extension/static/js/XMLReviewableModel.js`::
+:file:`xml_review_ui_extension/static/js/XMLReviewableModel.js`:
+
+.. code-block:: javascript
 
     /*
      * Provides review capabilities for XML files.
@@ -167,7 +173,9 @@ Here are the corresponding JavaScript used in the above template.
     });
 
 
-:file:`xml_review_ui_extension/static/js/XMLReviewableView.js`::
+:file:`xml_review_ui_extension/static/js/XMLReviewableView.js`:
+
+.. code-block:: javascript
 
     /*
      * Displays a review UI for XML files.

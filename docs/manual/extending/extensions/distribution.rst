@@ -24,11 +24,11 @@ documentation for a full description of features.
 Entry Point
 -----------
 
-.. highlight:: python
-
 To facilitate the auto-detection of installed extensions, a
 ``reviewboard.extensions`` entry point must be defined for each
-:ref:`extension-class`. Here is an example entry point definition::
+:ref:`extension-class`. Here is an example entry point definition:
+
+.. code-block:: python
 
       entry_points={
            'reviewboard.extensions':
@@ -37,7 +37,9 @@ To facilitate the auto-detection of installed extensions, a
 
 This defines an entry point for the :py:class:`SampleExtension` class from
 the :py:mod:`sample_extension.extension` module. Here is an example of
-a full :file:`setup.py` file defining this entry point::
+a full :file:`setup.py` file defining this entry point:
+
+.. code-block:: python
 
    from reviewboard.extensions.packaging import setup
 
@@ -73,7 +75,9 @@ along with your extension.
 See :ref:`extension-static-files` for more information on bundles.
 
 If you have other files you need to include, such as templates, you can list
-them in the ``package_data`` section in setup.py. For example::
+them in the ``package_data`` section in :file:`setup.py`. For example:
+
+.. code-block:: python
 
        package_data={
            'sample_extension': [
@@ -82,7 +86,9 @@ them in the ``package_data`` section in setup.py. For example::
            ],
        }
 
-Here is an example of a full setup.py file including the static files::
+Here is an example of a full setup.py file including the static files:
+
+.. code-block:: python
 
    from reviewboard.extensions.packaging import setup
 
@@ -116,7 +122,9 @@ Dependencies
 
 Any dependencies of the extension are defined in the :file:`setup.py` file
 using :py:attr:`install_requires`. Here is an example of a full
-:file`setup.py` file including a dependency::
+:file`setup.py` file including a dependency:
+
+.. code-block:: python
 
    from reviewboard.extensions.packaging import setup
 
@@ -148,13 +156,12 @@ declare a list of additional extensions it requires. This requirements list
 gives the name of each extension that must be enabled before allowing the
 extension itself to be enabled. This list is declared by setting the
 :py:attr:`requirements` attribute. Here is an example of an extension
-defining a requirements list::
+defining a requirements list:
+
+.. code-block:: python
 
    class SampleExtension(Extension):
        requirements = ['other_extension.extension.OtherExtension']
-
-       def __init__(self, *args, **kwargs):
-           super(RBWebHooksExtension, self).__init__(*args, **kwargs)
 
 
 .. _extension-egg-developing:
@@ -165,9 +172,11 @@ Developing With a Python Egg
 In order for Review Board to detect an extension, the Python Egg must be
 generated using the :file:`setup.py` file, and installed. During development
 this can be done by installing a link in the Python installation to the
-source directory of your extension. This is accomplished by running::
+source directory of your extension. This is accomplished by running:
 
-   python setup.py develop
+.. code-block:: sh
+
+   $ python setup.py develop
 
 If changes are made to the setup.py file this should be executed again.
 
