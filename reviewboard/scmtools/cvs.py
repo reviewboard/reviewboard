@@ -152,7 +152,7 @@ class CVSTool(SCMTool):
         client = CVSClient(cvsroot, repopath, local_site_name)
 
         try:
-            client.cat_file('CVSROOT/modules', HEAD)
+            client.check_repository()
         except (SCMError, SSHError, FileNotFoundError):
             raise RepositoryNotFoundError()
 
@@ -325,3 +325,10 @@ class CVSClient(object):
 
         self.cleanup()
         return contents
+
+    def check_repository(self):
+        p = SCMTool.popen(['cvs', '-f', '-d', self.cvsroot, 'rls'],
+                          self.local_site_name)
+        errmsg = six.text_type(p.stderr.read())
+        if p.wait() != 0:
+            raise SCMError(errmsg)
