@@ -43,6 +43,9 @@
 {%    else %}
   <pre id="field_changedescription" class="field field-text-area editable" data-rich-text="true" data-field-id="field_changedescription"></pre>
 {%    endif %}
+{%    if draft.diffset %}
+  <p>{% trans "This draft adds a new diff." %} <a href="{% url 'view_interdiff' review_request.display_id draft.diffset.revision|add:"-1" draft.diffset.revision %}">{% trans "Show changes" %}</a></p>
+{%    endif %}
 {%   else %}
   <h1>{% trans "This review request is not yet public." %}</h1>
  {% trans "Be sure to publish when finished." %}
