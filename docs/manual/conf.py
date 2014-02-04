@@ -28,10 +28,9 @@ sys.path.insert(0, os.path.dirname(__file__))
 # be looked up first, so allow us to append instead.
 sys.path = os.getenv('PYTHONPATH_PREPEND', '').split(':') + sys.path
 
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'reviewboard.settings')
+
 import reviewboard
-from reviewboard import settings
-from django.core.management import setup_environ
-setup_environ(settings)
 
 
 # If your extensions are in another directory, add it here. If the directory

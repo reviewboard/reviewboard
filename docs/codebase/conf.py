@@ -19,10 +19,10 @@ import sys, os
 # Set this up to parse Django-driven code.
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 sys.path.insert(0, os.path.dirname(__file__))
+
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'reviewboard.settings')
+
 import reviewboard
-from reviewboard import settings
-from django.core.management import setup_environ
-setup_environ(settings)
 
 
 # If your extensions are in another directory, add it here. If the directory

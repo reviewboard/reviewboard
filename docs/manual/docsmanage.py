@@ -6,8 +6,10 @@ sys.path.insert(0, os.path.join(__file__, "..", ".."))
 sys.path.insert(0, os.path.dirname(__file__))
 
 from reviewboard import settings
-from django.core.management import execute_manager, setup_environ
-setup_environ(settings)
+from django.core.management import execute_manager
+
+
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'reviewboard.settings')
 
 
 def scan_resource(resource):
