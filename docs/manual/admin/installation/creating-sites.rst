@@ -37,6 +37,13 @@ their documentation on how to set them up and configure them.
    greatly improve performance of your Review Board installation. If
    possible, put this on a server with a lot of RAM.
 
+.. admonition:: Apache should use the Prefork MPM
+
+   The Worker MPM uses multiple threads, which can cause numerous problems
+   with Review Board's dashboard and extensions implementations. In order for
+   Review Board to work correctly, it should use the single-threaded Prefork
+   MPM.
+
 .. admonition:: SQLite should only be used for test installations.
 
    While useful and portable, SQLite does not handle large loads with many
