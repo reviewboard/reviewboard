@@ -397,7 +397,7 @@ class GroupMemberCountColumn(Column):
         return six.text_type(group.users.count())
 
     def link_to_object(self, group, value):
-        return local_site_reverse('group_members',
+        return local_site_reverse('group-members',
                                   request=self.datagrid.request,
                                   args=[group.name])
 

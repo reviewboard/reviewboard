@@ -22,13 +22,13 @@ handler500 = 'django.views.defaults.server_error'
 # Useful collections of URL names that may be interesting to callers.
 # This is especially useful for any apply_to lists in hooks.
 diffviewer_url_names = [
-    'view_diff',
-    'view_interdiff',
-    'view_diff_revision',
+    'view-diff',
+    'view-interdiff',
+    'view-diff-revision',
 ]
 
 reviewable_url_names = diffviewer_url_names + [
-    'file_attachment',
+    'file-attachment',
     'screenshot',
 ]
 
@@ -104,7 +104,7 @@ localsite_urlpatterns = patterns(
     url(r'^groups/(?P<name>[A-Za-z0-9_-]+)/$',
         'reviewboard.reviews.views.group', name="group"),
     url(r'^groups/(?P<name>[A-Za-z0-9_-]+)/members/$',
-        'reviewboard.reviews.views.group_members', name="group_members"),
+        'reviewboard.reviews.views.group_members', name="group-members"),
 )
 
 

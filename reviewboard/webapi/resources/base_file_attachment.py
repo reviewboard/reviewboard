@@ -121,7 +121,7 @@ class BaseFileAttachmentResource(WebAPIResource):
                 local_site_name = None
 
             return local_site_reverse(
-                'file_attachment', local_site_name=local_site_name,
+                'file-attachment', local_site_name=local_site_name,
                 kwargs={
                     'review_request_id': review_request.display_id,
                     'file_attachment_id': obj.pk,

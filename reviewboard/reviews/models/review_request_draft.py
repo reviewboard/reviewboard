@@ -312,7 +312,7 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
                     local_site_name = None
 
                 url = local_site_reverse(
-                    'view_diff_revision',
+                    'view-diff-revision',
                     local_site_name=local_site_name,
                     args=[review_request.display_id, self.diffset.revision])
                 self.changedesc.fields_changed['diff'] = {

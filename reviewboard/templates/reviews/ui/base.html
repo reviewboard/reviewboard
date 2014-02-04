@@ -20,7 +20,7 @@
  <ul class="actions">
 {%   include "reviews/review_request_actions_secondary.html" %}
 {%   if has_diffs %}
-  <li class="primary"><a href="{% url 'raw_diff' review_request.display_id %}">{% trans "Download Diff" %}</a></li>
+  <li class="primary"><a href="{% url 'raw-diff' review_request.display_id %}">{% trans "Download Diff" %}</a></li>
 {%   endif %}
 {%   include "reviews/review_request_actions_primary.html" %}
   <li class="primary"><a href="{{review_request.get_absolute_url}}">{% trans "View Reviews" %}</a></li>
