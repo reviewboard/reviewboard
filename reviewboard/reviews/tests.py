@@ -973,11 +973,26 @@ class ViewTests(TestCase):
 
         self.client.logout()
 
-    def test_dashboard_to_group_with_unjoined_group(self):
-        """Testing dashboard view with to-group and unjoined group"""
+    def test_dashboard_to_group_with_unjoined_public_group(self):
+        """Testing dashboard view with to-group and unjoined public group"""
         self.client.login(username='doc', password='doc')
 
-        group = self.create_review_group(name='new-group')
+        group = self.create_review_group(name='new-public', invite_only=False)
+
+        review_request = self.create_review_request(summary='Test 1',
+                                                    publish=True)
+        review_request.target_groups.add(group)
+
+        response = self.client.get('/dashboard/',
+                                   {'view': 'to-group',
+                                    'group': 'devgroup'})
+        self.assertEqual(response.status_code, 200)
+
+    def test_dashboard_to_group_with_unjoined_private_group(self):
+        """Testing dashboard view with to-group and unjoined private group"""
+        self.client.login(username='doc', password='doc')
+
+        group = self.create_review_group(name='new-private', invite_only=True)
 
         review_request = self.create_review_request(summary='Test 1',
                                                     publish=True)
