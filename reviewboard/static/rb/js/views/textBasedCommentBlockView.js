@@ -54,7 +54,11 @@ RB.TextBasedCommentBlockView = RB.AbstractCommentBlockView.extend({
      * Removes the comment from the page.
      */
     remove: function() {
-        _.super(this).remove.call(this);
+        /*
+         * This can't use _.super() because AbstractCommentBlockView doesn't
+         * define a 'remove'.
+         */
+        Backbone.View.prototype.remove.call(this);
 
         $(window).off('resize', this._updateSize);
     },

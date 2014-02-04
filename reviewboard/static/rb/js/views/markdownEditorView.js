@@ -139,6 +139,8 @@ RB.MarkdownEditorView = Backbone.View.extend({
                 this._prevClientHeight = clientHeight;
                 this.$el.triggerHandler('resize');
             }
+
+            this.trigger('change');
         }, this));
 
         this.focus();

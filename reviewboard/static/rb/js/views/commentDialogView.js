@@ -137,12 +137,10 @@ RB.CommentDialogView = Backbone.View.extend({
         'click .buttons .close': '_onCancelClicked',
         'click .buttons .delete': '_onDeleteClicked',
         'click .buttons .save': 'save',
-        'keydown .comment-text-field': '_onTextKeyDown',
-        'keyup .comment-text-field': '_onTextKeyUp'
+        'keydown .comment-text-field': '_onTextKeyDown'
     },
 
     initialize: function() {
-        this._ignoreKeyUp = false;
     },
 
     render: function() {
@@ -229,6 +227,9 @@ RB.CommentDialogView = Backbone.View.extend({
             .keypress(_.bind(this._onTextKeyPress, this))
             .bindVisibility(this.model, 'canEdit');
         this._textEditor.setText(this.model.get('text'));
+        this._textEditor.on('change', function() {
+            this.model.set('text', this._textEditor.getText());
+        }, this);
 
         this.model.on('change:text', function() {
             this._textEditor.setText(this.model.get('text'));
@@ -512,7 +513,6 @@ RB.CommentDialogView = Backbone.View.extend({
             case $.ui.keyCode.ENTER:
                 /* Enter */
                 if (e.ctrlKey) {
-                    this._ignoreKeyUp = true;
                     this.save();
                     return false;
                 }
@@ -523,33 +523,11 @@ RB.CommentDialogView = Backbone.View.extend({
                 /* I */
                 if (e.altKey) {
                     this.model.set('openIssue', !this.model.get('openIssue'));
-                    this._ignoreKeyUp = true;
                 }
                 break;
 
             default:
-                this._ignoreKeyUp = false;
                 break;
-        }
-    },
-
-    /*
-     * Callback for key up events in the text field.
-     *
-     * If the key isn't being ignored due to a special key combination
-     * (Control-S, Alt-I), then we update the model with the new text.
-     */
-    _onTextKeyUp: function(e) {
-        /*
-         * We check if we want to ignore this event. The state from
-         * some shortcuts (control-enter) may not be settled, and we
-         * may end up setting this to dirty, causing page leave
-         * confirmations.
-         */
-        if (!this._ignoreKeyUp) {
-            e.stopPropagation();
-
-            this.model.set('text', this._textEditor.getText());
         }
     }
 }, {
