@@ -522,7 +522,7 @@ class ReviewRequestIDColumn(Column):
 class ReviewRequestDataGrid(DataGrid):
     """A datagrid that displays a list of review requests.
 
-    This datagrid accepts the show_submitted parameter in the URL, allowing
+    This datagrid accepts the show_closed parameter in the URL, allowing
     submitted review requests to be filtered out or displayed.
     """
     my_comments = MyCommentsColumn()
@@ -581,7 +581,7 @@ class ReviewRequestDataGrid(DataGrid):
         self.listview_template = 'reviews/review_request_listview.html'
         self.profile_sort_field = 'sort_review_request_columns'
         self.profile_columns_field = 'review_request_columns'
-        self.show_submitted = True
+        self.show_closed = True
         self.submitter_url_name = "user"
         self.default_sort = ["-last_updated"]
         self.default_columns = [
@@ -599,24 +599,24 @@ class ReviewRequestDataGrid(DataGrid):
 
     def load_extra_state(self, profile):
         if profile:
-            self.show_submitted = profile.show_submitted
+            self.show_closed = profile.show_closed
 
         try:
-            self.show_submitted = (
-                int(self.request.GET.get('show_submitted',
-                                         self.show_submitted))
+            self.show_closed = (
+                int(self.request.GET.get('show-closed',
+                                         self.show_closed))
                 != 0)
         except ValueError:
             # do nothing
             pass
 
-        if not self.show_submitted:
+        if not self.show_closed:
             self.queryset = self.queryset.filter(status='P')
 
         self.queryset = self.queryset.filter(local_site=self.local_site)
 
-        if profile and self.show_submitted != profile.show_submitted:
-            profile.show_submitted = self.show_submitted
+        if profile and self.show_closed != profile.show_closed:
+            profile.show_closed = self.show_closed
             return True
 
         return False
@@ -652,7 +652,7 @@ class DashboardDataGrid(ReviewRequestDataGrid):
         self.profile_sort_field = 'sort_dashboard_columns'
         self.profile_columns_field = 'dashboard_columns'
         self.default_view = "incoming"
-        self.show_submitted = False
+        self.show_closed = False
         self.default_sort = ["-last_updated"]
         self.default_columns = [
             "new_updates", "star", "summary", "submitter",

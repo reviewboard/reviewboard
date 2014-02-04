@@ -196,7 +196,7 @@ class Command(NoArgsCommand):
                 collapsed_diffs=True,
                 wordwrapped_diffs=True,
                 syntax_highlighting=True,
-                show_submitted=True)
+                show_closed=True)
 
             # Review Requests.
             req_val = self.pickRandomValue(num_of_requests)

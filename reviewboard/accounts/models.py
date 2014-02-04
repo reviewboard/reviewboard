@@ -78,9 +78,9 @@ class Profile(models.Model):
         help_text=_("Indicates whether the user wishes to default "
                     "to opening an issue or not."))
 
-    # Indicate whether submitted review requests should appear in the
+    # Indicate whether closed review requests should appear in the
     # review request lists (excluding the dashboard).
-    show_submitted = models.BooleanField(default=True)
+    show_closed = models.BooleanField(default=True)
 
     sort_review_request_columns = models.CharField(max_length=256, blank=True)
     sort_dashboard_columns = models.CharField(max_length=256, blank=True)
