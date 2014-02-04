@@ -291,16 +291,21 @@ First, update ``master`` itself::
     $ git checkout master
     $ git pull
 
-Next, merge master in to your branch::
+Next, rebase your branch onto master::
 
     $ git checkout new-branch
-    $ git merge master
+    $ git rebase master
 
-This will merge the upstream changes into your branch. If you have any
-conflicts to resolve, Git will list them. For each conflict, you will need
-to edit the file, find the ``<<<<<``, ``=====``, ``>>>>>`` lines, and
-fix fix them. Once each conflict is resolved, :command:`git add` the file.
-When you're done, commit the result.
+This will rebase your branch to be based on the latest code in master. If you
+have any conflicts to resolve, Git will list them. For each conflict, you will
+need to edit the file, find the ``<<<<<``, ``=====``, ``>>>>>`` lines, and fix
+fix them. Once each conflict is resolved, :command:`git add` the file. When
+you're done, you can continue the rebase::
+
+    $ git rebase --continue
+
+You may have to resolve conflicts multiple times if you have many commits on
+your branch.
 
 
 Additional Tips
