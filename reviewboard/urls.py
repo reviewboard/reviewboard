@@ -8,6 +8,7 @@ from django.conf.urls.static import static
 from django.contrib import admin
 from django.views.generic import RedirectView, TemplateView
 
+from reviewboard.datagrids.urls import urlpatterns as datagrid_urlpatterns
 from reviewboard.extensions.base import get_extension_manager
 from reviewboard.webapi.resources import resources
 
@@ -82,30 +83,16 @@ localsite_urlpatterns = patterns(
     (r'^api/', include(resources.root.get_url_patterns())),
     (r'^r/', include('reviewboard.reviews.urls')),
 
-    # Dashboard
-    url(r'^dashboard/$',
-        'reviewboard.reviews.views.dashboard', name="dashboard"),
-
     # Support
     url(r'^support/$',
         'reviewboard.admin.views.support_redirect', name="support"),
 
-    # Users
-    url(r'^users/$',
-        'reviewboard.reviews.views.submitter_list', name="all-users"),
-    url(r"^users/(?P<username>[A-Za-z0-9@_\-\.'\+]+)/$",
-        'reviewboard.reviews.views.submitter', name="user"),
+    # User info box
     url(r"^users/(?P<username>[A-Za-z0-9@_\-\.'\+]+)/infobox/$",
         'reviewboard.reviews.views.user_infobox', name="user-infobox"),
-
-    # Groups
-    url(r'^groups/$',
-        'reviewboard.reviews.views.group_list', name="all-groups"),
-    url(r'^groups/(?P<name>[A-Za-z0-9_-]+)/$',
-        'reviewboard.reviews.views.group', name="group"),
-    url(r'^groups/(?P<name>[A-Za-z0-9_-]+)/members/$',
-        'reviewboard.reviews.views.group_members', name="group-members"),
 )
+
+localsite_urlpatterns += datagrid_urlpatterns
 
 
 # Main includes

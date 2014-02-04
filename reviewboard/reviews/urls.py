@@ -102,7 +102,6 @@ review_request_urls = patterns(
 urlpatterns = patterns(
     'reviewboard.reviews.views',
 
-    url(r'^$', 'all_review_requests', name="all-review-requests"),
     url(r'^new/$', 'new_review_request', name="new-review-request"),
     url(r'^(?P<review_request_id>[0-9]+)/', include(review_request_urls)),
     url(r'^search/$', ReviewRequestSearchView(), name="search"),

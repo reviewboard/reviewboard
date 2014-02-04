@@ -208,14 +208,14 @@ def reply_section(context, entry, comment, context_type, context_id):
     }
 
 
-@register.inclusion_tag('reviews/dashboard_entry.html', takes_context=True)
+@register.inclusion_tag('datagrids/dashboard_entry.html', takes_context=True)
 def dashboard_entry(context, level, text, view, param=None):
     """
     Renders an entry in the dashboard sidebar.
 
     This includes the name of the entry and the list of review requests
     associated with it. The entry is rendered by the template
-    :template:`reviews/dashboard_entry.html`.
+    :template:`datagrids/dashboard_entry.html`.
     """
     user = context.get('user', None)
     sidebar_counts = context.get('sidebar_counts', None)

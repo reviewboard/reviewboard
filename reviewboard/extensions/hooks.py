@@ -10,7 +10,7 @@ from reviewboard.accounts.pages import (get_page_class,
                                         unregister_account_page_class)
 from reviewboard.attachments.mimetypes import (register_mimetype_handler,
                                                unregister_mimetype_handler)
-from reviewboard.reviews.datagrids import DashboardDataGrid
+from reviewboard.datagrids.grids import DashboardDataGrid
 from reviewboard.reviews.fields import (get_review_request_fieldset,
                                         register_review_request_fieldset,
                                         unregister_review_request_fieldset)

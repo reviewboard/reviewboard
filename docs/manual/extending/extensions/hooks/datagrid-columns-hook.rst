@@ -35,7 +35,7 @@ Example
     from djblets.datagrid.grids import Column
     from reviewboard.extensions.base import Extension
     from reviewboard.extensions.hooks import DataGridColumnsHook
-    from reviewboard.reviews.datagrids import SubmitterDataGrid
+    from reviewboard.datagrids.grids import SubmitterDataGrid
 
 
     class TeamColumn(Column):
