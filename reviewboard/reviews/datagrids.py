@@ -685,8 +685,10 @@ class DashboardDataGrid(ReviewRequestDataGrid):
                 # group exists and show a 404 if it doesn't. Otherwise, we'll
                 # show an empty datagrid with the name.
                 try:
-                    user.review_groups.get(name=group_name,
-                                           local_site=self.local_site)
+                    group = Group.objects.get(name=group_name,
+                                              local_site=self.local_site)
+                    if not group.is_accessible_by(user):
+                        raise Http404
                 except Group.DoesNotExist:
                     raise Http404
 
