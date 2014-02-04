@@ -8,4 +8,5 @@ SEQUENCE = [
     'timezone_length_30',
     'localsiteprofile_permissions',
     'unique_together_baseline',
+    'profile_show_closed',
 ]

@@ -227,7 +227,7 @@
 {%   definevar "added_values" %}
       <a href="{{fieldinfo.diff_url}}">{{fieldinfo.diff_label}}</a>
 {%    if fieldinfo.past_revision != 0 %}
-      - <a href="{% url 'view_interdiff' review_request.display_id fieldinfo.past_revision fieldinfo.current_revision %}">{% trans "Show changes" %}</a>
+      - <a href="{% url 'view-interdiff' review_request.display_id fieldinfo.past_revision fieldinfo.current_revision %}">{% trans "Show changes" %}</a>
 {%    endif %}
 {%   enddefinevar %}
      <ul>

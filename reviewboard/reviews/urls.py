@@ -19,11 +19,11 @@ diffviewer_revision_urls = patterns(
 
     url(r'^$',
         ReviewsDiffViewerView.as_view(),
-        name="view_diff_revision"),
+        name="view-diff-revision"),
 
     url(r'^raw/$',
         'raw_diff',
-        name='raw_diff_revision'),
+        name='raw-diff-revision'),
 
     url(r'^fragment/(?P<filediff_id>[0-9]+)/$',
         ReviewsDiffFragmentView.as_view()),
@@ -39,7 +39,7 @@ diffviewer_interdiff_urls = patterns(
 
     url(r'^$',
         ReviewsDiffViewerView.as_view(),
-        name="view_interdiff"),
+        name="view-interdiff"),
 
     url(r'^fragment/(?P<filediff_id>[0-9]+)/$',
         ReviewsDiffFragmentView.as_view()),
@@ -51,8 +51,8 @@ diffviewer_interdiff_urls = patterns(
 diffviewer_urls = patterns(
     'reviewboard.reviews.views',
 
-    url(r'^$', ReviewsDiffViewerView.as_view(), name="view_diff"),
-    url(r'^raw/$', 'raw_diff', name='raw_diff'),
+    url(r'^$', ReviewsDiffViewerView.as_view(), name="view-diff"),
+    url(r'^raw/$', 'raw_diff', name='raw-diff'),
 
     url(r'^(?P<revision>[0-9]+)/', include(diffviewer_revision_urls)),
     url(r'^(?P<revision>[0-9]+)-(?P<interdiff_revision>[0-9]+)/',
@@ -75,7 +75,7 @@ review_request_urls = patterns(
     # File attachments
     url(r'^file/(?P<file_attachment_id>[0-9]+)/$',
         'review_file_attachment',
-        name='file_attachment'),
+        name='file-attachment'),
 
     # Screenshots
     url(r'^s/(?P<screenshot_id>[0-9]+)/$',

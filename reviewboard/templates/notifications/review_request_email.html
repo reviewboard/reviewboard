@@ -94,7 +94,7 @@
 {% endfor %}
 </ul>
 
-<p><a href="{{domain_method}}://{{domain}}{% url 'view_diff' review_request.display_id %}" style="margin-left: 3em;">View Diff</a></p>
+<p><a href="{{domain_method}}://{{domain}}{% url 'view-diff' review_request.display_id %}" style="margin-left: 3em;">View Diff</a></p>
 
 
 {%   if review_request.file_attachments.count %}

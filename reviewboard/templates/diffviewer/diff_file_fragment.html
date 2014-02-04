@@ -127,7 +127,7 @@
 {%   if modified_diff_file_attachment %}
 {%    if not modified_attachment_review_ui_html and not diff_attachment_review_ui_html %}
 {%     if modified_diff_file_attachment.review_ui %}
-      <li class="file-review"><a href="{% url 'file_attachment' modified_diff_file_attachment.get_review_request.display_id modified_diff_file_attachment.pk %}">{% trans "Review" %}</a></li>
+      <li class="file-review"><a href="{% url 'file-attachment' modified_diff_file_attachment.get_review_request.display_id modified_diff_file_attachment.pk %}">{% trans "Review" %}</a></li>
 {%     else %}
       <li class="file-add-comment"><a href="#">{% trans "New Comment" %}</a></li>
 {%     endif %}

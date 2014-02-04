@@ -154,7 +154,7 @@ class ReviewUI(object):
             local_site_name = self.review_request.local_site.name
 
         return local_site_reverse(
-            'file_attachment',
+            'file-attachment',
             local_site_name=local_site_name,
             kwargs={
                 'review_request_id': self.review_request.display_id,
