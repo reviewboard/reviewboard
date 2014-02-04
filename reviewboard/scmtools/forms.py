@@ -856,7 +856,7 @@ class RepositoryForm(forms.ModelForm):
             # repository.
             if (not self.errors and
                 not self.cleaned_data['reedit_repository'] and
-                self.cleaned_data['visible'] and
+                self.cleaned_data.get('visible', True) and
                 self.validate_repository):
                 self._verify_repository_path()
 
