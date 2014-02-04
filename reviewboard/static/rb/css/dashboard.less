@@ -42,6 +42,7 @@
 
   .datagrid-body-container {
     overflow-y: auto;
+    margin-right: 1px;
   }
 
   .datagrid-titlebox {
@@ -116,49 +117,127 @@
 #dashboard_sidebar {
   position: absolute;
   top: 0;
-  bottom: 0;
+  bottom: 1px;
+  overflow-y: auto;
   width: @dashboard-sidebar-width;
 }
 
 #dashboard-navbar {
-  td {
-    padding: 5px 8px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+
+  li {
+    display: block;
+    list-style: none;
+    margin: 0;
+    text-align: left;
     word-break: break-all;
 
-    label {
-      color: #575012;
-      font-weight: bold;
+    &.has-url {
+      cursor: pointer;
     }
 
-    .rb-icon {
-      vertical-align: bottom;
+    &.has-url:hover,
+    &.active {
+      .row {
+        background: @dashboard-sidebar-active-bg;
+      }
+    }
+
+    &.section {
+      margin: 0 0 1em 0;
+
+      & > .row .label {
+        font-size: 110%;
+        font-weight: bold;
+      }
+    }
+
+    a {
+      color: black;
+      text-decoration: none;
+      padding: 0;
+    }
+
+    ul {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+
+      li {
+        &.has-count .label {
+          /* Give room for the counts. */
+          margin-right: 4em;
+        }
+
+        &.new-subsection {
+          margin-top: 1em;
+        }
+
+        .label {
+          display: inline-block;
+
+          /* Give room for the icons. */
+          margin-left: 20px;
+        }
+
+        .rb-icon {
+          position: absolute;
+          top: @dashboard-sidebar-vert-padding;
+          left: @dashboard-sidebar-horiz-padding;
+        }
+      }
+    }
+
+    .count {
+      position: absolute;
+      top: @dashboard-sidebar-vert-padding;
+      right: @dashboard-sidebar-horiz-padding;
+      background: @dashboard-sidebar-count-bg;
+      border: 1px @dashboard-sidebar-count-border-color solid;
+      font-size: 90%;
+      padding: @dashboard-sidebar-count-vert-padding
+               @dashboard-sidebar-count-horiz-padding;
+      margin-top: -@dashboard-sidebar-count-vert-padding;
+      .border-radius(@dashboard-sidebar-count-border-radius);
+
+      &.count-zero {
+        color: #666666;
+        background: @dashboard-sidebar-count-zero-bg;
+        border-color: @dashboard-sidebar-count-zero-border-color;
+      }
+    }
+
+    .row {
+      line-height: 16px;
+      padding: @dashboard-sidebar-vert-padding @dashboard-sidebar-horiz-padding;
+      position: relative;
+
+      .rb-icon {
+        vertical-align: middle;
+      }
     }
   }
+}
 
-  .selected {
-    border-top: 1px #999999 solid;
-    border-bottom: 1px #999999 solid;
+#dashboard-wrapper {
+  background-color: @dashboard-sidebar-bg;
+  position: relative;
+  .border-radius(@box-inner-border-radius);
+}
 
-    td {
-      background: #D0D0D0;
-    }
-  }
+.user-dashboard #dashboard_sidebar {
+  position: relative;
+  float: left;
 
-  tr.selected {
-    background: #b2ceec;
-  }
-
-  .main-item {
-    font-weight: bold;
+  tr {
+    background: transparent;
   }
 
   .header {
     font-weight: bold;
     padding-top: 15px;
-  }
-
-  .sub-item {
-    padding-left: 25px;
   }
 
   .nickname {
@@ -179,21 +258,6 @@
   .logged-in {
     padding-top: 1.5em;
   }
-}
-
-#dashboard-navbar tr {
-  background: transparent;
-}
-
-#dashboard-wrapper {
-  background-color: #E9E9E9;
-  position: relative;
-  .border-radius(@box-inner-border-radius);
-}
-
-.user-dashboard #dashboard_sidebar {
-  position: relative;
-  float: left;
 }
 
 

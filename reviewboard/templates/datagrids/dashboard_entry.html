@@ -1,4 +1,0 @@
-    <tr onclick="javascript:window.location=&quot;{% if url %}{{url}}{% else %}{% url 'dashboard' %}?view={{view}}{% if group_name %}&amp;group={{group_name}}{% endif %}{% endif %}&quot;; return false;"{% if selected %} class="selected"{% endif %}>
-     <td class="summary {{level}}"><a href="{% if url %}{{url}}{% else %}{% url 'dashboard' %}?view={{view}}{% if group_name %}&amp;group={{group_name}}{% endif %}{% endif %}">{% if starred %}<div class="rb-icon rb-icon-star-on"></div>{% endif %} {{text}}</a></td>
-     <td>{% if show_count %}{{count}}{% endif %}</td>
-    </tr>

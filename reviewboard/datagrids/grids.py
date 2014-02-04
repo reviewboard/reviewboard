@@ -4,7 +4,6 @@ import pytz
 
 from django.contrib.auth.models import User
 from django.http import Http404
-from django.utils.datastructures import SortedDict
 from django.utils.translation import ugettext_lazy as _
 from djblets.datagrid.grids import (CheckboxColumn, Column, DateTimeColumn,
                                     DataGrid)
@@ -30,6 +29,9 @@ from reviewboard.datagrids.columns import (BugsColumn,
                                            SubmitterColumn,
                                            SummaryColumn,
                                            ToMeColumn)
+from reviewboard.datagrids.sidebar import Sidebar, DataGridSidebarMixin
+from reviewboard.datagrids.builtin_items import (IncomingSection,
+                                                 OutgoingSection)
 from reviewboard.reviews.models import Group, ReviewRequest
 from reviewboard.site.urlresolvers import local_site_reverse
 
@@ -148,7 +150,7 @@ class ReviewRequestDataGrid(DataGrid):
         return obj.get_absolute_url()
 
 
-class DashboardDataGrid(ReviewRequestDataGrid):
+class DashboardDataGrid(DataGridSidebarMixin, ReviewRequestDataGrid):
     """Displays the dashboard.
 
     The dashboard is the main place where users see what review requests
@@ -157,6 +159,13 @@ class DashboardDataGrid(ReviewRequestDataGrid):
     new_updates = NewUpdatesColumn()
     my_comments = MyCommentsColumn()
     selected = CheckboxColumn()
+
+    sidebar = Sidebar(
+        [
+            OutgoingSection,
+            IncomingSection,
+        ],
+        default_view_id='incoming')
 
     def __init__(self, *args, **kwargs):
         local_site = kwargs.get('local_site', None)
@@ -173,9 +182,13 @@ class DashboardDataGrid(ReviewRequestDataGrid):
             'new_updates', 'star', 'summary', 'submitter',
             'time_added', 'last_updated_since'
         ]
-        self.counts = {}
 
         self.local_site = local_site
+        self.user = self.request.user
+        self.profile = Profile.objects.get_or_create(user=self.user)[0]
+        self.site_profile = LocalSiteProfile.objects.get_or_create(
+            user=self.user,
+            local_site=local_site)[0]
 
     def load_extra_state(self, profile):
         group_name = self.request.GET.get('group', '')
@@ -194,7 +207,7 @@ class DashboardDataGrid(ReviewRequestDataGrid):
             self.queryset = ReviewRequest.objects.to_user_directly(
                 user, user, local_site=self.local_site)
             self.title = _('Incoming Review Requests to Me')
-        elif view == 'to-group':
+        elif view in ('to-group', 'to-watched-group'):
             if group_name:
                 # to-group is special because we want to make sure that the
                 # group exists and show a 404 if it doesn't. Otherwise, we'll
@@ -216,8 +229,7 @@ class DashboardDataGrid(ReviewRequestDataGrid):
                     user, user, local_site=self.local_site)
                 self.title = _('All Incoming Review Requests to My Groups')
         elif view == 'starred':
-            profile, is_new = Profile.objects.get_or_create(user=user)
-            self.queryset = profile.starred_review_requests.public(
+            self.queryset = self.profile.starred_review_requests.public(
                 user=user, local_site=self.local_site, status=None)
             self.title = _('Starred Review Requests')
         elif view == 'incoming':
@@ -227,7 +239,7 @@ class DashboardDataGrid(ReviewRequestDataGrid):
         else:
             raise Http404
 
-        return False
+        return super(DashboardDataGrid, self).load_extra_state(profile)
 
 
 class SubmitterDataGrid(DataGrid):
@@ -294,54 +306,3 @@ class GroupDataGrid(DataGrid):
     @staticmethod
     def link_to_object(obj, value):
         return obj.get_absolute_url()
-
-
-class WatchedGroupDataGrid(GroupDataGrid):
-    """Shows the list of review groups watched by the user."""
-    def __init__(self, request, title=_('Watched groups'), *args, **kwargs):
-        local_site = kwargs.pop('local_site', None)
-
-        super(WatchedGroupDataGrid, self).__init__(request, title=title,
-                                                   *args, **kwargs)
-
-        user = request.user
-        profile, is_new = Profile.objects.get_or_create(user=user)
-
-        self.queryset = profile.starred_groups.all()
-        self.queryset = self.queryset.filter(local_site=local_site)
-
-    def link_to_object(self, group, value):
-        return '.?view=to-group&group=%s' % group.name
-
-
-def get_sidebar_counts(user, local_site):
-    """Returns counts used for the Dashboard sidebar."""
-    profile, is_new = Profile.objects.get_or_create(user=user)
-
-    site_profile, is_new = LocalSiteProfile.objects.get_or_create(
-        local_site=local_site,
-        user=user,
-        profile=profile)
-
-    if is_new:
-        site_profile.save()
-
-    counts = {
-        'outgoing': site_profile.pending_outgoing_request_count,
-        'incoming': site_profile.total_incoming_request_count,
-        'to-me': site_profile.direct_incoming_request_count,
-        'starred': site_profile.starred_public_request_count,
-        'mine': site_profile.total_outgoing_request_count,
-        'groups': SortedDict(),
-        'starred_groups': SortedDict(),
-    }
-
-    for group in Group.objects.filter(
-            users=user, local_site=local_site).order_by('name'):
-        counts['groups'][group.name] = group.incoming_request_count
-
-    for group in Group.objects.filter(
-            starred_by=profile, local_site=local_site).order_by('name'):
-        counts['starred_groups'][group.name] = group.incoming_request_count
-
-    return counts

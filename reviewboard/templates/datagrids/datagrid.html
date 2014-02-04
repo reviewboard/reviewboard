@@ -1,5 +1,5 @@
 {% extends "datagrid/datagrid.html" %}
-{% load compressed staticfiles %}
+{% load compressed djblets_deco staticfiles %}
 
 {% block extrahead %}
 {# Empty this out. We use "scripts" and "scripts-post" in Review Board. #}
@@ -9,6 +9,31 @@
 {{block.super}}
 {%  compressed_css "djblets-datagrid" %}
 {% endblock %}
+
+{% block content %}
+{%  if datagrid.sidebar %}
+<div id="dashboard_container">
+{%  box "dashboard" %}
+ <div id="dashboard-wrapper">
+  <div id="dashboard_sidebar"{% if datagrid.sidebar.css_classes %} class="{{datagrid.sidebar.css_classes|join:' '}}"{% endif %}>
+   <ul id="dashboard-navbar">
+{%   for item in datagrid.sidebar_items %}
+{%    if item.is_visible %}
+{{item.render}}
+{%    endif %}
+{%   endfor %}
+   </ul>
+  </div>
+  <div id="dashboard-main" class="clearfix">
+{{datagrid.render_listview}}
+  </div>
+ </div>
+{%  endbox %}
+</div>
+{%  else %}
+{{block.super}}
+{%  endif %}
+{% endblock content %}
 
 {% block scripts-post %}
 {%  compressed_js "djblets-datagrid" %}

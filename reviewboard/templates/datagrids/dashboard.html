@@ -1,62 +1,12 @@
-{% extends "base.html" %}
-{% load compressed djblets_deco i18n reviewtags staticfiles %}
+{% extends "datagrids/datagrid.html" %}
+{% load compressed djblets_deco i18n staticfiles %}
 
 {% block title %}{% trans "My Dashboard" %}{% endblock %}
 
 {% block bodytag %}<body id="dashboard_page">{% endblock %}
 
-{% block css %}
-{{block.super}}
-{%  compressed_css "djblets-datagrid" %}
-{% endblock %}
-
-{% block content %}
-<div id="dashboard_container">
-{%  box "dashboard" %}
- <div id="dashboard-wrapper">
-  <div id="dashboard_sidebar">
-   <table class="datagrid" id="dashboard-navbar">
-    <colgroup>
-     <col class="summary" />
-     <col class="count" />
-    </colgroup>
-    <tbody>
-{%   dashboard_entry "main-item" _("Starred Reviews")  "starred" %}
-{%   dashboard_entry "main-item" _("Outgoing Reviews") "outgoing" %}
-{%   dashboard_entry "main-item" _("Incoming Reviews") "incoming" %}
-{%   dashboard_entry "sub-item"  _("To Me")            "to-me" %}
-{%   for name, value in sidebar_counts.groups.items %}
-{%    dashboard_entry "sub-item" name "to-group" name %}
-{%   endfor %}
-{%   if sidebar_counts.starred_groups %}
-{%    dashboard_entry "main-item" _("Watched Groups") "watched-groups" %}
-{%    for name, value in sidebar_counts.starred_groups.items %}
-{%     dashboard_entry "sub-item" name "to-group" name %}
-{%    endfor %}
-{%   endif %}
-{%   dashboard_entry "main-item" _("All My Requests") "mine" %}
-{%   for hook in sidebar_hooks %}
-{%    for main_entry in hook.entries %}
-{%     dashboard_entry "main-item" main_entry.label "url" main_entry.url %}
-{%     for sub_entry in main_entry.subitems %}
-{%      dashboard_entry "sub-item" sub_entry.label "url" sub_entry.url %}
-{%     endfor %}
-{%    endfor %}
-{%   endfor %}
-    </tbody>
-   </table>
-  </div>
-  <div id="dashboard-main" class="clearfix">
-{{datagrid.render_listview}}
-  </div>
- </div>
-{%  endbox %}
-</div>
-{% endblock content %}
-
 {% block scripts-post %}
 {{block.super}}
-{%  compressed_js "djblets-datagrid" %}
 {%  compressed_js "dashboard" %}
 <script type="text/javascript">
     $(document).ready(function() {

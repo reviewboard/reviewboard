@@ -4,6 +4,7 @@ from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.testing.decorators import add_fixtures
+from djblets.util.compat import six
 
 from reviewboard.reviews.models import Group, ReviewRequest, ReviewRequestDraft
 from reviewboard.testing import TestCase
@@ -280,8 +281,8 @@ class DashboardViewTests(BaseViewTestCase):
         self.assertEqual(response.status_code, 404)
 
     @add_fixtures(['test_users'])
-    def test_sidebar_counts(self):
-        """Testing dashboard sidebar counts"""
+    def test_sidebar(self):
+        """Testing dashboard sidebar"""
         self.client.login(username='doc', password='doc')
         user = User.objects.get(username='doc')
         profile = user.get_profile()
@@ -312,18 +313,36 @@ class DashboardViewTests(BaseViewTestCase):
         review_request.publish(review_request.submitter)
         profile.star_review_request(review_request)
 
-        # Now get the counts.
+        # Now load the dashboard and get the sidebar items.
         response = self.client.get('/dashboard/')
         self.assertEqual(response.status_code, 200)
 
-        counts = self.getContextVar(response, 'sidebar_counts')
-        self.assertEqual(counts['outgoing'], 1)
-        self.assertEqual(counts['incoming'], 3)
-        self.assertEqual(counts['to-me'], 1)
-        self.assertEqual(counts['starred'], 1)
-        self.assertEqual(counts['mine'], 1)
-        self.assertEqual(counts['groups']['devgroup'], 1)
-        self.assertEqual(counts['groups']['privgroup'], 1)
+        sidebar_items = self.getContextVar(response, 'datagrid').sidebar_items
+        self.assertEqual(len(sidebar_items), 2)
+
+        # Test the Outgoing section.
+        section = sidebar_items[0]
+        self.assertEqual(six.text_type(section.label), 'Outgoing')
+        self.assertEqual(len(section.items), 2)
+        self.assertEqual(six.text_type(section.items[0].label), 'All')
+        self.assertEqual(section.items[0].count, 1)
+        self.assertEqual(six.text_type(section.items[1].label), 'Open')
+        self.assertEqual(section.items[1].count, 1)
+
+        # Test the Incoming section.
+        section = sidebar_items[1]
+        self.assertEqual(six.text_type(section.label), 'Incoming')
+        self.assertEqual(len(section.items), 5)
+        self.assertEqual(six.text_type(section.items[0].label), 'Open')
+        self.assertEqual(section.items[0].count, 3)
+        self.assertEqual(six.text_type(section.items[1].label), 'To Me')
+        self.assertEqual(section.items[1].count, 1)
+        self.assertEqual(six.text_type(section.items[2].label), 'Starred')
+        self.assertEqual(section.items[2].count, 1)
+        self.assertEqual(six.text_type(section.items[3].label), 'devgroup')
+        self.assertEqual(section.items[3].count, 1)
+        self.assertEqual(six.text_type(section.items[4].label), 'privgroup')
+        self.assertEqual(section.items[4].count, 1)
 
 
 class GroupListViewTests(BaseViewTestCase):

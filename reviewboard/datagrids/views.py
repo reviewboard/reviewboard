@@ -12,9 +12,7 @@ from reviewboard.extensions.hooks import DashboardHook, UserPageSidebarHook
 from reviewboard.datagrids.grids import (DashboardDataGrid,
                                          GroupDataGrid,
                                          ReviewRequestDataGrid,
-                                         SubmitterDataGrid,
-                                         WatchedGroupDataGrid,
-                                         get_sidebar_counts)
+                                         SubmitterDataGrid)
 from reviewboard.reviews.models import Group, ReviewRequest
 from reviewboard.reviews.views import _render_permission_denied
 from reviewboard.site.decorators import check_local_site_access
@@ -53,27 +51,11 @@ def dashboard(request,
         * 'to-me'
         * 'to-group'
         * 'starred'
-        * 'watched-groups'
         * 'incoming'
         * 'mine'
     """
-    view = request.GET.get('view', None)
-    context = {}
-
-    if view == "watched-groups":
-        # This is special. We want to return a list of groups, not
-        # review requests.
-        grid = WatchedGroupDataGrid(request, local_site=local_site)
-    else:
-        grid = DashboardDataGrid(request, local_site=local_site)
-
-    if not request.GET.get('gridonly', False):
-        context = {
-            'sidebar_counts': get_sidebar_counts(request.user, local_site),
-            'sidebar_hooks': DashboardHook.hooks,
-        }
-
-    return grid.render_to_response(template_name, extra_context=context)
+    grid = DashboardDataGrid(request, local_site=local_site)
+    return grid.render_to_response(template_name)
 
 
 @check_login_required
