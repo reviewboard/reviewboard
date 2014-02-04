@@ -334,6 +334,28 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
                 descKey: 'fullname',
                 extraParams: {
                     fullname: 1
+                },
+                cmp: function(term, a, b) {
+                    /*
+                     * Sort the results with username matches first (in
+                     * alphabetical order), followed by real name matches (in
+                     * alphabetical order)
+                     */
+                    var aUsername = a.data.username,
+                        bUsername = b.data.username,
+                        aFullname = a.data.fullname,
+                        bFullname = a.data.fullname;
+
+                    if (aUsername.indexOf(term) === 0) {
+                        if (bUsername.indexOf(term) === 0) {
+                            return aUsername.localeCompare(bUsername);
+                        }
+                        return -1;
+                    } else if (bUsername.indexOf(term) === 0) {
+                        return 1;
+                    } else {
+                        return aFullname.localeCompare(bFullname);
+                    }
                 }
             },
             formatter: function(view, data, $el) {
@@ -992,6 +1014,7 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
                 url: SITE_ROOT + reviewRequest.get('localSitePrefix') +
                      'api/' + (options.resourceName || options.fieldName) + '/',
                 extraParams: options.extraParams,
+                cmp: options.cmp,
                 width: 350
             })
             .on('autocompleteshow', function() {

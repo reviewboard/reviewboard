@@ -665,6 +665,12 @@ $.ui.rbautocomplete.select = function (options, input, select, config) {
     }
 
     function fillList() {
+        if (options.cmp !== undefined) {
+            data.sort(function(a, b) {
+                return options.cmp(term, a, b);
+            });
+        }
+
         list.empty();
         var max = limitNumberOfItems(data.length);
         for (var i=0; i < max; i++) {
