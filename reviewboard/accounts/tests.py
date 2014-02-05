@@ -1,8 +1,11 @@
 from __future__ import unicode_literals
 
+import re
+
 from django.contrib.auth.models import User
 from djblets.testing.decorators import add_fixtures
 
+from reviewboard.accounts.backends import INVALID_USERNAME_CHAR_REGEX
 from reviewboard.accounts.forms.pages import AccountPageForm
 from reviewboard.accounts.models import LocalSiteProfile
 from reviewboard.accounts.pages import (AccountPage, get_page_classes,
@@ -175,3 +178,24 @@ class AccountPageTests(TestCase):
 
         register_account_page_class(MyPage)
         self.assertRaises(KeyError, lambda: MyPage.remove_form(MyForm))
+
+
+class UsernameTests(TestCase):
+    cases = [
+        ('spaces  ', 'spaces'),
+        ('spa ces', 'spaces'),
+        ('CASES', 'cases'),
+        ('CaSeS', 'cases'),
+        ('Spec!al', 'specal'),
+        ('email@example.com', 'email@example.com'),
+        ('da-shes', 'da-shes'),
+        ('un_derscores', 'un_derscores'),
+        ('mu ^lt&^ipl Es', 'multiples'),
+    ]
+
+    def test(self):
+        """Testing username regex for LDAP/AD backends"""
+        for orig, new in self.cases:
+            self.assertEqual(
+                re.sub(INVALID_USERNAME_CHAR_REGEX, '', orig).lower(),
+                new)

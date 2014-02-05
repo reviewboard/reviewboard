@@ -33,6 +33,9 @@ _auth_backends = []
 _auth_backend_setting = None
 
 
+INVALID_USERNAME_CHAR_REGEX = re.compile(r'[^\w.@+-]')
+
+
 class AuthBackend(object):
     """The base class for Review Board authentication backends."""
     name = None
@@ -365,7 +368,7 @@ class LDAPBackend(AuthBackend):
         return None
 
     def get_or_create_user(self, username, request, ldapo, userdn):
-        username = username.strip()
+        username = re.sub(INVALID_USERNAME_CHAR_REGEX, '', username).lower()
 
         try:
             user = User.objects.get(username=username)
@@ -610,7 +613,7 @@ class ActiveDirectoryBackend(AuthBackend):
         return None
 
     def get_or_create_user(self, username, request, ad_user_data):
-        username = username.strip()
+        username = re.sub(INVALID_USERNAME_CHAR_REGEX, '', username).lower()
 
         try:
             user = User.objects.get(username=username)
