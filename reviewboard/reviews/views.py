@@ -599,6 +599,8 @@ def review_detail(request,
                     comment.file_attachment = file_attachment
                     file_attachment._comments.append(comment)
 
+            uncollapse = False
+
             if parent_review.is_reply():
                 # This is a reply to a comment. Add it to the list of replies.
                 assert obj.review_id not in reviews_entry_map
@@ -609,6 +611,9 @@ def review_detail(request,
                 if comment.is_reply():
                     replied_comment = comment_map[comment.reply_to_id]
                     replied_comment._replies.append(comment)
+
+                    if not parent_review.public:
+                        uncollapse = True
             elif parent_review.public:
                 # This is a comment on a public review we're going to show.
                 # Add it to the list.
@@ -624,6 +629,14 @@ def review_detail(request,
 
                     if comment.issue_status == BaseComment.OPEN:
                         entry['issue_open_count'] += 1
+
+                        if review_request.submitter == request.user:
+                            uncollapse = True
+
+            # If the box was collapsed, uncollapse it.
+            if uncollapse and entry['collapsed']:
+                entry['class'] = ''
+                entry['collapsed'] = False
 
     # Sort all the reviews and ChangeDescriptions into a single list, for
     # display.
