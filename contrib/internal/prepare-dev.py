@@ -109,9 +109,12 @@ def main():
     # Insert the current directory first in the module path so we find the
     # correct reviewboard package.
     sys.path.insert(0, os.getcwd())
-    from reviewboard.cmdline.rbsite import Site
+    from reviewboard.cmdline.rbsite import Site, ConsoleUI
 
     parse_options(sys.argv[1:])
+
+    import reviewboard.cmdline.rbsite
+    reviewboard.cmdline.rbsite.ui = ConsoleUI()
 
     # Re-use the Site class, since it has some useful functions.
     site = Site("reviewboard", SiteOptions)

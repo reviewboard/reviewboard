@@ -569,8 +569,11 @@ class Site(object):
         os.chdir(self.abs_install_dir)
 
         try:
-            from django.core.management import execute_manager, get_commands
-            import reviewboard.settings
+            from django.core.management import (execute_from_command_line,
+                                                get_commands)
+
+            os.environ.setdefault('DJANGO_SETTINGS_MODULE',
+                                  'reviewboard.settings')
 
             if not params:
                 params = []
@@ -599,7 +602,7 @@ class Site(object):
                         name = os.path.splitext(f)[0]
                         _commands[name] = module_globals['Command']()
 
-            execute_manager(reviewboard.settings, [__file__, cmd] + params)
+            execute_from_command_line([__file__, cmd] + params)
         except ImportError as e:
             ui.error("Unable to execute the manager command %s: %s" %
                      (cmd, e))
