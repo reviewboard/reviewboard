@@ -112,7 +112,7 @@ class Command(NoArgsCommand):
                     help='The login password for users created')
     )
 
-    @transaction.commit_on_success
+    @transaction.atomic
     def handle_noargs(self, users=None, review_requests=None, diffs=None,
                       reviews=None, diff_comments=None, password=None,
                       verbosity=NORMAL, **options):
