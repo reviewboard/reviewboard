@@ -940,6 +940,10 @@ class ReviewsDiffViewerView(DiffViewerView):
                     'revision': interfilediff.diffset.revision,
                 }
 
+            if f['force_interdiff']:
+                data['force_interdiff'] = True
+                data['interdiff_revision'] = f['force_interdiff_revision']
+
             files.append(data)
 
         context['diff_context']['files'] = files

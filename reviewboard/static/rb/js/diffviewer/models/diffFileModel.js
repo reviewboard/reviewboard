@@ -12,7 +12,9 @@ RB.DiffFile = Backbone.Model.extend({
         filediff: null,
         index: null,
         interfilediff: null,
-        newfile: false
+        newfile: false,
+        forceInterdiff: null,
+        forceInterdiffRevision: null,
     },
 
     /*
@@ -31,7 +33,9 @@ RB.DiffFile = Backbone.Model.extend({
             index: rsp.index,
             interfilediff: rsp.interfilediff,
             newfile: rsp.newfile,
-            revision: rsp.revision
+            revision: rsp.revision,
+            forceInterdiff: rsp.force_interdiff,
+            forceInterdiffRevision: rsp.interdiff_revision
         };
     }
 });

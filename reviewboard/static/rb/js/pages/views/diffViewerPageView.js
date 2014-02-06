@@ -212,14 +212,21 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
 
         files.each(function(file) {
             var filediff = file.get('filediff'),
-                interfilediff = file.get('interfilediff');
+                interfilediff = file.get('interfilediff'),
+                interdiffRevision = null;
 
             $diffs.append(this._fileEntryTemplate(file.attributes));
+
+            if (interfilediff) {
+                interdiffRevision = interfilediff.revision;
+            } else if (file.get('forceInterdiff')) {
+                interdiffRevision = file.get('forceInterdiffRevision');
+            }
 
             this.queueLoadDiff(filediff.id,
                                filediff.revision,
                                interfilediff ? interfilediff.id : null,
-                               interfilediff ? interfilediff.revision : null,
+                               interdiffRevision,
                                file.get('index'),
                                file.get('commentCounts'));
         }, this);

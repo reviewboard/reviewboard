@@ -333,7 +333,7 @@ def get_diff_files(diffset, filediff=None, interdiffset=None, request=None):
         depot_filename = tool.normalize_path_for_display(filediff.source_file)
         dest_filename = tool.normalize_path_for_display(filediff.dest_file)
 
-        files.append({
+        f = {
             'depot_filename': depot_filename,
             'dest_filename': dest_filename or depot_filename,
             'basename': basename,
@@ -351,7 +351,12 @@ def get_diff_files(diffset, filediff=None, interdiffset=None, request=None):
             'chunks_loaded': False,
             'is_new_file': (newfile and not interfilediff and
                             not filediff.parent_diff),
-        })
+        }
+
+        if force_interdiff:
+            f['force_interdiff_revision'] = interdiffset.revision
+
+        files.append(f);
 
     def cmp_file(x, y):
         # Sort based on basepath in asc order
