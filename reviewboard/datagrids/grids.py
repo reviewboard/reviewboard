@@ -31,7 +31,9 @@ from reviewboard.datagrids.columns import (BugsColumn,
                                            ToMeColumn)
 from reviewboard.datagrids.sidebar import Sidebar, DataGridSidebarMixin
 from reviewboard.datagrids.builtin_items import (IncomingSection,
-                                                 OutgoingSection)
+                                                 OutgoingSection,
+                                                 UserGroupsItem,
+                                                 UserProfileItem)
 from reviewboard.reviews.models import Group, ReviewRequest
 from reviewboard.site.urlresolvers import local_site_reverse
 
@@ -165,7 +167,8 @@ class DashboardDataGrid(DataGridSidebarMixin, ReviewRequestDataGrid):
             OutgoingSection,
             IncomingSection,
         ],
-        default_view_id='incoming')
+        default_view_id='incoming',
+        css_classes=['scrollable'])
 
     def __init__(self, *args, **kwargs):
         local_site = kwargs.get('local_site', None)
@@ -306,3 +309,33 @@ class GroupDataGrid(DataGrid):
     @staticmethod
     def link_to_object(obj, value):
         return obj.get_absolute_url()
+
+
+class UserPageDataGrid(DataGridSidebarMixin, ReviewRequestDataGrid):
+    """A data grid for the user's page.
+
+    This will show the review requests the user has out for review, and
+    display information about the user on the side.
+    """
+    sidebar = Sidebar([
+        UserProfileItem,
+        UserGroupsItem,
+    ])
+
+    def __init__(self, request, user, *args, **kwargs):
+        queryset = ReviewRequest.objects.from_user(
+            user.username,
+            user=request.user,
+            status=None,
+            with_counts=True,
+            local_site=kwargs.get('local_site'),
+            filter_private=True)
+
+        super(UserPageDataGrid, self).__init__(
+            request,
+            queryset=queryset,
+            title=_("%s's review requests") % user.username,
+            *args, **kwargs)
+
+        self.groups = user.review_groups.accessible(request.user)
+        self.user = user

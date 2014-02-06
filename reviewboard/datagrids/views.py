@@ -12,7 +12,8 @@ from reviewboard.extensions.hooks import DashboardHook, UserPageSidebarHook
 from reviewboard.datagrids.grids import (DashboardDataGrid,
                                          GroupDataGrid,
                                          ReviewRequestDataGrid,
-                                         SubmitterDataGrid)
+                                         SubmitterDataGrid,
+                                         UserPageDataGrid)
 from reviewboard.reviews.models import Group, ReviewRequest
 from reviewboard.reviews.views import _render_permission_denied
 from reviewboard.site.decorators import check_local_site_access
@@ -126,7 +127,7 @@ def group_members(request,
 @check_local_site_access
 def submitter(request,
               username,
-              template_name='datagrids/user_page.html',
+              template_name='datagrids/datagrid.html',
               local_site=None):
     """
     A list of review requests owned by a particular user.
@@ -140,23 +141,8 @@ def submitter(request,
     else:
         user = get_object_or_404(User, username=username)
 
-    datagrid = ReviewRequestDataGrid(
-        request,
-        ReviewRequest.objects.from_user(username,
-                                        user=request.user,
-                                        status=None,
-                                        with_counts=True,
-                                        local_site=local_site,
-                                        filter_private=True),
-        _("%s's review requests") % username,
-        local_site=local_site)
-
-    return datagrid.render_to_response(template_name, extra_context={
-        'show_profile': user.is_profile_visible(request.user),
-        'sidebar_hooks': UserPageSidebarHook.hooks,
-        'viewing_user': user,
-        'groups': user.review_groups.accessible(request.user),
-    })
+    datagrid = UserPageDataGrid(request, user, local_site=local_site)
+    return datagrid.render_to_response(template_name)
 
 
 @check_login_required

@@ -2,7 +2,8 @@ from __future__ import unicode_literals
 
 from django.utils.translation import ugettext_lazy as _
 
-from reviewboard.datagrids.sidebar import BaseSidebarSection, SidebarNavItem
+from reviewboard.datagrids.sidebar import (BaseSidebarItem,
+                                           BaseSidebarSection, SidebarNavItem)
 
 
 class OutgoingSection(BaseSidebarSection):
@@ -114,3 +115,43 @@ class IncomingSection(BaseSidebarSection):
                                  icon_name=icon_name,
                                  css_classes=css_classes,
                                  count=group['incoming_request_count'])
+
+
+class UserProfileItem(BaseSidebarItem):
+    """Displays the profile for a user in the user page sidebar.
+
+    This will display information such as the name, e-mail address,
+    gravatar, and dates logged in and joined.
+    """
+    template_name = 'datagrids/sidebar_user_info.html'
+
+    def get_extra_context(self):
+        request = self.datagrid.request
+        user = self.datagrid.user
+
+        return {
+            'show_profile': user.is_profile_visible(request.user),
+            'profile_user': user,
+        }
+
+
+class UserGroupsItem(BaseSidebarSection):
+    """Displays the list of groups a user belongs to in the user page sidebar.
+
+    Each group will be clickable, and will navigate to the corresponding
+    group page.
+    """
+    label = _('Groups')
+
+    def get_items(self):
+        request = self.datagrid.request
+
+        groups = (
+            self.datagrid.user.review_groups.accessible(request.user)
+            .filter(local_site=self.datagrid.local_site)
+            .order_by('name'))
+
+        for group in groups:
+            yield SidebarNavItem(self,
+                                 label=group.name,
+                                 url=group.get_absolute_url())

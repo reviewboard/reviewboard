@@ -115,11 +115,18 @@
 }
 
 #dashboard_sidebar {
-  position: absolute;
+  float: left;
+  position: left;
   top: 0;
   bottom: 1px;
-  overflow-y: auto;
+  position: left;
   width: @dashboard-sidebar-width;
+
+  &.scrollable {
+    float: none;
+    overflow-y: auto;
+    position: absolute;
+  }
 }
 
 #dashboard-navbar {
@@ -227,18 +234,8 @@
   .border-radius(@box-inner-border-radius);
 }
 
-.user-dashboard #dashboard_sidebar {
-  position: relative;
-  float: left;
-
-  tr {
-    background: transparent;
-  }
-
-  .header {
-    font-weight: bold;
-    padding-top: 15px;
-  }
+#dashboard-navbar #user_page_profile {
+  margin-bottom: 1em;
 
   .nickname {
     font-size: 1.4em;
@@ -247,7 +244,6 @@
   }
 
   .email, .group {
-    text-decoration: underline;
     color: #0000C0;
   }
 
@@ -256,7 +252,7 @@
   }
 
   .logged-in {
-    padding-top: 1.5em;
+    margin-top: 1.5em;
   }
 }
 
