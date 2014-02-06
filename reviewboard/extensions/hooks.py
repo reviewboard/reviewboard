@@ -37,6 +37,8 @@ class AccountPagesHook(ExtensionHook):
             register_account_page_class(page_class)
 
     def shutdown(self):
+        super(AccountPagesHook, self).shutdown()
+
         for page_class in self.page_classes:
             unregister_account_page_class(page_class)
 
@@ -75,6 +77,8 @@ class AccountPageFormsHook(ExtensionHook):
             page_class.add_form(form_class)
 
     def shutdown(self):
+        super(AccountPageFormsHook, self).shutdown()
+
         page_class = get_page_class(self.page_id)
 
         for form_class in self.form_classes:
@@ -177,6 +181,8 @@ class ReviewRequestFieldSetsHook(ExtensionHook):
             register_review_request_fieldset(fieldset)
 
     def shutdown(self):
+        super(ReviewRequestFieldSetsHook, self).shutdown()
+
         for fieldset in self.fieldsets:
             unregister_review_request_fieldset(fieldset)
 
@@ -216,6 +222,8 @@ class ReviewRequestFieldsHook(ExtensionHook):
             fieldset.add_field(field_cls)
 
     def shutdown(self):
+        super(ReviewRequestFieldsHook, self).shutdown()
+
         fieldset = get_review_request_fieldset(self.fieldset_id)
 
         for field_cls in self.fields:
