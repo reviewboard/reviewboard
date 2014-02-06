@@ -131,11 +131,6 @@ def parse_options():
     parser.add_option("--author",
                       dest="author", default=None,
                       help="author of the extension")
-    parser.add_option("--dashboard-link",
-                      dest="dashboard_link", default=None,
-                      metavar="DASHBOARD_LINK_LABEL",
-                      help="creates a dashboard link with this name in the " \
-                           "review requests sidebar (optional)")
     parser.add_option("--is-configurable",
                       dest="is_configurable", action="store_true",
                       default=False,
@@ -229,15 +224,6 @@ def main():
                          "{{PACKAGE}}/__init__.py")
     builder.add_template("extension/admin_urls.py",
                          "{{PACKAGE}}/admin_urls.py")
-
-    if options.dashboard_link is not None:
-        builder.add_template("extension/urls.py",
-                             "{{PACKAGE}}/urls.py")
-        builder.add_template("extension/templates/extension/dashboard.html",
-                             "{{PACKAGE}}/templates/{{PACKAGE}}/dashboard.html"
-                             )
-        builder.add_template("extension/views.py",
-                             "{{PACKAGE}}/views.py")
 
     if options.is_configurable:
         builder.add_template("extension/templates/extension/configure.html",

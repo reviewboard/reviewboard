@@ -20,7 +20,7 @@ The following hooks are available for use by extensions.
    account-page-forms-hook
    action-hooks
    comment-detail-display-hook
-   dashboard-hook
+   dashboard-sidebar-items-hook
    dashboard-columns-hook
    datagrid-columns-hook
    file-attachment-thumbnail-hook
@@ -30,4 +30,4 @@ The following hooks are available for use by extensions.
    review-ui-hook
    template-hook
    url-hook
-   user-page-sidebar-hook
+   user-page-sidebar-items-hook

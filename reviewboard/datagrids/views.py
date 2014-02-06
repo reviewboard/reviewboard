@@ -8,7 +8,6 @@ from django.utils.translation import ugettext_lazy as _
 
 from reviewboard.accounts.decorators import (check_login_required,
                                              valid_prefs_required)
-from reviewboard.extensions.hooks import DashboardHook, UserPageSidebarHook
 from reviewboard.datagrids.grids import (DashboardDataGrid,
                                          GroupDataGrid,
                                          ReviewRequestDataGrid,

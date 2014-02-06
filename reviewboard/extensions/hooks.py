@@ -10,7 +10,7 @@ from reviewboard.accounts.pages import (get_page_class,
                                         unregister_account_page_class)
 from reviewboard.attachments.mimetypes import (register_mimetype_handler,
                                                unregister_mimetype_handler)
-from reviewboard.datagrids.grids import DashboardDataGrid
+from reviewboard.datagrids.grids import DashboardDataGrid, UserPageDataGrid
 from reviewboard.reviews.fields import (get_review_request_fieldset,
                                         register_review_request_fieldset,
                                         unregister_review_request_fieldset)
@@ -86,10 +86,34 @@ class AccountPageFormsHook(ExtensionHook):
 
 
 @six.add_metaclass(ExtensionHookPoint)
-class DashboardHook(ExtensionHook):
-    def __init__(self, extension, entries=[], *args, **kwargs):
-        super(DashboardHook, self).__init__(extension, *args, **kwargs)
-        self.entries = entries
+class DataGridSidebarItemsHook(ExtensionHook):
+    """A hook for adding items to the sidebar of a datagrid.
+
+    Extensions can use this hook to plug new items into the sidebar of
+    any datagrid supporting sidebars.
+
+    The items can be any subclass of
+    :py:class:`reviewboard.datagrids.sidebar.BaseSidebarItem`, including the
+    built-in :py:class:`reviewboard.datagrids.sidebar.BaseSidebarSection` and
+    built-in :py:class:`reviewboard.datagrids.sidebar.SidebarNavItem`.
+    """
+    def __init__(self, extension, datagrid, item_classes):
+        super(DataGridSidebarItemsHook, self).__init__(extension)
+
+        if not hasattr(datagrid, 'sidebar'):
+            raise ValueError('The datagrid provided does not have a sidebar')
+
+        self.datagrid = datagrid
+        self.item_classes = item_classes
+
+        for item in item_classes:
+            datagrid.sidebar.add_item(item)
+
+    def shutdown(self):
+        super(DataGridSidebaritem_classesHook, self).shutdown()
+
+        for item in self.item_classes:
+            self.datagrid.sidebar.remove_item(item)
 
 
 # We don't use the ExtensionHookPoint metaclass here, because we actually
@@ -114,25 +138,20 @@ class DashboardColumnsHook(DataGridColumnsHook):
 
 
 @six.add_metaclass(ExtensionHookPoint)
-class UserPageSidebarHook(ExtensionHook):
-    """A Hook for adding entries to sidebar of /users/<user> page.
+class DashboardSidebarItemsHook(DataGridSidebarItemsHook):
+    """A hook for adding items to the sidebar of the dashboard.
 
-    This takes a list of entries. Each entry represents something on the
-    user page and is a dictionary with the following keys:
+    Extensions can use this hook to plug new items into the sidebar of
+    the dashboard. These will appear below the built-in items.
 
-        * ``label``:    The label to display.
-        * ``url``:      The URL to point to.
-        * ``subitems``: Dictionary for storing second level entries.
-
-    ``subitems`` is another dictionary that will be indented to show a
-    hierarchy of items. Each subitem is a dictionary with the following keys:
-
-        * ``label``:    The label for the sub-entry.
-        * ``url``:      The URL that the sub-entry points to.
+    The items can be any subclass of
+    :py:class:`reviewboard.datagrids.sidebar.BaseSidebarItem`, including the
+    built-in :py:class:`reviewboard.datagrids.sidebar.BaseSidebarSection` and
+    built-in :py:class:`reviewboard.datagrids.sidebar.SidebarNavItem`.
     """
-    def __init__(self, extension, entries=[], *args, **kwargs):
-        super(UserPageSidebarHook, self).__init__(extension)
-        self.entries = entries
+    def __init__(self, extension, item_classes):
+        super(DashboardSidebarItemsHook, self).__init__(
+            extension, DashboardDataGrid, item_classes)
 
 
 @six.add_metaclass(ExtensionHookPoint)
@@ -383,3 +402,20 @@ class HeaderActionHook(ActionHook):
 @six.add_metaclass(ExtensionHookPoint)
 class HeaderDropdownActionHook(ActionHook):
     """A hook for putting multiple actions into a header dropdown."""
+
+
+@six.add_metaclass(ExtensionHookPoint)
+class UserPageSidebarItemsHook(DataGridSidebarItemsHook):
+    """A hook for adding items to the sidebar of the user page.
+
+    Extensions can use this hook to plug new items into the sidebar of
+    the user page. These will appear below the built-in items.
+
+    The items can be any subclass of
+    :py:class:`reviewboard.datagrids.sidebar.BaseSidebarItem`, including the
+    built-in :py:class:`reviewboard.datagrids.sidebar.BaseSidebarSection` and
+    built-in :py:class:`reviewboard.datagrids.sidebar.SidebarNavItem`.
+    """
+    def __init__(self, extension, item_classes):
+        super(UserPageSidebarItemsHook, self).__init__(
+            extension, UserPageDataGrid, item_classes)
