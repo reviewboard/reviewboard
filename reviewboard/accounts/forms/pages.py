@@ -200,7 +200,7 @@ class ChangePasswordForm(AccountPageForm):
         backend.update_password(self.user, self.cleaned_data['password1'])
         self.user.save()
 
-        messages.add_message(selfrequest, messages.INFO,
+        messages.add_message(self.request, messages.INFO,
                              _('Your password has been changed.'))
 
 
