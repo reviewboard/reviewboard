@@ -25,6 +25,7 @@ The following hooks are available for use by extensions.
    datagrid-columns-hook
    file-attachment-thumbnail-hook
    navigation-bar-hook
+   review-request-approval-hook
    review-request-fieldsets-hook
    review-request-fields-hook
    review-ui-hook

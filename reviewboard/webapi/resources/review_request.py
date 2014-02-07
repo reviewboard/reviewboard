@@ -82,6 +82,23 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
             'type': int,
             'description': 'The numeric ID of the review request.',
         },
+        'approved': {
+            'type': bool,
+            'description': 'Whether the review request has been approved '
+                           'by reviewers.\n'
+                           '\n'
+                           'On a default install, a review request is '
+                           'approved if it has at least one Ship It! and '
+                           'open issues. Extensions may change these '
+                           'requirements.',
+            'added_in': '2.0',
+        },
+        'approval_failure': {
+            'type': six.text_type,
+            'description': 'The reason why the review request was not '
+                           'approved. This will be ``null`` if approved.',
+            'added_in': '2.0',
+        },
         'blocks': {
             'type': ['reviewboard.webapi.resources.review_request.'
                      'ReviewRequestResource'],

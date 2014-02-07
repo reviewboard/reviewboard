@@ -240,6 +240,36 @@ class ReviewRequest(BaseReviewRequestDetails):
 
     commit = property(get_commit, set_commit)
 
+    @property
+    def approved(self):
+        """Returns whether or not a review request is approved by reviewers.
+
+        On a default installation, a review request is approved if it has
+        at least one Ship It!, and doesn't have any open issues.
+
+        Extensions may customize approval by providing their own
+        ReviewRequestApprovalHook.
+        """
+        if not hasattr(self, '_approved'):
+            self._calculate_approval()
+
+        return self._approved
+
+    @property
+    def approval_failure(self):
+        """Returns the error indicating why a review request isn't approved.
+
+        If ``approved`` is ``False``, this will provide the text describing
+        why it wasn't approved.
+
+        Extensions may customize approval by providing their own
+        ReviewRequestApprovalHook.
+        """
+        if not hasattr(self, '_approval_failure'):
+            self._calculate_approval()
+
+        return self._approval_failure
+
     def get_participants(self):
         """Returns a list of users who have discussed this review request."""
         # See the comment in Review.get_participants for this list
@@ -738,6 +768,38 @@ class ReviewRequest(BaseReviewRequestDetails):
                     LocalSiteProfile.objects.filter(
                         profile__starred_review_requests=self,
                         local_site=local_site))
+
+    def _calculate_approval(self):
+        """Calculates the approval information for the review request."""
+        from reviewboard.extensions.hooks import ReviewRequestApprovalHook
+
+        approved = True
+        failure = None
+
+        if self.shipit_count == 0:
+            approved = False
+            failure = 'The review request has not been marked "Ship It!"'
+        elif self.issue_open_count > 0:
+            approved = False
+            failure = 'The review request has open issues.'
+
+        for hook in ReviewRequestApprovalHook.hooks:
+            result = hook.is_approved(self, approved, failure)
+
+            if isinstance(result, tuple):
+                approved, failure = result
+            elif isinstance(result, bool):
+                approved = result
+            else:
+                raise ValueError('%r returned an invalid value %r from '
+                                 'is_approved'
+                                 % (hook, result))
+
+            if approved:
+                failure = None
+
+        self._approval_failure = failure
+        self._approved = approved
 
     def get_review_request(self):
         """Returns this review request.
