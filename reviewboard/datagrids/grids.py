@@ -182,8 +182,8 @@ class DashboardDataGrid(DataGridSidebarMixin, ReviewRequestDataGrid):
         self.show_closed = False
         self.default_sort = ['-last_updated']
         self.default_columns = [
-            'new_updates', 'star', 'summary', 'submitter',
-            'time_added', 'last_updated_since'
+            'selected', 'new_updates', 'ship_it', 'my_comments', 'summary',
+            'submitter', 'last_updated_since'
         ]
 
         self.local_site = local_site
