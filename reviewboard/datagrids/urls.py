@@ -13,7 +13,7 @@ urlpatterns = patterns(
     url(r'^dashboard/$', 'dashboard', name='dashboard'),
 
     # Users
-    url(r'^users/$', 'submitter_list', name='all-users'),
+    url(r'^users/$', 'users_list', name='all-users'),
     url(r"^users/(?P<username>[A-Za-z0-9@_\-\.'\+]+)/$",
         'submitter', name='user'),
 

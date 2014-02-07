@@ -35,7 +35,7 @@ Example
     from djblets.datagrid.grids import Column
     from reviewboard.extensions.base import Extension
     from reviewboard.extensions.hooks import DataGridColumnsHook
-    from reviewboard.datagrids.grids import SubmitterDataGrid
+    from reviewboard.datagrids.grids import UsersDataGrid
 
 
     class TeamColumn(Column):
@@ -50,7 +50,7 @@ Example
 
     class SampleExtension(Extension):
         def initialize(self):
-            DataGridColumnsHook(self, SubmitterDataGrid, [
+            DataGridColumnsHook(self, UsersDataGrid, [
                 TeamColumn(id='myvendor_teams',
                            label='Team'),
             ])

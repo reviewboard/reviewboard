@@ -377,10 +377,10 @@ class GroupListViewTests(BaseViewTestCase):
 
 
 class SubmitterListViewTests(BaseViewTestCase):
-    """Unit tests for the submitter_list view."""
+    """Unit tests for the users_list view."""
     @add_fixtures(['test_users'])
     def test_with_access(self):
-        """Testing submitter_list view"""
+        """Testing users_list view"""
         response = self.client.get('/users/')
         self.assertEqual(response.status_code, 200)
 
@@ -394,7 +394,7 @@ class SubmitterListViewTests(BaseViewTestCase):
 
     @add_fixtures(['test_users'])
     def test_as_anonymous_and_redirect(self):
-        """Testing submitter_list view as anonymous with anonymous
+        """Testing users_list view as anonymous with anonymous
         access disabled
         """
         self.siteconfig.set("auth_require_sitewide_login", True)
@@ -405,7 +405,7 @@ class SubmitterListViewTests(BaseViewTestCase):
 
     @add_fixtures(['test_users'])
     def test_with_private_review_requests(self):
-        """Testing submitter_list view with private review requests"""
+        """Testing users_list view with private review requests"""
         ReviewRequest.objects.all().delete()
 
         user = User.objects.get(username='grumpy')

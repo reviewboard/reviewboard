@@ -245,25 +245,25 @@ class DashboardDataGrid(DataGridSidebarMixin, ReviewRequestDataGrid):
         return super(DashboardDataGrid, self).load_extra_state(profile)
 
 
-class SubmitterDataGrid(DataGrid):
+class UsersDataGrid(DataGrid):
     """A datagrid showing a list of users registered on Review Board."""
     username = Column(_('Username'), link=True, sortable=True)
     fullname = Column(_('Full Name'), field_name='get_full_name',
                       link=True, expand=True)
-    pending_count = PendingCountColumn(_('Pending Reviews'),
+    pending_count = PendingCountColumn(_('Open Review Requests'),
                                        field_name='directed_review_requests',
                                        shrink=True)
 
     def __init__(self, request,
                  queryset=User.objects.filter(is_active=True),
-                 title=_('All submitters'),
+                 title=_('All users'),
                  local_site=None):
         if local_site:
             qs = queryset.filter(local_site=local_site)
         else:
             qs = queryset
 
-        super(SubmitterDataGrid, self).__init__(request, qs, title)
+        super(UsersDataGrid, self).__init__(request, qs, title)
 
         self.default_sort = ['username']
         self.profile_sort_field = 'sort_submitter_columns'
@@ -283,7 +283,7 @@ class GroupDataGrid(DataGrid):
     name = Column(_('Group ID'), link=True, sortable=True)
     displayname = Column(_('Group Name'), field_name='display_name',
                          link=True, expand=True)
-    pending_count = PendingCountColumn(_('Pending Reviews'),
+    pending_count = PendingCountColumn(_('Open Review Requests'),
                                        field_name='review_requests',
                                        link=True,
                                        shrink=True)

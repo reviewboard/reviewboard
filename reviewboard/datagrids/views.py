@@ -11,7 +11,7 @@ from reviewboard.accounts.decorators import (check_login_required,
 from reviewboard.datagrids.grids import (DashboardDataGrid,
                                          GroupDataGrid,
                                          ReviewRequestDataGrid,
-                                         SubmitterDataGrid,
+                                         UsersDataGrid,
                                          UserPageDataGrid)
 from reviewboard.reviews.models import Group, ReviewRequest
 from reviewboard.reviews.views import _render_permission_denied
@@ -115,9 +115,9 @@ def group_members(request,
         return _render_permission_denied(
             request, 'datagrids/group_permission_denied.html')
 
-    datagrid = SubmitterDataGrid(request,
-                                 group.users.filter(is_active=True),
-                                 _("Members of group %s") % name)
+    datagrid = UsersDataGrid(request,
+                             group.users.filter(is_active=True),
+                             _("Members of group %s") % name)
 
     return datagrid.render_to_response(template_name)
 
@@ -146,9 +146,9 @@ def submitter(request,
 
 @check_login_required
 @check_local_site_access
-def submitter_list(request,
-                   local_site=None,
-                   template_name='datagrids/datagrid.html'):
+def users_list(request,
+               local_site=None,
+               template_name='datagrids/datagrid.html'):
     """Displays a list of all users."""
-    grid = SubmitterDataGrid(request, local_site=local_site)
+    grid = UsersDataGrid(request, local_site=local_site)
     return grid.render_to_response(template_name)
