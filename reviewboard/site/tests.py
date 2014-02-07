@@ -1,12 +1,15 @@
 from __future__ import unicode_literals
 
-from django.contrib.auth.models import User
+from django.contrib.auth.models import Permission, User
 from django.http import HttpRequest
 from django.template import Context, Template
-from django.test import TestCase
+from djblets.testing.decorators import add_fixtures
 
+from reviewboard.accounts.models import LocalSiteProfile
+from reviewboard.site.context_processors import AllPermsWrapper
 from reviewboard.site.models import LocalSite
 from reviewboard.site.urlresolvers import local_site_reverse
+from reviewboard.testing.testcase import TestCase
 
 
 class BasicTests(TestCase):
@@ -60,6 +63,43 @@ class BasicTests(TestCase):
             local_site_reverse('user', kwargs={'username': 'sample-user'},
                                request=request),
             '/users/sample-user/')
+
+
+class PermissionWrapperTests(TestCase):
+    """Testing the LocalSite-aware permissions wrapper."""
+    def setUp(self):
+        super(PermissionWrapperTests, self).setUp()
+
+        self.user = User.objects.get(username='doc')
+        self.assertFalse(self.user.is_superuser)
+
+    @add_fixtures(['test_users', 'test_site'])
+    def test_lookup_global_permission(self):
+        """Testing AllPermsWrapper with global permission lookup"""
+        self.user.user_permissions.add(
+            Permission.objects.get(codename='delete_reviewrequest'))
+
+        perms = AllPermsWrapper(self.user, self.local_site_name)
+
+        self.assertIn('reviews.delete_reviewrequest', perms)
+        self.assertNotIn('reviews.fake_permission', perms)
+
+    @add_fixtures(['test_users', 'test_site'])
+    def test_lookup_site_permission(self):
+        """Testing AllPermsWrapper with site permission lookup"""
+        local_site  = LocalSite.objects.get(name=self.local_site_name)
+
+        local_site_profile = LocalSiteProfile.objects.create(
+            user=self.user,
+            profile=self.user.get_profile(),
+            local_site=local_site)
+        local_site_profile.permissions['reviews.can_change_status'] = True
+        local_site_profile.save()
+
+        perms = AllPermsWrapper(self.user, self.local_site_name)
+
+        self.assertIn('reviews.can_change_status', perms)
+        self.assertNotIn('reviews.fake_permission', perms)
 
 
 class TemplateTagTests(TestCase):

@@ -7,8 +7,8 @@ from reviewboard.site.models import LocalSite
 
 
 class AllPermsLookupDict(PermLookupDict):
-    def __init__(self, user, module_name, perms_wrapper):
-        super(AllPermsLookupDict, self).__init__(user, module_name)
+    def __init__(self, user, app_label, perms_wrapper):
+        super(AllPermsLookupDict, self).__init__(user, app_label)
 
         self.perms_wrapper = perms_wrapper
 
@@ -17,7 +17,7 @@ class AllPermsLookupDict(PermLookupDict):
             self.perms_wrapper.get_local_site()))
 
     def __getitem__(self, perm_name):
-        return self.user.has_perm('%s.%s' % (self.module_name, perm_name),
+        return self.user.has_perm('%s.%s' % (self.app_label, perm_name),
                                   self.perms_wrapper.get_local_site())
 
     def __nonzero__(self):
@@ -34,8 +34,8 @@ class AllPermsWrapper(PermWrapper):
         self.local_site_name = local_site_name
         self.local_site = None
 
-    def __getitem__(self, module_name):
-        return AllPermsLookupDict(self.user, module_name, self)
+    def __getitem__(self, app_label):
+        return AllPermsLookupDict(self.user, app_label, self)
 
     def get_local_site(self):
         if self.local_site_name is None:
