@@ -6,7 +6,7 @@ sys.path.insert(0, os.path.join(__file__, "..", ".."))
 sys.path.insert(0, os.path.dirname(__file__))
 
 from reviewboard import settings
-from django.core.management import execute_manager
+from django.core.management import execute_from_command_line
 
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'reviewboard.settings')
@@ -21,4 +21,4 @@ def scan_resource(resource):
 
 
 if __name__ == "__main__":
-    execute_manager(settings)
+    execute_from_command_line()
