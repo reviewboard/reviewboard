@@ -142,13 +142,14 @@ RB.ReviewReplyEditorView = Backbone.View.extend({
      */
     _makeCommentElement: function(options) {
         var userSession = RB.UserSession.instance,
-            now;
+            reviewRequest = this.model.get('review').get('parentObject'),
+            now,
+            $el;
 
         options = options || {};
         now = options.now || moment().zone(userSession.get('timezoneOffset'));
 
-        return (
-            $(this.commentTemplate(_.extend({
+        $el = $(this.commentTemplate(_.extend({
                 id: _.uniqueId('draft_comment_'),
                 text: '',
                 commentID: null,
@@ -171,7 +172,13 @@ RB.ReviewReplyEditorView = Backbone.View.extend({
                 .timesince()
             .end()
             .appendTo(this._$commentsList)
-        );
+
+        if (options.text) {
+            RB.formatText($el.find('.reviewtext'), options.text,
+                          reviewRequest.get('bugTrackerURL'));
+        }
+
+        return $el;
     },
 
     /*
