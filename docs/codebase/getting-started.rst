@@ -5,8 +5,8 @@ Getting Started
 ===============
 
 This guide will serve as a basic introduction to installing Review Board
-for development purposes. The steps have been tested on Linux, but should
-be easily adapted to Windows with Cygwin installed.
+for development purposes. These steps have been tested on Linux and on
+MacOS X.
 
 The methods in this guide should not be used to install Review Board for
 production use or on a production server. It certainly should not be used
@@ -18,6 +18,13 @@ feel comfortable.
 
 Installation
 ============
+
+MacOS X Requirements
+--------------------
+
+If you're on MacOS X, you'll want to make sure you have XCode installed. This
+will provide some essential tools, such as Git and patch.
+
 
 Virtualenv
 ----------
@@ -193,10 +200,6 @@ type::
 
 You'll do the same with Review Board.
 
-If you're on Windows and you've recently updated Djblets, you will need to
-re-run :command:`contrib/internal/prepare-dev.py` in the Review Board tree in
-order to copy over the new Djblets media files.
-
 
 Beginning Development
 =====================
@@ -308,6 +311,24 @@ You may have to resolve conflicts multiple times if you have many commits on
 your branch.
 
 
+Updating your Database
+----------------------
+
+From time to time, we make changes to the schema for the database. You'll
+notice this if Review Board suddenly breaks, saying ``no such column`` or
+``no such table``.
+
+To update your database, run::
+
+    $ ./reviewboard/manage.py syncdb
+    $ ./reviewboard/manage.py evolve --execute
+
+This will apply the database schema migrations to your database.
+
+If you're writing a change that needs to modify the database, you'll want
+to see :ref:`database-evolutions`.
+
+
 Additional Tips
 ---------------
 
@@ -381,25 +402,21 @@ Before you post a change for review, make sure your branch is based on
 the upstream ``master`` branch.
 
 When you're ready to post the changes on a branch for review, you can
-just run :command:`post-review`, which you should have if you installed
+just run :command:`rbt post`, which you should have if you installed
 RBTools above::
 
-    $ post-review
+    $ rbt post -g
 
-If you want to update an existing review request, use the ``-r`` parameter.
-To update review request #42, type::
+This will use your commit message as the base for the review request's Summary
+and Description fields.
 
-    $ post-review -r 42
+If you want to update an existing review request, use the ``-u`` parameter::
 
-There are some other handy parameters as well. If you want to use your
-existing commit messages on your branch as a starting point for your
-review request's summary and description (which is really useful when
-your change is only one commit), type::
+    $ rbt post -u
 
-    $ post-review -g
+If it can't find your review request (which would happen if you changed your
+summary and description), then you will need to use ``-r <ID>`` instead::
 
-This will take the first line of the first commit and use that as the
-summary. The rest of the text of all your combined commits on that branch
-will be used as the description, which you can edit before publishing.
+    $ rbt post -r 42
 
 See our guidelines on :ref:`Contributing Patches` for more information.
