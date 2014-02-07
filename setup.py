@@ -192,7 +192,7 @@ setup(name=PACKAGE_NAME,
       },
       cmdclass=cmdclasses,
       install_requires=[
-          'Django>=1.6.1,<1.7',
+          'Django>=1.6.2,<1.7',
           'django_evolution>=0.7,<0.8',
           'Djblets>=0.8alpha3.dev,<0.9',
           'django-haystack',
