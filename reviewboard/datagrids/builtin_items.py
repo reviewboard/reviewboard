@@ -78,9 +78,8 @@ class IncomingSection(BaseSidebarSection):
         groups = (
             self.datagrid.user.review_groups
             .filter(local_site=self.datagrid.local_site)
-            .order_by('name')
-            .values('name', 'incoming_request_count'))
-        seen_groups = set([group['name'] for group in groups])
+            .order_by('name'))
+        seen_groups = set([group.name for group in groups])
 
         for item in self._add_groups(groups, view_id='to-group'):
             yield item
@@ -89,8 +88,7 @@ class IncomingSection(BaseSidebarSection):
             profile.starred_groups
             .filter(local_site=self.datagrid.local_site)
             .exclude(name__in=seen_groups)
-            .order_by('name')
-            .values('name', 'incoming_request_count'))
+            .order_by('name'))
 
         for item in self._add_groups(starred_groups,
                                      view_id='to-watched-group',
@@ -99,7 +97,7 @@ class IncomingSection(BaseSidebarSection):
 
     def _add_groups(self, groups, view_id, icon_name=None):
         for i, group in enumerate(groups):
-            name = group['name']
+            name = group.name
 
             if i == 0:
                 css_classes = ['new-subsection']
@@ -114,7 +112,7 @@ class IncomingSection(BaseSidebarSection):
                                  },
                                  icon_name=icon_name,
                                  css_classes=css_classes,
-                                 count=group['incoming_request_count'])
+                                 count=group.incoming_request_count)
 
 
 class UserProfileItem(BaseSidebarItem):
