@@ -865,7 +865,13 @@ class ConsoleUI(UIToolkit):
 
         while not value:
             if password:
-                value = getpass.getpass(prompt)
+                temp_value = getpass.getpass(prompt)
+                if save_var.startswith('reenter'):
+                    if not self.confirm_reentry(save_obj, save_var, temp_value):
+                        self.error("Passwords must match.")
+                        continue
+                value = temp_value
+
             else:
                 value = input(prompt)
 
@@ -879,6 +885,11 @@ class ConsoleUI(UIToolkit):
             value = normalize_func(value)
 
         setattr(save_obj, save_var, value)
+
+    def confirm_reentry(self, obj, reenter_var, value):
+        first_var = reenter_var.replace('reenter_', '')
+        first_entry = getattr(site, first_var)
+        return first_entry == value
 
     def prompt_choice(self, page, prompt, choices,
                       save_obj=None, save_var=None):
@@ -1707,7 +1718,7 @@ class InstallCommand(Command):
                         save_obj=site, save_var="db_user")
         ui.prompt_input(page, "Database Password", site.db_pass, password=True,
                         save_obj=site, save_var="db_pass")
-        ui.prompt_input(page, "Confirm Database Password", site.db_pass,
+        ui.prompt_input(page, "Confirm Database Password",
                         password=True, save_obj=site,
                         save_var="reenter_db_pass")
 
@@ -1781,7 +1792,7 @@ class InstallCommand(Command):
                         save_obj=site, save_var="admin_user")
         ui.prompt_input(page, "Password", site.admin_password, password=True,
                         save_obj=site, save_var="admin_password")
-        ui.prompt_input(page, "Confirm Password", site.admin_password,
+        ui.prompt_input(page, "Confirm Password",
                         password=True, save_obj=site,
                         save_var="reenter_admin_password")
         ui.prompt_input(page, "E-Mail Address", site.admin_email,
