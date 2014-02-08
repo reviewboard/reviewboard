@@ -65,7 +65,7 @@ if settings.DEBUG and not settings.PRODUCTION:
                           view='django.contrib.staticfiles.views.serve',
                           show_indexes=True)
     urlpatterns += static(settings.MEDIA_DIRECTORY,
-                          view='django.contrib.staticfiles.views.serve',
+                          document_root=settings.MEDIA_ROOT,
                           show_indexes=True)
 
     urlpatterns += patterns(
