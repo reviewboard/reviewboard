@@ -40,6 +40,7 @@ $.widget("ui.rbautocomplete", {
         },
         scroll: true,
         clickToURL: false,
+        enterToURL: false,
         scrollHeight: 180
     },
 
@@ -125,6 +126,9 @@ $.widget("ui.rbautocomplete", {
                 case options.multiple && $.trim(options.multipleSeparator) == "," && KEY.COMMA:
                 case KEY.TAB:
                 case KEY.ENTER:
+                    if (options.enterToURL && select.current()){
+                        select.current().click();
+                    }
                     if( selectCurrent() ) {
                         // stop default to prevent a form submit, Opera needs special handling
                         event.preventDefault();

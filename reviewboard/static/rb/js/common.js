@@ -301,10 +301,11 @@ $.fn.searchAutoComplete = function() {
             return s;
         },
         matchCase: false,
-        multiple: true,
+        multiple: false,
         clickToURL: true,
         selectFirst: false,
         width: 240,
+        enterToURL: true,
         parse: function(data) {
             var jsonData = data,
                 jsonDataSearch = jsonData.search,
