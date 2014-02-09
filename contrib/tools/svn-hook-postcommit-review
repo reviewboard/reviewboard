@@ -47,7 +47,7 @@
 # User configurable variables
 #
 
-# Path to post-review script
+# Path to rbt script
 POSTREVIEW_PATH = "/reviewboard/contrib/tools/"
 # Username and password for Review Board user that will be connecting
 # to create all review requests.  This user must have 'submit as'
@@ -55,7 +55,7 @@ POSTREVIEW_PATH = "/reviewboard/contrib/tools/"
 USERNAME = 'username'
 PASSWORD = 'password'
 
-# If true, runs post-review in debug mode and outputs its diff
+# If true, runs rbt in debug mode and outputs its diff
 DEBUG = False
 
 #
@@ -88,7 +88,7 @@ ticket_command = (r'(?P<action>[A-Za-z]*).?'
 def execute(command, env=None, ignore_errors=False):
     """
     Utility function to execute a command and return the output.
-    Derived from Review Board's post-review script.
+    Derived from Review Board's rbt script.
     """
     if env:
         env.update(os.environ)
@@ -217,7 +217,7 @@ def main():
     args = [repository_url, username, password, publish,
             submitas, revision, base_path, reviewid]
 
-    # filter out any potentially blank args, which will confuse post-review
+    # filter out any potentially blank args, which will confuse rbt
     args = [i for i in args if len(i) > 1]
 
     # if not updating an existing review, add extra arguments
@@ -226,10 +226,10 @@ def main():
 
     if DEBUG:
         args += ['-d', '--output-diff']
-        print [os.path.join(POSTREVIEW_PATH, 'post-review')] + args
+        print [os.path.join(POSTREVIEW_PATH, 'rbt'), 'post'] + args
 
-    # Run Review Board post-review script
-    data = execute([os.path.join(POSTREVIEW_PATH, 'post-review')] + args,
+    # Run Review Board rbt script
+    data = execute([os.path.join(POSTREVIEW_PATH, 'rbt'), 'post'] + args,
                    env = {'LANG': 'en_US.UTF-8'})
 
     if DEBUG:
