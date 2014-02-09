@@ -199,8 +199,8 @@ class Bitbucket(HostingService):
 
         return self._api_get(url, raw_content=True)
 
-    def _build_api_url(self, url):
-        return 'https://bitbucket.org/api/1.0/%s' % url
+    def _build_api_url(self, url, version='1.0'):
+        return 'https://bitbucket.org/api/%s/%s' % (version, url)
 
     def _get_repository_plan(self, repository):
         return (repository.extra_data.get('repository_plan') or
