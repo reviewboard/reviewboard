@@ -65,6 +65,22 @@ RB.TextCommentRowSelector = Backbone.View.extend({
         return this;
     },
 
+   /*
+    * Creates a comment for a chunk of a diff.
+    */
+    createComment: function(beginLineNum, endLineNum, beginNode, endNode) {
+        this._beginLineNum = beginLineNum;
+        this._endLineNum = endLineNum
+        this._$begin = this._getActualLineNumCell($(beginNode)).parent()
+        this._$end = this._getActualLineNumCell($(endNode)).parent()
+
+        if (this._isLineNumCell(endNode)) {
+            this._end(this._getActualLineNumCell($(endNode)).parent());
+        }
+
+        this._reset();
+    },
+
     /*
      * Begins the selection of line numbers.
      */

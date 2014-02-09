@@ -21,7 +21,8 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
         'dDjn.': '_selectNextDiff',
         '[x': '_selectPreviousComment',
         ']c': '_selectNextComment',
-        '\x0d': '_recenterSelected'
+        '\x0d': '_recenterSelected',
+        'rR': '_createComment'
     },
 
     events: _.extend({
@@ -42,6 +43,7 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
         this._$controls = null;
         this._diffReviewableViews = [];
         this._diffFileIndexView = null;
+        this._highlightedChunk = null;
 
         this.listenTo(this.model.get('files'), 'update', this._setFiles);
 
@@ -210,6 +212,8 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
         var files = this.model.get('files'),
             $diffs = $('#diffs').empty();
 
+        this._highlightedChunk = null;
+
         files.each(function(file) {
             var filediff = file.get('filediff'),
                 interfilediff = file.get('interfilediff'),
@@ -369,6 +373,7 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
      * Highlights a chunk bound to an anchor element.
      */
     _highlightAnchor: function($anchor) {
+        this._highlightedChunk = $anchor.parents('tbody:first, thead:first');
         RB.ChunkHighlighterView.highlight(
             $anchor.parents('tbody:first, thead:first'));
     },
@@ -476,6 +481,35 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
      */
     _recenterSelected: function() {
         this.selectAnchor($(this._$anchors[this._selectedAnchorIndex]));
+    },
+
+   /*
+    * Creates a comment for a chunk of a diff
+    */
+    _createComment: function() {
+        var chunkID = this._highlightedChunk[0].id,
+            chunkElement = document.getElementById(chunkID),
+            lineElements,
+            beginLineNum,
+            beginNode,
+            endLineNum,
+            endNode;
+
+        if (chunkElement) {
+            lineElements = chunkElement.getElementsByTagName('tr');
+            beginLineNum = lineElements[0].getAttribute("line");
+            beginNode = lineElements[0].cells[2];
+            endLineNum = lineElements[lineElements.length-1]
+                .getAttribute("line");
+            endNode = lineElements[lineElements.length-1].cells[2];
+
+            _.each(this._diffReviewableViews, function(diffReviewableView) {
+                if ($.contains(diffReviewableView.el, beginNode)){
+                    diffReviewableView.createComment(beginLineNum, endLineNum,
+                                                     beginNode, endNode);
+                }
+            });
+        }
     },
 
     /*

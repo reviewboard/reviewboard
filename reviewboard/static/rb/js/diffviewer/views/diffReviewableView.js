@@ -121,6 +121,14 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
                 .toggle();
     },
 
+   /*
+    * Creates a comment for a chunk of a diff.
+    */
+    createComment: function(beginLineNum, endLineNum, beginNode, endNode) {
+        this._selector.createComment(beginLineNum, endLineNum, beginNode,
+                                     endNode);
+    },
+
     /*
      * Finds the row in a table matching the specified line number.
      *
