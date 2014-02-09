@@ -420,9 +420,9 @@ class BaseTextAreaField(BaseEditableField):
         text = text or ''
 
         if self.enable_markdown and not self.is_text_markdown(text):
-            return markdown_escape(text)
-        else:
-            return text
+            text = markdown_escape(text)
+
+        return escape(text)
 
     def render_change_entry_html(self, info):
         old_value_html = ''
