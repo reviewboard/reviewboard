@@ -64,8 +64,8 @@ class DiffContextResource(WebAPIResource):
         """
         try:
             view = DiffViewerContextView.as_view()
-            context = view(request, review_request_id, revision,
-                           interdiff_revision, local_site_name)
+            context = view(request, local_site_name, review_request_id,
+                           revision, interdiff_revision)
         except Http404:
             return DOES_NOT_EXIST
 
