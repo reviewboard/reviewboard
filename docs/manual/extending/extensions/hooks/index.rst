@@ -29,6 +29,7 @@ The following hooks are available for use by extensions.
    review-request-fieldsets-hook
    review-request-fields-hook
    review-ui-hook
+   signal-hook
    template-hook
    url-hook
    user-page-sidebar-items-hook
