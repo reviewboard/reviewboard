@@ -672,8 +672,6 @@
  ****************************************************************************/
 #diff-details {
   border-spacing: 8px;
-  border-top: 1px #c2c1b0 solid;
-  margin-top: 20px;
 
   &.loading {
     #diff_index {
@@ -681,6 +679,13 @@
       height: 16px;
       padding: @box-padding;
     }
+  }
+
+  #diff_revision_label h1 {
+    color: @review-request-label-color;
+    font-size: 120%;
+    margin: 0;
+    padding: 0;
   }
 
   .main {
