@@ -6,6 +6,7 @@ from djblets.siteconfig.models import SiteConfiguration
 from djblets.testing.decorators import add_fixtures
 from djblets.util.compat import six
 
+from reviewboard.datagrids.builtin_items import UserGroupsItem, UserProfileItem
 from reviewboard.reviews.models import Group, ReviewRequest, ReviewRequestDraft
 from reviewboard.testing import TestCase
 
@@ -403,9 +404,11 @@ class SubmitterListViewTests(BaseViewTestCase):
         response = self.client.get('/users/')
         self.assertEqual(response.status_code, 302)
 
+class SubmitterViewTests(BaseViewTestCase):
+    """Unit tests for the submitter view."""
     @add_fixtures(['test_users'])
     def test_with_private_review_requests(self):
-        """Testing users_list view with private review requests"""
+        """Testing submitter view with private review requests"""
         ReviewRequest.objects.all().delete()
 
         user = User.objects.get(username='grumpy')
@@ -433,13 +436,40 @@ class SubmitterListViewTests(BaseViewTestCase):
         self.assertEqual(len(datagrid.rows), 1)
         self.assertEqual(datagrid.rows[0]['object'].summary, 'Summary 1')
 
-        groups = self.getContextVar(response, 'groups')
-        self.assertEqual(len(groups), 1)
-        self.assertEqual(groups[0], group1)
+    @add_fixtures(['test_users'])
+    def test_sidebar(self):
+        """Testing submitter view sidebar"""
+        user = User.objects.get(username='grumpy')
+        user.review_groups.clear()
 
+        group1 = Group.objects.create(name='test-group-1')
+        group1.users.add(user)
 
-class SubmitterViewTests(BaseViewTestCase):
-    """Unit tests for the submitter view."""
+        group2 = Group.objects.create(name='test-group-2', invite_only=True)
+        group2.users.add(user)
+
+        # Now load the page and get the sidebar items.
+        response = self.client.get('/users/grumpy/')
+        self.assertEqual(response.status_code, 200)
+
+        datagrid = self.getContextVar(response, 'datagrid')
+        self.assertIsNotNone(datagrid)
+
+        sidebar_items = self.getContextVar(response, 'datagrid').sidebar_items
+        self.assertEqual(len(sidebar_items), 2)
+
+        # Test the User Profile section.
+        section = sidebar_items[0]
+        self.assertIsInstance(section, UserProfileItem)
+
+        # Test the Groups section.
+        section = sidebar_items[1]
+        self.assertIsInstance(section, UserGroupsItem)
+        self.assertEqual(six.text_type(section.label), 'Groups')
+        self.assertEqual(len(section.items), 1)
+        self.assertEqual(six.text_type(section.items[0].label),
+                         'test-group-1')
+
     def test_match_url_with_email_address(self):
         """Testing submitter view URL matching with e-mail address
         as username
