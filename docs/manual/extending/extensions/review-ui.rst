@@ -29,14 +29,32 @@ UIs.  This can be using :py:class:`reviewboard.extensions.hooks.ReviewUIHook`
 directly, using a subclass of it. :py:class:`ReviewUIHook` expects a list of
 Review UIs as argument in addition to the extension instance.
 
+Since you will be writing custom JavaScript and, likely, custom CSS, you will
+also need to define some :ref:`static media bundles <extension-static-files>`
+to load.
+
 Example: **XMLReviewUIExtension**:
 
 .. code-block:: python
 
     class XMLReviewUIExtension(Extension):
-        def __init__(self, *args, **kwargs):
-            super(XMLReviewUIExtension, self).__init__(*args, **kwargs)
-            self.reviewui_hook = ReviewUIHook(self, [XMLReviewUI])
+        css_bundles = {
+            'xmlreviewable': {
+                'source_filenames': ['css/xmlreviewable.less'],
+            },
+        }
+
+        js_bundles = {
+            'xmlreviewable': {
+                'source_filenames': [
+                    'js/XMLReviewableModel.js',
+                    'js/XMLReviewableView.js',
+                ],
+            },
+        }
+
+        def initialize(self):
+            ReviewUIHook(self, [XMLReviewUI])
 
 
 .. _extension-review-ui-class:
@@ -49,15 +67,28 @@ Each Review UI must be defined by its own ReviewUI class that subclasses
 define the following class variables:
 
 *
+    **name**: The name for the review UI.
+
+*
     **supported_mimetypes**: a list of mimetypes of the files that this Review
     UI will be responsible for rendering.
 
 *
-    **template_name**: where to find the html template used when rendering this
-    Review UI
+    **js_model_class**: The JavaScript model name that will store information
+    for the view.
 
 *
-    **object_key**: a unique name to identify this Review UI
+    **js_model_view**: The JavaScript view name that will provide the review
+    experience for the file.
+
+*
+    **css_bundle_names**: A list of CSS bundles defined by your extension
+    that the page will include.
+
+*
+    **js_bundle_names**: A list of JavaScript bundles defined by your
+    extension that the page will include.
+
 
 Example: **XMLReviewUI**:
 
@@ -73,91 +104,52 @@ Example: **XMLReviewUI**:
 
     class XMLReviewUI(FileAttachmentReviewUI):
         """ReviewUI for XML mimetypes"""
+        name = 'XML'
         supported_mimetypes = ['application/xml', 'text/xml']
-        template_name = 'xml_review_ui_extension/xml.html'
-        object_key = 'xml'
 
-The class should also have some function to render the particular mimetype(s)
-that it is responsible for. There are no restrictions on the name of the
-function or what it returns, but it should be in agreement with logic specified
-in its corresponding template.
+        css_bundles = ['xmlreviewable']
+        js_bundles = ['xmlreviewable']
 
-Example: **render()** in **XMLReviewUI**. This simply uses the pygments API
-to convert raw XML into syntax-highlighted HTML:
+        js_model_class = 'MyVendor.XMLReviewable'
+        js_view_class = 'MyVendor.XMLReviewableView'
+
+
+Generally, you will also want to provide data for the model, such as the
+contents of the file. You will do this in :py:meth:`get_js_model_data`.
+For example:
 
 .. code-block:: python
 
-    def render(self):
+    def get_js_model_data(self):
+        data = super(XMLReviewUI, self).get_js_model_data()
+
         data_string = ""
-        f = self.obj.file
 
-        try:
-            f.open()
-            data_string = f.read()
-        except (ValueError, IOError), e:
-            logging.error('Failed to read from file %s: %s' % (self.obj.pk, e))
+        with self.obj.file as f:
+           try:
+               f.open()
+               data_string = f.read()
+           except (ValueError, IOError) as e:
+               logging.error('Failed to read from file %s: %s', self.obj.pk, e)
 
-        f.close()
-
-        return pygments.highlight(
+        data['xmlContent'] = pygments.highlight(
             force_unicode(data_string),
             pygments.lexers.XmlLexer(),
             pygments.formatters.HtmlFormatter())
 
+        return data
 
-.. _extension_review-ui-template:
+You may also provide :py:meth:`get_js_view_data` to pass options to the
+view.
 
-ReviewUI Template
------------------
-
-Here is the template that corresponds to the above Review UI:
-
-:file:`xml_review_ui_extension/templates/xml_review_ui_extension/xml.html`:
-
-.. code-block:: html+django
-
-    {% extends base_template %}
-    {% load i18n %}
-    {% load reviewtags %}
-
-    {% block title %}{{xml.filename}}{% if caption %}: {{caption}}
-    {% endif %}{% endblock %}
-
-    {% block scripts-post %}
-    {{block.super}}
-
-    <script language="javascript"
-    src="{{MEDIA_URL}}ext/xml-review-ui-extension/js/XMLReviewableModel.js">
-    </script>
-
-    <script language="javascript"
-    src="{{MEDIA_URL}}ext/xml-review-ui-extension/js/XMLReviewableView.js">
-    </script>
-
-    <script language="javascript">
-        $(document).ready(function() {
-            var view = new RB.XMLReviewableView({
-                model: new RB.XMLReviewable({
-                    attachmentID: '{{xml.id}}',
-                    caption: '{{caption|escapejs}}',
-                    rendered: '{{review_ui.render|escapejs}}'
-                })
-            });
-            view.render();
-            $('#xml-review-ui-container').append(view.$el);
-        });
-    </script>
-    {% endblock %}
-
-    {% block review_ui_content %}
-    <div id="xml-review-ui-container"></div>
-    {% endblock %}
+There are a number of functions you may want to override, all documented in
+:py:class:`reviewboard.reviews.ui.base.ReviewUI`.
 
 
 ReviewUI JavaScript
 -------------------
 
-Here are the corresponding JavaScript used in the above template.
+Here are the corresponding JavaScript used in the above extension.
 
 :file:`xml_review_ui_extension/static/js/XMLReviewableModel.js`:
 
@@ -166,9 +158,9 @@ Here are the corresponding JavaScript used in the above template.
     /*
      * Provides review capabilities for XML files.
      */
-    RB.XMLReviewable = RB.FileAttachmentReviewable.extend({
+    MyVendor.XMLReviewable = RB.FileAttachmentReviewable.extend({
         defaults: _.defaults({
-            rendered: ''
+            xmlContent: ''
         }, RB.FileAttachmentReviewable.prototype.defaults)
     });
 
@@ -180,14 +172,14 @@ Here are the corresponding JavaScript used in the above template.
     /*
      * Displays a review UI for XML files.
      */
-    RB.XMLReviewableView = RB.FileAttachmentReviewableView.extend({
+    MyVendor.XMLReviewableView = RB.FileAttachmentReviewableView.extend({
         className: 'xml-review-ui',
 
         /*
          * Renders the view.
          */
         renderContent: function() {
-            this.$el.html(this.model.get('rendered'));
+            this.$el.html(this.model.get('xmlContent'));
 
             return this;
         }
