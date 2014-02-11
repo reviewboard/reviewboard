@@ -266,9 +266,12 @@ class CommitField(BuiltinFieldMixin, BaseReviewRequestField):
     def render_value(self, commit_id):
         # Abbreviate SHA-1s
         if len(commit_id) == 40:
-            commit_id = commit_id[:7] + '...'
+            abbrev_commit_id = commit_id[:7] + '...'
 
-        return commit_id
+            return '<span title="%s">%s</span>' % (escape(commit_id),
+                                                   escape(abbrev_commit_id))
+        else:
+            return escape(commit_id)
 
 
 class TargetGroupsField(BuiltinFieldMixin, BaseModelListEditableField):
