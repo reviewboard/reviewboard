@@ -920,13 +920,13 @@ class ProcessorsTests(TestCase):
                                                     new_diff))
 
         self.assertEqual(new_opcodes, [
-            ('equal', 0, 0, 0, 1),
-            ('equal', 0, 5, 1, 5),
+            ('filtered-equal', 0, 0, 0, 1),
+            ('filtered-equal', 0, 5, 1, 5),
             ('delete', 5, 10, 5, 5),
-            ('equal', 10, 25, 5, 20),
+            ('filtered-equal', 10, 25, 5, 20),
             ('replace', 25, 26, 20, 26),
-            ('equal', 26, 40, 26, 40),
-            ('equal', 40, 40, 40, 45),
+            ('filtered-equal', 26, 40, 26, 40),
+            ('filtered-equal', 40, 40, 40, 45),
         ])
 
     def test_filter_interdiff_opcodes_with_inserts_right(self):
@@ -954,7 +954,7 @@ class ProcessorsTests(TestCase):
                                                     new_diff))
 
         self.assertEqual(new_opcodes, [
-            ('equal', 0, 141, 0, 141),
+            ('filtered-equal', 0, 141, 0, 141),
             ('replace', 141, 142, 141, 142),
             ('insert', 142, 142, 142, 144),
             ('equal', 142, 165, 144, 167),
@@ -999,10 +999,10 @@ class ProcessorsTests(TestCase):
                                                     new_diff))
 
         self.assertEqual(new_opcodes, [
-            ('equal', 0, 631, 0, 631),
+            ('filtered-equal', 0, 631, 0, 631),
             ('replace', 631, 632, 631, 632),
             ('insert', 632, 632, 632, 633),
-            ('equal', 632, 882, 633, 883),
+            ('filtered-equal', 632, 882, 633, 883),
         ])
 
     def test_merge_adjacent_chunks(self):

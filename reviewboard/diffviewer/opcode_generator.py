@@ -7,7 +7,8 @@ from djblets.util.compat import six
 from djblets.util.compat.six.moves import range
 
 from reviewboard.diffviewer.processors import (filter_interdiff_opcodes,
-                                               merge_adjacent_chunks)
+                                               merge_adjacent_chunks,
+                                               post_process_interdiff_chunks)
 
 
 class DiffOpcodeGenerator(object):
@@ -42,6 +43,7 @@ class DiffOpcodeGenerator(object):
         opcodes = self.differ.get_opcodes()
         opcodes = self._apply_processors(opcodes)
         opcodes = self._generate_opcode_meta(opcodes)
+        opcodes = self._apply_meta_processors(opcodes)
 
         self._group_opcodes(opcodes)
         self._compute_moves()
@@ -100,11 +102,22 @@ class DiffOpcodeGenerator(object):
                     else:
                         new_meta = meta
 
-                    yield 'equal', ii1, ii2, ij1, ij2, new_meta
+                    yield tag, ii1, ii2, ij1, ij2, new_meta
 
                 continue
 
             yield tag, i1, i2, j1, j2, meta
+
+    def _apply_meta_processors(self, opcodes):
+        if self.interfilediff:
+            # When filtering out opcodes, we may have converted chunks into
+            # "filtered-equal" chunks. This allowed us to skip any additional
+            # processing, particularly the indentation highlighting. It's
+            # now time to turn those back into "equal" chunks.
+            opcodes = post_process_interdiff_chunks(opcodes)
+
+        for opcode in opcodes:
+            yield opcode
 
     def _group_opcodes(self, opcodes):
         for tag, i1, i2, j1, j2, meta in opcodes:

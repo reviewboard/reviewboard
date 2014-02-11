@@ -102,11 +102,14 @@ def filter_interdiff_opcodes(opcodes, filediff_data, interfilediff_data):
         )
 
         if not valid_chunk:
-            # Turn this into an "equal" chunk. The left-hand and right-hand
-            # side of the diffs will look different, which may be noticeable,
-            # but it will still help the user pay attention to what's actually
-            # changed that they care about.
-            tag = 'equal'
+            # Turn this into an "filtered-equal" chunk. The left-hand and
+            # right-hand side of the diffs will look different, which may be
+            # noticeable, but it will still help the user pay attention to
+            # what's actually changed that they care about.
+            #
+            # These will get turned back into "equal" chunks in the
+            # post-processing step.
+            tag = 'filtered-equal'
 
         yield tag, i1, i2, j1, j2
 
@@ -130,3 +133,16 @@ def merge_adjacent_chunks(opcodes):
 
     if cur_chunk:
         yield cur_chunk
+
+
+def post_process_interdiff_chunks(opcodes):
+    """Post-processes interdiff chunks.
+
+    Any filtered-out "filtered-equal" chunks will get turned back into "equal"
+    chunks.
+    """
+    for tag, i1, i2, j1, j2, meta in opcodes:
+        if tag == 'filtered-equal':
+            tag = 'equal'
+
+        yield tag, i1, i2, j1, j2, meta
