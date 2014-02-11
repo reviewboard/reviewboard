@@ -9,13 +9,6 @@ CHUNK_RANGE_RE = re.compile(
     re.M)
 
 
-# Number of lines of context we assume we have in uploaded diffs. This number
-# may vary between diffs, but only if people go out of their way to change it
-# when generating the diff. In practice, we can trust this value in 99.9% of
-# the cases.
-CHUNK_RANGE_ASSUMED_CONTEXT_LEN = 3
-
-
 def filter_interdiff_opcodes(opcodes, filediff_data, interfilediff_data):
     """Filters the opcodes for an interdiff to remove unnecessary lines.
 
@@ -28,20 +21,40 @@ def filter_interdiff_opcodes(opcodes, filediff_data, interfilediff_data):
     ranges of lines dictated in the uploaded diff files.
     """
     def _find_range_info(diff):
+        lines = diff.splitlines()
+        process_changes = False
         ranges = []
 
-        for m in CHUNK_RANGE_RE.finditer(diff):
-            new_start = int(m.group('new_start'))
-            new_len = int(m.group('new_len')) or 1
+        # Look through the chunks of the diff, trying to find the amount
+        # of context shown at the beginning of each chunk. Though this
+        # will usually be 3 lines, it may be fewer or more, depending
+        # on file length and diff generation settings.
+        for line in lines:
+            if process_changes:
+                if line.startswith(('-', '+')):
+                    # We've found the first change in the chunk. We now
+                    # know how many lines of context we have.
+                    #
+                    # We reduce the indexes by 1 because the chunk ranges
+                    # in diffs start at 1, and we want a 0-based index.
+                    start = chunk_start - 1 + lines_of_context
+                    ranges.append((start, start + chunk_len))
+                    process_changes = False
+                    continue
+                else:
+                    lines_of_context += 1
 
-            if new_len >= 0:
-                new_end = new_start + new_len
+            # This was not a change within a chunk, or we weren't processing,
+            # so check to see if this is a chunk header instead.
+            m = CHUNK_RANGE_RE.match(line)
 
-                # We reduce by 1 because the chunk ranges in diffs start at 1.
-                ranges.append((
-                    new_start - 1 + CHUNK_RANGE_ASSUMED_CONTEXT_LEN,
-                    new_end - 1 + CHUNK_RANGE_ASSUMED_CONTEXT_LEN
-                ))
+            if m:
+                # It is a chunk header. Reset the state for the next range,
+                # and pull the line number and length from the header.
+                chunk_start = int(m.group('new_start'))
+                chunk_len = int(m.group('new_len') or '1')
+                process_changes = True
+                lines_of_context = 0
 
         return ranges
 

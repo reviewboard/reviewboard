@@ -908,12 +908,18 @@ class ProcessorsTests(TestCase):
             ('insert', 40, 40, 40, 45),
         ]
 
-        # NOTE: Only the "@@" lines in the diff matter below for this
-        #       processor, so the rest can be left out.
-        orig_diff = '@@ -22,7 +22,7 @@\n'
+        # NOTE: Only the "@@" lines and the lines leading up to the first
+        #       change in a chunk matter to the processor, so the rest can
+        #       be left out.
+        orig_diff = (
+            '@@ -22,7 +22,7 @@\n'
+            ' #\n #\n #\n-#\n'
+        )
         new_diff = (
             '@@ -2,11 +2,6 @@\n'
+            ' #\n #\n #\n-#\n'
             '@@ -22,7 +22,7 @@\n'
+            ' #\n #\n #\n-#\n'
         )
 
         new_opcodes = list(filter_interdiff_opcodes(opcodes, orig_diff,
@@ -927,6 +933,56 @@ class ProcessorsTests(TestCase):
             ('replace', 25, 26, 20, 26),
             ('filtered-equal', 26, 40, 26, 40),
             ('filtered-equal', 40, 40, 40, 45),
+        ])
+
+    def test_filter_interdiff_opcodes_1_line(self):
+        """Testing filter_interdiff_opcodes with a 1 line file"""
+        opcodes = [
+            ('replace', 0, 1, 0, 1),
+        ]
+
+        # NOTE: Only the "@@" lines and the lines leading up to the first
+        #       change in a chunk matter to the processor, so the rest can
+        #       be left out.
+        orig_diff = (
+            '@@ -0,0 +1 @@\n'
+            '+#\n'
+        )
+        new_diff = (
+            '@@ -0,0 +1 @@\n'
+            '+##\n'
+        )
+
+        new_opcodes = list(filter_interdiff_opcodes(opcodes, orig_diff,
+                                                    new_diff))
+
+        self.assertEqual(new_opcodes, [
+            ('replace', 0, 1, 0, 1),
+        ])
+
+    def test_filter_interdiff_opcodes_early_change(self):
+        """Testing filter_interdiff_opcodes with a change early in the file"""
+        opcodes = [
+            ('replace', 2, 3, 2, 3),
+        ]
+
+        # NOTE: Only the "@@" lines and the lines leading up to the first
+        #       change in a chunk matter to the processor, so the rest can
+        #       be left out.
+        orig_diff = (
+            '@@ -1,5 +1,5 @@\n'
+            ' #\n#\n+#\n'
+        )
+        new_diff = (
+            '@@ -1,5 +1,5 @@\n'
+            ' #\n#\n+#\n'
+        )
+
+        new_opcodes = list(filter_interdiff_opcodes(opcodes, orig_diff,
+                                                    new_diff))
+
+        self.assertEqual(new_opcodes, [
+            ('replace', 2, 3, 2, 3),
         ])
 
     def test_filter_interdiff_opcodes_with_inserts_right(self):
@@ -945,10 +1001,17 @@ class ProcessorsTests(TestCase):
             ('equal', 190, 232, 197, 239),
         ]
 
-        # NOTE: Only the "@@" lines in the diff matter below for this
-        #       processor, so the rest can be left out.
-        orig_diff = '@@ -0,0 +1,232 @@\n'
-        new_diff = '@@ -0,0 +1,239 @@\n'
+        # NOTE: Only the "@@" lines and the lines leading up to the first
+        #       change in a chunk matter to the processor, so the rest can
+        #       be left out.
+        orig_diff = (
+            '@@ -0,0 +1,232 @@\n'
+            ' #\n #\n #\n+#\n'
+        )
+        new_diff = (
+            '@@ -0,0 +1,239 @@\n'
+            ' #\n #\n #\n+#\n'
+        )
 
         new_opcodes = list(filter_interdiff_opcodes(opcodes, orig_diff,
                                                     new_diff))
@@ -976,24 +1039,37 @@ class ProcessorsTests(TestCase):
             ('equal', 632, 882, 633, 883),
         ]
 
-        # NOTE: Only the "@@" lines in the diff matter below for this
-        #       processor, so the rest can be left out.
-        orig_diff = (
+        # NOTE: Only the "@@" lines and the lines leading up to the first
+        #       change in a chunk matter to the processor, so the rest can
+        #       be left out.
+        orig_diff = '\n'.join([
             '@@ -413,6 +413,8 @@\n'
+            ' #\n #\n #\n+#\n'
             '@@ -422,9 +424,13 @@\n'
+            ' #\n #\n #\n+#\n'
             '@@ -433,6 +439,8 @@\n'
+            ' #\n #\n #\n+#\n'
             '@@ -442,6 +450,9 @@\n'
+            ' #\n #\n #\n+#\n'
             '@@ -595,6 +605,205 @@\n'
+            ' #\n #\n #\n+#\n'
             '@@ -636,6 +845,36 @@\n'
-        )
-        new_diff = (
+            ' #\n #\n #\n+#\n'
+        ])
+        new_diff = '\n'.join([
             '@@ -413,6 +413,8 @@\n'
+            ' #\n #\n #\n+#\n'
             '@@ -422,9 +424,13 @@\n'
+            ' #\n #\n #\n+#\n'
             '@@ -433,6 +439,8 @@\n'
+            ' #\n #\n #\n+#\n'
             '@@ -442,6 +450,8 @@\n'
+            ' #\n #\n #\n+#\n'
             '@@ -595,6 +605,206 @@\n'
+            ' #\n #\n #\n+#\n'
             '@@ -636,6 +846,36 @@\n'
-        )
+            ' #\n #\n #\n+#\n'
+        ])
 
         new_opcodes = list(filter_interdiff_opcodes(opcodes, orig_diff,
                                                     new_diff))
