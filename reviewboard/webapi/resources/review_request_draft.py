@@ -19,6 +19,7 @@ from reviewboard.scmtools.errors import InvalidChangeNumberError
 from reviewboard.webapi.base import WebAPIResource
 from reviewboard.webapi.decorators import webapi_check_local_site
 from reviewboard.webapi.encoder import status_to_string
+from reviewboard.webapi.errors import INVALID_CHANGE_NUMBER
 from reviewboard.webapi.mixins import MarkdownFieldsMixin
 from reviewboard.webapi.resources import resources
 

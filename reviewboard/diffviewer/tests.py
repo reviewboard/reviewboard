@@ -1350,9 +1350,9 @@ class DiffOpcodeGeneratorTests(TestCase):
             self.generator._compute_line_indentation(
                 '\tfoo',
                 '        foo'),
-            (True, 1))
+            None)
 
-    def test_indentation_with_replacing_tabs_with_spaces(self):
+    def test_indentation_with_replacing_spaces_with_tabs(self):
         """Testing DiffOpcodeGenerator._calculate_indentation
         with spaces with tabs
         """

@@ -110,7 +110,7 @@ class DataGridSidebarItemsHook(ExtensionHook):
             datagrid.sidebar.add_item(item)
 
     def shutdown(self):
-        super(DataGridSidebaritem_classesHook, self).shutdown()
+        super(DataGridSidebarItemsHook, self).shutdown()
 
         for item in self.item_classes:
             self.datagrid.sidebar.remove_item(item)

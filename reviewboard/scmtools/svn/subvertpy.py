@@ -175,10 +175,11 @@ class Client(base.Client):
 
     def get_filenames_in_revision(self, revision):
         """Returns a list of filenames associated with the revision."""
-        paths = None
+        paths = {}
 
         def log_cb(changed_paths, rev, props, has_children=False):
-            paths = changed_paths
+            paths.update(changed_paths)
+
         revnum = self._normalize_revision(revision)
         self.client.log(log_cb, self.repopath, revnum, revnum, limit=1,
                         discover_changed_paths=True)

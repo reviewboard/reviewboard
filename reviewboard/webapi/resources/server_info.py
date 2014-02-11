@@ -1,12 +1,8 @@
 from __future__ import unicode_literals
 
-from django.conf import settings
-from django.contrib.sites.models import Site
-from djblets.siteconfig.models import SiteConfiguration
 from djblets.webapi.decorators import webapi_response_errors
 from djblets.webapi.errors import NOT_LOGGED_IN, PERMISSION_DENIED
 
-from reviewboard import get_version_string, get_package_version, is_release
 from reviewboard.webapi.base import WebAPIResource
 from reviewboard.webapi.decorators import (webapi_check_login_required,
                                            webapi_check_local_site)

@@ -5,7 +5,6 @@ import sys
 sys.path.insert(0, os.path.join(__file__, "..", ".."))
 sys.path.insert(0, os.path.dirname(__file__))
 
-from reviewboard import settings
 from django.core.management import execute_from_command_line
 
 

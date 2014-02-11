@@ -7,7 +7,6 @@ import os
 from django.conf import settings
 from django.contrib.auth.models import AnonymousUser, User
 from django.core.files.uploadedfile import SimpleUploadedFile
-from django.core.urlresolvers import reverse
 from django.template import Context, Template
 from django.utils import six
 from djblets.siteconfig.models import SiteConfiguration
@@ -2164,10 +2163,8 @@ class IssueCounterTests(TestCase):
         create_comment_func(review, issue_opened=False)
 
         # Three comments with an issue opened.
-        open_comments = [
+        for i in range(3):
             create_comment_func(review, issue_opened=True)
-            for i in range(3)
-        ]
 
         # Two comments with an issue dropped.
         dropped_comments = [

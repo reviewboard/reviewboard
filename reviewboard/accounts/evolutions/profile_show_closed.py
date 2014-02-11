@@ -1,5 +1,4 @@
 from django_evolution.mutations import RenameField
-from django.db import models
 
 
 MUTATIONS = [

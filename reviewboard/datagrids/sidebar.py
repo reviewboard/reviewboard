@@ -2,12 +2,9 @@ from __future__ import unicode_literals
 
 from django.template.context import RequestContext
 from django.template.loader import render_to_string
-from django.utils.datastructures import SortedDict
 from djblets.util.compat import six
 from djblets.util.compat.six.moves.urllib.parse import urlencode
 
-from reviewboard.accounts.models import Profile, LocalSiteProfile
-from reviewboard.reviews.models import Group, ReviewRequest
 from reviewboard.site.urlresolvers import local_site_reverse
 
 

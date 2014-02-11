@@ -16,6 +16,7 @@ reviewboard/reviews/ui/markdownui.py:*: redefinition of unused 'StringIO' from l
 reviewboard/scmtools/clearcase.py:*: redefinition of unused 'cpath' from line *
 reviewboard/scmtools/git.py:*: redefinition of unused 'urllib_quote' from line *
 reviewboard/scmtools/hg.py:*: redefinition of unused 'urllib_quote' from line *
+reviewboard/scmtools/svn/__init__.py:*: redefinition of unused 'Client' from line *
 reviewboard/scmtools/tests.py:*: redefinition of unused 'md5' from line *
 reviewboard/scmtools/tests.py:*: redefinition of unused 'P4Error' from line *
 reviewboard/settings.py:*: 'from settings_local import *' used; unable to detect undefined names
