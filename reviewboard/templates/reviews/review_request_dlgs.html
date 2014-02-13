@@ -1,6 +1,4 @@
-{% load djblets_js %}
-{% load djblets_utils %}
-{% load i18n %}
+{% load djblets_js djblets_utils i18n %}
 
 {% if request.user.pk == review_request.submitter_id or perms.reviews.can_edit_reviewrequest %}
 <script type="text/javascript">

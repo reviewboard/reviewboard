@@ -1,5 +1,5 @@
-{% load djblets_utils %}
-{% load staticfiles %}
+{% load djblets_utils staticfiles %}
+
 <div class="admin-widget widget-collapsable widget-{{widget.size}}{% if widget.collapsed %} widget-hidden %}{% endif %}{% if widget.actions %} widget-has-actions{% endif %}" id="{{widget.name}}">
  <h1 class="widget-heading">
 {% if widget.icon %}

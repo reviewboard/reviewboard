@@ -1,6 +1,4 @@
-{% load djblets_utils %}
-{% load i18n %}
-{% load staticfiles %}
+{% load djblets_utils i18n staticfiles %}
 
 {% if request.user.pk == review_request.submitter_id or perms.reviews.can_change_status and review_request.public %}
 {%  if review_request.status == 'P' %}

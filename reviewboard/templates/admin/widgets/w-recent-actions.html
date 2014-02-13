@@ -1,5 +1,4 @@
-{% load i18n %}
-{% load log %}
+{% load i18n log %}
 
 {% get_admin_log 5 as admin_log for_user user %}
 {% if not admin_log %}
