@@ -11,23 +11,54 @@
    <div class="posted_time">{% localtime on %}{% blocktrans with entry.changedesc.timestamp as timestamp and entry.changedesc.timestamp|date:"c" as timestamp_raw %}Updated <time class="timesince" datetime="{{timestamp_raw}}">{{timestamp}}</time> ({{timestamp}}){% endblocktrans %}{% endlocaltime %}</div>
   </div>
   <div class="body">
-   <ul>
-{%  for fieldinfo in entry.changeinfo %}
-    <li><label>{{fieldinfo.title}}</label>
-{%   if fieldinfo.rendered_html %}
-     {{fieldinfo.rendered_html}}
-{%   elif fieldinfo.name == "status" %}
-{%    blocktrans with fieldinfo.old_status as old_status and fieldinfo.new_status as new_status %}
-     changed from <i>{{old_status}}</i> to <i>{{new_status}}</i>
-{%    endblocktrans %}
+{%  if entry.new_status %}
+   <h3 class="status">
+    {% trans "Status:" %}
+    <span class="value">
+{%   if entry.new_status == 'submitted' %}
+    {% trans "Closed (submitted)" %}
+{%   elif entry.new_status == 'discarded' %}
+    {% trans "Discarded" %}
+{%   elif entry.new_status == 'pending' %}
+    {% trans "Re-opened" %}
 {%   endif %}
-    </li>
-{%  endfor %}
-   </ul>
+    </span>
+   </h3>
+{%  endif %}
+
 {%  if entry.changedesc.text %}
-   <label>{% trans "Description:" %}</label>
+   <h3>{% trans "Change Summary:" %}</h3>
    <pre class="changedesc-text" data-rich-text="true">{{entry.changedesc.text|markdown_escape:entry.changedesc.rich_text}}</pre>
 {%  endif %}
+
+{%  for group in entry.fields_changed_groups %}
+{%   if group.inline %}
+   <table class="secondary-fields">
+{%  for fieldinfo in group.fields %}
+{%   if fieldinfo.rendered_html %}
+    <tr>
+     <th><h3>{{fieldinfo.title}}:</h3></th>
+     <td>
+      {{fieldinfo.rendered_html}}
+     </td>
+    </tr>
+{%   endif %}
+{%  endfor %}
+   </table>
+{%   else %}
+   <ul class="primary-fields">
+{%    for fieldinfo in group.fields %}
+{%     if fieldinfo.rendered_html %}
+    <li class="clearfix">
+     <h3>{{fieldinfo.title}}:</h3>
+     {{fieldinfo.rendered_html}}
+    </li>
+{%     endif %}
+{%    endfor %}
+   </ul>
+{%   endif %}
+{%  endfor %}
+
   </div>
  </div>
 {% endbox %}

@@ -48,7 +48,7 @@ from reviewboard.reviews.context import (comment_counts,
                                          has_comments_in_diffsets_excluding,
                                          interdiffs_with_comments,
                                          make_review_request_context)
-from reviewboard.reviews.fields import get_review_request_field
+from reviewboard.reviews.fields import get_review_request_fieldsets
 from reviewboard.reviews.models import (BaseComment, Comment,
                                         FileAttachmentComment,
                                         ReviewRequest, Review,
@@ -193,23 +193,6 @@ def build_diff_comment_fragments(
         })
 
     return had_error, comment_entries
-
-
-fields_changed_name_map = {
-    'summary': _('Summary'),
-    'description': _('Description'),
-    'testing_done': _('Testing Done'),
-    'bugs_closed': _('Bugs Closed'),
-    'depends_on': _('Depends On'),
-    'branch': _('Branch'),
-    'target_groups': _('Reviewers (Groups)'),
-    'target_people': _('Reviewers (People)'),
-    'screenshots': _('Screenshots'),
-    'screenshot_captions': _('Screenshot Captions'),
-    'files': _('Uploaded Files'),
-    'file_captions': _('Uploaded File Captions'),
-    'diff': _('Diff'),
-}
 
 
 #####
@@ -405,12 +388,13 @@ def review_detail(request,
 
     draft = review_request.get_draft(request.user)
     review_request_details = draft or review_request
-    diffsets = review_request.get_diffsets()
 
-    # Map diffset IDs to their revision ID for changedescs
-    diffset_versions = {}
+    # Map diffset IDs to their object.
+    diffsets = review_request.get_diffsets()
+    diffsets_by_id = {}
+
     for diffset in diffsets:
-        diffset_versions[diffset.pk] = diffset.revision
+        diffsets_by_id[diffset.pk] = diffset
 
     # Find out if we can bail early. Generate an ETag for this.
     last_activity_time, updated_object = \
@@ -490,26 +474,36 @@ def review_detail(request,
 
     # Get all the file attachments and screenshots and build a couple maps,
     # so we can easily associate those objects in comments.
+    #
+    # Note that we're fetching inactive file attachments and screenshots.
+    # is because any file attachments/screenshots created after the initial
+    # creation of the review request that were later removed will still need
+    # to be rendered as an added file in a change box.
     file_attachments = []
-
-    for file_attachment in review_request_details.get_file_attachments():
-        file_attachment._comments = []
-        file_attachments.append(file_attachment)
-
+    inactive_file_attachments = []
     screenshots = []
+    inactive_screenshots = []
+
+    for attachment in review_request_details.get_file_attachments():
+        attachment._comments = []
+        file_attachments.append(attachment)
+
+    for attachment in review_request_details.get_inactive_file_attachments():
+        attachment._comments = []
+        inactive_file_attachments.append(attachment)
 
     for screenshot in review_request_details.get_screenshots():
         screenshot._comments = []
         screenshots.append(screenshot)
 
-    file_attachment_id_map = _build_id_map(file_attachments)
-    screenshot_id_map = _build_id_map(screenshots)
+    for screenshot in review_request_details.get_inactive_screenshots():
+        screenshot._comments = []
+        inactive_screenshots.append(screenshot)
 
-    # There will be non-visible (generally deleted) file attachments and
-    # screenshots we'll need to reference. to save on queries, we'll only
-    # get these when we first encounter one not in the above maps.
-    has_inactive_file_attachments = False
-    has_inactive_screenshots = False
+    file_attachment_id_map = _build_id_map(file_attachments)
+    file_attachment_id_map.update(_build_id_map(inactive_file_attachments))
+    screenshot_id_map = _build_id_map(screenshots)
+    screenshot_id_map.update(_build_id_map(inactive_screenshots))
 
     issues = {
         'total': 0,
@@ -564,35 +558,11 @@ def review_detail(request,
             # If the comment has an associated object that we've already
             # queried, attach it to prevent a future lookup.
             if isinstance(comment, ScreenshotComment):
-                if (comment.screenshot_id not in screenshot_id_map and
-                    not has_inactive_screenshots):
-                    inactive_screenshots = \
-                        list(review_request_details.get_inactive_screenshots())
-
-                    for screenshot in inactive_screenshots:
-                        screenshot._comments = []
-
-                    screenshot_id_map.update(
-                        _build_id_map(inactive_screenshots))
-                    has_inactive_screenshots = True
-
                 if comment.screenshot_id in screenshot_id_map:
                     screenshot = screenshot_id_map[comment.screenshot_id]
                     comment.screenshot = screenshot
                     screenshot._comments.append(comment)
             elif isinstance(comment, FileAttachmentComment):
-                if (comment.file_attachment_id not in file_attachment_id_map
-                    and not has_inactive_file_attachments):
-                    inactive_file_attachments = list(
-                        review_request_details.get_inactive_file_attachments())
-
-                    for file_attachment in inactive_file_attachments:
-                        file_attachment._comments = []
-
-                    file_attachment_id_map.update(
-                        _build_id_map(inactive_file_attachments))
-                    has_inactive_file_attachments = True
-
                 if comment.file_attachment_id in file_attachment_id_map:
                     file_attachment = \
                         file_attachment_id_map[comment.file_attachment_id]
@@ -641,54 +611,67 @@ def review_detail(request,
     # Sort all the reviews and ChangeDescriptions into a single list, for
     # display.
     for changedesc in changedescs:
-        fields_changed = []
+        # Process the list of fields, in order by fieldset. These will be
+        # put into groups composed of inline vs. full-width field values,
+        # for render into the box.
+        fields_changed_groups = []
+        cur_field_changed_group = None
 
-        for name, info in six.iteritems(changedesc.fields_changed):
-            title = fields_changed_name_map.get(name, name)
-            field_cls = get_review_request_field(name)
-            change_info = {}
+        fieldsets = get_review_request_fieldsets(
+            include_main=True,
+            include_change_entries_only=True)
 
-            if field_cls:
+        for fieldset in fieldsets:
+            for field_cls in fieldset.field_classes:
+                field_id = field_cls.field_id
+
+                if field_id not in changedesc.fields_changed:
+                    continue
+
+                inline = field_cls.change_entry_renders_inline
+
+                if (not cur_field_changed_group or
+                    cur_field_changed_group['inline'] != inline):
+                    # Begin a new group of fields.
+                    cur_field_changed_group = {
+                        'inline': inline,
+                        'fields': [],
+                    }
+                    fields_changed_groups.append(cur_field_changed_group)
+
                 if hasattr(field_cls, 'locals_vars'):
                     field = field_cls(review_request, locals_vars=locals())
                 else:
                     field = field_cls(review_request)
 
-                title = field.label
-                change_info['rendered_html'] = \
-                    mark_safe(field.render_change_entry_html(info))
-            elif name == 'status':
-                # Make status human readable.
-                if 'old' in info:
-                    change_info['old_status'] = \
-                        status_to_string(info['old'][0])
+                cur_field_changed_group['fields'] += \
+                    field.get_change_entry_sections_html(
+                        changedesc.fields_changed[field_id])
 
-                if 'new' in info:
-                    change_info['new_status'] = \
-                        status_to_string(info['new'][0])
-            else:
-                # No clue what this is. Bail.
-                continue
+        # See if the review request has had a status change.
+        status_change = changedesc.fields_changed.get('status')
 
-            change_info.update({
-                'name': name,
-                'title': title,
-            })
-            fields_changed.append(change_info)
-
-        # Expand the latest review change
-        state = ''
+        if status_change:
+            assert 'new' in status_change
+            new_status = status_to_string(status_change['new'][0])
+        else:
+            new_status = None
 
         # Mark as collapsed if the change is older than a newer change
         if latest_timestamp and changedesc.timestamp < latest_timestamp:
             state = 'collapsed'
+            collapsed = True
+        else:
+            state = ''
+            collapsed = False
 
         entries.append({
-            'changeinfo': fields_changed,
+            'new_status': new_status,
+            'fields_changed_groups': fields_changed_groups,
             'changedesc': changedesc,
             'timestamp': changedesc.timestamp,
             'class': state,
-            'collapsed': state == 'collapsed',
+            'collapsed': collapsed,
         })
 
     entries.sort(key=lambda item: item['timestamp'])

@@ -554,7 +554,7 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
             }
 
             this.model.fileAttachments.on('add',
-                                          this._buildFileAttachmentThumbnail,
+                                          this.buildFileAttachmentThumbnail,
                                           this);
 
             /*
@@ -805,16 +805,18 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
      * attachment (through drag-and-drop or Add File), or after importing
      * from the rendered page.
      */
-    _buildFileAttachmentThumbnail: function(fileAttachment, collection,
-                                            options) {
+    buildFileAttachmentThumbnail: function(fileAttachment, collection,
+                                           options) {
         var fileAttachmentComments = this.model.get('fileAttachmentComments'),
-            $thumbnail = options ? options.$el : undefined,
+            options = options || {},
+            $thumbnail = options.$el,
             view = new RB.FileAttachmentThumbnail({
                 el: $thumbnail,
                 model: fileAttachment,
                 comments: fileAttachmentComments[fileAttachment.id],
                 renderThumbnail: ($thumbnail === undefined),
-                reviewRequest: this.model.get('reviewRequest')
+                reviewRequest: this.model.get('reviewRequest'),
+                canEdit: (options.canEdit !== false)
             });
 
         view.render();

@@ -4,10 +4,15 @@ import logging
 
 from django.utils import six
 from django.utils.datastructures import SortedDict
-from django.utils.html import escape
-from django.utils.translation import ugettext_lazy as _
+from django.utils.html import escape, strip_tags
+from django.utils.safestring import mark_safe
 
-from reviewboard.reviews.markdown_utils import markdown_escape
+from reviewboard.diffviewer.diffutils import get_line_changed_regions
+from reviewboard.diffviewer.myersdiff import MyersDiffer
+from reviewboard.diffviewer.templatetags.difftags import highlightregion
+from reviewboard.reviews.markdown_utils import (iter_markdown_lines,
+                                                markdown_escape,
+                                                render_markdown)
 
 
 _all_fields = {}
@@ -106,6 +111,7 @@ class BaseReviewRequestField(object):
     is_editable = False
     is_required = False
     default_css_classes = set()
+    change_entry_renders_inline = True
 
     can_record_change_entry = property(lambda self: self.is_editable)
 
@@ -140,6 +146,19 @@ class BaseReviewRequestField(object):
         """
         changedesc.record_field_change(self.field_id, old_value, new_value)
 
+    def get_change_entry_sections_html(self, info):
+        """Returns sections of change entries with titles and rendered HTML.
+
+        By default, this just returns a single section for the field, with
+        the field's title and rendered change HTML.
+
+        Subclasses can override this to provide more information.
+        """
+        return [{
+            'title': self.label,
+            'rendered_html': mark_safe(self.render_change_entry_html(info)),
+        }]
+
     def render_change_entry_html(self, info):
         """Renders a change entry to HTML.
 
@@ -154,24 +173,46 @@ class BaseReviewRequestField(object):
         Subclasses can override ``render_change_entry_value_html`` to
         change how the value itself will be rendered in the string.
         """
-        old_value_html = ''
-        new_value_html = ''
+        old_value = ''
+        new_value = ''
 
         if 'old' in info:
-            old_value_html = \
-                self.render_change_entry_value_html(info, info['old'][0])
+            old_value = info['old'][0]
 
         if 'new' in info:
-            new_value_html = \
-                self.render_change_entry_value_html(info, info['new'][0])
+            new_value = info['new'][0]
 
-        return (
-            _('changed from <i>%(old_value)s</i> to <i>%(new_value)s</i>')
-            % {
-                'old_value': old_value_html,
-                'new_value': new_value_html,
-            }
-        )
+        s = ['<table class="changed">']
+
+        if old_value:
+            s.append(self.render_change_entry_removed_value_html(
+                info, old_value))
+
+        if new_value:
+            s.append(self.render_change_entry_added_value_html(
+                info, new_value))
+
+        s.append('</table>')
+
+        return ''.join(s)
+
+    def render_change_entry_added_value_html(self, info, value):
+        value_html = self.render_change_entry_value_html(info, value)
+
+        if value_html:
+            return ('<tr class="new-value"><th class="marker">+</th>'
+                    '<td class="value">%s</td></tr>' % value_html)
+        else:
+            return ''
+
+    def render_change_entry_removed_value_html(self, info, value):
+        value_html = self.render_change_entry_value_html(info, value)
+
+        if value_html:
+            return ('<tr class="old-value"><th class="marker">-</th>'
+                    '<td class="value">%s</td></tr>' % value_html)
+        else:
+            return ''
 
     def render_change_entry_value_html(self, info, value):
         """Renders the value for a change description string to HTML.
@@ -278,6 +319,8 @@ class BaseCommaEditableField(BaseEditableField):
     default_css_classes = ['editable', 'comma-editable']
     order_matters = False
 
+    one_line_per_change_entry = True
+
     def has_value_changed(self, old_value, new_value):
         """Returns whether two values have changed.
 
@@ -319,31 +362,35 @@ class BaseCommaEditableField(BaseEditableField):
         coming from a field or any other form of user input must be
         properly escaped.
         """
-        s = ['<ul>']
+        s = ['<table class="changed">']
 
         if 'removed' in info:
-            old_value_html = \
-                self.render_change_entry_value_html(info, info['removed'])
+            values = info['removed']
 
-            if old_value_html:
-                s.append('<li>%s</li>' %
-                         _('removed %(values)s') % {
-                             'values': old_value_html,
-                         })
+            if self.one_line_per_change_entry:
+                s += [
+                    self.render_change_entry_removed_value_html(info, [value])
+                    for value in values
+                ]
+            else:
+                s.append(self.render_change_entry_removed_value_html(
+                    info, values))
 
         if 'added' in info:
-            new_value_html = \
-                self.render_change_entry_value_html(info, info['added'])
+            values = info['added']
 
-            if new_value_html:
-                s.append('<li>%s</li>' %
-                         _('added %(values)s') % {
-                             'values': new_value_html,
-                         })
+            if self.one_line_per_change_entry:
+                s += [
+                    self.render_change_entry_added_value_html(info, [value])
+                    for value in values
+                ]
+            else:
+                s.append(self.render_change_entry_added_value_html(
+                    info, values))
 
-        s.append('</ul>')
+        s.append('</table>')
 
-        return '\n'.join(s)
+        return ''.join(s)
 
     def render_change_entry_value_html(self, info, values):
         """Renders a list of items for change description HTML.
@@ -425,29 +472,95 @@ class BaseTextAreaField(BaseEditableField):
         return escape(text)
 
     def render_change_entry_html(self, info):
-        old_value_html = ''
-        new_value_html = ''
+        old_value = ''
+        new_value = ''
 
         if 'old' in info:
-            old_value_html = \
-                self.render_change_entry_value_html(info, info['old'][0])
+            old_value = info['old'][0]
 
         if 'new' in info:
-            new_value_html = \
-                self.render_change_entry_value_html(info, info['new'][0])
+            new_value = info['new'][0]
 
-        return (
-            '<p><label>%(changed_from_text)s</label></p>\n'
-            '<pre>%(old_value)s</pre>\n'
-            '<p><label>%(changed_to_text)s</label></p>\n'
-            '<pre>%(new_value)s</pre>\n'
-            % {
-                'changed_from_text': escape(_('Changed from:')),
-                'changed_to_text': escape(_('Changed to:')),
-                'old_value': old_value_html,
-                'new_value': new_value_html,
-            }
-        )
+        old_value = render_markdown(old_value)
+        new_value = render_markdown(new_value)
+        old_lines = list(iter_markdown_lines(old_value))
+        new_lines = list(iter_markdown_lines(new_value))
+
+        differ = MyersDiffer(old_lines, new_lines)
+
+        return ('<table class="diffed-text-area">%s</table>'
+                % ''.join(self._render_all_change_lines(differ, old_lines,
+                                                        new_lines)))
+
+    def _render_all_change_lines(self, differ, old_lines, new_lines):
+        for tag, i1, i2, j1, j2 in differ.get_opcodes():
+            if tag == 'equal':
+                lines = self._render_change_lines(differ, tag, None, None,
+                                                  i1, i2, old_lines)
+            elif tag == 'insert':
+                lines = self._render_change_lines(differ, tag, None, '+',
+                                                  j1, j2, new_lines)
+            elif tag == 'delete':
+                lines = self._render_change_lines(differ, tag, '-', None,
+                                                  i1, i2, old_lines)
+            elif tag == 'replace':
+                lines = self._render_change_replace_lines(differ, i1, i2,
+                                                          j1, j2, old_lines,
+                                                          new_lines)
+            else:
+                raise ValueError('Unexpected tag "%s"' % tag)
+
+            for line in lines:
+                yield line
+
+    def _render_change_lines(self, differ, tag, old_marker, new_marker,
+                             i1, i2, lines):
+        old_marker = old_marker or '&nbsp;'
+        new_marker = new_marker or '&nbsp;'
+
+        for i in range(i1, i2):
+            line = lines[i]
+
+            yield ('<tr class="%s">'
+                   ' <td class="marker">%s</td>'
+                   ' <td class="marker">%s</td>'
+                   ' <td class="line rich-text">%s</td>'
+                   '</tr>'
+                   % (tag, old_marker, new_marker, line))
+
+    def _render_change_replace_lines(self, differ, i1, i2, j1, j2,
+                                     old_lines, new_lines):
+        replace_new_lines = []
+
+        for i, j in zip(range(i1, i2), range(j1, j2)):
+            old_line = old_lines[i]
+            new_line = new_lines[j]
+
+            old_regions, new_regions = \
+                get_line_changed_regions(strip_tags(old_line),
+                                         strip_tags(new_line))
+
+            old_line = highlightregion(old_line, old_regions)
+            new_line = highlightregion(new_line, new_regions)
+
+            yield (
+                '<tr class="replace-old">'
+                ' <td class="marker">~</td>'
+                ' <td class="marker">&nbsp;</td>'
+                ' <td class="line rich-text">%s</td>'
+                '</tr>'
+                % old_line)
+
+            replace_new_lines.append(new_line)
+
+        for line in replace_new_lines:
+            yield (
+                '<tr class="replace-new">'
+                ' <td class="marker">&nbsp;</td>'
+                ' <td class="marker">~</td>'
+                ' <td class="line rich-text">%s</td>'
+                '</tr>'
+                % line)
 
 
 def _populate_defaults():

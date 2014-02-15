@@ -96,52 +96,7 @@
    <h3>{% trans "Files" %}</h3>
    <div id="file-list">
 {% for file in file_attachments %}
-    <div class="file-container" data-file-id="{{file.id}}">
-     <div class="file">
-      <ul class="actions">
-{%  if request.user.is_authenticated %}
-{%   if file.review_ui %}
-       <li class="{% if file.review_ui.allow_inline %}file-review-inline %}{% else %}file-review{% endif %}"><a href="{% url 'file-attachment' review_request.display_id file.pk %}">{% trans "Review" %}</a></li>
-{%   else %}
-       <li class="file-add-comment"><a href="#">{% trans "New Comment" %}</a></li>
-{%   endif %}
-{%   if request.user.pk == review_request.submitter_id or perms.reviews.delete_file %}
-       <li class="delete">
-        <a href="#" alt="{% trans 'Delete this file' %}" title="{% trans 'Delete this file' %}">
-         <span class="ui-icon ui-icon-trash"></span>
-        </a>
-       </li>
-{%   endif %}
-{%  endif %}
-      </ul>
-      <div class="file-header">
-       <a href="{{file.get_absolute_url}}">
-        <img class="icon" src="{{file.icon_url}}" />
-        <span class="filename">{{file.filename}}</span>
-       </a>
-      </div>
-      <div class="file-thumbnail-container">
-{%  if file.review_ui %}
-       <a href="{% url 'file-attachment' review_request.display_id file.pk %}" class="file-thumbnail-overlay" alt="{% trans 'Click to review' %}" title="{% trans 'Click to review' %}"> </a>
-       {{file.thumbnail}}
-{%  else %}
-       {{file.thumbnail}}
-{%  endif %}
-       {% if file.review_ui %}</a>{% endif %}
-      </div>
-      <div class="file-caption-container">
-       <div class="file-caption {% if request.user.pk == review_request.submitter_id or perms.reviews.delete_file %}can-edit{% endif %}">
-{%  definevar "caption" %}{% if draft %}{{file.draft_caption}}{% else %}{{file.caption}}{% endif %}{% enddefinevar %}
-{%  definevar "file_attachment_url" %}{% if file.review_ui %}{% url "file-attachment" review_request.display_id file.pk %}{% else %}{{file.get_absolute_url}}{% endif %}{% enddefinevar %}
-{%  if caption %}
-        <a href="{{file_attachment_url}}" class="edit">{{caption}}</a>
-{%  else %}
-        <a href="{{file_attachment_url}}" class="edit empty-caption">{% trans "No caption" %}</a>
-{%  endif %}
-       </div>
-      </div>
-     </div>
-    </div>
+{%  include "reviews/parts/file_attachment_thumbnail.html" %}
 {% endfor %}
    <br clear="both" />
   </div>

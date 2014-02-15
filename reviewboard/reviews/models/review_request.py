@@ -3,7 +3,7 @@ from __future__ import unicode_literals
 from django.contrib.auth.models import User
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
-from django.db.models import Q
+from django.db.models import Count, Q
 from django.utils import six, timezone
 from django.utils.translation import ugettext_lazy as _
 from djblets.db.fields import CounterField, ModificationTimestampField
@@ -488,13 +488,20 @@ class ReviewRequest(BaseReviewRequestDetails):
             kwargs={'review_request_id': self.display_id})
 
     def get_diffsets(self):
-        """Returns a list of all diffsets on this review request."""
+        """Returns a list of all diffsets on this review request.
+
+        This will also fetch all associated FileDiffs, as well as a count
+        of the number of files (stored in DiffSet.file_count).
+        """
         if not self.repository_id:
             return []
 
         if not hasattr(self, '_diffsets'):
-            self._diffsets = list(DiffSet.objects.filter(
-                history__pk=self.diffset_history_id))
+            self._diffsets = list(
+                DiffSet.objects
+                    .filter(history__pk=self.diffset_history_id)
+                    .annotate(file_count=Count('files'))
+                    .prefetch_related('files'))
 
         return self._diffsets
 

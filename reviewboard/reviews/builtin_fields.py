@@ -3,10 +3,13 @@ from __future__ import unicode_literals
 import logging
 
 from django.db import models
+from django.template.loader import Context, get_template
 from django.utils import six
-from django.utils.html import escape
+from django.utils.html import escape, format_html, format_html_join
+from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext_lazy as _
 
+from reviewboard.diffviewer.diffutils import get_sorted_filediffs
 from reviewboard.reviews.fields import (BaseCommaEditableField,
                                         BaseEditableField,
                                         BaseReviewRequestField,
@@ -93,20 +96,38 @@ class BuiltinLocalsFieldMixin(BuiltinFieldMixin):
         return None
 
 
-class BaseCaptionsField(BaseReviewRequestField):
+class BaseCaptionsField(BuiltinLocalsFieldMixin, BaseReviewRequestField):
     """Base class for rendering captions for attachments.
 
     This serves as a base for FileAttachmentCaptionsField and
     ScreenshotCaptionsField. It provides the base rendering and
     for caption changes on file attachments or screenshots.
     """
+    obj_map_attr = None
+
+    change_entry_renders_inline = False
+
     def render_change_entry_html(self, info):
         render_item = super(BaseCaptionsField, self).render_change_entry_html
+        obj_map = getattr(self, self.obj_map_attr)
 
-        return '<ul>%s</ul>' % ''.join([
-            '<li>%s</li>' % render_item(caption)
-            for caption in six.itervalues(info)
-        ])
+        s = ['<table class="caption-changed">']
+
+        for id_str, caption in six.iteritems(info):
+            obj = obj_map[int(id_str)]
+
+            s.append(format_html(
+                '<tr>'
+                ' <th><a href="{url}">{filename}</a>:</th>'
+                ' <td>{caption}</td>'
+                '</tr>',
+                url=obj.get_absolute_url(),
+                filename=obj.filename,
+                caption=mark_safe(render_item(caption))))
+
+        s.append('</table>')
+
+        return ''.join(s)
 
 
 class BaseModelListEditableField(BaseCommaEditableField):
@@ -197,6 +218,8 @@ class BugsField(BuiltinFieldMixin, BaseCommaEditableField):
     field_id = 'bugs_closed'
     label = _('Bugs')
 
+    one_line_per_change_entry = False
+
     def load_value(self, review_request_details):
         return review_request_details.get_bug_list()
 
@@ -237,12 +260,25 @@ class DependsOnField(BuiltinFieldMixin, BaseModelListEditableField):
     model_name_attr = 'summary'
 
     def render_change_entry_item_html(self, info, item):
-        return self.render_item(ReviewRequest.objects.get(pk=item[2]))
+        item = ReviewRequest.objects.get(pk=item[2])
+
+        rendered_item = format_html(
+            '<a href="{url}">{id} - {summary}</a>',
+            url=item.get_absolute_url(),
+            id=item.pk,
+            summary=item.summary)
+
+        if item.status == ReviewRequest.SUBMITTED:
+            return '<s>%s</s>' % rendered_item
+        else:
+            return rendered_item
 
     def render_item(self, item):
-        rendered_item = (
-            '<a href="%s">%s</a>'
-            % (escape(item.get_absolute_url()), escape(item.display_id)))
+        rendered_item = format_html(
+            '<a href="{url}" title="{summary}">{id}</a>',
+            url=item.get_absolute_url(),
+            summary=item.summary,
+            id=item.display_id)
 
         if item.status == ReviewRequest.SUBMITTED:
             return '<s>%s</s>' % rendered_item
@@ -262,11 +298,13 @@ class BlocksField(BuiltinFieldMixin, BaseReviewRequestField):
         return len(blocks) > 0
 
     def render_value(self, blocks):
-        return ', '.join([
-            '<a href="%s">%s</a>' % (escape(item.get_absolute_url()),
-                                     escape(item.display_id))
-            for item in blocks
-        ])
+        return format_html_join(
+            ', ',
+            '<a href="{0}">{1}</a>',
+            [
+                (item.get_absolute_url(), item.display_id)
+                for item in blocks
+            ])
 
 
 class ChangeField(BuiltinFieldMixin, BaseReviewRequestField):
@@ -335,34 +373,116 @@ class DiffField(BuiltinLocalsFieldMixin, BaseReviewRequestField):
     """
     field_id = 'diff'
     label = _('Diff')
-    locals_vars = ['diffset_versions']
+    locals_vars = ['diffsets_by_id']
 
     can_record_change_entry = True
+
+    MAX_FILES_PREVIEW = 8
 
     def render_change_entry_html(self, info):
         added_diff_info = info['added'][0]
         review_request = self.review_request_details.get_review_request()
 
-        diff_revision = self.diffset_versions[added_diff_info[2]]
+        diffset = self.diffsets_by_id[added_diff_info[2]]
+        diff_revision = diffset.revision
         past_revision = diff_revision - 1
         diff_url = added_diff_info[1]
 
-        s = '<a href="%s">%s</a>' % (diff_url, added_diff_info[0])
+        s = []
 
-        if past_revision != 0:
+        # Fetch the total number of inserts/deletes. These will be shown
+        # alongside the diff revision.
+        counts = diffset.get_total_line_counts()
+        raw_insert_count = counts['raw_insert_count']
+        raw_delete_count = counts['raw_delete_count']
+
+        line_counts = []
+
+        if raw_insert_count > 0:
+            line_counts.append('<span class="insert-count">+%d</span>'
+                               % raw_insert_count)
+
+        if raw_delete_count > 0:
+            line_counts.append('<span class="delete-count">-%d</span>'
+                               % raw_delete_count)
+
+        # Display the label, URL, and line counts for the diff.
+        s.append(format_html(
+            '<p class="diff-changes">'
+            ' <a href="{url}">{label}</a>'
+            ' <span class="line-counts">({line_counts})</span>'
+            '</p>',
+            url=diff_url,
+            label=_('Revision %s') % diff_revision,
+            count=_('%d files') % diffset.file_count,
+            line_counts=mark_safe(' '.join(line_counts))))
+
+        if past_revision > 0:
+            # This is not the first diff revision. Include an interdiff link.
             interdiff_url = local_site_reverse('view-interdiff', args=[
                 review_request.display_id,
                 past_revision,
                 diff_revision,
             ])
 
-            s += ' - <a href="%s">%s</a>' % (interdiff_url, _('Show changes'))
+            s.append(format_html(
+                '<p><a href="{url}">{text}</a>',
+                url=interdiff_url,
+                text=_('Show changes')))
 
-        return '\n'.join([
-            '<ul>',
-            ' <li>%s</li>' % _('added %s' % s),
-            '</ul>',
-        ])
+        if diffset.file_count > 0:
+            # Begin displaying the list of files modified in this diff.
+            # It will be capped at a fixed number (MAX_FILES_PREVIEW).
+            s += [
+                '<div class="diff-index">',
+                ' <table>',
+            ]
+
+            # We want a sorted list of filediffs, but tagged with the order in
+            # which they come from the database, so that we can properly link
+            # to the respective files in the diff viewer.
+            files = get_sorted_filediffs(enumerate(diffset.files.all()),
+                                         key=lambda i: i[1])
+
+            for i, filediff in files[:self.MAX_FILES_PREVIEW]:
+                counts = filediff.get_line_counts()
+
+                data_attrs = [
+                    'data-%s="%s"' % (attr.replace('_', '-'), counts[attr])
+                    for attr in ('insert_count', 'delete_count',
+                                 'replace_count', 'total_line_count')
+                    if counts.get(attr) is not None
+                ]
+
+                s.append(format_html(
+                    '<tr {data_attrs}>'
+                    ' <td class="diff-file-icon"></td>'
+                    ' <td class="diff-file-info">'
+                    '  <a href="{url}">{filename}</a>'
+                    ' </td>'
+                    '</tr>',
+                    data_attrs=mark_safe(' '.join(data_attrs)),
+                    url=diff_url + '#%d' % i,
+                    filename=filediff.source_file))
+
+            num_remaining = diffset.file_count - self.MAX_FILES_PREVIEW
+
+            if num_remaining > 0:
+                # There are more files remaining than we've shown, so show
+                # the count.
+                s.append(format_html(
+                    '<tr>'
+                    ' <td></td>'
+                    ' <td class="diff-file-info">{text}</td>'
+                    '</tr>',
+                    text=_('%s more') % num_remaining))
+
+            s += [
+                ' </table>',
+                '</div>',
+            ]
+
+        return ''.join(s)
 
     def has_value_changed(self, old_value, new_value):
         # If there's a new diffset at all (in new_value), then it passes
@@ -406,9 +526,11 @@ class FileAttachmentCaptionsField(BaseCaptionsField):
     """
     field_id = 'file_captions'
     label = _('File Captions')
+    obj_map_attr = 'file_attachment_id_map'
+    locals_vars = [obj_map_attr]
 
 
-class FileAttachmentsField(BaseCommaEditableField):
+class FileAttachmentsField(BuiltinLocalsFieldMixin, BaseCommaEditableField):
     """Renders removed or added file attachments.
 
     This is not shown as an actual displayable field on the review request
@@ -418,6 +540,43 @@ class FileAttachmentsField(BaseCommaEditableField):
     """
     field_id = 'files'
     label = _('Files')
+    locals_vars = ['file_attachment_id_map']
+
+    thumbnail_template = 'reviews/parts/file_attachment_thumbnail.html'
+
+    def get_change_entry_sections_html(self, info):
+        sections = []
+
+        if 'removed' in info:
+            sections.append({
+                'title': _('Removed Files'),
+                'rendered_html': mark_safe(
+                    self.render_change_entry_html(info['removed'])),
+            })
+
+        if 'added' in info:
+            sections.append({
+                'title': _('Added Files'),
+                'rendered_html': mark_safe(
+                    self.render_change_entry_html(info['added'])),
+            })
+
+        return sections
+
+    def render_change_entry_html(self, values):
+        # Fetch the template ourselves only once and render it for each item,
+        # instead of calling render_to_string() in the loop, so we don't
+        # have to locate and parse/fetch from cache for every item.
+        template = get_template(self.thumbnail_template)
+        review_request = self.review_request_details.get_review_request()
+
+        return ''.join([
+            template.render(Context({
+                'file': self.file_attachment_id_map[pk],
+                'review_request': review_request,
+            }))
+            for caption, filename, pk in values
+        ])
 
 
 class ScreenshotCaptionsField(BaseCaptionsField):
@@ -430,6 +589,8 @@ class ScreenshotCaptionsField(BaseCaptionsField):
     """
     field_id = 'screenshot_captions'
     label = _('Screenshot Captions')
+    obj_map_attr = 'screenshot_id_map'
+    locals_vars = [obj_map_attr]
 
 
 class ScreenshotsField(BaseCommaEditableField):

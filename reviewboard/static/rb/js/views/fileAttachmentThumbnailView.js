@@ -84,7 +84,9 @@ RB.FileAttachmentThumbnail = Backbone.View.extend({
         '<% } %>'
     ].join('')),
 
-    initialize: function() {
+    initialize: function(options) {
+        this.options = options;
+
         this._draftComment = null;
         this._comments = [];
         this._commentsProcessed = false;
@@ -150,36 +152,38 @@ RB.FileAttachmentThumbnail = Backbone.View.extend({
             this._renderThumbnail();
         }
 
-        this._$caption
-            .inlineEditor({
-                editIconClass: 'rb-icon rb-icon-edit',
-                showButtons: false
-            })
-            .on({
-                beginEdit: function() {
-                     if ($(this).hasClass('empty-caption')) {
-                         $(this).inlineEditor('field').val('');
-                     }
+        if (this.options.canEdit !== false) {
+            this._$caption
+                .inlineEditor({
+                    editIconClass: 'rb-icon rb-icon-edit',
+                    showButtons: false
+                })
+                .on({
+                    beginEdit: function() {
+                         if ($(this).hasClass('empty-caption')) {
+                             $(this).inlineEditor('field').val('');
+                         }
 
-                    self.trigger('beginEdit');
-                },
-                cancel: function() {
-                    self.trigger('endEdit');
-                },
-                complete: function(e, value) {
-                    /*
-                     * We want to set the caption after ready() finishes,
-                     * it case it loads state and overwrites.
-                     */
-                    self.model.ready({
-                        ready: function() {
-                            self.model.set('caption', value);
-                            self.trigger('endEdit');
-                            self.model.save();
-                        }
-                    });
-                }
-            });
+                        self.trigger('beginEdit');
+                    },
+                    cancel: function() {
+                        self.trigger('endEdit');
+                    },
+                    complete: function(e, value) {
+                        /*
+                         * We want to set the caption after ready() finishes,
+                         * it case it loads state and overwrites.
+                         */
+                        self.model.ready({
+                            ready: function() {
+                                self.model.set('caption', value);
+                                self.trigger('endEdit');
+                                self.model.save();
+                            }
+                        });
+                    }
+                });
+        }
 
         return this;
     },
