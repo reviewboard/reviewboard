@@ -91,17 +91,26 @@ class TextBasedReviewUI(FileAttachmentReviewUI):
         data = self.obj.file.read()
         self.obj.file.close()
 
-        try:
-            lexer = guess_lexer_for_filename(self.obj.filename, data)
-        except ClassNotFound:
-            lexer = TextLexer()
-
+        lexer = self.get_source_lexer(self.obj.filename, data)
         lines = highlight(data, lexer, NoWrapperHtmlFormatter()).splitlines()
 
         return [
             '<pre>%s</pre>' % line
             for line in lines
         ]
+
+    def get_source_lexer(self, filename, data):
+        """Returns the lexer that should be used for the text.
+
+        By default, this will attempt to guess the lexer based on the
+        filename, falling back to a plain-text lexer.
+
+        Subclasses can override this to choose a more specific lexer.
+        """
+        try:
+            return guess_lexer_for_filename(filename, data)
+        except ClassNotFound:
+            return TextLexer()
 
     def generate_render(self):
         """Generates a render of the text.

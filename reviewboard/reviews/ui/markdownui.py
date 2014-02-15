@@ -3,10 +3,11 @@ from __future__ import unicode_literals
 import logging
 from xml.dom.minidom import parseString
 
-from djblets.util.compat.six.moves import cStringIO as StringIO
-import markdown
+from pygments.lexers import TextLexer
 
 from reviewboard.reviews.ui.text import TextBasedReviewUI
+from reviewboard.reviews.markdown_utils import (iter_markdown_lines,
+                                                render_markdown_from_file)
 
 
 class MarkdownReviewUI(TextBasedReviewUI):
@@ -24,31 +25,16 @@ class MarkdownReviewUI(TextBasedReviewUI):
     js_view_class = 'RB.MarkdownReviewableView'
 
     def generate_render(self):
-        buffer = StringIO()
-        self.obj.file.open()
-        markdown.markdownFromFile(input=self.obj.file, output=buffer,
-                                  output_format='xhtml1', safe_mode='escape',
-                                  extensions=['fenced_code', 'codehilite'])
-        rendered = buffer.getvalue()
-        buffer.close()
-        self.obj.file.close()
+        with self.obj.file as f:
+            f.open()
+            rendered = render_markdown_from_file(f)
 
         try:
-            doc = parseString('<html>%s</html>' % rendered)
-            main_node = doc.childNodes[0]
-
-            for node in main_node.childNodes:
-                for html in self._process_markdown_html(node):
-                    yield html
+            for line in iter_markdown_lines(rendered):
+                yield line
         except Exception as e:
             logging.error('Failed to parse resulting Markdown XHTML for '
                           'file attachment %d: %s' % (self.obj.pk, e))
 
-    def _process_markdown_html(self, node):
-        if (node.nodeType == node.ELEMENT_NODE and
-            node.tagName == 'div' and
-            node.attributes.get('class', 'codehilite')):
-            for line in node.toxml().splitlines():
-                yield '<pre>%s</pre>' % line
-        else:
-            yield node.toxml()
+    def get_source_lexer(self, filename, data):
+        return TextLexer()
