@@ -317,6 +317,13 @@ RB.CommentDialogView = Backbone.View.extend({
             this._textEditor.focus();
         }
 
+        this.$('.comment-text-field').prev().append([
+            '<a class="markdown-info"',
+            'href="http://www.reviewboard.org/docs/manual/dev/users/markdown/"',
+            'target="_blank">',
+            gettext('This field supports Markdown'),
+            '</a>'].join(''));
+
         this.$el
             .css({
                 top: parseInt(this.$el.css("top"), 10) - this.SLIDE_DISTANCE,

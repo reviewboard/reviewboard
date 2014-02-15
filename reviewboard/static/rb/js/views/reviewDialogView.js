@@ -534,7 +534,12 @@ RB.ReviewDialogView = Backbone.View.extend({
 
         /* Must be done after the dialog is rendered. */
         this._$buttons = this._$dlg.modalBox('buttons');
-
+        $('#id_shipit').after([
+            '<a class="markdown-info" ',
+            'href="http://www.reviewboard.org/docs/manual/dev/users/markdown/" ',
+            'target="_blank">',
+            gettext('These fields support Markdown'),
+            '</a> '].join(''));
         this._bodyTopEditor.focus();
     },
 

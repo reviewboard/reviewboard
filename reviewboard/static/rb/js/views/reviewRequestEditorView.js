@@ -923,13 +923,31 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
             .inlineEditor(options)
             .on({
                 beginEdit: function() {
+                    if (fieldOptions.editMarkdown) {
+                        $el.inlineEditor('buttons').append([
+                            '<a class="markdown-info" ',
+                            'href="http://www.reviewboard.org/docs/manual/dev/users/markdown/" ',
+                            'target="_blank">',
+                            gettext('This field supports Markdown'),
+                            '</a> '].join(''));
+                    }
                     model.incr('editCount');
                 },
                 cancel: _.bind(function() {
+                    if (fieldOptions.editMarkdown) {
+                        $el.inlineEditor('buttons')
+                           .find('.markdown-info')
+                           .remove();
+                    }
                     this._scheduleResizeLayout();
                     model.decr('editCount');
                 }, this),
                 complete: _.bind(function(e, value) {
+                    if (fieldOptions.editMarkdown) {
+                        $el.inlineEditor('buttons')
+                           .find('.markdown-info')
+                           .remove();
+                    }
                     this._scheduleResizeLayout();
                     model.decr('editCount');
                     model.setDraftField(
