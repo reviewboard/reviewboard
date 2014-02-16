@@ -262,6 +262,8 @@ RB.ReviewDialogView = Backbone.View.extend({
 
     template: _.template([
         '<div class="edit-field">',
+        ' <a class="markdown-info" href="<%- markdownDocsURL %>"',
+        '    target="_blank"><%- markdownText %></a>',
         ' <input id="id_shipit" type="checkbox" />',
         ' <label for="id_shipit"><%- shipItText %></label>',
         '</div>',
@@ -361,7 +363,9 @@ RB.ReviewDialogView = Backbone.View.extend({
      */
     render: function() {
         this.$el.html(this.template({
-            shipItText: gettext('Ship It')
+            shipItText: gettext('Ship It'),
+            markdownDocsURL: MANUAL_URL + 'users/markdown/',
+            markdownText: gettext('Markdown Reference')
         }));
 
         this._$shipIt = this.$('#id_shipit');
@@ -534,12 +538,6 @@ RB.ReviewDialogView = Backbone.View.extend({
 
         /* Must be done after the dialog is rendered. */
         this._$buttons = this._$dlg.modalBox('buttons');
-        $('#id_shipit').after([
-            '<a class="markdown-info" ',
-            'href="http://www.reviewboard.org/docs/manual/dev/users/markdown/" ',
-            'target="_blank">',
-            gettext('These fields support Markdown'),
-            '</a> '].join(''));
         this._bodyTopEditor.focus();
     },
 

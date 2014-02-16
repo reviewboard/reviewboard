@@ -107,7 +107,13 @@ RB.CommentDialogView = Backbone.View.extend({
         ' <ul></ul>',
         '</div>',
         '<form method="post">',
-        ' <h1 class="title"><%- yourCommentText %></h1>',
+        ' <h1 class="title">',
+        '  <%- yourCommentText %>',
+        '<% if (authenticated && !hasDraft) { %>',
+        '  <a class="markdown-info" href="<%- markdownDocsURL %>"',
+        '     target="_blank"><%- markdownText %></a>',
+        '<% } %>',
+        ' </h1>',
         '<% if (!authenticated) { %>',
         ' <p class="login-text">',
         '  <%= loginText %>',
@@ -155,12 +161,16 @@ RB.CommentDialogView = Backbone.View.extend({
             .html(this.template({
                 authenticated: userSession.get('authenticated'),
                 hasDraft: reviewRequest.get('hasDraft'),
-                loginURL: userSession.get('loginURL'),
-                reviewRequestURL: this.options.reviewRequestURL,
+                markdownDocsURL: MANUAL_URL + 'users/markdown/',
+                markdownText: gettext('Markdown'),
                 otherReviewsText: gettext('Other reviews'),
                 yourCommentText: gettext('Your comment'),
-                loginText: gettext('You must <a href="<%= loginURL %>">log in</a> to post a comment.'),
-                draftWarning: gettext('The review request\'s current <a href="{{reviewRequestURL}}">draft</a> needs to be published before you can comment.'),
+                loginText: interpolate(
+                    gettext('You must <a href="%s">log in</a> to post a comment.'),
+                    [userSession.get('loginURL')]),
+                draftWarning: interpolate(
+                    gettext('The review request\'s current <a href="%s">draft</a> needs to be published before you can comment.'),
+                    [reviewRequest.get('reviewURL')]),
                 openAnIssueText: gettext('Open an <u>i</u>ssue'),
                 saveButton: gettext('Save'),
                 cancelButton: gettext('Cancel'),
@@ -316,13 +326,6 @@ RB.CommentDialogView = Backbone.View.extend({
             this.$el.scrollIntoView();
             this._textEditor.focus();
         }
-
-        this.$('.comment-text-field').prev().append([
-            '<a class="markdown-info"',
-            'href="http://www.reviewboard.org/docs/manual/dev/users/markdown/"',
-            'target="_blank">',
-            gettext('This field supports Markdown'),
-            '</a>'].join(''));
 
         this.$el
             .css({

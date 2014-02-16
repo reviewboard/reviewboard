@@ -113,15 +113,6 @@ RB.ReviewReplyEditorView = Backbone.View.extend({
             }, RB.MarkdownEditorView.getInlineEditorOptions()))
             .on({
                 beginEdit: function() {
-                    $draftComment
-                        .find('pre.reviewtext')
-                        .inlineEditor('buttons')
-                        .append([
-                            '<a class="markdown-info" ',
-                            'href="http://www.reviewboard.org/docs/manual/dev/users/markdown/" ',
-                            'target="_blank">',
-                            gettext('This field supports Markdown'),
-                            '</a> '].join(''));
                     if (pageEditState) {
                         pageEditState.incr('editCount');
                     }
