@@ -2,6 +2,7 @@ from __future__ import unicode_literals
 
 import logging
 
+from django.core.exceptions import ObjectDoesNotExist
 from django.template.defaultfilters import date
 from django.utils.html import conditional_escape
 from django.utils.translation import ugettext_lazy as _
@@ -511,3 +512,38 @@ class ToMeColumn(Column):
                     % (self.detailed_label))
 
         return ''
+
+
+class DiffSizeColumn(Column):
+    """Indicates line add/delete counts for the latest diffset."""
+    def __init__(self, *args, **kwargs):
+        super(DiffSizeColumn, self).__init__(*args, **kwargs)
+
+        self.label = _('Diff Size')
+        self.detailed_label = _('Diff Size')
+        self.sortable = False
+        self.shrink = True
+
+    def render_data(self, review_request):
+        try:
+            diffset = review_request.diffset_history.diffsets.latest()
+        except ObjectDoesNotExist:
+            return ''
+
+        insert_count = 0
+        delete_count = 0
+        for filediff in diffset.files.all():
+            insert_count += filediff.insert_count
+            delete_count += filediff.delete_count
+
+        result = []
+
+        if insert_count:
+            result.append('<span class="diff-size-column insert">+%d</span>' %
+                          insert_count)
+
+        if delete_count:
+            result.append('<span class="diff-size-column delete">-%d</span>' %
+                          delete_count)
+
+        return ' '.join(result)

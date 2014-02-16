@@ -12,6 +12,7 @@ from djblets.util.templatetags.djblets_utils import ageid
 from reviewboard.accounts.models import Profile, LocalSiteProfile
 from reviewboard.datagrids.columns import (BugsColumn,
                                            DateTimeSinceColumn,
+                                           DiffSizeColumn,
                                            DiffUpdatedColumn,
                                            DiffUpdatedSinceColumn,
                                            GroupMemberCountColumn,
@@ -83,6 +84,7 @@ class ReviewRequestDataGrid(DataGrid):
         detailed_label=_('Diff Updated (Relative)'),
         shrink=True,
         css_class=lambda r: ageid(r.diffset_history.last_diff_updated))
+    diff_size = DiffSizeColumn()
 
     review_count = ReviewCountColumn()
 
