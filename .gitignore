@@ -39,3 +39,4 @@ pickle
 temp
 .idea
 bak
+reviewboard/scmtools/testdata/hg_repo/.hg/cache/branch2-served
