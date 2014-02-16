@@ -69,22 +69,43 @@ class Client(base.Client):
         This assumes the standard layout in the repository."""
         results = []
         try:
-            dirents = self.ra.get_dir(B('.'), -1, ra.DIRENT_CREATED_REV)[0]
+            root_dirents = self.ra.get_dir(B('.'), -1, ra.DIRENT_CREATED_REV)[0]
         except SubversionException as e:
             raise SCMError(e)
+
         trunk = B('trunk')
-        if trunk in dirents:
-            created_rev = dirents[trunk]['created_rev']
+        if trunk in root_dirents:
+            # Looks like the standard layout. Adds trunk and any branches.
+            created_rev = root_dirents[trunk]['created_rev']
             results.append(Branch('trunk', six.text_type(created_rev), True))
 
-        try:
-            dirents = self.ra.get_dir(B('branches'), -1,
-                                      ra.DIRENT_CREATED_REV)[0]
-        except SubversionException as e:
-            raise SCMError(e)
-        for name, prop in six.iteritems(dirents):
-            results.append(Branch(six.text_type(name),
-                                  six.text_type(dirents[name]['created_rev'])))
+            try:
+                dirents = self.ra.get_dir(B('branches'), -1,
+                                          ra.DIRENT_CREATED_REV)[0]
+
+                branches = {}
+                for name, dirent in six.iteritems(dirents):
+                    branches[six.text_type(name)] = six.text_type(
+                        dirent['created_rev'])
+
+                for name in sorted(six.iterkeys(branches)):
+                    results.append(Branch(name, branches[name]))
+            except SubversionException as e:
+                pass
+        else:
+            # If the repository doesn't use the standard layout, just use a
+            # listing of the root directory as the "branches". This probably
+            # corresponds to a list of projects instead of branches, but it
+            # will at least give people a useful result.
+            branches = {}
+            for name, dirent in six.iteritems(root_dirents):
+                branches[six.text_type(name)] = six.text_type(
+                    dirent['created_rev'])
+
+            default = True
+            for name in sorted(six.iterkeys(branches)):
+                results.append(Branch(name, branches[name], default))
+                default = False
 
         return results
 

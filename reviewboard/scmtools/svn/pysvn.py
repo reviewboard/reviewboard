@@ -19,6 +19,7 @@ except ImportError:
     imported_dependency = False
 
 from django.core.cache import cache
+from django.utils.datastructures import SortedDict
 from django.utils.translation import ugettext as _
 from djblets.util.compat import six
 from djblets.util.compat.six.moves.urllib.parse import (urlsplit, urlunsplit,
@@ -91,24 +92,46 @@ class Client(base.Client):
         This assumes the standard layout in the repository."""
         results = []
 
-        trunk, unused = self.client.list(self.normalize_path('trunk'),
-                                         dirent_fields=SVN_DIRENT_CREATED_REV,
-                                         recurse=False)[0]
-        results.append(
-            Branch('trunk', six.text_type(trunk['created_rev'].number), True))
-
         try:
-            branches = self.client.list(
-                self.normalize_path('branches'),
-                dirent_fields=SVN_DIRENT_CREATED_REV)[1:]
-            for branch, unused in branches:
-                results.append(Branch(
-                    branch['path'].split('/')[-1],
-                    six.text_type(branch['created_rev'].number)))
-        except ClientError:
-            # It's possible there aren't any branches. Ignore errors for this
-            # part.
-            pass
+            root_dirents = self.client.list(
+                self.normalize_path('/'),
+                dirent_fields=SVN_DIRENT_CREATED_REV,
+                recurse=False)[1:]
+        except ClientError as e:
+            raise SCMError(e)
+
+        root_entries = SortedDict()
+        for dirent, unused in root_dirents:
+            name = dirent['path'].split('/')[-1]
+            rev = six.text_type(dirent['created_rev'].number)
+            root_entries[name] = rev
+
+        if 'trunk' in root_entries:
+            # Looks like the standard layout. Adds trunks and any branches
+            results.append(
+                Branch('trunk', root_entries['trunk'], True))
+
+            try:
+                branches = self.client.list(
+                    self.normalize_path('branches'),
+                    dirent_fields=SVN_DIRENT_CREATED_REV)[1:]
+                for branch, unused in branches:
+                    results.append(Branch(
+                        branch['path'].split('/')[-1],
+                        six.text_type(branch['created_rev'].number)))
+            except ClientError:
+                # It's possible there aren't any branches. Ignore errors for this
+                # part.
+                pass
+        else:
+            # If the repository doesn't use the standard layout, just use a
+            # listing of the root directory as the "branches". This probably
+            # corresponds to a list of projects instead of branches, but it
+            # will at least give people a useful result.
+            default = True
+            for name, rev in six.iteritems(root_entries):
+                results.append(Branch(name, rev, default))
+                default = False
 
         return results
 
