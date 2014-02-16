@@ -9,6 +9,7 @@ from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
 from djblets.db.fields import Base64Field, JSONField
 
+from reviewboard.diffviewer.errors import DiffParserError
 from reviewboard.diffviewer.managers import (FileDiffDataManager,
                                              FileDiffManager,
                                              DiffSetManager)
@@ -53,12 +54,16 @@ class FileDiffData(models.Model):
         logging.debug('Recalculating insert/delete line counts on '
                       'FileDiffData %s' % self.pk)
 
-        files = tool.get_parser(self.binary).parse()
-
-        if len(files) != 1:
+        try:
+            files = tool.get_parser(self.binary).parse()
+            if len(files) != 1:
+                raise DiffParserError(
+                    'Got wrong number of files (%d)' % len(files))
+        except DiffParserError as e:
             logging.error('Failed to correctly parse stored diff data in '
                           'FileDiffData ID %s when trying to get '
-                          'insert/delete line counts' % self.pk)
+                          'insert/delete line counts: %s',
+                          self.pk, e)
         else:
             file_info = files[0]
             self.insert_count = file_info.insert_count

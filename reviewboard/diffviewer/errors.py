@@ -22,6 +22,6 @@ class EmptyDiffError(ValueError):
 
 
 class DiffParserError(Exception):
-    def __init__(self, msg, linenum):
+    def __init__(self, msg, linenum=None):
         Exception.__init__(self, msg)
         self.linenum = linenum
