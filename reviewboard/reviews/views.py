@@ -666,14 +666,6 @@ def review_detail(request,
                 if 'new' in info:
                     change_info['new_status'] = \
                         status_to_string(info['new'][0])
-            elif name in ('screenshot_captions', 'file_captions'):
-                change_info['captions'] = [
-                    {
-                        'old': caption['old'][0],
-                        'new': caption['new'][0],
-                    }
-                    for caption in six.itervalues(info)
-                ]
             else:
                 # No clue what this is. Bail.
                 continue

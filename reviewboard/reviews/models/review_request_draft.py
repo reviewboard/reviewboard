@@ -238,7 +238,7 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
 
         # Screenshots are a bit special.  The list of associated screenshots
         # can change, but so can captions within each screenshot.
-        screenshots = self.screenshots.all()
+        screenshots = list(self.screenshots.all())
         caption_changes = {}
 
         for s in review_request.screenshots.all():
@@ -272,7 +272,7 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
 
         # Files are treated like screenshots. The list of files can
         # change, but so can captions within each file.
-        files = self.file_attachments.all()
+        files = list(self.file_attachments.all())
         caption_changes = {}
 
         for f in review_request.file_attachments.all():

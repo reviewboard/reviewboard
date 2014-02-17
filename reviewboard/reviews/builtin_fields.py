@@ -3,6 +3,7 @@ from __future__ import unicode_literals
 import logging
 
 from django.db import models
+from django.utils import six
 from django.utils.html import escape
 from django.utils.translation import ugettext_lazy as _
 
@@ -90,6 +91,22 @@ class BuiltinLocalsFieldMixin(BuiltinFieldMixin):
 
     def record_change_entry(self, changedesc, old_value, new_value):
         return None
+
+
+class BaseCaptionsField(BaseReviewRequestField):
+    """Base class for rendering captions for attachments.
+
+    This serves as a base for FileAttachmentCaptionsField and
+    ScreenshotCaptionsField. It provides the base rendering and
+    for caption changes on file attachments or screenshots.
+    """
+    def render_change_entry_html(self, info):
+        render_item = super(BaseCaptionsField, self).render_change_entry_html
+
+        return '<ul>%s</ul>' % ''.join([
+            '<li>%s</li>' % render_item(caption)
+            for caption in six.itervalues(info)
+        ])
 
 
 class BaseModelListEditableField(BaseCommaEditableField):
@@ -379,6 +396,54 @@ class DiffField(BuiltinLocalsFieldMixin, BaseReviewRequestField):
         }
 
 
+class FileAttachmentCaptionsField(BaseCaptionsField):
+    """Renders caption changes for file attachments.
+
+    This is not shown as an actual displayable field on the review request
+    itself. Instead, it is used only during the ChangeDescription rendering
+    stage. It is not, however, used for populating entries in
+    ChangeDescription.
+    """
+    field_id = 'file_captions'
+    label = _('File Captions')
+
+
+class FileAttachmentsField(BaseCommaEditableField):
+    """Renders removed or added file attachments.
+
+    This is not shown as an actual displayable field on the review request
+    itself. Instead, it is used only during the ChangeDescription rendering
+    stage. It is not, however, used for populating entries in
+    ChangeDescription.
+    """
+    field_id = 'files'
+    label = _('Files')
+
+
+class ScreenshotCaptionsField(BaseCaptionsField):
+    """Renders caption changes for screenshots.
+
+    This is not shown as an actual displayable field on the review request
+    itself. Instead, it is used only during the ChangeDescription rendering
+    stage. It is not, however, used for populating entries in
+    ChangeDescription.
+    """
+    field_id = 'screenshot_captions'
+    label = _('Screenshot Captions')
+
+
+class ScreenshotsField(BaseCommaEditableField):
+    """Renders removed or added screenshots.
+
+    This is not shown as an actual displayable field on the review request
+    itself. Instead, it is used only during the ChangeDescription rendering
+    stage. It is not, however, used for populating entries in
+    ChangeDescription.
+    """
+    field_id = 'screenshots'
+    label = _('Screenshots')
+
+
 class TargetGroupsField(BuiltinFieldMixin, BaseModelListEditableField):
     """The Target Groups field on a review request."""
     field_id = 'target_groups'
@@ -446,6 +511,10 @@ class ChangeEntryOnlyFieldSet(BaseReviewRequestFieldSet):
     fieldset_id = '_change_entries_only'
     field_classes = [
         DiffField,
+        FileAttachmentCaptionsField,
+        ScreenshotCaptionsField,
+        FileAttachmentsField,
+        ScreenshotsField,
     ]
 
 
