@@ -649,21 +649,14 @@ def review_detail(request,
             change_info = {}
 
             if field_cls:
-                field = field_cls(review_request)
+                if hasattr(field_cls, 'locals_vars'):
+                    field = field_cls(review_request, locals_vars=locals())
+                else:
+                    field = field_cls(review_request)
+
+                title = field.label
                 change_info['rendered_html'] = \
                     mark_safe(field.render_change_entry_html(info))
-                title = field.label
-            elif name == 'diff':
-                # Sets the incremental revision number for a review
-                # request change, provided it is an updated diff.
-                added_diff_info = info['added'][0]
-                diff_revision = diffset_versions[added_diff_info[2]]
-                change_info.update({
-                    'diff_label': added_diff_info[0],
-                    'diff_url': added_diff_info[1],
-                    'past_revision': diff_revision - 1,
-                    'current_revision': diff_revision,
-                })
             elif name == 'status':
                 # Make status human readable.
                 if 'old' in info:

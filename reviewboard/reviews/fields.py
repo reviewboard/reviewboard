@@ -488,7 +488,8 @@ def get_review_request_fields():
     return six.itervalues(_all_fields)
 
 
-def get_review_request_fieldsets(include_main=False):
+def get_review_request_fieldsets(include_main=False,
+                                 include_change_entries_only=False):
     """Returns a list of all registered fieldset classes.
 
     As an internal optimization, the "main" fieldset can be filtered out,
@@ -496,13 +497,21 @@ def get_review_request_fieldsets(include_main=False):
     """
     _populate_defaults()
 
-    if include_main:
-        return _fieldsets.itervalue()
+    if include_main and include_change_entries_only:
+        return six.itervalues(_fieldsets)
     else:
+        excluded_ids = []
+
+        if not include_main:
+            excluded_ids.append('main')
+
+        if not include_change_entries_only:
+            excluded_ids.append('_change_entries_only')
+
         return [
             fieldset
             for fieldset in six.itervalues(_fieldsets)
-            if fieldset.fieldset_id != 'main'
+            if fieldset.fieldset_id not in excluded_ids
         ]
 
 

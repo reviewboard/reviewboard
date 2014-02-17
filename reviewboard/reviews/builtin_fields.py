@@ -12,6 +12,7 @@ from reviewboard.reviews.fields import (BaseCommaEditableField,
                                         BaseReviewRequestFieldSet,
                                         BaseTextAreaField)
 from reviewboard.reviews.models import ReviewRequest, ReviewRequestDraft
+from reviewboard.site.urlresolvers import local_site_reverse
 
 
 class BuiltinFieldMixin(object):
@@ -44,7 +45,7 @@ class BuiltinFieldMixin(object):
 
 
 class BuiltinTextAreaFieldMixin(BuiltinFieldMixin):
-    """Mixin for buit-in text area fields.
+    """Mixin for built-in text area fields.
 
     This will ensure that the text is always rendered in Markdown,
     no matter whether the source text is plain or Markdown. It will
@@ -55,6 +56,40 @@ class BuiltinTextAreaFieldMixin(BuiltinFieldMixin):
 
     def is_text_markdown(self, value):
         return self.review_request_details.rich_text
+
+
+class BuiltinLocalsFieldMixin(BuiltinFieldMixin):
+    """Mixin for internal fields needing access to local variables.
+
+    These are used by fields that operate on state generated when
+    creating the review request page. The view handling that page has
+    a lot of cached variables, which the fields need access to for
+    performance reasons.
+
+    This should not be used by any classes outside this file.
+
+    By default, this will not render or handle any value loading or change
+    entry recording. Subclasses must implement those manually.
+    """
+    #: A list of variables needed from the review_detail view's locals().
+    locals_vars = []
+
+    def __init__(self, review_request_details, locals_vars={},
+                 *args, **kwargs):
+        super(BuiltinLocalsFieldMixin, self).__init__(
+            review_request_details, *args, **kwargs)
+
+        for var in self.locals_vars:
+            setattr(self, var, locals_vars.get(var, None))
+
+    def should_render(self, value):
+        return False
+
+    def load_value(self, review_request_details):
+        return None
+
+    def record_change_entry(self, changedesc, old_value, new_value):
+        return None
 
 
 class BaseModelListEditableField(BaseCommaEditableField):
@@ -274,6 +309,76 @@ class CommitField(BuiltinFieldMixin, BaseReviewRequestField):
             return escape(commit_id)
 
 
+class DiffField(BuiltinLocalsFieldMixin, BaseReviewRequestField):
+    """Represents a newly uploaded diff on a review request.
+
+    This is not shown as an actual displayable field on the review request
+    itself. Instead, it is used only during the ChangeDescription population
+    and processing steps.
+    """
+    field_id = 'diff'
+    label = _('Diff')
+    locals_vars = ['diffset_versions']
+
+    can_record_change_entry = True
+
+    def render_change_entry_html(self, info):
+        added_diff_info = info['added'][0]
+        review_request = self.review_request_details.get_review_request()
+
+        diff_revision = self.diffset_versions[added_diff_info[2]]
+        past_revision = diff_revision - 1
+        diff_url = added_diff_info[1]
+
+        s = '<a href="%s">%s</a>' % (diff_url, added_diff_info[0])
+
+        if past_revision != 0:
+            interdiff_url = local_site_reverse('view-interdiff', args=[
+                review_request.display_id,
+                past_revision,
+                diff_revision,
+            ])
+
+            s += ' - <a href="%s">%s</a>' % (interdiff_url, _('Show changes'))
+
+        return '\n'.join([
+            '<ul>',
+            ' <li>%s</li>' % _('added %s' % s),
+            '</ul>',
+        ])
+
+    def has_value_changed(self, old_value, new_value):
+        # If there's a new diffset at all (in new_value), then it passes
+        # the test.
+        return new_value is not None
+
+    def load_value(self, review_request_details):
+        # This will be None for a ReviewRequest, and may have a value for
+        # ReviewRequestDraft if a new diff was attached.
+        return getattr(review_request_details, 'diffset', None)
+
+    def record_change_entry(self, changedesc, unused, diffset):
+        review_request = self.review_request_details.get_review_request()
+
+        if review_request.local_site:
+            local_site_name = review_request.local_site_name
+        else:
+            local_site_name = None
+
+        url = local_site_reverse(
+            'view-diff-revision',
+            local_site_name=local_site_name,
+            args=[review_request.display_id, diffset.revision])
+
+        changedesc.fields_changed['diff'] = {
+            'added': [(
+                _('Diff r%s') % diffset.revision,
+                url,
+                diffset.pk
+            )]
+        }
+
+
 class TargetGroupsField(BuiltinFieldMixin, BaseModelListEditableField):
     """The Target Groups field on a review request."""
     field_id = 'target_groups'
@@ -337,8 +442,16 @@ class ReviewersFieldSet(BaseReviewRequestFieldSet):
     ]
 
 
+class ChangeEntryOnlyFieldSet(BaseReviewRequestFieldSet):
+    fieldset_id = '_change_entries_only'
+    field_classes = [
+        DiffField,
+    ]
+
+
 builtin_fieldsets = [
     MainFieldSet,
     InformationFieldSet,
     ReviewersFieldSet,
+    ChangeEntryOnlyFieldSet,
 ]

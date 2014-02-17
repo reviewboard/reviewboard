@@ -305,22 +305,6 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
             self.inactive_file_attachments.all()
 
         if self.diffset:
-            if self.changedesc:
-                if review_request.local_site:
-                    local_site_name = review_request.local_site.name
-                else:
-                    local_site_name = None
-
-                url = local_site_reverse(
-                    'view-diff-revision',
-                    local_site_name=local_site_name,
-                    args=[review_request.display_id, self.diffset.revision])
-                self.changedesc.fields_changed['diff'] = {
-                    'added': [(_("Diff r%s") % self.diffset.revision,
-                               url,
-                               self.diffset.id)],
-                }
-
             self.diffset.history = review_request.diffset_history
             self.diffset.save(update_fields=['history'])
 
