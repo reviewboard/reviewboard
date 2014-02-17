@@ -332,7 +332,8 @@ class UserPageDataGrid(DataGridSidebarMixin, ReviewRequestDataGrid):
             status=None,
             with_counts=True,
             local_site=kwargs.get('local_site'),
-            filter_private=True)
+            filter_private=True,
+            show_inactive=True)
 
         super(UserPageDataGrid, self).__init__(
             request,

@@ -271,7 +271,8 @@ class ReviewRequestManager(ConcurrencyManager):
             *args, **kwargs)
 
     def _query(self, user=None, status='P', with_counts=False,
-               extra_query=None, local_site=None, filter_private=False):
+               extra_query=None, local_site=None, filter_private=False,
+               show_inactive=False):
         is_authenticated = (user is not None and user.is_authenticated())
 
         query = Q(public=True)
@@ -279,7 +280,8 @@ class ReviewRequestManager(ConcurrencyManager):
         if is_authenticated:
             query = query | Q(submitter=user)
 
-        query = query & Q(submitter__is_active=True)
+        if not show_inactive:
+            query = query & Q(submitter__is_active=True)
 
         if status:
             query = query & Q(status=status)

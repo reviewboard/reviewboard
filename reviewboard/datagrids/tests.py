@@ -104,6 +104,30 @@ class AllReviewRequestViewTests(BaseViewTestCase):
         self.assertEqual(datagrid.rows[2]['object'].summary, 'Test 2')
         self.assertEqual(datagrid.rows[3]['object'].summary, 'Test 1')
 
+    @add_fixtures(['test_users'])
+    def test_with_inactive_users(self):
+        """Testing all_review_requests view with review requests from inactive
+        users"""
+        user = User.objects.get(username='doc')
+        user.is_active = False
+        user.save()
+
+        rr = self.create_review_request(summary='Test 1', submitter='doc',
+                                        publish=True)
+        rr.close(ReviewRequest.SUBMITTED)
+        self.create_review_request(summary='Test 2', submitter='grumpy',
+                                   publish=True)
+
+        self.client.login(username='grumpy', password='grumpy')
+        response = self.client.get('/r/')
+        self.assertEqual(response.status_code, 200)
+
+        datagrid = self.getContextVar(response, 'datagrid')
+        self.assertTrue(datagrid)
+        self.assertEqual(len(datagrid.rows), 2)
+        self.assertEqual(datagrid.rows[0]['object'].summary, 'Test 2')
+        self.assertEqual(datagrid.rows[1]['object'].summary, 'Test 1')
+
 
 class DashboardViewTests(BaseViewTestCase):
     """Unit tests for the dashboard view."""

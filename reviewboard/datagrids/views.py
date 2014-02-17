@@ -29,7 +29,8 @@ def all_review_requests(request,
         ReviewRequest.objects.public(user=request.user,
                                      status=None,
                                      local_site=local_site,
-                                     with_counts=True),
+                                     with_counts=True,
+                                     show_inactive=True),
         _("All Review Requests"),
         local_site=local_site)
     return datagrid.render_to_response(template_name)
