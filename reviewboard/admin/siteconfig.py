@@ -30,7 +30,7 @@
 #
 
 
-import os.path
+import os
 
 from django.conf import settings, global_settings
 from django.core.exceptions import ImproperlyConfigured
@@ -285,3 +285,10 @@ def load_site_config():
         settings.AWS_CALLING_FORMAT = int(siteconfig.get('aws_calling_format'))
     except ValueError:
         settings.AWS_CALLING_FORMAT = 0
+
+    if siteconfig.settings.get('site_domain_method', 'http') == 'https':
+        os.environ['HTTPS'] = 'on'
+    else:
+        os.environ['HTTPS'] = 'off'
+
+    return siteconfig
