@@ -43,7 +43,10 @@ class LoadSettingsMiddleware(object):
     """
     def process_request(self, request):
         # Load all site settings.
-        load_site_config()
+        siteconfig = load_site_config()
+
+        if siteconfig.settings.get('site_domain_method', 'http') == 'https':
+            request.META['wsgi.url_scheme'] = 'https'
 
 
 class CheckUpdatesRequiredMiddleware(object):
