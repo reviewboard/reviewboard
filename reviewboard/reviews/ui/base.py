@@ -9,9 +9,9 @@ import mimeparse
 from django.http import HttpResponse
 from django.template.context import RequestContext
 from django.template.loader import render_to_string
+from django.utils import six
 from django.utils.html import escape
 from django.utils.safestring import mark_safe
-from djblets.util.compat import six
 
 from reviewboard.attachments.mimetypes import MIMETYPE_EXTENSIONS, score_match
 from reviewboard.diffviewer.models import DiffSet

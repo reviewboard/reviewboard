@@ -2,9 +2,9 @@ from __future__ import unicode_literals
 
 from django.contrib.auth.models import User, Permission
 from django.db.models import Q
+from django.utils import six
 from djblets.db.query import get_object_or_none
 from djblets.testing.decorators import add_fixtures
-from djblets.util.compat import six
 from djblets.webapi.errors import DOES_NOT_EXIST, PERMISSION_DENIED
 
 from reviewboard.accounts.models import LocalSiteProfile

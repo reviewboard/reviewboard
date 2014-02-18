@@ -4,8 +4,8 @@ import os
 import re
 import tempfile
 
-from djblets.util.compat import six
-from djblets.util.compat.six.moves.urllib.parse import urlparse
+from django.utils import six
+from django.utils.six.moves.urllib.parse import urlparse
 from djblets.util.filesystem import is_exe_in_path
 
 from reviewboard.scmtools.core import SCMTool, HEAD, PRE_CREATION

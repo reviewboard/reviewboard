@@ -4,9 +4,9 @@ import logging
 import os
 import re
 
+from django.utils import six
+from django.utils.six.moves.urllib.parse import quote as urlquote
 from django.utils.translation import ugettext_lazy as _
-from djblets.util.compat import six
-from djblets.util.compat.six.moves.urllib.parse import quote as urlquote
 from djblets.util.filesystem import is_exe_in_path
 
 from reviewboard.diffviewer.parser import DiffParser, DiffParserError, File

@@ -3,7 +3,7 @@ from __future__ import unicode_literals
 import logging
 import re
 
-from djblets.util.compat.six.moves import range
+from django.utils.six.moves import range
 
 from reviewboard.diffviewer.errors import DiffParserError
 

@@ -16,8 +16,8 @@ import subprocess
 from optparse import OptionGroup, OptionParser
 from random import choice
 
-from djblets.util.compat import six
-from djblets.util.compat.six.moves import input
+from django.utils import six
+from django.utils.six.moves import input
 
 from reviewboard import get_version_string
 

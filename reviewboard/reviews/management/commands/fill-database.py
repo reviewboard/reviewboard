@@ -12,7 +12,7 @@ from django.core.files import File
 from django.core.management.base import (BaseCommand, CommandError,
                                          NoArgsCommand)
 from django.db import transaction
-from djblets.util.compat import six
+from django.utils import six
 
 from reviewboard.accounts.models import Profile
 from reviewboard.reviews.forms import UploadDiffForm

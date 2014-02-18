@@ -10,8 +10,8 @@ from tempfile import mkdtemp
 from django import forms
 from django.contrib.auth.models import AnonymousUser, User
 from django.core.cache import cache
-from djblets.util.compat import six
-from djblets.util.compat.six.moves import zip_longest
+from django.utils import six
+from django.utils.six.moves import zip_longest
 from djblets.util.filesystem import is_exe_in_path
 import nose
 

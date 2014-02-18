@@ -19,11 +19,10 @@ except ImportError:
     imported_dependency = False
 
 from django.core.cache import cache
+from django.utils import six
 from django.utils.datastructures import SortedDict
+from django.utils.six.moves.urllib.parse import (urlsplit, urlunsplit, quote)
 from django.utils.translation import ugettext as _
-from djblets.util.compat import six
-from djblets.util.compat.six.moves.urllib.parse import (urlsplit, urlunsplit,
-                                                        quote)
 
 from reviewboard.scmtools.core import (Branch, Commit,
                                        HEAD, PRE_CREATION)

@@ -2,9 +2,9 @@ from __future__ import print_function, unicode_literals
 
 from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
+from django.utils import six
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.testing.decorators import add_fixtures
-from djblets.util.compat import six
 
 from reviewboard.datagrids.builtin_items import UserGroupsItem, UserProfileItem
 from reviewboard.reviews.models import Group, ReviewRequest, ReviewRequestDraft

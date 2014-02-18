@@ -3,8 +3,8 @@ from __future__ import unicode_literals
 import os
 
 import paramiko
+from django.utils import six
 from djblets.testing.decorators import add_fixtures
-from djblets.util.compat import six
 
 from reviewboard import scmtools
 from reviewboard.hostingsvcs.models import HostingServiceAccount

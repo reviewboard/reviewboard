@@ -3,7 +3,7 @@ from __future__ import unicode_literals
 import re
 from xml.dom.minidom import parseString
 
-from djblets.util.compat.six.moves import cStringIO as StringIO
+from django.utils.six.moves import cStringIO as StringIO
 from markdown import Markdown, markdown, markdownFromFile
 
 

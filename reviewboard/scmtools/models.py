@@ -10,7 +10,7 @@ from django.utils.translation import ugettext_lazy as _
 from djblets.cache.backend import cache_memoize, make_cache_key
 from djblets.db.fields import JSONField
 from djblets.log import log_timed
-from djblets.util.compat import six
+from django.utils import six
 
 from reviewboard.hostingsvcs.models import HostingServiceAccount
 from reviewboard.scmtools.managers import RepositoryManager, ToolManager

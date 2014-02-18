@@ -5,13 +5,12 @@ import json
 import logging
 import mimetools
 
+from django.utils import six
+from django.utils.six.moves.urllib.parse import urlparse
+from django.utils.six.moves.urllib.request import (Request as URLRequest,
+                                                   HTTPBasicAuthHandler,
+                                                   urlopen)
 from django.utils.translation import ugettext_lazy as _
-from djblets.util.compat import six
-from djblets.util.compat.six.moves.urllib.parse import urlparse
-from djblets.util.compat.six.moves.urllib.request import (
-    Request as URLRequest,
-    HTTPBasicAuthHandler,
-    urlopen)
 from pkg_resources import iter_entry_points
 
 

@@ -7,11 +7,11 @@ from django import forms
 from django.conf import settings
 from django.contrib.sites.models import Site
 from django.core.cache import cache
+from django.utils import six
+from django.utils.six.moves import http_client
+from django.utils.six.moves.urllib.error import HTTPError, URLError
 from django.utils.translation import ugettext_lazy as _
 from djblets.siteconfig.models import SiteConfiguration
-from djblets.util.compat import six
-from djblets.util.compat.six.moves import http_client
-from djblets.util.compat.six.moves.urllib.error import HTTPError, URLError
 
 from reviewboard.hostingsvcs.errors import (AuthorizationError,
                                             InvalidPlanError,

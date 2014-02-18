@@ -1,7 +1,7 @@
 from __future__ import unicode_literals
 
 from django.core import mail
-from djblets.util.compat import six
+from django.utils import six
 
 from reviewboard.reviews.models import Review
 from reviewboard.webapi.resources import resources

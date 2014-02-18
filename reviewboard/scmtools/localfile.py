@@ -1,6 +1,6 @@
 from __future__ import unicode_literals
 
-from djblets.util.compat import six
+from django.utils import six
 
 from reviewboard.scmtools.core import FileNotFoundError, SCMTool, HEAD
 

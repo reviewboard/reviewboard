@@ -15,7 +15,7 @@ except ImportError:
     imported_dependency = False
 
 from django.core.cache import cache
-from djblets.util.compat import six
+from django.utils import six
 
 from reviewboard.scmtools.core import (Branch, Commit, Revision,
                                        HEAD, PRE_CREATION)

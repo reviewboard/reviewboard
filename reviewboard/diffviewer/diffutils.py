@@ -6,10 +6,10 @@ import subprocess
 import tempfile
 from difflib import SequenceMatcher
 
+from django.utils import six
 from django.utils.translation import ugettext as _
 from djblets.log import log_timed
 from djblets.siteconfig.models import SiteConfiguration
-from djblets.util.compat import six
 from djblets.util.contextmanagers import controlled_subprocess
 
 from reviewboard.accounts.models import Profile

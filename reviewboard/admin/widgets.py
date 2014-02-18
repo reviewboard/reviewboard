@@ -9,9 +9,9 @@ from django.contrib.auth.models import User
 from django.db.models.aggregates import Count
 from django.template.context import RequestContext
 from django.template.loader import render_to_string
+from django.utils import six
 from django.utils.translation import ugettext_lazy as _
 from djblets.cache.backend import cache_memoize
-from djblets.util.compat import six
 
 from reviewboard.admin.cache_stats import get_cache_stats
 from reviewboard.attachments.models import FileAttachment

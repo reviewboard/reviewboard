@@ -5,9 +5,9 @@ from django.contrib import messages
 from django.forms import widgets
 from django.template.context import RequestContext
 from django.template.loader import render_to_string
+from django.utils import six
 from django.utils.datastructures import SortedDict
 from django.utils.translation import ugettext_lazy as _
-from djblets.util.compat import six
 from djblets.forms.fields import TimeZoneField
 from djblets.siteconfig.models import SiteConfiguration
 

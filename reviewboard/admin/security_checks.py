@@ -7,11 +7,11 @@ from django.conf import settings
 from django.contrib.sites.models import Site
 from django.core.files.base import ContentFile
 from django.core.files.storage import FileSystemStorage
+from django.utils import six
+from django.utils.six.moves.urllib.request import urlopen
 from django.utils.translation import ngettext
 from django.utils.translation import ugettext_lazy as _
 from djblets.siteconfig.models import SiteConfiguration
-from djblets.util.compat import six
-from djblets.util.compat.six.moves.urllib.request import urlopen
 
 
 _security_checks = {}

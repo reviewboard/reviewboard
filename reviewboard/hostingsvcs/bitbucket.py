@@ -3,9 +3,9 @@ from __future__ import unicode_literals
 import json
 
 from django import forms
+from django.utils.six.moves.urllib.error import HTTPError, URLError
+from django.utils.six.moves.urllib.parse import quote
 from django.utils.translation import ugettext_lazy as _
-from djblets.util.compat.six.moves.urllib.error import HTTPError, URLError
-from djblets.util.compat.six.moves.urllib.parse import quote
 
 from reviewboard.hostingsvcs.errors import InvalidPlanError
 from reviewboard.hostingsvcs.forms import HostingServiceForm

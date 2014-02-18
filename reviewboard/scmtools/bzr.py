@@ -15,7 +15,7 @@ try:
     has_bzrlib = True
 except ImportError:
     has_bzrlib = False
-from djblets.util.compat import six
+from django.utils import six
 
 from reviewboard.scmtools.core import SCMTool, HEAD, PRE_CREATION
 from reviewboard.scmtools.errors import RepositoryNotFoundError, SCMError

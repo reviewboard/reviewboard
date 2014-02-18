@@ -1,6 +1,6 @@
 from __future__ import unicode_literals
 
-from djblets.util.compat import six
+from django.utils import six
 from djblets.webapi.resources import get_resource_for_object
 
 from reviewboard.webapi.base import WebAPIResource

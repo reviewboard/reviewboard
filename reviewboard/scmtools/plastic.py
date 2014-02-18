@@ -6,8 +6,8 @@ import re
 import subprocess
 from tempfile import mkstemp
 
+from django.utils import six
 from django.utils.translation import ugettext_lazy as _
-from djblets.util.compat import six
 from djblets.util.filesystem import is_exe_in_path
 
 from reviewboard.scmtools.core import (SCMTool, ChangeSet,

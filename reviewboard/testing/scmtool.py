@@ -1,7 +1,7 @@
 from __future__ import unicode_literals
 
-from djblets.util.compat import six
-from djblets.util.compat.six.moves import range
+from django.utils import six
+from django.utils.six.moves import range
 
 from reviewboard.scmtools.core import Branch, Commit
 from reviewboard.scmtools.git import GitTool

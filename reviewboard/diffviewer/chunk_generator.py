@@ -3,14 +3,14 @@ from __future__ import unicode_literals
 import fnmatch
 import re
 
+from django.utils import six
 from django.utils.html import escape
 from django.utils.safestring import mark_safe
+from django.utils.six.moves import range
 from django.utils.translation import get_language
 from djblets.log import log_timed
 from djblets.cache.backend import cache_memoize
 from djblets.siteconfig.models import SiteConfiguration
-from djblets.util.compat import six
-from djblets.util.compat.six.moves import range
 from pygments import highlight
 from pygments.lexers import get_lexer_for_filename
 from pygments.formatters import HtmlFormatter

@@ -8,9 +8,9 @@ from django.db.models import Q
 from django.template import TemplateSyntaxError
 from django.template.defaultfilters import stringfilter
 from django.template.loader import render_to_string
+from django.utils import six
 from django.utils.html import escape
 from django.utils.translation import ugettext_lazy as _
-from djblets.util.compat import six
 from djblets.util.decorators import basictag, blocktag
 from djblets.util.humanize import humanize_list
 

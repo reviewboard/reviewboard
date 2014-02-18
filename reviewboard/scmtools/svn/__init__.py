@@ -6,8 +6,8 @@ import os
 import re
 import weakref
 
+from django.utils import six
 from django.utils.translation import ugettext as _
-from djblets.util.compat import six
 
 from reviewboard.diffviewer.parser import DiffParser
 from reviewboard.scmtools.certs import Certificate

@@ -1,7 +1,7 @@
 from __future__ import unicode_literals
 
 from django.core.exceptions import ObjectDoesNotExist
-from djblets.util.compat import six
+from django.utils import six
 from djblets.webapi.decorators import (webapi_response_errors,
                                        webapi_request_fields)
 from djblets.webapi.errors import DOES_NOT_EXIST

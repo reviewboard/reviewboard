@@ -2,8 +2,8 @@ from __future__ import unicode_literals
 
 from django.core.exceptions import ObjectDoesNotExist
 from django.http import HttpResponseNotModified
+from django.utils import six
 from django.utils.translation import ugettext as _
-from djblets.util.compat import six
 from djblets.util.http import get_modified_since, http_date
 from djblets.webapi.errors import DOES_NOT_EXIST
 from reviewboard.diffviewer.models import DiffSet

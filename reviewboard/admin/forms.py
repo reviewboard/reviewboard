@@ -35,13 +35,13 @@ from django.contrib.sites.models import Site
 from django.conf import settings
 from django.core.cache import DEFAULT_CACHE_ALIAS
 from django.core.exceptions import ValidationError
+from django.utils import six
+from django.utils.six.moves.urllib.parse import urlparse
 from django.utils.translation import ugettext as _
 from djblets.cache.backend_compat import normalize_cache_backend
 from djblets.forms.fields import TimeZoneField
 from djblets.log import restart_logging
 from djblets.siteconfig.forms import SiteSettingsForm
-from djblets.util.compat import six
-from djblets.util.compat.six.moves.urllib.parse import urlparse
 
 from reviewboard.accounts.forms.auth import LegacyAuthModuleSettingsForm
 from reviewboard.admin.checks import (get_can_enable_syntax_highlighting,

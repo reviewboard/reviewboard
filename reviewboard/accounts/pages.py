@@ -2,9 +2,9 @@ import logging
 
 from django.template.context import RequestContext
 from django.template.loader import render_to_string
+from django.utils import six
 from django.utils.datastructures import SortedDict
 from django.utils.translation import ugettext_lazy as _
-from djblets.util.compat import six
 
 from reviewboard.accounts.forms.pages import (AccountSettingsForm,
                                               ChangePasswordForm,

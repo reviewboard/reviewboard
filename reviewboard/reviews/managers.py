@@ -7,8 +7,8 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.db import connections, router, transaction
 from django.db.models import Manager, Q
 from django.db.models.query import QuerySet
+from django.utils import six
 from djblets.db.managers import ConcurrencyManager
-from djblets.util.compat import six
 
 from reviewboard.diffviewer.models import DiffSetHistory
 from reviewboard.scmtools.errors import ChangeNumberInUseError

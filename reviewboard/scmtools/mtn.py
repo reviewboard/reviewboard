@@ -3,7 +3,7 @@ from __future__ import unicode_literals
 import os
 import subprocess
 
-from djblets.util.compat import six
+from django.utils import six
 from djblets.util.filesystem import is_exe_in_path
 
 from reviewboard.diffviewer.parser import DiffParser

@@ -4,8 +4,8 @@ from django.conf import settings
 from django.http import HttpResponse
 from django.template import Context
 from django.template.loader import render_to_string
+from django.utils import six
 from django.utils.translation import ugettext as _, get_language
-from djblets.util.compat import six
 from djblets.cache.backend import cache_memoize
 
 from reviewboard.diffviewer.chunk_generator import compute_chunk_last_header

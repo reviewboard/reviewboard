@@ -1,6 +1,6 @@
 from __future__ import unicode_literals
 
-from djblets.util.compat import six
+from django.utils import six
 
 from reviewboard.reviews.models import FileAttachmentComment
 from reviewboard.webapi.resources import resources

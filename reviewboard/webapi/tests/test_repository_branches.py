@@ -1,6 +1,6 @@
 from __future__ import unicode_literals
 
-from djblets.util.compat import six
+from django.utils import six
 
 from reviewboard.webapi.errors import REPO_NOT_IMPLEMENTED
 from reviewboard.webapi.resources import resources

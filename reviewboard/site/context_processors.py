@@ -1,7 +1,7 @@
 from __future__ import unicode_literals
 
 from django.contrib.auth.context_processors import PermLookupDict, PermWrapper
-from djblets.util.compat import six
+from django.utils import six
 
 from reviewboard.site.models import LocalSite
 

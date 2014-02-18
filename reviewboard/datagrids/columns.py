@@ -4,11 +4,11 @@ import logging
 
 from django.core.exceptions import ObjectDoesNotExist
 from django.template.defaultfilters import date
+from django.utils import six
 from django.utils.html import conditional_escape
+from django.utils.six.moves import reduce
 from django.utils.translation import ugettext_lazy as _
 from djblets.datagrid.grids import Column, DateTimeColumn
-from djblets.util.compat import six
-from djblets.util.compat.six.moves import reduce
 
 from reviewboard.accounts.models import Profile
 from reviewboard.reviews.models import ReviewRequest

@@ -2,7 +2,7 @@ from __future__ import unicode_literals
 
 import os
 
-from djblets.util.compat import six
+from django.utils import six
 from djblets.webapi.errors import INVALID_FORM_DATA, PERMISSION_DENIED
 
 from reviewboard import scmtools

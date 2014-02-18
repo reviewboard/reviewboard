@@ -4,7 +4,7 @@ import logging
 
 from django.core.exceptions import ObjectDoesNotExist
 from django.http import HttpResponse
-from djblets.util.compat.six.moves.urllib.parse import quote as urllib_quote
+from django.utils.six.moves.urllib.parse import quote as urllib_quote
 from djblets.util.http import set_last_modified
 from djblets.webapi.errors import DOES_NOT_EXIST
 

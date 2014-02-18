@@ -1,9 +1,9 @@
 from __future__ import unicode_literals
 
 from django.contrib.auth.models import User
+from django.utils import six
+from django.utils.six.moves import range
 from djblets.testing.decorators import add_fixtures
-from djblets.util.compat import six
-from djblets.util.compat.six.moves import range
 from djblets.util.decorators import simple_decorator
 from djblets.webapi.errors import PERMISSION_DENIED
 

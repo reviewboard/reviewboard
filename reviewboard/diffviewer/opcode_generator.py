@@ -3,8 +3,8 @@ from __future__ import unicode_literals
 import os
 import re
 
-from djblets.util.compat import six
-from djblets.util.compat.six.moves import range
+from django.utils import six
+from django.utils.six.moves import range
 
 from reviewboard.diffviewer.processors import (filter_interdiff_opcodes,
                                                merge_adjacent_chunks,

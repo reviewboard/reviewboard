@@ -4,7 +4,7 @@ import logging
 
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
-from djblets.util.compat.six.moves import cStringIO as StringIO
+from django.utils.six.moves import cStringIO as StringIO
 from paramiko.hostkeys import HostKeyEntry
 import paramiko
 

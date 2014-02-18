@@ -6,14 +6,13 @@ import os
 import subprocess
 import sys
 
+from django.utils import six
 from django.utils.encoding import python_2_unicode_compatible
+from django.utils.six.moves.urllib.error import HTTPError
+from django.utils.six.moves.urllib.parse import urlparse
+from django.utils.six.moves.urllib.request import (Request as URLRequest,
+                                                   urlopen)
 from django.utils.translation import ugettext_lazy as _
-from djblets.util.compat import six
-from djblets.util.compat.six.moves.urllib.error import HTTPError
-from djblets.util.compat.six.moves.urllib.parse import urlparse
-from djblets.util.compat.six.moves.urllib.request import (
-    Request as URLRequest,
-    urlopen)
 
 import reviewboard.diffviewer.parser as diffparser
 from reviewboard.scmtools.errors import (AuthenticationError,

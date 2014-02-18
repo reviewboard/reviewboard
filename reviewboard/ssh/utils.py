@@ -3,7 +3,7 @@ from __future__ import unicode_literals
 import os
 
 import paramiko
-from djblets.util.compat import six
+from django.utils import six
 
 from reviewboard.ssh.client import SSHClient
 from reviewboard.ssh.errors import (BadHostKeyError, SSHAuthenticationError,

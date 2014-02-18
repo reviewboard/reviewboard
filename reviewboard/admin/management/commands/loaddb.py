@@ -8,7 +8,7 @@ from django.core import serializers
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 from django.db.models import get_apps
-from djblets.util.compat.six.moves import input
+from django.utils.six.moves import input
 
 
 class Command(BaseCommand):

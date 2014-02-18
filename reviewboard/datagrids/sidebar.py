@@ -2,8 +2,8 @@ from __future__ import unicode_literals
 
 from django.template.context import RequestContext
 from django.template.loader import render_to_string
-from djblets.util.compat import six
-from djblets.util.compat.six.moves.urllib.parse import urlencode
+from django.utils import six
+from django.utils.six.moves.urllib.parse import urlencode
 
 from reviewboard.site.urlresolvers import local_site_reverse
 

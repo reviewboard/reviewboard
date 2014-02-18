@@ -3,8 +3,8 @@ from __future__ import unicode_literals
 import logging
 import re
 
-from djblets.util.compat import six
-from djblets.util.compat.six.moves.urllib.parse import quote as urllib_quote
+from django.utils import six
+from django.utils.six.moves.urllib.parse import quote as urllib_quote
 from djblets.util.filesystem import is_exe_in_path
 
 from reviewboard.diffviewer.parser import DiffParser, DiffParserError

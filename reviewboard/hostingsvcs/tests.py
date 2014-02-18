@@ -4,10 +4,10 @@ import json
 from hashlib import md5
 from textwrap import dedent
 
-from djblets.util.compat import six
-from djblets.util.compat.six.moves import cStringIO as StringIO
-from djblets.util.compat.six.moves.urllib.error import HTTPError
-from djblets.util.compat.six.moves.urllib.parse import urlparse
+from django.utils import six
+from django.utils.six.moves import cStringIO as StringIO
+from django.utils.six.moves.urllib.error import HTTPError
+from django.utils.six.moves.urllib.parse import urlparse
 from kgb import SpyAgency
 
 from reviewboard.hostingsvcs.errors import RepositoryError

@@ -4,7 +4,7 @@ import logging
 
 from django.core.exceptions import PermissionDenied, ObjectDoesNotExist
 from django.http import HttpResponse
-from djblets.util.compat import six
+from django.utils import six
 from djblets.util.http import get_http_requested_mimetype, set_last_modified
 from djblets.webapi.decorators import (webapi_login_required,
                                        webapi_response_errors,
