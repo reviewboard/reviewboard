@@ -321,15 +321,6 @@ def get_diff_files(diffset, filediff=None, interdiffset=None, request=None):
             else:
                 dest_revision = _("New Change")
 
-        i = filediff.source_file.rfind('/')
-
-        if i != -1:
-            basepath = filediff.source_file[:i]
-            basename = filediff.source_file[i + 1:]
-        else:
-            basepath = ""
-            basename = filediff.source_file
-
         tool = filediff.diffset.repository.get_scmtool()
         depot_filename = tool.normalize_path_for_display(filediff.source_file)
         dest_filename = tool.normalize_path_for_display(filediff.dest_file)
@@ -337,8 +328,6 @@ def get_diff_files(diffset, filediff=None, interdiffset=None, request=None):
         f = {
             'depot_filename': depot_filename,
             'dest_filename': dest_filename or depot_filename,
-            'basename': basename,
-            'basepath': basepath,
             'revision': source_revision,
             'dest_revision': dest_revision,
             'filediff': filediff,
@@ -357,27 +346,11 @@ def get_diff_files(diffset, filediff=None, interdiffset=None, request=None):
         if force_interdiff:
             f['force_interdiff_revision'] = interdiffset.revision
 
-        files.append(f);
-
-    def cmp_file(x, y):
-        # Sort based on basepath in asc order
-        if x["basepath"] != y["basepath"]:
-            return cmp(x["basepath"], y["basepath"])
-
-        # Sort based on filename in asc order, then based on extension in desc
-        # order, to make *.h be ahead of *.c/cpp
-        x_file, x_ext = os.path.splitext(x["basename"])
-        y_file, y_ext = os.path.splitext(y["basename"])
-        if x_file != y_file:
-            return cmp(x_file, y_file)
-        else:
-            return cmp(y_ext, x_ext)
-
-    files.sort(cmp_file)
+        files.append(f)
 
     log_timer.done()
 
-    return files
+    return get_sorted_filediffs(files, key=lambda f: f['filediff'])
 
 
 def populate_diff_chunks(files, enable_syntax_highlighting=True,
@@ -599,3 +572,52 @@ def get_line_changed_regions(oldline, newline):
         back = (0, 0)
 
     return oldchanges, newchanges
+
+
+def get_sorted_filediffs(filediffs, key=None):
+    """Sorts a list of filediffs.
+
+    The list of filediffs will be sorted first by their base paths in
+    ascending order.
+
+    Within a base path, they'll be sorted by base name (minus the extension)
+    in ascending order.
+
+    If two files have the same base path and base name, we'll sort by the
+    extension in descending order. This will make *.h sort ahead of *.c/cpp,
+    for example.
+
+    If the list being passed in is actually not a list of FileDiffs, it
+    must provide a callable ``key`` parameter that will return a FileDiff
+    for the given entry in the list. This will only be called once per
+    item.
+    """
+    def cmp_filediffs(x, y):
+        # Sort based on basepath in ascending order.
+        if x[0] != y[0]:
+            return cmp(x[0], y[0])
+
+        # Sort based on filename in ascending order, then based on
+        # the extension in descending order, to make *.h sort ahead of
+        # *.c/cpp.
+        x_file, x_ext = os.path.splitext(x[1])
+        y_file, y_ext = os.path.splitext(y[1])
+
+        if x_file == y_file:
+            return cmp(y_ext, x_ext)
+        else:
+            return cmp(x_file, y_file)
+
+    def make_key(filediff):
+        if key:
+            filediff = key(filediff)
+
+        filename = filediff.source_file
+        i = filename.rfind('/')
+
+        if i == -1:
+            return '', filename
+        else:
+            return filename[:i], filename[i + 1:]
+
+    return sorted(filediffs, cmp=cmp_filediffs, key=make_key)
