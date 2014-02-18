@@ -243,6 +243,13 @@ class DiffChunkGenerator(object):
                                                       self.filediff,
                                                       self.interfilediff)
 
+        counts = {
+            'equal': 0,
+            'replace': 0,
+            'insert': 0,
+            'delete': 0,
+        }
+
         for tag, i1, i2, j1, j2, meta in opcodes_generator:
             old_lines = markup_a[i1:i2]
             new_lines = markup_b[j1:j2]
@@ -254,6 +261,8 @@ class DiffChunkGenerator(object):
                         range(i1 + 1, i2 + 1), range(j1 + 1, j2 + 1),
                         a[i1:i2], b[j1:j2], old_lines, new_lines)
             self._cur_meta = None
+
+            counts[tag] += num_lines
 
             if tag == 'equal' and num_lines > collapse_threshold:
                 last_range_start = num_lines - context_num_lines
@@ -278,6 +287,20 @@ class DiffChunkGenerator(object):
             line_num += num_lines
 
         log_timer.done()
+
+        if not self.interfilediff:
+            insert_count = counts['insert']
+            delete_count = counts['delete']
+            replace_count = counts['replace']
+            equal_count = counts['equal']
+
+            self.filediff.set_line_counts(
+                insert_count=insert_count,
+                delete_count=delete_count,
+                replace_count=replace_count,
+                equal_count=equal_count,
+                total_line_count=insert_count + delete_count +
+                                 replace_count + equal_count)
 
     def _get_enable_syntax_highlighting(self, old, new, a, b):
         """Returns whether or not we'll be enabling syntax highlighting.

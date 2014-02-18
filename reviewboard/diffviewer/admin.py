@@ -15,15 +15,19 @@ class FileDiffAdmin(admin.ModelAdmin):
             'fields': ('diffset', 'status', 'binary',
                        ('source_file', 'source_revision'),
                        ('dest_file', 'dest_detail'),
-                       'insert_count',
-                       'delete_count',
                        'diff', 'parent_diff')
+        }),
+        (_('Internal State'), {
+            'description': _('<p>This is advanced state that should not be '
+                             'modified unless something is wrong.</p>'),
+            'fields': ('extra_data',),
+            'classes': ['collapse'],
         }),
     )
     list_display = ('source_file', 'source_revision',
                     'dest_file', 'dest_detail')
     raw_id_fields = ('diffset', 'diff_hash', 'parent_diff_hash')
-    readonly_fields = ('diff', 'parent_diff', 'insert_count', 'delete_count')
+    readonly_fields = ('diff', 'parent_diff')
 
     def diff(self, filediff):
         return self._style_diff(filediff.diff)

@@ -530,12 +530,9 @@ class DiffSizeColumn(Column):
         except ObjectDoesNotExist:
             return ''
 
-        insert_count = 0
-        delete_count = 0
-        for filediff in diffset.files.all():
-            insert_count += filediff.insert_count
-            delete_count += filediff.delete_count
-
+        counts = diffset.get_total_line_counts()
+        insert_count = counts['raw_insert_count']
+        delete_count = counts['raw_delete_count']
         result = []
 
         if insert_count:

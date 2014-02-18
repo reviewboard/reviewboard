@@ -238,7 +238,8 @@ class DiffSetManager(models.Manager):
                                 parent_diff=parent_content,
                                 binary=f.binary,
                                 status=status)
-            filediff.set_line_counts(f.insert_count, f.delete_count)
+            filediff.set_line_counts(raw_insert_count=f.insert_count,
+                                     raw_delete_count=f.delete_count)
 
             if save:
                 filediff.save()

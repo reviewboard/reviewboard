@@ -479,6 +479,81 @@ class DiffParserTest(TestCase):
         self.assertEqual(r_moves, expected_r_moves)
 
 
+class FileDiffTests(TestCase):
+    """Unit tests for FileDiff."""
+    fixtures = ['test_scmtools']
+
+    def setUp(self):
+        super(FileDiffTests, self).setUp()
+
+        diff = (
+            b'diff --git a/README b/README\n'
+            b'index d6613f5..5b50866 100644\n'
+            b'--- README\n'
+            b'+++ README\n'
+            b'@ -1,1 +1,2 @@\n'
+            b'-blah blah\n'
+            b'+blah!\n'
+            b'+blah!!\n')
+
+        repository = self.create_repository(tool_name='Test')
+        diffset = DiffSet.objects.create(name='test',
+                                         revision=1,
+                                         repository=repository)
+        self.filediff = FileDiff(source_file='README',
+                                 dest_file='README',
+                                 diffset=diffset,
+                                 diff64=diff,
+                                 parent_diff64='')
+
+    def test_get_line_counts_with_defaults(self):
+        """Testing FileDiff.get_line_counts with default values"""
+        counts = self.filediff.get_line_counts()
+
+        self.assertIn('raw_insert_count', counts)
+        self.assertIn('raw_delete_count', counts)
+        self.assertIn('insert_count', counts)
+        self.assertIn('delete_count', counts)
+        self.assertIn('replace_count', counts)
+        self.assertIn('equal_count', counts)
+        self.assertIn('total_line_count', counts)
+        self.assertEqual(counts['raw_insert_count'], 2)
+        self.assertEqual(counts['raw_delete_count'], 1)
+        self.assertEqual(counts['insert_count'], 2)
+        self.assertEqual(counts['delete_count'], 1)
+        self.assertIsNone(counts['replace_count'])
+        self.assertIsNone(counts['equal_count'])
+        self.assertIsNone(counts['total_line_count'])
+
+        diff_hash = self.filediff.diff_hash
+        self.assertEqual(diff_hash.insert_count, 2)
+        self.assertEqual(diff_hash.delete_count, 1)
+
+    def test_set_line_counts(self):
+        """Testing FileDiff.set_line_counts"""
+        self.filediff.set_line_counts(
+            raw_insert_count=1,
+            raw_delete_count=2,
+            insert_count=3,
+            delete_count=4,
+            replace_count=5,
+            equal_count=6,
+            total_line_count=7)
+
+        counts = self.filediff.get_line_counts()
+        self.assertEqual(counts['raw_insert_count'], 1)
+        self.assertEqual(counts['raw_delete_count'], 2)
+        self.assertEqual(counts['insert_count'], 3)
+        self.assertEqual(counts['delete_count'], 4)
+        self.assertEqual(counts['replace_count'], 5)
+        self.assertEqual(counts['equal_count'], 6)
+        self.assertEqual(counts['total_line_count'], 7)
+
+        diff_hash = self.filediff.diff_hash
+        self.assertEqual(diff_hash.insert_count, 1)
+        self.assertEqual(diff_hash.delete_count, 2)
+
+
 class FileDiffMigrationTests(TestCase):
     fixtures = ['test_scmtools']
 
@@ -557,10 +632,10 @@ class FileDiffMigrationTests(TestCase):
         self.assertEqual(self.filediff.diff_hash, None)
 
         # This should prompt the migration
-        delete_count = self.filediff.delete_count
+        counts = self.filediff.get_line_counts()
 
         self.assertNotEqual(self.filediff.diff_hash, None)
-        self.assertEqual(delete_count, 1)
+        self.assertEqual(counts['raw_delete_count'], 1)
         self.assertEqual(self.filediff.diff_hash.delete_count, 1)
 
     def test_migration_by_insert_count(self):
@@ -570,10 +645,10 @@ class FileDiffMigrationTests(TestCase):
         self.assertEqual(self.filediff.diff_hash, None)
 
         # This should prompt the migration
-        insert_count = self.filediff.insert_count
+        counts = self.filediff.get_line_counts()
 
         self.assertNotEqual(self.filediff.diff_hash, None)
-        self.assertEqual(insert_count, 1)
+        self.assertEqual(counts['raw_insert_count'], 1)
         self.assertEqual(self.filediff.diff_hash.insert_count, 1)
 
     def test_migration_by_set_line_counts(self):
@@ -583,11 +658,14 @@ class FileDiffMigrationTests(TestCase):
         self.assertEqual(self.filediff.diff_hash, None)
 
         # This should prompt the migration, but with our line counts.
-        self.filediff.set_line_counts(10, 20)
+        self.filediff.set_line_counts(raw_insert_count=10,
+                                      raw_delete_count=20)
 
         self.assertNotEqual(self.filediff.diff_hash, None)
-        self.assertEqual(self.filediff.insert_count, 10)
-        self.assertEqual(self.filediff.delete_count, 20)
+
+        counts = self.filediff.get_line_counts()
+        self.assertEqual(counts['raw_insert_count'], 10)
+        self.assertEqual(counts['raw_delete_count'], 20)
         self.assertEqual(self.filediff.diff_hash.insert_count, 10)
         self.assertEqual(self.filediff.diff_hash.delete_count, 20)
 

@@ -4,7 +4,7 @@ import hashlib
 import logging
 
 from django.db import models
-from django.utils import timezone
+from django.utils import six, timezone
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
 from djblets.db.fields import Base64Field, JSONField
@@ -56,6 +56,7 @@ class FileDiffData(models.Model):
 
         try:
             files = tool.get_parser(self.binary).parse()
+
             if len(files) != 1:
                 raise DiffParserError(
                     'Got wrong number of files (%d)' % len(files))
@@ -68,7 +69,9 @@ class FileDiffData(models.Model):
             file_info = files[0]
             self.insert_count = file_info.insert_count
             self.delete_count = file_info.delete_count
-            self.save()
+
+            if self.pk:
+                self.save(update_fields=['extra_data'])
 
 
 @python_2_unicode_compatible
@@ -176,37 +179,87 @@ class FileDiff(models.Model):
 
     parent_diff = property(_get_parent_diff, _set_parent_diff)
 
-    @property
-    def insert_count(self):
-        if not self.diff_hash:
-            self._migrate_diff_data()
+    def get_line_counts(self):
+        """Returns the stored line counts for the diff.
 
-        if self.diff_hash.insert_count is None:
-            self._recalculate_line_counts(self.diff_hash)
+        This will return all the types of line counts that can be set:
 
-        return self.diff_hash.insert_count
+        * ``raw_insert_count``
+        * ``raw_delete_count``
+        * ``insert_count``
+        * ``delete_count``
+        * ``replace_count``
+        * ``equal_count``
+        * ``total_line_count``
 
-    @property
-    def delete_count(self):
-        if not self.diff_hash:
-            self._migrate_diff_data()
+        These are not all guaranteed to have values set, and may instead be
+        None. Only ``raw_insert_count``, ``raw_delete_count``
+        ``insert_count``, and ``delete_count`` are guaranteed to have values
+        set.
 
-        if self.diff_hash.delete_count is None:
-            self._recalculate_line_counts(self.diff_hash)
+        If there isn't a processed number of inserts or deletes stored,
+        then ``insert_count`` and ``delete_count`` will be equal to the
+        raw versions.
+        """
+        if ('raw_insert_count' not in self.extra_data or
+            'raw_delete_count' not in self.extra_data):
+            if not self.diff_hash:
+                self._migrate_diff_data()
 
-        return self.diff_hash.delete_count
+            if self.diff_hash.insert_count is None:
+                self._recalculate_line_counts(self.diff_hash)
 
-    def set_line_counts(self, insert_count, delete_count):
-        """Sets the insert/delete line count on the FileDiff."""
-        if not self.diff_hash:
+            self.extra_data.update({
+                'raw_insert_count': self.diff_hash.insert_count,
+                'raw_delete_count': self.diff_hash.delete_count,
+            })
+
+            if self.pk:
+                self.save(update_fields=['extra_data'])
+
+        raw_insert_count = self.extra_data['raw_insert_count']
+        raw_delete_count = self.extra_data['raw_delete_count']
+
+        return {
+            'raw_insert_count': raw_insert_count,
+            'raw_delete_count': raw_delete_count,
+            'insert_count': self.extra_data.get('insert_count',
+                                                raw_insert_count),
+            'delete_count': self.extra_data.get('delete_count',
+                                                raw_delete_count),
+            'replace_count': self.extra_data.get('replace_count'),
+            'equal_count': self.extra_data.get('equal_count'),
+            'total_line_count': self.extra_data.get('total_line_count'),
+        }
+
+    def set_line_counts(self, raw_insert_count=None, raw_delete_count=None,
+                        insert_count=None, delete_count=None,
+                        replace_count=None, equal_count=None,
+                        total_line_count=None):
+        """Sets the line counts on the FileDiff.
+
+        There are many types of useful line counts that can be set.
+
+        ``raw_insert_count`` and ``raw_delete_count`` correspond to the
+        raw inserts and deletes in the actual patch, which will be set both
+        in this FileDiff and in the associated FileDiffData.
+
+        The other counts are stored exclusively in FileDiff, as they are
+        more render-specific.
+        """
+        updated = False
+
+        if not self.diff_hash_id:
             # This really shouldn't happen, but if it does, we should handle
             # it gracefully.
             logging.warning('Attempting to call set_line_counts on '
                             'un-migrated FileDiff %s' % self.pk)
             self._migrate_diff_data(False)
 
-        if (self.diff_hash.insert_count is not None and
-                self.diff_hash.insert_count != insert_count):
+        if (raw_insert_count is not None and
+            self.diff_hash.insert_count is not None and
+            self.diff_hash.insert_count != insert_count):
+            # Allow overriding, but warn. This really shouldn't be called.
             logging.warning('Attempting to override insert count on '
                             'FileDiffData %s from %s to %s (FileDiff %s)'
                             % (self.diff_hash.pk,
@@ -214,8 +267,10 @@ class FileDiff(models.Model):
                                insert_count,
                                self.pk))
 
-        if (self.diff_hash.delete_count is not None and
-                self.diff_hash.delete_count != delete_count):
+        if (raw_delete_count is not None and
+            self.diff_hash.delete_count is not None and
+            self.diff_hash.delete_count != delete_count):
+            # Allow overriding, but warn. This really shouldn't be called.
             logging.warning('Attempting to override delete count on '
                             'FileDiffData %s from %s to %s (FileDiff %s)'
                             % (self.diff_hash.pk,
@@ -223,9 +278,33 @@ class FileDiff(models.Model):
                                delete_count,
                                self.pk))
 
-        self.diff_hash.insert_count = insert_count
-        self.diff_hash.delete_count = delete_count
-        self.diff_hash.save()
+        if raw_insert_count is not None or raw_delete_count is not None:
+            # New raw counts have been provided. These apply to the actual
+            # diff file itself, and will be common across all diffs sharing
+            # the diff_hash instance. Set it there.
+            if raw_insert_count is not None:
+                self.diff_hash.insert_count = raw_insert_count
+                self.extra_data['raw_insert_count'] = raw_insert_count
+                updated = True
+
+            if raw_delete_count is not None:
+                self.diff_hash.delete_count = raw_delete_count
+                self.extra_data['raw_delete_count'] = raw_delete_count
+                updated = True
+
+            self.diff_hash.save()
+
+        for key, cur_value in (('insert_count', insert_count),
+                               ('delete_count', delete_count),
+                               ('replace_count', replace_count),
+                               ('equal_count', equal_count),
+                               ('total_line_count', total_line_count)):
+            if cur_value is not None and cur_value != self.extra_data.get(key):
+                self.extra_data[key] = cur_value
+                updated = True
+
+        if updated and self.pk:
+            self.save(update_fields=['extra_data'])
 
     def _hash_hexdigest(self, diff):
         hasher = hashlib.sha1()
@@ -302,6 +381,19 @@ class DiffSet(models.Model):
     extra_data = JSONField(null=True)
 
     objects = DiffSetManager()
+
+    def get_total_line_counts(self):
+        """Returns the total line counts from all files in this diffset."""
+        counts = {}
+
+        for filediff in self.files.all():
+            for key, value in six.iteritems(filediff.get_line_counts()):
+                if counts.get(key) is None:
+                    counts[key] = value
+                elif value is not None:
+                    counts[key] += value
+
+        return counts
 
     def save(self, **kwargs):
         """
