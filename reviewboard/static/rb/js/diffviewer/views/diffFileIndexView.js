@@ -20,9 +20,6 @@ RB.DiffFileIndexView = Backbone.View.extend({
     initialize: function() {
         this._$items = null;
         this._$itemsTable = null;
-        this._iconInsertColor = null;
-        this._iconReplaceColor = null;
-        this._iconDeleteColor = null;
 
         this.collection = this.options.collection;
         this.listenTo(this.collection, 'update', this.update);
@@ -30,26 +27,10 @@ RB.DiffFileIndexView = Backbone.View.extend({
 
     /*
      * Renders the view to the page.
-     *
-     * This will grab the list of items and precompute the colors used in
-     * the complexity icons.
      */
     render: function() {
-        var $iconColor = $('<div/>').appendTo(document.body);
-
         this._$itemsTable = $('<table/>').appendTo(this.el);
         this._$items = this.$('tr');
-
-        $iconColor[0].className = 'diff-changes-icon-insert';
-        this._iconInsertColor = $iconColor.css('color');
-
-        $iconColor[0].className = 'diff-changes-icon-replace';
-        this._iconReplaceColor = $iconColor.css('color');
-
-        $iconColor[0].className = 'diff-changes-icon-delete';
-        this._iconDeleteColor = $iconColor.css('color');
-
-        $iconColor.remove();
 
         // Add the files from the collection
         this.update();
@@ -141,7 +122,8 @@ RB.DiffFileIndexView = Backbone.View.extend({
             numDeletes = 0,
             numInserts = 0,
             numReplaces = 0,
-            chunksList = [];
+            chunksList = [],
+            iconView;
 
         if (fileAdded) {
             numInserts = 1;
@@ -175,65 +157,19 @@ RB.DiffFileIndexView = Backbone.View.extend({
         }
 
         /* Render the complexity icon. */
-        this._renderComplexityIcon($item, numInserts, numDeletes, numReplaces,
-                                   linesEqual + numDeletes + numInserts +
-                                   numReplaces);
+        iconView = new RB.DiffComplexityIconView({
+            numInserts: numInserts,
+            numDeletes: numDeletes,
+            numReplaces: numReplaces,
+            totalLines: linesEqual + numDeletes + numInserts + numReplaces
+        });
+        iconView.$el.appendTo($item.find('.diff-file-icon'));
+        iconView.render();
 
         this.listenTo(diffReviewableView, 'chunkDimmed chunkUndimmed',
                       function(chunkID) {
             this.$('a[href="#' + chunkID + '"]').toggleClass('dimmed');
         });
-    },
-
-    /*
-     * Renders the icon showing the general complexity of the diff.
-     *
-     * This icon is a pie graph showing the percentage of adds vs deletes
-     * vs replaces. The size of the white inner radius is a relative indicator
-     * of how large the change is for the file. Smaller inner radiuses indicate
-     * much larger changes, whereas larger radiuses represent smaller changes.
-     *
-     * Think of the inner radius as the unchanged lines.
-     */
-    _renderComplexityIcon: function($item, numInserts, numDeletes, numReplaces,
-                                    totalLines) {
-        function clampValue(val) {
-            return val === 0 ? 0 : Math.max(val, minValue);
-        }
-
-        var numTotal = numInserts + numDeletes + numReplaces,
-            minValue = numTotal * 0.15;
-
-        $('<div/>')
-            .width(20)
-            .height(20)
-            .appendTo($item.find('.diff-file-icon'))
-            .plot(
-                [
-                    {
-                        color: this._iconInsertColor,
-                        data: clampValue(numInserts)
-                    },
-                    {
-                        color: this._iconDeleteColor,
-                        data: clampValue(numDeletes)
-                    },
-                    {
-                        color: this._iconReplaceColor,
-                        data: clampValue(numReplaces)
-                    }
-                ],
-                {
-                    series: {
-                        pie: {
-                            show: true,
-                            innerRadius: 0.5 *
-                                         ((totalLines - numTotal) / totalLines),
-                            radius: 0.8
-                        }
-                    }
-                }
-            );
     },
 
     /*
