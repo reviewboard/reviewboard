@@ -1110,36 +1110,6 @@ class DiffChunkGeneratorTests(TestCase):
         filediff = FileDiff(source_file='foo', diffset=DiffSet())
         self.generator = DiffChunkGenerator(None, filediff)
 
-    def test_get_line_changed_regions(self):
-        """Testing DiffChunkGenerator._get_line_changed_regions"""
-        def deep_equal(A, B):
-            typea, typeb = type(A), type(B)
-            self.assertEqual(typea, typeb)
-            if typea is tuple or typea is list:
-                for a, b in zip_longest(A, B):
-                    deep_equal(a, b)
-            else:
-                self.assertEqual(A, B)
-
-        deep_equal(self.generator._get_line_changed_regions(None, None),
-                   (None, None))
-
-        old = 'submitter = models.ForeignKey(Person, verbose_name="Submitter")'
-        new = 'submitter = models.ForeignKey(User, verbose_name="Submitter")'
-        regions = self.generator._get_line_changed_regions(old, new)
-        deep_equal(regions, ([(30, 36)], [(30, 34)]))
-
-        old = '-from reviews.models import ReviewRequest, Person, Group'
-        new = '+from .reviews.models import ReviewRequest, Group'
-        regions = self.generator._get_line_changed_regions(old, new)
-        deep_equal(regions, ([(0, 1), (6, 6), (43, 51)],
-                             [(0, 1), (6, 7), (44, 44)]))
-
-        old = 'abcdefghijklm'
-        new = 'nopqrstuvwxyz'
-        regions = self.generator._get_line_changed_regions(old, new)
-        deep_equal(regions, (None, None))
-
     def test_indent_spaces(self):
         """Testing DiffChunkGenerator._serialize_indentation with spaces"""
         self.assertEqual(self.generator._serialize_indentation('    '),
@@ -1540,3 +1510,37 @@ class DiffRendererTests(SpyAgency, TestCase):
 
         chunk = diff_file['chunks'][0]
         self.assertEqual(chunk['change'], 'replace')
+
+
+class DiffUtilsTests(TestCase):
+    """Unit tests for diffutils."""
+    def test_get_line_changed_regions(self):
+        """Testing DiffChunkGenerator._get_line_changed_regions"""
+        def deep_equal(A, B):
+            typea, typeb = type(A), type(B)
+            self.assertEqual(typea, typeb)
+
+            if typea is tuple or typea is list:
+                for a, b in zip_longest(A, B):
+                    deep_equal(a, b)
+            else:
+                self.assertEqual(A, B)
+
+        deep_equal(diffutils.get_line_changed_regions(None, None),
+                   (None, None))
+
+        old = 'submitter = models.ForeignKey(Person, verbose_name="Submitter")'
+        new = 'submitter = models.ForeignKey(User, verbose_name="Submitter")'
+        regions = diffutils.get_line_changed_regions(old, new)
+        deep_equal(regions, ([(30, 36)], [(30, 34)]))
+
+        old = '-from reviews.models import ReviewRequest, Person, Group'
+        new = '+from .reviews.models import ReviewRequest, Group'
+        regions = diffutils.get_line_changed_regions(old, new)
+        deep_equal(regions, ([(0, 1), (6, 6), (43, 51)],
+                             [(0, 1), (6, 7), (44, 44)]))
+
+        old = 'abcdefghijklm'
+        new = 'nopqrstuvwxyz'
+        regions = diffutils.get_line_changed_regions(old, new)
+        deep_equal(regions, (None, None))

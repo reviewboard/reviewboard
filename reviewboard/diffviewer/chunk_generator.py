@@ -2,7 +2,6 @@ from __future__ import unicode_literals
 
 import fnmatch
 import re
-from difflib import SequenceMatcher
 
 from django.utils.html import escape
 from django.utils.safestring import mark_safe
@@ -17,7 +16,8 @@ from pygments.lexers import get_lexer_for_filename
 from pygments.formatters import HtmlFormatter
 
 from reviewboard.diffviewer.differ import get_differ
-from reviewboard.diffviewer.diffutils import (get_original_file,
+from reviewboard.diffviewer.diffutils import (get_line_changed_regions,
+                                              get_original_file,
                                               get_patched_file,
                                               convert_to_unicode)
 from reviewboard.diffviewer.opcode_generator import (DiffOpcodeGenerator,
@@ -328,8 +328,8 @@ class DiffChunkGenerator(object):
                 len(old_line) <= self.STYLED_MAX_LINE_LEN and
                 len(new_line) <= self.STYLED_MAX_LINE_LEN and
                 old_line != new_line):
-            old_region, new_region = self._get_line_changed_regions(old_line,
-                                                                    new_line)
+            old_region, new_region = \
+                get_line_changed_regions(old_line, new_line)
         else:
             old_region = new_region = []
 
@@ -585,51 +585,6 @@ class DiffChunkGenerator(object):
         lexer.add_filter('codetagify')
 
         return highlight(data, lexer, NoWrapperHtmlFormatter()).splitlines()
-
-    def _get_line_changed_regions(self, oldline, newline):
-        """Returns regions of changes between two similar lines."""
-        if oldline is None or newline is None:
-            return (None, None)
-
-        # Use the SequenceMatcher directly. It seems to give us better results
-        # for this. We should investigate steps to move to the new differ.
-        differ = SequenceMatcher(None, oldline, newline)
-
-        # This thresholds our results -- we don't want to show inter-line diffs
-        # if most of the line has changed, unless those lines are very short.
-
-        # FIXME: just a plain, linear threshold is pretty crummy here.  Short
-        # changes in a short line get lost.  I haven't yet thought of a fancy
-        # nonlinear test.
-        if differ.ratio() < 0.6:
-            return (None, None)
-
-        oldchanges = []
-        newchanges = []
-        back = (0, 0)
-
-        for tag, i1, i2, j1, j2 in differ.get_opcodes():
-            if tag == 'equal':
-                if (i2 - i1 < 3) or (j2 - j1 < 3):
-                    back = (j2 - j1, i2 - i1)
-                continue
-
-            oldstart, oldend = i1 - back[0], i2
-            newstart, newend = j1 - back[1], j2
-
-            if oldchanges != [] and oldstart <= oldchanges[-1][1] < oldend:
-                oldchanges[-1] = (oldchanges[-1][0], oldend)
-            elif not oldline[oldstart:oldend].isspace():
-                oldchanges.append((oldstart, oldend))
-
-            if newchanges != [] and newstart <= newchanges[-1][1] < newend:
-                newchanges[-1] = (newchanges[-1][0], newend)
-            elif not newline[newstart:newend].isspace():
-                newchanges.append((newstart, newend))
-
-            back = (0, 0)
-
-        return oldchanges, newchanges
 
 
 def compute_chunk_last_header(lines, numlines, meta, last_header=None):
