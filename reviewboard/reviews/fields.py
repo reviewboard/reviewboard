@@ -288,7 +288,7 @@ class BaseCommaEditableField(BaseEditableField):
         if self.order_matters:
             return old_value != new_value
         else:
-            return set(old_value) != set(new_value)
+            return set(old_value or []) != set(new_value or [])
 
     def render_value(self, values):
         """Renders the list of items.
