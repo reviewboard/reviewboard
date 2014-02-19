@@ -150,8 +150,8 @@
       if (! that.el.complete) {
         setTimeout(load, 5);
       } else {
-        that.el.setAttribute('width', that.el.offsetWidth);
-        that.el.setAttribute('height', that.el.offsetHeight);
+        that.el.setAttribute('width', that.el.naturalWidth || that.el.offsetWidth);
+        that.el.setAttribute('height', that.el.naturalHeight || that.el.offsetHeight);
         that.el.setAttribute('src', path);
       }
     }
