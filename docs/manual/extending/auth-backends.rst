@@ -33,6 +33,7 @@ following attributes:
 
 And can optionally set the following attributes:
 
+* :py:attr:`login_instructions`
 * :py:attr:`settings_form`
 * :py:attr:`supports_registration`
 * :py:attr:`supports_change_name`
@@ -55,6 +56,9 @@ We'll go into each function and attribute in detail.
    This is the human-readable name of the authentication backend. This is what
    users will see when they go to select the authentication backend to use.
 
+.. py:attribute:: login_instructions
+
+   If set, this string is displayed under the name on the login page.
 
 .. py:attribute:: settings_form
 
