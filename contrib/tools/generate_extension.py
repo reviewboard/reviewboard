@@ -6,9 +6,9 @@ import os
 import re
 from optparse import OptionParser
 
+from django.utils.six.moves import input
 from jinja2 import Environment, PackageLoader
 
-from djblets.util.compat.six.moves import input
 from reviewboard import get_version_string
 
 
