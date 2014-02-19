@@ -2104,6 +2104,62 @@ class IssueCounterTests(TestCase):
             lambda review, issue_opened: self.create_screenshot_comment(
                 review, screenshot, issue_opened=issue_opened))
 
+    @add_fixtures(['test_scmtools'])
+    def test_init_with_mix(self):
+        """Testing ReviewRequest issue counter initialization
+        from multiple types of comments at once
+        """
+        # The initial implementation for issue status counting broke when
+        # there were multiple types of comments on a review (such as diff
+        # comments and file attachment comments). There would be an
+        # artificially large number of issues reported.
+        #
+        # That's been fixed, and this test is ensuring that it doesn't
+        # regress.
+        self.review_request.repository = self.create_repository()
+        diffset = self.create_diffset(self.review_request)
+        filediff = self.create_filediff(diffset)
+        file_attachment = self.create_file_attachment(self.review_request)
+        screenshot = self.create_screenshot(self.review_request)
+
+        review = self.create_review(self.review_request)
+
+        # One open file attachment comment
+        self.create_file_attachment_comment(review, file_attachment,
+                                            issue_opened=True)
+
+        # Two diff comments
+        self.create_diff_comment(review, filediff, issue_opened=True)
+        self.create_diff_comment(review, filediff, issue_opened=True)
+
+        # Four screenshot comments
+        self.create_screenshot_comment(review, screenshot, issue_opened=True)
+        self.create_screenshot_comment(review, screenshot, issue_opened=True)
+        self.create_screenshot_comment(review, screenshot, issue_opened=True)
+        self.create_screenshot_comment(review, screenshot, issue_opened=True)
+
+        # The issue counts should be end up being 0, since they'll initialize
+        # during load.
+        self._reload_object(clear_counters=True)
+        self.assertEqual(self.review_request.issue_open_count, 0)
+        self.assertEqual(self.review_request.issue_resolved_count, 0)
+        self.assertEqual(self.review_request.issue_dropped_count, 0)
+
+        # Now publish. We should have 7 open issues, by way of incrementing
+        # during publish.
+        review.publish()
+
+        self._reload_object()
+        self.assertEqual(self.review_request.issue_open_count, 7)
+        self.assertEqual(self.review_request.issue_dropped_count, 0)
+        self.assertEqual(self.review_request.issue_resolved_count, 0)
+
+        # Make sure we get the same number back when initializing counters.
+        self._reload_object(clear_counters=True)
+        self.assertEqual(self.review_request.issue_open_count, 7)
+        self.assertEqual(self.review_request.issue_dropped_count, 0)
+        self.assertEqual(self.review_request.issue_resolved_count, 0)
+
     def test_init_with_replies(self):
         """Testing ReviewRequest issue counter initialization and replies."""
         file_attachment = self.create_file_attachment(self.review_request)
@@ -2166,13 +2222,13 @@ class IssueCounterTests(TestCase):
         for i in range(3):
             create_comment_func(review, issue_opened=True)
 
-        # Two comments with an issue dropped.
+        # Two comments that will have their issues dropped.
         dropped_comments = [
             create_comment_func(review, issue_opened=True)
             for i in range(2)
         ]
 
-        # One comment with an issue fixed.
+        # One comment that will have its issue resolved.
         resolved_comments = [
             create_comment_func(review, issue_opened=True)
         ]
