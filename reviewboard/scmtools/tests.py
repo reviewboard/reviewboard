@@ -826,6 +826,26 @@ class SubversionTests(SCMTestCase):
         self.assertEqual(files[0].insert_count, 0)
         self.assertEqual(files[0].delete_count, 0)
 
+    def test_diff_with_spaces_in_filenames(self):
+        """Testing parsing SVN diff with spaces in filenames"""
+        diff = (b"Index: File with spaces\n"
+                b"==========================================================="
+                b"========\n"
+                b"--- File with spaces    (revision 4)\n"
+                b"+++ File with spaces    (working copy)\n"
+                b"@@ -1,6 +1,7 @@\n"
+                b"+# foo\n"
+                b" include ../tools/Makefile.base-vars\n"
+                b" NAME = misc-docs\n"
+                b" OUTNAME = svn-misc-docs\n")
+
+        files = self.tool.get_parser(diff).parse()
+        self.assertEqual(len(files), 1)
+        self.assertEqual(files[0].origFile, 'File with spaces')
+        self.assertFalse(files[0].binary)
+        self.assertEqual(files[0].insert_count, 1)
+        self.assertEqual(files[0].delete_count, 0)
+
     def test_get_branches(self):
         """Testing SVNTool.get_branches"""
         branches = self.tool.get_branches()

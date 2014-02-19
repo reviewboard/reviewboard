@@ -140,7 +140,7 @@ class DiffParser(object):
             # This is an Index: header, which is common in CVS and Subversion,
             # amongst other systems.
             try:
-                info['index'] = self.lines[linenum].split(None, 2)[1]
+                info['index'] = self.lines[linenum].split(None, 1)[1]
             except ValueError:
                 raise DiffParserError("Malformed Index line", linenum)
             linenum += 2
