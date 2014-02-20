@@ -312,6 +312,12 @@ class LDAPBackend(AuthBackend):
             logging.warning("Empty password for: %s" % username)
             return None
 
+        if isinstance(username, six.text_type):
+            username = username.encode('utf-8')
+
+        if isinstance(password, six.text_type):
+            password = password.encode('utf-8')
+
         try:
             import ldap
             ldapo = ldap.initialize(settings.LDAP_URI)
@@ -406,7 +412,13 @@ class LDAPBackend(AuthBackend):
                 if settings.LDAP_EMAIL_DOMAIN:
                     email = '%s@%s' % (username, settings.LDAP_EMAIL_DOMAIN)
                 elif settings.LDAP_EMAIL_ATTRIBUTE:
-                    email = user_info[settings.LDAP_EMAIL_ATTRIBUTE][0]
+                    try:
+                        email = user_info[settings.LDAP_EMAIL_ATTRIBUTE][0]
+                    except KeyError:
+                        logging.error('LDAP: could not get email address for '
+                                      'user %s using attribute %s',
+                                      username, settings.LDAP_EMAIL_ATTRIBUTE)
+                        email = ''
                 else:
                     logging.warning("LDAP: email for user %s is not specified",
                                     username)
