@@ -2,8 +2,8 @@ from __future__ import unicode_literals
 
 from django.utils import six
 from djblets.extensions.hooks import (DataGridColumnsHook, ExtensionHook,
-                                      ExtensionHookPoint, TemplateHook,
-                                      URLHook)
+                                      ExtensionHookPoint, SignalHook,
+                                      TemplateHook, URLHook)
 
 from reviewboard.accounts.pages import (get_page_class,
                                         register_account_page_class,
