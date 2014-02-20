@@ -83,30 +83,27 @@ class SVNTool(SCMTool):
         # to their system locale. This is a little ridiculous, but we have to
         # deal with it because not everyone uses post-review.
         self.revision_re = re.compile("""
-            ^(\(([^\)]+)\)\s)?              # creating diffs between two branches
-                                            # of a remote repository will insert
-                                            # extra "relocation information" into
-                                            # the diff.
+            ^(\(([^\)]+)\)\s)?      # creating diffs between two branches of a
+                                    # remote repository will insert extra
+                                    # "relocation information" into the diff.
 
-            (?:\d+-\d+-\d+\ +               # svnlook-style diffs contain a
-               \d+:\d+:\d+\ +               # timestamp on each line before the
-               [A-Z]+\ +)?                  # revision number.  This here is
-                                            # probably a really crappy way to
-                                            # express that, but oh well.
+            (?:\d+-\d+-\d+\ +       # svnlook-style diffs contain a timestamp
+               \d+:\d+:\d+\ +       # on each line before the revision number.
+               [A-Z]+\ +)?          # This here is probably a really crappy
+                                    # to express that, but oh well.
 
             \ *\((?:
-                [Rr]ev(?:ision)?|           # english - svnlook uses 'rev 0'
-                                            #           while svn diff uses
-                                            #           'revision 0'
-                revisión:|                  # espanol
-                révision|                   # french
-                revisione|                  # italian
-                リビジョン|                 # japanese
-                리비전|                     # korean
-                revisjon|                   # norwegian
-                wersja|                     # polish
-                revisão|                    # brazilian portuguese
-                版本                        # simplified chinese
+                [Rr]ev(?:ision)?|   # English - svnlook uses 'rev 0' while svn
+                                    #           diff uses 'revision 0'
+                revisión:|          # Spanish
+                révision|           # French
+                revisione|          # Italian
+                リビジョン|         # Japanese
+                리비전|             # Korean
+                revisjon|           # Norwegian
+                wersja|             # Polish
+                revisão|            # Brazilian Portuguese
+                版本                # Simplified Chinese
             )\ (\d+)\)$
             """, re.VERBOSE)
 
@@ -370,7 +367,8 @@ class SVNDiffParser(DiffParser):
             # a property change.
             return linenum + 2
 
-        linenum = super(SVNDiffParser, self).parse_special_header(linenum, info)
+        linenum = super(SVNDiffParser, self).parse_special_header(
+            linenum, info)
 
         if 'index' in info and linenum != len(self.lines):
             if self.lines[linenum] == self.BINARY_STRING:

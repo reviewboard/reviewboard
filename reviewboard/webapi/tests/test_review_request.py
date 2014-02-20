@@ -1052,7 +1052,6 @@ class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase):
                                         self.local_site_name),
             expected_status=403)
 
-
     #
     # HTTP GET tests
     #
@@ -1116,7 +1115,8 @@ class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase):
             get_review_request_item_url(review_request.display_id),
             expected_mimetype=review_request_item_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(rsp['review_request']['id'], review_request.display_id)
+        self.assertEqual(rsp['review_request']['id'],
+                         review_request.display_id)
         self.assertEqual(rsp['review_request']['summary'],
                          review_request.summary)
 

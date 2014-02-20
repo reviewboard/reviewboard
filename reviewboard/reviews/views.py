@@ -170,17 +170,17 @@ def build_diff_comment_fragments(
                 'domain_method': siteconfig.get("site_domain_method"),
             })
         except Exception as e:
-            content = exception_traceback_string(None, e,
-                                                 error_template_name, {
-                'comment': comment,
-                'file': {
-                    'depot_filename': comment.filediff.source_file,
-                    'index': None,
-                    'filediff': comment.filediff,
-                },
-                'domain': Site.objects.get_current().domain,
-                'domain_method': siteconfig.get("site_domain_method"),
-            })
+            content = exception_traceback_string(
+                None, e, error_template_name, {
+                    'comment': comment,
+                    'file': {
+                        'depot_filename': comment.filediff.source_file,
+                        'index': None,
+                        'filediff': comment.filediff,
+                    },
+                    'domain': Site.objects.get_current().domain,
+                    'domain_method': siteconfig.get("site_domain_method"),
+                })
 
             # It's bad that we failed, and we'll return a 500, but we'll
             # still return content for anything we have. This will prevent any
@@ -1515,7 +1515,8 @@ class ReviewRequestSearchView(SearchView):
         }
         context.update(self.extra_context())
 
-        return render_to_response(self.template, context,
+        return render_to_response(
+            self.template, context,
             context_instance=self.context_class(self.request))
 
 

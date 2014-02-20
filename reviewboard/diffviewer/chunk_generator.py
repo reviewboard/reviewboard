@@ -299,8 +299,8 @@ class DiffChunkGenerator(object):
                 delete_count=delete_count,
                 replace_count=replace_count,
                 equal_count=equal_count,
-                total_line_count=insert_count + delete_count +
-                                 replace_count + equal_count)
+                total_line_count=(insert_count + delete_count +
+                                  replace_count + equal_count))
 
     def _get_enable_syntax_highlighting(self, old, new, a, b):
         """Returns whether or not we'll be enabling syntax highlighting.

@@ -355,7 +355,7 @@ class LDAPBackend(AuthBackend):
                 # Log in as the service account before searching.
                 ldapo.simple_bind_s(settings.LDAP_ANON_BIND_UID,
                                     settings.LDAP_ANON_BIND_PASSWD)
-            else :
+            else:
                 # Bind anonymously to the server
                 ldapo.simple_bind_s()
 
@@ -429,7 +429,8 @@ class LDAPBackend(AuthBackend):
                 # admin can handle the corner cases.
                 try:
                     if settings.LDAP_FULL_NAME_ATTRIBUTE:
-                        full_name = user_info[settings.LDAP_FULL_NAME_ATTRIBUTE][0]
+                        full_name = \
+                            user_info[settings.LDAP_FULL_NAME_ATTRIBUTE][0]
                         first_name, last_name = full_name.split(' ', 1)
                 except AttributeError:
                     pass

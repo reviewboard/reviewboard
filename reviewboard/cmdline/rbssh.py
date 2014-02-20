@@ -224,7 +224,8 @@ def parse_options(args):
     parser.add_option('--rb-local-site',
                       dest='local_site_name', metavar='NAME',
                       default=os.getenv('RB_LOCAL_SITE'),
-                      help='the local site name containing the SSH keys to use')
+                      help='the local site name containing the SSH keys to '
+                           'use')
 
     (options, args) = parser.parse_args(args)
 

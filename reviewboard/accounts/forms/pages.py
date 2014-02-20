@@ -87,11 +87,12 @@ class AccountPageForm(forms.Form):
 
     def render(self):
         """Renders the form."""
-        return render_to_string(self.template_name,
-                                RequestContext(self.request, {
-            'form': self,
-            'page': self.page,
-        }))
+        return render_to_string(
+            self.template_name,
+            RequestContext(self.request, {
+                'form': self,
+                'page': self.page,
+            }))
 
     def load(self):
         """Loads data for the form.

@@ -27,7 +27,8 @@ class FileDiffCommentResource(BaseDiffCommentResource):
     mimetype_list_resource_name = 'file-diff-comments'
     mimetype_item_resource_name = 'file-diff-comment'
 
-    def get_queryset(self, request, diff_revision, filediff_id, *args, **kwargs):
+    def get_queryset(self, request, diff_revision, filediff_id,
+                     *args, **kwargs):
         """Returns a queryset for Comment models.
 
         This filters the query for comments on the specified review request

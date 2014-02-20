@@ -119,8 +119,8 @@ class Client(base.Client):
                         branch['path'].split('/')[-1],
                         six.text_type(branch['created_rev'].number)))
             except ClientError:
-                # It's possible there aren't any branches. Ignore errors for this
-                # part.
+                # It's possible there aren't any branches. Ignore errors for
+                # this part.
                 pass
         else:
             # If the repository doesn't use the standard layout, just use a

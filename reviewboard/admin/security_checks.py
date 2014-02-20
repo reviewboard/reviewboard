@@ -52,7 +52,8 @@ class ExecutableCodeCheck(BaseSecurityCheck):
 
         self.file_checks = [
             (
-                ['.php', '.php3', '.php4', '.php5', '.phps', '.phtml', '.phtm'],
+                ['.php', '.php3', '.php4', '.php5', '.phps', '.phtml',
+                 '.phtm'],
                 '<?php echo "Hello, World!"; ?>'
             ),
             (
@@ -95,7 +96,7 @@ class ExecutableCodeCheck(BaseSecurityCheck):
         if self._using_default_storage():
             for extensions_list, content in self.file_checks:
                 for ext in extensions_list:
-                    self.storage.save(('exec_check' + ext), ContentFile(content))
+                    self.storage.save('exec_check' + ext, ContentFile(content))
 
     def execute(self):
         error_msg = ''
@@ -107,12 +108,13 @@ class ExecutableCodeCheck(BaseSecurityCheck):
             for extensions_list, content in self.file_checks:
                 for ext in extensions_list:
                     try:
-                        ext_result = self.download_and_compare('exec_check' + ext)
+                        ext_result = self.download_and_compare(
+                            'exec_check' + ext)
                         if final_result and not ext_result:
                             final_result = False
                     except Exception as e:
                         return (False,
-                            _('Uncaught exception during test: %s') % e)
+                                _('Uncaught exception during test: %s') % e)
 
                     if not ext_result:
                         failed_exts.append(ext)
@@ -145,12 +147,13 @@ class ExecutableCodeCheck(BaseSecurityCheck):
 
 class AllowedHostsCheck(BaseSecurityCheck):
     name = _('Checking ALLOWED_HOSTS setting')
-    desc = _('ALLOWED_HOSTS is a list containing the host/domain names that Review Board '
-             'will consider valid for this server to serve. '
-             'This is a security measure to prevent an attacker from poisoning cache '
-             'and password reset emails with links to malicious hosts by submitting '
-             'requests with a fake HTTP Host header, which is possible even under many '
-             'seemingly-safe web server configurations.')
+    desc = _('ALLOWED_HOSTS is a list containing the host/domain names that '
+             'Review Board will consider valid for this server to serve. '
+             'This is a security measure to prevent an attacker from '
+             'poisoning cache and password reset emails with links to '
+             'malicious hosts by submitting requests with a fake HTTP Host '
+             'header, which is possible even under many seemingly-safe web '
+             'server configurations.')
     fix_info = _("To fix this, edit the settings_local.py in the site's conf "
                  "directory and add a line like this with your site's URL: "
                  "<pre>ALLOWED_HOSTS = ['example.com']</pre>")

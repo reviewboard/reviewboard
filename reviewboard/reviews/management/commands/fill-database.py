@@ -238,7 +238,7 @@ class Command(NoArgsCommand):
                     file_to_open = diff_dir + files[random_number]
                     f = open(file_to_open, 'r')
                     form = UploadDiffForm(review_request=review_request,
-                                          files={"path" : File(f)})
+                                          files={"path": File(f)})
 
                     if form.is_valid():
                         cur_diff = form.create(f, None, diffset_history)
@@ -328,12 +328,16 @@ class Command(NoArgsCommand):
 
     def randUsername(self):
         """Used to generate random usernames so no flushing needed."""
-
         return ''.join(random.choice(string.ascii_lowercase)
                        for x in range(0, random.randrange(5, 9)))
 
     def pickRandomValue(self, value):
-        """This acts like a condition check in the program, value is a tuple."""
+        """Pick a random value out of a range.
+
+        If the 'value' tuple is empty, this returns 0. If 'value' contains a
+        single number, this returns that number. Otherwise, this returns a
+        random number between the two given numbers.
+        """
         if not value:
             return 0
 

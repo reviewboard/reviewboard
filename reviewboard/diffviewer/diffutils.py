@@ -309,8 +309,8 @@ def get_diff_files(diffset, filediff=None, interdiffset=None, request=None):
             source_revision = _("Diff Revision %s") % diffset.revision
 
             if not interfilediff and force_interdiff:
-                dest_revision = _("Diff Revision %s - File Reverted") % \
-                                interdiffset.revision
+                dest_revision = (_("Diff Revision %s - File Reverted") %
+                                 interdiffset.revision)
             else:
                 dest_revision = _("Diff Revision %s") % interdiffset.revision
         else:

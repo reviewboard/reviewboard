@@ -202,7 +202,9 @@ class FileAttachmentManagerTests(BaseFileAttachmentTestCase):
     fixtures = ['test_scmtools']
 
     def test_create_from_filediff_with_new_and_modified_true(self):
-        """Testing FileAttachmentManager.create_from_filediff with new FileDiff and modified=True"""
+        """Testing FileAttachmentManager.create_from_filediff
+        with new FileDiff and modified=True
+        """
         filediff = self.make_filediff(is_new=True)
         self.assertTrue(filediff.is_new)
 
@@ -216,7 +218,9 @@ class FileAttachmentManagerTests(BaseFileAttachmentTestCase):
         self.assertEqual(file_attachment.added_in_filediff, filediff)
 
     def test_create_from_filediff_with_new_and_modified_false(self):
-        """Testing FileAttachmentManager.create_from_filediff with new FileDiff and modified=False"""
+        """Testing FileAttachmentManager.create_from_filediff
+        with new FileDiff and modified=False
+        """
         filediff = self.make_filediff(is_new=True)
         self.assertTrue(filediff.is_new)
 
@@ -229,7 +233,9 @@ class FileAttachmentManagerTests(BaseFileAttachmentTestCase):
             from_modified=False)
 
     def test_create_from_filediff_with_existing_and_modified_true(self):
-        """Testing FileAttachmentManager.create_from_filediff with existing FileDiff and modified=True"""
+        """Testing FileAttachmentManager.create_from_filediff
+        with existing FileDiff and modified=True
+        """
         filediff = self.make_filediff()
         self.assertFalse(filediff.is_new)
 
@@ -244,7 +250,9 @@ class FileAttachmentManagerTests(BaseFileAttachmentTestCase):
         self.assertEqual(file_attachment.added_in_filediff_id, None)
 
     def test_create_from_filediff_with_existing_and_modified_false(self):
-        """Testing FileAttachmentManager.create_from_filediff with existing FileDiff and modified=False"""
+        """Testing FileAttachmentManager.create_from_filediff
+        with existing FileDiff and modified=False
+        """
         filediff = self.make_filediff()
         self.assertFalse(filediff.is_new)
 
@@ -261,7 +269,9 @@ class FileAttachmentManagerTests(BaseFileAttachmentTestCase):
         self.assertEqual(file_attachment.added_in_filediff_id, None)
 
     def test_get_for_filediff_with_new_and_modified_true(self):
-        """Testing FileAttachmentManager.get_for_filediff with new FileDiff and modified=True"""
+        """Testing FileAttachmentManager.get_for_filediff
+        with new FileDiff and modified=True
+        """
         filediff = self.make_filediff(is_new=True)
         self.assertTrue(filediff.is_new)
 
@@ -275,7 +285,9 @@ class FileAttachmentManagerTests(BaseFileAttachmentTestCase):
             file_attachment)
 
     def test_get_for_filediff_with_new_and_modified_false(self):
-        """Testing FileAttachmentManager.get_for_filediff with new FileDiff and modified=False"""
+        """Testing FileAttachmentManager.get_for_filediff
+        with new FileDiff and modified=False
+        """
         filediff = self.make_filediff(is_new=True)
         self.assertTrue(filediff.is_new)
 
@@ -289,7 +301,9 @@ class FileAttachmentManagerTests(BaseFileAttachmentTestCase):
             None)
 
     def test_get_for_filediff_with_existing_and_modified_true(self):
-        """Testing FileAttachmentManager.get_for_filediff with existing FileDiff and modified=True"""
+        """Testing FileAttachmentManager.get_for_filediff
+        with existing FileDiff and modified=True
+        """
         filediff = self.make_filediff()
         self.assertFalse(filediff.is_new)
 
@@ -303,7 +317,9 @@ class FileAttachmentManagerTests(BaseFileAttachmentTestCase):
             file_attachment)
 
     def test_get_for_filediff_with_existing_and_modified_false(self):
-        """Testing FileAttachmentManager.get_for_filediff with existing FileDiff and modified=False"""
+        """Testing FileAttachmentManager.get_for_filediff
+        with existing FileDiff and modified=False
+        """
         filediff = self.make_filediff()
         self.assertFalse(filediff.is_new)
 

@@ -59,8 +59,8 @@ def user_preferences(request, template_name='accounts/prefs.html'):
         for form in page.forms:
             # This should already be handled during form registration.
             assert form.form_id not in forms, \
-                   'Duplicate form ID %s (on page %s)' % (form.form_id,
-                                                          page.page_id)
+                'Duplicate form ID %s (on page %s)' % (
+                    form.form_id, page.page_id)
 
             forms[form.form_id] = form
 

@@ -253,7 +253,8 @@ class BaseWebAPITestCase(TestCase, EmailTestHelper):
             # Pick a user that's not part of the default LocalSite.
             username = 'grumpy'
 
-        self.assertTrue(self.client.login(username=username, password=username))
+        self.assertTrue(self.client.login(username=username,
+                                          password=username))
 
         return User.objects.get(username=username)
 
@@ -333,8 +334,10 @@ class BaseWebAPITestCase(TestCase, EmailTestHelper):
         return rsp
 
     def _delete_screenshot(self, review_request, screenshot):
-        """Deletes a screenshot but does not return, as deletes don't return a
-        payload response.
+        """Deletes a screenshot.
+
+        This does not return anything, because DELETE requests don't return a
+        response with a payload.
         """
         if review_request.local_site:
             local_site_name = review_request.local_site.name
@@ -350,7 +353,9 @@ class BaseWebAPITestCase(TestCase, EmailTestHelper):
                                       issue_opened=None,
                                       issue_status=None,
                                       extra_fields={}):
-        """Creates a file attachment comment and returns the payload response."""
+        """Creates a file attachment comment.
+
+        This returns the response from the API call to create the comment."""
         if review_request.local_site:
             local_site_name = review_request.local_site.name
         else:

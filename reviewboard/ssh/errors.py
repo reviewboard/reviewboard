@@ -34,8 +34,8 @@ class SSHAuthenticationError(SSHError):
             msg = _('Unable to authenticate against this repository using one '
                     'of the supported authentication types '
                     '(%(allowed_types)s).') % {
-                        'allowed_types': humanize_list(allowed_types),
-                    }
+                'allowed_types': humanize_list(allowed_types),
+            }
         elif not msg:
             msg = _('Unable to authenticate against this repository using one '
                     'of the supported authentication types.')

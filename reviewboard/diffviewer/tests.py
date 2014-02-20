@@ -1006,7 +1006,8 @@ class UploadDiffFormTests(SpyAgency, TestCase):
         self.assertEqual(len(saw_file_exists), 1)
 
     def test_mercurial_parent_diff_base_rev(self):
-        """Testing that the correct base revision is used for Mercurial diffs"""
+        """Testing that the correct base revision is used for Mercurial diffs
+        """
         diff = (
             b'# Node ID a6fc203fee9091ff9739c9c00cd4a6694e023f48\n'
             b'# Parent  7c4735ef51a7c665b5654f1a111ae430ce84ebbd\n'

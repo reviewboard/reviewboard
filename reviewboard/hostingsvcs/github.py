@@ -203,8 +203,8 @@ class GitHub(HostingService):
                           'user may not own it.'))
                 elif plan == 'public-org':
                     raise RepositoryError(
-                        _('A repository with this organization or name was not '
-                          'found.'))
+                        _('A repository with this organization or name was '
+                          'not found.'))
                 elif plan == 'private-org':
                     raise RepositoryError(
                         _('A repository with this organization or name was '
@@ -481,7 +481,8 @@ class GitHub(HostingService):
         """
         if 'message' not in rsp:
             msg = _('Unknown GitHub API Error')
-        elif 'errors' in rsp and status_code == http_client.UNPROCESSABLE_ENTITY:
+        elif ('errors' in rsp and
+              status_code == http_client.UNPROCESSABLE_ENTITY):
             errors = [e['message'] for e in rsp['errors'] if 'message' in e]
             msg = '%s: (%s)' % (rsp['message'], ', '.join(errors))
         else:

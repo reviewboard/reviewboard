@@ -41,7 +41,8 @@ Type 'yes' to continue, or 'no' to cancel: """)
 
         apps = [app.__name__.split('.')[-2] for app in get_apps()]
 
-        os.system("./reviewboard/manage.py reset --noinput %s" % ' '.join(apps))
+        os.system('./reviewboard/manage.py reset --noinput %s'
+                  % ' '.join(apps))
 
         transaction_setup = False
 

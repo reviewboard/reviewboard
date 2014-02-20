@@ -104,8 +104,8 @@ class RBTestRunner(DjangoTestSuiteRunner):
         else:
             profiling = False
 
-        # If the test files are executable on the file system, nose will need the
-        #  --exe argument to run them
+        # If the test files are executable on the file system, nose will need
+        # the --exe argument to run them
         known_file = os.path.join(os.path.dirname(__file__), 'settings.py')
 
         if (os.path.exists(known_file) and

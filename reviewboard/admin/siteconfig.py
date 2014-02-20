@@ -292,9 +292,12 @@ def load_site_config():
 
     # These blow up if they're not the perfectly right types
     settings.AWS_QUERYSTRING_AUTH = siteconfig.get('aws_querystring_auth')
-    settings.AWS_ACCESS_KEY_ID = six.text_type(siteconfig.get('aws_access_key_id'))
-    settings.AWS_SECRET_ACCESS_KEY = six.text_type(siteconfig.get('aws_secret_access_key'))
-    settings.AWS_STORAGE_BUCKET_NAME = six.text_type(siteconfig.get('aws_s3_bucket_name'))
+    settings.AWS_ACCESS_KEY_ID = six.text_type(
+        siteconfig.get('aws_access_key_id'))
+    settings.AWS_SECRET_ACCESS_KEY = six.text_type(
+        siteconfig.get('aws_secret_access_key'))
+    settings.AWS_STORAGE_BUCKET_NAME = six.text_type(
+        siteconfig.get('aws_s3_bucket_name'))
     try:
         settings.AWS_CALLING_FORMAT = int(siteconfig.get('aws_calling_format'))
     except ValueError:

@@ -100,6 +100,7 @@ def repository_delete_reset_review_counts(sender, instance, using, **kwargs):
     """
     fix_review_counts()
 
+
 class ToolAdmin(admin.ModelAdmin):
     list_display = ('__str__', 'class_name')
 

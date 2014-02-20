@@ -662,7 +662,7 @@ class ReviewersFieldSet(BaseReviewRequestFieldSet):
     fieldset_id = 'reviewers'
     label = _('Reviewers')
     show_required = True
-    field_classes =[
+    field_classes = [
         TargetGroupsField,
         TargetPeopleField,
     ]

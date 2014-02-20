@@ -96,8 +96,8 @@ class ReviewRequestManagerTests(TestCase):
         user = User.objects.get(username='grumpy')
 
         repository = self.create_repository(public=False)
-        review_request =self.create_review_request(repository=repository,
-                                                   publish=True)
+        review_request = self.create_review_request(repository=repository,
+                                                    publish=True)
         self.assertFalse(review_request.is_accessible_by(user))
 
         review_requests = ReviewRequest.objects.public(user=user)
@@ -1401,7 +1401,8 @@ class DefaultReviewerTests(TestCase):
         self.assertEquals(default_reviewer.groups.get(), group)
 
     def test_form_with_localsite_and_bad_user(self):
-        """Testing DefaultReviewerForm with a User not on the same LocalSite."""
+        """Testing DefaultReviewerForm with a User not on the same LocalSite.
+        """
         test_site = LocalSite.objects.create(name='test')
         user = User.objects.create(username='testuser', password='')
 
@@ -1414,7 +1415,8 @@ class DefaultReviewerTests(TestCase):
         self.assertFalse(form.is_valid())
 
     def test_form_with_localsite_and_bad_group(self):
-        """Testing DefaultReviewerForm with a Group not on the same LocalSite."""
+        """Testing DefaultReviewerForm with a Group not on the same LocalSite.
+        """
         test_site = LocalSite.objects.create(name='test')
         group = Group.objects.create(name='test', display_name='Test')
 
@@ -1437,7 +1439,9 @@ class DefaultReviewerTests(TestCase):
         self.assertFalse(form.is_valid())
 
     def test_form_with_localsite_and_bad_repository(self):
-        """Testing DefaultReviewerForm with a Repository not on the same LocalSite."""
+        """Testing DefaultReviewerForm with a Repository not on the same
+        LocalSite.
+        """
         test_site = LocalSite.objects.create(name='test')
         tool = Tool.objects.get(name='CVS')
         repo = Repository.objects.create(name='Test', path='path', tool=tool)
@@ -1768,7 +1772,8 @@ class ReviewRequestCounterTests(TestCase):
         self.assertEqual(self.group.incoming_request_count, 0)
 
     def test_reopen_discarded_requests(self):
-        """Testing counters with reopening discarded outgoing review requests"""
+        """Testing counters with reopening discarded outgoing review requests
+        """
         self.test_closing_requests(ReviewRequest.DISCARDED)
 
         self.review_request.reopen()
@@ -1805,7 +1810,8 @@ class ReviewRequestCounterTests(TestCase):
         self.assertEqual(self.group.incoming_request_count, 1)
 
     def test_reopen_submitted_requests(self):
-        """Testing counters with reopening submitted outgoing review requests"""
+        """Testing counters with reopening submitted outgoing review requests
+        """
         self.test_closing_requests(ReviewRequest.SUBMITTED)
 
         self.review_request.reopen()
@@ -2378,7 +2384,9 @@ class PolicyTests(TestCase):
             group in Group.objects.accessible(self.user, visible_only=True))
 
     def test_group_invite_only_review_request_ownership(self):
-        """Testing visibility of review requests assigned to invite-only groups by a non-member"""
+        """Testing visibility of review requests assigned to invite-only
+        groups by a non-member
+        """
         group = Group.objects.create(name='test-group', visible=False,
                                      invite_only=True)
 
@@ -2423,7 +2431,9 @@ class PolicyTests(TestCase):
 
     @add_fixtures(['test_scmtools'])
     def test_repository_private_access_allowed_by_review_group(self):
-        """Testing access to a private repository with joined review group added"""
+        """Testing access to a private repository with joined review group
+        added
+        """
         group = Group.objects.create(name='test-group', invite_only=True)
         group.users.add(self.user)
 
@@ -2444,7 +2454,9 @@ class PolicyTests(TestCase):
         self.assertTrue(review_request.is_accessible_by(self.anonymous))
 
     def test_review_request_with_invite_only_group(self):
-        """Testing no access to a review request with only an unjoined invite-only group"""
+        """Testing no access to a review request with only an unjoined
+        invite-only group
+        """
         group = Group(name='test-group', invite_only=True)
         group.save()
 
@@ -2455,7 +2467,9 @@ class PolicyTests(TestCase):
         self.assertFalse(review_request.is_accessible_by(self.anonymous))
 
     def test_review_request_with_invite_only_group_and_target_user(self):
-        """Testing access to a review request with specific target user and invite-only group"""
+        """Testing access to a review request with specific target user and
+        invite-only group
+        """
         group = Group(name='test-group', invite_only=True)
         group.save()
 
@@ -2481,7 +2495,9 @@ class PolicyTests(TestCase):
 
     @add_fixtures(['test_scmtools'])
     def test_review_request_with_private_repository_allowed_by_user(self):
-        """Testing access to a review request with a private repository with user added"""
+        """Testing access to a review request with a private repository with
+        user added
+        """
         Group.objects.create(name='test-group', invite_only=True)
 
         review_request = self.create_review_request(create_repository=True,
@@ -2495,7 +2511,9 @@ class PolicyTests(TestCase):
 
     @add_fixtures(['test_scmtools'])
     def test_review_request_with_private_repository_allowed_by_review_group(self):
-        """Testing access to a review request with a private repository with review group added"""
+        """Testing access to a review request with a private repository with
+        review group added
+        """
         group = Group.objects.create(name='test-group', invite_only=True)
         group.users.add(self.user)
 

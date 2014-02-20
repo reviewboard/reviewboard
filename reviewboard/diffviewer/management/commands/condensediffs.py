@@ -24,7 +24,7 @@ class Command(NoArgsCommand):
             'processing, but it may temporarily run slower.\n'
             % {
                 'count': count,
-            });
+            })
 
         info = FileDiff.objects.migrate_all()
 

@@ -178,8 +178,8 @@ class BZRTool(SCMTool):
     def _revspec_from_revision(self, revision):
         """Returns a revspec based on the revision found in the diff.
 
-        In addition to the standard date format from "bzr diff", this
-        function supports the revid: syntax provided by the bzr diff-revid plugin.
+        In addition to the standard date format from "bzr diff", this function
+        supports the revid: syntax provided by the bzr diff-revid plugin.
         """
         if revision == HEAD:
             revspec = 'last:1'
@@ -192,23 +192,28 @@ class BZRTool(SCMTool):
         return revspec
 
     def _revision_timestamp_to_local(self, timestamp_str):
-        """When using a date to ask bzr for a file revision, it expects
-        the date to be in local time. So, this function converts a
-        timestamp from a bzr diff file to local time.
+        """Convert a timestamp to local time.
+
+        When using a date to ask bzr for a file revision, it expects the date
+        to be in local time. So, this function converts a timestamp from a bzr
+        diff file to local time.
         """
 
-        timestamp = datetime(*time.strptime(timestamp_str[0:19], BZRTool.DIFF_TIMESTAMP_FORMAT)[0:6])
+        timestamp = datetime(*time.strptime(
+            timestamp_str[0:19], BZRTool.DIFF_TIMESTAMP_FORMAT)[0:6])
 
-        # Now, parse the difference to GMT time (such as +0200)
-        # If only strptime() supported %z, we wouldn't have to do this manually.
-        delta = timedelta(hours=int(timestamp_str[21:23]), minutes=int(timestamp_str[23:25]))
+        # Now, parse the difference to GMT time (such as +0200). If only
+        # strptime() supported %z, we wouldn't have to do this manually.
+        delta = timedelta(hours=int(timestamp_str[21:23]),
+                          minutes=int(timestamp_str[23:25]))
         if timestamp_str[20] == '+':
             timestamp -= delta
         else:
             timestamp += delta
 
         # convert to local time
-        return datetime.utcfromtimestamp(calendar.timegm(timestamp.timetuple()))
+        return datetime.utcfromtimestamp(
+            calendar.timegm(timestamp.timetuple()))
 
     @classmethod
     def check_repository(cls, path, username=None, password=None,

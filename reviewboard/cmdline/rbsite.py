@@ -131,9 +131,7 @@ class Dependencies(object):
 
     @classmethod
     def has_modules(cls, names):
-        """
-        Returns whether or not one of the specified modules is installed.
-        """
+        """Returns True if one of the specified modules is installed."""
         for name in names:
             try:
                 __import__(name)
@@ -410,7 +408,7 @@ class Site(object):
         self.run_manage_command("evolve", ["--noinput", "--execute"])
 
     def get_static_media_upgrade_needed(self):
-        """Determines whether or not a static media config upgrade is needed."""
+        """Determines if a static media config upgrade is needed."""
         from djblets.siteconfig.models import SiteConfiguration
 
         siteconfig = SiteConfiguration.objects.get_current()
@@ -422,13 +420,13 @@ class Site(object):
                  pkg_resources.parse_version("1.7")))
 
     def get_diff_dedup_needed(self):
-        """Determines whether there's likely duplicate diff data stored."""
+        """Determines if there's likely duplicate diff data stored."""
         from reviewboard.diffviewer.models import FileDiff
 
         return FileDiff.objects.unmigrated().count() > 0
 
     def get_settings_upgrade_needed(self):
-        """Determines whether or not a settings upgrade is needed."""
+        """Determines if a settings upgrade is needed."""
         try:
             import settings_local
 
@@ -867,7 +865,8 @@ class ConsoleUI(UIToolkit):
             if password:
                 temp_value = getpass.getpass(prompt)
                 if save_var.startswith('reenter'):
-                    if not self.confirm_reentry(save_obj, save_var, temp_value):
+                    if not self.confirm_reentry(save_obj, save_var,
+                                                temp_value):
                         self.error("Passwords must match.")
                         continue
                 value = temp_value
@@ -1928,7 +1927,8 @@ class UpgradeCommand(Command):
             # This is an upgrade of a site that pre-dates the new $HOME
             # directory ($sitedir/data). Tell the user how to upgrade things.
             print()
-            print("A new 'data' directory has been created inside of your site")
+            print("A new 'data' directory has been created inside of your "
+                  "site")
             print("directory. This will act as the home directory for "
                   "programs")
             print("invoked by Review Board.")

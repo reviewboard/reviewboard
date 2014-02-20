@@ -77,11 +77,12 @@ class AccountPage(object):
 
     def render(self):
         """Renders the page as HTML."""
-        return render_to_string(self.template_name,
-                                RequestContext(self.request, {
-            'page': self,
-            'forms': self.forms,
-        }))
+        return render_to_string(
+            self.template_name,
+            RequestContext(self.request, {
+                'page': self,
+                'forms': self.forms,
+            }))
 
 
 class AccountSettingsPage(AccountPage):

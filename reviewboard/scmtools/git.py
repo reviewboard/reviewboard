@@ -470,7 +470,8 @@ class GitClient(SCMClient):
     def _resolve_head(self, revision, path):
         if revision == HEAD:
             if path == "":
-                raise SCMError("path must be supplied if revision is %s" % HEAD)
+                raise SCMError("path must be supplied if revision is %s"
+                               % HEAD)
             return "HEAD:%s" % path
         else:
             return six.text_type(revision)

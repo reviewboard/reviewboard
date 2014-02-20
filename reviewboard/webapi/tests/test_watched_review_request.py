@@ -165,7 +165,8 @@ class ResourceItemTests(BaseWebAPITestCase):
     #
 
     def test_get(self):
-        """Testing the GET users/<username>/watched/review-requests/<id>/ API"""
+        """Testing the GET users/<username>/watched/review-requests/<id>/ API
+        """
         review_request = self.create_review_request(publish=True)
         profile = self.user.get_profile()
         profile.starred_review_requests.add(review_request)

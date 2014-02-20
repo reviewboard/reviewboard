@@ -48,7 +48,9 @@ class BaseCommentItemMixin(object):
 
     @test_template
     def test_put_with_text_type_markdown_and_text(self):
-        """Testing the PUT <URL> API with text_type=markdown and text specified"""
+        """Testing the PUT <URL> API
+        with text_type=markdown and text specified
+        """
         self._test_put_with_text_type_and_text('markdown')
 
     @test_template

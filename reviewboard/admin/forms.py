@@ -238,7 +238,8 @@ class GeneralSettingsForm(SiteSettingsForm):
     def full_clean(self):
         cache_type = self['cache_type'].data or self['cache_type'].initial
 
-        for iter_cache_type, field in six.iteritems(self.CACHE_LOCATION_FIELD_MAP):
+        for iter_cache_type, field in six.iteritems(
+                self.CACHE_LOCATION_FIELD_MAP):
             self.fields[field].required = (cache_type == iter_cache_type)
 
         return super(GeneralSettingsForm, self).full_clean()
@@ -557,8 +558,10 @@ class DiffSettingsForm(SiteSettingsForm):
         if not can_syntax_highlight:
             self.disabled_fields['diffviewer_syntax_highlighting'] = True
             self.disabled_reasons['diffviewer_syntax_highlighting'] = _(reason)
-            self.disabled_fields['diffviewer_syntax_highlighting_threshold'] = True
-            self.disabled_reasons['diffviewer_syntax_highlighting_threshold'] = _(reason)
+            self.disabled_fields[
+                'diffviewer_syntax_highlighting_threshold'] = True
+            self.disabled_reasons[
+                'diffviewer_syntax_highlighting_threshold'] = _(reason)
 
         super(DiffSettingsForm, self).load()
         self.fields['include_space_patterns'].initial = \
