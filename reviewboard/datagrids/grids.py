@@ -194,7 +194,7 @@ class DashboardDataGrid(DataGridSidebarMixin, ReviewRequestDataGrid):
         self.site_profile = LocalSiteProfile.objects.get_or_create(
             user=self.user,
             local_site=local_site,
-	    profile=self.profile)[0]
+            profile=self.profile)[0]
 
     def load_extra_state(self, profile):
         group_name = self.request.GET.get('group', '')
