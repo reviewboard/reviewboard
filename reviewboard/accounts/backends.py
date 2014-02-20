@@ -387,7 +387,13 @@ class LDAPBackend(AuthBackend):
                 if settings.LDAP_EMAIL_DOMAIN:
                     email = u'%s@%s' % (username, settings.LDAP_EMAIL_DOMAIN)
                 elif settings.LDAP_EMAIL_ATTRIBUTE:
-                    email = user_info[settings.LDAP_EMAIL_ATTRIBUTE][0]
+                    try:
+                        email = user_info[settings.LDAP_EMAIL_ATTRIBUTE][0]
+                    except KeyError:
+                        logging.error('LDAP: could not get email address for '
+                                      'user %s using attribute %s',
+                                      username, settings.LDAP_EMAIL_ATTRIBUTE)
+                        email = ''
                 else:
                     logging.warning("LDAP: email for user %s is not specified",
                                     username)
