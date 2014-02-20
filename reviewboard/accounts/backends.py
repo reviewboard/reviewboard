@@ -287,6 +287,12 @@ class LDAPBackend(AuthBackend):
             logging.warning("Empty password for: %s" % uid)
             return None
 
+        if isinstance(username, unicode):
+            username = username.encode('utf-8')
+
+        if isinstance(password, unicode):
+            password = password.encode('utf-8')
+
         try:
             import ldap
             ldapo = ldap.initialize(settings.LDAP_URI)
@@ -527,6 +533,15 @@ class ActiveDirectoryBackend(AuthBackend):
 
         if user_subdomain:
             userdomain = "%s.%s" % (user_subdomain, userdomain)
+
+        if isinstance(username, unicode):
+            username = username.encode('utf-8')
+
+        if isinstance(user_subdomain, unicode):
+            user_subdomain = user_subdomain.encode('utf-8')
+
+        if isinstance(password, unicode):
+            password = password.encode('utf-8')
 
         connections = self.get_ldap_connections(userdomain)
         required_group = settings.AD_GROUP_NAME
