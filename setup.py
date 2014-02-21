@@ -194,7 +194,7 @@ setup(name=PACKAGE_NAME,
       install_requires=[
           'Django>=1.6.2,<1.7',
           'django_evolution>=0.7,<0.8',
-          'Djblets>=0.8beta2,<0.9',
+          'Djblets>=0.8beta1,<0.9',
           'django-haystack',
           'django-pipeline>=1.3.15',
           'docutils',
