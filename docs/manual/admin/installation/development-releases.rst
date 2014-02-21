@@ -4,12 +4,12 @@
 Installing Development Releases
 ===============================
 
-When following the installation instructions, you will install the latest
-stable release of Review Board, but if you prefer living on the edge or
+When following the standard installation instructions, you will install the
+latest stable release of Review Board, but if you prefer living on the edge or
 helping out with testing, you can install in-development alpha/beta/RC
-releases and nightly builds.
+releases.
 
-Note that if you install an in-development/nightly build, you may not be able to
+Note that if you install an in-development build, you may not be able to
 downgrade back to a stable build due to changes to the database schema. Be
 careful when running development builds on production servers, and always keep
 back-ups of your database.
@@ -43,28 +43,3 @@ And any new versions found in that directory will be installed.
 
 
 .. _`releases directory`: http://downloads.reviewboard.org/releases/
-
-
-Installing Nightly Builds
-=========================
-
-Nightly builds are generally more unstable than the in-development releases.
-They're a snapshot of the build that day, even if nothing actually changed.
-Nightly builds are stored at http://downloads.reviewboard.org/nightlies/.
-
-To install a single nightly build, you can type::
-
-    $ easy_install -f http://downloads.reviewboard.org/nightlies/ -U ReviewBoard
-
-If you want to install from the nightly builds directory by default in future
-upgrades, you can create a :file:`$HOME/.pydistutils.cfg` file and add the
-following::
-
-    [install]
-    find_links = http://downloads.reviewboard.org/nightlies/
-
-From then on, you can simply type::
-
-    $ easy_install -U ReviewBoard
-
-And any new versions found in that directory will be installed.
