@@ -25,6 +25,10 @@ def filter_interdiff_opcodes(opcodes, filediff_data, interfilediff_data):
         process_changes = False
         ranges = []
 
+        chunk_start = None
+        chunk_len = 0
+        lines_of_context = 0
+
         # Look through the chunks of the diff, trying to find the amount
         # of context shown at the beginning of each chunk. Though this
         # will usually be 3 lines, it may be fewer or more, depending

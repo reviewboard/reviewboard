@@ -9,6 +9,7 @@ reviewboard/admin/checks.py:*: 'S3Storage' imported but unused
 reviewboard/admin/checks.py:*: 'S3BotoStorage' imported but unused
 reviewboard/admin/middleware.py:*: redefinition of unused 'ModPythonRequest' from line *
 reviewboard/admin/middleware.py:*: redefinition of unused 'WSGIRequest' from line *
+reviewboard/extensions/hooks.py:*: 'SignalHook' imported but unused
 reviewboard/extensions/hooks.py:*: 'TemplateHook' imported but unused
 reviewboard/extensions/hooks.py:*: 'URLHook' imported but unused
 reviewboard/manage.py:*: 'recaptcha' imported but unused

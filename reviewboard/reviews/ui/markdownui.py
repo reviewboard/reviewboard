@@ -1,7 +1,6 @@
 from __future__ import unicode_literals
 
 import logging
-from xml.dom.minidom import parseString
 
 from pygments.lexers import TextLexer
 
