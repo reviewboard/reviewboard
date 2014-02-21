@@ -74,12 +74,12 @@ class DiffParser(object):
         line = self.lines[linenum]
 
         if info.origFile is not None and info.newFile is not None:
-            if line.startswith('-'):
+            if line.startswith(b'-'):
                 info.delete_count += 1
-            elif line.startswith('+'):
+            elif line.startswith(b'+'):
                 info.insert_count += 1
 
-        info.data += line + '\n'
+        info.data += line + b'\n'
 
         return linenum + 1
 
@@ -100,7 +100,7 @@ class DiffParser(object):
         # If we have enough information to represent a header, build the
         # file to return.
         if ('origFile' in info and 'newFile' in info and
-                'origInfo' in info and 'newInfo' in info):
+            'origInfo' in info and 'newInfo' in info):
             if linenum < len(self.lines):
                 linenum = self.parse_after_headers(linenum, info)
 
@@ -119,8 +119,8 @@ class DiffParser(object):
 
             # The header is part of the diff, so make sure it gets in the
             # diff content.
-            file.data = ''.join([
-                self.lines[i] + '\n' for i in range(start, linenum)
+            file.data = b''.join([
+                self.lines[i] + b'\n' for i in range(start, linenum)
             ])
 
         return linenum, file
