@@ -18,7 +18,6 @@ from reviewboard.reviews.models.review_request import ReviewRequest
 from reviewboard.reviews.models.screenshot import Screenshot
 from reviewboard.reviews.fields import get_review_request_fields
 from reviewboard.reviews.signals import review_request_published
-from reviewboard.site.urlresolvers import local_site_reverse
 
 
 class ReviewRequestDraft(BaseReviewRequestDetails):

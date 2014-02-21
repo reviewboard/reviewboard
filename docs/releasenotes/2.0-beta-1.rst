@@ -43,7 +43,7 @@ changed chunks, the new index shows:
 * Indications for deleted or binary files.
 * A list of clickable chunk dots, color-coded to represent add/change/delete.
 
-.. image:: _static/images/2.0/diff-file-index.png
+.. image:: _static/images/2.0/2.0-diff-file-index.png
 
 
 New Diff Revision Selector
@@ -56,7 +56,7 @@ allows viewing both individual revisions (by selecting :guilabel:`orig` and the
 desired revision), and viewing interdiffs (by selecting the two revisions to
 compare).
 
-.. image:: _static/images/2.0/diff-revision-selector.png
+.. image:: _static/images/2.0/2.0-diff-revision-selector.png
 
 
 Reload-Free Navigation
@@ -131,13 +131,13 @@ features and capabilities.
     |new-review-request-image|_
 
     .. |new-review-request-image| image::
-       _static/images/2.0/new-review-request_thumb.png
+       _static/images/2.0/2.0-new-review-request_thumb.png
     .. _new-review-request-image:
-       _static/images/2.0/new-review-request.png
+       _static/images/2.0/2.0-new-review-request.png
 
 .. only:: not html
 
-    .. image:: _static/images/2.0/new-review-request.png
+    .. image:: _static/images/2.0/2.0-new-review-request.png
 
 
 Post-Commit Review Requests
