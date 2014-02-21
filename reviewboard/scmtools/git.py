@@ -223,6 +223,10 @@ class GitDiffParser(DiffParser):
 
         linenum += 1
 
+        # Check to make sure we haven't reached the end of the diff.
+        if linenum >= len(self.lines):
+            return linenum, None
+
         # Parse the extended header to save the new file, deleted file,
         # mode change, file move, and index.
         if self._is_new_file(linenum):
@@ -242,10 +246,6 @@ class GitDiffParser(DiffParser):
             file_info.data += self.lines[linenum + 2] + "\n"
             linenum += 3
             file_info.moved = True
-
-        # Check to make sure we haven't reached the end of the diff.
-        if linenum >= len(self.lines):
-            return linenum, None
 
         # Assume by default that the change is empty. If we find content
         # later, we'll clear this.
