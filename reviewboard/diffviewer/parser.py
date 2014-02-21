@@ -43,7 +43,7 @@ class DiffParser(object):
         logging.debug("DiffParser.parse: Beginning parse of diff, size = %s",
                       len(self.data))
 
-        preamble = ''
+        preamble = b''
         self.files = []
         file = None
         i = 0
@@ -56,14 +56,14 @@ class DiffParser(object):
                 # This line is the start of a new file diff.
                 file = new_file
                 file.data = preamble + file.data
-                preamble = ''
+                preamble = b''
                 self.files.append(file)
                 i = next_linenum
             else:
                 if file:
                     i = self.parse_diff_line(i, file)
                 else:
-                    preamble += self.lines[i] + '\n'
+                    preamble += self.lines[i] + b'\n'
                     i += 1
 
         logging.debug("DiffParser.parse: Finished parsing diff.")
