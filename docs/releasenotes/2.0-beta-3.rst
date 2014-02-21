@@ -1,0 +1,771 @@
+=====================================
+Review Board 2.0 Beta 3 Release Notes
+=====================================
+
+**Release date:** February 20, 2014
+
+This release contains all bug fixes and features found in Review Board version
+:doc:`1.7.21 <1.7.21>`.
+
+
+Installation
+============
+
+To install this release, run the following::
+
+    $ sudo easy_install \
+        -f http://downloads.reviewboard.org/releases/ReviewBoard/2.0/ \
+        -U ReviewBoard
+
+We **do not** recommend upgrading a production server with this version of
+Review Board. It's best to install on a test server, in case there are any
+major problems.
+
+
+Important Upgrade Notes
+=======================
+
+**Make a backup of your database!**
+
+Substantial changes were made to database migration. While our testing has
+shown it to work, it *could* leave your database in a bad state.
+
+Do **not** upgrade a production database without a full backup.
+
+Please let us know if you have any problems with the upgrade.
+
+
+Compatibility Updates
+=====================
+
+* We now depend on Django_ 1.6.2. This is a major version bump, and may
+  introduce regressions we have not yet caught.
+
+* Added support for Pillow_.
+
+  Pillow is a replacement for PIL. It's better maintained and easier to
+  install. While not yet required, we recommend upgrading to it sooner
+  rather than later. We may require it in a future release.
+
+  You will need to uninstall PIL in order to install Pillow. See the
+  `Pillow documentation`_ for more information.
+
+* Subvertpy_ is now supported as an alternative to PySVN. This can often be
+  easier to install than PySVN. We welcome any feedback and bug reports,
+  as this is quite new.
+
+  Patch by Mark Lee.
+
+.. _Django: https://www.djangoproject.com/
+.. _Pillow: http://pillow.readthedocs.org/en/latest/
+.. _Pillow documentation: http://pillow.readthedocs.org/en/latest/
+.. _Subvertpy: http://www.samba.org/~jelmer/subvertpy/
+
+
+New Features
+============
+
+Better Issue and Ship-It Tracking
+---------------------------------
+
+If there are any open issues remaining on a review request, they will be
+shown in place of the Ship It count in the dashboard. Any Ship Its issued on
+the review request will remain hidden until all issues are resolved.
+
+This makes it easier to see what work still remains at a glance, and to give a
+better idea if a Ship It really means Ship It.
+
+Improvements were also made for reviews. Now, if a reviewer marks Ship It and
+opens issues, the "Ship It!" will be replaced by "Fix it, then Ship it!" until
+all the issues are closed. Once the last issue is closed, it will update to
+"Ship It!"
+
+.. image:: _static/images/2.0/2.0-dashboard-issue-status.png
+
+
+Detailed Change Descriptions
+----------------------------
+
+The "Review request changed" boxes provided only basic information on
+what changed when publishing a draft of a review request. It wasn't very
+helpful when uploading new file attachments or when changing a long
+description.
+
+This has been fully rewritten to be much more useful:
+
+* The Description and Testing Done changes are now shown as a diff, making
+  it very easy to see what parts of the description has changed.
+
+  Any Markdown formatting is also rendered in the diff view.
+
+  (:bug:`2045`)
+
+  .. image:: _static/images/2.0/2.0-changedescs-diffed-text.png
+
+* Added or removed file attachments are shown with their thumbnails.
+
+  The thumbnails in the change description box include a "Review" or
+  "New Comment" link, to allow jumping directly to the review UI without
+  needing to find the matching thumbnail at the top of the page.
+
+  This also helps when you want to see older file attachments that have since
+  been removed.
+
+  .. image:: _static/images/2.0/2.0-changedescs-attachments.png
+
+* More information is shown about the contents of new diffs.
+
+  The total number of added or removed lines are shown alongside the diff
+  revision, making it easy to see just how big the change is.
+
+  A file listing is also shown for the diff, along with the same icons now
+  used in the diff viewer to show the complexity of the changes made to
+  the files.
+
+  .. image:: _static/images/2.0/2.0-changedescs-diffs.png
+
+* The other fields, like Branch and Depends On, are shown in a way that
+  makes it much easier to see what has changed.
+
+  Some of the fields also show more information than they used to. Depends On,
+  for example, now shows the summaries of the review requests.
+
+Custom fields provided by extensions will benefit from these updates as well,
+and can also take advantage of the new API to customize how the updates
+are displayed.
+
+
+Indentation Markers in Diffs
+----------------------------
+
+In order to simplify reviews, the diff viewer has traditionally treated
+lines with only indentation changes as being equal. This was often helpful,
+but it meant that it wasn't always obvious that a line's indentation had
+changed.
+
+The diff viewer now shows indentation changes, and differentiates between
+spaces and tabs. The lines are still shown as equals, to keep the diffs
+clean, but it's now easy to tell at a glance what indentation changes
+were made to a file.
+
+This is especially important for languages that use whitespace for blocks,
+such as Python.
+
+.. image:: _static/images/2.0/2.0-diff-indentation.png
+
+
+New My Account Page
+-------------------
+
+The My Account page has been completely rewritten. The original was from the
+very first few months of Review Board, and was long overdue due for a
+replacement.
+
+The new page makes it easy to search for groups and join them and to manage
+your settings and your profile.
+
+Extensions can add new sections to the My Account page, or add to existing
+sections, in order to provide user customization of an extension.
+
+.. image:: _static/images/2.0/2.0-my-account.png
+
+
+Easy File Downloads in the Diff Viewer
+--------------------------------------
+
+Files shown in the diff viewer can now be downloaded in their raw, original
+form. A download icon is shown alongside the revision of each file. This makes
+it easy to fetch either the original or modified version of any file up for
+review.
+
+:bug:`1434`
+
+.. image:: _static/images/2.0/2.0-diff-download.png
+
+
+Improved Dashboard Sidebar
+--------------------------
+
+The dashboard sidebar is now better organized, neatly categorizing items under
+"Incoming" and "Outgoing" sections. There's no longer a bunch of bold items
+that double as links and sections.
+
+The current dashboard view is also highlighted, making it easier to see what
+you're looking at.
+
+.. image:: _static/images/2.0/2.0-dashboard-sidebar.png
+
+
+.. _approval:
+
+Determining Approval for Review Requests
+----------------------------------------
+
+Review Board tries hard not to dictate workflows for developers and companies,
+but to instead provide a solid platform for existing workflows. Many
+companies or individual teams have their own policies for when a review
+request is approved.
+
+We're now providing a way through the API and extensions to determine if a
+review request is approved. Approval logic can be provided by an extension,
+and then used in repository hooks or other scripts.
+
+By default, the logic marks a review request as approved if it has at least
+one Ship It!, and no open issues. This can be augmented or completely
+replaced.
+
+The Review Board web UI does not indicate approval or enforce any actions
+based on approval, so by default, nothing really changes. This is more for
+those companies that are adding their own deeper integration or policy
+enforcement.
+
+
+Interdiff Link on the Draft Banner
+----------------------------------
+
+When uploading a new diff to an existing review request, the draft banner
+will now show a "Show changes" link that will take you to an interdiff between
+the last published diff and the newly uploaded diff.
+
+Patch by Tomi Äijö
+
+:bug:`3189`
+
+
+Better Post-Commit Support for Subversion
+-----------------------------------------
+
+The new "New Review Request" page didn't work so well for Subversion users
+that had a non-standard repository layout, such as one where the project name
+was on the root instead of "trunk" and "branches."
+
+Now, on these sort of layouts, a drop-down list showing the top-level
+directories will be provided. Selecting a project will show commits for that
+project.
+
+
+Other Changes
+-------------
+
+* There's a better set of default dashboard columns for new users. These are,
+  in order:
+
+  * Select Rows
+  * New Updates
+  * Ship It!
+  * My Comments
+  * Summary
+  * Submitter
+  * Last Updated (Relative)
+
+  Existing users won't see their columns change. If they want to use the new
+  columns, they can click the Pencil on the top-right of the dashboard and
+  customize their columns.
+
+* Added a Diff Size column to the dashboard, which shows the number of
+  inserted and deleted lines in the uploaded patch. (:bug:`48`)
+
+* Added a keyboard shortcut (:kbd:`r`/:kbd:`R`) to comment on the selected
+  chunk in the diff viewer. (:bug:`44`)
+
+  Patch by Edwin Zhang.
+
+* Discarded review requests are now shown in the All Review Requests page.
+  (:bug:`576`)
+
+* The :guilabel:`Depends On` field now shows a strikethrough for
+  dependencies that have been closed. (:bug:`3200`)
+
+  Patch by Olessia Karpova.
+
+* Public local sites can now be accessed by anonymous users.
+
+
+New Administration Features
+===========================
+
+* Added an option for choosing whether to set the
+  ``Auto-Submitted: auto-generated`` e-mail header. (:bug:`2646`)
+
+  Some mailing lists filter out e-mails that contain the
+  ``Auto-Submitted: auto-generated`` header. This new setting allows the
+  header to be disabled. By default, the header is included for e-mails.
+
+  Patch by Anselina Chia.
+
+* Review groups now allow setting multiple mailing lists, separated by
+  commas. (:bug:`1661`)
+
+* Rewrote LDAP configuration to be more clear. (:bug:`3004`)
+
+  LDAP configuration has been redone to help prevent many of the problems
+  users encountered.
+
+  Patch by Stephen Gallagher.
+
+
+Usability Improvements
+======================
+
+* The target users auto-complete now has a better order for the results,
+  prioritizing usernames ahead of real names. (:bug:`2107`)
+
+* Review boxes containing draft replies are no longer auto-collapsed for the
+  owner of the reply.
+
+* Review boxes containing open issues are no longer auto-collapsed for the
+  owner of the review request.
+
+* The group links on the user page's sidebar are now cleaner and easier to
+  read.
+
+* All Markdown-capable fields now have a link pointing to our Markdown
+  syntax reference. (:bug:`3201`)
+
+  Patch by Bhushan Ramnani.
+
+
+Performance Improvements
+========================
+
+* Reduced the time it takes to create, publish, or discard review request
+  drafts.
+
+* Reduced the completion time for all API requests through the web UI.
+
+* Reduced the workload of some of our templates to slightly reduce memory
+  usage and processing time.
+
+
+Web API
+=======
+
+* Added fields for indicating approval on a review request.
+
+  :ref:`webapi2.0-review-request-resource` now has ``approved`` and
+  ``approval_failure`` fields that indicate whether the review request
+  has been approved and, if not, what the failure was, respectively.
+
+  These can be used by scripts or repository hooks to, for example,
+  display a list of changes that can be committed, or to prevent
+  committing a change if it isn't approved.
+
+  See the description on approval_ above for more information.
+
+* Added fields for getting the issue counts and number of Ship Its on a
+  review request.
+
+  This provides ``issue_open_count``, ``issue_dropped_count``,
+  ``issue_resolved_count``, and ``ship_it_count`` fields on
+  :ref:`webapi2.0-review-request-resource`.
+
+* Added querying for review requests based on issue counts and Ship Its.
+
+  This supports a variety of new query arguments for finding review requests
+  based on the number of open, dropped, or resolved issues. These are in
+  the form of ``?issue-open-count=``, ``?issue-dropped-count=``,
+  ``?issue-resolved-count=``, and ``?ship-it-count=``.
+
+  It's also possible to query with ranges by appending ``-lt``, ``-lte``,
+  ``-gt`` or ``-gte`` to the query parameter name.
+
+  This only works for review requests that have otherwise been created or
+  accessed since upgrading to this release, since the query counts are only
+  generated on-demand.
+
+* The root resource now provides the server information and capabilities.
+
+  Clients can now check the :ref:`webapi2.0-root-resource` for this
+  information, instead of having to access the
+  :ref:`webapi2.0-server-info-resource`. Both resources provide the same
+  data.
+
+* Users can now add or remove themselves to or from review groups through the
+  API.
+
+  A user can POST or DELETE their own username to
+  :ref:`webapi2.0-review-group-user-resource` in order to change their
+  membership in the group. Previously, this ability was limited to
+  administrators.
+
+* Changed how the ``commit_id`` field works in review requests.
+
+  Previous betas had a ``commit_id`` field that, when set, would update
+  the fields and diff of the review request based on the commit ID. Now,
+  this is just a container for a value that can later be looked up and
+  searched, making it easy to tie review requests to commits.
+
+  Commit IDs are now set on a draft, and stored along with it. They can
+  change over time.
+
+  To get the old behavior, set ``commit_id`` and ``create_from_commit_id=1``
+  on :ref:`webapi2.0-review-request-resource`. To update an existing
+  review request, set ``commit_id`` and ``update_from_commit_id=1`` on the
+  draft.
+
+* The ``next`` and ``previous`` links for pagination in resource lists
+  now contain all the query parameters used for filtering that list.
+  (:bug:`3199`)
+
+* :ref:`webapi2.0-file-diff-resource` now provides information on various
+  stats for the diff, if the diff has been rendered at least once. These
+  will appear in ``extra_data``.
+
+  These include the raw insert/delete line counts from the patch file
+  (``raw_insert_count``, ``raw_delete_count``), the processed
+  insert/delete/replace/equal line counts from the processed file
+  (``insert_count``, ``delete_count``, ``replace_count``, ``equal_count``),
+  and the total number of lines in the file (``total_line_count``).
+
+  The raw insert/delete counts will be there for any uploaded patch.
+
+
+Extensibility
+=============
+
+New Initialize Method
+---------------------
+
+Instead of overriding :py:meth:`Extension.__init__` and passing arguments
+to the parent method, extensions can now simply override
+:py:meth:`initialize`. This doesn't take any arguments, and there's no need to
+call the parent method.
+
+This means instead of this:
+
+.. code-block:: python
+
+    class MyExtension(Extension):
+        def __init__(self, *args, **kwargs):
+            super(MyExtension, self).__init__(*args, **kwargs)
+
+            # Initialization here
+
+You can just do this:
+
+.. code-block:: python
+
+    class MyExtension(Extension):
+        def initialize(self):
+            # Initialization here
+
+
+Improved JavaScript Extensions
+------------------------------
+
+JavaScript extensions in earlier betas were specified by defining a
+:py:attr:`js_model_class` property. This has been replaced by an all new
+:py:class:`JSExtension` class.
+
+:py:class:`JSExtension` contains attributes for :py:attr:`model_class`
+(equivalent to the old :py:attr:`js_model_class`), and :py:attr:`apply_to`,
+which allows the extension to be initialized only on the pages with the given
+URL names.
+
+One or more JavaScript extensions can be provided by setting the list of
+subclasses in :py:attr:`Extension.js_extensions`.
+
+
+Per-Page Static Media Bundles
+-----------------------------
+
+Static media bundles (defined by :py:attr:`css_bundles` and
+:py:attr:`js_bundles` on an :py:class:`Extension`) can now be applied to
+specific pages by specifying an ``apply_to`` field in the bundle definition.
+This field takes a list of URL names that the bundle should be loaded on.
+It works like the ``default`` bundle in that the bundles don't have to be
+manually loaded in a template.
+
+
+Pre-Defined URL Name Lists
+--------------------------
+
+There's now a few useful lists of URL names that an extension can import
+that can be used for any ``apply_to`` fields, to help ensure hooks or
+static media bundles apply to the necessary pages.
+
+This includes :py:data:`diffviewer_url_names`, :py:data:`reviewable_url_names`
+and :py:data:`review_request_url_names`, which can be imported from
+:py:mod:`reviewboard.urls`.
+
+
+New Hooks
+---------
+
+SignalHook
+~~~~~~~~~~
+
+Extensions that need to listen to signals can now use :ref:`signal-hook`
+instead of managing their own signal connections.
+
+:py:class:`SignalHook` takes the signal and a callack as arguments, and
+an optional ``sender``. It will then connect to that signal, and disconnect
+when shutting down the extension.
+
+
+AccountPagesHook and AccountPageFormsHook
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Extensions can add to the new My Account page through the new
+:ref:`account-pages-hook` and :ref:`account-page-forms-hook`.  These create
+new page sections in the My Account page and add to existing page sections,
+respectively. See the documentation for more information on using these.
+
+
+DashboardColumnsHook
+~~~~~~~~~~~~~~~~~~~~
+
+Extensions can add new columns to the dashboard and to other datagrids
+using the new :ref:`dashboard-columns-hook`. These can be used to display
+custom information on each row of the dashboard, using, for example, custom
+data stored on a review request by the extension.
+
+
+DashboardSidebarItemsHook
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The old :py:class:`DashboardHook` has been replaced by
+:ref:`dashboard-sidebar-items-hook`, which offers an improved way of adding
+content to the dashboard's sidebar.
+
+Instead of only supporting links to URLs, this can support content of any type
+by making use of extensible subclasses of
+:py:class:`reviewboard.datagrids.sidebar.BaseSidebarItem`. We provide
+built-in classes for named sections
+(:py:class:`reviewboard.datagrids.sidebar.BaseSidebarSection`) and links
+(:py:class:`reviewboard.datagrids.sidebar.SidebarNavItem`). New subclasses
+can be written for rendering any custom template.
+
+
+ReviewRequestApprovalHook
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Companies that need to define their own approval_ logic can subclass
+:ref:`review-request-approval-hook` and implement the :py:meth:`is_approved`
+method to calculate if the provided review request is approved. This
+value will be reflected in the API, and will be accessible to any extensions
+that want to operate on approval.
+
+
+UserPageSidebarItemsHook
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+The old :py:class:`UserPageSidebarHook` has been replaced by
+:ref:`user-page-sidebar-items-hook`. This is just like the new dashboard
+sidebar hooks listed above, but targetted for the user page instead.
+
+
+Bug Fixes
+=========
+
+General UI
+----------
+
+* Improved the logic for Markdown escaping.
+
+  We do a better job now of escaping only the necessary characters, in order
+  to reduce the number of backslashes in the text when uploading a change.
+
+* Pressing Enter in auto-complete fields now properly completes the selected
+  entry. (:bug:`2779`)
+
+  This applies to the reviewer fields, search, and any other field that can
+  be auto-completed.
+
+* Pressing Enter on an auto-completed item in the search field now navigates
+  to that item. (:bug:`3032`)
+
+  Patch by Mirai Akagawa.
+
+* Right-click and pasting content into the comment dialogs now enables
+  the :guilabel:`Save` button. (:bug:`2424`)
+
+* The user information popup (shown when hovering over a username on the
+  dashboard, review requests, or reviews) now wraps overly long e-mail
+  addresses. (:bug:`3215`)
+
+  Patch by Stephanie Su.
+
+
+New Review Request Page
+-----------------------
+
+* Fixed creating a review request based on the first committed change in a
+  GitHub repository in the New Review Request page. (:bug:`3207`)
+
+  Patch by Anselina Chia.
+
+* When failing to post a change for review in the New Review Request page,
+  an error is now shown, and the user can try again.
+
+
+Dashboard
+---------
+
+* Going to a dashboard view for a group you aren't a member of, such as
+  an unjoined starred group, no longer results in a 404 page. (:bug:`3204`)
+
+* Review request summaries can now wrap if they're getting too long.
+  (:bug:`2125`)
+
+* The pagination links can no longer overwrite the dashboard view states,
+  such as the current page, column sorts, or Show/Hide filters. This
+  also applies to the All Review Requests page, and other datagrid pages.
+  (:bug:`1155`)
+
+* Fixed cases where crafting a URL for sorting non-sortable fields could
+  cause an HTTP 500 error. (:bug:`2565`)
+
+
+Review Requests
+---------------
+
+* The bugs field on a review request no longer allows duplicates.
+  (:bug:`3063`)
+
+* The Repository field on a review request is once again hidden if the
+  review request isn't tied to a repository.
+
+* Fixed regressions in storing and rendering changes to the Depends On field.
+  (:bug:`3073`, :bug:`3139`)
+
+* SHA-1 commit IDs are now shown abbreviated in the Commit ID field on a
+  review request, instead of making the field too wide.
+
+* Fixed deleting file attachments without first having a draft.
+
+* Review replies are now rendered as Markdown when saved.
+
+* Thumbnails for file attachments can no longer overflow the container.
+
+  Patch by Tami Forrester.
+
+* Fixed escaping of HTML-unsafe characters in the Description and Testing Done
+  fields.
+
+* Review requests for inactive users are now shown on the All Review Requests
+  page and the user page. (:bug:`1436`)
+
+
+Diff Viewer
+-----------
+
+* When calculating function headers for PHP files, those functions with
+  ``public``, ``private``, and ``protected`` keywords are now included.
+  (:bug:`2951`)
+
+* Fixed possible deadlock issues when generating side-by-side diffs.
+  (:bug:`2247`)
+
+* Fixed showing interdiffs for files that are reverted. (:bug:`1486`)
+
+* Fixed showing changes in interdiffs that were made in the first 3 lines
+  of a file.
+
+* Fixed interdiffs for 1-line files.
+
+* The expand icon is no longer shown if the section cannot be expanded.
+
+* Lines that have move indicator flags no longer have misaligned line numbers.
+
+* Fixed an occasional visual glitch with the diff complexity icons.
+
+
+Markdown Review
+---------------
+
+* Markdown file attachments now render more correctly. In particular,
+  lists are now properly shown, and the source code doesn't show red
+  boxes around quotes.
+
+
+Mercurial
+---------
+
+* Fixed issues with trailing slashes in the Mercurial URL when using
+  hg-history lookups. (:bug:`3216`)
+
+
+Subversion
+----------
+
+* Filenames that contain a space are no longer cut off. This only applies
+  to newly uploaded files. (:bug:`1533`)
+
+
+CVS
+---
+
+* Diffs generated on Windows that use `nul:` for the "old filename" when
+  generating a diff for a new file are now handled correctly. (:bug:`2294`)
+
+* Repositories that don't contain a :file:`CVSROOT/modules` file can now be
+  added. (:bug:`1986`)
+
+
+Clear Case
+----------
+
+* Clear Case no longer fails in multi-site mode when OIDs aren't yet
+  available on the server. (:bug:`3183`)
+
+  Patch by Nicolas Dély.
+
+
+LDAP
+----
+
+* Usernames, domains and passwords are now encoded to UTF-8 before sending
+  them over LDAP. (:bug:`2978`)
+
+* Usernames are now normalized, preventing issues when users log in with
+  otherwise valid variations of a username. This converts to lowercase and
+  strips special characters. (:bug:`1478`, :bug:`1674`, :bug:`2924`)
+
+* LDAP users who don't have an e-mail address configured will no longer be
+  prevented from logging into Review Board. (:bug:`3257`)
+
+
+System Administration
+---------------------
+
+* When specifying "https" on the server URL in the General Settings page, the
+  links generated by Review Board in e-mails and the API will use HTTPS.
+  (:bug:`3085`, :bug:`3246`)
+
+* System administrators can now access private repositories. (:bug:`3118`)
+
+* Review counts are now reset for users when deleting a repository.
+  (:bug:`3192`)
+
+* Old repository entries using paths that no longer exist can now properly
+  be hidden. (:bug:`2361`)
+
+* When creating a new site installation, the passwords the users confirm
+  are now properly matched. (:bug:`3006`)
+
+  Patch by Tami Forrester.
+
+* The filter menu for the database browser is now shown in full, even
+  when there are no or few entries in the list. (:bug:`3222`)
+
+  Patch by Joonas Lindholm.
+
+
+Contributors
+============
+
+* Anselina Chia
+* Bhushan Ramnani
+* Christian Hammond
+* David Trowbridge
+* Edwin Zhang
+* Joonas Lindholm
+* Mark Lee
+* Mirai Akagawa
+* Nicolas Dély
+* Olessia Karpova
+* Stephanie Su
+* Stephen Gallagher
+* Tami Forrester
+* Tomi Äijö
