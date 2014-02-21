@@ -9,8 +9,9 @@ from djblets.util.http import get_http_requested_mimetype, set_last_modified
 from djblets.webapi.decorators import (webapi_login_required,
                                        webapi_response_errors,
                                        webapi_request_fields)
-from djblets.webapi.errors import (DOES_NOT_EXIST, INVALID_FORM_DATA,
-                                   NOT_LOGGED_IN, PERMISSION_DENIED)
+from djblets.webapi.errors import (DOES_NOT_EXIST, INVALID_ATTRIBUTE,
+                                   INVALID_FORM_DATA, NOT_LOGGED_IN,
+                                   PERMISSION_DENIED)
 
 from reviewboard.diffviewer.errors import DiffTooBigError, EmptyDiffError
 from reviewboard.diffviewer.models import DiffSet
@@ -183,7 +184,7 @@ class DiffResource(WebAPIResource):
     @webapi_check_local_site
     @webapi_response_errors(DOES_NOT_EXIST, NOT_LOGGED_IN, PERMISSION_DENIED,
                             REPO_FILE_NOT_FOUND, INVALID_FORM_DATA,
-                            DIFF_EMPTY, DIFF_TOO_BIG)
+                            INVALID_ATTRIBUTE, DIFF_EMPTY, DIFF_TOO_BIG)
     @webapi_request_fields(
         required={
             'path': {
@@ -266,6 +267,12 @@ class DiffResource(WebAPIResource):
 
         if not review_request.is_mutable_by(request.user):
             return self._no_access_error(request.user)
+
+        if review_request.repository is None:
+            return INVALID_ATTRIBUTE, {
+                'reason': 'This review request was created as attachments-'
+                          'only, with no repository.'
+            }
 
         form_data = request.POST.copy()
         form = UploadDiffForm(review_request, form_data, request.FILES,

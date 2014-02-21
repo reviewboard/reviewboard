@@ -116,8 +116,7 @@ DIFF_TOO_BIG = WebAPIError(
 FILE_RETRIEVAL_ERROR = WebAPIError(
     221,
     "There was an error fetching a source file.",
-    http_status=500)  # 500 Internal Server
-                                                          #     Error
+    http_status=500)  # 500 Internal Server Error
 
 HOSTINGSVC_AUTH_ERROR = WebAPIError(
     222,
