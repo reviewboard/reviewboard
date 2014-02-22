@@ -169,7 +169,7 @@ def get_markdown_element_tree(markdown_html):
     This will build the tree and return all nodes representing the rendered
     Markdown content.
     """
-    doc = parseString('<html>%s</html>' % markdown_html)
+    doc = parseString(('<html>%s</html>' % markdown_html).encode('utf-8'))
     return doc.childNodes[0].childNodes
 
 
