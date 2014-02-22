@@ -221,7 +221,7 @@ class ProfileForm(AccountPageForm):
         required=True)
     profile_private = forms.BooleanField(
         required=False,
-        label=_("Keep this information private"))
+        label=_("Keep profile information private"))
 
     def load(self):
         self.set_initial({

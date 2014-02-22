@@ -19,71 +19,61 @@ Navigation Sidebar
 
 The dashboard provides a navigation sidebar with the following items:
 
-* :guilabel:`Starred Reviews`
-* :guilabel:`Outgoing Reviews`
-* :guilabel:`Incoming Reviews`
+* :guilabel:`Outgoing`
 
+  * :guilabel:`All`
+  * :guilabel:`Open`
+
+* :guilabel:`Incoming`
+
+  * :guilabel:`Open`
   * :guilabel:`To Me`
-
-* :guilabel:`Watched Groups`
-* :guilabel:`All My Requests`
+  * :guilabel:`Starred`
 
 It also lists each group you belong to, and each group you're watching.
 Each item also lists the number of review requests in that view.
 You can click on an item to be taken to that view of the dashboard.
 
 
-Starred Reviews
----------------
+Outgoing: All
+-------------
 
-This view shows every review request that you have starred. This is useful for
-keeping track of review request you are interested in that were not directly
-assigned to you.
+This view shows every review request you have created, including those that
+are discarded or submitted. It works like the :ref:`outgoing-open` but with
+your complete history.
 
 
-.. _outgoing-reviews:
+.. _outgoing-open:
 
-Outgoing Reviews
-----------------
+Outgoing: Open
+--------------
 
 This view shows all review requests that you have filed that are open or are
 still drafts.
 
 
-Incoming Reviews
-----------------
+Incoming: Open
+--------------
 
-This view shows all review requests that have been either directly assigned to
-you or indirectly through a group you belong to.
+This is the default view. This view shows all review requests that have been
+either directly assigned to you or indirectly through a group you belong to.
 
 This can be filtered down by selecting :guilabel:`To Me` or one of the
 group names under :guilabel:`Incoming Reviews`.
 
 
-To Me
------
+Incoming: To Me
+---------------
 
 This view shows all review requests that have been directly assigned to you.
 
 
-Watched Groups
---------------
+Incoming: Starred
+-----------------
 
-This view shows every group that you have starred. This is useful for
-keeping track of all review requests to groups that you may be interested in
-but have not joined.
-
-Clicking on this item in the navigation bar will show a list of all the
-watched groups with details about each group. The list of groups is also
-available on the navigation bar under :guilabel:`Watched Groups`.
-
-
-All My Requests
----------------
-
-This view shows every review request you have created, including those that
-are discarded or submitted. It works like the :ref:`outgoing-reviews` but with
-your complete history.
+This view shows every review request that you have starred. This is useful for
+keeping track of review requests you are interested in that were not directly
+assigned to you.
 
 
 Review Requests List
@@ -139,37 +129,6 @@ showing which columns are shown and which aren't.
 The following are available columns you can choose from:
 
 
-My Comments
------------
-
-Shows a green comment flag if you have any unpublished comments on the review
-request, or a blue comment flag if you have published comments. This allows
-you to quickly see which review requests you've addressed.
-
-
-New Updates
------------
-
-Shows a message bubble icon for any review requests that have been updated or
-have had discussion since you've last seen it. This does not apply to review
-requests you haven't yet looked at.
-
-
-Ship It!
---------
-
-Shows a checkmark icon next to any review requests that someone has marked
-"Ship It!"
-
-
-Starred
--------
-
-Shows a star indicator that can be toggled. When toggled on, the review
-request is starred, meaning you'll be CC'd on any discussion. Toggling it off
-will remove you from the CC list.
-
-
 Branch
 ------
 
@@ -179,7 +138,14 @@ Shows the branch information listed on the review request.
 Bugs
 ----
 
-Shows the list of bug IDs listed on the review request.
+Shows the bug IDs listed on the review request.
+
+
+Diff Size
+---------
+
+Shows a count of the removed and added lines of code in the latest revision of
+the diff.
 
 
 Diff Updated
@@ -210,6 +176,28 @@ Shows the timestamp of the last update to the review request, relative to now.
 This is color-coded to indicate the age.
 
 
+My Comments
+-----------
+
+Shows a green comment flag if you have any unpublished comments on the review
+request, or a blue comment flag if you have published comments. This allows
+you to quickly see which review requests you've addressed.
+
+
+New Updates
+-----------
+
+Shows a message bubble icon for any review requests that have been updated or
+have had discussion since you've last seen it. This does not apply to review
+requests you haven't yet looked at.
+
+
+Number of Reviews
+-----------------
+
+Shows how many reviews have been made on the review request.
+
+
 Posted Time
 -----------
 
@@ -230,16 +218,34 @@ Repository
 Shows the repository that the review request is against.
 
 
-Review ID
----------
+Review Request ID
+-----------------
 
 Shows the ID number of the review request.
 
 
-Number of Reviews
------------------
+Select Rows
+-----------
 
-Shows how many reviews have been made on the review request.
+Shows a check-box that allows you to select the row. When one or more review
+requests are selected, the sidebar will contain commands to close the selected
+review requests.
+
+
+Ship It!
+--------
+
+If there are open issues, this shows a count of the open issues in a yellow
+bubble. If there are no open issues, this will show a count of reviews where
+someone has marked "Ship It!"
+
+
+Starred
+-------
+
+Shows a star indicator that can be toggled. When toggled on, the review
+request is starred, meaning you'll be CC'd on any discussion. Toggling it off
+will remove you from the CC list.
 
 
 Submitter
@@ -252,6 +258,18 @@ Summary
 -------
 
 Shows the summary text of the review request.
+
+
+Target Groups
+-------------
+
+Shows a list of the assigned groups for each review request.
+
+
+Target People
+-------------
+
+Shows a list of the assigned people for each review request.
 
 
 To Me
