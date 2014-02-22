@@ -3,7 +3,8 @@ from __future__ import unicode_literals
 import os
 
 from django.utils import six
-from djblets.webapi.errors import INVALID_FORM_DATA, PERMISSION_DENIED
+from djblets.webapi.errors import (INVALID_ATTRIBUTE, INVALID_FORM_DATA,
+                                   PERMISSION_DENIED)
 
 from reviewboard import scmtools
 from reviewboard.diffviewer.models import DiffSet
@@ -186,6 +187,26 @@ class ResourceListTests(ExtraDataListMixin, ReviewRequestChildListMixin,
 
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
+
+    def test_post_no_repository(self):
+        """Testing the POST review-requests/<id>/diffs API
+        with a ReviewRequest that has no repository
+        """
+        review_request = self.create_review_request(submitter=self.user)
+
+        diff_filename = os.path.join(os.path.dirname(scmtools.__file__),
+                                     'testdata', 'git_readme.diff')
+        with open(diff_filename, 'r') as f:
+            rsp = self.apiPost(
+                get_diff_list_url(review_request),
+                {
+                    'path': f,
+                    'basedir': '/trunk',
+                },
+                expected_status=400)
+
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertEqual(rsp['err']['code'], INVALID_ATTRIBUTE.code)
 
 
 @six.add_metaclass(BasicTestsMetaclass)

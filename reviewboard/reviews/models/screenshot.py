@@ -28,6 +28,11 @@ class Screenshot(models.Model):
                               upload_to=os.path.join('uploaded', 'images',
                                                      '%Y', '%m', '%d'))
 
+    @property
+    def filename(self):
+        """Returns the filename for display purposes."""
+        return os.path.basename(self.image.name)
+
     def get_comments(self):
         """Returns all the comments made on this screenshot."""
         if not hasattr(self, '_comments'):

@@ -209,7 +209,7 @@ class GitDiffParser(DiffParser):
 
         # Now we have a diff we are going to use so get the filenames + commits
         file_info = File()
-        file_info.data = self.lines[linenum] + "\n"
+        file_info.data = self.lines[linenum] + b"\n"
         file_info.binary = False
         diff_line = self.lines[linenum].split()
 
@@ -223,29 +223,29 @@ class GitDiffParser(DiffParser):
 
         linenum += 1
 
-        # Parse the extended header to save the new file, deleted file,
-        # mode change, file move, and index.
-        if self._is_new_file(linenum):
-            file_info.data += self.lines[linenum] + "\n"
-            linenum += 1
-        elif self._is_deleted_file(linenum):
-            file_info.data += self.lines[linenum] + "\n"
-            linenum += 1
-            file_info.deleted = True
-        elif self._is_mode_change(linenum):
-            file_info.data += self.lines[linenum] + "\n"
-            file_info.data += self.lines[linenum + 1] + "\n"
-            linenum += 2
-        elif self._is_moved_file(linenum):
-            file_info.data += self.lines[linenum] + "\n"
-            file_info.data += self.lines[linenum + 1] + "\n"
-            file_info.data += self.lines[linenum + 2] + "\n"
-            linenum += 3
-            file_info.moved = True
-
         # Check to make sure we haven't reached the end of the diff.
         if linenum >= len(self.lines):
             return linenum, None
+
+        # Parse the extended header to save the new file, deleted file,
+        # mode change, file move, and index.
+        if self._is_new_file(linenum):
+            file_info.data += self.lines[linenum] + b"\n"
+            linenum += 1
+        elif self._is_deleted_file(linenum):
+            file_info.data += self.lines[linenum] + b"\n"
+            linenum += 1
+            file_info.deleted = True
+        elif self._is_mode_change(linenum):
+            file_info.data += self.lines[linenum] + b"\n"
+            file_info.data += self.lines[linenum + 1] + b"\n"
+            linenum += 2
+        elif self._is_moved_file(linenum):
+            file_info.data += self.lines[linenum] + b"\n"
+            file_info.data += self.lines[linenum + 1] + b"\n"
+            file_info.data += self.lines[linenum + 2] + b"\n"
+            linenum += 3
+            file_info.moved = True
 
         # Assume by default that the change is empty. If we find content
         # later, we'll clear this.
@@ -260,7 +260,7 @@ class GitDiffParser(DiffParser):
             if self.pre_creation_regexp.match(file_info.origInfo):
                 file_info.origInfo = PRE_CREATION
 
-            file_info.data += self.lines[linenum] + "\n"
+            file_info.data += self.lines[linenum] + b"\n"
             linenum += 1
 
         # Get the changes
@@ -269,7 +269,7 @@ class GitDiffParser(DiffParser):
                 break
             elif self._is_binary_patch(linenum):
                 file_info.binary = True
-                file_info.data += self.lines[linenum] + "\n"
+                file_info.data += self.lines[linenum] + b"\n"
                 empty_change = False
                 linenum += 1
                 break
@@ -277,8 +277,8 @@ class GitDiffParser(DiffParser):
                 if self.lines[linenum].split()[1] == "/dev/null":
                     file_info.origInfo = PRE_CREATION
 
-                file_info.data += self.lines[linenum] + '\n'
-                file_info.data += self.lines[linenum + 1] + '\n'
+                file_info.data += self.lines[linenum] + b'\n'
+                file_info.data += self.lines[linenum + 1] + b'\n'
                 linenum += 2
             else:
                 empty_change = False
@@ -296,37 +296,37 @@ class GitDiffParser(DiffParser):
         return linenum, file_info
 
     def _is_new_file(self, linenum):
-        return self.lines[linenum].startswith("new file mode")
+        return self.lines[linenum].startswith(b"new file mode")
 
     def _is_deleted_file(self, linenum):
-        return self.lines[linenum].startswith("deleted file mode")
+        return self.lines[linenum].startswith(b"deleted file mode")
 
     def _is_mode_change(self, linenum):
-        return (self.lines[linenum].startswith("old mode")
-                and self.lines[linenum + 1].startswith("new mode"))
+        return (self.lines[linenum].startswith(b"old mode")
+                and self.lines[linenum + 1].startswith(b"new mode"))
 
     def _is_moved_file(self, linenum):
-        return (self.lines[linenum].startswith("similarity index") and
-                self.lines[linenum + 1].startswith("rename from") and
-                self.lines[linenum + 2].startswith("rename to"))
+        return (self.lines[linenum].startswith(b"similarity index") and
+                self.lines[linenum + 1].startswith(b"rename from") and
+                self.lines[linenum + 2].startswith(b"rename to"))
 
     def _is_index_range_line(self, linenum):
         return (linenum < len(self.lines) and
-                self.lines[linenum].startswith("index "))
+                self.lines[linenum].startswith(b"index "))
 
     def _is_git_diff(self, linenum):
-        return self.lines[linenum].startswith('diff --git')
+        return self.lines[linenum].startswith(b'diff --git')
 
     def _is_binary_patch(self, linenum):
         line = self.lines[linenum]
 
-        return (line.startswith("Binary file") or
-                line.startswith("GIT binary patch"))
+        return (line.startswith(b"Binary file") or
+                line.startswith(b"GIT binary patch"))
 
     def _is_diff_fromfile_line(self, linenum):
         return (linenum + 1 < len(self.lines) and
-                (self.lines[linenum].startswith('--- ') and
-                    self.lines[linenum + 1].startswith('+++ ')))
+                (self.lines[linenum].startswith(b'--- ') and
+                    self.lines[linenum + 1].startswith(b'+++ ')))
 
     def _ensure_file_has_required_fields(self, file_info):
         """
