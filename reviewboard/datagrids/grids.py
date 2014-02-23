@@ -48,34 +48,41 @@ class ReviewRequestDataGrid(DataGrid):
     my_comments = MyCommentsColumn()
     star = ReviewRequestStarColumn()
     ship_it = ShipItColumn()
-    summary = SummaryColumn(expand=True, link=True, css_class='summary')
+    summary = SummaryColumn()
     submitter = SubmitterColumn()
 
-    branch = Column(_('Branch'), db_field='branch',
-                    shrink=True, sortable=True, link=False)
+    branch = Column(
+        label=_('Branch'),
+        db_field='branch',
+        shrink=True,
+        sortable=True,
+        link=False)
     bugs_closed = BugsColumn()
     repository = RepositoryColumn()
     time_added = DateTimeColumn(
-        _('Posted'),
+        label=_('Posted'),
         detailed_label=_('Posted Time'),
-        format='F jS, Y, P', shrink=True,
+        format='F jS, Y, P',
+        shrink=True,
         css_class=lambda r: ageid(r.time_added))
     last_updated = DateTimeColumn(
-        _('Last Updated'),
-        format='F jS, Y, P', shrink=True,
+        label=_('Last Updated'),
+        format='F jS, Y, P',
+        shrink=True,
         db_field='last_updated',
         field_name='last_updated',
         css_class=lambda r: ageid(r.last_updated))
     diff_updated = DiffUpdatedColumn(
-        format='F jS, Y, P', shrink=True,
+        format='F jS, Y, P',
+        shrink=True,
         css_class=lambda r: ageid(r.diffset_history.last_diff_updated))
     time_added_since = DateTimeSinceColumn(
-        _('Posted'),
+        label=_('Posted'),
         detailed_label=_('Posted Time (Relative)'),
         field_name='time_added', shrink=True,
         css_class=lambda r: ageid(r.time_added))
     last_updated_since = DateTimeSinceColumn(
-        _('Last Updated'),
+        label=_('Last Updated'),
         detailed_label=_('Last Updated (Relative)'), shrink=True,
         db_field='last_updated',
         field_name='last_updated',
