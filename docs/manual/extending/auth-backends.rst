@@ -29,6 +29,7 @@ An Authentication Backend class is a simple class inheriting from
 :py:class:`reviewboard.accounts.backends.AuthBackend`. It must set the
 following attributes:
 
+* :py:attr:`backend_id`
 * :py:attr:`name`
 
 And can optionally set the following attributes:
@@ -51,6 +52,14 @@ We'll go into each function and attribute in detail.
 
 .. py:class:: reviewboard.accounts.backends.AuthBackend
 
+.. py:attribute:: backend_id
+
+   This is the ID used for registering and looking up the authentication
+   backend.
+
+   This ID needs to be unique, and therefore should include some
+   vendor-specific prefix.
+
 .. py:attribute:: name
 
    This is the human-readable name of the authentication backend. This is what
@@ -58,7 +67,7 @@ We'll go into each function and attribute in detail.
 
 .. py:attribute:: login_instructions
 
-   If set, this string is displayed under the name on the login page.
+   If set, this string is displayed on the login page.
 
 .. py:attribute:: settings_form
 
@@ -281,7 +290,7 @@ Disabling Fields
 It can be useful to disable fields based on different conditions, such as
 a missing Python module. In this case, you can disable any fields in the
 form and provide an inline message by setting the
-:py:attr:`disabled_fields` and :py:`disabled_reasons` attributes during
+:py:attr:`disabled_fields` and :py:attr:`disabled_reasons` attributes during
 :py:meth:`load`.
 
 Both of these attributes are dictionaries mapping from a field name to a
@@ -338,8 +347,25 @@ For example::
 Packaging
 =========
 
-Authentication backends should be packaged as a standard Python egg module.
-Generally, this looks something like::
+Using Extensions
+----------------
+
+As of Review Board 2.0, authentication backends should be provided by
+extensions, using :ref:`auth-backend-hook`. This allows the authentication
+backends to be easily added or removed.
+
+
+Using Entry Points
+------------------
+
+When extensions are, for some reason, not an ideal option, you can instead
+fall back on using Python entry point registration. This is required
+if your authentication backend needs to work on versions of Review Board
+prior to 2.0.
+
+For entry point registration, your authentication backends will need to be
+packaged as a standard Python egg module. Generally, this looks something
+like::
 
     setup.py
     myauth/__init__.py

@@ -43,7 +43,7 @@ from djblets.siteconfig.django_settings import (apply_django_settings,
 from djblets.siteconfig.models import SiteConfiguration
 from haystack import connections
 
-from reviewboard.accounts.backends import get_registered_auth_backends
+from reviewboard.accounts.backends import get_registered_auth_backend
 from reviewboard.admin.checks import get_can_enable_syntax_highlighting
 from reviewboard.signals import site_settings_loaded
 
@@ -255,9 +255,8 @@ def load_site_config():
     apply_setting("ADMIN_MEDIA_PREFIX", None, settings.STATIC_URL + "admin/")
 
     # Set the auth backends
-    auth_backend_map = dict(get_registered_auth_backends())
     auth_backend_id = siteconfig.settings.get("auth_backend", "builtin")
-    builtin_backend_obj = auth_backend_map['builtin']
+    builtin_backend_obj = get_registered_auth_backend('builtin')
     builtin_backend = "%s.%s" % (builtin_backend_obj.__module__,
                                  builtin_backend_obj.__name__)
 
@@ -273,14 +272,15 @@ def load_site_config():
 
         if builtin_backend not in custom_backends:
             settings.AUTHENTICATION_BACKENDS += (builtin_backend,)
-    elif auth_backend_id != "builtin" and auth_backend_id in auth_backend_map:
-        backend = auth_backend_map[auth_backend_id]
-
-        settings.AUTHENTICATION_BACKENDS = \
-            ("%s.%s" % (backend.__module__, backend.__name__),
-             builtin_backend)
     else:
-        settings.AUTHENTICATION_BACKENDS = (builtin_backend,)
+        backend = get_registered_auth_backend(auth_backend_id)
+
+        if backend and backend is not builtin_backend_obj:
+            settings.AUTHENTICATION_BACKENDS = \
+                ("%s.%s" % (backend.__module__, backend.__name__),
+                 builtin_backend)
+        else:
+            settings.AUTHENTICATION_BACKENDS = (builtin_backend,)
 
     # Set the storage backend
     storage_backend = siteconfig.settings.get('storage_backend', 'builtin')
