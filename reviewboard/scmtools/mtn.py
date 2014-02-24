@@ -59,11 +59,11 @@ class MonotoneTool(SCMTool):
 
 
 class MonotoneDiffParser(DiffParser):
-    INDEX_SEP = "=" * 60
+    INDEX_SEP = b"=" * 60
 
     def parse_special_header(self, linenum, info):
-        if self.lines[linenum].startswith("#"):
-            if "is binary" in self.lines[linenum]:
+        if self.lines[linenum].startswith(b"#"):
+            if b"is binary" in self.lines[linenum]:
                 info['binary'] = True
                 linenum += 1
             elif self.lines[linenum + 1] == self.INDEX_SEP:

@@ -3,6 +3,7 @@ from __future__ import unicode_literals
 import logging
 import re
 
+from django.utils import six
 from django.utils.six.moves import range
 
 from reviewboard.diffviewer.errors import DiffParserError
@@ -29,7 +30,7 @@ class DiffParser(object):
     present in certain types of diffs.
     """
 
-    INDEX_SEP = "=" * 67
+    INDEX_SEP = b"=" * 67
 
     def __init__(self, data):
         self.data = data
@@ -117,6 +118,18 @@ class DiffParser(object):
             file.newInfo         = info.get('newInfo')
             file.origChangesetId = info.get('origChangesetId')
 
+            if isinstance(file.origFile, six.binary_type):
+                file.origFile = file.origFile.decode('utf-8')
+
+            if isinstance(file.newFile, six.binary_type):
+                file.newFile = file.newFile.decode('utf-8')
+
+            if isinstance(file.origInfo, six.binary_type):
+                file.origInfo = file.origInfo.decode('utf-8')
+
+            if isinstance(file.newInfo, six.binary_type):
+                file.newInfo = file.newInfo.decode('utf-8')
+
             # The header is part of the diff, so make sure it gets in the
             # diff content.
             file.data = b''.join([
@@ -135,7 +148,7 @@ class DiffParser(object):
         which can be multiple lines long.
         """
         if linenum + 1 < len(self.lines) and \
-           self.lines[linenum].startswith("Index: ") and \
+           self.lines[linenum].startswith(b"Index: ") and \
            self.lines[linenum + 1] == self.INDEX_SEP:
             # This is an Index: header, which is common in CVS and Subversion,
             # amongst other systems.
@@ -156,11 +169,11 @@ class DiffParser(object):
         which can be multiple lines long.
         """
         if linenum + 1 < len(self.lines) and \
-           ((self.lines[linenum].startswith('--- ') and
-             self.lines[linenum + 1].startswith('+++ ')) or
-            (self.lines[linenum].startswith('*** ') and
-             self.lines[linenum + 1].startswith('--- ') and
-             not self.lines[linenum].endswith(" ****"))):
+           ((self.lines[linenum].startswith(b'--- ') and
+             self.lines[linenum + 1].startswith(b'+++ ')) or
+            (self.lines[linenum].startswith(b'*** ') and
+             self.lines[linenum + 1].startswith(b'--- ') and
+             not self.lines[linenum].endswith(b" ****"))):
             # This is a unified or context diff header. Parse the
             # file and extra info.
             try:
@@ -188,17 +201,17 @@ class DiffParser(object):
         return linenum
 
     def parse_filename_header(self, s, linenum):
-        if "\t" in s:
+        if b"\t" in s:
             # There's a \t separating the filename and info. This is the
             # best case scenario, since it allows for filenames with spaces
             # without much work.
-            return s.split("\t", 1)
+            return s.split(b"\t", 1)
 
         # There's spaces being used to separate the filename and info.
         # This is technically wrong, so all we can do is assume that
         # 1) the filename won't have multiple consecutive spaces, and
         # 2) there's at least 2 spaces separating the filename and info.
-        if "  " in s:
+        if b"  " in s:
             return re.split(r"  +", s, 1)
 
         raise DiffParserError("No valid separator after the filename was " +

@@ -57,7 +57,7 @@ class HgTool(SCMTool):
         return ['diff_path', 'parent_diff_path']
 
     def get_parser(self, data):
-        if data.lstrip().startswith('diff --git'):
+        if data.lstrip().startswith(b'diff --git'):
             return GitDiffParser(data)
         else:
             return HgDiffParser(data)
@@ -81,70 +81,76 @@ class HgDiffParser(DiffParser):
     This class is able to extract Mercurial changeset ids, and
     replaces /dev/null with a useful name
     """
-    newChangesetId = None
-    origChangesetId = None
-    isGitDiff = False
+    new_changeset_id = None
+    orig_changeset_id = None
+    is_git_diff = False
 
     def parse_special_header(self, linenum, info):
-        diffLine = self.lines[linenum].split()
+        diff_line = self.lines[linenum]
+        split_line = diff_line.split()
 
         # git style diffs are supported as long as the node ID and parent ID
         # are present in the patch header
-        if self.lines[linenum].startswith("# Node ID") and len(diffLine) == 4:
-            self.newChangesetId = diffLine[3]
-        elif self.lines[linenum].startswith("# Parent") and len(diffLine) == 3:
-            self.origChangesetId = diffLine[2]
-        elif self.lines[linenum].startswith("diff -r"):
+        if diff_line.startswith(b"# Node ID") and len(split_line) == 4:
+            self.new_changeset_id = split_line[3]
+        elif diff_line.startswith(b"# Parent") and len(split_line) == 3:
+            self.orig_changeset_id = split_line[2]
+        elif diff_line.startswith(b"diff -r"):
             # diff between two revisions are in the following form:
             #  "diff -r abcdef123456 -r 123456abcdef filename"
             # diff between a revision and the working copy are like:
             #  "diff -r abcdef123456 filename"
-            self.isGitDiff = False
+            self.is_git_diff = False
             try:
                 # ordinary hg diffs don't record renames, so
                 # new file always == old file
-                isCommitted = len(diffLine) > 4 and diffLine[3] == '-r'
-                if isCommitted:
-                    nameStartIndex = 5
-                    info['newInfo'] = diffLine[4]
+                if len(split_line) > 4 and split_line[3] == b'-r':
+                    # Committed revision
+                    name_start_ix = 5
+                    info['newInfo'] = split_line[4]
                 else:
-                    nameStartIndex = 3
+                    # Uncommitted revision
+                    name_start_ix = 3
                     info['newInfo'] = "Uncommitted"
                 info['newFile'] = info['origFile'] = \
-                    ' '.join(diffLine[nameStartIndex:])
-                info['origInfo'] = diffLine[2]
-                info['origChangesetId'] = diffLine[2]
+                    b' '.join(split_line[name_start_ix:])
+                info['origInfo'] = split_line[2]
+                info['orig_changeset_id'] = split_line[2]
             except ValueError:
                 raise DiffParserError("The diff file is missing revision "
                                       "information", linenum)
             linenum += 1
 
-        elif self.lines[linenum].startswith("diff --git") and \
-            self.origChangesetId:
+        elif (diff_line.startswith(b"diff --git") and
+              self.orig_changeset_id):
             # diff is in the following form:
             #  "diff --git a/origfilename b/newfilename"
             # possibly followed by:
             #  "{copy|rename} from origfilename"
             #  "{copy|rename} from newfilename"
-            self.isGitDiff = True
-            info['origInfo'] = info['origChangesetId'] = self.origChangesetId
-            if not self.newChangesetId:
+            self.is_git_diff = True
+
+            info['origInfo'] = self.orig_changeset_id
+            info['orig_changeset_id'] = self.orig_changeset_id
+
+            if not self.new_changeset_id:
                 info['newInfo'] = "Uncommitted"
             else:
-                info['newInfo'] = self.newChangesetId
-            lineMatch = re.search(
+                info['newInfo'] = self.new_changeset_id
+
+            match = re.search(
                 r' a/(.*?) b/(.*?)( (copy|rename) from .*)?$',
-                self.lines[linenum])
-            info['origFile'] = lineMatch.group(1)
-            info['newFile'] = lineMatch.group(2)
+                diff_line)
+            info['origFile'] = match.group(1)
+            info['newFile'] = match.group(2)
             linenum += 1
 
         return linenum
 
     def parse_diff_header(self, linenum, info):
-        if not self.isGitDiff:
-            if linenum <= len(self.lines) and \
-               self.lines[linenum].startswith("Binary file "):
+        if not self.is_git_diff:
+            if (linenum <= len(self.lines) and
+                self.lines[linenum].startswith(b"Binary file ")):
                 info['binary'] = True
                 linenum += 1
 
@@ -154,21 +160,21 @@ class HgDiffParser(DiffParser):
         else:
             while linenum < len(self.lines):
                 if self._check_file_diff_start(linenum, info):
-                    self.isGitDiff = False
+                    self.is_git_diff = False
                     linenum += 2
                     return linenum
 
                 line = self.lines[linenum]
-                if (line.startswith("Binary file") or
-                    line.startswith("GIT binary")):
+                if (line.startswith(b"Binary file") or
+                    line.startswith(b"GIT binary")):
                     info['binary'] = True
                     linenum += 1
-                elif (line.startswith("copy") or
-                      line.startswith("rename") or
-                      line.startswith("new") or
-                      line.startswith("old") or
-                      line.startswith("deleted") or
-                      line.startswith("index")):
+                elif (line.startswith(b"copy") or
+                      line.startswith(b"rename") or
+                      line.startswith(b"new") or
+                      line.startswith(b"old") or
+                      line.startswith(b"deleted") or
+                      line.startswith(b"index")):
                     # Not interested, just pass over this one
                     linenum += 1
                 else:
@@ -177,14 +183,14 @@ class HgDiffParser(DiffParser):
         return linenum
 
     def get_orig_commit_id(self):
-        return self.origChangesetId
+        return self.orig_changeset_id
 
     def _check_file_diff_start(self, linenum, info):
         if (linenum + 1 < len(self.lines) and
-            (self.lines[linenum].startswith('--- ') and
-             self.lines[linenum + 1].startswith('+++ '))):
+            (self.lines[linenum].startswith(b'--- ') and
+             self.lines[linenum + 1].startswith(b'+++ '))):
             # check if we're a new file
-            if self.lines[linenum].split()[1] == "/dev/null":
+            if self.lines[linenum].split()[1] == b"/dev/null":
                 info['origInfo'] = PRE_CREATION
             return True
         else:

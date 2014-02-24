@@ -201,8 +201,8 @@ class PlasticDiffParser(DiffParser):
             linenum += 1
 
             if (linenum < len(self.lines) and
-                (self.lines[linenum].startswith("Binary files ") or
-                 self.lines[linenum].startswith("Files "))):
+                (self.lines[linenum].startswith(b"Binary files ") or
+                 self.lines[linenum].startswith(b"Files "))):
                 info['binary'] = True
                 linenum += 1
 

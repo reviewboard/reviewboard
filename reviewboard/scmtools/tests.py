@@ -579,6 +579,32 @@ class CVSTests(SCMTestCase):
         self.assertEqual(file.insert_count, 2)
         self.assertEqual(file.delete_count, 1)
 
+    def test_unicode_diff(self):
+        """Testing parsing CVS diff with unicode filenames"""
+        diff = ("Index: téstfile\n"
+                "===================================================================\n"
+                "RCS file: %s/test/téstfile,v\n"
+                "retrieving revision 1.1.1.1\n"
+                "diff -u -r1.1.1.1 téstfile\n"
+                "--- téstfile    26 Jul 2007 08:50:30 -0000      1.1.1.1\n"
+                "+++ téstfile    26 Jul 2007 10:20:20 -0000\n"
+                "@@ -1 +1,2 @@\n"
+                "-tést content\n"
+                "+updated test content\n"
+                "+added info\n")
+        diff = diff % self.cvs_repo_path
+        diff = diff.encode('utf-8')
+
+        file = self.tool.get_parser(diff).parse()[0]
+        self.assertEqual(file.origFile, 'test/téstfile')
+        self.assertEqual(file.origInfo,
+                         '26 Jul 2007 08:50:30 -0000      1.1.1.1')
+        self.assertEqual(file.newFile, 'téstfile')
+        self.assertEqual(file.newInfo, '26 Jul 2007 10:20:20 -0000')
+        self.assertEqual(file.data, diff)
+        self.assertEqual(file.insert_count, 2)
+        self.assertEqual(file.delete_count, 1)
+
     def test_bad_root(self):
         """Testing a bad CVSROOT"""
         file = 'test/testfile'
@@ -824,6 +850,26 @@ class SubversionTests(SCMTestCase):
         self.assertEqual(files[0].origFile, 'binfile')
         self.assertTrue(files[0].binary)
         self.assertEqual(files[0].insert_count, 0)
+        self.assertEqual(files[0].delete_count, 0)
+
+    def test_unicode_diff(self):
+        """Testing parsing SVN diff with unicode characters"""
+        diff = ("Index: Filé\n"
+                "==========================================================="
+                "========\n"
+                "--- Filé    (revision 4)\n"
+                "+++ Filé    (working copy)\n"
+                "@@ -1,6 +1,7 @@\n"
+                "+# foó\n"
+                " include ../tools/Makefile.base-vars\n"
+                " NAME = misc-docs\n"
+                " OUTNAME = svn-misc-docs\n").encode('utf-8')
+
+        files = self.tool.get_parser(diff).parse()
+        self.assertEqual(len(files), 1)
+        self.assertEqual(files[0].origFile, 'Filé')
+        self.assertFalse(files[0].binary)
+        self.assertEqual(files[0].insert_count, 1)
         self.assertEqual(files[0].delete_count, 0)
 
     def test_diff_with_spaces_in_filenames(self):
@@ -1113,6 +1159,27 @@ class PerforceTests(SCMTestCase):
         self.assertEqual(files[1].insert_count, 2)
         self.assertEqual(files[1].delete_count, 1)
 
+    def test_unicode_diff(self):
+        """Testing Perforce diff parsing with unicode characters"""
+        diff = ("--- tést.c  //depot/foo/proj/tést.c#2\n"
+                "+++ tést.c  01-02-03 04:05:06\n"
+                "@@ -1 +1,2 @@\n"
+                "-tést content\n"
+                "+updated test content\n"
+                "+added info\n").encode('utf-8')
+
+        files = self.tool.get_parser(diff).parse()
+        self.assertEqual(len(files), 1)
+        self.assertEqual(files[0].origFile, 'tést.c')
+        self.assertEqual(files[0].origInfo, '//depot/foo/proj/tést.c#2')
+        self.assertEqual(files[0].newFile, 'tést.c')
+        self.assertEqual(files[0].newInfo, '01-02-03 04:05:06')
+        self.assertFalse(files[0].binary)
+        self.assertFalse(files[0].deleted)
+        self.assertFalse(files[0].moved)
+        self.assertEqual(files[0].insert_count, 2)
+        self.assertEqual(files[0].delete_count, 1)
+
 
 class PerforceStunnelTests(SCMTestCase):
     """
@@ -1381,6 +1448,35 @@ class MercurialTests(SCMTestCase):
         self.assertEqual(file.newInfo, "4960455a8e88")
         self.assertEqual(file.newFile, "new/path to/readme.txt")
 
+    def test_diff_parser_unicode(self):
+        """Testing HgDiffParser with unicode characters"""
+
+        diffContents = ('diff -r bf544ea505f8 réadme\n'
+                        '--- a/réadme\n'
+                        '+++ b/réadme\n').encode('utf-8')
+
+        file = self._first_file_in_diff(diffContents)
+        self.assertEqual(file.origInfo, "bf544ea505f8")
+        self.assertEqual(file.origFile, "réadme")
+        self.assertEqual(file.newInfo, "Uncommitted")
+        self.assertEqual(file.newFile, "réadme")
+
+    def test_git_diff_parsing_unicode(self):
+        """Testing HgDiffParser git diff with unicode characters"""
+
+        diffContents = ('# Node ID 4960455a8e88\n'
+                        '# Parent bf544ea505f8\n'
+                        'diff --git a/path/to file/réadme.txt '
+                        'b/new/path to/réadme.txt\n'
+                        '--- a/path/to file/réadme.txt\n'
+                        '+++ b/new/path to/reédme.txt\n').encode('utf-8')
+
+        file = self._first_file_in_diff(diffContents)
+        self.assertEqual(file.origInfo, "bf544ea505f8")
+        self.assertEqual(file.origFile, "path/to file/réadme.txt")
+        self.assertEqual(file.newInfo, "4960455a8e88")
+        self.assertEqual(file.newFile, "new/path to/réadme.txt")
+
     def test_revision_parsing(self):
         """Testing HgDiffParser revision number parsing"""
 
@@ -1549,6 +1645,36 @@ class GitTests(SCMTestCase):
         self.assertEqual(file.data.splitlines()[0],
                          "diff --git a/cfg/testcase.ini b/cfg/testcase.ini")
         self.assertEqual(file.data.splitlines()[-1], "+db = pyunit")
+        self.assertEqual(file.insert_count, 2)
+        self.assertEqual(file.delete_count, 1)
+
+    def test_diff_with_unicode(self):
+        """Testing parsing Git diff with unicode characters"""
+        diff = ('diff --git a/cfg/téstcase.ini b/cfg/téstcase.ini\n'
+                'index cc18ec8..5e70b73 100644\n'
+                '--- a/cfg/téstcase.ini\n'
+                '+++ b/cfg/téstcase.ini\n'
+                '@@ -1,6 +1,7 @@\n'
+                '+blah blah blah\n'
+                ' [mysql]\n'
+                ' hóst = localhost\n'
+                ' pórt = 3306\n'
+                ' user = user\n'
+                ' pass = pass\n'
+                '-db = pyunít\n'
+                '+db = pyunít\n').encode('utf-8')
+
+        file = self._get_file_in_diff(diff)
+        self.assertEqual(file.origFile, 'cfg/téstcase.ini')
+        self.assertEqual(file.newFile, 'cfg/téstcase.ini')
+        self.assertEqual(file.origInfo, 'cc18ec8')
+        self.assertEqual(file.newInfo, '5e70b73')
+        self.assertFalse(file.binary)
+        self.assertFalse(file.deleted)
+        self.assertEqual(file.data.splitlines()[0].decode('utf-8'),
+                         'diff --git a/cfg/téstcase.ini b/cfg/téstcase.ini')
+        self.assertEqual(file.data.splitlines()[-1].decode('utf-8'),
+                         '+db = pyunít')
         self.assertEqual(file.insert_count, 2)
         self.assertEqual(file.delete_count, 1)
 
