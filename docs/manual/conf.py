@@ -51,6 +51,7 @@ extensions = [
     'sphinx.ext.todo',
     'webapidocs',
     'httprole',
+    'retina_images',
 ]
 
 # Add any paths that contain templates here, relative to this directory.

@@ -6,16 +6,23 @@ Uploading File Attachments
 
 .. versionadded:: 1.6
 
-Any type of file can be added to a review request. Log files, binaries,
-test data, audio, or anything else. These files can be downloaded by
-other people. This is especially helpful for files that are part of a change
-but can't be represented in diffs.
+Any type of file can be added to a review request. Log files, binaries, test
+data, audio, or anything else. This is especially helpful for files that are
+part of a change but can't be represented in diffs, as well as things like
+attaching a screenshot of changes that affect user interfaces.
 
 .. image:: file-attachment.png
 
-Comments can be made on file attachments by clicking :guilabel:`Add Comment`.
-These comments apply to file attachments as a whole. See
-:ref:`reviewing-file-attachments` for more information.
+Many types of files, including text and images, can be displayed on Review
+Board and reviewed by clicking on the areas where you want to add comments.
+This works just like the review process for source code. Simply click the
+thumbnail or click :guilabel:`Review` to begin reviewing the file.
+
+Not all types of files have this support. For those files, clicking
+:guilabel:`Add Comment` will let you leave a comment that applies to the whole
+file.
+
+See :ref:`reviewing-file-attachments` for more information.
 
 There are two ways to upload a file attachment:
 
