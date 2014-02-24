@@ -227,7 +227,7 @@ Shows the ID number of the review request.
 Select Rows
 -----------
 
-Shows a check-box that allows you to select the row. When one or more review
+Shows a checkbox that allows you to select the row. When one or more review
 requests are selected, the sidebar will contain commands to close the selected
 review requests.
 

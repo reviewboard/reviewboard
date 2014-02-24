@@ -14,7 +14,7 @@ Groups
 ======
 
 If Review Board has review groups, you can choose which groups you'd like to
-join using the check-boxes in this section. Review Requests which are assigned
+join using the checkboxes in this section. Review Requests which are assigned
 to groups that you are in will show up on your dashboard.
 
 
@@ -33,7 +33,7 @@ Board:
     it off, de-select this item.
 
 * **Always open an issue when comment box opens**
-    By default, when you create a comment, the "Open an issue" check-box will
+    By default, when you create a comment, the "Open an issue" checkbox will
     be pre-selected. If you prefer to opt-in to creating issues for each
     comment, de-select this item.
 
