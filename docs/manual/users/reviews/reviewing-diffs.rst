@@ -134,3 +134,5 @@ There are many keyboard shortcuts for navigating around the diff viewer:
   :kbd:`[`, :kbd:`x`
 * Next comment:
   :kbd:`]`, :kbd:`c`
+* Add comment to selected block:
+  :kbd:`r`, :kbd:`R`

@@ -11,7 +11,7 @@ from django.utils.translation import ugettext_lazy as _
 from djblets.forms.fields import TimeZoneField
 from djblets.siteconfig.models import SiteConfiguration
 
-from reviewboard.accounts.backends import get_auth_backends
+from reviewboard.accounts.backends import get_enabled_auth_backends
 from reviewboard.reviews.models import Group
 from reviewboard.site.urlresolvers import local_site_reverse
 
@@ -130,7 +130,7 @@ class AccountSettingsForm(AccountPageForm):
         required=False)
 
     def is_visible(self):
-        backend = get_auth_backends()[0]
+        backend = get_enabled_auth_backends()[0]
 
         return backend.supports_change_password
 
@@ -179,7 +179,7 @@ class ChangePasswordForm(AccountPageForm):
         widget=widgets.PasswordInput())
 
     def clean_old_password(self):
-        backend = get_auth_backends()[0]
+        backend = get_enabled_auth_backends()[0]
 
         password = self.cleaned_data['old_password']
 
@@ -196,7 +196,7 @@ class ChangePasswordForm(AccountPageForm):
         return p2
 
     def save(self):
-        backend = get_auth_backends()[0]
+        backend = get_enabled_auth_backends()[0]
         backend.update_password(self.user, self.cleaned_data['password1'])
         self.user.save()
 
@@ -221,7 +221,7 @@ class ProfileForm(AccountPageForm):
         required=True)
     profile_private = forms.BooleanField(
         required=False,
-        label=_("Keep this information private"))
+        label=_("Keep profile information private"))
 
     def load(self):
         self.set_initial({
@@ -231,7 +231,7 @@ class ProfileForm(AccountPageForm):
             'profile_private': self.profile.is_private,
         })
 
-        backend = get_auth_backends()[0]
+        backend = get_enabled_auth_backends()[0]
 
         if not backend.supports_change_name:
             del self.fields['first_name']
@@ -241,7 +241,7 @@ class ProfileForm(AccountPageForm):
             del self.fields['email']
 
     def save(self):
-        backend = get_auth_backends()[0]
+        backend = get_enabled_auth_backends()[0]
 
         if not backend.supports_change_name:
             self.user.first_name = self.cleaned_data['first_name']

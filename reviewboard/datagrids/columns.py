@@ -7,7 +7,7 @@ from django.template.defaultfilters import date
 from django.utils import six
 from django.utils.html import conditional_escape
 from django.utils.six.moves import reduce
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import ugettext_lazy as _, ugettext
 from djblets.datagrid.grids import Column, DateTimeColumn
 
 from reviewboard.accounts.models import Profile
@@ -24,12 +24,13 @@ class BaseStarColumn(Column):
     The star is interactive, allowing the user to star or unstar the item.
     """
     def __init__(self, *args, **kwargs):
-        super(BaseStarColumn, self).__init__(*args, **kwargs)
+        super(BaseStarColumn, self).__init__(
+            image_class='rb-icon rb-icon-star-on',
+            image_alt=_('Starred'),
+            detailed_label=_('Starred'),
+            shrink=True,
+            *args, **kwargs)
 
-        self.image_class = 'rb-icon rb-icon-star-on'
-        self.image_alt = _('Starred')
-        self.detailed_label = _('Starred')
-        self.shrink = True
         self.all_starred = {}
 
     def render_data(self, obj):
@@ -44,9 +45,13 @@ class BugsColumn(Column):
     was configured for the repository the review request's change is on.
     """
     def __init__(self, *args, **kwargs):
-        super(BugsColumn, self).__init__(_('Bugs'), link=False, shrink=True,
-                                         sortable=False, css_class='bugs',
-                                         *args, **kwargs)
+        super(BugsColumn, self).__init__(
+            label=_('Bugs'),
+            css_class='bugs',
+            link=False,
+            shrink=True,
+            sortable=False,
+            *args, **kwargs)
 
     def augment_queryset(self, queryset):
         return queryset.select_related('repository')
@@ -83,7 +88,7 @@ class DiffUpdatedColumn(DateTimeColumn):
     """Shows the date/time that the diff was last updated."""
     def __init__(self, *args, **kwargs):
         super(DiffUpdatedColumn, self).__init__(
-            _('Diff Updated'),
+            label=_('Diff Updated'),
             db_field='diffset_history__last_diff_updated',
             field_name='last_diff_updated',
             sortable=True,
@@ -105,7 +110,7 @@ class DiffUpdatedSinceColumn(DateTimeSinceColumn):
     """Shows the elapsed time since the diff was last updated."""
     def __init__(self, *args, **kwargs):
         super(DiffUpdatedSinceColumn, self).__init__(
-            _('Diff Updated'),
+            label=_('Diff Updated'),
             db_field='diffset_history__last_diff_updated',
             field_name='last_diff_updated',
             sortable=True,
@@ -125,10 +130,10 @@ class DiffUpdatedSinceColumn(DateTimeSinceColumn):
 class GroupMemberCountColumn(Column):
     """Shows the number of users that are part of a review group."""
     def __init__(self, *args, **kwargs):
-        super(GroupMemberCountColumn, self).__init__(*args, **kwargs)
-
-        self.link = True
-        self.link_func = self.link_to_object
+        super(GroupMemberCountColumn, self).__init__(
+            link=True,
+            link_func=self.link_to_object,
+            *args, **kwargs)
 
     def render_data(self, group):
         return six.text_type(group.users.count())
@@ -142,12 +147,12 @@ class GroupMemberCountColumn(Column):
 class GroupsColumn(Column):
     """Shows the list of groups requested to review the review request."""
     def __init__(self, *args, **kwargs):
-        super(GroupsColumn, self).__init__(*args, **kwargs)
-
-        self.label = _('Groups')
-        self.detailed_label = _('Target Groups')
-        self.sortable = False
-        self.shrink = False
+        super(GroupsColumn, self).__init__(
+            label=_('Groups'),
+            detailed_label=_('Target Groups'),
+            sortable=False,
+            shrink=False,
+            *args, **kwargs)
 
     def render_data(self, review_request):
         groups = review_request.target_groups.all()
@@ -157,12 +162,12 @@ class GroupsColumn(Column):
 class MyCommentsColumn(Column):
     """Shows if the current user has reviewed the review request."""
     def __init__(self, *args, **kwargs):
-        super(MyCommentsColumn, self).__init__(*args, **kwargs)
-
-        self.image_class = 'rb-icon rb-icon-datagrid-comment-draft'
-        self.image_alt = _('My Comments')
-        self.detailed_label = _('My Comments')
-        self.shrink = True
+        super(MyCommentsColumn, self).__init__(
+            image_class='rb-icon rb-icon-datagrid-comment-draft',
+            image_alt=_('My Comments'),
+            detailed_label=_('My Comments'),
+            shrink=True,
+            *args, **kwargs)
 
         # XXX It'd be nice to be able to sort on this, but datagrids currently
         # can only sort based on stored (in the DB) values, not computed
@@ -237,12 +242,12 @@ class NewUpdatesColumn(Column):
     or reviews since the user last saw it.
     """
     def __init__(self, *args, **kwargs):
-        super(NewUpdatesColumn, self).__init__(*args, **kwargs)
-
-        self.image_class = 'rb-icon rb-icon-datagrid-new-updates'
-        self.image_alt = _('New Updates')
-        self.detailed_label = _('New Updates')
-        self.shrink = True
+        super(NewUpdatesColumn, self).__init__(
+            image_class='rb-icon rb-icon-datagrid-new-updates',
+            image_alt=_('New Updates'),
+            detailed_label=_('New Updates'),
+            shrink=True,
+            *args, **kwargs)
 
     def render_data(self, review_request):
         if review_request.new_review_count > 0:
@@ -270,12 +275,12 @@ class PendingCountColumn(Column):
 class PeopleColumn(Column):
     """Shows the list of people requested to review the review request."""
     def __init__(self, *args, **kwargs):
-        super(PeopleColumn, self).__init__(*args, **kwargs)
-
-        self.label = _('People')
-        self.detailed_label = _('Target People')
-        self.sortable = False
-        self.shrink = False
+        super(PeopleColumn, self).__init__(
+            label=_('People'),
+            detailed_label=_('Target People'),
+            sortable=False,
+            shrink=False,
+            *args, **kwargs)
 
     def render_data(self, review_request):
         people = review_request.target_people.all()
@@ -286,9 +291,13 @@ class RepositoryColumn(Column):
     """Shows the name of the repository the review request's change is on."""
     def __init__(self, *args, **kwargs):
         super(RepositoryColumn, self).__init__(
-            _('Repository'), db_field='repository__name',
-            shrink=True, sortable=True, link=False,
-            css_class='repository-column', *args, **kwargs)
+            label=_('Repository'),
+            db_field='repository__name',
+            shrink=True,
+            sortable=True,
+            link=False,
+            css_class='repository-column',
+            *args, **kwargs)
 
     def augment_queryset(self, queryset):
         return queryset.select_related('repository')
@@ -299,16 +308,14 @@ class RepositoryColumn(Column):
 
 class ReviewCountColumn(Column):
     """Shows the number of published reviews for a review request."""
-    def __init__(self, label=_('Reviews'),
-                 detailed_label=_('Number of Reviews'),
-                 *args, **kwargs):
-        super(ReviewCountColumn, self).__init__(label=label,
-                                                detailed_label=detailed_label,
-                                                *kwargs, **kwargs)
-
-        self.shrink = True
-        self.link = True
-        self.link_func = self.link_to_object
+    def __init__(self, *args, **kwargs):
+        super(ReviewCountColumn, self).__init__(
+            label=_('Reviews'),
+            detailed_label=_('Number of Reviews'),
+            shrink=True,
+            link=True,
+            link_func=self.link_to_object,
+            *kwargs, **kwargs)
 
     def render_data(self, review_request):
         return six.text_type(review_request.publicreviewcount_count)
@@ -362,7 +369,9 @@ class ReviewRequestIDColumn(Column):
         super(ReviewRequestIDColumn, self).__init__(
             label=_('ID'),
             detailed_label=_('Review Request ID'),
-            shrink=True, link=True)
+            shrink=True,
+            link=True,
+            *args, **kwargs)
 
     def render_data(self, review_request):
         return review_request.display_id
@@ -399,14 +408,14 @@ class ReviewRequestStarColumn(BaseStarColumn):
 class ShipItColumn(Column):
     """Shows the "Ship It" count for a review request."""
     def __init__(self, *args, **kwargs):
-        super(ShipItColumn, self).__init__(*args, **kwargs)
-
-        self.image_class = 'rb-icon rb-icon-shipit'
-        self.image_alt = _('Ship It!')
-        self.detailed_label = _('Ship It!')
-        self.db_field = 'shipit_count'
-        self.sortable = True
-        self.shrink = True
+        super(ShipItColumn, self).__init__(
+            image_class='rb-icon rb-icon-shipit',
+            image_alt=_('Ship It!'),
+            detailed_label = _('Ship It!'),
+            db_field='shipit_count',
+            sortable=True,
+            shrink=True,
+            *args, **kwargs)
 
     def render_data(self, review_request):
         if review_request.issue_open_count > 0:
@@ -428,8 +437,12 @@ class SubmitterColumn(Column):
     """Shows the username of the user who submitted the review request."""
     def __init__(self, *args, **kwargs):
         super(SubmitterColumn, self).__init__(
-            _('Submitter'), db_field='submitter__username',
-            shrink=True, sortable=True, link=True, *args, **kwargs)
+            label=_('Submitter'),
+            db_field='submitter__username',
+            shrink=True,
+            sortable=True,
+            link=True,
+            *args, **kwargs)
 
     def augment_queryset(self, queryset):
         return queryset.select_related('submitter')
@@ -441,8 +454,13 @@ class SummaryColumn(Column):
     This will also prepend the draft/submitted/discarded state, if any,
     to the summary.
     """
-    def __init__(self, label=_('Summary'), *args, **kwargs):
-        super(SummaryColumn, self).__init__(label=label, *args, **kwargs)
+    def __init__(self, *args, **kwargs):
+        super(SummaryColumn, self).__init__(
+            label=_('Summary'),
+            expand=True,
+            link=True,
+            css_class='summary',
+            *args, **kwargs)
 
         self.sortable = True
 
@@ -498,11 +516,14 @@ class ToMeColumn(Column):
     list.
     """
     def __init__(self, *args, **kwargs):
-        super(ToMeColumn, self).__init__(*args, **kwargs)
+        raquo = '\u00BB'
 
-        self.label = '\u00BB'  # this is &raquo;
-        self.detailed_label = '\u00BB To Me'
-        self.shrink = True
+        super(ToMeColumn, self).__init__(
+            label=raquo,
+            detailed_label=_('To Me'),
+            detailed_label_html=(ugettext('%s To Me') % raquo),
+            shrink=True,
+            *args, **kwargs)
 
     def render_data(self, review_request):
         user = self.datagrid.request.user
@@ -517,12 +538,11 @@ class ToMeColumn(Column):
 class DiffSizeColumn(Column):
     """Indicates line add/delete counts for the latest diffset."""
     def __init__(self, *args, **kwargs):
-        super(DiffSizeColumn, self).__init__(*args, **kwargs)
-
-        self.label = _('Diff Size')
-        self.detailed_label = _('Diff Size')
-        self.sortable = False
-        self.shrink = True
+        super(DiffSizeColumn, self).__init__(
+            label=_('Diff Size'),
+            sortable=False,
+            shrink=True,
+            *args, **kwargs)
 
     def render_data(self, review_request):
         try:

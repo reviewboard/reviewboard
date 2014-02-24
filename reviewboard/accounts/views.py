@@ -7,7 +7,7 @@ from django.shortcuts import render
 from djblets.auth.views import register
 from djblets.siteconfig.models import SiteConfiguration
 
-from reviewboard.accounts.backends import get_auth_backends
+from reviewboard.accounts.backends import get_enabled_auth_backends
 from reviewboard.accounts.forms.registration import RegistrationForm
 from reviewboard.accounts.models import Profile
 from reviewboard.accounts.pages import get_page_classes
@@ -20,7 +20,7 @@ def account_register(request, next_url='dashboard'):
     on the authentication type the user has configured.
     """
     siteconfig = SiteConfiguration.objects.get_current()
-    auth_backends = get_auth_backends()
+    auth_backends = get_enabled_auth_backends()
 
     if (auth_backends[0].supports_registration and
             siteconfig.get("auth_enable_registration")):

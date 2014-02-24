@@ -655,7 +655,7 @@ def get_review_request_field(field_id):
 
 
 def register_review_request_fieldset(fieldset):
-    """Registeres a custom review request fieldset.
+    """Registers a custom review request fieldset.
 
     A fieldset ID is considered unique and can only be registered once. A
     KeyError will be thrown if attempting to register a second time.
@@ -681,7 +681,7 @@ def register_review_request_fieldset(fieldset):
 
 
 def unregister_review_request_fieldset(fieldset):
-    """Unregisteres a previously registered review request fieldset."""
+    """Unregisters a previously registered review request fieldset."""
     _populate_defaults()
 
     fieldset_id = fieldset.fieldset_id

@@ -10,36 +10,55 @@ page (signified by your gravatar image). From here, select :menuselection:`My
 Account`.
 
 
-User Preferences
-================
-
-Depending on how the Review Board server is configured, you may have the option
-to change the real name, e-mail address, and password on your account. These
-options are typically not available if Review Board is set up to use some kind
-of centralized authentication system such as LDAP or Active Directory.
-
-There are three other user preferences which are always available:
-
-* **Enable syntax highlighting in the diff viewer**
-    By default, code is shown using syntax highlighting. If you'd like to turn
-    it off, de-select this item.
-
-* **Keep your user profile page private**
-    Normally, the user profile page will show your real name, e-mail address,
-    and when you last logged in. If you'd like to hide this information, select
-    this item.
-
-* **Time zone**
-    This setting will change which time zone is used to show times and dates.
-    This should be set to the time zone in your current location.
-
-
 Groups
 ======
 
 If Review Board has review groups, you can choose which groups you'd like to
 join using the check-boxes in this section. Review Requests which are assigned
 to groups that you are in will show up on your dashboard.
+
+
+Settings
+========
+
+There are a few settings which allow you to affect how you interact with Review
+Board:
+
+* **Time zone**
+    This setting will change which time zone is used to show times and dates.
+    This should be set to the time zone in your current location.
+
+* **Enable syntax highlighting in the diff viewer**
+    By default, code is shown using syntax highlighting. If you'd like to turn
+    it off, de-select this item.
+
+* **Always open an issue when comment box opens**
+    By default, when you create a comment, the "Open an issue" check-box will
+    be pre-selected. If you prefer to opt-in to creating issues for each
+    comment, de-select this item.
+
+
+Authentication
+==============
+
+The Authentication page allows you to change your password. This page may not
+be available if Review Board is configured to use an external authentication
+system like LDAP or Active Directory.
+
+
+Profile
+=======
+
+The Profile page allows you to change the real name and e-mail address
+associated with your account. These settings may not be available if Review
+Board is configured to use an external authentication system like LDAP or
+Active Directory. There is also a setting to control the privacy of your
+account:
+
+* **Keep profile information private**
+    Normally, the user profile page will show your real name, e-mail address,
+    and when you last logged in. If you'd like to hide this information, select
+    this item.
 
 
 Gravatar Images

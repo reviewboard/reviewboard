@@ -65,7 +65,7 @@
      </li>
 {% if user.is_authenticated %}
      <li>
-      <a class="user-nav-item" href="{% url 'user-preferences' %}">{% gravatar user 32 %} {{user.first_name}} &#9662;</a>
+      <a class="user-nav-item" href="{% url 'user-preferences' %}">{% gravatar user 32 %} {{user.username}} &#9662;</a>
       <ul>
        <li><a href="{% url 'user-preferences' %}">{% trans "My account" %}</a></li>
 {%  if user.is_staff %}

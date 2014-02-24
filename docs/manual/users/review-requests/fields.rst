@@ -13,7 +13,7 @@ Changing Fields
 ===============
 
 Most fields on a review request can be changed, with the exception of
-:guilabel:`Submitter`, :guilabel:`Change Number` and :guilabel:`Repository`.
+:guilabel:`Submitter`, :guilabel:`Commit` and :guilabel:`Repository`.
 
 To change a field, either click on the field (in the case of
 :guilabel:`Description` and :guilabel:`Testing Done`) or click on the pencil
@@ -28,6 +28,33 @@ Summary
 The :guilabel:`Summary` field is a short, one-line description of the
 change. It's what people will see in their dashboard and in e-mail subject
 headers. You should aim to keep this short and as descriptive as possible.
+
+
+Description
+-----------
+
+The :guilabel:`Description` field describes the change that will be reviewed.
+It can support paragraphs of text with word-wrapping.
+
+This is intended to provide enough information for reviewers to know what the
+change is about before they go to review it.
+
+This field supports rich text using the :term:`Markdown` language. See
+:ref:`using-markdown` for more information.
+
+
+Testing Done
+------------
+
+The :guilabel:`Testing Done` field describes how this change has been tested.
+It can support paragraphs of text with word-wrapping.
+
+This should cover any and all testing scenarios that have been done, in order
+to help reviewers feel more confident about the stability and design of the
+change.
+
+This field supports rich text using the :term:`Markdown` language. See
+:ref:`using-markdown` for more information.
 
 
 Branch
@@ -95,30 +122,3 @@ people will be displayed, showing both the username and full name.
 Review Board doesn't enforce that the people listed must review the change
 before it can be submitted. This is a policy that is left up to each
 organization.
-
-
-Description
------------
-
-The :guilabel:`Description` field describes the change that will be reviewed.
-It can support paragraphs of text with word-wrapping.
-
-This is intended to provide enough information for reviewers to know what the
-change is about before they go to review it.
-
-This field supports rich text using the :term:`Markdown` language. See
-:ref:`using-markdown` for more information.
-
-
-Testing Done
-------------
-
-The :guilabel:`Testing Done` field describes how this change has been tested.
-It can support paragraphs of text with word-wrapping.
-
-This should cover any and all testing scenarios that have been done, in order
-to help reviewers feel more confident about the stability and design of the
-change.
-
-This field supports rich text using the :term:`Markdown` language. See
-:ref:`using-markdown` for more information.

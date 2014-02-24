@@ -33,4 +33,7 @@ The gray submitted or discarded banners have a field for the description.
 You can enter the text here and click :guilabel:`OK`. The description will
 be saved immediately, and other users will be able to see it.
 
+This field supports rich text using the :term:`Markdown` language. See
+:ref:`using-markdown` for more information.
+
 .. image:: submitted-banner.png

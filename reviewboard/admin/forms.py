@@ -345,7 +345,9 @@ class AuthenticationSettingsForm(SiteSettingsForm):
         backend_choices = []
         builtin_auth_choice = None
 
-        for backend_id, backend in get_registered_auth_backends():
+        for backend in get_registered_auth_backends():
+            backend_id = backend.backend_id
+
             try:
                 if backend.settings_form:
                     if cur_auth_backend == backend_id:

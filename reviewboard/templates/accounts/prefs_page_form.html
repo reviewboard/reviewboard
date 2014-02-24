@@ -8,11 +8,11 @@
 <div class="fields-row{% if not label_first %} checkbox-row{% endif %}">
  <div class="field">
 {%    if label_first %}
-  {{field.label_tag}}
+  {% label_tag field %}
   {{field}}
 {%    else %}
   {{field}}
-  {{field.label_tag}}
+  {% label_tag field %}
 {%    endif %}
   {{field.errors}}
  </div>

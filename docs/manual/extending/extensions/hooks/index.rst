@@ -16,6 +16,7 @@ The following hooks are available for use by extensions.
 .. toctree::
    :maxdepth: 1
 
+   auth-backend-hook
    account-pages-hook
    account-page-forms-hook
    action-hooks

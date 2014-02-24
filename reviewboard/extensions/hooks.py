@@ -5,6 +5,8 @@ from djblets.extensions.hooks import (DataGridColumnsHook, ExtensionHook,
                                       ExtensionHookPoint, SignalHook,
                                       TemplateHook, URLHook)
 
+from reviewboard.accounts.backends import (register_auth_backend,
+                                           unregister_auth_backend)
 from reviewboard.accounts.pages import (get_page_class,
                                         register_account_page_class,
                                         unregister_account_page_class)
@@ -15,6 +17,28 @@ from reviewboard.reviews.fields import (get_review_request_fieldset,
                                         register_review_request_fieldset,
                                         unregister_review_request_fieldset)
 from reviewboard.reviews.ui.base import register_ui, unregister_ui
+
+
+@six.add_metaclass(ExtensionHookPoint)
+class AuthBackendHook(ExtensionHook):
+    """A hook for registering an authentication backend.
+
+    Authentication backends control user authentication, registration, and
+    user lookup, and user data manipulation.
+
+    This hook takes the class of an authentication backend that should
+    be made available to the server.
+    """
+    def __init__(self, extension, backend_cls):
+        super(AuthBackendHook, self).__init__(extension)
+
+        self.backend_cls = backend_cls
+        register_auth_backend(backend_cls)
+
+    def shutdown(self):
+        super(AuthBackendHook, self).shutdown()
+
+        unregister_auth_backend(self.backend_cls)
 
 
 @six.add_metaclass(ExtensionHookPoint)
