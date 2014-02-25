@@ -1,3 +1,5 @@
+.. _review-replying:
+
 ====================
 Replying to Comments
 ====================
