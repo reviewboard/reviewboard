@@ -1,3 +1,7 @@
+import __main__
+__main__.__requires__ = ['Reviewboard']
+import pkg_resources
+
 import os
 import sys
 
