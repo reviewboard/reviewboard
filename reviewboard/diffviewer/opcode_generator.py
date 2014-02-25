@@ -292,9 +292,9 @@ class DiffOpcodeGenerator(object):
         r_move_ranges = {}  # key -> (start, end, group)
         prev_key = None
 
-        # Loop through every location from ij1 through ij2 until we've
+        # Loop through every location from ij1 through ij2 - 1 until we've
         # reached the end.
-        while i_move_cur <= ij2:
+        while i_move_cur < ij2:
             try:
                 iline = self.differ.b[i_move_cur].strip()
             except IndexError:
@@ -380,7 +380,7 @@ class DiffOpcodeGenerator(object):
 
             i_move_cur += 1
 
-            if not updated_range:
+            if not updated_range or i_move_cur == ij2:
                 # We've reached the very end of the insert group. See if
                 # we have anything that looks like a move.
                 if r_move_ranges:

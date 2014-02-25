@@ -330,6 +330,34 @@ class DiffParserTest(TestCase):
             ]
         )
 
+    def test_move_detection_with_last_line_in_range(self):
+        """Testing diff viewer move detection with last line in a range"""
+        # The move detection rewrite in 2.0 introduced an off-by-one where
+        # the last line in a chunk wasn't being processed as a move unless
+        # the line after the chunk had content. That line should never have
+        # been processed either.
+        self._test_move_detection(
+            [
+                'this line will be replaced',
+                '',
+                'foo bar blah blah',
+                'this is line 1, and it is sufficiently long',
+                '',
+            ],
+            [
+                'this is line 1, and it is sufficiently long',
+                '',
+                'foo bar blah blah',
+                '',
+            ],
+            [
+                {1: 4},
+            ],
+            [
+                {4: 1},
+            ]
+        )
+
     def test_move_detection_with_adjacent_regions(self):
         """Testing diff viewer move detection with adjacent regions"""
         self._test_move_detection(
