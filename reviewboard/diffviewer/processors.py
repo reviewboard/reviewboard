@@ -62,6 +62,11 @@ def filter_interdiff_opcodes(opcodes, filediff_data, interfilediff_data):
 
         return ranges
 
+    def _is_range_valid(line_range, tag, i1, i2):
+        return (line_range is not None and
+                i1 >= line_range[0] and
+                (tag == 'delete' or i1 != i2))
+
     orig_ranges = _find_range_info(filediff_data)
     new_ranges = _find_range_info(interfilediff_data)
 
@@ -109,14 +114,39 @@ def filter_interdiff_opcodes(opcodes, filediff_data, interfilediff_data):
 
         # See if the chunk we're looking at is in the range of the chunk in
         # one of the uploaded diffs. If so, allow it through.
-        valid_chunk = (
-            (orig_range is not None and
-             (tag == 'delete' or i1 != i2) and
-             (i1 >= orig_range[0] and i2 <= orig_range[1])) or
-            (new_range is not None and
-             (tag == 'delete' or j1 != j2) and
-             (j1 >= new_range[0] and j2 <= new_range[1]))
-        )
+        orig_starts_valid = _is_range_valid(orig_range, tag, i1, i2)
+        new_starts_valid = _is_range_valid(new_range, tag, j1, j2)
+        valid_chunk = orig_starts_valid or new_starts_valid
+
+        if valid_chunk:
+            # This chunk is valid. It may only be a portion of the real
+            # chunk, though. We'll need to split it up into a known valid
+            # segment first, and yield that.
+            if orig_starts_valid:
+                valid_i2 = min(i2, orig_range[1] + 1)
+            else:
+                valid_i2 = i2
+
+            if new_starts_valid:
+                valid_j2 = min(j2, new_range[1] + 1)
+            else:
+                valid_j2 = j2
+
+            yield tag, i1, valid_i2, j1, valid_j2
+
+            if valid_i2 == i2 and valid_j2 == j2:
+                continue
+
+            # There were more parts of this range remaining. We know they're
+            # all invalid, so let's update i1 and j1 to point to the start
+            # of those invalid ranges, and mark them.
+            if orig_range is not None and i2 > orig_range[1]:
+                i1 = orig_range[1] + 1
+
+            if new_range is not None and j2 > new_range[1]:
+                j1 = new_range[1] + 1
+
+            valid_chunk = False
 
         if not valid_chunk:
             # Turn this into an "filtered-equal" chunk. The left-hand and
@@ -126,40 +156,43 @@ def filter_interdiff_opcodes(opcodes, filediff_data, interfilediff_data):
             #
             # These will get turned back into "equal" chunks in the
             # post-processing step.
-            tag = 'filtered-equal'
-
-        yield tag, i1, i2, j1, j2
+            yield 'filtered-equal', i1, i2, j1, j2
 
 
-def merge_adjacent_chunks(opcodes):
-    """Merges adjacent chunks of the same tag.
+def post_process_filtered_equals(opcodes):
+    """Post-processes filtered-equal and equal chunks from interdiffs.
 
-    This will take any chunks that have the same tag (such as two "equal"
-    chunks) and merge them together.
+    Any filtered-out "filtered-equal" chunks will get turned back into "equal"
+    chunks and merged into any prior equal chunks. Likewise, simple "equal"
+    chunks will also get merged.
+
+    "equal" chunks that have any indentation information will remain
+    their own chunks, with nothing merged in.
     """
     cur_chunk = None
 
-    for tag, i1, i2, j1, j2 in opcodes:
-        if cur_chunk and cur_chunk[0] == tag:
-            cur_chunk = (tag, cur_chunk[1], i2, cur_chunk[3], j2)
+    for tag, i1, i2, j1, j2, meta in opcodes:
+        if ((tag == 'equal' and not meta.get('indentation_changes')) or
+            tag == 'filtered-equal'):
+            # We either have a plain equal chunk without any indentation
+            # changes, or a filtered-equal chunk. In these cases, we can
+            # safely merge the chunks together and transform them into
+            # an "equal" chunk.
+            if cur_chunk:
+                i1 = cur_chunk[1]
+                j1 = cur_chunk[3]
+                meta = cur_chunk[5]
+
+            cur_chunk = ('equal', i1, i2, j1, j2, meta)
         else:
+            # This is some sort of changed chunk (insert, delete, replace,
+            # or equal with indentation changes). Yield the previous chunk
+            # we were working with, if any, and then yield the current chunk.
             if cur_chunk:
                 yield cur_chunk
+                cur_chunk = None
 
-            cur_chunk = (tag, i1, i2, j1, j2)
+            yield tag, i1, i2, j1, j2, meta
 
     if cur_chunk:
         yield cur_chunk
-
-
-def post_process_interdiff_chunks(opcodes):
-    """Post-processes interdiff chunks.
-
-    Any filtered-out "filtered-equal" chunks will get turned back into "equal"
-    chunks.
-    """
-    for tag, i1, i2, j1, j2, meta in opcodes:
-        if tag == 'filtered-equal':
-            tag = 'equal'
-
-        yield tag, i1, i2, j1, j2, meta

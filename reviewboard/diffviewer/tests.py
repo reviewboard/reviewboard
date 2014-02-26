@@ -21,7 +21,7 @@ from reviewboard.diffviewer.myersdiff import MyersDiffer
 from reviewboard.diffviewer.opcode_generator import get_diff_opcode_generator
 from reviewboard.diffviewer.renderers import DiffRenderer
 from reviewboard.diffviewer.processors import (filter_interdiff_opcodes,
-                                               merge_adjacent_chunks)
+                                               post_process_filtered_equals)
 from reviewboard.diffviewer.templatetags.difftags import highlightregion
 from reviewboard.scmtools.models import Repository, Tool
 from reviewboard.testing import TestCase
@@ -326,6 +326,34 @@ class DiffParserTest(TestCase):
             ],
             [
                 {1: 4},
+                {4: 1},
+            ]
+        )
+
+    def test_move_detection_with_last_line_in_range(self):
+        """Testing diff viewer move detection with last line in a range"""
+        # The move detection rewrite in 2.0 introduced an off-by-one where
+        # the last line in a chunk wasn't being processed as a move unless
+        # the line after the chunk had content. That line should never have
+        # been processed either.
+        self._test_move_detection(
+            [
+                'this line will be replaced',
+                '',
+                'foo bar blah blah',
+                'this is line 1, and it is sufficiently long',
+                '',
+            ],
+            [
+                'this is line 1, and it is sufficiently long',
+                '',
+                'foo bar blah blah',
+                '',
+            ],
+            [
+                {1: 4},
+            ],
+            [
                 {4: 1},
             ]
         )
@@ -1007,9 +1035,11 @@ class ProcessorsTests(TestCase):
             ('filtered-equal', 0, 0, 0, 1),
             ('filtered-equal', 0, 5, 1, 5),
             ('delete', 5, 10, 5, 5),
-            ('filtered-equal', 10, 25, 5, 20),
+            ('equal', 10, 25, 5, 11),
+            ('filtered-equal', 10, 25, 11, 20),
             ('replace', 25, 26, 20, 26),
-            ('filtered-equal', 26, 40, 26, 40),
+            ('equal', 26, 32, 26, 32),
+            ('filtered-equal', 32, 40, 32, 40),
             ('filtered-equal', 40, 40, 40, 45),
         ])
 
@@ -1156,30 +1186,98 @@ class ProcessorsTests(TestCase):
             ('filtered-equal', 0, 631, 0, 631),
             ('replace', 631, 632, 631, 632),
             ('insert', 632, 632, 632, 633),
-            ('filtered-equal', 632, 882, 633, 883),
+            ('equal', 632, 813, 633, 814),
+            ('filtered-equal', 813, 882, 814, 883),
         ])
 
-    def test_merge_adjacent_chunks(self):
-        """Testing merge_adjacent_chunks"""
+    def test_post_process_filtered_equals(self):
+        """Testing post_process_filtered_equals"""
         opcodes = [
-            ('equal', 0, 0, 0, 1),
-            ('equal', 0, 5, 1, 5),
-            ('delete', 5, 10, 5, 5),
-            ('equal', 10, 25, 5, 20),
-            ('replace', 25, 26, 20, 26),
-            ('equal', 26, 40, 26, 40),
-            ('equal', 40, 40, 40, 45),
+            ('equal', 0, 10, 0, 10, {}),
+            ('insert', 10, 20, 0, 10, {}),
+            ('equal', 20, 30, 10, 20, {}),
+            ('equal', 30, 40, 20, 30, {}),
+            ('filtered-equal', 40, 50, 30, 40, {}),
         ]
 
-        new_opcodes = list(merge_adjacent_chunks(opcodes))
+        new_opcodes = list(post_process_filtered_equals(opcodes))
 
-        self.assertEqual(new_opcodes, [
-            ('equal', 0, 5, 0, 5),
-            ('delete', 5, 10, 5, 5),
-            ('equal', 10, 25, 5, 20),
-            ('replace', 25, 26, 20, 26),
-            ('equal', 26, 40, 26, 45),
-        ])
+        self.assertEqual(
+            new_opcodes,
+            [
+                ('equal', 0, 10, 0, 10, {}),
+                ('insert', 10, 20, 0, 10, {}),
+                ('equal', 20, 50, 10, 40, {}),
+            ])
+
+    def test_post_process_filtered_equals_with_indentation(self):
+        """Testing post_process_filtered_equals with indentation changes"""
+        opcodes = [
+            ('equal', 0, 10, 0, 10, {}),
+            ('insert', 10, 20, 0, 10, {}),
+            ('equal', 20, 30, 10, 20, {
+                'indentation_changes': {
+                    '21-11': (True, 4),
+                }
+            }),
+            ('equal', 30, 40, 20, 30, {}),
+            ('filtered-equal', 30, 50, 20, 40, {}),
+        ]
+
+        new_opcodes = list(post_process_filtered_equals(opcodes))
+
+        self.assertEqual(
+            new_opcodes,
+            [
+                ('equal', 0, 10, 0, 10, {}),
+                ('insert', 10, 20, 0, 10, {}),
+                ('equal', 20, 30, 10, 20, {
+                    'indentation_changes': {
+                        '21-11': (True, 4),
+                    }
+                }),
+            ('equal', 30, 50, 20, 40, {}),
+            ])
+
+    def test_post_process_filtered_equals_with_adjacent_indentation(self):
+        """Testing post_process_filtered_equals with
+        adjacent indentation changes
+        """
+        opcodes = [
+            ('equal', 0, 10, 0, 10, {}),
+            ('insert', 10, 20, 0, 10, {}),
+            ('equal', 20, 30, 10, 20, {
+                'indentation_changes': {
+                    '21-11': (True, 4),
+                }
+            }),
+            ('equal', 30, 40, 20, 30, {
+                'indentation_changes': {
+                    '31-21': (False, 8),
+                }
+            }),
+            ('filtered-equal', 40, 50, 30, 40, {}),
+        ]
+
+        new_opcodes = list(post_process_filtered_equals(opcodes))
+
+        self.assertEqual(
+            new_opcodes,
+            [
+                ('equal', 0, 10, 0, 10, {}),
+                ('insert', 10, 20, 0, 10, {}),
+                ('equal', 20, 30, 10, 20, {
+                    'indentation_changes': {
+                        '21-11': (True, 4),
+                    }
+                }),
+                ('equal', 30, 40, 20, 30, {
+                    'indentation_changes': {
+                        '31-21': (False, 8),
+                    }
+                }),
+                ('equal', 40, 50, 30, 40, {}),
+            ])
 
 
 class DiffChunkGeneratorTests(TestCase):

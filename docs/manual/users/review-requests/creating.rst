@@ -14,8 +14,22 @@ when posting diffs for review, as it does a lot of work for you, and is
 actually required for some version control systems, such as Perforce.
 
 
-Web UI
-======
+Using ``rbt post`` to Create Review Requests
+============================================
+
+:ref:`RBTools <rbtools:rbt>` is a set of command-line tools that can be
+installed on each client system. There are many tools in the RBTools package,
+but the most important one is :ref:`rbt post <rbtools:rbt-post>`, which will
+look into your development directory and post changes to Review Board.
+
+Using RBTools is the recommended way of posting changes, and for some version
+control systems or hosting services, may be the only supported way (due to the
+built-in diff tools generating files with insufficient information). For more
+information, see the :ref:`RBTools documentation <rbtools:rbt>`.
+
+
+Using the Web UI to Create Review Requests
+==========================================
 
 To post a review request through the web UI, click
 :guilabel:`New Review Request` in the upper-left of a page. This will take

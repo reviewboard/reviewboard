@@ -9,6 +9,9 @@ you make will be seen by you only until you :ref:`publish the changes
 <publishing-review-requests>`.
 
 
+.. image:: review-request-fields.png
+
+
 Changing Fields
 ===============
 
@@ -17,9 +20,10 @@ Most fields on a review request can be changed, with the exception of
 
 To change a field, either click on the field (in the case of
 :guilabel:`Description` and :guilabel:`Testing Done`) or click on the pencil
-icon. A text box will appear allowing you to modify the value. Make sure to
-click "OK" after making a change in order to save the field before navigating
-away from the page.
+icon. A text box will appear allowing you to modify the value.
+
+To save a field, press the :kbd:`Enter` key or click :guilabel:`OK`. To revert
+your changes, press the :kbd:`Escape` key or click :guilabel:`Cancel'.
 
 
 Summary
@@ -34,8 +38,6 @@ Description
 -----------
 
 The :guilabel:`Description` field describes the change that will be reviewed.
-It can support paragraphs of text with word-wrapping.
-
 This is intended to provide enough information for reviewers to know what the
 change is about before they go to review it.
 
@@ -47,8 +49,6 @@ Testing Done
 ------------
 
 The :guilabel:`Testing Done` field describes how this change has been tested.
-It can support paragraphs of text with word-wrapping.
-
 This should cover any and all testing scenarios that have been done, in order
 to help reviewers feel more confident about the stability and design of the
 change.

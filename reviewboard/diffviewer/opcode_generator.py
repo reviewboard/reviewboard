@@ -7,8 +7,7 @@ from django.utils import six
 from django.utils.six.moves import range
 
 from reviewboard.diffviewer.processors import (filter_interdiff_opcodes,
-                                               merge_adjacent_chunks,
-                                               post_process_interdiff_chunks)
+                                               post_process_filtered_equals)
 
 
 class DiffOpcodeGenerator(object):
@@ -57,10 +56,6 @@ class DiffOpcodeGenerator(object):
             # interdiff. This will get rid of any merge information.
             opcodes = filter_interdiff_opcodes(opcodes, self.filediff.diff,
                                                self.interfilediff.diff)
-
-            # From the filtered content, we may have ended up with consecutive
-            # "equal" chunks, so merge them.
-            opcodes = merge_adjacent_chunks(opcodes)
 
         for opcode in opcodes:
             yield opcode
@@ -114,7 +109,7 @@ class DiffOpcodeGenerator(object):
             # "filtered-equal" chunks. This allowed us to skip any additional
             # processing, particularly the indentation highlighting. It's
             # now time to turn those back into "equal" chunks.
-            opcodes = post_process_interdiff_chunks(opcodes)
+            opcodes = post_process_filtered_equals(opcodes)
 
         for opcode in opcodes:
             yield opcode
@@ -292,9 +287,9 @@ class DiffOpcodeGenerator(object):
         r_move_ranges = {}  # key -> (start, end, group)
         prev_key = None
 
-        # Loop through every location from ij1 through ij2 until we've
+        # Loop through every location from ij1 through ij2 - 1 until we've
         # reached the end.
-        while i_move_cur <= ij2:
+        while i_move_cur < ij2:
             try:
                 iline = self.differ.b[i_move_cur].strip()
             except IndexError:
@@ -380,7 +375,7 @@ class DiffOpcodeGenerator(object):
 
             i_move_cur += 1
 
-            if not updated_range:
+            if not updated_range or i_move_cur == ij2:
                 # We've reached the very end of the insert group. See if
                 # we have anything that looks like a move.
                 if r_move_ranges:
