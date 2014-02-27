@@ -253,14 +253,13 @@ def diff_lines(file, chunk, standalone, line_fmt, anchor_fmt,
 
         if len(line) > 8 and isinstance(line[8], dict):
             moved_info = line[8]
-            moved_to_linenum = moved_info.get('to')
-            moved_from_linenum = moved_info.get('from')
 
-            if moved_from_linenum is not None:
+            if 'from' in moved_info:
+                moved_from_linenum, moved_from_first = moved_info['from']
+
                 cell_2_classes.append('moved-from')
 
-                if (moved_from_prev_linenum is None or
-                    moved_from_linenum != moved_from_prev_linenum + 1):
+                if moved_from_first:
                     # This is the start of a new move range.
                     cell_2_classes.append('moved-from-start')
                     moved_from = {
@@ -270,15 +269,12 @@ def diff_lines(file, chunk, standalone, line_fmt, anchor_fmt,
                         'text': _('Moved from line %s') % moved_from_linenum,
                     }
 
-                moved_from_prev_linenum = moved_from_linenum
-            else:
-                moved_from_prev_linenum = None
+            if 'to' in moved_info:
+                moved_to_linenum, moved_to_first = moved_info['to']
 
-            if moved_to_linenum is not None:
                 cell_1_classes.append('moved-to')
 
-                if (moved_to_prev_linenum is None or
-                    moved_to_linenum != moved_to_prev_linenum + 1):
+                if moved_to_first:
                     # This is the start of a new move range.
                     cell_1_classes.append('moved-to-start')
                     moved_to = {
@@ -287,13 +283,6 @@ def diff_lines(file, chunk, standalone, line_fmt, anchor_fmt,
                         'target': mark_safe(linenum1),
                         'text': _('Moved to line %s') % moved_to_linenum,
                     }
-
-                moved_to_prev_linenum = moved_to_linenum
-            else:
-                moved_to_prev_linenum = None
-        else:
-            moved_from_prev_linenum = None
-            moved_to_prev_linenum = None
 
         if moved_to or moved_from:
             row_classes.append('moved-row')

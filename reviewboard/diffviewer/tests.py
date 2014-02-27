@@ -397,6 +397,70 @@ class DiffParserTest(TestCase):
             ],
         )
 
+    def test_move_detection_spanning_chunks(self):
+        """Testing diff viewer move detection spanning left-hand-side chunks"""
+        # This is testing an insert move range (the first 4 lines on the
+        # second list of lines) that spans 3 chunks (1 replace line, 1 equal
+        # blank line, and 2 delete lines).
+        self._test_move_detection(
+            [
+                'Unchanged line 1',
+                'Unchanged line 2',
+                'Unchanged line 3',
+                'Unchanged line 4',
+                '====',
+                'this is line 1, and it is sufficiently long',
+                '',
+                'this is line 2, and it is sufficiently long',
+                'this is line 3, and it is sufficiently long',
+                '',
+            ],
+            [
+                'this is line 1, and it is sufficiently long',
+                '',
+                'this is line 2, and it is sufficiently long',
+                'this is line 3, and it is sufficiently long',
+                'Unchanged line 1',
+                'Unchanged line 2',
+                'Unchanged line 3',
+                'Unchanged line 4',
+                '====',
+                'this is line X, and it is sufficiently long',
+                '',
+                '',
+            ],
+            [
+                {
+                    1: 6,
+                    2: 7,
+                    3: 8,
+                    4: 9,
+                },
+            ],
+            [
+                # The entire move range is stored for every chunk, hence
+                # the repeats.
+                {
+                    6: 1,
+                    7: 2,
+                    8: 3,
+                    9: 4,
+                },
+                {
+                    6: 1,
+                    7: 2,
+                    8: 3,
+                    9: 4,
+                },
+                {
+                    6: 1,
+                    7: 2,
+                    8: 3,
+                    9: 4,
+                },
+            ]
+        )
+
     def test_move_detection_single_line_thresholds(self):
         """Testing diff viewer move detection with a single line and
         line length threshold

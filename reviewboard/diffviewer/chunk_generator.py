@@ -381,10 +381,16 @@ class DiffChunkGenerator(object):
         moved_info = {}
 
         if old_line_num and old_line_num in meta.get('moved-to', {}):
-            moved_info['to'] = meta['moved-to'][old_line_num]
+            moved_info['to'] = (
+                meta['moved-to'][old_line_num],
+                old_line_num - 1 not in meta['moved-to'],
+            )
 
         if new_line_num and new_line_num in meta.get('moved-from', {}):
-            moved_info['from'] = meta['moved-from'][new_line_num]
+            moved_info['from'] = (
+                meta['moved-from'][new_line_num],
+                new_line_num - 1 not in meta['moved-from'],
+            )
 
         if moved_info:
             result.append(moved_info)

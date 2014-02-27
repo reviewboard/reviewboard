@@ -10,6 +10,29 @@ from reviewboard.diffviewer.processors import (filter_interdiff_opcodes,
                                                post_process_filtered_equals)
 
 
+class MoveRange(object):
+    """Stores information on a move range.
+
+    This will store the start and end of the range, and all groups that
+    are a part of it.
+    """
+    def __init__(self, start, end, groups=[]):
+        self.start = start
+        self.end = end
+        self.groups = groups
+
+    @property
+    def last_group(self):
+        return self.groups[-1]
+
+    def add_group(self, group, group_index):
+        if self.groups[-1] != group:
+            self.groups.append((group, group_index))
+
+    def __repr__(self):
+        return '<MoveRange(%d, %d, %r)>' % (self.start, self.end, self.groups)
+
+
 class DiffOpcodeGenerator(object):
     ALPHANUM_RE = re.compile(r'\w')
     WHITESPACE_RE = re.compile(r'\s')
@@ -115,8 +138,7 @@ class DiffOpcodeGenerator(object):
             yield opcode
 
     def _group_opcodes(self, opcodes):
-        for tag, i1, i2, j1, j2, meta in opcodes:
-            group = (tag, i1, i2, j1, j2, meta)
+        for group_index, group in enumerate(opcodes):
             self.groups.append(group)
 
             # Store delete/insert ranges for later lookup. We will be building
@@ -126,12 +148,18 @@ class DiffOpcodeGenerator(object):
             #
             # Later, we will loop through the keys and attempt to find insert
             # keys/groups that match remove keys/groups.
+            tag = group[0]
+
             if tag in ('delete', 'replace'):
+                i1 = group[1]
+                i2 = group[2]
+
                 for i in range(i1, i2):
                     line = self.differ.a[i].strip()
 
                     if line:
-                        self.removes.setdefault(line, []).append((i, group))
+                        self.removes.setdefault(line, []).append(
+                            (i, group, group_index))
 
             if tag in ('insert', 'replace'):
                 self.inserts.append(group)
@@ -279,13 +307,13 @@ class DiffOpcodeGenerator(object):
         # r_move_ranges represents deleted move ranges. The key is a
         # string in the form of "{i1}-{i2}-{j1}-{j2}", with those
         # positions taken from the remove group for the line. The value
-        # is a tuple of (r_start, r_end, r_group). These values are used to
+        # is an instance of MoveRange. The values in MoveRange are used to
         # quickly locate deleted lines we've found that match the inserted
         # lines, so we can assemble ranges later.
         i_move_cur = ij1
-        i_move_range = (i_move_cur, i_move_cur)
+        i_move_range = MoveRange(i_move_cur, i_move_cur)
         r_move_ranges = {}  # key -> (start, end, group)
-        prev_key = None
+        move_key = None
 
         # Loop through every location from ij1 through ij2 - 1 until we've
         # reached the end.
@@ -313,26 +341,32 @@ class DiffOpcodeGenerator(object):
                 #
                 # If there isn't any move information for this line, we'll
                 # simply add it to the move ranges.
-                for ri, rgroup in self.removes.get(iline, []):
-                    key = '%s-%s-%s-%s' % rgroup[1:5]
-                    prev_key = key
+                for ri, rgroup, rgroup_index in self.removes.get(iline, []):
+                    r_move_range = r_move_ranges.get(move_key)
 
-                    r_move_range = r_move_ranges.get(key)
+                    if not r_move_range or ri != r_move_range.end + 1:
+                        # We either didn't have a previous range, or this
+                        # group didn't immediately follow it, so we need
+                        # to start a new one.
+                        move_key = '%s-%s-%s-%s' % rgroup[1:5]
+                        r_move_range = r_move_ranges.get(move_key)
 
                     if r_move_range:
                         # If the remove information for the line is next in
                         # the sequence for this calculated move range...
-                        if ri == r_move_range[1] + 1:
+                        if ri == r_move_range.end + 1:
                             # This is part of the current range, so update
                             # the end of the range to include it.
-                            r_move_ranges[key] = (r_move_range[0], ri, rgroup)
+                            r_move_range.end = ri
+                            r_move_range.add_group(rgroup, rgroup_index)
                             updated_range = True
                     else:
                         # We don't have any move ranges yet, or we're done
                         # with the existing range, so it's time to build one
                         # based on any removed lines we find that match the
                         # inserted line.
-                        r_move_ranges[key] = (ri, ri, rgroup)
+                        r_move_ranges[move_key] = \
+                            MoveRange(ri, ri, [(rgroup, rgroup_index)])
                         updated_range = True
 
                 if not updated_range and r_move_ranges:
@@ -348,7 +382,8 @@ class DiffOpcodeGenerator(object):
                     # To do that, just i_move_cur back by one. That negates
                     # the increment below.
                     i_move_cur -= 1
-            elif iline == '' and prev_key:
+                    move_key = None
+            elif iline == '' and move_key:
                 # This is a blank or whitespace-only line, which would not
                 # be in the list of removed lines above. We also have been
                 # working on a move range.
@@ -359,18 +394,34 @@ class DiffOpcodeGenerator(object):
                 # This blank line will help tie together adjacent move
                 # ranges. If it turns out to be a trailing line, it'll be
                 # stripped later in _determine_move_range.
-                r_move_range = r_move_ranges.get(prev_key, None)
+                r_move_range = r_move_ranges.get(move_key)
 
                 if r_move_range:
-                    new_end_i = r_move_range[1] + 1
+                    new_end_i = r_move_range.end + 1
 
                     if (new_end_i < len(self.differ.a) and
                         self.differ.a[new_end_i].strip() == ''):
                         # There was a matching blank line on the other end
                         # of the range, so we should feel more confident about
                         # adding the blank line here.
-                        r_move_ranges[prev_key] = \
-                            (r_move_range[0], new_end_i, r_move_range[2])
+                        r_move_range.end = new_end_i
+
+                        # It's possible that this blank line is actually an
+                        # "equal" line. Though technically it didn't move,
+                        # we're trying to create a logical, seamless move
+                        # range, so we need to try to find that group and
+                        # add it to the list of groups in the range, if it'
+                        # not already there.
+                        last_group, last_group_index = r_move_range.last_group
+
+                        if new_end_i >= last_group[2]:
+                            # This is in the next group, which hasn't been
+                            # added yet. So add it.
+                            cur_group_index = r_move_range.last_group[1] + 1
+                            r_move_range.add_group(
+                                self.groups[cur_group_index],
+                                cur_group_index)
+
                         updated_range = True
 
             i_move_cur += 1
@@ -379,8 +430,7 @@ class DiffOpcodeGenerator(object):
                 # We've reached the very end of the insert group. See if
                 # we have anything that looks like a move.
                 if r_move_ranges:
-                    r_move_range = \
-                        self._find_longest_move_range(r_move_ranges)
+                    r_move_range = self._find_longest_move_range(r_move_ranges)
 
                     # If we have a move range, see if it's one we want to
                     # include or filter out. Some moves are not impressive
@@ -406,20 +456,24 @@ class DiffOpcodeGenerator(object):
                         # only increment i_move_cur by one, because i_move_cur
                         # already factored in the + 1 by being at the end of
                         # the while loop.
-                        i_range = range(i_move_range[0] + 1,
+                        i_range = range(i_move_range.start + 1,
                                         i_move_cur + 1)
-                        r_range = range(r_move_range[0] + 1,
-                                        r_move_range[1] + 2)
+                        r_range = range(r_move_range.start + 1,
+                                        r_move_range.end + 2)
 
-                        rmeta = r_move_range[2][-1]
-                        rmeta.setdefault('moved-to', {}).update(
-                            dict(zip(r_range, i_range)))
+                        moved_to_ranges = dict(zip(r_range, i_range))
+
+                        for group, group_index in r_move_range.groups:
+                            rmeta = group[-1]
+                            rmeta.setdefault('moved-to', {}).update(
+                                moved_to_ranges)
+
                         imeta.setdefault('moved-from', {}).update(
                             dict(zip(i_range, r_range)))
 
                 # Reset the state for the next range.
-                prev_key = None
-                i_move_range = (i_move_cur, i_move_cur)
+                move_key = None
+                i_move_range = MoveRange(i_move_cur, i_move_cur)
                 r_move_ranges = {}
 
     def _find_longest_move_range(self, r_move_ranges):
@@ -442,8 +496,8 @@ class DiffOpcodeGenerator(object):
             if not r_move_range:
                 r_move_range = iter_move_range
             else:
-                len1 = r_move_range[1] - r_move_range[0]
-                len2 = iter_move_range[1] - iter_move_range[0]
+                len1 = r_move_range.end - r_move_range.start
+                len2 = iter_move_range.end - iter_move_range.start
 
                 if len1 < len2:
                     r_move_range = iter_move_range
@@ -471,8 +525,8 @@ class DiffOpcodeGenerator(object):
         if not r_move_range:
             return None
 
-        end_i = r_move_range[1]
-        lines = self.differ.a[r_move_range[0]:end_i + 1]
+        end_i = r_move_range.end
+        lines = self.differ.a[r_move_range.start:end_i + 1]
         new_end_i = None
         valid = False
 
@@ -493,9 +547,9 @@ class DiffOpcodeGenerator(object):
         # line is long enough, in order to filter out small bits of garbage.
         valid = (
             valid and
-            (new_end_i - r_move_range[0] + 1 >=
+            (new_end_i - r_move_range.start + 1 >=
                  self.MOVE_PREFERRED_MIN_LINES or
-             len(self.differ.a[r_move_range[0]].strip()) >=
+             len(self.differ.a[r_move_range.start].strip()) >=
                  self.MOVE_MIN_LINE_LENGTH))
 
         if not valid:
@@ -503,7 +557,7 @@ class DiffOpcodeGenerator(object):
 
         assert new_end_i is not None
 
-        return r_move_range[0], new_end_i, r_move_range[2]
+        return MoveRange(r_move_range.start, new_end_i, r_move_range.groups)
 
 
 _generator = DiffOpcodeGenerator
