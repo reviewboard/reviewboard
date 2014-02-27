@@ -335,7 +335,7 @@ class SVNTool(SCMTool):
 
 
 class SVNDiffParser(DiffParser):
-    BINARY_STRING = "Cannot display: file marked as a binary type."
+    BINARY_STRING = b"Cannot display: file marked as a binary type."
     PROPERTY_PATH_RE = re.compile(r'Property changes on: (.*)')
 
     def parse_diff_header(self, linenum, info):
@@ -348,9 +348,9 @@ class SVNDiffParser(DiffParser):
         # 4) -----------------------------------------------------
         # 5) Modified: <propname>
         if (linenum + 4 < len(self.lines) and
-            self.lines[linenum].startswith('--- (') and
-            self.lines[linenum + 1].startswith('+++ (') and
-            self.lines[linenum + 2].startswith('Property changes on:')):
+            self.lines[linenum].startswith(b'--- (') and
+            self.lines[linenum + 1].startswith(b'+++ (') and
+            self.lines[linenum + 2].startswith(b'Property changes on:')):
             # Subversion diffs with property changes have no really
             # parsable format. The content of a property can easily mimic
             # the property change headers. So we can't rely upon it, and
@@ -365,7 +365,7 @@ class SVNDiffParser(DiffParser):
 
     def parse_special_header(self, linenum, info):
         if (linenum + 1 < len(self.lines) and
-            self.lines[linenum] == 'Index:'):
+            self.lines[linenum] == b'Index:'):
             # This is an empty Index: line. This might mean we're parsing
             # a property change.
             return linenum + 2
@@ -398,7 +398,7 @@ class SVNDiffParser(DiffParser):
         # 2) There's an actual section per-property, so we could parse these
         #    out in a usable form. We'd still need a way to display that
         #    sanely, though.
-        if (self.lines[linenum] == '' and
+        if (self.lines[linenum] == b'' and
             linenum + 2 < len(self.lines) and
             self.lines[linenum + 1].startswith('Property changes on:')):
             # Skip over the next 3 lines (blank, "Property changes on:", and

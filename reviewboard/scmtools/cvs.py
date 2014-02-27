@@ -189,10 +189,10 @@ class CVSDiffParser(DiffParser):
         else:
             raise DiffParserError('Unable to find RCS line', linenum)
 
-        while self.lines[linenum].startswith('retrieving '):
+        while self.lines[linenum].startswith(b'retrieving '):
             linenum += 1
 
-        if self.lines[linenum].startswith('diff '):
+        if self.lines[linenum].startswith(b'diff '):
             linenum += 1
 
         return linenum

@@ -342,8 +342,8 @@ class ClearCaseDiffParser(DiffParser):
 
             linenum += 1
             if (linenum < len(self.lines) and
-                (self.lines[linenum].startswith("Binary files ") or
-                 self.lines[linenum].startswith("Files "))):
+                (self.lines[linenum].startswith(b"Binary files ") or
+                 self.lines[linenum].startswith(b"Files "))):
 
                 # To consider filenames translated from oids
                 # origInfo and newInfo keys must exists.

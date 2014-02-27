@@ -443,8 +443,8 @@ class PerforceDiffParser(DiffParser):
             linenum += 1
 
             if linenum < len(self.lines) and \
-               (self.lines[linenum].startswith("Binary files ") or
-                self.lines[linenum].startswith("Files ")):
+               (self.lines[linenum].startswith(b"Binary files ") or
+                self.lines[linenum].startswith(b"Files ")):
                 info['binary'] = True
                 linenum += 1
 
@@ -467,8 +467,8 @@ class PerforceDiffParser(DiffParser):
             linenum, info)
 
         if (linenum + 2 < len(self.lines) and
-            self.lines[linenum].startswith('Moved from:') and
-            self.lines[linenum + 1].startswith('Moved to:')):
+            self.lines[linenum].startswith(b'Moved from:') and
+            self.lines[linenum + 1].startswith(b'Moved to:')):
             info['moved'] = True
             linenum += 2
 

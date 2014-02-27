@@ -194,7 +194,7 @@ class GitDiffParser(DiffParser):
         (if any), and whether or not we've found a file (even if we decided
         not to record it).
         """
-        if self.lines[linenum].startswith("diff --git"):
+        if self.lines[linenum].startswith(b"diff --git"):
             parts = self._parse_git_diff(linenum)
 
             return parts[0], parts[1], True
@@ -215,8 +215,14 @@ class GitDiffParser(DiffParser):
 
         try:
             # Need to remove the "a/" and "b/" prefix
-            file_info.origFile = GIT_DIFF_PREFIX.sub("", diff_line[-2])
-            file_info.newFile = GIT_DIFF_PREFIX.sub("", diff_line[-1])
+            file_info.origFile = GIT_DIFF_PREFIX.sub(b"", diff_line[-2])
+            file_info.newFile = GIT_DIFF_PREFIX.sub(b"", diff_line[-1])
+
+            if isinstance(file_info.origFile, six.binary_type):
+                file_info.origFile = file_info.origFile.decode('utf-8')
+
+            if isinstance(file_info.newFile, six.binary_type):
+                file_info.newFile = file_info.newFile.decode('utf-8')
         except ValueError:
             raise DiffParserError('The diff file is missing revision '
                                   'information', linenum)
@@ -274,7 +280,7 @@ class GitDiffParser(DiffParser):
                 linenum += 1
                 break
             elif self._is_diff_fromfile_line(linenum):
-                if self.lines[linenum].split()[1] == "/dev/null":
+                if self.lines[linenum].split()[1] == b"/dev/null":
                     file_info.origInfo = PRE_CREATION
 
                 file_info.data += self.lines[linenum] + b'\n'

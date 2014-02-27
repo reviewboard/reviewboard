@@ -3,6 +3,7 @@ from __future__ import unicode_literals
 import re
 from xml.dom.minidom import parseString
 
+from django.utils import six
 from django.utils.six.moves import cStringIO as StringIO
 from markdown import Markdown, markdown, markdownFromFile
 
@@ -169,7 +170,10 @@ def get_markdown_element_tree(markdown_html):
     This will build the tree and return all nodes representing the rendered
     Markdown content.
     """
-    doc = parseString(('<html>%s</html>' % markdown_html).encode('utf-8'))
+    if isinstance(markdown_html, six.text_type):
+        markdown_html = markdown_html.encode('utf-8')
+
+    doc = parseString(b'<html>%s</html>' % markdown_html)
     return doc.childNodes[0].childNodes
 
 

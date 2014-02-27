@@ -2,6 +2,7 @@ from __future__ import unicode_literals
 
 import logging
 
+from django.utils.translation import ugettext as _
 from pygments.lexers import TextLexer
 
 from reviewboard.reviews.ui.text import TextBasedReviewUI
@@ -34,6 +35,7 @@ class MarkdownReviewUI(TextBasedReviewUI):
         except Exception as e:
             logging.error('Failed to parse resulting Markdown XHTML for '
                           'file attachment %d: %s' % (self.obj.pk, e))
+            yield _('Error while rendering Markdown content: %s') % e
 
     def get_source_lexer(self, filename, data):
         return TextLexer()

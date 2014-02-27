@@ -52,7 +52,7 @@ reviewers that either their comment didn't make sense for one reason or
 another, or that there's a disagreement about the issue. Generally, this
 should be followed up with a comment.
 
-.. image:: closed-issue.png
+.. image:: resolved-issue.png
 
 .. image:: dropped-issue.png
 
