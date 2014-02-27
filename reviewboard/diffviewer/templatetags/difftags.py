@@ -18,8 +18,7 @@ register = template.Library()
 
 @register.filter
 def highlightregion(value, regions):
-    """
-    Highlights the specified regions of text.
+    """Highlights the specified regions of text.
 
     This is used to insert ``<span class="hl">...</span>`` tags in the
     text as specified by the ``regions`` variable.
@@ -27,7 +26,7 @@ def highlightregion(value, regions):
     if not regions:
         return value
 
-    s = ""
+    s = ''
 
     # We need to insert span tags into a string already consisting
     # of span tags. We have a list of ranges that our span tags should
@@ -43,45 +42,52 @@ def highlightregion(value, regions):
     # This code makes the assumption that the list of regions is sorted.
     # This is safe to assume in practice, but if we ever at some point
     # had reason to doubt it, we could always sort the regions up-front.
-    in_tag = in_entity = in_hl = False
+    in_hl = False
     i = j = r = 0
-    region = regions[r]
+    region_start, region_end = regions[r]
 
-    for i in range(len(value)):
-        if value[i] == "<":
-            in_tag = True
+    while i < len(value):
+        c = value[i]
 
-            if in_hl:
-                s += "</span>"
-                in_hl = False
-        elif value[i] == ">":
-            in_tag = False
-        elif value[i] == ';' and in_entity:
-            in_entity = False
-            j += 1
-        elif not in_tag and not in_entity:
-            if not in_hl and region[0] <= j < region[1]:
-                s += '<span class="hl">'
-                in_hl = True
-
-            if value[i] == '&':
-                in_entity = True
-            else:
-                j += 1
-
-        s += value[i]
-
-        if j == region[1]:
-            r += 1
-
+        if c == '<':
             if in_hl:
                 s += '</span>'
                 in_hl = False
 
+            k = value.find('>', i)
+            assert k != -1
+
+            s += value[i:k + 1]
+            i = k
+        else:
+            if not in_hl and region_start <= j < region_end:
+                s += '<span class="hl">'
+                in_hl = True
+
+            if c == '&':
+                k = value.find(';', i)
+                assert k != -1
+
+                s += value[i:k + 1]
+                i = k
+                j += 1
+            else:
+                j += 1
+                s += c
+
+        if j == region_end:
+            if in_hl:
+                s += '</span>'
+                in_hl = False
+
+            r += 1
+
             if r == len(regions):
                 break
 
-            region = regions[r]
+            region_start, region_end = regions[r]
+
+        i += 1
 
     if i + 1 < len(value):
         s += value[i + 1:]
@@ -196,13 +202,19 @@ def diff_lines(file, chunk, standalone, line_fmt, anchor_fmt,
     num_lines = len(lines)
     chunk_index = chunk['index']
     change = chunk['change']
-    is_equal = (change == 'equal')
-    is_replace = (change == 'replace')
-    is_insert = (change == 'insert')
-    is_delete = (change == 'delete')
+    is_equal = False
+    is_replace = False
+    is_insert = False
+    is_delete = False
 
-    moved_from_prev_linenum = None
-    moved_to_prev_linenum = None
+    if change == 'equal':
+        is_equal = True
+    elif change == 'replace':
+        is_replace = True
+    elif change == 'insert':
+        is_insert = True
+    elif change == 'delete':
+        is_delete = True
 
     result = []
 
