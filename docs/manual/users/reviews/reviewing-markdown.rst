@@ -15,6 +15,12 @@ review UI that will render the document.
 To begin reviewing a Markdown file, click the thumbnail or the "Review" link
 for the file attachment on the review request page.
 
+The Markdown Review interface presents two tabs: :guilabel:`Rendered` and
+:guilabel:`Source`. These let you switch between the rendered HTML and the
+plain-text source, respectively. Comments can be added in either view.
+
+.. image:: markdown-review-ui.png
+
 
 Commenting on Blocks
 ====================
@@ -54,8 +60,13 @@ If you click on the block or the comment flag, the comment dialog will appear,
 along with a blue side panel on the left showing those existing comments. You
 can still write new comments in the green area of the comment box.
 
-It's important to note that this is meant to be used as a reference to see if
-other people have already said what you plan to say. The comment box is
-**not** the place to reply to those comments. Instead, you can click the
-:guilabel:`Reply` link next to the particular comment, which will take you
-back to the review request page and open a reply box.
+.. note:: It's important to note that this is **not** the place to reply to
+          those comments. When you add a comment from the diff viewer, it's
+          creating a new top-level review (akin to a new thread). If you want
+          to reply to existing comments, you can do so from the
+          :ref:`Reviews <review-replying>` page. The :guilabel:`Reply` link
+          here is a shortcut to jump directly to the relevant comment on the
+          Reviews page.
+
+          The view here is meant to be used only as a reference to see if
+          other people have already said what you plan to say.
