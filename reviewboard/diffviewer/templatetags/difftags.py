@@ -250,12 +250,14 @@ def diff_lines(file, chunk, standalone, line_fmt, anchor_fmt,
 
         moved_from = {}
         moved_to = {}
+        is_moved_row = False
 
         if len(line) > 8 and isinstance(line[8], dict):
             moved_info = line[8]
 
             if 'from' in moved_info:
                 moved_from_linenum, moved_from_first = moved_info['from']
+                is_moved_row = True
 
                 cell_2_classes.append('moved-from')
 
@@ -271,6 +273,7 @@ def diff_lines(file, chunk, standalone, line_fmt, anchor_fmt,
 
             if 'to' in moved_info:
                 moved_to_linenum, moved_to_first = moved_info['to']
+                is_moved_row = True
 
                 cell_1_classes.append('moved-to')
 
@@ -284,7 +287,7 @@ def diff_lines(file, chunk, standalone, line_fmt, anchor_fmt,
                         'text': _('Moved to line %s') % moved_to_linenum,
                     }
 
-        if moved_to or moved_from:
+        if is_moved_row:
             row_classes.append('moved-row')
 
         if row_classes:
