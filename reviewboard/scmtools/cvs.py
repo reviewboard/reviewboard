@@ -329,6 +329,6 @@ class CVSClient(object):
     def check_repository(self):
         p = SCMTool.popen(['cvs', '-f', '-d', self.cvsroot, 'rls'],
                           self.local_site_name)
-        errmsg = six.text_type(p.stderr.read())
+        errmsg = unicode(p.stderr.read())
         if p.wait() != 0:
             raise SCMError(errmsg)
