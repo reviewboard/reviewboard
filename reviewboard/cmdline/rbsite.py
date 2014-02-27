@@ -2078,7 +2078,7 @@ def parse_options(args):
 
         if len(site_paths) == 0:
             print("No Review Board sites listed in %s" % sitelist.path)
-            sys.exit(1)
+            sys.exit(0)
     elif len(args) >= 2 and command in COMMANDS:
         site_paths = [args[1]]
     else:
