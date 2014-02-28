@@ -94,11 +94,11 @@ var CommentsListView = Backbone.View.extend({
  * used to reply to those comments.
  */
 RB.CommentDialogView = Backbone.View.extend({
-    DIALOG_TOTAL_HEIGHT: 250,
+    DIALOG_TOTAL_HEIGHT: 300,
     DIALOG_NON_EDITABLE_HEIGHT: 120,
     SLIDE_DISTANCE: 10,
     COMMENTS_BOX_WIDTH: 280,
-    FORM_BOX_WIDTH: 380,
+    FORM_BOX_WIDTH: 430,
 
     className: 'comment-dlg',
     template: _.template([
