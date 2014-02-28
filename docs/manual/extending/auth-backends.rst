@@ -46,6 +46,9 @@ It must also define the methods:
 * :py:meth:`authenticate`
 * :py:meth:`get_or_create_user`
 
+And can optionally define these methods:
+
+* :py:meth:`query_users`
 
 We'll go into each function and attribute in detail.
 
@@ -155,9 +158,10 @@ We'll go into each function and attribute in detail.
    but this function does not, it can lead to duplicate users in the database.
 
 
-.. py:method:: get_or_create_user(username)
+.. py:method:: get_or_create_user(username, request)
 
    :param username: The user's username.
+   :param request: The current Django Request object.
    :rtype: The user, if it exists. Otherwise, ``None``.
 
    Looks up or creates a :py:class:`User <django.contrib.auth.models.User>`
@@ -183,6 +187,21 @@ We'll go into each function and attribute in detail.
    a review request as a reviewer. In the latter case, Review Board will
    look up the user using the authentication backend in order to see if
    the user exists and can be added.
+
+
+.. py:method:: query_users(query, request)
+
+   :param query: A user-query search string.
+   :param request: The current Django Request object.
+   :rtype: ``None``.
+
+   This function is executed when querying :ref:`webapi2.0-user-list-resource`,
+   before retrieving the list of users from the database.
+
+   The response is always fetched directly from the database; however,
+   this function allows backends to search an external service and
+   create or update users in the Review Board database before the
+   query is executed.
 
 
 .. _auth-settings-form:

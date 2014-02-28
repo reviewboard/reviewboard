@@ -100,6 +100,24 @@ class AuthBackend(object):
         """
         pass
 
+    def query_users(self, query, request):
+        """Searches for users on the back end.
+
+        This call is executed when the User List web API resource is called,
+        before the database is queried.
+
+        Authentication backends can override this to perform an external
+        query. Results should be written to the database as standard
+        Review Board users, which will be matched and returned by the web API
+        call.
+
+        The ``query`` parameter contains the value of the ``q`` search
+        parameter of the web API call (e.g. /users/?q=foo), if any.
+
+        By default, this will do nothing.
+        """
+        pass
+
 
 class StandardAuthBackend(AuthBackend, ModelBackend):
     """Authenticates users against the local database.

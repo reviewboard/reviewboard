@@ -7,6 +7,7 @@ from djblets.util.decorators import augment_method_from
 from djblets.webapi.decorators import webapi_request_fields
 from djblets.webapi.resources import UserResource as DjbletsUserResource
 
+from reviewboard.accounts.backends import get_auth_backends
 from reviewboard.site.urlresolvers import local_site_reverse
 from reviewboard.webapi.base import WebAPIResource
 from reviewboard.webapi.decorators import webapi_check_local_site
@@ -45,6 +46,9 @@ class UserResource(WebAPIResource, DjbletsUserResource):
 
     def get_queryset(self, request, local_site_name=None, *args, **kwargs):
         search_q = request.GET.get('q', None)
+
+        for backend in get_auth_backends():
+            backend.query_users(search_q, request)
 
         local_site = self._get_local_site(local_site_name)
         if local_site:
