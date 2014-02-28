@@ -251,6 +251,7 @@ def diff_lines(file, chunk, standalone, line_fmt, anchor_fmt,
         moved_from = {}
         moved_to = {}
         is_moved_row = False
+        is_first_moved_row = False
 
         if len(line) > 8 and isinstance(line[8], dict):
             moved_info = line[8]
@@ -263,6 +264,7 @@ def diff_lines(file, chunk, standalone, line_fmt, anchor_fmt,
 
                 if moved_from_first:
                     # This is the start of a new move range.
+                    is_first_moved_row = True
                     cell_2_classes.append('moved-from-start')
                     moved_from = {
                         'class': 'moved-flag',
@@ -279,6 +281,7 @@ def diff_lines(file, chunk, standalone, line_fmt, anchor_fmt,
 
                 if moved_to_first:
                     # This is the start of a new move range.
+                    is_first_moved_row = True
                     cell_1_classes.append('moved-to-start')
                     moved_to = {
                         'class': 'moved-flag',
@@ -289,6 +292,9 @@ def diff_lines(file, chunk, standalone, line_fmt, anchor_fmt,
 
         if is_moved_row:
             row_classes.append('moved-row')
+
+        if is_first_moved_row:
+            row_classes.append('moved-row-start')
 
         if row_classes:
             row_class_attr = ' class="%s"' % ' '.join(row_classes)
