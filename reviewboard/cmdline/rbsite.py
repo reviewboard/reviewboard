@@ -663,8 +663,10 @@ class Site(object):
             'siteid': self.site_id,
             'siteroot': self.site_root,
             'siteroot_noslash': self.site_root[1:-1],
-            'apache_auth': self.apache_auth,
         }
+
+        if hasattr(self, 'apache_auth'):
+            data['apache_auth'] = self.apache_auth
 
         template = re.sub(r"@([a-z_]+)@", lambda m: data.get(m.group(1)),
                           template)
