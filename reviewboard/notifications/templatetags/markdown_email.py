@@ -87,8 +87,8 @@ def markdown_email_html(text, is_rich_text):
 
     marked = markdown.markdown(
         text,
-        extensions=['fenced_code', 'codehilite(noclasses=True)', 'tables', 'nl2br',
-                    InlineStyleExtension()],
+        extensions=['fenced_code', 'codehilite(noclasses=True)', 'tables',
+                    'nl2br', InlineStyleExtension()],
         output_format='xhtml1',
         safe_mode='escape')
     return mark_safe(marked)

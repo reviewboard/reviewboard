@@ -44,7 +44,8 @@ def check_dependencies(settings):
         try:
             imp.find_module('Image')
         except ImportError:
-            dependency_error('The Python Imaging Library (PIL) is required.')
+            dependency_error('The Python Imaging Library (Pillow or PIL) '
+                             'is required.')
 
     # ReCaptcha
     try:
@@ -65,29 +66,31 @@ def check_dependencies(settings):
         try:
             imp.find_module('pysvn')
         except ImportError:
-            dependency_warning('Neither subvertpy nor pysvn found.  SVN integration will not work.')
+            dependency_warning('Neither subvertpy nor pysvn found. '
+                               'SVN integration will not work.')
 
     try:
         imp.find_module('P4')
         subprocess.call(['p4', '-h'],
                         stdin=subprocess.PIPE, stdout=subprocess.PIPE)
     except ImportError:
-        dependency_warning('p4python (>=07.3) not found.  Perforce integration'
-                           ' will not work.')
+        dependency_warning('p4python (>=07.3) not found. Perforce integration '
+                           'will not work.')
     except OSError:
-        dependency_error('p4 command not found.  Perforce integration will not'
-                         ' work.')
+        dependency_error('p4 command not found. Perforce integration will not '
+                         'work.')
 
     try:
         imp.find_module('mercurial')
     except ImportError:
-        dependency_warning('hg not found.  Mercurial integration will not'
-                           ' work.')
+        dependency_warning('hg not found. Mercurial integration will not '
+                           'work.')
 
     try:
         imp.find_module('bzrlib')
     except ImportError:
-        dependency_warning('bzrlib not found.  Bazaar integration will not work.')
+        dependency_warning('bzrlib not found. Bazaar integration will not '
+                           'work.')
 
     success, reason = checks.get_can_enable_syntax_highlighting()
 
@@ -95,15 +98,15 @@ def check_dependencies(settings):
         dependency_warning(striptags(reason))
 
     if not is_exe_in_path('cvs'):
-        dependency_warning('cvs binary not found.  CVS integration '
+        dependency_warning('cvs binary not found. CVS integration '
                            'will not work.')
 
     if not is_exe_in_path('git'):
-        dependency_warning('git binary not found.  Git integration '
+        dependency_warning('git binary not found. Git integration '
                            'will not work.')
 
     if not is_exe_in_path('mtn'):
-        dependency_warning('mtn binary not found.  Monotone integration '
+        dependency_warning('mtn binary not found. Monotone integration '
                            'will not work.')
 
     # Django will print warnings/errors for database backend modules and flup

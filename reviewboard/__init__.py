@@ -101,8 +101,8 @@ def initialize():
         try:
             get_extension_manager().load()
         except DatabaseError:
-            # This database is from a time before extensions, so don't attempt to
-            # load any extensions yet.
+            # This database is from a time before extensions, so don't attempt
+            # to load any extensions yet.
             pass
 
     signals.initializing.send(sender=None)

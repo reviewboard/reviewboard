@@ -88,13 +88,14 @@ class ClearCaseTool(SCMTool):
         if not '@@' in extended_path:
             return HEAD, extended_path
 
-        # Result of regular expression search result is list of tuples.
-        # We must flat this to one list. The best way is use list comprehension.
-        # b is first because it frequently occure in tuples.
-        # Before that remove @@ from path.
+        # Result of regular expression search result is list of tuples. We must
+        # flat this to one list. The best way is use list comprehension. b is
+        # first because it frequently occure in tuples. Before that remove @@
+        # from path.
         unextended_chunks = [
             b or a
-            for a, b, foo in self.UNEXTENDED.findall(extended_path.replace('@@', ''))
+            for a, b, foo in self.UNEXTENDED.findall(
+                extended_path.replace('@@', ''))
         ]
 
         if sys.platform.startswith('win'):
@@ -261,7 +262,8 @@ class ClearCaseTool(SCMTool):
 
         return output
 
-    def parse_diff_revision(self, extended_path, revision_str, *args, **kwargs):
+    def parse_diff_revision(self, extended_path, revision_str,
+                            *args, **kwargs):
         """Guess revision based on extended_path.
 
         Revision is part of file path, called extended-path,
@@ -310,7 +312,8 @@ class ClearCaseDiffParser(DiffParser):
 
         # Because ==== oid oid ==== is present after each header
         # parse standard +++ and --- headers at the first place
-        linenum = super(ClearCaseDiffParser, self).parse_diff_header(linenum, info)
+        linenum = super(ClearCaseDiffParser, self).parse_diff_header(
+            linenum, info)
         m = self.SPECIAL_REGEX.match(self.lines[linenum])
 
         if m:
@@ -334,7 +337,7 @@ class ClearCaseDiffParser(DiffParser):
 
             currentFilename = info['newFile']
             try:
-               info['newFile'] = self._oid2filename(m.group(2))
+                info['newFile'] = self._oid2filename(m.group(2))
             except:
                 logging.debug("oid (%s) not found, get filename from client",
                               m.group(2))
@@ -384,7 +387,7 @@ class ClearCaseDiffParser(DiffParser):
         """Normalize any path sent from client view and return relative path
         against vobtag
         """
-	path, revision = filename.split("@@", 1)
+        path, revision = filename.split("@@", 1)
         relpath = ""
         logging.debug("vobstag: %s, path: %s", self.vobstag, path)
         while True:

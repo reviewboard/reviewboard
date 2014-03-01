@@ -69,7 +69,8 @@ class Client(base.Client):
         This assumes the standard layout in the repository."""
         results = []
         try:
-            root_dirents = self.ra.get_dir(B('.'), -1, ra.DIRENT_CREATED_REV)[0]
+            root_dirents = \
+                self.ra.get_dir(B('.'), -1, ra.DIRENT_CREATED_REV)[0]
         except SubversionException as e:
             raise SCMError(e)
 

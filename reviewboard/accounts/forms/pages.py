@@ -87,11 +87,12 @@ class AccountPageForm(forms.Form):
 
     def render(self):
         """Renders the form."""
-        return render_to_string(self.template_name,
-                                RequestContext(self.request, {
-            'form': self,
-            'page': self.page,
-        }))
+        return render_to_string(
+            self.template_name,
+            RequestContext(self.request, {
+                'form': self,
+                'page': self.page,
+            }))
 
     def load(self):
         """Loads data for the form.
@@ -243,12 +244,12 @@ class ProfileForm(AccountPageForm):
     def save(self):
         backend = get_enabled_auth_backends()[0]
 
-        if not backend.supports_change_name:
+        if backend.supports_change_name:
             self.user.first_name = self.cleaned_data['first_name']
             self.user.last_name = self.cleaned_data['last_name']
             backend.update_name(self.user)
 
-        if not backend.supports_change_email:
+        if backend.supports_change_email:
             new_email = self.cleaned_data['email']
 
             if new_email != self.user.email:

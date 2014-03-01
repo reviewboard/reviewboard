@@ -55,7 +55,7 @@ class DiffContextResource(WebAPIResource):
     @webapi_response_errors(DOES_NOT_EXIST)
     def get(self, request, review_request_id, revision=None,
             interdiff_revision=None, local_site_name=None, *args, **kwargs):
-        """Returns the context information for a particular revision or interdiff.
+        """Returns the context info for a particular revision or interdiff.
 
         The output of this is more or less internal to the Review Board web UI.
         The result will be an object with several fields for the files in the

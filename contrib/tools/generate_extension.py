@@ -12,8 +12,9 @@ from jinja2 import Environment, PackageLoader
 from reviewboard import get_version_string
 
 
-env = Environment(loader=PackageLoader('reviewboard',
-    '../contrib/tools/templates/extensions'))
+env = Environment(
+    loader=PackageLoader(
+        'reviewboard', '../contrib/tools/templates/extensions'))
 
 options = None
 
@@ -123,7 +124,7 @@ def parse_options():
                       help="class name of extension (capitalized no spaces)")
     parser.add_option("--package-name",
                       dest="package_name", default=None,
-                      help="package name of extension (lower case with " \
+                      help="package name of extension (lower case with "
                            "underscores)")
     parser.add_option("--description",
                       dest="description", default=None,

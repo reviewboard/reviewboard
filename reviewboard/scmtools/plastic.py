@@ -81,7 +81,8 @@ class PlasticTool(SCMTool):
                 if m.group("csid") != six.text_type(changesetid):
                     logging.debug('Plastic: csid %s != %s' % (m.group("csid"),
                                                               changesetid))
-                    raise SCMError("The server returned a changeset ID that was not requested")
+                    raise SCMError('The server returned a changeset ID that '
+                                   'was not requested')
 
                 logging.debug('Plastic: adding file %s' % (m.group("file")))
                 changeset.files += m.group("file")

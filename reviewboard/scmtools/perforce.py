@@ -170,7 +170,8 @@ class PerforceClient(object):
             raise RepositoryNotFoundError
         elif "To allow connection use the 'p4 trust' command" in error:
             fingerprint = error.split('\\n')[3]
-            raise UnverifiedCertificateError(Certificate(fingerprint=fingerprint))
+            raise UnverifiedCertificateError(
+                Certificate(fingerprint=fingerprint))
         else:
             raise SCMError(error)
 
@@ -252,10 +253,10 @@ class PerforceTool(SCMTool):
     supports_ticket_auth = True
     supports_pending_changesets = True
     field_help_text = {
-        'path': _('The Perforce port identifier (P4PORT) for the repository. If '
-                  'your server is set up to use SSL (2012.1+), prefix the port '
-                  'with "ssl:". If your server connection is secured with '
-                  'stunnel (2011.x or older), prefix the port with '
+        'path': _('The Perforce port identifier (P4PORT) for the repository. '
+                  'If your server is set up to use SSL (2012.1+), prefix the '
+                  'port with "ssl:". If your server connection is secured '
+                  'with stunnel (2011.x or older), prefix the port with '
                   '"stunnel:".'),
     }
     dependencies = {
@@ -304,8 +305,8 @@ class PerforceTool(SCMTool):
         This should check if a repository exists and can be connected to.
 
         The result is returned as an exception. The exception may contain extra
-        information, such as a human-readable description of the problem. If the
-        repository is valid and can be connected to, no exception will be
+        information, such as a human-readable description of the problem. If
+        the repository is valid and can be connected to, no exception will be
         thrown.
         """
         super(PerforceTool, cls).check_repository(path, username, password,
@@ -325,7 +326,8 @@ class PerforceTool(SCMTool):
     def get_changeset(self, changesetid, allow_empty=False):
         changeset = self.client.get_changeset(changesetid)
         if changeset:
-            return self.parse_change_desc(changeset[0], changesetid, allow_empty)
+            return self.parse_change_desc(changeset[0], changesetid,
+                                          allow_empty)
         else:
             return None
 
@@ -336,8 +338,8 @@ class PerforceTool(SCMTool):
         return self.client.get_file(path, revision)
 
     def parse_diff_revision(self, file_str, revision_str, *args, **kwargs):
-        # Perforce has this lovely idiosyncracy that diffs show revision #1 both
-        # for pre-creation and when there's an actual revision.
+        # Perforce has this lovely idiosyncracy that diffs show revision #1
+        # both for pre-creation and when there's an actual revision.
         filename, revision = revision_str.rsplit('#', 1)
         if len(self.client.get_files_at_revision(revision_str)) == 0:
             revision = PRE_CREATION

@@ -41,10 +41,11 @@ class LocalSite(models.Model):
     as admins (which allows them to manipulate the repositories, groups and
     users in the site).
 
-    Pretty much every other model in this module can all be assigned to a single
-    LocalSite, at which point only members will be able to see or manipulate
-    these objects. Access control is performed at every level, and consistency
-    is enforced through a liberal sprinkling of assertions and unit tests.
+    Pretty much every other model in this module can all be assigned to a
+    single LocalSite, at which point only members will be able to see or
+    manipulate these objects. Access control is performed at every level, and
+    consistency is enforced through a liberal sprinkling of assertions and unit
+    tests.
     """
     name = models.SlugField(_('name'), max_length=32, blank=False, unique=True)
     public = models.BooleanField(

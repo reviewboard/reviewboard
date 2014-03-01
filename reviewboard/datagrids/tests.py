@@ -428,6 +428,7 @@ class SubmitterListViewTests(BaseViewTestCase):
         response = self.client.get('/users/')
         self.assertEqual(response.status_code, 302)
 
+
 class SubmitterViewTests(BaseViewTestCase):
     """Unit tests for the submitter view."""
     @add_fixtures(['test_users'])

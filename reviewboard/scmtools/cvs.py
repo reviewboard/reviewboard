@@ -173,7 +173,8 @@ class CVSDiffParser(DiffParser):
         self.regex_full = re.compile('^RCS file: %s/(.*),v$' % re.escape(repo))
 
     def parse_special_header(self, linenum, info):
-        linenum = super(CVSDiffParser, self).parse_special_header(linenum, info)
+        linenum = super(CVSDiffParser, self).parse_special_header(
+            linenum, info)
 
         if 'index' not in info:
             # We didn't find an index, so the rest is probably bogus too.

@@ -251,7 +251,9 @@ class RepositoryTests(TestCase):
         self.assertEqual(num_calls['get_file_exists'], 1)
 
     def test_get_file_exists_caching_when_not_exists(self):
-        """Testing Repository.get_file_exists doesn't cache result when not exists"""
+        """Testing Repository.get_file_exists doesn't cache result when the
+        file does not exist
+        """
         def file_exists(self, path, revision):
             num_calls['get_file_exists'] += 1
             return False
@@ -448,10 +450,14 @@ class CVSTests(SCMTestCase):
         """Testing revision number parsing"""
         self.assertEqual(self.tool.parse_diff_revision('', 'PRE-CREATION')[1],
                          PRE_CREATION)
-        self.assertEqual(self.tool.parse_diff_revision('', '7 Nov 2005 13:17:07 -0000\t1.2')[1],
-                         '1.2')
-        self.assertEqual(self.tool.parse_diff_revision('', '7 Nov 2005 13:17:07 -0000\t1.2.3.4')[1],
-                         '1.2.3.4')
+        self.assertEqual(
+            self.tool.parse_diff_revision(
+                '', '7 Nov 2005 13:17:07 -0000\t1.2')[1],
+            '1.2')
+        self.assertEqual(
+            self.tool.parse_diff_revision(
+                '', '7 Nov 2005 13:17:07 -0000\t1.2.3.4')[1],
+            '1.2.3.4')
         self.assertRaises(SCMError,
                           lambda: self.tool.parse_diff_revision('', 'hello'))
 
@@ -495,10 +501,12 @@ class CVSTests(SCMTestCase):
                 b"-test content\n"
                 b"+updated test content\n"
                 b"+added info\n")
-        diff = diff % (self.cvs_repo_path, self.cvs_repo_path, self.cvs_repo_path)
+        diff = diff % (self.cvs_repo_path, self.cvs_repo_path,
+                       self.cvs_repo_path)
 
         file = self.tool.get_parser(diff).parse()[0]
-        f2, revision = self.tool.parse_diff_revision(file.origFile, file.origInfo,
+        f2, revision = self.tool.parse_diff_revision(file.origFile,
+                                                     file.origInfo,
                                                      file.moved)
         self.assertEqual(f2, 'test/testfile')
         self.assertEqual(revision, '1.5.2.1')
@@ -673,8 +681,9 @@ class SubversionTests(SCMTestCase):
 
         self.assertEqual(self.tool.get_file('/' + file, rev), expected)
 
-        self.assertEqual(self.tool.get_file(self.repository.path + '/' + file, rev),
-                         expected)
+        self.assertEqual(
+            self.tool.get_file(self.repository.path + '/' + file, rev),
+            expected)
 
         self.assertTrue(self.tool.file_exists('trunk/doc/misc-docs/Makefile'))
         self.assertTrue(
@@ -687,10 +696,12 @@ class SubversionTests(SCMTestCase):
 
     def test_revision_parsing(self):
         """Testing revision number parsing"""
-        self.assertEqual(self.tool.parse_diff_revision('', '(working copy)')[1],
-                         HEAD)
-        self.assertEqual(self.tool.parse_diff_revision('', '   (revision 0)')[1],
-                         PRE_CREATION)
+        self.assertEqual(
+            self.tool.parse_diff_revision('', '(working copy)')[1],
+            HEAD)
+        self.assertEqual(
+            self.tool.parse_diff_revision('', '   (revision 0)')[1],
+            PRE_CREATION)
 
         self.assertEqual(self.tool.parse_diff_revision('', '(revision 1)')[1],
                          '1')
@@ -698,8 +709,8 @@ class SubversionTests(SCMTestCase):
                          '23')
 
         # Fix for bug 2176
-        self.assertEqual(self.tool.parse_diff_revision('', '\t(revision 4)')[1],
-                         '4')
+        self.assertEqual(
+            self.tool.parse_diff_revision('', '\t(revision 4)')[1], '4')
 
         self.assertEqual(
             self.tool.parse_diff_revision(
@@ -1026,7 +1037,8 @@ class PerforceTests(SCMTestCase):
         file = self.tool.get_file('//depot/foo', PRE_CREATION)
         self.assertEqual(file, b'')
 
-        file = self.tool.get_file('//public/perforce/api/python/P4Client/p4.py', 1)
+        file = self.tool.get_file(
+            '//public/perforce/api/python/P4Client/p4.py', 1)
         self.assertEqual(md5(file).hexdigest(),
                          '227bdd87b052fcad9369e65c7bf23fd0')
 
@@ -1253,7 +1265,8 @@ class PerforceStunnelTests(SCMTestCase):
         self.assertEqual(file, '')
 
         try:
-            file = self.tool.get_file('//public/perforce/api/python/P4Client/p4.py', 1)
+            file = self.tool.get_file(
+                '//public/perforce/api/python/P4Client/p4.py', 1)
         except Exception as e:
             if six.text_type(e).startswith('Connect to server failed'):
                 raise nose.SkipTest(
@@ -1262,89 +1275,6 @@ class PerforceStunnelTests(SCMTestCase):
                 raise
         self.assertEqual(md5(file).hexdigest(),
                          '227bdd87b052fcad9369e65c7bf23fd0')
-
-
-class VMWareTests(SCMTestCase):
-    """Tests for VMware specific code"""
-    fixtures = ['vmware', 'test_scmtools']
-
-    def setUp(self):
-        super(VMWareTests, self).setUp()
-
-        self.repository = Repository(name='VMware Test',
-                                     path='perforce.eng.vmware.com:1666',
-                                     tool=Tool.objects.get(name='VMware Perforce'))
-
-        try:
-            self.tool = self.repository.get_scmtool()
-        except ImportError:
-            raise nose.SkipTest('perforce/p4python is not installed')
-
-#    TODO: Re-enable when we find a way to feed strings into the new p4python.
-#    def test_parse(self):
-#        """Testing VMware changeset parsing"""
-#
-#        file = open(os.path.join(os.path.dirname(__file__), 'testdata',
-#                                 'vmware.changeset'), 'r')
-#        data = file.read()
-#        file.close()
-#
-#        changeset = self.tool.parse_change_desc(data, 123456)
-#        self.assertEqual(changeset.summary, "Emma")
-#        self.assertEqual(hash(changeset.description), 315618127)
-#        self.assertEqual(changeset.changenum, 123456)
-#        self.assertEqual(hash(changeset.testing_done), 1030854806)
-#
-#        self.assertEqual(len(changeset.bugs_closed), 1)
-#        self.assertEqual(changeset.bugs_closed[0], '128700')
-#
-#        expected_files = [
-#            '//depot/bora/hosted07-rel/foo.cc',
-#            '//depot/bora/hosted07-rel/foo.hh',
-#            '//depot/bora/hosted07-rel/bar.cc',
-#            '//depot/bora/hosted07-rel/bar.hh',
-#        ]
-#        for file, expected in map(None, changeset.files, expected_files):
-#            self.assertEqual(file, expected)
-#
-#        self.assertEqual(changeset.branch,
-#                         'hosted07-rel &rarr; hosted07 &rarr; bfg-main (manual)')
-#
-#
-#    def test_parse_single_line_desc(self):
-#        """Testing VMware changeset parsing with a single line description."""
-#        file = open(os.path.join(os.path.dirname(__file__), 'testdata',
-#                                 'vmware-single-line-desc.changeset'), 'r')
-#        data = file.read()
-#        file.close()
-#
-#        changeset = self.tool.parse_change_desc(data, 1234567)
-#        self.assertEqual(changeset.summary,
-#                         "There is only a single line in this changeset description.")
-#        self.assertEqual(changeset.description,
-#                         "There is only a single line in this changeset description.")
-#        self.assertEqual(changeset.changenum, 1234567)
-#        self.assertEqual(changeset.testing_done, "")
-#
-#        self.assertEqual(len(changeset.bugs_closed), 0)
-#
-#        expected_files = [
-#            '//depot/qa/foo/bar',
-#        ]
-#        for file, expected in map(None, changeset.files, expected_files):
-#            self.assertEqual(file, expected)
-#
-#    def test_parse_multi_line_summary(self):
-#        """Testing VMware changeset parsing with a summary spanning multiple lines."""
-#        file = open(os.path.join(os.path.dirname(__file__), 'testdata',
-#                                 'vmware-phil-is-crazy.changeset'), 'r')
-#        data = file.read()
-#        file.close()
-#
-#        changeset = self.tool.parse_change_desc(data, 123456)
-#        self.assertEqual(changeset.summary, "Changes: Emma")
-#
-#        self.assertEqual(changeset.branch, 'bfg-main')
 
 
 class MercurialTests(SCMTestCase):
@@ -1370,14 +1300,12 @@ class MercurialTests(SCMTestCase):
 
     def test_patch_creates_new_file(self):
         """Testing HgTool with a patch that creates a new file"""
-
         self.assertEqual(
             PRE_CREATION,
             self.tool.parse_diff_revision("/dev/null", "bf544ea505f8")[1])
 
     def test_diff_parser_new_file(self):
         """Testing HgDiffParser with a diff that creates a new file"""
-
         diffContents = (b'diff -r bf544ea505f8 readme\n'
                         b'--- /dev/null\n'
                         b'+++ b/readme\n')
@@ -1387,7 +1315,6 @@ class MercurialTests(SCMTestCase):
 
     def test_diff_parser_uncommitted(self):
         """Testing HgDiffParser with a diff with an uncommitted change"""
-
         diffContents = (b'diff -r bf544ea505f8 readme\n'
                         b'--- a/readme\n'
                         b'+++ b/readme\n')
@@ -1400,7 +1327,6 @@ class MercurialTests(SCMTestCase):
 
     def test_diff_parser_committed(self):
         """Testing HgDiffParser with a diff between committed revisions"""
-
         diffContents = (b'diff -r 356a6127ef19 -r 4960455a8e88 readme\n'
                         b'--- a/readme\n'
                         b'+++ b/readme\n')
@@ -1412,8 +1338,9 @@ class MercurialTests(SCMTestCase):
         self.assertEqual(file.newFile, "readme")
 
     def test_diff_parser_with_preamble_junk(self):
-        """Testing HgDiffParser with a diff that contains non-diff junk test as a preamble"""
-
+        """Testing HgDiffParser with a diff that contains non-diff junk test
+        as a preamble
+        """
         diffContents = (b'changeset:   60:3613c58ad1d5\n'
                         b'user:        Michael Rowe <mrowe@mojain.com>\n'
                         b'date:        Fri Jul 27 11:44:37 2007 +1000\n'
@@ -1434,7 +1361,6 @@ class MercurialTests(SCMTestCase):
 
     def test_git_diff_parsing(self):
         """Testing HgDiffParser git diff support"""
-
         diffContents = (b'# Node ID 4960455a8e88\n'
                         b'# Parent bf544ea505f8\n'
                         b'diff --git a/path/to file/readme.txt '
@@ -1479,12 +1405,13 @@ class MercurialTests(SCMTestCase):
 
     def test_revision_parsing(self):
         """Testing HgDiffParser revision number parsing"""
+        self.assertEqual(
+            self.tool.parse_diff_revision('doc/readme', 'bf544ea505f8'),
+            ('doc/readme', 'bf544ea505f8'))
 
-        self.assertEqual(self.tool.parse_diff_revision('doc/readme', 'bf544ea505f8'),
-                         ('doc/readme', 'bf544ea505f8'))
-
-        self.assertEqual(self.tool.parse_diff_revision('/dev/null', 'bf544ea505f8'),
-                         ('/dev/null', PRE_CREATION))
+        self.assertEqual(
+            self.tool.parse_diff_revision('/dev/null', 'bf544ea505f8'),
+            ('/dev/null', PRE_CREATION))
 
         # TODO think of a meaningful thing to test here...
         # self.assertRaises(SCMException,
@@ -1492,7 +1419,6 @@ class MercurialTests(SCMTestCase):
 
     def test_get_file(self):
         """Testing HgTool.get_file"""
-
         rev = Revision('661e5dd3c493')
         file = 'doc/readme'
 
@@ -1749,11 +1675,10 @@ class GitTests(SCMTestCase):
         self.assertFalse(file.deleted)
         lines = file.data.splitlines()
         self.assertEqual(len(lines), 4)
-        self.assertEqual(lines[0],
-                         "diff --git a/pysvn-1.5.1.tar.gz b/pysvn-1.5.1.tar.gz")
-        self.assertEqual(lines[3],
-                         "Binary files /dev/null and b/pysvn-1.5.1.tar.gz "
-                         "differ")
+        self.assertEqual(
+            lines[0], "diff --git a/pysvn-1.5.1.tar.gz b/pysvn-1.5.1.tar.gz")
+        self.assertEqual(
+            lines[3], "Binary files /dev/null and b/pysvn-1.5.1.tar.gz differ")
         self.assertEqual(file.insert_count, 0)
         self.assertEqual(file.delete_count, 0)
 
@@ -1801,8 +1726,8 @@ class GitTests(SCMTestCase):
         self.assertEqual(files[2].delete_count, 0)
         lines = files[2].data.splitlines()
         self.assertEqual(len(lines), 4)
-        self.assertEqual(lines[0],
-                         "diff --git a/pysvn-1.5.1.tar.gz b/pysvn-1.5.1.tar.gz")
+        self.assertEqual(
+            lines[0], "diff --git a/pysvn-1.5.1.tar.gz b/pysvn-1.5.1.tar.gz")
         self.assertEqual(lines[3],
                          'Binary files /dev/null and b/pysvn-1.5.1.tar.gz '
                          'differ')
@@ -1957,12 +1882,15 @@ class GitTests(SCMTestCase):
     def test_parse_diff_revision(self):
         """Testing Git revision number parsing"""
 
-        self.assertEqual(self.tool.parse_diff_revision('doc/readme', 'bf544ea'),
-                         ('doc/readme', 'bf544ea'))
-        self.assertEqual(self.tool.parse_diff_revision('/dev/null', 'bf544ea'),
-                         ('/dev/null', PRE_CREATION))
-        self.assertEqual(self.tool.parse_diff_revision('/dev/null', '0000000'),
-                         ('/dev/null', PRE_CREATION))
+        self.assertEqual(
+            self.tool.parse_diff_revision('doc/readme', 'bf544ea'),
+            ('doc/readme', 'bf544ea'))
+        self.assertEqual(
+            self.tool.parse_diff_revision('/dev/null', 'bf544ea'),
+            ('/dev/null', PRE_CREATION))
+        self.assertEqual(
+            self.tool.parse_diff_revision('/dev/null', '0000000'),
+            ('/dev/null', PRE_CREATION))
 
     def test_file_exists(self):
         """Testing GitTool.file_exists"""
@@ -1985,7 +1913,8 @@ class GitTests(SCMTestCase):
         self.assertTrue(
             isinstance(self.tool.get_file("readme", "e965047"), bytes))
         self.assertEqual(self.tool.get_file("readme", "e965047"), b'Hello\n')
-        self.assertEqual(self.tool.get_file("readme", "d6613f5"), b'Hello there\n')
+        self.assertEqual(self.tool.get_file("readme", "d6613f5"),
+                         b'Hello there\n')
 
         self.assertEqual(self.tool.get_file("readme"), b'Hello there\n')
 
@@ -1999,7 +1928,9 @@ class GitTests(SCMTestCase):
                           lambda: self.tool.get_file("readme", "0000000"))
 
     def test_parse_diff_revision_with_remote_and_short_SHA1_error(self):
-        """Testing GitTool.parse_diff_revision with remote files and short SHA1 error"""
+        """Testing GitTool.parse_diff_revision with remote files and short
+        SHA1 error
+        """
         self.assertRaises(
             ShortSHA1Error,
             lambda: self.remote_tool.parse_diff_revision('README', 'd7e96b3'))
@@ -2074,7 +2005,8 @@ class PolicyTests(TestCase):
             self.repo in Repository.objects.accessible(self.anonymous))
 
     def test_repository_form_with_local_site_and_bad_group(self):
-        """Testing adding a Group to a RepositoryForm with the wrong LocalSite."""
+        """Testing adding a Group to a RepositoryForm with the wrong LocalSite
+        """
         test_site = LocalSite.objects.create(name='test')
         tool = Tool.objects.get(name='Subversion')
         group = Group.objects.create(name='test-group')
@@ -2107,7 +2039,8 @@ class PolicyTests(TestCase):
         self.assertFalse(form.is_valid())
 
     def test_repository_form_with_local_site_and_bad_user(self):
-        """Testing adding a User to a RepositoryForm with the wrong LocalSite."""
+        """Testing adding a User to a RepositoryForm with the wrong LocalSite
+        """
         test_site = LocalSite.objects.create(name='test')
         tool = Tool.objects.get(name='Subversion')
 
@@ -2214,7 +2147,9 @@ class RepositoryFormTests(TestCase):
         self.assertEqual(repository.extra_data['repository_plan'], '')
 
     def test_with_hosting_service_self_hosted_and_new_account(self):
-        """Testing RepositoryForm with a self-hosted hosting service and new account"""
+        """Testing RepositoryForm with a self-hosted hosting service and new
+        account
+        """
         form = RepositoryForm({
             'name': 'test',
             'hosting_type': 'self_hosted_test',
@@ -2242,7 +2177,9 @@ class RepositoryFormTests(TestCase):
                          'https://example.com')
 
     def test_with_hosting_service_self_hosted_and_blank_url(self):
-        """Testing RepositoryForm with a self-hosted hosting service and blank URL"""
+        """Testing RepositoryForm with a self-hosted hosting service and blank
+        URL
+        """
         form = RepositoryForm({
             'name': 'test',
             'hosting_type': 'self_hosted_test',
@@ -2258,7 +2195,9 @@ class RepositoryFormTests(TestCase):
         self.assertFalse(form.is_valid())
 
     def test_with_hosting_service_new_account_localsite(self):
-        """Testing RepositoryForm with a hosting service, new account and LocalSite"""
+        """Testing RepositoryForm with a hosting service, new account and
+        LocalSite
+        """
         local_site = LocalSite.objects.create(name='testsite')
 
         form = RepositoryForm({
@@ -2283,7 +2222,9 @@ class RepositoryFormTests(TestCase):
         self.assertEqual(repository.extra_data['repository_plan'], '')
 
     def test_with_hosting_service_existing_account(self):
-        """Testing RepositoryForm with a hosting service and existing account"""
+        """Testing RepositoryForm with a hosting service and existing
+        account
+        """
         account = HostingServiceAccount.objects.create(username='testuser',
                                                        service_name='test')
 
@@ -2304,7 +2245,9 @@ class RepositoryFormTests(TestCase):
         self.assertEqual(repository.extra_data['repository_plan'], '')
 
     def test_with_hosting_service_self_hosted_and_existing_account(self):
-        """Testing RepositoryForm with a self-hosted hosting service and existing account"""
+        """Testing RepositoryForm with a self-hosted hosting service and
+        existing account
+        """
         account = HostingServiceAccount.objects.create(
             username='testuser',
             service_name='self_hosted_test',
@@ -2330,7 +2273,9 @@ class RepositoryFormTests(TestCase):
                          'https://example.com')
 
     def test_with_hosting_service_self_hosted_and_invalid_existing_account(self):
-        """Testing RepositoryForm with a self-hosted hosting service and invalid existing account"""
+        """Testing RepositoryForm with a self-hosted hosting service and
+        invalid existing account
+        """
         account = HostingServiceAccount.objects.create(
             username='testuser',
             service_name='self_hosted_test',
@@ -2466,7 +2411,9 @@ class RepositoryFormTests(TestCase):
                          in repository.extra_data)
 
     def test_with_hosting_service_with_hosting_bug_tracker_and_self_hosted(self):
-        """Testing RepositoryForm with self-hosted hosting service's bug tracker"""
+        """Testing RepositoryForm with self-hosted hosting service's bug
+        tracker
+        """
         account = HostingServiceAccount.objects.create(
             username='testuser',
             service_name='self_hosted_test',
@@ -2556,7 +2503,9 @@ class RepositoryFormTests(TestCase):
             'testrepo')
 
     def test_with_hosting_service_with_existing_bug_tracker_using_hosting(self):
-        """Testing RepositoryForm with existing bug tracker using hosting service"""
+        """Testing RepositoryForm with existing bug tracker using hosting
+        service
+        """
         account = HostingServiceAccount.objects.create(username='testuser',
                                                        service_name='test')
         repository = Repository(name='test',

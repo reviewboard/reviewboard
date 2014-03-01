@@ -201,7 +201,8 @@ class Review(models.Model):
             reply_published.send(sender=self.__class__,
                                  user=user, reply=self)
         else:
-            issue_counts = fetch_issue_counts(self.review_request, Q(pk=self.pk))
+            issue_counts = fetch_issue_counts(self.review_request,
+                                              Q(pk=self.pk))
 
             # Since we're publishing the review, all filed issues should be
             # open.

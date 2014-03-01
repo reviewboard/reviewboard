@@ -1,6 +1,7 @@
 from __future__ import unicode_literals
 
 import fnmatch
+import functools
 import re
 
 from django.utils import six
@@ -106,7 +107,6 @@ class DiffChunkGenerator(object):
         # Chunk processing state.
         self._last_header = [None, None]
         self._last_header_index = [0, 0]
-        self._cur_meta = {}
         self._chunk_index = 0
 
     def make_cache_key(self):
@@ -255,12 +255,10 @@ class DiffChunkGenerator(object):
             new_lines = markup_b[j1:j2]
             num_lines = max(len(old_lines), len(new_lines))
 
-            self._cur_meta = meta
-            lines = map(self._diff_line,
+            lines = map(functools.partial(self._diff_line, tag, meta),
                         range(line_num, line_num + num_lines),
                         range(i1 + 1, i2 + 1), range(j1 + 1, j2 + 1),
                         a[i1:i2], b[j1:j2], old_lines, new_lines)
-            self._cur_meta = None
 
             counts[tag] += num_lines
 
@@ -299,8 +297,8 @@ class DiffChunkGenerator(object):
                 delete_count=delete_count,
                 replace_count=replace_count,
                 equal_count=equal_count,
-                total_line_count=insert_count + delete_count +
-                                 replace_count + equal_count)
+                total_line_count=(insert_count + delete_count +
+                                  replace_count + equal_count))
 
     def _get_enable_syntax_highlighting(self, old, new, a, b):
         """Returns whether or not we'll be enabling syntax highlighting.
@@ -337,7 +335,7 @@ class DiffChunkGenerator(object):
 
         return True
 
-    def _diff_line(self, v_line_num, old_line_num, new_line_num,
+    def _diff_line(self, tag, meta, v_line_num, old_line_num, new_line_num,
                    old_line, new_line, old_markup, new_markup):
         """Creates a single line in the diff viewer.
 
@@ -347,10 +345,13 @@ class DiffChunkGenerator(object):
         region information, syntax-highlighted HTML for the text,
         and other metadata.
         """
-        if (old_line and new_line and
-                len(old_line) <= self.STYLED_MAX_LINE_LEN and
-                len(new_line) <= self.STYLED_MAX_LINE_LEN and
-                old_line != new_line):
+        if (tag == 'replace' and
+            old_line and new_line and
+            len(old_line) <= self.STYLED_MAX_LINE_LEN and
+            len(new_line) <= self.STYLED_MAX_LINE_LEN and
+            old_line != new_line):
+            # Generate information on the regions that changed between the
+            # two lines.
             old_region, new_region = \
                 get_line_changed_regions(old_line, new_line)
         else:
@@ -359,7 +360,6 @@ class DiffChunkGenerator(object):
         old_markup = old_markup or ''
         new_markup = new_markup or ''
 
-        meta = self._cur_meta
         line_pair = (old_line_num, new_line_num)
 
         indentation_changes = meta.get('indentation_changes', {})
@@ -381,10 +381,16 @@ class DiffChunkGenerator(object):
         moved_info = {}
 
         if old_line_num and old_line_num in meta.get('moved-to', {}):
-            moved_info['to'] = meta['moved-to'][old_line_num]
+            moved_info['to'] = (
+                meta['moved-to'][old_line_num],
+                old_line_num - 1 not in meta['moved-to'],
+            )
 
         if new_line_num and new_line_num in meta.get('moved-from', {}):
-            moved_info['from'] = meta['moved-from'][new_line_num]
+            moved_info['from'] = (
+                meta['moved-from'][new_line_num],
+                new_line_num - 1 not in meta['moved-from'],
+            )
 
         if moved_info:
             result.append(moved_info)

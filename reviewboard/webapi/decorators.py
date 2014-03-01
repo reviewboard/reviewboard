@@ -87,8 +87,8 @@ def webapi_deprecated(deprecated_in, force_error_http_status=None,
 def webapi_check_local_site(view_func):
     """Checks whether a user has access to a local site given in the URL.
 
-    This decorator can be added to get/get_list methods to check whether or
-    not a user should be able to view them given the local site name in the URL.
+    This decorator can be added to get/get_list methods to check whether or not
+    a user should be able to view them given the local site name in the URL.
     """
     @webapi_response_errors(DOES_NOT_EXIST, NOT_LOGGED_IN, PERMISSION_DENIED)
     def _check(*args, **kwargs):

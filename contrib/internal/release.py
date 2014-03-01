@@ -54,7 +54,8 @@ def load_config():
         execfile(filename, user_config)
     except SyntaxError, e:
         sys.stderr.write('Syntax error in config file: %s\n'
-                         'Line %i offset %i\n' % (filename, e.lineno, e.offset))
+                         'Line %i offset %i\n'
+                         % (filename, e.lineno, e.offset))
         sys.exit(1)
 
     auth_handler = urllib2.HTTPBasicAuthHandler()

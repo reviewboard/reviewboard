@@ -100,6 +100,24 @@ class AuthBackend(object):
         """
         pass
 
+    def query_users(self, query, request):
+        """Searches for users on the back end.
+
+        This call is executed when the User List web API resource is called,
+        before the database is queried.
+
+        Authentication backends can override this to perform an external
+        query. Results should be written to the database as standard
+        Review Board users, which will be matched and returned by the web API
+        call.
+
+        The ``query`` parameter contains the value of the ``q`` search
+        parameter of the web API call (e.g. /users/?q=foo), if any.
+
+        By default, this will do nothing.
+        """
+        pass
+
 
 class StandardAuthBackend(AuthBackend, ModelBackend):
     """Authenticates users against the local database.
@@ -337,7 +355,7 @@ class LDAPBackend(AuthBackend):
                 # Log in as the service account before searching.
                 ldapo.simple_bind_s(settings.LDAP_ANON_BIND_UID,
                                     settings.LDAP_ANON_BIND_PASSWD)
-            else :
+            else:
                 # Bind anonymously to the server
                 ldapo.simple_bind_s()
 
@@ -411,7 +429,8 @@ class LDAPBackend(AuthBackend):
                 # admin can handle the corner cases.
                 try:
                     if settings.LDAP_FULL_NAME_ATTRIBUTE:
-                        full_name = user_info[settings.LDAP_FULL_NAME_ATTRIBUTE][0]
+                        full_name = \
+                            user_info[settings.LDAP_FULL_NAME_ATTRIBUTE][0]
                         first_name, last_name = full_name.split(' ', 1)
                 except AttributeError:
                     pass

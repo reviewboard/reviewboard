@@ -47,7 +47,8 @@ def create_settings():
             elif line.strip().startswith("'USER': "):
                 out_fp.write("        'USER': '%s',\n" % options.db_user)
             elif line.strip().startswith("'PASSWORD': "):
-                out_fp.write("        'PASSWORD': '%s',\n" % options.db_password)
+                out_fp.write("        'PASSWORD': '%s',\n"
+                             % options.db_password)
             else:
                 out_fp.write(line)
 
@@ -104,7 +105,6 @@ def main():
         sys.stderr.write("This must be run from the top-level Review Board "
                          "directory\n")
         sys.exit(1)
-
 
     # Insert the current directory first in the module path so we find the
     # correct reviewboard package.

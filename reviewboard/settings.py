@@ -207,8 +207,8 @@ CACHE_EXPIRATION_TIME = 60 * 60 * 24 * 30  # 1 month
 # runner, as well as some special features like a code coverage report.
 TEST_RUNNER = 'reviewboard.test.RBTestRunner'
 
-# Dependency checker functionality.  Gives our users nice errors when they start
-# out, instead of encountering them later on.  Most of the magic for this
+# Dependency checker functionality.  Gives our users nice errors when they
+# start out, instead of encountering them later on.  Most of the magic for this
 # happens in manage.py, not here.
 install_help = '''
 Please see http://www.reviewboard.org/docs/manual/dev/admin/
@@ -222,7 +222,8 @@ def dependency_error(string):
     sys.exit(1)
 
 if os.path.split(os.path.dirname(__file__))[1] != 'reviewboard':
-    dependency_error('The directory containing manage.py must be named "reviewboard"')
+    dependency_error('The directory containing manage.py must be named '
+                     '"reviewboard"')
 
 LOCAL_ROOT = None
 PRODUCTION = True
@@ -303,7 +304,8 @@ if 'staticfiles' not in CACHES:
 #
 # Examples: "http://foo.com/media/", "/media/".
 STATIC_DIRECTORY = 'static/'
-STATIC_URL = getattr(settings_local, 'STATIC_URL', SITE_ROOT + STATIC_DIRECTORY)
+STATIC_URL = getattr(settings_local, 'STATIC_URL',
+                     SITE_ROOT + STATIC_DIRECTORY)
 
 MEDIA_DIRECTORY = 'media/'
 MEDIA_URL = getattr(settings_local, 'MEDIA_URL', SITE_ROOT + MEDIA_DIRECTORY)

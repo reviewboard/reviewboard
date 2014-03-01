@@ -119,8 +119,8 @@ class ReviewReplyResource(BaseReviewResource):
             },
             'text_type': {
                 'type': MarkdownFieldsMixin.SAVEABLE_TEXT_TYPES,
-                'description': 'The mode for the body_top and body_bottom text '
-                               'fields. The default is "plain".',
+                'description': 'The mode for the body_top and body_bottom '
+                               'text fields. The default is "plain".',
             },
         },
         allow_unknown=True
@@ -204,8 +204,8 @@ class ReviewReplyResource(BaseReviewResource):
             },
             'text_type': {
                 'type': MarkdownFieldsMixin.SAVEABLE_TEXT_TYPES,
-                'description': 'The mode for the body_top and body_bottom text '
-                               'fields. This default is to leave the '
+                'description': 'The mode for the body_top and body_bottom '
+                               'text fields. This default is to leave the '
                                'mode unchanged.',
             },
         },

@@ -585,12 +585,15 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
      */
     _loadRevision: function(base, tip, page) {
         var reviewRequestURL = _.result(this.reviewRequest, 'url'),
-            contextURL = reviewRequestURL + 'diff-context/';
+            contextURL = reviewRequestURL + 'diff-context/',
+            $downloadLink = $('#download-diff');
 
         if (base === 0) {
             contextURL += '?revision=' + tip;
+            $downloadLink.show();
         } else {
             contextURL += '?revision=' + base + '&interdiff_revision=' + tip;
+            $downloadLink.hide();
         }
 
         if (page !== 1) {

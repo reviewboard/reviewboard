@@ -193,7 +193,8 @@ class ResourceItemTests(ReviewRequestChildItemMixin, BaseWebAPITestCase):
                             [screenshot2]),
             'diff': (diff1, diff2, None, diff2),
         }
-        model_fields = ('target_people', 'target_groups', 'screenshots', 'diff')
+        model_fields = ('target_people', 'target_groups', 'screenshots',
+                        'diff')
 
         # Set the initial data on the review request.
         r = self.create_review_request(submitter=self.user)
@@ -290,14 +291,18 @@ class ResourceItemTests(ReviewRequestChildItemMixin, BaseWebAPITestCase):
                 self.assertTrue('new' in field_data)
                 self.assertTrue('added' in field_data)
                 self.assertTrue('removed' in field_data)
-                self.assertEqual([item['id'] for item in field_data['old']],
-                                 [obj.pk for obj in old])
-                self.assertEqual([item['id'] for item in field_data['new']],
-                                 [obj.pk for obj in new])
-                self.assertEqual([item['id'] for item in field_data['removed']],
-                                 [obj.pk for obj in removed])
-                self.assertEqual([item['id'] for item in field_data['added']],
-                                 [obj.pk for obj in added])
+                self.assertEqual(
+                    [item['id'] for item in field_data['old']],
+                    [obj.pk for obj in old])
+                self.assertEqual(
+                    [item['id'] for item in field_data['new']],
+                    [obj.pk for obj in new])
+                self.assertEqual(
+                    [item['id'] for item in field_data['removed']],
+                    [obj.pk for obj in removed])
+                self.assertEqual(
+                    [item['id'] for item in field_data['added']],
+                    [obj.pk for obj in added])
             else:
                 self.assertTrue('old' in field_data)
                 self.assertTrue('new' in field_data)

@@ -164,7 +164,7 @@ def diffsets_with_comments(review, current_pair):
 
 
 def interdiffs_with_comments(review, current_pair):
-    """Returns a list of interdiffs in the review that contain draft comments."""
+    """Get a list of interdiffs in the review that contain draft comments."""
     if not review:
         return
 

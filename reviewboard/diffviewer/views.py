@@ -315,10 +315,10 @@ class DiffFragmentView(View):
             collapseall = True
         elif chunkindex is not None:
             # If we're currently expanding part of a chunk, we want to render
-            # the entire chunk without any lines collapsed. In the case of showing
-            # a range of lines, we're going to get all chunks and then only show
-            # the range. This is so that we won't have separate cached entries for
-            # each range.
+            # the entire chunk without any lines collapsed. In the case of
+            # showing a range of lines, we're going to get all chunks and then
+            # only show the range. This is so that we won't have separate
+            # cached entries for each range.
             collapseall = False
         else:
             collapseall = get_collapse_diff(self.request)

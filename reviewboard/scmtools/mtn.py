@@ -67,7 +67,8 @@ class MonotoneDiffParser(DiffParser):
                 info['binary'] = True
                 linenum += 1
             elif self.lines[linenum + 1] == self.INDEX_SEP:
-                # this is a standard mtn diff header (comments with the file summary)
+                # This is a standard mtn diff header (comments with the file
+                # summary)
                 linenum += 1
 
         return linenum

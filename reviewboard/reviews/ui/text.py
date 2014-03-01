@@ -185,17 +185,18 @@ class TextBasedReviewUI(FileAttachmentReviewUI):
         # The line numbers are stored 1-indexed, so normalize to 0.
         lines = lines[begin_line_num - 1:end_line_num]
 
-        return render_to_string(self.comment_thumbnail_template_name,
-                                Context({
-            'review_ui': self,
-            'lines': [
-                {
-                    'line_num': begin_line_num + i,
-                    'text': mark_safe(line),
-                }
-                for i, line in enumerate(lines)
-            ]
-        }))
+        return render_to_string(
+            self.comment_thumbnail_template_name,
+            Context({
+                'review_ui': self,
+                'lines': [
+                    {
+                        'line_num': begin_line_num + i,
+                        'text': mark_safe(line),
+                    }
+                    for i, line in enumerate(lines)
+                ],
+            }))
 
     def get_comment_link_url(self, comment):
         """Returns the URL to the file and line commented on.

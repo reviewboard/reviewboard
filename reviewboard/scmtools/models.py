@@ -266,7 +266,8 @@ class Repository(models.Model):
         """
         hosting_service = self.hosting_service
 
-        cache_key = make_cache_key('repository-commits:%s:%s' % (self.pk, start))
+        cache_key = make_cache_key('repository-commits:%s:%s'
+                                   % (self.pk, start))
         if hosting_service:
             commits_callable = lambda: hosting_service.get_commits(self, start)
         else:

@@ -403,8 +403,8 @@ class RepositoryForm(forms.ModelForm):
 
         if (data.get('bug_tracker_use_hosting', False) and
             self.instance.hosting_account):
-            # The user has chosen to use the hosting service's bug tracker.
-            # We only care about the checkbox. Don't bother populating the form.
+            # The user has chosen to use the hosting service's bug tracker. We
+            # only care about the checkbox. Don't bother populating the form.
             self.fields['bug_tracker_use_hosting'].initial = True
         elif bug_tracker_type == self.NO_BUG_TRACKER_ID:
             # Do nothing.
@@ -755,8 +755,8 @@ class RepositoryForm(forms.ModelForm):
             self.fields['hosting_account_two_factor_auth_code'].required = (
                 hosting_service and
                 hosting_service.supports_two_factor_auth and
-                self.hosting_service_info[hosting_type]
-                    ['needs_two_factor_auth_code'])
+                self.hosting_service_info[hosting_type][
+                    'needs_two_factor_auth_code'])
 
             # Only require a URL if the hosting service is self-hosted.
             self.fields['hosting_url'].required = (

@@ -174,15 +174,15 @@ class SCMTool(object):
         raise NotImplementedError
 
     def get_commits(self, start):
-        """Get a list of commits backward in history from a given starting point.
+        """Get a list of commits backward in history from a given point.
 
         This should be implemented by subclasses, and is expected to return a
         list of Commit objects (usually 30, but this is flexible depending on
         the limitations of the APIs provided.
 
-        This can be called multiple times in succession using the "parent" field
-        of the last entry as the start parameter in order to paginate through
-        the history of commits in the repository.
+        This can be called multiple times in succession using the "parent"
+        field of the last entry as the start parameter in order to paginate
+        through the history of commits in the repository.
         """
         raise NotImplementedError
 

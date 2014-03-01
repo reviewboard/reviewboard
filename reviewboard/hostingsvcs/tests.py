@@ -194,7 +194,8 @@ class BeanstalkTests(ServiceTests):
             expected_revision='123')
 
     def test_get_file_exists_with_svn_and_base_commit_id(self):
-        """Testing Beanstalk get_file_exists with Subversion and base commit ID"""
+        """Testing Beanstalk get_file_exists with Subversion and base commit ID
+        """
         self._test_get_file_exists(
             tool_name='Subversion',
             revision='123',
@@ -482,7 +483,8 @@ class BitbucketTests(ServiceTests):
             expected_revision='123')
 
     def test_get_file_exists_with_mercurial_and_base_commit_id(self):
-        """Testing Bitbucket get_file_exists with Mercurial and base commit ID"""
+        """Testing Bitbucket get_file_exists with Mercurial and base commit ID
+        """
         self._test_get_file_exists(
             tool_name='Mercurial',
             revision='123',
@@ -668,7 +670,8 @@ class FedoraHosted(ServiceTests):
 
     def test_bug_tracker_field(self):
         """Testing the Fedora Hosted bug tracker field value"""
-        self.assertFalse(self.service_class.get_bug_tracker_requires_username())
+        self.assertFalse(
+            self.service_class.get_bug_tracker_requires_username())
         self.assertEqual(
             self.service_class.get_bug_tracker_field(None, {
                 'fedorahosted_repo_name': 'myrepo',
@@ -788,8 +791,8 @@ class GitHubTests(ServiceTests):
 
     def test_private_org_bug_tracker_field(self):
         """Testing the GitHub private-org repository bug tracker field value"""
-        self.assertFalse(
-            self.service_class.get_bug_tracker_requires_username('private-org'))
+        self.assertFalse(self.service_class.get_bug_tracker_requires_username(
+            'private-org'))
         self.assertEqual(
             self.service_class.get_bug_tracker_field('private-org', {
                 'github_private_org_name': 'myorg',
@@ -949,7 +952,9 @@ class GitHubTests(ServiceTests):
         self.assertEqual(http_post_data['kwargs']['password'], 'mypass')
 
     def test_authorization_with_client_info(self):
-        """Testing that GitHub account authorization with registered client info"""
+        """Testing that GitHub account authorization with registered client
+        info
+        """
         http_post_data = {}
         client_id = '<my client id>'
         client_secret = '<my client secret>'
@@ -1045,10 +1050,13 @@ class GitHubTests(ServiceTests):
                 'commit': {
                     'author': {'name': 'Christian Hammond'},
                     'committer': {'date': '2013-06-25T23:31:22Z'},
-                    'message': 'Fixed the bug number for the blacktriangledown bug.',
+                    'message': 'Fixed the bug number for the '
+                               'blacktriangledown bug.',
                 },
                 'sha': '859d4e148ce3ce60bbda6622cdbe5c2c2f8d9817',
-                'parents': [{'sha': '92463764015ef463b4b6d1a1825fee7aeec8cb15'}],
+                'parents': [
+                    {'sha': '92463764015ef463b4b6d1a1825fee7aeec8cb15'}
+                ],
             },
             {
                 'commit': {
@@ -1066,7 +1074,8 @@ class GitHubTests(ServiceTests):
                 'commit': {
                     'author': {'name': 'David Trowbridge'},
                     'committer': {'date': '2013-06-25T22:41:09Z'},
-                    'message': 'Add DIFF_PARSE_ERROR to the ValidateDiffResource.create error list.',
+                    'message': 'Add DIFF_PARSE_ERROR to the '
+                               'ValidateDiffResource.create error list.',
                 },
                 'sha': 'f5a35f1d8a8dcefb336a8e3211334f1f50ea7792',
                 'parents': [],
@@ -1294,8 +1303,8 @@ class GitHubTests(ServiceTests):
         service.check_repository(**kwargs)
         self.assertTrue(service._http_get.called)
 
-    def _test_check_repository_error(self, http_status, payload, expected_error,
-                                     **kwargs):
+    def _test_check_repository_error(self, http_status, payload,
+                                     expected_error, **kwargs):
         def _http_get(service, url, *args, **kwargs):
             if http_status == 200:
                 return payload, {}
@@ -1577,7 +1586,8 @@ class RedmineTests(ServiceTests):
 
     def test_bug_tracker_field(self):
         """Testing the Redmine bug tracker field value"""
-        self.assertFalse(self.service_class.get_bug_tracker_requires_username())
+        self.assertFalse(
+            self.service_class.get_bug_tracker_requires_username())
         self.assertEqual(
             self.service_class.get_bug_tracker_field(None, {
                 'redmine_url': 'http://redmine.example.com',
@@ -1649,7 +1659,8 @@ class TracTests(ServiceTests):
 
     def test_bug_tracker_field(self):
         """Testing the Trac bug tracker field value"""
-        self.assertFalse(self.service_class.get_bug_tracker_requires_username())
+        self.assertFalse(
+            self.service_class.get_bug_tracker_requires_username())
         self.assertEqual(
             self.service_class.get_bug_tracker_field(None, {
                 'trac_url': 'http://trac.example.com',
@@ -1794,7 +1805,8 @@ class UnfuddleTests(ServiceTests):
             expected_error=True)
 
     def test_get_file_exists_with_svn_and_base_commit_id(self):
-        """Testing Unfuddle get_file_exists with Subversion and base commit ID"""
+        """Testing Unfuddle get_file_exists with Subversion and base commit ID
+        """
         self._test_get_file_exists(
             tool_name='Subversion',
             revision='123',
@@ -1921,7 +1933,8 @@ class VersionOneTests(ServiceTests):
 
     def test_bug_tracker_field(self):
         """Testing the VersionOne bug tracker field value"""
-        self.assertFalse(self.service_class.get_bug_tracker_requires_username())
+        self.assertFalse(
+            self.service_class.get_bug_tracker_requires_username())
         self.assertEqual(
             self.service_class.get_bug_tracker_field(None, {
                 'versionone_url': 'http://versionone.example.com',

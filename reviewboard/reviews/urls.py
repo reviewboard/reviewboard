@@ -84,7 +84,7 @@ review_request_urls = patterns(
 
     # E-mail previews
     url(r'^preview-email/(?P<format>(text|html))/$',
-     'preview_review_request_email'),
+        'preview_review_request_email'),
 
     url(r'^changes/(?P<changedesc_id>[0-9]+)/preview-email/'
         r'(?P<format>(text|html))/$',

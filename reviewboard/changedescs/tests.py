@@ -1,8 +1,7 @@
 from __future__ import unicode_literals
 
-from django.test import TestCase
-
 from reviewboard.changedescs.models import ChangeDescription
+from reviewboard.testing.testcase import TestCase
 
 
 class ChangeDescTests(TestCase):
@@ -46,7 +45,8 @@ class ChangeDescTests(TestCase):
         self.assertEqual(changedesc.fields_changed["test"]["removed"], [(1,)])
 
     def testRecordObjectListNameField(self):
-        """Testing record_field_change with an object list (using name_field)"""
+        """Testing record_field_change with an object list (using name_field)
+        """
         class DummyObject(object):
             def __init__(self, id):
                 self.id = id

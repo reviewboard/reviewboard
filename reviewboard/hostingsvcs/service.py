@@ -133,7 +133,7 @@ class HostingService(object):
         raise NotImplementedError
 
     def get_commits(self, repository, start=None):
-        """Get a list of commits backward in history from a given starting point.
+        """Get a list of commits backward in history from a given point.
 
         This should be implemented by subclasses, and is expected to return a
         list of Commit objects (usually 30, but this is flexible depending on
@@ -187,9 +187,9 @@ class HostingService(object):
                 raise KeyError(
                     _('Internal error when generating %(field)s field '
                       '(Missing key "%(key)s"). Please report this.') % {
-                          'field': field,
-                          'key': e,
-                      })
+                        'field': field,
+                        'key': e,
+                    })
 
         return results
 
@@ -222,9 +222,9 @@ class HostingService(object):
             raise KeyError(
                 _('Internal error when generating %(field)s field '
                   '(Missing key "%(key)s"). Please report this.') % {
-                      'field': bug_tracker_field,
-                      'key': e,
-                  })
+                    'field': bug_tracker_field,
+                    'key': e,
+                })
 
     @classmethod
     def _get_field(cls, plan, name, default=None):
