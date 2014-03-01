@@ -100,12 +100,13 @@ class GitTool(SCMTool):
             return False
 
     def parse_diff_revision(self, file_str, revision_str, moved=False,
-                            *args, **kwargs):
+                            copied=False, *args, **kwargs):
         revision = revision_str
 
         if file_str == "/dev/null":
             revision = PRE_CREATION
-        elif revision != PRE_CREATION and not moved and revision != '':
+        elif (revision != PRE_CREATION and
+              (not (moved or copied) or revision != '')):
             # Moved files with no changes has no revision,
             # so don't validate those.
             self.client.validate_sha1_format(file_str, revision)
@@ -252,6 +253,12 @@ class GitDiffParser(DiffParser):
             file_info.data += self.lines[linenum + 2] + b"\n"
             linenum += 3
             file_info.moved = True
+        elif self._is_copied_file(linenum):
+            file_info.data += self.lines[linenum] + b"\n"
+            file_info.data += self.lines[linenum + 1] + b"\n"
+            file_info.data += self.lines[linenum + 2] + b"\n"
+            linenum += 3
+            file_info.copied = True
 
         # Assume by default that the change is empty. If we find content
         # later, we'll clear this.
@@ -290,7 +297,7 @@ class GitDiffParser(DiffParser):
                 empty_change = False
                 linenum = self.parse_diff_line(linenum, file_info)
 
-        if empty_change:
+        if empty_change and not (file_info.moved or file_info.copied):
             # We didn't find any interesting content, so leave out this
             # file's info.
             #
@@ -310,6 +317,11 @@ class GitDiffParser(DiffParser):
     def _is_mode_change(self, linenum):
         return (self.lines[linenum].startswith(b"old mode")
                 and self.lines[linenum + 1].startswith(b"new mode"))
+
+    def _is_copied_file(self, linenum):
+        return (self.lines[linenum].startswith(b'similarity index') and
+                self.lines[linenum + 1].startswith(b'copy from') and
+                self.lines[linenum + 2].startswith(b'copy to'))
 
     def _is_moved_file(self, linenum):
         return (self.lines[linenum].startswith(b"similarity index") and

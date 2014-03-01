@@ -226,6 +226,8 @@ class DiffSetManager(models.Manager):
                 status = FileDiff.DELETED
             elif f.moved:
                 status = FileDiff.MOVED
+            elif f.copied:
+                status = FileDiff.COPIED
             else:
                 status = FileDiff.MODIFIED
 
@@ -252,7 +254,8 @@ class DiffSetManager(models.Manager):
 
         for f in parser.parse():
             f2, revision = tool.parse_diff_revision(f.origFile, f.origInfo,
-                                                    f.moved)
+                                                    moved=f.moved,
+                                                    copied=f.copied)
 
             if f2.startswith("/"):
                 filename = f2
@@ -270,6 +273,7 @@ class DiffSetManager(models.Manager):
                 not f.binary and
                 not f.deleted and
                 not f.moved and
+                not f.copied and
                 (check_existence and
                  not repository.get_file_exists(filename, revision,
                                                 base_commit_id=base_commit_id,
