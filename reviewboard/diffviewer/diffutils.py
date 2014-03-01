@@ -297,6 +297,8 @@ def get_diff_files(diffset, filediff=None, interdiffset=None, request=None):
             'binary': filediff.binary,
             'deleted': filediff.deleted,
             'moved': filediff.moved,
+            'copied': filediff.copied,
+            'moved_or_copied': filediff.moved or filediff.copied,
             'newfile': newfile,
             'index': len(files),
             'chunks_loaded': False,

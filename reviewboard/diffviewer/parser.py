@@ -13,6 +13,7 @@ class File(object):
         self.binary = False
         self.deleted = False
         self.moved = False
+        self.copied = False
 
 
 class DiffParserError(Exception):
@@ -99,6 +100,7 @@ class DiffParser(object):
             file.binary   = info.get('binary', False)
             file.deleted  = info.get('deleted', False)
             file.moved    = info.get('moved', False)
+            file.copied   = info.get('copied', False)
             file.origFile = info.get('origFile')
             file.newFile  = info.get('newFile')
             file.origInfo = info.get('origInfo')

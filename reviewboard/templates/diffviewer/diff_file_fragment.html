@@ -38,7 +38,7 @@
  <a href="#" class="%(class)s" line="%(line)s" target="%(target)s">%(text)s</a>
 {% enddefinevar %}
 
-{% if file.changed_chunk_indexes or file.binary or file.deleted or file.moved %}
+{% if file.changed_chunk_indexes or file.binary or file.deleted or file.moved or file.copied %}
 {%  if not standalone %}
 <table class="sidebyside{% if not file.interfilediff and file.newfile and not file.filediff.parent_diff %} newfile{% endif %}" id="file{{file.filediff.id}}">
  <colgroup>
@@ -53,11 +53,11 @@
    <th colspan="4"><a name="{{file.index}}" class="file-anchor"></a>{{ file.depot_filename }}</th>
 {%   else %}
    <th colspan="2"><a name="{{file.index}}" class="file-anchor"></a>{{ file.depot_filename }}</th>
-   <th colspan="2">{{ file.dest_filename }}{% if file.moved %}{% trans " (moved)" %}{% endif %}</th>
+   <th colspan="2">{{file.dest_filename}}{% if file.moved %}{% trans " (moved)" %}{% elif file.copied %}{% trans " (copied)" %}{% endif %}</th>
 {%   endif %}{# file.dest_filename == file.depot_filename #}
   </tr>
   <tr>
-{%   if file.moved and file.num_changes == 0 %}
+{%   if file.moved_or_copied and file.num_changes == 0 %}
    <th colspan="4" class="rev">{% trans "No changes were made to this file." %}</th>
 {%   else %}
    <th colspan="2" class="rev">{{file.revision}}</th>
