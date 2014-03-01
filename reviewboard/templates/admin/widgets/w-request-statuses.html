@@ -7,15 +7,19 @@ $(document).ready(function() {
     // Review Request percentage by status data.
     var data = [
         {
+            label: "Draft ({{widget.data.draft}})",
+            data: {{widget.data.pending}}
+        },
+        {
             label: "Pending ({{widget.data.pending}})",
             data: {{widget.data.pending}}
         },
         {
-            label: "Draft ({{widget.data.draft}})",
-            data: {{widget.data.draft}}
+            label: "Discarded ({{widget.data.discarded}})",
+            data: {{widget.data.discarded}}
         },
         {
-            label: "Submit ({{widget.data.submit}})",
+            label: "Submitted ({{widget.data.submit}})",
             data: {{widget.data.submit}}
         }
     ];

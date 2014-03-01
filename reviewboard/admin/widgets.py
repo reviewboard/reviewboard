@@ -171,12 +171,13 @@ class ReviewRequestStatusesWidget(Widget):
     template = 'admin/widgets/w-request-statuses.html'
 
     def generate_data(self, request):
-        request_objects = ReviewRequest.objects.all()
+        public_requests = ReviewRequest.objects.filter(public=True)
 
         return {
-            'pending': request_objects.filter(status="P").count(),
-            'draft': request_objects.filter(status="D").count(),
-            'submit': request_objects.filter(status="S").count()
+            'draft': ReviewRequest.objects.filter(public=False).count(),
+            'pending': public_requests.filter(status="P").count(),
+            'discarded': public_requests.filter(status="D").count(),
+            'submit': public_requests.filter(status="S").count()
         }
 
 
