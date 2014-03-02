@@ -398,7 +398,7 @@ class DiffChunkGenerator(object):
         return result
 
     def _highlight_indentation(self, old_markup, new_markup, is_indent,
-                               raw_indent_len):
+                               raw_indent_len, norm_indent_len_diff):
         """Highlights indentation in an HTML-formatted line.
 
         This will wrap the indentation in <span> tags, and format it in
@@ -409,18 +409,20 @@ class DiffChunkGenerator(object):
                 'indent',
                 new_markup,
                 raw_indent_len,
+                norm_indent_len_diff,
                 self._serialize_indentation)
         else:
             old_markup = self._wrap_indentation_chars(
                 'unindent',
                 old_markup,
                 raw_indent_len,
+                norm_indent_len_diff,
                 self._serialize_unindentation)
 
         return old_markup, new_markup
 
     def _wrap_indentation_chars(self, class_name, markup, raw_indent_len,
-                                serializer):
+                                norm_indent_len_diff, serializer):
         """Wraps characters in a string with indentation markers.
 
         This will insert the indentation markers and its wrapper in the
@@ -449,13 +451,15 @@ class DiffChunkGenerator(object):
             # a straight sequence of characters. Give up on highlighting it.
             return markup
 
+        serialized, remainder = serializer(indentation, norm_indent_len_diff)
+
         return '%s<span class="%s">%s</span>%s' % (
             markup[:start_pos],
             class_name,
-            serializer(indentation),
-            markup[end_pos:])
+            serialized,
+            remainder + markup[end_pos:])
 
-    def _serialize_indentation(self, chars):
+    def _serialize_indentation(self, chars, norm_indent_len_diff):
         """Serializes an indentation string into an HTML representation.
 
         This will show every space as ">", and every tab as "------>|".
@@ -466,7 +470,7 @@ class DiffChunkGenerator(object):
         s = ''
         i = 0
 
-        for c in chars:
+        for j, c in enumerate(chars):
             if c == ' ':
                 s += '&gt;'
                 i += 1
@@ -486,9 +490,12 @@ class DiffChunkGenerator(object):
                 s += '|'
                 i += 1
 
-        return s
+            if i >= norm_indent_len_diff:
+                break
 
-    def _serialize_unindentation(self, chars):
+        return s, chars[j + 1:]
+
+    def _serialize_unindentation(self, chars, norm_indent_len_diff):
         """Serializes an unindentation string into an HTML representation.
 
         This will show every space as "<", and every tab as "|<------".
@@ -499,7 +506,7 @@ class DiffChunkGenerator(object):
         s = ''
         i = 0
 
-        for c in chars:
+        for j, c in enumerate(chars):
             if c == ' ':
                 s += '&lt;'
                 i += 1
@@ -519,7 +526,10 @@ class DiffChunkGenerator(object):
                         s += '&mdash;' * num_dashes
                         i += num_dashes
 
-        return s
+            if i >= norm_indent_len_diff:
+                break
+
+        return s, chars[j + 1:]
 
     def _new_chunk(self, all_lines, start, end, collapsable=False,
                    tag='equal', meta=None):

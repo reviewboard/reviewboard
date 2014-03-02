@@ -238,9 +238,11 @@ class DiffOpcodeGenerator(object):
 
         norm_old_line_indent = old_line_indent.expandtabs(self.TAB_SIZE)
         norm_new_line_indent = new_line_indent.expandtabs(self.TAB_SIZE)
-        norm_old_line_len = (len(norm_old_line_indent) +
+        norm_old_line_indent_len = len(norm_old_line_indent)
+        norm_new_line_indent_len = len(norm_new_line_indent)
+        norm_old_line_len = (norm_old_line_indent_len +
                              len(old_line_stripped))
-        norm_new_line_len = (len(norm_new_line_indent) +
+        norm_new_line_len = (norm_new_line_indent_len +
                              len(new_line_stripped))
         line_len_diff = norm_new_line_len - norm_old_line_len
 
@@ -277,7 +279,9 @@ class DiffOpcodeGenerator(object):
             new_line_indent[::-1],
         ]))
 
-        return is_indent, raw_indent_len
+        return (is_indent,
+                raw_indent_len,
+                abs(norm_old_line_indent_len - norm_new_line_indent_len))
 
     def _compute_moves(self):
         # We now need to figure out all the moved locations.

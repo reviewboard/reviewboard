@@ -1322,7 +1322,7 @@ class ProcessorsTests(TestCase):
                         '21-11': (True, 4),
                     }
                 }),
-            ('equal', 30, 50, 20, 40, {}),
+                ('equal', 30, 50, 20, 40, {}),
             ])
 
     def test_post_process_filtered_equals_with_adjacent_indentation(self):
@@ -1374,108 +1374,119 @@ class DiffChunkGeneratorTests(TestCase):
 
     def test_indent_spaces(self):
         """Testing DiffChunkGenerator._serialize_indentation with spaces"""
-        self.assertEqual(self.generator._serialize_indentation('    '),
-                         '&gt;&gt;&gt;&gt;')
+        self.assertEqual(
+            self.generator._serialize_indentation('    ', 4),
+            ('&gt;&gt;&gt;&gt;', ''))
 
     def test_indent_tabs(self):
         """Testing DiffChunkGenerator._serialize_indentation with tabs"""
-        self.assertEqual(self.generator._serialize_indentation('\t'),
-                         '&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&gt;|')
+        self.assertEqual(
+            self.generator._serialize_indentation('\t', 8),
+            ('&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&gt;|', ''))
 
     def test_indent_spaces_and_tabs(self):
         """Testing DiffChunkGenerator._serialize_indentation
         with spaces and tabs
         """
-        self.assertEqual(self.generator._serialize_indentation('   \t'),
-                         '&gt;&gt;&gt;&mdash;&mdash;&mdash;&gt;|')
+        self.assertEqual(
+            self.generator._serialize_indentation('   \t', 8),
+            ('&gt;&gt;&gt;&mdash;&mdash;&mdash;&gt;|', ''))
 
     def test_indent_tabs_and_spaces(self):
         """Testing DiffChunkGenerator._serialize_indentation
         with tabs and spaces
         """
         self.assertEqual(
-            self.generator._serialize_indentation('\t   '),
-            '&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&gt;|&gt;&gt;&gt;')
+            self.generator._serialize_indentation('\t   ', 11),
+            ('&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&gt;|&gt;&gt;&gt;',
+             ''))
 
     def test_indent_9_spaces_and_tab(self):
         """Testing DiffChunkGenerator._serialize_indentation
         with 9 spaces and tab
         """
         self.assertEqual(
-            self.generator._serialize_indentation('       \t'),
-            '&gt;&gt;&gt;&gt;&gt;&gt;&gt;|')
+            self.generator._serialize_indentation('       \t', 8),
+            ('&gt;&gt;&gt;&gt;&gt;&gt;&gt;|', ''))
 
     def test_indent_8_spaces_and_tab(self):
         """Testing DiffChunkGenerator._serialize_indentation
         with 8 spaces and tab
         """
         self.assertEqual(
-            self.generator._serialize_indentation('      \t'),
-            '&gt;&gt;&gt;&gt;&gt;&gt;&gt;|')
+            self.generator._serialize_indentation('      \t', 8),
+            ('&gt;&gt;&gt;&gt;&gt;&gt;&gt;|', ''))
 
     def test_indent_7_spaces_and_tab(self):
         """Testing DiffChunkGenerator._serialize_indentation
         with 7 spaces and tab
         """
         self.assertEqual(
-            self.generator._serialize_indentation('     \t'),
-            '&gt;&gt;&gt;&gt;&gt;&mdash;&gt;|')
+            self.generator._serialize_indentation('     \t', 8),
+            ('&gt;&gt;&gt;&gt;&gt;&mdash;&gt;|', ''))
 
     def test_unindent_spaces(self):
         """Testing DiffChunkGenerator._serialize_unindentation with spaces"""
-        self.assertEqual(self.generator._serialize_unindentation('    '),
-                         '&lt;&lt;&lt;&lt;')
+        self.assertEqual(
+            self.generator._serialize_unindentation('    ', 4),
+            ('&lt;&lt;&lt;&lt;', ''))
 
     def test_unindent_tabs(self):
         """Testing DiffChunkGenerator._serialize_unindentation with tabs"""
-        self.assertEqual(self.generator._serialize_unindentation('\t'),
-                         '|&lt;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;')
+        self.assertEqual(
+            self.generator._serialize_unindentation('\t', 8),
+            ('|&lt;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;', ''))
 
     def test_unindent_spaces_and_tabs(self):
         """Testing DiffChunkGenerator._serialize_unindentation
         with spaces and tabs
         """
-        self.assertEqual(self.generator._serialize_unindentation('   \t'),
-                         '&lt;&lt;&lt;|&lt;&mdash;&mdash;&mdash;')
+        self.assertEqual(
+            self.generator._serialize_unindentation('   \t', 8),
+            ('&lt;&lt;&lt;|&lt;&mdash;&mdash;&mdash;', ''))
 
     def test_unindent_tabs_and_spaces(self):
         """Testing DiffChunkGenerator._serialize_unindentation
         with tabs and spaces
         """
         self.assertEqual(
-            self.generator._serialize_unindentation('\t   '),
-            '|&lt;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&lt;&lt;&lt;')
+            self.generator._serialize_unindentation('\t   ', 11),
+            ('|&lt;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&lt;&lt;&lt;',
+             ''))
 
     def test_unindent_9_spaces_and_tab(self):
         """Testing DiffChunkGenerator._serialize_unindentation
         with 9 spaces and tab
         """
         self.assertEqual(
-            self.generator._serialize_unindentation('       \t'),
-            '&lt;&lt;&lt;&lt;&lt;&lt;&lt;|')
+            self.generator._serialize_unindentation('       \t', 8),
+            ('&lt;&lt;&lt;&lt;&lt;&lt;&lt;|', ''))
 
     def test_unindent_8_spaces_and_tab(self):
         """Testing DiffChunkGenerator._serialize_unindentation
         with 8 spaces and tab
         """
         self.assertEqual(
-            self.generator._serialize_unindentation('      \t'),
-            '&lt;&lt;&lt;&lt;&lt;&lt;|&lt;')
+            self.generator._serialize_unindentation('      \t', 8),
+            ('&lt;&lt;&lt;&lt;&lt;&lt;|&lt;', ''))
 
     def test_unindent_7_spaces_and_tab(self):
         """Testing DiffChunkGenerator._serialize_unindentation
         with 7 spaces and tab
         """
         self.assertEqual(
-            self.generator._serialize_unindentation('     \t'),
-            '&lt;&lt;&lt;&lt;&lt;|&lt;&mdash;')
+            self.generator._serialize_unindentation('     \t', 8),
+            ('&lt;&lt;&lt;&lt;&lt;|&lt;&mdash;', ''))
 
     def test_highlight_indent(self):
         """Testing DiffChunkGenerator._highlight_indentation
         with indentation
         """
         self.assertEqual(
-            self.generator._highlight_indentation('', '        foo', True, 4),
+            self.generator._highlight_indentation(
+                '',
+                '        foo',
+                True, 4, 4),
             ('', '<span class="indent">&gt;&gt;&gt;&gt;</span>    foo'))
 
     def test_highlight_indent_with_adjacent_tag(self):
@@ -1486,7 +1497,7 @@ class DiffChunkGeneratorTests(TestCase):
             self.generator._highlight_indentation(
                 '',
                 '<span class="s"> </span>foo',
-                True, 1),
+                True, 1, 1),
             ('',
              '<span class="s"><span class="indent">&gt;</span></span>foo'))
 
@@ -1496,7 +1507,9 @@ class DiffChunkGeneratorTests(TestCase):
         """
         self.assertEqual(
             self.generator._highlight_indentation(
-                '', ' <span>  </span> foo', True, 4),
+                '',
+                ' <span>  </span> foo',
+                True, 4, 2),
             ('', ' <span>  </span> foo'))
 
     def test_highlight_unindent(self):
@@ -1504,7 +1517,10 @@ class DiffChunkGeneratorTests(TestCase):
         with unindentation
         """
         self.assertEqual(
-            self.generator._highlight_indentation('        foo', '', False, 4),
+            self.generator._highlight_indentation(
+                '        foo',
+                '',
+                False, 4, 4),
             ('<span class="unindent">&lt;&lt;&lt;&lt;</span>    foo', ''))
 
     def test_highlight_unindent_with_adjacent_tag(self):
@@ -1515,7 +1531,7 @@ class DiffChunkGeneratorTests(TestCase):
             self.generator._highlight_indentation(
                 '<span class="s"> </span>foo',
                 '',
-                False, 1),
+                False, 1, 1),
             ('<span class="s"><span class="unindent">&lt;</span></span>foo',
              ''))
 
@@ -1525,8 +1541,37 @@ class DiffChunkGeneratorTests(TestCase):
         """
         self.assertEqual(
             self.generator._highlight_indentation(
-                ' <span>  </span> foo', '', False, 4),
+                ' <span>  </span> foo',
+                '',
+                False, 4, 2),
             (' <span>  </span> foo', ''))
+
+    def test_highlight_unindent_with_replacing_last_tab_with_spaces(self):
+        """Testing DiffChunkGenerator._highlight_indentation
+        with unindentation and replacing last tab with spaces
+        """
+        self.assertEqual(
+            self.generator._highlight_indentation(
+                '<span>\t\t        </span> foo',
+                '',
+                False, 2, 16),
+            ('<span><span class="unindent">'
+             '|&lt;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;'
+             '|&lt;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;'
+             '</span>        </span> foo', ''))
+
+    def test_highlight_unindent_with_replacing_3_tabs_with_tab_spaces(self):
+        """Testing DiffChunkGenerator._highlight_indentation
+        with unindentation and replacing 3 tabs with 1 tab and 8 spaces
+        """
+        self.assertEqual(
+            self.generator._highlight_indentation(
+                '<span>\t        </span> foo',
+                '',
+                False, 1, 24),
+            ('<span><span class="unindent">'
+             '|&lt;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;'
+             '</span>        </span> foo', ''))
 
 
 class DiffOpcodeGeneratorTests(TestCase):
@@ -1542,7 +1587,7 @@ class DiffOpcodeGeneratorTests(TestCase):
             self.generator._compute_line_indentation(
                 '    foo',
                 '        foo'),
-            (True, 4))
+            (True, 4, 4))
 
     def test_indentation_with_tabs(self):
         """Testing DiffOpcodeGenerator._calculate_indentation
@@ -1552,7 +1597,7 @@ class DiffOpcodeGeneratorTests(TestCase):
             self.generator._compute_line_indentation(
                 '    foo',
                 '\t    foo'),
-            (True, 1))
+            (True, 1, 8))
 
     def test_indentation_with_spaces_and_tabs(self):
         """Testing DiffOpcodeGenerator._calculate_indentation
@@ -1562,7 +1607,7 @@ class DiffOpcodeGeneratorTests(TestCase):
             self.generator._compute_line_indentation(
                 '    foo',
                 '  \t    foo'),
-            (True, 3))
+            (True, 3, 8))
 
     def test_indentation_with_tabs_and_spaces(self):
         """Testing DiffOpcodeGenerator._calculate_indentation
@@ -1572,7 +1617,7 @@ class DiffOpcodeGeneratorTests(TestCase):
             self.generator._compute_line_indentation(
                 '    foo',
                 '\t      foo'),
-            (True, 3))
+            (True, 3, 10))
 
     def test_indentation_with_replacing_tabs_with_spaces(self):
         """Testing DiffOpcodeGenerator._calculate_indentation
@@ -1612,7 +1657,7 @@ class DiffOpcodeGeneratorTests(TestCase):
             self.generator._compute_line_indentation(
                 '        foo',
                 '    foo'),
-            (False, 4))
+            (False, 4, 4))
 
     def test_unindentation_with_tabs(self):
         """Testing DiffOpcodeGenerator._calculate_indentation
@@ -1622,7 +1667,7 @@ class DiffOpcodeGeneratorTests(TestCase):
             self.generator._compute_line_indentation(
                 '\t    foo',
                 '    foo'),
-            (False, 1))
+            (False, 1, 8))
 
     def test_unindentation_with_spaces_and_tabs(self):
         """Testing DiffOpcodeGenerator._calculate_indentation
@@ -1632,7 +1677,7 @@ class DiffOpcodeGeneratorTests(TestCase):
             self.generator._compute_line_indentation(
                 '  \t    foo',
                 '    foo'),
-            (False, 3))
+            (False, 3, 8))
 
     def test_unindentation_with_tabs_and_spaces(self):
         """Testing DiffOpcodeGenerator._calculate_indentation
@@ -1642,7 +1687,7 @@ class DiffOpcodeGeneratorTests(TestCase):
             self.generator._compute_line_indentation(
                 '\t      foo',
                 '    foo'),
-            (False, 3))
+            (False, 3, 10))
 
     def test_unindentation_with_replacing_tabs_with_spaces(self):
         """Testing DiffOpcodeGenerator._calculate_indentation
@@ -1652,7 +1697,17 @@ class DiffOpcodeGeneratorTests(TestCase):
             self.generator._compute_line_indentation(
                 '\tfoo',
                 '    foo'),
-            (False, 1))
+            (False, 1, 4))
+
+    def test_unindentation_with_replacing_some_tabs_with_spaces(self):
+        """Testing DiffOpcodeGenerator._calculate_indentation
+        with replacing some tabs with spaces
+        """
+        self.assertEqual(
+            self.generator._compute_line_indentation(
+                '\t\t\tfoo',
+                '\t        foo'),
+            (False, 3, 8))
 
 
 class DiffRendererTests(SpyAgency, TestCase):
