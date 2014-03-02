@@ -330,6 +330,27 @@ class DiffParserTest(TestCase):
             ]
         )
 
+    def test_move_detection_with_whitespace_replace_lines(self):
+        """Testing diff viewer move detection with whitespace-only
+        changes on replace lines
+        """
+        self._test_move_detection(
+            [
+                'this is line 1, and it is sufficiently long',
+                '-------------------------------------------',
+                '-------------------------------------------',
+                'this is line 2, and it is sufficiently long  ',
+            ],
+            [
+                '  this is line 1, and it is sufficiently long',
+                '-------------------------------------------',
+                '-------------------------------------------',
+                'this is line 2, and it is sufficiently long',
+            ],
+            [],
+            []
+        )
+
     def test_move_detection_with_last_line_in_range(self):
         """Testing diff viewer move detection with last line in a range"""
         # The move detection rewrite in 2.0 introduced an off-by-one where

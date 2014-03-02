@@ -315,6 +315,8 @@ class DiffOpcodeGenerator(object):
         r_move_ranges = {}  # key -> (start, end, group)
         move_key = None
 
+        is_replace = (itag == 'replace')
+
         # Loop through every location from ij1 through ij2 - 1 until we've
         # reached the end.
         while i_move_cur < ij2:
@@ -361,13 +363,17 @@ class DiffOpcodeGenerator(object):
                             r_move_range.add_group(rgroup, rgroup_index)
                             updated_range = True
                     else:
-                        # We don't have any move ranges yet, or we're done
-                        # with the existing range, so it's time to build one
-                        # based on any removed lines we find that match the
-                        # inserted line.
-                        r_move_ranges[move_key] = \
-                            MoveRange(ri, ri, [(rgroup, rgroup_index)])
-                        updated_range = True
+                        # Check that this isn't a replace line that's just
+                        # "replacing" itself (which would happen if it's just
+                        # changing whitespace).
+                        if not is_replace or i_move_cur - ij1 != ri - ii1:
+                            # We don't have any move ranges yet, or we're done
+                            # with the existing range, so it's time to build one
+                            # based on any removed lines we find that match the
+                            # inserted line.
+                            r_move_ranges[move_key] = \
+                                MoveRange(ri, ri, [(rgroup, rgroup_index)])
+                            updated_range = True
 
                 if not updated_range and r_move_ranges:
                     # We didn't find a move range that this line is a part
