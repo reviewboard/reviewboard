@@ -20,6 +20,7 @@ class File(object):
         self.binary = False
         self.deleted = False
         self.moved = False
+        self.copied = False
         self.insert_count = 0
         self.delete_count = 0
 
@@ -112,6 +113,7 @@ class DiffParser(object):
             file.binary          = info.get('binary', False)
             file.deleted         = info.get('deleted', False)
             file.moved           = info.get('moved', False)
+            file.copied          = info.get('copied', False)
             file.origFile        = info.get('origFile')
             file.newFile         = info.get('newFile')
             file.origInfo        = info.get('origInfo')

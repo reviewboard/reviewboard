@@ -77,11 +77,11 @@
 {%   if not file.is_new_file %}
    <th colspan="2"><a name="{{file.index}}" class="file-anchor"></a>{{ file.depot_filename }}</th>
 {%   endif %}
-   <th colspan="2">{{ file.dest_filename }}{% if file.moved %}{% trans " (moved)" %}{% endif %}</th>
+   <th colspan="2">{{file.dest_filename}}{% if file.moved %}{% trans " (moved)" %}{% elif file.copied %}{% trans " (copied)" %}{% endif %}</th>
 {%  endif %}{# file.dest_filename == file.depot_filename #}
   </tr>
   <tr class="revision-row">
-{%  if file.moved and file.num_changes == 0 %}
+{%  if file.moved_or_copied and file.num_changes == 0 %}
    <th colspan="4"></th>
 {%  else %}
 {%   if not file.is_new_file %}
@@ -111,7 +111,7 @@
  <tbody class="binary" data-file-id="{{modified_diff_file_attachment.id}}">
 {%  if orig_diff_file_attachment or modified_diff_file_attachment %}
   <tr class="inline-actions-header">
-{%   if file.moved and file.num_changes == 0 or file.newfile and not orig_diff_file_attachment %}
+{%   if file.moved_or_copied and file.num_changes == 0 or file.newfile and not orig_diff_file_attachment %}
    <td colspan="4">
 {%   else %}
    <td colspan="2">
@@ -141,7 +141,7 @@
 {%  if diff_attachment_review_ui_html %}
   <td colspan="4" class="diff-review-ui">{{diff_attachment_review_ui_html}}</td>
 {%  else %}
-{%   if file.moved and file.num_changes == 0 or file.newfile and not orig_diff_file_attachment %}
+{%   if file.moved_or_copied and file.num_changes == 0 or file.newfile and not orig_diff_file_attachment %}
    <td colspan="4">
 {%   else %}
    <td colspan="2">
@@ -170,7 +170,7 @@
    </td>
   </tr>
  </tbody>
-{% elif file.moved and file.num_changes == 0 %}
+{% elif file.moved_or_copied and file.num_changes == 0 %}
  <tbody class="no-changes">
   <tr>
    <td colspan="4">{% trans "No changes were made to this file." %}</td>

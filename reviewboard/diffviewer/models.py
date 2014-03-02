@@ -82,14 +82,16 @@ class FileDiff(models.Model):
     This contains the patch and information needed to produce original and
     patched versions of a single file in a repository.
     """
+    COPIED = 'C'
+    DELETED = 'D'
     MODIFIED = 'M'
     MOVED = 'V'
-    DELETED = 'D'
 
     STATUSES = (
+        (COPIED, _('Copied')),
+        (DELETED, _('Deleted')),
         (MODIFIED, _('Modified')),
         (MOVED, _('Moved')),
-        (DELETED, _('Deleted')),
     )
 
     diffset = models.ForeignKey('DiffSet',
@@ -128,6 +130,10 @@ class FileDiff(models.Model):
     @property
     def deleted(self):
         return self.status == self.DELETED
+
+    @property
+    def copied(self):
+        return self.status == self.COPIED
 
     @property
     def moved(self):

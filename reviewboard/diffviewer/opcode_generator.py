@@ -238,9 +238,11 @@ class DiffOpcodeGenerator(object):
 
         norm_old_line_indent = old_line_indent.expandtabs(self.TAB_SIZE)
         norm_new_line_indent = new_line_indent.expandtabs(self.TAB_SIZE)
-        norm_old_line_len = (len(norm_old_line_indent) +
+        norm_old_line_indent_len = len(norm_old_line_indent)
+        norm_new_line_indent_len = len(norm_new_line_indent)
+        norm_old_line_len = (norm_old_line_indent_len +
                              len(old_line_stripped))
-        norm_new_line_len = (len(norm_new_line_indent) +
+        norm_new_line_len = (norm_new_line_indent_len +
                              len(new_line_stripped))
         line_len_diff = norm_new_line_len - norm_old_line_len
 
@@ -277,7 +279,9 @@ class DiffOpcodeGenerator(object):
             new_line_indent[::-1],
         ]))
 
-        return is_indent, raw_indent_len
+        return (is_indent,
+                raw_indent_len,
+                abs(norm_old_line_indent_len - norm_new_line_indent_len))
 
     def _compute_moves(self):
         # We now need to figure out all the moved locations.
@@ -314,6 +318,8 @@ class DiffOpcodeGenerator(object):
         i_move_range = MoveRange(i_move_cur, i_move_cur)
         r_move_ranges = {}  # key -> (start, end, group)
         move_key = None
+
+        is_replace = (itag == 'replace')
 
         # Loop through every location from ij1 through ij2 - 1 until we've
         # reached the end.
@@ -361,13 +367,17 @@ class DiffOpcodeGenerator(object):
                             r_move_range.add_group(rgroup, rgroup_index)
                             updated_range = True
                     else:
-                        # We don't have any move ranges yet, or we're done
-                        # with the existing range, so it's time to build one
-                        # based on any removed lines we find that match the
-                        # inserted line.
-                        r_move_ranges[move_key] = \
-                            MoveRange(ri, ri, [(rgroup, rgroup_index)])
-                        updated_range = True
+                        # Check that this isn't a replace line that's just
+                        # "replacing" itself (which would happen if it's just
+                        # changing whitespace).
+                        if not is_replace or i_move_cur - ij1 != ri - ii1:
+                            # We don't have any move ranges yet, or we're done
+                            # with the existing range, so it's time to build one
+                            # based on any removed lines we find that match the
+                            # inserted line.
+                            r_move_ranges[move_key] = \
+                                MoveRange(ri, ri, [(rgroup, rgroup_index)])
+                            updated_range = True
 
                 if not updated_range and r_move_ranges:
                     # We didn't find a move range that this line is a part
