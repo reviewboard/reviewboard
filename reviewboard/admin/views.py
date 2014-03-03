@@ -10,6 +10,7 @@ from django.shortcuts import render_to_response
 from django.template.context import RequestContext
 from django.template.loader import render_to_string
 from django.utils.translation import ugettext as _
+from django.views.decorators.csrf import csrf_protect
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.siteconfig.views import site_settings as djblets_site_settings
 
@@ -64,6 +65,7 @@ def security(request, template_name="admin/security.html"):
     }))
 
 
+@csrf_protect
 @staff_member_required
 def site_settings(request, form_class,
                   template_name="siteconfig/settings.html"):
@@ -72,6 +74,7 @@ def site_settings(request, form_class,
     })
 
 
+@csrf_protect
 @staff_member_required
 def ssh_settings(request, template_name='admin/ssh_settings.html'):
     client = SSHClient()
