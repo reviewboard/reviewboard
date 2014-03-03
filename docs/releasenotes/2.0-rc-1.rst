@@ -1,0 +1,273 @@
+===================================
+Review Board 2.0 RC 1 Release Notes
+===================================
+
+**Release date:** TBD
+
+This release contains all bug fixes and features found in Review Board version
+:doc:`1.7.22 <1.7.22>`.
+
+
+Installation
+============
+
+To install this release, run the following::
+
+    $ sudo easy_install \
+        -f http://downloads.reviewboard.org/releases/ReviewBoard/2.0/ \
+        -U ReviewBoard
+
+We are very close to the final release of 2.0. If you are intending to run
+2.0 on a production server, it is time to do some testing with this release to
+make sure we address any bugs you may run into.
+
+If you are careful with backups, you may run this on a production server, but
+you may experience bugs. It is best to install on a test server first, in case
+there are any major problems.
+
+
+Important Upgrade Notes
+=======================
+
+**Make a backup of your database!**
+
+Substantial changes were made to database migration. While our testing has
+shown it to work, it *could* leave your database in a bad state.
+
+Do **not** upgrade a production database without a full backup.
+
+Please let us know if you have any problems with the upgrade.
+
+
+Security Improvements
+=====================
+
+* This release fixes a vulnerability where users could compose a very short
+  script in their full name fields and cause it to be executed when the
+  user appears in a search result.
+
+* Added improved CSRF protection to all our forms.
+
+
+Usability Improvements
+======================
+
+* The name shown for the account menu in the top-right is now the username,
+  and not the first name.
+
+  This makes it easier to remember your own username, which is more useful
+  than helping remember your first name.
+
+* The list of columns on the Dashboard is now displayed in alphabetical
+  order. (:bug:`3260`)
+
+* Increased the size of the comment dialog.
+
+  The comment dialog is now a bit larger, providing more room for writing
+  comments and code samples.
+
+
+Performance Improvements
+========================
+
+* Optimized the rendering of diffs.
+
+  A series of optimizations were made to improve render time. Some operations
+  are twice as fast as they were before.
+
+  In particular, changes have been made to optimize highlighting of changed
+  characters in "replace" lines.
+
+* Reduced the number of database queries when loading extensions.
+
+
+Web API
+=======
+
+* :ref:`webapi2.0-diff-list-resource` no longer thinks it can create diffs
+  on review requess without a repository.
+
+  Attempting to create a diff on an attachments-only review request would
+  result in an HTTP 500. It now returns an Invalid Attribute error.
+
+
+Extensibility
+=============
+
+Authentication Backends
+-----------------------
+
+Populating Users on API Lookup
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+An :py:meth:`AuthBackend.query_users` method was added, which can populate the
+database based on a user lookup query.
+
+This is called when querying :ref:`webapi2.0-user-list-resource` before any
+results are returned from the database. This can be used to query a backend
+server or database to fetch any matching users and store them in the database.
+
+Patch by Mark Côté.
+
+
+Extensions
+----------
+
+Access to Extension Instances
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Extension code often needed to access the instance of the extension, but that
+instance wasn't always immediately available. That meant that they'd have to
+jump through hoops, querying for the extension using the extension manager.
+
+Extensions can now access an :py:attr:`instance` attribute on their
+:py:class:`Extension` subclass, which will point to the running instance of
+the extension. This will be ``None`` if the extension is not enabled.
+
+
+SettingsForm.settings
+~~~~~~~~~~~~~~~~~~~~~
+
+Subclasses of :py:class:`SettingsForm` can now access a :py:attr:`settings`
+attribute, which points to the extension's settings. This is useful for
+custom :py:meth:`load` and :py:meth:`save` methods that need to access the
+settings in some way.
+
+
+AuthBackendHook
+~~~~~~~~~~~~~~~
+
+The new :ref:`auth-backend-hook` allows extensions to provide new
+authentication backends. These will be available in the list of authentication
+backends that the administrator can choose from. This is now the preferred way
+of adding custom authentication backends, rather than using Python
+entrypoints.
+
+The auth backend will be registered when the extension is enabled, and
+unregistered when disabled.
+
+See the :ref:`documentation <auth-backend-hook>` for information on using
+this.
+
+
+Extra Context for TemplateHook
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:ref:`template-hook` now accepts an :py:data:`extra_context` argument that can
+be used to populate the template with custom variables.
+
+:py:class:`TemplateHook` subclasses can also implement
+:py:meth:`get_extra_data` to dynamically generate data for the template.
+Previously, they had to override :py:meth:`render_to_string` to provide any
+custom data.
+
+
+Bug Fixes
+=========
+
+Installation
+------------
+
+* Fixed generating lighttpd configuration files using
+  :command:`rb-site install` (:bug:`3263`)
+
+
+Diff Viewer
+-----------
+
+* Move detection will no longer show that a line moved to itself when
+  making a whitespace-only change on a line.
+
+* Move ranges can now span different types of remove groups.
+
+  Previously, a move range would appear incorrectly when the moved-from
+  range was spanning, say, a "replace" and a "delete" chunk. The new logic
+  allows ranges to span any type of chunk, even "equal" chunks if it helps
+  provide a good visual for the move.
+
+* Fixed move detection for the last line in an inserted chunk.
+
+  The last line wasn't being processed as a move unless the line after it
+  was also moved, due to an off-by-one error.
+
+* Newly introduced indentation changes between two diffs are now shown in
+  interdiffs. They were previously filtered out.
+
+* Fixed showing indentation changes when converting part of an indentation
+  or unindentation from tabs to spaces.
+
+* Fixed stylistic issues with line numbers and replaced text on move ranges.
+
+* Fixed displaying the :guilabel:`Download Diff` link when using interdiffs.
+  (:bug:`3269`)
+
+  The link is now always shown when looking at a single revision, and never
+  shown when looking at an interdiff.
+
+
+Diff Parsing
+------------
+
+* Fixed some errors parsing unicode characters from diffs. This was
+  a regression in the 2.0 betas, and affects all supported repositories.
+
+* Fixed a Git diff parsing issue where we would sometimes try to read past
+  the end of a file's diff.
+
+
+Review Requests
+---------------
+
+* Fixed rendering Markdown file attachments or content in the review
+  request multi-line text fields when they contain non-UTF-8 unicode
+  characters.
+
+* Fixed showing caption changes for legacy screenshots using the new
+  change rendering from beta 3.
+
+* Fixed some style issues when rendering Markdown file attachments.
+
+* Posting a review request with a commit ID that matches an existing
+  review request now works, and no longer results in a confusing error.
+
+
+My Account Page
+---------------
+
+* Fixed problems saving profile information. (:bug:`3268`)
+
+* The Groups list no longer shows any Local Sites you're a member of that
+  don't have any review groups set up.
+
+* Fixed some stylistic issues with checkboxes, labels, paragraphs,
+  and e-mail fields.
+
+
+Register Page
+-------------
+
+* Fixed a stylistic issue with the e-mail field.
+
+
+Extensions
+----------
+
+* Fixed issues using static media bundles with :py:data:`apply_to`.
+
+
+Other Changes
+-------------
+
+* Fixed a breakage when resetting your password. This regressed in an earlier
+  beta.
+
+* Logs containing timing operations weren't portraying microseconds correctly.
+  This could lead to operations appearing to take longer than they really did.
+
+
+Contributors
+============
+
+* Christian Hammond
+* David Trowbridge
+* Mark Côté
