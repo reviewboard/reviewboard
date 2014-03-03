@@ -1,0 +1,56 @@
+================================
+Review Board 1.7.5 Release Notes
+================================
+
+**Release date**: February 6, 2013
+
+
+New Features
+============
+
+* Added a nicer, human-readable view of diffs in the FileDiff tables in the
+  administration UI.
+
+* The repository name is now included in review request e-mails.
+  Patch by Katherine Schramm. (:bug:`2483`)
+
+
+Compatibility Fixes
+===================
+
+* We now require django-pipeline 1.2.24, which restores our compatibility
+  with Python 2.5 and fixes some errors when loading pages.
+
+* Our list of supported timezones should now be consistent across all
+  installs, since we now require a specific, modern version of pytz.
+  (:bug:`2874`)
+
+
+Bug Fixes
+=========
+
+* The entire thumbnail for file attachments are now clickable, making it
+  easier to download the file or reach the review page.
+
+* Users are no longer locked out of their review requests when assigned to
+  private groups they don't have access to. (:bug:`2446`)
+
+* The :guilabel:`Hide whitespace changes` toggle was broken on many
+  browsers, causing a JavaScript error. Patch by Ionut Prunache. (:bug:`2885`)
+
+* Searching for a user in the quick search field and then clicking the
+  user once again navigates to the user's page. Patch by Raja Venkataraman.
+  (:bug:`2842`)
+
+* The review request counts in the dashboard no longer show "None" for new
+  users when using Local Sites. Patch by Raja Venkataraman. (:bug:`2873`)
+
+
+Contributors
+============
+
+* Christian Hammond
+* David Trowbridge
+* Ionut Prunache
+* Katherine Schramm
+* Raja Venkataraman

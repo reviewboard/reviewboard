@@ -1,0 +1,153 @@
+======================================
+Review Board 1.1 Alpha 2 Release Notes
+======================================
+
+**Release date**: November 15, 2009
+
+
+This release contains all bug fixes and features found in Review Board 1.0.5.
+
+The release is dedicated to Vinay Venkatesh, a good friend of ours and
+long-time supporter of the project, who passed away November 1st.
+
+
+New Features
+============
+
+Review Requests
+---------------
+
+* Support Subversion repositories over HTTPS. (:bug:`1072`)
+
+  Up until now, only HTTP Subversion repositories could be used with
+  Review Board. We now support Subversion repositories that use HTTPS. When
+  adding/saving such a repository, the HTTPS certificate will be checked and
+  may be displayed to the administrator for confirmation.
+
+  This requires that the web server's user has a home directory that is
+  writable. This may not be the default setup on various Linux distributions,
+  so administrators may need to create a home directory for the user and
+  update the path in :file:`/etc/passwd`.
+
+* Support repositories over SSH.
+
+  Many types of repositories can be hosted over an SSH connection. Due to
+  authentication and host verification issues, these would not work with
+  Review Board without some manual changes. Now we support most repositories
+  backed by SSH. This includes Bazaar, CVS, Git, and Subversion. While it
+  has not been tested with Mercurial, it should work.
+
+* Repository path verification.
+
+  We now verify that a repository's information is valid before saving or
+  creating the new repository entry. This helps to prevent issues with
+  bad repository paths, which is one of the primary problems new users have
+  experienced. This is currently supported for Bazaar, CVS, Git, and
+  Subversion.
+
+* Added Amazon S3-based screenshot storage.
+
+  Review Board can now store screenshots in the cloud using `Amazon S3`_. This
+  is especially useful for Review Board instances hosted on `Amazon EC2`_, but
+  can be used in any installation to offload the storage.
+
+* We now remember the previous base diff path on a review request.
+  (:bug:`365`)
+
+  When using the web UI to upload diffs against a Subversion repository,
+  they'd have to type the base diff path every single time. We now store
+  the last used one and present that as the default for the new diff.
+
+
+Dashboard
+---------
+
+* Added tooltips to the Starred, Ship It, Comments and Updated images.
+  (:bug:`1207`)
+
+  This helps to describe the purpose of these icons for users who are
+  unfamiliar with them. Patch by Brett Simmers.
+
+* Added a :guilabel:`[Discarded]` label for discarded review requests on
+  the All My Requests page. (:bug:`1350`)
+
+
+User Accounts and Authentication
+--------------------------------
+
+* Added reCAPTCHA support for account registration.
+
+  Review Board servers that are open to the public can have issues with
+  spambots creating new accounts. Review Board can now use the
+  reCAPTCHA_ service to help guard against spam accounts.
+
+  By signing up at the reCAPTCHA_ site, you will receive keys you can
+  specify in the new Authentication Settings page in the administration UI
+  to enable a captcha. Captchas are easy to solve by humans, but harder for
+  programs to solve, and should work well as a deterrent.
+
+
+Administration UI
+-----------------
+
+* Added the ability to mark repositories as hidden.
+
+  When an organization moves to a new repository, they're supposed to create a
+  new Repository entry instead of changing an existing one so that they don't
+  break existing review requests. However, the old repositories must stick
+  around, and are seen in the New Review Request page and in the Default
+  Reviewer lists.
+
+  Administrators can now flag a repository as being hidden, which will
+  hide the repository from users.
+
+* Added validation to the Logging Directory setting. (:bug:`893`)
+
+  This checks that the directory for log files exists and is writable,
+  preventing problems where administrators believe logging is enabled but
+  can't find the resulting log files.
+
+* Split off the authentication-related settings from the General Settings page
+  to the new Authentication Settings page.
+
+
+API
+---
+
+* Added an API method for retrieving all diffsets on a review request.
+
+  The new ``/api/json/reviewrequests/<reviewrequest_id>/diff/`` URL returns
+  a list of all diffsets on that review request.
+
+  Patch by Markus Knittig.
+
+
+Bugs Fixed
+==========
+
+* The new autocomplete results would sometimes overlap the scrollbar. We now
+  position the results so that this overlap does not occur. (:bug:`1347`)
+
+* Fixed retrieving file contents in Bazaar when the file was moved in a
+  previous revision. Patch by Kay Röpke. (:bug:`1393`)
+
+* When two comment flags were placed on consecutive lines, only the first
+  flag would show. This was due to an off-by-one calculation in the diff
+  viewer. Patch by Laurent Nicolas. (:bug:`1377`)
+
+
+Contributors
+============
+
+* Brett Simmers
+* Christian Hammond
+* Chris Clark
+* David Trowbridge
+* Kay Röpke
+* Laurent Nicolas
+* Markus Knittig
+
+
+.. _`Amazon S3`: https://s3.amazonaws.com/
+.. _`Amazon EC2`: http://aws.amazon.com/ec2/
+.. _`reCAPTCHA`: http://www.recaptcha.net/

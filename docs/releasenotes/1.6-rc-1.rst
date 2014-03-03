@@ -1,0 +1,156 @@
+===================================
+Review Board 1.6 RC 1 Release Notes
+===================================
+
+
+**Release date**: June 23, 2011
+
+
+New Features
+============
+
+* Added generic file attachment. (:bug:`239`)
+
+  Files of any type can now be uploaded to a review request and reviewed
+  as a whole. This is useful for providing tarballs of non-diffable files,
+  log files, unit test output, sample files, etc.
+
+  Every uploaded file will appear on the review request page, with the
+  ability to download or add a comment about the file.
+
+  Comments made on files will appear in the review, just like diff and
+  screenshot comments.
+
+  Drag-and-drop upload support doesn't yet exist, but the plan is to add it
+  before release.
+
+  The initial work for this feature was developed by Laila Agaev and then
+  Steve Sutcliffe as part of their UCOSP_ projects this year.
+
+.. _UCOSP: http://www.ucosp.ca/
+
+* Added support for private profiles. (:bug:`2127`)
+
+  On a public Review Board server, users may not want their name and e-mail
+  address to be easily accessed on their profile page or through the API.
+  Users can now go to their My Account page and make their profile private.
+
+  When a profile is private, the only users who can see the profile
+  information are the site administrators and the user owning the profile.
+
+  Patch by Hongbin Lu.
+
+* Added support for private GitHub Organizations.
+
+  The Repository page in the administration UI now provides a Hosting Service
+  entry for private GitHub Organizations. This differs from the other
+  GitHub entries in that it requires the username used to access files on
+  that repository, rather than assuming the hosting owner account or
+  organization name is used.
+
+* New review request notifications are now reflected in the page icon.
+
+  The page icon now shows a little green indicator overlaying the Review
+  Board icon when there's an update notification on the screen. This makes
+  it easier to keep track of any changes to review requests when several
+  tabs are open.
+
+* The "Discarded" and "Submitted" labels in the dashboard views now
+  have their own distinct colors. Patch by Vlad Filippov. (:bug:`1903`)
+
+* The Review Request Updated e-mails now clearly show when the summary,
+  rather than the description, was changed. Patch by Philipp Henkel.
+
+
+Performance Enhancements
+========================
+
+* Sped up the rendering of the New Review Request page.
+
+  The New Review Request page generated far too many database queries
+  when displaying the list of repositories. It would query once per
+  entry. With hundreds of repositories, this would slow down the page and
+  the server.
+
+  This has been drastically sped up and now performs much faster with
+  large lists.
+
+* The rendering of syntax highlighting in diffs is now faster.
+
+  We switched to requiring Pygments_ 1.4, which offers speed improvements
+  when generating the syntax highlighting in our diffs. This upgrade also
+  adds support for new file types. The list can be found on their website.
+
+.. _Pygments: http://www.pygments.org/
+
+* Reduced queries when looking up SCMTools in the database.
+
+  We now cache lookups to SCMTools (the components responsible for talking
+  to repositories), reducing the amount of queries that need to be made on
+  each page.
+
+
+Bug Fixes
+=========
+
+* Fixed an error when attempting to show a changeset-related error during
+  the creation of a review request. (:bug:`2088`)
+
+* Fixed a page breakage where a user profile was incorrectly assumed to exist
+  when viewing a review request. (:bug:`2111`)
+
+* Clear Case wasn't properly recognizing brand new files. Patch by
+  Jan Koprowski.
+
+* Fixed a Python 2.4 compatibility problem in Clear Case. Patch by
+  Jan Koprowski.
+
+* Fixed a breakage with Internet Explorer that was introduced in 1.6 beta 2.
+  (:bug:`2005`)
+
+  The breakage was preventing many pages, including the review request page,
+  from at all operating on Internet Explorer and possibly other browsers.
+
+* Fixed a rare crash in rb-site on the memcached server location page.
+
+  On rare occasions, the memcached server location page in the rb-site
+  installation wizard would crash due to an invalid variable access.
+  Patch by Alexander Solovets.
+
+* Fixed an inconsistent recommendation in rb-site. (:bug:`2113`)
+
+  rb-site was recommending both mod_python and wsgi on the same page. Now
+  it just recommends wsgi.
+
+* Fixed possible problems if a :file:`.ssh/authorized_keys` file contained
+  a bad line. This is a rare problem, and only happened if hand-editing
+  the file.
+
+* The new Quick Search results list no longer appears off-screen.
+
+* The log file no longer spews file locations on every new web server worker
+  thread/process unless the log level is set to DEBUG. This was filling up
+  log files with near useless information on production systems.
+
+* Public servers not running in DEBUG mode would cause any HTTP 400 errors to
+  e-mail the administrator.
+
+
+Internal Changes
+================
+
+* Review Board now depends on Django 1.3.
+
+
+Contributors
+============
+
+* Alexander Solovets
+* Christian Hammond
+* David Trowbridge
+* Hongbin Lu
+* Jan Koprowski
+* Laila Agaev
+* Philipp Henkel
+* Steve Sutcliffe
+* Vlad Filippov

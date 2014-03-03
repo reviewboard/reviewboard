@@ -1,0 +1,18 @@
+==================================
+Review Board 1.6.7.1 Release Notes
+==================================
+
+**Release date**: June 5, 2012
+
+
+Bug Fixes
+=========
+
+* Fixed a database migration compatibility issue with certain versions of
+  MySQL.
+
+
+Contributors
+============
+
+* Christian Hammond

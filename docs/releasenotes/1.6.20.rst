@@ -1,0 +1,17 @@
+=================================
+Review Board 1.6.20 Release Notes
+=================================
+
+**Release date**: October 11, 2013
+
+
+Bug Fixes
+=========
+
+* Fixed a breakage when accessing the Review Group Users resource.
+
+
+Contributors
+============
+
+* Christian Hammond

@@ -1,0 +1,31 @@
+==================================
+Review Board 1.7.9 Release Notes
+==================================
+
+**Release date**: June 3, 2013
+
+
+API Changes
+===========
+
+* Added new ``blocks`` and ``depends_on`` fields to the Review Request
+  resource.
+
+
+Bug Fixes
+=========
+
+* Fixed the max_length of the new HostingServiceAccount.hosting_url
+  field. This was causing problems on MySQL with InnoDB.
+
+* Fixed the documentation for the cgit configuration for Git.
+  Patch by Stephen Gallagher.
+
+* Fixed the cgit URL for Fedora Hosted. Patch by Stephen Gallagher.
+
+
+Contributors
+============
+
+* Christian Hammond
+* Stephen Gallagher

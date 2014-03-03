@@ -1,0 +1,70 @@
+================================
+Review Board 1.0.4 Release Notes
+================================
+
+**Release date**: October 4, 2009
+
+
+Bugs Fixed
+==========
+
+* On CVS repositories, lookups would fail on older files still in revision
+  control that have since been "removed" from the repository. We now check
+  the CVS Attic paths for these files. (:bug:`394`)
+
+* Replying to a comment on an interdiff caused the new replies to not
+  appear in the diff viewer or to have a valid link in the e-mails, as we
+  weren't storing the interdiff information on that new comment. (:bug:`765`)
+
+* Review requests without summaries (for example, newly created draft
+  review requests) weren't selectable in the administration UI. We now
+  show a fake summary. (:bug:`984`)
+
+* On Google Chrome, the screenshot comment area would be wrong, showing
+  comment boxes in the wrong place. New comments would also be placed in
+  the wrong location. (:bug:`1050`)
+
+* On Google Chrome, the text areas would grow by a line with every key
+  pressed. Patch by Cory McWilliams. (:bug:`1145`).
+
+* On Safari 4, the text areas wouldn't auto-resize based on text.
+
+* On Firefox, the text areas would shrink too much when deleting text.
+
+* Uploading diffs were broken on Opera. (:bug:`1167`)
+
+* When entering bugs on a review request against a repository without a
+  bug tracker URL, the :guilabel:`Loading` indicator would remain on the
+  screen until the page was reloaded. (:bug:`1195`)
+
+* The group membership in the Active Directory backend is only checked
+  when an actual restriction on the groups are active. Patch by
+  Nikolai Prokoschenko. (:bug:`1267`)
+
+* The "Review Board" logo didn't link to anything. It now links to the
+  dashboard when logged in, or to the login page otherwise. (:bug:`1308`)
+
+* Usernames lookups containing leading or trailing whitespace no longer
+  creates an invalid user from an LDAP, NIS or Active Directory backend.
+  Whitespace around the usernames are now stripped when looking up or
+  creating a user profile. (:bug:`1309`)
+
+* The "Review Board" text, logo and version number wasn't displaying correctly
+  on some browsers. It now displays properly on Firefox, Internet Explorer,
+  Safari, Chrome, and Opera. (:bug:`1313`)
+
+* If a diff was viewed while as part of the first draft of a review request,
+  the server-side cache of the diff would contain broken links. (:bug:`1334`)
+
+* The New Review Request page could show a 500 Internal Server Error if
+  the settings for a repository were invalid or a dependency was missing.
+  We now simply filter the repository from the list and log the error.
+
+
+Contributors
+============
+
+* Christian Hammond
+* Cory McWilliams
+* David Trowbridge
+* Nikolai Prokoschenko

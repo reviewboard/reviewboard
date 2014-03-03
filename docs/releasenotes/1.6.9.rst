@@ -1,0 +1,31 @@
+================================
+Review Board 1.6.9 Release Notes
+================================
+
+**Release date**: June 12, 2012
+
+
+New Features
+============
+
+* When using a GitHub repository and there's only 100 API calls or less
+  available on GitHub for the hour, a warning with the number of API calls
+  left is logged.
+
+
+Bug Fixes
+=========
+
+* Fixed typing in entry fields in the diff viewer. Certain keys were
+  triggering the diff viewer's key bindings.
+
+* Fixed some issues with private repositories on GitHub.
+
+* Fixed creating review requests that aren't tied to repositories.
+  (:bug:`2633`)
+
+
+Contributors
+============
+
+* Christian Hammond

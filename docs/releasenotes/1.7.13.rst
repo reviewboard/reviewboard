@@ -1,0 +1,103 @@
+=================================
+Review Board 1.7.13 Release Notes
+=================================
+
+**Release date**: August 15, 2013
+
+
+Security Updates
+================
+
+* We now require Django 1.4.6, which is their latest security release. It
+  fixes a couple of issues that we are not impacted by, but are worth
+  having for any third-party modules, applications or extensions.
+
+* We have updated the recommended Apache configuration for file attachment
+  protection. We will be unveiling a better security method in coming
+  releases, but for now, if you're serving file attachments from Apache,
+  be sure to update your configuration based on `our recommendations`_.
+
+.. _`our recommendations`:
+   http://support.beanbaginc.com/support/solutions/articles/110173-securing-file-attachments
+
+
+New Features
+============
+
+* Added Beanstalk_ as a supported hosting service.
+
+  Beanstalk offers Git and Subversion support, inline code editing,
+  easy deployment to servers, and more. It integrates with a variety
+  of third party tools and services.
+
+* Added Git support for Bitbucket_.
+
+  Previously, we only supported Mercurial, but now you can access your
+  Git repositories as well.
+
+  This requires using :command:`rbt post` in RBTools 0.5.2. It will not
+  work with :command:`post-review`, or earlier versions of RBTools.
+
+* Add easier site upgrading to :command:`rb-site`.
+
+  New site installations are now recorded in :file:`/etc/reviewboard/sites`.
+  When upgrading, you can now run ``rb-site upgrade --all-sites`` to
+  upgrade all known sites.
+
+  If you're running an existing installation, you can just add the path
+  of your site directory to :file:`/etc/reviewboard/sites`.
+
+  This is not supported for Windows.
+
+  Patch by Stephen Gallagher.
+
+
+.. _Beanstalk: http://www.beanstalkapp.com/
+.. _Bitbucket: http://bitbucket.org/
+
+
+Bug Fixes
+=========
+
+* Fixed hosting service integration with Python 2.5. (:bug:`3043`)
+
+  Some hosting services (such as GitHub) respond to requests with HTTP 2xx
+  error codes other than 200. This is perfectly valid, but Python 2.5 doesn't
+  recognize these by default as valid codes. We now work around this to
+  ensure compatibility across all supported Python versions.
+
+* Fixed a database upgrade issue that affected many MySQL instances when
+  using UTF-8 tables. (:bug:`3040`)
+
+* File attachment names are no longer cut off if they're over a certain size.
+
+* Fixed bad URLs when viewing file attachments stored on Amazon S3.
+
+* Fixed parent diff support for Mercurial. Patch by Colin Caughie.
+  (:bug:`2971`)
+
+* Fixed e-mails going out as the wrong sender when updating a review request
+  using ``--submit-as`` in RBTools. (:bug:`1795`, :bug:`2500`)
+
+* Fixed some regressions in our Plastic SCM support. (:bug:`3044`)
+
+  Note that there may still be issues with talking to some Plastic
+  repositories, which are not yet fixed.
+
+* The administration UI no longer breaks if a badly formatted cache server
+  hostname is set. (:bug:`3049`)
+
+* Extensions install media into the correct directory again if the
+  extension has a custom display name.
+
+* Fixed the display of review request IDs for trophies on Local Sites.
+  (:bug:`3055`)
+
+
+Contributors
+============
+
+* Christian Hammond
+* Colin Caughie
+* David Trowbridge
+* Stephen Gallagher

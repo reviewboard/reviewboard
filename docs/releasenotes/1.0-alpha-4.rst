@@ -1,0 +1,25 @@
+======================================
+Review Board 1.0 Alpha 4 Release Notes
+======================================
+
+**Release date**: February 16, 2009
+
+
+Bugs fixed in Review Board
+==========================
+
+* Fixed an infinite loop in the Git diff parser. Patch by Dennis Schön.
+  (:bug:`887`)
+
+* The first file in the diff viewer would sometimes come back as
+  escaped HTML. It's now embedded correctly.
+
+* The comment dialog's "dirty" state wasn't being reset for new
+  comments. This would leave reviewers unable to make new comments.
+
+
+Bugs Fixed in post-review
+=========================
+
+* post-review should now work with SVN regardless of the locale set.
+  (:bug:`888`)

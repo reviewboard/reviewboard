@@ -1,0 +1,75 @@
+=================================
+Review Board 1.6.16 Release Notes
+=================================
+
+**Release date**: February 20, 2013
+
+
+Security Updates
+================
+
+We now require Django 1.3.7, which fixes a few `security vulnerabilities`_.
+We recommend all 1.6.x users upgrade to 1.6.16.
+
+.. _`security vulnerabilities`:
+   https://www.djangoproject.com/weblog/2013/feb/19/security/
+
+
+Web API Changes
+===============
+
+* Added API support for querying and manipulating default reviewers. This is
+  accessible at ``/api/default-reviewers/``.
+
+* Repositories deleted through the Web API are now only archived if they
+  have any associated review requests. Otherwise, they're deleted, which
+  helps prevent collisions when creating a repository, deleting it, and
+  re-creating it.
+
+
+Bug Fixes
+=========
+
+* Fixed an HTML escaping issue when listing filenames in the diff viewer.
+
+  Any filenames consisting of HTML-unsafe characters were being interpreted.
+  In theory, this could be used to inject scripts into the diff viewer
+  page when uploading a diff (though in practice, our diff parsing wouldn't
+  allow it). We now make sure the filenames are escaped properly.
+
+* Fixed an occasional crash when viewing a diff when displaying a function
+  or class header on the left-hand side but when there was none on the
+  right-hand side. (:bug:`2876`)
+
+* We try harder now to set the :envvar:`PYTHONPATH` for subprocesses,
+  which should fix some issues fetching files over Subversion. (:bug:`2834`)
+
+* Fixed default Apache configuration files to be explicit in enabling
+  ``FollowSymLinks``.
+
+* Fixed fetching files with FedoraHosted. Patch by Stephen Gallagher.
+  (:bug:`2897`)
+
+* SMTP servers saved with additional whitespace will now have that
+  whitespace stripped, in order to prevent lookup failures. (:bug:`2620`)
+
+  Patch by Surya Nallu.
+
+* Fixed the link to the PyLucene documentation in the General Settings
+  page.
+
+* Fixed the review ID column when using Local Sites.
+
+* Fixed the starred public review count for new users when using Local Sites.
+  (:bug:`2873`)
+
+
+Contributors
+============
+
+* Christian Hammond
+* David Trowbridge
+* Felix Sung
+* Raja Venkataraman
+* Stephen Gallagher
+* Surya Nallu

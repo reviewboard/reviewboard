@@ -1,0 +1,78 @@
+======================================
+Review Board 1.0 Alpha 3 Release Notes
+======================================
+
+**Release date**: February 15, 2009
+
+
+Feature Improvements
+====================
+
+* We now pre-load the first file on a page in the diff viewer, in
+  order to make it appear that the page is loading faster. Many people
+  felt the new, faster diff viewer was slower because even after the
+  initial page load, they had to wait to see any diffs. They're now
+  able to work with the first diff the moment the diff viewer loads.
+
+* Added hover/clicked styling for the review request action buttons.
+
+
+Bugs Fixed in the Diff Viewer
+=============================
+
+* Fixed some major performance issues when typing in the diff viewer.
+  This was the cause of many reports of slowdown and visual oddities
+  when creating comments.
+
+* Unchanged files should no longer show errors in interdiffs.
+
+* Fixed file-based navigation (:kbd:`<` and :kbd:`>` keys) in the diff
+  viewer. (:bug:`696`)
+
+* We no longer show a nonsensical error when SVN logins fail. (:bug:`721`)
+
+* Fixed anchors in the diff viewer. (:bug:`828`)
+
+* Fixed the "Expand/Collapse Diffs" toggle in the diff viewer.  (:bug:`862`)
+
+
+Bugs Fixed in Reviews
+=====================
+
+* The review request page is no longer cached across login sessions.
+  We were over-aggressive in the caching and are now a lot more careful.
+
+* Upload Diff/Screenshot dialogs on Safari are now centered instead
+  of being docked to the far-left side.
+
+* Uploading diffs and screenshots now works on Safari.
+
+* Empty Changeset errors in Perforce should now properly be shown
+  to the user. They were in some cases triggering a server-side
+  error.
+
+* The Change Description field no longer animates open on page load.
+
+* Sentences containing the word "bug" or "issue" no longer generate
+  links unless followed by either specifically a number or a "#"
+  followed by alphanumeric characters.
+
+* Fixed some escaping issues in the review request summary, which
+  would cause characters (such as quotes) to appear incorrectly. (:bug:`860`)
+
+* Fixed some issues with auto-linking text in the Description and
+  Testing Done fields. There were issues on initial page loads with
+  linking URLs that were followed by quotes, "<" and ">". (:bug:`864`)
+
+
+Bugs Fixed in rb-site
+=====================
+
+* Generated :file:`settings_local.py` files no longer have ``DEBUG=True``
+  enabled by default.
+
+* The generated FastCGI and Apache config files should now work better
+  out of the box. We had path issues in :file:`reviewboard.fcgi`. We also
+  now set the ``PYTHON_EGG_CACHE`` directory and default to processing
+  :file:`.htaccess` files in :file:`htdocs` (which some distros don't have
+  enabled by default).

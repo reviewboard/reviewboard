@@ -1,0 +1,118 @@
+=================================
+Review Board 1.7.12 Release Notes
+=================================
+
+**Release date**: July 28, 2013
+
+
+Security Fixes
+==============
+
+This release contains security updates to better lock down Review Board
+from malicious users.
+
+There are no known vulnerabilities in the wild for these issues, but we
+recommend upgrading immediately.
+
+* Function names in diff headers are no longer rendered as HTML.
+  Patch by Damian Johnson. (:bug:`2612`)
+
+* If a user's full name contained HTML, the Submitters list would render
+  it as HTML, without escaping it. This was an XSS vulnerability.
+  (:cve:`2013-4795`)
+
+* The default Apache configuration is now more strict with how it serves
+  up file attachments. This does not apply to older installations.
+  To update your configuration, and to read best practices, read our
+  guide on `securing file attachments`_.
+
+* Uploaded files are now renamed to include a hash, preventing users from
+  uploading malicious filenames, and making filenames unguessable.
+
+* Recaptcha support has been updated to use the new URLs provided by Google.
+  This re-enables Recaptcha support when serving over HTTPS.
+
+
+.. _`securing file attachments`:
+   http://support.beanbaginc.com/support/solutions/articles/110173-securing-file-attachments
+
+
+New Features
+============
+
+* Added a ``X-ReviewRequest-Repository`` header for e-mails. This will
+  list the name of the repository. Patch by Dan Tehranian.
+
+
+Extension Improvements
+======================
+
+* Extensions can now specify their list of app directories.
+
+  An Extension subclass can define an ``apps`` member variable that,
+  like ``INSTALLED_APPS``, lists the app module paths the extension
+  uses. These will each be added to ``INSTALLED_APPS`` when enabled,
+  and removed when disabled.
+
+  If an extension does not provide ``apps``, then this falls back
+  on the default behavior of only adding the extension's parent
+  app.
+
+* Extensions can now specify the author's URL.
+
+  Extension.metadata can now specify an ``Author-home-page`` field,
+  which points to the URL for the author's site. This is meant to
+  distinguish between the extension's URL, and the URL for the
+  person/company/organization that created the extension.
+
+* Improved the look and feel for extension configuration.
+
+  The extension configuration pages now fit in with the admin UI
+  a lot better. They share much of the look of other admin UI
+  pages.
+
+  Furthermore, when extensions are saved, there's now feedback
+  given to the user, instead of just simply re-rendering the page.
+
+* Improved the functionality for extension configuration.
+
+  Extension configuration forms now contain all the functionality
+  of ``SiteSettingsForm``. This include fieldsets and save blacklists
+  (which prevent a field from automatically being saved in the
+  extension settings).
+
+* Improved the list of available extensions.
+
+  The list no longer causes part of the extension description
+  to be overlapped. It also shows the author of the extension,
+  and links back to the author's site.
+
+
+Bug Fixes
+=========
+
+* Fixed the "Show Whitespace Changes" toggle. (:bug:`2941`)
+
+* Fixed compatibility with modern versions of django-storages.
+  Patch by Victoria Ponce.
+
+* Draft comments on file attachments are no longer shown to all users.
+
+* Fixed issues with console windows appearing when invoking Clear Case
+  requests on Python 2.7.x and Windows 7. Patch by Nicolas Dély.
+
+* Review requests on Local Sites are now guaranteed to have the proper
+  ID. Previously, this would fail in some circumstances.
+
+* Fixed starring review requests on Local Sites.
+
+
+Contributors
+============
+
+* Christian Hammond
+* Damian Johnson
+* Dan Tehranian
+* David Trowbridge
+* Nicolas Dély
+* Victoria Ponce

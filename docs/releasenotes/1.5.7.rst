@@ -1,0 +1,27 @@
+================================
+Review Board 1.5.7 Release Notes
+================================
+
+
+**Release date**: November 15, 2011
+
+
+Security Fixes
+==============
+
+* A script injection vulnerability was discovered in the commenting system.
+  This affected the diff viewer and screenshot pages, and allowed a commenter
+  to break the page and execute JavaScript. This vulnerability has been fixed.
+
+  Thanks to Damian Johnson for reporting this.
+
+  To upgrade to this release, run::
+
+      sudo easy_install -U ReviewBoard==1.5.7
+
+
+Contributors
+============
+
+* Christian Hammond
+* Damian Johnson

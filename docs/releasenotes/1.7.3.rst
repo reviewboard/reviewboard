@@ -1,0 +1,85 @@
+================================
+Review Board 1.7.3 Release Notes
+================================
+
+**Release date**: January 28, 2013
+
+
+New Features
+============
+
+* Add optional support for sending e-mails when closing review requests.
+  This is off by default, but can be turned on in E-mail Settings.
+  Patch by Raja Venkataraman. (:bug:`422`)
+
+
+Compatibility Updates
+=====================
+
+* The new support for Perforce moved files has changed. RBTools 0.4.3 will now
+  require Review Board 1.7.3 at a minimum.
+
+* Review Board now works with SVN diffs generated in many non-C locales.
+  Patch by Tetsuya Morimoto.
+
+
+Web API Changes
+===============
+
+* Added a ``scmtools.perforce.moved_files`` capability to indicate moved
+  file support for Perforce.
+
+
+Bug Fixes
+=========
+
+* SMTP servers saved with additional whitespace will now have that
+  whitespace stripped, in order to prevent lookup failures. (:bug:`2620`)
+
+  Patch by Surya Nallu.
+
+* Fixed a crash when running a search index. (:bug:`2872`)
+
+* The listed creation time for a review request now reflects when it was
+  first published, not when the initial draft was first created.
+
+* The "Add Comment" button on file attachment thumbnails is no longer shown
+  if not logged in. Patch by Niklas Hambuechen.
+
+* Fixed a bug allowing for publishing blank review requests after filling in
+  the field and then deleting them. Patch by Miguel Flores. (:bug:`2870`)
+
+* Fixed an occasional crash when viewing a diff when displaying a function
+  or class header on the left-hand side but when there was none on the
+  right-hand side. (:bug:`2876`)
+
+* Fixed a breakage on some systems when checking the Mercurial version.
+
+* The Summary field no longer overlaps text when wrapping. Patch by Greg Wang.
+
+* Fixed the review ID column when using Local Sites.
+
+* Using a custom ``SITE_ROOT`` with a development server setup no longer
+  breaks all static media.
+
+* Fixed the capitalization of the "VersionOne" bug tracker entry.
+
+* Using ClearCase on Windows 7 should no longer cause console windows to
+  pop up. Patch by Tao Zhou.
+
+* Fixed loading blank comments in the diff viewer. This is primarily a problem
+  during development.
+
+
+Contributors
+============
+
+* Christian Hammond
+* David Trowbridge
+* Greg Wang
+* Miguel Flores
+* Niklas Hambuechen
+* Raja Venkataraman
+* Surya Nallu
+* Tao Zhou
+* Tetsuya Morimoto

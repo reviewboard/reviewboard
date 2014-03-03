@@ -1,0 +1,26 @@
+==================================
+Review Board 1.7.8.1 Release Notes
+==================================
+
+**Release date**: June 3, 2013
+
+
+Bug Fixes
+=========
+
+* Fixed a regression with saving repositories that don't use hosting
+  services.
+
+
+Misc. Changes
+=============
+
+* Compatibility changes for the upcoming PDF review plugin.
+
+
+Contributors
+============
+
+* Adam Collard
+* Christian Hammond
+* David Trowbridge

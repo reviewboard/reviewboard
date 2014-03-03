@@ -1,0 +1,121 @@
+=================================
+Review Board 1.7.21 Release Notes
+=================================
+
+**Release date**: January 14, 2014
+
+
+New Features
+============
+
+* Added support for GitLab_ servers.
+
+  GitLab is a popular self-hosted alternative to GitHub and other similar
+  services. This release supports public and private personal and group
+  repositories on self-hosted GitLab servers.
+
+  Repositories on GitLab can be added through the Add Repository page.
+  Simply select GitLab from the list of hosting services and fill in
+  the fields.
+
+
+* Added support for the Unfuddle_ service.
+
+  Unfuddle is a service that provides Git and Subversion hosting, as well
+  as numerous other features for project management and task tracking.
+
+  Repositories on Unfuddle can be added through the Add Repository page.
+  Simply select Unfuddle from the list of hosting services and fill in
+  the fields.
+
+* Added support for publicly accessible Local Sites.
+
+  A Local Site can now be set to be public, allowing non-members to post or
+  view review requests, or to participate in discussions.
+
+  This is still experimental, and as a non-member, there are things users
+  cannot do. For example, they will not receive e-mails for changes they're
+  involved in, and cannot join any review groups on the Local Site.
+
+
+.. _GitLab: http://gitlab.org/
+.. _Unfuddle: http://unfuddle.com/
+
+
+Performance Improvements
+========================
+
+* Massively improved render time of large diffs,
+
+  We made a change to our diff algorithm that should provide a substantial
+  speed boost for large diffs. These could take some time to generate before,
+  but now we cut short some of the calculations if they're deemed too
+  expensive.
+
+  In testing, this has dropped render time for some very large diffs from a
+  minute to a less than 10 seconds.
+
+  This will not affect existing diffs, only newly uploaded diffs. Please let
+  us know if you see any regressions or breakages.
+
+
+API Changes
+===========
+
+* Added new query parameters for filtering lists of repositories.
+
+  The :ref:`repository list resource <webapi2.0-repository-list-resource>`
+  now accepts the following arguments for filtering the list of repositories:
+
+  * ``?name=`` - Comma-separated list of repository names.
+  * ``?path=`` - Comma-separated list of paths or mirror paths.
+  * ``?name-or-path=`` - Comma-separated list of strings matching either
+    repository names or paths/mirror paths.
+  * ``?tool=`` - Comma-separated list of registered SCMTool names
+    ("Git", "Subversion", etc.)
+  * ``?hosting-service=`` - Comma-separated list of registered hosting service
+    names.
+  * ``?username=`` - Comma-separated list of usernames for accessing the
+    repository or hosting service account.
+
+
+Bug Fixes
+=========
+
+* Fixed issues verifying and accessing files for Subversion repositories on
+  Beanstalk_.
+
+* Fixed issues accessing properties on Subversion repositories on some
+  hosting providers that require authentication.
+
+* The activity widget in the administration UI now shows data for the current
+  day.
+
+  Patch by Michael Zhilin.
+
+* Fixed issues where the activity widget could break, depending on the
+  date range. (:bug:`3068`)
+
+* Fixed a regression in error messages provided when setting up a GitHub
+  repository.
+
+* Fixed links in e-mails to file attachments stored on CDNs.
+
+* Removed an unnecessary external image included in e-mails. (:bug:`3080`)
+
+  Patch by Leo Shklovskii.
+
+* Users no longer on a LocalSite will be excluded from any e-mails on
+  review requests or reviews they were previously involved in.
+
+
+.. _Beanstalk: http://beanstalkapp.com/
+
+
+Contributors
+============
+
+* Christian Hammond
+* David Trowbridge
+* Leo Shklovskii
+* Michael Zhilin

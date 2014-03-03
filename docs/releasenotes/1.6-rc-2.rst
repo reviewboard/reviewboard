@@ -1,0 +1,195 @@
+===================================
+Review Board 1.6 RC 2 Release Notes
+===================================
+
+**Release date**: July 21, 2011
+
+
+New Features
+============
+
+* File attachment comments.
+
+  Users can now add comments to file attachments. These attachments will
+  appear in the review, just like diff and screenshot comments.
+
+  This was mistakingly listed as a feature of RC 1, but does work now in RC 2.
+
+* File attachment drag-and-drop. (:bug:`1993`)
+
+  Arbitrary files can now be dropped onto the review request to upload them.
+  The drag-and-drop experience for both file attachments and screenshots
+  have been greatly improved, and it's faster and easier to upload files now.
+
+* Added close descriptions to review requests. (:bug:`268`, :bug:`693`,
+  :bug:`1052`)
+
+  When closing a review request (discarding or marking as submitted), a
+  description can now be added on the close banner. This works much like
+  a change description for drafts. These can be used to describe why a change
+  was discarded, or what revision it was submitted as, or anything else.
+
+  Patch by Hongbin Lu.
+
+* Added alerts whenever leaving a page would cause data loss. (:bug:`1794`)
+
+  Leaving a page while a field or a comment or anything else is being
+  edited will now prompt the user to make them aware they may lose changes.
+  They'll have an option to leave the page or stay on the page.
+
+* Added confirmation when canceling a field with new changes. (:bug:`2096`)
+
+* Added a :kbd:`Control-S` shortcut to save the field you're editing.
+  Patch by Hongbin Lu. (:bug:`2096`)
+
+* Added support for HTTP Basic Auth for Git repositories when using the
+  web-based raw file URL method.
+
+  Private git repositories requiring a username and password through the
+  HTTP Basic Auth mechanism can now be accessed from Review Board. The
+  repository's username and password are used when accessing the file
+  requires authorization.
+
+* Added stunnel support for Perforce.
+
+  Perforce repositories can be secured by using stunnel on the client and
+  server. Review Board now knows how to make use of this. A Perforce
+  repository path beginning with ``stunnel:`` will tell Review Board to
+  use stunnel for all communication to that repository.
+
+* Provide better instructions when manual updates to the server are required.
+
+  Review Board's Manual Updates pages have historically been a bit confusing,
+  and sometimes were misleading. They've now been completely replaced with
+  useful, detailed sets of instructions, along with any error messages that
+  would make debugging problems (broken database connections, for example)
+  easier.
+
+  It should be much easier now to get going after installing an existing
+  Review Board release, upgrading an old one, or when something goes wrong
+  with the database connection.
+
+* Added Gitorious as a hosting service for repositories. (:bug:`2053`)
+
+  Gitorious is now a supported hosting service for Review Board, and can
+  be easily configured on the Review Request page.
+
+  Patch by Hongbin Lu.
+
+* Added People and Groups columns to the dashboard.
+
+  These new columns show the individual and group reviewers listed for
+  review requests.
+
+  Patch by Philipp Henkel.
+
+* Added additional LDAP configuration for name attributes. (:bug:`2122`)
+
+  LDAP configurations can use different attributes to store people's names.
+  These attributes can now be customized in the LDAP configuration.
+
+  Patch by Tucker Dewitt.
+
+
+Web API Changes
+===============
+
+* Added a ``?ship-it=`` parameter to the review requests list resource.
+
+  The ``/api/review-requests/`` API gained a ``?ship-it=`` filter that
+  makes it easy to locate review request that either have a Ship It
+  (if ``ship-it=1``), or have none (if ``ship-it=0``).
+
+* Added support for HTTP caching headers for resources.
+
+  Resources now provide and respect Last-Modified timestamps and ETags.
+  Clients with HTTP caching header awareness will be able to tell if
+  resources need to be fetched, or if the cached version will suffice.
+
+  It's possible that there will be regressions on some resources that don't
+  properly recompute their timestamps. If you encounter stale data, send
+  us a bug report.
+
+* Fixed accessing diff resources for closed review requests. (:bug:`2009`)
+
+  The diffs resource (and possibly others) was failing when accessed on
+  a closed review request. It would return a 404 Not Found.
+
+* Errors accessing Perforce repositories are now reported in the web API.
+
+
+Bug Fixes
+=========
+
+* Review request counts in the dashboard's sidebar should now be correct
+  if they were broken in older releases. They've been reset in this release.
+
+* LDAP referrals are now turned off. (:bug:`1641`)
+
+  If this impacts you, please let us know and we'll add an option for
+  turning it back on.
+
+* Fixed JavaScript errors on Internet Explorer. (:bug:`2152`)
+
+* Fixed a JavaScript error when canceling a newly created, empty reply to
+  a comment.
+
+* Fixed the star/unstar issue counts for review requests. (:bug:`2051`)
+
+  Starring and unstarring a review request could break the star counts in
+  the dashboard. This mostly happened for unpublished review requests.
+
+  Patch by Megan Schneider.
+
+* Fixed screenshot comment location problems on Chrome and Firefox.
+  Patch by Hongbin Lu. (:bug:`2025`)
+
+* Closing issues no longer changes the review timestamp. This was causing
+  reviews to shuffle around on the page. (:bug:`2156`)
+
+* The dashboard should no longer generate errors about ``id_list`` not being
+  set. (:bug:`1526`)
+
+* Invalid bug tracker URLs (those with extra "%s" or other format strings)
+  no longer break review requests. These invalid URLs are instead logged.
+
+* Trailing ``)`` characters on links are no longer included in the link.
+  (:bug:`2002`)
+
+* The proper screenshot caption is now shown after uploading a screenshot
+  through the :guilabel:`Add Screenshot` button. (:bug:`2171`)
+
+* The issue tracker buttons ("Fixed" and "Discard") are no longer shown
+  to all users, just to the owner of the review request. Patch by
+  Mike Conley.
+
+* Removed the unwanted "Uploaded files" label on review requests without
+  file attachments.
+
+* The Expand Reviews button is no longer shown if there aren't any reviews.
+
+* Fixed the name of the "recaptcha-client" dependency. This didn't affect
+  most users, but it was causing problems for some packagers.
+
+
+Feature Polish
+==============
+
+* The user page now has a bit of polish, and looks closer to how the
+  user hover bubble looks.
+
+* Updated the styles for the issue bars. The icons and color scheme have been
+  tweaked a bit.
+
+
+Contributors
+============
+
+* Christian Hammond
+* David Trowbridge
+* Hongbin Lu
+* Megan Schneider
+* Mike Conley
+* Paul Schulz
+* Philipp Henkel
+* Tucker Dewitt

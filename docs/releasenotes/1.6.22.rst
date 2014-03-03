@@ -1,0 +1,21 @@
+=================================
+Review Board 1.6.22 Release Notes
+=================================
+
+**Release date**: December 9, 2013
+
+
+Internal Changes
+================
+
+* Rewrote the Mercurial support to use the command line tool.
+
+  The command line tool is meant to be used instead of the Python bindings.
+  We're now using that instead of the hg module. This solves some
+  compatibility and licensing issues we hit.
+
+
+Contributors
+============
+
+* Christian Hammond

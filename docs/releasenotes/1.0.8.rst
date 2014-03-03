@@ -1,0 +1,33 @@
+================================
+Review Board 1.0.8 Release Notes
+================================
+
+**Release date**: May 12, 2010
+
+
+Bugs Fixed
+==========
+
+* When clicking on a line number (either on the left-hand or right-hand side
+  of the diff viewer) with an existing comment flag, we now open the existing
+  comment instead of showing a blank comment dialog. (:bug:`1281`)
+
+* Fixed some caching issues with the dashboard where two different review
+  requests with identical subjects would link to the same review request.
+  (:bug:`1582`)
+
+* Fixed another caching issue with the dashboard where adding a column could
+  cause the columns to be improperly rendered until the page was reloaded.
+
+* The Review Board log file can now be rotated on Linux without interrupting
+  logging or having to restart the web server.
+
+* Fixed a small bug where error output was getting lumped together on the
+  console when failing to register SCMTools.
+
+
+Contributors
+============
+
+* Christian Hammond
+* Dan Savilonis

@@ -1,0 +1,58 @@
+=================================
+Review Board 1.7.14 Release Notes
+=================================
+
+**Release date**: September 15, 2013
+
+
+Security Updates
+================
+
+* We now require Django 1.4.8, which is their latest security release. It
+  fixes a major denial-of-service attack vector against the authentication
+  support. We strongly encourage everybody running Review Board 1.7.x to
+  update to this release, particularly if you're running a site exposed
+  to the Internet.
+
+* Some API resources were accessible even if their parent resources were not,
+  due to a missing check. In most cases, this was harmless, but it can affect
+  those using access control on groups or review requests.
+
+
+New Features
+============
+
+* Added Team account support for Bitbucket_.
+
+  The new support for Bitbucket only worked for personal accounts. Now, when
+  configuring your Bitbucket repository, you can select that it's a Team
+  account instead.
+
+  All existing configurations are assumed to be personal accounts.
+
+.. _Bitbucket: http://bitbucket.org/
+
+
+Bug Fixes
+=========
+
+* If django-storages was installed, but Amazon's boto library for S3 was not,
+  the Storage settings page would fail to load. (:bug:`3062`)
+
+* Fixed expanding the top-most chunk of a diff file. (:bug:`3026`)
+
+* For LDAP authentication, the fully-qualified DN is now used when binding.
+  Patch by Harald Glock. (:bug:`2836`, :bug:`3069`)
+
+* The clickable overlay for file attachment thumbnails wasn't positioned
+  correctly in all cases, making it impossible to click parts of the
+  thumbnail to navigate to the file.
+
+
+Contributors
+============
+
+* Christian Hammond
+* David Trowbridge
+* Harald Glock
+* Mark Côté

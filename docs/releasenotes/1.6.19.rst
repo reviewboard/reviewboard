@@ -1,0 +1,43 @@
+=================================
+Review Board 1.6.19 Release Notes
+=================================
+
+**Release date**: October 10, 2013
+
+
+Security Fixes
+==============
+
+This release contains security updates to better lock down access to
+private information on Review Board, when making use of the Local Sites,
+invite-only groups, or private repository features.
+
+These issues were discovered internally, and we are not aware of any cases of
+them being used in the wild. They do not affect servers not using the above
+features. However, we still recommend upgrading immediately.
+
+* Some API resources returned information on private review requests the
+  caller did not have access to (by way of an invite-only group, private
+  repository, or Local Site), if the appropriate database IDs were known or
+  discovered. (:cve:`2013-4410`)
+
+* Summaries for private review requests were displayed on the All Review
+  Requests page, on the review request list on a user's page, and through
+  a specially crafted dashboard URL. (:cve:`2013-4411`)
+
+
+Bug Fixes
+=========
+
+* The Watched Review Requests REST API now works with Local Sites. Previously,
+  it didn't look up or store review requests correctly unless they were
+  global.
+
+* File attachments with longer destination file paths are now stored without
+  truncating the filename (up to a path length of 512).
+
+
+Contributors
+============
+
+* Christian Hammond

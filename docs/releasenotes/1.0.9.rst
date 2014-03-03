@@ -1,0 +1,72 @@
+================================
+Review Board 1.0.9 Release Notes
+================================
+
+**Release date**: June 5, 2010
+
+
+Compatibility Changes
+=====================
+
+* Review Board 1.0.9 works better with Django 1.2 out of the box and fixes
+  some compatibility problems with database migration.
+
+* Switched to using python-memcached instead of cmemcache. (:bug:`1446`)
+
+  cmemcache has been discontinued and is no longer supported. We've switched
+  to python-memcached, which is a pure Python interface to memcached.
+  python-memcached can run on any system that Review Board supports, and
+  Review Board will actually install it for you.
+
+
+Bugs Fixed
+==========
+
+* The old database migration scripts that used to be used for database
+  migration have been fixed up to work again. These can be useful when
+  transitioning from one type of database to another (such as from SQLite
+  to MySQL).
+
+* rb-site now handles installing into empty directories. (:bug:`1468`)
+
+  Previously, using ``rb-site install`` on an empty directory would
+  cause an error, requiring that the user first removes the directory. It was
+  easy to get into this case if installation previously failed for one reason
+  or another.
+
+* Fixed Subversion keyword collapsing to not break with unterminated keywords.
+  (:bug:`1523`)
+
+  If an unterminated keyword (such as ``$Id:`` instead of ``$Id$`` or
+  ``$Id:$``) appeared in a file being patched, it would result in a breakage
+  during patch. We now assume that this is not a keyword if it contains a
+  newline before any final ``$``. Patch by Masakazu Hamaji.
+
+* Fixed the Starred Groups page in the Dashboard. (:bug:`1539`)
+
+* Fixed some issues with syntax highlighting and UTF-8 characters in the
+  diff viewer. (:bug:`1541`)
+
+  Pygments, the library responsible for syntax highlighting, assumed that all
+  files being processed were latin-1 encoding. We now force it to UTF-8.
+  Patch by Taro Muraoka.
+
+* Fixed linkified text for users that don't own the review request.
+  (:bug:`1586`)
+
+  We were only linkifying text for users that could edit the review request.
+  We now make sure to linkify for all users.
+
+* Fixed the Recenter Selected Chunk (Enter key) feature in the diff viewer.
+
+  When pressing Enter to recenter the selected diff chunk, it would fail
+  with a JavaScript error. Patch by Laurent Nicolas.
+
+
+Contributors
+============
+
+* Christian Hammond
+* Laurent Nicolas
+* Masakazu Hamaji
+* Taro Muraoka

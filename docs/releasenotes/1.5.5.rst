@@ -1,0 +1,80 @@
+================================
+Review Board 1.5.5 Release Notes
+================================
+
+
+**Release date**: March 28, 2011
+
+
+New Features
+============
+
+* Added a :guilabel:`Show SSH Public Key` link in the Add/Change Repository
+  page.
+
+  This new link makes it really easy to show the SSH public key currently
+  associated with the Review Board server. When clicked, a box will appear
+  on the page with the public key information for quick reference.
+
+* Added timezone information to the Server Information resource API.
+  (:bug:`1983`)
+
+
+Bug Fixes
+=========
+
+* New installs no longer try to install python-dateutil 2.0, which only
+  supports Python 3. This would cause errors during use.
+
+* Fix image links in HTML e-mails.
+
+  The HTML e-mails weren't accessing the correct path for some media. This
+  could cause some e-mail clients to complain.
+
+* Fixed errors when using the same change number on different repositories.
+  (:bug:`2024`)
+
+* Fixed some problems caching diffs on memcached. The generated cache keys
+  would sometimes be invalid. (:bug:`387`)
+
+* The diff viewer no longer crashes when trying to find a method name
+  near the end of the file. (:bug:`2014`)
+
+* Turned off resizing of text areas on Google Chrome. (:bug:`2031`)
+
+  Google Chrome by default allows text areas to be resized. This can break
+  things in Review Board. We now turn it off. Patch by Vignesh Srinivasan.
+
+* The administration page could break when trying to load the Amazon
+  S3 settings. (:bug:`1888`)
+
+* Fixed importing PIL (Python Imaging Library) on some installs.
+
+  PIL is sometimes installed on systems in different ways. We're now
+  more flexible and try to import it in more than one way. Patch by
+  Jan Koprowski.
+
+* Better handle errors during syntax highlighting.
+
+  On the rare occasion that there's an error applying syntax highlighting,
+  we now catch the errors and simply disable syntax highlighting for the
+  file.
+
+* Optimize the starring feature in the dashboard. This simplifies the
+  JavaScript and reduces the HTML file size. Patch by Ben Hollis.
+
+* rbssh now uses the current user's username as a default when connecting
+  to a repository. This doesn't really affect repository access in
+  Review Board except under very specific circumstances, but is mostly
+  for testing on the command line.
+
+
+Contributors
+============
+
+* Ben Hollis
+* Christian Hammond
+* David Trowbridge
+* Evan Dower
+* Jan Koprowski
+* Vignesh Srinivasan

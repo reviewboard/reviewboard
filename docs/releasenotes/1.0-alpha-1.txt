@@ -1,9 +1,0 @@
-======================================
-Review Board 1.0 Alpha 1 Release Notes
-======================================
-
-
-First public release of Review Board.
-
-
-.. comment: vim: ft=rst et

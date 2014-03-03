@@ -1,0 +1,141 @@
+=====================================
+Review Board 1.5 Beta 1 Release Notes
+=====================================
+
+**Release date**: February 14, 2010
+
+
+This release follows Review Board 1.1 alpha 2. Due to the extensive feature
+list in the 1.1/1.5 release, we decided 1.5 would be more appropriate.
+
+
+New Features
+============
+
+* Move detection in the diff viewer.
+
+  The diff viewer now indicates when a block of code has moved from one
+  location to another. Previously, if code had moved, the diff viewer would
+  only show inserts and deletes, leaving it unclear as to whether code was
+  changed during the move. Now, these regions contain special tags on the
+  side that indicate where the line was moved to. Clicking on these tags
+  will jump to the source or destination for that particular line, briefly
+  highlighting the line.
+
+  This was a Google Summer of Code 2009 project by Eduardo Felipe Castegnaro.
+
+* Function/class headers for collapsed regions in the diff viewer.
+  (:bug:`114`)
+
+  The diff viewer will now show function or class information for collapsed
+  regions. These are also shown in the parts of the diff commented on in the
+  review request page and HTML e-mails.
+
+  The functions/classes shown are the closest ones found to the collapsed
+  region, and as much may not be exactly where the code in the region lives,
+  but should serve as a good guide as to where the code is in the file.
+
+  Support for function/class headers exists for C, C++, C#, Objective-C,
+  Java, JavaScript, Perl, PHP, Python, and Ruby files.
+
+* Screenshot drag-and-drop now works with newer HTML 5-capable browsers.
+
+  Previously, our screenshot drag-and-drop support required Google Gears,
+  and was broken on the more modern Firefox releases. We have since removed
+  the Google Gears support and moved to require newer browsers that support
+  the file drag-and-drop support in HTML 5. To date, this has been tested
+  with Firefox 3.6. It should work in newer Google Chrome and Safari
+  browsers, but this has not yet been tested.
+
+* Support for private GitHub repositories.
+
+  We now have a new Hosting Type in the Repository configuration page for
+  private GitHub repositories. Simply select :guilabel:`GitHub (Private)`
+  to configure Review Board to access your private repository.
+
+  This requires an API token, which can be found on the GitHub user account
+  page.
+
+* Improved error reporting in Git.
+
+  If a diff upload failed for whatever reason, there was no log information
+  provided to show what had gone wrong. Now we log the reason for the
+  failure in the log file.
+
+  We also log any errors with accessing a Git repository, which may help
+  diagnose some problems.
+
+* Improved error reporting in Subversion.
+
+  We now log attempts to access information on a Subversion repository, as
+  well as any error information when accessing the repository fails.
+
+* Added new Branch and Bugs columns to the dashboard.
+
+  The Branch column is sortable and displays the branch specified on the
+  review request.
+
+  The Bugs column is a comma-separated list of bugs referenced in the
+  review request. This column is not sortable.
+
+  Patch by Alex Harvey. (:bug:`1441`)
+
+
+Performance Improvements
+========================
+
+* Improved performance in the diff viewer.
+
+  Some work was done to improve performance in the diff viewer. The
+  performance gains for small or medium files may only be milliseconds or
+  microseconds, but it can add up for larger files.
+
+* Sped up loading of the dashboard.
+
+  The dashboard made many more SQL queries than were necessary. Much of the
+  information (such as a submitter's information) was queried per-row instead
+  of once per submitter, and some columns performed their own SQL queries
+  per-row. This has now been greatly optimized and sped up to use the minimum
+  number of SQL queries needed for all the information displayed.
+
+
+Bugs Fixed
+==========
+
+* The New Review Request page was broken in alpha 2, and is now fixed. Based
+  on a patch by Ryan Oblak. (:bug:`1401`)
+
+* The cropped areas of screenshots containing comments were failing to save
+  to the storage. Python Image Library didn't know what format to save the
+  screenshots in. (:bug:`1396`)
+
+* The diff viewer should now always show utf-8 strings, regardless of the
+  repository encoding. (:bug:`1409`)
+
+* The diff viewer would sometimes calculate the position of a comment flag
+  incorrectly and fail to show it. We're now more careful about calculating
+  the position. Patch by Laurent Nicolas. (:bug:`1165`)
+
+* Fixed an Index Out Of Range error with Subversion repositories when the
+  last file in a diff was empty. Patch by Simon Morley. (:bug:`1402`)
+
+* Depending on how the recaptcha Python module was installed, Review Board
+  couldn't properly detect it. We now detect it properly.
+
+* Fixed exceptions during error reporting for Git and Subversion.
+
+* Added a missing page title to the Server Log page.
+
+* Fixed a compatibility issue during site creation with the upcoming
+  Django 1.2.
+
+
+Contributors
+============
+
+* Alex Harvey
+* Christian Hammond
+* David Trowbridge
+* Eduardo Felipe Castegnaro
+* Ryan Oblak
+* Simon Morley

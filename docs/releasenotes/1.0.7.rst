@@ -1,0 +1,24 @@
+================================
+Review Board 1.0.7 Release Notes
+================================
+
+**Release date**: April 19, 2010
+
+
+Performance Improvements
+========================
+
+* We found some more ways to speed up the dashboard, and have further
+  reduced the time it takes to load.
+
+
+Bugs Fixed
+==========
+
+* Fixed a new compatibility issues with the beta of Django 1.2.
+
+
+Contributors
+============
+
+* Christian Hammond

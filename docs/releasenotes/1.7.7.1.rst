@@ -1,0 +1,27 @@
+==================================
+Review Board 1.7.7.1 Release Notes
+==================================
+
+**Release date**: April 21, 2013
+
+
+.. image:: ../../reviewboard/static/rb/images/fish-trophy.png
+
+
+Bug Fixes
+=========
+
+* Fixed a problem with generating config files when creating a new site
+  installation.
+
+  The default value for the web server port was an integer, but internally
+  needed to be a string to properly generate the Apache config file.
+  Thanks to Jeff Schroeder for letting us know and pointing out the
+  problem quickly.
+
+
+Contributors
+============
+
+* Christian Hammond
+* Jeff Schroeder

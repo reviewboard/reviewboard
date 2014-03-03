@@ -1,0 +1,61 @@
+=====================================
+Review Board 1.7 Beta 2 Release Notes
+=====================================
+
+**Release date**: September 26, 2012
+
+
+This release contains all bug fixes and features found in
+Review Board version :doc:`1.6.12 <1.6.12>`.
+
+
+New Features
+============
+
+* Introduced a new style for Review Board.
+
+  Review Board's look and feel has remained the same since we first began
+  development in 2006. We felt it was time for a change, so we've revamped
+  it and modernized it a bit.
+
+  The new site design should be familiar to all existing Review Board
+  users, but makes better use of space, and is a bit more polished and
+  consistent.
+
+  We'll iterate on this a bit before the release. Please let us know if you
+  hit any problems with the new style.
+
+
+Performance Improvements
+========================
+
+* We've updated our dependency on jQuery to the latest version. We've been
+  on an old one for quite a while, and there have been many performance
+  improvements since. The site's responsiveness should be a little faster
+  now.
+
+
+Bug Fixes
+=========
+
+* Fixed the paths to certain decorational image files.
+
+* File attachment comments are no longer missing from the review box.
+  Patch by Bogdana Popa.
+
+* Fixed problems with issue tracking statuses in the review box.
+  Patch by Bogdana Popa.
+
+* Fixed wrapping of the text in the change updates.
+
+* Admin UI widgets no longer overlap when loading the page.
+
+
+Contributors
+============
+
+* Bogdana Popa
+* Christian Hammond
+* David Trowbridge
+* Karl Leuschen
+* Steven MacLeod

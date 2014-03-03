@@ -1,0 +1,32 @@
+=================================
+Review Board 1.7.16 Release Notes
+=================================
+
+**Release date**: October 11, 2013
+
+
+New Features
+============
+
+* Added two new hooks for extensibility: HeaderActionHook, and
+  HeaderDropdownActionHook. These can be used to inject new entries
+  into the top bar, alongside the User and Support items.
+
+  Patch by Mike Conley.
+
+
+Bug Fixes
+=========
+
+* Fixed a breakage when accessing the Review Group Users resource.
+
+* Fixed a packaging issue for the Python 2.6 builds.
+
+* Fixed pagination in the dashboard and similar pages.
+
+
+Contributors
+============
+
+* Christian Hammond
+* Mike Conley

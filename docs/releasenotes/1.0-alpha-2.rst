@@ -1,0 +1,133 @@
+======================================
+Review Board 1.0 Alpha 2 Release Notes
+======================================
+
+**Release date**: February 3, 2009
+
+
+New Features
+============
+
+* Load times for nearly all parts of Review Board have greatly
+  increased. The browser is now instructed to aggressively cache
+  media files and many pages, meaning fewer downloads when going to
+  any particular page.
+
+  We optimize the order in which resources are loaded in order to
+  take advantage of the browser's ability to parallelize downloads
+  of similar resources types (such as CSS files or JavaScript).
+
+  The results of these files are GZip'd to further increase transfer
+  speeds.
+
+  Apache users will get these improvements for free. lighttpd users
+  will need to upgrade their lighttpd config file based on the
+  template provided with Review Board in the contrib/conf/
+  directory.
+
+  On top of this, we now use jQuery 1.3.1, which is many times faster
+  than the previous version of jQuery we were using, and we also
+  have a number of improvements such as progressive loading of the
+  diff viewer.
+
+* Added progressive loading of the diff viewer. This is one of the
+  main features of this release. Regardless of the size of the diff,
+  the diff viewer now loads quickly, and loads each file's diff
+  progressively. This gives people the ability to review code before
+  all the diffs have even been generated.
+
+  This also fixes some major scalability issues we've had with large
+  diffs. In theory, it's now possible to review very large diffs
+  that span many pages.
+
+* Added support for linkifying pieces of text in the Description and
+  Testing Done fields. (:bug:`258`)
+
+  The following formats are supported:
+
+  * URLs
+  * ``/r/123`` numbers (even ``/r/123/diff`` and such)
+  * bug/issue numbers (in the form of ``bug abc123``, ``bug #abc123``,
+    ``issue abc123`` and ``issue #abc123``)
+
+* Added support for Clearcase repositories. This depends on a mounted
+  view on the Review Board server. Patch by Daniel Belz.
+
+
+Feature Improvements
+====================
+
+* Improved lighttpd and Apache+fastcgi support. A Review Board
+  install using either lighttpd or Apache+fastcgi should now work
+  out of the box without setting up any custom scripts for launching
+  fastcgi.
+
+* The diff fragments placeholders in the review request page are now
+  set to the same size as the fragment itself. This means that
+  progressively loaded fragments should no longer cause the page
+  to jump nearly as much, resulting in a smoother loading experience.
+
+* When displaying the Review form, we now make sure that the form
+  is scrolled to the top. This fixes a bug where the page was often
+  scrolled to the bottom of the list of comments.
+
+* Several improvements were made to Bazaar support. We now use
+  bzrlib and support revid information in the diff header.
+
+* The comment dialog is now slightly wider and has slightly smaller
+  text, resulting in more room for comments.
+
+
+Bugs Fixed in Review Board
+==========================
+
+* Whitespace from usernames are now stripped on LDAP accounts,
+  which prevents duplicate user accounts in the database. (:bug:`728`)
+
+* Fixed a bug where anchors in comment flags were incorrect and were
+  getting lost when setting the comment count for the flag. This
+  was breaking anchors to parts of the diff. (:bug:`820`)
+
+* The fields in the comment dialog are now disabled if the user is
+  not logged in. (:bug:`827`)
+
+* Key presses in dialogs or in the review request details box no longer
+  trigger navigation in the diff viewer. (:bug:`828`)
+
+* The "Review" link on a review request is no longer displayed if
+  the user is not logged in.
+
+* Trailing whitespace wasn't shown in diff fragments on the
+  review request page.
+
+* Trailing whitespace wasn't always shown in the diff viewer, if
+  it appeared in the middle of a comment block.
+
+* Removed some old YUI files that were still in the repository.
+
+
+Bugs Fixed in post-review
+=========================
+
+* We now strip the filename coming in from Perforce. There can be a trailing
+  newline sometimes, resulting in a failed upload. (:bug:`726`)
+
+* We set the correct locale now when invoking svn. Patch by
+  Łukasz Jernaś. (:bug:`822`)
+
+* Fixed backwards version comparison logic in post-review's GitClient.
+  Patch by Stacey Sheldon.
+
+* Added support for hgsubversion. Patch by Augie Fackler
+
+* Added support for Clearcase. Patch by Daniel Belz.
+
+
+Bugs Fixed in rb-site
+=====================
+
+* rb-site now sets ``postgresql_psycopg2`` as the ``DATABASE_ENGINE``
+  for PostgreSQL installs. Patch by Rusty Burchfield. (:bug:`749`)
+
+* rb-site should now generate config files that work correctly on
+  Windows servers.

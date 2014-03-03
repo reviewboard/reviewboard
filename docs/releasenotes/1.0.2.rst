@@ -1,0 +1,115 @@
+================================
+Review Board 1.0.2 Release Notes
+================================
+
+**Release date**: September 15, 2009.
+
+
+New Features
+============
+
+* Made SCMTool registration more flexible and bullet-proof. Previously, all
+  of our built-in SCMTools had to have an entry with a specific ID in our
+  database, and if an organization added a custom SCMTool to their database,
+  it would break (:bug:`1272`). Now we look for new SCMTools registered with
+  Review Board and dynamically register them in the database during a site
+  upgrade.
+
+  Third parties can now easily provide their own custom SCMTools without
+  modifying Review Board. All that's needed is a Python package using
+  setuptools that registers the SCMTool class using the
+  ``reviewboard.scmtools`` entry point.
+
+  This should not affect any existing installations with custom SCMTools.
+
+* Improved logging of errors. If a 500 Internal Server Error is displayed,
+  the actual reason for the error will appear in the system log file,
+  along with the URL of the page and the user who tried to access it. This
+  should greatly help administrators track down problems and report bugs
+  back to us.
+
+
+Bugs Fixed
+==========
+
+* The generated mod_python configuration file didn't support subdirectory
+  installation out of the box. New users would have to hand-modify the
+  configuration. It's now generated correctly, so users shouldn't hit this
+  anymore.
+
+* The reviewer's name wasn't always displayed in reply e-mails. It would
+  simply appear blank. (:bug:`748`)
+
+* The filename fields for diff files only allowed for filenames up to
+  256 characters in length, which was often not enough (especially for
+  ClearCase). We now support up to 1024 characters. (:bug:`751`)
+
+* When attempting to submit as another user, without having the permissions
+  to do so, the server would respond with a 500 Internal Server Error instead
+  of a meaningful error. (:bug:`1067`)
+
+* The :guilabel:`Bugs Closed` field on the Review Request administration
+  page was too restrictive. It only allowed integers and commas, even though
+  we support more than this for bug IDs. It will now accept pretty much
+  anything. (:bug:`1149`)
+
+* The Cache Stats page would sometimes say that the memcached server wasn't
+  supported. This was due to parsing the user's memcached server string
+  incorrectly. We now handle many more variations on this string.
+  (:bug:`1196`)
+
+* The ship-it counter didn't always increase, depending on the setup.
+  Patch by Marc Bee. (:bug:`1200`)
+
+* The :guilabel:`Server URL` field in the General Settings page in the
+  administration UI was too strict, preventing URLs that didn't have a
+  fully-qualified domain, such as ``reviewboard.internal`` or ``reviewboard``.
+  This was overly restrictive for many people. We now except pretty much
+  anything. (:bug:`1223`)
+
+* Modifying a comment on a screenshot in the :guilabel:`Edit Review` dialog
+  caused the thumbnail to point to the wrong screenshot. Patch by Eric Huss.
+  (:bug:`1240`)
+
+* The :mod:`crypt` and :mod:`nis` modules were always imported, even if they
+  weren't needed. This was especially bad on Windows servers, as these modules
+  are unavailable. This would make custom backends fail. Now we only import
+  them as needed. Patch by Thilo-Alexander Ginkel. (:bug:`1244`)
+
+* The ``@`` character wasn't considered a valid character in usernames in all
+  places, even though it should be. This would lead to page errors. We now
+  support this as part of usernames. (:bug:`1250`)
+
+* The draft screenshot caption wasn't shown for screenshots on drafts of
+  review requests. We would only show the published caption. Now we show
+  whichever is appropriate. (:bug:`1257`)
+
+* When browsing an interdiff, the :guilabel:`Expand` link wouldn't always
+  work, generating an error instead. It should now work in every case.
+  (:bug:`1285`)
+
+* Excess whitespace is now stripped from the :guilabel:`Path` and
+  :guilabel:`Mirror Path` fields on the Repository administration page. This
+  helps prevent problems when copying and pasting paths into the page, which
+  could lead to misleading errors. (:bug:`1286`)
+
+* Review requests from inactive users (users who had their accounts disabled,
+  due to spam or leaving the company, for example) would appear in the
+  dashboard, despite not appearing in other lists. We now filter these out.
+  The review request URLs will still work, though, meaning that they are not
+  actually removed, just hidden from normal view. (:bug:`1290`)
+
+* The :guilabel:`Save` and :guilabel:`Publish` buttons in the
+  :guilabel:`Edit Review` dialog would only work once per page, requiring
+  a page reload to make them work again. (:bug:`1292`)
+
+
+Contributors
+============
+
+* Christian Hammond
+* David Trowbridge
+* Eric Fung
+* Eric Huss
+* Marc Bee
+* Thilo-Alexander Ginkel

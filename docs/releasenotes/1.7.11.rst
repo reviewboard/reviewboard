@@ -1,0 +1,20 @@
+=================================
+Review Board 1.7.11 Release Notes
+=================================
+
+**Release date**: June 25, 2013
+
+
+Bug Fixes
+=========
+
+* Fixed compatibility with Python 2.5.
+
+* Fixed the drop-down arrow by Support and the account name on older
+  versions of Internet Explorer. (:bug:`3017`)
+
+
+Contributors
+============
+
+* Christian Hammond

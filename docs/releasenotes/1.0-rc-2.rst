@@ -1,0 +1,31 @@
+=====================================
+Review Board 1.0 RC 2 Release Notes
+=====================================
+
+**Release date**: May 8, 2009.
+
+
+Feature Enhancements
+====================
+
+* :kbd:`Control-Enter` now saves in the comment dialog, and :kbd:`Escape`
+  cancels the comment.
+
+
+Bugs Fixed
+==========
+
+* Installation of new sites using rb-site was broken. (:bug:`1012`)
+
+* The dashboard threw an exception when using PostgreSQL. (:bug:`1099`)
+
+* LDAP e-mail generation was broken and caused an exception.
+
+* Active Directory was broken for some users and caused an exception.
+  (:bug:`1112`)
+
+* We hit concurrency issues when saving reviews sometimes. We now
+  register each with a ConcurrencyManager.
+
+* Apache configuration files with spaces in filenames were still
+  broken. (:bug:`1111`)

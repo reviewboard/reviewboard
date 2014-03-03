@@ -1,0 +1,93 @@
+================================
+Review Board 1.5.1 Release Notes
+================================
+
+
+**Release date**: November 20, 2010
+
+
+New Features
+============
+
+* Permission denied errors are shown when accessing unreachable local
+  Git repositories. (:bug:`1765`)
+
+  Previously, if a Git repository was used and there wasn't sufficient
+  file permissions to access it, a vague error saying that the repository
+  was unreachable would appear. Now we check to find out if it's a
+  permissions error, and display an appropriate error message.
+
+
+Performance Improvements
+========================
+
+* Reduce the number of SQL queries in the legacy JSON API.
+
+  Some of the legacy API handlers performed more queries than necessary.
+  We now perform fewer queries. Patch by Ben Hollis.
+
+
+Bug Fixes
+=========
+
+* Fixed several small problems in the Admin UI from bundling Django
+  media files.
+
+  For historical reasons, we've always shipped the Django Admin media files
+  as part of Review Board. This comes from a time before rb-site existed,
+  when we needed a single media directory with everything inside it. However,
+  it just introduces various compatibility problems these days. We now make
+  use of the media files that are installed with Django.
+
+* Fixed a breakage in the diff viewer with SCons files. (:bug:`1864`)
+
+  Any SCons files put up for review would break the diff viewer, due to a
+  typo when looking up information on that type of file.
+
+* Added the :guilabel:`Parent Diff` field to the New Review Request page.
+  (:bug:`1651`)
+
+  The :guilabel:`Parent Diff` field was missing for Git, Bazaar, and
+  Mercurial, making it impossible to upload a parent diff through the
+  web UI when creating a new review request.
+
+* Fixed some common installation problems with the generated
+  :file:`lighttpd.conf` file. (:bug:`1618`, :bug:`1639`)
+
+  Several installs with lighttpd would give 404 Not Found errors, due to
+  some configuration problems in the sample config file.
+
+* Fixed support for multiple e-mail addresses assigned to a group.
+  (:bug:`1661`)
+
+  Multiple e-mail addresses for a group were supported, but broken in 1.5.
+  We now split them out properly.
+
+* The screenshot area is no longer hidden immediately after uploading a
+  screenshot.
+
+* Fixed an error in the web API when serializing to XML.
+
+* Fixed broken intervals for search updating in the generated crontab file.
+
+  The intervals would cause a full index to happen at every minute at
+  2AM on Sundays, rather than only at 2AM.
+
+* Fixed an error when permanently deleting a review request.
+
+  The administrator-specific ability to permanently delete a review
+  request would succeed but generate an error page.
+* Fixed some compatibility problems with Django SVN.
+
+  Production systems should never run against Django SVN, but for the purpose
+  of development and forward-compatibility, we've made some changes to work
+  with Django SVN. This does not ensure that it won't break in the future.
+
+
+Contributors
+============
+
+* Ben Hollis
+* Christian Hammond
+* David Trowbridge
+* Mike Stoddart

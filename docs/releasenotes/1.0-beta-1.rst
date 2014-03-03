@@ -1,0 +1,109 @@
+=====================================
+Review Board 1.0 Beta 1 Release Notes
+=====================================
+
+**Release date**: March 28, 2009
+
+
+New Features
+============
+
+* Added support for disabling user registration.
+
+  This provides a checkbox in the General Settings page for disabling
+  user registration. This only takes effect when using standard
+  authentication, and will hide the :guilabel:`Register` link and redirect
+  requests made to ``/account/register/`` to the ``/account/login/`` page
+  instead.
+
+* Added new administration, user documentation, and a FAQ. This is
+  available on http://www.reviewboard.org/docs/, and is also
+  available in the :file:`reviewboard/docs/ directory`.
+
+
+Feature Improvements
+====================
+
+* Added a faster, more scalable version of diff fragment loading.
+  We used to make a call to the server for each comment shown in
+  a review, which became very slow on large reviews. We now only
+  make one call per file, regardless of how many comments are made
+  against that file.  This speeds up load times of the review page
+  considerably. (:bug:`906`)
+
+* Greatly improved performance in the diff viewer. Loading comments
+  and placing them in the diff viewer wasn't nearly as fast as it
+  could have been. Due to these new improvements, a sample diff
+  with 15 comments that used to take over 1 second now takes
+  ~150ms to load. Other improvements have also been made, and should
+  make a noticeable difference in large deployments.
+
+* Improved accessibility for inline editors on the review request
+  page. The "edit" icons can now be activated using the Enter key.
+  Patch by Brad Taylor. (:bug:`965`)
+
+* Added a new icon for the "My Comments" column in the dashboard
+  that's used when you've specifically posted a review marked
+  "Ship It." (:bug:`909`)
+
+* Change descriptions are now a lot more readable for the
+  Description and Testing Done fields. (:bug:`913`)
+
+* Added a dependency on Pygments, in order to install it by default.
+
+
+Bugs Fixed
+==========
+
+* Fixed index errors shown during some interdiffs and empty diffs. (:bug:`892`)
+
+* Interdiffs would break when one revision had a newly added file. (:bug:`847`)
+
+* Interdiffs no longer pre-load all files on a page before showing
+  anything. They now load each file independently, like normal diffs.
+
+* We no longer display the "Download Diff" button on interdiffs. (:bug:`873`)
+
+* Clicking the "ghost" comment flag in the diff viewer wasn't
+  triggering a comment dialog for that line.
+
+* We now correctly parse Git diffs that don't include ``a/`` and ``b/``
+  prefixes in the filenames. Patch by Andrey Fedorov. (:bug:`883`)
+
+* We now forward on the Perforce Empty Changeset error, instead of
+  returning an Internal Server Error.
+
+* Fixed some problems with Perforce errors on newer versions of the
+  P4 API, and fixed some issues where we were sometimes stripping
+  valuable data from an error message. (:bug:`710`)
+
+* Fixed an Internal Server Error when showing the review dialog with
+  a comment made on a screenshot with no caption.
+
+* The :guilabel:`Ship It` label in the review dialog is now associated
+  with the checkbox, meaning the label can be clicked to check/uncheck
+  :guilabel:`Ship It`. (:bug:`922`)
+
+* For LDAP backends, we now log on as an anonymous user before
+  searching for the real user to log in as. This fixes some breakages
+  with people encountered. Patch by Alexey Morozov.
+
+* Changed the default LDAP scope to ``SUBTREE``, in order to fix
+  authentication on some LDAP servers. (:bug:`959`)
+
+* We now use the review request's draft summary, if set, on
+  the screenshot detail page. (:bug:`981`)
+
+* HTML tags are no longer interpreted in the Description and
+  Testing Done fields. (:bug:`894`)
+
+* The :guilabel:`branch` field in change descriptions no longer escape
+  entities (such as arrows). (:bug:`898`)
+
+* Fixed some XHTML validation errors in the dashboard.
+  Patch by Onkar Shinde. (:bug:`932`)
+
+* We no longer require logging in for read-only API calls, if
+  anonymous access is enabled on the site. (:bug:`767`)
+
+* Fixed some small breakages with Django 1.1.

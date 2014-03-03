@@ -1,0 +1,29 @@
+================================
+Review Board 1.6.8 Release Notes
+================================
+
+**Release date**: June 10, 2012
+
+
+Bug Fixes
+=========
+
+* The Account field for a hosting service for a repository now properly
+  loads the existing account when re-editing a repository or when showing
+  validation errors.
+
+* Fixed problems when using the :guilabel:`Use hosting service's bug tracker`
+  setting.
+
+* Fixed a file fetching error with GitHub when using the New Review Request
+  form.
+
+* Improved the help text of some of the hosting service fields.
+
+* Fixed improper text in the File Not Found error when using GitHub.
+
+
+Contributors
+============
+
+* Christian Hammond

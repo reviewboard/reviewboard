@@ -1,0 +1,84 @@
+================================
+Review Board 1.6.7 Release Notes
+================================
+
+**Release date**: June 5, 2012
+
+
+Important Updates
+=================
+
+* GitHub is soon moving to a new API and removing the one Review Board has
+  traditionally used. This release of Review Board has been updated to
+  support the new method for authentication that we need in order to fetch
+  data from GitHub.
+
+  If you use GitHub, you will need to edit each repository to link up to
+  an account with access to the repository, and to edit your hosting
+  service and bug tracker information to choose GitHub.
+
+  This is a new workflow for repositories, so if there are any problems,
+  please contact us.
+
+
+New Features
+============
+
+* Introduced a new model for hosting service integration.
+
+  This release introduces a brand new way of integrating into various
+  repository and bug tracker hosting services. In the past, you were able
+  to select a service, such as GitHub, and it would populate the repository
+  path and other fields, but it was nothing more than a convenience.
+
+  Starting in this release, a repository can actually be associated with an
+  account on a hosting service. This will allow us to use the hosting
+  service's APIs for fetching files, solving many of the problems users have
+  hit with certain hosting services, and in the future, providing even
+  deeper integration.
+
+  This is used primarily for GitHub today. Better integration will be
+  added for other services in the future.
+
+* Made the maximum diff size customizable.
+
+  In 1.6.6, the maximum diff size was set to 1MB. While this didn't impact
+  most users in practice, it did cause issues in a few setups. We now turn
+  off this limit, but allow administrators to configure it in the Diff
+  Viewer settings page.
+
+* Added Plastic SCM 4.0 compatibility. Patch by Luis Rodriguez.
+
+
+Web API Changes
+===============
+
+* Added a ``/api/hosting-service-accounts/`` resource for querying existing
+  hosting service accounts and for linking new ones.
+
+
+Bug Fixes
+=========
+
+* Review Board no longer continues to show the Manual Updates page if the
+  problem is resolved. Previously, a restart was required for the page to
+  go away. This helps with issues where a server thread may attempt to
+  reach the Review Board page when there's a temporary database outage,
+  causing that thread to be forever stuck.
+
+* Subversion now understands the ``$Header$`` keyword. Patch by
+  Alexey Neyman.
+
+* Setting the issue status on deleted screenshots no longer fails.
+  Patch by Yazan Medanat.
+
+
+Contributors
+============
+
+* Alexey Neyman
+* Christian Hammond
+* David Trowbridge
+* Luis Rodriguez
+* Po-Chien Lin
+* Yazan Medanat

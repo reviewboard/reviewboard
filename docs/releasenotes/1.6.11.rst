@@ -1,0 +1,36 @@
+=================================
+Review Board 1.6.11 Release Notes
+=================================
+
+**Release date**: July 31, 2012
+
+
+Performance Enhancements
+========================
+
+* Reduced the number of queries for review requests with file attachments,
+  comments referencing inactive screenshots and file attachments, the
+  screenshot page, and review requests without a repository.
+
+* Reduced the number of queries on review requests with file attachments.
+
+* Reduced the number of queries when comments were referencing previously
+  removed screenshots or file attachments.
+
+
+Bug Fixes
+=========
+
+* Fixed the order of displayed replies on a review. (:bug:`2684`)
+
+* Draft file attachments and screenshots are now shown again. In 1.6.10, they
+  weren't being shown after a reload, until the changes were published.
+  (:bug:`2685`)
+
+* SSH-backed repositories no longer break on some setups. (:bug:`2686`)
+
+
+Contributors
+============
+
+* Christian Hammond

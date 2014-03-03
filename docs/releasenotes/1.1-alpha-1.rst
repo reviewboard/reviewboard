@@ -1,0 +1,147 @@
+======================================
+Review Board 1.1 Alpha 1 Release Notes
+======================================
+
+**Release date**: September 20, 2009
+
+
+New Features
+============
+
+Review Requests
+---------------
+
+* An update bubble now appears in the lower-right of the review request page
+  when a new diff is uploaded, the review request is updated, or a new
+  review or reply has been posted. The bubble tells what updated, by who, and
+  allows updating the page.
+
+* Improved the auto-complete of users and groups when specifying reviewers.
+  We now search the username, first name and last name of people, and
+  both the group name and group's display name for groups. The full name
+  for users and display name for groups are shown next to the username and
+  group name in the auto-complete dropdown. (:bug:`598`)
+
+* Screenshots can now be uploaded by dragging from the file manager into
+  the review request. This functionality currently requires a modern
+  `Google Gears`_ on a supported browser. (Note that as of Google Gears
+  0.5.32.0, support with Firefox 3.5+ is broken. This should be fixed in
+  an upcoming release).
+
+* Uploading screenshots no longer causes the page to reload. They're now
+  uploaded and inserted directly into the page.
+
+* Pending changes on Perforce servers now have a "(pending)" indicator next to
+  the change number.
+
+.. _`Google Gears`: http://gears.google.com/
+
+
+Diff Viewer
+-----------
+
+* Added the ability to toggle the visibility of whitespace-only lines in
+  the diff viewer. New :guilabel:`Show Whitespace changes` and
+  :guilabel:`Hide Whitespace changes` buttons dynamically toggle whether
+  lines containing only whitespace changes (such as the addition or
+  removal of trailing whitespace) should be shown in the diff viewer. This
+  can help cut down large diffs that contain many lines of whitespace changes.
+
+  This functionality was written by Eduardo Felipe Castegnaro as part of his
+  2009 Google Summer of Code project.
+
+* An update bubble now appears in the lower-right of the diff viewer
+  when a new diff is uploaded. The bubble tells what updated, by who, and
+  allows updating the page.
+
+
+E-Mail Support
+--------------
+
+* Review Board now sends HTML e-mails. The e-mails are structured similarly
+  to the review request page, and show the fragments of the diffs and
+  screenshots that are being commented on. It also shows any thumbnails
+  on the review request and has links to associated bugs.
+
+  E-mail clients set to disallow HTML e-mails will continue to see the old
+  plain text e-mails.
+
+* Added ``X-ReviewBoard-URL`` and ``X-ReviewRequest-URL`` headers to all
+  e-mails sent out. These can be used for advanced filtering of e-mails into
+  different folders. ``X-ReviewBoard-URL`` contains the URL to the Review
+  Board server, and ``X-ReviewRequest-URL`` contains the URL to the
+  particular review request undergoing discussion.
+
+
+User Accounts and Authentication
+--------------------------------
+
+* Users who lost their passwords can now reset their password on the
+  login screen. An e-mail will be sent to their account with instructions
+  on resetting the password.
+
+* Added the ability to use X.509 certificates for authenticating users.
+  This is useful for Review Board servers in environments with a Public Key
+  Infrastructure set up. Patch by Nathan Heijermans.
+
+
+Administration UI
+-----------------
+
+* Made it easier to configure Review Board with various bug trackers and
+  code hosting services. The Repository configuration page now gives
+  administrators the option of choosing between various hosting services
+  (currently Bitbucket, GitHub, Google Code, or SourceForge) and
+  bug trackers (Bitbucket, Bugzilla, Google Code, Redmine, SourceForge, or
+  Trac).
+
+  When chosen, the more complex fields such as the repository URL go away,
+  and simpler fields such as the project name will appear. This makes the
+  process of configuring Review Board with public services much easier.
+
+* Added remote Git support. Previously, Review Board required local clones
+  of a Git repository that were always up-to-date. Now we support a form of
+  remote Git by downloading raw files over HTTP. This does require certain
+  setups on the Git server, though.
+
+  Git itself doesn't give us the remoting abilities we normally require, but
+  if the Git repository is set up with a web repository browser (such as
+  Gitosis, cgit, gitweb, or GitHub), then a special "raw file" URL can be set
+  that will allow Review Board to download the required file over HTTP. When
+  using the GitHub hosting service configuration in the Repository page, this
+  is automatically set.
+
+* Default Reviewer entries can now be tied to one or more repositories.
+  By default, they still cover all known repositories. The Default Reviewers
+  configuration page has also been revamped for better usability and error
+  checking.
+
+* A Server Log page has been added for viewing the server log file,
+  filtering it, and sorting it. Lines are color-coded based on severity.
+  You can get to this new page by clicking :guilabel:`Server Log` on the
+  Administration Dashboard.
+
+* The tab bar for the Settings pages now shows the current page you're on.
+  Patch by Eduardo Felipe Castegnaro.
+
+
+Bug Fixes
+=========
+
+(These are bugs fixed since the 1.0.3 release. Bugs in this list may
+end up in future 1.0.x releases before Review Board 1.1 is out.)
+
+* When using Active Directory, group membership is now only checked when an
+  actual restriction on groups is active. (Workaround for :bug:`1267`)
+
+
+Contributors
+============
+
+* Christian Hammond
+* David Trowbridge
+* Eduardo Felipe Castegnaro
+* Helder Ribeiro
+* Nathan Auch
+* Nathan Heijermans
+* Nikolai Prokoschenko

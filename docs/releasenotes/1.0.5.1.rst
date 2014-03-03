@@ -1,0 +1,22 @@
+==================================
+Review Board 1.0.5.1 Release Notes
+==================================
+
+**Release date**: October 22, 2009
+
+
+This is a small patch release on top of `1.0.5 <../1.0.5>`_ that fixes a critical
+bug.
+
+
+Bugs Fixed
+==========
+
+* Fixed a critical bug where the New Review Request page no longer accepted
+  new diffs.
+
+
+Contributors
+============
+
+* Christian Hammond

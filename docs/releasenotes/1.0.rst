@@ -1,0 +1,174 @@
+==============================
+Review Board 1.0 Release Notes
+==============================
+
+**Release date**: June 20, 2009.
+
+Introducing Review Board 1.0
+============================
+
+This is the first official stable release of Review Board. Review Board 1.0
+has undergone much development and testing, thanks to our many users who have
+contributed to the project and reported bugs over the past two years.
+
+Review Board is a powerful open source web-based code review tool designed to
+work in many environments. It's used in small open source projects, small
+businesses, startups, and large enterprises. It has a large development and
+support community, and questions/problems are usually addressed quickly.
+
+
+Features
+========
+
+Repository Support
+------------------
+
+Out of the box, Review Board supports Bazaar, ClearCase, CVS, Git, Mercurial,
+Perforce, and Subversion. Any number of different repositories can be
+configured with Review Board.
+
+
+Wide Server Compatibility
+-------------------------
+
+Review Board works with MySQL, PostgreSQL and SQLite databases, and lighttpd
+or Apache web servers, on Windows or Linux.
+
+
+Scalable
+--------
+
+Review Board has been tested in large installs with thousands of users using
+it every day. While it performs well with that load on a standard server box,
+it can be scaled across many servers to meet increased demand.
+
+
+Easy Install
+------------
+
+In most modern Linux distributions, Review Board itself can be installed with
+only a couple of command line parameters. Review Board sites, including
+web server configuration, are created through a simple wizard or command-line
+tool.
+
+Note that some functionality, such as Perforce integration, requires
+installing additional components.
+
+
+Powerful Diff Viewer
+--------------------
+
+Our diff viewer displays the original and modified files side-by-side, showing
+not only the differences between the two files but the differences between
+modified lines when only part of the lines had changed. This makes reviewing
+code with variable name changes or string changes quick and easy.
+
+Comments on changes can be made right from the diff viewer. Click a line, or
+click and drag across multiple lines to write a comment. Later, after the
+review is finished, all comments will be shown along with the accompanying
+lines of code.
+
+Code is displayed with syntax highlighting, improving readability. A wide
+variety of file types are supported.
+
+
+Interdiffs
+----------
+
+The diff viewer can display the changes between two different revisions of a
+diff. This means that if someone uploads a large change for review, then makes
+some changes and uploads the new changes, it's easy to see what actually
+changed.
+
+Interdiffs can be commented on just like normal diffs as well.
+
+
+Screenshot Commenting
+---------------------
+
+Screenshots can be uploaded for review, just as diffs can. Reviewers can
+comment on regions of a screenshot and those comments will appear next to the
+commented area in the review.
+
+
+Review History
+--------------
+
+Every review request contains a complete history of all reviews made
+(including the code or parts of screenshots reviewed), and all changes made to
+the review request itself (such as new diffs or screenshots added).
+
+
+Customizable Dashboard
+----------------------
+
+The Dashboard allows users to see at a glance any review requests available to
+review. It supports filtering by group, two-level sorting, and allows
+customizing the displayed columns. The dashboard will tell you if updates have
+been made to a review since you last saw it, if you have reviewed a particular
+review request, or if reviewers have deemed your code ready to ship.
+
+
+Fast Searching
+--------------
+
+When used with PyLucene, Review Board supports searching through all
+review requests to quickly find the one you want.
+
+
+Administration UI
+-----------------
+
+Our administration UI provides full access to the entire database, settings,
+and even news updates for the product.
+
+
+Web API
+-------
+
+Third party applications can integrate with Review Board through our XML/JSON
+APIs. Most of Review Board's functionality is provided through this API,
+making it possible to look up review requests, create them, modify, review, or
+close through any application. In the future we hope this will lead to tight
+integration with IDEs.
+
+
+Command Line Tools
+------------------
+
+Command line tools are available for quickly posting or updating review
+requests from changes made to a local source tree. This allows for rapid
+development and review request cycles.
+
+
+Changes since 1.0 RC 3
+======================
+
+New Features
+------------
+
+* The logo and the version number are now shown next to the "Review Board"
+  text on all pages.
+
+* Added the ``/api/json/info/`` API path to display server info, including
+  the version.
+
+
+Bugs Fixed
+----------
+
+* Under times of heavy server load, it was possible to get duplicate draft
+  Review objects in the database. This was less frequent with RC3, but
+  could still happen. We now handle this gracefully and consolidate those
+  duplicate Review objects instead of erroring out, which would require
+  an administrator to fix the problem.
+
+* Fixed a regression with our CVS support on Windows. We weren't properly
+  finding :file:`cvs.exe` in the path. (:bug:`1174`)
+
+* Fixed a style issue with the "Ship It" indicators in IE, Safari 3/4 and
+  Chrome. Patch by Eduardo Felipe Castegnaro for the Safari/Chrome fix.
+
+* Changed the text when attempting to publish a review request without any
+  reviewers to be slightly more clear in that either a person or a group
+  is required. Patch by Helder Ribeiro.

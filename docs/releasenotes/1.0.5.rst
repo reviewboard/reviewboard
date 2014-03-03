@@ -1,0 +1,59 @@
+================================
+Review Board 1.0.5 Release Notes
+================================
+
+**Release date**: October 22, 2009
+
+
+Feature Improvements
+====================
+
+* The New Review Request page has been improved to have larger fields,
+  help text, and to be consistent with the Upload Diff dialog. It also now
+  recommends post-review, describes it briefly, and provides a link to it.
+  (:bug:`1355`)
+
+
+Bugs Fixed
+==========
+
+* There were some bad security vulnerabilities in Django 1.1. We now
+  require Django 1.1.1 or higher, which contains some important security fixes.
+
+* Binary files wouldn't appear in the diff viewer. We were accidentally
+  filtering out binary files. (:bug:`1173`)
+
+* Viewing a review request with no summary in the administration UI would
+  fail with an error. We weren't returning a proper unicode string in this
+  case, breaking the administration UI. (:bug:`1346`)
+
+* The auto-size text areas were broken on Internet Explorer 6 and up.
+  (:bug:`1349`)
+
+* Entering long bug numbers on a review request would fail, causing a
+  TypeError to be thrown during the AJAX request, which would in turn
+  cause the JavaScript to fail. We now support long bug numbers properly.
+  Patch by Thilo-Alexander Ginkel and Vladimir Sitnikov. (:bug:`1352`)
+
+* The selection rectangle in the diff viewer wouldn't update properly when
+  expanding part of a diff. We now reset the position on expand so it's not
+  overlaying some random location. (:bug:`1353`)
+
+* Expanding of files in the diff viewer were broken in a previous release for
+  some cases. We now expand files correctly again.
+
+* The Active Directory group enumeration logic was checking sAMAccountName
+  instead of CN, causing problems in group enumeration. We now use the CN
+  in the search query so that groups which have CNs that differ from their
+  sAMAccountNames (e..g, if a "pre-Windows 2000" group name is set in Active
+  Directory) will be included in the search results. Patch by Solomon
+  Matthews.
+
+
+Contributors
+============
+
+* Christian Hammond
+* Solomon Matthews
+* Thilo-Alexander Ginkel
+* Vladimir Sitnikov

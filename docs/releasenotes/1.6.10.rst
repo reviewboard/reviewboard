@@ -1,0 +1,85 @@
+=================================
+Review Board 1.6.10 Release Notes
+=================================
+
+**Release date**: July 22, 2012
+
+
+Welcome to the fastest release of Review Board yet.
+
+
+New Features
+============
+
+* The "x minutes ago" timestamps now update live on the page. No need to
+  reload to see how long ago something was. This also helps with caching
+  issues.
+
+* Added a ``RB_EXTRA_MIDDLEWARE_CLASSES`` setting for
+  :file:`settings_local.py`.
+
+  This can be used to include additional Django middleware. It's a specialized
+  feature that is only really needed in very specific setups.
+
+
+Performance Enhancements
+========================
+
+This version of Review Board is the fastest ever. We have greatly tuned our
+database queries, session handling, and other bits of logic, and this makes a
+noticeable impact on performance. All pages load faster, particularly review
+requests, diffs, and the dashboard.
+
+There's still more we'll do over the next few releases. In the meantime,
+given the level of changes needed for the optimizations in this release, there
+may be a bug here and there that we have not hit during our dogfooding.
+
+Let us know if something is misbehaving that worked in previous releases and
+we'll look into it.
+
+
+API Changes
+===========
+
+* The new Hosting Service Account resource payload key has been changed from
+  ``hosting-service-account`` to ``hosting_service_account``.
+
+
+Bug Fixes
+=========
+
+* Very large lines no longer slow Review Board to a crawl.
+
+  Applying syntax highlighting and determining what changed within a line
+  assumed that the length of a line wasn't too huge. However, some minified
+  files could reach hundreds of thousands of characters in length, and would
+  easily break. Now, long lines (over 1,000 characters) have syntax
+  highlighting and extra features turned off.
+
+* All errors that occur when verifying a repository should now be shown,
+  instead of causing an HTTP 500 error.
+
+* Closing or reopening an issue no longer causes excessive checks for
+  update notification bubbles.
+
+* Fixed compatibility issues with newer versions of Mercurial with
+  version numbers containing a ``+`` in them. Patch by Dean Prichard.
+
+* Mercurial no longer forces an HTTP URL for downloading files from a
+  repository when an HTTPS URL is specified. (:bug:`2555`)
+
+* Mercurial support on Google Code now works properly. Patch by
+  Nate Skulic. (:bug:`2585`)
+
+* Fixed files in CVS that had ``v`` as the last character in the filename.
+  We would attempt to strip the ``,v`` at the end, but end up getting the
+  ``v`` as well. (:bug:`2613`)
+
+
+Contributors
+============
+
+* Christian Hammond
+* David Trowbridge
+* Dean Prichard
+* Nate Skulic

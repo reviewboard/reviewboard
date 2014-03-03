@@ -1,0 +1,51 @@
+=================================
+Review Board 1.7.20 Release Notes
+=================================
+
+**Release date**: December 10, 2013
+
+
+Web API Changes
+===============
+
+* When posting a review request and using ``submit-as``, the given username
+  will now be looked up in the auth backend (LDAP, Active Directory, etc.),
+  instead of just the local database.
+
+
+Bug Fixes
+=========
+
+* Accessing file attachments without review UIs through the API
+  no longer causes an HTTP 500 error. (:bug:`3145`)
+
+* Fields in the administration UI containing JSON will no longer cause
+  errors during save. Furthermore, the JSON is now valid and properly
+  editable.
+
+* Usernames with plus signs are now allowed.
+
+  Patch by Mark Côté.
+
+* Usernames with plus signs are now allowed. (:bug:`2890`)
+
+  Patch by Allisa Schmidt.
+
+
+Internal Changes
+================
+
+* Rewrote the Mercurial support to use the command line tool.
+
+  The command line tool is meant to be used instead of the Python bindings.
+  We're now using that instead of the hg module. This solves some
+  compatibility and licensing issues we hit.
+
+
+Contributors
+============
+
+* Allisa Schmidt
+* Christian Hammond
+* David Trowbridge
+* Mark Côté

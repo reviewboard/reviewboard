@@ -1,0 +1,76 @@
+================================
+Review Board 1.6.6 Release Notes
+================================
+
+**Release date**: April 25, 2012
+
+
+Important Updates
+=================
+
+* GitHub is moving to a new API, and we're hard at work on upgrading Review
+  Board to use that API. In the meantime, they've removed the API Tokens
+  (required for private GitHub repositories) from their account pages,
+  but gave us an API for retrieving them.
+
+  We've updated Review Board to include a button for getting the API token.
+  This is actually a much nicer experience than what we had before.
+
+  We'll soon release a Review Board 1.6.x that supports the new GitHub API,
+  along with an even easier configuration experience.
+
+
+New Features
+============
+
+* Added a button for fetching GitHub API tokens.
+
+  There's now a "Get your API Token" button on the repository page for
+  private GitHub accounts that will fetch the API token. This is only needed
+  for new GitHub accounts. Existing ones are unaffected.
+
+* Improved update bubbles.
+
+  The update bubbles used to only say that a review request was updated.
+  Now it will say if it was submitted or discarded as well.
+
+  Patch by Jim Chen.
+
+* Diffs larger than 1MB can no longer be uploaded.
+
+  Diffs over 1MB can slow down Review Board, causing problems on the server,
+  particularly with large numbers of users. A diff that size is impractical
+  to review. We've decided to return an error if the diff is that large.
+
+* Added a ``RB_EXTRA_APPS`` setting for :file:`settings.py`.
+
+  This can be used for installations that need to load custom Django apps,
+  without having to override ``INSTALLED_APPS``.
+
+  Patch by Stephen Gallagher.
+
+
+Web API Changes
+===============
+
+* Fixed the links in the FileDiff resource.
+
+  The links generated for the FileDiff resources weren't being generated
+  correctly and pointed to non-existent URLs.
+
+  Patch by Steven MacLeod.
+
+* Added an error for diff uploading (code 219) when the diff is empty.
+
+* Added an error for diff uploading (code 220) when the diff is over
+  1MB in size.
+
+
+Contributors
+============
+
+* Christian Hammond
+* David Trowbridge
+* Jim Chen
+* Stephen Gallagher
+* Steven MacLeod

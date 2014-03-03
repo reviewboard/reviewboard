@@ -1,0 +1,20 @@
+================================
+Review Board 1.7.4 Release Notes
+================================
+
+**Release date**: January 30, 2013
+
+
+Bug Fixes
+=========
+
+* Fixed a JavaScript error in Internet Explorer and Firefox 3.x involving
+  the ``console`` object being undefined. (:bug:`2880`)
+
+* Fixed the diff viewer's changed file listings when using Windows file paths.
+
+
+Contributors
+============
+
+* Christian Hammond

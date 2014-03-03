@@ -1,0 +1,86 @@
+=================================
+Review Board 1.6.13 Release Notes
+=================================
+
+**Release date**: October 4, 2012
+
+
+Web API Changes
+===============
+
+* The FileDiffComment resource was showing all comments for all files in a
+  diffset. Now it's taking into account the requested FileDiff.
+  (:bug:`2327`)
+
+  Patch by Allyshia Sewdat.
+
+* Passing ``?shipit=0`` to the ReviewRequests resource now returns all
+  review requests that do not have a Ship It. (:bug:`2635`)
+
+  Patch by Sampson Chen.
+
+
+Bug Fixes
+=========
+
+* The headers shown on the diffs in e-mails are no longer broken.
+
+* The diff viewer no longer allows expansion to a function/class unless
+  that function/class is defined within the collapsed region.
+
+* Failed diffs no longer break the diff viewer when the first file
+  fails to patch.
+
+  Patch by Tomasz Moń.
+
+* Fixed validation of bug tracker URLs. (:bug:`1996`)
+
+  Custom bug tracker URLs are now properly validated to ensure that they
+  contain a ``%s``.
+
+  Patch by Karl Leuschen.
+
+* Linked URLs with parenthesis in the URL no longer generate broken
+  links.
+
+  Patch by John Sintal.
+
+* Fixed problems with collapsing SVN keywords. (:bug:`2134`)
+
+  Diffs were being created for files where the area surrounding keywords had
+  changed, and the keywords were not being collapsed. This was happening for
+  two reasons:
+
+  * It couldn't understand paths with two leading slashes
+  * `svn propget svn:keywords` can return strings with non-space delimiters
+
+  Patch by Nate Bragg.
+
+* Changes to new files in parent diffs are no longer styled wrong.
+  (:bug:`2389`)
+
+  Previously, changes to new files introduced in parent diffs would show
+  the left-hand side of the diff shrunk and the right-hand side fully
+  expanded, making it harder to review changes. This has now been fixed.
+
+  Patch by Tina Yang.
+
+* Fix JavaScript errors when publishing reviews with screenshot comments.
+  (:bug:`2702`)
+
+* The alt text for images in the dashboard now show the expected text and not
+  Python representations of objects. (:bug:`2747`)
+
+
+Contributors
+============
+
+* Allyshia Sewdat
+* Christian Hammond
+* David Trowbridge
+* John Sintal
+* Karl Leuschen
+* Nate Bragg
+* Tomasz Moń
+* Sampson Chen
+* Tina Yang

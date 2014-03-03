@@ -1,0 +1,24 @@
+=================================
+Review Board 1.6.21 Release Notes
+=================================
+
+**Release date**: November 5, 2013
+
+
+Security Fixes
+==============
+
+* Fixed XSS vulnerabilities for the :guilabel:`Branch` field and
+  uploaded file captions. (:cve:`2013-4519`)
+
+  It was possible to construct captions for uploaded files and construct
+  a Branch field where the content would be interpreted as HTML.
+
+  Thanks to Frederik Braun at Mozilla for reporting this.
+
+
+Contributors
+============
+
+* Christian Hammond
+* Frederik Braun

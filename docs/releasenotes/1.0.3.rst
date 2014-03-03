@@ -1,0 +1,32 @@
+================================
+Review Board 1.0.3 Release Notes
+================================
+
+**Release date**: September 16, 2009.
+
+
+New Features
+============
+
+* The administration UI now supports batch deletes for items in the database.
+  This is provided by Django 1.1, which is a new requirement in this release.
+
+
+Bugs Fixed
+==========
+
+* Creation of new sites was broken. Due to a change in the structure of
+  the codebase, we were no longer bundling the configuration template files
+  for the web server, which rb-site install needed for new sites.
+
+* Installations using Django 1.0.2 would see Internal Server Errors, due to
+  a function we were using that wasn't added until 1.0.3. We've decided to
+  bump up our required version of Django to 1.1, which is the version that
+  new installations would use anyway. This comes with a variety of internal
+  bug fixes and stability improvements that we get for free.
+
+
+Contributors
+============
+
+* Christian Hammond

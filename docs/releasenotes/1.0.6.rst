@@ -1,0 +1,70 @@
+================================
+Review Board 1.0.6 Release Notes
+================================
+
+**Release date**: March 27, 2010
+
+
+Feature Improvements
+====================
+
+* Added a :guilabel:`[Discarded]` label for discarded review requests on the
+  :guilabel:`All My Requests` page. (:bug:`1350`)
+
+* Changed the ``...`` icon next to the dashboard columns to be a
+  pencil icon, which is more recognizable and easy to find.
+
+
+Performance Improvements
+========================
+
+* The dashboard suffered from speed problems in the past, particularly with
+  certain types of columns. Much work has been done to heavily optimize the
+  dashboard. There should be a very noticeable speed increase in this release.
+
+
+Bugs Fixed
+==========
+
+* Fixed the stale settings problem, where saved settings would sometimes
+  appear to revert. This was dependent on the web server setup, but would
+  sometimes result in saving settings and not seeing them take effect until
+  the web server was restarted. We need testing in more real deployments
+  to verify that this has been fixed, but initial testing is promising.
+  (:bug:`1105`)
+
+* Fixed an issue with cropping uploaded images and saving them to disk.
+  This would sometimes result in comments on screenshots not displaying
+  in the review. (:bug:`1396`, :bug:`1490`)
+
+* Fixed compatibility issues with Django 1.2 and newer versions of Djblets.
+
+* Fixed a breakage in Python 2.6 with saving the mail username and password
+  fields.
+
+* Fixed a badly generated path in the search-cron.conf. rb-site was putting
+  the wrong path in this file, making it unusable without modification.
+  (:bug:`1181`)
+
+* Fixed an issue with displaying comment flags on consecutive lines. If two
+  comments were placed on two consecutive lines, we would sometimes
+  only show the first comment. Patch by Laurent Nicolas. (:bug:`1377`)
+
+* Fixed retrieving file contents in Bazaar when the file was moved in a
+  previous revision. Patch by Kay Röpke. (:bug:`1393`)
+
+* Fixed an Index Out of Range error with Subversion when the last file in
+  a diff is empty. Patch by Simon Morley. (:bug:`1402`)
+
+* We now strip the base directory field in the Upload Diff and New
+  Review Request forms in order to prevent some confusing errors with
+  leading/trailing spaces. (:bug:`1451`)
+
+
+Contributors
+============
+
+* Christian Hammond
+* Kay Röpke
+* Laurent Nicolas
+* Simon Morley

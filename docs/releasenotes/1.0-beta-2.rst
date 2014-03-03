@@ -1,0 +1,14 @@
+=====================================
+Review Board 1.0 Beta 2 Release Notes
+=====================================
+
+**Release date**: March 29, 2009
+
+This is an emergency fix release that fixes some major breakages with
+jQuery 1.3.2.
+
+
+Bugs Fixed
+==========
+
+* Fixed some last-minute breakages with jQuery 1.3.2. (:bug:`1001`)

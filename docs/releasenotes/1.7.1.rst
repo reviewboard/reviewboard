@@ -1,0 +1,48 @@
+================================
+Review Board 1.7.1 Release Notes
+================================
+
+**Release date**: December 19, 2012
+
+
+New Features
+============
+
+* Added automatic SSH key configuration for GitHub.
+
+  When configuring a GitHub repository, the configured SSH key can now
+  be automatically set on GitHub as a deploy key. There's an
+  :guilabel:`Associate my SSH key with the hosting service` checkbox on
+  the repository form that handles this.
+
+  This support will be added for other hosting services in time, and we
+  plan to introduce automatic SSH key creation as well.
+
+  Patch by Karl Leuschen.
+
+
+Bug Fixes
+=========
+
+* Upgrading from an older 1.0/1.5/1.6 release is now smoother and less
+  error-prone, especially with PostgreSQL databases.
+
+* Added missing documentation in the initial rb-site upgrade to 1.7.x and to
+  the Manual Updates page for setting up the new static media configuration.
+
+* The documentation URL after running rb-site no longer wraps.
+
+* rb-site no longer mashes together its own output with the database log
+  output.
+
+  It appeared before as if there were errors during upgrade, when really these
+  were just parts of the log that could be ignored. We're now clearly marking
+  off the log entries and telling the user not to worry about them unless
+  the upgrade fails.
+
+
+Contributors
+============
+
+* Christian Hammond
+* Karl Leuschen

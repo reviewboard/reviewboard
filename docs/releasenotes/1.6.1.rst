@@ -1,0 +1,34 @@
+================================
+Review Board 1.6.1 Release Notes
+================================
+
+**Release date**: September 10, 2011
+
+
+Security Updates
+================
+
+* Review Board 1.6.1 now requires Django 1.3.1. Django 1.3.1 contains
+  a number of important security fixes. See their
+  announcement_ for a detailed list.
+
+.. _announcement:
+   https://www.djangoproject.com/weblog/2011/sep/09/security-releases-issued/
+
+
+Bug Fixes
+=========
+
+* Fixed the Dashboard counters showing up as 0 or negative numbers.
+  (:bug:`2268`)
+
+  Some of the Dashboard review request counters were appearing as 0 after
+  the upgrade to 1.6, and would turn negative after closing review requests.
+  This was due to an incorrect default used when upgrading. The default has
+  been fixed, and the counters will be recomputed after upgrading to 1.6.1.
+
+
+Contributors
+============
+
+* Christian Hammond

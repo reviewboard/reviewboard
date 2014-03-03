@@ -1,0 +1,102 @@
+================================
+Review Board 1.7.7 Release Notes
+================================
+
+**Release date**: April 19, 2013
+
+
+New Features
+============
+
+* The configured SSH key can now be deleted. (:bug:`2743`)
+
+  A :guilabel:`Delete Key` button is now available on the SSH key settings
+  page.
+
+  Patch by Greg Wang.
+
+* Added support for working against a GitHub OAuth application.
+
+  GitHub's API imposes rate limits. For larger organizations, this can
+  cause problems when many people are using Review Board with large numbers
+  of files in diffs.
+
+  Now, if you register your own Review Board OAuth application entry on
+  GitHub, you can make use of higher rate limits. GitHub will supply you
+  with a client ID and a client secret key, which would be specified in
+  ``settings.GITHUB_CLIENT_ID`` and ``settings.GITHUB_CLIENT_SECRET``.
+
+  This is unlikely to be something most people need, but is there if you
+  are running into rate limit issues.
+
+  Note that a higher rate limit is entirely at the discretion of GitHub.
+
+
+Performance Improvements
+========================
+
+* Uploading a diff with a parent diff will no longer attempt to process
+  any files in the parent diff that aren't in the main diff.
+
+  This means that if you upload a diff based on a large parent branch,
+  it will be faster to upload and process, and won't hit the repository
+  as hard. It is especially useful when using GitHub or other services
+  with API rate limits.
+
+* Sped up rendering times for the Dashboard, All Review Requests page,
+  and the user/groups pages.
+
+  On some setups, there should be a fairly substantial speedup.
+
+
+Web API Improvements
+====================
+
+* Fixed a breakage with updating comments when the ``issue_status`` field
+  wasn't provided.
+
+* Improved caching logic to not claim a cached payload is valid when the
+  client reports a matching Last Modified timestamp but not a matching
+  ETag.
+
+
+Bug Fixes
+=========
+
+* Specifying a port in a SSH URL for a repository will now connect on that
+  port. (:bug:`2841`)
+
+  Patch by Mario Zivic.
+
+* Fixed broken links to file attachments when using Local Sites.
+
+* Review request e-mails now show the right ID in the subject for
+  Local Sites.
+
+* Fixed Python path issues when spawning processes.
+
+  We were setting PYTHONPATH to be the entire Python system path, but this
+  had issues with spawning some processes and with virtualenv setups.
+  We now have a less invasive approach to the original bug we were attempting
+  to fix.
+
+* Fixed a rare breakage when saving repositories.
+
+* Fixed the cookie path when using site directories.
+
+* When installing a site, database hosts now accept a port in the format
+  of ``hostname:port``.
+
+* Fixed visual glitches with some rounded corners in the UI.
+
+
+Contributors
+============
+
+* Christian Hammond
+* David Trowbridge
+* Greg Wang
+* Mario Zivic
+* Michiel van Baak
+* Surya Nallu
+* Victoria Ponce (BitNami)

@@ -1,0 +1,31 @@
+=================================
+Review Board 1.6.17 Release Notes
+=================================
+
+**Release date**: June 22, 2013
+
+
+Security Updates
+================
+
+Fixed an XSS vulnerability where users could trigger script errors under
+certain conditions in auto-complete widgets.
+
+There are no known vulnerabilities in the wild, but we recommend
+upgrading immediately.
+
+Thanks to Craig Young at Tripwire for reporting this to us.
+
+
+Bug Fixes
+=========
+
+* Fixed an HTTP 500 when updating a comment in the web API without
+  also updating the issue status.
+
+
+Contributors
+============
+
+* Christian Hammond
+* David Trowbridge

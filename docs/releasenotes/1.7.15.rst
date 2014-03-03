@@ -1,0 +1,88 @@
+=================================
+Review Board 1.7.15 Release Notes
+=================================
+
+**Release date**: October 10, 2013
+
+
+Security Fixes
+==============
+
+This release contains security updates to better lock down access to
+private information on Review Board, when making use of the Local Sites,
+invite-only groups, or private repository features.
+
+These issues were discovered internally, and we are not aware of any cases of
+them being used in the wild. They do not affect servers not using the above
+features. However, we still recommend upgrading immediately.
+
+* Some API resources returned information on private review requests the
+  caller did not have access to (by way of an invite-only group, private
+  repository, or Local Site), if the appropriate database IDs were known or
+  discovered. (:cve:`2013-4410`)
+
+* Summaries for private review requests were displayed on the All Review
+  Requests page, on the review request list on a user's page, and through
+  a specially crafted dashboard URL. (:cve:`2013-4411`)
+
+* Extensions making use of JSONField are now more protected from possible
+  remote code exploits, if they're not already being careful of input.
+  This was reported and fixed by Frederik Braun from Mozilla.
+  (:cve:`2013-4409`)
+
+For extension authors, see the Extensibility Changes below for how this
+release will affect you.
+
+
+New Features
+============
+
+* Added support for authenticating against Active Directory subdomains.
+
+  Active Directory authentication can now authenticate against the proper
+  subdomain as extracted by the supplied username. For example, given a
+  configured domain name ``example.com`` and a username of ``subdomain\bob``,
+  the authentication will take place against ``bob`` at
+  ``subdomain.example.com``.
+
+  Patch by German Galkin.
+
+
+Extensibility Changes
+=====================
+
+* Extensions that introduce API resources will now need to include a
+  ``has_access_permissions`` method in each resource that returns whether it's
+  accessible by the current user.
+
+  This will be used for GET requests on a list resource automatically. Other
+  handlers should make use of this to determine if access is granted for a
+  given resource.
+
+  In prior versions, this defaulted to returning ``True``, but now it's
+  opt-in.
+
+
+Bug Fixes
+=========
+
+* The Watched Review Requests REST API now works with Local Sites. Previously,
+  it didn't look up or store review requests correctly unless they were
+  global.
+
+* The Hosting Service Account REST API no longer errors out when accessing it.
+  It was failing to serialize the resource contents.
+
+* The username and password fields in the E-Mail Settings page are no longer
+  auto-completed/filled by the browser. Patch by Edward Lee. (:bug:`2380`)
+
+
+Contributors
+============
+
+* Christian Hammond
+* David Trowbridge
+* Edward Lee
+* Emmanuel Gil Peyrot
+* Frederik Braun
+* German Galkin

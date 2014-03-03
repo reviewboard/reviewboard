@@ -1,0 +1,127 @@
+=================================
+Review Board 1.7.17 Release Notes
+=================================
+
+**Release date**: November 5, 2013
+
+
+Security Fixes
+==============
+
+This release fixes a couple crucial XSS vulnerabilities. We recommend
+that everyone upgrade their installs immediately. Special thanks to
+Frederik Braun from Mozilla for reporting these to us.
+
+If you discover any security vulnerabilities, please report them to
+security@reviewboard.org.
+
+* Fixed XSS vulnerabilities for the :guilabel:`Branch` field and
+  uploaded file captions. (:cve:`2013-4519`)
+
+  It was possible to construct captions for uploaded files and construct
+  a Branch field where the content would be interpreted as HTML.
+
+* Added a ``X-Frame-Options`` header to prevent clickjacking.
+
+  This header tells modern browsers that Review Board cannot be displayed
+  in a frame. While not a security "fix," it's a useful prevention
+  against clickjacking_.
+
+
+.. _clickjacking: http://en.wikipedia.org/wiki/Clickjacking
+
+
+New Features
+============
+
+* Remove the need for SSH keys for GitHub repositories.
+
+  GitHub repositories no longer need SSH keys, simplifying the configuration
+  process. Previously, an SSH key had to be configured both on Review Board
+  and for the user configured to access the GitHub repositories.
+
+  This is no longer the case. An out-of-the-box install without an SSH key
+  will now properly work with any GitHub repository.
+
+* Improved validation for GitHub repositories.
+
+  Review Board wasn't very helpful when failing to add GitHub repositories,
+  often showing "Repository not found" errors.
+
+  Now it will show detailed, meaningful errors when things go wrong.
+
+* Added support for permissions on Local Sites.
+
+  Local Sites now support permissions. While there's currently no UI for
+  setting these, it is possible to modify a ``LocalSiteProfile.permissions``
+  dictionary to set them.
+
+  Administrators of Local Sites now have all permissions relevant to that
+  Local Site, meaning they can edit or close/reopen review requests.
+
+
+Performance Improvements
+========================
+
+* Reduced query counts on all pages.
+
+* Reduced query counts in the web API when returning empty lists.
+
+
+Extensibility
+=============
+
+* Extensions using the ``configure_extension`` view an now pass in a
+  custom ``template_name`` pointing to a template for the configuration
+  page, if it needs additional customization.
+
+* Enabling, disabling or reconfiguring extensions will now invalidate the
+  caches for pages, ensuring that hooks will take affect.
+
+* Extension configuration now works properly on subdirectory installs.
+
+
+Bug Fixes
+=========
+
+* Fixed showing private review requests on a submitter page.
+
+* The description for submitted or discarded review requests is now
+  shown on the diff viewer. (:bug:`2913`)
+
+* Discarding, reopening and then closing a review request no longer
+  makes the review request private. (:bug:`3103`)
+
+* Fixed a naming conflict with older PyCrypto packages, such as the default
+  package on CentOS 6.4. (:bug:`3110`)
+
+* Users with the ``can_change_status`` permission no longer need the
+  ``can_edit_reviewrequest`` permission in order to close or reopen
+  review requests.
+
+* Switching a repository from using a hosting service to Custom no longer
+  reverts back to the hosting service.
+
+* Fixed editing a repository if its associated hosting service can't be
+  loaded (such as if an extension providing that hosting service is
+  disabled).
+
+* Many diff validation errors weren't being shown on the New Review Request
+  page, generating 500 errors instead.
+
+* Fixed caching issues with the Blocks field on review requests.
+
+* Editing JSON text fields in the administration UI now works, validates,
+  and won't result in warnings in the log.
+
+* Fixed breakages with looking up URLs internally with Local Sites.
+
+
+Contributors
+============
+
+* Christian Hammond
+* David Trowbridge
+* Frederik Braun
+* Garrett Cooper
+* Stephen Gallagher

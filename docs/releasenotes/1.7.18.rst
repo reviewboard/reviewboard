@@ -1,0 +1,22 @@
+=================================
+Review Board 1.7.18 Release Notes
+=================================
+
+**Release date**: November 6, 2013
+
+
+Packaging Fixes
+===============
+
+* Fixed a packaging error involving JavaScript files.
+
+  The minifier we were using for JavaScript had some regressions that broke
+  us again. We have now switched to UglifyJS as our JavaScript minifier.
+  This will ensure more reliable packages in the future, and will produce
+  better minified output.
+
+
+Contributors
+============
+
+* Christian Hammond
