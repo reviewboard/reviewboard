@@ -280,13 +280,13 @@ $.fn.searchAutoComplete = function() {
                 s = data.username;
 
                 if (data.fullname) {
-                    s += " <span>(" + data.fullname + ")</span>";
+                    s += " <span>(" + _.escape(data.fullname) + ")</span>";
                 }
 
             } else if (data.name) {
                 // For the format of groups
                 s = data.name;
-                s += " <span>(" + data.display_name + ")</span>";
+                s += " <span>(" + _.escape(data.display_name) + ")</span>";
             } else if (data.summary) {
                 // For the format of review requests
                 if (data.summary.length < SUMMARY_TRIM_LEN) {
@@ -295,7 +295,7 @@ $.fn.searchAutoComplete = function() {
                     s = data.summary.substring(0, SUMMARY_TRIM_LEN);
                 }
 
-                s += " <span>(" + data.id + ")</span>";
+                s += " <span>(" + _.escape(data.id) + ")</span>";
             }
 
             return s;

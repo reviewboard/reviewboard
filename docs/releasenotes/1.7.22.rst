@@ -1,0 +1,139 @@
+=================================
+Review Board 1.7.22 Release Notes
+=================================
+
+**Release date**: March 3, 2014
+
+
+Security Fixes
+==============
+
+* An XSS vulnerability was found in the Search field's auto-complete.
+
+  If a user had a first or last name with HTML in it, the HTML would be
+  interpreted by the browser. This allowed crafting short scripts (up to
+  13 characters in length per field, due to the field length limits).
+
+  This release fixes the vulnerability.
+
+  The vulnerability was made public on multiple channels, and we decided to
+  fast-track a release in order to allow administrators to quickly patch
+  their systems.
+
+  :bug:`3274`
+
+
+New Features
+============
+
+* Added support for anonymous access to public Local Sites.
+
+  Local Sites marked as public can now be accessed by anonymous users,
+  if anonymous access is turned on for the installation.
+
+* Added support for parallel-installed versions of Django.
+
+  Newly generated sites (or sites that update their :file:`reviewboard.wsgi`
+  files) now function correctly if there are multiple versions of Django
+  or another Review Board dependency on the system. The thread will ensure
+  that Review Board will import the versions it's compatible with, and not
+  other versions found on the system.
+
+  Patch by Stephen Gallagher.
+
+
+API Changes
+===========
+
+* The documentation for :ref:`webapi2.0-review-group-resource` no longer says
+  that review groups cannot be created through the API.
+
+
+Bug Fixes
+=========
+
+Install/Upgrade
+---------------
+
+* Fixed compatibility with Apache 2.4's method for authorization in newly
+  generated config files. Patch by Stephen Gallagher. (:bug:`3210`)
+
+* Fixed an issue on some configurations where loading in initial schema
+  data for the database would fail. (:bug:`3126`)
+
+* :command:`rb-site upgrade --all-sites` no longer throws an error if
+  there are no valid sites configured. Patch by Stephen Gallagher.
+
+
+Administration
+--------------
+
+* Administrators now have access to all repositories, instead of just public
+  ones or ones they're a member of. (:bug:`3118`)
+
+* Repositories backed by paths that no longer exist can now be hidden.
+  Previously, attempting to change the "Visible" checkbox would result in
+  an error. (:bug:`2361`)
+
+* Fixed creating groups and repositories that had conflicting "unique"
+  fields. (:bug:`3066`, :bug:`3093`)
+
+* Password fields no longer appear blank when they have a value in forms.
+  This prevents them from having to be re-entered just to save the form.
+  (:bug:`3037`, :bug:`3167`)
+
+* Setting ``https`` in the server URL now properly marks the server as using
+  HTTPS. All URLs generated for the API and e-mails will include ``https``
+  instead of ``http``. (:bug:`3085`, :bug:`3246`)
+
+* Fixed incorrect labelling for the review request status graph in the
+  Admin dashboard.
+
+  The widget in the dashboard showing the percentage of all review requests
+  mislabeled discarded review requests as draft review requests. This has
+  been fixed, and proper support for draft review requests was added.
+  (:bug:`3270`)
+
+
+LDAP
+----
+
+* Usernames, passwords, and other information are properly encoded to UTF-8
+  before authenticating. (:bug:`3256`)
+
+* Users without e-mail addresses in LDAP no longer break when first
+  authenticating. (:bug:`3257`)
+
+
+Dashboard
+---------
+
+* Fixed support for accessing watched groups through the Dashboard.
+  Patch by Thom Gerdes. (:bug:`3204`)
+
+
+Repositories
+------------
+
+* Copied files in Git diffs no longer results in File Not Found errors,
+  and properly handles showing the state much like moved files.
+
+* Added better compatibility with Mercurial repository when accessing
+  ``hg-history`` URLs, when the server name didn't contain a trailing
+  slash. (:bug:`3216`)
+
+* Added better CVS compatibility for repositories that don't contain
+  :file:`CVSROOT/modules`. (:bug:`1986`)
+
+* Fixed issues with Clear Case in multi-site mode when OIDs weren't yet
+  available on the server. Patch by Nicolas Dély. (:bug:`3183`)
+
+
+Contributors
+============
+
+* Christian Hammond
+* David Trowbridge
+* Nicolas Dély
+* Stephen Gallagher
+* Thom Gerdes
