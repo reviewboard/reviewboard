@@ -37,7 +37,7 @@ class DefaultReviewer(models.Model):
     repository = models.ManyToManyField(Repository, blank=True)
     groups = models.ManyToManyField(Group, verbose_name=_("default groups"),
                                     blank=True)
-    people = models.ManyToManyField(User, verbose_name=_("default people"),
+    people = models.ManyToManyField(User, verbose_name=_("default users"),
                                     related_name="default_review_paths",
                                     blank=True)
     local_site = models.ForeignKey(LocalSite, blank=True, null=True,
