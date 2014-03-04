@@ -1,33 +1,33 @@
 {% load gravatars i18n tz %}
 
 <li id="user_page_profile">
- <div class="row">
+ <div class="datagrid-sidebar-row">
   {% gravatar profile_user 175 %}
  </div>
 
- <div class="row">
+ <div class="datagrid-sidebar-row">
   <h2 class="nickname">{{profile_user.username}}</h2>
  </div>
 
 {% if show_profile %}
- <div class="row fn">
+ <div class="datagrid-sidebar-row fn">
   {{profile_user.first_name}} {{profile_user.last_name}}
  </div>
 
 {%  if request.user.is_authenticated %}
- <div class="row">
+ <div class="datagrid-sidebar-row">
   <a class="email" href="mailto:{{profile_user.email}}">{{profile_user.email}}</a>
  </div>
 {%  endif %}
 
 {%  localtime on %}
- <div class="row logged-in">
+ <div class="datagrid-sidebar-row logged-in">
 {%   blocktrans with profile_user.last_login|localtime|date as last_login_date %}
   Last logged in {{last_login_date}}
 {%   endblocktrans %}
  </div>
 
- <div class="row joined">
+ <div class="datagrid-sidebar-row joined">
 {%   blocktrans with profile_user.date_joined|localtime|date as joined_date %}
   Joined {{joined_date}}
 {%   endblocktrans %}
