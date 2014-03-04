@@ -95,7 +95,7 @@ class Unfuddle(HostingService):
         try:
             self._api_get_repository(unfuddle_account_domain, unfuddle_repo_name,
                                      tool_name)
-        except Exception, e:
+        except Exception:
             raise
 
     def authorize(self, username, password, unfuddle_account_domain=None,

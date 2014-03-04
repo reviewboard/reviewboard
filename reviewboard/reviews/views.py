@@ -47,17 +47,14 @@ from reviewboard.reviews.datagrids import DashboardDataGrid, \
                                           SubmitterDataGrid, \
                                           WatchedGroupDataGrid, \
                                           get_sidebar_counts
-from reviewboard.reviews.errors import OwnershipError
 from reviewboard.reviews.forms import NewReviewRequestForm
 from reviewboard.reviews.models import Comment, \
                                        FileAttachmentComment, \
                                        Group, ReviewRequest, Review, \
                                        Screenshot, ScreenshotComment
 from reviewboard.scmtools.core import PRE_CREATION
-from reviewboard.scmtools.errors import SCMError
 from reviewboard.site.decorators import check_local_site_access
 from reviewboard.site.urlresolvers import local_site_reverse
-from reviewboard.ssh.errors import SSHError
 from reviewboard.webapi.encoder import status_to_string
 
 

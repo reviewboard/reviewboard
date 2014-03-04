@@ -6,13 +6,10 @@ try:
 except ImportError:
     from urllib import quote as urllib_quote
 
-from pkg_resources import parse_version
-
 from reviewboard.diffviewer.parser import DiffParser, DiffParserError
 from reviewboard.scmtools.git import GitDiffParser
 from reviewboard.scmtools.core import \
     FileNotFoundError, SCMClient, SCMTool, HEAD, PRE_CREATION, UNKNOWN
-from reviewboard.scmtools.errors import RepositoryNotFoundError
 
 
 class HgTool(SCMTool):

@@ -57,7 +57,6 @@ def initialize():
     """
     import logging
     import os
-    import sys
 
     import settings_local
 

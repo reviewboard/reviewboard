@@ -5,8 +5,6 @@ try:
 except ImportError:
     from StringIO import StringIO
 
-from django.contrib.sites.models import Site
-from django.test import TestCase
 from django.utils import simplejson
 from kgb import SpyAgency
 

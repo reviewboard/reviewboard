@@ -5,7 +5,6 @@ import sys
 
 import djblets
 from django.core.urlresolvers import reverse
-from djblets.util.filesystem import is_exe_in_path
 
 
 # Can't import django.utils.translation yet

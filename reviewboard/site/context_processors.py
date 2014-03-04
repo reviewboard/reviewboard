@@ -18,7 +18,7 @@ class AllPermsLookupDict(PermLookupDict):
                                   self.perms_wrapper.get_local_site())
 
     def __nonzero__(self):
-        return super(AllPermLookupDict, self).__nonzero__()
+        return super(AllPermsLookupDict, self).__nonzero__()
 
 
 class AllPermsWrapper(PermWrapper):

@@ -33,8 +33,7 @@ import urlparse
 from django import forms
 from django.contrib.sites.models import Site
 from django.conf import settings
-from django.core.cache import parse_backend_uri, InvalidCacheBackendError, \
-                              DEFAULT_CACHE_ALIAS
+from django.core.cache import DEFAULT_CACHE_ALIAS
 from django.utils.translation import ugettext as _
 from djblets.log import restart_logging
 from djblets.siteconfig.forms import SiteSettingsForm

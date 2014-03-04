@@ -1,5 +1,3 @@
-from reviewboard.scmtools.core import HEAD, SCMTool
-from reviewboard.scmtools.errors import FileNotFoundError
 from reviewboard.scmtools.git import GitTool
 
 

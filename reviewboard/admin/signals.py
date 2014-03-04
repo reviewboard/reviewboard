@@ -1,9 +1,3 @@
-import datetime
-
-from django.core.cache import cache
-from django.db.models import signals
-from djblets.util.misc import make_cache_key
-
 from reviewboard.admin.widgets import increment_sync_num
 
 

@@ -5,7 +5,7 @@ reviewboard/accounts/views.py:*: redefinition of unused 'sha1' from line *
 reviewboard/admin/cache_stats.py:*: redefinition of unused 'memcache' from line *
 reviewboard/admin/checks.py:*: 'CouchDBStorage' imported but unused
 reviewboard/admin/checks.py:*: 'DNS' imported but unused
-reviewboard/admin/checks.py:*: 'S3Storage' imported but unused
+reviewboard/admin/checks.py:*: 'S3BotoStorage' imported but unused
 reviewboard/admin/middleware.py:*: redefinition of unused 'ModPythonRequest' from line *
 reviewboard/admin/middleware.py:*: redefinition of unused 'WSGIRequest' from line *
 reviewboard/manage.py:*: 'recaptcha' imported but unused

@@ -3018,7 +3018,7 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
         r = ReviewRequest.objects.filter(public=True, status='P',
                                          submitter__username='dopey')[0]
 
-        rsp = self.apiPut(
+        self.apiPut(
             self.get_item_url(r.display_id),
             {
                 'status': 'submitted',
@@ -3284,7 +3284,7 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
         review_request = ReviewRequest.objects.filter(local_site=local_site,
             submitter__username='doc')[0]
 
-        rsp = self.apiDelete(
+        self.apiDelete(
             self.get_item_url(review_request.display_id,
                               self.local_site_name),
             expected_status=403)
@@ -3294,15 +3294,13 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
         """Testing the DELETE review-requests/<id>/ API
         with a local site and a site admin is not allowed
         """
-        user = User.objects.get(username='doc')
-
         self._login_user(local_site=True, admin=True)
         local_site = LocalSite.objects.get(name=self.local_site_name)
 
         review_request = ReviewRequest.objects.filter(local_site=local_site,
             submitter__username='doc')[0]
 
-        rsp = self.apiDelete(
+        self.apiDelete(
             self.get_item_url(review_request.display_id,
                               self.local_site_name),
             expected_status=403)
@@ -7805,16 +7803,6 @@ class DefaultReviewerResourceTests(BaseWebAPITestCase):
             'file_regex': '.*',
         }, expected_status=403)
 
-    @add_fixtures(['test_users', 'test_site'])
-    def test_post_default_reviewer_with_permission_denied(self):
-        """Testing the POST default-reviewers/ API with a local site and Permission Denied error"""
-        self._login_user()
-
-        self.apiPost(self.get_list_url(self.local_site_name), {
-            'name': 'default1',
-            'file_regex': '.*',
-        }, expected_status=403)
-
     @add_fixtures(['test_users'])
     def test_post_default_reviewer_with_invalid_username(self):
         """Testing the POST default-reviewers/ API with invalid username"""
@@ -8000,7 +7988,7 @@ class DefaultReviewerResourceTests(BaseWebAPITestCase):
         }, expected_status=403)
 
     @add_fixtures(['test_users', 'test_site'])
-    def test_put_default_reviewer_with_permission_denied(self):
+    def test_put_default_reviewer_with_site_and_permission_denied(self):
         """Testing the PUT default-reviewers/<id>/ API with a local site and Permission Denied error"""
         self._login_user()
 
@@ -8179,8 +8167,8 @@ class DefaultReviewerResourceTests(BaseWebAPITestCase):
     @add_fixtures(['test_users', 'test_site'])
     def test_get_default_reviewers_with_site_no_access(self):
         """Testing the GET default-reviewers/ API with a local site and Permission Denied error"""
-        rsp = self.apiGet(self.get_list_url(self.local_site_name),
-                          expected_status=403)
+        self.apiGet(self.get_list_url(self.local_site_name),
+                    expected_status=403)
 
     @add_fixtures(['test_users', 'test_scmtools'])
     def test_get_default_reviewers_with_repositories(self):
