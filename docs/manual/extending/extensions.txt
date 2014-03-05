@@ -1,0 +1,930 @@
+.. _writing-extensions:
+
+===============================
+Writing Review Board Extensions
+===============================
+
+.. versionadded:: 1.7
+   Many of the features described here are new in Review Board 1.7.
+
+
+Overview
+========
+
+Review Board's functionality can be enhanced by installing a Review Board
+extension. Writing and installing an extension is an excellent way to tailor
+Review Board to your exact needs. Here are a few examples of the many things
+you can accomplish by writing an extension:
+
+*  Modify the user interface, providing new links or buttons.
+*  Generate statistics for report gathering.
+*  Interface Review Board with other systems (e.g. an IRC bot).
+
+
+Extension Structure
+===================
+
+Extensions must follow a certain structure to be recognized and loaded
+by Review Board. They are distributed inside Python Eggs following a few
+conventions. See :ref:`extension-python-egg` for more information.
+
+.. note::
+   The Review Board extension system has been designed to follow many
+   of Django's conventions. The structure of an extension package tries
+   to mirror that of Django apps.
+
+The main constituent of an extension is a class which inherits from the
+Extension base class :py:class:`reviewboard.extensions.base.Extension`.
+
+The Review Board repository contains a script for generating the
+initial code an extension requires. See :ref:`extension-generator` for
+more information.
+
+
+Minimum Extension Structure
+---------------------------
+
+At minimum, an extension requires the following files:
+
+*  :ref:`setup.py <extension-example-files-setup.py>`
+*  *extensiondir*/:ref:`__init__.py <extension-example-files-__init__.py>`
+*  *extensiondir*/:ref:`extension.py <extension-example-files-extension.py>`
+
+
+The following are a description and example of each file. In each example
+*extensiondir* has been replaced with the extension's package,
+'sample_extension':
+
+.. _extension-example-files-setup.py:
+
+**setup.py**
+
+   This is the file used to create the Python Egg. It defines the
+   :ref:`extension-entry-point` along with other meta-data.
+   See :ref:`extension-python-egg` for a description of features relevant to
+   Review Board extensions. Example::
+
+      from setuptools import setup
+
+
+      PACKAGE = "sample_extension"
+      VERSION = "0.1"
+
+      setup(
+          name=PACKAGE,
+          version=VERSION,
+          description="description of extension",
+          author="Your Name",
+          packages=["sample_extension"],
+          entry_points={
+              'reviewboard.extensions':
+                  '%s = sample_extension.extension:SampleExtension' % PACKAGE,
+          },
+      )
+
+   See :ref:`extension-python-egg` and the :py:mod:`setuptools` documentation
+   for more information.
+
+.. _extension-example-files-__init__.py:
+
+sample_extension/**__init__.py**
+
+   This file indicates the sample_extension is a Python package.
+
+.. _extension-example-files-extension.py:
+
+sample_extension/**extension.py**
+
+   This is the main module of the extension. The Extension subclass should
+   be defined here. Example::
+
+      from reviewboard.extensions.base import Extension
+
+
+      class SampleExtension(Extension):
+          def __init__(self, *args, **kwargs):
+              super(SampleExtension, self).__init__(*args, **kwargs)
+
+
+Other Structure
+---------------
+
+Review Board also expects extensions to follow a few other conventions when
+naming files. The following files serve a special purpose:
+
+**models.py**
+   An extension may define Django models in this file. The
+   corresponding tables will be created in the database when the extension is
+   loaded. See :ref:`extension-models` for more information.
+
+**models/**
+   As an alternative to using models.py, a Python package may
+   be created in models/, which may define models in its modules.
+
+**admin_urls.py**
+   An extension may define urls for
+   configuration in the admin panel. It is only used when
+   :py:attr:`is_configurable` is set ``True``. For more information, see
+   :ref:`extension-configuration-urls`.
+
+**admin.py**
+   This file allows an extension to register models in its own Django admin
+   site. It is only used when :py:attr:`has_admin_site` is set ``True``. For
+   more information, see :ref:`extension-admin-sites`.
+
+
+.. _extension-class:
+
+Extension Class
+===============
+
+The main component of an extension is a class inheriting from
+:py:class:`reviewboard.extensions.base.Extension`. It can optionally set
+the following attributes:
+
+* :py:attr:`is_configurable`
+* :py:attr:`has_admin_site`
+* :py:attr:`default_settings`
+* :py:attr:`requirements`
+
+The base class also provides the following attributes:
+
+* :py:attr:`settings`
+
+
+.. py:class:: reviewboard.extensions.base.Extension
+
+   .. py:attribute:: is_configurable
+
+      A Boolean indicating whether the extension supports configuration in
+      the Review Board admin panel. The default is ``False``. See
+      :ref:`extension-configuration` for more information.
+
+   .. py:attribute:: has_admin_site
+
+      A Boolean that indicates whether a Django admin site should be generated
+      for the extension. The default is ``False``. See
+      :ref:`extension-admin-site` for more information.
+
+   .. py:attribute:: default_settings
+
+      A Dictionary which acts as a default for :py:attr:`settings`. The default
+      is ``{}``, an empty dictionary. See :ref:`extension-settings-defaults`
+      for more information.
+
+   .. py:attribute:: requirements
+
+      A list of strings providing the names of other extensions the
+      extension requires. An extension may only be enabled if all
+      other extensions in its requirements list are also enabled.
+      See :ref:`extension-egg-dependencies` for more information.
+
+   .. py:attribute:: settings
+
+      An instance of :py:class:`djblets.extensions.base.settings`. This
+      attribute gives each extension an easy-to-use and persistent data store
+      for settings. See :ref:`extension-settings` for more information.
+
+
+.. _extension-models:
+
+Models
+======
+
+Extensions are able to define Django Models to expand the database schema.
+When an extension is loaded, it is added to :py:attr:`INSTALLED_APPS`
+automatically. New Models are then written to the database by Review Board,
+which runs syncdb programmatically.
+
+.. note::
+   Review Board is also able to evolve the database programmatically. This
+   allows a developer to make changes to an extension's models after release.
+
+Extensions use the same convention as Django applications when defining
+Models. In order to define new Models, a :file:`models.py` file, or a
+:file:`models/` directory constituting a Python package should be created.
+
+Here is an example :file:`models.py` file::
+
+   from django.db import models
+
+
+   class MyExtensionsSampleModel(models.Model):
+       name = models.CharField(max_length=128)
+       enabled = models.BooleanField()
+
+.. note::
+   When an extension is disabled, tables for its models are not dropped.
+   For a development installation, an evolution to drop these tables may be
+   generated using::
+
+      ./reviewboard/manage.py evolve --purge
+
+   Alternativley, when developing against a Review Board install, rb-site
+   may be used::
+
+      rb-site manage /path/to/site evolve -- --purge
+
+
+.. _extension-settings:
+
+Settings
+========
+
+Each extension is given a settings dictionary which it can load from the
+database using :py:meth:`load` and save to the database using :py:meth:`save`.
+This is found in the :py:attr:`settings` attribute and is an instance of the
+:py:class:`djblets.extensions.base.settings` class.
+
+A set of defaults may be provided in :py:attr:`default_settings` to make
+initialization of the dictionary simple. See :ref:`extension-settings-defaults`
+for more information.
+
+.. py:class:: djblets.extensions.base.settings
+
+   .. py:method:: load()
+
+      Retrieves the dictionary entries from the database.
+
+   .. py:method:: save()
+
+      Stores the dictionary entries to the database.
+
+
+Here is an example of how to save settings::
+
+   settings['mysetting'] = "New Setting Value"
+   settings.save()  # Store the settings in the database.
+
+And an example of how to load settings::
+
+   settings.load()  # Retrieve the settings from the database.
+   mysetting = settings['mysetting']  # Read the setting value.
+
+
+.. _extension-settings-defaults:
+
+Default Settings
+----------------
+
+To provide defaults for the :py:attr:`settings` dictionary, an extension
+may use the :py:attr:`default_settings` attribute. If a key is not
+found in :py:attr:`settings`, :py:attr:`default_settings` will be checked.
+If neither dictionary contains the key, a :py:exc:`KeyError` exception
+will be thrown.
+
+Here is an example extension setting :py:attr:`default_settings`::
+
+   class SampleExtension(Extension):
+      default_settings = {
+         'mysetting': 1,
+         'anothersetting': 4,
+         'stringsetting': "I'm a string setting",
+      }
+
+      def __init__(self, *args, **kwargs):
+        super(SampleExtension, self).__init__(*args, **kwargs)
+
+
+.. _extension-configuration:
+
+Configuration
+=============
+
+For administrative configuration, extensions are able to hook into the
+Review Board admin panel.
+
+By setting :py:attr:`is_configurable` to ``True``, an extension is assigned
+a URL namespace under the admin path. New URLs are added to this namespace
+using an admin_urls.py file. See :ref:`extension-configuration-urls` for
+more information.
+
+Review Board also supplies views, templates, and forms, making management
+of :ref:`extension-settings` painless. See
+:ref:`extension-configuration-settings-form` for more information.
+
+.. _extension-configuration-urls:
+
+Admin URLs
+----------
+
+If an extension has :py:attr:`is_configurable` set to ``True``, it will
+be assigned a URL namespace under the admin path. A button labeled
+:guilabel:`Configure` will appear in the list of installed extensions,
+linking to the base path of this namespace.
+
+To specify URLs in the namespace, an :file:`admin_urls.py` file should be
+created, taking the form of a Django URLconf module. This module should
+follow Django's conventions, defining a :py:data:`urlpatterns` variable.
+
+.. py:data:: urlpatterns
+
+   Used to specify URLs. This should be a Python list, in the format returned
+   by the function :py:func:`django.conf.urls.patterns`.
+
+The following is an example :file:`admin_url.py` file::
+
+   from django.conf.urls.defaults import patterns, url
+
+
+   urlpatterns = patterns('sample_extension.views',
+       url(r'^$', 'configure')
+   )
+
+This would direct the base URL of the namespace to the configure view.
+
+For a more in depth explanation of URLconfs please see the
+`Django URLs`_ documentation.
+
+.. _`Django URLs`: https://docs.djangoproject.com/en/1.4/topics/http/urls/
+
+.. _extension-configuration-settings-form:
+
+Settings Form
+-------------
+
+Review Board supplies the views, templates, and a base Django form to make
+creating a configuration UI for :ref:`extension-settings` painless. To take
+advantage of this feature, do the following:
+
+*
+   Define a new form class inheriting from
+   :py:class:`djblets.extensions.forms.SettingsForm`
+
+*
+   Create a new URL pattern to
+   `reviewboard.extensions.views.configure_extension`, providing the extension
+   class and form class. See :ref:`extension-configuration-urls` for more
+   information on creating URL patterns.
+
+Here is an example form class::
+
+   from django import forms
+   from djblets.extensions.forms import SettingsForm
+
+
+   class SampleExtensionSettingsForm(SettingsForm):
+       field1 = forms.IntegerField(min_value=0, initial=1, help_text="Field 1")
+
+Here is an example URL pattern for the form::
+
+   from django.conf.urls.defaults import patterns
+
+   from sample_extension.extension import SampleExtension
+   from sample_extension.forms import SampleExtensionSettingsForm
+
+
+   urlpatterns = patterns('',
+       (r'^$', 'reviewboard.extensions.views.configure_extension',
+        {'ext_class': SampleExtension,
+         'form_class': SampleExtensionSettingsForm,
+        }),
+   )
+
+
+.. _extension-admin-site:
+
+Admin Site
+==========
+
+By setting :py:attr:`has_admin_site` to ``True``, an extension will be given
+its own Django admin site. A button labeled :guilabel:`Database` will appear
+in the list of installed extensions, linking to the base path of the admin site.
+
+The extension's instance of :py:class:`django.contrib.admin.sites.AdminSite`
+will exist in the :py:attr:`admin_site` attribute of the Extension.
+
+Models should be registered to the Admin site in an :file:`admin.py` file.
+Here is an example :file:`admin.py` file::
+
+   from reviewboard.extensions.base import get_extension_manager
+
+   from sample_extension.extension import SampleExtension
+   from sample_extension.models import SampleModel
+
+
+   # You must get the loaded instance of the extension to register to the
+   # admin site.
+   extension_manager = get_extension_manager()
+   extension = extension_manager.get_enabled_extension(SampleExtension.id)
+
+   # Register the Model to the sample_extensions admin site.
+   extension.admin_site.register(SampleModel)
+
+For more information on Django admin sites, please see the `Django Admin Site`_
+documentation.
+
+.. _`Django Admin Site`: https://docs.djangoproject.com/en/1.4/ref/contrib/admin/
+
+
+Useful Hooks
+============
+
+Extensions hooks are the primary mechanism for customizing Review Board's
+appearance and behavior.
+
+Hooks need only be instantiated for Review Board to "notice" them, and are
+automatically removed when the extension shuts down.
+
+The following hooks are available for use by extensions.
+
+URLHook
+-------
+
+:py:class:`reviewboard.extensions.hooks.URLHook` are used to extend the URL
+patterns that Review Board wil recognize and respond to.
+
+:py:class:`URLHook` requires two arguments for initialization: the extension
+instance and the URL patterns. 
+
+Example usage in an Extension::
+
+    class SampleExtension(Extension):
+        def __init__(self, *args, **kwargs):
+            super(SampleExtension, self).__init__(*args, **kwargs)
+            pattern = patterns('', (r'^sample_extension/',
+                                    include('sample_extension.urls')))
+            self.url_hook = URLHook(self, pattern)
+
+Notice how `sample_extension.urls` was included in the patterns. In this case,
+`sample_extension` is the package name for the extension, and `urls` is the module
+that contains the patterns::
+
+    from django.conf.urls.defaults import patterns, url
+
+
+    urlpatterns = patterns('sample_extension.views',
+        url(r'^$', 'dashboard'),
+    )
+
+
+DashboardHook
+-------------
+
+:py:class:`reviewboard.extensions.hooks.DashboardHook` can be used to define a
+custom dashboard page for your Extension. :py:class:`DashboardHook` requires
+two arguments for initialization: the extension instance and a list of entries.
+Each entry in this list must be a dictionary with the following keys:
+
+   * **label**: Label to appear on the dashboard's navigation pane.
+   * **url**: URL for the dashboard page.
+
+If the extension needs only one dashboard, then it needs only one entry in
+this list. (See :ref:`extension-navigation-bar-hook`)
+
+Example usage in an Extension::
+
+    class SampleExtension(Extension):
+        def __init__(self, *args, **kwargs):
+            super(SampleExtension, self).__init__(*args, **kwargs)
+            self.dashboard_hook = DashboardHook(
+                self,
+                entries = [
+                    {
+                        'label': 'A SampleExtension Label',
+                        'url': settings.SITE_ROOT + 'sample_extension/',
+                    }
+                ]
+            ) 
+
+Corresponding code in `views.py`::
+
+    def dashboard(request, template_name='sample_extension/dashboard.html'):
+        return render_to_response(template_name, RequestContext(request))
+
+.. highlight:: html
+
+Corresponding template `dashboard.html`::
+
+    {% extends "base.html" %}
+    {% load djblets_deco %}
+    {% load i18n %}
+
+    {% block title %}{% trans "sample_extension Dashboard" %}{% endblock %}
+
+    {% block content %}
+    {%  box "reports" %}
+     <h1 class="title">{% trans "sample_extension Dashboard" %}</h1>
+
+     <div class="main">
+      <p>{% trans "This is my new Dashboard page for Review Board" %}</p>
+     </div>
+    {%  endbox %}
+    {% endblock %}
+
+
+.. _extension-navigation-bar-hook:
+
+NavigationBarHook
+-----------------
+
+.. highlight:: python
+
+:py:class:`reviewboard.extensions.hooks.NavigationBarHook` can be used to
+introduce additional items to the main navigation bar.
+
+:py:class:`NavigationBarHook` requires two arguments: the extension instance
+and a list of entries. Each entry represents an item on the navigation bar,
+and is a dictionary with the following keys:
+
+    * **label**:    The label to display.
+    * **url**:      The URL to point to.
+    * **url_name**: The name of the URL to point to.
+
+Only one of **url** or **url_name** is required. **url_name** will take precedence.
+
+If your extension needs to access the template context, you can define a
+subclass from NavigationBarHook to override get_entries and return results
+from there.
+
+Example usage in an Extension::
+
+    class SampleExtension(Extension):
+        def __init__(self, *args, **kwargs):
+            super(SampleExtension, self).__init__(*args, **kwargs)
+            self.navigationbar_hook = NavigationBarHook(
+                self,
+                entries = [
+                    {
+                        'label': 'An Item on Navigation Bar',
+                        'url': settings.SITE_ROOT + 'an_item_url_a/',
+                    },
+                    {
+                        'label': 'Another Item on Navigation Bar',
+                        'url': settings.SITE_ROOT + 'an_item_url_b/',
+                    },
+                    {
+                        'label': 'Yet Another Item on Navigation Bar',
+                        'url': settings.SITE_ROOT + 'an_item_url_c/',
+                    },
+                ]
+            )
+
+
+.. _extension-review-ui-integration:
+
+Review UI Integration
+=====================
+
+Review UIs are used in reviewing file attachments of particular mimetypes. For
+example, an Image Review UI is used to render image files and allow comments to
+be attached to specific areas of an image. Similarly, a Markdown Review UI
+renders the raw text from a .md file into a corresponding HTML.
+
+Extensions can integrate custom Review UIs into Review Board by defining
+a hook that subclasses ReviewUIHook. Each extension may define and register
+zero or more Review UIs. When the extension is enabled through the admin page,
+the hook registers its list of Review UIs. Likewise, the hook unregisters these
+Review UIs when the extension is disabled.
+
+We use a simple XMLReviewUI that performs syntax highlighting as an example to
+demonstrate the key anatomical points for integrating ReviewUIs through
+extensions.
+
+
+.. _extension-subclassing-review-ui-hook:
+
+Subclassing ReviewUIHook
+------------------------
+
+:file:`extension.py` must use a Review UI Hook to register its list of Review
+UIs.  This can be using :py:class:`reviewboard.extensions.hooks.ReviewUIHook`
+directly, using a subclass of it. :py:class:`ReviewUIHook` expects a list of
+Review UIs as argument in addition to the extension instance.
+
+Example: **XMLReviewUIExtension**::
+
+    class XMLReviewUIExtension(Extension):
+        def __init__(self, *args, **kwargs):
+            super(XMLReviewUIExtension, self).__init__(*args, **kwargs)
+            self.reviewui_hook = ReviewUIHook(self, [XMLReviewUI])
+
+
+.. _extension-review-ui-class:
+
+ReviewUI Class
+--------------
+
+Each Review UI must be defined by its own ReviewUI class that subclasses
+:py:class:`reviewboard.reviews.ui.base.FileAttachmentReviewUI`. It must also
+define the following class variables:
+
+*
+    **supported_mimetypes**: a list of mimetypes of the files that this Review
+    UI will be responsible for rendering.
+
+*
+    **template_name**: where to find the html template used when rendering this
+    Review UI
+
+*
+    **object_key**: a unique name to identify this Review UI
+
+Example: **XMLReviewUI**::
+
+    import logging
+
+    from django.utils.encoding import force_unicode
+    import pygments
+
+    from reviewboard.reviews.ui.base import FileAttachmentReviewUI
+
+
+    class XMLReviewUI(FileAttachmentReviewUI):
+        """ReviewUI for XML mimetypes"""
+        supported_mimetypes = ['application/xml', 'text/xml']
+        template_name = 'xml_review_ui_extension/xml.html'
+        object_key = 'xml'
+
+The class should also have some function to render the particular mimetype(s)
+that it is responsible for. There are no restrictions on the name of the
+function or what it returns, but it should be in agreement with logic specified
+in its corresponding template.
+
+Example: **render()** in **XMLReviewUI**. This simply uses the pygments API
+to convert raw XML into syntax-highlighted HTML::
+
+    def render(self):
+        data_string = ""
+        f = self.obj.file
+
+        try:
+            f.open()
+            data_string = f.read()
+        except (ValueError, IOError), e:
+            logging.error('Failed to read from file %s: %s' % (self.obj.pk, e))
+
+        f.close()
+
+        return pygments.highlight(
+            force_unicode(data_string),
+            pygments.lexers.XmlLexer(),
+            pygments.formatters.HtmlFormatter())
+
+
+.. _extension_review-ui-template:
+
+ReviewUI Template
+-----------------
+
+.. highlight:: html
+
+Here is the template that corresponds to the above Review UI:
+
+:file:`xml_review_ui_extension/templates/xml_review_ui_extension/xml.html`::
+
+    {% extends base_template %}
+    {% load i18n %}
+    {% load reviewtags %}
+
+    {% block title %}{{xml.filename}}{% if caption %}: {{caption}}
+    {% endif %}{% endblock %}
+
+    {% block scripts-post %}
+    {{block.super}}
+
+    <script language="javascript"
+    src="{{MEDIA_URL}}ext/xml-review-ui-extension/js/XMLReviewableModel.js">
+    </script>
+
+    <script language="javascript"
+    src="{{MEDIA_URL}}ext/xml-review-ui-extension/js/XMLReviewableView.js">
+    </script>
+
+    <script language="javascript">
+        $(document).ready(function() {
+            var view = new RB.XMLReviewableView({
+                model: new RB.XMLReviewable({
+                    attachmentID: '{{xml.id}}',
+                    caption: '{{caption|escapejs}}',
+                    rendered: '{{review_ui.render|escapejs}}'
+                })
+            });
+            view.render();
+            $('#xml-review-ui-container').append(view.$el);
+        });
+    </script>
+    {% endblock %}
+
+    {% block review_ui_content %}
+    <div id="xml-review-ui-container"></div>
+    {% endblock %}
+
+
+ReviewUI JavaScript
+-------------------
+
+.. highlight:: javascript
+
+Here are the corresponding JavaScript used in the above template.
+
+:file:`xml_review_ui_extension/htdocs/js/XMLReviewableModel.js`::
+
+    /*
+     * Provides review capabilities for XML files.
+     */
+    RB.XMLReviewable = RB.FileAttachmentReviewable.extend({
+        defaults: _.defaults({
+            rendered: ''
+        }, RB.FileAttachmentReviewable.prototype.defaults)
+    });
+
+
+:file:`xml_review_ui_extension/htdocs/js/XMLReviewableView.js`::
+
+    /*
+     * Displays a review UI for XML files.
+     */
+    RB.XMLReviewableView = RB.FileAttachmentReviewableView.extend({
+        className: 'xml-review-ui',
+
+        /*
+         * Renders the view.
+         */
+        renderContent: function() {
+            this.$el.html(this.model.get('rendered'));
+
+            return this;
+        }
+    });
+
+
+.. _extension-python-egg:
+
+Python Egg
+==========
+
+Extensions are packaged and distributed as Python Eggs. This allows for
+automatic detection of installed extensions, packaging of static files,
+and dependency checking.
+
+The :py:mod:`setuptools` module is used to create a Python Egg. A
+:file:`setup.py` file is created for this purpose. See the :py:mod:`setuptools`
+documentation for a full description of features.
+
+
+.. _extension-entry-point:
+
+Entry Point
+-----------
+
+.. highlight:: python
+
+To facilitate the auto-detection of installed extensions, a
+``reviewboard.extensions`` entry point must be defined for each
+:ref:`extension-class`. Here is an example entry point definition::
+
+      entry_points={
+           'reviewboard.extensions':
+               'sample_extension = sample_extension.extension:SampleExtension',
+      },
+
+This defines an entry point for the :py:class:`SampleExtension` class from
+the :py:mod:`sample_extension.extension` module. Here is an example of
+a full :file:`setup.py` file defining this entry point::
+
+   from setuptools import setup
+
+
+   PACKAGE = "sample_extension"
+   VERSION = "0.1"
+
+   setup(
+       name=PACKAGE,
+       version=VERSION,
+       description="Description of extension",
+       author="Your Name",
+       packages=["sample_extension"],
+       entry_points={
+           'reviewboard.extensions':
+               'sample_extension = sample_extension.extension:SampleExtension',
+       },
+   )
+
+
+.. _extension-egg-static-files:
+
+Static Files
+------------
+
+Any static files (such as css, html, and javascript) the extension requires
+must be added to the package data of the Python Egg. Here is an example of
+how this is done in the setup.py file::
+
+       package_data={
+           'sample_extension': [
+               'htdocs/css/*.css',
+               'htdocs/js/*.js',
+               'templates/rbreports/*.html',
+               'templates/rbreports/*.txt',
+           ],
+       }
+
+Here is an example of a full setup.py file including the static files::
+
+   from setuptools import setup
+
+
+   PACKAGE = "sample_extension"
+   VERSION = "0.1"
+
+   setup(
+       name=PACKAGE,
+       version=VERSION,
+       description="Description of extension",
+       author="Your Name",
+       packages=["sample_extension"],
+       entry_points={
+           'reviewboard.extensions':
+               'sample_extension = sample_extension.extension:SampleExtension',
+       },
+       package_data={
+           'sample_extension': [
+               'htdocs/css/*.css',
+               'htdocs/js/*.js',
+               'templates/rbreports/*.html',
+               'templates/rbreports/*.txt',
+           ],
+       }
+   )
+
+
+.. _extension-egg-dependencies:
+
+Dependencies
+------------
+
+Any dependencies of the extension are defined in the :file:`setup.py` file
+using :py:attr:`install_requires`. Here is an example of a full
+:file`setup.py` file including a dependency::
+
+   from setuptools import setup
+
+
+   PACKAGE = "sample_extension"
+   VERSION = "0.1"
+
+   setup(
+       name=PACKAGE,
+       version=VERSION,
+       description="Description of extension",
+       author="Your Name",
+       packages=["sample_extension"],
+       entry_points={
+           'reviewboard.extensions':
+               'sample_extension = sample_extension.extension:SampleExtension',
+       },
+       install_requires=['PythonPackageIDependOn>=0.1']
+   )
+
+This will ensure any packages the extension requires will be installed.
+See the `Setuptools`_ documentation for more information on
+:py:attr:`install_requires`.
+
+.. _`Setuptools`: http://pypi.python.org/pypi/setuptools#using-setuptools-and-easyinstall
+
+In addition to requiring python packages when installing, an extension can
+declare a list of additional extensions it requires. This requirements list
+gives the name of each extension that must be enabled before allowing the
+extension itself to be enabled. This list is declared by setting the
+:py:attr:`requirements` attribute. Here is an example of an extension
+defining a requirements list::
+
+   class SampleExtension(Extension):
+       requirements = ['other_extension.extension.OtherExtension']
+
+       def __init__(self, *args, **kwargs):
+           super(RBWebHooksExtension, self).__init__(*args, **kwargs)
+
+
+.. _extension-egg-developing:
+
+Developing With a Python Egg
+----------------------------
+
+In order for Review Board to detect an extension, the Python Egg must be
+generated using the :file:`setup.py` file, and installed. During development
+this can be done by installing a link in the Python installation to the
+source directory of your extension. This is accomplished by running::
+
+   python setup.py develop
+
+If changes are made to the setup.py file this should be executed again.
+
+See the `Setuptools`_ documentation for more information.
+
+
+.. _extension-generator:
+
+Extension Boilerplate Generator
+===============================
+
+The Review Board repository contains a script for generating the boilerplate
+code for a new extension. This script is part of the Review Board tree and is
+located here::
+
+   ./contrib/tools/generate_extension.py
+
+
+.. comment: vim: ft=rst et ts=3
+

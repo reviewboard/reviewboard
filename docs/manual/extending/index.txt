@@ -1,0 +1,13 @@
+======================
+Extending Review Board
+======================
+
+.. toctree::
+   :maxdepth: 2
+
+   extensions
+   auth-backends
+   legacy-auth-backends
+
+
+.. comment: vim: ft=rst et
