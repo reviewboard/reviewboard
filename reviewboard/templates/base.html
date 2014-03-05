@@ -1,7 +1,7 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-{% load compressed djblets_deco djblets_extensions djblets_utils gravatars %}
-{% load i18n rb_extensions staticfiles %}
+{% load compressed djblets_deco djblets_extensions djblets_utils i18n %}
+{% load staticfiles %}
 
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
  <head>
@@ -52,72 +52,19 @@
  <body>
 {% endblock %}
   <div id="container">
+
 {% block headerbar %}
-   <div id="headerbar">
-{% include "base/branding.html" %}
-    <ul id="accountnav">
-     <li>
-      <a href="#">{% trans "Support" %} &#9662;</a>
-      <ul>
-       <li><a href="http://www.reviewboard.org/docs/manual/dev/">{% trans "Documentation" %}</a></li>
-       <li><a href="{% url 'support' %}">{% trans "Get Support" %}</a></li>
-      </ul>
-     </li>
-{% if user.is_authenticated %}
-     <li>
-      <a class="user-nav-item" href="{% url 'user-preferences' %}">{% gravatar user 32 %} {{user.username}} &#9662;</a>
-      <ul>
-       <li><a href="{% url 'user-preferences' %}">{% trans "My account" %}</a></li>
-{%  if user.is_staff %}
-       <li><a href="{% url 'reviewboard.admin.views.dashboard' %}">{% trans "Admin" %}</a></li>
-{%  endif %}
-       <li><a href="{% url 'logout' %}">{% trans "Log out" %}</a></li>
-      </ul>
-     </li>
-{% else %}
-     <li><a href="{% url 'login' %}?next={{request.path}}">{% trans "Log in" %}</a></li>
-{#  XXX Using default sucks, but siteconfig defaults don't #}
-{#      work from templates.                               #}
-{%  if auth_backends.0.supports_registration and siteconfig.settings.auth_enable_registration|default_if_none:1 %}
-     <li><a href="{% url 'register' %}">{% trans "Register" %}</a></li>
-{%  endif %}
-{% endif %}{# !is_authenticated #}
-{% header_action_hooks %}
-{% header_dropdown_action_hooks %}
-    </ul>
-    <div id="search">
-{% if siteconfig.settings.search_enable %}
-    <form method="get" action="{% url 'search' %}">
-{% endif %}
-     <input type="text" name="q" placeholder="{% if siteconfig.settings.search_enable %}{% trans "Search" %}{% else %}{% trans "Jump to..." %}{% endif %}" id="search_field" {% attr "value" %}{{query}}{% endattr %} />
-{% if siteconfig.settings.search_enable %}
-    </form>
-{% endif %}
-    </div>
-
-    <br />
-   </div>
-{% template_hook_point "base-before-navbar" %}
-
-{% block navbar %}
+{%  include "base/headerbar.html" %}
+{%  template_hook_point "base-before-navbar" %}
    <div id="navbar-container">
-    <ul id="navbar">
-{%  if user.is_authenticated or not siteconfig.settings.auth_require_sitewide_login %}
-{%   if user.is_authenticated %}
-     <li><a href="{% url 'dashboard' %}">{% trans "My Dashboard" %}</a></li>
-     <li><a href="{% url 'new-review-request' %}">{% trans "New Review Request" %}</a></li>
-{%   endif %}
-     <li><a href="{% url 'all-review-requests' %}">{% trans "All Review Requests" %}</a></li>
-     <li><a href="{% url 'all-users' %}">{% trans "Users" %}</a></li>
-     <li><a href="{% url 'all-groups' %}">{% trans "Groups" %}</a></li>
-{%   navigation_bar_hooks %}
-{%  endif %}
-    </ul>
-{% endblock %}
-{% template_hook_point "base-after-navbar" %}
-{% block navbar_post %}{% endblock %}
+{%  block navbar %}
+{%   include "base/navbar.html" %}
+{%  endblock %}
+{%  template_hook_point "base-after-navbar" %}
+{%  block navbar_post %}{% endblock %}
    </div>
 {% endblock %}
+
    <div id="page-container">
     <noscript>
 {%  box "important" %}

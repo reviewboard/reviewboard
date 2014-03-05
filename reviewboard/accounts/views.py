@@ -4,6 +4,7 @@ from django.contrib.auth.decorators import login_required
 from django.core.urlresolvers import reverse
 from django.http import Http404, HttpResponseBadRequest, HttpResponseRedirect
 from django.shortcuts import render
+from django.views.decorators.csrf import csrf_protect
 from djblets.auth.views import register
 from djblets.siteconfig.models import SiteConfiguration
 
@@ -14,6 +15,7 @@ from reviewboard.accounts.pages import get_page_classes
 from reviewboard.accounts.signals import user_registered
 
 
+@csrf_protect
 def account_register(request, next_url='dashboard'):
     """
     Handles redirection to the appropriate registration page, depending
@@ -37,6 +39,7 @@ def account_register(request, next_url='dashboard'):
     return HttpResponseRedirect(reverse("login"))
 
 
+@csrf_protect
 @login_required
 def user_preferences(request, template_name='accounts/prefs.html'):
     """Displays the My Account page containing user preferences.

@@ -16,6 +16,8 @@
 
  <form method="post" action="." class="auth-section main-auth-section"
        id="register_form">
+  {% csrf_token %}
+
   <div class="auth-form-row auth-field-row">
    {{form.username.label_tag}}
    {{form.username}}

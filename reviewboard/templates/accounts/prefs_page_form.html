@@ -1,5 +1,7 @@
 {% load djblets_forms %}
 
+{% block pre_fields %}{% endblock %}
+
 {% for field in form %}
 {%  if field.is_hidden %}
 {{field}}
@@ -20,6 +22,8 @@
 {%   endwith %}
 {%  endif %}
 {% endfor %}
+
+{% block post_fields %}{% endblock %}
 
 {% if form.save_label %}
 <input type="submit" clas="btn" value="{{form.save_label}}" />

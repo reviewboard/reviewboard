@@ -98,10 +98,6 @@
     form {
       margin: 0 auto;
 
-      label {
-        display: block;
-      }
-
       input[type=text],
       input[type=password],
       input[type=email] {
@@ -109,6 +105,20 @@
         max-width: 30em;
         font-size: inherit;
         padding: 0.3em 0.6em;
+      }
+
+      label, p {
+        color: #666666;
+      }
+
+      label {
+        display: block;
+        margin: 0.25em 0;
+      }
+
+      p {
+        font-size: inherit;
+        margin: 1em 0;
       }
 
       select {
@@ -165,20 +175,22 @@
             margin-right: 0;
           }
 
-          label {
-            display: block;
-            color: #666666;
-	    margin: 0.25em 0;
-          }
-
           input {
             width: 21em;
+
+            &[type=checkbox] {
+              width: auto;
+            }
           }
 
           ul {
             list-style: none;
             margin: 1em 0;
             padding: 0;
+
+            &:last-child {
+              margin-bottom: 0;
+            }
 
             li {
               margin: 0.5em 0;
@@ -267,7 +279,9 @@
         }
 
         p {
-          margin-top: 0;
+          &:first-child {
+            margin-top: 0;
+          }
 
           &:last-child {
             margin-bottom: 0;

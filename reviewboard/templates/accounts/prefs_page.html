@@ -5,6 +5,7 @@
   <h1 class="title">{{form.form_title}}</h1>
   <div class="main">
    <form method="post" action=".#{{page.page_id}}" id="form_{{form.form_id}}">
+    {% csrf_token %}
     {{form.render|safe}}
    </form>
   </div>

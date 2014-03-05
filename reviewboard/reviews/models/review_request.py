@@ -1,5 +1,7 @@
 from __future__ import unicode_literals
 
+import logging
+
 from django.contrib.auth.models import User
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
@@ -332,7 +334,7 @@ class ReviewRequest(BaseReviewRequestDetails):
         """Returns all public top-level reviews for this review request."""
         return self.reviews.filter(public=True, base_reply_to__isnull=True)
 
-    def is_accessible_by(self, user, local_site=None):
+    def is_accessible_by(self, user, local_site=None, request=None):
         """Returns whether or not the user can read this review request.
 
         This performs several checks to ensure that the user has access.
@@ -354,12 +356,24 @@ class ReviewRequest(BaseReviewRequestDetails):
             return True
 
         if not self.public and not self.is_mutable_by(user):
+            logging.warning('Review Request pk=%d (display_id=%d) is not '
+                            'accessible by user %s because it has not yet '
+                            'been published.',
+                            self.pk, self.display_id, user, request=request)
             return False
 
         if self.repository and not self.repository.is_accessible_by(user):
+            logging.warning('Review Request pk=%d (display_id=%d) is not '
+                            'accessible by user %s because its repository is '
+                            'not accessible by that user.',
+                            self.pk, self.display_id, user, request=request)
             return False
 
         if local_site and not local_site.is_accessible_by(user):
+            logging.warning('Review Request pk=%d (display_id=%d) is not '
+                            'accessible by user %s because its local_site is '
+                            'not accessible by that user.',
+                            self.pk, self.display_id, user, request=request)
             return False
 
         if (user.is_authenticated() and
@@ -381,6 +395,12 @@ class ReviewRequest(BaseReviewRequestDetails):
         for group in groups:
             if group.is_accessible_by(user):
                 return True
+
+        logging.warning('Review Request pk=%d (display_id=%d) is not '
+                        'accessible by user %s because they are not directly '
+                        'listed as a reviewer, and none of the target groups '
+                        'are accessible by that user.',
+                        self.pk, self.display_id, user, request=request)
 
         return False
 

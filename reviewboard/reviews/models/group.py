@@ -1,5 +1,7 @@
 from __future__ import unicode_literals
 
+import logging
+
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.db import models
@@ -48,22 +50,38 @@ class Group(models.Model):
         _('incoming review request count'),
         initializer=_initialize_incoming_request_count)
 
-    invite_only = models.BooleanField(_('invite only'), default=False)
+    invite_only = models.BooleanField(
+        _('invite only'),
+        default=False,
+        help_text=_('If checked, only the users listed below will be able '
+                    'to view review requests sent to this group.'))
     visible = models.BooleanField(default=True)
 
     extra_data = JSONField(null=True)
 
     objects = ReviewGroupManager()
 
-    def is_accessible_by(self, user):
+    def is_accessible_by(self, user, request=None):
         """Returns true if the user can access this group."""
         if self.local_site and not self.local_site.is_accessible_by(user):
+            logging.warning('Group pk=%d (%s) is not accessible by user %s '
+                            'because its local_site is not accessible by '
+                            'that user.',
+                            self.pk, self.name, user, request=request)
             return False
 
-        return (not self.invite_only or
-                user.is_superuser or
-                (user.is_authenticated() and
-                 self.users.filter(pk=user.pk).count() > 0))
+        if not self.invite_only or user.is_superuser:
+            return True
+
+        if user.is_authenticated() and self.users.filter(pk=user.pk).exists():
+            return True
+
+        logging.warning('Group pk=%d (%s) is not accessible by user %s '
+                        'because it is invite only, and the user is not a '
+                        'member.',
+                        self.pk, self.name, user, request=request)
+
+        return False
 
     def is_mutable_by(self, user):
         """Returns whether or not the user can modify or delete the group.

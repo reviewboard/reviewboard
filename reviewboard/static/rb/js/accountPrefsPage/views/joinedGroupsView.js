@@ -270,15 +270,19 @@ RB.JoinedGroupsView = Backbone.View.extend({
         this._$search = this.$('.search input');
 
         _.each(this.groups, function(groups, localSiteName) {
-            var view = new SiteGroupsView({
-                name: localSiteName,
-                groups: groups
-            });
+            var view;
 
-            view.$el.appendTo(this._$listsContainer);
-            view.render();
+            if (groups.length > 0) {
+                view = new SiteGroupsView({
+                    name: localSiteName,
+                    groups: groups
+                });
 
-            this._groupViews.push(view);
+                view.$el.appendTo(this._$listsContainer);
+                view.render();
+
+                this._groupViews.push(view);
+            }
         }, this);
 
         return this;

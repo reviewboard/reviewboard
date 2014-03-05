@@ -33,6 +33,7 @@
  <div class="form-row">
   <label></label>
   <form method="POST" action=".">
+   {% csrf_token %}
    {{form.delete_key}}
    <input type="submit" value="{% trans "Delete Key" %}" />
   </form>
@@ -54,6 +55,7 @@
   {% endblocktrans %}
   </p>
   <form method="POST" action=".">
+   {% csrf_token %}
    {{form.generate_key}}
    <input type="submit" value="{% trans "Generate Key" %}" />
   </form>
@@ -67,6 +69,7 @@
   {% endblocktrans %}
   </p>
   <form method="POST" action="." enctype="multipart/form-data">
+   {% csrf_token %}
    {{form.keyfile.errors}}
    {{form.keyfile}}<br />
    <input type="submit" value="{% trans "Upload Key" %}" />

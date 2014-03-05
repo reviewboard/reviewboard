@@ -44,15 +44,22 @@ MySQL Packet Size
 =================
 
 Viewing very large diffs can cause a problem where queries exceed the default
-MySQL packet size (16M). One way around this issue is to change the value of the
-max_allowed_packet variable. To do this, connect to your database using the
-mysql command-line interface:
+MySQL packet size (16MB).
 
-shell$ mysql -- max_allowed_packet=32M
+This can be changed through the ``max_allowed_packet`` configuration variable.
+You can set this on the database by editing :file:`/etc/my.cnf` and setting::
 
-This will set the maximum packet size to 32M.
+    [mysqld]
+    max_allowed_packet=32M
 
-However, diffs larger than a megabyte are nearly impossible for ordinary humans
+You can set this value to any number you need, in megabytes.
+
+If you only need to set this for a session, such as when dumping your
+database, you can instead pass this on the command line::
+
+    $ mysqldump --max-allowed-packet=32M
+
+Diffs larger than a megabyte are nearly impossible for ordinary humans
 to review and can slow down the server in other ways. Reviews with such large
 diffs are almost always caused by some intermediate build step such as
 auto-generated or emitted code. A better solution is to be more careful about
