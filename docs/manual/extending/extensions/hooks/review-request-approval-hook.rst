@@ -45,7 +45,7 @@ Example
 
 
     class SampleApprovalHook(ReviewRequestApprovalHook):
-        def is_approved(self, review_request, prev_approved):
+        def is_approved(self, review_request, prev_approved, prev_failure):
             # Require at least 2 Ship It!'s from everyone but Bob. Bob needs
             # at least 3.
             if not prev_approved:
