@@ -212,7 +212,7 @@ class ReviewRequestApprovalHook(ExtensionHook):
     review request approval, which may impact any scripts integrating
     with Review Board to, for example, allow committing to a repository.
     """
-    def is_approved(self, review_request, prev_approved):
+    def is_approved(self, review_request, prev_approved, prev_failure):
         """Determines if the review request is approved.
 
         This function is provided with the review request and the previously
