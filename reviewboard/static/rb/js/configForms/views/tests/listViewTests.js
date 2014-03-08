@@ -76,5 +76,5 @@ describe('configForms/views/ListView', function() {
             expect($items.eq(0).text().strip()).toBe('Foo');
             expect($items.eq(1).text().strip()).toBe('Bar');
         });
-    })
+    });
 });

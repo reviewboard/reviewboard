@@ -59,16 +59,14 @@ RB.Config.ListItemView = Backbone.View.extend({
      */
     addActions: function($parentEl) {
         _.each(this.model.actions, function(action) {
-            var actionHandlerName = this.actionHandlers[action.id],
-                $action = this._buildActionEl(action)
-                    .appendTo($parentEl);
+            var $action = this._buildActionEl(action).appendTo($parentEl);
 
             if (action.children) {
                 if (action.label) {
                     $action.append(' &blacktriangledown;');
                 }
 
-                $action.click(_.bind(function(e) {
+                $action.click(_.bind(function() {
                     /*
                      * Show the dropdown after we let this event propagate.
                      */
@@ -113,19 +111,21 @@ RB.Config.ListItemView = Backbone.View.extend({
      * If the action's type is "checkbox", a checkbox will be shown. Otherwise,
      * the action will be shown as a button.
      */
-    _buildActionEl: function(action, $parentEl) {
+    _buildActionEl: function(action) {
         var actionHandlerName = (action.enabled !== false
                                  ? this.actionHandlers[action.id]
                                  : null),
-            $result;
+            $action,
+            $result,
+            checkboxID;
 
-        if (action.type == 'checkbox') {
-            var checkboxID = _.uniqueId('action_check'),
-                $action = $('<input/>')
-                    .attr({
-                        type: "checkbox",
-                        id: checkboxID
-                    });
+        if (action.type === 'checkbox') {
+            checkboxID = _.uniqueId('action_check');
+            $action = $('<input/>')
+                .attr({
+                    type: "checkbox",
+                    id: checkboxID
+                });
 
             $result = $('<span/>')
                 .append($action)

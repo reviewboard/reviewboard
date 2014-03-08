@@ -180,7 +180,7 @@ DraftBannerView = BannerView.extend({
         _.super(this).initialize.apply(this, arguments);
 
         if (this.reviewRequest.get('public')) {
-            this.title = 'This review request is a draft.'
+            this.title = 'This review request is a draft.';
             this.actions = [
                 {
                     id: 'btn-draft-publish',
@@ -808,16 +808,21 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
     buildFileAttachmentThumbnail: function(fileAttachment, collection,
                                            options) {
         var fileAttachmentComments = this.model.get('fileAttachmentComments'),
-            options = options || {},
-            $thumbnail = options.$el,
-            view = new RB.FileAttachmentThumbnail({
-                el: $thumbnail,
-                model: fileAttachment,
-                comments: fileAttachmentComments[fileAttachment.id],
-                renderThumbnail: ($thumbnail === undefined),
-                reviewRequest: this.model.get('reviewRequest'),
-                canEdit: (options.canEdit !== false)
-            });
+            $thumbnail,
+            view;
+
+        options = options || {};
+
+        $thumbnail = options.$el;
+
+        view = new RB.FileAttachmentThumbnail({
+            el: $thumbnail,
+            model: fileAttachment,
+            comments: fileAttachmentComments[fileAttachment.id],
+            renderThumbnail: ($thumbnail === undefined),
+            reviewRequest: this.model.get('reviewRequest'),
+            canEdit: (options.canEdit !== false)
+        });
 
         view.render();
 
@@ -1072,7 +1077,7 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
          * Reset all the heights so we can do calculations based on their
          * native sizes.
          */
-        this._$main.height('auto')
+        this._$main.height('auto');
         $lastContent.height('auto');
         $lastEditable.height('auto');
 

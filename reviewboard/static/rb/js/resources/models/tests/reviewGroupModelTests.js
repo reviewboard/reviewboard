@@ -68,8 +68,7 @@ describe('resources/models/ReviewGroup', function() {
     });
 
     describe('addUser', function() {
-        var url = '/api/groups/test-group/users/',
-            callbacks,
+        var callbacks,
             group;
 
         beforeEach(function() {
@@ -102,7 +101,7 @@ describe('resources/models/ReviewGroup', function() {
 
             expect(RB.apiCall).toHaveBeenCalled();
             expect($.ajax).toHaveBeenCalled();
-            expect(callbacks.success).toHaveBeenCalled()
+            expect(callbacks.success).toHaveBeenCalled();
         });
 
         it('Unloaded group', function() {
@@ -120,8 +119,7 @@ describe('resources/models/ReviewGroup', function() {
     });
 
     describe('removeUser', function() {
-        var url = '/api/groups/test-group/users/my-user/',
-            callbacks,
+        var callbacks,
             group;
 
         beforeEach(function() {
@@ -151,7 +149,7 @@ describe('resources/models/ReviewGroup', function() {
 
             expect(RB.apiCall).toHaveBeenCalled();
             expect($.ajax).toHaveBeenCalled();
-            expect(callbacks.success).toHaveBeenCalled()
+            expect(callbacks.success).toHaveBeenCalled();
         });
 
         it('Unloaded group', function() {

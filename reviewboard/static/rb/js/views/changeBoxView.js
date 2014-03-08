@@ -24,7 +24,7 @@ RB.ChangeBoxView = RB.CollapsableBoxView.extend({
                     numDeletes: $row.data('delete-count'),
                     numReplaces: $row.data('replace-count'),
                     totalLines: $row.data('total-line-count')
-                })
+                });
 
             iconView.$el.appendTo($row.find('.diff-file-icon'));
             iconView.render();

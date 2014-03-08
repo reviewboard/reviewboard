@@ -55,7 +55,7 @@ RB.ReviewBoxListView = Backbone.View.extend({
 
             review.set({
                 shipIt: $review.data('ship-it'),
-                public: true,
+                'public': true,
                 bodyTop: $body.children('.body_top').text(),
                 bodyBottom: $body.children('.body_bottom').text()
             });

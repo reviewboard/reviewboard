@@ -14,7 +14,7 @@ RB.DiffFile = Backbone.Model.extend({
         interfilediff: null,
         newfile: false,
         forceInterdiff: null,
-        forceInterdiffRevision: null,
+        forceInterdiffRevision: null
     },
 
     /*

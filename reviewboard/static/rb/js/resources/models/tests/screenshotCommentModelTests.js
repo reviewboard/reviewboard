@@ -7,7 +7,7 @@ describe('resources/models/ScreenshotComment', function() {
         model = new RB.ScreenshotComment({
             screenshotID: 16,
             parentObject: new RB.BaseResource({
-                public: true
+                'public': true
             }),
             x: 0,
             y: 0,

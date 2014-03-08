@@ -4,7 +4,7 @@ describe('resources/models/Screenshot', function() {
 
     beforeEach(function(){
         parentObject = new RB.BaseResource({
-            public: true
+            'public': true
         });
 
         model = new RB.Screenshot({

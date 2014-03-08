@@ -175,7 +175,7 @@ RB.ReviewReplyEditorView = Backbone.View.extend({
             .find('time.timesince')
                 .timesince()
             .end()
-            .appendTo(this._$commentsList)
+            .appendTo(this._$commentsList);
 
         if (options.text) {
             RB.formatText($el.find('.reviewtext'), options.text,

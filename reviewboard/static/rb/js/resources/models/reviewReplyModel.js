@@ -6,7 +6,7 @@
 RB.ReviewReply = RB.BaseResource.extend({
     defaults: _.defaults({
         review: null,
-        public: false,
+        'public': false,
         richText: false,
         bodyTop: null,
         bodyBottom: null,
@@ -39,7 +39,7 @@ RB.ReviewReply = RB.BaseResource.extend({
         return {
             bodyTop: rsp.body_top,
             bodyBottom: rsp.body_bottom,
-            public: rsp.public,
+            'public': rsp['public'],
             richText: rsp.text_type === 'markdown',
             timestamp: rsp.timestamp
         };

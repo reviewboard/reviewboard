@@ -43,7 +43,7 @@ describe('resources/models/DraftReviewRequest', function() {
     it('publish', function() {
         spyOn(RB, 'apiCall').andCallThrough();
         spyOn($, 'ajax').andCallFake(function(request) {
-            expect(request.data.public).toBe(1);
+            expect(request.data['public']).toBe(1);
 
             request.success({
                 stat: 'ok',
@@ -84,7 +84,7 @@ describe('resources/models/DraftReviewRequest', function() {
                 bugs_closed: 'bugsClosed',
                 changedescription: 'changeDescription',
                 description: 'description',
-                public: 'public',
+                'public': 'public',
                 text_type: 'markdown',
                 summary: 'summary',
                 target_groups: 'targetGroups',
@@ -99,7 +99,7 @@ describe('resources/models/DraftReviewRequest', function() {
         expect(data.bugsClosed).toBe('bugsClosed');
         expect(data.changeDescription).toBe('changeDescription');
         expect(data.description).toBe('description');
-        expect(data.public).toBe('public');
+        expect(data['public']).toBe('public');
         expect(data.richText).toBe(true);
         expect(data.summary).toBe('summary');
         expect(data.targetGroups).toBe('targetGroups');
