@@ -44,7 +44,7 @@ BaseCommentView = Backbone.View.extend({
 
         this._hookViews = [];
 
-        _.super(this).remove.call(this);
+        _super(this).remove.call(this);
     },
 
     /*

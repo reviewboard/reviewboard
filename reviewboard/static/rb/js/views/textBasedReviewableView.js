@@ -58,7 +58,7 @@ RB.TextBasedReviewableView = RB.FileAttachmentReviewableView.extend({
      * Removes the reviewable from the DOM.
      */
     remove: function() {
-        _.super(this).remove.call(this);
+        _super(this).remove.call(this);
 
         this._textSelector.remove();
         this._renderedSelector.remove();

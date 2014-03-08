@@ -36,7 +36,7 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
     initialize: function() {
         var url;
 
-        _.super(this).initialize.call(this);
+        _super(this).initialize.call(this);
 
         this._selectedAnchorIndex = -1;
         this._$anchors = $();
@@ -100,7 +100,7 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
      * Removes the view from the page.
      */
     remove: function() {
-        _.super(this).remove.call(this);
+        _super(this).remove.call(this);
 
         this._diffFileIndexView.remove();
     },
@@ -113,7 +113,7 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
             numDiffs = this.model.get('numDiffs'),
             revisionModel = this.model.get('revision');
 
-        _.super(this).render.call(this);
+        _super(this).render.call(this);
 
         $reviewRequest = this.$('.review-request');
 

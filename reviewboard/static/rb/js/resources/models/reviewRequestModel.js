@@ -338,7 +338,7 @@ RB.ReviewRequest = RB.BaseResource.extend({
 
             return result;
         } else {
-            return _.super(this).toJSON.apply(this, arguments);
+            return _super(this).toJSON.apply(this, arguments);
         }
     },
 

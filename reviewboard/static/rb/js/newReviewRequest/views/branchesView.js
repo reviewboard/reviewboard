@@ -19,7 +19,7 @@ RB.BranchesView = RB.CollectionView.extend({
      * Render the view.
      */
     render: function() {
-        _.super(this).render.apply(this, arguments);
+        _super(this).render.apply(this, arguments);
 
         this.collection.each(function(branch) {
             if (branch.get('isDefault')) {
@@ -37,7 +37,7 @@ RB.BranchesView = RB.CollectionView.extend({
      * 'master' in git), start with it selected.
      */
     _add: function(branch) {
-        _.super(this)._add.apply(this, arguments);
+        _super(this)._add.apply(this, arguments);
 
         if (this._rendered && branch.get('isDefault')) {
             this.trigger('selected', branch);

@@ -26,7 +26,7 @@ RB.ValidateDiffModel = RB.Diff.extend({
     },
 
     toJSON: function() {
-        var payload = _.super(this).toJSON.apply(this, arguments);
+        var payload = _super(this).toJSON.apply(this, arguments);
         payload.repository = this.get('repository');
         return payload;
     },

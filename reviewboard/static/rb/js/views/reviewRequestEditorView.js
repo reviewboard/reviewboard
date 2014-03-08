@@ -177,7 +177,7 @@ DraftBannerView = BannerView.extend({
      * Initializes the banner.
      */
     initialize: function() {
-        _.super(this).initialize.apply(this, arguments);
+        _super(this).initialize.apply(this, arguments);
 
         if (this.reviewRequest.get('public')) {
             this.title = 'This review request is a draft.';

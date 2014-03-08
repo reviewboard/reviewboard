@@ -86,7 +86,7 @@ RB.FileAttachmentComment = RB.BaseComment.extend({
             return strings.INVALID_FILE_ATTACHMENT_ID;
         }
 
-        return _.super(this).validate.call(this, attrs, options);
+        return _super(this).validate.call(this, attrs, options);
     }
 }, {
     strings: {

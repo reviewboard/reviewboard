@@ -25,7 +25,7 @@ RB.PreCommitModel = Backbone.Model.extend({
      * Initialize the model.
      */
     initialize: function() {
-        _.super(this).initialize.apply(this, arguments);
+        _super(this).initialize.apply(this, arguments);
 
         this.on('change:diffFile change:basedir change:changeNumber ' +
                 'change:diffValid',

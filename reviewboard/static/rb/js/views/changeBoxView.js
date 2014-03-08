@@ -13,7 +13,7 @@ RB.ChangeBoxView = RB.CollapsableBoxView.extend({
     render: function() {
         var $text = this.$('.changedesc-text');
 
-        _.super(this).render.call(this);
+        _super(this).render.call(this);
 
         RB.formatText($text, $text.text());
 

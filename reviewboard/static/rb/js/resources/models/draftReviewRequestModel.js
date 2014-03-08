@@ -97,7 +97,7 @@ RB.DraftReviewRequest = RB.BaseResource.extend(_.defaults({
             }
         }
 
-        return _.super(this).validate.call(this, attrs, options);
+        return _super(this).validate.call(this, attrs, options);
     },
 
     parseResourceData: function(rsp) {
