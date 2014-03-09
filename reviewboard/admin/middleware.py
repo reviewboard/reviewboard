@@ -45,7 +45,8 @@ class LoadSettingsMiddleware(object):
         # Load all site settings.
         siteconfig = load_site_config()
 
-        if siteconfig.settings.get('site_domain_method', 'http') == 'https':
+        if (siteconfig and
+            siteconfig.settings.get('site_domain_method', 'http') == 'https'):
             request.META['wsgi.url_scheme'] = 'https'
 
 

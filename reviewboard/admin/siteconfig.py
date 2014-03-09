@@ -31,6 +31,7 @@
 
 from __future__ import unicode_literals
 
+import logging
 import os
 import re
 
@@ -199,9 +200,10 @@ def load_site_config():
         raise ImproperlyConfigured(
             "The site configuration entry does not exist in the database. "
             "Re-run `./manage.py` syncdb to fix this.")
-    except:
+    except Exception as e:
         # We got something else. Likely, this doesn't exist yet and we're
         # doing a syncdb or something, so silently ignore.
+        logging.error('Could not load siteconfig: %s' % e)
         return
 
     # Populate defaults if they weren't already set.
