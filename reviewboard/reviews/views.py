@@ -75,16 +75,12 @@ def _render_permission_denied(
     return response
 
 
-def _find_review_request(request, review_request_id, local_site):
-    """
-    Find a review request based on an ID, optional LocalSite name and optional
-    select related query.
+def _find_review_request_object(review_request_id, local_site):
+    """Finds a review request given an ID and an optional LocalSite name.
 
     If a local site is passed in on the URL, we want to look up the review
     request using the local_id instead of the pk. This allows each LocalSite
     configured to have its own review request ID namespace starting from 1.
-
-    Returns either (None, response) or (ReviewRequest, None).
     """
     q = ReviewRequest.objects.all()
 
@@ -96,9 +92,18 @@ def _find_review_request(request, review_request_id, local_site):
 
     try:
         q = q.select_related('submitter', 'repository')
-        review_request = q.get()
+        return q.get()
     except ReviewRequest.DoesNotExist:
         raise Http404
+
+
+def _find_review_request(request, review_request_id, local_site):
+    """Finds a review request matching an ID, checking user access permissions.
+
+    If the review request is accessible by the user, we return
+    (ReviewRequest, None). Otherwise, we return (None, response).
+    """
+    review_request = _find_review_request_object(review_request_id, local_site)
 
     if review_request.is_accessible_by(request.user):
         return review_request, None
