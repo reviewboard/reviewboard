@@ -1,6 +1,5 @@
 describe('resources/models/FileAttachmentComment', function() {
-    var strings = RB.FileAttachmentComment.strings,
-        baseStrings = RB.BaseResource.strings,
+    var baseStrings = RB.BaseResource.strings,
         model;
 
     beforeEach(function() {
@@ -8,7 +7,7 @@ describe('resources/models/FileAttachmentComment', function() {
         model = new RB.FileAttachmentComment({
             fileAttachmentID: 16,
             parentObject: new RB.BaseResource({
-                public: true
+                'public': true
             })
         });
     });

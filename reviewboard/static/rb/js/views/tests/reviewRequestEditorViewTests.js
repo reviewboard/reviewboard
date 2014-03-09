@@ -74,7 +74,7 @@ describe('views/ReviewRequestEditorView', function() {
 
         reviewRequest = new RB.ReviewRequest({
             id: 123,
-            public: true,
+            'public': true,
             state: RB.ReviewRequest.PENDING
         });
 
@@ -503,9 +503,8 @@ describe('views/ReviewRequestEditorView', function() {
                         reviewRequest.draft.set('changeDescription',
                                                 'Testing /r/123');
 
-                        expect($field.html()).toBe(
-                            '<p>Testing <a href="/r/123/" target="_blank">' +
-                            '/r/123</a></p>');
+                        expect($field.text()).toBe('Testing /r/123');
+                        expect($field.find('a').attr('href')).toBe('/r/123/');
                     });
 
                     it('Markdown', function() {
@@ -561,9 +560,8 @@ describe('views/ReviewRequestEditorView', function() {
                 it('Links', function() {
                     reviewRequest.draft.set('description', 'Testing /r/123');
 
-                    expect($field.html()).toBe(
-                        '<p>Testing <a href="/r/123/" target="_blank">' +
-                        '/r/123</a></p>');
+                    expect($field.text()).toBe('Testing /r/123');
+                    expect($field.find('a').attr('href')).toBe('/r/123/');
                 });
 
                 it('Markdown', function() {
@@ -602,9 +600,8 @@ describe('views/ReviewRequestEditorView', function() {
                 it('Links', function() {
                     reviewRequest.draft.set('testingDone', 'Testing /r/123');
 
-                    expect($field.html()).toBe(
-                        '<p>Testing <a href="/r/123/" target="_blank">' +
-                        '/r/123</a></p>');
+                    expect($field.text()).toBe('Testing /r/123');
+                    expect($field.find('a').attr('href')).toBe('/r/123/');
                 });
 
                 it('Markdown', function() {
@@ -672,9 +669,9 @@ describe('views/ReviewRequestEditorView', function() {
                         }
                     ]);
 
-                    expect($field.html()).toBe(
-                        '<a href="/users/user1/" class="user">user1</a>, ' +
-                        '<a href="/users/user2/" class="user">user2</a>');
+                    expect($field.text()).toBe('user1, user2');
+                    expect($($field.children()[0]).attr('href')).toBe('/users/user1/');
+                    expect($($field.children()[1]).attr('href')).toBe('/users/user2/');
                 });
 
                 editCountTests();

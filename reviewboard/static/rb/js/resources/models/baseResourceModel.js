@@ -634,7 +634,7 @@ RB.BaseResource = Backbone.Model.extend({
      *
      * By default, this validates the extraData field, if provided.
      */
-    validate: function(attrs, options) {
+    validate: function(attrs) {
         var strings = RB.BaseResource.strings,
             value,
             key;

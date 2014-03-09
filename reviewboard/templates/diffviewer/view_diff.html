@@ -32,9 +32,9 @@
  <ul class="actions">
 {%    include "reviews/review_request_actions_secondary.html" %}
 {%    diffviewer_action_hooks %}
-  <li class="primary" id="download-diff"><a href="raw/">{% trans "Download Diff" %}</a></li>
+  <li class="primary" id="download-diff" {% if interdiffset %}style="display: none;"{% endif %}><a href="raw/">{% trans "Download Diff" %}</a></li>
 {%    include "reviews/review_request_actions_primary.html" %}
-  <li class="primary" {% if interdiffset %}style="display: none;"{% endif %}><a href="{{review_request.get_absolute_url}}">{% trans "View Reviews" %}</a></li>
+  <li class="primary"><a href="{{review_request.get_absolute_url}}">{% trans "View Reviews" %}</a></li>
  </ul>
 </div>
 

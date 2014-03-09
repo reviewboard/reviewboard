@@ -12,7 +12,7 @@ RB.ReviewBoxView = RB.CollapsableBoxView.extend({
         this._replyEditorViews = [];
         this._draftBannerShown = false;
         this._$banners = null;
-        this._openIssueCount = 0
+        this._openIssueCount = 0;
 
         this._setupNewReply(this.options.reviewReply);
     },

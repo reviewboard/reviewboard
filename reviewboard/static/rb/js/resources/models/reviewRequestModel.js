@@ -23,7 +23,7 @@ RB.ReviewRequest = RB.BaseResource.extend({
         draftReview: null,
         lastUpdated: null,
         localSitePrefix: null,
-        public: null,
+        'public': null,
         repository: null,
         reviewURL: null,
         richText: false,
@@ -338,7 +338,7 @@ RB.ReviewRequest = RB.BaseResource.extend({
 
             return result;
         } else {
-            return _.super(this).toJSON.apply(this, arguments);
+            return _super(this).toJSON.apply(this, arguments);
         }
     },
 
@@ -358,7 +358,7 @@ RB.ReviewRequest = RB.BaseResource.extend({
             dependsOn: rsp.depends_on,
             description: rsp.description,
             lastUpdated: rsp.last_updated,
-            public: rsp.public,
+            'public': rsp['public'],
             reviewURL: rsp.url,
             richText: rsp.text_type === 'markdown',
             summary: rsp.summary,

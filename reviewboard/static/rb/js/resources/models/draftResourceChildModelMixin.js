@@ -15,7 +15,7 @@ RB.DraftResourceChildModelMixin = {
         options = options || {};
 
         this.get('parentObject').ensureCreated({
-            success: _.bind(_.super(this).destroy, this, options, context),
+            success: _.bind(_super(this).destroy, this, options, context),
             error: options.error
         }, context);
     },
@@ -30,7 +30,7 @@ RB.DraftResourceChildModelMixin = {
         options = options || {};
 
         this.get('parentObject').ensureCreated({
-            success: _.bind(_.super(this).ready, this, options, context),
+            success: _.bind(_super(this).ready, this, options, context),
             error: options.error
         }, context);
     }

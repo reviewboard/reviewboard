@@ -6,7 +6,7 @@ describe('resources/models/DiffComment', function() {
         model = new RB.DiffComment({
             fileDiffID: 16,
             parentObject: new RB.BaseResource({
-                public: true
+                'public': true
             })
         });
     });

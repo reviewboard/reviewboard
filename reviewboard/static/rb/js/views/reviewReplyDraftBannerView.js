@@ -22,7 +22,7 @@ RB.ReviewReplyDraftBannerView = RB.FloatingBannerView.extend({
      * Renders the banner.
      */
     render: function() {
-        _.super(this).render.call(this);
+        _super(this).render.call(this);
 
         this.$el.html(this.template({
             draftText: gettext('This reply is a draft.')

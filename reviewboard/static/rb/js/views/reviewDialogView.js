@@ -44,7 +44,7 @@ BaseCommentView = Backbone.View.extend({
 
         this._hookViews = [];
 
-        _.super(this).remove.call(this);
+        _super(this).remove.call(this);
     },
 
     /*
@@ -580,7 +580,7 @@ RB.ReviewDialogView = Backbone.View.extend({
                 shipIt: this._$shipIt.prop('checked'),
                 bodyTop: this._bodyTopEditor.getText(),
                 bodyBottom: this._bodyBottomEditor.getText(),
-                public: publish,
+                'public': publish,
                 richText: true
             });
 

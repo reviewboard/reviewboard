@@ -14,7 +14,7 @@ RB.RepositorySelectionView = RB.CollectionView.extend({
      * Initialize the view.
      */
     initialize: function() {
-        _.super(this).initialize.apply(this, arguments);
+        _super(this).initialize.apply(this, arguments);
 
         this._selected = null;
         this._searchActive = false;
@@ -26,7 +26,7 @@ RB.RepositorySelectionView = RB.CollectionView.extend({
      * Render the view.
      */
     render: function() {
-        _.super(this).render.apply(this, arguments);
+        _super(this).render.apply(this, arguments);
 
         this._$header = $('<h3>')
             .text(gettext('Repositories'))

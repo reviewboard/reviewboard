@@ -118,7 +118,7 @@ RB.MarkdownEditorView = Backbone.View.extend({
             codeMirrorOptions.viewportMargin = Infinity;
         }
 
-        this._codeMirror = CodeMirror(this.el, codeMirrorOptions);
+        this._codeMirror = new CodeMirror(this.el, codeMirrorOptions);
         this._codeMirror.setValue(this._value);
         this._value = '';
         this._prevClientHeight = null;
@@ -205,11 +205,11 @@ RB.MarkdownEditorView = Backbone.View.extend({
                 markdownEditor.setText(value);
             },
 
-            getFieldValue: function(editor) {
+            getFieldValue: function() {
                 return markdownEditor.getText();
             },
 
-            isFieldDirty: function(editor) {
+            isFieldDirty: function() {
                 return markdownEditor.isDirty();
             }
         };

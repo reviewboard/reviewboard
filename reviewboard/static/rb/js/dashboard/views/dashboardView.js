@@ -352,7 +352,7 @@ RB.DashboardView = Backbone.View.extend({
 
             this._setupDashboard();
 
-            if (!periodicReload === false) {
+            if (periodicReload !== false) {
                 this._startReloadTimer();
             }
         }, this));

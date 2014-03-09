@@ -182,8 +182,8 @@ describe('configForms/views/ListItemView', function() {
                 }),
                 $button;
 
-            itemView.actionHandlers['mybutton'] = '_onMyButtonClick';
-            itemView._onMyButtonClick = function() {}
+            itemView.actionHandlers.mybutton = '_onMyButtonClick';
+            itemView._onMyButtonClick = function() {};
             spyOn(itemView, '_onMyButtonClick');
 
             itemView.render();
@@ -213,8 +213,8 @@ describe('configForms/views/ListItemView', function() {
                 }),
                 $checkbox;
 
-            itemView.actionHandlers['mybutton'] = '_onMyButtonClick';
-            itemView._onMyButtonClick = function() {}
+            itemView.actionHandlers.mybutton = '_onMyButtonClick';
+            itemView._onMyButtonClick = function() {};
             spyOn(itemView, '_onMyButtonClick');
 
             itemView.render();

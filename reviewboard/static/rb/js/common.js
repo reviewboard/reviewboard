@@ -329,7 +329,7 @@ $.fn.searchAutoComplete = function() {
                             value: value[values[j]],
                             result: value[values[j]]
                         });
-                    } else if (value.public) {
+                    } else if (value['public']) {
                         // Only show review requests that are public
                         value.url = SITE_ROOT + "r/" + value.id;
                         parsed.push({
@@ -408,7 +408,7 @@ $.fn.user_infobox = function() {
                     clearTimeout(timeout);
                 }
             },
-            mouseout: function(e) {
+            mouseout: function() {
                 clearTimeout(timeout);
 
                 if (infobox.is(':visible')) {

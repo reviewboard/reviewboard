@@ -16,7 +16,7 @@ RB.CommitsView = RB.CollectionView.extend({
      * handler.
      */
     render: function() {
-        _.super(this).render.call(this);
+        _super(this).render.call(this);
 
         $('#new-review-request .main').scroll(_.bind(this._onScroll, this));
 

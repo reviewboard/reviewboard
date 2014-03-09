@@ -11,7 +11,7 @@ RB.DraftReviewRequest = RB.BaseResource.extend(_.defaults({
         changeDescription: null,
         dependsOn: [],
         description: null,
-        public: null,
+        'public': null,
         richText: false,
         summary: null,
         targetGroups: [],
@@ -67,7 +67,7 @@ RB.DraftReviewRequest = RB.BaseResource.extend(_.defaults({
                     this.save(
                         _.defaults({
                             data: {
-                                public: 1
+                                'public': 1
                             }
                         }, options),
                         context);
@@ -97,7 +97,7 @@ RB.DraftReviewRequest = RB.BaseResource.extend(_.defaults({
             }
         }
 
-        return _.super(this).validate.call(this, attrs, options);
+        return _super(this).validate.call(this, attrs, options);
     },
 
     parseResourceData: function(rsp) {
@@ -107,7 +107,7 @@ RB.DraftReviewRequest = RB.BaseResource.extend(_.defaults({
             changeDescription: rsp.changedescription,
             dependsOn: rsp.depends_on,
             description: rsp.description,
-            public: rsp.public,
+            'public': rsp['public'],
             richText: rsp.text_type === 'markdown',
             summary: rsp.summary,
             targetGroups: rsp.target_groups,

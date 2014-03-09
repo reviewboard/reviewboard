@@ -34,6 +34,6 @@ _.bindCallbacks = function(callbacks, context, methodNames) {
 /*
  * Returns the parent prototype for an object.
  */
-_.super = function(obj) {
+_super = function(obj) {
     return Object.getPrototypeOf(Object.getPrototypeOf(obj));
 };

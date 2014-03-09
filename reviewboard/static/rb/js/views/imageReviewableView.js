@@ -170,7 +170,7 @@ ImageDifferenceDiffView = BaseImageView.extend({
      * Initializes the view.
      */
     initialize: function() {
-        _.super(this).initialize.call(this);
+        _super(this).initialize.call(this);
 
         this._origImage = null;
         this._modifiedImage = null;
@@ -279,7 +279,7 @@ ImageOnionDiffView = BaseImageView.extend({
      * Initializes the view.
      */
     initialize: function() {
-        _.super(this).initialize.call(this);
+        _super(this).initialize.call(this);
 
         this._$origImage = null;
         this._$modifiedImage = null;
@@ -292,7 +292,7 @@ ImageOnionDiffView = BaseImageView.extend({
      * This will set up the slider and set it to a default of 25% opacity.
      */
     render: function() {
-        _.super(this).render.call(this);
+        _super(this).render.call(this);
 
         this.$commentRegion = this.$('.image-containers');
         this._$origImage = this.$('.orig-image img');
@@ -382,7 +382,7 @@ ImageSplitDiffView = BaseImageView.extend({
      * Initializes the view.
      */
     initialize: function() {
-        _.super(this).initialize.call(this);
+        _super(this).initialize.call(this);
 
         this._$modifiedImage = null;
         this._$origImage = null;
@@ -398,7 +398,7 @@ ImageSplitDiffView = BaseImageView.extend({
      * This will set up the slider and set it to a default of 25%.
      */
     render: function() {
-        _.super(this).render.call(this);
+        _super(this).render.call(this);
 
         this.$commentRegion = this.$('.image-containers');
         this._$origImage = this.$('.orig-image img');
@@ -502,7 +502,7 @@ ImageTwoUpDiffView = BaseImageView.extend({
      * Renders the view.
      */
     render: function() {
-        _.super(this).render.call(this);
+        _super(this).render.call(this);
 
         this.$commentRegion = this.$('.modified-image img');
 

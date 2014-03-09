@@ -72,7 +72,7 @@ RB.ChunkHighlighterView = Backbone.View.extend({
      * Removes the highlighter from the page and disconnects all events.
      */
     remove: function() {
-        _.super(this).remove.call(this);
+        _super(this).remove.call(this);
 
         $(window).off(this.cid);
     },

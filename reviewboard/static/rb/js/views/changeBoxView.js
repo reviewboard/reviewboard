@@ -13,7 +13,7 @@ RB.ChangeBoxView = RB.CollapsableBoxView.extend({
     render: function() {
         var $text = this.$('.changedesc-text');
 
-        _.super(this).render.call(this);
+        _super(this).render.call(this);
 
         RB.formatText($text, $text.text());
 
@@ -24,7 +24,7 @@ RB.ChangeBoxView = RB.CollapsableBoxView.extend({
                     numDeletes: $row.data('delete-count'),
                     numReplaces: $row.data('replace-count'),
                     totalLines: $row.data('total-line-count')
-                })
+                });
 
             iconView.$el.appendTo($row.find('.diff-file-icon'));
             iconView.render();

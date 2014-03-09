@@ -7,7 +7,7 @@
 RB.Review = RB.BaseResource.extend({
     defaults: _.defaults({
         shipIt: false,
-        public: false,
+        'public': false,
         richText: false,
         bodyTop: null,
         bodyBottom: null,
@@ -30,7 +30,7 @@ RB.Review = RB.BaseResource.extend({
         };
 
         if (this.get('public')) {
-            data.public = 1;
+            data['public'] = 1;
         }
 
         return data;
@@ -41,7 +41,7 @@ RB.Review = RB.BaseResource.extend({
             shipIt: rsp.ship_it,
             bodyTop: rsp.body_top,
             bodyBottom: rsp.body_bottom,
-            public: rsp.public,
+            'public': rsp['public'],
             richText: rsp.text_type === 'markdown',
             timestamp: rsp.timestamp
         };

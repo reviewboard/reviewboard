@@ -19,7 +19,7 @@ RB.DraftResourceModelMixin = {
      */
     ready: function(options, context) {
         var self = this,
-            sup = _.super(this);
+            sup = _super(this);
 
         if (!this.get('loaded') && this.isNew() &&
             this._needDraft === undefined) {
@@ -57,7 +57,7 @@ RB.DraftResourceModelMixin = {
         this.ready(
             _.defaults({
                 ready: function() {
-                    _.super(this).destroy.call(
+                    _super(this).destroy.call(
                         this,
                         _.defaults({
                             success: function() {
@@ -111,7 +111,7 @@ RB.DraftResourceModelMixin = {
              */
             return links[linkName].href + 'draft/?' + $.now();
         } else {
-            return _.super(this).url.call(this);
+            return _super(this).url.call(this);
         }
     },
 

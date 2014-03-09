@@ -28,7 +28,7 @@ if (marked !== undefined) {
  * Otherwise, if it's not expected and won't be converted, then it will add
  * links to review requests and bug trackers but otherwise leave the text alone.
  */
-RB.formatText = function($el, text, bugTrackerURL, options) {
+RB.formatText = function($el, text, bugTrackerURL) {
     var markedUp = text;
 
     if ($el.data('rich-text')) {

@@ -27,7 +27,7 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
      * Initializes the reviewable for a file's diff.
      */
     initialize: function() {
-        _.super(this).initialize.call(this);
+        _super(this).initialize.call(this);
 
         _.bindAll(this, '_updateCollapseButtonPos');
 
@@ -64,7 +64,7 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
      * Renders the reviewable.
      */
     render: function() {
-        _.super(this).render.call(this);
+        _super(this).render.call(this);
 
         this._selector.render();
 

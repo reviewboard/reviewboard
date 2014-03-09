@@ -54,22 +54,12 @@ RB.BaseComment = RB.BaseResource.extend({
                 text_type: this.get('richText') ? 'markdown' : 'plain',
                 text: this.get('text')
             }, RB.BaseResource.prototype.toJSON.call(this)),
-            parentObject,
-            isPublic;
+            parentObject;
 
         if (this.get('loaded')) {
             parentObject = this.get('parentObject');
 
-            /*
-             * XXX This is temporary to support older-style resource
-             *     objects. We should just use get() once we're moved
-             *     entirely onto BaseResource.
-             */
-            isPublic = parentObject.cid
-                       ? parentObject.get('public')
-                       : parentObject.public;
-
-            if (isPublic) {
+            if (parentObject.get('public')) {
                 data.issue_status = this.get('issueStatus');
             }
         }
