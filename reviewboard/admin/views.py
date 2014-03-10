@@ -14,11 +14,13 @@ from django.views.decorators.csrf import csrf_protect
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.siteconfig.views import site_settings as djblets_site_settings
 
+from reviewboard.accounts.models import Profile
 from reviewboard.admin.cache_stats import get_cache_stats
 from reviewboard.admin.forms import SSHSettingsForm
 from reviewboard.admin.security_checks import SecurityCheckRunner
 from reviewboard.admin.support import get_support_url
-from reviewboard.admin.widgets import (dynamic_activity_data,
+from reviewboard.admin.widgets import (Widget,
+                                       dynamic_activity_data,
                                        primary_widgets,
                                        secondary_widgets)
 from reviewboard.ssh.client import SSHClient
@@ -31,11 +33,30 @@ def dashboard(request, template_name="admin/dashboard.html"):
     Displays the administration dashboard, containing news updates and
     useful administration tasks.
     """
+    profile = Profile.objects.get_or_create(user=request.user)[0]
+    profile_data = profile.extra_data
+
+    primary_widget_positions = profile_data.get('primary_widget_positions')
+    if primary_widget_positions:
+        sorted_primary_widgets = sorted(
+            primary_widgets,
+            key=lambda y: primary_widget_positions[y.widget_id])
+    else:
+        sorted_primary_widgets = primary_widgets
+
+    secondary_widget_positions = profile_data.get('secondary_widget_positions')
+    if secondary_widget_positions:
+        sorted_secondary_widgets = sorted(
+            secondary_widgets,
+            key=lambda y: secondary_widget_positions[y.widget_id])
+    else:
+        sorted_secondary_widgets = secondary_widgets
+
     return render_to_response(template_name, RequestContext(request, {
         'title': _("Admin Dashboard"),
         'root_path': settings.SITE_ROOT + "admin/db/",
-        'primary_widgets': primary_widgets,
-        'secondary_widgets': secondary_widgets,
+        'primary_widgets': sorted_primary_widgets,
+        'secondary_widgets': sorted_secondary_widgets,
     }))
 
 
@@ -145,6 +166,30 @@ def widget_toggle(request):
 
     return HttpResponse("")
 
+
+def widget_move(request):
+    """Saves state of widget positions in account profile"""
+    profile = Profile.objects.get_or_create(user=request.user)[0]
+    profile_data = profile.extra_data
+
+    widget_type = request.POST.get('type', None)
+
+    if widget_type == 'primary':
+        positions_key = 'primary_widget_positions'
+        widgets = primary_widgets
+    else:
+        positions_key = 'secondary_widget_positions'
+        widgets = secondary_widgets
+
+    positions = profile_data.setdefault(positions_key, {})
+
+    for widget in widgets:
+        widget_position = request.POST.get(widget.widget_id, None)
+        positions[widget.widget_id] = widget_position
+
+    profile.save()
+
+    return HttpResponse()
 
 def widget_activity(request):
     """

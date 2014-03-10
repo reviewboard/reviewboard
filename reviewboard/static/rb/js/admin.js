@@ -10,6 +10,65 @@ $(window).load(function() {
     });
 });
 
+function postWidgetPositions(widgetType, widgetSize) {
+    var positionData = {'type': widgetType};
+    $(".widget-" + widgetSize).each(function(index, element) {
+        positionData[element.id] = index;
+    });
+
+    $.ajax({
+        type: "POST",
+        url: 'widget-move/',
+        data: positionData
+    });
+}
+
+function makeDashboardSortable() {
+    $("#admin-widgets").sortable({
+        items: '.widget-large',
+        revert: true,
+        axis: 'y',
+        containment: 'parent',
+        stop: function() {
+            postWidgetPositions('primary', 'large');
+            $("#activity-graph-widget .btn-s").click(function() {
+                $(this).toggleClass("btn-s-checked");
+                getActivityData("same");
+            });
+        }
+    });
+}
+
+function makeSidebarSortable() {
+    $("#admin-extras").sortable({
+        items: '.widget-small',
+        revert: true,
+        axis: 'y',
+        containment: 'parent',
+        start: function(event, ui) {
+           /*
+            * Temporarily remove masonry to avoid conflicts with jQuery UI
+            * sortable.
+            */
+            ui.item.removeClass('widget-masonry-item');
+            ui.item.parent()
+                .masonry('reload');
+        },
+        change: function(event, ui) {
+            ui.item.parent().masonry('reload');
+        },
+        stop: function(event, ui) {
+            postWidgetPositions('secondary', 'small');
+            ui.item.addClass('widget-masonry-item');
+            ui.item.parent()
+                .masonry({
+                    itemSelector: '.widget-masonry-item'
+                })
+                .masonry('reload');
+        }
+    });
+}
+
 $(document).ready(function() {
     var adminExtras = $("#admin-extras");
 
@@ -24,33 +83,33 @@ $(document).ready(function() {
     }
 
     adminExtras.masonry({
-        itemSelector: '.admin-widget'
+        itemSelector: '.widget-masonry-item'
     });
 
     $(window).on('reflowWidgets resize', refreshWidgets);
     refreshWidgets();
 
     // Heading Toggle
-    $("#dashboard-view .widget-heading").click(function() {
-        var widgetBox = $(this).parent(),
-            widgetBoxId = widgetBox.attr('id'),
-            $stateIcon = widgetBox.find('.btn-state');
+    $("#dashboard-view .widget-heading .btn-state").click(function() {
+        var $stateIcon = $(this),
+            $widgetBox = $stateIcon.parents('.admin-widget'),
+            widgetBoxId = $widgetBox.attr('id');
 
-        widgetBox.find(".widget-content").slideToggle('fast', function() {
+        $widgetBox.find(".widget-content").slideToggle('fast', function() {
             var collapsed;
 
             adminExtras.masonry('reload');
 
-            if (widgetBox.hasClass("widget-hidden")) {
-                widgetBox.removeClass("widget-hidden");
+            if ($widgetBox.hasClass("widget-hidden")) {
+                $widgetBox.removeClass("widget-hidden");
                 collapsed = 0;
-                widgetBox.trigger("widget-shown");
+                $widgetBox.trigger("widget-shown");
                 $stateIcon
                     .removeClass('rb-icon-admin-expand')
                     .addClass('rb-icon-admin-collapse');
             } else {
-                widgetBox.addClass("widget-hidden");
-                widgetBox.trigger("widget-hidden");
+                $widgetBox.addClass("widget-hidden");
+                $widgetBox.trigger("widget-hidden");
                 collapsed = 1;
                 $stateIcon
                     .removeClass('rb-icon-admin-collapse')
@@ -61,4 +120,17 @@ $(document).ready(function() {
                    "&collapse=" + collapsed);
          });
     });
+
+   /*
+    * Calls methods to implement drag and drop
+    * for both large and small widgets
+    */
+    makeDashboardSortable();
+    makeSidebarSortable();
+
+    $(".widget-draggable")
+        .disableSelection()
+        .on('hover', function() {
+            $(this).css('cursor', 'move');
+        });
 });
