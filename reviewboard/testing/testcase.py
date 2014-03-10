@@ -234,7 +234,8 @@ class TestCase(DjbletsTestCase):
             diff=diff)
 
     def create_repository(self, with_local_site=False, name='Test Repo',
-                          tool_name='Git', path=None, **kwargs):
+                          tool_name='Git', path=None, local_site=None,
+                          **kwargs):
         """Creates a Repository for testing.
 
         The Repository may optionally be attached to a LocalSite. It's also
@@ -244,10 +245,11 @@ class TestCase(DjbletsTestCase):
         The correct bundled repository path will be used for the given
         tool_name.
         """
-        if with_local_site:
-            local_site = LocalSite.objects.get(name=self.local_site_name)
-        else:
-            local_site = None
+        if not local_site:
+            if with_local_site:
+                local_site = LocalSite.objects.get(name=self.local_site_name)
+            else:
+                local_site = None
 
         testdata_dir = os.path.join(os.path.dirname(scmtools.__file__),
                                     'testdata')
