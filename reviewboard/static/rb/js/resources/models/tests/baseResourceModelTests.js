@@ -964,8 +964,10 @@ describe('resources/models/BaseResource', function() {
         });
 
         it('With parentObject and model ID', function() {
-            model.set('parentObject', parentObject);
-            model.id = 123;
+            model.set({
+                parentObject: parentObject,
+                id: 123
+            });
 
             expect(model.url()).toBe('/api/foos/123/');
         });
