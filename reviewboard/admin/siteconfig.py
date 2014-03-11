@@ -31,7 +31,9 @@
 
 from __future__ import unicode_literals
 
+import logging
 import os
+import re
 
 from django.conf import settings, global_settings
 from django.core.exceptions import ImproperlyConfigured
@@ -190,15 +192,18 @@ def load_site_config():
         connections.connections_info = settings.HAYSTACK_CONNECTIONS
         connections._connections = {}
 
+    # If siteconfig needs to be saved back to the DB, set dirty=true
+    dirty = False
     try:
         siteconfig = SiteConfiguration.objects.get_current()
     except SiteConfiguration.DoesNotExist:
         raise ImproperlyConfigured(
             "The site configuration entry does not exist in the database. "
             "Re-run `./manage.py` syncdb to fix this.")
-    except:
+    except Exception as e:
         # We got something else. Likely, this doesn't exist yet and we're
         # doing a syncdb or something, so silently ignore.
+        logging.error('Could not load siteconfig: %s' % e)
         return
 
     # Populate defaults if they weren't already set.
@@ -282,6 +287,42 @@ def load_site_config():
         else:
             settings.AUTHENTICATION_BACKENDS = (builtin_backend,)
 
+        # If we're upgrading from a 1.x LDAP configuration, populate
+        # ldap_uid and clear ldap_uid_mask
+        if auth_backend_id == "ldap":
+            if not hasattr(settings, 'LDAP_UID'):
+                if hasattr(settings, 'LDAP_UID_MASK'):
+                    # Get the username attribute from the old UID mask
+                    # LDAP attributes can contain only alphanumeric
+                    # characters and the hyphen and must lead with an
+                    # alphabetic character. This is not dependent upon
+                    # locale.
+                    m = re.search("([a-zA-Z][a-zA-Z0-9-]+)=%s",
+                                  settings.LDAP_UID_MASK)
+                    if m:
+                        # Assign LDAP_UID the value of the retrieved attribute
+                        settings.LDAP_UID = m.group(1)
+                    else:
+                        # Couldn't match the old value?
+                        # This should be impossible, but in this case, let's
+                        # just guess a sane default and hope for the best.
+                        settings.LDAP_UID = 'uid'
+
+                else:
+                    # Neither the old nor new value?
+                    # This should be impossible, but in this case, let's just
+                    # guess a sane default and hope for the best.
+                    settings.LDAP_UID = 'uid'
+
+                # Remove the LDAP_UID_MASK value
+                settings.LDAP_UID_MASK = None
+
+                siteconfig.set('auth_ldap_uid', settings.LDAP_UID)
+                siteconfig.set('auth_ldap_uid_mask', settings.LDAP_UID_MASK)
+                # Set the dirty flag so we save this back
+                dirty = True
+
+
     # Set the storage backend
     storage_backend = siteconfig.settings.get('storage_backend', 'builtin')
 
@@ -307,6 +348,10 @@ def load_site_config():
         os.environ['HTTPS'] = 'on'
     else:
         os.environ['HTTPS'] = 'off'
+
+    # Save back changes if they have been made
+    if dirty:
+        siteconfig.save()
 
     site_settings_loaded.send(sender=None)
 

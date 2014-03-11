@@ -20,6 +20,9 @@ RB.BaseResource = Backbone.Model.extend({
     /* The key for the namespace for the object's payload in a response. */
     rspNamespace: '',
 
+    /* The attribute used for the ID in the URL. */
+    urlIDAttr: 'id',
+
     listKey: function() {
         return this.rspNamespace + 's';
     },
@@ -66,8 +69,9 @@ RB.BaseResource = Backbone.Model.extend({
                     if (link) {
                         baseURL = link.href;
 
-                        return this.isNew() ? baseURL
-                                            : (baseURL + this.id + '/');
+                        return this.isNew()
+                               ? baseURL
+                               : (baseURL + this.get(this.urlIDAttr) + '/');
                     }
                 }
             }

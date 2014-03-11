@@ -46,6 +46,7 @@ class Widget(object):
     LARGE = 'large'
 
     # Configuration
+    widget_id = None
     title = None
     size = SMALL
     template = None
@@ -125,6 +126,7 @@ class UserActivityWidget(Widget):
     Displays a pie chart of the active application users based on their last
     login dates.
     """
+    widget_id = 'user-activity-widget'
     title = _('User Activity')
     size = Widget.LARGE
     template = 'admin/widgets/w-user-activity.html'
@@ -171,6 +173,7 @@ class ReviewRequestStatusesWidget(Widget):
 
     Displays a pie chart showing review request by status.
     """
+    widget_id = 'review-request-statuses-widget'
     title = _('Request Statuses')
     template = 'admin/widgets/w-request-statuses.html'
 
@@ -193,6 +196,7 @@ class RepositoriesWidget(Widget):
     """
     MAX_REPOSITORIES = 3
 
+    widget_id = 'repositories-widget'
     title = _('Repositories')
     size = Widget.LARGE
     template = 'admin/widgets/w-repositories.html'
@@ -231,6 +235,7 @@ class ReviewGroupsWidget(Widget):
     """
     MAX_GROUPS = 5
 
+    widget_id = 'review-groups-widget'
     title = _('Review Groups')
     template = 'admin/widgets/w-groups.html'
     actions = [
@@ -256,6 +261,7 @@ class ServerCacheWidget(Widget):
 
     Displays a list of memcached statistics, if available.
     """
+    widget_id = 'server-cache-widget'
     title = _('Server Cache')
     template = 'admin/widgets/w-server-cache.html'
     cache_data = False
@@ -287,6 +293,7 @@ class NewsWidget(Widget):
 
     Displays the latest news headlines from reviewboard.org.
     """
+    widget_id = 'news-widget'
     title = _('Review Board News')
     template = 'admin/widgets/w-news.html'
     actions = [
@@ -307,6 +314,7 @@ class DatabaseStatsWidget(Widget):
 
     Displays a list of totals for several important database tables.
     """
+    widget_id = 'database-stats-widget'
     title = _('Database Stats')
     template = 'admin/widgets/w-stats.html'
 
@@ -326,6 +334,7 @@ class RecentActionsWidget(Widget):
 
     Displays a list of recent admin actions to the user.
     """
+    widget_id = 'recent-actions-widget'
     title = _('Recent Actions')
     template = 'admin/widgets/w-recent-actions.html'
     has_data = False
@@ -433,6 +442,7 @@ class ActivityGraphWidget(Widget):
     All displayed widget data is computed on demand, rather than up-front
     during creation of the widget.
     """
+    widget_id = 'activity-graph-widget'
     title = _('Review Board Activity')
     size = Widget.LARGE
     template = 'admin/widgets/w-stats-large.html'

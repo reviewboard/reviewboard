@@ -101,7 +101,7 @@ class WebAPIResource(DjbletsWebAPIResource):
         href_kwargs = {
             self.uri_object_key: getattr(obj, self.model_object_key),
         }
-        href_kwargs.update(self.get_href_parent_ids(obj))
+        href_kwargs.update(self.get_href_parent_ids(obj, **kwargs))
 
         return request.build_absolute_uri(
             self.get_item_url(request=request, **href_kwargs))

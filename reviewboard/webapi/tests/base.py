@@ -30,6 +30,8 @@ from reviewboard.webapi.tests.urls import (
 class BaseWebAPITestCase(TestCase, EmailTestHelper):
     sample_api_url = None
 
+    error_mimetype = error_mimetype
+
     def setUp(self):
         super(BaseWebAPITestCase, self).setUp()
 
@@ -86,7 +88,7 @@ class BaseWebAPITestCase(TestCase, EmailTestHelper):
             self.assertEqual(expected_mimetype, None)
 
             if expected_status != 405:
-                self.assertEqual(response['Content-Type'], error_mimetype)
+                self.assertEqual(response['Content-Type'], self.error_mimetype)
         elif expected_status != 302:
             self.assertNotEqual(expected_mimetype, None)
             self.assertEqual(response['Content-Type'], expected_mimetype)
@@ -142,7 +144,7 @@ class BaseWebAPITestCase(TestCase, EmailTestHelper):
             self.assertEqual(expected_mimetype, None)
 
             if expected_status != 405:
-                self.assertEqual(response['Content-Type'], error_mimetype)
+                self.assertEqual(response['Content-Type'], self.error_mimetype)
         else:
             self.assertNotEqual(expected_mimetype, None)
             self.assertEqual(response['Content-Type'], expected_mimetype)

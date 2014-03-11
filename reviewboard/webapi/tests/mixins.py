@@ -38,8 +38,12 @@ class BasicTestsMetaclass(type):
     The class can also set ``test_http_methods`` to a tuple of HTTP methods
     that should be tested. By default, this includes DELETE, GET, POST
     and PUT.
+
+    By default, tests will also be repeated on Local Sites. This can be
+    disabled by setting ``test_local_sites = False``.
     """
     def __new__(meta, name, bases, d):
+        test_local_sites = d.get('test_local_sites', True)
         resource = d['resource']
         is_singleton = False
         is_list = False
@@ -56,28 +60,48 @@ class BasicTestsMetaclass(type):
             is_singleton = True
 
         if 'DELETE' in test_http_methods and not is_list:
-            if 'DELETE' in resource.allowed_methods:
-                bases = (BasicDeleteTestsMixin,) + bases
+            if 'DELETE' not in resource.allowed_methods:
+                mixin = BasicDeleteNotAllowedTestsMixin
+            elif test_local_sites:
+                mixin = BasicDeleteTestsWithLocalSiteMixin
             else:
-                bases = (BasicDeleteNotAllowedTestsMixin,) + bases
+                mixin = BasicDeleteTestsMixin
+
+            bases = (mixin,) + bases
 
         if 'GET' in test_http_methods:
             if is_list:
-                bases = (BasicGetListTestsMixin,) + bases
+                if test_local_sites:
+                    mixin = BasicGetListTestsWithLocalSiteMixin
+                else:
+                    mixin = BasicGetListTestsMixin
             else:
-                bases = (BasicGetItemTestsMixin,) + bases
+                if test_local_sites:
+                    mixin = BasicGetItemTestsWithLocalSiteMixin
+                else:
+                    mixin = BasicGetItemTestsMixin
+
+            bases = (mixin,) + bases
 
         if 'POST' in test_http_methods and (is_list or is_singleton):
-            if 'POST' in resource.allowed_methods:
-                bases = (BasicPostTestsMixin,) + bases
+            if 'POST' not in resource.allowed_methods:
+                mixin = BasicPostNotAllowedTestsMixin
+            elif test_local_sites:
+                mixin = BasicPostTestsWithLocalSiteMixin
             else:
-                bases = (BasicPostNotAllowedTestsMixin,) + bases
+                mixin = BasicPostTestsMixin
+
+            bases = (mixin,) + bases
 
         if 'PUT' in test_http_methods and not is_list:
-            if 'PUT' in resource.allowed_methods:
-                bases = (BasicPutTestsMixin,) + bases
+            if 'PUT' not in resource.allowed_methods:
+                mixin = BasicPutNotAllowedTestsMixin
+            elif test_local_sites:
+                mixin = BasicPutTestsWithLocalSiteMixin
             else:
-                bases = (BasicPutNotAllowedTestsMixin,) + bases
+                mixin = BasicPutTestsMixin
+
+            bases = (mixin,) + bases
 
         return super(BasicTestsMetaclass, meta).__new__(meta, name, bases, d)
 
@@ -128,6 +152,28 @@ class BasicDeleteTestsMixin(BasicTestsMixin):
         self.apiDelete(url)
         self.check_delete_result(self.user, *cb_args)
 
+    @test_template
+    def test_delete_not_owner(self):
+        """Testing the DELETE <URL> API without owner"""
+        self.load_fixtures(self.basic_delete_fixtures)
+
+        user = User.objects.get(username='doc')
+        self.assertNotEqual(user, self.user)
+
+        url, cb_args = self.setup_basic_delete_test(user, False, None)
+        self.assertFalse(url.startswith('/s/' + self.local_site_name))
+
+        rsp = self.apiDelete(url, expected_status=403)
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
+
+
+class BasicDeleteTestsWithLocalSiteMixin(BasicDeleteTestsMixin):
+    """Adds basic HTTP DELETE unit tests with Local Sites.
+
+    This extends BasicDeleteTestsMixin to also perform equivalent tests
+    on Local Sites.
+    """
     @add_fixtures(['test_site'])
     @test_template
     def test_delete_with_site(self):
@@ -156,21 +202,6 @@ class BasicDeleteTestsMixin(BasicTestsMixin):
         self.assertTrue(url.startswith('/s/' + self.local_site_name))
 
         user = self._login_user()
-        rsp = self.apiDelete(url, expected_status=403)
-        self.assertEqual(rsp['stat'], 'fail')
-        self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
-
-    @test_template
-    def test_delete_not_owner(self):
-        """Testing the DELETE <URL> API without owner"""
-        self.load_fixtures(self.basic_delete_fixtures)
-
-        user = User.objects.get(username='doc')
-        self.assertNotEqual(user, self.user)
-
-        url, cb_args = self.setup_basic_delete_test(user, False, None)
-        self.assertFalse(url.startswith('/s/' + self.local_site_name))
-
         rsp = self.apiDelete(url, expected_status=403)
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
@@ -225,6 +256,13 @@ class BasicGetItemTestsMixin(BasicTestsMixin):
         item_rsp = rsp[self.resource.item_result_key]
         self.compare_item(item_rsp, item)
 
+
+class BasicGetItemTestsWithLocalSiteMixin(BasicGetItemTestsMixin):
+    """Adds basic HTTP GET unit tests for item resources with Local Sites.
+
+    This extends BasicGetItemTestsMixin to also perform equivalent tests
+    on Local Sites.
+    """
     @add_fixtures(['test_site'])
     @test_template
     def test_get_with_site(self):
@@ -292,6 +330,13 @@ class BasicGetListTestsMixin(BasicTestsMixin):
         for i in range(len(items)):
             self.compare_item(items_rsp[i], items[i])
 
+
+class BasicGetListTestsWithLocalSiteMixin(BasicGetListTestsMixin):
+    """Adds basic HTTP GET unit tests for list resources with Local Sites.
+
+    This extends BasicGetListTestsMixin to also perform equivalent tests
+    on Local Sites.
+    """
     @add_fixtures(['test_site'])
     @test_template
     def test_get_with_site(self):
@@ -367,6 +412,13 @@ class BasicPostTestsMixin(BasicTestsMixin):
         self.assertEqual(rsp['stat'], 'ok')
         self.check_post_result(self.user, rsp, *cb_args)
 
+
+class BasicPostTestsWithLocalSiteMixin(BasicPostTestsMixin):
+    """Adds basic HTTP POST unit tests with Local Sites.
+
+    This extends BasicPostTestsMixin to also perform equivalent tests
+    on Local Sites.
+    """
     @add_fixtures(['test_site'])
     @test_template
     def test_post_with_site(self):
@@ -460,6 +512,29 @@ class BasicPutTestsMixin(BasicTestsMixin):
         self.check_put_result(self.user, rsp[self.resource.item_result_key],
                               item, *cb_args)
 
+    @test_template
+    def test_put_not_owner(self):
+        """Testing the PUT <URL> API without owner"""
+        self.load_fixtures(self.basic_put_fixtures)
+
+        user = User.objects.get(username='doc')
+        self.assertNotEqual(user, self.user)
+
+        url, mimetype, put_data, item, cb_args = \
+            self.setup_basic_put_test(user, False, None, False)
+        self.assertFalse(url.startswith('/s/' + self.local_site_name))
+
+        rsp = self.apiPut(url, put_data, expected_status=403)
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
+
+
+class BasicPutTestsWithLocalSiteMixin(BasicPutTestsMixin):
+    """Adds basic HTTP PUT unit tests with Local Sites.
+
+    This extends BasicPutTestsMixin to also perform equivalent tests
+    on Local Sites.
+    """
     @add_fixtures(['test_site'])
     @test_template
     def test_put_with_site(self):
@@ -492,22 +567,6 @@ class BasicPutTestsMixin(BasicTestsMixin):
         self.assertTrue(url.startswith('/s/' + self.local_site_name))
 
         user = self._login_user()
-        rsp = self.apiPut(url, put_data, expected_status=403)
-        self.assertEqual(rsp['stat'], 'fail')
-        self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
-
-    @test_template
-    def test_put_not_owner(self):
-        """Testing the PUT <URL> API without owner"""
-        self.load_fixtures(self.basic_put_fixtures)
-
-        user = User.objects.get(username='doc')
-        self.assertNotEqual(user, self.user)
-
-        url, mimetype, put_data, item, cb_args = \
-            self.setup_basic_put_test(user, False, None, False)
-        self.assertFalse(url.startswith('/s/' + self.local_site_name))
-
         rsp = self.apiPut(url, put_data, expected_status=403)
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
