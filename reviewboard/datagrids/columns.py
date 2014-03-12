@@ -31,11 +31,12 @@ class BaseStarColumn(Column):
             shrink=True,
             *args, **kwargs)
 
-        self.all_starred = {}
+    def setup_state(self, state):
+        state.all_starred = set()
 
-    def render_data(self, obj):
-        obj.starred = self.all_starred.get(obj.id, False)
-        return render_star(self.datagrid.request.user, obj)
+    def render_data(self, state, obj):
+        obj.starred = obj.pk in state.all_starred
+        return render_star(state.datagrid.request.user, obj)
 
 
 class BugsColumn(Column):
@@ -53,10 +54,10 @@ class BugsColumn(Column):
             sortable=False,
             *args, **kwargs)
 
-    def augment_queryset(self, queryset):
+    def augment_queryset(self, state, queryset):
         return queryset.select_related('repository')
 
-    def render_data(self, review_request):
+    def render_data(self, state, review_request):
         bugs = review_request.get_bug_list()
         repository = review_request.repository
 
@@ -78,10 +79,10 @@ class DateTimeSinceColumn(DateTimeColumn):
     These columns will dynamically update as the page is shown, so that the
     number of minutes, hours, days, etc. ago is correct.
     """
-    def render_data(self, obj):
+    def render_data(self, state, obj):
         return '<time class="timesince" datetime="%s">%s</time>' % (
             date(getattr(obj, self.field_name), 'c'),
-            super(DateTimeSinceColumn, self).render_data(obj))
+            super(DateTimeSinceColumn, self).render_data(state, obj))
 
 
 class DiffUpdatedColumn(DateTimeColumn):
@@ -95,13 +96,13 @@ class DiffUpdatedColumn(DateTimeColumn):
             link=False,
             *args, **kwargs)
 
-    def augment_queryset(self, queryset):
+    def augment_queryset(self, state, queryset):
         return queryset.select_related('diffset_history')
 
-    def render_data(self, obj):
+    def render_data(self, state, obj):
         if obj.diffset_history.last_diff_updated:
             return super(DiffUpdatedColumn, self).render_data(
-                obj.diffset_history)
+                state, obj.diffset_history)
         else:
             return ''
 
@@ -117,12 +118,13 @@ class DiffUpdatedSinceColumn(DateTimeSinceColumn):
             link=False,
             *args, **kwargs)
 
-    def augment_queryset(self, queryset):
+    def augment_queryset(self, state, queryset):
         return queryset.select_related('diffset_history')
 
-    def render_data(self, obj):
+    def render_data(self, state, obj):
         if obj.diffset_history.last_diff_updated:
-            return DateTimeSinceColumn.render_data(self, obj.diffset_history)
+            return super(DiffUpdatedSinceColumn, self).render_data(
+                state, obj.diffset_history)
         else:
             return ''
 
@@ -135,12 +137,12 @@ class GroupMemberCountColumn(Column):
             link_func=self.link_to_object,
             *args, **kwargs)
 
-    def render_data(self, group):
+    def render_data(self, state, group):
         return six.text_type(group.users.count())
 
-    def link_to_object(self, group, value):
+    def link_to_object(self, state, group, value):
         return local_site_reverse('group-members',
-                                  request=self.datagrid.request,
+                                  request=state.datagrid.request,
                                   args=[group.name])
 
 
@@ -154,7 +156,7 @@ class GroupsColumn(Column):
             shrink=False,
             *args, **kwargs)
 
-    def render_data(self, review_request):
+    def render_data(self, state, review_request):
         groups = review_request.target_groups.all()
         return reduce(lambda a, d: a + d.name + ' ', groups, '')
 
@@ -173,8 +175,8 @@ class MyCommentsColumn(Column):
         # can only sort based on stored (in the DB) values, not computed
         # values.
 
-    def augment_queryset(self, queryset):
-        user = self.datagrid.request.user
+    def augment_queryset(self, state, queryset):
+        user = state.datagrid.request.user
 
         if user.is_anonymous():
             return queryset
@@ -209,8 +211,8 @@ class MyCommentsColumn(Column):
             """ % query_dict,
         })
 
-    def render_data(self, review_request):
-        user = self.datagrid.request.user
+    def render_data(self, state, review_request):
+        user = state.datagrid.request.user
 
         if user.is_anonymous() or review_request.mycomments_my_reviews == 0:
             return ''
@@ -249,7 +251,7 @@ class NewUpdatesColumn(Column):
             shrink=True,
             *args, **kwargs)
 
-    def render_data(self, review_request):
+    def render_data(self, state, review_request):
         if review_request.new_review_count > 0:
             return '<div class="%s" title="%s" />' % \
                    (self.image_class, self.image_alt)
@@ -263,10 +265,7 @@ class PendingCountColumn(Column):
     This will show the pending number of review requests for the given
     review group or user. It only applies to group or user lists.
     """
-    def __init__(self, *args, **kwargs):
-        super(PendingCountColumn, self).__init__(*args, **kwargs)
-
-    def render_data(self, obj):
+    def render_data(self, state, obj):
         return six.text_type(
             getattr(obj, self.field_name).filter(
                 public=True, status='P').count())
@@ -282,7 +281,7 @@ class PeopleColumn(Column):
             shrink=False,
             *args, **kwargs)
 
-    def render_data(self, review_request):
+    def render_data(self, state, review_request):
         people = review_request.target_people.all()
         return reduce(lambda a, d: a + d.username + ' ', people, '')
 
@@ -299,11 +298,11 @@ class RepositoryColumn(Column):
             css_class='repository-column',
             *args, **kwargs)
 
-    def augment_queryset(self, queryset):
+    def augment_queryset(self, state, queryset):
         return queryset.select_related('repository')
 
-    def render_data(self, obj):
-        return super(RepositoryColumn, self).render_data(obj) or ''
+    def render_data(self, state, obj):
+        return super(RepositoryColumn, self).render_data(state, obj) or ''
 
 
 class ReviewCountColumn(Column):
@@ -317,10 +316,10 @@ class ReviewCountColumn(Column):
             link_func=self.link_to_object,
             *kwargs, **kwargs)
 
-    def render_data(self, review_request):
+    def render_data(self, state, review_request):
         return six.text_type(review_request.publicreviewcount_count)
 
-    def augment_queryset(self, queryset):
+    def augment_queryset(self, state, queryset):
         return queryset.extra(select={
             'publicreviewcount_count': """
                 SELECT COUNT(*)
@@ -332,7 +331,7 @@ class ReviewCountColumn(Column):
             """
         })
 
-    def link_to_object(self, review_request, value):
+    def link_to_object(self, state, review_request, value):
         return '%s#last-review' % review_request.get_absolute_url()
 
 
@@ -341,8 +340,8 @@ class ReviewGroupStarColumn(BaseStarColumn):
 
     The star is interactive, allowing the user to star or unstar the group.
     """
-    def augment_queryset(self, queryset):
-        user = self.datagrid.request.user
+    def augment_queryset(self, state, queryset):
+        user = state.datagrid.request.user
 
         if user.is_anonymous():
             return queryset
@@ -352,13 +351,9 @@ class ReviewGroupStarColumn(BaseStarColumn):
         except Profile.DoesNotExist:
             return queryset
 
-        pks = profile.starred_groups.filter(
-            pk__in=self.datagrid.id_list).values_list('pk', flat=True)
-
-        self.all_starred = {}
-
-        for pk in pks:
-            self.all_starred[pk] = True
+        state.all_starred = set(
+            profile.starred_groups.filter(
+                pk__in=state.datagrid.id_list).values_list('pk', flat=True))
 
         return queryset
 
@@ -371,9 +366,16 @@ class ReviewRequestIDColumn(Column):
             detailed_label=_('Review Request ID'),
             shrink=True,
             link=True,
+            sortable=True,
             *args, **kwargs)
 
-    def render_data(self, review_request):
+    def get_sort_field(self, state):
+        if state.datagrid.local_site:
+            return 'local_id'
+        else:
+            return 'id'
+
+    def render_data(self, state, review_request):
         return review_request.display_id
 
 
@@ -383,8 +385,8 @@ class ReviewRequestStarColumn(BaseStarColumn):
     The star is interactive, allowing the user to star or unstar the
     review request.
     """
-    def augment_queryset(self, queryset):
-        user = self.datagrid.request.user
+    def augment_queryset(self, state, queryset):
+        user = state.datagrid.request.user
 
         if user.is_anonymous():
             return queryset
@@ -394,13 +396,9 @@ class ReviewRequestStarColumn(BaseStarColumn):
         except Profile.DoesNotExist:
             return queryset
 
-        pks = profile.starred_review_requests.filter(
-            pk__in=self.datagrid.id_list).values_list('pk', flat=True)
-
-        self.all_starred = {}
-
-        for pk in pks:
-            self.all_starred[pk] = True
+        state.all_starred = set(
+            profile.starred_review_requests.filter(
+                pk__in=state.datagrid.id_list).values_list('pk', flat=True))
 
         return queryset
 
@@ -417,7 +415,7 @@ class ShipItColumn(Column):
             shrink=True,
             *args, **kwargs)
 
-    def render_data(self, review_request):
+    def render_data(self, state, review_request):
         if review_request.issue_open_count > 0:
             return ('<span class="issue-count">'
                     ' <span class="issue-icon">!</span> %s'
@@ -444,7 +442,7 @@ class SubmitterColumn(Column):
             link=True,
             *args, **kwargs)
 
-    def augment_queryset(self, queryset):
+    def augment_queryset(self, state, queryset):
         return queryset.select_related('submitter')
 
 
@@ -460,12 +458,11 @@ class SummaryColumn(Column):
             expand=True,
             link=True,
             css_class='summary',
+            sortable=True,
             *args, **kwargs)
 
-        self.sortable = True
-
-    def augment_queryset(self, queryset):
-        user = self.datagrid.request.user
+    def augment_queryset(self, state, queryset):
+        user = state.datagrid.request.user
 
         if user.is_anonymous():
             return queryset
@@ -479,15 +476,14 @@ class SummaryColumn(Column):
             """
         })
 
-    def render_data(self, review_request):
+    def render_data(self, state, review_request):
         summary = conditional_escape(review_request.summary)
         labels = {}
 
         if not summary:
             summary = '&nbsp;<i>%s</i>' % _('No Summary')
 
-        if review_request.submitter_id == self.datagrid.request.user.id:
-
+        if review_request.submitter_id == state.datagrid.request.user.id:
             if review_request.draft_summary is not None:
                 summary = conditional_escape(review_request.draft_summary)
                 labels.update({_('Draft'): 'label-draft'})
@@ -525,8 +521,9 @@ class ToMeColumn(Column):
             shrink=True,
             *args, **kwargs)
 
-    def render_data(self, review_request):
-        user = self.datagrid.request.user
+    def render_data(self, state, review_request):
+        user = state.datagrid.request.user
+
         if (user.is_authenticated() and
             review_request.target_people.filter(pk=user.pk).exists()):
             return ('<div title="%s"><b>&raquo;</b></div>'
@@ -544,7 +541,7 @@ class DiffSizeColumn(Column):
             shrink=True,
             *args, **kwargs)
 
-    def render_data(self, review_request):
+    def render_data(self, state, review_request):
         try:
             diffset = review_request.diffset_history.diffsets.latest()
         except ObjectDoesNotExist:
