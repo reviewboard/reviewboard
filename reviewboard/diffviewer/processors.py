@@ -35,7 +35,7 @@ def filter_interdiff_opcodes(opcodes, filediff_data, interfilediff_data):
         # on file length and diff generation settings.
         for line in lines:
             if process_changes:
-                if line.startswith(('-', '+')):
+                if line.startswith((b'-', b'+')):
                     # We've found the first change in the chunk. We now
                     # know how many lines of context we have.
                     #
