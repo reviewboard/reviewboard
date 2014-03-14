@@ -153,8 +153,12 @@ class Client(base.Client):
             else:
                 base_revision = 0
 
-        out, err = self.client.diff(base_revision, revision, self.repopath,
-                                    self.repopath, diffopts=DIFF_UNIFIED)
+        try:
+            out, err = self.client.diff(int(base_revision), int(revision),
+                                        self.repopath, self.repopath,
+                                        diffopts=DIFF_UNIFIED)
+        except Exception as e:
+            raise SCMError(e)
 
         commit = Commit(author_name, six.text_type(revision), date,
                         message, six.text_type(base_revision))
