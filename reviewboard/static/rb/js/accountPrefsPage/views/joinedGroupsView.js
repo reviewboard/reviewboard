@@ -14,7 +14,7 @@ var GroupMembershipItem,
  *
  * This provides two actions: 'Join', and 'Leave'.
  */
-GroupMembershipItem = RB.Config.ListItem.extend({
+GroupMembershipItem = Djblets.Config.ListItem.extend({
     defaults: _.defaults({
         localSiteName: null,
         displayName: null,
@@ -22,7 +22,7 @@ GroupMembershipItem = RB.Config.ListItem.extend({
         joined: false,
         showRemove: false,
         url: null
-    }, RB.Config.ListItem.prototype.defaults),
+    }, Djblets.Config.ListItem.prototype.defaults),
 
     /*
      * Initializes the item.
@@ -35,7 +35,7 @@ GroupMembershipItem = RB.Config.ListItem.extend({
         var name = this.get('name'),
             localSiteName = this.get('localSiteName');
 
-        RB.Config.ListItem.prototype.initialize.call(this);
+        Djblets.Config.ListItem.prototype.initialize.call(this);
 
         this.set({
             text: name,
@@ -117,7 +117,7 @@ GroupMembershipItem = RB.Config.ListItem.extend({
  * This will display the group information and provide buttons for
  * the Join/Leave actions.
  */
-GroupMembershipItemView = RB.Config.ListItemView.extend({
+GroupMembershipItemView = Djblets.Config.ListItemView.extend({
     actionHandlers: {
         'join': '_onJoinClicked',
         'leave': '_onLeaveClicked'
@@ -181,7 +181,7 @@ SiteGroupsView = Backbone.View.extend({
                 model: GroupMembershipItem
             })
         });
-        this.groupList = new RB.Config.List({}, {
+        this.groupList = new Djblets.Config.List({}, {
             collection: this.collection
         });
     },
@@ -190,7 +190,7 @@ SiteGroupsView = Backbone.View.extend({
      * Renders the view.
      */
     render: function() {
-        this._listView = new RB.Config.ListView({
+        this._listView = new Djblets.Config.ListView({
             ItemView: GroupMembershipItemView,
             model: this.groupList
         });

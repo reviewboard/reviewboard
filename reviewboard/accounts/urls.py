@@ -2,13 +2,17 @@ from __future__ import unicode_literals
 
 from django.conf.urls import patterns, url
 
+from reviewboard.accounts.views import MyAccountView
+
 
 urlpatterns = patterns(
     "reviewboard.accounts.views",
 
     url(r'^register/$', 'account_register',
         {'next_url': 'dashboard'}, name="register"),
-    url(r'^preferences/$', 'user_preferences', name="user-preferences"),
+    url(r'^preferences/$',
+        MyAccountView.as_view(),
+        name="user-preferences"),
 )
 
 urlpatterns += patterns(

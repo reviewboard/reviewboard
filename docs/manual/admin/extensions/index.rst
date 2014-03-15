@@ -11,10 +11,7 @@ available features across the product.
 
 The extension API is still new and bleeding edge, and will be improved over
 time. If you're interested in developing an extension, please read our
-`Writing Review Board Extensions`_ guide to get started.
-
-.. _`Writing Review Board Extensions`:
-   http://www.reviewboard.org/docs/manual/dev/extending/extensions/
+:ref:`writing-extensions` guide to get started.
 
 
 Installing Extensions

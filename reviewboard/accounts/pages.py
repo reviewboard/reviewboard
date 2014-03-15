@@ -1,10 +1,11 @@
+from __future__ import unicode_literals
+
 import logging
 
-from django.template.context import RequestContext
-from django.template.loader import render_to_string
 from django.utils import six
 from django.utils.datastructures import SortedDict
 from django.utils.translation import ugettext_lazy as _
+from djblets.configforms.pages import ConfigPage
 
 from reviewboard.accounts.forms.pages import (AccountSettingsForm,
                                               ChangePasswordForm,
@@ -17,7 +18,7 @@ _registered_form_classes = {}
 _registered_page_classes = SortedDict()
 
 
-class AccountPage(object):
+class AccountPage(ConfigPage):
     """Base class for a page of forms in the My Account page.
 
     Each AccountPage is represented in the My Account page by an entry
@@ -27,18 +28,6 @@ class AccountPage(object):
     Extensions can provide custom pages in order to offer per-user
     customization.
     """
-    page_id = None
-    page_title = None
-    form_classes = None
-    template_name = 'accounts/prefs_page.html'
-
-    def __init__(self, request, user):
-        self.request = request
-        self.forms = [
-            form_cls(self, request, user)
-            for form_cls in self.form_classes
-        ]
-
     @classmethod
     def add_form(cls, form_cls):
         """Adds a form class to this page."""
@@ -60,29 +49,6 @@ class AccountPage(object):
             logging.error('Failed to unregister unknown account form "%s"',
                           form_id)
             raise KeyError('"%s" is not a registered account form' % form_id)
-
-    def is_visible(self):
-        """Returns whether the page should be visible.
-
-        Visible pages are shown in the sidebar and can be navigated to.
-
-        By default, a page is visible if at least one of its forms are
-        also visible.
-        """
-        for form in self.forms:
-            if form.is_visible():
-                return True
-
-        return False
-
-    def render(self):
-        """Renders the page as HTML."""
-        return render_to_string(
-            self.template_name,
-            RequestContext(self.request, {
-                'page': self,
-                'forms': self.forms,
-            }))
 
 
 class AccountSettingsPage(AccountPage):

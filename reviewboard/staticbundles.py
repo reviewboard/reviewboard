@@ -140,17 +140,6 @@ PIPELINE_JS = dict({
         ),
         'output_filename': 'rb/js/account-page.min.js',
     },
-    'config-forms': {
-        'source_filenames': (
-            'rb/js/configForms/base.js',
-            'rb/js/configForms/collections/listItemsCollection.js',
-            'rb/js/configForms/models/listItemModel.js',
-            'rb/js/configForms/models/listModel.js',
-            'rb/js/configForms/views/listItemView.js',
-            'rb/js/configForms/views/listView.js',
-        ),
-        'output_filename': 'rb/js/config-forms.min.js',
-    },
     'dashboard': {
         'source_filenames': (
             'rb/js/dashboard/models/dashboardModel.js',
@@ -288,13 +277,6 @@ PIPELINE_CSS = dict({
             'rb/css/js-tests.less',
         ),
         'output_filename': 'rb/css/js-tests.min.css',
-        'absolute_paths': False,
-    },
-    'config-forms': {
-        'source_filenames': (
-            'rb/css/config-forms.less',
-        ),
-        'output_filename': 'rb/css/config-forms.min.css',
         'absolute_paths': False,
     },
     'reviews': {

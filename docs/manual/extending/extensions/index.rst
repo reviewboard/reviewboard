@@ -1,3 +1,5 @@
+.. _writing-extensions:
+
 ===============================
 Writing Review Board Extensions
 ===============================
