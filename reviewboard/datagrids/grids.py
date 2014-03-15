@@ -153,7 +153,7 @@ class ReviewRequestDataGrid(DataGrid):
         q = queryset.with_counts(self.request.user)
         return super(ReviewRequestDataGrid, self).post_process_queryset(q)
 
-    def link_to_object(self, obj, value):
+    def link_to_object(self, state, obj, value):
         if value and isinstance(value, User):
             return local_site_reverse('user', request=self.request,
                                       args=[value])
@@ -282,7 +282,7 @@ class UsersDataGrid(DataGrid):
             'username', 'fullname', 'pending_count'
         ]
 
-    def link_to_object(self, obj, value):
+    def link_to_object(self, state, obj, value):
         return local_site_reverse('user', request=self.request,
                                   args=[obj.username])
 
@@ -317,7 +317,7 @@ class GroupDataGrid(DataGrid):
         ]
 
     @staticmethod
-    def link_to_object(obj, value):
+    def link_to_object(state, obj, value):
         return obj.get_absolute_url()
 
 
