@@ -1,6 +1,5 @@
 {% extends "admin/change_form.html" %}
-{% load compressed %}
-{% load i18n %}
+{% load admin_urls compressed i18n %}
 
 {% block scripts %}
 {{block.super}}
@@ -13,11 +12,19 @@
 </script>
 {% endblock %}
 
+{% block object-tools %}
+<ul class="object-tools">
 {% block object-tools-items %}
 {%  if adminform.form.public_key %}
  <li><a href="#" id="show-ssh-key-link">{% trans "Show SSH Public Key" %}</a></li>
 {%  endif %}
-{{block.super}}
+{%  if change and not is_popup %}
+ <li><a href="history/" class="historylink">{% trans "History" %}</a></li>
+{%   if has_absolute_url %}
+ <li><a href="../../../r/{{content_type_id}}/{{object_id}}/" class="viewsitelink">{% trans "View on site" %}</a></li>
+{%   endif %}
+{%  endblock %}
+</ul>
 {% endblock %}
 
 {% block form_top %}
