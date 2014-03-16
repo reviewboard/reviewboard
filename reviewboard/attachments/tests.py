@@ -5,6 +5,7 @@ from django.conf import settings
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
 
+from reviewboard import initialize
 from reviewboard.attachments.forms import UploadFileForm
 from reviewboard.attachments.mimetypes import MimetypeHandler, \
                                               register_mimetype_handler, \
@@ -14,6 +15,9 @@ from reviewboard.reviews.models import ReviewRequest
 
 class FileAttachmentTests(TestCase):
     fixtures = ['test_users', 'test_reviewrequests', 'test_scmtools']
+
+    def setUp(self):
+        initialize()
 
     def test_upload_file(self):
         """Testing uploading a file attachment."""
@@ -26,8 +30,6 @@ class FileAttachmentTests(TestCase):
         form = UploadFileForm(files={
             'path': file,
         })
-        form.is_valid()
-        print form.errors
         self.assertTrue(form.is_valid())
 
         review_request = ReviewRequest.objects.get(pk=1)
@@ -35,6 +37,29 @@ class FileAttachmentTests(TestCase):
         self.assertTrue(os.path.basename(file_attachment.file.name).endswith(
             '__trophy.png'))
         self.assertEqual(file_attachment.mimetype, 'image/png')
+
+    def test_utf16_thumbnail(self):
+        """Testing file attachment thumbnail generation for UTF-16 files"""
+        filename = os.path.join(os.path.dirname(__file__),
+                                'testdata', 'utf-16.txt')
+        with open(filename) as f:
+            file = SimpleUploadedFile(f.name, f.read(),
+                                      content_type='text/plain;charset=utf-16le')
+            form = UploadFileForm(files={'path': file})
+            form.is_valid()
+
+            review_request = ReviewRequest.objects.get(pk=1)
+            file_attachment = form.create(file, review_request)
+
+            self.assertEqual(file_attachment.thumbnail,
+                             u'<div class="file-thumbnail-clipped"><br />'
+                             u'UTF-16le encoded sample plain-text file<br />'
+                             u'\u203e\u203e\u203e\u203e\u203e\u203e\u203e'
+                             u'\u203e\u203e\u203e\u203e\u203e\u203e\u203e'
+                             u'\u203e\u203e\u203e\u203e\u203e\u203e\u203e'
+                             u'\u203e\u203e\u203e\u203e\u203e\u203e\u203e'
+                             u'\u203e\u203e\u203e\u203e\u203e\u203e\u203e'
+                             u'\u203e\u203e\u203e\u203e<br /></div>')
 
 
 class MimetypeTest(MimetypeHandler):

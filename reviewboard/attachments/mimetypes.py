@@ -211,18 +211,24 @@ class TextMimetype(MimetypeHandler):
     # the file attachment to prevent long reads caused by malicious
     # or auto-generated files.
     FILE_CROP_CHAR_LIMIT = 2000
-    TEXT_CROP_NUM_HEIGHT = 4
-    TEXT_CROP_NUM_LENGTH = 50
+    TEXT_CROP_ROWS = 4
+    TEXT_CROP_COLS = 50
 
-    def _generate_preview_html(self, data_string):
+    def _generate_preview_html(self, data):
         """Returns the first few truncated lines of the text file."""
+        charset = self.mimetype[2].get('charset', 'ascii')
+        try:
+            text = data.decode(charset)
+        except UnicodeDecodeError:
+            logging.error('Could not decode text file attachment %s using '
+                          'charset "%s"',
+                          self.attachment.pk, charset)
+            text = data.decode('utf-8', 'replace')
 
-        preview_lines = data_string.splitlines()[:self.TEXT_CROP_NUM_HEIGHT]
-
-        for i in range(min(self.TEXT_CROP_NUM_HEIGHT, len(preview_lines))):
-            preview_lines[i] = escape(preview_lines[i][:self.TEXT_CROP_NUM_LENGTH])
-
-        return '<br />'.join(preview_lines)
+        return '<br />'.join([
+            escape(line[:self.TEXT_CROP_COLS])
+            for line in text.splitlines()[:self.TEXT_CROP_ROWS]
+        ])
 
     def _generate_thumbnail(self):
         """Returns the HTML for a thumbnail preview for a text file."""
@@ -230,7 +236,7 @@ class TextMimetype(MimetypeHandler):
         f.open()
 
         try:
-            data_string = f.read(self.FILE_CROP_CHAR_LIMIT)
+            data = f.read(self.FILE_CROP_CHAR_LIMIT)
         except (ValueError, IOError), e:
             logging.error('Failed to read from file attachment %s: %s'
                           % (self.attachment.pk, e))
@@ -238,7 +244,7 @@ class TextMimetype(MimetypeHandler):
 
         f.close()
         return mark_safe('<div class="file-thumbnail-clipped">%s</div>'
-                         % self._generate_preview_html(data_string))
+                         % self._generate_preview_html(data))
 
     def get_thumbnail(self):
         """Returns the thumbnail of the text file as rendered as html"""
