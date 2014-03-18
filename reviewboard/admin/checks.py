@@ -162,17 +162,19 @@ def check_updates_required():
                 }
             ))
 
-        # Check if the htdocs/media/ext directory is writable by us.
-        ext_dir = settings.EXTENSIONS_STATIC_ROOT
+        # Check if the the legacy htdocs and modern static extension
+        # directories exist and are writable by us.
+        for root in (settings.MEDIA_ROOT, settings.STATIC_ROOT):
+            ext_dir = os.path.join(root, 'ext')
 
-        if not os.path.isdir(ext_dir) or not os.access(ext_dir, os.W_OK):
-            updates_required.append((
-                'admin/manual-updates/ext-dir.html', {
-                    'ext_dir': ext_dir,
-                    'writable': os.access(ext_dir, os.W_OK),
-                    'server_user': username,
-                }
-            ))
+            if not os.path.isdir(ext_dir) or not os.access(ext_dir, os.W_OK):
+                updates_required.append((
+                    'admin/manual-updates/ext-dir.html', {
+                        'ext_dir': ext_dir,
+                        'writable': os.access(ext_dir, os.W_OK),
+                        'server_user': username,
+                    }
+                ))
 
         if not is_exe_in_path('patch'):
             if sys.platform == 'win32':
