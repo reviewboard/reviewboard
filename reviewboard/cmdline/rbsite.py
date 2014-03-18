@@ -16,6 +16,7 @@ import subprocess
 from optparse import OptionGroup, OptionParser
 from random import choice
 
+from django.db.utils import OperationalError
 from django.utils import six
 from django.utils.six.moves import input
 
@@ -379,7 +380,23 @@ class Site(object):
         if not allow_input:
             params.append("--noinput")
 
-        self.run_manage_command("syncdb", params)
+        while True:
+            try:
+                self.run_manage_command("syncdb", params)
+                break
+            except OperationalError as e:
+                ui.error('There was an error synchronizing the database. '
+                         'Make sure the database is created and has the '
+                         'appropriate permissions, and then continue.'
+                         '\n'
+                         'Details: %s'
+                         % e,
+                         force_wait=True)
+            except Exception:
+                # This is an unexpected error, and we don't know how to
+                # handle this. Bubble it up.
+                raise
+
         self.run_manage_command("registerscmtools")
 
     def migrate_database(self):
@@ -774,7 +791,7 @@ class UIToolkit(object):
         """
         raise NotImplementedError
 
-    def error(self, text, done_func=None):
+    def error(self, text, force_wait=False, done_func=None):
         """
         Displays a block of error text to the user.
         """
@@ -974,12 +991,18 @@ class ConsoleUI(UIToolkit):
         func()
         print("OK")
 
-    def error(self, text, done_func=None):
+    def error(self, text, force_wait=False, done_func=None):
         """
         Displays a block of error text to the user.
         """
         print()
-        print(self.error_wrapper.fill(text))
+
+        for text_block in text.split('\n'):
+            print(self.error_wrapper.fill(text_block))
+
+        if force_wait:
+            print()
+            input('Press Enter to continue')
 
         if done_func:
             done_func()
