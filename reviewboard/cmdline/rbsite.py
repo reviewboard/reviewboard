@@ -2022,8 +2022,8 @@ class ManageCommand(Command):
     def run(self):
         site.setup_settings()
 
-        from reviewboard.admin.siteconfig import load_site_config
-        load_site_config()
+        from reviewboard import initialize
+        initialize()
 
         if len(args) == 0:
             ui.error("A manage command is needed.",
