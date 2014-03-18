@@ -180,12 +180,31 @@ class Site(object):
         self.mkdir(media_dir)
         self.mkdir(static_dir)
 
-        # TODO: In the future, support changing ownership of these
-        #       directories.
-        self.mkdir(os.path.join(media_dir, "uploaded"))
-        self.mkdir(os.path.join(media_dir, "uploaded", "images"))
-        self.mkdir(os.path.join(media_dir, "ext"))
-        self.mkdir(os.path.join(static_dir, "ext"))
+        uploaded_dir = os.path.join(media_dir, 'uploaded')
+
+        self.mkdir(uploaded_dir)
+
+        # Assuming this is an upgrade, the 'uploaded' directory should
+        # already have the right permissions for writing, so use that as a
+        # template for all the new directories.
+        writable_st = os.stat(uploaded_dir)
+
+        writable_dirs = [
+            os.path.join(uploaded_dir, 'images'),
+            os.path.join(uploaded_dir, 'files'),
+            os.path.join(media_dir, 'ext'),
+            os.path.join(static_dir, 'ext'),
+        ]
+
+        for writable_dir in writable_dirs:
+            self.mkdir(writable_dir)
+
+            try:
+                os.chown(writable_dir, writable_st.st_uid, writable_st.st_gid)
+            except OSError:
+                # The user didn't have permission to change the ownership,
+                # they'll have to do this manually later.
+                pass
 
         self.link_pkg_dir(
             "reviewboard",
