@@ -450,7 +450,7 @@ class Repository(models.Model):
             if q.filter(path=self.path).exists():
                 raise ValidationError(
                     _('A repository with this path already exists'),
-                    parames={'field': 'path'})
+                    params={'field': 'path'})
 
     class Meta:
         verbose_name_plural = "Repositories"
