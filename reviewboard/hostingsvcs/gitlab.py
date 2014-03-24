@@ -3,6 +3,8 @@ from __future__ import unicode_literals
 import json
 
 from django import forms
+from django.core.exceptions import ValidationError
+from django.core.validators import validate_email
 from django.utils.six.moves.urllib.error import HTTPError, URLError
 from django.utils.six.moves.urllib.parse import quote
 from django.utils.translation import ugettext_lazy as _, ugettext
@@ -107,13 +109,18 @@ class GitLab(HostingService):
         GitLab uses HTTP Basic Auth for the API, so this will store the
         provided password, encrypted, for use in later API requests.
         """
+        if self._is_email(username):
+            login_key = 'email'
+        else:
+            login_key = 'login'
+
         # This will raise an exception if it fails, which the form will
         # catch.
         try:
             rsp, headers = self._json_post(
                 url=self._build_api_url(hosting_url, 'session'),
                 fields={
-                    'login': username,
+                    login_key : username,
                     'password': password,
                 })
         except HTTPError as e:
@@ -323,3 +330,12 @@ class GitLab(HostingService):
                     ugettext('The login or password is incorrect.'))
 
             raise
+
+    def _is_email(self, email):
+        """Returns True if given string is valid email address"""
+        try:
+            validate_email(email)
+            return True
+        except ValidationError:
+            return False
+

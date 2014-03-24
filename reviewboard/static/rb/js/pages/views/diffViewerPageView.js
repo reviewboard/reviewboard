@@ -413,6 +413,10 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
              i += dir) {
             $anchor = $(this._$anchors[i]);
 
+            if ($anchor.parents('tr').hasClass('dimmed')) {
+                continue;
+            }
+
             if (((anchorTypes & this.ANCHOR_COMMENT) &&
                  $anchor.hasClass('comment-anchor')) ||
                 ((anchorTypes & this.ANCHOR_FILE) &&

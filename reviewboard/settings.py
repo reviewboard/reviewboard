@@ -278,8 +278,11 @@ else:
 HTDOCS_ROOT = os.path.join(LOCAL_ROOT, 'htdocs')
 STATIC_ROOT = os.path.join(HTDOCS_ROOT, 'static')
 MEDIA_ROOT = os.path.join(HTDOCS_ROOT, 'media')
-EXTENSIONS_STATIC_ROOT = os.path.join(MEDIA_ROOT, 'ext')
 ADMIN_MEDIA_ROOT = STATIC_ROOT + 'admin/'
+
+# XXX This is deprecated, but kept around for compatibility, in case any
+#     old extensions reference it. We'll want to deprecate it.
+EXTENSIONS_STATIC_ROOT = os.path.join(MEDIA_ROOT, 'ext')
 
 # Haystack requires this to be defined here, otherwise it will throw errors.
 # The actual PATH will be loaded through load_site_config()
