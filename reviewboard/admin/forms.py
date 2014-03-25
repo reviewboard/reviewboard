@@ -148,6 +148,11 @@ class GeneralSettingsForm(SiteSettingsForm):
         required=True,
         widget=forms.TextInput(attrs={'size': '50'}))
 
+    integration_gravatars = forms.BooleanField(
+        label=_("Use Gravatar images"),
+        help_text=_("Use gravatar.com for user avatars"),
+        required=False)
+
     def load(self):
         domain_method = self.siteconfig.get("site_domain_method")
         site = Site.objects.get_current()
@@ -303,6 +308,11 @@ class GeneralSettingsForm(SiteSettingsForm):
                 'title': _("Search"),
                 'fields': ('search_enable', 'max_search_results',
                            'search_results_per_page', 'search_index_file'),
+            },
+            {
+                'classes': ('wide',),
+                'title': _("Third-party Integrations"),
+                'fields': ('integration_gravatars',),
             },
         )
 
