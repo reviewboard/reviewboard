@@ -57,11 +57,23 @@ class UserResource(WebAPIResource, DjbletsUserResource):
             query = self.model.objects.filter(is_active=True)
 
         if search_q:
-            q = Q(username__istartswith=search_q)
+            q = None
 
-            if request.GET.get('fullname', None):
-                q = q | (Q(first_name__istartswith=search_q) |
-                         Q(last_name__istartswith=search_q))
+            # Auth backends may have special naming conventions for users that
+            # they'd like to be represented in search. If any auth backends
+            # implement search_users, prefer that over the built-in searching.
+            for backend in get_enabled_auth_backends():
+                q = backend.search_users(search_q, request)
+
+                if q:
+                    break
+
+            if not q:
+                q = Q(username__istartswith=search_q)
+
+                if request.GET.get('fullname', None):
+                    q = q | (Q(first_name__istartswith=search_q) |
+                             Q(last_name__istartswith=search_q))
 
             query = query.filter(q)
 
