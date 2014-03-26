@@ -55,7 +55,7 @@ class UpdateTests(TestCase):
         checks.reset_check_cache()
 
         updates_required = checks.check_updates_required()
-        self.assertEqual(len(updates_required), 1)
+        self.assertEqual(len(updates_required), 2)
 
         url, data = updates_required[0]
         self.assertEqual(url, "admin/manual-updates/media-upload-dir.html")
