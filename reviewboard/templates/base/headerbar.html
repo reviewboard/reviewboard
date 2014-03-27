@@ -12,7 +12,14 @@
   </li>
 {% if request.user.is_authenticated %}
   <li>
-   <a class="user-nav-item" href="{% url 'user-preferences' %}">{% gravatar user 32 %} {{request.user.username}} &#9662;</a>
+{%  spaceless %}
+   <a class="user-nav-item" href="{% url 'user-preferences' %}">
+{%   if siteconfig.settings.integration_gravatars %}
+    {% gravatar user 32 %}
+{%   endif %}
+     {{request.user.username}} &#9662;
+    </a>
+{%  endspaceless %}
    <ul>
     <li><a href="{% url 'user-preferences' %}">{% trans "My account" %}</a></li>
 {%  if request.user.is_staff %}

@@ -149,9 +149,12 @@ class RBTestRunner(DjangoTestSuiteRunner):
         settings.STATIC_ROOT = os.path.join(self.tempdir, 'static')
         settings.MEDIA_ROOT = os.path.join(self.tempdir, 'media')
         images_dir = os.path.join(settings.MEDIA_ROOT, "uploaded", "images")
+        legacy_extensions_media = os.path.join(settings.MEDIA_ROOT, 'ext')
+        extensions_media = os.path.join(settings.STATIC_ROOT, 'ext')
 
-        if not os.path.exists(images_dir):
-            os.makedirs(images_dir)
+        for dirname in (images_dir, legacy_extensions_media, extensions_media):
+            if not os.path.exists(dirname):
+                os.makedirs(dirname)
 
         # Collect all static media needed for tests, including web-based tests.
         execute_from_command_line([

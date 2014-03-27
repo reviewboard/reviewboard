@@ -1,9 +1,11 @@
 {% load gravatars i18n tz %}
 
 <li id="user_page_profile">
+{% if siteconfig.settings.integration_gravatars %}
  <div class="datagrid-sidebar-row">
   {% gravatar profile_user 175 %}
  </div>
+{% endif %}
 
  <div class="datagrid-sidebar-row">
   <h2 class="nickname">{{profile_user.username}}</h2>

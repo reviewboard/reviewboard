@@ -118,6 +118,19 @@ class AuthBackend(object):
         """
         pass
 
+    def search_users(self, query, request):
+        """Custom user-database search.
+
+        This call is executed when the User List web API resource is called
+        and the ``q`` search parameter is provided, indicating a search
+        query.
+
+        It must return either a django.db.models.Q object or None.  All
+        enabled backends are called until a Q object is returned.  If one
+        isn't returned, a default search is executed.
+        """
+        return None
+
 
 class StandardAuthBackend(AuthBackend, ModelBackend):
     """Authenticates users against the local database.

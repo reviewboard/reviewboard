@@ -49,6 +49,7 @@ It must also define the methods:
 And can optionally define these methods:
 
 * :py:meth:`query_users`
+* :py:meth:`search_users`
 
 We'll go into each function and attribute in detail.
 
@@ -202,6 +203,20 @@ We'll go into each function and attribute in detail.
    this function allows backends to search an external service and
    create or update users in the Review Board database before the
    query is executed.
+
+
+.. py:method:: search_users(query, request)
+
+   :param query: A user-query search string.
+   :param request: The current Django Request object.
+   :rtype: django.db.models.Q or ``None``.
+
+   This function is executed when querying :ref:`webapi2.0-user-list-resource`,
+   when the ``q`` parameter is given, meaning there is a search query.  It
+   can return a Django Q object to filter the database results, or it can
+   return None (the default, if not overriden).  If None, this method is
+   called on the next enabled auth backend, if any.  If all backends return
+   None, the default filter is applied.
 
 
 .. _auth-settings-form:
