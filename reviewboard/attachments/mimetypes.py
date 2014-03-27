@@ -225,12 +225,21 @@ class TextMimetype(MimetypeHandler):
         from reviewboard.diffviewer.chunk_generator import \
             NoWrapperHtmlFormatter
 
+        charset = self.mimetype[2].get('charset', 'ascii')
         try:
-            lexer = guess_lexer_for_filename(self.attachment.filename, data)
+            text = data.decode(charset)
+        except UnicodeDecodeError:
+            logging.error('Could not decode text file attachment %s using '
+                          'charset "%s"',
+                          self.attachment.pk, charset)
+            text = data.decode('utf-8', 'replace')
+
+        try:
+            lexer = guess_lexer_for_filename(self.attachment.filename, text)
         except ClassNotFound:
             lexer = TextLexer()
 
-        lines = highlight(data, lexer, NoWrapperHtmlFormatter()).splitlines()
+        lines = highlight(text, lexer, NoWrapperHtmlFormatter()).splitlines()
 
         return ''.join([
             '<pre>%s</pre>' % line
@@ -243,7 +252,7 @@ class TextMimetype(MimetypeHandler):
         f.open()
 
         try:
-            data_string = f.read(self.FILE_CROP_CHAR_LIMIT)
+            data = f.read(self.FILE_CROP_CHAR_LIMIT)
         except (ValueError, IOError) as e:
             logging.error('Failed to read from file attachment %s: %s'
                           % (self.attachment.pk, e))
@@ -251,7 +260,7 @@ class TextMimetype(MimetypeHandler):
 
         f.close()
         return mark_safe('<div class="file-thumbnail-clipped">%s</div>'
-                         % self._generate_preview_html(data_string))
+                         % self._generate_preview_html(data))
 
     def get_thumbnail(self):
         """Returns the thumbnail of the text file as rendered as html"""

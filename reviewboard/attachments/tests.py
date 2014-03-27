@@ -9,6 +9,7 @@ from django.core.cache import cache
 from django.core.files.uploadedfile import SimpleUploadedFile
 from djblets.testing.decorators import add_fixtures
 
+from reviewboard import initialize
 from reviewboard.attachments.forms import UploadFileForm
 from reviewboard.attachments.mimetypes import (MimetypeHandler,
                                                register_mimetype_handler,
@@ -21,6 +22,9 @@ from reviewboard.testing import TestCase
 
 
 class BaseFileAttachmentTestCase(TestCase):
+    def setUp(self):
+        initialize()
+
     def make_uploaded_file(self):
         filename = os.path.join(settings.STATIC_ROOT,
                                 'rb', 'images', 'trophy.png')
@@ -98,6 +102,37 @@ class FileAttachmentTests(BaseFileAttachmentTestCase):
         file_attachment = FileAttachment(added_in_filediff=filediff)
 
         self.assertTrue(file_attachment.is_from_diff)
+
+    @add_fixtures(['test_users', 'test_scmtools'])
+    def test_utf16_thumbnail(self):
+        """Testing file attachment thumbnail generation for UTF-16 files"""
+        filename = os.path.join(os.path.dirname(__file__),
+                                'testdata', 'utf-16.txt')
+        with open(filename) as f:
+            file = SimpleUploadedFile(f.name, f.read(),
+                                      content_type='text/plain;charset=utf-16le')
+            form = UploadFileForm(files={'path': file})
+            form.is_valid()
+
+            review_request = self.create_review_request(publish=True)
+            file_attachment = form.create(file, review_request)
+
+            self.assertEqual(file_attachment.thumbnail,
+                             u'<div class="file-thumbnail-clipped"><pre>'
+                             u'UTF-16le encoded sample plain-text file</pre>'
+                             u'<pre>\u203e\u203e\u203e\u203e\u203e\u203e'
+                             u'\u203e\u203e\u203e\u203e\u203e\u203e\u203e'
+                             u'\u203e\u203e\u203e\u203e\u203e\u203e\u203e'
+                             u'\u203e\u203e\u203e\u203e\u203e\u203e\u203e'
+                             u'\u203e\u203e\u203e\u203e\u203e\u203e\u203e'
+                             u'\u203e\u203e\u203e\u203e\u203e</pre><pre>'
+                             u'</pre><pre>Markus Kuhn [\u02c8ma\u02b3k\u028as'
+                             u' ku\u02d0n] &lt;http://www.cl.cam.ac.uk/~mgk25/'
+                             u'&gt; \u2014 2002-07-25</pre><pre></pre><pre>'
+                             u'</pre><pre>The ASCII compatible UTF-8 encoding '
+                             u'used in this plain-text file</pre><pre>is '
+                             u'defined in Unicode, ISO 10646-1, and RFC 2279.'
+                             u'</pre></div>')
 
 
 class MimetypeTest(MimetypeHandler):
