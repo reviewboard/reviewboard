@@ -3,6 +3,7 @@
 from __future__ import unicode_literals
 
 import os
+import re
 import sys
 
 import djblets
@@ -241,6 +242,13 @@ SESSION_COOKIE_AGE = 365 * 24 * 60 * 60  # 1 year
 # Default support settings
 DEFAULT_SUPPORT_URL = 'http://www.beanbaginc.com/support/reviewboard/' \
                       '?support-data=%(support_data)s'
+
+# Regular expression and flags used to match review request IDs in commit
+# messages for hosting service webhooks. These can be overriden in
+# settings_local.py.
+HOSTINGSVCS_HOOK_REGEX = (r'(?:Reviewed at %(server_url)sr/|Review request #)'
+                           '(?P<id>\d+)')
+HOSTINGSVCS_HOOK_REGEX_FLAGS = re.IGNORECASE
 
 
 # Load local settings.  This can override anything in here, but at the very

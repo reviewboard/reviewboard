@@ -2,15 +2,19 @@ from __future__ import unicode_literals
 
 import json
 import logging
+from collections import defaultdict
 
 from django import forms
 from django.conf import settings
+from django.conf.urls import patterns, url
 from django.contrib.sites.models import Site
 from django.core.cache import cache
+from django.http import HttpResponse
 from django.utils import six
 from django.utils.six.moves import http_client
 from django.utils.six.moves.urllib.error import HTTPError, URLError
 from django.utils.translation import ugettext_lazy as _
+from django.views.decorators.http import require_POST
 from djblets.siteconfig.models import SiteConfiguration
 
 from reviewboard.hostingsvcs.errors import (AuthorizationError,
@@ -18,6 +22,10 @@ from reviewboard.hostingsvcs.errors import (AuthorizationError,
                                             RepositoryError,
                                             TwoFactorAuthCodeRequiredError)
 from reviewboard.hostingsvcs.forms import HostingServiceForm
+from reviewboard.hostingsvcs.hook_utils import (close_all_review_requests,
+                                                get_git_branch_name,
+                                                get_review_request_id,
+                                                get_server_url)
 from reviewboard.hostingsvcs.service import HostingService
 from reviewboard.scmtools.core import Branch, Commit
 from reviewboard.scmtools.errors import FileNotFoundError, SCMError
@@ -160,6 +168,13 @@ class GitHub(HostingService):
     supports_repositories = True
     supports_two_factor_auth = True
     supported_scmtools = ['Git']
+
+    repository_url_patterns = patterns(
+        '',
+
+        url(r'^hooks/post-receive/$',
+            'reviewboard.hostingsvcs.github._process_post_receive_hook'),
+    )
 
     # This should be the prefix for every field on the plan forms.
     plan_field_prefix = 'github'
@@ -558,3 +573,50 @@ class GitHub(HostingService):
                 raise Exception(rsp['message'])
             else:
                 raise Exception(six.text_type(e))
+
+
+@require_POST
+def _process_post_receive_hook(request, *args, **kwargs):
+    """Closes review requests as submitted automatically after a push."""
+    try:
+        payload = json.loads(request.body)
+    except ValueError, e:
+        logging.error('The payload is not in JSON format: %s', e)
+        return HttpResponse(status=415)
+
+    server_url = get_server_url(request)
+    review_id_to_commits = _get_review_id_to_commits_map(payload, server_url)
+
+    if not review_id_to_commits:
+        return HttpResponse()
+
+    close_all_review_requests(review_id_to_commits)
+
+    return HttpResponse()
+
+
+def _get_review_id_to_commits_map(payload, server_url):
+    """Returns a dictionary, mapping a review request ID to a list of commits.
+
+    If a commit's commit message does not contain a review request ID, we append
+    the commit to the key 0.
+    """
+    review_id_to_commits_map = defaultdict(list)
+
+    ref_name = payload.get('ref', None)
+    branch_name = get_git_branch_name(ref_name)
+
+    if not branch_name:
+        return None
+
+    commits = payload.get('commits', [])
+
+    for commit in commits:
+        commit_hash = commit.get('id', None)
+        commit_message = commit.get('message', None)
+        review_request_id = get_review_request_id(commit_message, server_url)
+
+        commit_entry = '%s (%s)' % (branch_name, commit_hash[:7])
+        review_id_to_commits_map[review_request_id].append(commit_entry)
+
+    return review_id_to_commits_map
