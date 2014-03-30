@@ -8,6 +8,7 @@ from django.views.generic import TemplateView
 
 from reviewboard.datagrids.urls import urlpatterns as datagrid_urlpatterns
 from reviewboard.extensions.base import get_extension_manager
+from reviewboard.hostingsvcs.urls import urlpatterns as hostingsvcs_urlpatterns
 from reviewboard.webapi.resources import resources
 
 
@@ -104,3 +105,4 @@ urlpatterns += patterns(
 )
 
 urlpatterns += localsite_urlpatterns
+urlpatterns += hostingsvcs_urlpatterns
