@@ -60,6 +60,13 @@ class RepositoryCommitsResource(WebAPIResource):
             },
         })
     def get(self, request, start=None, *args, **kwargs):
+        """Retrieves a set of commits from a particular repository.
+
+        The ``start`` parameter is a commit ID to use as a starting point. This
+        allows both pagination and logging of different branches. Successive
+        pages of commit history can be fetched by using the ``parent`` field of
+        the last entry as the ``start`` parameter for another request.
+        """
         try:
             repository = resources.repository.get_object(request, *args,
                                                          **kwargs)

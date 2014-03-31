@@ -39,6 +39,7 @@ class RepositoryBranchesResource(WebAPIResource):
     @webapi_check_login_required
     @webapi_response_errors(DOES_NOT_EXIST, REPO_NOT_IMPLEMENTED)
     def get(self, request, *args, **kwargs):
+        """Retrieves an array of the branches in a repository."""
         try:
             repository = resources.repository.get_object(request, *args,
                                                          **kwargs)

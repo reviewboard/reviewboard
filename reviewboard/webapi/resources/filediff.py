@@ -137,6 +137,13 @@ class FileDiffResource(WebAPIResource):
         return resources.review_request.has_access_permissions(
             request, review_request, *args, **kwargs)
 
+    def has_modify_permissions(self, request, filedif, *args, **kwargs):
+        review_request = resources.review_request.get_object(
+            request, *args, **kwargs)
+
+        return resources.review_request.has_modify_permissions(
+            request, review_request, *args, **kwargs)
+
     @webapi_check_local_site
     @augment_method_from(WebAPIResource)
     def get_list(self, *args, **kwargs):

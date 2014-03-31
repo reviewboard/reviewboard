@@ -18,6 +18,7 @@ class ReviewDraftResource(WebAPIResource):
     @webapi_check_local_site
     @webapi_login_required
     def get(self, request, *args, **kwargs):
+        """Returns an HTTP redirect to the current draft review."""
         try:
             review_request = \
                 resources.review_request.get_object(request, *args, **kwargs)
