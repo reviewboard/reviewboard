@@ -120,6 +120,12 @@ class HostingServiceAccountResource(WebAPIResource):
     )
     def create(self, request, username, service_id, password=None,
                hosting_url=None, local_site_name=None, *args, **kwargs):
+        """Creates a hosting service account.
+
+        The ``service_id`` is a registered HostingService ID. This must be
+        known beforehand, and can be looked up in the Review Board
+        administration UI.
+        """
         local_site = self._get_local_site(local_site_name)
 
         if not HostingServiceAccount.objects.can_create(request.user,

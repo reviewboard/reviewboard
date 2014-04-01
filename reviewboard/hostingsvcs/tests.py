@@ -4,6 +4,8 @@ import json
 from hashlib import md5
 from textwrap import dedent
 
+from django.conf.urls import patterns, url
+from django.http import HttpResponse
 from django.utils import six
 from django.utils.six.moves import cStringIO as StringIO
 from django.utils.six.moves.urllib.error import HTTPError
@@ -12,7 +14,10 @@ from kgb import SpyAgency
 
 from reviewboard.hostingsvcs.errors import RepositoryError
 from reviewboard.hostingsvcs.models import HostingServiceAccount
-from reviewboard.hostingsvcs.service import get_hosting_service
+from reviewboard.hostingsvcs.service import (get_hosting_service,
+                                             HostingService,
+                                             register_hosting_service,
+                                             unregister_hosting_service)
 from reviewboard.scmtools.core import Branch
 from reviewboard.scmtools.crypto_utils import encrypt_password
 from reviewboard.scmtools.errors import FileNotFoundError, SCMError
@@ -1940,3 +1945,63 @@ class VersionOneTests(ServiceTests):
                 'versionone_url': 'http://versionone.example.com',
             }),
             'http://versionone.example.com/assetdetail.v1?Number=%s')
+
+
+def hosting_service_url_test_view(request, repo_id):
+    """View to test URL pattern addition when registering a hosting service"""
+    return HttpResponse(str(repo_id))
+
+
+class HostingServiceUrlPatternTests(TestCase):
+    """Unit tests for generating URL patterns."""
+    test_url = '/repos/1/DummyService/hooks/pre-commit/'
+
+    class DummyService(HostingService):
+        name = 'DummyService'
+
+        repository_url_patterns = patterns(
+            '',
+            url(r'^hooks/pre-commit/$',
+            hosting_service_url_test_view)
+        )
+
+    def test_url_registration(self):
+        """Testing the registration and unregistration of a hosting service"""
+        # Testing hosting service and URL registration
+        register_hosting_service('DummyService', self.DummyService)
+        response = self.client.get(self.test_url)
+        self.assertEqual(response.status_code, 200)
+
+        # Once registered, should not be able to register again
+        self.assertRaises(KeyError,
+                          register_hosting_service,
+                          'DummyService',
+                          self.DummyService)
+
+        # Testing unregistration of hosting service. Should not be
+        # able to resolve the URL
+        unregister_hosting_service('DummyService')
+        response = self.client.get(self.test_url)
+        self.assertEqual(response.status_code, 404)
+
+        # Once unregistered, should not be able to unregister again
+        self.assertRaises(KeyError,
+                          unregister_hosting_service,
+                          'DummyService')
+
+        # Should not add repository_url_patterns if it is None.
+        # But should still register the hosting service
+        self.DummyService.repository_url_patterns = None
+        register_hosting_service('DummyService', self.DummyService)
+        self.assertRaises(KeyError,
+                          register_hosting_service,
+                          'DummyService',
+                          self.DummyService)
+        response = self.client.get(self.test_url)
+        self.assertEqual(response.status_code, 404)
+
+        # Should be able to unregister successfully after the previous
+        # test.
+        unregister_hosting_service('DummyService')
+        response = self.client.get(self.test_url)
+        self.assertEqual(response.status_code, 404)

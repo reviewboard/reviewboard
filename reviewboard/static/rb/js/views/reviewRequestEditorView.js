@@ -1167,11 +1167,19 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
 
     /*
      * Handler for when Close -> Discarded is clicked.
+     *
+     * The user will be asked for confirmation before the review request is
+     * discarded.
      */
     _onCloseDiscardedClicked: function() {
-        this.model.get('reviewRequest').close({
-            type: RB.ReviewRequest.CLOSE_DISCARDED
-        });
+        var confirmText = gettext(
+            "Are you sure you want to discard this review request?");
+
+        if (confirm(confirmText)) {
+            this.model.get('reviewRequest').close({
+                type: RB.ReviewRequest.CLOSE_DISCARDED
+            });
+        }
 
         return false;
     },

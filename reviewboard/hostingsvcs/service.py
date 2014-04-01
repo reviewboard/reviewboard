@@ -5,6 +5,7 @@ import json
 import logging
 import mimetools
 
+from django.conf.urls import include, patterns, url
 from django.utils import six
 from django.utils.six.moves.urllib.parse import urlparse
 from django.utils.six.moves.urllib.request import (Request as URLRequest,
@@ -12,6 +13,8 @@ from django.utils.six.moves.urllib.request import (Request as URLRequest,
                                                    urlopen)
 from django.utils.translation import ugettext_lazy as _
 from pkg_resources import iter_entry_points
+
+import reviewboard.hostingsvcs.urls as hostingsvcs_urls
 
 
 class HostingService(object):
@@ -37,6 +40,7 @@ class HostingService(object):
     supports_ssh_key_association = False
     supports_two_factor_auth = False
     self_hosted = False
+    repository_url_patterns = None
 
     # These values are defaults that can be overridden in repository_plans
     # above.
@@ -316,6 +320,8 @@ class HostingService(object):
 
 
 _hosting_services = {}
+_hostingsvcs_urlpatterns = {}
+_populated = False
 
 
 def _populate_hosting_services():
@@ -324,14 +330,41 @@ def _populate_hosting_services():
     This is called any time we need to access or modify the list of hosting
     services, to ensure that we have loaded the initial list once.
     """
-    if not _hosting_services:
+    global _populated
+
+    if not _populated:
+        _populated = True
+
         for entry in iter_entry_points('reviewboard.hosting_services'):
             try:
-                _hosting_services[entry.name] = entry.load()
+                register_hosting_service(entry.name, entry.load())
             except Exception as e:
                 logging.error(
                     'Unable to load repository hosting service %s: %s'
                     % (entry, e))
+
+
+def _add_hosting_service_url_pattern(name, cls):
+    """Adds the URL patterns defined by the registering hosting service.
+
+    Creates a base URL pattern for the hosting service based on the name
+    and adds the repository_url_patterns of the class to the base URL
+    pattern.
+
+    Throws a KeyError if the hosting URL pattern has already been added
+    before. Does not add the url_pattern of the hosting service if the
+    repository_url_patterns property is None.
+    """
+    if name in _hostingsvcs_urlpatterns:
+        raise KeyError('URL patterns for "%s" are already added.' % name)
+
+    if cls.repository_url_patterns:
+        cls_urlpatterns = patterns(
+            '',
+            url(r'^' + name + '/', include(cls.repository_url_patterns))
+        )
+        _hostingsvcs_urlpatterns[name] = cls_urlpatterns
+        hostingsvcs_urls.dynamic_urls.add_patterns(cls_urlpatterns)
 
 
 def get_hosting_services():
@@ -368,6 +401,8 @@ def register_hosting_service(name, cls):
 
     _hosting_services[name] = cls
 
+    _add_hosting_service_url_pattern(name, cls)
+
 
 def unregister_hosting_service(name):
     """Unregisters a previously registered hosting service."""
@@ -379,3 +414,8 @@ def unregister_hosting_service(name):
         logging.error('Failed to unregister unknown hosting service "%s"' %
                       name)
         raise KeyError('"%s" is not a registered hosting service' % name)
+
+    if name in _hostingsvcs_urlpatterns:
+        hostingsvc_urlpattern = _hostingsvcs_urlpatterns[name]
+        hostingsvcs_urls.dynamic_urls.remove_patterns(hostingsvc_urlpattern)
+        del _hostingsvcs_urlpatterns[name]

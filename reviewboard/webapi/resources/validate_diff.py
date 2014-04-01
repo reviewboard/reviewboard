@@ -86,6 +86,13 @@ class ValidateDiffResource(DiffResource):
     )
     def create(self, request, repository, basedir=None, local_site_name=None,
                *args, **kwargs):
+        """Validate a diff.
+
+        This API has a similar signature to the ReviewRequest resource POST
+        API, but instead of actually creating a review request, will return
+        either OK or an error, depending on whether the included diff file
+        parsed correctly.
+        """
         local_site = self._get_local_site(local_site_name)
 
         path = request.FILES.get('path')

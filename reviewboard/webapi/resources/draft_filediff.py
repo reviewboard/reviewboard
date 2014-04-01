@@ -48,6 +48,12 @@ class DraftFileDiffResource(FileDiffResource):
 
         return draft.is_accessible_by(request.user)
 
+    def has_modify_permissions(self, request, filediff, *args, **kwargs):
+        draft = resources.review_request_draft.get_object(
+            request, *args, **kwargs)
+
+        return draft.is_mutable_by(request.user)
+
     @webapi_check_local_site
     @webapi_login_required
     @augment_method_from(FileDiffResource)

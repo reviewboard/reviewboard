@@ -114,6 +114,10 @@ class DiffResource(WebAPIResource):
         review_request = diffset.history.review_request.get()
         return review_request.is_accessible_by(request.user)
 
+    def has_modify_permissions(self, request, diffset, *args, **kwargs):
+        review_request = diffset.history.review_request.get()
+        return review_request.is_mutable_by(request.user)
+
     @webapi_check_login_required
     @webapi_check_local_site
     @webapi_response_errors(DOES_NOT_EXIST)
