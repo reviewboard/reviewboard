@@ -1,0 +1,278 @@
+===================================
+Review Board 2.0 RC 2 Release Notes
+===================================
+
+**Release date:** TBD
+
+This release contains all bug fixes and features found in Review Board version
+:doc:`1.7.22 <1.7.22>`.
+
+
+Installation
+============
+
+To install this release, run the following::
+
+    $ sudo easy_install \
+        -f http://downloads.reviewboard.org/releases/ReviewBoard/2.0/ \
+        -U ReviewBoard
+
+We are very close to the final release of 2.0. If you are intending to run
+2.0 on a production server, it is time to do some testing with this release to
+make sure we address any bugs you may run into.
+
+If you are careful with backups, you may run this on a production server, but
+you may experience bugs. It is best to install on a test server first, in case
+there are any major problems.
+
+
+Important Upgrade Notes
+=======================
+
+**Make a backup of your database!**
+
+Substantial changes were made to database migration. While our testing has
+shown it to work, it *could* leave your database in a bad state.
+
+Do **not** upgrade a production database without a full backup.
+
+Please let us know if you have any problems with the upgrade.
+
+
+New Features
+============
+
+Admin Widget Reordering
+-----------------------
+
+The widgets in the administration dashboard can now be reordered through
+drag-and-drop. This allows admins to choose which widgets they want to see
+near the top of the page, and which they want to keep further down.
+
+This is the first step toward customization of the administration UI. In
+future releases, administrators will be able to add or remove widgets, and
+extensions will be able to provide new widgets.
+
+Patch by Stephanie Su.
+
+
+Option to Disable Gravatars
+---------------------------
+
+The Gravatars shown in the top header bar, user infobox, and user page's
+sidebar can now be disabled through a "Use Gravatar images" setting in the
+General Settings page.
+
+This is useful for environments that are locked down and don't allow access to
+the Internet.
+
+:bug:`3030`
+
+
+Experimental Post-Receive Hook for GitHub
+-----------------------------------------
+
+We are testing a new post-recieve webhook for GitHub, which we'll expand upon
+in upcoming releases.
+
+This webhook can be used to close review requests referenced in pushed
+commits. To use this, you'll need to edit the settings for your repository on
+GitHub, add a WebHook entry, choose a JSON payload, and enter the hook URL.
+This URL is in the form of
+:samp:`http://<server>/repos/<repo_id>/hooks/github/post-receive/`, where
+``repo_id`` is the numeric ID of your repository (available in the
+administration UI).
+
+Note that this requires your server be reachable over the Internet by GitHub's
+servers.
+
+The hook will then look for all commits with::
+
+    Reviewed at http://<server>/r/<id>/
+
+or::
+
+    Review request #<id>
+
+If found, the review request will be closed with a reference to the committed
+revisions and branches.
+
+Future versions will introduce hooks for additional services, and improve the
+setup process.
+
+Patches by Anselina Chia and Bhushan Ramnani.
+
+
+Improvements to rb-site
+-----------------------
+
+Simpler Installs
+~~~~~~~~~~~~~~~~
+
+:command:`rb-site install` has a new stream-lined installation experience. It
+now asks fewer questions, focusing on handling common installations using
+Apache, mod_wsgi, and memcached. This reduces the number of questions you have
+to answer.
+
+Passing :option:`--advanced` will cause all original questions to be
+presented.
+
+
+Management Commands for Extensions
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Three new :command:`rb-site manage` commands have been added to manage the
+list of enabled extensions: ``list-extensions``, ``enable-extension``, and
+``disable-extension``.
+
+``list-extensions`` will list all the extensions that Review Board currently
+knows about, as well as their enabled states.
+
+``enable-extension`` and ``disable-extension`` take an extension ID and can
+enable or disable the given extension, which is helpful when an extension has
+broken the installation.
+
+
+Removed Features
+================
+
+* :command:`rb-site install` no longer provides a graphical interface when run
+  on Linux desktops. This was removed to provide consistency and attention
+  around the text-based install, and to reduce the maintenance and bug count.
+
+
+Usability Improvements
+======================
+
+* Added a red glow around opened but unfocused field editors on review
+  requests. (:bug:`3242`)
+
+  It was easy to miss that a field was open for edit but not saved, which
+  could lead to lost data or warnings when leaving the page. There's now a
+  red glow around these fields to help highlight what's still open.
+
+* Added confirmation when discarding a review request. (:bug:`3117`)
+
+  It was easy to accidentally close a review request as discarded instead of
+  submitted, which then required re-publishing before closing again.
+
+  Now, closing as discarded will first prompt for confirmation, in order
+  to ensure it wasn't chosen by accident.
+
+  Patch by Anselina Chia.
+
+
+Performance Improvements
+========================
+
+* Improved query time of lists of review requests when one or more are
+  private.
+
+
+Extensibility
+=============
+
+Authentication Backends
+-----------------------
+
+Custom User Filtering
+~~~~~~~~~~~~~~~~~~~~~
+
+An :py:meth:`AuthBackend.search_users` method was added, which is called when
+querying a list of users using the API. This function can override the query
+to perform a lookup with the provided query string in whatever way is most
+appropriate for the backend.
+
+This can be used, for example, to filter out users not matching certain
+criteria, or to change which fields are matched.
+
+Patch by Mark Côté.
+
+
+Bug Fixes
+=========
+
+New Review Request Page
+-----------------------
+
+* Fixed creating review requests from Subversion commits in the New Review
+  Request page when using the new Subvertpy_ backend.
+
+.. _Subvertpy: http://www.samba.org/~jelmer/subvertpy/
+
+
+Diff Viewer
+-----------
+
+* The :guilabel:`View Reviews` link was unintentionally hidden at times
+  when working with interdiffs.
+
+* Fixed a unicode issue when parsing files for interdiffs. (:bug:`3291`)
+
+* Key-based navigation now skips chunks of code hidden when hiding
+  whitespace-only chunks. (:bug:`3280`)
+
+
+File Attachments
+----------------
+
+* Text files encoded with UTF-16le no longer cause breakages when generating
+  thumbnails. (:bug:`3282`)
+
+
+Repository Configuration
+------------------------
+
+* Added back the "Show SSH Public Key" link for new repositories.
+  (:bug:`3262`)
+
+
+rb-site
+-------
+
+* The :command:`rb-site manage` command once again allows running management
+  commands from extensions.
+
+* :command:`rb-site install` gracefully handles issues when failing to create
+  a database, allowing the user to fix the issue and try again without
+  recreating the whole site. (:bug:`2126`)
+
+
+GitLab
+------
+
+* Fixed e-mail-based authentication on older versions of GitLab.
+
+  Patch by Tomi Äijö.
+
+
+LDAP
+----
+
+* Fixed porting over LDAP settings from older installations. This had
+  regressed in 2.0 beta 3.
+
+  Patch by Stephen Gallagher.
+
+
+Other Changes
+-------------
+
+* Added some bullet-proofing when failing to load settings from the
+  database.
+
+* Fixed some issues using the site (particularly the dashboard) when using a
+  multi-threaded web server or loader such as Apache's mod_worker.
+
+
+Contributors
+============
+
+* Anselina Chia
+* Bhushan Ramnani
+* Christian Hammond
+* David Trowbridge
+* Mark Côté
+* Stephanie Su
+* Stephen Gallagher
+* Tomi Äijö
