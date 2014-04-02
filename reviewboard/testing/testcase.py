@@ -358,16 +358,14 @@ class TestCase(DjbletsTestCase):
         return review
 
     def create_review_group(self, name='test-group', with_local_site=False,
-                            visible=True, invite_only=False):
+                            local_site=None, visible=True, invite_only=False):
         """Creates a review group for testing.
 
         The group may optionally be attached to a LocalSite. It's also
         populated with default data that can be overridden by the caller.
         """
-        if with_local_site:
+        if not local_site and with_local_site:
             local_site = LocalSite.objects.get(name=self.local_site_name)
-        else:
-            local_site = None
 
         return Group.objects.create(
             name=name,

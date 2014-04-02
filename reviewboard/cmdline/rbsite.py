@@ -16,6 +16,7 @@ import subprocess
 from optparse import OptionGroup, OptionParser
 from random import choice
 
+from django.db.utils import OperationalError
 from django.utils import six
 from django.utils.six.moves import input
 
@@ -179,12 +180,31 @@ class Site(object):
         self.mkdir(media_dir)
         self.mkdir(static_dir)
 
-        # TODO: In the future, support changing ownership of these
-        #       directories.
-        self.mkdir(os.path.join(media_dir, "uploaded"))
-        self.mkdir(os.path.join(media_dir, "uploaded", "images"))
-        self.mkdir(os.path.join(media_dir, "ext"))
-        self.mkdir(os.path.join(static_dir, "ext"))
+        uploaded_dir = os.path.join(media_dir, 'uploaded')
+
+        self.mkdir(uploaded_dir)
+
+        # Assuming this is an upgrade, the 'uploaded' directory should
+        # already have the right permissions for writing, so use that as a
+        # template for all the new directories.
+        writable_st = os.stat(uploaded_dir)
+
+        writable_dirs = [
+            os.path.join(uploaded_dir, 'images'),
+            os.path.join(uploaded_dir, 'files'),
+            os.path.join(media_dir, 'ext'),
+            os.path.join(static_dir, 'ext'),
+        ]
+
+        for writable_dir in writable_dirs:
+            self.mkdir(writable_dir)
+
+            try:
+                os.chown(writable_dir, writable_st.st_uid, writable_st.st_gid)
+            except OSError:
+                # The user didn't have permission to change the ownership,
+                # they'll have to do this manually later.
+                pass
 
         self.link_pkg_dir(
             "reviewboard",
@@ -268,9 +288,7 @@ class Site(object):
         enable_wsgi = False
 
         if self.web_server_type == "apache":
-            if self.python_loader == "modpython":
-                web_conf_filename = "apache-modpython.conf"
-            elif self.python_loader == "fastcgi":
+            if self.python_loader == "fastcgi":
                 web_conf_filename = "apache-fastcgi.conf"
                 enable_fastcgi = True
             elif self.python_loader == "wsgi":
@@ -381,7 +399,23 @@ class Site(object):
         if not allow_input:
             params.append("--noinput")
 
-        self.run_manage_command("syncdb", params)
+        while True:
+            try:
+                self.run_manage_command("syncdb", params)
+                break
+            except OperationalError as e:
+                ui.error('There was an error synchronizing the database. '
+                         'Make sure the database is created and has the '
+                         'appropriate permissions, and then continue.'
+                         '\n'
+                         'Details: %s'
+                         % e,
+                         force_wait=True)
+            except Exception:
+                # This is an unexpected error, and we don't know how to
+                # handle this. Bubble it up.
+                raise
+
         self.run_manage_command("registerscmtools")
 
     def migrate_database(self):
@@ -776,7 +810,7 @@ class UIToolkit(object):
         """
         raise NotImplementedError
 
-    def error(self, text, done_func=None):
+    def error(self, text, force_wait=False, done_func=None):
         """
         Displays a block of error text to the user.
         """
@@ -976,12 +1010,18 @@ class ConsoleUI(UIToolkit):
         func()
         print("OK")
 
-    def error(self, text, done_func=None):
+    def error(self, text, force_wait=False, done_func=None):
         """
         Displays a block of error text to the user.
         """
         print()
-        print(self.error_wrapper.fill(text))
+
+        for text_block in text.split('\n'):
+            print(self.error_wrapper.fill(text_block))
+
+        if force_wait:
+            print()
+            input('Press Enter to continue')
 
         if done_func:
             done_func()
@@ -1010,6 +1050,10 @@ class InstallCommand(Command):
 
         group = OptionGroup(parser, "'install' command",
                             self.__doc__.strip())
+        group.add_option('--advanced', action='store_true',
+                         dest='advanced',
+                         default=False,
+                         help='provide more advanced configuration options')
         group.add_option("--copy-media", action="store_true",
                          dest="copy_media",
                          default=is_windows,
@@ -1040,18 +1084,21 @@ class InstallCommand(Command):
                          help="password for the database user "
                               "(not for sqlite3)")
         group.add_option("--cache-type",
+                         default='memcached',
                          help="cache server type (memcached or file)")
         group.add_option("--cache-info",
+                         default='localhost:11211',
                          help="cache identifier (memcached connection string "
                               "or file cache directory)")
         group.add_option("--web-server-type",
+                         default='apache',
                          help="web server (apache or lighttpd)")
         group.add_option("--web-server-port",
                          help="port that the web server should listen on",
                          default='80')
         group.add_option("--python-loader",
-                         help="python loader for apache (modpython, fastcgi "
-                              "or wsgi)")
+                        default='wsgi',
+                         help="python loader for apache (fastcgi or wsgi)")
         group.add_option("--admin-user", default="admin",
                          help="the site administrator's username")
         group.add_option("--admin-password",
@@ -1084,16 +1131,25 @@ class InstallCommand(Command):
         if not options.noinput:
             self.ask_domain()
             self.ask_site_root()
-            self.ask_shipped_media_url()
-            self.ask_uploaded_media_url()
+
+            if options.advanced:
+                self.ask_shipped_media_url()
+                self.ask_uploaded_media_url()
+
             self.ask_database_type()
             self.ask_database_name()
             self.ask_database_host()
             self.ask_database_login()
-            self.ask_cache_type()
+
+            if options.advanced:
+                self.ask_cache_type()
+
             self.ask_cache_info()
-            self.ask_web_server_type()
-            self.ask_python_loader()
+
+            if options.advanced:
+                self.ask_web_server_type()
+                self.ask_python_loader()
+
             self.ask_admin_user()
             # Do not ask for sitelist file, it should not be common.
 
@@ -1318,7 +1374,7 @@ class InstallCommand(Command):
         ui.text(page, "This is in the format of hostname:port")
 
         ui.prompt_input(page, "Memcache Server",
-                        site.cache_info or "localhost:11211",
+                        site.cache_info,
                         save_obj=site, save_var="cache_info")
 
         # Appears only if using file caching.
@@ -1347,7 +1403,6 @@ class InstallCommand(Command):
                          [
                              ("wsgi", "(recommended)", True),
                              "fastcgi",
-                             ("modpython", "(no longer supported)", True),
                          ],
                          save_obj=site, save_var="python_loader")
 
@@ -1513,13 +1568,6 @@ class UpgradeCommand(Command):
             print()
             print("You need to change the ownership of this directory so that")
             print("the web server can write to it.")
-            print()
-            print("If using mod_python, you will also need to add the "
-                  " following")
-            print("to your Review Board Apache configuration:")
-            print()
-            print("    SetEnv HOME %s" % os.path.join(site.abs_install_dir,
-                                                      "data"))
 
         if static_media_upgrade_needed:
             from djblets.siteconfig.models import SiteConfiguration
