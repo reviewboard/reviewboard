@@ -164,7 +164,12 @@ def check_updates_required():
 
         # Check if the the legacy htdocs and modern static extension
         # directories exist and are writable by us.
-        for root in (settings.MEDIA_ROOT, settings.STATIC_ROOT):
+        ext_roots = [settings.MEDIA_ROOT]
+
+        if not settings.DEBUG:
+            ext_roots.append(settings.STATIC_ROOT)
+
+        for root in ext_roots:
             ext_dir = os.path.join(root, 'ext')
 
             if not os.path.isdir(ext_dir) or not os.access(ext_dir, os.W_OK):
