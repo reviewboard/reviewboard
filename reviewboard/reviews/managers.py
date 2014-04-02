@@ -10,6 +10,7 @@ from djblets.util.db import ConcurrencyManager
 
 from reviewboard.diffviewer.models import DiffSetHistory
 from reviewboard.scmtools.errors import ChangeNumberInUseError
+from reviewboard.scmtools.models import Repository
 
 
 class DefaultReviewerManager(Manager):
@@ -259,6 +260,8 @@ class ReviewRequestManager(ConcurrencyManager):
 
     def _query(self, user=None, status='P', with_counts=False,
                extra_query=None, local_site=None, filter_private=False):
+        from reviewboard.reviews.models import Group
+
         is_authenticated = (user is not None and user.is_authenticated())
 
         query = Q(public=True)
@@ -283,10 +286,15 @@ class ReviewRequestManager(ConcurrencyManager):
                            Q(target_groups__invite_only=False))
 
             if is_authenticated:
-                repo_query = repo_query | (
-                    Q(repository__users=user) |
-                    Q(repository__review_groups__users=user))
-                group_query = group_query | Q(target_groups__users=user)
+                accessible_repo_ids = Repository.objects.filter(
+                    Q(users=user) |
+                    Q(review_groups__users=user)).values_list('pk', flat=True)
+                accessible_group_ids = Group.objects.filter(
+                    users=user).values_list('pk', flat=True)
+
+                repo_query = repo_query | Q(repository__in=accessible_repo_ids)
+                group_query = (group_query |
+                               Q(target_groups__in=accessible_group_ids))
 
                 query = query & (Q(submitter=user) |
                                  (repo_query &
