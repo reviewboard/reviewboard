@@ -7,6 +7,7 @@ from django.conf import settings
 from django.contrib.sites.models import Site
 from django.core.urlresolvers import resolve, Resolver404
 from django.http import Http404
+from django.utils import six
 from djblets.siteconfig.models import SiteConfiguration
 
 from reviewboard.reviews.models import ReviewRequest
@@ -31,11 +32,16 @@ def get_git_branch_name(ref_name):
         return ref_name[len(branch_ref_prefix):]
 
 
-def get_review_request_id(commit_message, server_url):
-    """Returns the review request ID referenced in the commit message.
+def get_review_request_id(commit_message, server_url, commit_id):
+    """Returns the review request ID matching the pushed commit.
+
+    We first use a regex (that can be overriden in settings_local.py) to try to
+    find a matching review request ID in the commit message. If no match is
+    found with the regex, we then try to find a review request with a matching
+    commit ID.
 
     We assume there is at most one review request associated with each commit.
-    If a matching review request cannot be found, we return 0.
+    If a matching review request cannot be found, we return None.
     """
     regex = settings.HOSTINGSVCS_HOOK_REGEX % {
         'server_url': server_url,
@@ -43,7 +49,22 @@ def get_review_request_id(commit_message, server_url):
 
     pattern = re.compile(regex, settings.HOSTINGSVCS_HOOK_REGEX_FLAGS)
     match = pattern.search(commit_message)
-    return (match and int(match.group('id'))) or 0
+
+    if match:
+        try:
+            review_request_id = int(match.group('id'))
+        except ValueError:
+            logging.error('The review request ID must be an integer.')
+            review_request_id = None
+    else:
+        try:
+            review_request = ReviewRequest.objects.get(
+                commit_id=six.text_type(commit_id))
+            review_request_id = review_request.display_id
+        except ReviewRequest.DoesNotExist:
+            review_request_id = None
+
+    return review_request_id
 
 
 def close_review_request(review_request, review_request_id, description):
@@ -62,8 +83,8 @@ def close_all_review_requests(review_id_to_commits):
     """Closes each review request in the given dictionary as submitted.
 
     The provided dictionary should map a review request ID (int) to commits
-    associated with that review request ID (list of strings). Commits that are not
-    associated with any review requests have the review request ID 0.
+    associated with that review request ID (list of strings). Commits that are
+    not associated with any review requests have the key None.
     """
     for review_request_id in review_id_to_commits:
         if not review_request_id:

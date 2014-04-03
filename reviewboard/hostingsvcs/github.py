@@ -599,7 +599,7 @@ def _get_review_id_to_commits_map(payload, server_url):
     """Returns a dictionary, mapping a review request ID to a list of commits.
 
     If a commit's commit message does not contain a review request ID, we append
-    the commit to the key 0.
+    the commit to the key None.
     """
     review_id_to_commits_map = defaultdict(list)
 
@@ -614,7 +614,8 @@ def _get_review_id_to_commits_map(payload, server_url):
     for commit in commits:
         commit_hash = commit.get('id', None)
         commit_message = commit.get('message', None)
-        review_request_id = get_review_request_id(commit_message, server_url)
+        review_request_id = get_review_request_id(commit_message, server_url,
+                                                  commit_hash)
 
         commit_entry = '%s (%s)' % (branch_name, commit_hash[:7])
         review_id_to_commits_map[review_request_id].append(commit_entry)
