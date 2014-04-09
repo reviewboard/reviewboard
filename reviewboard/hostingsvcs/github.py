@@ -1,6 +1,7 @@
 import httplib
 import logging
 import urllib2
+import uuid
 
 from django import forms
 from django.conf import settings
@@ -225,10 +226,16 @@ class GitHub(HostingService):
         site = Site.objects.get_current()
         siteconfig = SiteConfiguration.objects.get_current()
 
-        site_url = '%s://%s%s' % (
-            siteconfig.get('site_domain_method'),
+        site_base_url = '%s%s' % (
             site.domain,
             local_site_reverse('root', local_site_name=local_site_name))
+
+        site_url = '%s://%s' % (siteconfig.get('site_domain_method'),
+                                site_base_url)
+
+        note = 'Access for Review Board (%s - %s)' % (
+            site_base_url,
+            uuid.uuid4().hex[:7])
 
         try:
             body = {
@@ -236,7 +243,7 @@ class GitHub(HostingService):
                     'user',
                     'repo',
                 ],
-                'note': 'Access for Review Board',
+                'note': note,
                 'note_url': site_url,
             }
 
