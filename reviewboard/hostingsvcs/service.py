@@ -27,6 +27,15 @@ class HTTPErrorProcessor(urllib2.HTTPErrorProcessor):
     https_response = http_response
 
 
+class URLRequest(urllib2.Request):
+    def __init__(self, url, body='', headers={}, method='GET'):
+        urllib2.Request.__init__(self, url, body, headers)
+        self.method = method
+
+    def get_method(self):
+        return self.method
+
+
 class HostingService(object):
     """An interface to a hosting service for repositories and bug trackers.
 
@@ -230,8 +239,16 @@ class HostingService(object):
         data, headers = self._http_post(*args, **kwargs)
         return simplejson.loads(data), headers
 
+    def _json_delete(self, *args, **kwargs):
+        data, headers = self._http_delete(*args, **kwargs)
+
+        if data:
+            data = json.loads(data)
+
+        return data, headers
+
     def _http_get(self, url, *args, **kwargs):
-        return self._http_request(url, **kwargs)
+        return self._http_request(url, method='GET', **kwargs)
 
     def _http_post(self, url, body=None, fields={}, files={},
                    content_type=None, headers={}, *args, **kwargs):
@@ -248,11 +265,18 @@ class HostingService(object):
 
         headers['Content-Length'] = str(len(body))
 
-        return self._http_request(url, body, headers, **kwargs)
+        return self._http_request(url, body, headers, method='POST',
+                                  **kwargs)
+
+    def _http_delete(self, url, headers={}, *args, **kwargs):
+        headers = headers.copy()
+
+        return self._http_request(url, headers=headers, method='DELETE',
+                                  **kwargs)
 
     def _build_request(self, url, body=None, headers={}, username=None,
-                       password=None):
-        r = urllib2.Request(url, body, headers)
+                       password=None, method='GET'):
+        r = URLRequest(url, body, headers, method=method)
 
         if username is not None and password is not None:
             r.add_header(urllib2.HTTPBasicAuthHandler.auth_header,
