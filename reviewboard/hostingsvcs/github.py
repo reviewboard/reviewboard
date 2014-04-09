@@ -2,6 +2,8 @@ from __future__ import unicode_literals
 
 import json
 import logging
+import urllib2
+import uuid
 from collections import defaultdict
 
 from django import forms
@@ -247,10 +249,16 @@ class GitHub(HostingService):
         site = Site.objects.get_current()
         siteconfig = SiteConfiguration.objects.get_current()
 
-        site_url = '%s://%s%s' % (
-            siteconfig.get('site_domain_method'),
+        site_base_url = '%s%s' % (
             site.domain,
             local_site_reverse('root', local_site_name=local_site_name))
+
+        site_url = '%s://%s' % (siteconfig.get('site_domain_method'),
+                                site_base_url)
+
+        note = 'Access for Review Board (%s - %s)' % (
+            site_base_url,
+            uuid.uuid4().hex[:7])
 
         try:
             body = {
@@ -258,7 +266,7 @@ class GitHub(HostingService):
                     'user',
                     'repo',
                 ],
-                'note': 'Access for Review Board',
+                'note': note,
                 'note_url': site_url,
             }
 
@@ -711,6 +719,9 @@ class GitHub(HostingService):
                 raise TwoFactorAuthCodeRequiredError(
                     _('Enter your two-factor authentication code. '
                       'This code will be sent to you by GitHub.'))
+
+            if e.code == 401:
+                raise AuthorizationError(rsp['message'])
 
             raise HostingServiceError(rsp['message'])
         else:
