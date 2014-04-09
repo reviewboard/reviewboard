@@ -1,0 +1,99 @@
+=================================
+Review Board 1.7.23 Release Notes
+=================================
+
+**Release date**: April 9, 2014
+
+
+Security Announcements
+======================
+
+On April 7th, 2014, the Heartbleed_ vulnerability in OpenSSL was announced to
+the world. This affects servers running a wide range of OpenSSL versions.
+Since then, companies have been hard at work upgrading their versions and
+re-issuing their possibly compromised SSL certificates.
+
+GitHub
+`recommends <https://github.com/blog/1818-security-heartbleed-vulnerability>`_
+resetting passwords, enabling two-factor authentication, and revoking all
+account access tokens.
+
+If you are using Review Board with GitHub, then you'll want to reset your auth
+tokens you set up when linking repositories. Starting in this release, you can
+reset these tokens by typing::
+
+    $ rb-site manage /path/to/site reset-github-tokens
+
+This will confirm every linked GitHub account, asking for the GitHub
+account password and two-factor auth code (if enabled). There should be
+very minimal downtime for this, and it can be run while the server is up.
+
+If your server is exposed to the Internet, you may also want to instruct your
+users to reset their passwords. You should also re-issue your own SSL
+certificates for any exposed servers.
+
+.. _Heartbleed: http://heartbleed.com/
+
+
+New Features
+============
+
+* Added a ``reset-github-tokens`` management command to reset GitHub
+  authentication tokens.
+
+
+Performance Improvements
+========================
+
+* Improved query time of lists of review requests when one or more are
+  private.
+
+
+Web API Changes
+===============
+
+* Pagination links now include any requested query parameters. (:bug:`3199`)
+
+
+Bug Fixes
+=========
+
+File Attachments
+----------------
+
+* Text files encoded with UTF-16le no longer cause breakages when generating
+  thumbnails. (:bug:`3282`)
+
+
+Administration
+--------------
+
+* Added back the "Show SSH Public Key" link for new repositories.
+  (:bug:`3262`)
+
+* Fixed a crash when showing the "A repository with this path already exists"
+  error.
+
+
+GitHub
+------
+
+* Authorizing the same GitHub account twice should no longer result in
+  cryptic errors or crashes.
+
+
+GitLab
+------
+
+* Fixed e-mail-based authentication on older versions of GitLab.
+
+  Patch by Tomi Äijö.
+
+
+Contributors
+============
+
+* Balazs Hinel
+* Christian Hammond
+* David Trowbridge
+* Tomi Äijö
