@@ -1,0 +1,20 @@
+=================================
+Review Board 1.7.24 Release Notes
+=================================
+
+**Release date**: April 9, 2014
+
+
+Bug Fixes
+=========
+
+* Fixed a crash when attempting to add a new repository.
+
+* Fixed the display of the Manual Updates page, when requiring manual changes
+  to the server.
+
+
+Contributors
+============
+
+* Christian Hammond

@@ -14,8 +14,8 @@
 
 {% block object-tools %}
 <ul class="object-tools">
-{% block object-tools-items %}
-{%  if adminform.form.public_key %}
+{%  block object-tools-items %}
+{%   if adminform.form.public_key %}
  <li><a href="#" id="show-ssh-key-link">{% trans "Show SSH Public Key" %}</a></li>
 {%  endif %}
 {%  if change and not is_popup %}
