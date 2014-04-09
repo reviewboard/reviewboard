@@ -2,6 +2,8 @@ from __future__ import unicode_literals
 
 import json
 import logging
+import urllib2
+import uuid
 from collections import defaultdict
 
 from django import forms
@@ -18,6 +20,7 @@ from django.views.decorators.http import require_POST
 from djblets.siteconfig.models import SiteConfiguration
 
 from reviewboard.hostingsvcs.errors import (AuthorizationError,
+                                            HostingServiceError,
                                             InvalidPlanError,
                                             RepositoryError,
                                             TwoFactorAuthCodeRequiredError)
@@ -246,10 +249,16 @@ class GitHub(HostingService):
         site = Site.objects.get_current()
         siteconfig = SiteConfiguration.objects.get_current()
 
-        site_url = '%s://%s%s' % (
-            siteconfig.get('site_domain_method'),
+        site_base_url = '%s%s' % (
             site.domain,
             local_site_reverse('root', local_site_name=local_site_name))
+
+        site_url = '%s://%s' % (siteconfig.get('site_domain_method'),
+                                site_base_url)
+
+        note = 'Access for Review Board (%s - %s)' % (
+            site_base_url,
+            uuid.uuid4().hex[:7])
 
         try:
             body = {
@@ -257,7 +266,7 @@ class GitHub(HostingService):
                     'user',
                     'repo',
                 ],
-                'note': 'Access for Review Board',
+                'note': note,
                 'note_url': site_url,
             }
 
@@ -304,12 +313,85 @@ class GitHub(HostingService):
             else:
                 raise AuthorizationError(six.text_type(e))
 
-        self.account.data['authorization'] = rsp
-        self.account.save()
+        self._save_auth_data(rsp)
 
     def is_authorized(self):
         return ('authorization' in self.account.data and
                 'token' in self.account.data['authorization'])
+
+    def get_reset_auth_token_requires_password(self):
+        """Returns whether or not resetting the auth token requires a password.
+
+        A password will be required if not using a GitHub client ID or
+        secret.
+        """
+        if not self.is_authorized():
+            return True
+
+        app_info = self.account.data['authorization']['app']
+        client_id = app_info.get('client_id', '')
+        has_client = (client_id.strip('0') != '')
+
+        return (not has_client or
+                (not (hasattr(settings, 'GITHUB_CLIENT_ID') and
+                      hasattr(settings, 'GITHUB_CLIENT_SECRET'))))
+
+    def reset_auth_token(self, password=None, two_factor_auth_code=None):
+        """Resets the authorization token for the linked account.
+
+        This will attempt to reset the token in a few different ways,
+        depending on how the token was granted.
+
+        Tokens linked to a registered GitHub OAuth app can be reset without
+        requiring any additional credentials.
+
+        Tokens linked to a personal account (which is the case on most
+        installations) require a password and possibly a two-factor auth
+        code. Callers should call get_reset_auth_token_requires_password()
+        before determining whether to pass a password, and should pass
+        a two-factor auth code if this raises TwoFactorAuthCodeRequiredError.
+        """
+        if self.is_authorized():
+            token = self.account.data['authorization']['token']
+        else:
+            token = None
+
+        if self.get_reset_auth_token_requires_password():
+            assert password
+
+            if self.account.local_site:
+                local_site_name = self.account.local_site.name
+            else:
+                local_site_name = None
+
+            if token:
+                try:
+                    self._delete_auth_token(
+                        self.account.data['authorization']['id'],
+                        password=password,
+                        two_factor_auth_code=two_factor_auth_code)
+                except HostingServiceError as e:
+                    # If we get a Not Found, then the authorization was
+                    # probably already deleted.
+                    if six.text_type(e) != 'Not Found':
+                        raise
+
+                self.account.data['authorization'] = ''
+                self.account.save()
+
+            # This may produce errors, which we want to bubble up.
+            self.authorize(self.account.username, password,
+                           self.account.hosting_url,
+                           two_factor_auth_code=two_factor_auth_code,
+                           local_site_name=local_site_name)
+        else:
+            # We can use the new API for resetting the token without
+            # re-authenticating.
+            auth_data = self._reset_authorization(
+                settings.GITHUB_CLIENT_ID,
+                settings.GITHUB_CLIENT_SECRET,
+                token)
+            self._save_auth_data(auth_data)
 
     def get_file(self, repository, path, revision, *args, **kwargs):
         url = self._build_api_url(self._get_repo_api_url(repository),
@@ -489,6 +571,49 @@ class GitHub(HostingService):
         return Commit(author_name, revision, date, message, parent_revision,
                       diff=diff)
 
+    def _reset_authorization(self, client_id, client_secret, token):
+        """Resets the authorization info for an OAuth app-linked token.
+
+        If the token is associated with a registered OAuth application,
+        its token will be reset, without any authentication details required.
+        """
+        url = '%sapplications/%s/tokens/%s' % (
+            self.get_api_url(self.account.hosting_url),
+            client_id,
+            token)
+
+        # Allow any errors to bubble up
+        return self._api_post(url=url,
+                              username=client_id,
+                              password=client_secret)
+
+    def _delete_auth_token(self, auth_id, password, two_factor_auth_code=None):
+        """Requests that an authorization token be deleted.
+
+        This will delete the authorization token with the given ID. It
+        requires a password and, depending on the settings, a two-factor
+        authentication code to perform the deletion.
+        """
+        headers = {}
+
+        if two_factor_auth_code:
+            headers['X-GitHub-OTP'] = two_factor_auth_code
+
+        url = self._build_api_url(
+            '%sauthorizations/%s' % (
+                self.get_api_url(self.account.hosting_url),
+                auth_id))
+
+        self._api_delete(url=url,
+                         headers=headers,
+                         username=self.account.username,
+                         password=password)
+
+    def _save_auth_data(self, auth_data):
+        """Saves authorization data sent from GitHub."""
+        self.account.data['authorization'] = auth_data
+        self.account.save()
+
     def _get_api_error_message(self, rsp, status_code):
         """Return the error(s) reported by the GitHub API, as a string
 
@@ -557,22 +682,50 @@ class GitHub(HostingService):
         return self._api_get(self._build_api_url(
             self._get_repo_api_url_raw(owner, repo_name)))
 
-    def _api_get(self, url):
+    def _api_get(self, url, *args, **kwargs):
         try:
-            data, headers = self._http_get(url)
-            return json.loads(data)
+            data, headers = self._json_get(url, *args, **kwargs)
+            return data
         except (URLError, HTTPError) as e:
-            data = e.read()
+            self._check_api_error(e)
 
-            try:
-                rsp = json.loads(data)
-            except:
-                rsp = None
+    def _api_post(self, url, *args, **kwargs):
+        try:
+            data, headers = self._json_post(url, *args, **kwargs)
+            return data
+        except (URLError, HTTPError) as e:
+            self._check_api_error(e)
 
-            if rsp and 'message' in rsp:
-                raise Exception(rsp['message'])
-            else:
-                raise Exception(six.text_type(e))
+    def _api_delete(self, url, *args, **kwargs):
+        try:
+            data, headers = self._json_delete(url, *args, **kwargs)
+            return data
+        except (URLError, HTTPError) as e:
+            self._check_api_error(e)
+
+    def _check_api_error(self, e):
+        data = e.read()
+
+        try:
+            rsp = json.loads(data)
+        except:
+            rsp = None
+
+        if rsp and 'message' in rsp:
+            response_info = e.info()
+            x_github_otp = response_info.get('X-GitHub-OTP', '')
+
+            if x_github_otp.startswith('required;'):
+                raise TwoFactorAuthCodeRequiredError(
+                    _('Enter your two-factor authentication code. '
+                      'This code will be sent to you by GitHub.'))
+
+            if e.code == 401:
+                raise AuthorizationError(rsp['message'])
+
+            raise HostingServiceError(rsp['message'])
+        else:
+            raise HostingServiceError(six.text_type(e))
 
 
 @require_POST
@@ -580,7 +733,7 @@ def _process_post_receive_hook(request, *args, **kwargs):
     """Closes review requests as submitted automatically after a push."""
     try:
         payload = json.loads(request.body)
-    except ValueError, e:
+    except ValueError as e:
         logging.error('The payload is not in JSON format: %s', e)
         return HttpResponse(status=415)
 
@@ -599,7 +752,7 @@ def _get_review_id_to_commits_map(payload, server_url):
     """Returns a dictionary, mapping a review request ID to a list of commits.
 
     If a commit's commit message does not contain a review request ID, we append
-    the commit to the key 0.
+    the commit to the key None.
     """
     review_id_to_commits_map = defaultdict(list)
 
@@ -614,7 +767,8 @@ def _get_review_id_to_commits_map(payload, server_url):
     for commit in commits:
         commit_hash = commit.get('id', None)
         commit_message = commit.get('message', None)
-        review_request_id = get_review_request_id(commit_message, server_url)
+        review_request_id = get_review_request_id(commit_message, server_url,
+                                                  commit_hash)
 
         commit_entry = '%s (%s)' % (branch_name, commit_hash[:7])
         review_id_to_commits_map[review_request_id].append(commit_entry)
