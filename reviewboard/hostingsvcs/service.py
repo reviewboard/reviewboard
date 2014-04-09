@@ -270,6 +270,14 @@ class HostingService(object):
 
         return data, headers
 
+    def _json_delete(self, *args, **kwargs):
+        data, headers = self._http_delete(*args, **kwargs)
+
+        if data:
+            data = json.loads(data)
+
+        return data, headers
+
     def _http_get(self, url, *args, **kwargs):
         return self._http_request(url, method='GET', **kwargs)
 
