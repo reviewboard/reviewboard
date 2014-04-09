@@ -699,7 +699,7 @@ class GitHub(HostingService):
         data = e.read()
 
         try:
-            rsp = simplejson.loads(data)
+            rsp = json.loads(data)
         except:
             rsp = None
 
