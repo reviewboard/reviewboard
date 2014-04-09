@@ -8,13 +8,22 @@ import mimetools
 from django.conf.urls import include, patterns, url
 from django.utils import six
 from django.utils.six.moves.urllib.parse import urlparse
-from django.utils.six.moves.urllib.request import (Request as URLRequest,
+from django.utils.six.moves.urllib.request import (Request as BaseURLRequest,
                                                    HTTPBasicAuthHandler,
                                                    urlopen)
 from django.utils.translation import ugettext_lazy as _
 from pkg_resources import iter_entry_points
 
 import reviewboard.hostingsvcs.urls as hostingsvcs_urls
+
+
+class URLRequest(BaseURLRequest):
+    def __init__(self, url, body='', headers={}, method='GET'):
+        BaseURLRequest.__init__(self, url, body, headers)
+        self.method = method
+
+    def get_method(self):
+        return self.method
 
 
 class HostingService(object):
@@ -253,8 +262,16 @@ class HostingService(object):
         data, headers = self._http_post(*args, **kwargs)
         return json.loads(data), headers
 
+    def _json_delete(self, *args, **kwargs):
+        data, headers = self._http_delete(*args, **kwargs)
+
+        if data:
+            data = json.loads(data)
+
+        return data, headers
+
     def _http_get(self, url, *args, **kwargs):
-        return self._http_request(url, **kwargs)
+        return self._http_request(url, method='GET', **kwargs)
 
     def _http_post(self, url, body=None, fields={}, files={},
                    content_type=None, headers={}, *args, **kwargs):
@@ -271,11 +288,18 @@ class HostingService(object):
 
         headers['Content-Length'] = '%d' % len(body)
 
-        return self._http_request(url, body, headers, **kwargs)
+        return self._http_request(url, body, headers, method='POST',
+                                  **kwargs)
+
+    def _http_delete(self, url, headers={}, *args, **kwargs):
+        headers = headers.copy()
+
+        return self._http_request(url, headers=headers, method='DELETE',
+                                  **kwargs)
 
     def _build_request(self, url, body=None, headers={}, username=None,
-                       password=None):
-        r = URLRequest(url, body, headers)
+                       password=None, method='GET'):
+        r = URLRequest(url, body, headers, method=method)
 
         if username is not None and password is not None:
             auth_key = username + ':' + password
