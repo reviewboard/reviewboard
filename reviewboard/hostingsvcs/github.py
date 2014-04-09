@@ -535,6 +535,9 @@ class GitHub(HostingService):
                     _('Enter your two-factor authentication code. '
                       'This code will be sent to you by GitHub.'))
 
+            if e.code == 401:
+                raise AuthorizationError(rsp['message'])
+
             raise HostingServiceError(rsp['message'])
         else:
             raise HostingServiceError(str(e))
