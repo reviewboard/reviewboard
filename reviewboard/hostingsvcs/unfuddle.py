@@ -236,7 +236,7 @@ class Unfuddle(HostingService):
 
     def _api_get(self, url, raw_content=False, username=None, password=None):
         try:
-            data, headers = self._http_get(
+            data, headers = self.client.http_get(
                 url,
                 username=username or self.account.username,
                 password=password or self.get_password(),

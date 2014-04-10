@@ -12,7 +12,6 @@ from django.contrib.sites.models import Site
 from django.core.cache import cache
 from django.http import HttpResponse
 from django.utils import six
-from django.utils.six.moves import http_client
 from django.utils.six.moves.urllib.error import HTTPError, URLError
 from django.utils.translation import ugettext_lazy as _
 from django.views.decorators.http import require_POST
@@ -28,7 +27,8 @@ from reviewboard.hostingsvcs.hook_utils import (close_all_review_requests,
                                                 get_git_branch_name,
                                                 get_review_request_id,
                                                 get_server_url)
-from reviewboard.hostingsvcs.service import HostingService
+from reviewboard.hostingsvcs.service import (HostingService,
+                                             HostingServiceClient)
 from reviewboard.scmtools.core import Branch, Commit
 from reviewboard.scmtools.errors import FileNotFoundError, SCMError
 from reviewboard.site.urlresolvers import local_site_reverse
@@ -94,6 +94,98 @@ class GitHubPrivateOrgForm(HostingServiceForm):
         help_text=_('The name of the repository. This is the '
                     '&lt;repo_name&gt; in '
                     'http://github.com/&lt;org_name&gt;/&lt;repo_name&gt;/'))
+
+
+class GitHubClient(HostingServiceClient):
+    def __init__(self, hosting_service):
+        super(GitHubClient, self).__init__(hosting_service)
+        self.account = hosting_service.account
+
+    #
+    # HTTP method overrides
+    #
+
+    def http_delete(self, url, *args, **kwargs):
+        data, headers = super(GitHubClient, self).http_delete(
+            url, *args, **kwargs)
+        self._check_rate_limits(headers)
+        return data, headers
+
+    def http_get(self, url, *args, **kwargs):
+        data, headers = super(GitHubClient, self).http_get(
+            url, *args, **kwargs)
+        self._check_rate_limits(headers)
+        return data, headers
+
+    def http_post(self, url, *args, **kwargs):
+        data, headers = super(GitHubClient, self).http_post(
+            url, *args, **kwargs)
+        self._check_rate_limits(headers)
+        return data, headers
+
+    #
+    # API wrappers around HTTP/JSON methods
+    #
+
+    def api_delete(self, url, *args, **kwargs):
+        try:
+            data, headers = self.json_delete(url, *args, **kwargs)
+            return data
+        except (URLError, HTTPError) as e:
+            self._check_api_error(e)
+
+    def api_get(self, url, *args, **kwargs):
+        try:
+            data, headers = self.json_get(url, *args, **kwargs)
+            return data
+        except (URLError, HTTPError) as e:
+            self._check_api_error(e)
+
+    def api_post(self, url, *args, **kwargs):
+        try:
+            data, headers = self.json_post(url, *args, **kwargs)
+            return data
+        except (URLError, HTTPError) as e:
+            self._check_api_error(e)
+
+    #
+    # Internal utilities
+    #
+
+    def _check_rate_limits(self, headers):
+        rate_limit_remaining = headers.get('X-RateLimit-Remaining', None)
+
+        try:
+            if (rate_limit_remaining is not None and
+                int(rate_limit_remaining) <= 100):
+                logging.warning('GitHub rate limit for %s is down to %s',
+                                self.account.username, rate_limit_remaining)
+        except ValueError:
+            pass
+
+    def _check_api_error(self, e):
+        data = e.read()
+
+        try:
+            rsp = json.loads(data)
+        except:
+            rsp = None
+
+        if rsp and 'message' in rsp:
+            response_info = e.info()
+            x_github_otp = response_info.get('X-GitHub-OTP', '')
+
+            if x_github_otp.startswith('required;'):
+                raise TwoFactorAuthCodeRequiredError(
+                    _('Enter your two-factor authentication code. '
+                      'This code will be sent to you by GitHub.'))
+
+            if e.code == 401:
+                raise AuthorizationError(rsp['message'])
+
+            raise HostingServiceError(rsp['message'])
+        else:
+            raise HostingServiceError(six.text_type(e))
 
 
 class GitHub(HostingService):
@@ -170,6 +262,8 @@ class GitHub(HostingService):
     supports_repositories = True
     supports_two_factor_auth = True
     supported_scmtools = ['Git']
+
+    client_class = GitHubClient
 
     repository_url_patterns = patterns(
         '',
@@ -287,7 +381,7 @@ class GitHub(HostingService):
             if two_factor_auth_code:
                 headers['X-GitHub-OTP'] = two_factor_auth_code
 
-            rsp, headers = self._json_post(
+            rsp, headers = self.client.json_post(
                 url=self.get_api_url(hosting_url) + 'authorizations',
                 username=username,
                 password=password,
@@ -400,7 +494,7 @@ class GitHub(HostingService):
                                   'git/blobs/%s' % revision)
 
         try:
-            return self._http_get(url, headers={
+            return self.client.http_get(url, headers={
                 'Accept': self.RAW_MIMETYPE,
             })[0]
         except (URLError, HTTPError):
@@ -411,7 +505,7 @@ class GitHub(HostingService):
                                   'git/blobs/%s' % revision)
 
         try:
-            self._http_get(url, headers={
+            self.client.http_get(url, headers={
                 'Accept': self.RAW_MIMETYPE,
             })
 
@@ -426,7 +520,7 @@ class GitHub(HostingService):
                                   'git/refs/heads')
 
         try:
-            rsp = self._api_get(url)
+            rsp = self.client.api_get(url)
         except Exception as e:
             logging.warning('Failed to fetch commits from %s: %s',
                             url, e)
@@ -453,7 +547,7 @@ class GitHub(HostingService):
             url += '&sha=%s' % start
 
         try:
-            rsp = self._api_get(url)
+            rsp = self.client.api_get(url)
         except Exception as e:
             logging.warning('Failed to fetch commits from %s: %s',
                             url, e)
@@ -489,7 +583,7 @@ class GitHub(HostingService):
             url += '&sha=%s' % revision
 
             try:
-                commit = self._api_get(url)[0]
+                commit = self.client.api_get(url)[0]
             except Exception as e:
                 raise SCMError(six.text_type(e))
 
@@ -507,7 +601,7 @@ class GitHub(HostingService):
             url = self._build_api_url(repo_api_url, 'commits/%s' % revision)
 
         try:
-            comparison = self._api_get(url)
+            comparison = self.client.api_get(url)
         except Exception as e:
             raise SCMError(six.text_type(e))
 
@@ -522,7 +616,7 @@ class GitHub(HostingService):
         # full blob SHAs for each of the files in the diff.
         url = self._build_api_url(repo_api_url, 'git/trees/%s' % tree_sha)
         url += '&recursive=1'
-        tree = self._api_get(url)
+        tree = self.client.api_get(url)
 
         file_shas = {}
         for file in tree['tree']:
@@ -584,9 +678,9 @@ class GitHub(HostingService):
             token)
 
         # Allow any errors to bubble up
-        return self._api_post(url=url,
-                              username=client_id,
-                              password=client_secret)
+        return self.client.api_post(url=url,
+                                    username=client_id,
+                                    password=client_secret)
 
     def _delete_auth_token(self, auth_id, password, two_factor_auth_code=None):
         """Requests that an authorization token be deleted.
@@ -605,52 +699,15 @@ class GitHub(HostingService):
                 self.get_api_url(self.account.hosting_url),
                 auth_id))
 
-        self._api_delete(url=url,
-                         headers=headers,
-                         username=self.account.username,
-                         password=password)
+        self.client.api_delete(url=url,
+                               headers=headers,
+                               username=self.account.username,
+                               password=password)
 
     def _save_auth_data(self, auth_data):
         """Saves authorization data sent from GitHub."""
         self.account.data['authorization'] = auth_data
         self.account.save()
-
-    def _get_api_error_message(self, rsp, status_code):
-        """Return the error(s) reported by the GitHub API, as a string
-
-        See: http://developer.github.com/v3/#client-errors
-        """
-        if 'message' not in rsp:
-            msg = _('Unknown GitHub API Error')
-        elif ('errors' in rsp and
-              status_code == http_client.UNPROCESSABLE_ENTITY):
-            errors = [e['message'] for e in rsp['errors'] if 'message' in e]
-            msg = '%s: (%s)' % (rsp['message'], ', '.join(errors))
-        else:
-            msg = rsp['message']
-
-        return msg
-
-    def _http_get(self, url, *args, **kwargs):
-        data, headers = super(GitHub, self)._http_get(url, *args, **kwargs)
-        self._check_rate_limits(headers)
-        return data, headers
-
-    def _http_post(self, url, *args, **kwargs):
-        data, headers = super(GitHub, self)._http_post(url, *args, **kwargs)
-        self._check_rate_limits(headers)
-        return data, headers
-
-    def _check_rate_limits(self, headers):
-        rate_limit_remaining = headers.get('X-RateLimit-Remaining', None)
-
-        try:
-            if (rate_limit_remaining is not None and
-                int(rate_limit_remaining) <= 100):
-                logging.warning('GitHub rate limit for %s is down to %s',
-                                self.account.username, rate_limit_remaining)
-        except ValueError:
-            pass
 
     def _build_api_url(self, *api_paths):
         return '%s?access_token=%s' % (
@@ -680,53 +737,8 @@ class GitHub(HostingService):
         return self.get_plan_field(plan, extra_data, 'repo_name')
 
     def _api_get_repository(self, owner, repo_name):
-        return self._api_get(self._build_api_url(
+        return self.client.api_get(self._build_api_url(
             self._get_repo_api_url_raw(owner, repo_name)))
-
-    def _api_get(self, url, *args, **kwargs):
-        try:
-            data, headers = self._json_get(url, *args, **kwargs)
-            return data
-        except (URLError, HTTPError) as e:
-            self._check_api_error(e)
-
-    def _api_post(self, url, *args, **kwargs):
-        try:
-            data, headers = self._json_post(url, *args, **kwargs)
-            return data
-        except (URLError, HTTPError) as e:
-            self._check_api_error(e)
-
-    def _api_delete(self, url, *args, **kwargs):
-        try:
-            data, headers = self._json_delete(url, *args, **kwargs)
-            return data
-        except (URLError, HTTPError) as e:
-            self._check_api_error(e)
-
-    def _check_api_error(self, e):
-        data = e.read()
-
-        try:
-            rsp = json.loads(data)
-        except:
-            rsp = None
-
-        if rsp and 'message' in rsp:
-            response_info = e.info()
-            x_github_otp = response_info.get('X-GitHub-OTP', '')
-
-            if x_github_otp.startswith('required;'):
-                raise TwoFactorAuthCodeRequiredError(
-                    _('Enter your two-factor authentication code. '
-                      'This code will be sent to you by GitHub.'))
-
-            if e.code == 401:
-                raise AuthorizationError(rsp['message'])
-
-            raise HostingServiceError(rsp['message'])
-        else:
-            raise HostingServiceError(six.text_type(e))
 
 
 @require_POST
