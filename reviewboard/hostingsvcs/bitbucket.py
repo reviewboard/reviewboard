@@ -27,7 +27,7 @@ class BitbucketTeamForm(HostingServiceForm):
         max_length=64,
         required=True,
         widget=forms.TextInput(attrs={'size': '60'}),
-        help_text=_('The name of the team. This is hte &lt;team_name&gt; in '
+        help_text=_('The name of the team. This is the &lt;team_name&gt; in '
                     'https://bitbucket.org/&lt;team_name&gt;/'
                     '&lt;repo_name&gt;/'))
 
