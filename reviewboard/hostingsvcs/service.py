@@ -26,6 +26,127 @@ class URLRequest(BaseURLRequest):
         return self.method
 
 
+class HostingServiceClient(object):
+    """Client for communicating with a hosting service's API.
+
+    This implementation includes abstractions for performing HTTP operations,
+    and wrappers for those to interpret responses as JSON data.
+
+    HostingService subclasses can also include an override of this class to add
+    additional checking (such as GitHub's checking of rate limit headers), or
+    add higher-level API functionality.
+    """
+    def __init__(self, hosting_service):
+        pass
+
+    #
+    # HTTP utility methods
+    #
+
+    def http_delete(self, url, headers={}, *args, **kwargs):
+        """Perform an HTTP DELETE on the given URL."""
+        return self.http_request(url, headers=headers, method='DELETE',
+                                 **kwargs)
+
+    def http_get(self, url, *args, **kwargs):
+        """Perform an HTTP GET on the given URL."""
+        return self.http_request(url, method='GET', **kwargs)
+
+    def http_post(self, url, body=None, fields={}, files={}, content_type=None,
+                  headers={}, *args, **kwargs):
+        """Perform an HTTP POST on the given URL."""
+        headers = headers.copy()
+
+        if body is None:
+            if fields is not None:
+                body, content_type = self._build_form_data(fields, files)
+            else:
+                body = ''
+
+        if content_type:
+            headers['Content-Type'] = content_type
+
+        headers['Content-Length'] = '%d' % len(body)
+
+        return self.http_request(url, headers=headers, method='POST', **kwargs)
+
+    def http_request(self, url, body=None, headers={}, method='GET', **kwargs):
+        """Perform some HTTP operation on a given URL."""
+        r = self._build_request(url, body, headers, method=method, **kwargs)
+        u = urlopen(r)
+
+        return u.read(), u.headers
+
+    #
+    # JSON utility methods
+    #
+
+    def json_delete(self, *args, **kwargs):
+        """Perform an HTTP DELETE and interpret the results as JSON."""
+        return self._do_json_method(self.http_delete, *args, **kwargs)
+
+    def json_get(self, *args, **kwargs):
+        """Perform an HTTP GET and interpret the results as JSON."""
+        return self._do_json_method(self.http_get, *args, **kwargs)
+
+    def json_post(self, *args, **kwargs):
+        """Perform an HTTP POST and interpret the results as JSON."""
+        return self._do_json_method(self.http_post, *args, **kwargs)
+
+    def _do_json_method(self, method, *args, **kwargs):
+        """Internal helper for JSON operations."""
+        data, headers = method(*args, **kwargs)
+
+        if data:
+            data = json.loads(data)
+
+        return data, headers
+
+    #
+    # Internal utilities
+    #
+
+    def _build_request(self, url, body=None, headers={}, username=None,
+                       password=None, method='GET'):
+        """Build a URLRequest object, including HTTP Basic auth"""
+        r = URLRequest(url, body, headers, method=method)
+
+        if username is not None and password is not None:
+            auth_key = username + ':' + password
+            r.add_header(HTTPBasicAuthHandler.auth_header,
+                         'Basic %s' %
+                         base64.b64encode(auth_key.encode('utf-8')))
+
+        return r
+
+    def _build_form_data(self, fields, files):
+        """Encodes data for use in an HTTP POST."""
+        BOUNDARY = mimetools.choose_boundary()
+        content = ""
+
+        for key in fields:
+            content += "--" + BOUNDARY + "\r\n"
+            content += "Content-Disposition: form-data; name=\"%s\"\r\n" % key
+            content += "\r\n"
+            content += six.text_type(fields[key]) + "\r\n"
+
+        for key in files:
+            filename = files[key]['filename']
+            value = files[key]['content']
+            content += "--" + BOUNDARY + "\r\n"
+            content += "Content-Disposition: form-data; name=\"%s\"; " % key
+            content += "filename=\"%s\"\r\n" % filename
+            content += "\r\n"
+            content += value + "\r\n"
+
+        content += "--" + BOUNDARY + "--\r\n"
+        content += "\r\n"
+
+        content_type = "multipart/form-data; boundary=%s" % BOUNDARY
+
+        return content, content_type
+
+
 class HostingService(object):
     """An interface to a hosting service for repositories and bug trackers.
 
@@ -51,6 +172,8 @@ class HostingService(object):
     self_hosted = False
     repository_url_patterns = None
 
+    client_class = HostingServiceClient
+
     # These values are defaults that can be overridden in repository_plans
     # above.
     needs_authorization = False
@@ -63,6 +186,8 @@ class HostingService(object):
     def __init__(self, account):
         assert account
         self.account = account
+
+        self.client = self.client_class(self)
 
     def is_authorized(self):
         """Returns whether or not the account is currently authorized.
@@ -249,106 +374,6 @@ class HostingService(object):
                     return info[name]
 
         return getattr(cls, name, default)
-
-    #
-    # HTTP utility methods
-    #
-
-    def _json_get(self, *args, **kwargs):
-        data, headers = self._http_get(*args, **kwargs)
-        return json.loads(data), headers
-
-    def _json_post(self, *args, **kwargs):
-        data, headers = self._http_post(*args, **kwargs)
-        return json.loads(data), headers
-
-    def _json_delete(self, *args, **kwargs):
-        data, headers = self._http_delete(*args, **kwargs)
-
-        if data:
-            data = json.loads(data)
-
-        return data, headers
-
-    def _json_delete(self, *args, **kwargs):
-        data, headers = self._http_delete(*args, **kwargs)
-
-        if data:
-            data = json.loads(data)
-
-        return data, headers
-
-    def _http_get(self, url, *args, **kwargs):
-        return self._http_request(url, method='GET', **kwargs)
-
-    def _http_post(self, url, body=None, fields={}, files={},
-                   content_type=None, headers={}, *args, **kwargs):
-        headers = headers.copy()
-
-        if body is None:
-            if fields is not None:
-                body, content_type = self._build_form_data(fields, files)
-            else:
-                body = ''
-
-        if content_type:
-            headers['Content-Type'] = content_type
-
-        headers['Content-Length'] = '%d' % len(body)
-
-        return self._http_request(url, body, headers, method='POST',
-                                  **kwargs)
-
-    def _http_delete(self, url, headers={}, *args, **kwargs):
-        headers = headers.copy()
-
-        return self._http_request(url, headers=headers, method='DELETE',
-                                  **kwargs)
-
-    def _build_request(self, url, body=None, headers={}, username=None,
-                       password=None, method='GET'):
-        r = URLRequest(url, body, headers, method=method)
-
-        if username is not None and password is not None:
-            auth_key = username + ':' + password
-            r.add_header(HTTPBasicAuthHandler.auth_header,
-                         'Basic %s' %
-                         base64.b64encode(auth_key.encode('utf-8')))
-
-        return r
-
-    def _http_request(self, url, body=None, headers={}, **kwargs):
-        r = self._build_request(url, body, headers, **kwargs)
-        u = urlopen(r)
-
-        return u.read(), u.headers
-
-    def _build_form_data(self, fields, files):
-        """Encodes data for use in an HTTP POST."""
-        BOUNDARY = mimetools.choose_boundary()
-        content = ""
-
-        for key in fields:
-            content += "--" + BOUNDARY + "\r\n"
-            content += "Content-Disposition: form-data; name=\"%s\"\r\n" % key
-            content += "\r\n"
-            content += six.text_type(fields[key]) + "\r\n"
-
-        for key in files:
-            filename = files[key]['filename']
-            value = files[key]['content']
-            content += "--" + BOUNDARY + "\r\n"
-            content += "Content-Disposition: form-data; name=\"%s\"; " % key
-            content += "filename=\"%s\"\r\n" % filename
-            content += "\r\n"
-            content += value + "\r\n"
-
-        content += "--" + BOUNDARY + "--\r\n"
-        content += "\r\n"
-
-        content_type = "multipart/form-data; boundary=%s" % BOUNDARY
-
-        return content, content_type
 
 
 _hosting_services = {}

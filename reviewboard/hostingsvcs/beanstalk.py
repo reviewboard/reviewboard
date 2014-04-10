@@ -176,7 +176,7 @@ class Beanstalk(HostingService):
 
     def _api_get(self, url, raw_content=False):
         try:
-            data, headers = self._http_get(
+            data, headers = self.client.http_get(
                 url,
                 username=self.account.username,
                 password=self.get_password())

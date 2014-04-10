@@ -117,7 +117,7 @@ class GitLab(HostingService):
         # This will raise an exception if it fails, which the form will
         # catch.
         try:
-            rsp, headers = self._json_post(
+            rsp, headers = self.client.json_post(
                 url=self._build_api_url(hosting_url, 'session'),
                 fields={
                     login_key : username,
@@ -313,7 +313,7 @@ class GitLab(HostingService):
     def _api_get(self, url, raw_content=False):
         """Makes a request to the GitLab API and returns the result."""
         try:
-            data, headers = self._http_get(
+            data, headers = self.client.http_get(
                 url,
                 headers={
                     'Accept': 'application/json',

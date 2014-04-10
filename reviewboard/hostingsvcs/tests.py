@@ -36,16 +36,7 @@ class ServiceTests(SpyAgency, TestCase):
 
     def setUp(self):
         super(ServiceTests, self).setUp()
-
         self.assertNotEqual(self.service_class, None)
-        self._old_http_post = self.service_class._http_post
-        self._old_http_get = self.service_class._http_get
-
-    def tearDown(self):
-        super(ServiceTests, self).tearDown()
-
-        self.service_class._http_post = self._old_http_post
-        self.service_class._http_get = self._old_http_get
 
     def _get_repository_info(self, field, plan=None):
         if plan:
@@ -160,11 +151,11 @@ class BeanstalkTests(ServiceTests):
 
         service.authorize('myuser', 'abc123', None)
 
-        self.spy_on(service._http_get, call_fake=_http_get)
+        self.spy_on(service.client.http_get, call_fake=_http_get)
 
         service.check_repository(beanstalk_account_domain='mydomain',
                                  beanstalk_repo_name='myrepo')
-        self.assertTrue(service._http_get.called)
+        self.assertTrue(service.client.http_get.called)
 
     def test_get_file_with_svn_and_base_commit_id(self):
         """Testing Beanstalk get_file with Subversion and base commit ID"""
@@ -266,11 +257,11 @@ class BeanstalkTests(ServiceTests):
 
         service.authorize('myuser', 'abc123', None)
 
-        self.spy_on(service._http_get, call_fake=_http_get)
+        self.spy_on(service.client.http_get, call_fake=_http_get)
 
         result = service.get_file(repository, '/path', revision,
                                   base_commit_id)
-        self.assertTrue(service._http_get.called)
+        self.assertTrue(service.client.http_get.called)
         self.assertEqual(result, 'My data')
 
     def _test_get_file_exists(self, tool_name, revision, base_commit_id,
@@ -303,11 +294,11 @@ class BeanstalkTests(ServiceTests):
 
         service.authorize('myuser', 'abc123', None)
 
-        self.spy_on(service._http_get, call_fake=_http_get)
+        self.spy_on(service.client.http_get, call_fake=_http_get)
 
         result = service.get_file_exists(repository, '/path', revision,
                                          base_commit_id)
-        self.assertTrue(service._http_get.called)
+        self.assertTrue(service.client.http_get.called)
         self.assertEqual(result, expected_found)
 
 
@@ -373,11 +364,11 @@ class BitbucketTests(ServiceTests):
 
         service.authorize('myuser', 'abc123', None)
 
-        self.spy_on(service._http_get, call_fake=_http_get)
+        self.spy_on(service.client.http_get, call_fake=_http_get)
 
         service.check_repository(bitbucket_repo_name='myrepo',
                                  plan='personal')
-        self.assertTrue(service._http_get.called)
+        self.assertTrue(service.client.http_get.called)
 
     def test_team_repo_field_values_git(self):
         """Testing Bitbucket team repository field values for Git"""
@@ -433,12 +424,12 @@ class BitbucketTests(ServiceTests):
 
         service.authorize('myuser', 'abc123', None)
 
-        self.spy_on(service._http_get, call_fake=_http_get)
+        self.spy_on(service.client.http_get, call_fake=_http_get)
 
         service.check_repository(bitbucket_team_name='myteam',
                                  bitbucket_team_repo_name='myrepo',
                                  plan='team')
-        self.assertTrue(service._http_get.called)
+        self.assertTrue(service.client.http_get.called)
 
     def test_authorize(self):
         """Testing Bitbucket authorization password storage"""
@@ -545,11 +536,11 @@ class BitbucketTests(ServiceTests):
 
         service.authorize('myuser', 'abc123', None)
 
-        self.spy_on(service._http_get, call_fake=_http_get)
+        self.spy_on(service.client.http_get, call_fake=_http_get)
 
         result = service.get_file(repository, 'path', revision,
                                   base_commit_id)
-        self.assertTrue(service._http_get.called)
+        self.assertTrue(service.client.http_get.called)
         self.assertEqual(result, 'My data')
 
     def _test_get_file_exists(self, tool_name, revision, base_commit_id,
@@ -577,11 +568,11 @@ class BitbucketTests(ServiceTests):
 
         service.authorize('myuser', 'abc123', None)
 
-        self.spy_on(service._http_get, call_fake=_http_get)
+        self.spy_on(service.client.http_get, call_fake=_http_get)
 
         result = service.get_file_exists(repository, 'path', revision,
                                          base_commit_id)
-        self.assertEqual(service._http_get.called, expected_http_called)
+        self.assertEqual(service.client.http_get.called, expected_http_called)
         self.assertEqual(result, expected_found)
 
 
@@ -941,11 +932,12 @@ class GitHubTests(ServiceTests):
                 'created_at': '2012-05-04T03:30:00Z',
             }), {}
 
-        self.service_class._http_post = _http_post
-
         account = HostingServiceAccount(service_name=self.service_name,
                                         username='myuser')
         service = account.service
+
+        self.spy_on(service.client.http_post, call_fake=_http_post)
+
         self.assertFalse(account.is_authorized)
 
         service.authorize('myuser', 'mypass', None)
@@ -979,11 +971,12 @@ class GitHubTests(ServiceTests):
                 'created_at': '2012-05-04T03:30:00Z',
             }), {}
 
-        self.service_class._http_post = _http_post
-
         account = HostingServiceAccount(service_name=self.service_name,
                                         username='myuser')
         service = account.service
+
+        self.spy_on(service.client.http_post, call_fake=_http_post)
+
         self.assertFalse(account.is_authorized)
 
         with self.settings(GITHUB_CLIENT_ID=client_id,
@@ -1022,8 +1015,6 @@ class GitHubTests(ServiceTests):
         def _http_get(self, *args, **kwargs):
             return branches_api_response, None
 
-        self.service_class._http_get = _http_get
-
         account = self._get_hosting_account()
         account.data['authorization'] = {'token': 'abc123'}
 
@@ -1034,7 +1025,11 @@ class GitHubTests(ServiceTests):
         }
 
         service = account.service
+        self.spy_on(service.client.http_get, call_fake=_http_get)
+
         branches = service.get_branches(repository)
+
+        self.assertTrue(service.client.http_get.called)
 
         self.assertEqual(len(branches), 2)
         self.assertEqual(
@@ -1090,9 +1085,10 @@ class GitHubTests(ServiceTests):
         def _http_get(self, *args, **kwargs):
             return commits_api_response, None
 
-        self.service_class._http_get = _http_get
-
         account = self._get_hosting_account()
+        service = account.service
+        self.spy_on(service.client.http_get, call_fake=_http_get)
+
         account.data['authorization'] = {'token': 'abc123'}
 
         repository = Repository(hosting_account=account)
@@ -1101,9 +1097,10 @@ class GitHubTests(ServiceTests):
             'github_public_repo_name': 'myrepo',
         }
 
-        service = account.service
         commits = service.get_commits(
             repository, '859d4e148ce3ce60bbda6622cdbe5c2c2f8d9817')
+
+        self.assertTrue(service.client.http_get.called)
 
         self.assertEqual(len(commits), 3)
         self.assertEqual(commits[0].parent, commits[1].id)
@@ -1250,10 +1247,11 @@ class GitHubTests(ServiceTests):
                 print(parsed)
                 self.fail('Got an unexpected GET request')
 
-        self.service_class._http_get = _http_get
-
         account = self._get_hosting_account()
         account.data['authorization'] = {'token': 'abc123'}
+
+        service = account.service
+        self.spy_on(service.client.http_get, call_fake=_http_get)
 
         repository = Repository(hosting_account=account)
         repository.extra_data = {
@@ -1261,8 +1259,9 @@ class GitHubTests(ServiceTests):
             'github_public_repo_name': 'myrepo',
         }
 
-        service = account.service
         change = service.get_change(repository, commit_sha)
+
+        self.assertTrue(service.client.http_get.called)
 
         self.assertEqual(change.message, 'Move .clearfix to defs.less')
         self.assertEqual(md5(change.diff.encode('utf-8')).hexdigest(),
@@ -1273,10 +1272,11 @@ class GitHubTests(ServiceTests):
         def _http_get(service, url, *args, **kwargs):
             raise Exception('Not Found')
 
-        self.service_class._http_get = _http_get
-
         account = self._get_hosting_account()
         account.data['authorization'] = {'token': 'abc123'}
+
+        service = account.service
+        self.spy_on(service.client.http_get, call_fake=_http_get)
 
         repository = Repository(hosting_account=account)
         repository.extra_data = {
@@ -1300,13 +1300,13 @@ class GitHubTests(ServiceTests):
 
         account = self._get_hosting_account()
         service = account.service
-        self.spy_on(service._http_get, call_fake=_http_get)
+        self.spy_on(service.client.http_get, call_fake=_http_get)
         account.data['authorization'] = {
             'token': '123',
         }
 
         service.check_repository(**kwargs)
-        self.assertTrue(service._http_get.called)
+        self.assertTrue(service.client.http_get.called)
 
     def _test_check_repository_error(self, http_status, payload,
                                      expected_error, **kwargs):
@@ -1318,7 +1318,7 @@ class GitHubTests(ServiceTests):
 
         account = self._get_hosting_account()
         service = account.service
-        self.spy_on(service._http_get, call_fake=_http_get)
+        self.spy_on(service.client.http_get, call_fake=_http_get)
         account.data['authorization'] = {
             'token': '123',
         }
@@ -1448,11 +1448,12 @@ class GitLabTests(ServiceTests):
                 'private_token': 'abc123',
             }), {}
 
-        self.service_class._http_post = _http_post
-
         account = HostingServiceAccount(service_name=self.service_name,
                                         username='myuser')
         service = account.service
+
+        self.spy_on(service.client.http_post, call_fake=_http_post)
+
         self.assertFalse(account.is_authorized)
 
         service.authorize('myuser', 'mypass',
@@ -1489,11 +1490,11 @@ class GitLabTests(ServiceTests):
 
         account = self._get_hosting_account(use_url=True)
         service = account.service
-        self.spy_on(service._http_get, call_fake=_http_get)
+        self.spy_on(service.client.http_get, call_fake=_http_get)
         account.data['private_token'] = encrypt_password('abc123')
 
         service.check_repository(**kwargs)
-        self.assertTrue(service._http_get.called)
+        self.assertTrue(service.client.http_get.called)
 
     def _test_check_repository_error(self, expected_error, **kwargs):
         def _http_get(service, url, *args, **kwargs):
@@ -1501,7 +1502,7 @@ class GitLabTests(ServiceTests):
 
         account = self._get_hosting_account(use_url=True)
         service = account.service
-        self.spy_on(service._http_get, call_fake=_http_get)
+        self.spy_on(service.client.http_get, call_fake=_http_get)
         account.data['private_token'] = encrypt_password('abc123')
 
         try:
@@ -1724,7 +1725,7 @@ class UnfuddleTests(ServiceTests):
 
         self.assertFalse(service.is_authorized())
 
-        self.spy_on(service._http_get, call_fake=_http_get)
+        self.spy_on(service.client.http_get, call_fake=_http_get)
 
         service.authorize('myuser', 'abc123',
                           unfuddle_account_domain='mydomain')
@@ -1746,12 +1747,12 @@ class UnfuddleTests(ServiceTests):
         service = account.service
         account.data['password'] = encrypt_password('password')
 
-        self.spy_on(service._http_get, call_fake=_http_get)
+        self.spy_on(service.client.http_get, call_fake=_http_get)
 
         service.check_repository(unfuddle_account_domain='mydomain',
                                  unfuddle_repo_name='myrepo',
                                  tool_name='Git')
-        self.assertTrue(service._http_get.called)
+        self.assertTrue(service.client.http_get.called)
 
     def test_check_repository_with_wrong_repo_type(self):
         """Testing Unfuddle check_repository with wrong repo type"""
@@ -1766,7 +1767,7 @@ class UnfuddleTests(ServiceTests):
         service = account.service
         account.data['password'] = encrypt_password('password')
 
-        self.spy_on(service._http_get, call_fake=_http_get)
+        self.spy_on(service.client.http_get, call_fake=_http_get)
 
         self.assertRaises(
             RepositoryError,
@@ -1774,7 +1775,7 @@ class UnfuddleTests(ServiceTests):
                 unfuddle_account_domain='mydomain',
                 unfuddle_repo_name='myrepo',
                 tool_name='Git'))
-        self.assertTrue(service._http_get.called)
+        self.assertTrue(service.client.http_get.called)
 
     def test_get_file_with_svn_and_base_commit_id(self):
         """Testing Unfuddle get_file with Subversion and base commit ID"""
@@ -1871,18 +1872,18 @@ class UnfuddleTests(ServiceTests):
 
         account.data['password'] = encrypt_password('password')
 
-        self.spy_on(service._http_get, call_fake=_http_get)
+        self.spy_on(service.client.http_get, call_fake=_http_get)
 
         if expected_error:
             self.assertRaises(
                 FileNotFoundError,
                 lambda: service.get_file(repository, path, revision,
                                          base_commit_id))
-            self.assertFalse(service._http_get.called)
+            self.assertFalse(service.client.http_get.called)
         else:
             result = service.get_file(repository, path, revision,
                                       base_commit_id)
-            self.assertTrue(service._http_get.called)
+            self.assertTrue(service.client.http_get.called)
             self.assertEqual(result, 'My data')
 
     def _test_get_file_exists(self, tool_name, revision, base_commit_id,
@@ -1913,16 +1914,16 @@ class UnfuddleTests(ServiceTests):
 
         account.data['password'] = encrypt_password('password')
 
-        self.spy_on(service._http_get, call_fake=_http_get)
+        self.spy_on(service.client.http_get, call_fake=_http_get)
 
         result = service.get_file_exists(repository, '/path', revision,
                                          base_commit_id)
 
         if expected_error:
-            self.assertFalse(service._http_get.called)
+            self.assertFalse(service.client.http_get.called)
             self.assertFalse(result)
         else:
-            self.assertTrue(service._http_get.called)
+            self.assertTrue(service.client.http_get.called)
             self.assertEqual(result, expected_found)
 
 
