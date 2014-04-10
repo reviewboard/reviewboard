@@ -1,7 +1,7 @@
 {% load i18n rb_extensions %}
 
 <ul id="navbar">
-{% if request.user.is_authenticated or not siteconfig.settings.auth_require_sitewide_login %}
+{% if request.user.is_authenticated or not siteconfig_settings.auth_require_sitewide_login %}
 {%  if request.user.is_authenticated %}
  <li><a href="{% url 'dashboard' %}">{% trans "My Dashboard" %}</a></li>
  <li><a href="{% url 'new-review-request' %}">{% trans "New Review Request" %}</a></li>
