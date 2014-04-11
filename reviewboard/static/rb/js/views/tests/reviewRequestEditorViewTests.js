@@ -143,6 +143,8 @@ describe('views/ReviewRequestEditorView', function() {
                     expect(options.type).toBe(RB.ReviewRequest.CLOSE_DISCARDED);
                 });
 
+                spyOn(window, 'confirm').andReturn(true);
+
                 $('#discard-review-request-link').click();
 
                 expect(reviewRequest.close).toHaveBeenCalled();
