@@ -97,6 +97,8 @@ class GitHubPrivateOrgForm(HostingServiceForm):
 
 
 class GitHubClient(HostingServiceClient):
+    RAW_MIMETYPE = 'application/vnd.github.v3.raw'
+
     def __init__(self, hosting_service):
         super(GitHubClient, self).__init__(hosting_service)
         self.account = hosting_service.account
@@ -149,8 +151,88 @@ class GitHubClient(HostingServiceClient):
             self._check_api_error(e)
 
     #
+    # Higher-level API methods
+    #
+
+    def api_get_blob(self, repo_api_url, path, sha):
+        url = self._build_api_url(repo_api_url, 'git/blobs/%s' % sha)
+
+        try:
+            return self.http_get(url, headers={
+                'Accept': self.RAW_MIMETYPE,
+            })[0]
+        except (URLError, HTTPError):
+            raise FileNotFoundError(path, sha)
+
+    def api_get_commits(self, repo_api_url, start=None):
+        url = self._build_api_url(repo_api_url, 'commits')
+        if start:
+            url += '&sha=%s' % start
+
+        try:
+            return self.api_get(url)
+        except Exception as e:
+            logging.warning('Failed to fetch commits from %s: %s',
+                            url, e, exc_info=1)
+            raise SCMError(six.text_type(e))
+
+    def api_get_compare_commits(self, repo_api_url, parent_revision, revision):
+        # If the commit has a parent commit, use GitHub's "compare two commits"
+        # API to get the diff. Otherwise, fetch the commit itself.
+        if parent_revision:
+            url = self._build_api_url(
+                repo_api_url,
+                'compare/%s...%s' % (parent_revision, revision))
+        else:
+            url = self._build_api_url(repo_api_url, 'commits/%s' % revision)
+
+        try:
+            comparison = self.api_get(url)
+        except Exception as e:
+            logging.warning('Failed to fetch commit comparison from %s: %s',
+                            url, e, exc_info=1)
+            raise SCMError(six.text_type(e))
+
+        if parent_revision:
+            tree_sha = comparison['base_commit']['commit']['tree']['sha']
+        else:
+            tree_sha = comparison['commit']['tree']['sha']
+
+        return comparison['files'], tree_sha
+
+
+    def api_get_heads(self, repo_api_url):
+        url = self._build_api_url(repo_api_url, 'git/refs/heads')
+
+        try:
+            rsp = self.api_get(url)
+            return [ref for ref in rsp if ref['ref'].startswith('refs/heads/')]
+        except Exception as e:
+            logging.warning('Failed to fetch commits from %s: %s',
+                            url, e, exc_info=1)
+            raise SCMError(six.text_type(e))
+
+    def api_get_tree(self, repo_api_url, sha, recursive=False):
+        url = self._build_api_url(repo_api_url, 'git/trees/%s' % sha)
+
+        if recursive:
+            url += '&recursive=1'
+
+        try:
+            return self.api_get(url)
+        except Exception as e:
+            logging.warning('Failed to fetch tree from %s: %s',
+                            url, e, exc_info=1)
+            raise SCMError(six.text_type(e))
+
+    #
     # Internal utilities
     #
+
+    def _build_api_url(self, *api_paths):
+        return '%s?access_token=%s' % (
+            '/'.join(api_paths),
+            self.account.data['authorization']['token'])
 
     def _check_rate_limits(self, headers):
         rate_limit_remaining = headers.get('X-RateLimit-Remaining', None)
@@ -275,8 +357,6 @@ class GitHub(HostingService):
     # This should be the prefix for every field on the plan forms.
     plan_field_prefix = 'github'
 
-    RAW_MIMETYPE = 'application/vnd.github.v3.raw'
-
     def get_api_url(self, hosting_url):
         """Returns the API URL for GitHub.
 
@@ -303,9 +383,11 @@ class GitHub(HostingService):
         the repository was not found, and return cleanly if it was found.
         """
         try:
-            repo_info = self._api_get_repository(
-                self._get_repository_owner_raw(plan, kwargs),
-                self._get_repository_name_raw(plan, kwargs))
+            repo_info = self.client.api_get(
+                self._build_api_url(
+                    self._get_repo_api_url_raw(
+                        self._get_repository_owner_raw(plan, kwargs),
+                        self._get_repository_name_raw(plan, kwargs))))
         except Exception as e:
             if six.text_type(e) == 'Not Found':
                 if plan in ('public', 'private'):
@@ -487,71 +569,35 @@ class GitHub(HostingService):
             self._save_auth_data(auth_data)
 
     def get_file(self, repository, path, revision, *args, **kwargs):
-        url = self._build_api_url(self._get_repo_api_url(repository),
-                                  'git/blobs/%s' % revision)
-
-        try:
-            return self.client.http_get(url, headers={
-                'Accept': self.RAW_MIMETYPE,
-            })[0]
-        except (URLError, HTTPError):
-            raise FileNotFoundError(path, revision)
+        repo_api_url = self._get_repo_api_url(repository)
+        return self.client.api_get_blob(repo_api_url, path, revision)
 
     def get_file_exists(self, repository, path, revision, *args, **kwargs):
-        url = self._build_api_url(self._get_repo_api_url(repository),
-                                  'git/blobs/%s' % revision)
-
         try:
-            self.client.http_get(url, headers={
-                'Accept': self.RAW_MIMETYPE,
-            })
-
+            repo_api_url = self._get_repo_api_url(repository)
+            self.client.api_get_blob(repo_api_url, path, revision)
             return True
-        except (URLError, HTTPError):
+        except FileNotFoundError:
             return False
 
     def get_branches(self, repository):
+        repo_api_url = self._get_repo_api_url(repository)
+        refs = self.client.api_get_heads(repo_api_url)
+
         results = []
-
-        url = self._build_api_url(self._get_repo_api_url(repository),
-                                  'git/refs/heads')
-
-        try:
-            rsp = self.client.api_get(url)
-        except Exception as e:
-            logging.warning('Failed to fetch commits from %s: %s',
-                            url, e)
-            return results
-
-        for ref in rsp:
-            refname = ref['ref']
-
-            if not refname.startswith('refs/heads/'):
-                continue
-
-            name = refname.split('/')[-1]
+        for ref in refs:
+            name = ref['ref'][len('refs/heads/'):]
             results.append(Branch(name, ref['object']['sha'],
                                   default=(name == 'master')))
 
         return results
 
     def get_commits(self, repository, start=None):
+        repo_api_url = self._get_repo_api_url(repository)
+        commits = self.client.api_get_commits(repo_api_url, start=start)
+
         results = []
-
-        resource = 'commits'
-        url = self._build_api_url(self._get_repo_api_url(repository), resource)
-
-        if start:
-            url += '&sha=%s' % start
-
-        try:
-            rsp = self.client.api_get(url)
-        except Exception as e:
-            logging.warning('Failed to fetch commits from %s: %s',
-                            url, e)
-            return results
-
-        for item in rsp:
+        for item in commits:
             commit = Commit(
                 item['commit']['author']['name'],
                 item['sha'],
@@ -577,44 +623,20 @@ class GitHub(HostingService):
             parent_revision = commit.parent
             message = commit.message
         else:
-            url = self._build_api_url(repo_api_url, 'commits')
-            url += '&sha=%s' % revision
-
-            try:
-                commit = self.client.api_get(url)[0]
-            except Exception as e:
-                raise SCMError(six.text_type(e))
+            commit = self.client.api_get_commits(repo_api_url, revision)[0]
 
             author_name = commit['commit']['author']['name']
             date = commit['commit']['committer']['date'],
             parent_revision = commit['parents'][0]['sha']
             message = commit['commit']['message']
 
-        # Step 2: fetch the "compare two commits" API to get the diff if the
-        # commit has a parent commit. Otherwise, fetch the commit itself.
-        if parent_revision:
-            url = self._build_api_url(
-                repo_api_url, 'compare/%s...%s' % (parent_revision, revision))
-        else:
-            url = self._build_api_url(repo_api_url, 'commits/%s' % revision)
-
-        try:
-            comparison = self.client.api_get(url)
-        except Exception as e:
-            raise SCMError(six.text_type(e))
-
-        if parent_revision:
-            tree_sha = comparison['base_commit']['commit']['tree']['sha']
-        else:
-            tree_sha = comparison['commit']['tree']['sha']
-
-        files = comparison['files']
+        # Step 2: Get the diff and tree from the "compare commits" API
+        files, tree_sha = self.client.api_get_compare_commits(
+            repo_api_url, parent_revision, revision)
 
         # Step 3: fetch the tree for the original commit, so that we can get
         # full blob SHAs for each of the files in the diff.
-        url = self._build_api_url(repo_api_url, 'git/trees/%s' % tree_sha)
-        url += '&recursive=1'
-        tree = self.client.api_get(url)
+        tree = self.client.api_get_tree(repo_api_url, tree_sha, recursive=True)
 
         file_shas = {}
         for file in tree['tree']:
@@ -708,9 +730,7 @@ class GitHub(HostingService):
         self.account.save()
 
     def _build_api_url(self, *api_paths):
-        return '%s?access_token=%s' % (
-            '/'.join(api_paths),
-            self.account.data['authorization']['token'])
+        return self.client._build_api_url(*api_paths)
 
     def _get_repo_api_url(self, repository):
         plan = repository.extra_data['repository_plan']
@@ -733,10 +753,6 @@ class GitHub(HostingService):
 
     def _get_repository_name_raw(self, plan, extra_data):
         return self.get_plan_field(plan, extra_data, 'repo_name')
-
-    def _api_get_repository(self, owner, repo_name):
-        return self.client.api_get(self._build_api_url(
-            self._get_repo_api_url_raw(owner, repo_name)))
 
 
 @require_POST
