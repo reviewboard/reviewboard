@@ -7,7 +7,7 @@
 {% block css %}
 {{block.super}}
 
-{%  if siteconfig.settings.diffviewer_show_trailing_whitespace|default_if_none:1 %}
+{%  if siteconfig_settings.diffviewer_show_trailing_whitespace %}
 <style type="text/css">
   #diffs.ewhl table.sidebyside .ew { background: #ee3434; }
 </style>
@@ -57,7 +57,7 @@
 {%    else %}
  <li><a href=".?collapse=1"><div class="rb-icon rb-icon-collapse"></div> {% trans "Collapse changes" %}</a></li>
 {%    endif %}
-{%    if siteconfig.settings.diffviewer_show_trailing_whitespace|default_if_none:1 %}
+{%    if siteconfig_settings.diffviewer_show_trailing_whitespace %}
  <li class="ew" style="display:none;"><a href="#" class="toggle-show-whitespace"><div class="rb-icon rb-icon-collapse"></div> {% trans "Hide Extra Whitespace" %}</a></li>
  <li class="ew"><a href="#" class="toggle-show-whitespace"><div class="rb-icon rb-icon-expand"></div> {% trans "Show Extra Whitespace" %}</a></li>
 {%    endif %}

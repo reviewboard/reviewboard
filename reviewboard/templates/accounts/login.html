@@ -42,12 +42,12 @@
   </div>
 
   <div class="auth-form-row login-links">
-{%  if auth_backends.0.supports_registration and siteconfig.settings.auth_enable_registration|default_if_none:1 %}
+{%  if auth_backends.0.supports_registration %}
+{%   if siteconfig_settings.auth_enable_registration %}
    <p>
     <a href="{% url 'register' %}">{% trans "Create an account" %}</a>
    </p>
-{%  endif %}
-{%  if auth_backends.0.supports_registration %}
+{%   endif %}
    <p>
     <a href="{% url 'recover' %}">{% trans "Forgot your password?" %}</a>
    </p>

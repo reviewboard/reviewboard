@@ -12,6 +12,8 @@ RB.Repository = RB.BaseResource.extend({
         supportsPostCommit: false
     },
 
+    rspNamespace: 'repository',
+
     /*
      * Initialize the model.
      */

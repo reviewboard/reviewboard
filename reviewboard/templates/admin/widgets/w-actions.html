@@ -67,49 +67,49 @@
 {% endif %}
    </a></li>
    <li><a href="{% url 'settings-authentication' %}">{% trans "Public Read-only Access" %}
-{% if siteconfig.settings.auth_anonymous_access %}
+{% if siteconfig_settings.auth_anonymous_access %}
     {{enabled_img}}
 {% else %}
     {{disabled_img}}
 {% endif %}
    </a></li>
    <li><a href="{% url 'settings-diffs' %}">{% trans "Syntax Highlighting" %}
-{% if siteconfig.settings.diffviewer_syntax_highlighting %}
+{% if siteconfig_settings.diffviewer_syntax_highlighting %}
     {{enabled_img}}
 {% else %}
     {{disabled_img}}
 {% endif %}
    </a></li>
    <li><a href="{% url 'server-log' %}">{% trans "Server Log" %}
-{% if siteconfig.settings.logging_enabled and siteconfig.settings.logging_directory %}
+{% if siteconfig_settings.logging_enabled and siteconfig_settings.logging_directory %}
     {{enabled_img}}
 {% else %}
     {{disabled_img}}
 {% endif %}
    </a></li>
    <li><a href="{% url 'settings-logging' %}">{% trans "Log Profiling" %}
-{% if siteconfig.settings.logging_allow_profiling %}
+{% if siteconfig_settings.logging_allow_profiling %}
     {{enabled_img}}
 {% else %}
     {{disabled_img}}
 {% endif %}
    </a></li>
    <li><a href="{% url 'settings-email' %}">{% trans "Review Emails" %}
-{% if siteconfig.settings.mail_send_review_mail %}
+{% if siteconfig_settings.mail_send_review_mail %}
     {{enabled_img}}
 {% else %}
     {{disabled_img}}
 {% endif %}
    </a></li>
    <li><a href="{% url 'settings-email' %}">{% trans "Email TLS Authentication" %}
-{% if siteconfig.settings.mail_use_tls %}
+{% if siteconfig_settings.mail_use_tls %}
     {{enabled_img}}
 {% else %}
     {{disabled_img}}
 {% endif %}
    </a></li>
    <li><a href="{% url 'settings-general' %}">{% trans "Indexed Search" %}
-{% if siteconfig.settings.search_enable %}
+{% if siteconfig_settings.search_enable %}
     {{enabled_img}}
 {% else %}
     {{disabled_img}}

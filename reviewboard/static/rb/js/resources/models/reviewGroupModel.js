@@ -13,6 +13,8 @@ var GroupMember = RB.BaseResource.extend({
         loaded: true
     }, RB.BaseResource.prototype.defaults),
 
+    rspNamespace: 'group',
+
     /*
      * Returns a URL for this resource.
      *

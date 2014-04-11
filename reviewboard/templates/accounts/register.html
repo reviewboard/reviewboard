@@ -54,7 +54,7 @@
    {{form.errors.last_name}}
   </div>
 
-{% if siteconfig.settings.auth_registration_show_captcha %}
+{% if siteconfig_settings.auth_registration_show_captcha %}
   <div class="auth-form-row register-captcha-row clearfix">
    <script>
        var RecaptchaOptions = {
@@ -62,10 +62,10 @@
        };
    </script>
    <div class="register-captcha-container">
-    <script type="text/javascript" src="{{form.recaptcha_url}}/challenge?k={{siteconfig.settings.recaptcha_public_key}}{{form.captcha_error_query_str}}"></script>
+    <script type="text/javascript" src="{{form.recaptcha_url}}/challenge?k={{siteconfig_settings.recaptcha_public_key}}{{form.captcha_error_query_str}}"></script>
 
     <noscript>
-     <iframe src="{{form.recaptcha_url}}/noscript?k={{siteconfig.settings.recaptcha_public_key}}{{form.captcha_error_query_str}}"
+     <iframe src="{{form.recaptcha_url}}/noscript?k={{siteconfig_settings.recaptcha_public_key}}{{form.captcha_error_query_str}}"
              height="300" width="500" frameborder="0"></iframe>
      <br />
      <textarea name="recaptcha_challenge_field" rows="3" cols="40"></textarea>
