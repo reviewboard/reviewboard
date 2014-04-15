@@ -1,14 +1,21 @@
 from __future__ import unicode_literals
 
 import json
+from collections import defaultdict
 
 from django import forms
+from django.conf.urls import patterns, url
+from django.http import HttpResponse
 from django.utils.six.moves.urllib.error import HTTPError, URLError
 from django.utils.six.moves.urllib.parse import quote
 from django.utils.translation import ugettext_lazy as _
+from django.views.decorators.http import require_POST
 
 from reviewboard.hostingsvcs.errors import InvalidPlanError
 from reviewboard.hostingsvcs.forms import HostingServiceForm
+from reviewboard.hostingsvcs.hook_utils import (close_all_review_requests,
+                                                get_review_request_id,
+                                                get_server_url)
 from reviewboard.hostingsvcs.service import HostingService
 from reviewboard.scmtools.crypto_utils import (decrypt_password,
                                                encrypt_password)
@@ -52,6 +59,13 @@ class Bitbucket(HostingService):
     needs_authorization = True
     supports_repositories = True
     supports_bug_trackers = True
+
+    repository_url_patterns = patterns(
+        '',
+
+        url(r'^hooks/post-receive/$',
+            'reviewboard.hostingsvcs.bitbucket.process_post_receive_hook'),
+    )
 
     supported_scmtools = ['Git', 'Mercurial']
     plans = [
@@ -249,3 +263,39 @@ class Bitbucket(HostingService):
             # sometimes get a raw error string, and sometimes raw HTML.
             # We'll just have to return what we get for now.
             raise Exception(e.read())
+
+
+@require_POST
+def process_post_receive_hook(request, *args, **kwargs):
+    """Closes review requests as submitted automatically after a push."""
+    if 'payload' not in request.POST:
+        return HttpResponse()
+
+    payload = json.loads(request.POST['payload'])
+    server_url = get_server_url(request)
+    review_id_to_commits = get_review_id_to_commits_map(payload, server_url)
+    close_all_review_requests(review_id_to_commits)
+    return HttpResponse()
+
+
+def get_review_id_to_commits_map(payload, server_url):
+    """Returns a dictionary, mapping a review request ID to a list of commits.
+
+    If a commit's commit message does not contain a review request ID, we append
+    the commit to the key None.
+    """
+    review_id_to_commits_map = defaultdict(list)
+    commits = payload.get('commits', [])
+
+    for commit in commits:
+        commit_hash = commit.get('node', None)
+        commit_message = commit.get('message', None)
+        branch_name = commit.get('branch', None)
+
+        if branch_name:
+            review_request_id = get_review_request_id(commit_message, server_url,
+                                                      commit_hash)
+            commit_entry = '%s (%s)' % (branch_name, commit_hash[:7])
+            review_id_to_commits_map[review_request_id].append(commit_entry)
+
+    return review_id_to_commits_map
