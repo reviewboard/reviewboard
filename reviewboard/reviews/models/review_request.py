@@ -826,19 +826,25 @@ class ReviewRequest(BaseReviewRequestDetails):
             failure = 'The review request has open issues.'
 
         for hook in ReviewRequestApprovalHook.hooks:
-            result = hook.is_approved(self, approved, failure)
+            try:
+                result = hook.is_approved(self, approved, failure)
 
-            if isinstance(result, tuple):
-                approved, failure = result
-            elif isinstance(result, bool):
-                approved = result
-            else:
-                raise ValueError('%r returned an invalid value %r from '
-                                 'is_approved'
-                                 % (hook, result))
+                if isinstance(result, tuple):
+                    approved, failure = result
+                elif isinstance(result, bool):
+                    approved = result
+                else:
+                    raise ValueError('%r returned an invalid value %r from '
+                                    'is_approved'
+                                    % (hook, result))
 
-            if approved:
-                failure = None
+                if approved:
+                    failure = None
+            except Exception as e:
+                extension = hook.extension
+                logging.error('Error when running ReviewRequestApprovalHook.'
+                              'is_approved function in extension: "%s": %s',
+                              extension.metadata['Name'], e, exc_info=1)
 
         self._approval_failure = failure
         self._approved = approved
