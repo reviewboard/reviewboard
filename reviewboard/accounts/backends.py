@@ -519,7 +519,21 @@ class ActiveDirectoryBackend(AuthBackend):
             port, host = dc
             con = ldap.open(host, port=int(port))
             if settings.AD_USE_TLS:
-                con.start_tls_s()
+                try:
+                    con.start_tls_s()
+                except ldap.UNAVAILABLE:
+                    logging.warning('Active Directory: Domain controller '
+                                    '%s:%d for domain %s unavailable',
+                                    host, int(port), userdomain)
+                    continue
+                except ldap.CONNECT_ERROR:
+                    logging.warning("Active Directory: Could not connect "
+                                    "to domain controller %s:%d for domain "
+                                    "%s, possibly the certificate wasn't "
+                                    "verifiable",
+                                    host, int(port), userdomain)
+                    continue
+
             con.set_option(ldap.OPT_REFERRALS, 0)
             yield con
 
