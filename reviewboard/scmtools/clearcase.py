@@ -387,7 +387,13 @@ class ClearCaseDiffParser(DiffParser):
         """Normalize any path sent from client view and return relative path
         against vobtag
         """
-        path, revision = filename.split("@@", 1)
+
+        try:
+            path, revision = filename.split("@@", 1)
+        except ValueError:
+            path = filename
+            revision = None
+
         relpath = ""
         logging.debug("vobstag: %s, path: %s", self.vobstag, path)
         while True:
@@ -406,8 +412,10 @@ class ClearCaseDiffParser(DiffParser):
                 relpath = os.path.join(basename, relpath)
 
         logging.debug("relpath: %s", relpath)
-        return relpath + "@@" + revision
 
+        if revision:
+            relpath = relpath + "@@" + revision
+        return relpath
 
 class ClearCaseDynamicViewClient(object):
     def __init__(self, path):

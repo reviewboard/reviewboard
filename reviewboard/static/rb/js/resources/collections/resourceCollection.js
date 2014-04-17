@@ -17,6 +17,7 @@ RB.ResourceCollection = RB.BaseCollection.extend({
     initialize: function(models, options) {
         this.parentResource = options.parentResource;
         this.extraQueryData = options.extraQueryData;
+        this.maxResults = options.maxResults;
         this.hasPrev = false;
         this.hasNext = false;
         this.currentPage = 0;
@@ -68,7 +69,7 @@ RB.ResourceCollection = RB.BaseCollection.extend({
 
         options = options || {};
 
-        this._links = rsp.links;
+        this._links = rsp.links || null;
         this.totalResults = rsp.total_results;
 
         if (options.fetchingAll) {
@@ -77,8 +78,10 @@ RB.ResourceCollection = RB.BaseCollection.extend({
             this.currentPage = 0;
         } else {
             this.totalResults = rsp.total_results;
-            this.hasPrev = this._links && this._links.prev !== undefined;
-            this.hasNext = this._links && this._links.next !== undefined;
+            this.hasPrev = (this._links !== null &&
+                            this._links.prev !== undefined);
+            this.hasNext = (this._links !== null &&
+                            this._links.next !== undefined);
             this.currentPage = options.page;
         }
 
@@ -89,7 +92,7 @@ RB.ResourceCollection = RB.BaseCollection.extend({
      * Fetches models from the list.
      *
      * By default, this will replace the list of models in this collection.
-     * That can be changed by providing `remove: false` in options.
+     * That can be changed by providing `reset: false` in options.
      *
      * The first page of resources will be fetched unless options.start is
      * set. The value is the start position for the number of objects, not
@@ -107,6 +110,35 @@ RB.ResourceCollection = RB.BaseCollection.extend({
         if (options.start !== undefined) {
             options.data.start = options.start;
         }
+
+        /*
+         * There's a couple different ways that the max number of results
+         * can be specified. We'll want to support them all.
+         *
+         * If a value is passed in extraQueryData, it takes precedence.
+         * We'll just set it further down. Otherwise, options.maxResults
+         * will be used if passed, falling back on the maxResults passed
+         * during collection construction.
+         */
+        if (!this.extraQueryData ||
+            this.extraQueryData['max-results'] === undefined) {
+            if (options.maxResults !== undefined) {
+                options.data['max-results'] = options.maxResults;
+            } else if (this.maxResults) {
+                options.data['max-results'] = this.maxResults;
+            }
+        }
+
+        if (options.reset === undefined) {
+            options.reset = true;
+        }
+
+        /*
+         * Versions of Backbone prior to 1.1 won't respect the reset option,
+         * instead requiring we use 'remove'. Support this for compatibility,
+         * until we move to Backbone 1.1.
+         */
+        options.remove = options.reset;
 
         if (expandedFields.length > 0) {
             options.data.expand = expandedFields.join(',');
@@ -142,7 +174,7 @@ RB.ResourceCollection = RB.BaseCollection.extend({
      * The collection's list of models will be replaced with the new list
      * after the fetch succeeds. Each time fetchPrev is called, the collection
      * will consist only of that page's batch of models. This can be overridden
-     * by providing `replace: false` in options.
+     * by providing `reset: false` in options.
      */
     fetchPrev: function(options, context) {
         options = options || {};
@@ -168,7 +200,7 @@ RB.ResourceCollection = RB.BaseCollection.extend({
      * The collection's list of models will be replaced with the new list
      * after the fetch succeeds. Each time fetchNext is called, the collection
      * will consist only of that page's batch of models. This can be overridden
-     * by providing `replace: false` in options.
+     * by providing `reset: false` in options.
      */
     fetchNext: function(options, context) {
         options = options || {};
@@ -204,12 +236,10 @@ RB.ResourceCollection = RB.BaseCollection.extend({
         options = _.bindCallbacks(options || {}, context);
 
         fetchOptions = _.defaults({
-            remove: false,
+            reset: false,
             fetchingAll: true,
             enforceHasNext: false,
-            data: {
-                'max-results': 50
-            },
+            maxResults: 50,
             success: function() {
                 if (this._links.next) {
                     this._fetchURL = this._links.next.href;

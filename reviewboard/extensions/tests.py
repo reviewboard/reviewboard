@@ -10,8 +10,10 @@ from reviewboard.extensions.hooks import (DiffViewerActionHook,
                                           HeaderDropdownActionHook,
                                           NavigationBarHook,
                                           ReviewRequestActionHook,
+                                          ReviewRequestApprovalHook,
                                           ReviewRequestDropdownActionHook)
 from reviewboard.testing.testcase import TestCase
+from reviewboard.reviews.models.review_request import ReviewRequest
 
 
 class DummyExtension(Extension):
@@ -163,3 +165,38 @@ class HookTests(TestCase):
         """Testing header drop-down action extension hooks"""
         self._test_dropdown_action_hook('header_dropdown_action_hooks',
                                         HeaderDropdownActionHook)
+
+
+class SandboxExtension(Extension):
+    registration = RegisteredExtension()
+    metadata = {
+        'Name': 'Sandbox Extension',
+    }
+    def __init__(self, *args, **kwargs):
+        super(SandboxExtension, self).__init__(*args, **kwargs)
+        ReviewRequestApprovalTestHook(self)
+
+
+class ReviewRequestApprovalTestHook(ReviewRequestApprovalHook):
+    def is_approved(self, review_request, prev_approved, prev_failure):
+        raise StandardError
+
+
+class SandboxTests(TestCase):
+    """Testing extension sandboxing"""
+    def setUp(self):
+        super(SandboxTests, self).setUp()
+
+        manager = ExtensionManager('')
+        self.extension = SandboxExtension(extension_manager=manager)
+
+    def tearDown(self):
+        super(SandboxTests, self).tearDown()
+
+        self.extension.shutdown()
+
+    def test_is_approved_sandbox(self):
+        """Testing sandboxing ReviewRequestApprovalHook when
+        is_approved function throws an error"""
+        review = ReviewRequest()
+        review._calculate_approval()
