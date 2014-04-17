@@ -104,7 +104,7 @@ Options
 
 .. cmdoption:: --db-name=<DB_NAME>
 
-   The database name (not used for sqlite3).
+   The database name (database file path for sqlite3).
 
 .. cmdoption:: --db-user=<DB_USER>
 
