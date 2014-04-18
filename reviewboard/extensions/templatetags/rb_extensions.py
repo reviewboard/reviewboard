@@ -1,5 +1,7 @@
 from __future__ import unicode_literals
 
+import logging
+
 from django import template
 from django.template.loader import render_to_string
 from djblets.util.decorators import basictag
@@ -66,17 +68,23 @@ def navigation_bar_hooks(context):
     s = ""
 
     for hook in NavigationBarHook.hooks:
-        for nav_info in hook.get_entries(context):
-            if nav_info:
-                url_name = nav_info.get('url_name', None)
-                if url_name:
-                    nav_info['url'] = local_site_reverse(
-                        url_name, request=context.get('request'))
+        try:
+            for nav_info in hook.get_entries(context):
+                if nav_info:
+                    url_name = nav_info.get('url_name', None)
+                    if url_name:
+                        nav_info['url'] = local_site_reverse(
+                            url_name, request=context.get('request'))
 
-                context.push()
-                context['entry'] = nav_info
-                s += render_to_string("extensions/navbar_entry.html", context)
-                context.pop()
+                    context.push()
+                    context['entry'] = nav_info
+                    s += render_to_string("extensions/navbar_entry.html", context)
+                    context.pop()
+        except Exception as e:
+            extension = hook.extension
+            logging.error('Error when running NavigationBarHook.'
+                          'get_entries function in extension: "%s": %s',
+                          extension.metadata['Name'], e, exc_info=1)
 
     return s
 

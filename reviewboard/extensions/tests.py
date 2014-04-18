@@ -182,6 +182,11 @@ class ReviewRequestApprovalTestHook(ReviewRequestApprovalHook):
         raise StandardError
 
 
+class NavigationBarTestHook(NavigationBarHook):
+    def get_entries(self, context):
+        raise StandardError
+
+
 class SandboxTests(TestCase):
     """Testing extension sandboxing"""
     def setUp(self):
@@ -200,3 +205,21 @@ class SandboxTests(TestCase):
         is_approved function throws an error"""
         review = ReviewRequest()
         review._calculate_approval()
+
+    def test_get_entries(self):
+        """Testing sandboxing NavigationBarHook when get_entries function
+        throws an error"""
+        entry = {
+            'label': 'Test get_entries Function',
+            'url': '/dashboard/',
+        }
+
+        hook = NavigationBarTestHook(extension=self.extension, entries=[entry])
+
+        context = Context({})
+
+        t = Template(
+            "{% load rb_extensions %}"
+            "{% navigation_bar_hooks %}")
+
+        t.render(context).strip()
