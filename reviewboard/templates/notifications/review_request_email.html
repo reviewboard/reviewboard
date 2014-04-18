@@ -4,17 +4,17 @@
 {% block content %}
 {%  with review_request.rich_text as rich_text %}
 {%   if changes and changes.status and review_request.status in "SD" %}
-<table bgcolor="#e0e0e0" width="100%" cellpadding="8" style="border: 1px gray solid;">
+<table bgcolor="#e0e0e0" width="100%" cellpadding="12" style="border: 1px gray solid; border-radius: 6px; -moz-border-radius: 6px; -webkit-border-radius: 6px;">
  <tr>
   <td>
-   <h1 style="margin-right: 0.2em; padding: 0; font-size: 10pt;">{% if review_request.status == 'S' %}This change has been marked as submitted.{% elif review_request.status == 'D' %}This change has been discarded.{% endif %}</h1>
+   <h1 style="margin: 0; padding: 0; font-size: 10pt;">{% if review_request.status == 'S' %}This change has been marked as submitted.{% elif review_request.status == 'D' %}This change has been discarded.{% endif %}</h1>
   </td>
  </tr>
 </table>
 <br />
 {%   endif %}
 
-<table bgcolor="#fefadf" width="100%" cellspacing="0" cellpadding="8" style="border: 1px black solid;">
+<table bgcolor="#fefadf" width="100%" cellspacing="0" cellpadding="12" style="border: 1px #888a85 solid; border-radius: 6px; -moz-border-radius: 6px; -webkit-border-radius: 6px;">
  <tr>
   <td>
 
