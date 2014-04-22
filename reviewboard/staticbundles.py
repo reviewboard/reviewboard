@@ -30,6 +30,7 @@ PIPELINE_JS = dict({
         'source_filenames': (
             'lib/js/jasmine-1.3.1.js',
             'lib/js/jasmine-html-1.3.1.js',
+            'lib/js/jasmine.suites-1.0.js',
             'rb/js/collections/tests/filteredCollectionTests.js',
             'rb/js/diffviewer/models/tests/diffFileModelTests.js',
             'rb/js/diffviewer/models/tests/diffReviewableModelTests.js',

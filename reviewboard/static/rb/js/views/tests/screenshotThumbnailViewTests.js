@@ -1,4 +1,4 @@
-describe('views/ScreenshotThumbnail', function() {
+suite('rb/views/ScreenshotThumbnail', function() {
     var model,
         view,
         template = _.template([

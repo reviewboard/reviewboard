@@ -1,4 +1,4 @@
-describe('resources/models/FileDiff', function() {
+suite('rb/resources/models/FileDiff', function() {
     var model;
 
     beforeEach(function() {

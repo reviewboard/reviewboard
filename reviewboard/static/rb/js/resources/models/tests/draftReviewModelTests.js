@@ -1,4 +1,4 @@
-describe('resources/models/DraftReview', function() {
+suite('rb/resources/models/DraftReview', function() {
     var model,
         parentObject;
 

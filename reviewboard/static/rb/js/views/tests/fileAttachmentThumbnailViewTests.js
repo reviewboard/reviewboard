@@ -1,4 +1,4 @@
-describe('views/FileAttachmentThumbnail', function() {
+suite('rb/views/FileAttachmentThumbnail', function() {
     var reviewRequest,
         model,
         view;

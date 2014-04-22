@@ -1,4 +1,4 @@
-describe('resources/models/Screenshot', function() {
+suite('rb/resources/models/Screenshot', function() {
     var parentObject,
         model;
 

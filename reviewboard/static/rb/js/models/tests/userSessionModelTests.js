@@ -1,4 +1,4 @@
-describe('models/UserSession', function() {
+suite('rb/models/UserSession', function() {
     describe('create', function() {
         it('Instance is set', function() {
             var session;

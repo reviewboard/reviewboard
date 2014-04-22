@@ -1,4 +1,4 @@
-describe('resources/models/BaseComment', function() {
+suite('rb/resources/models/BaseComment', function() {
     var strings = RB.BaseComment.strings,
         parentObject,
         model;

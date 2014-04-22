@@ -1,4 +1,4 @@
-describe('views/ReviewReplyDraftBannerView', function() {
+suite('rb/views/ReviewReplyDraftBannerView', function() {
     var reviewReply,
         view;
 

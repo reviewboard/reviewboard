@@ -1,4 +1,4 @@
-describe('views/ReviewDialogView', function() {
+suite('rb/views/ReviewDialogView', function() {
     var baseEmptyCommentListPayload = {
             stat: 'ok',
             total_results: 0,

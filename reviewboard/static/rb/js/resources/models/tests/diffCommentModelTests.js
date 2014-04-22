@@ -1,4 +1,4 @@
-describe('resources/models/DiffComment', function() {
+suite('rb/resources/models/DiffComment', function() {
     var model;
 
     beforeEach(function() {

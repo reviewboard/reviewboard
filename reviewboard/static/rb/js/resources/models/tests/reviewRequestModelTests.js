@@ -1,4 +1,4 @@
-describe('resources/models/ReviewRequest', function() {
+suite('rb/resources/models/ReviewRequest', function() {
     var reviewRequest,
         callbacks;
 

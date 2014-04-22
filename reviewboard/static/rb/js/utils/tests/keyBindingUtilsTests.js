@@ -1,4 +1,4 @@
-describe('utils/keyBindingUtils', function() {
+suite('rb/utils/keyBindingUtils', function() {
     describe('KeyBindingsMixin', function() {
         var MyView,
             view;

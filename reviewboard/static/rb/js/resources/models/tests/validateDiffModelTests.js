@@ -1,4 +1,4 @@
-describe('resources/models/ValidateDiffModel', function() {
+suite('rb/resources/models/ValidateDiffModel', function() {
     var model;
 
     beforeEach(function() {
