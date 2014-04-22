@@ -28,7 +28,7 @@ Bug Fixes
 
   Patch by Giel van Schijndel.
 
-* Fixed the documentation for :cmd:`rb-site --db-name` when using SQLite.
+* Fixed the documentation for :command:`rb-site --db-name` when using SQLite.
   (:bug:`3304`)
 
 
