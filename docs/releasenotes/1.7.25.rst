@@ -1,0 +1,40 @@
+=================================
+Review Board 1.7.25 Release Notes
+=================================
+
+**Release date**: April 22, 2014
+
+
+Security Fixes
+==============
+
+This release requires Django 1.4.11, which was announced today (April 22nd)
+and fixes a number of security-related issues. We strongly recommend that
+everyone, particularly those with public installations, upgrade to this
+release.
+
+See Django's `announcement
+<https://www.djangoproject.com/weblog/2014/apr/21/security/>`_ for more
+information.
+
+
+Bug Fixes
+=========
+
+* Fixed a typo in the Bitbucket help text.
+
+* Active Directory no longer fails to check all domain controllers when
+  STARTTLS fails for one.
+
+  Patch by Giel van Schijndel.
+
+* Fixed the documentation for :cmd:`rb-site --db-name` when using SQLite.
+  (:bug:`3304`)
+
+
+Contributors
+============
+
+* Christian Hammond
+* David Trowbridge
+* Giel van Schijndel
