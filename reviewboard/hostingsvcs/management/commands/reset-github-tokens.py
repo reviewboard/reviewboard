@@ -1,14 +1,11 @@
 from __future__ import unicode_literals
 
 import getpass
-import sys
 from optparse import make_option
 
-from django.conf import settings
-from django.core.management.base import BaseCommand, CommandError
+from django.core.management.base import BaseCommand
 from django.utils.six.moves import input
 from django.utils.translation import ugettext_lazy as _
-from djblets.siteconfig.models import SiteConfiguration
 
 from reviewboard.hostingsvcs.errors import (AuthorizationError,
                                             TwoFactorAuthCodeRequiredError)

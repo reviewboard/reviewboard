@@ -2,7 +2,6 @@ from __future__ import unicode_literals
 
 import json
 import logging
-import urllib2
 import uuid
 from collections import defaultdict
 

@@ -214,7 +214,7 @@ class SandboxTests(TestCase):
             'url': '/dashboard/',
         }
 
-        hook = NavigationBarTestHook(extension=self.extension, entries=[entry])
+        NavigationBarTestHook(extension=self.extension, entries=[entry])
 
         context = Context({})
 

@@ -19,8 +19,7 @@ from reviewboard.admin.cache_stats import get_cache_stats
 from reviewboard.admin.forms import SSHSettingsForm
 from reviewboard.admin.security_checks import SecurityCheckRunner
 from reviewboard.admin.support import get_support_url
-from reviewboard.admin.widgets import (Widget,
-                                       dynamic_activity_data,
+from reviewboard.admin.widgets import (dynamic_activity_data,
                                        primary_widgets,
                                        secondary_widgets)
 from reviewboard.ssh.client import SSHClient
