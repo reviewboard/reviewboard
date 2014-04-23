@@ -97,10 +97,10 @@ RB.IssueSummaryTableView = Backbone.View.extend({
 
     _onHeaderClicked: function(event) {
         if (this._$tbody.find('tr.issue:visible').length !== 0) {
-            var $header = $(event.srcElement);
+            var $header = $(event.target);
 
             this._sortByCol(
-                $header.parent().children().index(event.srcElement) + 1);
+                $header.parent().children().index(event.target) + 1);
         }
 
         return false;
@@ -114,7 +114,7 @@ RB.IssueSummaryTableView = Backbone.View.extend({
          *  the issueClicked event so the page can navigate the user to the
          *  relevant issue comment.
          */
-        var $el = $(event.srcElement);
+        var $el = $(event.target);
 
         this.trigger('issueClicked', {
             type: $el.attr('comment-type'),
