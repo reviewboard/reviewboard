@@ -231,15 +231,16 @@ class DiffSetManager(models.Manager):
             else:
                 status = FileDiff.MODIFIED
 
-            filediff = FileDiff(diffset=diffset,
-                                source_file=f.origFile,
-                                dest_file=dest_file,
-                                source_revision=smart_unicode(source_rev),
-                                dest_detail=f.newInfo,
-                                diff=f.data.encode(encoding),
-                                parent_diff=parent_content,
-                                binary=f.binary,
-                                status=status)
+            filediff = FileDiff(
+                diffset=diffset,
+                source_file=self._normalize_diff_filename(f.origFile),
+                dest_file=self._normalize_diff_filename(dest_file),
+                source_revision=smart_unicode(source_rev),
+                dest_detail=f.newInfo,
+                diff=f.data.encode(encoding),
+                parent_diff=parent_content,
+                binary=f.binary,
+                status=status)
             filediff.set_line_counts(raw_insert_count=f.insert_count,
                                      raw_delete_count=f.delete_count)
 
@@ -247,6 +248,17 @@ class DiffSetManager(models.Manager):
                 filediff.save()
 
         return diffset
+
+    def _normalize_diff_filename(self, filename):
+        """Normalize filenames in diffs.
+
+        This strips off any leading slashes, which might occur due to
+        differences in various diffing methods or APIs.
+        """
+        if filename.startswith('/'):
+            return filename[1:]
+        else:
+            return filename
 
     def _process_files(self, parser, basedir, repository, base_commit_id,
                        request, check_existence=False, limit_to=None):
