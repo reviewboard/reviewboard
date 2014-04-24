@@ -295,6 +295,10 @@ class BaseReviewRequestField(object):
         """
         return self.render_value(self.value)
 
+    def post_field_html(self):
+        """Returns any extra HTML to be added after the field."""
+        return ''
+
 
 class BaseEditableField(BaseReviewRequestField):
     """Base class for an editable field.

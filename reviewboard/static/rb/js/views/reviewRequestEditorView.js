@@ -258,6 +258,10 @@ DraftBannerView = BannerView.extend({
  * around editing a review request.
  */
 RB.ReviewRequestEditorView = Backbone.View.extend({
+    events: {
+        'click .suggest-user': '_addPersonToField'
+    },
+
     defaultFields: [
         {
             fieldID: 'branch'
@@ -377,6 +381,12 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
                     $list
                         .addClass("user")
                         .user_infobox());
+            },
+            cancelEdit: function() {
+                this.$('.suggest-user:hidden').show();
+            },
+            completeEdit: function() {
+                this.$('.suggest-user:hidden').remove();
             }
         },
         {
@@ -451,6 +461,13 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
      *     * useExtraData
      *       - If true, field values will be stored in extraData.
      *         Defaults to true for non-builtin fields.
+     *
+     *     * cancelEdit
+     *       - A function that gets called when editor changes are cancelled.
+     *         Defaults to null.
+     *
+     *     * completeEdit
+     *       - A function that gets called when editor changes are completed.
      */
     registerField: function(options) {
         var fieldID = options.fieldID;
@@ -458,12 +475,14 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
         console.assert(fieldID);
 
         this._fieldEditors[fieldID] = _.extend({
-            selector: '#field_' + fieldID,
+            cancelEdit: null,
+            completeEdit: null,
             elementOptional: false,
             fieldID: fieldID,
             fieldName: fieldID,
             formatter: null,
             jsonFieldName: fieldID,
+            selector: '#field_' + fieldID,
             useEditIconOnly: false,
             useExtraData: true
         }, options);
@@ -487,6 +506,9 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
         this._$bannersContainer = $('#review_request_banners');
         this._$main = $('#review_request_main');
         this._$extra = $('#review_request_extra');
+
+        this._$suggestedPeople = $('#people_suggestions');
+        this._$targetPeople = $('#field_target_people');
 
         /*
          * Find any editors that weren't registered. These may be from
@@ -762,6 +784,28 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
     },
 
     /*
+     * Adds the person to the editor on click and hides that
+     * person from the suggestions list.
+     */
+    _addPersonToField: function(event) {
+        var username = $(event.target).data('username'),
+            value;
+
+        event.preventDefault();
+
+        this._$targetPeople.inlineEditor('startEdit');
+        value = this._$targetPeople.inlineEditor('value').trim();
+
+        if (value) {
+            this._$targetPeople.inlineEditor('setValue', value + ', ' + username);
+        } else {
+            this._$targetPeople.inlineEditor('setValue', username);
+        }
+
+        $(event.target).hide();
+    },
+
+    /*
      * Sets up all review request actions and listens for events.
      */
     _setupActions: function() {
@@ -949,6 +993,10 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
                     }
                     this._scheduleResizeLayout();
                     model.decr('editCount');
+
+                    if (_.isFunction(fieldOptions.cancelEdit)) {
+                        fieldOptions.cancelEdit.call(fieldOptions.context, this);
+                    }
                 }, this),
                 complete: _.bind(function(e, value) {
                     if (fieldOptions.editMarkdown) {
@@ -978,6 +1026,10 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
                             }
                         }, fieldOptions),
                         this);
+
+                    if (_.isFunction(fieldOptions.completeEdit)) {
+                        fieldOptions.completeEdit.call(fieldOptions.context, this);
+                    }
                 }, this),
                 resize: this._checkResizeLayout
             });

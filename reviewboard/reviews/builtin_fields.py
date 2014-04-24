@@ -646,6 +646,32 @@ class TargetPeopleField(BuiltinFieldMixin, BaseModelListEditableField):
                    ' '.join(extra_classes),
                    escape(user.username)))
 
+    def post_field_html(self):
+        """Returns any extra HTML to be added after the field.
+
+        This adds the UI for the suggested reviewers feature.
+        """
+        users = [
+            format_html(
+                '<a href="#" role="button" class="suggest-user" '
+                'data-username="{username}">{username}</a>',
+                username=user.username)
+            for user in self.review_request_details.get_suggested_reviewers()
+        ]
+
+        if users and self.is_editable:
+            return format_html(
+                '<div id="people_suggestions_container">'
+                ' <span>{suggestions}</span>'
+                ' <span id="people_suggestions">'
+                '  {users}'
+                ' </span>'
+                '</div>',
+                suggestions=_('Suggestions: '),
+                users=mark_safe(''.join(users)))
+        else:
+            return ''
+
 
 class MainFieldSet(BaseReviewRequestFieldSet):
     fieldset_id = 'main'

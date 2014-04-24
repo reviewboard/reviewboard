@@ -363,6 +363,14 @@
     #target_people .inactive {
       text-decoration: line-through;
     }
+
+    .suggest-user:after {
+      content: ', ';
+    }
+
+    .suggest-user:last-child:after {
+      content: '';
+    }
   }
 
   #review_request_extra {
@@ -496,6 +504,10 @@
     clear: both;
     padding: 0;
   }
+}
+
+#people_suggestions_container {
+  margin: 5px 0px 15px 0px;
 }
 
 

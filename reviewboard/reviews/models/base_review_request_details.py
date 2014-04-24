@@ -1,7 +1,11 @@
 from __future__ import unicode_literals
 
+import datetime
 import re
+from collections import defaultdict
+from operator import itemgetter
 
+from django.contrib.auth.models import User
 from django.db import models
 from django.utils import six
 from django.utils.encoding import python_2_unicode_compatible
@@ -23,6 +27,7 @@ class BaseReviewRequestDetails(models.Model):
     classes.
     """
     MAX_SUMMARY_LENGTH = 300
+    MAX_SUGGESTED_REVIEWERS = 5
 
     summary = models.CharField(_("summary"), max_length=MAX_SUMMARY_LENGTH)
     description = models.TextField(_("description"), blank=True)
@@ -112,6 +117,106 @@ class BaseReviewRequestDetails(models.Model):
         for file_attachment in self.inactive_file_attachments.all():
             file_attachment._review_request = review_request
             yield file_attachment
+
+    def get_suggested_reviewers(self):
+        """Returns a list of suggested reviewers for the request.
+
+        Uses comment and review history to find reviewers who have
+        reviewed changes to files in the current review request's diffset
+        in the past.
+        """
+        RECENCY_WEIGHT = 1
+        TARGET_WEIGHT = 1.5
+        diffed_files = []
+        weighted = defaultdict(int)
+        diffset = self.get_latest_diffset()
+
+        # Get the list of files modified in the current review request.
+        if diffset is None:
+            return []
+
+        filediffs = diffset.files.all()
+        diffed_files = [
+            fd.source_file.lstrip('/')
+            for fd in filediffs
+        ]
+
+        # Query on the through table that matches review requests to
+        # target people to get the specified values for each review on
+        # a file that is in the list of files modified on the current
+        # review request.
+        from reviewboard.reviews.models.review_request import ReviewRequest
+
+        q = ReviewRequest.target_people.field.rel.through.objects
+        q = q.select_related('reviews')
+        q = q.filter(reviewrequest__reviews__comments__filediff__dest_file__in=
+                         diffed_files)
+        q = q.values('reviewrequest__reviews', 'reviewrequest__reviews__user',
+                     'reviewrequest__reviews__timestamp', 'user', 'pk')
+
+        # Build a dictionary mapping review request ids to a list of the
+        # users targetted in that review request.
+        # Also build a dictionary containing information for each review.
+        # Since the nature of the previous query would lead to duplicate
+        # entries for reviews, we need this to result in unique entries.
+        targets = defaultdict(list)
+        all_reviews = {}
+
+        for entry in q:
+            rr_id = entry['pk']
+
+            if entry['user']:
+                targets[rr_id].append(entry['user'])
+
+            # This is the pk of a single review
+            review_id = entry['reviewrequest__reviews']
+
+            if rr_id != self.pk and review_id not in all_reviews:
+                all_reviews[review_id] = (
+                    entry['reviewrequest__reviews__user'],
+                    entry['reviewrequest__reviews__timestamp'],
+                    rr_id)
+
+        now = datetime.datetime.now()
+
+        # Loop through all the reviews, getting the user that reviewed each.
+        #
+        # Assign the user an initial weight of 1. Divide the weight by
+        # a constant multiple of the number of days passed since the review
+        # was written.
+        #
+        # If the user was targetted for review in the review
+        # request in which they made the comment, then multiply their weight
+        # by a pre-decided weighting constant 'target_weighting_constant'.
+        #
+        # Add the user along with its weight to the dictionary named 'weighted'.
+        for rev in all_reviews:
+            weight = 1
+            user, user_timestamp, related_review_request = all_reviews[rev]
+
+            # Get the offset in days since review was submitted.
+            timedelta = (now.replace(tzinfo=user_timestamp.tzinfo)
+                         - user_timestamp)
+
+            # Adding 1 to account for division by 0 errors.
+            weight = (RECENCY_WEIGHT * (weight / float(timedelta.days + 1)))
+
+            # Add weight if the user targetted in the request:
+            if user in targets[related_review_request]:
+                weight *= TARGET_WEIGHT
+
+            weighted[user] += weight
+
+        # Sort the users in decreasing order of weight
+        sorted_entries = sorted(six.iteritems(weighted),
+                                key=itemgetter(1),
+                                reverse=True)
+        sorted_users = [
+            user
+            for user, weight in sorted_entries[:self.MAX_SUGGESTED_REVIEWERS]
+        ]
+
+        return User.objects.in_bulk(sorted_users).values()
 
     def add_default_reviewers(self):
         """Add default reviewers based on the diffset.
