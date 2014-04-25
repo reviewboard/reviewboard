@@ -25,8 +25,11 @@ class Command(BaseCommand):
             raise CommandError(_('%s is not a valid extension ID.')
                                % extension_id)
         except EnablingExtensionError as e:
-            raise CommandError(_('Error enabling extension: %s\n\n%s')
-                               % (e.message, e.load_error))
+            raise CommandError(
+                _('Error enabling extension: %(message)s\n\n%(error)s') % {
+                    'message': e.message,
+                    'error': e.load_error,
+                })
         except Exception as e:
             raise CommandError(_('Unexpected error enabling extension: %s')
                                % e)

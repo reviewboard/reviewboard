@@ -49,9 +49,11 @@ class Command(BaseCommand):
                 reset = 'y'
             else:
                 if account.local_site:
-                    reset_msg = _('Reset token for %s (%s) [Y/n] ') % (
-                        account.local_site.name,
-                        account.username)
+                    reset_msg = _('Reset token for %(site_name)s '
+                                  '(%(username)s) [Y/n] ') % {
+                        'site_name': account.local_site.name,
+                        'username': account.username,
+                    }
                 else:
                     reset_msg = _('Reset token for %s [Y/n] ') % (
                         account.username)
