@@ -10,13 +10,13 @@ msgstr ""
 "POT-Creation-Date: 2014-04-25 15:54-0700\n"
 "PO-Revision-Date: 2014-04-25 21:40+0000\n"
 "Last-Translator: trowbrds <trowbrds@gmail.com>\n"
-"Language-Team: Italian (Italy) (http://www.transifex.com/projects/p/"
-"reviewboard/language/it_IT/)\n"
-"Language: it_IT\n"
+"Language-Team: Korean (Korea) (http://www.transifex.com/projects/p/"
+"reviewboard/language/ko_KR/)\n"
+"Language: ko_KR\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
 
 #: static/rb/js/common.js:129
 #: static/rb/js/dashboard/views/dashboardView.js:168
@@ -68,21 +68,18 @@ msgstr ""
 msgid "%s review request selected"
 msgid_plural "%s review requests selected"
 msgstr[0] ""
-msgstr[1] ""
 
 #: static/rb/js/dashboard/views/dashboardView.js:128
 #, c-format
 msgid "%s review request has been closed."
 msgid_plural "%s review requests have been closed."
 msgstr[0] ""
-msgstr[1] ""
 
 #: static/rb/js/dashboard/views/dashboardView.js:137
 #, c-format
 msgid "%s review request could not be closed."
 msgid_plural "%s review requests could not be closed."
 msgstr[0] ""
-msgstr[1] ""
 
 #: static/rb/js/dashboard/views/dashboardView.js:142
 msgid "You may not have permission to close them."
@@ -202,21 +199,18 @@ msgstr ""
 msgid "Group %s does not exist."
 msgid_plural "Groups %s do not exist."
 msgstr[0] ""
-msgstr[1] ""
 
 #: static/rb/js/models/reviewRequestEditorModel.js:149
 #, c-format
 msgid "User %s does not exist."
 msgid_plural "Users %s do not exist."
 msgstr[0] ""
-msgstr[1] ""
 
 #: static/rb/js/models/reviewRequestEditorModel.js:155
 #, c-format
 msgid "Review Request %s does not exist."
 msgid_plural "Review Requests %s do not exist."
 msgstr[0] ""
-msgstr[1] ""
 
 #: static/rb/js/models/reviewRequestEditorModel.js:278
 msgid "There is an internal error balancing the edit count"
