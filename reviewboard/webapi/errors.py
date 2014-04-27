@@ -132,3 +132,8 @@ DIFF_PARSE_ERROR = WebAPIError(
     224,
     "The specified diff file could not be parsed.",
     http_status=400)  # 400 Bad Request
+
+PUBLISH_ERROR = WebAPIError(
+    225,
+    "An error occurred during publishing.",
+    http_status=500)  # 500 Internal Server Error

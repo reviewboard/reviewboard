@@ -21,7 +21,8 @@ from reviewboard.reviews.models.base_review_request_details import \
     BaseReviewRequestDetails
 from reviewboard.reviews.models.group import Group
 from reviewboard.reviews.models.screenshot import Screenshot
-from reviewboard.reviews.signals import (review_request_published,
+from reviewboard.reviews.signals import (review_request_publishing,
+                                         review_request_published,
                                          review_request_reopened,
                                          review_request_closed)
 from reviewboard.scmtools.models import Repository
@@ -693,6 +694,11 @@ class ReviewRequest(BaseReviewRequestDetails):
         if not self.is_mutable_by(user):
             raise PermissionError
 
+        draft = get_object_or_none(self.draft)
+
+        review_request_publishing.send(sender=self.__class__, user=user,
+                                       review_request_draft=draft)
+
         # Decrement the counts on everything. we lose them.
         # We'll increment the resulting set during ReviewRequest.save.
         # This should be done before the draft is published.
@@ -716,7 +722,6 @@ class ReviewRequest(BaseReviewRequestDetails):
                     profile__starred_review_requests=self,
                     local_site=self.local_site))
 
-        draft = get_object_or_none(self.draft)
         if draft is not None:
             # This will in turn save the review request, so we'll be done.
             changes = draft.publish(self, send_notification=False)

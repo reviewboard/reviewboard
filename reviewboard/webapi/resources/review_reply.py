@@ -9,8 +9,10 @@ from djblets.webapi.decorators import (webapi_login_required,
 from djblets.webapi.errors import (DOES_NOT_EXIST, NOT_LOGGED_IN,
                                    PERMISSION_DENIED)
 
+from reviewboard.reviews.errors import PublishError
 from reviewboard.reviews.models import Review
 from reviewboard.webapi.decorators import webapi_check_local_site
+from reviewboard.webapi.errors import PUBLISH_ERROR
 from reviewboard.webapi.mixins import MarkdownFieldsMixin
 from reviewboard.webapi.resources import resources
 from reviewboard.webapi.resources.base_review import BaseReviewResource
@@ -298,7 +300,11 @@ class ReviewReplyResource(BaseReviewResource):
         self._import_extra_data(reply.extra_data, extra_fields)
 
         if public:
-            reply.publish(user=request.user)
+            try:
+                reply.publish(user=request.user)
+            except PublishError as e:
+                return PUBLISH_ERROR.with_message(e.msg)
+
         else:
             reply.save()
 
