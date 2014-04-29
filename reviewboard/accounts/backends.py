@@ -178,7 +178,8 @@ class StandardAuthBackend(AuthBackend, ModelBackend):
         if obj is not None and not isinstance(obj, LocalSite):
             logging.error('Unexpected object %r passed to '
                           'StandardAuthBackend.get_all_permissions. '
-                          'Returning an empty list.' % obj)
+                          'Returning an empty list.',
+                          obj)
 
             if settings.DEBUG:
                 raise ValueError('Unexpected object %r' % obj)
@@ -235,7 +236,7 @@ class StandardAuthBackend(AuthBackend, ModelBackend):
         """
         if obj is not None and not isinstance(obj, LocalSite):
             logging.error('Unexpected object %r passed to has_perm. '
-                          'Returning False.' % obj)
+                          'Returning False.', obj)
 
             if settings.DEBUG:
                 raise ValueError('Unexpected object %r' % obj)
@@ -347,11 +348,11 @@ class LDAPBackend(AuthBackend):
             # return success, which doesn't mean we have authenticated.
             # http://tools.ietf.org/html/rfc4513#section-5.1.2
             # http://tools.ietf.org/html/rfc4513#section-6.3.1
-            logging.warning("Empty password for: %s" % username)
+            logging.warning("Empty password for: %s", username)
             return None
 
         if isinstance(username, six.text_type):
-            username = username.encode('utf-8')
+            username_bytes = username.encode('utf-8')
 
         if isinstance(password, six.text_type):
             password = password.encode('utf-8')
@@ -381,27 +382,28 @@ class LDAPBackend(AuthBackend):
             if not search:
                 # No such user, return early, no need for bind attempts
                 logging.warning("LDAP error: The specified object does "
-                                "not exist in the Directory: "
-                                "%s" % username)
+                                "not exist in the Directory: %s",
+                                username)
                 return None
             else:
                 userdn = search[0][0]
 
             # Now that we have the user, attempt to bind to verify
             # authentication
-            logging.debug("Attempting to authenticate as %s" % userdn)
+            logging.debug("Attempting to authenticate as %s" % userdn.decode('utf-8'))
             ldapo.bind_s(userdn, password)
 
-            return self.get_or_create_user(username, None, ldapo, userdn)
+            return self.get_or_create_user(username_bytes, None, ldapo, userdn)
 
         except ImportError:
             pass
         except ldap.INVALID_CREDENTIALS:
             logging.warning("LDAP error: The specified object does not exist "
                             "in the Directory or provided invalid "
-                            "credentials: %s" % username)
+                            "credentials: %s",
+                            username)
         except ldap.LDAPError as e:
-            logging.warning("LDAP error: %s" % e)
+            logging.warning("LDAP error: %s", e)
         except:
             # Fallback exception catch because
             # django.contrib.auth.authenticate() (our caller) catches only
@@ -482,10 +484,11 @@ class LDAPBackend(AuthBackend):
                 pass
             except ldap.NO_SUCH_OBJECT as e:
                 logging.warning("LDAP error: %s settings.LDAP_BASE_DN: %s "
-                                "User DN: %s" %
-                                (e, settings.LDAP_BASE_DN, userdn))
+                                "User DN: %s",
+                                e, settings.LDAP_BASE_DN, userdn,
+                                exc_info=1)
             except ldap.LDAPError as e:
-                logging.warning("LDAP error: %s" % e)
+                logging.warning("LDAP error: %s", e, exc_info=1)
 
         return None
 
@@ -627,7 +630,7 @@ class ActiveDirectoryBackend(AuthBackend):
         required_group = settings.AD_GROUP_NAME
 
         if isinstance(username, six.text_type):
-            username = username.encode('utf-8')
+            username_bytes = username.encode('utf-8')
 
         if isinstance(user_subdomain, six.text_type):
             user_subdomain = user_subdomain.encode('utf-8')
@@ -637,14 +640,14 @@ class ActiveDirectoryBackend(AuthBackend):
 
         for con in connections:
             try:
-                bind_username = '%s@%s' % (username, userdomain)
-                logging.debug("User %s is trying to log in "
-                              "via AD" % bind_username)
+                bind_username = b'%s@%s' % (username_bytes, userdomain)
+                logging.debug("User %s is trying to log in via AD",
+                              bind_username.decode('utf-8'))
                 con.simple_bind_s(bind_username, password)
                 user_data = self.search_ad(
                     con,
                     filter_format('(&(objectClass=user)(sAMAccountName=%s))',
-                                  (username,)),
+                                  (username_bytes,)),
                     userdomain)
 
                 if not user_data:
@@ -655,14 +658,14 @@ class ActiveDirectoryBackend(AuthBackend):
                         group_names = self.get_member_of(con, user_data)
                     except Exception as e:
                         logging.error("Active Directory error: failed getting"
-                                      "groups for user '%s': %s" %
-                                      (username, e))
+                                      "groups for user '%s': %s",
+                                      username, e, exc_info=1)
                         return None
 
                     if required_group not in group_names:
                         logging.warning("Active Directory: User %s is not in "
-                                        "required group %s" %
-                                        (username, required_group))
+                                        "required group %s",
+                                        username, required_group)
                         return None
 
                 return self.get_or_create_user(username, None, user_data)
@@ -670,7 +673,7 @@ class ActiveDirectoryBackend(AuthBackend):
                 logging.warning('Active Directory: Domain controller is down')
                 continue
             except ldap.INVALID_CREDENTIALS:
-                logging.warning('Active Directory: Failed login for user %s' %
+                logging.warning('Active Directory: Failed login for user %s',
                                 username)
                 return None
 
@@ -733,9 +736,10 @@ class X509Backend(AuthBackend):
                     username = m.group(1)
                 else:
                     logging.warning("X509Backend: username '%s' didn't match "
-                                    "regex." % username)
+                                    "regex.", username)
             except sre_constants.error as e:
-                logging.error("X509Backend: Invalid regex specified: %s" % e)
+                logging.error("X509Backend: Invalid regex specified: %s",
+                              e, exc_info=1)
 
         return username
 
@@ -787,9 +791,8 @@ def _populate_defaults():
 
                 register_auth_backend(cls)
             except Exception as e:
-                logging.error('Error loading authentication backend %s: %s'
-                              % (entry.name, e),
-                              exc_info=1)
+                logging.error('Error loading authentication backend %s: %s',
+                              entry.name, e, exc_info=1)
 
 
 def get_registered_auth_backends():
