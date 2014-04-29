@@ -1,4 +1,4 @@
-describe('views/CommentDialogView', function() {
+suite('rb/views/CommentDialogView', function() {
     var reviewRequestEditor,
         reviewRequest;
 

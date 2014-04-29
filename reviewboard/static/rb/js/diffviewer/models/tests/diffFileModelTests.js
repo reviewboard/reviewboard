@@ -1,4 +1,4 @@
-describe('diffviewer/models/DiffFile', function() {
+suite('rb/diffviewer/models/DiffFile', function() {
     var model;
 
     beforeEach(function() {

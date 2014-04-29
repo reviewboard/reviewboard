@@ -1,4 +1,4 @@
-describe('resources/models/RepositoryBranch', function() {
+suite('rb/resources/models/RepositoryBranch', function() {
     var model;
 
     beforeEach(function() {

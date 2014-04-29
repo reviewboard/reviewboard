@@ -1,4 +1,4 @@
-describe('resources/models/Review', function() {
+suite('rb/resources/models/Review', function() {
     var model;
 
     beforeEach(function() {

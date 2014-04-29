@@ -1,4 +1,4 @@
-describe('resources/models/DefaultReviewer', function() {
+suite('rb/resources/models/DefaultReviewer', function() {
     var model;
 
     beforeEach(function() {

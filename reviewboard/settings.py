@@ -48,11 +48,6 @@ EMAIL_SUBJECT_PREFIX = "[Review Board] "
 # If you set this to False, Django will make some optimizations so as not
 # to load the internationalization machinery.
 USE_I18N = True
-LANGUAGES = (
-    ('en', _('English')),
-    ('it', _('Italian')),
-    ('zh-tw', _('Traditional Chinese')),
-)
 
 # List of callables that know how to import templates from various sources.
 TEMPLATE_LOADERS = (

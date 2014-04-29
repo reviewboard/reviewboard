@@ -1,4 +1,4 @@
-describe('models/CommentEditor', function() {
+suite('rb/models/CommentEditor', function() {
     var editor,
         reviewRequest;
 

@@ -1,4 +1,4 @@
-describe('resources/collections/ResourceCollection', function() {
+suite('rb/resources/collections/ResourceCollection', function() {
     var collection,
         reviewRequest;
 

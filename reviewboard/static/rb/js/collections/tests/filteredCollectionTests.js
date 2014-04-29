@@ -1,4 +1,4 @@
-describe('collections/FilteredCollection', function() {
+suite('rb/collections/FilteredCollection', function() {
     var mainCollection,
         filteredCollection;
 

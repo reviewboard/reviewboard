@@ -1,4 +1,4 @@
-describe('pages/models/PageManager', function() {
+suite('rb/pages/models/PageManager', function() {
     var pageManager,
         page;
 

@@ -1,4 +1,4 @@
-describe('views/CommentIssueBarView', function() {
+suite('rb/views/CommentIssueBarView', function() {
     var commentIssueManager,
         statuses = RB.CommentIssueBarView.prototype,
         view,

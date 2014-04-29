@@ -1,4 +1,4 @@
-describe('views/DraftReviewBannerView', function() {
+suite('rb/views/DraftReviewBannerView', function() {
     var model,
         view,
         template = _.template([

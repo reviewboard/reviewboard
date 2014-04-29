@@ -1,4 +1,4 @@
-describe('views/ReviewBoxListView', function() {
+suite('rb/views/ReviewBoxListView', function() {
     var template = _.template([
             '<div>',
             ' <a id="collapse-all"></a>',

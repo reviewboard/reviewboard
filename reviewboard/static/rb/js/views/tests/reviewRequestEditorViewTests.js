@@ -1,4 +1,4 @@
-describe('views/ReviewRequestEditorView', function() {
+suite('rb/views/ReviewRequestEditorView', function() {
     var reviewRequest,
         editor,
         view,

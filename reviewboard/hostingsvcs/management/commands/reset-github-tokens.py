@@ -1,14 +1,11 @@
 from __future__ import unicode_literals
 
 import getpass
-import sys
 from optparse import make_option
 
-from django.conf import settings
-from django.core.management.base import BaseCommand, CommandError
+from django.core.management.base import BaseCommand
 from django.utils.six.moves import input
 from django.utils.translation import ugettext_lazy as _
-from djblets.siteconfig.models import SiteConfiguration
 
 from reviewboard.hostingsvcs.errors import (AuthorizationError,
                                             TwoFactorAuthCodeRequiredError)
@@ -52,9 +49,11 @@ class Command(BaseCommand):
                 reset = 'y'
             else:
                 if account.local_site:
-                    reset_msg = _('Reset token for %s (%s) [Y/n] ') % (
-                        account.local_site.name,
-                        account.username)
+                    reset_msg = _('Reset token for %(site_name)s '
+                                  '(%(username)s) [Y/n] ') % {
+                        'site_name': account.local_site.name,
+                        'username': account.username,
+                    }
                 else:
                     reset_msg = _('Reset token for %s [Y/n] ') % (
                         account.username)

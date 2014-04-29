@@ -1,4 +1,4 @@
-describe('newReviewRequest/views/BranchesView', function() {
+suite('rb/newReviewRequest/views/BranchesView', function() {
     var collection,
         view;
 

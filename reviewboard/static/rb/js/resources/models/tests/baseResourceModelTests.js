@@ -1,4 +1,4 @@
-describe('resources/models/BaseResource', function() {
+suite('rb/resources/models/BaseResource', function() {
     var model,
         parentObject;
 

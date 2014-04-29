@@ -1,4 +1,4 @@
-describe('diffviewer/models/DiffRevision', function() {
+suite('rb/diffviewer/models/DiffRevision', function() {
     var model;
 
     beforeEach(function() {

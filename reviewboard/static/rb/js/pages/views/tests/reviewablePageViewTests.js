@@ -1,4 +1,4 @@
-describe('pages/views/ReviewablePageView', function() {
+suite('rb/pages/views/ReviewablePageView', function() {
     var $editReview,
         $shipIt,
         pageView;

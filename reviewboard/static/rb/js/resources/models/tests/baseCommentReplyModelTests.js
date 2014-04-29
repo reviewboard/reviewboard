@@ -1,4 +1,4 @@
-describe('resources/models/BaseCommentReply', function() {
+suite('rb/resources/models/BaseCommentReply', function() {
     var parentObject,
         model;
 

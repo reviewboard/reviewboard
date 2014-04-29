@@ -1,4 +1,4 @@
-describe('diffviewer/models/Pagination', function() {
+suite('rb/diffviewer/models/Pagination', function() {
     var model;
 
     beforeEach(function() {

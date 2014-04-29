@@ -36,6 +36,10 @@ RB.ReviewReplyDraftBannerView = RB.FloatingBannerView.extend({
             this.$('input').prop('disabled', false);
         }, this);
 
+        this.model.on('publishError', function(errorText) {
+            alert(errorText);
+        }, this);
+
         return this;
     },
 
@@ -45,7 +49,11 @@ RB.ReviewReplyDraftBannerView = RB.FloatingBannerView.extend({
      * Publishes the reply.
      */
     _onPublishClicked: function() {
-        this.model.publish();
+        this.model.publish({
+            error: function(model, xhr) {
+                this.model.trigger('publishError', xhr.errorText);
+            }
+        }, this);
     },
 
     /*

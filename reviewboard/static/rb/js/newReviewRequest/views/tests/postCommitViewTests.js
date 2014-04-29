@@ -1,4 +1,4 @@
-describe('newReviewRequest/views/PostCommitView', function() {
+suite('rb/newReviewRequest/views/PostCommitView', function() {
     var repository,
         commits,
         model,

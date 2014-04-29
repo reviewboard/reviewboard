@@ -1,4 +1,4 @@
-describe('utils/propertyUtils', function() {
+suite('rb/utils/propertyUtils', function() {
     var model;
 
     beforeEach(function() {

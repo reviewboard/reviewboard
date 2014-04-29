@@ -1,4 +1,4 @@
-describe('resources/collections/RepositoryCommits', function() {
+suite('rb/resources/collections/RepositoryCommits', function() {
     var collection,
         url = '/api/repositories/123/commits/',
         start = '859d4e148ce3ce60bbda6622cdbe5c2c2f8d9817';

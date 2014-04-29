@@ -760,7 +760,7 @@ RB.ImageReviewableView = RB.FileAttachmentReviewableView.extend({
         e.preventDefault();
         e.stopPropagation();
 
-        this._setDiffMode($(e.srcElement).data('mode'));
+        this._setDiffMode($(e.target).data('mode'));
     },
 
     /*

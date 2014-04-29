@@ -1,4 +1,4 @@
-describe('views/DiffFragmentQueueView', function() {
+suite('rb/views/DiffFragmentQueueView', function() {
     var fragmentQueue;
 
     beforeEach(function() {

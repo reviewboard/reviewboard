@@ -1,4 +1,4 @@
-describe('views/CollectionView', function() {
+suite('rb/views/CollectionView', function() {
     var TestModel,
         TestCollection,
         TestModelView,

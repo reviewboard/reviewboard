@@ -1,4 +1,4 @@
-describe('newReviewRequest/views/RepositorySelectionView', function() {
+suite('rb/newReviewRequest/views/RepositorySelectionView', function() {
     var collection,
         view;
 

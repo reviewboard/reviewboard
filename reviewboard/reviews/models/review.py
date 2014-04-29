@@ -18,7 +18,8 @@ from reviewboard.reviews.models.file_attachment_comment import \
 from reviewboard.reviews.models.review_request import (ReviewRequest,
                                                        fetch_issue_counts)
 from reviewboard.reviews.models.screenshot_comment import ScreenshotComment
-from reviewboard.reviews.signals import reply_published, review_published
+from reviewboard.reviews.signals import (reply_publishing, reply_published,
+                                         review_publishing, review_published)
 
 
 @python_2_unicode_compatible
@@ -185,6 +186,13 @@ class Review(models.Model):
             user = self.user
 
         self.public = True
+
+        if self.is_reply():
+            reply_publishing.send(sender=self.__class__, user=user, reply=self)
+        else:
+            review_publishing.send(sender=self.__class__, user=user,
+                                   review=self)
+
         self.save()
 
         self.comments.update(timestamp=self.timestamp)

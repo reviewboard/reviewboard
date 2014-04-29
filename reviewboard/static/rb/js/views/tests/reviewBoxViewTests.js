@@ -1,4 +1,4 @@
-describe('views/ReviewBoxView', function() {
+suite('rb/views/ReviewBoxView', function() {
     var view,
         reviewReply,
         template = _.template([

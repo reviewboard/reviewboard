@@ -1,4 +1,4 @@
-describe('resources/models/ScreenshotComment', function() {
+suite('rb/resources/models/ScreenshotComment', function() {
     var strings = RB.ScreenshotComment.strings,
         model;
 

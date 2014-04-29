@@ -1,4 +1,4 @@
-describe('resources/models/RepositoryCommit', function() {
+suite('rb/resources/models/RepositoryCommit', function() {
     var model;
 
     beforeEach(function() {

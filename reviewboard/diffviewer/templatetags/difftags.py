@@ -6,7 +6,6 @@ from django import template
 from django.template.loader import render_to_string
 from django.utils.html import escape
 from django.utils.safestring import mark_safe
-from django.utils.six.moves import range
 from django.utils.translation import ugettext as _
 from djblets.util.decorators import basictag
 

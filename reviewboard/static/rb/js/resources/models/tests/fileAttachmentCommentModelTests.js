@@ -1,4 +1,4 @@
-describe('resources/models/FileAttachmentComment', function() {
+suite('rb/resources/models/FileAttachmentComment', function() {
     var baseStrings = RB.BaseResource.strings,
         model;
 

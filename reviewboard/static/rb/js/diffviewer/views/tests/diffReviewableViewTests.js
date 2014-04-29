@@ -1,4 +1,4 @@
-describe('diffviewer/views/DiffReviewableView', function() {
+suite('rb/diffviewer/views/DiffReviewableView', function() {
     var diffTableTemplate = _.template([
             '<table class="sidebyside">',
             ' <thead>',

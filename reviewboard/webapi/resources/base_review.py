@@ -10,9 +10,11 @@ from djblets.webapi.decorators import (webapi_login_required,
 from djblets.webapi.errors import (DOES_NOT_EXIST, NOT_LOGGED_IN,
                                    PERMISSION_DENIED)
 
+from reviewboard.reviews.errors import PublishError
 from reviewboard.reviews.models import Review
 from reviewboard.webapi.base import WebAPIResource
 from reviewboard.webapi.decorators import webapi_check_local_site
+from reviewboard.webapi.errors import PUBLISH_ERROR
 from reviewboard.webapi.mixins import MarkdownFieldsMixin
 from reviewboard.webapi.resources import resources
 from reviewboard.webapi.resources.user import UserResource
@@ -298,7 +300,10 @@ class BaseReviewResource(MarkdownFieldsMixin, WebAPIResource):
         review.save()
 
         if public:
-            review.publish(user=request.user)
+            try:
+                review.publish(user=request.user)
+            except PublishError as e:
+                return PUBLISH_ERROR.with_message(e.msg)
 
         return 200, {
             self.item_result_key: review,

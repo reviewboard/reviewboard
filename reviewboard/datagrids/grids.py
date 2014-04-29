@@ -125,7 +125,7 @@ class ReviewRequestDataGrid(DataGrid):
             self.last_updated.timezone = self.timezone
             self.diff_updated.timezone = self.timezone
 
-    def load_extra_state(self, profile):
+    def load_extra_state(self, profile, allow_hide_closed=True):
         if profile:
             self.show_closed = profile.show_closed
 
@@ -138,7 +138,7 @@ class ReviewRequestDataGrid(DataGrid):
             # do nothing
             pass
 
-        if not self.show_closed:
+        if allow_hide_closed and not self.show_closed:
             self.queryset = self.queryset.filter(status='P')
 
         self.queryset = self.queryset.filter(local_site=self.local_site)
@@ -252,7 +252,8 @@ class DashboardDataGrid(DataGridSidebarMixin, ReviewRequestDataGrid):
         else:
             raise Http404
 
-        return super(DashboardDataGrid, self).load_extra_state(profile)
+        return super(DashboardDataGrid, self).load_extra_state(
+            profile, allow_hide_closed=False)
 
 
 class UsersDataGrid(DataGrid):

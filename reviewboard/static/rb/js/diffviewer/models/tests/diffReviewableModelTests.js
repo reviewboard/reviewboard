@@ -1,4 +1,4 @@
-describe('diffviewer/models/DiffReviewable', function() {
+suite('rb/diffviewer/models/DiffReviewable', function() {
     var callbacks,
         reviewRequest;
 

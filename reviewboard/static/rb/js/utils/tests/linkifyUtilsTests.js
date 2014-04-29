@@ -1,4 +1,4 @@
-describe('utils/linkifyUtils', function() {
+suite('rb/utils/linkifyUtils', function() {
     describe('linkifyText', function() {
         describe('URLs', function() {
             it('http-based URLs', function() {

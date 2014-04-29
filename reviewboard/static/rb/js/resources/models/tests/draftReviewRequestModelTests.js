@@ -1,4 +1,4 @@
-describe('resources/models/DraftReviewRequest', function() {
+suite('rb/resources/models/DraftReviewRequest', function() {
     var draft,
         callbacks;
 

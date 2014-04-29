@@ -13,8 +13,6 @@ var GroupMember = RB.BaseResource.extend({
         loaded: true
     }, RB.BaseResource.prototype.defaults),
 
-    rspNamespace: 'group',
-
     /*
      * Returns a URL for this resource.
      *
@@ -73,6 +71,8 @@ RB.ReviewGroup = RB.BaseResource.extend({
     defaults: _.defaults({
         name: null
     }, RB.BaseResource.prototype.defaults),
+
+    rspNamespace: 'group',
 
     /*
      * Returns the URL to the review group.

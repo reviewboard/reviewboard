@@ -1,0 +1,663 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+#
+# Translators:
+msgid ""
+msgstr ""
+"Project-Id-Version: Review Board\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2014-04-25 15:54-0700\n"
+"PO-Revision-Date: 2014-04-25 21:40+0000\n"
+"Last-Translator: trowbrds <trowbrds@gmail.com>\n"
+"Language-Team: Portuguese (Brazil) (http://www.transifex.com/projects/p/"
+"reviewboard/language/pt_BR/)\n"
+"Language: pt_BR\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+
+#: static/rb/js/common.js:129
+#: static/rb/js/dashboard/views/dashboardView.js:168
+#: static/rb/js/views/commentDialogView.js:176
+#: static/rb/js/views/draftReviewBannerView.js:113
+#: static/rb/js/views/reviewDialogView.js:521
+#: static/rb/js/views/reviewRequestEditorView.js:1225
+msgid "Cancel"
+msgstr "Cancelar"
+
+#: static/rb/js/common.js:247
+msgid "Starred"
+msgstr "Estrelada"
+
+#: static/rb/js/common.js:247
+msgid "Click to star"
+msgstr "Clique para estrelar"
+
+#: static/rb/js/common.js:427 static/rb/js/utils/apiUtils.js:40
+msgid "Loading..."
+msgstr "Carregando..."
+
+#: static/rb/js/repositoryform.js:402
+msgid "Hide SSH Public Key"
+msgstr "Esconder Chave SSH pública"
+
+#: static/rb/js/repositoryform.js:406
+msgid "Show SSH Public Key"
+msgstr "Exibir Chave SSH pública"
+
+#: static/rb/js/accountPrefsPage/views/joinedGroupsView.js:100
+msgid "Leave"
+msgstr ""
+
+#: static/rb/js/accountPrefsPage/views/joinedGroupsView.js:105
+msgid "Join"
+msgstr ""
+
+#: static/rb/js/dashboard/views/dashboardView.js:41
+msgid "<b>Close</b> Discarded"
+msgstr ""
+
+#: static/rb/js/dashboard/views/dashboardView.js:42
+msgid "<b>Close</b> Submitted"
+msgstr ""
+
+#: static/rb/js/dashboard/views/dashboardView.js:50
+#, c-format
+msgid "%s review request selected"
+msgid_plural "%s review requests selected"
+msgstr[0] ""
+msgstr[1] ""
+
+#: static/rb/js/dashboard/views/dashboardView.js:128
+#, c-format
+msgid "%s review request has been closed."
+msgid_plural "%s review requests have been closed."
+msgstr[0] ""
+msgstr[1] ""
+
+#: static/rb/js/dashboard/views/dashboardView.js:137
+#, c-format
+msgid "%s review request could not be closed."
+msgid_plural "%s review requests could not be closed."
+msgstr[0] ""
+msgstr[1] ""
+
+#: static/rb/js/dashboard/views/dashboardView.js:142
+msgid "You may not have permission to close them."
+msgstr ""
+
+#: static/rb/js/dashboard/views/dashboardView.js:146
+#: static/rb/js/dashboard/views/dashboardView.js:165
+msgid "Close review requests"
+msgstr ""
+
+#: static/rb/js/dashboard/views/dashboardView.js:148
+msgid "Thanks!"
+msgstr ""
+
+#: static/rb/js/dashboard/views/dashboardView.js:161
+msgid ""
+"If these review requests have unpublished drafts, they will be discarded."
+msgstr ""
+
+#: static/rb/js/dashboard/views/dashboardView.js:163
+msgid "Are you sure you want to close these review requests?"
+msgstr ""
+
+#: static/rb/js/dashboard/views/dashboardView.js:171
+msgid "Close Review Requests"
+msgstr ""
+
+#: static/rb/js/diffviewer/views/diffCommentsHintView.js:34
+#, c-format
+msgid "Revision %s"
+msgstr "Revisão %s"
+
+#: static/rb/js/diffviewer/views/diffCommentsHintView.js:35
+msgid "Interdiff revision %(oldRevision)s - %(newRevision)s"
+msgstr ""
+
+#: static/rb/js/diffviewer/views/diffCommentsHintView.js:41
+msgid "You have unpublished comments on other revisions"
+msgstr "Você tem comentários não publicados em outras revisões"
+
+#: static/rb/js/diffviewer/views/diffCommentsHintView.js:42
+msgid "Your review consists of comments on the following revisions:"
+msgstr ""
+
+#: static/rb/js/diffviewer/views/diffFileIndexView.js:76
+msgid "Binary file"
+msgstr "Arquivo binário"
+
+#: static/rb/js/diffviewer/views/diffFileIndexView.js:77
+msgid "Deleted"
+msgstr "Deletado"
+
+#: static/rb/js/diffviewer/views/diffFileIndexView.js:78
+#, c-format
+msgid "Was %s"
+msgstr "Foi %s"
+
+#: static/rb/js/diffviewer/views/diffRevisionLabelView.js:19
+msgid "Changes between revision <%- revision %> and <%- interdiffRevision %>"
+msgstr "Mudanças entre as revisões <%- revision %> e <%- interdiffRevision %>"
+
+#: static/rb/js/diffviewer/views/diffRevisionLabelView.js:21
+msgid "Diff Revision <%- revision %> (Latest)"
+msgstr ""
+
+#: static/rb/js/diffviewer/views/diffRevisionLabelView.js:22
+msgid "Diff Revision <%- revision %>"
+msgstr ""
+
+#. Translators: This string should be valid HTML (including any necessary escaping for entities).
+#: static/rb/js/diffviewer/views/diffRevisionLabelView.js:25
+msgid ""
+"This is not the most recent revision of the diff. The <a href=\"#\" class="
+"\"select-latest\">latest diff</a> is revision <%- latestRevision %>. <a href="
+"\"#\" class=\"select-changed\">See what's changed.</a>"
+msgstr ""
+
+#: static/rb/js/diffviewer/views/diffRevisionLabelView.js:54
+msgid "Draft diff"
+msgstr "Diff rascunho"
+
+#. Translators: This string should be valid HTML (including any necessary escaping for entities).
+#: static/rb/js/diffviewer/views/diffRevisionLabelView.js:56
+msgid ""
+"This diff is part of your current draft. Other users will not see this diff "
+"until you publish your draft."
+msgstr ""
+
+#: static/rb/js/diffviewer/views/paginationView.js:45
+#, c-format
+msgid "This diff has been split across %s pages:"
+msgstr "Esse diff foi partido entre %s páginas:"
+
+#: static/rb/js/diffviewer/views/paginationView.js:47
+msgid "Previous Page"
+msgstr "Página Anterior"
+
+#: static/rb/js/diffviewer/views/paginationView.js:48
+msgid "Next Page"
+msgstr "Próxima Página"
+
+#: static/rb/js/diffviewer/views/paginationView.js:49
+msgid "Current Page"
+msgstr "Página Corrente"
+
+#: static/rb/js/diffviewer/views/paginationView.js:50
+#, c-format
+msgid "Page %s"
+msgstr "Página %s"
+
+#: static/rb/js/models/commentEditorModel.js:59
+msgid "This comment has unsaved changes."
+msgstr "Esse comentário tem alterações não salvas."
+
+#: static/rb/js/models/reviewRequestEditorModel.js:143
+#, c-format
+msgid "Group %s does not exist."
+msgid_plural "Groups %s do not exist."
+msgstr[0] "O grupo %s não existen"
+msgstr[1] "Os grupos %s não existem"
+
+#: static/rb/js/models/reviewRequestEditorModel.js:149
+#, c-format
+msgid "User %s does not exist."
+msgid_plural "Users %s do not exist."
+msgstr[0] "O usuário %s não existe."
+msgstr[1] "Os usuários %s não existem."
+
+#: static/rb/js/models/reviewRequestEditorModel.js:155
+#, c-format
+msgid "Review Request %s does not exist."
+msgid_plural "Review Requests %s do not exist."
+msgstr[0] "A requisição de revisão %s não existe."
+msgstr[1] "As requisições de revisão %s não existem."
+
+#: static/rb/js/models/reviewRequestEditorModel.js:278
+msgid "There is an internal error balancing the edit count"
+msgstr ""
+
+#: static/rb/js/newReviewRequest/models/preCommitModel.js:169
+msgid ""
+"The uploaded diff uses short revisions, but Review Board requires full "
+"revisions.<br />Please generate a new diff using the <code>--full-index</"
+"code> paramater."
+msgstr ""
+
+#: static/rb/js/newReviewRequest/models/preCommitModel.js:172
+#, c-format
+msgid ""
+"The file \"%s\" (revision %s) was not found in the repository. If you want "
+"to use a parent diff, please create the review request with <code>rbt post</"
+"code>."
+msgstr ""
+
+#: static/rb/js/newReviewRequest/views/newReviewRequestView.js:40
+msgid ""
+"You won't be able to add any diffs to this review request. The review "
+"request will only be usable for reviewing graphics, screenshots and file "
+"attachments."
+msgstr ""
+
+#: static/rb/js/newReviewRequest/views/newReviewRequestView.js:41
+msgid "Create Review Request"
+msgstr "Criar uma requisiçao de revisão"
+
+#: static/rb/js/newReviewRequest/views/newReviewRequestView.js:111
+msgid "Select a repository"
+msgstr "Selecionar um repositório"
+
+#: static/rb/js/newReviewRequest/views/postCommitView.js:49
+msgid "New Review Request for Committed Change:"
+msgstr "Nova requisição de revisão para uma mudança comitada."
+
+#: static/rb/js/newReviewRequest/views/preCommitView.js:62
+msgid "New Review Request for Pending Change"
+msgstr "Nova requisição de revisão para uma mudança pendente"
+
+#: static/rb/js/newReviewRequest/views/preCommitView.js:63
+msgid "Tip:"
+msgstr "Dica:"
+
+#: static/rb/js/newReviewRequest/views/preCommitView.js:64
+msgid ""
+"We recommend using <code>rbt post</code> from <a href=\"http://www."
+"reviewboard.org/docs/rbtools/dev/\">RBTools</a> to create and update review "
+"requests."
+msgstr ""
+
+#: static/rb/js/newReviewRequest/views/preCommitView.js:65
+msgid ""
+"<input type=\"button\" id=\"select-diff-file\" value=\"Select\"> or drag and "
+"drop a diff file to begin."
+msgstr ""
+
+#: static/rb/js/newReviewRequest/views/preCommitView.js:66
+msgid "What is the base directory for this diff?"
+msgstr "Qual é o diretório base para esse diff?"
+
+#: static/rb/js/newReviewRequest/views/preCommitView.js:67
+msgid "What is the change number for this diff?"
+msgstr "Qual é o número da mudança para esse diff?"
+
+#: static/rb/js/newReviewRequest/views/preCommitView.js:68
+msgid "Start Over"
+msgstr "Recomeçar"
+
+#: static/rb/js/newReviewRequest/views/preCommitView.js:69
+msgid "OK"
+msgstr "OK"
+
+#: static/rb/js/newReviewRequest/views/repositorySelectionView.js:32
+msgid "Repositories"
+msgstr "Repositórios"
+
+#: static/rb/js/pages/views/reviewablePageView.js:35
+msgid "Update Page"
+msgstr "Atualizar página"
+
+#: static/rb/js/pages/views/reviewablePageView.js:36
+msgid "Ignore"
+msgstr "Ignorar"
+
+#: static/rb/js/pages/views/reviewablePageView.js:260
+msgid "Are you sure you want to post this review?"
+msgstr "Tem certeza que deseja enviar essa revisão?"
+
+#: static/rb/js/pages/views/reviewablePageView.js:265
+msgid "Ship It!"
+msgstr ""
+
+#: static/rb/js/resources/models/diffModel.js:24
+msgid ""
+"The file \"%(file)s\" (revision %(revision)s) was not found in the repository"
+msgstr ""
+
+#: static/rb/js/resources/models/draftResourceModelMixin.js:129
+msgid "You must be logged in to retrieve the draft."
+msgstr "VocÊ tem que estar logado para recuperar um rascunho"
+
+#: static/rb/js/resources/models/draftReviewRequestModel.js:121
+msgid "The draft must have a description."
+msgstr "O rascunho tem que ter uma descrição"
+
+#: static/rb/js/resources/models/draftReviewRequestModel.js:122
+msgid ""
+"There must be at least one reviewer before this review request can be "
+"published."
+msgstr ""
+"Tem que existir no mínimo um revisor antes dessa revisão ser publicada."
+
+#: static/rb/js/resources/models/draftReviewRequestModel.js:123
+msgid "The draft must have a summary."
+msgstr "Um rascunho tem que ter um sumário."
+
+#: static/rb/js/utils/apiUtils.js:40
+msgid "Saving..."
+msgstr "Salvando..."
+
+#: static/rb/js/utils/apiUtils.js:68
+msgid "A server error occurred."
+msgstr "Um erro de servidor aconteceu."
+
+#: static/rb/js/utils/apiUtils.js:71
+msgid "Show Details"
+msgstr "Mostrar detalhes"
+
+#: static/rb/js/utils/apiUtils.js:79
+msgid "Dismiss"
+msgstr "Desfazer"
+
+#: static/rb/js/utils/apiUtils.js:139
+msgid "Error Code:"
+msgstr "Código do erro:"
+
+#: static/rb/js/utils/apiUtils.js:140
+msgid "Error Text:"
+msgstr "Descrição do erro:"
+
+#: static/rb/js/utils/apiUtils.js:141
+msgid "Request URL:"
+msgstr "URL requisitada:"
+
+#: static/rb/js/utils/apiUtils.js:142
+msgid "Request Data:"
+msgstr "Dados da requisição:"
+
+#: static/rb/js/utils/apiUtils.js:143
+msgid "Response Data:"
+msgstr "Dados da resposta"
+
+#: static/rb/js/utils/apiUtils.js:144
+msgid ""
+"<p>There may be useful error details below. The following error page may be "
+"useful to your system administrator or when <a href=\"http://www.reviewboard."
+"org/bugs/new/\">reporting a bug</a>. To save the page, right-click the error "
+"below and choose \"Save Page As,\" if available, or \"View Source\" and save "
+"the result as a <tt>.html</tt> file.</p>"
+msgstr ""
+
+#: static/rb/js/utils/apiUtils.js:145
+msgid ""
+"<p><b>Warning:</b> Be sure to remove any sensitive material that may exist "
+"in the error page before reporting a bug!</p>"
+msgstr ""
+
+#: static/rb/js/utils/apiUtils.js:153
+msgid "Server Error Details"
+msgstr "Detalhes do Erro do Servidor"
+
+#: static/rb/js/views/abstractCommentBlockView.js:151
+msgid "Comment Deleted"
+msgstr "Comentário deletado"
+
+#: static/rb/js/views/abstractCommentBlockView.js:164
+msgid "Comment Saved"
+msgstr "Comentário salvo"
+
+#: static/rb/js/views/commentDialogView.js:47
+msgid "View"
+msgstr "Visualizar"
+
+#: static/rb/js/views/commentDialogView.js:165
+msgid "Markdown"
+msgstr ""
+
+#: static/rb/js/views/commentDialogView.js:166
+msgid "Other reviews"
+msgstr "Outras revisões"
+
+#: static/rb/js/views/commentDialogView.js:167
+msgid "Your comment"
+msgstr "Seu comentário"
+
+#: static/rb/js/views/commentDialogView.js:169
+#, c-format
+msgid "You must <a href=\"%s\">log in</a> to post a comment."
+msgstr ""
+
+#: static/rb/js/views/commentDialogView.js:172
+#, c-format
+msgid ""
+"The review request's current <a href=\"%s\">draft</a> needs to be published "
+"before you can comment."
+msgstr ""
+
+#: static/rb/js/views/commentDialogView.js:174
+msgid "Open an <u>i</u>ssue"
+msgstr "Abrir uma pendência"
+
+#: static/rb/js/views/commentDialogView.js:175
+#: static/rb/js/views/reviewDialogView.js:528
+msgid "Save"
+msgstr "Salvar"
+
+#: static/rb/js/views/commentDialogView.js:177
+#: static/rb/js/views/reviewRequestEditorView.js:1226
+msgid "Delete"
+msgstr "Deletar"
+
+#: static/rb/js/views/commentDialogView.js:178
+msgid "Close"
+msgstr "Fechar"
+
+#: static/rb/js/views/commentDialogView.js:314
+msgid "Error saving comment: "
+msgstr "Erro ao salvar comentário: "
+
+#: static/rb/js/views/commentIssueBarView.js:22
+msgid "An issue was opened."
+msgstr "Uma pendência foi aberta."
+
+#: static/rb/js/views/commentIssueBarView.js:26
+msgid "The issue has been resolved."
+msgstr "A pendência que foi resolvida."
+
+#: static/rb/js/views/commentIssueBarView.js:30
+msgid "The issue has been dropped."
+msgstr "Existe uma pendência que foi rejeitada."
+
+#: static/rb/js/views/commentIssueBarView.js:71
+msgid "Fixed"
+msgstr "Corrigido"
+
+#: static/rb/js/views/commentIssueBarView.js:72
+msgid "Drop"
+msgstr "Solte"
+
+#: static/rb/js/views/commentIssueBarView.js:73
+msgid "Re-open"
+msgstr "Reabrir"
+
+#: static/rb/js/views/dndUploaderView.js:27
+msgid "Drop to Upload"
+msgstr "Solte para carregar arquivo"
+
+#: static/rb/js/views/draftReviewBannerView.js:109
+msgid ""
+"If you discard this review, all related comments will be permanently deleted."
+msgstr ""
+"Se você descartar essa revisão, todos os comentários relacionados serão "
+"removidos permanentemente."
+
+#: static/rb/js/views/draftReviewBannerView.js:111
+msgid "Are you sure you want to discard this review?"
+msgstr "Tem certeza que deseja descartar essa revisão?"
+
+#: static/rb/js/views/draftReviewBannerView.js:114
+msgid "Discard"
+msgstr "Descartar"
+
+#: static/rb/js/views/fileAttachmentThumbnailView.js:290
+#: static/rb/js/views/fileAttachmentThumbnailView.js:347
+msgid "No caption"
+msgstr ""
+
+#: static/rb/js/views/fileAttachmentThumbnailView.js:301
+msgid "Click to review"
+msgstr ""
+
+#: static/rb/js/views/fileAttachmentThumbnailView.js:326
+msgid "Delete this file"
+msgstr ""
+
+#: static/rb/js/views/fileAttachmentThumbnailView.js:327
+msgid "Review"
+msgstr "Revisão"
+
+#: static/rb/js/views/fileAttachmentThumbnailView.js:328
+msgid "New Comment"
+msgstr ""
+
+#: static/rb/js/views/imageReviewableView.js:161
+msgid "Difference"
+msgstr "Diferença"
+
+#: static/rb/js/views/imageReviewableView.js:262
+msgid "Onion Skin"
+msgstr ""
+
+#: static/rb/js/views/imageReviewableView.js:361
+msgid "Split"
+msgstr "Dividir"
+
+#: static/rb/js/views/imageReviewableView.js:486
+msgid "Two-Up"
+msgstr ""
+
+#: static/rb/js/views/issueSummaryTableView.js:136
+#, c-format
+msgid "There are no open issues from %s"
+msgstr ""
+
+#: static/rb/js/views/issueSummaryTableView.js:140
+#, c-format
+msgid "There are no dropped issues from %s"
+msgstr ""
+
+#: static/rb/js/views/issueSummaryTableView.js:144
+#: static/rb/js/views/issueSummaryTableView.js:153
+msgid "There are no resolved issues"
+msgstr "Não existem pendências resolvidas"
+
+#: static/rb/js/views/issueSummaryTableView.js:149
+msgid "There are no open issues"
+msgstr "Não existem pendências abertas"
+
+#: static/rb/js/views/issueSummaryTableView.js:151
+msgid "There are no dropped issues"
+msgstr ""
+
+#: static/rb/js/views/markdownEditorView.js:192
+#: static/rb/js/views/reviewDialogView.js:368
+msgid "Markdown Reference"
+msgstr ""
+
+#: static/rb/js/views/reviewBoxView.js:221
+msgid "Ship it!"
+msgstr ""
+
+#: static/rb/js/views/reviewBoxView.js:225
+msgid "Fix it, then Ship it!"
+msgstr ""
+
+#: static/rb/js/views/reviewDialogView.js:92
+msgid "Open an issue"
+msgstr "Abrir uma pendência"
+
+#: static/rb/js/views/reviewDialogView.js:366
+msgid "Ship It"
+msgstr ""
+
+#: static/rb/js/views/reviewDialogView.js:495
+msgid "Review for: "
+msgstr "Revisão para: "
+
+#: static/rb/js/views/reviewDialogView.js:500
+msgid "Publish Review"
+msgstr "Publicar Revisão"
+
+#: static/rb/js/views/reviewDialogView.js:507
+msgid "Discard Review"
+msgstr "Descartar Revisão"
+
+#: static/rb/js/views/reviewReplyDraftBannerView.js:28
+msgid "This reply is a draft."
+msgstr "Essa resposta é um rascunho."
+
+#: static/rb/js/views/reviewRequestEditorView.js:111
+msgid "Reopen for Review"
+msgstr "Reabrir para revisão"
+
+#: static/rb/js/views/reviewRequestEditorView.js:138
+msgid "This change has been discarded."
+msgstr "Essa mudança foi descartada."
+
+#: static/rb/js/views/reviewRequestEditorView.js:139
+msgid "Describe the reason it's discarded (optional):"
+msgstr "Descreva as razões para o descarte (opcional)"
+
+#: static/rb/js/views/reviewRequestEditorView.js:151
+msgid "This change has been marked as submitted."
+msgstr ""
+
+#: static/rb/js/views/reviewRequestEditorView.js:152
+msgid "Describe the submission (optional):"
+msgstr "Descreva o que deseja submter (opcional):"
+
+#: static/rb/js/views/reviewRequestEditorView.js:187
+msgid "Publish Changes"
+msgstr "Publicar mudanças"
+
+#: static/rb/js/views/reviewRequestEditorView.js:191
+msgid "Discard Draft"
+msgstr "Descartar rascunho"
+
+#: static/rb/js/views/reviewRequestEditorView.js:199
+msgid "Publish"
+msgstr "Publicar"
+
+#: static/rb/js/views/reviewRequestEditorView.js:203
+msgid "Discard Review Request"
+msgstr "Descartar Requisição de Revisão"
+
+#: static/rb/js/views/reviewRequestEditorView.js:605
+msgid ""
+"You have unsaved changes that will be lost if you navigate away from this "
+"page."
+msgstr ""
+"Você tem mudanças não salvas que serão perdidas se você navegar adiante."
+
+#: static/rb/js/views/reviewRequestEditorView.js:1053
+msgid "Press Tab to auto-complete."
+msgstr "Pressiona Tab para auto-completar."
+
+#: static/rb/js/views/reviewRequestEditorView.js:1176
+msgid "Are you sure you want to discard this review request?"
+msgstr ""
+
+#: static/rb/js/views/reviewRequestEditorView.js:1201
+msgid ""
+"You have an unpublished draft. If you close this review request, the draft "
+"will be discarded. Are you sure you want to close the review request?"
+msgstr ""
+"Você tem um rascunho não publicado. Se você fechar essa requisição de "
+"revisão o rascunho será descartado. Tem certeza que deseja fechar essa "
+"requisição de revisão?"
+
+#: static/rb/js/views/reviewRequestEditorView.js:1221
+msgid ""
+"This deletion cannot be undone. All diffs and reviews will be deleted as "
+"well."
+msgstr ""
+"Essa deleção não pode ser desfeita. Todos os diffs e revisões também serão "
+"deletadas."
+
+#: static/rb/js/views/reviewRequestEditorView.js:1223
+msgid "Are you sure you want to delete this review request?"
+msgstr "Tem certeza que deseja deletar essa requisição de revisão?"
