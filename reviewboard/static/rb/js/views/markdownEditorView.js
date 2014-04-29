@@ -180,16 +180,19 @@ RB.MarkdownEditorView = Backbone.View.extend({
                 markdownEditor.render();
 
                 editor.element.on('beginEdit', function() {
+                    var $buttons = editor.element.inlineEditor('buttons');
+
                     markdownEditor._showEditor();
 
-                    editor.element.inlineEditor('buttons').append(
-                        $('<a/>')
+                    if ($buttons.find('.markdown-info').length === 0) {
+                        $buttons.append($('<a/>')
                             .addClass('markdown-info')
                             .attr({
                                 href: MANUAL_URL + 'users/markdown/',
                                 target: '_blank'
                             })
                             .text(gettext('Markdown Reference')));
+                    }
                 });
 
                 editor.element.on('cancel complete', function() {
