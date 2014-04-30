@@ -172,9 +172,9 @@ class SandboxExtension(Extension):
     metadata = {
         'Name': 'Sandbox Extension',
     }
+
     def __init__(self, *args, **kwargs):
         super(SandboxExtension, self).__init__(*args, **kwargs)
-        ReviewRequestApprovalTestHook(self)
 
 
 class ReviewRequestApprovalTestHook(ReviewRequestApprovalHook):
@@ -184,6 +184,31 @@ class ReviewRequestApprovalTestHook(ReviewRequestApprovalHook):
 
 class NavigationBarTestHook(NavigationBarHook):
     def get_entries(self, context):
+        raise StandardError
+
+
+class DiffViewerActionTestHook(DiffViewerActionHook):
+    def get_actions(self, context):
+        raise StandardError
+
+
+class HeaderActionTestHook(HeaderActionHook):
+    def get_actions(self, context):
+        raise StandardError
+
+
+class HeaderDropdownActionTestHook(HeaderDropdownActionHook):
+    def get_actions(self, context):
+        raise StandardError
+
+
+class ReviewRequestActionTestHook(ReviewRequestActionHook):
+    def get_actions(self, context):
+        raise StandardError
+
+
+class ReviewRequestDropdownActionTestHook(ReviewRequestDropdownActionHook):
+    def get_actions(self, context):
         raise StandardError
 
 
@@ -203,6 +228,7 @@ class SandboxTests(TestCase):
     def test_is_approved_sandbox(self):
         """Testing sandboxing ReviewRequestApprovalHook when
         is_approved function throws an error"""
+        ReviewRequestApprovalTestHook(extension=self.extension)
         review = ReviewRequest()
         review._calculate_approval()
 
@@ -221,5 +247,70 @@ class SandboxTests(TestCase):
         t = Template(
             "{% load rb_extensions %}"
             "{% navigation_bar_hooks %}")
+
+        t.render(context).strip()
+
+    def test_action_hooks_diff_viewer_hook(self):
+        """Testing sandboxing DiffViewerActionHook when
+        action_hooks throws an error"""
+        DiffViewerActionTestHook(extension=self.extension)
+
+        context = Context({'comment': 'this is a comment'})
+
+        t = Template(
+            "{% load rb_extensions %}"
+            "{% diffviewer_action_hooks %}")
+
+        t.render(context).strip()
+
+    def test_action_hooks_header_hook(self):
+        """Testing sandboxing HeaderActionHook when
+        action_hooks throws an error"""
+        HeaderActionTestHook(extension=self.extension)
+
+        context = Context({'comment': 'this is a comment'})
+
+        t = Template(
+            "{% load rb_extensions %}"
+            "{% header_action_hooks %}")
+
+        t.render(context).strip()
+
+    def test_action_hooks_header_dropdown_hook(self):
+        """Testing sandboxing HeaderDropdownActionHook when
+        action_hooks throws an error"""
+        HeaderDropdownActionTestHook(extension=self.extension)
+
+        context = Context({'comment': 'this is a comment'})
+
+        t = Template(
+            "{% load rb_extensions %}"
+            "{% header_dropdown_action_hooks %}")
+
+        t.render(context).strip()
+
+    def test_action_hooks_review_request_hook(self):
+        """Testing sandboxing ReviewRequestActionHook when
+        action_hooks throws an error"""
+        ReviewRequestActionTestHook(extension=self.extension)
+
+        context = Context({'comment': 'this is a comment'})
+
+        t = Template(
+            "{% load rb_extensions %}"
+            "{% review_request_action_hooks %}")
+
+        t.render(context).strip()
+
+    def test_action_hooks_review_request_dropdown_hook(self):
+        """Testing sandboxing ReviewRequestDropdownActionHook when
+        action_hooks throws an error"""
+        ReviewRequestDropdownActionTestHook(extension=self.extension)
+
+        context = Context({'comment': 'this is a comment'})
+
+        t = Template(
+            "{% load rb_extensions %}"
+            "{% review_request_dropdown_action_hooks %}")
 
         t.render(context).strip()

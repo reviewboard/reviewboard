@@ -25,14 +25,20 @@ def action_hooks(context, hookcls, action_key="action",
     s = ""
 
     for hook in hookcls.hooks:
-        for actions in hook.get_actions(context):
-            if actions:
-                new_context = {
-                    action_key: actions
-                }
-                context.update(new_context)
+        try:
+            for actions in hook.get_actions(context):
+                if actions:
+                    new_context = {
+                        action_key: actions
+                    }
+                    context.update(new_context)
 
-                s += render_to_string(template_name, new_context)
+                    s += render_to_string(template_name, new_context)
+        except Exception as e:
+            extension = hook.extension
+            logging.error('Error when running %s.get_actions function '
+                          'in extension: "%s": %s', hookcls,
+                          extension.metadata['Name'], e, exc_info=1)
 
     return s
 
