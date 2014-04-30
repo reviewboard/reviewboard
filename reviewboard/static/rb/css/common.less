@@ -264,14 +264,23 @@ input[type=submit].btn {
   cursor: pointer;
 }
 
-.box-title,
+.box-head,
 .modalbox-title {
   background: @box-title-bg;
   border-bottom: 1px #728eac solid;
   margin: 0;
   padding: 0.4em 0.6em;
-  font-size: 120%;
   .border-radius(@box-border-radius @box-border-radius 0 0);
+}
+
+.box-title,
+.modalbox-title {
+  font-size: 120%;
+}
+
+.box-title {
+  margin: 0;
+  padding: 0;
 }
 
 .box-main {
