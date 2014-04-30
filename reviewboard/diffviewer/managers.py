@@ -41,7 +41,7 @@ class FileDiffManager(models.Manager):
         total_diff_size = 0
         total_bytes_saved = 0
 
-        for filediff in filediffs:
+        for filediff in filediffs.iterator():
             total_diffs_migrated += 1
 
             diff_size = len(filediff.diff64)
