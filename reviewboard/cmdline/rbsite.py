@@ -440,7 +440,13 @@ class Site(object):
         """Determines if there's likely duplicate diff data stored."""
         from reviewboard.diffviewer.models import FileDiff
 
-        return FileDiff.objects.unmigrated().count() > 0
+        try:
+            return FileDiff.objects.unmigrated().count() > 0
+        except OperationalError:
+            # Very likely, there was no diffviewer_filediff.diff_hash_id
+            # column, indicating a pre-1.7 database. We want to assume
+            # a dedup is needed.
+            return True
 
     def get_settings_upgrade_needed(self):
         """Determines if a settings upgrade is needed."""
