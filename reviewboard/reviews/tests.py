@@ -1226,7 +1226,7 @@ class PostCommitTests(SpyAgency, TestCase):
         self.assertEqual(diffset.files.count(), 1)
 
         fileDiff = diffset.files.get()
-        self.assertEqual(fileDiff.source_file, '/readme')
+        self.assertEqual(fileDiff.source_file, 'readme')
         self.assertEqual(fileDiff.source_revision, 'd6613f5')
 
     def test_update_from_committed_change_with_markdown_escaping(self):
