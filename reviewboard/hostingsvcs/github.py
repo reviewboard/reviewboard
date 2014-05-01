@@ -174,8 +174,8 @@ class GitHub(HostingService):
     repository_url_patterns = patterns(
         '',
 
-        url(r'^hooks/post-receive/$',
-            'reviewboard.hostingsvcs.github._process_post_receive_hook'),
+        url(r'^hooks/close-submitted/$',
+            'reviewboard.hostingsvcs.github.post_receive_hook_close_submitted'),
     )
 
     # This should be the prefix for every field on the plan forms.
@@ -728,7 +728,7 @@ class GitHub(HostingService):
 
 
 @require_POST
-def _process_post_receive_hook(request, *args, **kwargs):
+def post_receive_hook_close_submitted(request, *args, **kwargs):
     """Closes review requests as submitted automatically after a push."""
     try:
         payload = json.loads(request.body)
