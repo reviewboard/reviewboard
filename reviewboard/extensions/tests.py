@@ -48,6 +48,26 @@ class HookTests(TestCase):
         self._test_dropdown_action_hook('review_request_dropdown_action_hooks',
                                         ReviewRequestDropdownActionHook)
 
+    def test_action_hook_context_doesnt_leak(self):
+        """Testing ActionHooks' context won't leak state"""
+        action = {
+            'label': 'Test Action',
+            'id': 'test-action',
+            'url': 'foo-url',
+        }
+
+        hook = ReviewRequestActionHook(extension=self.extension,
+                                       actions=[action])
+
+        context = Context({})
+
+        t = Template(
+            "{% load rb_extensions %}"
+            "{% review_request_action_hooks %}")
+        t.render(context)
+
+        self.assertNotIn('action', context)
+
     def _test_action_hook(self, template_tag_name, hook_cls):
         action = {
             'label': 'Test Action',
