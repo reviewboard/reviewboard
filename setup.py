@@ -22,7 +22,7 @@ from distutils.command.install_data import install_data
 from distutils.command.install import INSTALL_SCHEMES
 from distutils.core import Command
 
-from reviewboard import get_package_version, is_release, VERSION
+from reviewboard import get_package_version, is_release, VERSION, django_version
 
 
 # Make sure this is a version of Python we are compatible with. This should
@@ -171,7 +171,7 @@ setup(name=PACKAGE_NAME,
       },
       cmdclass=cmdclasses,
       install_requires=[
-          'Django>=1.4.11,<1.5',
+          django_version,
           'django_evolution>=0.6.9,<0.7',
           'Djblets>=0.7.29,<0.8',
           'django-pipeline>=1.2.24,<1.3',
