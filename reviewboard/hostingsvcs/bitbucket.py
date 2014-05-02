@@ -63,8 +63,8 @@ class Bitbucket(HostingService):
     repository_url_patterns = patterns(
         '',
 
-        url(r'^hooks/post-receive/$',
-            'reviewboard.hostingsvcs.bitbucket.process_post_receive_hook'),
+        url(r'^hooks/close-submitted/$',
+            'reviewboard.hostingsvcs.bitbucket.post_receive_hook_close_submitted'),
     )
 
     supported_scmtools = ['Git', 'Mercurial']
@@ -266,7 +266,7 @@ class Bitbucket(HostingService):
 
 
 @require_POST
-def process_post_receive_hook(request, *args, **kwargs):
+def post_receive_hook_close_submitted(request, *args, **kwargs):
     """Closes review requests as submitted automatically after a push."""
     if 'payload' not in request.POST:
         return HttpResponse()

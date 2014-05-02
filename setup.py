@@ -22,7 +22,7 @@ from distutils.command.install_data import install_data
 from distutils.command.install import INSTALL_SCHEMES
 from distutils.core import Command
 
-from reviewboard import get_package_version, is_release, VERSION
+from reviewboard import get_package_version, is_release, VERSION, django_version
 
 
 # Make sure this is a version of Python we are compatible with. This should
@@ -192,7 +192,7 @@ setup(name=PACKAGE_NAME,
       },
       cmdclass=cmdclasses,
       install_requires=[
-          'Django>=1.6.2,<1.7',
+          django_version,
           'django_evolution>=0.7,<0.8',
           'Djblets>=0.8rc1,<0.9',
           'django-haystack',
