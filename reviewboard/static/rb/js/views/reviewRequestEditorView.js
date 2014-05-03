@@ -1032,7 +1032,18 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
                      'api/' + (options.resourceName || options.fieldName) + '/',
                 extraParams: options.extraParams,
                 cmp: options.cmp,
-                width: 350
+                width: 350,
+                error: function(xhr) {
+                    var text;
+
+                    try {
+                        text = $.parseJSON(xhr.responseText).err.msg;
+                    } catch (e) {
+                        text = 'HTTP ' + xhr.status + ' ' + xhr.statusText;
+                    }
+
+                    alert(text);
+                }
             })
             .on('autocompleteshow', function() {
                 /*
