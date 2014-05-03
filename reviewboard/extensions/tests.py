@@ -5,7 +5,8 @@ from djblets.extensions.manager import ExtensionManager
 from djblets.extensions.models import RegisteredExtension
 
 from reviewboard.extensions.base import Extension
-from reviewboard.extensions.hooks import (DiffViewerActionHook,
+from reviewboard.extensions.hooks import (CommentDetailDisplayHook,
+                                          DiffViewerActionHook,
                                           HeaderActionHook,
                                           HeaderDropdownActionHook,
                                           NavigationBarHook,
@@ -212,6 +213,14 @@ class ReviewRequestDropdownActionTestHook(ReviewRequestDropdownActionHook):
         raise StandardError
 
 
+class CommentDetailDisplayTestHook(CommentDetailDisplayHook):
+    def render_review_comment_detail(self, comment):
+        raise StandardError
+
+    def render_email_comment_detail(self, comment, is_html):
+        raise StandardError
+
+
 class SandboxTests(TestCase):
     """Testing extension sandboxing"""
     def setUp(self):
@@ -247,6 +256,32 @@ class SandboxTests(TestCase):
         t = Template(
             "{% load rb_extensions %}"
             "{% navigation_bar_hooks %}")
+
+        t.render(context).strip()
+
+    def test_render_review_comment_details(self):
+        """Testing sandboxing CommentDetailDisplayHook when
+        render_review_comment_detail throws an error"""
+        CommentDetailDisplayTestHook(extension=self.extension)
+
+        context = Context({'comment': 'this is a comment'})
+
+        t = Template(
+            "{% load rb_extensions %}"
+            "{% comment_detail_display_hook comment 'review'%}")
+
+        t.render(context).strip()
+
+    def test_email_review_comment_details(self):
+        """Testing sandboxing CommentDetailDisplayHook when
+        render_email_comment_detail throws an error"""
+        CommentDetailDisplayTestHook(extension=self.extension)
+
+        context = Context({'comment': 'this is a comment'})
+
+        t = Template(
+            "{% load rb_extensions %}"
+            "{% comment_detail_display_hook comment 'html-email'%}")
 
         t.render(context).strip()
 
