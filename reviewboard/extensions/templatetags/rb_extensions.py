@@ -127,7 +127,11 @@ def comment_detail_display_hook(context, comment, render_mode):
             elif render_mode in ('text-email', 'html-email'):
                 s += hook.render_email_comment_detail(
                     comment, render_mode == 'html-email')
-        except NotImplementedError:
-            pass
+        except Exception as e:
+            extension = hook.extension
+            logging.error('Error when running CommentDetailDisplayHook with '
+                          'render mode "%s" in extension: %s: %s',
+                          render_mode, extension.metadata['Name'], e,
+                          exc_info=1)
 
     return s

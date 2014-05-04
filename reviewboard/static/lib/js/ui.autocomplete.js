@@ -350,6 +350,11 @@ $.widget("ui.rbautocomplete", {
                         var parsed = options.parse && options.parse(data) || parse(data);
                         cache.add(term, parsed);
                         success(term, parsed);
+                    },
+                    error: function(xhr, textStatus, errorThrown) {
+                        if (options.error) {
+                            options.error(xhr, textStatus, errorThrown);
+                        }
                     }
                 });
             }
