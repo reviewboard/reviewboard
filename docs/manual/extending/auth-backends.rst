@@ -204,6 +204,10 @@ We'll go into each function and attribute in detail.
    create or update users in the Review Board database before the
    query is executed.
 
+   To pass errors up to the web API layer, raise a
+   :py:exc:`reviewboard.accounts.errors.UserQueryError`
+   exception with a specific error message.
+
 
 .. py:method:: search_users(query, request)
 

@@ -137,3 +137,8 @@ PUBLISH_ERROR = WebAPIError(
     225,
     "An error occurred during publishing.",
     http_status=500)  # 500 Internal Server Error
+
+USER_QUERY_ERROR = WebAPIError(
+    226,
+    "An error occurred querying the user list.",
+    http_status=500)  # 500 Internal Server Error
