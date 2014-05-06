@@ -139,7 +139,7 @@ def include_enabled_extensions(settings):
         load_app(extension.info.app_name)
 
 
-def main(settings):
+def main(settings, in_subprocess):
     if dirname(settings.__file__) == os.getcwd():
         sys.stderr.write("manage.py should not be run from within the "
                          "'reviewboard' Python package directory.\n")
@@ -147,16 +147,12 @@ def main(settings):
                          "Review Board source tree.\n")
         sys.exit(1)
 
-    if len(sys.argv) > 1 and \
-       (sys.argv[1] == 'runserver' or sys.argv[1] == 'test'):
-        if settings.DEBUG:
-            # If DJANGO_SETTINGS_MODULE is in our environment, we're in
-            # execute_from_command_line's sub-process.  It doesn't make sense
-            # to do this check twice, so just return.
-            if 'DJANGO_SETTINGS_MODULE' not in os.environ:
-                sys.stderr.write('Running dependency checks (set DEBUG=False '
-                                 'to turn this off)...\n')
-                check_dependencies(settings)
+    if (len(sys.argv) > 1 and
+        (sys.argv[1] == 'runserver' or sys.argv[1] == 'test')):
+        if settings.DEBUG and not in_subprocess:
+            sys.stderr.write('Running dependency checks (set DEBUG=False '
+                             'to turn this off)...\n')
+            check_dependencies(settings)
     else:
         # Some of our checks require access to django.conf.settings, so
         # tell Django about our settings.
@@ -176,7 +172,12 @@ if __name__ == "__main__":
     # manage.py can be run from any directory.
     # From http://www.djangosnippets.org/snippets/281/
     sys.path.insert(0, dirname(dirname(abspath(__file__))))
-    os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'reviewboard.settings')
+
+    if 'DJANGO_SETTINGS_MODULE' not in os.environ:
+        in_subprocess = False
+        os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'reviewboard.settings')
+    else:
+        in_subprocess = True
 
     try:
         from reviewboard import settings
@@ -191,4 +192,4 @@ if __name__ == "__main__":
         sys.stderr.write("The error we got was: %s\n" % e)
         sys.exit(1)
 
-    main(settings)
+    main(settings, in_subprocess)

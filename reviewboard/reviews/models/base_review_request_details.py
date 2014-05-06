@@ -4,6 +4,7 @@ import re
 
 from django.db import models
 from django.utils import six
+from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
 from djblets.db.fields import JSONField
 
@@ -13,6 +14,7 @@ from reviewboard.reviews.models.default_reviewer import DefaultReviewer
 from reviewboard.scmtools.errors import InvalidChangeNumberError
 
 
+@python_2_unicode_compatible
 class BaseReviewRequestDetails(models.Model):
     """Base information for a review request and draft.
 
@@ -267,7 +269,7 @@ class BaseReviewRequestDetails(models.Model):
 
     def __str__(self):
         if self.summary:
-            return self.summary
+            return six.text_type(self.summary)
         else:
             return six.text_type(_('(no summary)'))
 
