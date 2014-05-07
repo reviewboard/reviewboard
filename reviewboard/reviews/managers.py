@@ -133,6 +133,12 @@ class ReviewRequestManager(ConcurrencyManager):
         if commit_id:
             if create_from_commit_id:
                 review_request.update_from_commit_id(commit_id)
+
+                # Also create a draft, so that the user will see the "This
+                # review request is not yet public" banner.
+                from reviewboard.reviews.models.review_request_draft import \
+                    ReviewRequestDraft
+                ReviewRequestDraft.create(review_request)
             else:
                 review_request.commit_id = commit_id
 
