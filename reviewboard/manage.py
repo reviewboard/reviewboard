@@ -49,7 +49,8 @@ def check_dependencies(settings):
 
     # ReCaptcha
     try:
-        imp.find_module('recaptcha')
+        # For some reason, imp.find_module('recaptcha') doesn't always work.
+        import recaptcha
     except ImportError:
         dependency_error('The recaptcha python module is required.')
 
