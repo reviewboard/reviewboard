@@ -180,6 +180,12 @@
         }
       }
 
+      &.highlight-anchor {
+        td, th {
+            background: @diff-highlight-color;
+        }
+      }
+
       td {
         vertical-align: top;
 
@@ -309,6 +315,7 @@
     &.delete {
       tr {
         &.selected * { background: @diff-delete-selected-color; }
+        &.highlight-anchor * { background: @diff-highlight-color; }
 
         td {
           background: @diff-delete-color;
@@ -325,6 +332,7 @@
     &.insert {
       tr {
         &.selected * { background: @diff-insert-selected-color; }
+        &.highlight-anchor * { background: @diff-highlight-color; }
 
         td {
           background: @diff-insert-color;
@@ -341,6 +349,7 @@
     &.replace {
       tr {
         &.selected * { background: @diff-replace-selected-color; }
+        &.highlight-anchor * { background: @diff-highlight-color; }
 
         td {
           background: @diff-replace-color;
