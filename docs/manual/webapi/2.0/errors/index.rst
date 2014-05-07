@@ -7,9 +7,15 @@ Errors
 
    100-does-not-exist
    101-permission-denied
+   102-invalid-attribute
    103-not-logged-in
    104-login-failed
    105-invalid-form-data
+   106-missing-attribute
+   107-enable-extension-failed
+   108-disable-extension-failed
+   109-extension-installed
+   110-install-extension-failed
    203-invalid-change-number
    204-change-number-in-use
    205-missing-repository
@@ -31,3 +37,5 @@ Errors
    222-hosting-service-auth-error
    223-group-already-exists
    224-diff-parse-error
+   225-publish-error
+   226-user-query-error

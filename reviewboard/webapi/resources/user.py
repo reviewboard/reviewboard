@@ -4,7 +4,10 @@ from django.db.models import Q
 from django.utils import six
 from djblets.gravatars import get_gravatar_url
 from djblets.util.decorators import augment_method_from
-from djblets.webapi.decorators import webapi_request_fields
+from djblets.webapi.decorators import (webapi_request_fields,
+                                       webapi_response_errors)
+from djblets.webapi.errors import (DOES_NOT_EXIST, NOT_LOGGED_IN,
+                                   PERMISSION_DENIED)
 from djblets.webapi.resources import UserResource as DjbletsUserResource
 
 from reviewboard.accounts.backends import get_enabled_auth_backends
@@ -108,6 +111,8 @@ class UserResource(WebAPIResource, DjbletsUserResource):
         return True
 
     @webapi_check_local_site
+    @webapi_response_errors(NOT_LOGGED_IN, PERMISSION_DENIED, DOES_NOT_EXIST,
+                            USER_QUERY_ERROR)
     @webapi_request_fields(
         optional={
             'q': {
