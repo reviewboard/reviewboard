@@ -2,7 +2,7 @@
 Review Board 2.0 RC 3 Release Notes
 ===================================
 
-**Release date:** TBD
+**Release date:** May 8, 2014
 
 This release contains all bug fixes and features found in Review Board version
 :doc:`1.7.25 <1.7.25>`.
@@ -102,6 +102,29 @@ Other
 Extensibility
 =============
 
+Better Uprades
+--------------
+
+Installing a new version of an extension will cause Review Board to re-install
+all bundled media files.
+
+This removes the need for administrators to disable and re-enable an extension
+in order to get things working again.
+
+
+Media Packaging
+---------------
+
+* Source media files (JavaScript, CSS, and LessCSS) can now be removed
+  from built extension packages.
+
+  This behavior can be triggered by adding the following to the package's
+  :file:`setup.cfg`::
+
+      [build_static_files]
+      remove_source_files = 1
+
+
 JavaScript
 ----------
 
@@ -125,8 +148,8 @@ Sandboxing
   Many of the hook points Review Board offers now protect the rest of the
   application from crashing if an extension raises an exception. Currently,
   :ref:`review-request-approval-hook`, :ref:`navigation-bar-hook`,
-  :ref:`comment-detail-display-hook`, and the :ref:`action-hooks` are
-  sandboxed.
+  :ref:`comment-detail-display-hook`, :ref:`template-hook`, and the
+  :ref:`action-hooks` are sandboxed.
 
   Patches by Edwin Zhang.
 
@@ -169,11 +192,6 @@ General
 
 * Fixed a regression when resetting user passwords. (:bug:`3301`)
 
-* Fixed displaying and handling errors when publishing a review request
-  fails.
-
-  Patch by Mark Côté.
-
 * Fixed various browser compatibility issues with Firefox.
 
   Patch by Matthew N.
@@ -181,14 +199,31 @@ General
 * Duplicate :guilabel:`Markdown Reference` links are no longer shown in
   replies to comments.
 
-* The :guilabel:`Hide closed` link on the All Review Requests page no longer
-  impacts the dashboard. (:bug:`3319`)
-
 * Diffs containing leading slashes are normalized to remove leading slashes,
   fixing lookups.
 
+
+Review Requests
+---------------
+
+* Fixed displaying and handling errors when publishing a review request
+  fails.
+
+  Patch by Mark Côté.
+
 * Review requests created through the New Review Request page will once
   again show a draft banner.
+
+* Fixed escaping of content in the bugs field. (:bug:`3244`)
+
+
+Dashboard and DataGrids
+-----------------------
+
+* The :guilabel:`Hide closed` link on the All Review Requests page no longer
+  impacts the dashboard. (:bug:`3319`)
+
+* Sorting on non-existing columns in the Dashboard no longer breaks.
 
 
 Administrative
@@ -228,6 +263,12 @@ Extensions
 ----------
 
 * Fixed leaking of variables between hook-provided templates.
+
+
+Web API
+-------
+
+* Unicode values in GET query strings no longer causes HTTP 500 errors.
 
 
 Contributors
