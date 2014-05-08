@@ -195,7 +195,10 @@ class DiffSetManager(models.Manager):
                                                     copied=f.copied)
 
             if f2.startswith("/"):
-                filename = f2
+                if type(f2) is str:
+                    filename = f2.decode('utf-8')
+                else:
+                    filename = f2
             else:
                 filename = os.path.join(basedir, f2).replace("\\", "/")
 
