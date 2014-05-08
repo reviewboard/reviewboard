@@ -27,7 +27,7 @@
   <pre id="field field-text-area changedescription"{% if close_description %} loading{% endif %} data-rich-text="true" data-field-id="field_changedescription">{{close_description|markdown_escape:close_description_rich_text}}</pre>
 {%  endif %}
  </div>
-{% elif draft %}{# pending review #}
+{% else %}{# pending review #}
 {%  if request.user.pk == review_request.submitter_id or perms.reviews.can_edit_reviewrequest %}
  <div class="banner" id="draft-banner" style="display:none;">
 {%   if review_request.public %}
