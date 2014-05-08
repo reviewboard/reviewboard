@@ -1,0 +1,244 @@
+===================================
+Review Board 2.0 RC 3 Release Notes
+===================================
+
+**Release date:** TBD
+
+This release contains all bug fixes and features found in Review Board version
+:doc:`1.7.25 <1.7.25>`.
+
+
+Installation
+============
+
+To install this release, run the following::
+
+    $ sudo easy_install \
+        -f http://downloads.reviewboard.org/releases/ReviewBoard/2.0/ \
+        -U ReviewBoard
+
+We are very close to the final release of 2.0. If you are intending to run
+2.0 on a production server, it is time to do some testing with this release to
+make sure we address any bugs you may run into.
+
+If you are careful with backups, you may run this on a production server, but
+you may experience bugs. It is best to install on a test server first, in case
+there are any major problems.
+
+
+Important Upgrade Notes
+=======================
+
+**Make a backup of your database!**
+
+Substantial changes were made to database migration. While our testing has
+shown it to work, it *could* leave your database in a bad state.
+
+Do **not** upgrade a production database without a full backup.
+
+Please let us know if you have any problems with the upgrade.
+
+
+New Features
+============
+
+Experimental Web Hooks
+----------------------
+
+* Added experimental "close-submitted" Web Hook support for Bitbucket,
+  Beanstalk, and Google Code.
+
+  Bitbucket_, Beanstalk_, GitHub_, and `Google Code`_ repositories can now be
+  configured to close review requests referenced in a commit message (or
+  identified by a commit ID) by using Web Hooks.
+
+  To use this, configure a WebHook and provide the URL for the hook.
+
+  For Bitbucket:
+  :samp:`http://<server>/repos/<repo_id>/hooks/bitbucket/close-submitted/`
+
+  For Beanstalk:
+  :samp:`http://<server>/repos/<repo_id>/hooks/beanstalk/close-submitted/`
+
+  For GitHub:
+  :samp:`http://<server>/repos/<repo_id>/hooks/github/close-submitted/`
+
+  For Google Code:
+  :samp:`http://<server>/repos/<repo_id>/hooks/googlecode/close-submitted/`
+
+  .. note::
+
+    The 2.0 RC 2 release notes cover the usage of these hooks in more detail,
+    though in RC 2, these webhooks were named "post-receive" instead of
+    "close-submitted".
+
+  Documentation on using these will be available at a later date. For now,
+  the feature is experimental.
+
+  Patches by Bhushan Ramnani.
+
+.. _Bitbucket: https://bitbucket.org/
+.. _Beanstalk: http://beanstalkapp.com/
+.. _GitHub: https://github.com/
+.. _`Google Code`: https://code.google.com/
+
+* "close-submitted" Web Hooks can now match by commit ID.
+
+  The post-review Web Hooks for GitHub, Bitbucket, Beanstalk, and Google Code,
+  which close review requests when commits are pushed, can now look up the
+  proper review request through the Commit ID field, instead of requiring a
+  URL in the commit message. This requires that the review request's commit ID
+  field matches the resulting SHA1 of the commit.
+
+  Patch by Anselina Chia.
+
+
+Other
+-----
+
+* Improved the look of generated e-mails.
+
+
+Extensibility
+=============
+
+JavaScript
+----------
+
+* Improved support in ``RB.ReviewGroup`` and ``RB.Repository``.
+
+  These resource models, used to communicate with the API, have been improved
+  to better handle parsing payloads returned from the API.
+
+* Added ``RB.DefaultReviewer`` for parsing payloads for the Default Reviewer
+  API.
+
+  This is not feature-complete, but can be used to fetch basic details on a
+  Default Reviewer entry.
+
+
+Sandboxing
+----------
+
+* Added sandboxing for several extension hook points.
+
+  Many of the hook points Review Board offers now protect the rest of the
+  application from crashing if an extension raises an exception. Currently,
+  :ref:`review-request-approval-hook`, :ref:`navigation-bar-hook`,
+  :ref:`comment-detail-display-hook`, and the :ref:`action-hooks` are
+  sandboxed.
+
+  Patches by Edwin Zhang.
+
+
+New Signals
+-----------
+
+* Added ``review_request_publishing``, ``review_publishing``, and
+  ``reply_publishing`` signals.
+
+  These signals are emitted before the publishing process starts on review
+  requests, reviews, and replies. Extensions can connect to these to
+  perform pre-publish validation. They can raise a ``PublishError`` to abort
+  the publish.
+
+  The error message provided to ``PublishError`` will be reflected in the
+  API's error message.
+
+  Patch by Mark Côté.
+
+
+Authentication Backends
+-----------------------
+
+* Custom AuthBackends can now raise a :py:class:`UserQueryError` when
+  looking up errors.
+
+  These errors will be represented in the web API though
+  :ref:`webapi2.0-error-226`.
+
+
+Bug Fixes
+=========
+
+General
+-------
+
+* Fixed a regression where Gravatars wouldn't display until Gravatar
+  support was toggled off and back on.
+
+* Fixed a regression when resetting user passwords. (:bug:`3301`)
+
+* Fixed displaying and handling errors when publishing a review request
+  fails.
+
+  Patch by Mark Côté.
+
+* Fixed various browser compatibility issues with Firefox.
+
+  Patch by Matthew N.
+
+* Duplicate :guilabel:`Markdown Reference` links are no longer shown in
+  replies to comments.
+
+* The :guilabel:`Hide closed` link on the All Review Requests page no longer
+  impacts the dashboard. (:bug:`3319`)
+
+* Diffs containing leading slashes are normalized to remove leading slashes,
+  fixing lookups.
+
+* Review requests created through the New Review Request page will once
+  again show a draft banner.
+
+
+Administrative
+--------------
+
+* Upgrades from pre-1.7 databases now work again.
+
+* Condensing diffs in the database should no longer use up all memory.
+
+* Fixed an issue parsing some payloads on GitHub in the post-receive
+  Web Hook.
+
+* Fixed Unicode errors with LDAP authentication when the user dn contains
+  non-ASCII characters.
+
+  Patch by Georgy Dyuldin.
+
+* Fixed breakages in the administration UI when viewing review requests
+  with unicode characters in the summary. (:bug:`3325`)
+
+
+Repository Support
+------------------
+
+* Fixed authentication with Subversion backends. (:bug:`3303`)
+
+* Fixed a "Need more than 1 value to unpack" error with ClearCase.
+  (:bug:`3305`)
+
+  Patch by David Bodor.
+
+* Fixed permission lookups when creating repositories through the web API.
+  (:bug:`3307`)
+
+
+Extensions
+----------
+
+* Fixed leaking of variables between hook-provided templates.
+
+
+Contributors
+============
+
+* Anselina Chia
+* Bhushan Ramnani
+* Christian Hammond
+* David Bodor
+* David Trowbridge
+* Edward Zhang
+* Georgy Dyuldin
+* Mark Côté
+* Matthew N
