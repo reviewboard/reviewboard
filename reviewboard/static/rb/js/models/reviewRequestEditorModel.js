@@ -189,15 +189,21 @@ RB.ReviewRequestEditor = Backbone.Model.extend({
      * success, the "publish" event will be triggered.
      */
     publishDraft: function() {
-        var reviewRequest = this.get('reviewRequest');
-
-        reviewRequest.draft.publish({
-            success: function() {
-                this.trigger('published');
-            },
-            error: function(model, xhr) {
+        var reviewRequest = this.get('reviewRequest'),
+            onError = function(xhr) {
                 this.trigger('publishError', xhr.errorText);
-            }
+            };
+
+        reviewRequest.draft.ensureCreated({
+            success: function() {
+                reviewRequest.draft.publish({
+                    success: function() {
+                        this.trigger('published');
+                    },
+                    error: onError
+                }, this);
+            },
+            error: onError
         }, this);
     },
 

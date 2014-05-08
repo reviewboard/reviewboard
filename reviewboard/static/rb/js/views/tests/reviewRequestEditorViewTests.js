@@ -213,6 +213,10 @@ suite('rb/views/ReviewRequestEditorView', function() {
                     view.showBanner();
 
                     spyOn(editor, 'publishDraft').andCallThrough();
+                    spyOn(reviewRequest.draft, 'ensureCreated')
+                        .andCallFake(function(options, context) {
+                            options.success.call(context);
+                        });
                     spyOn(reviewRequest.draft, 'publish');
 
                     /* Set up some basic state so that we pass validation. */
