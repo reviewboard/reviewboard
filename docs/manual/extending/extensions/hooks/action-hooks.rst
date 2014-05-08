@@ -1,8 +1,8 @@
 .. _action-hooks:
 
-==========
-ActionHook
-==========
+============
+Action Hooks
+============
 
 There are a variety of action hooks, which allow injecting clickable actions
 into various parts of the UI.
