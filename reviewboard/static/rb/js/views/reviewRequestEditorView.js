@@ -276,9 +276,9 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
                 if (bugTrackerURL) {
                     $el.html(view.urlizeList(data, function(item) {
                         return bugTrackerURL.replace('%s', item);
-                    }));
+                    }, _.escape));
                 } else {
-                    $el.html(data.join(", "));
+                    $el.text(data.join(", "));
                 }
             }
         },
