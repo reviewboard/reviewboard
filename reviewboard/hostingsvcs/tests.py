@@ -1424,16 +1424,25 @@ class GitLabTests(ServiceTests):
             expected_error='A repository with this name was not found, '
                            'or your user may not own it.')
 
-    def test_check_repository_group_not_found(self):
+    def test_check_repository_group_repo_not_found(self):
         """Testing GitLab check_repository with not found error and
         group repository"""
         self._test_check_repository_error(
             plan='group',
             gitlab_group_name='mygroup',
-            gitlab_group_repo_name='myrepo',
+            gitlab_group_repo_name='badrepo',
             expected_error='A repository with this name was not found on '
                            'this group, or your user may not have access '
                            'to it.')
+
+    def test_check_repository_group_not_found(self):
+        """Testing GitLab check_repository with an incorrect group name"""
+        self._test_check_repository_error(
+            plan='group',
+            gitlab_group_name='badgroup',
+            gitlab_group_repo_name='myrepo',
+            expected_error='A group with this name was not found, or your '
+                           'user may not have access to it.')
 
     def test_authorization(self):
         """Testing that GitLab account authorization sends expected data"""
@@ -1480,9 +1489,25 @@ class GitLabTests(ServiceTests):
                         },
                     }
                 ]
+            elif url == 'https://example.com/api/v3/groups?per_page=100':
+                payload = [
+                    {
+                        'id': 1,
+                        'name': 'mygroup',
+                    }
+                ]
             elif url == 'https://example.com/api/v3/projects/1':
                 # We don't care about the contents. Just that it exists.
                 payload = {}
+            elif url == 'https://example.com/api/v3/groups/1':
+                payload = {
+                    'projects': [
+                        {
+                            'id': 1,
+                            'name': 'myrepo',
+                        },
+                    ],
+                }
             else:
                 self.fail('Unexpected URL %s' % url)
 
@@ -1498,7 +1523,26 @@ class GitLabTests(ServiceTests):
 
     def _test_check_repository_error(self, expected_error, **kwargs):
         def _http_get(service, url, *args, **kwargs):
-            return '[]', {}
+            if url == 'https://example.com/api/v3/groups?per_page=100':
+                payload = [
+                    {
+                        'id': 1,
+                        'name': 'mygroup',
+                    }
+                ]
+            elif url == 'https://example.com/api/v3/groups/1':
+                payload = {
+                    'projects': [
+                        {
+                            'id': 1,
+                            'name': 'myrepo',
+                        },
+                    ],
+                }
+            else:
+                payload = []
+
+            return json.dumps(payload), {}
 
         account = self._get_hosting_account(use_url=True)
         service = account.service
