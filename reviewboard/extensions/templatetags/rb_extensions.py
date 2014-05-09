@@ -37,7 +37,7 @@ def action_hooks(context, hook_cls, action_key="action",
                         logging.error(
                             'Error when rendering template for action "%s" '
                             'for hook %r in extension "%s": %s',
-                            action_key, hook, extension.id, e,
+                            action_key, hook, hook.extension.id, e,
                             exc_info=1)
 
                     context.pop()
@@ -96,7 +96,7 @@ def navigation_bar_hooks(context):
             extension = hook.extension
             logging.error('Error when running NavigationBarHook.'
                           'get_entries function in extension: "%s": %s',
-                          extension.metadata['Name'], e, exc_info=1)
+                          extension.id, e, exc_info=1)
 
     return s
 
@@ -137,7 +137,6 @@ def comment_detail_display_hook(context, comment, render_mode):
             extension = hook.extension
             logging.error('Error when running CommentDetailDisplayHook with '
                           'render mode "%s" in extension: %s: %s',
-                          render_mode, extension.metadata['Name'], e,
-                          exc_info=1)
+                          render_mode, extension.id, e, exc_info=1)
 
     return s

@@ -849,7 +849,7 @@ class ReviewRequest(BaseReviewRequestDetails):
                 extension = hook.extension
                 logging.error('Error when running ReviewRequestApprovalHook.'
                               'is_approved function in extension: "%s": %s',
-                              extension.metadata['Name'], e, exc_info=1)
+                              extension.id, e, exc_info=1)
 
         self._approval_failure = failure
         self._approved = approved

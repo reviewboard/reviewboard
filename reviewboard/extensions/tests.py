@@ -193,6 +193,7 @@ class SandboxExtension(Extension):
     metadata = {
         'Name': 'Sandbox Extension',
     }
+    id = 'reviewboard.extensions.tests.SandboxExtension'
 
     def __init__(self, *args, **kwargs):
         super(SandboxExtension, self).__init__(*args, **kwargs)
