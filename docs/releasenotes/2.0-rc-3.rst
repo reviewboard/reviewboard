@@ -102,8 +102,8 @@ Other
 Extensibility
 =============
 
-Better Uprades
---------------
+Better Upgrades
+---------------
 
 Installing a new version of an extension will cause Review Board to re-install
 all bundled media files.
