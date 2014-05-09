@@ -68,7 +68,8 @@ class HostingServiceClient(object):
 
         headers['Content-Length'] = '%d' % len(body)
 
-        return self.http_request(url, headers=headers, method='POST', **kwargs)
+        return self.http_request(url, body=body, headers=headers,
+                                 method='POST', **kwargs)
 
     def http_request(self, url, body=None, headers={}, method='GET', **kwargs):
         """Perform some HTTP operation on a given URL."""
