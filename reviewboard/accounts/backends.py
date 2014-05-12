@@ -592,7 +592,9 @@ class ActiveDirectoryBackend(AuthBackend):
 
         for dc in dcs:
             port, host = dc
-            con = ldap.open(host, port=int(port))
+            ldap_uri = 'ldap://%s:%s' % (host, port)
+            con = ldap.initialize(ldap_uri)
+
             if settings.AD_USE_TLS:
                 try:
                     con.start_tls_s()
