@@ -16,16 +16,103 @@
 <div id="admin-dashboard">
  <div id="dashboard-view">
   <div id="admin-widgets">
-{% for widget in primary_widgets %}
-   {% admin_widget widget %}
+{% for widget in selected_primary_widgets %}
+{% admin_widget widget %}
 {% endfor %}
+   <div class="widget-adder widget-masonry-item" id="large-widget-adder">
+    <a>{% trans "Add Large Widgets +" %}</a>
+   </div>
   </div>
   <div id="admin-extras">
-{% for widget in secondary_widgets %}
-   {% admin_widget widget %}
+{% for widget in selected_secondary_widgets %}
+{% admin_widget widget %}
 {% endfor %}
+   <div class="widget-adder widget-masonry-item" id="small-widget-adder">
+    <a>{% trans "Add Small Widgets +" %}</a>
+   </div>
   </div>
  </div>
+</div>
+
+<div class="widget-adder-modal" id="large-widget-modal" title="{% trans 'Add Large Widgets' %}">
+ <form>
+  <fieldset>
+   <table>
+{% for widget in unselected_primary_widgets %}
+    <tr><td>
+     <div id="{{widget.widget_id}}-selection">
+      <div class="widget-label">
+       <input id="{{widget.widget_id}}-checkbox" name="{{widget.widget_id}}" type="checkbox" value="{{widget.widget_id}}">
+       <label class="checkbox-label" for="{{widget.widget_id}}">{{widget.title}}</label>
+      </div>
+      <img src="{% static 'rb/images/admin/'|add:widget.name|add:'.png' %}" />
+     </div>
+    </td></tr>
+{% endfor %}
+    <div id="no-large-msg"></p>{% trans "You have added all available large widgets." %}</p></div>
+   </table>
+  </fieldset>
+ </form>
+</div>
+
+<div class="widget-adder-modal" id="small-widget-modal" title="{% trans 'Add Small Widgets' %}">
+ <form>
+  <fieldset>
+   <table>
+{% for widget in unselected_secondary_widgets %}
+{% if not forloop.counter|divisibleby:2 %}
+    <tr>
+{% endif %}
+     <td>
+      <div id="{{widget.widget_id}}-selection">
+       <div class="widget-label">
+        <input id="{{widget.widget_id}}-checkbox" name="{{widget.widget_id}}" type="checkbox" value="{{widget.widget_id}}">
+        <label class="checkbox-label" for="{{widget.widget_id}}">{{widget.title}}</label>
+       </div>
+       <img src="{% static 'rb/images/admin/'|add:widget.name|add:'.png' %}" />
+      </div>
+     </td>
+{% if forloop.counter|divisibleby:2 %}
+    </tr>
+{% endif %}
+{% endfor %}
+    <div id="no-small-msg"><p>{% trans "You have added all available small widgets." %}</p></div>
+   </table>
+  </fieldset>
+ </form>
+</div>
+
+<div id="all-primary-widgets">
+{% for widget in primary_widgets %}
+{% admin_widget widget %}
+{% endfor %}
+</div>
+<div id="all-secondary-widgets">
+{% for widget in secondary_widgets %}
+{% admin_widget widget %}
+{% endfor %}
+</div>
+<div id="all-modal-primary-widgets">
+{% for widget in primary_widgets %}
+ <div id="{{widget.widget_id}}-selection">
+  <div class="widget-label">
+   <input id="{{widget.widget_id}}-checkbox" name="{{widget.widget_id}}" type="checkbox" value="{{widget.widget_id}}">
+   <label class="checkbox-label" for="{{widget.widget_id}}">{{widget.title}}</label>
+  </div>
+  <img src="{% static 'rb/images/admin/'|add:widget.name|add:'.png' %}" />
+ </div>
+{% endfor %}
+</div>
+<div id="all-modal-secondary-widgets">
+{% for widget in secondary_widgets %}
+ <div id="{{widget.widget_id}}-selection">
+  <div class="widget-label">
+   <input id="{{widget.widget_id}}-checkbox" name="{{widget.widget_id}}" type="checkbox" value="{{widget.widget_id}}">
+   <label class="checkbox-label" for="{{widget.widget_id}}">{{widget.title}}</label>
+  </div>
+  <img src="{% static 'rb/images/admin/'|add:widget.name|add:'.png' %}" />
+ </div>
+{% endfor %}
 </div>
 
 <br class="clear" />

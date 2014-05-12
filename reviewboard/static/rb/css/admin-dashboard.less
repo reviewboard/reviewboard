@@ -18,6 +18,8 @@
 @widget-heading-border-color: #728EAC;
 @widget-large-size: 460px;
 @widget-small-size: 200px;
+@widget-large-image-size: 225px;
+@widget-small-image-size: 135px;
 
 @admin-actions-bg: #F0F0F2;
 @admin-actions-border-color: @box-border-color;
@@ -136,6 +138,10 @@
       margin: 0;
     }
   }
+}
+
+#all-primary-widgets, #all-secondary-widgets {
+  display: none;
 }
 
 .admin-widget {
@@ -451,6 +457,86 @@
   li {
     border: none;
   }
+}
+
+/**************************************************************************
+ * Widget selector styles
+ **************************************************************************/
+
+.widget-adder {
+  border: 1px solid @widget-border-color;
+  margin: 0 0 (2 * @widget-margin);
+  .border-radius(@box-border-radius);
+  .box-shadow(@box-shadow);
+  height: 30px;
+  text-align: center;
+  padding-top: 15px;
+
+  a {
+    color: #5b80b2;
+    font-weight: bold;
+    font-size: 13px;
+  }
+
+  a:hover {
+    color: black;
+    cursor: pointer;
+  }
+
+  &#large-widget-adder {
+    width: @widget-large-size;
+    background-color: white;
+  }
+
+  &#small-widget-adder {
+    float: left;
+    width: @widget-small-size;
+    margin-left: 2 * @widget-margin;
+  }
+}
+
+.widget-adder-modal {
+  table {
+    border-right: none;
+  }
+
+  td {
+    padding: 0 20px 0 0;
+
+    img {
+      margin-top: 3px;
+      padding-bottom: 13px;
+    }
+  }
+
+  .widget-label {
+    margin-top: 5px;
+    padding: 0;
+  }
+}
+
+#large-widget-modal {
+  table {
+    margin-left: 33px;
+  }
+
+  img {
+    width: @widget-large-image-size;
+  }
+}
+
+#small-widget-modal {
+  table {
+    margin-left: 10px;
+  }
+
+  img {
+    width: @widget-small-image-size;
+  }
+}
+
+#all-modal-primary-widgets, #all-modal-secondary-widgets {
+  display: none;
 }
 
 // vim: set et ts=2 sw=2:

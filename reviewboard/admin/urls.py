@@ -77,6 +77,7 @@ urlpatterns = patterns(
     (r'^settings/', include(settings_urlpatterns)),
     (r'^widget-toggle/', 'widget_toggle'),
     (r'^widget-move/', 'widget_move'),
+    (r'^widget-select/', 'widget_select'),
     (r'^widget-activity/', 'widget_activity'),
     url(r'^security/$', 'security', name='admin-security-checks'),
 )
