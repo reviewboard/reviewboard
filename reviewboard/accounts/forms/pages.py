@@ -44,11 +44,6 @@ class AccountSettingsForm(AccountPageForm):
         label=_('Always open an issue when comment box opens'),
         required=False)
 
-    def is_visible(self):
-        backend = get_enabled_auth_backends()[0]
-
-        return backend.supports_change_password
-
     def load(self):
         self.set_initial({
             'open_an_issue': self.profile.open_an_issue,
@@ -92,6 +87,11 @@ class ChangePasswordForm(AccountPageForm):
         label=_('New password (confirm)'),
         required=True,
         widget=widgets.PasswordInput())
+
+    def is_visible(self):
+        backend = get_enabled_auth_backends()[0]
+
+        return backend.supports_change_password
 
     def clean_old_password(self):
         backend = get_enabled_auth_backends()[0]
