@@ -27,14 +27,14 @@ class OriginalFileResource(WebAPIResource):
 
     @webapi_check_login_required
     @webapi_check_local_site
-    def get(self, request, diffset_id=None, *args, **kwargs):
+    def get(self, request, diff_revision=None, *args, **kwargs):
         """Returns the original unpatched file.
 
         The file is returned as :mimetype:`text/plain` and is the original
         file before applying a patch.
         """
         try:
-            attached_diffset = DiffSet.objects.filter(pk=diffset_id,
+            attached_diffset = DiffSet.objects.filter(revision=diff_revision,
                                                       history__isnull=True)
 
             if attached_diffset.exists():
@@ -43,7 +43,7 @@ class OriginalFileResource(WebAPIResource):
                 filediff_resource = resources.draft_filediff
 
             filediff = filediff_resource.get_object(
-                request, diffset=diffset_id, *args, **kwargs)
+                request, diff_revision=diff_revision, *args, **kwargs)
         except ObjectDoesNotExist:
             return DOES_NOT_EXIST
 

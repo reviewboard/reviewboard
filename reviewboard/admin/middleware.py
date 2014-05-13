@@ -57,6 +57,11 @@ class CheckUpdatesRequiredMiddleware(object):
     URL will be redirected to the updates page (or an appropriate
     error response for API calls.
     """
+    ALLOWED_PATHS = (
+        settings.STATIC_URL,
+        settings.SITE_ROOT + 'jsi18n/',
+    )
+
     def process_view(self, request, view_func, view_args, view_kwargs):
         """
         Checks whether updates are required and returns the appropriate
@@ -66,8 +71,7 @@ class CheckUpdatesRequiredMiddleware(object):
 
         updates_required = check_updates_required()
 
-        if (updates_required and
-                not path_info.startswith(settings.STATIC_URL)):
+        if updates_required and not path_info.startswith(self.ALLOWED_PATHS):
             return manual_updates_required(request, updates_required)
 
         # Let another handler handle this.
