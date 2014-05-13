@@ -44,8 +44,7 @@ from djblets.log import restart_logging
 from djblets.siteconfig.forms import SiteSettingsForm
 
 from reviewboard.accounts.forms.auth import LegacyAuthModuleSettingsForm
-from reviewboard.admin.checks import (get_can_enable_syntax_highlighting,
-                                      get_can_use_amazon_s3,
+from reviewboard.admin.checks import (get_can_use_amazon_s3,
                                       get_can_use_couchdb)
 from reviewboard.admin.siteconfig import load_site_config
 from reviewboard.admin.support import get_install_key
@@ -561,18 +560,6 @@ class DiffSettingsForm(SiteSettingsForm):
         widget=forms.TextInput(attrs={'size': '15'}))
 
     def load(self):
-        # TODO: Move this check into a dependencies module so we can catch it
-        #       when the user starts up Review Board.
-        can_syntax_highlight, reason = get_can_enable_syntax_highlighting()
-
-        if not can_syntax_highlight:
-            self.disabled_fields['diffviewer_syntax_highlighting'] = True
-            self.disabled_reasons['diffviewer_syntax_highlighting'] = _(reason)
-            self.disabled_fields[
-                'diffviewer_syntax_highlighting_threshold'] = True
-            self.disabled_reasons[
-                'diffviewer_syntax_highlighting_threshold'] = _(reason)
-
         super(DiffSettingsForm, self).load()
         self.fields['include_space_patterns'].initial = \
             ', '.join(self.siteconfig.get('diffviewer_include_space_patterns'))

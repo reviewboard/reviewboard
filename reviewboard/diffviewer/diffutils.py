@@ -13,7 +13,6 @@ from djblets.siteconfig.models import SiteConfiguration
 from djblets.util.contextmanagers import controlled_subprocess
 
 from reviewboard.accounts.models import Profile
-from reviewboard.admin.checks import get_can_enable_syntax_highlighting
 from reviewboard.scmtools.core import PRE_CREATION, HEAD
 
 
@@ -525,8 +524,7 @@ def get_enable_highlighting(user):
 
     siteconfig = SiteConfiguration.objects.get_current()
     return (siteconfig.get('diffviewer_syntax_highlighting') and
-            user_syntax_highlighting and
-            get_can_enable_syntax_highlighting())
+            user_syntax_highlighting)
 
 
 def get_line_changed_regions(oldline, newline):

@@ -214,29 +214,6 @@ def reset_check_cache():
     _install_fine = False
 
 
-def get_can_enable_syntax_highlighting():
-    """Checks whether syntax highlighting can be enabled."""
-    try:
-        import pygments
-
-        version = pygments.__version__.split(".")
-
-        if int(version[0]) > 0 or int(version[1]) >= 9:
-            return (True, None)
-        else:
-            return (False, _(
-                'Pygments %(cur_version)s is installed, but '
-                '%(required_version)s or higher is required '
-                'to use syntax highlighting.'
-            ) % {'cur_version': pygments.__version__,
-                 'required_version': "0.9"})
-    except ImportError:
-        return (False, _(
-            'Syntax highlighting requires the <a href="%(url)s">Pygments</a> '
-            'library, which is not installed.'
-        ) % {'url': "http://www.pygments.org/"})
-
-
 def get_can_enable_ldap():
     """Checks whether LDAP authentication can be enabled."""
     try:
