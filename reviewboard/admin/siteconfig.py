@@ -46,7 +46,6 @@ from djblets.siteconfig.models import SiteConfiguration
 from haystack import connections
 
 from reviewboard.accounts.backends import get_registered_auth_backend
-from reviewboard.admin.checks import get_can_enable_syntax_highlighting
 from reviewboard.signals import site_settings_loaded
 
 
@@ -244,10 +243,6 @@ def load_site_config():
     # Now for some more complicated stuff...
 
     update_haystack_settings()
-
-    # Do some dependency checks and disable things if we don't support them.
-    if not get_can_enable_syntax_highlighting()[0]:
-        siteconfig.set('diffviewer_syntax_highlighting', False)
 
     # Site administrator settings
     apply_setting("ADMINS", None, (
