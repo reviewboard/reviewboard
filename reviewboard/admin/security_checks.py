@@ -94,9 +94,25 @@ class ExecutableCodeCheck(BaseSecurityCheck):
 
     def setUp(self):
         if self._using_default_storage():
-            for extensions_list, content in self.file_checks:
+            for i, file_check in enumerate(self.file_checks):
+                extensions_list, content = file_check
+                bad_extensions = []
+
                 for ext in extensions_list:
-                    self.storage.save('exec_check' + ext, ContentFile(content))
+                    try:
+                        self.storage.save('exec_check' + ext,
+                                          ContentFile(content))
+                    except OSError:
+                        # Some web server configurations prevent even saving
+                        # files with certain extensions. In this case, things
+                        # will definitely succeed.
+                        bad_extensions.append(ext)
+
+                # Filter out any extensions that we failed to save, because we
+                # don't need to check that they downloaded properly.
+                extensions_list = [ext for ext in extensions_list
+                                   if ext not in bad_extensions]
+                self.file_checks[i] = extensions_list, content
 
     def execute(self):
         error_msg = ''
