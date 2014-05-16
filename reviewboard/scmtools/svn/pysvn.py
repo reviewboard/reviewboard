@@ -191,8 +191,8 @@ class Client(base.Client):
                 revision_start=head_revision,
                 limit=2)
             commit = commits[0]
-            message = commit['message']
-            author_name = commit['author']
+            message = commit['message'].decode('utf-8', 'replace')
+            author_name = commit['author'].decode('utf-8', 'replace')
             date = datetime.utcfromtimestamp(commit['date']).\
                 isoformat()
 
