@@ -329,7 +329,11 @@ class CVSClient(object):
         return contents
 
     def check_repository(self):
-        p = SCMTool.popen(['cvs', '-f', '-d', self.cvsroot, 'rls'],
+        # Running 'cvs version' and specifying a CVSROOT will bail out if said
+        # CVSROOT is invalid, which is perfect for us. This used to use
+        # 'cvs rls' which is maybe slightly more correct, but rls is only
+        # available in CVS 1.12+
+        p = SCMTool.popen(['cvs', '-f', '-d', self.cvsroot, 'version'],
                           self.local_site_name)
         errmsg = six.text_type(p.stderr.read())
         if p.wait() != 0:
