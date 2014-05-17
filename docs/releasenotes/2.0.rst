@@ -630,6 +630,8 @@ Other User Features
 
 * Public local sites can now be accessed by anonymous users.
 
+* Improved the look of generated e-mails.
+
 
 New Administration Features
 ===========================
@@ -747,24 +749,25 @@ enable or disable the given extension, which is helpful when an extension has
 broken the installation.
 
 
-Experimental Post-Receive Webhooks for GitHub and BitBucket
------------------------------------------------------------
+Experimental Web Hooks
+----------------------
 
-We are testing new post-recieve webhooks for GitHub and BitBucket, which we'll
-expand upon in upcoming releases.
+We are testing new post-recieve webhooks for Beanstalk_, BitBucket_, GitHub_,
+and `Google Code`_, which we'll expand upon in upcoming releases.
 
 This webhook can be used to close review requests referenced in pushed
 commits. To use this, you'll need to edit the settings for your repository on
 GitHub, add a WebHook entry, choose a JSON payload, and enter the hook URL.
 This URL is in the form of
-:samp:`http://<server>/repos/<repo_id>/hooks/post-receive/`, where
+:samp:`http://<server>/repos/<repo_id>/hooks/close-submitted/`, where
 ``repo_id`` is the numeric ID of your repository (available in the
 administration UI).
 
 Note that this requires your server be reachable over the Internet by
 GitHub's/BitBucket's servers.
 
-The hook will then look for all commits with::
+The hook will then look for all commits with a matching Commit ID field, as
+well as commit messages that contain::
 
     Reviewed at http://<server>/r/<id>/
 
@@ -775,10 +778,16 @@ or::
 If found, the review request will be closed with a reference to the committed
 revisions and branches.
 
-Future versions will introduce hooks for additional services, and improve the
-setup process.
+For now, this feature is considered experimental, and is not referenced in the
+documentation. Future versions will introduce hooks for additional services,
+and improve the setup process.
 
 Patches by Anselina Chia and Bhushan Ramnani.
+
+.. _Beanstalk: http://beanstalkapp.com/
+.. _BitBucket: https://bitbucket.org/
+.. _GitHub: https://github.com/
+.. _`Google Code`: https://code.google.com/
 
 
 Other Administration Features
@@ -1030,6 +1039,9 @@ When running in a development environment, the files will be included directly
 into the pages. When building a package, these bundles will be compiled and
 minified.
 
+Bundled static media will also be re-extracted when extensions are upgraded,
+which prevents the need to disable and re-enable extensions when upgrading.
+
 
 Per-Page Static Media Bundles
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1081,6 +1093,19 @@ LessCSS Files
   Board.
 
 
+Media Packaging
+---------------
+
+* Source media files (JavaScript, CSS, and LessCSS) can now be removed
+  from built extension packages.
+
+  This behavior can be triggered by adding the following to the package's
+  :file:`setup.cfg`::
+
+      [build_static_files]
+      remove_source_files = 1
+
+
 JavaScript Extensions
 ---------------------
 
@@ -1101,6 +1126,20 @@ subclasses in :py:attr:`Extension.js_extensions`.
 Currently, there are two hooks: One for interfacing with the comment
 dialog, and one for adding additional elements to comments in the review
 dialog. More will come in future releases.
+
+
+Sandboxing
+----------
+
+* Added sandboxing for several extension hook points.
+
+  Many of the hook points Review Board offers now protect the rest of the
+  application from crashing if an extension raises an exception. Currently,
+  :ref:`review-request-approval-hook`, :ref:`navigation-bar-hook`,
+  :ref:`comment-detail-display-hook`, :ref:`template-hook`, and the
+  :ref:`action-hooks` are sandboxed.
+
+  Patches by Edwin Zhang.
 
 
 New Hooks
@@ -1231,7 +1270,10 @@ This is called when querying :ref:`webapi2.0-user-list-resource` before any
 results are returned from the database. This can be used to query a backend
 server or database to fetch any matching users and store them in the database.
 
-Patch by Mark Côté.
+Extensions can raise a :py:class:`UserQueryError` if this fails, which will be
+reflected in the web API through :ref:`webapi2.0-error-226`.
+
+Patches by Mark Côté.
 
 
 Custom User Filtering
@@ -1295,17 +1337,30 @@ The values can also be accessed and manipulated through the API. See
 :ref:`resource-extra-data`.
 
 
-Signals for Loading Site and Extension Settings
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+New Signals
+~~~~~~~~~~~
 
-There are two new signals that can be used by extensions to operate when
-settings have been changed.
+* There are two new signals that can be used by extensions to operate when
+  settings have been changed.
 
-* ``site_settings_loaded signal`` (provided by :py:mod:`reviewboard.signals`)
-  is emitted after Review Board loads its settings.
+  * ``site_settings_loaded signal`` (provided by :py:mod:`reviewboard.signals`)
+    is emitted after Review Board loads its settings.
 
-* ``settings_saved`` (provided by :py:mod:`djblets.extensions.signals`)
-  is emitted for an extension when its settings have been saved.
+  * ``settings_saved`` (provided by :py:mod:`djblets.extensions.signals`)
+    is emitted for an extension when its settings have been saved.
+
+* Added ``review_request_publishing``, ``review_publishing``, and
+  ``reply_publishing`` signals.
+
+  These signals are emitted before the publishing process starts on review
+  requests, reviews, and replies. Extensions can connect to these to
+  perform pre-publish validation. They can raise a ``PublishError`` to abort
+  the publish.
+
+  The error message provided to ``PublishError`` will be reflected in the
+  API's error message.
+
+  Patch by Mark Côté.
 
 
 Access to Extension Instances
@@ -1535,6 +1590,13 @@ General
 
   Patch by Stephanie Su.
 
+* Fixed various browser compatibility issues with Firefox.
+
+  Patch by Matthew N.
+
+* Diffs containing leading slashes are normalized to remove leading slashes,
+  fixing lookups.
+
 
 Installation
 ------------
@@ -1545,6 +1607,14 @@ Installation
 * :command:`rb-site install` gracefully handles issues when failing to create
   a database, allowing the user to fix the issue and try again without
   recreating the whole site. (:bug:`2126`)
+
+* Fixed Unicode errors with LDAP authentication when the user dn contains
+  non-ASCII characters.
+
+  Patch by Georgy Dyuldin.
+
+* Fixed breakages in the administration UI when viewing review requests
+  with unicode characters in the summary. (:bug:`3325`)
 
 
 Diff Viewer
@@ -1641,6 +1711,11 @@ Dashboard
   page (at ``/r/``), the user profile would fail to be found and cause a 500
   error. This has been fixed.
 
+* The :guilabel:`Hide closed` link (previously :guilabel:`Hide submitted`) on the
+  All Review Requests page no longer impacts the dashboard. (:bug:`3319`)
+
+* Sorting on non-existing columns in the Dashboard no longer breaks.
+
 
 Reviews
 -------
@@ -1648,7 +1723,7 @@ Reviews
 * Trimming of extra whitespace around review comments. (:bug:`2933`)
 
   When writing comments, any blank lines at the beginning or end of the comment
-  would be included in the page and emails. These are now stripped out.
+  would be included in the page and e-mails. These are now stripped out.
 
   Patch by Edward Lee.
 
@@ -1676,12 +1751,16 @@ ClearCase
 * Fix "Need more than 1 value to unpack" errors when uploading ClearCase diffs
   generated by hand. (:bug:`3305`)
 
+  Patch by David Bodor.
+
 
 CVS
 ---
 
 * Diffs generated on Windows that use `nul:` for the "old filename" when
   generating a diff for a new file are now handled correctly. (:bug:`2294`)
+
+* Fixed adding CVS repositories using versions older than 1.12 (:bug:`3343`)
 
 
 LDAP
@@ -1731,6 +1810,8 @@ Extensions
 
 * The extension list API no longer breaks if an extension can't be loaded.
 
+* Fixed leaking of variables between hook-provided templates.
+
 
 Other Bug Fixes
 ---------------
@@ -1747,6 +1828,12 @@ Other Bug Fixes
 * Fixed some issues using the site (particularly the dashboard) when using a
   multi-threaded web server or loader such as Apache's mod_worker.
 
+* Fixed permission lookups when creating repositories through the web API.
+  (:bug:`3307`)
+
+* Unicode values in GET query strings in the web API no longer cause HTTP 500
+  errors.
+
 
 Contributors
 ============
@@ -1760,10 +1847,12 @@ Contributors
 * Christian Hammond
 * Crystal Lok Koo
 * Dave Druska
+* David Bodor
 * David Trowbridge
 * Edward Lee
 * Edwin Zhang
 * Emmanuel Gil Peyrot
+* Georgy Dyuldin
 * German Galkin
 * Hiroki Gohara
 * Joonas Lindholm
@@ -1771,6 +1860,7 @@ Contributors
 * Mark Côté
 * Mark Lee
 * Mary Elaine Malit
+* Matthew N
 * Mike Conley
 * Mirai Akagawa
 * Natasha Dalal
