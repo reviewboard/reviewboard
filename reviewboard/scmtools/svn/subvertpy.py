@@ -144,8 +144,8 @@ class Client(base.Client):
         else:
             commits = list(self.ra.iter_log(None, revision, 0, limit=2))
             rev, props = commits[0][1:3]
-            message = props[SVN_LOG]
-            author_name = props[SVN_AUTHOR]
+            message = props[SVN_LOG].decode('utf-8', 'replace')
+            author_name = props[SVN_AUTHOR].decode('utf-8', 'replace')
             date = props[SVN_DATE]
 
             if len(commits) > 1:
