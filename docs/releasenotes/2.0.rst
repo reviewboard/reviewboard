@@ -2,7 +2,7 @@
 Review Board 2.0 Release Notes
 ==============================
 
-**Release date:** TBD
+**Release date:** May 19, 2014
 
 
 This release contains all bug fixes and features found in Review Board version
