@@ -152,7 +152,7 @@ class Client(base.Client):
 
             date = datetime.utcfromtimestamp(commit['date'])
             results.append(Commit(
-                commit['author'],
+                commit.get('author', ''),
                 six.text_type(commit['revision'].number),
                 date.isoformat(),
                 commit['message'],
