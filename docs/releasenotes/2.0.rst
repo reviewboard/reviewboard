@@ -6,7 +6,7 @@ Review Board 2.0 Release Notes
 
 
 This release contains all bug fixes and features found in Review Board version
-:doc:`1.7.24 <1.7.24>`.
+:doc:`1.7.25 <1.7.25>`.
 
 
 Security Improvements
@@ -1835,6 +1835,37 @@ Other Bug Fixes
   errors.
 
 
+Changes since 2.0 RC 3
+======================
+
+Bug Fixes
+---------
+
+* The Change Password form is no longer shown if the auth backend doesn't
+  support it. (:bug:`3255`)
+
+  Patch by Volodymyr Lyubinets.
+
+* Fixed failures running the security checklist on very locked-down
+  web servers. (:bug:`3341`)
+
+* Fixed URL lookups when resetting passwords. (:bug:`3345`)
+
+* Fixed decoding author and commit message strings from Subversion
+  commits. (:bug:`3346`)
+
+* Fixed a crash in the New Review Request page when working with commits
+  that don't contain author information. (:bug:`3349`)
+
+* Fixed fetching original and patched files in the web API.
+
+* Fixed uploading file attachments without a browser-supplied mimetype.
+
+* Fixed JavaScript errors on the Manual Updates pages.
+
+* Fixed the styling of titles in the administration UI.
+
+
 Contributors
 ============
 
@@ -1877,4 +1908,5 @@ Contributors
 * Tomasz Moń
 * Tomi Äijö
 * Vlad Safronov
+* Volodymyr Lyubinets
 * Yazan Medanat
