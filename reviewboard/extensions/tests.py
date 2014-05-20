@@ -1,6 +1,8 @@
 from __future__ import unicode_literals
 
+from django.contrib.auth.models import User
 from django.template import Context, Template
+from django.test.client import RequestFactory
 from djblets.extensions.manager import ExtensionManager
 from djblets.extensions.models import RegisteredExtension
 
@@ -12,9 +14,12 @@ from reviewboard.extensions.hooks import (CommentDetailDisplayHook,
                                           NavigationBarHook,
                                           ReviewRequestActionHook,
                                           ReviewRequestApprovalHook,
-                                          ReviewRequestDropdownActionHook)
+                                          ReviewRequestDropdownActionHook,
+                                          ReviewRequestFieldSetsHook)
 from reviewboard.testing.testcase import TestCase
 from reviewboard.reviews.models.review_request import ReviewRequest
+from reviewboard.reviews.fields import (BaseReviewRequestField,
+                                        BaseReviewRequestFieldSet)
 
 
 class DummyExtension(Extension):
@@ -242,6 +247,55 @@ class CommentDetailDisplayTestHook(CommentDetailDisplayHook):
         raise StandardError
 
 
+class BaseReviewRequestTestShouldRenderField(BaseReviewRequestField):
+    field_id = 'should_render'
+
+    def should_render(self, value):
+        raise StandardError
+
+
+class BaseReviewRequestTestInitField(BaseReviewRequestField):
+    field_id = 'init_field'
+
+    def __init__(self, review_request_details):
+        raise StandardError
+
+
+class TestIsEmptyField(BaseReviewRequestField):
+    field_id = 'is_empty'
+
+
+class TestInitField(BaseReviewRequestField):
+    field_id = 'test_init'
+
+
+class TestInitFieldset(BaseReviewRequestFieldSet):
+    fieldset_id = 'test_init'
+    field_classes = [BaseReviewRequestTestInitField]
+
+
+class TestShouldRenderFieldset(BaseReviewRequestFieldSet):
+    fieldset_id = 'test_should_render'
+    field_classes = [BaseReviewRequestTestShouldRenderField]
+
+
+class BaseReviewRequestTestIsEmptyFieldset(BaseReviewRequestFieldSet):
+    fieldset_id = 'is_empty'
+    field_classes = [TestIsEmptyField]
+
+    @classmethod
+    def is_empty(cls):
+        raise StandardError
+
+
+class BaseReviewRequestTestInitFieldset(BaseReviewRequestFieldSet):
+    fieldset_id = 'init_fieldset'
+    field_classes = [TestInitField]
+
+    def __init__(self, review_request_details):
+        raise StandardError
+
+
 class SandboxTests(TestCase):
     """Testing extension sandboxing"""
     def setUp(self):
@@ -249,6 +303,10 @@ class SandboxTests(TestCase):
 
         manager = ExtensionManager('')
         self.extension = SandboxExtension(extension_manager=manager)
+
+        self.factory = RequestFactory()
+        self.user = User.objects.create_user(username='reviewboard', email='',
+                                             password='password')
 
     def tearDown(self):
         super(SandboxTests, self).tearDown()
@@ -368,5 +426,86 @@ class SandboxTests(TestCase):
         t = Template(
             "{% load rb_extensions %}"
             "{% review_request_dropdown_action_hooks %}")
+
+        t.render(context).strip()
+
+    def test_is_empty_review_request_fieldset(self):
+        """Testing sandboxing ReivewRequestFieldset is_empty function in
+        for_review_request_fieldset"""
+        fieldset = [BaseReviewRequestTestIsEmptyFieldset]
+        ReviewRequestFieldSetsHook(extension=self.extension, fieldsets=fieldset)
+
+        review = ReviewRequest()
+
+        request = self.factory.get('test')
+        request.user = self.user
+        context = Context({
+            'review_request_details': review,
+            'request': request
+        })
+
+        t = Template(
+            "{% load reviewtags %}"
+            "{% for_review_request_fieldset review_request_details %}"
+            "{% end_for_review_request_fieldset %}")
+
+        t.render(context).strip()
+
+    def test_field_cls_review_request_field(self):
+        """Testing sandboxing ReviewRequestFieldset init function in
+        for_review_request_field"""
+        fieldset = [TestInitFieldset]
+        ReviewRequestFieldSetsHook(extension=self.extension, fieldsets=fieldset)
+
+        review = ReviewRequest()
+        context = Context({
+            'review_request_details': review,
+            'fieldset': TestInitFieldset
+        })
+
+        t = Template(
+            "{% load reviewtags %}"
+            "{% for_review_request_field review_request_details 'test_init' %}"
+            "{% end_for_review_request_field %}")
+
+        t.render(context).strip()
+
+    def test_fieldset_cls_review_request_fieldset(self):
+        """Testing sandboxing ReviewRequestFieldset init function in
+        for_review_request_fieldset"""
+        fieldset = [BaseReviewRequestTestInitFieldset]
+        ReviewRequestFieldSetsHook(extension=self.extension, fieldsets=fieldset)
+
+        review = ReviewRequest()
+        request = self.factory.get('test')
+        request.user = self.user
+        context = Context({
+            'review_request_details': review,
+            'request': request
+        })
+
+        t = Template(
+            "{% load reviewtags %}"
+            "{% for_review_request_fieldset review_request_details %}"
+            "{% end_for_review_request_fieldset %}")
+
+        t.render(context).strip()
+
+    def test_should_render_review_request_field(self):
+        """Testing sandboxing ReviewRequestFieldset should_render function in
+        for_review_request_field"""
+        fieldset = [TestShouldRenderFieldset]
+        ReviewRequestFieldSetsHook(extension=self.extension, fieldsets=fieldset)
+
+        review = ReviewRequest()
+        context = Context({
+            'review_request_details': review,
+            'fieldset': TestShouldRenderFieldset
+        })
+
+        t = Template(
+            "{% load reviewtags %}"
+            "{% for_review_request_field review_request_details 'test_should_render' %}"
+            "{% end_for_review_request_field %}")
 
         t.render(context).strip()
