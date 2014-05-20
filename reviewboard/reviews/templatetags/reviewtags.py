@@ -287,13 +287,22 @@ def for_review_request_field(context, nodelist, review_request_details,
         fieldset = get_review_request_fieldset(fieldset)
 
     for field_cls in fieldset.field_classes:
-        field = field_cls(review_request_details)
+        try:
+            field = field_cls(review_request_details)
+        except Exception as e:
+            logging.error('Error instantiating ReviewRequestFieldset %r: %s',
+                          field_cls, e, exc_info=1)
 
-        if field.should_render(field.value):
-            context.push()
-            context['field'] = field
-            s.append(nodelist.render(context))
-            context.pop()
+        try:
+            if field.should_render(field.value):
+                context.push()
+                context['field'] = field
+                s.append(nodelist.render(context))
+                context.pop()
+        except Exception as e:
+            logging.error('Error running should_render for '
+                          'ReviewRequestFieldset %r: %s', field_cls, e,
+                          exc_info=1)
 
     return ''.join(s)
 
@@ -313,24 +322,32 @@ def for_review_request_fieldset(context, nodelist, review_request_details):
     fieldset_classes = get_review_request_fieldsets(include_main=False)
 
     for fieldset_cls in fieldset_classes:
-        if not fieldset_cls.is_empty():
-            fieldset = fieldset_cls(review_request_details)
+        try:
+            if not fieldset_cls.is_empty():
+                try:
+                    fieldset = fieldset_cls(review_request_details)
+                except Exception as e:
+                    logging.error('Error instantiating ReviewRequestFieldset '
+                                  '%r: %s', fieldset_cls, e, exc_info=1)
 
-            context.push()
-            context.update({
-                'fieldset': fieldset,
-                'show_fieldset_required': (
-                    fieldset.show_required and
-                    review_request.status == ReviewRequest.PENDING_REVIEW and
-                    review_request.is_mutable_by(user)),
-                'forloop': {
-                    'first': is_first,
-                }
-            })
-            s.append(nodelist.render(context))
-            context.pop()
+                context.push()
+                context.update({
+                    'fieldset': fieldset,
+                    'show_fieldset_required': (
+                        fieldset.show_required and
+                        review_request.status == ReviewRequest.PENDING_REVIEW and
+                        review_request.is_mutable_by(user)),
+                    'forloop': {
+                        'first': is_first,
+                        }
+                })
+                s.append(nodelist.render(context))
+                context.pop()
 
-            is_first = False
+                is_first = False
+        except Exception as e:
+            logging.error('Error running is_empty for ReviewRequestFieldset '
+                          '%r: %s', fieldset_cls, e, exc_info=1)
 
     return ''.join(s)
 
