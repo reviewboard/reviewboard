@@ -1,6 +1,5 @@
 from __future__ import unicode_literals
 
-import imp
 import os
 
 from django.core.files.uploadedfile import SimpleUploadedFile
@@ -13,6 +12,7 @@ import nose
 
 import reviewboard.diffviewer.diffutils as diffutils
 import reviewboard.diffviewer.parser as diffparser
+from reviewboard.admin.import_utils import has_module
 from reviewboard.diffviewer.chunk_generator import DiffChunkGenerator
 from reviewboard.diffviewer.errors import UserVisibleError
 from reviewboard.diffviewer.forms import UploadDiffForm
@@ -1053,9 +1053,7 @@ class UploadDiffFormTests(SpyAgency, TestCase):
             b'+Lorem ipsum\n'
         )
 
-        try:
-            imp.find_module('mercurial')
-        except ImportError:
+        if not has_module('mercurial'):
             raise nose.SkipTest("Hg is not installed")
 
         diff_file = SimpleUploadedFile('diff', diff,

@@ -1,6 +1,5 @@
 from __future__ import unicode_literals
 
-import imp
 import logging
 import sys
 
@@ -11,6 +10,7 @@ from django.utils import six
 from django.utils.translation import ugettext_lazy as _
 from djblets.util.filesystem import is_exe_in_path
 
+from reviewboard.admin.import_utils import has_module
 from reviewboard.admin.validation import validate_bug_tracker
 from reviewboard.hostingsvcs.errors import (AuthorizationError,
                                             SSHKeyAssociationError,
@@ -990,9 +990,7 @@ class RepositoryForm(forms.ModelForm):
         errors = []
 
         for dep in scmtool_class.dependencies.get('modules', []):
-            try:
-                imp.find_module(dep)
-            except ImportError:
+            if not has_module(dep):
                 errors.append(_('The Python module "%s" is not installed.'
                                 'You may need to restart the server '
                                 'after installing it.') % dep)
