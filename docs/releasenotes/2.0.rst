@@ -227,7 +227,7 @@ Other Diff Viewer Features
 The "New Review Request" page has been completely re-done, with many new
 features and capabilities.
 
-.. image:: _static/images/2.0/2.0-new-review-request.png
+.. image:: _static/images/2.0/2.0-new-review-request_thumb.png
 
 
 Post-Commit Review Requests
