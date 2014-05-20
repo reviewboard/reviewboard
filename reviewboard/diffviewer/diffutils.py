@@ -6,13 +6,13 @@ import subprocess
 import tempfile
 from difflib import SequenceMatcher
 
+from django.core.exceptions import ObjectDoesNotExist
 from django.utils import six
 from django.utils.translation import ugettext as _
 from djblets.log import log_timed
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.util.contextmanagers import controlled_subprocess
 
-from reviewboard.accounts.models import Profile
 from reviewboard.scmtools.core import PRE_CREATION, HEAD
 
 
@@ -519,7 +519,7 @@ def get_enable_highlighting(user):
         try:
             profile = user.get_profile()
             user_syntax_highlighting = profile.syntax_highlighting
-        except Profile.DoesNotExist:
+        except ObjectDoesNotExist:
             pass
 
     siteconfig = SiteConfiguration.objects.get_current()
