@@ -178,6 +178,7 @@ class RepositoryForm(forms.ModelForm):
         self.hostkeyerror = None
         self.certerror = None
         self.userkeyerror = None
+        self.bug_tracker_host_error = None
         self.hosting_account_linked = False
         self.local_site = None
         self.repository_forms = {}
@@ -917,6 +918,33 @@ class RepositoryForm(forms.ModelForm):
     def clean_bug_tracker_base_url(self):
         return self.cleaned_data['bug_tracker_base_url'].rstrip('/')
 
+    def clean_bug_tracker_hosting_url(self):
+        """Validates that the bug tracker hosting url is valid.
+
+        Note that bug tracker hosting url is whatever the bug hosting form
+        (e.g BugzillaForm) specifies.
+
+        cleaned_data['bug_tracker_hosting_url'] refers to a specific field
+        in bug tracker description that only GitLab uses, and has quite a
+        misleading name. It will not contain the base URL of the bug tracker
+        in other cases.
+        """
+        bug_tracker_use_hosting = self.cleaned_data['bug_tracker_use_hosting']
+        if not bug_tracker_use_hosting:
+            bug_tracker_type = self.cleaned_data['bug_tracker_type']
+
+            # If the validator exception was thrown, the form will
+            # have at least one error present in the errors object. If errors
+            # were detected, set an appropriate variable that is_valid()
+            # method will check.
+            if bug_tracker_type in self.bug_tracker_forms:
+                field = self.bug_tracker_forms[bug_tracker_type]['default']
+                self.bug_tracker_host_error = (
+                    hasattr(field, 'errors') and
+                    len(field.errors) > 0)
+
+        return self.cleaned_data['bug_tracker_hosting_url'].strip()
+
     def clean_hosting_type(self):
         """Validates that the hosting type represents a valid hosting service.
 
@@ -1004,6 +1032,7 @@ class RepositoryForm(forms.ModelForm):
         return (not self.hostkeyerror and
                 not self.certerror and
                 not self.userkeyerror and
+                not self.bug_tracker_host_error and
                 not self.cleaned_data['reedit_repository'] and
                 (hosting_type not in self.repository_forms or
                  self.repository_forms[hosting_type][plan].is_valid()))

@@ -24,3 +24,16 @@ def validate_bug_tracker(input_url):
               "'%%s' to mark the location of the bug id. If the URI contains "
               "encoded values (e.g. '%%20'), prepend the encoded values with "
               "an additional '%%'.") % input_url])
+
+def validate_bug_tracker_base_hosting_url(input_url):
+    """Check that hosting service bug URLs don't contain %s."""
+    # Try formatting the URL using an empty tuple to verify that it
+    # doesn't contain any format characters.
+    try:
+        input_url % ()
+    except TypeError:
+        raise ValidationError([
+            _("The URL '%s' is not valid because it contains a format "
+              "character. For bug trackers other than 'Custom Bug Tracker', "
+              "use the base URL of the server. If you need a '%%' character, "
+              "prepend it with an additional '%%'.") % input_url])
