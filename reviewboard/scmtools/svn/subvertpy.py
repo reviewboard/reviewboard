@@ -162,7 +162,7 @@ class Client(base.Client):
 
         commit = Commit(author_name, six.text_type(revision), date,
                         message, six.text_type(base_revision))
-        commit.diff = out.read()
+        commit.diff = out.read().decode('utf-8')
         return commit
 
     def get_file(self, path, revision=HEAD):
