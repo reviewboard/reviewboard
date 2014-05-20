@@ -503,7 +503,7 @@ $.fn.commentSection = function(review_id, context_id, context_type) {
     function removeCommentFormIfEmpty(editorEl) {
         var value = editorEl.inlineEditor("value");
 
-        if (value.stripTags().strip() != "") {
+        if (value.strip() != "") {
             return;
         }
 
