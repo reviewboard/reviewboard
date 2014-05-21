@@ -1,4 +1,4 @@
-codemirror-4.2.min.js is built with the minifier at
+codemirror-3.20.min.js is built with the minifier at
 http://codemirror.net/doc/compress.html
 
 It contains the following modules:

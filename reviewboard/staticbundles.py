@@ -22,7 +22,7 @@ PIPELINE_JS = dict({
             'lib/js/ui.autocomplete.js',
             'lib/js/google-code-prettify/prettify.js',
             'lib/js/marked.js',
-            'lib/js/codemirror-4.2.min.js',
+            'lib/js/codemirror-3.20.min.js',
         ),
         'output_filename': 'lib/js/3rdparty.min.js',
     },

@@ -143,7 +143,6 @@ RB.MarkdownEditorView = Backbone.View.extend({
             this.trigger('change');
         }, this));
 
-        this._codeMirror.refresh();
         this.focus();
     },
 
