@@ -5,6 +5,7 @@ from django.utils.translation import ugettext_lazy as _
 
 from reviewboard.hostingsvcs.forms import HostingServiceForm
 from reviewboard.hostingsvcs.service import HostingService
+from reviewboard.admin.validation import validate_bug_tracker_base_hosting_url
 
 
 class TracForm(HostingServiceForm):
@@ -12,7 +13,8 @@ class TracForm(HostingServiceForm):
         label=_('Trac URL'),
         max_length=64,
         required=True,
-        widget=forms.TextInput(attrs={'size': '60'}))
+        widget=forms.TextInput(attrs={'size': '60'}),
+        validators=[validate_bug_tracker_base_hosting_url])
 
     def clean_trac_url(self):
         return self.cleaned_data['trac_url'].rstrip('/')

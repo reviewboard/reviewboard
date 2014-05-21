@@ -2,7 +2,6 @@
 
 from __future__ import unicode_literals
 
-import imp
 import os
 import subprocess
 import sys
@@ -18,40 +17,29 @@ def check_dependencies(settings):
     # Some of our checks require access to django.conf.settings, so
     # tell Django about our settings.
     #
-    from django.template.defaultfilters import striptags
     from djblets.util.filesystem import is_exe_in_path
 
-    from reviewboard.admin import checks
+    from reviewboard.admin.import_utils import has_module
 
     dependency_error = settings.dependency_error
 
-    # Python 2.4
+    # Python 2.6
     if sys.version_info[0] < 2 or \
-       (sys.version_info[0] == 2 and sys.version_info[1] < 4):
-        dependency_error('Python 2.4 or newer is required.')
+       (sys.version_info[0] == 2 and sys.version_info[1] < 6):
+        dependency_error('Python 2.6 or newer is required.')
 
     # django-evolution
-    try:
-        imp.find_module('django_evolution')
-    except ImportError:
+    if not has_module('django_evolution'):
         dependency_error("django_evolution is required.\n"
                          "http://code.google.com/p/django-evolution/")
 
     # PIL
-    try:
-        imp.find_module('PIL')
-    except ImportError:
-        try:
-            imp.find_module('Image')
-        except ImportError:
-            dependency_error('The Python Imaging Library (Pillow or PIL) '
-                             'is required.')
+    if not has_module('PIL') and not has_module('Image'):
+        dependency_error('The Python Imaging Library (Pillow or PIL) '
+                         'is required.')
 
     # ReCaptcha
-    try:
-        # For some reason, imp.find_module('recaptcha') doesn't always work.
-        import recaptcha
-    except ImportError:
+    if not has_module('recaptcha'):
         dependency_error('The recaptcha python module is required.')
 
     # The following checks are non-fatal warnings, since these dependencies are
@@ -61,35 +49,26 @@ def check_dependencies(settings):
         global warnings_found
         warnings_found += 1
 
-    try:
-        imp.find_module('subvertpy')
-    except ImportError:
-        try:
-            imp.find_module('pysvn')
-        except ImportError:
-            dependency_warning('Neither subvertpy nor pysvn found. '
-                               'SVN integration will not work.')
+    if not has_module('pysvn') and not has_module('subvertpy'):
+        dependency_warning('Neither subvertpy nor pysvn found. '
+                           'SVN integration will not work.')
 
-    try:
-        imp.find_module('P4')
-        subprocess.call(['p4', '-h'],
-                        stdin=subprocess.PIPE, stdout=subprocess.PIPE)
-    except ImportError:
+    if has_module('P4'):
+        try:
+            subprocess.call(['p4', '-h'],
+                            stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+        except OSError:
+            dependency_error('p4 command not found. Perforce integration '
+                             'will not work.')
+    else:
         dependency_warning('p4python (>=07.3) not found. Perforce integration '
                            'will not work.')
-    except OSError:
-        dependency_error('p4 command not found. Perforce integration will not '
-                         'work.')
 
-    try:
-        imp.find_module('mercurial')
-    except ImportError:
+    if not has_module('mercurial'):
         dependency_warning('hg not found. Mercurial integration will not '
                            'work.')
 
-    try:
-        imp.find_module('bzrlib')
-    except ImportError:
+    if not has_module('bzrlib'):
         dependency_warning('bzrlib not found. Bazaar integration will not '
                            'work.')
 

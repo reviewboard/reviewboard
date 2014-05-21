@@ -574,7 +574,7 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
 
         this._setupActions();
 
-        if (this._$bannersContainer.children().length > 0) {
+        if (this._$bannersContainer.children().filter(':visible').length > 0) {
             this.showBanner();
         }
 
@@ -672,13 +672,14 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
             reviewRequestEditorView: this
         });
 
-        if (!$existingBanner) {
+        if ($existingBanner) {
+            $existingBanner.show();
+        } else {
             this.banner.$el.appendTo(this._$bannersContainer);
         }
 
         this.banner.render();
     },
-
 
     /*
      * Handler for when the Publish Draft button is clicked.

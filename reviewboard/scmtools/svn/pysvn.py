@@ -209,7 +209,8 @@ class Client(base.Client):
             self.repopath,
             revision1=base_revision,
             revision2=head_revision,
-            diff_options=['-u'])
+            header_encoding='utf-8',
+            diff_options=['-u']).decode('utf-8')
 
         rmtree(tmpdir)
 
