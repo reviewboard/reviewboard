@@ -561,6 +561,9 @@
 
 #diff_index,
 .diff-index {
+  @icon-size: 20px;
+  @icon-offset: 2px;
+
   border: 1px #BBB solid;
   margin: 1em 0;
 
@@ -570,8 +573,6 @@
     width: 100%;
 
     tr {
-      min-height: 2.5em;
-
       &:first-child td {
         border-top: 0;
       }
@@ -580,9 +581,9 @@
         background-image: url("../images/spinner.gif");
         background-position: center center;
         background-repeat: no-repeat;
-        min-width: 20px;
-        width: 20px;
-        height: 24px;
+        min-width: @icon-size;
+        width: @icon-size;
+        height: (@icon-size + @icon-offset);
       }
     }
 
@@ -600,12 +601,11 @@
       }
 
       &.diff-file-icon {
-        padding: 2px 0 0 2px;
+        padding: @icon-offset 0 0 @icon-offset;
 
         .rb-icon {
-          margin: 2px;
-          width: 16px;
-          height: 20px;
+          width: @icon-size;
+          height: @icon-size;
         }
       }
 
@@ -643,7 +643,7 @@
 
         a {
           display: inline-block;
-          margin: 3px 2px;
+          margin: 3px 2px 0 2px;
           width: 8px;
           height: 8px;
           .border-radius(50%);
