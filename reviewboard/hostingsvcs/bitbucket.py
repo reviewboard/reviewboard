@@ -288,7 +288,7 @@ def get_review_id_to_commits_map(payload, server_url):
     commits = payload.get('commits', [])
 
     for commit in commits:
-        commit_hash = commit.get('node', None)
+        commit_hash = commit.get('raw_node', None)
         commit_message = commit.get('message', None)
         branch_name = commit.get('branch', None)
 
