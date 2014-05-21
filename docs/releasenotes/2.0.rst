@@ -748,12 +748,13 @@ This webhook can be used to close review requests referenced in pushed
 commits. To use this, you'll need to edit the settings for your repository on
 GitHub, add a WebHook entry, choose a JSON payload, and enter the hook URL.
 This URL is in the form of
-:samp:`http://<server>/repos/<repo_id>/hooks/close-submitted/`, where
-``repo_id`` is the numeric ID of your repository (available in the
-administration UI).
+:samp:`http://<server>/repos/<repo_id>/<service>/hooks/close-submitted/`,
+where ``repo_id`` is the numeric ID of your repository (available in the
+administration UI), and ``service`` is the ID of the hosting service
+(``beanstalk``, ``bitbucket``, ``github``, or ``googlecode``).
 
-Note that this requires your server be reachable over the Internet by
-GitHub's/BitBucket's servers.
+Note that this requires your server be reachable over the Internet by the
+hosting provider's servers.
 
 The hook will then look for all commits with a matching Commit ID field, as
 well as commit messages that contain::
