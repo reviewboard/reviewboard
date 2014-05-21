@@ -741,17 +741,20 @@ broken the installation.
 Experimental Web Hooks
 ----------------------
 
-We are testing new post-recieve webhooks for Beanstalk_, BitBucket_, GitHub_,
+We are testing new post-receive webhooks for Beanstalk_, BitBucket_, GitHub_,
 and `Google Code`_, which we'll expand upon in upcoming releases.
 
 This webhook can be used to close review requests referenced in pushed
-commits. To use this, you'll need to edit the settings for your repository on
-GitHub, add a WebHook entry, choose a JSON payload, and enter the hook URL.
+commits. To use this, you'll need to add a webhook to your repository
+at your hosting provider and provide a URL.
+
 This URL is in the form of
 :samp:`http://<server>/repos/<repo_id>/<service>/hooks/close-submitted/`,
 where ``repo_id`` is the numeric ID of your repository (available in the
 administration UI), and ``service`` is the ID of the hosting service
 (``beanstalk``, ``bitbucket``, ``github``, or ``googlecode``).
+
+(If you're using GitHub, make sure you choose to send a JSON payload.)
 
 Note that this requires your server be reachable over the Internet by the
 hosting provider's servers.
