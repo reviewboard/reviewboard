@@ -193,7 +193,7 @@ setup(name=PACKAGE_NAME,
       cmdclass=cmdclasses,
       install_requires=[
           django_version,
-          'django_evolution>=0.7,<=0.7.999',
+          'django_evolution>=0.7.1,<=0.7.999',
           'Djblets>=0.8,<=0.8.999',
           'django-haystack',
           'docutils',
