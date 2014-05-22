@@ -2604,10 +2604,10 @@ class MarkdownUtilsTests(TestCase):
         self.assertEqual(markdown_escape('_foo_'), r'\_foo\_')
         self.assertEqual(markdown_escape('__foo__'), r'\_\_foo\_\_')
         self.assertEqual(markdown_escape(' _foo_ '), r' \_foo\_ ')
-        self.assertEqual(markdown_escape('f_o_o'), r'f_o_o')
-        self.assertEqual(markdown_escape('f_o_o_'), r'f_o_o\_')
+        self.assertEqual(markdown_escape('f_o_o'), r'f\_o\_o')
+        self.assertEqual(markdown_escape('f_o_o_'), r'f\_o\_o\_')
         self.assertEqual(markdown_escape('foo_ _bar'), r'foo\_ \_bar')
-        self.assertEqual(markdown_escape('foo__bar'), r'foo__bar')
+        self.assertEqual(markdown_escape('foo__bar'), r'foo\_\_bar')
         self.assertEqual(markdown_escape('foo\n_bar'), 'foo\n\\_bar')
         self.assertEqual(markdown_escape('(_foo_)'), r'(\_foo\_)')
 
