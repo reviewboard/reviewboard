@@ -1,0 +1,116 @@
+@import (reference) "../defs.less";
+
+
+@img_base: '../../images';
+
+
+.box, .modalbox {
+  background-color: @box-bg;
+  background-image: url('@{img_base}/box_top_bg.png');
+  background-position: top left;
+  background-repeat: repeat-x;
+  border: 1px @box-border-color solid;
+  .border-radius(@box-border-radius);
+  .box-shadow(@box-shadow);
+}
+
+.box {
+  .important {
+    background-color: #fdf2a0;
+    background-image: url('@{img_base}/gold_box_top_bg.png');
+    border: 1px #b7a93e solid;
+    padding: 0 10px;
+
+    .box-inner {
+      background: url("@{img_base}/important.png") no-repeat top left;
+      padding: 0 0 0 50px;
+    }
+  }
+
+  .tip {
+    background-color: #fdf2a0;
+    background-image: url('@{img_base}/gold_box_top_bg.png');
+    border: 1px #b7a93e solid;
+    padding: 0 10px;
+
+    .box-inner {
+      background: transparent;
+    }
+
+    h1 {
+      padding-left: 0;
+    }
+  }
+
+  .yay {
+    background-color: #fdf2a0;
+    background-image: url('@{img_base}/gold_box_top_bg.png');
+    border: 1px #b7a93e solid;
+    padding: 0 10px;
+
+    .box-inner {
+      background: transparent;
+      position: relative;
+    }
+
+    h1 {
+      padding-left: 2.5em;
+    }
+
+    img {
+      float: left;
+      left: -5px;
+      margin: 0;
+      padding: 0;
+      position: absolute;
+      top: -20px;
+    }
+  }
+}
+
+.admin h1.title,
+.box-head,
+.modalbox-title {
+  background: @box-title-bg;
+  border-bottom: 1px #728eac solid;
+  margin: 0;
+  padding: 0.4em 0.6em;
+  .border-radius(@box-border-radius @box-border-radius 0 0);
+}
+
+.box-title,
+.modalbox-title {
+  font-size: 120%;
+}
+
+.box-title {
+  margin: 0;
+  padding: 0;
+}
+
+.box-main {
+  padding: 5px;
+}
+
+.box-container {
+  margin-bottom: 10px;
+  width: 100%;
+}
+
+.box-inner,
+.modalbox-inner {
+  background-image: url('@{img_base}/box_bottom_bg.png');
+  background-position: bottom left;
+  background-repeat: repeat-x;
+  .border-radius(@box-border-radius);
+
+  padding-bottom: 1px\9; /* IE wants this. The \9 targets IE 7,8,9. */
+}
+
+.box-inner form {
+  margin: 0;
+}
+
+.modalbox, .modalbox-bg {
+  z-index: @z-index-dialog;
+}

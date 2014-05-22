@@ -1,0 +1,20 @@
+@import (reference) "../defs.less";
+
+
+.banner {
+  background: @draft-bg-color;
+  border: 1px @draft-border-color solid;
+  margin-bottom: 10px;
+  padding: 8px 10px;
+  z-index: @z-index-banner;
+
+  &>h1 {
+    display: inline;
+    margin-right: 0.2em;
+    padding: 0;
+  }
+
+  &>input {
+    margin-left: 10px;
+  }
+}

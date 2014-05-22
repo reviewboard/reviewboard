@@ -264,6 +264,10 @@ PIPELINE_CSS = dict({
         'source_filenames': (
             'lib/css/codemirror.css',
             'lib/css/jquery-ui-1.8.24.min.css',
+            'rb/css/layout/helpers.less',
+            'rb/css/ui/banners.less',
+            'rb/css/ui/boxes.less',
+            'rb/css/ui/buttons.less',
             'rb/css/common.less',
             'rb/css/dashboard.less',
             'rb/css/icons.less',

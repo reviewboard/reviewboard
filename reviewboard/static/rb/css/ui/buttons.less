@@ -1,0 +1,91 @@
+@import (reference) "../defs.less";
+
+
+.btn,
+input[type="button"],
+input[type="submit"] {
+  // Button Base
+  cursor: pointer;
+  display: inline-block;
+
+  // Don't use .gradientbar() here since it does a three-color gradient
+  #gradient > .vertical-three-colors(#ffffff, #ffffff, 25%, darken(#ffffff, 10%));
+
+  padding: 3px 8px;
+  text-shadow: 0 1px 1px rgba(255,255,255,.75);
+  color: #333;
+  font-size: 13px;
+  line-height: normal;
+  border: 1px solid #ccc;
+  border-bottom-color: #bbb;
+  .border-radius(4px);
+  .box-shadow(inset 0 1px 0 rgba(255,255,255,.2), 0 1px 2px rgba(0,0,0,.05));
+
+  // Transitions
+  .transition(.1s linear all);
+
+  &[disabled] {
+    // disabled pseudo can't be included with .disabled
+    // def because IE8 and below will drop it ;_;
+    cursor: default;
+    background-image: none;
+    .ie-reset-gradients();
+    .opacity(65);
+    .box-shadow(none);
+  }
+
+  // Active and Disabled states
+  &:active {
+    .box-shadow(inset 0 2px 4px rgba(0,0,0,.25), 0 1px 2px rgba(0,0,0,.05));
+  }
+
+  &:hover {
+    background-position: 0 -15px;
+    color: #333;
+    text-decoration: none;
+  }
+
+  &.danger {
+    color: white !important;
+    .gradientBar(#ee5f5b, #c43c35);
+  }
+
+  &.disabled {
+    cursor: default;
+    background-image: none;
+    .ie-reset-gradients();
+    .opacity(65);
+    .box-shadow(none);
+  }
+
+  // Primary Button Type
+  &.primary, &.default {
+    color: white;
+    text-shadow: none;
+
+    .gradientBar(@btn-primary-color1, @btn-primary-color2);
+  }
+
+  // Button Sizes
+  &.large {
+    font-size: 130%;
+    line-height: normal;
+    padding: 9px 14px 9px;
+    .border-radius(6px);
+  }
+
+  &.small {
+    padding: 7px 9px 7px;
+    font-size: 11px;
+  }
+}
+
+
+// Help Firefox not be a jerk about adding extra padding to buttons
+button.btn,
+input[type=submit].btn {
+  &::-moz-focus-inner {
+    padding: 0;
+    border: 0;
+  }
+}
