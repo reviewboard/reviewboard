@@ -53,6 +53,15 @@ def is_release():
     return VERSION[6]
 
 
+def get_manual_url():
+    if VERSION[4] == 'final' and is_release():
+        manual_ver = '%s.%s' % (VERSION[0], VERSION[1])
+    else:
+        manual_ver = 'dev'
+
+    return 'http://www.reviewboard.org/docs/manual/%s/' % manual_ver
+
+
 def initialize():
     """Begins initialization of Review Board.
 

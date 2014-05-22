@@ -20,10 +20,8 @@ from django.db.utils import OperationalError
 from django.utils import six
 from django.utils.six.moves import input
 
-from reviewboard import get_version_string
+from reviewboard import get_manual_url, get_version_string
 
-
-DOCS_BASE = "http://www.reviewboard.org/docs/manual/dev/"
 
 SITELIST_FILE_UNIX = "/etc/reviewboard/sites"
 
@@ -1468,7 +1466,8 @@ class InstallCommand(Command):
         ])
 
         ui.text(page, "For more information, visit:")
-        ui.urllink(page, "%sadmin/installation/creating-sites/" % DOCS_BASE)
+        ui.urllink(page,
+                   "%sadmin/installation/creating-sites/" % get_manual_url())
 
     def save_settings(self):
         """
