@@ -8,7 +8,6 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.contrib.sites.models import Site
 from django.core.exceptions import MultipleObjectsReturned, ObjectDoesNotExist
-from django.core.urlresolvers import reverse
 from django.db.models import Q
 from django.http import (HttpResponse, HttpResponseRedirect, Http404,
                          HttpResponseNotModified, HttpResponseServerError)
@@ -1209,17 +1208,23 @@ class ReviewsDiffFragmentView(DiffFragmentView):
                 modified_revision = diffset.revision
                 modified_filediff_id = filediff.pk
 
-            download_orig_url = reverse(orig_url_name, kwargs={
-                'review_request_id': self.review_request.display_id,
-                'revision': diffset.revision,
-                'filediff_id': filediff.pk,
-            })
+            download_orig_url = local_site_reverse(
+                orig_url_name,
+                request=self.request,
+                kwargs={
+                    'review_request_id': self.review_request.display_id,
+                    'revision': diffset.revision,
+                    'filediff_id': filediff.pk,
+                })
 
-            download_modified_url = reverse('download-modified-file', kwargs={
-                'review_request_id': self.review_request.display_id,
-                'revision': modified_revision,
-                'filediff_id': modified_filediff_id,
-            })
+            download_modified_url = local_site_reverse(
+                'download-modified-file',
+                request=self.request,
+                kwargs={
+                    'review_request_id': self.review_request.display_id,
+                    'revision': modified_revision,
+                    'filediff_id': modified_filediff_id,
+                })
 
         return {
             'download_orig_url': download_orig_url,
@@ -1506,7 +1511,9 @@ class ReviewRequestSearchView(SearchView):
 
     def create_response(self):
         if not self.query:
-            return HttpResponseRedirect(reverse("all-review-requests"))
+            return HttpResponseRedirect(
+                local_site_reverse('all-review-requests',
+                                   request=self.request))
 
         if self.query.isdigit() and self.results:
             return HttpResponseRedirect(
