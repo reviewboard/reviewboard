@@ -1,0 +1,44 @@
+@import (reference) "../defs.less";
+
+
+form {
+  td {
+    padding: 8px 8px 4px 4px;
+
+    &.label {
+      text-align: right;
+      font-weight: bold;
+    }
+  }
+
+  th {
+    text-align: right;
+    vertical-align: top;
+  }
+}
+
+
+label.required:after {
+  content: ' *';
+  font-weight: bold;
+  font-size: 10px;
+  color: @required-flag-color;
+}
+
+td.help {
+  font-size: 10px;
+  color: #333;
+  padding-top: 0;
+}
+
+.errorlist {
+  color: #DD0000;
+  display: inline;
+  font-weight: bold;
+  margin: 0 0 0 15px;
+  padding: 4px 8px;
+
+  li {
+    display: inline;
+  }
+}

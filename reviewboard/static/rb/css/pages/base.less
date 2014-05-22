@@ -1,0 +1,314 @@
+@import (reference) "../defs.less";
+
+
+@img_base: '../../images';
+
+
+body {
+  background-color: white;
+  color: black;
+  font-family: Verdana, Arial, Helvetica, Sans-Serif;
+  font-size: 8pt;
+  margin: 0;
+  padding: 0;
+}
+
+h1 {
+  font-size: 10pt;
+}
+
+h3 {
+  margin-top: 2em;
+}
+
+img {
+  border: 0;
+}
+
+pre, textarea, .CodeMirror {
+  font-size: @textarea-font-size;
+  font-family: @textarea-font-family;
+  line-height: @textarea-line-height;
+}
+
+textarea {
+  resize: none;
+}
+
+
+/*
+ * The account and support menu drop-down region of the header bar.
+ */
+#accountnav {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  z-index: @z-index-base;
+  float: right;
+
+  li {
+    display: block;
+    float: right;
+    margin: -@headerbar-padding 0;
+    padding: 0;
+    position: relative;
+    white-space: nowrap;
+
+    &:hover {
+      background: @headerbar-bg-active;
+
+      ul {
+        display: block;
+        z-index: @z-index-menu;
+      }
+    }
+
+    a {
+      color: white;
+      display: block;
+      font-size: 120%;
+      margin: 0;
+      padding: 0 1em;
+      text-decoration: none;
+      height: 32px;
+      vertical-align: middle;
+      line-height: 32px;
+
+      &.user-nav-item {
+        padding-left: 0.2em;
+      }
+    }
+
+    img {
+      display: inline;
+      vertical-align: top;
+      margin: 0;
+      padding: 0;
+    }
+
+    ul {
+      background-color: @headerbar-bg;
+      display: none;
+      margin: 0;
+      min-width: @headerbar-menu-min-width;
+      padding: 0;
+      position: absolute;
+      right: 0;
+      .border-radius(0 0 @box-border-radius @box-border-radius);
+
+      li {
+        float: none;
+        margin: 0;
+        padding: 0;
+        text-align: right;
+
+        &:last-child {
+          .border-radius(0 0 @box-border-radius @box-border-radius);
+        }
+
+        a {
+          margin: 0;
+        }
+      }
+    }
+  }
+}
+
+
+/*
+ * The "Loading..." indicator shown during AJAX operations.
+ */
+#activity-indicator {
+  position: fixed;
+  top: 0;
+  left: 50%;
+  text-align: center;
+  font-weight: bold;
+  background-color: #fce94f;
+  background-image: url("@{img_base}/spinner.gif");
+  background-position: 0.4em 0.4em;
+  background-repeat: no-repeat;
+  border: 1px #c4a000 solid;
+  border-top: 0;
+  margin-left: -3em;
+  padding: 0.5em 0.6em 0.5em 2.2em;
+  width: 6em;
+  z-index: @z-index-spinner;
+
+  &.error {
+    background-color: #ffcd9c;
+    width: 28em;
+    margin-left: -14em;
+    background-image: none;
+    padding-left: 0.6em;
+
+    a {
+      margin-left: 1em;
+      color: #0000CC;
+      text-decoration: none;
+    }
+  }
+}
+
+
+/*
+ * The error information shown when an AJAX operation fails.
+ */
+#error {
+  div {
+    background: #ffcd9c;
+    border: 1px #9a4306 solid;
+    margin-bottom: 10px;
+    padding: 8px 10px;
+  }
+
+  h1 {
+    display: inline;
+    margin: 0;
+    padding: 0;
+  }
+
+  input[type='submit'] {
+    margin-left: 10px;
+  }
+}
+
+
+/*
+ * The header bar at the top of the page. This contains the branding,
+ * search field, and the accountnav element.
+ *
+ * This has the following children:
+ *
+ *    * #rbinfo
+ *    * #accountnav
+ *    * #search
+ */
+#headerbar {
+  background: @headerbar-bg;
+  border-bottom: 1px #DDDDDD solid;
+  color: white;
+  margin: 0;
+  padding: @headerbar-padding;
+
+  br {
+    clear: both;
+    height: 0;
+  }
+
+  #logo {
+    position: absolute;
+    top: -2px;
+    left: @headerbar-logo-padding-horiz;
+  }
+
+  #title {
+    color: white;
+    display: inline;
+    font-weight: normal;
+    font-size: 120%;
+    vertical-align: middle;
+    margin: 0;
+    padding: 0;
+
+    a {
+      color: white;
+      font-size: 120%;
+      text-decoration: none;
+    }
+
+    .version {
+      color: #E0E0E0;
+      font-weight: normal;
+      font-size: 90%;
+    }
+  }
+
+  #search {
+   float: right;
+   margin: 0 1em;
+
+   input {
+     border: 1px black solid;
+     margin: 0;
+     padding: 2px;
+     .border-radius(6px);
+     background-color: #EEEEEE;
+     font-size: 1.2em;
+   }
+  }
+}
+
+
+/*
+ * The branding section of the headerbar, containing the logo and versioning
+ * information.
+ */
+#rbinfo {
+  float: left;
+  position: absolute;
+  left: 0;
+  padding-top: 0.2em;
+  padding-left: @headerbar-padding-left;
+
+  img {
+    display: inline;
+    vertical-align: middle;
+  }
+}
+
+
+/*
+ * The container for the navigation bar.
+ */
+#navbar-container {
+  margin: 0 0 1em 0;
+}
+
+
+/*
+ * The navigation bar.
+ *
+ * This is the bar showing such items as "My Dashboard"< "New Review Request",
+ * etc.
+ */
+#navbar {
+  background: @navbar-bg;
+  border-bottom: 1px @navbar-border-color solid;
+  list-style: none;
+  margin: 0;
+  min-height: 1.5em;
+  padding: @headerbar-padding;
+  padding-left: @headerbar-padding-left;
+
+  li {
+    display: inline;
+    height: 30px;
+    margin: 0 1em 0 0;
+  }
+
+  a {
+    color: @navbar-text-color;
+    font-size: 110%;
+    text-decoration: none;
+  }
+
+  .newreviewrequest {
+    text-align: right;
+  }
+}
+
+/*
+ * The main container for the page's content.
+ */
+#page-container {
+  padding: 0 @page-container-padding @page-container-padding
+           @page-container-padding;
+}
+
+/*
+ * The box containing information on an AJAX error.
+ */
+.server-error-box .response-data {
+  margin-top: 2em;
+}
