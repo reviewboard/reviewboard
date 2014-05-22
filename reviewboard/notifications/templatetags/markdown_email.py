@@ -40,6 +40,8 @@ class InlineStyleProcessor(Treeprocessor):
             style['margin'] = '0 0 0 2em'
         elif tag == 'code':
             style['color'] = '#4444cc'
+        elif tag == 'p':
+            style['white-space'] = 'inherit'
         elif tag == 'blockquote':
             style.update({
                 'border-left': '1px solid #bbb',
