@@ -1,7 +1,8 @@
-@import "defs.less";
+@import (reference) "../defs.less";
 
-@img_base: '../../admin/img';
-@sort_icons: url('@{img_base}/sorting-icons.gif');
+@img_base: '../../images';
+@admin_img_base: '../../../admin/img';
+@sort_icons: url('@{admin_img_base}/sorting-icons.gif');
 @colMS_margin_right: 25em;
 @colMS_right_width: 24em;
 
@@ -191,7 +192,7 @@ th {
 
 thead th,
 tfoot td {
-  background: #e1e1e1 url('@{img_base}/nav-bg.gif') top left repeat-x;
+  background: #e1e1e1 url('@{admin_img_base}/nav-bg.gif') top left repeat-x;
   border-bottom: 1px solid #ddd;
   border-left: 1px solid #ddd;
   color: #666;
@@ -248,7 +249,7 @@ tr.alt {
 }
 
 thead th {
-  background: transparent url("../images/header_bg.png") repeat-x;
+  background: transparent url("@{img_base}/header_bg.png") repeat-x;
   border-bottom: 1px solid #999999;
   border-left: 0 !important;
   border-right: 1px solid #CCCCCC;
@@ -256,15 +257,15 @@ thead th {
   padding: 5px;
 
   &.ascending a {
-    background: transparent url("../images/sort_asc_primary.png") no-repeat right 0.4em;
+    background: transparent url("@{img_base}/sort_asc_primary.png") no-repeat right 0.4em;
   }
 
   &.descending a {
-    background: transparent url("../images/sort_desc_primary.png") no-repeat right 0.4em;
+    background: transparent url("@{img_base}/sort_desc_primary.png") no-repeat right 0.4em;
   }
 
   &.sortable:hover {
-    background: white url('@{img_base}/nav-bg-reverse.gif') 0 -5px repeat-x;
+    background: white url('@{admin_img_base}/nav-bg-reverse.gif') 0 -5px repeat-x;
   }
 
   &.sorted {
@@ -348,7 +349,7 @@ table.orderable tbody tr td {
   }
 
   &:first-child {
-    background-image: url('@{img_base}/nav-bg-grabber.gif');
+    background-image: url('@{admin_img_base}/nav-bg-grabber.gif');
     background-repeat: repeat-y;
     padding-left: 14px;
   }
@@ -384,7 +385,7 @@ ul.messagelist {
   padding: 0;
 
   li {
-    background: @admin-msg-banner-bg url('@{img_base}/icon_success.gif') 5px .3em no-repeat;
+    background: @admin-msg-banner-bg url('@{admin_img_base}/icon_success.gif') 5px .3em no-repeat;
     border: 1px solid @admin-msg-banner-border-color;
     color: #666;
     display: block;
@@ -393,17 +394,17 @@ ul.messagelist {
     padding: 4px 5px 4px 25px;
 
     &.error{
-      background-image: url('@{img_base}/icon_error.gif');
+      background-image: url('@{admin_img_base}/icon_error.gif');
     }
 
     &.warning{
-      background-image: url('@{img_base}/icon_alert.gif');
+      background-image: url('@{admin_img_base}/icon_alert.gif');
     }
   }
 }
 
 .errornote {
-  background: #ffc url('@{img_base}/icon_error.gif') 5px .3em no-repeat;
+  background: #ffc url('@{admin_img_base}/icon_error.gif') 5px .3em no-repeat;
   border: 1px solid red;
   color: red;
   display: block;
@@ -417,7 +418,7 @@ ul.errorlist {
   padding: 0 !important;
 
   li {
-    background: red url('@{img_base}/icon_alert.gif') 5px .3em no-repeat;
+    background: red url('@{admin_img_base}/icon_alert.gif') 5px .3em no-repeat;
     border: 1px solid red;
     color: white;
     display: block;
@@ -456,7 +457,7 @@ div.system-message {
   padding: 6px 8px;
 
   p.system-message-title {
-    background: #ffc url('@{img_base}/icon_error.gif') 5px .3em no-repeat;
+    background: #ffc url('@{admin_img_base}/icon_error.gif') 5px .3em no-repeat;
     color: red;
     margin: 0;
     padding: 4px 5px 4px 25px;
@@ -474,7 +475,7 @@ div.system-message {
  ****************************************************************************/
 
 div.breadcrumbs {
-  background: white url('@{img_base}/nav-bg-reverse.gif') 0 -10px repeat-x;
+  background: white url('@{admin_img_base}/nav-bg-reverse.gif') 0 -10px repeat-x;
   border-bottom: 1px solid #ccc;
   border-top: 1px solid white;
   color: #999;
@@ -529,7 +530,7 @@ h1.title {
     margin-top: 0;
 
     h2 {
-      background: #EEE url('@{img_base}/nav-bg.gif') bottom left repeat-x;
+      background: #EEE url('@{admin_img_base}/nav-bg.gif') bottom left repeat-x;
       color: #666;
     }
   }
@@ -776,7 +777,7 @@ td, th {
 .module caption,
 .inline-group h2,
 #content-related .module h2 {
-  background: url("../images/title_box_top_bg.png") repeat-x scroll left top #A2BEDC;
+  background: url("@{img_base}/title_box_top_bg.png") repeat-x scroll left top #A2BEDC;
   border-bottom: 1px solid @box-border-color;
   color: black;
   font-size: 11px;

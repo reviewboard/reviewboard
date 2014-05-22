@@ -1,4 +1,7 @@
-@import "defs.less";
+@import (reference) "../defs.less";
+
+
+@img_base: '../../images';
 
 
 /*
@@ -587,7 +590,7 @@
       }
 
       &.loading .diff-file-icon {
-        background-image: url("../images/spinner.gif");
+        background-image: url("@{img_base}/spinner.gif");
         background-position: center center;
         background-repeat: no-repeat;
         min-width: @icon-size;
@@ -683,7 +686,7 @@
 
   &.loading {
     #diff_index {
-      background: white url("../images/spinner.gif") no-repeat @box-padding @box-padding;
+      background: white url("@{img_base}/spinner.gif") no-repeat @box-padding @box-padding;
       height: 16px;
       padding: @box-padding;
     }

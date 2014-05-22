@@ -1,4 +1,8 @@
-@import "defs.less";
+@import (reference) "../defs.less";
+
+
+@img_base: '../../images';
+@djblets_img_base: '../../../djblets/images';
 
 
 /****************************************************************************
@@ -7,7 +11,7 @@
 
 .rich-text-loading() {
   color: transparent;
-  background: white url("../images/spinner.gif") no-repeat @box-padding @box-padding;
+  background: white url("@{img_base}/spinner.gif") no-repeat @box-padding @box-padding;
 }
 
 
@@ -199,7 +203,7 @@
   @details-width: 30em;
 
   background-color: #fefadf;
-  background-image: url('../images/review_request_box_top_bg.png');
+  background-image: url('@{img_base}/review_request_box_top_bg.png');
 
   label {
     color: @review-request-label-color;
@@ -218,7 +222,7 @@
   }
 
   .box-inner {
-    background-image: url('../images/review_request_box_bottom_bg.png');
+    background-image: url('@{img_base}/review_request_box_bottom_bg.png');
   }
 
   .content {
@@ -523,7 +527,7 @@
 .review {
   .box {
     background-color: #e9edf5;
-    background-image: url('../images/review_box_top_bg.png');
+    background-image: url('@{img_base}/review_box_top_bg.png');
   }
 
   .banner {
@@ -557,7 +561,7 @@
   }
 
   .box-inner {
-    background-image: url('../images/review_box_bottom_bg.png') !important;
+    background-image: url('@{img_base}/review_box_bottom_bg.png') !important;
     min-height: 32px;
   }
 
@@ -743,7 +747,7 @@
   width: 100%;
 
   tbody {
-    background: #F3F3F3 url("../images/spinner.gif") no-repeat center center;
+    background: #F3F3F3 url("@{img_base}/spinner.gif") no-repeat center center;
 
     td {
       padding: 1em;
@@ -770,7 +774,7 @@
 .changedesc {
   &.box {
     background-color: #fefadf;
-    background-image: url('../images/review_request_box_top_bg.png');
+    background-image: url('@{img_base}/review_request_box_top_bg.png');
   }
 
   .body {
@@ -1103,7 +1107,7 @@
   }
 
   .box-inner {
-    background-image: url('../images/review_request_box_bottom_bg.png') !important;
+    background-image: url('@{img_base}/review_request_box_bottom_bg.png') !important;
     min-height: 32px;
   }
 
@@ -1184,7 +1188,7 @@
   }
 
   .spinner {
-    background: url("../images/spinner.gif") no-repeat center center;
+    background: url("@{img_base}/spinner.gif") no-repeat center center;
     height: 16px;
     margin: 3em auto;
   }
@@ -1450,7 +1454,7 @@
     .border-radius(@box-border-radius @box-border-radius 0 0);
 
     &.loading {
-      background: white url("../images/spinner.gif") no-repeat center center;
+      background: white url("@{img_base}/spinner.gif") no-repeat center center;
     }
 
     img {
@@ -1604,7 +1608,7 @@
   }
 
   .ui-icon-gripsmall-diagonal-se {
-    background: url('../images/resize-grip.png') no-repeat top left;
+    background: url('@{img_base}/resize-grip.png') no-repeat top left;
   }
 }
 
@@ -1823,7 +1827,7 @@
 
   thead {
     th {
-      background: url("../../djblets/images/datagrid/header_bg.png") repeat-x bottom left;
+      background: url("@{djblets_img_base}/datagrid/header_bg.png") repeat-x bottom left;
       border-color: #999;
       border-style: solid;
       border-width: 1px 0;
@@ -1834,7 +1838,7 @@
       white-space: nowrap;
 
       &:hover {
-        background: url("../../djblets/images/datagrid/header_bg_primary.png") repeat-x bottom left;
+        background: url("@{djblets_img_base}/datagrid/header_bg_primary.png") repeat-x bottom left;
       }
     }
 

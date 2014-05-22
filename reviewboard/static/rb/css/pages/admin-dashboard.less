@@ -1,4 +1,6 @@
-@import "defs.less";
+@import (reference) "../defs.less";
+
+@img_base: '../../images';
 
 @widget-border-color: @box-border-color;
 @admin-light-border-color: #f5f5f5;
@@ -183,7 +185,7 @@
   .widget-heading {
     background: @widget-heading-color;
     border-bottom: 1px solid @widget-heading-border-color;
-    background-image: url("../images/title_box_top_bg.png");
+    background-image: url("@{img_base}/title_box_top_bg.png");
     color: black;
     font-size: 11px;
     font-weight: 400;
@@ -274,7 +276,7 @@
   }
 
   .widget-actions {
-    background: url("../images/admin/header_bg.png") repeat-x scroll left bottom transparent;
+    background: url("@{img_base}/admin/header_bg.png") repeat-x scroll left bottom transparent;
     border-bottom: 1px solid @widget-action-dark-border-color;
     border-right: 1px solid @widget-action-border-color;
     border-top: 1px solid @widget-action-dark-border-color;
@@ -296,7 +298,7 @@
       text-decoration: none;
 
       &:hover {
-        background: url("../images/admin/header_bg_primary.png") repeat-x scroll left bottom transparent;
+        background: url("@{img_base}/admin/header_bg_primary.png") repeat-x scroll left bottom transparent;
         text-decoration: underline;
       }
 

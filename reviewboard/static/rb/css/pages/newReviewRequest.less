@@ -1,4 +1,9 @@
-@import "defs.less";
+@import (reference) "../defs.less";
+
+
+@img_base: '../../images';
+@djblets_img_base: '../../../djblets/images';
+
 
 #new-review-request {
   @default-height: 55em;
@@ -111,7 +116,7 @@
 
     #processing-diff,
     #uploading-diffs {
-      background: url(../images/spinner.gif) center center no-repeat;
+      background: url('@{img_base}/spinner.gif') center center no-repeat;
     }
 
     .input {
@@ -184,7 +189,7 @@
       right: 1em;
       top: 0;
       height: 100%;
-      background: url(../images/spinner.gif) center center no-repeat;
+      background: url('@{img_base}/spinner.gif') center center no-repeat;
     }
 
     &:nth-child(even) {

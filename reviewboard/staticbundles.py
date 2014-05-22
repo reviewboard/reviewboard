@@ -269,27 +269,27 @@ PIPELINE_CSS = dict({
             'rb/css/ui/boxes.less',
             'rb/css/ui/buttons.less',
             'rb/css/common.less',
-            'rb/css/dashboard.less',
             'rb/css/icons.less',
-            'rb/css/search.less',
+            'rb/css/pages/dashboard.less',
+            'rb/css/pages/search.less',
         ),
         'output_filename': 'rb/css/common.min.css',
         'absolute_paths': False,
     },
     'js-tests': {
         'source_filenames': (
-            'rb/css/js-tests.less',
+            'rb/css/pages/js-tests.less',
         ),
         'output_filename': 'rb/css/js-tests.min.css',
         'absolute_paths': False,
     },
     'reviews': {
         'source_filenames': (
-            'rb/css/diffviewer.less',
+            'rb/css/pages/diffviewer.less',
             'rb/css/dndUploader.less',
-            'rb/css/image-review-ui.less',
-            'rb/css/text-review-ui.less',
-            'rb/css/reviews.less',
+            'rb/css/pages/image-review-ui.less',
+            'rb/css/pages/text-review-ui.less',
+            'rb/css/pages/reviews.less',
             'rb/css/syntax.css',
         ),
         'output_filename': 'rb/css/reviews.min.css',
@@ -297,15 +297,15 @@ PIPELINE_CSS = dict({
     },
     'newReviewRequest': {
         'source_filenames': (
-            'rb/css/newReviewRequest.less',
+            'rb/css/pages/newReviewRequest.less',
         ),
         'output_filename': 'rb/css/newReviewRequest.min.css',
         'absolute_paths': False,
     },
     'admin': {
         'source_filenames': (
-            'rb/css/admin.less',
-            'rb/css/admin-dashboard.less',
+            'rb/css/pages/admin.less',
+            'rb/css/pages/admin-dashboard.less',
         ),
         'output_filename': 'rb/css/admin.min.css',
         'absolute_paths': False,
