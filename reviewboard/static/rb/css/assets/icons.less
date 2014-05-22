@@ -1,4 +1,7 @@
-@import "retina.less";
+@import (reference) "../mixins/retina.less";
+
+
+@img_base: '../../images';
 
 
 .rb-icon {
@@ -8,8 +11,8 @@
   text-indent: -99999px;
   vertical-align: middle;
 
-  background-image: url("../images/icons.png");
-  .at2x('../images/icons.png', 155px, 109px);
+  background-image: url("@{img_base}/icons.png");
+  .at2x('@{img_base}/icons.png', 155px, 109px);
 
   // For IE7
   zoom: 1;

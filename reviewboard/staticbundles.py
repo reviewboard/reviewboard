@@ -264,12 +264,12 @@ PIPELINE_CSS = dict({
         'source_filenames': (
             'lib/css/codemirror.css',
             'lib/css/jquery-ui-1.8.24.min.css',
+            'rb/css/assets/icons.less',
             'rb/css/layout/helpers.less',
             'rb/css/ui/banners.less',
             'rb/css/ui/boxes.less',
             'rb/css/ui/buttons.less',
             'rb/css/common.less',
-            'rb/css/icons.less',
             'rb/css/pages/dashboard.less',
             'rb/css/pages/search.less',
         ),
@@ -286,10 +286,10 @@ PIPELINE_CSS = dict({
     'reviews': {
         'source_filenames': (
             'rb/css/pages/diffviewer.less',
-            'rb/css/dndUploader.less',
             'rb/css/pages/image-review-ui.less',
             'rb/css/pages/text-review-ui.less',
             'rb/css/pages/reviews.less',
+            'rb/css/ui/dnd-uploader.less',
             'rb/css/syntax.css',
         ),
         'output_filename': 'rb/css/reviews.min.css',
