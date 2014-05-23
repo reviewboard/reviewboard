@@ -292,6 +292,14 @@ class HostingService(object):
         """
         raise NotImplementedError
 
+    def get_remote_repositories(self, owner, plan=None):
+        """Get a list of remote repositories for the owner and plan.
+
+        This should be implemented by subclasses, and is expected to return a
+        list of HostingServiceRepository objects.
+        """
+        raise NotImplementedError
+
     @classmethod
     def get_repository_fields(cls, username, hosting_url, plan, tool_name,
                               field_vars):
