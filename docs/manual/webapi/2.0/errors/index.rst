@@ -39,3 +39,4 @@ Errors
    224-diff-parse-error
    225-publish-error
    226-user-query-error
+   227-commit-id-already-exists

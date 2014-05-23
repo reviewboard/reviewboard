@@ -142,3 +142,8 @@ USER_QUERY_ERROR = WebAPIError(
     226,
     "An error occurred querying the user list.",
     http_status=500)  # 500 Internal Server Error
+
+COMMIT_ID_ALREADY_EXISTS = WebAPIError(
+    227,
+    "Review request with this commit ID already exists in the repository.",
+    http_status=409)  # 409 Conflict

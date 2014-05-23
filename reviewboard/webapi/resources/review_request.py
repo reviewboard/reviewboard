@@ -5,7 +5,9 @@ import logging
 import dateutil.parser
 from django.contrib import auth
 from django.contrib.auth.models import User
-from django.core.exceptions import PermissionDenied, ObjectDoesNotExist
+from django.core.exceptions import (PermissionDenied,
+                                    ObjectDoesNotExist,
+                                    ValidationError)
 from django.db.models import Q
 from django.utils import six
 from djblets.util.decorators import augment_method_from
@@ -32,6 +34,7 @@ from reviewboard.webapi.base import WebAPIResource
 from reviewboard.webapi.decorators import webapi_check_local_site
 from reviewboard.webapi.encoder import status_to_string, string_to_status
 from reviewboard.webapi.errors import (CHANGE_NUMBER_IN_USE,
+                                       COMMIT_ID_ALREADY_EXISTS,
                                        DIFF_EMPTY,
                                        DIFF_TOO_BIG,
                                        DIFF_PARSE_ERROR,
@@ -599,6 +602,8 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
                           "repository: %s"
                           % e, exc_info=1, request=request)
             return REPO_INFO_ERROR
+        except ValidationError:
+            return COMMIT_ID_ALREADY_EXISTS
 
     @webapi_check_local_site
     @webapi_login_required

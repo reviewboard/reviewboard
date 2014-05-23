@@ -122,7 +122,7 @@ class ReviewRequestManager(ConcurrencyManager):
         diffset_history = DiffSetHistory()
         diffset_history.save()
 
-        review_request = super(ReviewRequestManager, self).create(
+        review_request = self.model(
             submitter=user,
             status='P',
             public=False,
@@ -136,6 +136,7 @@ class ReviewRequestManager(ConcurrencyManager):
             else:
                 review_request.commit_id = commit_id
 
+        review_request.validate_unique()
         review_request.save()
 
         if local_site:
