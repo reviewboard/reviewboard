@@ -1,5 +1,6 @@
 from __future__ import unicode_literals
 
+from django.conf import settings
 from django.core.management.base import NoArgsCommand
 
 from reviewboard.diffviewer.models import FileDiff
@@ -25,6 +26,9 @@ class Command(NoArgsCommand):
             % {
                 'count': count,
             })
+
+        # Don't allow queries to be stored.
+        settings.DEBUG = False
 
         info = FileDiff.objects.migrate_all()
 

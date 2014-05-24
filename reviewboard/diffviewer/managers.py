@@ -1,10 +1,12 @@
 from __future__ import unicode_literals
 
+import gc
 import os
 
-from django.db import models
+from django.db import models, reset_queries
 from django.db.models import Q
 from django.utils.encoding import smart_unicode
+from django.utils.six.moves import range
 from django.utils.translation import ugettext as _
 from djblets.db.fields import Base64DecodedValue
 from djblets.siteconfig.models import SiteConfiguration
@@ -35,28 +37,42 @@ class FileDiffManager(models.Manager):
 
         This will return a dictionary with the result of the process.
         """
-        filediffs = self.unmigrated()
+        unmigrated_filediffs = self.unmigrated()
 
+        OBJECT_LIMIT = 200
         total_diffs_migrated = 0
         total_diff_size = 0
         total_bytes_saved = 0
 
-        for filediff in filediffs.iterator():
-            total_diffs_migrated += 1
+        count = unmigrated_filediffs.count()
 
-            diff_size = len(filediff.diff64)
-            parent_diff_size = len(filediff.parent_diff64)
+        for i in range(0, count, OBJECT_LIMIT):
+            # Every time we work on a batch of FileDiffs, we're re-querying
+            # the list of unmigrated FileDiffs. No previously processed
+            # FileDiff will be returned in the results. That's why we're
+            # indexing from 0 to OBJECT_LIMIT, instead of from 'i'.
+            for filediff in unmigrated_filediffs[:OBJECT_LIMIT].iterator():
+                total_diffs_migrated += 1
 
-            total_diff_size += diff_size + parent_diff_size
+                diff_size = len(filediff.diff64)
+                parent_diff_size = len(filediff.parent_diff64)
 
-            diff_hash_is_new, parent_diff_hash_is_new = \
-                filediff._migrate_diff_data(recalculate_counts=False)
+                total_diff_size += diff_size + parent_diff_size
 
-            if diff_size > 0 and not diff_hash_is_new:
-                total_bytes_saved += diff_size
+                diff_hash_is_new, parent_diff_hash_is_new = \
+                    filediff._migrate_diff_data(recalculate_counts=False)
 
-            if parent_diff_size > 0 and not parent_diff_hash_is_new:
-                total_bytes_saved += parent_diff_size
+                if diff_size > 0 and not diff_hash_is_new:
+                    total_bytes_saved += diff_size
+
+                if parent_diff_size > 0 and not parent_diff_hash_is_new:
+                    total_bytes_saved += parent_diff_size
+
+            # Do all we can to limit the memory usage by resetting any stored
+            # queries (if DEBUG is True), and force garbage collection of
+            # anything we may have from processing a FileDiff.
+            reset_queries()
+            gc.collect()
 
         return {
             'diffs_migrated': total_diffs_migrated,
