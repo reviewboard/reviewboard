@@ -28,7 +28,7 @@ class FileDiffManager(models.Manager):
             Q(diff_hash__isnull=False) &
             (Q(parent_diff_hash__isnull=False) | Q(parent_diff64='')))
 
-    def migrate_all(self):
+    def migrate_all(self, processed_filediff_cb=None):
         """Migrates diff content in FileDiffs to use FileDiffData for storage.
 
         This will run through all unmigrated FileDiffs and migrate them,
@@ -67,6 +67,9 @@ class FileDiffManager(models.Manager):
 
                 if parent_diff_size > 0 and not parent_diff_hash_is_new:
                     total_bytes_saved += parent_diff_size
+
+                if callable(processed_filediff_cb):
+                    processed_filediff_cb(filediff)
 
             # Do all we can to limit the memory usage by resetting any stored
             # queries (if DEBUG is True), and force garbage collection of
