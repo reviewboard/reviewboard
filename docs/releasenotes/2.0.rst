@@ -1000,7 +1000,7 @@ Other Web API Changes
   The raw insert/delete counts will be there for any uploaded patch.
 
 * :ref:`webapi2.0-diff-list-resource` no longer thinks it can create diffs
-  on review requess without a repository.
+  on review request without a repository.
 
   Attempting to create a diff on an attachments-only review request would
   result in an HTTP 500. It now returns an Invalid Attribute error.
@@ -1218,7 +1218,7 @@ SignalHook
 Extensions that need to listen to signals can now use :ref:`signal-hook`
 instead of managing their own signal connections.
 
-:py:class:`SignalHook` takes the signal and a callack as arguments, and
+:py:class:`SignalHook` takes the signal and a callback as arguments, and
 an optional ``sender``. It will then connect to that signal, and disconnect
 when shutting down the extension.
 
@@ -1237,7 +1237,7 @@ UserPageSidebarItemsHook
 
 A new extension hook has been added for adding links to the sidebar on the user
 page (``/users/<username>/``). :ref:`user-page-sidebar-items-hook` is just like
-the new dashboard sidebar hooks listed above, but targetted for the user page
+the new dashboard sidebar hooks listed above, but targeted for the user page
 instead.
 
 

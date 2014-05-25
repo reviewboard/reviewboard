@@ -55,7 +55,7 @@ display.
 The new :guilabel:`Show Whitespace Changes`/:guilabel:`Hide Whitespace Changes`
 toggle in the diff viewer controls whether changes that consist of only
 whitespace modifications (such as changing indentation of a line, or removing
-trailing whitespaces) will be shown. This can help cut down the review time
+trailing whitespace) will be shown. This can help cut down the review time
 of large diffs that contain many lines of whitespace-only changes.
 
 The new :guilabel:`Show Extra Whitespace`/:guilabel:`Hide Extra Whitespace`
@@ -148,7 +148,7 @@ UI, fully usable on the iPhone and iPad.
 New Dashboard Columns
 ---------------------
 
-New optional "Branch" nad "Bugs" columns have been added to the Dashboard.
+New optional "Branch" and "Bugs" columns have been added to the Dashboard.
 
 The "Branch" column is sortable and displays the branch specified in the
 review request.
@@ -290,7 +290,7 @@ The administration UI can be used to quickly close or reopen multiple
 review requests at once.
 
 For other types of data in the database, the administration UI supports
-deleting multiple entries at once, though this hsould be used with caution
+deleting multiple entries at once, though this should be used with caution
 as it can cause irreversible data loss.
 
 

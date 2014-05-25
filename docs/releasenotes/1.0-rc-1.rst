@@ -12,7 +12,7 @@ New Features
   a request is being made. Examples include saving a comment,
   marking a change as submitted, or saving fields on a review request.
   This appears as a small but eye-catching box at the top of the
-  page with a spiner, letting the user know that the request is still
+  page with a spinner, letting the user know that the request is still
   being processed. (:bug:`945`)
 
 * Changed the :guilabel:`Ship It` column to show the number of reviews

@@ -76,7 +76,7 @@ Web API Changes
 
 * Custom data can be stored in a file attachment comment.
 
-  This can be done by specifing a ``extra_data.myfield`` field when creating
+  This can be done by specifying a ``extra_data.myfield`` field when creating
   or updating a file attachment comment. ``myfield`` will then be accessible
   in the ``extra_data`` dictionary.
 

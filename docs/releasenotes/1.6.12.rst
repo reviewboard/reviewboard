@@ -19,7 +19,7 @@ New Features
   Now you can expand the lines above or below the header at 20 lines at a time
   by clicking the expansion links on the far left. Or you can expand up to the
   definition of the function or class listed by clicking the expansion button
-  for that.  ou can still of course expand the entire contents as well.
+  for that.  You can still of course expand the entire contents as well.
 
   Whenever you expand part of the diff, a collapse button will appear that
   will allow you to easily re-collapse what you've expanded.

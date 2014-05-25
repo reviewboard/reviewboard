@@ -12,7 +12,7 @@ New Features
   path, making installation easier. (:bug:`1110`)
 
 * Added a loading indicator for the news display in the
-  Adminsitration Dashboard.
+  Administration Dashboard.
 
 * Automatically updates the stored path for media files when moving
   the site directory. Previously, this would break with no easy way
@@ -59,7 +59,7 @@ Bugs Fixed
 * Reduce the chances of concurrency issues internally when saving
   the Comment and ScreenshotComment database models. (:bug:`709`)
 
-* Nercurial's HTTP support would fail when the repository served up
+* Mercurial's HTTP support would fail when the repository served up
   raw files using the ``/raw-file`` URL instead of ``/raw``. Our Mercurial
   support now tries both paths before giving up. This provides
   compatibility with http://bitbucket.org.

@@ -86,7 +86,7 @@ Administration
   HTTPS. All URLs generated for the API and e-mails will include ``https``
   instead of ``http``. (:bug:`3085`, :bug:`3246`)
 
-* Fixed incorrect labelling for the review request status graph in the
+* Fixed incorrect labeling for the review request status graph in the
   Admin dashboard.
 
   The widget in the dashboard showing the percentage of all review requests

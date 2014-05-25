@@ -48,7 +48,7 @@ Bug Fixes
   mod_wsgi, breaking sites that accessed that code.
 
 * The Search Index setting in the administration UI now validates the
-  path to ensure that it's an absolute path, it exists, and it's writeable.
+  path to ensure that it's an absolute path, it exists, and it's writable.
   Patch by Jan Koprowski. (:bug:`1831`)
 
 * Updated the version of Python Setuptools that we install if the system

@@ -14,7 +14,7 @@ New Features
   it needs to go.
 
 * :command:`rb-site` more clearly informs that an existing database with
-  valid permissions is needed for installatoin.
+  valid permissions is needed for installation.
 
 * :command:`rb-site` now lists recommendations for different services,
   and lists options that aren't officially supported.

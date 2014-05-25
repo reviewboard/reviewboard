@@ -34,7 +34,7 @@ Bug Fixes
   Current versions of IE don't display correctly, as they run in
   IE Compatibility Mode. We now turn that off. Patch by Ben Allen.
 
-* The source tarball now contains the documentation database, neededd to
+* The source tarball now contains the documentation database, needed to
   generate docs. (:bug:`2141`)
 
 

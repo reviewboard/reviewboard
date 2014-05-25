@@ -243,8 +243,8 @@ forms.  This can be used to provide further instructions or other options.
 LessCSS Files
 -------------
 
-Buit-In Constants
-~~~~~~~~~~~~~~~~~
+Built-In Constants
+~~~~~~~~~~~~~~~~~~
 
 Any :file:`.less` file can now make use of ``@RB_MAJOR_VERSION``,
 ``@RB_MINOR_VERSION``, ``@RB_MICRO_VERSION``, ``@RB_PATCH_VERSION``,
@@ -483,7 +483,7 @@ Reviews
 
 * Fixed the Publish/Discard buttons after replying twice.
 
-  The buttons were staying disabled ater saving a reply to a comment twice.
+  The buttons were staying disabled after saving a reply to a comment twice.
   They now re-enable themselves.
 
 * Fixed the icon for the expand/collapse buttons on reviews.

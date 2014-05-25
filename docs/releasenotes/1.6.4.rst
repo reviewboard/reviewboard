@@ -77,7 +77,7 @@ Bug Fixes
   Review Board sent emails with a Return-Path of the current user. This
   wasn't SPF compliant, and as a result review emails could be rejected
   if a user's domain implemented SPF with a reject all failed messages policy
-  and a reciever checked SPF.
+  and a receiver checked SPF.
 
   Now, the From header is set directly, and the site's default From e-mail
   address is set as the Return-Path.

@@ -72,7 +72,7 @@ the Internet.
 Experimental Post-Receive Hook for GitHub
 -----------------------------------------
 
-We are testing a new post-recieve webhook for GitHub, which we'll expand upon
+We are testing a new post-receive webhook for GitHub, which we'll expand upon
 in upcoming releases.
 
 This webhook can be used to close review requests referenced in pushed

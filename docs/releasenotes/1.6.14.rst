@@ -88,7 +88,7 @@ Bug Fixes
 
 * Added a better fallback for diff content encoding. (:bug:`2776`)
 
-  Diff content encoding onversion no longer breaks if it can't decode to UTF-8
+  Diff content encoding conversion no longer breaks if it can't decode to UTF-8
   or the repository-specified encoding. Instead, it now falls back to UTF-8
   with unknown characters replaced with U+FFFD.
 
@@ -105,7 +105,7 @@ Bug Fixes
 * The starred groups list in the dashboard didn't always show the right
   list of groups.
 
-  The query was targetting the profile IDs in the database and not the
+  The query was targeting the profile IDs in the database and not the
   user IDs, which in some cases would cause problems.
 
 * The "Comment Saved" bubble in the diff viewer had a broken style. The bubble
