@@ -38,7 +38,7 @@ class ExecutableCodeCheck(BaseSecurityCheck):
              'to review requests to be executed as code. The file types '
              'checked in this test are: .html, .htm, .shtml, .php, .php3, '
              '.php4, .php5, .phps, .asp, .pl, .py, .fcgi, .cgi, .phtml, '
-             '.pht, .jsp, .sh, and .rb.')
+             '.phtm, .pht, .jsp, .sh, and .rb.')
     fix_info = _('For instructions on how to fix this problem, please visit '
                  '<a href="http://support.beanbaginc.com/support/solutions/'
                  'articles/110173-securing-file-attachments">'
