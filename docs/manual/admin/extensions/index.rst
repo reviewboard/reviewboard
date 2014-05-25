@@ -33,7 +33,7 @@ The Extensions page in the :ref:`Administration UI <administration-ui>` lists
 all extensions currently installed on the system. From here, you can enable,
 disable, configure, or edit database entries for an extension.
 
-Depending on the capabilites of the extension, you'll see one or more
+Depending on the capabilities of the extension, you'll see one or more
 buttons:
 
 * **Enable** - Enables the extension.

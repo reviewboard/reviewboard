@@ -11,7 +11,7 @@ Query Caching
 
 Query caching allows MySQL to store the results of previous queries so that
 they can be returned quickly the next time the query is performed. This can
-be very beneficial on many pages, paricularly review requests and the
+be very beneficial on many pages, particularly review requests and the
 dashboard.
 
 The amount of memory available for query caching can be configured. It's

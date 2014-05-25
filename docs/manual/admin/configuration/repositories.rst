@@ -378,7 +378,7 @@ Unix/Linux.
 
 The `Username and Password fields`_ should be blank.
 
-.. note:: When uploading new diffs, Review Board wlil compare the VOBs by UUID.
+.. note:: When uploading new diffs, Review Board will compare the VOBs by UUID.
           If the UUID doesn't match, :command:`post-review` will use the VOB's
           name as the repository name. Because of this, it is a good idea to
           name the repositories in Review Board to match the VOB names.

@@ -76,7 +76,7 @@ Configuration URLs
 
 When an extension is configurable, Review Board will load the extension's
 :file:`admin_urls.py`, making those URLs available. An extension can provide
-whatever it wants in here, but it's expected to proivide at least the root
+whatever it wants in here, but it's expected to provide at least the root
 URL, designated by ``url(r'^$', ...)``. This should point to the main
 configuration page.
 
@@ -94,7 +94,7 @@ For example:
    )
 
 This will call the ``configure`` function in ``sample_extension.views``
-when clickin the :guilabel:`Configure` link.
+when clicking the :guilabel:`Configure` link.
 
 .. _`Django URLs`: https://docs.djangoproject.com/en/dev/topics/http/urls/
 
