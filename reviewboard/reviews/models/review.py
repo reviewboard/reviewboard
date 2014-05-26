@@ -203,7 +203,7 @@ class Review(models.Model):
         # timestamp on the review request.
         self.review_request.last_review_activity_timestamp = self.timestamp
         self.review_request.save(
-            update_fields=['last_review_activity_timestamp'])
+            update_fields=['last_review_activity_timestamp', 'last_updated'])
 
         if self.is_reply():
             reply_published.send(sender=self.__class__,

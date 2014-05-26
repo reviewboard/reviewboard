@@ -17,7 +17,7 @@ New Features
   The API can return a number of errors during repository verification,
   based on configuration problems or host access problems (such as bad or
   unknown SSH keys, or unknown HTTPS certificates). In the cases where it's
-  host-related information tat needs to be verified, the API can respond
+  host-related information that needs to be verified, the API can respond
   to the error by repeating the request and sending ``trust_host=``.
 
   More information on using this new API is available in the
@@ -50,7 +50,7 @@ Bug Fixes
   saving the General Settings page under many cases. This was actually
   hotfixed in 1.5.3.1, but no overall release announcement was made.
 
-* Comments begining in expanded regions of a diff and ending in collapsed
+* Comments beginning in expanded regions of a diff and ending in collapsed
   regions should no longer break the diff viewer. (:bug:`1564`)
 
 * Usernames with ``@`` in the name (such as when using e-mail addresses

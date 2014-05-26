@@ -49,7 +49,7 @@ Bug Fixes
 
 * Fixed the display of the static media instructions in rb-site.
 
-  These were't showing up for all users. Now a new upgrade from pre-1.7
+  These weren't showing up for all users. Now a new upgrade from pre-1.7
   will always show the instructions for upgrading the static media
   settings.
 

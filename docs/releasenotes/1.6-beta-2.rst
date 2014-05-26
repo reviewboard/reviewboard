@@ -63,7 +63,7 @@ New Features
 
   Patch by Hongbin Lu. (:bug:`1081`)
 
-* Aded move/rename information in the diff viewer.
+* Added move/rename information in the diff viewer.
 
   The change index and file sections now show when a file has been moved
   or renamed and what the new name is. Whether or not this is shown depends

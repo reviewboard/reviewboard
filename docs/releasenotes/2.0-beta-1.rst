@@ -382,7 +382,7 @@ Consolidated Static Media
 -------------------------
 
 In order to speed up page loads, we've reduced the number of HTTP requests by
-consolidating stylesheets, JavasSript, and images into a smaller number of
+consolidating stylesheets, JavaScript, and images into a smaller number of
 files.
 
 

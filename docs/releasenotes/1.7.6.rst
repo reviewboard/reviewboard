@@ -77,7 +77,7 @@ Bug Fixes
   subdirectory install. Patch by Raja Venkataraman. (:bug:`2843`)
 
 * The Manual Updates page for the media upload directory no longer points
-  to a non-existant wiki page.
+  to a non-existent wiki page.
 
 
 Contributors

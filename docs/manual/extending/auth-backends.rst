@@ -93,7 +93,7 @@ We'll go into each function and attribute in detail.
 
    The registration process will create a new
    :py:class:`User <django.contrib.auth.models.User>` in the database.
-   Currenly, there is no support for handing off registration to the
+   Currently, there is no support for handing off registration to the
    authentication backend, but it's planned.
 
 .. py:attribute:: supports_change_name

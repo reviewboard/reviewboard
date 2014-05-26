@@ -2,7 +2,7 @@
 Search Indexing
 ===============
 
-You can enable search indexing by going into hte :ref:`general-settings`
+You can enable search indexing by going into the :ref:`general-settings`
 page and toggling :guilabel:`Enable search`. The
 :guilabel:`Search index file` field must be filled out to specify the
 desired directory where the search index will be stored. Usually this will

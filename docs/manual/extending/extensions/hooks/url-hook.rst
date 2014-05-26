@@ -5,7 +5,7 @@ URLHook
 =======
 
 :py:class:`reviewboard.extensions.hooks.URLHook` is used to extend the URL
-patterns that Review Board wil recognize and respond to.
+patterns that Review Board will recognize and respond to.
 
 :py:class:`URLHook` requires two arguments for initialization: the extension
 instance and the Django URL patterns.

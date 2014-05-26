@@ -39,7 +39,7 @@ Bug Fixes
 
 * Fixed the display of extra whitespace in the diff viewer.
 
-* Fixed default raw paths for Gitorious repositories to accomodate their
+* Fixed default raw paths for Gitorious repositories to accommodate their
   latest URLs.
 
 * Some settings in the administration UI weren't showing the correct values,

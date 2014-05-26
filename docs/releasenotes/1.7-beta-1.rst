@@ -9,8 +9,8 @@ This release contains all bug fixes and features found in
 Review Board version :doc:`1.6.11 <1.6.11>`.
 
 
-Compatibilty Changes
-====================
+Compatibility Changes
+=====================
 
 * Added a requirement for Django 1.4.
 

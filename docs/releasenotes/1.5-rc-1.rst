@@ -62,7 +62,7 @@ API Improvements
 
 * Support filtering review requests by using date ranges.
 
-  The ``/api/review-requests/`` resource can now be filterd using date ranges.
+  The ``/api/review-requests/`` resource can now be filtered using date ranges.
   It supports passing ``?time-added-from=``, ``?time-added-to=``,
   ``?last-updated-from=``, and ``?last-updated-to=``. These parameters take
   a variety of date values, though we recommend ISO8601 format. For example:

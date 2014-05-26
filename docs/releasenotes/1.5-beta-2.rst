@@ -84,7 +84,7 @@ Usability Improvements
 * Added a resize grip to the comment dialog in the diff viewer and screenshot
   page.
 
-* Comment flags in the diff viewer now cover te entire range of lines that the
+* Comment flags in the diff viewer now cover the entire range of lines that the
   comment was made on, making it more obvious at a glance. (:bug:`1131`)
 
 * Comment flags in the diff viewer no longer overwrap the line numbers.

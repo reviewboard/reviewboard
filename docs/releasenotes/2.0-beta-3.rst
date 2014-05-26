@@ -498,7 +498,7 @@ SignalHook
 Extensions that need to listen to signals can now use :ref:`signal-hook`
 instead of managing their own signal connections.
 
-:py:class:`SignalHook` takes the signal and a callack as arguments, and
+:py:class:`SignalHook` takes the signal and a callback as arguments, and
 an optional ``sender``. It will then connect to that signal, and disconnect
 when shutting down the extension.
 
@@ -552,7 +552,7 @@ UserPageSidebarItemsHook
 
 The old :py:class:`UserPageSidebarHook` has been replaced by
 :ref:`user-page-sidebar-items-hook`. This is just like the new dashboard
-sidebar hooks listed above, but targetted for the user page instead.
+sidebar hooks listed above, but targeted for the user page instead.
 
 
 Bug Fixes

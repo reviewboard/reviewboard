@@ -4,7 +4,7 @@
 Optimizing Memcached
 ====================
 
-Memcached is a high-performant key/value caching server that operates
+Memcached is a high-performance key/value caching server that operates
 entirely in memory. We **strongly** recommend that you use it in order to
 achieve the best performance. Review Board caches a lot of large pieces of
 data, many of which are expensive to fetch or recompute, which is why a fast

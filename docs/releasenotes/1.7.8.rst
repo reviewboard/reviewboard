@@ -86,7 +86,7 @@ Usability Improvements
 API Changes
 ===========
 
-* Fixed deleting pendign replies to comments. This would always return
+* Fixed deleting pending replies to comments. This would always return
   Forbidden before.
 
 * Fixed some issues returning certain lists of data. It was possible that
@@ -102,7 +102,7 @@ Extensibility Improvements
   name, author, version, etc., meaning that a package could have at most one
   extension. They can now have as many as you choose.
 
-  This is customized by including a ``metadata`` dictinoary field on the
+  This is customized by including a ``metadata`` dictionary field on the
   Extension class. The keys and values correspond to standard Python
   egg metadata keys and values.
 

@@ -85,7 +85,7 @@ Web API
 =======
 
 * :ref:`webapi2.0-diff-list-resource` no longer thinks it can create diffs
-  on review requess without a repository.
+  on review request without a repository.
 
   Attempting to create a diff on an attachments-only review request would
   result in an HTTP 500. It now returns an Invalid Attribute error.

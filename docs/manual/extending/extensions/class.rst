@@ -63,7 +63,7 @@ The following are also available on an extension instance:
 
       A dictionary of default settings for the extension. These defaults
       are used when accessing :py:attr:`settings`, if the user hasn't
-      provided a custom value. By default, this is empt.
+      provided a custom value. By default, this is empty.
 
       See :ref:`extension-settings-defaults` for more information.
 

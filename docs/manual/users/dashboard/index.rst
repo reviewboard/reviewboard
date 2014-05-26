@@ -96,7 +96,7 @@ sort that column in descending order. The column will have a little up or
 down arrow indicating the sorting order. You can click the :guilabel:`X` next
 to clear sorting for that column.
 
-The dashboard provides two-level sorting. You can primarilty sort by one
+The dashboard provides two-level sorting. You can primarily sort by one
 column but in the case of multiple entries for a particular submitter,
 timestamp, etc., you can have secondary sorting on another column. This is set
 by simply clicking one column (which will be the secondary column) and then

@@ -66,7 +66,7 @@ New Features
   We now provide our own SSH wrapper that allows us to use a Review Board
   installation's configured SSH key. OpenSSH and possibly other SSH
   implementations used the web server's user's home directory, and this was
-  often hard-coded on systems to a non-writeable directory, preventing
+  often hard-coded on systems to a non-writable directory, preventing
   SSH from working out of the box.
 
   This shouldn't affect any access to repositories negatively, but any
@@ -212,7 +212,7 @@ Bug Fixes
 
       "^(/reviewboard.fcgi.*)$" => "$1",
 
-* Fixed errrors when passing a non-integer value for ``?show_submitted=``
+* Fixed errors when passing a non-integer value for ``?show_submitted=``
   on the dashboard or other review request listings.
 
   This wasn't really a user-facing problem, but could cause spurious log

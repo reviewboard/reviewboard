@@ -43,7 +43,7 @@ API Improvements
 * Added the screenshot image URL in the
   :ref:`screenshot resources <webapi2.0-screenshot-resource>`.
 
-* Renamed the ``?interdiff_revision=`` query paramater to
+* Renamed the ``?interdiff_revision=`` query parameter to
   ``?interdiff-revision=``  on
   :ref:`diff comment resources <webapi2.0-review-diff-comment-resource>`.
 

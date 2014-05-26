@@ -12,7 +12,7 @@ New Features
 
 * One of the first-time problems people have had was getting :file:`patch`
   installed, or even knowing to install it in the first place. Review Board
-  now checks for the existance of :file:`patch` or :file:`patch.exe` when
+  now checks for the existence of :file:`patch` or :file:`patch.exe` when
   starting up. If it doesn't exist, an error page will appear saying it's
   missing and giving instructions how to download and install it.
 

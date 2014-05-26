@@ -16,7 +16,7 @@ Bug Fixes
 * Fixed validation of the cache backend when saving settings.
   Patch by Bartek Celary.
 
-* Increased the buffer size for memcached stats in order to accomodate larger
+* Increased the buffer size for memcached stats in order to accommodate larger
   amounts of data. Patch by Bartek Celary.
 
 
