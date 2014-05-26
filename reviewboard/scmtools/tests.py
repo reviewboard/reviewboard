@@ -1171,6 +1171,12 @@ class PerforceTests(SCMTestCase):
         self.assertEqual(files[1].insert_count, 2)
         self.assertEqual(files[1].delete_count, 1)
 
+    def test_diff_file_normalization(self):
+        """Testing perforce diff filename normalization"""
+        parser = self.tool.get_parser('')
+        self.assertEqual(parser.normalize_diff_filename('//depot/test'),
+                         '//depot/test')
+
     def test_unicode_diff(self):
         """Testing Perforce diff parsing with unicode characters"""
         diff = ("--- tést.c  //depot/foo/proj/tést.c#2\n"
