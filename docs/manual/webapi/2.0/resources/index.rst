@@ -53,6 +53,8 @@ Hosting Services
 .. toctree::
    :maxdepth: 1
 
+   hosting-service-list
+   hosting-service
    hosting-service-account-list
    hosting-service-account
 

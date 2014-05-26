@@ -46,6 +46,10 @@ filediff_comment_list_mimetype = _build_mimetype('file-diff-comments')
 filediff_comment_item_mimetype = _build_mimetype('file-diff-comment')
 
 
+hosting_service_list_mimetype = _build_mimetype('hosting-services')
+hosting_service_item_mimetype = _build_mimetype('hosting-service')
+
+
 repository_list_mimetype = _build_mimetype('repositories')
 repository_item_mimetype = _build_mimetype('repository')
 

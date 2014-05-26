@@ -201,6 +201,25 @@ def get_filediff_comment_item_url(filediff, comment_id, local_site_name=None):
 
 
 #
+# HostingServiceResource
+#
+def get_hosting_service_list_url(local_site_name=None):
+    return resources.hosting_service.get_list_url(
+        local_site_name=local_site_name)
+
+
+def get_hosting_service_item_url(hosting_service_or_id, local_site_name=None):
+    if isinstance(hosting_service_or_id, int):
+        hosting_service_id = hosting_service_or_id
+    else:
+        hosting_service_id = hosting_service_or_id.id
+
+    return resources.hosting_service.get_item_url(
+        local_site_name=local_site_name,
+        hosting_service_id=hosting_service_id)
+
+
+#
 # RepositoryResource
 #
 def get_repository_list_url(local_site_name=None):

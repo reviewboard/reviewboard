@@ -28,6 +28,7 @@ class RootResource(DjbletsRootResource):
         super(RootResource, self).__init__([
             resources.default_reviewer,
             resources.extension,
+            resources.hosting_service,
             resources.hosting_service_account,
             resources.repository,
             resources.review_group,
