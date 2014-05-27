@@ -1326,10 +1326,13 @@ class GitHubTests(ServiceTests):
             self.assertIn(url, [base_url, '%s&page=2' % base_url])
 
             if url == base_url:
-                return json.dumps(repos1), {'Link': '<%s&page=2>; rel="next"'
-                                                    % base_url}
+                return json.dumps(repos1), {
+                    'Link': '<%s&page=2>; rel="next"' % base_url,
+                }
             else:
-                return json.dumps(repos2), {}
+                return json.dumps(repos2), {
+                    'Link': '<%s&page=1>; rel="prev"' % base_url,
+                }
 
         account = self._get_hosting_account()
         account.data['authorization'] = {
@@ -1339,24 +1342,34 @@ class GitHubTests(ServiceTests):
         service = account.service
         self.spy_on(service.client.http_get, call_fake=_http_get)
 
-        remote_repos = list(service.get_remote_repositories('myuser',
-                                                            'public'))
-        self.assertEqual(len(remote_repos), 2)
-        public_repo, private_repo = remote_repos
+        paginator = service.get_remote_repositories('myuser', 'public')
 
-        self.assertIsInstance(public_repo, HostingServiceRepository)
-        self.assertEqual(public_repo.owner, 'myuser')
-        self.assertEqual(public_repo.name, 'myrepo')
-        self.assertEqual(public_repo.scm_type, 'Git')
-        self.assertEqual(public_repo.path, 'myrepo_path')
-        self.assertEqual(public_repo.mirror_path, 'myrepo_mirror')
+        # Check the first result.
+        self.assertEqual(len(paginator.page_data), 1)
+        self.assertFalse(paginator.has_prev)
+        self.assertTrue(paginator.has_next)
+        repo = paginator.page_data[0]
 
-        self.assertIsInstance(private_repo, HostingServiceRepository)
-        self.assertEqual(private_repo.owner, 'myuser')
-        self.assertEqual(private_repo.name, 'myrepo2')
-        self.assertEqual(private_repo.scm_type, 'Git')
-        self.assertEqual(private_repo.path, 'myrepo_path2')
-        self.assertEqual(private_repo.mirror_path, 'myrepo_mirror2')
+        self.assertIsInstance(repo, HostingServiceRepository)
+        self.assertEqual(repo.owner, 'myuser')
+        self.assertEqual(repo.name, 'myrepo')
+        self.assertEqual(repo.scm_type, 'Git')
+        self.assertEqual(repo.path, 'myrepo_path')
+        self.assertEqual(repo.mirror_path, 'myrepo_mirror')
+
+        # Check the second result.
+        paginator.next()
+        self.assertEqual(len(paginator.page_data), 1)
+        self.assertTrue(paginator.has_prev)
+        self.assertFalse(paginator.has_next)
+        repo = paginator.page_data[0]
+
+        self.assertIsInstance(repo, HostingServiceRepository)
+        self.assertEqual(repo.owner, 'myuser')
+        self.assertEqual(repo.name, 'myrepo2')
+        self.assertEqual(repo.scm_type, 'Git')
+        self.assertEqual(repo.path, 'myrepo_path2')
+        self.assertEqual(repo.mirror_path, 'myrepo_mirror2')
 
     def test_get_remote_repositories_with_other(self, **kwargs):
         """Testing GitHub.get_remote_repositories with requesting
@@ -1377,8 +1390,8 @@ class GitHubTests(ServiceTests):
         repos2 = []
 
         def _http_get(service, url, *args, **kwargs):
-            base_url = ('https://api.github.com/users/other/repos?type=all'
-                        '&access_token=123')
+            base_url = ('https://api.github.com/users/other/repos'
+                        '?access_token=123&type=all')
 
             self.assertIn(url, [base_url, '%s&page=2' % base_url])
 
@@ -1396,9 +1409,10 @@ class GitHubTests(ServiceTests):
         service = account.service
         self.spy_on(service.client.http_get, call_fake=_http_get)
 
-        remote_repos = list(service.get_remote_repositories('other', 'public'))
-        self.assertEqual(len(remote_repos), 1)
-        public_repo = remote_repos[0]
+        paginator = service.get_remote_repositories('other', 'public')
+
+        self.assertEqual(len(paginator.page_data), 1)
+        public_repo = paginator.page_data[0]
         self.assertIsInstance(public_repo, HostingServiceRepository)
         self.assertEqual(public_repo.owner, 'other')
         self.assertEqual(public_repo.name, 'myrepo')
@@ -1447,10 +1461,9 @@ class GitHubTests(ServiceTests):
         service = account.service
         self.spy_on(service.client.http_get, call_fake=_http_get)
 
-        remote_repos = list(service.get_remote_repositories('myorg',
-                                                            'public-org'))
-        self.assertEqual(len(remote_repos), 2)
-        public_repo, private_repo = remote_repos
+        paginator = service.get_remote_repositories('myorg', 'public-org')
+        self.assertEqual(len(paginator.page_data), 2)
+        public_repo, private_repo = paginator.page_data
 
         self.assertIsInstance(public_repo, HostingServiceRepository)
         self.assertEqual(public_repo.owner, 'myorg')

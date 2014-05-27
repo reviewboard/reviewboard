@@ -31,6 +31,8 @@ from reviewboard.hostingsvcs.hook_utils import (close_all_review_requests,
 from reviewboard.hostingsvcs.repository import HostingServiceRepository
 from reviewboard.hostingsvcs.service import (HostingService,
                                              HostingServiceClient)
+from reviewboard.hostingsvcs.utils.paginator import (APIPaginator,
+                                                     ProxyPaginator)
 from reviewboard.scmtools.core import Branch, Commit
 from reviewboard.scmtools.errors import FileNotFoundError, SCMError
 from reviewboard.site.urlresolvers import local_site_reverse
@@ -98,10 +100,39 @@ class GitHubPrivateOrgForm(HostingServiceForm):
                     'http://github.com/&lt;org_name&gt;/&lt;repo_name&gt;/'))
 
 
+class GitHubAPIPaginator(APIPaginator):
+    """Paginates over GitHub API list resources.
+
+    This is returned by some GitHubClient functions in order to handle
+    iteration over pages of results, without resorting to fetching all
+    pages at once or baking pagination into the functions themselves.
+    """
+    start_query_param = 'page'
+    per_page_query_param = 'per_page'
+
+    LINK_RE = re.compile(r'\<(?P<url>[^>]+)\>; rel="(?P<rel>[^"]+)",? *')
+
+    def fetch_url(self, url):
+        """Fetches the page data from a URL."""
+        data, headers = self.client.api_get(url, return_headers=True)
+
+        # Find all the links in the Link header and key off by the link
+        # name ('prev', 'next', etc.).
+        links = dict(
+            (m.group('rel'), m.group('url'))
+            for m in self.LINK_RE.finditer(headers.get('Link', ''))
+        )
+
+        return {
+            'data': data,
+            'headers': headers,
+            'prev_url': links.get('prev'),
+            'next_url': links.get('next'),
+        }
+
+
 class GitHubClient(HostingServiceClient):
     RAW_MIMETYPE = 'application/vnd.github.v3.raw'
-
-    NEXT_LINK_RE = re.compile(r'\<(?P<link>.+)\>(?=; rel="next")')
 
     def __init__(self, hosting_service):
         super(GitHubClient, self).__init__(hosting_service)
@@ -157,26 +188,22 @@ class GitHubClient(HostingServiceClient):
         except (URLError, HTTPError) as e:
             self._check_api_error(e)
 
-    def api_get_list(self, url, return_headers=False, *args, **kwargs):
-        """Performs an HTTP GET to a GitHub list API and yields the results.
+    def api_get_list(self, url, start=None, per_page=None, *args, **kwargs):
+        """Performs an HTTP GET to a GitHub API and returns a paginator.
 
-        This will follow all "next" links provided by the API, yielding each
-        page of data. In this case, it works as a generator.
+        This returns a GitHubAPIPaginator that's used to iterate over the
+        pages of results. Each page contains information on the data and
+        headers from that given page.
 
-        If `return_headers` is True, then each page of results will be
-        yielded as a tuple of (data, headers). Otherwise, just the data
-        will be yielded.
+        The ``start`` and ``per_page`` parameters can be used to control
+        where pagination begins and how many results are returned per page.
+        ``start`` is a 0-based index representing a page number.
         """
-        while url:
-            data, headers = self.api_get(url, return_headers=True,
-                                         *args, **kwargs)
+        if start is not None:
+            # GitHub uses 1-based indexing, so add one.
+            start += 1
 
-            if return_headers:
-                yield data, headers
-            else:
-                yield data
-
-            url = self._get_next_link(headers)
+        return GitHubAPIPaginator(self, url, start=start, per_page=per_page)
 
     def api_post(self, url, *args, **kwargs):
         try:
@@ -247,7 +274,8 @@ class GitHubClient(HostingServiceClient):
                             url, e, exc_info=1)
             raise SCMError(six.text_type(e))
 
-    def api_get_remote_repositories(self, api_url, owner, plan):
+    def api_get_remote_repositories(self, api_url, owner, plan,
+                                    start=None, per_page=None):
         url = api_url
 
         if plan.endswith('org'):
@@ -259,9 +287,8 @@ class GitHubClient(HostingServiceClient):
             # Only public repositories for the user.
             url += 'users/%s/repos?type=all' % owner
 
-        for data in self.api_get_list(self._build_api_url(url)):
-            for repo_data in data:
-                yield repo_data
+        return self.api_get_list(self._build_api_url(url),
+                                 start=start, per_page=per_page)
 
     def api_get_tree(self, repo_api_url, sha, recursive=False):
         url = self._build_api_url(repo_api_url, 'git/trees/%s' % sha)
@@ -291,18 +318,6 @@ class GitHubClient(HostingServiceClient):
         url += 'access_token=%s' % self.account.data['authorization']['token']
 
         return url
-
-    def _get_next_link(self, headers):
-        """Return the next link extracted from the Links in headers.
-
-        This is used to traverse a paginated response by one of the
-        API pagination functions.
-        """
-        try:
-            links = headers.get('Link')
-            return self.NEXT_LINK_RE.match(links).group('link')
-        except (KeyError, AttributeError, TypeError):
-            return None
 
     def _check_rate_limits(self, headers):
         rate_limit_remaining = headers.get('X-RateLimit-Remaining', None)
@@ -756,7 +771,8 @@ class GitHub(HostingService):
         return Commit(author_name, revision, date, message, parent_revision,
                       diff=diff)
 
-    def get_remote_repositories(self, owner, plan=None):
+    def get_remote_repositories(self, owner, plan=None, start=None,
+                                per_page=None):
         """Return a list of remote repositories matching the given criteria.
 
         This will look up each remote repository on GitHub that the given
@@ -779,14 +795,20 @@ class GitHub(HostingService):
             raise InvalidPlanError(plan)
 
         url = self.get_api_url(self.account.hosting_url)
+        paginator = self.client.api_get_remote_repositories(url, owner, plan,
+                                                            start, per_page)
 
-        for repo in self.client.api_get_remote_repositories(url, owner, plan):
-            yield HostingServiceRepository(name=repo['name'],
-                                           owner=repo['owner']['login'],
-                                           scm_type='Git',
-                                           path=repo['url'],
-                                           mirror_path=repo['mirror_url'],
-                                           extra_data=repo)
+        return ProxyPaginator(
+            paginator,
+            normalize_page_data_func=lambda page_data: [
+                HostingServiceRepository(name=repo['name'],
+                                         owner=repo['owner']['login'],
+                                         scm_type='Git',
+                                         path=repo['url'],
+                                         mirror_path=repo['mirror_url'],
+                                         extra_data=repo)
+                for repo in page_data
+            ])
 
     def _reset_authorization(self, client_id, client_secret, token):
         """Resets the authorization info for an OAuth app-linked token.

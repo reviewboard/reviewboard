@@ -292,11 +292,16 @@ class HostingService(object):
         """
         raise NotImplementedError
 
-    def get_remote_repositories(self, owner, plan=None):
+    def get_remote_repositories(self, owner, plan=None, start=None,
+                                per_page=None):
         """Get a list of remote repositories for the owner and plan.
 
-        This should be implemented by subclasses, and is expected to return a
-        list of HostingServiceRepository objects.
+        This should be implemented by subclasses, and is expected to return an
+        APIPaginator providing pages of HostingServiceRepository objects.
+
+        The ``start`` and ``per_page`` parameters can be used to control
+        where pagination begins and how many results are returned per page,
+        if the subclass supports it.
         """
         raise NotImplementedError
 
