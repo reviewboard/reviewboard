@@ -434,14 +434,10 @@ def _add_hosting_service_url_pattern(name, cls):
 
 
 def get_hosting_services():
-    """Gets the list of hosting services.
-
-    This will return an iterator for iterating over each hosting service.
-    """
+    """Gets the list of hosting services."""
     _populate_hosting_services()
 
-    for name, cls in six.iteritems(_hosting_services):
-        yield name, cls
+    return _hosting_services.values()
 
 
 def get_hosting_service(name):
@@ -466,6 +462,7 @@ def register_hosting_service(name, cls):
         raise KeyError('"%s" is already a registered hosting service' % name)
 
     _hosting_services[name] = cls
+    cls.id = name
 
     _add_hosting_service_url_pattern(name, cls)
 
