@@ -150,7 +150,7 @@ setup(name=PACKAGE_NAME,
       author_email="reviewboard@googlegroups.com",
       maintainer="Christian Hammond",
       maintainer_email="christian@beanbaginc.com",
-      packages=find_packages(exclude=['webtests']),
+      packages=find_packages(),
       entry_points = {
           'console_scripts': [
               'rb-site = reviewboard.cmdline.rbsite:main',

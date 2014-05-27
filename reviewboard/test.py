@@ -94,10 +94,6 @@ class RBTestRunner(DjangoTestSuiteRunner):
         for package in settings.TEST_PACKAGES:
             self.nose_argv.append('--where=%s' % package)
 
-        if '--with-webtests' in sys.argv:
-            self.nose_argv.append('--where=webtests')
-            sys.argv.remove('--with-webtests')
-
         if '--with-profiling' in sys.argv:
             sys.argv.remove('--with-profiling')
             profiling = True

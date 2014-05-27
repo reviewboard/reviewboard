@@ -234,3 +234,14 @@ class DiffParser(object):
         revision IDs.
         """
         return None
+
+    def normalize_diff_filename(self, filename):
+        """Normalize filenames in diffs.
+
+        This strips off any leading slashes, which might occur due to
+        differences in various diffing methods or APIs.
+        """
+        if filename.startswith('/'):
+            return filename[1:]
+        else:
+            return filename

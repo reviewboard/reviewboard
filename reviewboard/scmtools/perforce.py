@@ -475,3 +475,12 @@ class PerforceDiffParser(DiffParser):
             linenum += 2
 
         return linenum
+
+    def normalize_diff_filename(self, filename):
+        """Normalize filenames in diffs.
+
+        The default behavior of stripping off leading slashes doesn't work for
+        Perforce (because depot paths start with //), so this overrides it to
+        just return the filename un-molested.
+        """
+        return filename

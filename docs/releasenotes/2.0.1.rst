@@ -1,0 +1,157 @@
+================================
+Review Board 2.0.1 Release Notes
+================================
+
+**Release date:** May 26, 2014
+
+
+New Features
+============
+
+* The ``condensediffs`` management command now shows the progress of the
+  condensing operation.
+
+
+Extensions
+==========
+
+Sandboxing
+----------
+
+* Added sandboxing for ReviewRequestFieldSets.
+
+  Custom ReviewRequestFieldSets provided by extensions are now better
+  sandboxed, which helps to prevent crashes in Review Board if there's
+  an error in the fieldset code.
+
+  Patch by Edwin Zhang.
+
+
+Bug Fixes
+=========
+
+General
+-------
+
+* Fixed the documentation links to point to the 2.0 manual.
+
+* Fixed resetting user passwords. (:bug:`3358`)
+
+
+Markdown
+--------
+
+* Markdown auto-escaping now escapes ``_`` in words, to prevent a rendering
+  issue.
+
+* Fixed leading whitespace in paragraphs.
+
+
+Review Requests
+---------------
+
+* The draft banner wouldn't always show up after editing a published review
+  request. (:bug:`3352`)
+
+* The "Last Updated" timestamp is once again updated when new reviews are
+  posted. (:bug:`3374`)
+
+* The Upload Diff dialog no longer allows you to click :guilabel:`Upload`
+  without the fields being filled in. (:bug:`3338`)
+
+  Patch by Salam Al-yahya.
+
+* Fixed a breakage with posting review requests with duplicate commit IDs.
+  (:bug:`3329`)
+
+  Attempting to post two review requests with the same commit ID on a
+  repository would cause the review request to become inaccessible and
+  return an HTTP 500. Now, an error message is shown in this case instead,
+  allowing the owner to fix the problem.
+
+  Patch by Matthew Maclean.
+
+
+Diff Viewer
+-----------
+
+* Fixed a consistency issue with the file index's row heights when
+  loading diffs. (:bug:`3361`)
+
+* Fixed loading diffs on Local Sites.
+
+
+New Review Request Page
+-----------------------
+
+* Fixed issues posting diffs against Subversion when the diff contents
+  contained Unicode characters. (:bug:`3353`)
+
+
+My Account Page
+---------------
+
+* Fixed the styling of titles in the My Account page.
+
+
+Administration
+--------------
+
+* Fixed issues upgrading from old versions of Review Board.
+
+* Fixed memory usage issues with the ``condensediffs`` management command.
+  (:bug:`3370`)
+
+* Repository bug tracker URLs with an extra ``%s`` in the URL no longer
+  cause breakages. (:bug:`3033`)
+
+  In the case of an extra ``%s``, the user will now get a warning and
+  advice on how to escape the character.
+
+  Patch by Volodymyr Lyubinets.
+
+* Fixed compatibility issues with importing some Python modules.
+
+  Some Python modules that Review Board depends on would be packaged in a
+  way that prevented us from properly checking if they exist. This could
+  happen with Pillow, for instance. We now check modules in a more compatible
+  way.
+
+* Added the missing ``.phtm`` file extension to the file upload security
+  checks.
+
+
+Extensions
+----------
+
+* Fixed the inability to use a :file:`MANIFEST.in` when packaging extensions.
+
+* Fixed race conditions in a threaded environment (such as mod_worker)
+  when reloading extensions.
+
+* Fixed a compatibility issue with Windows when deploying media files.
+  (:bug:`3367`)
+
+
+Experimental Web Hooks
+----------------------
+
+* Fixed extracting commit IDs from Bitbucket Web Hook payloads.
+
+  When using the new experimental "close-submitted" Web Hooks with Bitbucket,
+  commit IDs couldn't be used to look up the review request to close. This was
+  due to an error in which field in the Web Hook payload we looked up.
+
+  Patch by Christopher Orr.
+
+
+Contributors
+============
+
+* Christian Hammond
+* Christopher Orr
+* David Trowbridge
+* Edwin Zhang
+* Matthew Maclean
+* Salam Al-yahya
+* Volodymyr Lyubinets
