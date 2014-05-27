@@ -75,6 +75,9 @@ Review Requests
 Diff Viewer
 -----------
 
+* Posting diffs against Perforce no longer strips the depot path, which
+  was causing breakages.
+
 * Fixed a consistency issue with the file index's row heights when
   loading diffs. (:bug:`3361`)
 
