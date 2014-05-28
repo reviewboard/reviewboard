@@ -24,7 +24,7 @@ def review_request_closed_cb(sender, user, review_request, **kwargs):
     """Sends e-mail when a review request is closed.
 
     Listens to the ``review_request_closed`` signal and sends an
-    email if this type of notification is enabled (through
+    e-mail if this type of notification is enabled (through
     ``mail_send_review_close_mail`` site configuration).
     """
     siteconfig = SiteConfiguration.objects.get_current()
@@ -36,7 +36,7 @@ def review_request_published_cb(sender, user, review_request, changedesc,
                                 **kwargs):
     """
     Listens to the ``review_request_published`` signal and sends an
-    email if this type of notification is enabled (through
+    e-mail if this type of notification is enabled (through
     ``mail_send_review_mail`` site configuration).
     """
     siteconfig = SiteConfiguration.objects.get_current()
@@ -46,7 +46,7 @@ def review_request_published_cb(sender, user, review_request, changedesc,
 
 def review_published_cb(sender, user, review, **kwargs):
     """
-    Listens to the ``review_published`` signal and sends an email if
+    Listens to the ``review_published`` signal and sends an e-mail if
     this type of notification is enabled (through
     ``mail_send_review_mail`` site configuration).
     """
@@ -57,7 +57,7 @@ def review_published_cb(sender, user, review, **kwargs):
 
 def reply_published_cb(sender, user, reply, **kwargs):
     """
-    Listens to the ``reply_published`` signal and sends an email if
+    Listens to the ``reply_published`` signal and sends an e-mail if
     this type of notification is enabled (through
     ``mail_send_review_mail`` site configuration).
     """
@@ -294,11 +294,11 @@ def mail_review_request(review_request, changedesc=None, on_close=False):
     the template to add contextual (updated) flags to inform people what
     changed.
 
-    The "on_close" argument indicates whether review request emails should
+    The "on_close" argument indicates whether review request e-mails should
     be sent on closing (SUBMITTED,DISCARDED) review requests.
     """
     # If the review request is not yet public or has been discarded, don't send
-    # any mail. Relax the "discarded" rule when emails are sent on closing
+    # any mail. Relax the "discarded" rule when e-mails are sent on closing
     # review requests
     if (   not review_request.public
         or (not on_close and review_request.status == 'D')):

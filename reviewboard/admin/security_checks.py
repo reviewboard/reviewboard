@@ -175,7 +175,7 @@ class AllowedHostsCheck(BaseSecurityCheck):
     desc = _('ALLOWED_HOSTS is a list containing the host/domain names that '
              'Review Board will consider valid for this server to serve. '
              'This is a security measure to prevent an attacker from '
-             'poisoning cache and password reset emails with links to '
+             'poisoning cache and password reset e-mails with links to '
              'malicious hosts by submitting requests with a fake HTTP Host '
              'header, which is possible even under many seemingly-safe web '
              'server configurations.')
