@@ -460,6 +460,10 @@ class SVNDiffParser(DiffParser):
 
             return linenum
         else:
+            # Handle deleted empty files.
+            if b'index' in info and info['index'].endswith(b'\t(deleted)'):
+                info['deleted'] = True
+
             return super(SVNDiffParser, self).parse_diff_header(linenum, info)
 
     def parse_special_header(self, linenum, info):

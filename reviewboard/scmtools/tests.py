@@ -1028,6 +1028,44 @@ class CommonSVNTestsBase(SCMTestCase):
         self.assertEqual(files[0].insert_count, 1)
         self.assertEqual(files[0].delete_count, 0)
 
+    def test_diff_with_added_empty_file(self):
+        """Testing parsing SVN diff with added empty file"""
+        diff = (b'Index: empty-file\t(added)\n'
+                b'==========================================================='
+                b'========\n'
+                b'--- empty-file\t(revision 0)\n'
+                b'+++ empty-file\t(revision 0)\n')
+
+        files = self.tool.get_parser(diff).parse()
+        self.assertEqual(len(files), 1)
+        self.assertEqual(files[0].origFile, 'empty-file')
+        self.assertEqual(files[0].newFile, 'empty-file')
+        self.assertEqual(files[0].origInfo, '(revision 0)')
+        self.assertEqual(files[0].newInfo, '(revision 0)')
+        self.assertFalse(files[0].binary)
+        self.assertFalse(files[0].deleted)
+        self.assertEqual(files[0].insert_count, 0)
+        self.assertEqual(files[0].delete_count, 0)
+
+    def test_diff_with_deleted_empty_file(self):
+        """Testing parsing SVN diff with deleted empty file"""
+        diff = (b'Index: empty-file\t(deleted)\n'
+                b'==========================================================='
+                b'========\n'
+                b'--- empty-file\t(revision 4)\n'
+                b'+++ empty-file\t(working copy)\n')
+
+        files = self.tool.get_parser(diff).parse()
+        self.assertEqual(len(files), 1)
+        self.assertEqual(files[0].origFile, 'empty-file')
+        self.assertEqual(files[0].newFile, 'empty-file')
+        self.assertEqual(files[0].origInfo, '(revision 4)')
+        self.assertEqual(files[0].newInfo, '(working copy)')
+        self.assertFalse(files[0].binary)
+        self.assertTrue(files[0].deleted)
+        self.assertEqual(files[0].insert_count, 0)
+        self.assertEqual(files[0].delete_count, 0)
+
     def test_get_branches(self):
         """Testing SVN (<backend>) get_branches"""
         branches = self.tool.get_branches()
@@ -1492,6 +1530,38 @@ class MercurialTests(SCMTestCase):
         file = self._first_file_in_diff(diffContents)
         self.assertEqual(file.origFile, "readme")
 
+    def test_diff_parser_with_added_empty_file(self):
+        """Testing HgDiffParser with a diff with an added empty file"""
+        diff = (b'diff -r 356a6127ef19 -r 4960455a8e88 empty\n'
+                b'--- /dev/null\n'
+                b'+++ b/empty\n')
+
+        file = self._first_file_in_diff(diff)
+        self.assertEqual(file.origInfo, PRE_CREATION)
+        self.assertEqual(file.origFile, 'empty')
+        self.assertEqual(file.newInfo, '4960455a8e88')
+        self.assertEqual(file.newFile, 'empty')
+        self.assertFalse(file.binary)
+        self.assertFalse(file.deleted)
+        self.assertEqual(file.insert_count, 0)
+        self.assertEqual(file.delete_count, 0)
+
+    def test_diff_parser_with_deleted_empty_file(self):
+        """Testing HgDiffParser with a diff with a deleted empty file"""
+        diff = (b'diff -r 356a6127ef19 -r 4960455a8e88 empty\n'
+                b'--- a/empty\n'
+                b'+++ /dev/null\n')
+
+        file = self._first_file_in_diff(diff)
+        self.assertEqual(file.origInfo, '356a6127ef19')
+        self.assertEqual(file.origFile, 'empty')
+        self.assertEqual(file.newInfo, '4960455a8e88')
+        self.assertEqual(file.newFile, 'empty')
+        self.assertFalse(file.binary)
+        self.assertTrue(file.deleted)
+        self.assertEqual(file.insert_count, 0)
+        self.assertEqual(file.delete_count, 0)
+
     def test_diff_parser_uncommitted(self):
         """Testing HgDiffParser with a diff with an uncommitted change"""
         diffContents = (b'diff -r bf544ea505f8 readme\n'
@@ -1805,23 +1875,50 @@ class GitTests(SCMTestCase):
         """Testing parsing Git diff new file, no content"""
         diff = self._read_fixture('git_newfile_nocontent.diff')
         files = self.tool.get_parser(diff).parse()
-        self.assertEqual(len(files), 0)
+        self.assertEqual(len(files), 1)
+
+        file = self._get_file_in_diff(diff)
+        self.assertEqual(file.origFile, 'newfile')
+        self.assertEqual(file.newFile, 'newfile')
+        self.assertEqual(file.origInfo, PRE_CREATION)
+        self.assertEqual(file.newInfo, 'e69de29')
+        self.assertFalse(file.binary)
+        self.assertFalse(file.deleted)
+        lines = file.data.splitlines()
+        self.assertEqual(len(lines), 3)
+        self.assertEqual(lines[0], "diff --git a/newfile b/newfile")
+        self.assertEqual(file.insert_count, 0)
+        self.assertEqual(file.delete_count, 0)
 
     def test_new_file_no_content_with_following_diff(self):
         """Testing parsing Git diff new file, no content, with following"""
         diff = self._read_fixture('git_newfile_nocontent2.diff')
-        self.assertEqual(len(self.tool.get_parser(diff).parse()), 1)
+        files = self.tool.get_parser(diff).parse()
+        self.assertEqual(len(files), 2)
 
-        file = self._get_file_in_diff(diff)
-        self.assertEqual(file.origFile, 'cfg/testcase.ini')
-        self.assertEqual(file.newFile, 'cfg/testcase.ini')
-        self.assertEqual(file.origInfo, 'cc18ec8')
-        self.assertEqual(file.newInfo, '5e70b73')
-        self.assertEqual(file.data.splitlines()[0],
+        self.assertEqual(files[0].origFile, 'newfile')
+        self.assertEqual(files[0].newFile, 'newfile')
+        self.assertEqual(files[0].origInfo, PRE_CREATION)
+        self.assertEqual(files[0].newInfo, 'e69de29')
+        self.assertFalse(files[0].binary)
+        self.assertFalse(files[0].deleted)
+        lines = files[0].data.splitlines()
+        self.assertEqual(len(lines), 3)
+        self.assertEqual(lines[0], "diff --git a/newfile b/newfile")
+        self.assertEqual(files[0].insert_count, 0)
+        self.assertEqual(files[0].delete_count, 0)
+
+        self.assertEqual(files[1].origFile, 'cfg/testcase.ini')
+        self.assertEqual(files[1].newFile, 'cfg/testcase.ini')
+        self.assertEqual(files[1].origInfo, 'cc18ec8')
+        self.assertEqual(files[1].newInfo, '5e70b73')
+        lines = files[1].data.splitlines()
+        self.assertEqual(len(lines), 13)
+        self.assertEqual(lines[0],
                          "diff --git a/cfg/testcase.ini b/cfg/testcase.ini")
-        self.assertEqual(file.data.splitlines()[-1], '+db = pyunit')
-        self.assertEqual(file.insert_count, 2)
-        self.assertEqual(file.delete_count, 1)
+        self.assertEqual(lines[-1], '+db = pyunit')
+        self.assertEqual(files[1].insert_count, 2)
+        self.assertEqual(files[1].delete_count, 1)
 
     def test_del_file_diff(self):
         """Testing parsing Git diff with deleted file"""
@@ -1840,6 +1937,76 @@ class GitTests(SCMTestCase):
         self.assertEqual(file.data.splitlines()[-1], "-Goodbye")
         self.assertEqual(file.insert_count, 0)
         self.assertEqual(file.delete_count, 1)
+
+    def test_del_file_no_content_diff(self):
+        """Testing parsing Git diff with deleted file, no content"""
+        diff = (b'diff --git a/empty b/empty\n'
+                b'deleted file mode 100644\n'
+                b'index e69de29bb2d1d6434b8b29ae775ad8c2e48c5391..'
+                b'0000000000000000000000000000000000000000\n')
+        files = self.tool.get_parser(diff).parse()
+        self.assertEqual(len(files), 1)
+
+        self.assertEqual(files[0].origFile, 'empty')
+        self.assertEqual(files[0].newFile, 'empty')
+        self.assertEqual(files[0].origInfo,
+                         'e69de29bb2d1d6434b8b29ae775ad8c2e48c5391')
+        self.assertEqual(files[0].newInfo,
+                         '0000000000000000000000000000000000000000')
+        self.assertFalse(files[0].binary)
+        self.assertTrue(files[0].deleted)
+        self.assertEqual(len(files[0].data), 141)
+        self.assertEqual(files[0].data.splitlines()[0],
+                         "diff --git a/empty b/empty")
+        self.assertEqual(files[0].insert_count, 0)
+        self.assertEqual(files[0].delete_count, 0)
+
+    def test_del_file_no_content_with_following_diff(self):
+        """Testing parsing Git diff with deleted file, no content, with
+        following"""
+        diff = (b'diff --git a/empty b/empty\n'
+                b'deleted file mode 100644\n'
+                b'index e69de29bb2d1d6434b8b29ae775ad8c2e48c5391..'
+                b'0000000000000000000000000000000000000000\n'
+                b'diff --git a/foo/bar b/foo/bar\n'
+                b'index 484ba93ef5b0aed5b72af8f4e9dc4cfd10ef1a81..'
+                b'0ae4095ddfe7387d405bd53bd59bbb5d861114c5 100644\n'
+                b'--- a/foo/bar\n'
+                b'+++ b/foo/bar\n'
+                b'@@ -1 +1,2 @@\n'
+                b'+Hello!\n'
+                b'blah\n')
+        files = self.tool.get_parser(diff).parse()
+        self.assertEqual(len(files), 2)
+
+        self.assertEqual(files[0].origFile, 'empty')
+        self.assertEqual(files[0].newFile, 'empty')
+        self.assertEqual(files[0].origInfo,
+                         'e69de29bb2d1d6434b8b29ae775ad8c2e48c5391')
+        self.assertEqual(files[0].newInfo,
+                         '0000000000000000000000000000000000000000')
+        self.assertFalse(files[0].binary)
+        self.assertTrue(files[0].deleted)
+        self.assertEqual(len(files[0].data), 141)
+        self.assertEqual(files[0].data.splitlines()[0],
+                         "diff --git a/empty b/empty")
+        self.assertEqual(files[0].insert_count, 0)
+        self.assertEqual(files[0].delete_count, 0)
+
+        self.assertEqual(files[1].origFile, 'foo/bar')
+        self.assertEqual(files[1].newFile, 'foo/bar')
+        self.assertEqual(files[1].origInfo,
+                         '484ba93ef5b0aed5b72af8f4e9dc4cfd10ef1a81')
+        self.assertEqual(files[1].newInfo,
+                         '0ae4095ddfe7387d405bd53bd59bbb5d861114c5')
+        self.assertFalse(files[1].binary)
+        self.assertFalse(files[1].deleted)
+        lines = files[1].data.splitlines()
+        self.assertEqual(len(lines), 7)
+        self.assertEqual(lines[0], "diff --git a/foo/bar b/foo/bar")
+        self.assertEqual(lines[5], "+Hello!")
+        self.assertEqual(files[1].insert_count, 1)
+        self.assertEqual(files[1].delete_count, 0)
 
     def test_binary_diff(self):
         """Testing parsing Git diff with binary"""
@@ -1865,7 +2032,7 @@ class GitTests(SCMTestCase):
         """Testing parsing Git diff with existing and new files"""
         diff = self._read_fixture('git_complex.diff')
         files = self.tool.get_parser(diff).parse()
-        self.assertEqual(len(files), 6)
+        self.assertEqual(len(files), 7)
         self.assertEqual(files[0].origFile, 'cfg/testcase.ini')
         self.assertEqual(files[0].newFile, 'cfg/testcase.ini')
         self.assertEqual(files[0].origInfo, '5e35098')
@@ -1880,30 +2047,43 @@ class GitTests(SCMTestCase):
         self.assertEqual(files[0].data.splitlines()[13],
                          "         if isinstance(value, basestring):")
 
-        self.assertEqual(files[1].origFile, 'tests/tests.py')
-        self.assertEqual(files[1].newFile, 'tests/tests.py')
+        self.assertEqual(files[1].origFile, 'tests/models.py')
+        self.assertEqual(files[1].newFile, 'tests/models.py')
         self.assertEqual(files[1].origInfo, PRE_CREATION)
-        self.assertEqual(files[1].newInfo, 'e279a06')
+        self.assertEqual(files[1].newInfo, 'e69de29')
         self.assertFalse(files[1].binary)
         self.assertFalse(files[1].deleted)
-        self.assertEqual(files[1].insert_count, 2)
+        self.assertEqual(files[1].insert_count, 0)
         self.assertEqual(files[1].delete_count, 0)
         lines = files[1].data.splitlines()
+        self.assertEqual(len(lines), 3)
+        self.assertEqual(lines[0],
+                         "diff --git a/tests/models.py b/tests/models.py")
+
+        self.assertEqual(files[2].origFile, 'tests/tests.py')
+        self.assertEqual(files[2].newFile, 'tests/tests.py')
+        self.assertEqual(files[2].origInfo, PRE_CREATION)
+        self.assertEqual(files[2].newInfo, 'e279a06')
+        self.assertFalse(files[2].binary)
+        self.assertFalse(files[2].deleted)
+        self.assertEqual(files[2].insert_count, 2)
+        self.assertEqual(files[2].delete_count, 0)
+        lines = files[2].data.splitlines()
         self.assertEqual(len(lines), 8)
         self.assertEqual(lines[0],
                          "diff --git a/tests/tests.py b/tests/tests.py")
         self.assertEqual(lines[7],
                          "+This is some new content")
 
-        self.assertEqual(files[2].origFile, 'pysvn-1.5.1.tar.gz')
-        self.assertEqual(files[2].newFile, 'pysvn-1.5.1.tar.gz')
-        self.assertEqual(files[2].origInfo, PRE_CREATION)
-        self.assertEqual(files[2].newInfo, '86b520c')
-        self.assertTrue(files[2].binary)
-        self.assertFalse(files[2].deleted)
-        self.assertEqual(files[2].insert_count, 0)
-        self.assertEqual(files[2].delete_count, 0)
-        lines = files[2].data.splitlines()
+        self.assertEqual(files[3].origFile, 'pysvn-1.5.1.tar.gz')
+        self.assertEqual(files[3].newFile, 'pysvn-1.5.1.tar.gz')
+        self.assertEqual(files[3].origInfo, PRE_CREATION)
+        self.assertEqual(files[3].newInfo, '86b520c')
+        self.assertTrue(files[3].binary)
+        self.assertFalse(files[3].deleted)
+        self.assertEqual(files[3].insert_count, 0)
+        self.assertEqual(files[3].delete_count, 0)
+        lines = files[3].data.splitlines()
         self.assertEqual(len(lines), 4)
         self.assertEqual(
             lines[0], "diff --git a/pysvn-1.5.1.tar.gz b/pysvn-1.5.1.tar.gz")
@@ -1911,41 +2091,41 @@ class GitTests(SCMTestCase):
                          'Binary files /dev/null and b/pysvn-1.5.1.tar.gz '
                          'differ')
 
-        self.assertEqual(files[3].origFile, 'readme')
-        self.assertEqual(files[3].newFile, 'readme')
-        self.assertEqual(files[3].origInfo, '5e35098')
-        self.assertEqual(files[3].newInfo, 'e254ef4')
-        self.assertFalse(files[3].binary)
-        self.assertFalse(files[3].deleted)
-        self.assertEqual(files[3].insert_count, 1)
-        self.assertEqual(files[3].delete_count, 1)
-        lines = files[3].data.splitlines()
+        self.assertEqual(files[4].origFile, 'readme')
+        self.assertEqual(files[4].newFile, 'readme')
+        self.assertEqual(files[4].origInfo, '5e35098')
+        self.assertEqual(files[4].newInfo, 'e254ef4')
+        self.assertFalse(files[4].binary)
+        self.assertFalse(files[4].deleted)
+        self.assertEqual(files[4].insert_count, 1)
+        self.assertEqual(files[4].delete_count, 1)
+        lines = files[4].data.splitlines()
         self.assertEqual(len(lines), 7)
         self.assertEqual(lines[0], "diff --git a/readme b/readme")
         self.assertEqual(lines[6], "+Hello there")
 
-        self.assertEqual(files[4].origFile, 'OLDFILE')
-        self.assertEqual(files[4].newFile, 'OLDFILE')
-        self.assertEqual(files[4].origInfo, '8ebcb01')
-        self.assertEqual(files[4].newInfo, '0000000')
-        self.assertFalse(files[4].binary)
-        self.assertTrue(files[4].deleted)
-        self.assertEqual(files[4].insert_count, 0)
-        self.assertEqual(files[4].delete_count, 1)
-        lines = files[4].data.splitlines()
+        self.assertEqual(files[5].origFile, 'OLDFILE')
+        self.assertEqual(files[5].newFile, 'OLDFILE')
+        self.assertEqual(files[5].origInfo, '8ebcb01')
+        self.assertEqual(files[5].newInfo, '0000000')
+        self.assertFalse(files[5].binary)
+        self.assertTrue(files[5].deleted)
+        self.assertEqual(files[5].insert_count, 0)
+        self.assertEqual(files[5].delete_count, 1)
+        lines = files[5].data.splitlines()
         self.assertEqual(len(lines), 7)
         self.assertEqual(lines[0], "diff --git a/OLDFILE b/OLDFILE")
         self.assertEqual(lines[6], "-Goodbye")
 
-        self.assertEqual(files[5].origFile, 'readme2')
-        self.assertEqual(files[5].newFile, 'readme2')
-        self.assertEqual(files[5].origInfo, '5e43098')
-        self.assertEqual(files[5].newInfo, 'e248ef4')
-        self.assertFalse(files[5].binary)
-        self.assertFalse(files[5].deleted)
-        self.assertEqual(files[5].insert_count, 1)
-        self.assertEqual(files[5].delete_count, 1)
-        lines = files[5].data.splitlines()
+        self.assertEqual(files[6].origFile, 'readme2')
+        self.assertEqual(files[6].newFile, 'readme2')
+        self.assertEqual(files[6].origInfo, '5e43098')
+        self.assertEqual(files[6].newInfo, 'e248ef4')
+        self.assertFalse(files[6].binary)
+        self.assertFalse(files[6].deleted)
+        self.assertEqual(files[6].insert_count, 1)
+        self.assertEqual(files[6].delete_count, 1)
+        lines = files[6].data.splitlines()
         self.assertEqual(len(lines), 7)
         self.assertEqual(lines[0], "diff --git a/readme2 b/readme2")
         self.assertEqual(lines[6], "+Hello there")

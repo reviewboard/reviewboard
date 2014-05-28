@@ -131,16 +131,21 @@ class DiffChunkGenerator(object):
     def get_chunks(self):
         """Returns the chunks for the given diff information.
 
-        If the file is binary or deleted, or if the file has moved with no
-        additional changes, then an empty list of chunks will be returned.
+        If the file is binary or is an added or deleted 0-length file, or if
+        the file has moved with no additional changes, then an empty list of
+        chunks will be returned.
 
         If there are chunks already computed in the cache, they will be
         returned. Otherwise, new chunks will be generated, stored in cache,
         and returned.
         """
+        counts = self.filediff.get_line_counts()
+
         if (self.filediff.binary or
-                self.filediff.deleted or
-                self.filediff.source_revision == ''):
+            self.filediff.source_revision == '' or
+            ((self.filediff.is_new or self.filediff.deleted) and
+             counts['insert_count'] == 0 and
+             counts['delete_count'] == 0)):
             return []
 
         return cache_memoize(self.make_cache_key(),

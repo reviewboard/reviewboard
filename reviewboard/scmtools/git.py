@@ -297,7 +297,12 @@ class GitDiffParser(DiffParser):
                 empty_change = False
                 linenum = self.parse_diff_line(linenum, file_info)
 
-        if empty_change and not (file_info.moved or file_info.copied):
+        # For an empty change, we keep the file's info only if it is a new
+        # 0-length file, a moved file, a copied file, or a deleted 0-length
+        # file.
+        if (empty_change and
+            file_info.origInfo != PRE_CREATION and
+            not (file_info.moved or file_info.copied or file_info.deleted)):
             # We didn't find any interesting content, so leave out this
             # file's info.
             #

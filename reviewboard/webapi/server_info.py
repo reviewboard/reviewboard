@@ -47,8 +47,18 @@ def get_server_info(request=None):
                 'commit_ids': True,
             },
             'scmtools': {
+                'git': {
+                    'empty_files': True,
+                },
+                'mercurial': {
+                    'empty_files': True,
+                },
                 'perforce': {
                     'moved_files': True,
+                    'empty_files': True,
+                },
+                'svn': {
+                    'empty_files': True,
                 },
             },
             'text': {
