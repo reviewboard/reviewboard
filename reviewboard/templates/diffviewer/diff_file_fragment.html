@@ -176,10 +176,22 @@
    <td colspan="4">{% trans "No changes were made to this file." %}</td>
   </tr>
  </tbody>
+{% elif file.newfile and file.num_changes == 0 %}
+ <tbody class="new-empty-file">
+  <tr>
+   <td colspan="4">{% trans "This is an empty file." %}</td>
+  </tr>
+ </tbody>
 {% elif file.deleted %}
  <tbody class="deleted">
   <tr>
-   <td colspan="4">{% trans "This file was deleted. The content cannot be displayed." %}</td>
+   <td colspan="4">
+{%  if file.num_changes == 0 %}
+{%   trans "This empty file was deleted. The content cannot be displayed." %}
+{%  else %}
+{%   trans "This file was deleted. The content cannot be displayed." %}
+{%  endif %}
+   </td>
   </tr>
  </tbody>
 {% else %}

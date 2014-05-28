@@ -192,6 +192,11 @@ class HgDiffParser(DiffParser):
             # check if we're a new file
             if self.lines[linenum].split()[1] == b"/dev/null":
                 info['origInfo'] = PRE_CREATION
+
+            # Check if this is a deleted file.
+            if self.lines[linenum + 1].split()[1] == b'/dev/null':
+                info['deleted'] = True
+
             return True
         else:
             return False
