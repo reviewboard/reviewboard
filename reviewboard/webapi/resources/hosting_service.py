@@ -9,6 +9,7 @@ from djblets.util.decorators import augment_method_from
 from reviewboard.hostingsvcs.service import (get_hosting_services,
                                              HostingService)
 from reviewboard.webapi.base import WebAPIResource
+from reviewboard.webapi.resources import resources
 
 
 class HostingServiceResource(WebAPIResource):
@@ -81,6 +82,25 @@ class HostingServiceResource(WebAPIResource):
 
         return super(HostingServiceResource, self).get_serializer_for_object(
             obj)
+
+    def get_links(self, items, obj=None, *args, **kwargs):
+        links = super(HostingServiceResource, self).get_links(
+            items, obj, *args, **kwargs)
+
+        if obj:
+            request = kwargs.get('request')
+
+            accounts_url = resources.hosting_service_account.get_list_url(
+                local_site_name=request._local_site_name)
+
+            links['accounts'] = {
+                'method': 'GET',
+                'href': request.build_absolute_uri(
+                    '%s?service=%s' % (accounts_url, obj.id)
+                ),
+            }
+
+        return links
 
     @augment_method_from(WebAPIResource)
     def get_list(self, request, *args, **kwargs):

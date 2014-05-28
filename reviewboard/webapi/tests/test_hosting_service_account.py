@@ -60,6 +60,42 @@ class ResourceListTests(BaseWebAPITestCase):
                 hosting_service_account_list_mimetype,
                 accounts)
 
+    def test_get_with_service(self):
+        """Testing the GET hosting-service-accounts/ API with service="""
+        HostingServiceAccount.objects.create(
+            service_name='googlecode',
+            username='bob')
+
+        account = HostingServiceAccount.objects.create(
+            service_name='github',
+            username='bob')
+
+        rsp = self.apiGet(
+            get_hosting_service_account_list_url(),
+            query={'service': 'github'},
+            expected_mimetype=hosting_service_account_list_mimetype)
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(len(rsp['hosting_service_accounts']), 1)
+        self.compare_item(rsp['hosting_service_accounts'][0], account)
+
+    def test_get_with_username(self):
+        """Testing the GET hosting-service-accounts/ API with username="""
+        account = HostingServiceAccount.objects.create(
+            service_name='googlecode',
+            username='bob')
+
+        HostingServiceAccount.objects.create(
+            service_name='googlecode',
+            username='frank')
+
+        rsp = self.apiGet(
+            get_hosting_service_account_list_url(),
+            query={'username': 'bob'},
+            expected_mimetype=hosting_service_account_list_mimetype)
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(len(rsp['hosting_service_accounts']), 1)
+        self.compare_item(rsp['hosting_service_accounts'][0], account)
+
     #
     # HTTP POST tests
     #

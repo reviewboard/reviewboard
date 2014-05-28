@@ -50,10 +50,21 @@ class HostingServiceAccountResource(WebAPIResource):
     allowed_methods = ('GET', 'POST',)
 
     @webapi_check_login_required
-    def get_queryset(self, request, local_site_name=None, *args, **kwargs):
+    def get_queryset(self, request, local_site_name=None, is_list=False,
+                     *args, **kwargs):
         local_site = self._get_local_site(local_site_name)
-        return self.model.objects.accessible(visible_only=True,
-                                             local_site=local_site)
+
+        queryset = self.model.objects.accessible(visible_only=True,
+                                                 local_site=local_site)
+
+        if is_list:
+            if 'username' in request.GET:
+                queryset = queryset.filter(username=request.GET['username'])
+
+            if 'service' in request.GET:
+                queryset = queryset.filter(service_name=request.GET['service'])
+
+        return queryset
 
     def has_access_permissions(self, request, account, *args, **kwargs):
         return account.is_accessible_by(request.user)
@@ -66,6 +77,19 @@ class HostingServiceAccountResource(WebAPIResource):
 
     @webapi_check_local_site
     @augment_method_from(WebAPIResource)
+    @webapi_request_fields(
+        optional=dict({
+            'username': {
+                'type': six.text_type,
+                'description': 'Filter accounts by username.',
+            },
+            'service': {
+                'type': six.text_type,
+                'description': 'Filter accounts by the hosting service ID.',
+            },
+        }, **WebAPIResource.get_list.optional_fields),
+        required=WebAPIResource.get_list.required_fields
+    )
     def get_list(self, request, *args, **kwargs):
         """Retrieves the list of accounts on the server.
 
