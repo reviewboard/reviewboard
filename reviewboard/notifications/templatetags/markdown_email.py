@@ -19,8 +19,8 @@ class InlineStyleProcessor(Treeprocessor):
         # mimic the .rich-text rules in reviews.less. This does not do quite
         # everything that the reviews.less rules do, because implementing CSS
         # selectors in python is pretty gross to begin with, and even then
-        # we're at the mercy of whatever the email client is going to do. The
-        # end result is that the email will look similar but not identical to
+        # we're at the mercy of whatever the e-mail client is going to do. The
+        # end result is that the e-mail will look similar but not identical to
         # the page.
         style = {
             'margin': 0,

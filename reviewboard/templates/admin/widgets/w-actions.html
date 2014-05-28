@@ -94,14 +94,14 @@
     {{disabled_img}}
 {% endif %}
    </a></li>
-   <li><a href="{% url 'settings-email' %}">{% trans "Review Emails" %}
+   <li><a href="{% url 'settings-email' %}">{% trans "Review E-mails" %}
 {% if siteconfig_settings.mail_send_review_mail %}
     {{enabled_img}}
 {% else %}
     {{disabled_img}}
 {% endif %}
    </a></li>
-   <li><a href="{% url 'settings-email' %}">{% trans "Email TLS Authentication" %}
+   <li><a href="{% url 'settings-email' %}">{% trans "E-mail TLS Authentication" %}
 {% if siteconfig_settings.mail_use_tls %}
     {{enabled_img}}
 {% else %}

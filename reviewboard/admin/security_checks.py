@@ -8,6 +8,7 @@ from django.contrib.sites.models import Site
 from django.core.files.base import ContentFile
 from django.core.files.storage import FileSystemStorage
 from django.utils import six
+from django.utils.six.moves.urllib.error import HTTPError
 from django.utils.six.moves.urllib.request import urlopen
 from django.utils.translation import ngettext
 from django.utils.translation import ugettext_lazy as _
@@ -152,7 +153,15 @@ class ExecutableCodeCheck(BaseSecurityCheck):
                     self.storage.delete('exec_check' + ext)
 
     def download_and_compare(self, to_download):
-        data = urlopen(_get_url(self.directory) + to_download).read()
+        try:
+            data = urlopen(_get_url(self.directory) + to_download).read()
+        except HTTPError as e:
+            # An HTTP 403 is also an acceptable response
+            if e.code == 403:
+                return True
+            else:
+                raise e
+
         with self.storage.open(to_download, 'r') as f:
             return data == f.read()
 
@@ -166,7 +175,7 @@ class AllowedHostsCheck(BaseSecurityCheck):
     desc = _('ALLOWED_HOSTS is a list containing the host/domain names that '
              'Review Board will consider valid for this server to serve. '
              'This is a security measure to prevent an attacker from '
-             'poisoning cache and password reset emails with links to '
+             'poisoning cache and password reset e-mails with links to '
              'malicious hosts by submitting requests with a fake HTTP Host '
              'header, which is possible even under many seemingly-safe web '
              'server configurations.')

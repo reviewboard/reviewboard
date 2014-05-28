@@ -364,7 +364,7 @@ class GitLab(HostingService):
             raise
 
     def _is_email(self, email):
-        """Returns True if given string is valid email address"""
+        """Returns True if given string is valid e-mail address"""
         try:
             validate_email(email)
             return True

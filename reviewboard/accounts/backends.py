@@ -459,13 +459,14 @@ class LDAPBackend(AuthBackend):
                     try:
                         email = user_info[settings.LDAP_EMAIL_ATTRIBUTE][0]
                     except KeyError:
-                        logging.error('LDAP: could not get email address for '
+                        logging.error('LDAP: could not get e-mail address for '
                                       'user %s using attribute %s',
                                       username, settings.LDAP_EMAIL_ATTRIBUTE)
                         email = ''
                 else:
-                    logging.warning("LDAP: email for user %s is not specified",
-                                    username)
+                    logging.warning(
+                        'LDAP: e-mail for user %s is not specified',
+                        username)
                     email = ''
 
                 user = User(username=username,

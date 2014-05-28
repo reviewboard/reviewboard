@@ -147,7 +147,7 @@ class ReviewRequestEmailTests(TestCase, EmailTestHelper):
         self.assertEqual(message['Sender'], self._get_sender(review.user))
 
     def test_review_close_no_email(self):
-        """Tests email is not generated when a review is closed and email
+        """Tests e-mail is not generated when a review is closed and e-mail
         setting is False
         """
         review_request = self.create_review_request()
@@ -162,7 +162,7 @@ class ReviewRequestEmailTests(TestCase, EmailTestHelper):
         self.assertEqual(len(mail.outbox), 0)
 
     def test_review_close_with_email(self):
-        """Tests email is generated when a review is closed and email setting
+        """Tests e-mail is generated when a review is closed and e-mail setting
         is True
         """
         siteconfig = SiteConfiguration.objects.get_current()
