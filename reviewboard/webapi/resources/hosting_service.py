@@ -92,13 +92,23 @@ class HostingServiceResource(WebAPIResource):
 
             accounts_url = resources.hosting_service_account.get_list_url(
                 local_site_name=request._local_site_name)
+            repos_url = resources.repository.get_list_url(
+                local_site_name=request._local_site_name)
 
-            links['accounts'] = {
-                'method': 'GET',
-                'href': request.build_absolute_uri(
-                    '%s?service=%s' % (accounts_url, obj.id)
-                ),
-            }
+            links.update({
+                'accounts': {
+                    'method': 'GET',
+                    'href': request.build_absolute_uri(
+                        '%s?service=%s' % (accounts_url, obj.id)
+                    ),
+                },
+                'repositories': {
+                    'method': 'GET',
+                    'href': request.build_absolute_uri(
+                        '%s?hosting-service=%s' % (repos_url, obj.id)
+                    ),
+                }
+            })
 
         return links
 

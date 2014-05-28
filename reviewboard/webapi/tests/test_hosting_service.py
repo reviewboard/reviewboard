@@ -27,17 +27,24 @@ def _compare_item(self, item_rsp, hosting_service):
     self.assertEqual(item_rsp['supported_scmtools'],
                      hosting_service.supported_scmtools)
 
-    # Check the links
-    self.assertIn('accounts', item_rsp['links'])
-    accounts_url = 'http://testserver/'
+    # Compute the base URL for links.
+    url_base = 'http://testserver/'
 
     if '/s/local-site-1/' in item_rsp['links']['self']['href']:
-        accounts_url += 's/local-site-1/'
+        url_base += 's/local-site-1/'
 
-    accounts_url += ('api/hosting-service-accounts/?service=%s'
-                     % hosting_service.id)
+    url_base += 'api/'
 
+    # Check the links.
+    accounts_url = url_base + ('hosting-service-accounts/?service=%s'
+                               % hosting_service.id)
+    self.assertIn('accounts', item_rsp['links'])
     self.assertEqual(item_rsp['links']['accounts']['href'], accounts_url)
+
+    accounts_url = url_base + ('repositories/?hosting-service=%s'
+                               % hosting_service.id)
+    self.assertIn('repositories', item_rsp['links'])
+    self.assertEqual(item_rsp['links']['repositories']['href'], accounts_url)
 
 
 @six.add_metaclass(BasicTestsMetaclass)
