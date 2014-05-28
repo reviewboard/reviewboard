@@ -164,7 +164,7 @@ class HostingServiceAccountResource(WebAPIResource):
                     'reason': six.text_type(e),
                 }
 
-        service.save()
+        account.save()
 
         return 201, {
             self.item_result_key: account,

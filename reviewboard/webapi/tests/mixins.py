@@ -276,7 +276,7 @@ class BasicGetItemTestsWithLocalSiteMixin(BasicGetItemTestsMixin):
 
         rsp = self.apiGet(url, expected_mimetype=mimetype)
         self.assertEqual(rsp['stat'], 'ok')
-        self.assertTrue(self.resource.item_result_key in rsp)
+        self.assertIn(self.resource.item_result_key, rsp)
 
         item_rsp = rsp[self.resource.item_result_key]
         self.compare_item(item_rsp, item)

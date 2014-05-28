@@ -1,5 +1,6 @@
 from __future__ import unicode_literals
 
+from reviewboard.hostingsvcs.models import HostingServiceAccount
 from reviewboard.hostingsvcs.service import HostingService
 from reviewboard.reviews.models import ReviewRequest
 from reviewboard.scmtools.models import Repository
@@ -230,6 +231,22 @@ def get_hosting_service_item_url(hosting_service_or_id, local_site_name=None):
     return resources.hosting_service.get_item_url(
         local_site_name=local_site_name,
         hosting_service_id=hosting_service_id)
+
+
+#
+# HostingServiceAccountResource
+#
+def get_hosting_service_account_list_url(local_site_name=None):
+    return resources.hosting_service_account.get_list_url(
+        local_site_name=local_site_name)
+
+
+def get_hosting_service_account_item_url(account_or_id, local_site_name=None):
+    account_id = _normalize_id(account_or_id, HostingServiceAccount)
+
+    return resources.hosting_service_account.get_item_url(
+        local_site_name=local_site_name,
+        account_id=account_id)
 
 
 #
