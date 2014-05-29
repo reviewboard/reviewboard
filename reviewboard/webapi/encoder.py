@@ -1,7 +1,7 @@
 from __future__ import unicode_literals
 
 from django.template.defaultfilters import timesince
-from djblets.webapi.core import WebAPIEncoder
+from djblets.webapi.encoders import WebAPIEncoder
 
 from reviewboard.diffviewer.models import FileDiff, DiffSet
 from reviewboard.reviews.models import (ReviewRequest, Review, Group, Comment,

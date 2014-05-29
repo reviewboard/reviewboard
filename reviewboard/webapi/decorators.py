@@ -2,13 +2,13 @@ from __future__ import unicode_literals
 
 from django.http import HttpRequest
 from djblets.siteconfig.models import SiteConfiguration
-from djblets.webapi.core import WebAPIResponse, WebAPIResponseError
 from djblets.webapi.decorators import (webapi_decorator,
                                        webapi_login_required,
                                        webapi_response_errors,
                                        _find_httprequest)
 from djblets.webapi.errors import (DOES_NOT_EXIST, NOT_LOGGED_IN,
                                    PERMISSION_DENIED)
+from djblets.webapi.responses import WebAPIResponse, WebAPIResponseError
 
 from reviewboard.site.models import LocalSite
 

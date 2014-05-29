@@ -6,12 +6,12 @@ from django.utils import six
 from django.utils.six.moves.urllib.parse import quote as urllib_quote
 from djblets.util.decorators import augment_method_from
 from djblets.util.http import get_http_requested_mimetype, set_last_modified
-from djblets.webapi.core import WebAPIResponse
 from djblets.webapi.decorators import (webapi_login_required,
                                        webapi_request_fields,
                                        webapi_response_errors)
 from djblets.webapi.errors import (DOES_NOT_EXIST, NOT_LOGGED_IN,
                                    PERMISSION_DENIED)
+from djblets.webapi.responses import WebAPIResponse
 
 from reviewboard.attachments.models import FileAttachment
 from reviewboard.diffviewer.diffutils import (get_diff_files,

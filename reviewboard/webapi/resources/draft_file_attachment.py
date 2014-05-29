@@ -3,8 +3,8 @@ from __future__ import unicode_literals
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Q
 from djblets.util.decorators import augment_method_from
-from djblets.webapi.core import WebAPIResponsePaginated
 from djblets.webapi.decorators import webapi_login_required
+from djblets.webapi.responses import WebAPIResponsePaginated
 
 from reviewboard.webapi.base import WebAPIResource
 from reviewboard.webapi.decorators import webapi_check_local_site
