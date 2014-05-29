@@ -292,7 +292,7 @@ class HostingService(object):
         """
         raise NotImplementedError
 
-    def get_remote_repositories(self, owner, plan=None, start=None,
+    def get_remote_repositories(self, owner=None, plan=None, start=None,
                                 per_page=None):
         """Get a list of remote repositories for the owner and plan.
 
@@ -302,6 +302,11 @@ class HostingService(object):
         The ``start`` and ``per_page`` parameters can be used to control
         where pagination begins and how many results are returned per page,
         if the subclass supports it.
+
+        ``owner`` is expected to default to a reasonable value (typically
+        the linked account's username). Likewise, ``plan`` is expected to
+        default to something appropriate, if the hosting service supports
+        plans.
         """
         raise NotImplementedError
 

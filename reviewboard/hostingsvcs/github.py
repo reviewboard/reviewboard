@@ -771,7 +771,7 @@ class GitHub(HostingService):
         return Commit(author_name, revision, date, message, parent_revision,
                       diff=diff)
 
-    def get_remote_repositories(self, owner, plan=None, start=None,
+    def get_remote_repositories(self, owner=None, plan=None, start=None,
                                 per_page=None):
         """Return a list of remote repositories matching the given criteria.
 
@@ -790,7 +790,16 @@ class GitHub(HostingService):
         Otherwise, `owner` is assumed to be another GitHub user, and their
         accessible repositories that they own or are a member of will be
         returned.
+
+        `owner` defaults to the linked account's username, and `plan`
+        defaults to 'public'.
         """
+        if owner is None:
+            owner = self.account.username
+
+        if plan is None:
+            plan = 'public'
+
         if plan not in ('public', 'private', 'public-org', 'private-org'):
             raise InvalidPlanError(plan)
 
