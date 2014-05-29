@@ -28,7 +28,7 @@ from reviewboard.hostingsvcs.hook_utils import (close_all_review_requests,
                                                 get_git_branch_name,
                                                 get_review_request_id,
                                                 get_server_url)
-from reviewboard.hostingsvcs.repository import HostingServiceRepository
+from reviewboard.hostingsvcs.repository import RemoteRepository
 from reviewboard.hostingsvcs.service import (HostingService,
                                              HostingServiceClient)
 from reviewboard.hostingsvcs.utils.paginator import (APIPaginator,
@@ -801,12 +801,14 @@ class GitHub(HostingService):
         return ProxyPaginator(
             paginator,
             normalize_page_data_func=lambda page_data: [
-                HostingServiceRepository(name=repo['name'],
-                                         owner=repo['owner']['login'],
-                                         scm_type='Git',
-                                         path=repo['url'],
-                                         mirror_path=repo['mirror_url'],
-                                         extra_data=repo)
+                RemoteRepository(self,
+                                 repository_id=repo['id'],
+                                 name=repo['name'],
+                                 owner=repo['owner']['login'],
+                                 scm_type='Git',
+                                 path=repo['clone_url'],
+                                 mirror_path=repo['mirror_url'],
+                                 extra_data=repo)
                 for repo in page_data
             ])
 

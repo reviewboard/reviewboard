@@ -14,7 +14,7 @@ from kgb import SpyAgency
 
 from reviewboard.hostingsvcs.errors import RepositoryError
 from reviewboard.hostingsvcs.models import HostingServiceAccount
-from reviewboard.hostingsvcs.repository import HostingServiceRepository
+from reviewboard.hostingsvcs.repository import RemoteRepository
 from reviewboard.hostingsvcs.service import (get_hosting_service,
                                              HostingService,
                                              register_hosting_service,
@@ -1302,7 +1302,7 @@ class GitHubTests(ServiceTests):
                     'login': 'myuser',
                 },
                 'name': 'myrepo',
-                'url': 'myrepo_path',
+                'clone_url': 'myrepo_path',
                 'mirror_url': 'myrepo_mirror',
                 'private': 'false'
             }
@@ -1315,7 +1315,7 @@ class GitHubTests(ServiceTests):
                     'login': 'myuser',
                 },
                 'name': 'myrepo2',
-                'url': 'myrepo_path2',
+                'clone_url': 'myrepo_path2',
                 'mirror_url': 'myrepo_mirror2',
                 'private': 'true'
             }
@@ -1350,7 +1350,7 @@ class GitHubTests(ServiceTests):
         self.assertTrue(paginator.has_next)
         repo = paginator.page_data[0]
 
-        self.assertIsInstance(repo, HostingServiceRepository)
+        self.assertIsInstance(repo, RemoteRepository)
         self.assertEqual(repo.owner, 'myuser')
         self.assertEqual(repo.name, 'myrepo')
         self.assertEqual(repo.scm_type, 'Git')
@@ -1364,7 +1364,7 @@ class GitHubTests(ServiceTests):
         self.assertFalse(paginator.has_next)
         repo = paginator.page_data[0]
 
-        self.assertIsInstance(repo, HostingServiceRepository)
+        self.assertIsInstance(repo, RemoteRepository)
         self.assertEqual(repo.owner, 'myuser')
         self.assertEqual(repo.name, 'myrepo2')
         self.assertEqual(repo.scm_type, 'Git')
@@ -1382,7 +1382,7 @@ class GitHubTests(ServiceTests):
                     'login': 'other',
                 },
                 'name': 'myrepo',
-                'url': 'myrepo_path',
+                'clone_url': 'myrepo_path',
                 'mirror_url': 'myrepo_mirror',
                 'private': 'false'
             }
@@ -1413,7 +1413,7 @@ class GitHubTests(ServiceTests):
 
         self.assertEqual(len(paginator.page_data), 1)
         public_repo = paginator.page_data[0]
-        self.assertIsInstance(public_repo, HostingServiceRepository)
+        self.assertIsInstance(public_repo, RemoteRepository)
         self.assertEqual(public_repo.owner, 'other')
         self.assertEqual(public_repo.name, 'myrepo')
         self.assertEqual(public_repo.scm_type, 'Git')
@@ -1431,7 +1431,7 @@ class GitHubTests(ServiceTests):
                     'login': 'myorg',
                 },
                 'name': 'myrepo',
-                'url': 'myrepo_path',
+                'clone_url': 'myrepo_path',
                 'mirror_url': 'myrepo_mirror',
                 'private': 'false'
             },
@@ -1441,7 +1441,7 @@ class GitHubTests(ServiceTests):
                     'login': 'myuser',
                 },
                 'name': 'myrepo2',
-                'url': 'myrepo_path2',
+                'clone_url': 'myrepo_path2',
                 'mirror_url': 'myrepo_mirror2',
                 'private': 'true'
             }
@@ -1465,14 +1465,14 @@ class GitHubTests(ServiceTests):
         self.assertEqual(len(paginator.page_data), 2)
         public_repo, private_repo = paginator.page_data
 
-        self.assertIsInstance(public_repo, HostingServiceRepository)
+        self.assertIsInstance(public_repo, RemoteRepository)
         self.assertEqual(public_repo.owner, 'myorg')
         self.assertEqual(public_repo.name, 'myrepo')
         self.assertEqual(public_repo.scm_type, 'Git')
         self.assertEqual(public_repo.path, 'myrepo_path')
         self.assertEqual(public_repo.mirror_path, 'myrepo_mirror')
 
-        self.assertIsInstance(private_repo, HostingServiceRepository)
+        self.assertIsInstance(private_repo, RemoteRepository)
         self.assertEqual(private_repo.owner, 'myuser')
         self.assertEqual(private_repo.name, 'myrepo2')
         self.assertEqual(private_repo.scm_type, 'Git')

@@ -297,7 +297,7 @@ class HostingService(object):
         """Get a list of remote repositories for the owner and plan.
 
         This should be implemented by subclasses, and is expected to return an
-        APIPaginator providing pages of HostingServiceRepository objects.
+        APIPaginator providing pages of RemoteRepository objects.
 
         The ``start`` and ``per_page`` parameters can be used to control
         where pagination begins and how many results are returned per page,
