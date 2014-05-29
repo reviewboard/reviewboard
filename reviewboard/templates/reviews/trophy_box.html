@@ -1,10 +1,12 @@
-{% load djblets_deco djblets_utils i18n reviewtags staticfiles %}
+{% load djblets_deco %}
 
-{% ifneatnumber review_request.display_id %}
-{%  box "yay" %}
-{%   definevar "trophyimg" %}rb/images/{% if milestone %}trophy{% else %}fish-trophy{% endif %}.png{% enddefinevar %}
- <img src="{% static trophyimg %}" width="32" height="48" border="0" alt="" />
- <h1>{% blocktrans with review_request.submitter|user_displayname as submitter and review_request.display_id as id %}{{submitter}} got review request #{{id}}!{% endblocktrans %}</h1>
-{%  endbox %}
-{% endifneatnumber %}
-
+{% if trophies %}
+{%  box 'yay' %}
+{%   for trophy in trophies %}
+<div>
+ <img src="{{trophy.image_url}}" width="{{trophy.image_width}}" height="{{trophy.image_height}}" />
+ <h1>{{trophy.text}}</h1>
+</div>
+{%   endfor %}
+{%  endbox 'yay' %}
+{% endif %}
