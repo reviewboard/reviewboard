@@ -1,7 +1,20 @@
 from __future__ import unicode_literals
 
+from reviewboard.hostingsvcs.service import HostingService
+from reviewboard.reviews.models import ReviewRequest
+from reviewboard.scmtools.models import Repository
 from reviewboard.site.urlresolvers import local_site_reverse
 from reviewboard.webapi.resources import resources
+
+
+def _normalize_id(value, allowed_cls, id_field='pk', ischecker=isinstance):
+    if ischecker(value, allowed_cls):
+        return getattr(value, id_field)
+    elif isinstance(value, int):
+        return value
+    else:
+        raise ValueError('Expected int or %r, but got %r instead'
+                         % (allowed_cls, value))
 
 
 #
@@ -209,10 +222,10 @@ def get_hosting_service_list_url(local_site_name=None):
 
 
 def get_hosting_service_item_url(hosting_service_or_id, local_site_name=None):
-    if isinstance(hosting_service_or_id, int):
-        hosting_service_id = hosting_service_or_id
-    else:
-        hosting_service_id = hosting_service_or_id.id
+    hosting_service_id = _normalize_id(hosting_service_or_id,
+                                       HostingService,
+                                       id_field='id',
+                                       ischecker=issubclass)
 
     return resources.hosting_service.get_item_url(
         local_site_name=local_site_name,
@@ -228,10 +241,7 @@ def get_repository_list_url(local_site_name=None):
 
 
 def get_repository_item_url(repository_or_id, local_site_name=None):
-    if isinstance(repository_or_id, int):
-        repository_id = repository_or_id
-    else:
-        repository_id = repository_or_id.pk
+    repository_id = _normalize_id(repository_or_id, Repository)
 
     return resources.repository.get_item_url(
         local_site_name=local_site_name,
@@ -484,10 +494,8 @@ def get_root_url(local_site_name=None):
 # ScreenshotResource
 #
 def get_screenshot_list_url(review_request_or_id, local_site_name=None):
-    if isinstance(review_request_or_id, int):
-        review_request_id = review_request_or_id
-    else:
-        review_request_id = review_request_or_id.display_id
+    review_request_id = _normalize_id(review_request_or_id, ReviewRequest,
+                                      id_field='display_id')
 
     return resources.screenshot.get_list_url(
         local_site_name=local_site_name,
