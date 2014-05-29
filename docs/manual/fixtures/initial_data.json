@@ -2582,7 +2582,7 @@
     "fields": {
         "username": "testuser", 
         "local_site": null, 
-        "service_name": "", 
+        "service_name": "github", 
         "visible": true, 
         "hosting_url": null, 
         "data": "{}"

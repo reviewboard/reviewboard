@@ -20,6 +20,7 @@ from reviewboard.webapi.errors import (BAD_HOST_KEY,
                                        SERVER_CONFIG_ERROR,
                                        UNVERIFIED_HOST_CERT,
                                        UNVERIFIED_HOST_KEY)
+from reviewboard.webapi.resources import resources
 
 
 class HostingServiceAccountResource(WebAPIResource):
@@ -47,7 +48,11 @@ class HostingServiceAccountResource(WebAPIResource):
     uri_object_key = 'account_id'
     autogenerate_etags = True
 
-    allowed_methods = ('GET', 'POST',)
+    allowed_methods = ('GET', 'POST')
+
+    item_child_resources = [
+        resources.remote_repository,
+    ]
 
     @webapi_check_login_required
     def get_queryset(self, request, local_site_name=None, is_list=False,

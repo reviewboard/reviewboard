@@ -67,6 +67,13 @@ class TestCase(DjbletsTestCase):
 
         return doc
 
+    def get_local_site_or_none(self, name):
+        """Returns a LocalSite matching the name, if provided, or None."""
+        if name:
+            return LocalSite.objects.get(name=name)
+        else:
+            return None
+
     def create_diff_file_attachment(self, filediff, from_modified=True,
                                     review_request=None,
                                     orig_filename='filename.png',

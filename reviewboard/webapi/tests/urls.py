@@ -250,6 +250,22 @@ def get_hosting_service_account_item_url(account_or_id, local_site_name=None):
 
 
 #
+# RemoteRepositoryResource
+#
+def get_remote_repository_list_url(account, local_site_name=None):
+    return resources.remote_repository.get_list_url(
+        local_site_name=local_site_name,
+        account_id=account.pk)
+
+
+def get_remote_repository_item_url(remote_repository, local_site_name=None):
+    return resources.remote_repository.get_item_url(
+        local_site_name=local_site_name,
+        account_id=remote_repository.hosting_service_account.pk,
+        repository_id=remote_repository.id)
+
+
+#
 # RepositoryResource
 #
 def get_repository_list_url(local_site_name=None):

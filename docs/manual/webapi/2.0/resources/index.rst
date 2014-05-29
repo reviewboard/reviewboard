@@ -57,6 +57,8 @@ Hosting Services
    hosting-service
    hosting-service-account-list
    hosting-service-account
+   remote-repository-list
+   remote-repository
 
 
 Repositories
