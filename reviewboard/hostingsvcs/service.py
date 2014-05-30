@@ -292,9 +292,9 @@ class HostingService(object):
         """
         raise NotImplementedError
 
-    def get_remote_repositories(self, owner=None, plan=None, start=None,
-                                per_page=None):
-        """Get a list of remote repositories for the owner and plan.
+    def get_remote_repositories(self, owner=None, owner_type=None,
+                                filter_type=None, start=None, per_page=None):
+        """Get a list of remote repositories for the owner.
 
         This should be implemented by subclasses, and is expected to return an
         APIPaginator providing pages of RemoteRepository objects.
@@ -304,9 +304,12 @@ class HostingService(object):
         if the subclass supports it.
 
         ``owner`` is expected to default to a reasonable value (typically
-        the linked account's username). Likewise, ``plan`` is expected to
-        default to something appropriate, if the hosting service supports
-        plans.
+        the linked account's username). The hosting service may also require
+        an ``owner_type`` value that identifies what the ``owner`` means.
+        This value is specific to the hosting service backend.
+
+        Likewise, ``filter_type`` is specific to the hosting service backend.
+        If supported, it may be used to filter the types of hosting services.
         """
         raise NotImplementedError
 

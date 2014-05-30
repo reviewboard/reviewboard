@@ -274,18 +274,27 @@ class GitHubClient(HostingServiceClient):
                             url, e, exc_info=1)
             raise SCMError(six.text_type(e))
 
-    def api_get_remote_repositories(self, api_url, owner, plan,
-                                    start=None, per_page=None):
+    def api_get_remote_repositories(self, api_url, owner, owner_type,
+                                    filter_type=None, start=None,
+                                    per_page=None):
         url = api_url
 
-        if plan.endswith('org'):
+        if owner_type == 'organization':
             url += 'orgs/%s/repos' % owner
-        elif owner == self.account.username:
-            # All repositories belonging to an authenticated user.
-            url += 'user/repos'
+        elif owner_type == 'user':
+            if owner == self.account.username:
+                # All repositories belonging to an authenticated user.
+                url += 'user/repos'
+            else:
+                # Only public repositories for the user.
+                url += 'users/%s/repos' % owner
         else:
-            # Only public repositories for the user.
-            url += 'users/%s/repos?type=all' % owner
+            raise ValueError(
+                "owner_type must be 'organization' or 'user', not %r'"
+                % owner_type)
+
+        if filter_type:
+            url += '?type=%s' % (filter_type or 'all')
 
         return self.api_get_list(self._build_api_url(url),
                                  start=start, per_page=per_page)
@@ -771,8 +780,8 @@ class GitHub(HostingService):
         return Commit(author_name, revision, date, message, parent_revision,
                       diff=diff)
 
-    def get_remote_repositories(self, owner=None, plan=None, start=None,
-                                per_page=None):
+    def get_remote_repositories(self, owner=None, owner_type='user',
+                                filter_type=None, start=None, per_page=None):
         """Return a list of remote repositories matching the given criteria.
 
         This will look up each remote repository on GitHub that the given
@@ -794,18 +803,14 @@ class GitHub(HostingService):
         `owner` defaults to the linked account's username, and `plan`
         defaults to 'public'.
         """
-        if owner is None:
+        if owner is None and owner_type == 'user':
             owner = self.account.username
 
-        if plan is None:
-            plan = 'public'
-
-        if plan not in ('public', 'private', 'public-org', 'private-org'):
-            raise InvalidPlanError(plan)
+        assert owner
 
         url = self.get_api_url(self.account.hosting_url)
-        paginator = self.client.api_get_remote_repositories(url, owner, plan,
-                                                            start, per_page)
+        paginator = self.client.api_get_remote_repositories(
+            url, owner, owner_type, filter_type, start, per_page)
 
         return ProxyPaginator(
             paginator,

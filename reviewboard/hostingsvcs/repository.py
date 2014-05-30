@@ -9,7 +9,7 @@ class RemoteRepository(object):
     configured on Review Board, but can be used to create one.
     """
     def __init__(self, hosting_service, repository_id, name, owner,
-                 scm_type, path, mirror_path, extra_data):
+                 scm_type, path, mirror_path=None, extra_data={}):
         self.hosting_service = hosting_service
         self.hosting_service_account = hosting_service.account
         self.id = repository_id
