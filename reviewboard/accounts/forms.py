@@ -35,6 +35,9 @@ class PreferencesForm(forms.Form):
         label=_("Time Zone"),
         required=True,
         help_text=_("The time zone used for this account."))
+    should_send_email = forms.BooleanField(
+        label=_('Get e-mail notification for review requests and reviews.'),
+        required=False)
 
     def __init__(self, user, *args, **kwargs):
         from reviewboard.accounts.backends import get_auth_backends
@@ -84,6 +87,7 @@ class PreferencesForm(forms.Form):
         profile.syntax_highlighting = self.cleaned_data['syntax_highlighting']
         profile.is_private = self.cleaned_data['profile_private']
         profile.open_an_issue = self.cleaned_data['open_an_issue']
+        profile.should_send_email = self.cleaned_data['should_send_email']
         profile.timezone = self.cleaned_data['timezone']
         profile.save()
 

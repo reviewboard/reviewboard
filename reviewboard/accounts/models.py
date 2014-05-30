@@ -46,7 +46,14 @@ class Profile(models.Model):
                     "the first time setup process by saving their user "
                     "preferences."))
 
-    collapsed_diffs = models.BooleanField(default=True,
+    # Whether the user wants to receive emails
+    should_send_email = models.BooleanField(
+        default=True,
+        verbose_name=_("send email"),
+        help_text=_("Indicates whether the user wishes to receive emails."))
+
+    collapsed_diffs = models.BooleanField(
+        default=True,
         verbose_name=_("collapsed diffs"),
         help_text=_("Indicates whether diffs should be shown in their "
                     "collapsed state by default."))
@@ -231,6 +238,17 @@ def _is_user_profile_visible(self, user=None):
         return True
 
 
+def _should_send_email(self):
+    """Returns whether a user wants to receive emails.
+
+    This is patched into the user object to make it easier to deal with missing
+    Profile objects."""
+    try:
+        return self.get_profile().should_send_email
+    except Profile.DoesNotExist:
+        return True
+
+
 def _get_site_profile(self, local_site):
     """Returns the LocalSiteProfile for a given LocalSite for the User.
 
@@ -251,4 +269,5 @@ def _get_site_profile(self, local_site):
 
 User.is_profile_visible = _is_user_profile_visible
 User.get_site_profile = _get_site_profile
+User.should_send_email = _should_send_email
 User._meta.ordering = ('username',)
