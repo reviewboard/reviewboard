@@ -160,7 +160,7 @@ def get_original_file(filediff, request, encoding_list):
     """
     data = b""
 
-    if filediff.source_revision != PRE_CREATION:
+    if not filediff.is_new:
         repository = filediff.diffset.repository
         data = repository.get_file(
             filediff.source_file,
@@ -295,7 +295,7 @@ def get_diff_files(diffset, filediff=None, interdiffset=None, request=None):
     for parts in filediff_parts:
         filediff, interfilediff, force_interdiff = parts
 
-        newfile = (filediff.source_revision == PRE_CREATION)
+        newfile = filediff.is_new
 
         if interdiffset:
             # First, find out if we want to even process this one.

@@ -1,6 +1,6 @@
 {% load difftags djblets_utils reviewtags %}
 
-<table class="sidebyside{% if comment.filediff.source_revision == PRE_CREATION %} newfile{% endif %}">
+<table class="sidebyside{% if comment.filediff.is_new %} newfile{% endif %}">
  <colgroup>
   <col class="line" />
   <col class="left" />

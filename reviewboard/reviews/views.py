@@ -52,7 +52,6 @@ from reviewboard.reviews.models import (BaseComment, Comment,
                                         FileAttachmentComment,
                                         ReviewRequest, Review,
                                         Screenshot, ScreenshotComment)
-from reviewboard.scmtools.core import PRE_CREATION
 from reviewboard.scmtools.models import Repository
 from reviewboard.site.decorators import check_local_site_access
 from reviewboard.site.urlresolvers import local_site_reverse
@@ -701,7 +700,6 @@ def review_detail(request,
         'latest_changedesc': latest_changedesc,
         'close_description': close_description,
         'close_description_rich_text': close_description_rich_text,
-        'PRE_CREATION': PRE_CREATION,
         'issues': issues,
         'has_diffs': (draft and draft.diffset) or len(diffsets) > 0,
         'file_attachments': [file_attachment
