@@ -61,6 +61,7 @@ class RBTestRunner(DjangoTestSuiteRunner):
         # Default to testing in a non-subdir install.
         settings.SITE_ROOT = "/"
 
+        settings.AJAX_SERIAL = 123
         settings.STATIC_URL = settings.SITE_ROOT + 'static/'
         settings.MEDIA_URL = settings.SITE_ROOT + 'media/'
         settings.PASSWORD_HASHERS = (
