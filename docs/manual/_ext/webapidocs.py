@@ -15,8 +15,8 @@ from django.contrib.auth.models import User
 from django.http import HttpRequest
 from django.template.defaultfilters import title
 from djblets.util.http import is_mimetype_a
-from djblets.webapi.core import WebAPIResponseError
 from djblets.webapi.resources import get_resource_from_class, WebAPIResource
+from djblets.webapi.responses import WebAPIResponseError
 from docutils import nodes
 from docutils.parsers.rst import directives
 from docutils.statemachine import ViewList
