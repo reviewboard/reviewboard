@@ -14,7 +14,7 @@ PIPELINE_JS = dict({
             'lib/js/flot/jquery.flot.time.min.js',
             'lib/js/underscore-1.4.4.min.js',
             'lib/js/backbone-1.0.0.min.js',
-            'lib/js/jquery.cookie-1.3.1.js',
+            'lib/js/jquery.cookie-1.4.1.js',
             'lib/js/jquery.form.js',
             'lib/js/jquery.timesince.js',
             'lib/js/moment-2.0.0.min.js',
