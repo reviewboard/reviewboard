@@ -962,7 +962,7 @@ def raw_diff(request, review_request_id, revision=None, local_site=None):
     else:
         filename = six.text_type(diffset.name).encode('ascii', 'ignore')
 
-    resp['Content-Disposition'] = 'inline; filename=%s' % filename
+    resp['Content-Disposition'] = 'attachment; filename=%s' % filename
     set_last_modified(resp, diffset.timestamp)
 
     return resp
