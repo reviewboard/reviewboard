@@ -236,6 +236,7 @@ class BasicGetItemTestsMixin(BasicTestsMixin):
     fixture names to import.
     """
     basic_get_fixtures = []
+    basic_get_use_admin = False
 
     def setup_basic_get_test(self, user, with_local_site, local_site_name):
         raise NotImplementedError("%s doesn't implement setup_basic_get_test"
@@ -245,6 +246,7 @@ class BasicGetItemTestsMixin(BasicTestsMixin):
     def test_get(self):
         """Testing the GET <URL> API"""
         self.load_fixtures(self.basic_get_fixtures)
+        self._login_user(admin=self.basic_get_use_admin)
 
         url, mimetype, item = self.setup_basic_get_test(self.user, False, None)
         self.assertFalse(url.startswith('/s/' + self.local_site_name))
@@ -269,7 +271,8 @@ class BasicGetItemTestsWithLocalSiteMixin(BasicGetItemTestsMixin):
         """Testing the GET <URL> API with access to a local site"""
         self.load_fixtures(self.basic_get_fixtures)
 
-        user = self._login_user(local_site=True)
+        user = self._login_user(local_site=True,
+                                admin=self.basic_get_use_admin)
         url, mimetype, item = \
             self.setup_basic_get_test(user, True, self.local_site_name)
         self.assertTrue(url.startswith('/s/' + self.local_site_name))
@@ -305,6 +308,7 @@ class BasicGetListTestsMixin(BasicTestsMixin):
     fixture names to import.
     """
     basic_get_fixtures = []
+    basic_get_use_admin = False
 
     def setup_basic_get_test(self, user, with_local_site, local_site_name,
                              populate_items):
@@ -315,6 +319,7 @@ class BasicGetListTestsMixin(BasicTestsMixin):
     def test_get(self):
         """Testing the GET <URL> API"""
         self.load_fixtures(self.basic_get_fixtures)
+        self._login_user(admin=self.basic_get_use_admin)
 
         url, mimetype, items = self.setup_basic_get_test(self.user, False,
                                                          None, True)
@@ -343,7 +348,8 @@ class BasicGetListTestsWithLocalSiteMixin(BasicGetListTestsMixin):
         """Testing the GET <URL> API with access to a local site"""
         self.load_fixtures(self.basic_get_fixtures)
 
-        user = self._login_user(local_site=True)
+        user = self._login_user(local_site=True,
+                                admin=self.basic_get_use_admin)
         url, mimetype, items = self.setup_basic_get_test(user, True,
                                                          self.local_site_name,
                                                          True)
