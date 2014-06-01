@@ -313,6 +313,14 @@ class HostingService(object):
         """
         raise NotImplementedError
 
+    def get_remote_repository(self, repository_id):
+        """Get the remote repository for the ID.
+
+        This should be implemented by subclasses, and is expected to return
+        a RemoteRepository if found, or raise ObjectDoesNotExist if not found.
+        """
+        raise NotImplementedError
+
     @classmethod
     def get_repository_fields(cls, username, hosting_url, plan, tool_name,
                               field_vars):

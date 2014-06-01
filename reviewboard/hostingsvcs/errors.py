@@ -3,7 +3,10 @@ from __future__ import unicode_literals
 
 class HostingServiceError(Exception):
     """Base class for errors related to a hosting service."""
-    pass
+    def __init__(self, message, http_code=None):
+        super(HostingServiceError, self).__init__(message)
+
+        self.http_code = http_code
 
 
 class RepositoryError(HostingServiceError):

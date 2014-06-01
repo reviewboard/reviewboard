@@ -5,6 +5,7 @@ from hashlib import md5
 from textwrap import dedent
 
 from django.conf.urls import patterns, url
+from django.core.exceptions import ObjectDoesNotExist
 from django.http import HttpResponse
 from django.utils import six
 from django.utils.six.moves import cStringIO as StringIO
@@ -1351,6 +1352,7 @@ class GitHubTests(ServiceTests):
         repo = paginator.page_data[0]
 
         self.assertIsInstance(repo, RemoteRepository)
+        self.assertEqual(repo.id, 'myuser/myrepo')
         self.assertEqual(repo.owner, 'myuser')
         self.assertEqual(repo.name, 'myrepo')
         self.assertEqual(repo.scm_type, 'Git')
@@ -1365,6 +1367,7 @@ class GitHubTests(ServiceTests):
         repo = paginator.page_data[0]
 
         self.assertIsInstance(repo, RemoteRepository)
+        self.assertEqual(repo.id, 'myuser/myrepo2')
         self.assertEqual(repo.owner, 'myuser')
         self.assertEqual(repo.name, 'myrepo2')
         self.assertEqual(repo.scm_type, 'Git')
@@ -1414,6 +1417,7 @@ class GitHubTests(ServiceTests):
         self.assertEqual(len(paginator.page_data), 1)
         public_repo = paginator.page_data[0]
         self.assertIsInstance(public_repo, RemoteRepository)
+        self.assertEqual(public_repo.id, 'other/myrepo')
         self.assertEqual(public_repo.owner, 'other')
         self.assertEqual(public_repo.name, 'myrepo')
         self.assertEqual(public_repo.scm_type, 'Git')
@@ -1466,6 +1470,7 @@ class GitHubTests(ServiceTests):
         public_repo, private_repo = paginator.page_data
 
         self.assertIsInstance(public_repo, RemoteRepository)
+        self.assertEqual(public_repo.id, 'myorg/myrepo')
         self.assertEqual(public_repo.owner, 'myorg')
         self.assertEqual(public_repo.name, 'myrepo')
         self.assertEqual(public_repo.scm_type, 'Git')
@@ -1473,6 +1478,7 @@ class GitHubTests(ServiceTests):
         self.assertEqual(public_repo.mirror_path, 'myrepo_mirror')
 
         self.assertIsInstance(private_repo, RemoteRepository)
+        self.assertEqual(private_repo.id, 'myuser/myrepo2')
         self.assertEqual(private_repo.owner, 'myuser')
         self.assertEqual(private_repo.name, 'myrepo2')
         self.assertEqual(private_repo.scm_type, 'Git')
@@ -1516,6 +1522,70 @@ class GitHubTests(ServiceTests):
         self.spy_on(service.client.http_get, call_fake=_http_get)
 
         service.get_remote_repositories('myuser', filter_type='private')
+
+    def test_get_remote_repository(self, **kwargs):
+        """Testing GitHub.get_remote_repository"""
+        def _http_get(service, url, *args, **kwargs):
+            self.assertEqual(
+                url,
+                'https://api.github.com/repos/myuser/myrepo'
+                '?access_token=123')
+
+            repo_data = {
+                'id': 1,
+                'owner': {
+                    'login': 'myuser',
+                },
+                'name': 'myrepo',
+                'clone_url': 'myrepo_path',
+                'mirror_url': 'myrepo_mirror',
+                'private': 'false'
+            }
+
+            return json.dumps(repo_data), {}
+
+        account = self._get_hosting_account()
+        account.data['authorization'] = {
+            'token': '123',
+        }
+
+        service = account.service
+        self.spy_on(service.client.http_get, call_fake=_http_get)
+
+        remote_repository = service.get_remote_repository('myuser/myrepo')
+
+        self.assertIsInstance(remote_repository, RemoteRepository)
+        self.assertEqual(remote_repository.id, 'myuser/myrepo')
+        self.assertEqual(remote_repository.owner, 'myuser')
+        self.assertEqual(remote_repository.name, 'myrepo')
+        self.assertEqual(remote_repository.scm_type, 'Git')
+        self.assertEqual(remote_repository.path, 'myrepo_path')
+        self.assertEqual(remote_repository.mirror_path, 'myrepo_mirror')
+
+    def test_get_remote_repository_invalid(self, **kwargs):
+        """Testing GitHub.get_remote_repository with invalid repository ID"""
+        def _http_get(service, url, *args, **kwargs):
+            self.assertEqual(
+                url,
+                'https://api.github.com/repos/myuser/invalid'
+                '?access_token=123')
+
+            payload = {
+                'message': 'Not Found',
+            }
+
+            raise HTTPError(url, 404, '', {}, StringIO(json.dumps(payload)))
+
+        account = self._get_hosting_account()
+        account.data['authorization'] = {
+            'token': '123',
+        }
+
+        service = account.service
+        self.spy_on(service.client.http_get, call_fake=_http_get)
+
+        self.assertRaises(ObjectDoesNotExist,
+                          service.get_remote_repository, 'myuser/invalid')
 
     def _test_check_repository(self, expected_user='myuser', **kwargs):
         def _http_get(service, url, *args, **kwargs):

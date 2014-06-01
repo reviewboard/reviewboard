@@ -11,6 +11,7 @@ from django.conf import settings
 from django.conf.urls import patterns, url
 from django.contrib.sites.models import Site
 from django.core.cache import cache
+from django.core.exceptions import ObjectDoesNotExist
 from django.http import HttpResponse
 from django.utils import six
 from django.utils.six.moves.urllib.error import HTTPError, URLError
@@ -299,6 +300,16 @@ class GitHubClient(HostingServiceClient):
         return self.api_get_list(self._build_api_url(url),
                                  start=start, per_page=per_page)
 
+    def api_get_remote_repository(self, api_url, owner, repository_id):
+        try:
+            return self.api_get(self._build_api_url(
+                '%srepos/%s/%s' % (api_url, owner, repository_id)))
+        except HostingServiceError as e:
+            if e.http_code == 404:
+                return None
+            else:
+                raise
+
     def api_get_tree(self, repo_api_url, sha, recursive=False):
         url = self._build_api_url(repo_api_url, 'git/trees/%s' % sha)
 
@@ -354,14 +365,15 @@ class GitHubClient(HostingServiceClient):
             if x_github_otp.startswith('required;'):
                 raise TwoFactorAuthCodeRequiredError(
                     _('Enter your two-factor authentication code. '
-                      'This code will be sent to you by GitHub.'))
+                      'This code will be sent to you by GitHub.'),
+                    http_code=e.code)
 
             if e.code == 401:
-                raise AuthorizationError(rsp['message'])
+                raise AuthorizationError(rsp['message'], http_code=e.code)
 
-            raise HostingServiceError(rsp['message'])
+            raise HostingServiceError(rsp['message'], http_code=e.code)
         else:
-            raise HostingServiceError(six.text_type(e))
+            raise HostingServiceError(six.text_type(e), http_code=e.code)
 
 
 class GitHub(HostingService):
@@ -815,16 +827,46 @@ class GitHub(HostingService):
         return ProxyPaginator(
             paginator,
             normalize_page_data_func=lambda page_data: [
-                RemoteRepository(self,
-                                 repository_id=repo['id'],
-                                 name=repo['name'],
-                                 owner=repo['owner']['login'],
-                                 scm_type='Git',
-                                 path=repo['clone_url'],
-                                 mirror_path=repo['mirror_url'],
-                                 extra_data=repo)
+                RemoteRepository(
+                    self,
+                    repository_id='%s/%s' % (repo['owner']['login'],
+                                             repo['name']),
+                    name=repo['name'],
+                    owner=repo['owner']['login'],
+                    scm_type='Git',
+                    path=repo['clone_url'],
+                    mirror_path=repo['mirror_url'],
+                    extra_data=repo)
                 for repo in page_data
             ])
+
+    def get_remote_repository(self, repository_id):
+        """Get the remote repository for the ID.
+
+        The ID is expected to be an ID returned from get_remote_repositories(),
+        in the form of "owner/repo_id".
+
+        If the repository is not found, ObjectDoesNotExist will be raised.
+        """
+        parts = repository_id.split('/')
+        repo = None
+
+        if len(parts) == 2:
+            repo = self.client.api_get_remote_repository(
+                self.get_api_url(self.account.hosting_url),
+                *parts)
+
+        if not repo:
+            raise ObjectDoesNotExist
+
+        return RemoteRepository(self,
+                                repository_id=repository_id,
+                                name=repo['name'],
+                                owner=repo['owner']['login'],
+                                scm_type='Git',
+                                path=repo['clone_url'],
+                                mirror_path=repo['mirror_url'],
+                                extra_data=repo)
 
     def _reset_authorization(self, client_id, client_secret, token):
         """Resets the authorization info for an OAuth app-linked token.
