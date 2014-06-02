@@ -2600,6 +2600,7 @@
         "invite_only": false, 
         "extra_data": "{}", 
         "mailing_list": "devgroup@example.com", 
+        "email_list_only": true, 
         "users": [
             2, 
             3
@@ -2618,6 +2619,7 @@
         "invite_only": false, 
         "extra_data": "{}", 
         "mailing_list": "newgroup@example.com", 
+        "email_list_only": true, 
         "users": []
     }
 },
@@ -2633,6 +2635,7 @@
         "invite_only": false, 
         "extra_data": "{}", 
         "mailing_list": "", 
+        "email_list_only": true, 
         "users": []
     }
 },
@@ -2648,6 +2651,7 @@
         "invite_only": false, 
         "extra_data": "{}", 
         "mailing_list": "", 
+        "email_list_only": true, 
         "users": [
             2, 
             3, 
