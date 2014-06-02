@@ -73,6 +73,10 @@ class DummyRequest(HttpRequest):
         self.path = ''
         self.user = User.objects.all()[0]
 
+        # This is normally set internally by Djblets, but we don't
+        # go through the standard __call__ flow.
+        self._djblets_webapi_object_cache = {}
+
     def build_absolute_uri(self, location=None):
         if not self.path and not location:
             return '/api/'
