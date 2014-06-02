@@ -44,9 +44,14 @@ class AccountSettingsForm(AccountPageForm):
         label=_('Always open an issue when comment box opens'),
         required=False)
 
+    should_send_email = forms.BooleanField(
+        label=_('Get e-mail notification for review requests and reviews'),
+        required=False)
+
     def load(self):
         self.set_initial({
             'open_an_issue': self.profile.open_an_issue,
+            'should_send_email': self.profile.should_send_email,
             'syntax_highlighting': self.profile.syntax_highlighting,
             'timezone': self.profile.timezone,
         })
@@ -62,6 +67,7 @@ class AccountSettingsForm(AccountPageForm):
                 self.cleaned_data['syntax_highlighting']
 
         self.profile.open_an_issue = self.cleaned_data['open_an_issue']
+        self.profile.should_send_email = self.cleaned_data['should_send_email']
         self.profile.timezone = self.cleaned_data['timezone']
         self.profile.save()
 

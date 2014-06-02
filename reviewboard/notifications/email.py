@@ -118,7 +118,9 @@ def get_email_addresses_for_group(g):
                                (Q(local_site=local_site) |
                                 Q(local_site_admins=local_site)))
 
-        addresses.extend([get_email_address_for_user(u) for u in users])
+        addresses.extend([get_email_address_for_user(u)
+                          for u in users
+                          if u.should_send_email()])
 
     return addresses
 
@@ -200,28 +202,30 @@ def send_review_mail(user, review_request, subject, in_reply_to,
             extra_recipients = User.objects.filter(
                 Q(username__in=extra_recipients) & local_site_q)
 
-    if from_email:
+    if from_email and user.should_send_email():
         recipients.add(from_email)
 
-    if review_request.submitter.is_active:
+    if (review_request.submitter.is_active and
+        review_request.submitter.should_send_email()):
         recipients.add(get_email_address_for_user(review_request.submitter))
 
     for u in target_people:
-        email_address = get_email_address_for_user(u)
-        recipients.add(email_address)
-        to_field.add(email_address)
+        if u.should_send_email():
+            email_address = get_email_address_for_user(u)
+            recipients.add(email_address)
+            to_field.add(email_address)
 
     for group in review_request.target_groups.all():
         for address in get_email_addresses_for_group(group):
             recipients.add(address)
 
     for profile in review_request.starred_by.all():
-        if profile.user.is_active:
+        if profile.user.is_active and profile.should_send_email:
             recipients.add(get_email_address_for_user(profile.user))
 
     if extra_recipients:
         for recipient in extra_recipients:
-            if recipient.is_active:
+            if recipient.is_active and recipient.should_send_email():
                 recipients.add(get_email_address_for_user(recipient))
 
     siteconfig = current_site.config.get()
