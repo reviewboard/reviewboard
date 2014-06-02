@@ -23,7 +23,7 @@ def _compare_item(self, item_rsp, account):
 
 @six.add_metaclass(BasicTestsMetaclass)
 class ResourceListTests(BaseWebAPITestCase):
-    """Testing the HostingServiceAccount list APIs."""
+    """Testing the HostingServiceAccountResource list APIs."""
     sample_api_url = 'hosting-services-accounts/'
     resource = resources.hosting_service_account
     fixtures = ['test_users']
@@ -122,7 +122,7 @@ class ResourceListTests(BaseWebAPITestCase):
 
 @six.add_metaclass(BasicTestsMetaclass)
 class ResourceItemTests(BaseWebAPITestCase):
-    """Testing the HostingService item APIs."""
+    """Testing the HostingServiceAccountResource item APIs."""
     fixtures = ['test_users']
     sample_api_url = 'hosting-service-accounts/<id>/'
     resource = resources.hosting_service_account

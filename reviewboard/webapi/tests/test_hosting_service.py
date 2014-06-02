@@ -49,7 +49,7 @@ def _compare_item(self, item_rsp, hosting_service):
 
 @six.add_metaclass(BasicTestsMetaclass)
 class ResourceListTests(BaseWebAPITestCase):
-    """Testing the HostingService list APIs."""
+    """Testing the HostingServiceResource list APIs."""
     fixtures = ['test_users']
     sample_api_url = 'hosting-services/'
     resource = resources.hosting_service
@@ -72,7 +72,7 @@ class ResourceListTests(BaseWebAPITestCase):
 
 @six.add_metaclass(BasicTestsMetaclass)
 class ResourceItemTests(BaseWebAPITestCase):
-    """Testing the HostingService item APIs."""
+    """Testing the HostingServiceResource item APIs."""
     fixtures = ['test_users']
     sample_api_url = 'hosting-services/<id>/'
     resource = resources.hosting_service
