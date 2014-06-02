@@ -494,8 +494,8 @@ class GitHub(HostingService):
                     self._get_repo_api_url_raw(
                         self._get_repository_owner_raw(plan, kwargs),
                         self._get_repository_name_raw(plan, kwargs))))
-        except Exception as e:
-            if six.text_type(e) == 'Not Found':
+        except HostingServiceError as e:
+            if e.http_code == 404:
                 if plan in ('public', 'private'):
                     raise RepositoryError(
                         _('A repository with this name was not found, or your '
@@ -652,9 +652,9 @@ class GitHub(HostingService):
                         password=password,
                         two_factor_auth_code=two_factor_auth_code)
                 except HostingServiceError as e:
-                    # If we get a Not Found, then the authorization was
+                    # If we get a 404 Not Found, then the authorization was
                     # probably already deleted.
-                    if six.text_type(e) != 'Not Found':
+                    if e.http_code != 404:
                         raise
 
                 self.account.data['authorization'] = ''
