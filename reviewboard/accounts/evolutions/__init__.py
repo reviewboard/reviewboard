@@ -9,4 +9,5 @@ SEQUENCE = [
     'localsiteprofile_permissions',
     'unique_together_baseline',
     'profile_show_closed',
+    'profile_should_send_email',
 ]
