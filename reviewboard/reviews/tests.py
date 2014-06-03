@@ -1092,6 +1092,18 @@ class ViewTests(TestCase):
         # Make sure they're not equal
         self.assertNotEqual(etag1, etag2)
 
+    # Bug #3384
+    def test_diff_raw_content_disposition_attachment(self):
+        """Testing /diff/raw/ Content-Disposition: attachment; ..."""
+        review_request = self.create_review_request(create_repository=True,
+                                                    publish=True)
+
+        self.create_diffset(review_request=review_request)
+
+        response = self.client.get('/r/%d/diff/raw/' % review_request.pk)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response['Content-Disposition'],
+                         'attachment; filename=diffset')
 
 class DraftTests(TestCase):
     fixtures = ['test_users', 'test_scmtools']
