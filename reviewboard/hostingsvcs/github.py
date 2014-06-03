@@ -449,6 +449,7 @@ class GitHub(HostingService):
     supports_post_commit = True
     supports_repositories = True
     supports_two_factor_auth = True
+    supports_list_remote_repositories = True
     supported_scmtools = ['Git']
 
     client_class = GitHubClient

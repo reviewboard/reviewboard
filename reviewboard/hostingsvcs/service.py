@@ -170,6 +170,8 @@ class HostingService(object):
     supports_repositories = False
     supports_ssh_key_association = False
     supports_two_factor_auth = False
+    supports_list_remote_repositories = False
+
     self_hosted = False
     repository_url_patterns = None
 

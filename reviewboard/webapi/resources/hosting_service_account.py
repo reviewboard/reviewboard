@@ -80,6 +80,18 @@ class HostingServiceAccountResource(WebAPIResource):
     def has_delete_permissions(self, request, account, *args, **kwargs):
         return account.is_mutable_by(request.user)
 
+    def get_links(self, items, obj=None, *args, **kwargs):
+        links = super(HostingServiceAccountResource, self).get_links(
+            items, obj=obj, *args, **kwargs)
+
+        if obj:
+            service = obj.service
+
+            if not service.supports_list_remote_repositories:
+                del links['remote_repositories']
+
+        return links
+
     @webapi_check_local_site
     @augment_method_from(WebAPIResource)
     @webapi_request_fields(

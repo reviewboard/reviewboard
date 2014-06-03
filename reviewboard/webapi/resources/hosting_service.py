@@ -56,6 +56,11 @@ class HostingServiceResource(WebAPIResource):
             'type': bool,
             'description': 'Whether bug trackers are available.',
         },
+        'supports_list_remote_repositories': {
+            'type': bool,
+            'description': 'Whether remote repositories on the hosting '
+                           'service can be listed through the API.',
+        },
         'supports_repositories': {
             'type': bool,
             'description': 'Whether repository linking is supported.',
