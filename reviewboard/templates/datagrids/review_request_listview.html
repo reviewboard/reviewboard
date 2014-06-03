@@ -2,13 +2,26 @@
 {% load i18n reviewtags %}
 
 {% block datagrid_title %}
-{% if datagrid.group %}{% star datagrid.group %}{% endif %}
-{{block.super}}
- <ul>
-{% if datagrid.show_closed %}
-  <li><a href="?show-closed=0">{% trans "Hide closed" %}</a></li>
-{% else %}
-  <li><a href="?show-closed=1">{% trans "Show closed" %}</a></li>
-{% endif %}
- </ul>
+{%  if datagrid.group %}{% star datagrid.group %}{% endif %}
+
+{%  if not datagrid.tabs %}
+ {{block.super}}
+{%  else %}
+<ul class="datagrid-title-tabs">
+{%   for title, url in datagrid.tabs %}
+ <li class="datagrid-tab {% if title == datagrid.title %}active{% endif %}">
+  <h1 class="datagrid-title">
+   <a href="{{url}}">{{title}}</a>
+  </h1>
+ </li>
+{%   endfor %}
+{%  endif %}
+ <li class="datagrid-showclosed">
+{%  if datagrid.show_closed %}
+  <a href="?show-closed=0">{% trans "Hide closed" %}</a></li>
+{%  else %}
+  <a href="?show-closed=1">{% trans "Show closed" %}</a></li>
+{%  endif %}
+ </li>
+</ul>
 {% endblock %}

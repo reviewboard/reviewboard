@@ -24,10 +24,68 @@ span {
   cursor: pointer;
 }
 
-.datagrid-title,
-.datagrid-titlebox {
-  background: @box-title-bg !important;
-  .border-radius(@box-border-radius @box-border-radius 0 0);
+.datagrid-wrapper {
+  .datagrid-titlebox {
+    padding-left: 0px;
+
+    .datagrid-title {
+      padding-left: 10px;
+    }
+
+    .datagrid-showclosed {
+      display: inline-block ;
+    }
+  }
+
+  .datagrid-title,
+  .datagrid-titlebox {
+    background: @box-title-bg;
+    .border-radius(@box-border-radius @box-border-radius 0 0);
+  }
+}
+
+#dashboard-main {
+  display: block;
+
+  .datagrid-title-tabs {
+    display: block;
+    height: 1.5em;
+    list-style: none;
+
+    .datagrid-tab {
+      float: left;
+
+      &.active {
+        &:hover {
+          .datagrid-title {
+            background: darken(@box-title-bg, 20%);
+          }
+        }
+
+        .datagrid-title {
+          background: darken(@box-title-bg, 10%);
+        }
+      }
+
+      .datagrid-title {
+        border-radius: 0;
+        border-right: 1px solid gray;
+
+        &:hover {
+          background: darken(@box-title-bg, 10%);
+        }
+
+        a {
+          text-decoration: none;
+          color: black;
+        }
+      }
+    }
+
+    .datagrid-showclosed {
+      padding: 2px 0px 0px 10px ;
+    }
+  }
 }
 
 .datagrid-main {

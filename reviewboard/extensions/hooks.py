@@ -12,7 +12,8 @@ from reviewboard.accounts.pages import (get_page_class,
                                         unregister_account_page_class)
 from reviewboard.attachments.mimetypes import (register_mimetype_handler,
                                                unregister_mimetype_handler)
-from reviewboard.datagrids.grids import DashboardDataGrid, UserPageDataGrid
+from reviewboard.datagrids.grids import (DashboardDataGrid,
+                                         UserPageReviewRequestDataGrid)
 from reviewboard.reviews.fields import (get_review_request_fieldset,
                                         register_review_request_fieldset,
                                         unregister_review_request_fieldset)
@@ -470,4 +471,4 @@ class UserPageSidebarItemsHook(DataGridSidebarItemsHook):
     """
     def __init__(self, extension, item_classes):
         super(UserPageSidebarItemsHook, self).__init__(
-            extension, UserPageDataGrid, item_classes)
+            extension, UserPageReviewRequestDataGrid, item_classes)

@@ -403,6 +403,24 @@ class ReviewRequestStarColumn(BaseStarColumn):
         return queryset
 
 
+class ReviewSubmitterColumn(Column):
+    """Shows the submitter of the review request for a review."""
+    def __init__(self, *args, **kwargs):
+        super(ReviewSubmitterColumn, self).__init__(
+            label=_('Submitter'),
+            field_name='review_request',
+            shrink=True,
+            sortable=True,
+            link=True,
+            *args, **kwargs)
+
+    def render_data(self, state, review):
+        return conditional_escape(review.review_request.submitter)
+
+    def augment_queryset(self, state, queryset):
+        return queryset.select_related('reviews')
+
+
 class ShipItColumn(Column):
     """Shows the "Ship It" count for a review request."""
     def __init__(self, *args, **kwargs):
@@ -503,6 +521,27 @@ class SummaryColumn(Column):
                 labels[label], label)
         display_data += summary
         return display_data
+
+
+class ReviewSummaryColumn(SummaryColumn):
+    """Shows the summary of the review request of a review.
+
+    This does not (yet) prepend the draft/submitted/discarded state, if any,
+    to the summary.
+    """
+    def __init__(self, *args, **kwargs):
+        super(SummaryColumn, self).__init__(
+            label=_('Review Request Summary'),
+            expand=True,
+            link=True,
+            css_class='summary',
+            *args, **kwargs)
+
+    def render_data(self, state, review):
+        return conditional_escape(review.review_request.summary)
+
+    def augment_queryset(self, state, queryset):
+        return queryset.select_related('reviews')
 
 
 class ToMeColumn(Column):
