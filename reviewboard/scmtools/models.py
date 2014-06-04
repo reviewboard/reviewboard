@@ -427,7 +427,13 @@ class Repository(models.Model):
 
     def get_encoding_list(self):
         """Returns a list of candidate text encodings for files"""
-        return self.encoding.split(',') or ['iso-8859-15']
+        encodings = []
+        for e in self.encoding.split(','):
+            e = e.strip()
+            if e:
+                encodings.append(e)
+
+        return encodings or ['iso-5589-15']
 
     def clean(self):
         """Clean method for checking null unique_together constraints.
