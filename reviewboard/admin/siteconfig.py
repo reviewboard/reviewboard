@@ -38,7 +38,7 @@ import re
 from django.conf import settings, global_settings
 from django.core.exceptions import ImproperlyConfigured
 from django.utils import six
-from djblets.log import siteconfig as log_siteconfig
+from djblets.log import restart_logging, siteconfig as log_siteconfig
 from djblets.siteconfig.django_settings import (apply_django_settings,
                                                 get_django_defaults,
                                                 get_django_settings_map)
@@ -164,7 +164,7 @@ defaults.update({
 })
 
 
-def load_site_config():
+def load_site_config(full_reload=False):
     """
     Loads any stored site configuration settings and populates the Django
     settings object with any that need to be there.
@@ -239,6 +239,10 @@ def load_site_config():
 
     # Populate the settings object with anything relevant from the siteconfig.
     apply_django_settings(siteconfig, settings_map)
+
+    if full_reload and not getattr(settings, 'RUNNING_TEST', False):
+        # Logging may have changed, so restart logging.
+        restart_logging()
 
     # Now for some more complicated stuff...
 

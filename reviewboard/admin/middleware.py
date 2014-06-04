@@ -18,6 +18,7 @@ except ImportError:
     class WSGIRequest:
         pass
 
+from djblets.siteconfig.models import SiteConfiguration
 
 from reviewboard import initialize
 from reviewboard.admin.checks import check_updates_required
@@ -42,11 +43,21 @@ class LoadSettingsMiddleware(object):
     Middleware that loads the settings on each request.
     """
     def process_request(self, request):
-        # Load all site settings.
-        siteconfig = load_site_config()
+        try:
+            siteconfig = SiteConfiguration.objects.get_current()
+        except Exception as e:
+            logging.critical('Unable to load SiteConfiguration: %s',
+                             e, exc_info=1)
+            return
 
-        if (siteconfig and
-            siteconfig.settings.get('site_domain_method', 'http') == 'https'):
+        # This will be unset if the SiteConfiguration expired, since we'll
+        # have a new one in the cache.
+        if not hasattr(siteconfig, '_rb_settings_loaded'):
+            # Load all site settings.
+            load_site_config(full_reload=True)
+            siteconfig._rb_settings_loaded = True
+
+        if siteconfig.settings.get('site_domain_method', 'http') == 'https':
             request.META['wsgi.url_scheme'] = 'https'
 
 

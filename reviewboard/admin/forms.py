@@ -40,7 +40,6 @@ from django.utils.six.moves.urllib.parse import urlparse
 from django.utils.translation import ugettext as _
 from djblets.cache.backend_compat import normalize_cache_backend
 from djblets.forms.fields import TimeZoneField
-from djblets.log import restart_logging
 from djblets.siteconfig.forms import SiteSettingsForm
 
 from reviewboard.accounts.forms.auth import LegacyAuthModuleSettingsForm
@@ -658,7 +657,6 @@ class LoggingSettingsForm(SiteSettingsForm):
 
         # Reload any important changes into the Django settings.
         load_site_config()
-        restart_logging()
 
     class Meta:
         title = _("Logging Settings")
