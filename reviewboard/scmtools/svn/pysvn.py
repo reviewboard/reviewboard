@@ -45,6 +45,13 @@ class Client(base.Client):
         if password:
             self.client.set_default_password(six.text_type(password))
 
+    def set_ssl_server_trust_prompt(self, cb):
+        self.client.callback_ssl_server_trust_prompt = cb
+
+    def ssl_trust_prompt(self, trust_dict):
+        if hasattr(self, 'callback_ssl_server_trust_prompt'):
+            return self.callback_ssl_server_trust_prompt(trust_dict)
+
     def _do_on_path(self, cb, path, revision=HEAD):
         if not path:
             raise FileNotFoundError(path, revision)
@@ -301,10 +308,11 @@ class Client(base.Client):
 
         def ssl_server_trust_prompt(trust_dict):
             cert.update(trust_dict.copy())
-            del cert['failures']
+
             if on_failure:
                 return False, 0, False
             else:
+                del cert['failures']
                 return True, trust_dict['failures'], True
 
         self.client.callback_ssl_server_trust_prompt = ssl_server_trust_prompt
@@ -316,3 +324,5 @@ class Client(base.Client):
         except ClientError as e:
             if on_failure:
                 on_failure(e, path, cert)
+
+        return cert

@@ -37,6 +37,9 @@ class Client(object):
     def __init__(self, config_dir, repopath, username=None, password=None):
         self.repopath = repopath
 
+    def set_ssl_server_trust_prompt(self, cb):
+        raise NotImplementedError
+
     @property
     def branches(self):
         """Returns a list of branches.

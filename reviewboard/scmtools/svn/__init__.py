@@ -75,9 +75,9 @@ class SVNTool(SCMTool):
         # reference the repository, but it will safely go away when needed.
         # The function we pass can access that without causing the leaks
         repository_ref = weakref.ref(repository)
-        self.client.callback_ssl_server_trust_prompt = \
-            lambda trust_dict: \
-            SVNTool._ssl_server_trust_prompt(trust_dict, repository_ref())
+        self.client.set_ssl_server_trust_prompt(
+            lambda trust_dict:
+            SVNTool._ssl_server_trust_prompt(trust_dict, repository_ref()))
 
         # 'svn diff' produces patches which have the revision string localized
         # to their system locale. This is a little ridiculous, but we have to
