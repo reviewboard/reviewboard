@@ -13,7 +13,7 @@ from djblets.db.query import get_object_or_none
 
 from reviewboard.attachments.models import FileAttachment
 from reviewboard.changedescs.models import ChangeDescription
-from reviewboard.diffviewer.models import DiffSet, DiffSetHistory, FileDiff
+from reviewboard.diffviewer.models import DiffSet, DiffSetHistory
 from reviewboard.reviews.errors import PermissionError
 from reviewboard.reviews.managers import ReviewRequestManager
 from reviewboard.reviews.models.base_comment import BaseComment
@@ -525,12 +525,6 @@ class ReviewRequest(BaseReviewRequestDetails):
                     .prefetch_related('files'))
 
         return self._diffsets
-
-    def get_all_diff_filenames(self):
-        """Returns a set of filenames from files in all diffsets."""
-        q = FileDiff.objects.filter(
-            diffset__history__id=self.diffset_history_id)
-        return set(q.values_list('source_file', 'dest_file'))
 
     def get_latest_diffset(self):
         """Returns the latest diffset for this review request."""
