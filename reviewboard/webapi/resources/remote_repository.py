@@ -3,8 +3,8 @@ from __future__ import unicode_literals
 from django.utils import six
 from djblets.db.query import LocalDataQuerySet
 from djblets.util.decorators import augment_method_from
-from djblets.webapi.core import WebAPIResponsePaginated
 from djblets.webapi.decorators import webapi_request_fields
+from djblets.webapi.responses import WebAPIResponsePaginated
 
 from reviewboard.hostingsvcs.repository import RemoteRepository
 from reviewboard.webapi.base import WebAPIResource
