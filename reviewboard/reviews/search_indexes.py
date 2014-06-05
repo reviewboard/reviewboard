@@ -20,7 +20,7 @@ class ReviewRequestIndex(indexes.SearchIndex, indexes.Indexable):
     bug = indexes.CharField(model_attr='bugs_closed')
     username = indexes.CharField(model_attr='submitter__username')
     author = indexes.CharField(model_attr='submitter__get_full_name')
-    file = indexes.CharField(model_attr='get_all_diff_filenames')
+    file = indexes.CharField()
 
     def get_model(self):
         """Returns the Django model for this index."""
@@ -28,6 +28,18 @@ class ReviewRequestIndex(indexes.SearchIndex, indexes.Indexable):
 
     def index_queryset(self, using=None):
         """Index only public pending and submitted review requests."""
-        return self.get_model().objects.public(
+        queryset = self.get_model().objects.public(
             status=None,
             extra_query=Q(status='P') | Q(status='S'))
+        queryset = queryset.select_related('submitter', 'diffset_history')
+        queryset = queryset.prefetch_related(
+            'diffset_history__diffsets__files')
+
+        return queryset
+
+    def prepare_file(self, obj):
+        return set([
+            (filediff.source_file, filediff.dest_file)
+            for diffset in obj.diffset_history.diffsets.all()
+            for filediff in diffset.files.all()
+        ])
