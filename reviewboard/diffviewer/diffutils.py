@@ -48,7 +48,7 @@ def convert_to_unicode(s, encoding_list):
             for e in encoding_list:
                 try:
                     return e, six.text_type(s, e)
-                except UnicodeError:
+                except (UnicodeError, LookupError):
                     pass
 
             # Finally, try to convert to unicode and replace all unknown
