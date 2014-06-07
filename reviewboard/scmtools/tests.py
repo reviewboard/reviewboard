@@ -970,6 +970,7 @@ class PerforceTests(SCMTestCase):
         """Testing PerforceTool.get_changeset"""
         desc = self.tool.get_changeset(157)
         self.assertEqual(desc.changenum, 157)
+        self.assertEqual(type(desc.description), six.text_type)
         self.assertEqual(md5(desc.description.encode('utf-8')).hexdigest(),
                          'b7eff0ca252347cc9b09714d07397e64')
 

@@ -379,7 +379,13 @@ class PerforceTool(SCMTool):
         # everything around the 'Affected files ...' line, and process the
         # results.
         changeset.username = changedesc['user']
-        changeset.description = changedesc['desc']
+
+        try:
+            changeset.description = changedesc['desc'].decode('utf-8')
+        except UnicodeDecodeError:
+            changeset.description = changedesc['desc'].decode('utf-8',
+                                                              'replace')
+
         if changedesc['status'] == "pending":
             changeset.pending = True
         try:
