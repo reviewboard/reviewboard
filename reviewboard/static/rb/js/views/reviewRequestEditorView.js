@@ -385,6 +385,7 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
         var $issueSummary = $('#issue-summary');
 
         _.bindAll(this, '_checkResizeLayout');
+        this._scheduleResizeLayout = _.throttle(this._checkResizeLayout, 100);
 
         this._fieldEditors = {};
         this._hasFields = (this.$('.editable').length > 0);
@@ -545,7 +546,7 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
              * Update the layout constraints any time these properties
              * change. Also, right away.
              */
-            $(window).resize(this._checkResizeLayout);
+            $(window).resize(this._scheduleResizeLayout);
             this.listenTo(this.model, 'change:editCount', this._checkResizeLayout);
             this._checkResizeLayout();
 
@@ -1097,9 +1098,24 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
             editing = $lastEditable.inlineEditor('editing'),
             $field = $lastEditable.inlineEditor('field'),
             editor = $field.data('markdown-editor'),
+            detailsWidth = 300, // Defined as @details-width in reviews.less
+            detailsPadding = 10,
+            $details = $('#review_request_details'),
+            $detailsBody = $details.find('tbody'),
+            $detailsLabels = $detailsBody.find('th:first-child'),
+            $detailsValues = $detailsBody.find('span'),
             contentHeight,
             height;
 
+        /*
+         * Make sure that the details fields wrap correctly, even if they don't
+         * have wrappable characters (this combines with the white-space:
+         * word-wrap: break-word style). This computation makes things handle
+         * potentially unknown field labels correctly.
+         */
+        $detailsValues.css('max-width', (detailsWidth -
+                                         $detailsLabels.outerWidth() -
+                                         detailsPadding * 3) + 'px');
 
         /*
          * Reset all the heights so we can do calculations based on their
@@ -1159,13 +1175,6 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
                     true);
             }
         }
-    },
-
-    /*
-     * Schedules a layout resize after the stack unwinds.
-     */
-    _scheduleResizeLayout: function() {
-        _.defer(this._checkResizeLayout);
     },
 
     /*
