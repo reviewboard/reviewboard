@@ -16,11 +16,11 @@ from reviewboard.scmtools.errors import (AuthenticationError,
                                          RepositoryNotFoundError,
                                          SCMError,
                                          UnverifiedCertificateError)
-from reviewboard.scmtools.svn.subvertpy import Client, imported_dependency
-if not imported_dependency:  # not installed/couldn't be imported
-    from reviewboard.scmtools.svn.pysvn import (
-        Client, imported_dependency)
+from reviewboard.scmtools.svn.pysvn import Client, has_svn_backend
 from reviewboard.ssh import utils as sshutils
+
+if not has_svn_backend:  # not installed/couldn't be imported
+    from reviewboard.scmtools.svn.subvertpy import Client, has_svn_backend
 
 
 # Register these URI schemes so we can handle them properly.
@@ -285,7 +285,7 @@ class SVNTool(SCMTool):
     @classmethod
     def build_client(cls, repopath, username=None, password=None,
                      local_site_name=None):
-        if not imported_dependency:
+        if not has_svn_backend:
             raise ImportError(_(
                 'SVN integration requires either subvertpy or pysvn'))
         config_dir = os.path.join(os.path.expanduser('~'), '.subversion')
