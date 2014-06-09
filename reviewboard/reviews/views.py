@@ -376,11 +376,20 @@ def review_detail(request,
         # If the review request is public and pending review and if the user
         # is logged in, mark that they've visited this review request.
         if review_request.public and review_request.status == "P":
-            visited, visited_is_new = ReviewRequestVisit.objects.get_or_create(
-                user=request.user, review_request=review_request)
-            last_visited = visited.timestamp.replace(tzinfo=utc)
-            visited.timestamp = timezone.now()
-            visited.save()
+            try:
+                visited, visited_is_new = \
+                    ReviewRequestVisit.objects.get_or_create(
+                        user=request.user, review_request=review_request)
+                last_visited = visited.timestamp.replace(tzinfo=utc)
+                visited.timestamp = timezone.now()
+                visited.save()
+            except ReviewRequestVisit.DoesNotExist:
+                # Somehow, this visit was seen as created but then not
+                # accessible. We need to log this and then continue on.
+                logging.error('Unable to get or create ReviewRequestVisit '
+                              'for user "%s" on review request at %s',
+                              request.user.username,
+                              review_request.get_absolute_url())
 
         try:
             profile = request.user.get_profile()
