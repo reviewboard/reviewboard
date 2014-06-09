@@ -34,7 +34,7 @@ urlpatterns += patterns(
         'password_reset_done',
         {'template_name': 'accounts/password_reset_done.html'},
         name='password_reset_done'),
-    url(r'^reset/(?P<uidb64>[0-9A-Za-z_\-]+)-(?P<token>.+)/$',
+    url(r'^reset/(?P<uidb64>[0-9A-Za-z_\-]+)/(?P<token>[0-9A-Za-z]{1,13}-[0-9A-Za-z]{1,20})/$',
         'password_reset_confirm',
         {'template_name': 'accounts/password_reset_confirm.html'},
         name='password_reset_confirm'),
