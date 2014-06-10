@@ -26,6 +26,9 @@ class ReviewRequestIndex(indexes.SearchIndex, indexes.Indexable):
         """Returns the Django model for this index."""
         return ReviewRequest
 
+    def get_updated_field(self):
+        return 'last_updated'
+
     def index_queryset(self, using=None):
         """Index only public pending and submitted review requests."""
         queryset = self.get_model().objects.public(

@@ -36,10 +36,6 @@ RB.ReviewBoxView = RB.CollapsableBoxView.extend({
         this._$banners = this.$('.banners');
         this._$shipIt = this.$('.shipit');
 
-        this._reviewReply.on('destroyed published', function() {
-            this._setupNewReply();
-        }, this);
-
         _.each(this.$('.review-comments .issue-indicator'), function(el) {
             var $issueState = $('.issue-state', el),
                 issueStatus,
@@ -171,10 +167,12 @@ RB.ReviewBoxView = RB.CollapsableBoxView.extend({
             reviewReply = this.model.createReply();
         }
 
-        reviewReply.on('destroyed published', this._setupNewReply, this);
+        this.listenTo(reviewReply, 'destroyed published', function() {
+            this._setupNewReply();
+        });
 
         if (hadReviewReply) {
-            this._reviewReply.off(null, null, this);
+            this.stopListening(this._reviewReply);
 
             /*
              * We had one displayed before. Now it's time to clean up and
