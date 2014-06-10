@@ -1,0 +1,69 @@
+=================================
+Review Board 1.7.26 Release Notes
+=================================
+
+**Release date**: June 10, 2014
+
+
+Security Fixes
+==============
+
+* This release requires Django 1.4.13, which fixes a small handful of security
+  issues. See Django's `announcement
+  <https://www.djangoproject.com/weblog/2014/may/14/security-releases-issued/>`_
+  for more information.
+
+* Fixed an XSS issue in the diff viewer and file attachments with user real names.
+
+  A user could set their real name to text including ``</script>`` to take
+  advantage of an XSS bug on the diff viewer and file attachment pages. This is
+  related to the fixes in Djblets 0.7.30 and 0.8.3.
+
+  This is CVE-2014-3994 (discovered by "Uchida").
+
+
+New Features
+============
+
+* Added per-user options for choosing whether to receive e-mail.
+
+  Users can now toggle whether they want to receive e-mail from review requests
+  or reviews. By default, all users will receive e-mail as before, but users
+  may decide to turn this off.
+
+  Note that this only applies when e-mails are being directly sent to the user.
+  If the e-mail is going to a mailing list that the user is subscribed to,
+  they'll still see it.
+
+
+Bug Fixes
+=========
+
+* Fixed the repository API to allow non-administrator users with the
+  ``scmtools.add_repository`` permission to create repositories. (:bug:`3307`)
+
+* Fixed building static media when building packages on systems with multiple
+  parallel-installed versions of Django.
+
+  Patch by Stephen Gallagher.
+
+* Fixed a small Unicode error when parsing diffs with non-ASCII filenames.
+
+* Fixed the CVS repository verification to work with CVS versions prior to
+  1.12. (:bug:`3343`)
+
+* Fixed stripping of XML-like comments.
+
+  If a comment consisted only of XML or HTML-like text, it would get removed
+  instead of saved. These comments will now be properly saved. (:bug:`3298`).
+
+  Patch by Salam Al-yahya.
+
+
+Contributors
+============
+
+* Christian Hammond
+* David Trowbridge
+* Salam Al-yahya
+* Stephen Gallagher
