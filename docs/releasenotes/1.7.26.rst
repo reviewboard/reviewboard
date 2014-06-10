@@ -13,11 +13,11 @@ Security Fixes
   <https://www.djangoproject.com/weblog/2014/may/14/security-releases-issued/>`_
   for more information.
 
-* Fixed an XSS issue in the diff viewer with user real names.
+* Fixed an XSS issue in the diff viewer and file attachments with user real names.
 
   A user could set their real name to text including ``</script>`` to take
-  advantage of an XSS bug on the diff viewer page. This is related to the fixes
-  in Djblets 0.7.30 and 0.8.3.
+  advantage of an XSS bug on the diff viewer and file attachment pages. This is
+  related to the fixes in Djblets 0.7.30 and 0.8.3.
 
   This is CVE-2014-3994 (discovered by "Uchida").
 

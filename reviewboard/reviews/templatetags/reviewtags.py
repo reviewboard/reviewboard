@@ -173,8 +173,9 @@ def screenshotcommentcounts(context, screenshot):
                 'comment_id': comment.id,
                 'text': escape(comment.text),
                 'user': {
-                    'username': review.user.username,
-                    'name': review.user.get_full_name() or review.user.username,
+                    'username': escape(review.user.username),
+                    'name': escape(review.user.get_full_name() or
+                                   review.user.username),
                 },
                 'url': comment.get_review_url(),
                 'localdraft': review.user == user and not review.public,
@@ -185,9 +186,8 @@ def screenshotcommentcounts(context, screenshot):
                 'review_id': review.id,
                 'review_request_id': review.review_request_id,
                 'issue_opened': comment.issue_opened,
-                'issue_status': BaseComment
-                                .issue_status_to_string(comment
-                                                        .issue_status),
+                'issue_status': escape(
+                    BaseComment.issue_status_to_string(comment.issue_status)),
             })
 
     return simplejson.dumps(comments)
@@ -208,17 +208,17 @@ def file_attachment_comments(context, file_attachment):
                 'comment_id': comment.id,
                 'text': escape(comment.text),
                 'user': {
-                    'username': review.user.username,
-                    'name': review.user.get_full_name() or review.user.username,
+                    'username': escape(review.user.username),
+                    'name': escape(review.user.get_full_name() or
+                                   review.user.username),
                 },
                 'url': comment.get_review_url(),
                 'localdraft': review.user == user and not review.public,
                 'review_id': review.id,
                 'review_request_id': review.review_request_id,
                 'issue_opened': comment.issue_opened,
-                'issue_status': BaseComment
-                                .issue_status_to_string(comment
-                                                        .issue_status),
+                'issue_status': escape(
+                    BaseComment.issue_status_to_string(comment.issue_status)),
             })
 
     return simplejson.dumps(comments)
