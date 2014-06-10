@@ -173,7 +173,7 @@ setup(name=PACKAGE_NAME,
       install_requires=[
           django_version,
           'django_evolution>=0.6.9,<0.7',
-          'Djblets>=0.7.29,<0.8',
+          'Djblets>=0.7.30,<0.8',
           'django-pipeline>=1.2.24,<1.3',
           'docutils',
           markdown_requirement,
