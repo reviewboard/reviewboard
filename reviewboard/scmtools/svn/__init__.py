@@ -6,6 +6,7 @@ import os
 import re
 import weakref
 
+from django.conf import settings
 from django.utils import six
 from django.utils.translation import ugettext as _
 
@@ -16,11 +17,12 @@ from reviewboard.scmtools.errors import (AuthenticationError,
                                          RepositoryNotFoundError,
                                          SCMError,
                                          UnverifiedCertificateError)
-from reviewboard.scmtools.svn.pysvn import Client, has_svn_backend
 from reviewboard.ssh import utils as sshutils
 
-if not has_svn_backend:  # not installed/couldn't be imported
-    from reviewboard.scmtools.svn.subvertpy import Client, has_svn_backend
+
+# These will be set later in recompute_svn_backend().
+Client = None
+has_svn_backend = False
 
 
 # Register these URI schemes so we can handle them properly.
@@ -46,7 +48,8 @@ class SVNTool(SCMTool):
     supports_authentication = True
     supports_post_commit = True
     dependencies = {
-        'modules': [Client.required_module],
+        'modules': [],  # This will get filled in later in
+                        # recompute_svn_backend()
     }
 
     def __init__(self, repository):
@@ -405,3 +408,47 @@ class SVNDiffParser(DiffParser):
             linenum += 3
 
         return linenum
+
+
+def recompute_svn_backend():
+    """Recomputes the SVNTool client backend to use.
+
+    Normally, this is only called once, but it may be used to reset the
+    backend for use in testing.
+    """
+    global Client
+    global has_svn_backend
+
+    Client = None
+    has_svn_backend = False
+    required_module = None
+
+    for backend_path in settings.SVNTOOL_BACKENDS:
+        try:
+            mod = __import__(six.binary_type(backend_path),
+                             fromlist=['Client', 'has_svn_backend'])
+
+            # Check that this is a valid SVN backend.
+            if (not hasattr(mod, 'has_svn_backend') or
+                not hasattr(mod, 'Client')):
+                logging.error('Attempted to load invalid SVN backend %s',
+                              backend_path)
+                continue
+
+            has_svn_backend = mod.has_svn_backend
+
+            # We want either the winning SVN backend or the first one to show
+            # up in the required module dependencies list.
+            if has_svn_backend or not required_module:
+                SVNTool.dependencies['modules'] = [mod.Client.required_module]
+
+            if has_svn_backend:
+                # We found a suitable backend.
+                logging.info('Using %s backend for SVN', backend_path)
+                Client = mod.Client
+                break
+        except ImportError:
+            logging.error('Unable to load SVN backend %s',
+                          backend_path, exc_info=1)
+
+recompute_svn_backend()
