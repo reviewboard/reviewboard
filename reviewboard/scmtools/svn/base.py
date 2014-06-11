@@ -50,10 +50,6 @@ class Client(object):
         This assumes the standard layout in the repository."""
         raise NotImplementedError
 
-    def get_commits(self, start):
-        """Returns a list of commits."""
-        raise NotImplementedError
-
     def get_change(self, revision, cache_key):
         """Get an individual change.
 

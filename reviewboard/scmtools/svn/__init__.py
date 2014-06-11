@@ -12,7 +12,8 @@ from django.utils.translation import ugettext as _
 
 from reviewboard.diffviewer.parser import DiffParser
 from reviewboard.scmtools.certs import Certificate
-from reviewboard.scmtools.core import SCMTool, HEAD, PRE_CREATION, UNKNOWN
+from reviewboard.scmtools.core import (Commit, SCMTool, HEAD, PRE_CREATION,
+                                       UNKNOWN)
 from reviewboard.scmtools.errors import (AuthenticationError,
                                          RepositoryNotFoundError,
                                          SCMError,
@@ -51,6 +52,8 @@ class SVNTool(SCMTool):
         'modules': [],  # This will get filled in later in
                         # recompute_svn_backend()
     }
+
+    COMMITS_PAGE_LIMIT = 31
 
     def __init__(self, repository):
         self.repopath = repository.path
@@ -124,7 +127,38 @@ class SVNTool(SCMTool):
 
     def get_commits(self, start):
         """Return a list of commits."""
-        return self.client.get_commits(start)
+        commits = self.client.get_log('/',
+                                      start=start,
+                                      limit=self.COMMITS_PAGE_LIMIT,
+                                      limit_to_path=False)
+
+        results = []
+
+        # We fetch one more commit than we care about, because the entries in
+        # the svn log doesn't include the parent revision.
+        for i in range(len(commits) - 1):
+            commit = commits[i]
+            parent = commits[i + 1]
+
+            results.append(Commit(
+                commit.get('author', ''),
+                commit['revision'],
+                commit['date'].isoformat(),
+                commit['message'],
+                parent['revision']))
+
+        # If there were fewer than the requested number of commits fetched,
+        # also include the last one in the list so we don't leave off the
+        # initial revision.
+        if len(commits) < self.COMMITS_PAGE_LIMIT:
+            commit = commits[-1]
+            results.append(Commit(
+                commit['author'],
+                commit['revision'],
+                commit['date'].isoformat(),
+                commit['message']))
+
+        return results
 
     def get_change(self, revision):
         """Get an individual change.

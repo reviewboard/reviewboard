@@ -127,24 +127,6 @@ class Client(base.Client):
 
         return results
 
-    def get_commits(self, start):
-        """Returns a list of commits."""
-        results = []
-
-        if start.isdigit():
-            start = int(start)
-        commits = list(self.ra.iter_log(None, start, end=0, limit=31))
-        # We fetch one more commit than we care about, because the entries in
-        # the svn log doesn't include the parent revision.
-        for i, (_, rev, props, _) in enumerate(commits[:-1]):
-            parent = commits[i + 1]
-            commit = Commit(props[SVN_AUTHOR], six.text_type(rev),
-                            # [:-1] to remove the Z
-                            props[SVN_DATE][:-1], props[SVN_LOG],
-                            six.text_type(parent[1]))
-            results.append(commit)
-        return results
-
     def get_change(self, revision, cache_key):
         """Get an individual change.
 

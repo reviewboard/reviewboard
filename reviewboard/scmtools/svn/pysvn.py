@@ -141,43 +141,6 @@ class Client(base.Client):
 
         return results
 
-    def get_commits(self, start):
-        """Returns a list of commits."""
-        commits = self.client.log(
-            self.repopath,
-            revision_start=Revision(opt_revision_kind.number,
-                                    int(start)),
-            limit=31)
-
-        results = []
-
-        # We fetch one more commit than we care about, because the entries in
-        # the svn log doesn't include the parent revision.
-        for i in range(len(commits) - 1):
-            commit = commits[i]
-            parent = commits[i + 1]
-
-            date = datetime.utcfromtimestamp(commit['date'])
-            results.append(Commit(
-                commit.get('author', ''),
-                six.text_type(commit['revision'].number),
-                date.isoformat(),
-                commit['message'],
-                six.text_type(parent['revision'].number)))
-
-        # If there were fewer than 31 commits fetched, also include the last
-        # one in the list so we don't leave off the initial revision.
-        if len(commits) < 31:
-            commit = commits[-1]
-            date = datetime.utcfromtimestamp(commit['date'])
-            results.append(Commit(
-                commit['author'],
-                six.text_type(commit['revision'].number),
-                date.isoformat(),
-                commit['message']))
-
-        return results
-
     def get_change(self, revision, cache_key):
         """Get an individual change.
 
