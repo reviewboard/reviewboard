@@ -17,6 +17,7 @@ from reviewboard.scmtools.managers import RepositoryManager, ToolManager
 from reviewboard.scmtools.signals import (checked_file_exists,
                                           checking_file_exists,
                                           fetched_file, fetching_file)
+from reviewboard.scmtools.core import FileNotFoundError
 from reviewboard.site.models import LocalSite
 
 
@@ -367,7 +368,16 @@ class Repository(models.Model):
                 revision,
                 base_commit_id=base_commit_id)
         else:
-            data = self.get_scmtool().get_file(path, revision)
+            try:
+                data = self.get_scmtool().get_file(path, revision)
+            except FileNotFoundError:
+                if base_commit_id:
+                    # Some funky workflows with mq (mercurial) can cause issues
+                    # with parent diffs. If we didn't find it with the parsed
+                    # revision, and there's a base commit ID, try that.
+                    data = self.get_scmtool().get_file(path, base_commit_id)
+                else:
+                    raise
 
         log_timer.done()
 
