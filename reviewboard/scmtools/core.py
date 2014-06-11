@@ -22,7 +22,7 @@ from reviewboard.ssh import utils as sshutils
 from reviewboard.ssh.errors import SSHAuthenticationError
 
 
-class ChangeSet:
+class ChangeSet(object):
     def __init__(self):
         self.changenum = None
         self.summary = ""
@@ -64,6 +64,10 @@ class Branch(object):
                 self.commit == other.commit and
                 self.default == other.default)
 
+    def __repr__(self):
+        return ('<Branch %s (commit=%s: default=%r)>'
+                % (self.name, self.commit, self.default))
+
 
 class Commit(object):
     def __init__(self, author_name='', id='', date='', message='', parent='',
@@ -85,6 +89,10 @@ class Commit(object):
                 self.date == other.date and
                 self.message == other.message and
                 self.parent == other.parent)
+
+    def __repr__(self):
+        return ('<Commit %r (author=%s; date=%s; parent=%r)>'
+                % (self.id, self.author_name, self.date, self.parent))
 
     def split_message(self):
         """Get a split version of the commit message.
