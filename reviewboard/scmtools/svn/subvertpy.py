@@ -3,6 +3,7 @@ from __future__ import absolute_import, unicode_literals
 
 import logging
 import os
+from datetime import datetime
 
 try:
     from subvertpy import ra, SubversionException, __version__
@@ -205,7 +206,9 @@ class Client(base.Client):
         return self.client.propget(SVN_KEYWORDS, path, None, revnum).get(path)
 
     def _normalize_revision(self, revision, negatives_allowed=True):
-        if revision == HEAD:
+        if revision is None:
+            return None
+        elif revision == HEAD:
             return B('HEAD')
         elif revision == PRE_CREATION:
             raise FileNotFoundError('', revision)
@@ -213,6 +216,7 @@ class Client(base.Client):
             revnum = int(revision.name)
         elif isinstance(revision, (B,) + six.string_types):
             revnum = int(revision)
+
         return revnum
 
     def get_filenames_in_revision(self, revision):
@@ -326,3 +330,50 @@ class Client(base.Client):
                 on_failure(e, path, cert)
 
         return cert
+
+    def get_log(self, path, start=None, end=None, limit=None,
+                discover_changed_paths=False, limit_to_path=False):
+        """Returns log entries at the specified path.
+
+        The log entries will appear ordered from most recent to least,
+        with 'start' being the most recent commit in the range.
+
+        If 'start' is not specified, then it will default to 'HEAD'. If
+        'end' is not specified, it will default to '1'.
+
+        To limit the commits to the given path, not factoring in history
+        from any branch operations, set 'limit_to_path' to True.
+        """
+        def log_cb(changed_paths, revision, props, has_children):
+            commit = {
+                'revision': six.text_type(revision),
+            }
+
+            if 'svn:date' in props:
+                commit['date'] = datetime.strptime(props['svn:date'],
+                                                   '%Y-%m-%dT%H:%M:%S.%fZ')
+
+            if 'svn:author' in props:
+                commit['author'] = props['svn:author']
+
+            if 'svn:log' in props:
+                commit['message'] = props['svn:log']
+
+            commits.append(commit)
+
+        if start is None:
+            start = self.LOG_DEFAULT_START
+
+        if end is None:
+            end = self.LOG_DEFAULT_END
+
+        commits = []
+        self.client.log(log_cb,
+                        paths=B(self.normalize_path(path)),
+                        start_rev=self._normalize_revision(start),
+                        end_rev=self._normalize_revision(end),
+                        limit=limit,
+                        discover_changed_paths=discover_changed_paths,
+                        strict_node_history=limit_to_path)
+
+        return commits

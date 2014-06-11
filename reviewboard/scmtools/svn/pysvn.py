@@ -326,3 +326,38 @@ class Client(base.Client):
                 on_failure(e, path, cert)
 
         return cert
+
+    def get_log(self, path, start=None, end=None, limit=None,
+                discover_changed_paths=False, limit_to_path=False):
+        """Returns log entries at the specified path.
+
+        The log entries will appear ordered from most recent to least,
+        with 'start' being the most recent commit in the range.
+
+        If 'start' is not specified, then it will default to 'HEAD'. If
+        'end' is not specified, it will default to '1'.
+
+        To limit the commits to the given path, not factoring in history
+        from any branch operations, set 'limit_to_path' to True.
+        """
+        if start is None:
+            start = self.LOG_DEFAULT_START
+
+        if end is None:
+            end = self.LOG_DEFAULT_END
+
+        commits = self.client.log(
+            self.normalize_path(path),
+            limit=limit,
+            revision_start=Revision(opt_revision_kind.number, start),
+            revision_end=Revision(opt_revision_kind.number, end),
+            discover_changed_paths=discover_changed_paths,
+            strict_node_history=limit_to_path)
+
+        for commit in commits:
+            commit['revision'] = six.text_type(commit['revision'].number)
+
+            if 'date' in commit:
+                commit['date'] = datetime.utcfromtimestamp(commit['date'])
+
+        return commits
