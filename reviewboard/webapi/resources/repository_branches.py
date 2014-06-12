@@ -16,6 +16,8 @@ class RepositoryBranchesResource(WebAPIResource):
 
     Returns an array of objects with the following fields:
 
+        'id' is the ID of the branch.
+
         'name' is simply the name of the branch.
 
         'commit' is a string representing the revision identifier of the
@@ -50,6 +52,7 @@ class RepositoryBranchesResource(WebAPIResource):
             branches = []
             for branch in repository.get_branches():
                 branches.append({
+                    'id': branch.id,
                     'name': branch.name,
                     'commit': branch.commit,
                     'default': branch.default,

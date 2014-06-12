@@ -211,8 +211,8 @@ class Client(base.Client):
         commits = self.client.log(
             self.normalize_path(path),
             limit=limit,
-            revision_start=Revision(opt_revision_kind.number, start),
-            revision_end=Revision(opt_revision_kind.number, end),
+            revision_start=self._normalize_revision(start),
+            revision_end=self._normalize_revision(end),
             discover_changed_paths=discover_changed_paths,
             strict_node_history=limit_to_path)
 
