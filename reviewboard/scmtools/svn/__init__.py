@@ -12,8 +12,8 @@ from django.utils.translation import ugettext as _
 
 from reviewboard.diffviewer.parser import DiffParser
 from reviewboard.scmtools.certs import Certificate
-from reviewboard.scmtools.core import (Commit, SCMTool, HEAD, PRE_CREATION,
-                                       UNKNOWN)
+from reviewboard.scmtools.core import (Branch, Commit, SCMTool, HEAD,
+                                       PRE_CREATION, UNKNOWN)
 from reviewboard.scmtools.errors import (AuthenticationError,
                                          RepositoryNotFoundError,
                                          SCMError,
@@ -122,8 +122,45 @@ class SVNTool(SCMTool):
     def get_branches(self):
         """Returns a list of branches.
 
-        This assumes the standard layout in the repository."""
-        return self.client.branches
+        This assumes the standard layout in the repository.
+        """
+        results = []
+
+        try:
+            root_dirents = self.client.list_dir('/')
+        except Exception as e:
+            raise SCMError(e)
+
+        if 'trunk' in root_dirents:
+            # Looks like the standard layout. Adds trunk and any branches.
+            results.append(Branch(name='trunk',
+                                  commit=root_dirents['trunk']['created_rev'],
+                                  default=True))
+
+            if 'branches' in root_dirents:
+                try:
+                    dirents = self.client.list_dir('branches')
+
+                    results += [
+                        Branch(name=name, commit=dirents[name]['created_rev'])
+                        for name in sorted(six.iterkeys(dirents))
+                    ]
+                except Exception as e:
+                    raise SCMError(e)
+        else:
+            # If the repository doesn't use the standard layout, just use a
+            # listing of the root directory as the "branches". This probably
+            # corresponds to a list of projects instead of branches, but it
+            # will at least give people a useful result.
+            default = True
+
+            for name in sorted(six.iterkeys(root_dirents)):
+                results.append(Branch(name=name,
+                                      commit=dirents[name]['created_rev'],
+                                      default=default))
+                default = False
+
+        return results
 
     def get_commits(self, start):
         """Return a list of commits."""

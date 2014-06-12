@@ -9,8 +9,7 @@ from tempfile import mkdtemp
 
 try:
     import pysvn
-    from pysvn import (ClientError, Revision, opt_revision_kind,
-                       SVN_DIRENT_CREATED_REV)
+    from pysvn import ClientError, Revision, opt_revision_kind
     has_svn_backend = True
 except ImportError:
     # This try-except block is here for the sole purpose of avoiding
@@ -24,8 +23,7 @@ from django.utils.datastructures import SortedDict
 from django.utils.six.moves.urllib.parse import (urlsplit, urlunsplit, quote)
 from django.utils.translation import ugettext as _
 
-from reviewboard.scmtools.core import (Branch, Commit,
-                                       HEAD, PRE_CREATION)
+from reviewboard.scmtools.core import Commit, HEAD, PRE_CREATION
 from reviewboard.scmtools.errors import (AuthenticationError,
                                          FileNotFoundError,
                                          SCMError)
@@ -90,56 +88,6 @@ class Client(base.Client):
                     msg=_('Login to the SCM server failed.'))
             else:
                 raise SCMError(e)
-
-    @property
-    def branches(self):
-        """Returns a list of branches.
-
-        This assumes the standard layout in the repository."""
-        results = []
-
-        try:
-            root_dirents = self.client.list(
-                self.normalize_path('/'),
-                dirent_fields=SVN_DIRENT_CREATED_REV,
-                recurse=False)[1:]
-        except ClientError as e:
-            raise SCMError(e)
-
-        root_entries = SortedDict()
-        for dirent, unused in root_dirents:
-            name = dirent['path'].split('/')[-1]
-            rev = six.text_type(dirent['created_rev'].number)
-            root_entries[name] = rev
-
-        if 'trunk' in root_entries:
-            # Looks like the standard layout. Adds trunks and any branches
-            results.append(
-                Branch('trunk', root_entries['trunk'], True))
-
-            try:
-                branches = self.client.list(
-                    self.normalize_path('branches'),
-                    dirent_fields=SVN_DIRENT_CREATED_REV)[1:]
-                for branch, unused in branches:
-                    results.append(Branch(
-                        branch['path'].split('/')[-1],
-                        six.text_type(branch['created_rev'].number)))
-            except ClientError:
-                # It's possible there aren't any branches. Ignore errors for
-                # this part.
-                pass
-        else:
-            # If the repository doesn't use the standard layout, just use a
-            # listing of the root directory as the "branches". This probably
-            # corresponds to a list of projects instead of branches, but it
-            # will at least give people a useful result.
-            default = True
-            for name, rev in six.iteritems(root_entries):
-                results.append(Branch(name, rev, default))
-                default = False
-
-        return results
 
     def get_change(self, revision, cache_key):
         """Get an individual change.
@@ -324,3 +272,27 @@ class Client(base.Client):
                 commit['date'] = datetime.utcfromtimestamp(commit['date'])
 
         return commits
+
+    def list_dir(self, path):
+        """Lists the contents of the specified path.
+
+        The result will be an ordered dictionary of contents, mapping
+        filenames or directory names with a dictionary containing:
+
+        * ``path``        - The full path of the file or directory.
+        * ``created_rev`` - The revision where the file or directory was
+                            created.
+        """
+        result = SortedDict()
+        dirents = self.client.list(self.normalize_path(path),
+                                   recurse=False)[1:]
+
+        for dirent, unused in dirents:
+            name = dirent['path'].split('/')[-1]
+
+            result[name] = {
+                'path': dirent['path'],
+                'created_rev': six.text_type(dirent['created_rev'].number),
+            }
+
+        return result

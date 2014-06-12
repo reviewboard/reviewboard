@@ -80,6 +80,18 @@ class Client(object):
         """
         raise NotImplementedError
 
+    def list_dir(self, path):
+        """Lists the contents of the specified path.
+
+        The result will be an ordered dictionary of contents, mapping
+        filenames or directory names with a dictionary containing:
+
+        * ``path``        - The full path of the file or directory.
+        * ``created_rev`` - The revision where the file or directory was
+                            created.
+        """
+        raise NotImplementedError
+
     def collapse_keywords(self, data, keyword_str):
         """
         Collapse SVN keywords in string.

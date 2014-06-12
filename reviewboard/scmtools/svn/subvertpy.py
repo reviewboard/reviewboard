@@ -7,7 +7,7 @@ from datetime import datetime
 
 try:
     from subvertpy import ra, SubversionException, __version__
-    from subvertpy.client import Client as SVNClient, get_config
+    from subvertpy.client import Client as SVNClient, api_version, get_config
 
     has_svn_backend = (__version__ >= (0, 9, 1))
 except ImportError:
@@ -18,11 +18,10 @@ except ImportError:
 
 from django.core.cache import cache
 from django.utils import six
+from django.utils.datastructures import SortedDict
 
-from reviewboard.scmtools.core import (Branch, Commit, Revision,
-                                       HEAD, PRE_CREATION)
-from reviewboard.scmtools.errors import (FileNotFoundError,
-                                         SCMError)
+from reviewboard.scmtools.core import Commit, Revision, HEAD, PRE_CREATION
+from reviewboard.scmtools.errors import FileNotFoundError, SCMError
 from reviewboard.scmtools.svn import base
 
 B = six.binary_type
@@ -78,54 +77,6 @@ class Client(base.Client):
         if not hasattr(self, '_ra'):
             self._ra = ra.RemoteAccess(self.repopath, auth=self.auth)
         return self._ra
-
-    @property
-    def branches(self):
-        """Returns a list of branches.
-
-        This assumes the standard layout in the repository."""
-        results = []
-        try:
-            root_dirents = \
-                self.ra.get_dir(B('.'), -1, ra.DIRENT_CREATED_REV)[0]
-        except SubversionException as e:
-            raise SCMError(e)
-
-        trunk = B('trunk')
-        if trunk in root_dirents:
-            # Looks like the standard layout. Adds trunk and any branches.
-            created_rev = root_dirents[trunk]['created_rev']
-            results.append(Branch('trunk', six.text_type(created_rev), True))
-
-            try:
-                dirents = self.ra.get_dir(B('branches'), -1,
-                                          ra.DIRENT_CREATED_REV)[0]
-
-                branches = {}
-                for name, dirent in six.iteritems(dirents):
-                    branches[six.text_type(name)] = six.text_type(
-                        dirent['created_rev'])
-
-                for name in sorted(six.iterkeys(branches)):
-                    results.append(Branch(name, branches[name]))
-            except SubversionException as e:
-                pass
-        else:
-            # If the repository doesn't use the standard layout, just use a
-            # listing of the root directory as the "branches". This probably
-            # corresponds to a list of projects instead of branches, but it
-            # will at least give people a useful result.
-            branches = {}
-            for name, dirent in six.iteritems(root_dirents):
-                branches[six.text_type(name)] = six.text_type(
-                    dirent['created_rev'])
-
-            default = True
-            for name in sorted(six.iterkeys(branches)):
-                results.append(Branch(name, branches[name], default))
-                default = False
-
-        return results
 
     def get_change(self, revision, cache_key):
         """Get an individual change.
@@ -359,3 +310,31 @@ class Client(base.Client):
                         strict_node_history=limit_to_path)
 
         return commits
+
+    def list_dir(self, path):
+        """Lists the contents of the specified path.
+
+        The result will be an ordered dictionary of contents, mapping
+        filenames or directory names with a dictionary containing:
+
+        * ``path``        - The full path of the file or directory.
+        * ``created_rev`` - The revision where the file or directory was
+                            created.
+        """
+        result = SortedDict()
+
+        if api_version()[:2] >= (1, 5):
+            depth = 2  # Immediate files in this path. Only in 1.5+.
+        else:
+            depth = 0  # This will trigger recurse=False for SVN < 1.5.
+
+        dirents = self.client.list(B(self.normalize_path(path)), None, depth)
+
+        for name, dirent in six.iteritems(dirents):
+            if name:
+                result[six.text_type(name)] = {
+                    'path': '%s/%s' % (path.strip('/'), name),
+                    'created_rev': six.text_type(dirent['created_rev']),
+                }
+
+        return result
