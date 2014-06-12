@@ -54,19 +54,23 @@ class Revision(object):
 
 
 class Branch(object):
-    def __init__(self, name='', commit='', default=False):
-        self.name = name
+    def __init__(self, id, name=None, commit='', default=False):
+        assert id
+
+        self.id = id
+        self.name = name or self.id
         self.commit = commit
         self.default = default
 
     def __eq__(self, other):
-        return (self.name == other.name and
+        return (self.id == other.id and
+                self.name == other.name and
                 self.commit == other.commit and
                 self.default == other.default)
 
     def __repr__(self):
-        return ('<Branch %s (commit=%s: default=%r)>'
-                % (self.name, self.commit, self.default))
+        return ('<Branch %s (name=%s; commit=%s: default=%r)>'
+                % (self.id, self.name, self.commit, self.default))
 
 
 class Commit(object):
@@ -182,7 +186,7 @@ class SCMTool(object):
         """
         raise NotImplementedError
 
-    def get_commits(self, start):
+    def get_commits(self, branch=None, start=None):
         """Get a list of commits backward in history from a given point.
 
         This should be implemented by subclasses, and is expected to return a

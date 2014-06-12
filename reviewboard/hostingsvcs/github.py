@@ -437,13 +437,13 @@ class GitHub(HostingService):
 
             if refname.startswith(self.REFNAME_PREFIX):
                 name = refname[self.REFNAME_PREFIX_LEN:]
-                results.append(Branch(name=name,
+                results.append(Branch(id=name,
                                       commit=ref['object']['sha'],
                                       default=(name == 'master')))
 
         return results
 
-    def get_commits(self, repository, start=None):
+    def get_commits(self, repository, branch=None, start=None):
         results = []
 
         resource = 'commits'

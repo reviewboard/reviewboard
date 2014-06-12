@@ -74,7 +74,7 @@ class RepositoryCommitsResource(WebAPIResource):
             return DOES_NOT_EXIST
 
         try:
-            items = repository.get_commits(start)
+            items = repository.get_commits(start=start)
         except NotImplementedError:
             return REPO_NOT_IMPLEMENTED
 

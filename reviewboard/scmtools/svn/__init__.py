@@ -133,16 +133,16 @@ class SVNTool(SCMTool):
 
         if 'trunk' in root_dirents:
             # Looks like the standard layout. Adds trunk and any branches.
-            results.append(Branch(name='trunk',
-                                  commit=root_dirents['trunk']['created_rev'],
-                                  default=True))
+            trunk = root_dirents['trunk']
+            results.append(self._create_branch_from_dirent(
+                'trunk', trunk, default=True))
 
             if 'branches' in root_dirents:
                 try:
                     dirents = self.client.list_dir('branches')
 
                     results += [
-                        Branch(name=name, commit=dirents[name]['created_rev'])
+                        self._create_branch_from_dirent(name, dirents[name])
                         for name in sorted(six.iterkeys(dirents))
                     ]
                 except Exception as e:
@@ -155,16 +155,15 @@ class SVNTool(SCMTool):
             default = True
 
             for name in sorted(six.iterkeys(root_dirents)):
-                results.append(Branch(name=name,
-                                      commit=dirents[name]['created_rev'],
-                                      default=default))
+                results.append(self._create_branch_from_dirent(
+                    name, root_dirents[name], default))
                 default = False
 
         return results
 
-    def get_commits(self, start):
+    def get_commits(self, branch=None, start=None):
         """Return a list of commits."""
-        commits = self.client.get_log('/',
+        commits = self.client.get_log(branch or '/',
                                       start=start,
                                       limit=self.COMMITS_PAGE_LIMIT,
                                       limit_to_path=False)
@@ -295,6 +294,13 @@ class SVNTool(SCMTool):
 
     def get_parser(self, data):
         return SVNDiffParser(data)
+
+    def _create_branch_from_dirent(self, name, dirent, default=False):
+        return Branch(
+            id=dirent['path'].strip('/'),
+            name=name,
+            commit=dirent['created_rev'],
+            default=default)
 
     @classmethod
     def _ssl_server_trust_prompt(cls, trust_dict, repository):

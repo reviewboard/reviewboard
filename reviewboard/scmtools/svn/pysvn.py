@@ -235,14 +235,16 @@ class Client(base.Client):
                             created.
         """
         result = SortedDict()
-        dirents = self.client.list(self.normalize_path(path),
-                                   recurse=False)[1:]
+        norm_path = self.normalize_path(path)
+        dirents = self.client.list(norm_path, recurse=False)[1:]
+
+        repo_path_len = len(self.repopath)
 
         for dirent, unused in dirents:
             name = dirent['path'].split('/')[-1]
 
             result[name] = {
-                'path': dirent['path'],
+                'path': dirent['path'][repo_path_len:],
                 'created_rev': six.text_type(dirent['created_rev'].number),
             }
 

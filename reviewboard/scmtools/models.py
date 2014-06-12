@@ -259,7 +259,7 @@ class Repository(models.Model):
     def get_commit_cache_key(self, commit):
         return 'repository-commit:%s:%s' % (self.pk, commit)
 
-    def get_commits(self, start=None):
+    def get_commits(self, branch=None, start=None):
         """Returns a list of commits.
 
         This is paginated via the 'start' parameter. Any exceptions are
@@ -267,12 +267,19 @@ class Repository(models.Model):
         """
         hosting_service = self.hosting_service
 
-        cache_key = make_cache_key('repository-commits:%s:%s'
-                                   % (self.pk, start))
+        cache_key = make_cache_key('repository-commits:%s:%s:%s'
+                                   % (self.pk, branch, start))
+        commits_kwargs = {
+            'branch': branch,
+            'start': start,
+        }
+
         if hosting_service:
-            commits_callable = lambda: hosting_service.get_commits(self, start)
+            commits_callable = \
+                lambda: hosting_service.get_commits(self, **commits_kwargs)
         else:
-            commits_callable = lambda: self.get_scmtool().get_commits(start)
+            commits_callable = \
+                lambda: self.get_scmtool().get_commits(**commits_kwargs)
 
         # We cache both the entire list for 'start', as well as each individual
         # commit. This allows us to reduce API load when people are looking at

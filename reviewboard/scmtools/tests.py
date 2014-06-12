@@ -942,12 +942,15 @@ class CommonSVNTestsBase(SCMTestCase):
         branches = self.tool.get_branches()
 
         self.assertEqual(len(branches), 2)
-        self.assertEqual(branches[0], Branch('trunk', '5', True))
-        self.assertEqual(branches[1], Branch('branch1', '7', False))
+        self.assertEqual(branches[0], Branch(id='trunk', name='trunk',
+                                             commit='5', default=True))
+        self.assertEqual(branches[1], Branch(id='branches/branch1',
+                                             name='branch1',
+                                             commit='7', default=False))
 
     def test_get_commits(self):
         """Testing SVN (<backend>) get_commits"""
-        commits = self.tool.get_commits('5')
+        commits = self.tool.get_commits(start='5')
 
         self.assertEqual(len(commits), 5)
         self.assertEqual(
@@ -958,7 +961,7 @@ class CommonSVNTestsBase(SCMTestCase):
                    'Add an unterminated keyword for testing bug #1523\n',
                    '4'))
 
-        commits = self.tool.get_commits('7')
+        commits = self.tool.get_commits(start='7')
         self.assertEqual(len(commits), 7)
         self.assertEqual(
             commits[1],
@@ -967,6 +970,36 @@ class CommonSVNTestsBase(SCMTestCase):
                    '2013-06-13T07:43:04.725088',
                    'Add a branches directory',
                    '5'))
+
+    def test_get_commits_with_branch(self):
+        """Testing SVN (<backend>) get_commits with branch"""
+        commits = self.tool.get_commits(branch='/branches/branch1', start='5')
+
+        self.assertEqual(len(commits), 5)
+        self.assertEqual(
+            commits[0],
+            Commit('chipx86',
+                   '5',
+                   '2010-05-21T09:33:40.893946',
+                   'Add an unterminated keyword for testing bug #1523\n',
+                   '4'))
+
+        commits = self.tool.get_commits(branch='/branches/branch1', start='7')
+        self.assertEqual(len(commits), 6)
+        self.assertEqual(
+            commits[0],
+            Commit('david',
+                   '7',
+                   '2013-06-13T07:43:27.259554',
+                   'Add a branch',
+                   '5'))
+        self.assertEqual(
+            commits[1],
+            Commit('chipx86',
+                   '5',
+                   '2010-05-21T09:33:40.893946',
+                   'Add an unterminated keyword for testing bug #1523\n',
+                   '4'))
 
     def test_get_change(self):
         """Testing SVN (<backend>) get_change"""
