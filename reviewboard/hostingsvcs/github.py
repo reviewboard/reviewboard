@@ -183,6 +183,9 @@ class GitHub(HostingService):
 
     RAW_MIMETYPE = 'application/vnd.github.v3.raw'
 
+    REFNAME_PREFIX = 'refs/heads/'
+    REFNAME_PREFIX_LEN = len(REFNAME_PREFIX)
+
     def get_api_url(self, hosting_url):
         """Returns the API URL for GitHub.
 
@@ -432,12 +435,11 @@ class GitHub(HostingService):
         for ref in rsp:
             refname = ref['ref']
 
-            if not refname.startswith('refs/heads/'):
-                continue
-
-            name = refname.split('/')[-1]
-            results.append(Branch(name, ref['object']['sha'],
-                                  default=(name == 'master')))
+            if refname.startswith(self.REFNAME_PREFIX):
+                name = refname[self.REFNAME_PREFIX_LEN:]
+                results.append(Branch(name=name,
+                                      commit=ref['object']['sha'],
+                                      default=(name == 'master')))
 
         return results
 

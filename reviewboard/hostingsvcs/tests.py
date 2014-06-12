@@ -1012,6 +1012,12 @@ class GitHubTests(ServiceTests):
                 }
             },
             {
+                'ref': 'refs/heads/some-component/fix',
+                'object': {
+                    'sha': '764015ef492c8cb1546363b45fee7ab6d1a182ee',
+                }
+            },
+            {
                 'ref': 'refs/tags/release-1.7.11',
                 'object': {
                     'sha': 'f5a35f1d8a8dcefb336a8e3211334f1f50ea7792',
@@ -1036,7 +1042,7 @@ class GitHubTests(ServiceTests):
         service = account.service
         branches = service.get_branches(repository)
 
-        self.assertEqual(len(branches), 2)
+        self.assertEqual(len(branches), 3)
         self.assertEqual(
             branches,
             [
@@ -1045,6 +1051,9 @@ class GitHubTests(ServiceTests):
                        True),
                 Branch('release-1.7.x',
                        '92463764015ef463b4b6d1a1825fee7aeec8cb15',
+                       False),
+                Branch('some-component/fix',
+                       '764015ef492c8cb1546363b45fee7ab6d1a182ee',
                        False),
             ])
 
