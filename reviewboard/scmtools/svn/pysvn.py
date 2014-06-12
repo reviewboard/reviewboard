@@ -17,13 +17,12 @@ except ImportError:
     # the testsuite.
     has_svn_backend = False
 
-from django.core.cache import cache
 from django.utils import six
 from django.utils.datastructures import SortedDict
 from django.utils.six.moves.urllib.parse import (urlsplit, urlunsplit, quote)
 from django.utils.translation import ugettext as _
 
-from reviewboard.scmtools.core import Commit, HEAD, PRE_CREATION
+from reviewboard.scmtools.core import HEAD, PRE_CREATION
 from reviewboard.scmtools.errors import (AuthenticationError,
                                          FileNotFoundError,
                                          SCMError)
@@ -69,7 +68,7 @@ class Client(base.Client):
                                        quote(path),
                                        '', ''))
 
-            normrev = self.__normalize_revision(revision)
+            normrev = self._normalize_revision(revision)
             return cb(normpath, normrev)
 
         except ClientError as e:
@@ -88,54 +87,6 @@ class Client(base.Client):
                     msg=_('Login to the SCM server failed.'))
             else:
                 raise SCMError(e)
-
-    def get_change(self, revision, cache_key):
-        """Get an individual change.
-
-        This returns a tuple with the commit message and the diff contents.
-        """
-        revision = int(revision)
-        head_revision = Revision(opt_revision_kind.number, revision)
-
-        commit = cache.get(cache_key)
-        if commit:
-            message = commit.message
-            author_name = commit.author_name
-            date = commit.date
-            base_revision = Revision(opt_revision_kind.number, commit.parent)
-        else:
-            commits = self.client.log(
-                self.repopath,
-                revision_start=head_revision,
-                limit=2)
-            commit = commits[0]
-            message = commit['message'].decode('utf-8', 'replace')
-            author_name = commit['author'].decode('utf-8', 'replace')
-            date = datetime.utcfromtimestamp(commit['date']).\
-                isoformat()
-
-            try:
-                commit = commits[1]
-                base_revision = commit['revision']
-            except IndexError:
-                base_revision = Revision(opt_revision_kind.number, 0)
-
-        tmpdir = mkdtemp(prefix='reviewboard-svn.')
-
-        diff = self.client.diff(
-            tmpdir,
-            self.repopath,
-            revision1=base_revision,
-            revision2=head_revision,
-            header_encoding='utf-8',
-            diff_options=['-u']).decode('utf-8')
-
-        rmtree(tmpdir)
-
-        commit = Commit(author_name, six.text_type(head_revision.number), date,
-                        message, six.text_type(base_revision.number))
-        commit.diff = diff
-        return commit
 
     def _get_file_data(self, normpath, normrev):
         data = self.client.cat(normpath, normrev)
@@ -165,7 +116,7 @@ class Client(base.Client):
 
     def get_filenames_in_revision(self, revision):
         """Returns a list of filenames associated with the revision."""
-        r = self.__normalize_revision(revision)
+        r = self._normalize_revision(revision)
         logs = self.client.log(self.repopath, r, r, True)
 
         if len(logs) == 0:
@@ -175,7 +126,7 @@ class Client(base.Client):
         else:
             assert False
 
-    def __normalize_revision(self, revision):
+    def _normalize_revision(self, revision):
         if revision == HEAD:
             r = Revision(opt_revision_kind.head)
         elif revision == PRE_CREATION:
@@ -296,3 +247,38 @@ class Client(base.Client):
             }
 
         return result
+
+    def diff(self, revision1, revision2, path=None):
+        """Returns a diff between two revisions.
+
+        The diff will contain the differences between the two revisions,
+        and may optionally be limited to a specific path.
+
+        The returned diff will be returned as a Unicode object.
+        """
+        if path:
+            path = self.normalize_path(path)
+        else:
+            path = self.repopath
+
+        tmpdir = mkdtemp(prefix='reviewboard-svn.')
+
+        try:
+            diff = self.client.diff(
+                tmpdir,
+                path,
+                revision1=self._normalize_revision(revision1),
+                revision2=self._normalize_revision(revision2),
+                header_encoding='utf-8',
+                diff_options=['-u']).decode('utf-8')
+        except Exception as e:
+            logging.error('Failed to generate diff using pysvn for revisions '
+                          '%s:%s for path %s: %s',
+                          revision1, revision2, path, e, exc_info=1)
+            raise SCMError(
+                _('Unable to get diff revisions %s through %s: %s')
+                % (revision1, revision2, e))
+        finally:
+            rmtree(tmpdir)
+
+        return diff

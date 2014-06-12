@@ -43,20 +43,6 @@ class Client(object):
     def set_ssl_server_trust_prompt(self, cb):
         raise NotImplementedError
 
-    @property
-    def branches(self):
-        """Returns a list of branches.
-
-        This assumes the standard layout in the repository."""
-        raise NotImplementedError
-
-    def get_change(self, revision, cache_key):
-        """Get an individual change.
-
-        This returns a tuple with the commit message and the diff contents.
-        """
-        raise NotImplementedError
-
     def get_file(self, path, revision=HEAD):
         """Returns the contents of a given file at the given revision."""
         raise NotImplementedError
@@ -89,6 +75,16 @@ class Client(object):
         * ``path``        - The full path of the file or directory.
         * ``created_rev`` - The revision where the file or directory was
                             created.
+        """
+        raise NotImplementedError
+
+    def diff(self, revision1, revision2, path=None):
+        """Returns a diff between two revisions.
+
+        The diff will contain the differences between the two revisions,
+        and may optionally be limited to a specific path.
+
+        The returned diff will be returned as a Unicode object.
         """
         raise NotImplementedError
 

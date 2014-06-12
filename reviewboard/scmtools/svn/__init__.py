@@ -202,9 +202,30 @@ class SVNTool(SCMTool):
 
         This returns a Commit object containing the details of the commit.
         """
-        cache_key = self.repository.get_commit_cache_key(revision)
+        revision = int(revision)
 
-        return self.client.get_change(revision, cache_key)
+        commits = self.client.get_log('/', start=revision, limit=2)
+
+        commit = commits[0]
+        message = commit['message'].decode('utf-8', 'replace')
+        author_name = commit['author'].decode('utf-8', 'replace')
+        date = commit['date'].isoformat()
+
+        if len(commits) > 1:
+            base_revision = commits[1]['revision']
+        else:
+            base_revision = 0
+
+        try:
+            diff = self.client.diff(base_revision, revision)
+        except Exception as e:
+            raise SCMError(e)
+
+        commit = Commit(author_name, six.text_type(revision), date,
+                        message, six.text_type(base_revision))
+        commit.diff = diff
+
+        return commit
 
     def normalize_patch(self, patch, filename, revision=HEAD):
         """
