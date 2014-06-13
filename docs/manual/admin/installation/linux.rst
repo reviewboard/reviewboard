@@ -197,7 +197,8 @@ Installing patch
 ================
 
 :command:`patch` is required for Review Board's diff viewer to work.
-All distributions should provide this.
+All distributions should provide this. We recommend using patch version 2.7 or
+newer.
 
 To install on Debian_ or Ubuntu_, type::
 
