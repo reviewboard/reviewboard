@@ -67,6 +67,14 @@ Performance Improvements
   more than once. We now do a better job of caching this data, reducing
   the amount of time the API spends talking to the database.
 
+* Massively sped up search indexing.
+
+  It's now much faster when rebuilding or updating the search index, using
+  the newer ``rebuild_index`` or ``update_index`` management commands.
+
+  This is especially true when passing the ``--age=<hours>`` argument to
+  ``update_index``, which previously was unused.
+
 
 Bug Fixes
 =========
@@ -122,18 +130,6 @@ Review Requests
   Description and Testing Done fields, without causing the editor to open.
 
   Patch by Thom Gerdes.
-
-
-Search
-------
-
-* Massively sped up search indexing.
-
-  It's now much faster when rebuilding or updating the search index, using
-  the newer ``rebuild_index`` or ``update_index`` management commands.
-
-  This is especially true when passing the ``--age=<hours>`` argument to
-  ``update_index``, which previously was unused.
 
 
 Administration
