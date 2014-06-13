@@ -42,8 +42,18 @@ class ResourceTests(BaseWebAPITestCase):
         return (get_repository_branches_url(repository, local_site_name),
                 repository_branches_item_mimetype,
                 [
-                    {'name': 'trunk', 'commit': '5', 'default': True},
-                    {'name': 'branch1', 'commit': '7', 'default': False},
+                    {
+                        'id': 'trunk',
+                        'name': 'trunk',
+                        'commit': '5',
+                        'default': True
+                    },
+                    {
+                        'id': 'branch1',
+                        'name': 'branch1',
+                        'commit': '7',
+                        'default': False
+                    },
                 ])
 
     def test_get_with_no_support(self):
