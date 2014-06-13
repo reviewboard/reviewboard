@@ -246,6 +246,15 @@ HOSTINGSVCS_HOOK_REGEX = (r'(?:Reviewed at %(server_url)sr/|Review request #)'
 HOSTINGSVCS_HOOK_REGEX_FLAGS = re.IGNORECASE
 
 
+# The SVN backends to attempt to load, in order. This is useful if more than
+# one type of backend is installed on a server, and you need to force usage
+# of a specific one.
+SVNTOOL_BACKENDS = [
+    'reviewboard.scmtools.svn.pysvn',
+    'reviewboard.scmtools.svn.subvertpy',
+]
+
+
 # Load local settings.  This can override anything in here, but at the very
 # least it needs to define database connectivity.
 try:

@@ -53,13 +53,20 @@ class RepositoryCommitsResource(WebAPIResource):
     @webapi_check_login_required
     @webapi_response_errors(DOES_NOT_EXIST, REPO_NOT_IMPLEMENTED)
     @webapi_request_fields(
-        required={
+        optional={
+            'branch': {
+                'type': six.text_type,
+                "description": "The ID of the branch to limit the commits "
+                               "to, as provided by the 'id' field of the "
+                               "repository branches API.",
+            },
             'start': {
                 'type': six.text_type,
                 'description': 'A commit ID to start listing from.',
             },
-        })
-    def get(self, request, start=None, *args, **kwargs):
+        }
+    )
+    def get(self, request, branch=None, start=None, *args, **kwargs):
         """Retrieves a set of commits from a particular repository.
 
         The ``start`` parameter is a commit ID to use as a starting point. This
@@ -74,7 +81,7 @@ class RepositoryCommitsResource(WebAPIResource):
             return DOES_NOT_EXIST
 
         try:
-            items = repository.get_commits(start)
+            items = repository.get_commits(branch=branch, start=start)
         except NotImplementedError:
             return REPO_NOT_IMPLEMENTED
 

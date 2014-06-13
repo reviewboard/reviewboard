@@ -22,7 +22,7 @@ from reviewboard.ssh import utils as sshutils
 from reviewboard.ssh.errors import SSHAuthenticationError
 
 
-class ChangeSet:
+class ChangeSet(object):
     def __init__(self):
         self.changenum = None
         self.summary = ""
@@ -54,15 +54,23 @@ class Revision(object):
 
 
 class Branch(object):
-    def __init__(self, name='', commit='', default=False):
-        self.name = name
+    def __init__(self, id, name=None, commit='', default=False):
+        assert id
+
+        self.id = id
+        self.name = name or self.id
         self.commit = commit
         self.default = default
 
     def __eq__(self, other):
-        return (self.name == other.name and
+        return (self.id == other.id and
+                self.name == other.name and
                 self.commit == other.commit and
                 self.default == other.default)
+
+    def __repr__(self):
+        return ('<Branch %s (name=%s; commit=%s: default=%r)>'
+                % (self.id, self.name, self.commit, self.default))
 
 
 class Commit(object):
@@ -85,6 +93,10 @@ class Commit(object):
                 self.date == other.date and
                 self.message == other.message and
                 self.parent == other.parent)
+
+    def __repr__(self):
+        return ('<Commit %r (author=%s; date=%s; parent=%r)>'
+                % (self.id, self.author_name, self.date, self.parent))
 
     def split_message(self):
         """Get a split version of the commit message.
@@ -174,7 +186,7 @@ class SCMTool(object):
         """
         raise NotImplementedError
 
-    def get_commits(self, start):
+    def get_commits(self, branch=None, start=None):
         """Get a list of commits backward in history from a given point.
 
         This should be implemented by subclasses, and is expected to return a

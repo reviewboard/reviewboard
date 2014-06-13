@@ -273,7 +273,7 @@ class HostingService(object):
         """
         raise NotImplementedError
 
-    def get_commits(self, repository, start=None):
+    def get_commits(self, repository, branch=None, start=None):
         """Get a list of commits backward in history from a given point.
 
         This should be implemented by subclasses, and is expected to return a

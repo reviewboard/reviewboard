@@ -1007,6 +1007,12 @@ class GitHubTests(ServiceTests):
                 }
             },
             {
+                'ref': 'refs/heads/some-component/fix',
+                'object': {
+                    'sha': '764015ef492c8cb1546363b45fee7ab6d1a182ee',
+                }
+            },
+            {
                 'ref': 'refs/tags/release-1.7.11',
                 'object': {
                     'sha': 'f5a35f1d8a8dcefb336a8e3211334f1f50ea7792',
@@ -1033,16 +1039,19 @@ class GitHubTests(ServiceTests):
 
         self.assertTrue(service.client.http_get.called)
 
-        self.assertEqual(len(branches), 2)
+        self.assertEqual(len(branches), 3)
         self.assertEqual(
             branches,
             [
-                Branch('master',
-                       '859d4e148ce3ce60bbda6622cdbe5c2c2f8d9817',
-                       True),
-                Branch('release-1.7.x',
-                       '92463764015ef463b4b6d1a1825fee7aeec8cb15',
-                       False),
+                Branch(id='master',
+                       commit='859d4e148ce3ce60bbda6622cdbe5c2c2f8d9817',
+                       default=True),
+                Branch(id='release-1.7.x',
+                       commit='92463764015ef463b4b6d1a1825fee7aeec8cb15',
+                       default=False),
+                Branch(id='some-component/fix',
+                       commit='764015ef492c8cb1546363b45fee7ab6d1a182ee',
+                       default=False),
             ])
 
     def test_get_commits(self):
@@ -1100,7 +1109,7 @@ class GitHubTests(ServiceTests):
         }
 
         commits = service.get_commits(
-            repository, '859d4e148ce3ce60bbda6622cdbe5c2c2f8d9817')
+            repository, start='859d4e148ce3ce60bbda6622cdbe5c2c2f8d9817')
 
         self.assertTrue(service.client.http_get.called)
 

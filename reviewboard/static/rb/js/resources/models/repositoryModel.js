@@ -26,11 +26,18 @@ RB.Repository = RB.BaseResource.extend({
 
     /*
      * Get a collection of commits from a given starting point.
+     *
+     * 'options' may have the following set:
+     *
+     *     * 'start'  - The starting commit (this will be the most recent
+     *                  commit shown).
+     *     * 'branch' - The branch to fetch commits from.
      */
-    getCommits: function(startCommit) {
+    getCommits: function(options) {
         return new RB.RepositoryCommits([], {
             urlBase: _.result(this, 'url') + 'commits/',
-            start: startCommit
+            start: options.start,
+            branch: options.branch
         });
     },
 

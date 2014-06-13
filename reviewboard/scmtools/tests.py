@@ -8,6 +8,7 @@ from socket import error as SocketError
 from tempfile import mkdtemp
 
 from django import forms
+from django.conf import settings
 from django.contrib.auth.models import AnonymousUser, User
 from django.core.cache import cache
 from django.utils import six
@@ -35,6 +36,7 @@ from reviewboard.scmtools.perforce import STunnelProxy, STUNNEL_SERVER
 from reviewboard.scmtools.signals import (checked_file_exists,
                                           checking_file_exists,
                                           fetched_file, fetching_file)
+from reviewboard.scmtools.svn import recompute_svn_backend
 from reviewboard.site.models import LocalSite
 from reviewboard.ssh.client import SSHClient
 from reviewboard.ssh.tests import SSHTestCase
@@ -633,12 +635,22 @@ class CVSTests(SCMTestCase):
         self._test_ssh_with_site(self.cvs_ssh_path, 'CVSROOT/modules')
 
 
-class SubversionTests(SCMTestCase):
-    """Unit tests for subversion."""
+class CommonSVNTestsBase(SCMTestCase):
+    """Common unit tests for Subversion.
+
+    This is meant to be subclassed for each backend that wants to run
+    the common set of tests.
+    """
+    backend = None
+    backend_name = None
     fixtures = ['test_scmtools']
 
     def setUp(self):
-        super(SubversionTests, self).setUp()
+        super(CommonSVNTestsBase, self).setUp()
+
+        self._old_backend_setting = settings.SVNTOOL_BACKENDS
+        settings.SVNTOOL_BACKENDS = [self.backend]
+        recompute_svn_backend()
 
         self.svn_repo_path = os.path.join(os.path.dirname(__file__),
                                           'testdata/svn_repo')
@@ -651,19 +663,37 @@ class SubversionTests(SCMTestCase):
         try:
             self.tool = self.repository.get_scmtool()
         except ImportError:
-            raise nose.SkipTest('Neither pysvn nor subvertpy is installed')
+            raise nose.SkipTest('The %s backend could not be used. A '
+                                'dependency may be missing.'
+                                % self.backend)
+
+        assert self.tool.client.__class__.__module__ == self.backend
+
+    def tearDown(self):
+        super(CommonSVNTestsBase, self).tearDown()
+
+        settings.SVNTOOL_BACKENDS = self._old_backend_setting
+        recompute_svn_backend()
+
+    def shortDescription(self):
+        desc = super(CommonSVNTestsBase, self).shortDescription()
+        desc = desc.replace('<backend>', self.backend_name)
+
+        return desc
 
     def test_ssh(self):
-        """Testing a SSH-backed Subversion repository"""
+        """Testing SVN (<backend>) with a SSH-backed Subversion repository"""
         self._test_ssh(self.svn_ssh_path, 'trunk/doc/misc-docs/Makefile')
 
     def test_ssh_with_site(self):
-        """Testing a SSH-backed Subversion repository with a LocalSite"""
+        """Testing SVN (<backend>) with a SSH-backed Subversion repository
+        with a LocalSite
+        """
         self._test_ssh_with_site(self.svn_ssh_path,
                                  'trunk/doc/misc-docs/Makefile')
 
     def test_get_file(self):
-        """Testing SVNTool.get_file"""
+        """Testing SVN (<backend>) get_file"""
         expected = (b'include ../tools/Makefile.base-vars\n'
                     b'NAME = misc-docs\n'
                     b'OUTNAME = svn-misc-docs\n'
@@ -695,7 +725,7 @@ class SubversionTests(SCMTestCase):
                           lambda: self.tool.get_file('hello', PRE_CREATION))
 
     def test_revision_parsing(self):
-        """Testing revision number parsing"""
+        """Testing SVN (<backend>) revision number parsing"""
         self.assertEqual(
             self.tool.parse_diff_revision('', '(working copy)')[1],
             HEAD)
@@ -733,7 +763,7 @@ class SubversionTests(SCMTestCase):
                          '7')
 
     def test_interface(self):
-        """Testing basic SVNTool API"""
+        """Testing SVN (<backend>) with basic SVNTool API"""
         self.assertEqual(self.tool.get_diffs_use_absolute_paths(), False)
 
         self.assertRaises(NotImplementedError,
@@ -743,7 +773,7 @@ class SubversionTests(SCMTestCase):
                           lambda: self.tool.get_pending_changesets(1))
 
     def test_binary_diff(self):
-        """Testing parsing SVN diff with binary file"""
+        """Testing SVN (<backend>) parsing SVN diff with binary file"""
         diff = (b'Index: binfile\n'
                 b'============================================================'
                 b'=======\n'
@@ -755,7 +785,7 @@ class SubversionTests(SCMTestCase):
         self.assertEqual(file.binary, True)
 
     def test_keyword_diff(self):
-        """Testing parsing SVN diff with keywords"""
+        """Testing SVN (<backend>) parsing diff with keywords"""
         # 'svn cat' will expand special variables in svn:keywords,
         # but 'svn diff' doesn't expand anything.  This causes the
         # patch to fail if those variables appear in the patch context.
@@ -779,7 +809,7 @@ class SubversionTests(SCMTestCase):
         patch(diff, file, filename)
 
     def test_unterminated_keyword_diff(self):
-        """Testing parsing SVN diff with unterminated keywords"""
+        """Testing SVN (<backend>) parsing diff with unterminated keywords"""
         diff = (b"Index: Makefile\n"
                 b"==========================================================="
                 b"========\n"
@@ -801,7 +831,9 @@ class SubversionTests(SCMTestCase):
         patch(diff, file, filename)
 
     def test_svn16_property_diff(self):
-        """Testing parsing SVN 1.6 diff with property changes"""
+        """Testing SVN (<backend>) parsing SVN 1.6 diff with
+        property changes
+        """
         prop_diff = (
             b"Index:\n"
             b"======================================================"
@@ -830,7 +862,9 @@ class SubversionTests(SCMTestCase):
         self.assertEqual(files[0].delete_count, 0)
 
     def test_svn17_property_diff(self):
-        """Testing parsing SVN 1.7+ diff with property changes"""
+        """Testing SVN (<backend>) parsing SVN 1.7+ diff with
+        property changes
+        """
         prop_diff = (
             b"Index .:\n"
             b"======================================================"
@@ -864,7 +898,7 @@ class SubversionTests(SCMTestCase):
         self.assertEqual(files[0].delete_count, 0)
 
     def test_unicode_diff(self):
-        """Testing parsing SVN diff with unicode characters"""
+        """Testing SVN (<backend>) parsing diff with unicode characters"""
         diff = ("Index: Filé\n"
                 "==========================================================="
                 "========\n"
@@ -884,7 +918,7 @@ class SubversionTests(SCMTestCase):
         self.assertEqual(files[0].delete_count, 0)
 
     def test_diff_with_spaces_in_filenames(self):
-        """Testing parsing SVN diff with spaces in filenames"""
+        """Testing SVN (<backend>) parsing diff with spaces in filenames"""
         diff = (b"Index: File with spaces\n"
                 b"==========================================================="
                 b"========\n"
@@ -942,16 +976,19 @@ class SubversionTests(SCMTestCase):
         self.assertEqual(files[0].delete_count, 0)
 
     def test_get_branches(self):
-        """Testing SVNTool.get_branches"""
+        """Testing SVN (<backend>) get_branches"""
         branches = self.tool.get_branches()
 
         self.assertEqual(len(branches), 2)
-        self.assertEqual(branches[0], Branch('trunk', '5', True))
-        self.assertEqual(branches[1], Branch('branch1', '7', False))
+        self.assertEqual(branches[0], Branch(id='trunk', name='trunk',
+                                             commit='5', default=True))
+        self.assertEqual(branches[1], Branch(id='branches/branch1',
+                                             name='branch1',
+                                             commit='7', default=False))
 
     def test_get_commits(self):
-        """Testing SVNTool.get_commits"""
-        commits = self.tool.get_commits('5')
+        """Testing SVN (<backend>) get_commits"""
+        commits = self.tool.get_commits(start='5')
 
         self.assertEqual(len(commits), 5)
         self.assertEqual(
@@ -962,7 +999,7 @@ class SubversionTests(SCMTestCase):
                    'Add an unterminated keyword for testing bug #1523\n',
                    '4'))
 
-        commits = self.tool.get_commits('7')
+        commits = self.tool.get_commits(start='7')
         self.assertEqual(len(commits), 7)
         self.assertEqual(
             commits[1],
@@ -972,14 +1009,54 @@ class SubversionTests(SCMTestCase):
                    'Add a branches directory',
                    '5'))
 
+    def test_get_commits_with_branch(self):
+        """Testing SVN (<backend>) get_commits with branch"""
+        commits = self.tool.get_commits(branch='/branches/branch1', start='5')
+
+        self.assertEqual(len(commits), 5)
+        self.assertEqual(
+            commits[0],
+            Commit('chipx86',
+                   '5',
+                   '2010-05-21T09:33:40.893946',
+                   'Add an unterminated keyword for testing bug #1523\n',
+                   '4'))
+
+        commits = self.tool.get_commits(branch='/branches/branch1', start='7')
+        self.assertEqual(len(commits), 6)
+        self.assertEqual(
+            commits[0],
+            Commit('david',
+                   '7',
+                   '2013-06-13T07:43:27.259554',
+                   'Add a branch',
+                   '5'))
+        self.assertEqual(
+            commits[1],
+            Commit('chipx86',
+                   '5',
+                   '2010-05-21T09:33:40.893946',
+                   'Add an unterminated keyword for testing bug #1523\n',
+                   '4'))
+
     def test_get_change(self):
-        """Testing SVNTool.get_change"""
+        """Testing SVN (<backend>) get_change"""
         commit = self.tool.get_change('5')
 
         self.assertEqual(md5(commit.message.encode('utf-8')).hexdigest(),
                          '928336c082dd756e3f7af4cde4724ebf')
         self.assertEqual(md5(commit.diff.encode('utf-8')).hexdigest(),
                          '56e50374056931c03a333f234fa63375')
+
+
+class PySVNTests(CommonSVNTestsBase):
+    backend = 'reviewboard.scmtools.svn.pysvn'
+    backend_name = 'pysvn'
+
+
+class SubvertpyTests(CommonSVNTestsBase):
+    backend = 'reviewboard.scmtools.svn.subvertpy'
+    backend_name = 'subvertpy'
 
 
 class PerforceTests(SCMTestCase):

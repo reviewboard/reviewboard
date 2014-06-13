@@ -1,0 +1,200 @@
+================================
+Review Board 2.0.2 Release Notes
+================================
+
+**Release date:** June 12, 2014
+
+
+This release contains all bug fixes and features found in Review Board version
+:doc:`1.7.26 <1.7.26>`.
+
+
+Security Fixes
+==============
+
+* Fixed an XSS issue in the diff viewer and file attachments with user real
+  names.
+
+  A user could set their real name to text including ``</script>`` to take
+  advantage of an XSS bug on the diff viewer and file attachment pages.
+
+  This was actually fixed in Djblets 0.8.3, but this is the first release
+  of Review Board to explicitly require a release with those fixes.
+
+  This is CVE-2014-3994 (discovered by "Uchida").
+
+
+New Features
+============
+
+* Added per-user options for choosing whether to receive e-mail.
+
+  Users can now toggle whether they want to receive e-mail from review
+  requests or reviews. By default, all users will receive e-mail as before,
+  but users may decide to turn this off.
+
+  Note that this only applies when e-mails are being directly sent to the
+  user. If the e-mail is going to a mailing list that the user is
+  subscribed to, they'll still see it.
+
+* Administrators can now choose the desired Subversion backend.
+
+  Review Board 2.0 shipped with two possible backends for Subversion:
+  PySVN and Subvertpy. Subvertpy has the advantage of being
+  ``easy_install``-able, but compared to PySVN it is relatively new and
+  unstable. If installed, Subvertpy would take precedence, even if it was an
+  old, broken version.
+
+  PySVN is the new default, if installed, but this can be changed by
+  overriding ``SVNTOOLS_BACKENDS`` in :file:`settings_local.py`, setting it
+  to a list containing the desired backend class. This defaults to:
+
+  .. code-block:: python
+
+      SVNTOOL_BACKENDS = [
+          'reviewboard.scmtools.svn.pysvn',
+          'reviewboard.scmtools.svn.subvertpy',
+      ]
+
+
+Performance Improvements
+========================
+
+* Improved the response time for many APIs.
+
+  Most of the API provided by Review Board involves access to the database.
+  In some case, a single request would access the same data in the database
+  more than once. We now do a better job of caching this data, reducing
+  the amount of time the API spends talking to the database.
+
+* Massively sped up search indexing.
+
+  It's now much faster when rebuilding or updating the search index, using
+  the newer ``rebuild_index`` or ``update_index`` management commands.
+
+  This is especially true when passing the ``--age=<hours>`` argument to
+  ``update_index``, which previously was unused.
+
+
+Bug Fixes
+=========
+
+General
+-------
+
+* Fixed a breakage if a cookie for the domain was stored with invalid URL
+  escaping. (:bug:`3387`)
+
+  If there was any cookie set by another service or by an extension that
+  had invalid URL escaping, such as ``foo=%%``, then our JavaScript code
+  would fail to load any cookies we needed. This was fixed by upgrading
+  to a newer build of jquery.cookie.
+
+  Patch by Abhishek Mukherjee.
+
+* Standardized on "e-mail" for user-visible text.
+
+  We had some strings that were saying "e-mail" and some that were saying
+  "email". We now standardize on "e-mail".
+
+* Fixed issues with resetting user passwords. (:bug:`3395`)
+
+
+New Review Request Page
+-----------------------
+
+* Commits are now properly filtered by branch on Subversion repositories.
+  (:bug:`3401`)
+
+* Branches containing forward-slashes (``/``) are now properly listed on
+  GitHub repositories.
+
+
+Review Requests
+---------------
+
+* Clicking :guilabel:`Download Diff` now attempts to trigger a download
+  instead of viewing the diff inline. (:bug:`3384`)
+
+  Patch by Brett Randall.
+
+* Publishing two consecutive replies to a review no longer causes the draft
+  banner to remain on the page.
+
+* Fixed clicking links in editable multi-line text fields, such as the
+  Description and Testing Done fields. (:bug:`3377`)
+
+  Patch by Thom Gerdes.
+
+* Fixed selecting text in editable multi-line text fields, such as the
+  Description and Testing Done fields, without causing the editor to open.
+
+  Patch by Thom Gerdes.
+
+
+Administration
+--------------
+
+* Fixed an error with the security checklist when denied access to potentially
+  dangerous files. (:bug:`3368`)
+
+  If the web server was configured to disallow access to a file type that we
+  were checking for in the list of unsafe files, the security checklist would
+  break. Instead, it now considers that a successful result, since it's
+  locked down.
+
+* Fixed a padding issue at the top of every page's content area in the
+  Administration UI.
+
+* The :guilabel:`Encodings` field in the repository settings page now
+  strips whitespace.
+
+  It was possible to unintentionally add whitespace to this field, which
+  would break things when attempting to apply the encoding.
+
+* Fixed breakages when invalid encodings are specified in a repository's
+  :guilabel:`Encodings` field. (:bug:`3399`)
+
+
+Mercurial
+---------
+
+* Fixed fetching of files that existed in the base commit but not a parent
+  diff.
+
+  When posting a patch with a parent diff, the patch could reference
+  revisions that existed only in the parent diffs, preventing Review Board
+  from properly fetching the file from the repository. We now fall back to
+  fetching the file from the base commit ID.
+
+  This requires posting through RBTools or supplying a ``base_commit_id``
+  value in the API when posting a diff.
+
+  Patch by Bruce Cran.
+
+
+Subversion
+----------
+
+* Fixed regressions in accessing HTTPS-based repositories. (:bug:`3317`)
+
+  PySVN and the newer Subvertpy backend had various issues in configuring
+  a HTTPS-based repository and accessing it, resulting in different errors
+  or other bad behavior. This should now work smoothly again.
+
+* Fixed some consistency issues in results between the PySVN and
+  Subvertpy backends.
+
+* Subvertpy is no longer used if it's older than version 0.9.1, for
+  compatibility reasons.
+
+
+Contributors
+============
+
+* Abhishek Mukherjee
+* Brett Randall
+* Bruce Cran
+* Christian Hammond
+* David Trowbridge
+* Thom Gerdes

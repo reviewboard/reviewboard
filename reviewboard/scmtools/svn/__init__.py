@@ -6,21 +6,24 @@ import os
 import re
 import weakref
 
+from django.conf import settings
 from django.utils import six
 from django.utils.translation import ugettext as _
 
 from reviewboard.diffviewer.parser import DiffParser
 from reviewboard.scmtools.certs import Certificate
-from reviewboard.scmtools.core import SCMTool, HEAD, PRE_CREATION, UNKNOWN
+from reviewboard.scmtools.core import (Branch, Commit, SCMTool, HEAD,
+                                       PRE_CREATION, UNKNOWN)
 from reviewboard.scmtools.errors import (AuthenticationError,
                                          RepositoryNotFoundError,
                                          SCMError,
                                          UnverifiedCertificateError)
-from reviewboard.scmtools.svn.pysvn import Client, has_svn_backend
 from reviewboard.ssh import utils as sshutils
 
-if not has_svn_backend:  # not installed/couldn't be imported
-    from reviewboard.scmtools.svn.subvertpy import Client, has_svn_backend
+
+# These will be set later in recompute_svn_backend().
+Client = None
+has_svn_backend = False
 
 
 # Register these URI schemes so we can handle them properly.
@@ -46,8 +49,11 @@ class SVNTool(SCMTool):
     supports_authentication = True
     supports_post_commit = True
     dependencies = {
-        'modules': [Client.required_module],
+        'modules': [],  # This will get filled in later in
+                        # recompute_svn_backend()
     }
+
+    COMMITS_PAGE_LIMIT = 31
 
     def __init__(self, repository):
         self.repopath = repository.path
@@ -116,21 +122,109 @@ class SVNTool(SCMTool):
     def get_branches(self):
         """Returns a list of branches.
 
-        This assumes the standard layout in the repository."""
-        return self.client.branches
+        This assumes the standard layout in the repository.
+        """
+        results = []
 
-    def get_commits(self, start):
+        try:
+            root_dirents = self.client.list_dir('/')
+        except Exception as e:
+            raise SCMError(e)
+
+        if 'trunk' in root_dirents:
+            # Looks like the standard layout. Adds trunk and any branches.
+            trunk = root_dirents['trunk']
+            results.append(self._create_branch_from_dirent(
+                'trunk', trunk, default=True))
+
+            if 'branches' in root_dirents:
+                try:
+                    dirents = self.client.list_dir('branches')
+
+                    results += [
+                        self._create_branch_from_dirent(name, dirents[name])
+                        for name in sorted(six.iterkeys(dirents))
+                    ]
+                except Exception as e:
+                    raise SCMError(e)
+        else:
+            # If the repository doesn't use the standard layout, just use a
+            # listing of the root directory as the "branches". This probably
+            # corresponds to a list of projects instead of branches, but it
+            # will at least give people a useful result.
+            default = True
+
+            for name in sorted(six.iterkeys(root_dirents)):
+                results.append(self._create_branch_from_dirent(
+                    name, root_dirents[name], default))
+                default = False
+
+        return results
+
+    def get_commits(self, branch=None, start=None):
         """Return a list of commits."""
-        return self.client.get_commits(start)
+        commits = self.client.get_log(branch or '/',
+                                      start=start,
+                                      limit=self.COMMITS_PAGE_LIMIT,
+                                      limit_to_path=False)
+
+        results = []
+
+        # We fetch one more commit than we care about, because the entries in
+        # the svn log doesn't include the parent revision.
+        for i in range(len(commits) - 1):
+            commit = commits[i]
+            parent = commits[i + 1]
+
+            results.append(Commit(
+                commit.get('author', ''),
+                commit['revision'],
+                commit['date'].isoformat(),
+                commit['message'],
+                parent['revision']))
+
+        # If there were fewer than the requested number of commits fetched,
+        # also include the last one in the list so we don't leave off the
+        # initial revision.
+        if len(commits) < self.COMMITS_PAGE_LIMIT:
+            commit = commits[-1]
+            results.append(Commit(
+                commit['author'],
+                commit['revision'],
+                commit['date'].isoformat(),
+                commit['message']))
+
+        return results
 
     def get_change(self, revision):
         """Get an individual change.
 
         This returns a Commit object containing the details of the commit.
         """
-        cache_key = self.repository.get_commit_cache_key(revision)
+        revision = int(revision)
 
-        return self.client.get_change(revision, cache_key)
+        commits = self.client.get_log('/', start=revision, limit=2)
+
+        commit = commits[0]
+        message = commit['message'].decode('utf-8', 'replace')
+        author_name = commit['author'].decode('utf-8', 'replace')
+        date = commit['date'].isoformat()
+
+        if len(commits) > 1:
+            base_revision = commits[1]['revision']
+        else:
+            base_revision = 0
+
+        try:
+            diff = self.client.diff(base_revision, revision)
+        except Exception as e:
+            raise SCMError(e)
+
+        commit = Commit(author_name, six.text_type(revision), date,
+                        message, six.text_type(base_revision))
+        commit.diff = diff
+
+        return commit
 
     def normalize_patch(self, patch, filename, revision=HEAD):
         """
@@ -200,6 +294,13 @@ class SVNTool(SCMTool):
 
     def get_parser(self, data):
         return SVNDiffParser(data)
+
+    def _create_branch_from_dirent(self, name, dirent, default=False):
+        return Branch(
+            id=dirent['path'].strip('/'),
+            name=name,
+            commit=dirent['created_rev'],
+            default=default)
 
     @classmethod
     def _ssl_server_trust_prompt(cls, trust_dict, repository):
@@ -409,3 +510,47 @@ class SVNDiffParser(DiffParser):
             linenum += 3
 
         return linenum
+
+
+def recompute_svn_backend():
+    """Recomputes the SVNTool client backend to use.
+
+    Normally, this is only called once, but it may be used to reset the
+    backend for use in testing.
+    """
+    global Client
+    global has_svn_backend
+
+    Client = None
+    has_svn_backend = False
+    required_module = None
+
+    for backend_path in settings.SVNTOOL_BACKENDS:
+        try:
+            mod = __import__(six.binary_type(backend_path),
+                             fromlist=['Client', 'has_svn_backend'])
+
+            # Check that this is a valid SVN backend.
+            if (not hasattr(mod, 'has_svn_backend') or
+                not hasattr(mod, 'Client')):
+                logging.error('Attempted to load invalid SVN backend %s',
+                              backend_path)
+                continue
+
+            has_svn_backend = mod.has_svn_backend
+
+            # We want either the winning SVN backend or the first one to show
+            # up in the required module dependencies list.
+            if has_svn_backend or not required_module:
+                SVNTool.dependencies['modules'] = [mod.Client.required_module]
+
+            if has_svn_backend:
+                # We found a suitable backend.
+                logging.info('Using %s backend for SVN', backend_path)
+                Client = mod.Client
+                break
+        except ImportError:
+            logging.error('Unable to load SVN backend %s',
+                          backend_path, exc_info=1)
+
+recompute_svn_backend()

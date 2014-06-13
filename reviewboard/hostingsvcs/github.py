@@ -694,12 +694,13 @@ class GitHub(HostingService):
         results = []
         for ref in refs:
             name = ref['ref'][len('refs/heads/'):]
-            results.append(Branch(name, ref['object']['sha'],
+            results.append(Branch(id=name,
+                                  commit=ref['object']['sha'],
                                   default=(name == 'master')))
 
         return results
 
-    def get_commits(self, repository, start=None):
+    def get_commits(self, repository, branch=None, start=None):
         repo_api_url = self._get_repo_api_url(repository)
         commits = self.client.api_get_commits(repo_api_url, start=start)
 

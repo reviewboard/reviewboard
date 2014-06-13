@@ -46,17 +46,6 @@ class ResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['commits'][0]['message'], 'Commit 5')
         self.assertEqual(rsp['commits'][3]['author_name'], 'user2')
 
-    def test_get_without_start(self):
-        """Testing the GET repositories/<id>/commits/ API
-        without providing a start parameter
-        """
-        repository = self.create_repository()
-        rsp = self.apiGet(get_repository_commits_url(repository),
-                          expected_status=400)
-        self.assertEqual(rsp['stat'], 'fail')
-        self.assertEqual(rsp['err']['code'], INVALID_FORM_DATA.code)
-        self.assertTrue('start' in rsp['fields'])
-
     @add_fixtures(['test_site'])
     def test_get_with_site(self):
         """Testing the GET repositories/<id>/commits/ API with a local site"""

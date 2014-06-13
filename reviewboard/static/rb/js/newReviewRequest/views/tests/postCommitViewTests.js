@@ -35,10 +35,11 @@ suite('rb/newReviewRequest/views/PostCommitView', function() {
             }
         );
 
-        spyOn(repository, 'getCommits').andCallFake(function(start) {
+        spyOn(repository, 'getCommits').andCallFake(function(options) {
             commits = new RB.RepositoryCommits([], {
                 urlBase: _.result(this, 'url') + 'commits/',
-                start: start
+                start: options.start,
+                branch: options.branch
             });
 
             spyOn(commits, 'sync').andCallFake(

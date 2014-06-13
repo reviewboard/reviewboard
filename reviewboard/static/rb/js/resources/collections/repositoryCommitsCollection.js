@@ -29,7 +29,17 @@ RB.RepositoryCommits = RB.BaseCollection.extend({
      * Get the URL to fetch for the next page of results.
      */
     url: function() {
-        return this.options.urlBase + '?start=' + this.options.start;
+        var args = [];
+
+        if (this.options.start !== undefined) {
+            args.push('start=' + encodeURIComponent(this.options.start));
+        }
+
+        if (this.options.branch !== undefined) {
+            args.push('branch=' + encodeURIComponent(this.options.branch));
+        }
+
+        return this.options.urlBase + '?' + args.join('&');
     },
 
     /*
