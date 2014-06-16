@@ -225,7 +225,7 @@ msgstr ""
 msgid ""
 "The uploaded diff uses short revisions, but Review Board requires full "
 "revisions.<br />Please generate a new diff using the <code>--full-index</"
-"code> paramater."
+"code> parameter."
 msgstr ""
 
 #: static/rb/js/newReviewRequest/models/preCommitModel.js:172
