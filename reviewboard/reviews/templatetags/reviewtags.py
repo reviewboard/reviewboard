@@ -394,6 +394,17 @@ def reviewer_list(review_request):
                           for user  in review_request.target_people.all()])
 
 
+@register.assignment_tag
+def has_usable_review_ui(user, review_request, file_attachment):
+    """Returns whether a review UI is set and can be used."""
+    review_ui = file_attachment.review_ui
+
+    return (review_ui and
+            review_ui.is_enabled_for(user=user,
+                                     review_request=review_request,
+                                     file_attachment=file_attachment))
+
+
 @register.filter
 def bug_url(bug_id, review_request):
     """
