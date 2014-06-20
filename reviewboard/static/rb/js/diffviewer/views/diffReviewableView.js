@@ -14,6 +14,13 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
     commentBlockView: RB.DiffCommentBlockView,
     commentsListName: 'diff_comments',
 
+    cssTemplate: _.template([
+        '#<%= id %> td pre {',
+        '    min-width: <%= minWidth %>px;',
+        '    max-width: <%= maxWidth %>px;',
+        '}'
+    ].join('\n')),
+
     events: {
         'click .download-link': '_onDownloadLinkClicked',
         'click thead tr': '_onFileHeaderClicked',
@@ -29,7 +36,7 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
     initialize: function() {
         _super(this).initialize.call(this);
 
-        _.bindAll(this, '_updateCollapseButtonPos');
+        _.bindAll(this, '_updateCollapseButtonPos', '_onWindowResize');
 
         this._selector = new RB.TextCommentRowSelector({
             el: this.el,
@@ -39,6 +46,13 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
         this._hiddenCommentBlockViews = [];
         this._visibleCommentBlockViews = [];
         this._$collapseButtons = $();
+
+        /* State for keeping consistent column widths for diff content. */
+        this._$revisionRow = null;
+        this._$css = null;
+        this._reservedWidths = 0;
+        this._numColumns = 0;
+        this._prevContentWidth = null;
 
         /*
          * Wrap this only once so we don't have to re-wrap every time
@@ -55,7 +69,8 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
     remove: function() {
         RB.AbstractReviewableView.prototype.remove.call(this);
 
-        this._$window.off('scroll resize', this._updateCollapseButtonPos);
+        this._$window.off('scroll', this._updateCollapseButtonPos);
+        this._$window.off('resize', this._onWindowResize);
 
         this._selector.remove();
     },
@@ -65,6 +80,9 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
      */
     render: function() {
         _super(this).render.call(this);
+
+        this._$revisionRow = this.$('thead .revision-row');
+        this._$css = $('<style/>').appendTo(this.$el);
 
         this._selector.render();
 
@@ -82,7 +100,11 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
             }
         }, this);
 
-        this._$window.on('scroll resize', this._updateCollapseButtonPos);
+        this._precalculateContentWidths();
+        this._updateColumnSizes();
+
+        this._$window.on('scroll', this._updateCollapseButtonPos);
+        this._$window.on('resize', this._onWindowResize);
 
         return this;
     },
@@ -552,9 +574,88 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
                 this._$collapseButtons = this.$('.diff-collapse-btn');
                 this._updateCollapseButtonPos();
 
+                /*
+                 * We'll need to update the column sizes, but first, we need
+                 * to re-calculate things like the line widths, since they
+                 * may be longer after expanding.
+                 */
+                this._precalculateContentWidths();
+                this._updateColumnSizes();
+
                 this.trigger('chunkExpansionChanged');
             }
         }, this);
+    },
+
+    /*
+     * Pre-calculate the widths and other state needed for column widths.
+     *
+     * This will store the number of columns and the reserved space that
+     * needs to be subtracted from the container width, to be used in later
+     * calculating the desired widths of the content areas.
+     */
+    _precalculateContentWidths: function() {
+        var $cells,
+            cellPadding;
+
+        if (!this.$el.hasClass('diff-error') && this._$revisionRow.length > 0) {
+            $cells = $(this._$revisionRow[0].cells);
+            cellPadding = this.$('pre:first').getExtents('p', 'lr');
+
+            this._reservedWidths = $cells.eq(0).width() + cellPadding;
+            this._numColumns = $cells.length;
+
+            if (this._numColumns === 4) {
+                /* There's a left-hand side and a right-hand side. */
+                this._reservedWidths += $cells.eq(2).width() + cellPadding;
+            }
+        } else {
+            this._reservedWidths = 0;
+            this._numColumns = 0;
+        }
+    },
+
+    /*
+     * Update the sizes of the diff content columns.
+     *
+     * This will figure out the minimum and maximum widths of the columns
+     * and set them in a stylesheet, ensuring that lines will constrain to
+     * those sizes (force-wrapping if necessary) without overflowing or
+     * causing the other column to shrink too small.
+     */
+    _updateColumnSizes: function() {
+        var contentWidth;
+
+        if (this.$el.hasClass('diff-error')) {
+            return;
+        }
+
+        contentWidth = this.$el.parent().width() - this._reservedWidths;
+
+        if (this._numColumns === 4) {
+            contentWidth /= 2;
+        }
+
+        if (contentWidth !== this._prevContentWidth) {
+            this._$css.html(this.cssTemplate({
+                id: this.el.id,
+                minWidth: Math.ceil(contentWidth * 0.66),
+                maxWidth: Math.ceil(contentWidth)
+            }));
+
+            this._prevContentWidth = contentWidth;
+        }
+    },
+
+    /*
+     * Handler for when the window resizes.
+     *
+     * Updates the sizes of the diff columns, and the location of the
+     * collapse buttons (if one or more are visible).
+     */
+    _onWindowResize: function() {
+        this._updateColumnSizes();
+        this._updateCollapseButtonPos();
     },
 
     /*
