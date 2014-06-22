@@ -9,8 +9,9 @@ import re
 import shutil
 import sys
 import textwrap
-import warnings
 import subprocess
+import urllib2
+import warnings
 from optparse import OptionGroup, OptionParser
 from random import choice
 
@@ -153,6 +154,7 @@ class Site(object):
         self.options = options
 
         # State saved during installation
+        self.company = None
         self.domain_name = None
         self.web_server_port = None
         self.site_root = None
@@ -172,6 +174,7 @@ class Site(object):
         self.admin_user = None
         self.admin_password = None
         self.reenter_admin_password = None
+        self.send_support_usage_stats = True
 
     def rebuild_site_directory(self):
         """
@@ -554,6 +557,20 @@ class Site(object):
 
         os.chdir(cwd)
 
+    def register_support_page(self):
+        from reviewboard.admin.support import get_register_support_url
+
+        url = get_register_support_url(force_is_admin=True)
+
+        try:
+            urllib2.urlopen(url, timeout=5).read()
+        except Exception, e:
+            # There may be a number of issues preventing this from working,
+            # such as a restricted network environment or a server issue on
+            # our side. This isn't a catastrophic issue, so don't bother them
+            # about it.
+            pass
+
     def run_manage_command(self, cmd, params=None):
         cwd = os.getcwd()
         os.chdir(self.abs_install_dir)
@@ -830,7 +847,8 @@ class ConsoleUI(UIToolkit):
         return True
 
     def prompt_input(self, page, prompt, default=None, password=False,
-                     normalize_func=None, save_obj=None, save_var=None):
+                     yes_no=False, optional=False, normalize_func=None,
+                     save_obj=None, save_var=None):
         """
         Prompts the user for some text. This may contain a default value.
         """
@@ -840,9 +858,17 @@ class ConsoleUI(UIToolkit):
         if not page:
             return
 
-        if default:
+        if yes_no:
+            if default:
+                prompt = '%s [Y/n]' % prompt
+            else:
+                prompt = '%s [y/N]' % prompt
+                default = False
+        elif default:
             self.text(page, "The default is %s" % default)
             prompt = "%s [%s]" % (prompt, default)
+        elif optional:
+            prompt = '%s (optional)' % prompt
 
         print
 
@@ -858,8 +884,26 @@ class ConsoleUI(UIToolkit):
             if not value:
                 if default:
                     value = default
+                elif optional:
+                    break
+
+            if yes_no:
+                if isinstance(value, bool):
+                    # This came from the 'default' value.
+                    norm_value = value
                 else:
-                    self.error("You must answer this question.")
+                    assert isinstance(value, str)
+                    norm_value = value.lower()
+
+                if norm_value not in (True, False, 'y', 'n', 'yes', 'no'):
+                    self.error('Must specify one of Y/y/yes or N/n/no.')
+                    value = None
+                    continue
+                else:
+                    value = norm_value in (True, 'y', 'yes')
+                    break
+            elif not value:
+                self.error("You must answer this question.")
 
         if normalize_func:
             value = normalize_func(value)
@@ -1415,6 +1459,15 @@ class InstallCommand(Command):
         group.add_option("--noinput", action="store_true", default=False,
                          help="run non-interactively using configuration "
                               "provided in command-line options")
+        group.add_option('--opt-out-support-data',
+                         action='store_false',
+                         default=True,
+                         dest='send_support_usage_stats',
+                         help='opt out of sending data and stats for '
+                              'improved user and admin support')
+        group.add_option("--company",
+                         help="the name of the company or organization that "
+                              "owns the server")
         group.add_option("--domain-name",
                          help="fully-qualified host name of the site, "
                          "excluding the http://, port or path")
@@ -1491,6 +1544,8 @@ class InstallCommand(Command):
             self.ask_web_server_type()
             self.ask_python_loader()
             self.ask_admin_user()
+            self.ask_support_data()
+
             # Do not ask for sitelist file, it should not be common.
 
         self.show_install_status()
@@ -1764,6 +1819,35 @@ class InstallCommand(Command):
                         save_obj=site, save_var="reenter_admin_password")
         ui.prompt_input(page, "E-Mail Address", site.admin_email,
                         save_obj=site, save_var="admin_email")
+        ui.prompt_input(page, "Company/Organization Name", site.company,
+                        save_obj=site, save_var="company", optional=True)
+
+    def ask_support_data(self):
+        page = ui.page('Enable collection of data for better support')
+
+        ui.text(page, 'We would like to periodically collect data and '
+                      'statistics about your installation to provide a '
+                      'better support experience for you and your users.')
+
+        ui.text(page, 'The data collected includes basic information such as '
+                      'your company name, the version of Review Board, and '
+                      'the size of your install. It does NOT include '
+                      'confidential data such as source code. Data collected '
+                      'never leaves our server and is never given to any '
+                      'third parties for any purposes.')
+
+        ui.text(page, 'We use this to provide a user support page that\'s '
+                      'more specific to your server. We also use it to '
+                      'determine which versions to continue to support, and '
+                      'to help track how upgrades affect our number of bug '
+                      'reports and support incidents.')
+
+        ui.text(page, 'You can choose to turn this off at any time in '
+                      'Support Settings in Review Board.')
+
+        ui.prompt_input(page, 'Allow us to collect support data?',
+                        site.send_support_usage_stats, yes_no=True,
+                        save_obj=site, save_var='send_support_usage_stats')
 
     def show_install_status(self):
         page = ui.page("Installing the site...", allow_back=False)
@@ -1779,6 +1863,8 @@ class InstallCommand(Command):
                 site.create_admin_user)
         ui.step(page, "Saving site settings",
                 self.save_settings)
+        ui.step(page, "Setting up support",
+                self.setup_support)
 
     def show_finished(self):
         page = ui.page("The site has been installed", allow_back=False)
@@ -1825,6 +1911,9 @@ class InstallCommand(Command):
         site_static_root = os.path.join(htdocs_path, "static")
 
         siteconfig = SiteConfiguration.objects.get_current()
+        siteconfig.set("company", site.company)
+        siteconfig.set("send_support_usage_stats",
+                       site.send_support_usage_stats)
         siteconfig.set("site_static_url", site_static_url)
         siteconfig.set("site_static_root", site_static_root)
         siteconfig.set("site_media_url", site_media_url)
@@ -1841,6 +1930,11 @@ class InstallCommand(Command):
                   site.install_dir, abs_sitelist)
             sitelist = SiteList(abs_sitelist)
             sitelist.add_site(site.install_dir)
+
+    def setup_support(self):
+        """Sets up the support page for the installation."""
+        if site.send_support_usage_stats:
+            site.register_support_page()
 
 
 class UpgradeCommand(Command):
@@ -1887,6 +1981,13 @@ class UpgradeCommand(Command):
             print "Resetting in-database caches."
             site.run_manage_command("fixreviewcounts")
 
+        from djblets.siteconfig.models import SiteConfiguration
+
+        siteconfig = SiteConfiguration.objects.get_current()
+
+        if siteconfig.get('send_support_usage_stats'):
+            site.register_support_page()
+
         print
         print "Upgrade complete!"
 
@@ -1908,10 +2009,7 @@ class UpgradeCommand(Command):
                                                       "data")
 
         if static_media_upgrade_needed:
-            from djblets.siteconfig.models import SiteConfiguration
             from django.conf import settings
-
-            siteconfig = SiteConfiguration.objects.get_current()
 
             if 'manual-updates' not in siteconfig.settings:
                 siteconfig.settings['manual-updates'] = {}

@@ -117,6 +117,7 @@ defaults.update({
     'auth_x509_username_field':            'SSL_CLIENT_S_DN_CN',
     'auth_x509_username_regex':            '',
     'auth_x509_autocreate_users':          False,
+    'company':                             '',
     'diffviewer_context_num_lines':        5,
     'diffviewer_include_space_patterns':   [],
     'diffviewer_max_diff_size':            0,
@@ -128,6 +129,7 @@ defaults.update({
     'mail_send_review_mail':               False,
     'mail_send_new_user_mail':             False,
     'search_enable':                       False,
+    'send_support_usage_stats':            True,
     'site_domain_method':                  'http',
 
     # TODO: Allow relative paths for the index file later on.
@@ -135,7 +137,7 @@ defaults.update({
                                       'search-index'),
 
     # Overwrite this.
-    'site_media_url': settings.SITE_ROOT + "media/"
+    'site_media_url': settings.SITE_ROOT + "media/",
 })
 
 defaults.update({

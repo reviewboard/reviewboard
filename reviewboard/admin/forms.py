@@ -74,6 +74,13 @@ class GeneralSettingsForm(SiteSettingsForm):
         'memcached': 'cache_host',
     }
 
+    company = forms.CharField(
+        label=_("Company/Organization"),
+        help_text=_("The optional name of your company or organization. "
+                    "This will be displayed on your support page."),
+        required=False,
+        widget=forms.TextInput(attrs={'size': '30'}))
+
     server = forms.CharField(
         label=_("Server"),
         help_text=_("The URL of this Review Board server. This should not "
@@ -279,11 +286,10 @@ class GeneralSettingsForm(SiteSettingsForm):
         fieldsets = (
             {
                 'classes': ('wide',),
-                'title':   _("Site Settings"),
-                'fields':  ('server', 'site_media_url',
-                            'site_admin_name',
-                            'site_admin_email',
-                            'locale_timezone'),
+                'title': _("Site Settings"),
+                'fields': ('company', 'server', 'site_media_url',
+                           'site_admin_name', 'site_admin_email',
+                           'locale_timezone'),
             },
             {
                 'classes': ('wide',),
@@ -880,6 +886,14 @@ class SupportSettingsForm(SiteSettingsForm):
         required=False,
         widget=forms.TextInput(attrs={'size': '80'}))
 
+    send_support_usage_stats = forms.BooleanField(
+        label=_('Send support-related usage statistics'),
+        help_text=_('Basic usage information will be sent to us at times to '
+                    'help with some support issues and to provide a more '
+                    'personalized support page for your users. '
+                    '<i>No information is ever given to a third party.</i>'),
+        required=False)
+
     def load(self):
         super(SupportSettingsForm, self).load()
         self.fields['install_key'].initial = get_install_key()
@@ -895,8 +909,8 @@ class SupportSettingsForm(SiteSettingsForm):
                 'http://www.beanbaginc.com/support/contracts/">'
                 'support contract</a>.</p>'
                 '<p>You can also customize where your users will go for '
-                'support by changing the Custom Support URL below. If '
-                'left blank, they will be taken to our support '
-                'channel.</p>',
-            'fields': ('install_key', 'support_url'),
+                'support by changing the Custom Support URL below. If left '
+                'blank, they will be taken to our support channel.</p>',
+            'fields': ('install_key', 'support_url',
+                       'send_support_usage_stats'),
         },)
