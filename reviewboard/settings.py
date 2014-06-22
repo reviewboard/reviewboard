@@ -235,8 +235,10 @@ SESSION_COOKIE_NAME = "rbsessionid"
 SESSION_COOKIE_AGE = 365 * 24 * 60 * 60  # 1 year
 
 # Default support settings
-DEFAULT_SUPPORT_URL = 'http://www.beanbaginc.com/support/reviewboard/' \
-                      '?support-data=%(support_data)s'
+SUPPORT_URL_BASE = 'https://www.beanbaginc.com/support/reviewboard/'
+DEFAULT_SUPPORT_URL = SUPPORT_URL_BASE + '?support-data=%(support_data)s'
+REGISTER_SUPPORT_URL = (SUPPORT_URL_BASE +
+                        'register/?support-data=%(support_data)s')
 
 # Regular expression and flags used to match review request IDs in commit
 # messages for hosting service webhooks. These can be overriden in
