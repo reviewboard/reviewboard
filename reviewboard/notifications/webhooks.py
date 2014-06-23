@@ -30,7 +30,7 @@ class FakeHTTPRequest(HttpRequest):
     def __init__(self):
         super(FakeHTTPRequest, self).__init__()
 
-        if self._secure is None:
+        if self._is_secure is None:
             siteconfig = SiteConfiguration.objects.get_current()
             self._is_secure = siteconfig.get('site_domain_method') == 'https'
             self._host = Site.objects.get_current().domain
