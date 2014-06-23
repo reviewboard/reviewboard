@@ -10,8 +10,12 @@ from djblets.siteconfig.models import SiteConfiguration
 from djblets.webapi.encoders import BasicAPIEncoder, JSONEncoderAdapter
 
 from reviewboard.notifications.models import WebHookTarget
-from reviewboard.reviews.models import ReviewRequest
-from reviewboard.reviews.signals import review_request_published
+from reviewboard.reviews.models import Review, ReviewRequest
+from reviewboard.reviews.signals import (review_request_closed,
+                                         review_request_published,
+                                         review_request_reopened,
+                                         review_published,
+                                         reply_published)
 from reviewboard.webapi.resources import resources
 
 
@@ -27,8 +31,10 @@ class FakeHTTPRequest(HttpRequest):
     _is_secure = None
     _host = None
 
-    def __init__(self):
+    def __init__(self, user):
         super(FakeHTTPRequest, self).__init__()
+
+        self.user = user
 
         if self._is_secure is None:
             siteconfig = SiteConfiguration.objects.get_current()
@@ -74,16 +80,57 @@ def dispatch(request, handlers, event, payload):
         urlopen(Request(handler.url, body, headers))
 
 
+def _serialize_review(review, request):
+    return {
+        'review': resources.review.serialize_object(
+            review, request=request),
+        'diff_comments': [
+            resources.filediff_comment.serialize_object(
+                comment, request=request)
+            for comment in review.comments.all()
+        ],
+        'screenshot_comments': [
+            resources.screenshot_comment.serialize_object(
+                comment, request=request)
+            for comment in review.screenshot_comments.all()
+        ],
+        'file_attachment_comments': [
+            resources.file_attachment_comment.serialize_object(
+                comment, request=request)
+            for comment in review.file_attachment_comments.all()
+        ],
+    }
+
+
+def review_request_closed_cb(sender, user, review_request, type,
+                             **kwargs):
+    event = 'review_request_closed'
+    handlers = get_handlers(event, review_request.local_site)
+
+    if handlers:
+        request = FakeHTTPRequest(user)
+        payload = {
+            'event': event,
+            'closed_by': resources.user.serialize_object(
+                user, request=request),
+            'close_type': type,
+            'review_request': resources.review_request.serialize_object(
+                review_request, request=request),
+        }
+
+        dispatch(request, handlers, event, payload)
+
+
 def review_request_published_cb(sender, user, review_request, changedesc,
                                 **kwargs):
     event = 'review_request_published'
     handlers = get_handlers(event, review_request.local_site)
 
     if handlers:
-        request = FakeHTTPRequest()
+        request = FakeHTTPRequest(user)
         payload = {
+            'event': event,
             'is_new': changedesc is None,
-            'review_request_id': review_request.get_display_id(),
             'review_request': resources.review_request.serialize_object(
                 review_request, request=request),
         }
@@ -95,6 +142,52 @@ def review_request_published_cb(sender, user, review_request, changedesc,
         dispatch(request, handlers, event, payload)
 
 
+def review_request_reopened_cb(sender, user, review_request, **kwargs):
+    event = 'review_request_reopened'
+    handlers = get_handlers(event, review_request.local_site)
+
+    if handlers:
+        request = FakeHTTPRequest(user)
+        payload = {
+            'event': event,
+            'reopened_by': resources.user.serialize_object(
+                user, request=request),
+            'review_request': resources.review_request.serialize_object(
+                review_request, request=request),
+        }
+
+        dispatch(request, handlers, event, payload)
+
+
+def review_published_cb(sender, user, review, **kwargs):
+    event = 'review_published'
+    handlers = get_handlers(event, review.review_request.local_site)
+
+    if handlers:
+        request = FakeHTTPRequest(user)
+        payload = _serialize_review(review, request)
+        payload['event'] = event
+        dispatch(request, handlers, event, payload)
+
+
+def reply_published_cb(sender, user, reply, **kwargs):
+    event = 'reply_published'
+    handlers = get_handlers(event, reply.review_request.local_site)
+
+    if handlers:
+        request = FakeHTTPRequest(user)
+        payload = _serialize_review(reply, request)
+        payload['event'] = event
+        dispatch(request, handlers, event, payload)
+
+
 def connect_signals():
+    review_request_closed.connect(review_request_closed_cb,
+                                  sender=ReviewRequest)
     review_request_published.connect(review_request_published_cb,
                                      sender=ReviewRequest)
+    review_request_reopened.connect(review_request_reopened_cb,
+                                    sender=ReviewRequest)
+
+    review_published.connect(review_published_cb, sender=Review)
+    reply_published.connect(reply_published_cb, sender=Review)
