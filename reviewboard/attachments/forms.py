@@ -26,7 +26,15 @@ class UploadFileForm(forms.Form):
 
     def create(self, file, review_request, filediff=None):
         caption = self.cleaned_data['caption'] or file.name
-        mimetype = file.content_type or self._guess_mimetype(file)
+
+        if (not file.content_type or
+            file.content_type == 'application/octet-stream'):
+            # We can't rely on the browser for the file type here, so
+            # attempt to guess it.
+            mimetype = self._guess_mimetype(file)
+        else:
+            mimetype = file.content_type
+
         filename = '%s__%s' % (uuid4(), file.name)
 
         attachment_kwargs = {
