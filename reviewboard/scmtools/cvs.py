@@ -212,6 +212,14 @@ class CVSDiffParser(DiffParser):
 
         return linenum
 
+    def normalize_diff_filename(self, filename):
+        """Normalize filenames in diffs.
+
+        The default behavior of stripping off leading slashes doesn't work for
+        CVS, so this overrides it to just return the filename un-molested.
+        """
+        return filename
+
 
 class CVSClient(object):
     def __init__(self, cvsroot, path, local_site_name):
