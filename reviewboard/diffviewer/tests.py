@@ -1093,10 +1093,11 @@ class ProcessorsTests(TestCase):
             ('equal', 0, 5, 1, 5),
             ('delete', 5, 10, 5, 5),
             ('equal', 10, 25, 5, 20),
-            ('replace', 25, 26, 20, 26),
-            ('equal', 26, 40, 26, 40),
-            ('insert', 40, 40, 40, 45),
+            ('replace', 25, 26, 20, 21),
+            ('equal', 26, 40, 21, 35),
+            ('insert', 40, 40, 35, 45),
         ]
+        self._sanity_check_opcodes(opcodes)
 
         # NOTE: Only the "@@" lines and the lines leading up to the first
         #       change in a chunk matter to the processor, so the rest can
@@ -1119,19 +1120,51 @@ class ProcessorsTests(TestCase):
             ('filtered-equal', 0, 0, 0, 1),
             ('filtered-equal', 0, 5, 1, 5),
             ('delete', 5, 10, 5, 5),
-            ('equal', 10, 25, 5, 11),
-            ('filtered-equal', 10, 25, 11, 20),
-            ('replace', 25, 26, 20, 26),
-            ('equal', 26, 32, 26, 32),
-            ('filtered-equal', 32, 40, 32, 40),
-            ('filtered-equal', 40, 40, 40, 45),
+            ('equal', 10, 25, 5, 20),
+            ('replace', 25, 26, 20, 21),
+            ('equal', 26, 32, 21, 27),
+            ('filtered-equal', 32, 40, 27, 35),
+            ('filtered-equal', 40, 40, 35, 45),
         ])
+        self._sanity_check_opcodes(new_opcodes)
+
+    def test_filter_interdiff_opcodes_replace_after_valid_ranges(self):
+        """Testing filter_interdiff_opcodes with replace after valid range"""
+        # While developing the fix for replace lines in
+        # https://reviews.reviewboard.org/r/6030/, an iteration of the fix
+        # broke replace lines when one side exceeded its last range found in
+        # the diff.
+        opcodes = [
+            ('replace', 12, 13, 5, 6),
+        ]
+        self._sanity_check_opcodes(opcodes)
+
+        # NOTE: Only the "@@" lines and the lines leading up to the first
+        #       change in a chunk matter to the processor, so the rest can
+        #       be left out.
+        orig_diff = (
+            '@@ -2,7 +2,7 @@\n'
+            ' #\n #\n #\n-#\n'
+        )
+        new_diff = (
+            '@@ -2,7 +2,7 @@\n'
+            ' #\n #\n #\n-#\n'
+        )
+
+        new_opcodes = list(filter_interdiff_opcodes(opcodes, orig_diff,
+                                                    new_diff))
+
+        self.assertEqual(new_opcodes, [
+            ('replace', 12, 13, 5, 6),
+        ])
+        self._sanity_check_opcodes(new_opcodes)
 
     def test_filter_interdiff_opcodes_1_line(self):
         """Testing filter_interdiff_opcodes with a 1 line file"""
         opcodes = [
             ('replace', 0, 1, 0, 1),
         ]
+        self._sanity_check_opcodes(opcodes)
 
         # NOTE: Only the "@@" lines and the lines leading up to the first
         #       change in a chunk matter to the processor, so the rest can
@@ -1151,12 +1184,14 @@ class ProcessorsTests(TestCase):
         self.assertEqual(new_opcodes, [
             ('replace', 0, 1, 0, 1),
         ])
+        self._sanity_check_opcodes(new_opcodes)
 
     def test_filter_interdiff_opcodes_early_change(self):
         """Testing filter_interdiff_opcodes with a change early in the file"""
         opcodes = [
             ('replace', 2, 3, 2, 3),
         ]
+        self._sanity_check_opcodes(opcodes)
 
         # NOTE: Only the "@@" lines and the lines leading up to the first
         #       change in a chunk matter to the processor, so the rest can
@@ -1176,6 +1211,7 @@ class ProcessorsTests(TestCase):
         self.assertEqual(new_opcodes, [
             ('replace', 2, 3, 2, 3),
         ])
+        self._sanity_check_opcodes(new_opcodes)
 
     def test_filter_interdiff_opcodes_with_inserts_right(self):
         """Testing filter_interdiff_opcodes with inserts on the right"""
@@ -1192,6 +1228,7 @@ class ProcessorsTests(TestCase):
             ('insert', 190, 190, 194, 197),
             ('equal', 190, 232, 197, 239),
         ]
+        self._sanity_check_opcodes(opcodes)
 
         # NOTE: Only the "@@" lines and the lines leading up to the first
         #       change in a chunk matter to the processor, so the rest can
@@ -1219,6 +1256,7 @@ class ProcessorsTests(TestCase):
             ('insert', 190, 190, 194, 197),
             ('equal', 190, 232, 197, 239),
         ])
+        self._sanity_check_opcodes(new_opcodes)
 
     def test_filter_interdiff_opcodes_with_many_ignorable_ranges(self):
         """Testing filter_interdiff_opcodes with many ignorable ranges"""
@@ -1230,6 +1268,7 @@ class ProcessorsTests(TestCase):
             ('insert', 632, 632, 632, 633),
             ('equal', 632, 882, 633, 883),
         ]
+        self._sanity_check_opcodes(opcodes)
 
         # NOTE: Only the "@@" lines and the lines leading up to the first
         #       change in a chunk matter to the processor, so the rest can
@@ -1273,6 +1312,54 @@ class ProcessorsTests(TestCase):
             ('equal', 632, 813, 633, 814),
             ('filtered-equal', 813, 882, 814, 883),
         ])
+        self._sanity_check_opcodes(new_opcodes)
+
+    def test_filter_interdiff_opcodes_with_replace_overflowing_range(self):
+        """Testing filter_interdiff_opcodes with replace overflowing range"""
+        # In the case where there's a replace chunk with i2 or j2 larger than
+        # the end position of the current range, the chunk would get chopped,
+        # and the two replace ranges could be unequal. This broke an assertion
+        # check when generating opcode metadata, and would result in a
+        # corrupt-looking diff.
+        #
+        # This is bug #3440
+        #
+        # Before the fix, the below opcodes and diff ranges would result
+        # in the replace turning into (2, 6, 2, 15), instead of staying at
+        # (2, 15, 2, 15).
+        #
+        # This only really tends to happen in early ranges (since the range
+        # numbers are small), but could also happen further into the diff
+        # if a replace range is huge on one side.
+        opcodes = [
+            ('equal', 0, 2, 0, 2),
+            ('replace', 2, 100, 2, 100),
+        ]
+        self._sanity_check_opcodes(opcodes)
+
+        # NOTE: Only the "@@" lines and the lines leading up to the first
+        #       change in a chunk matter to the processor, so the rest can
+        #       be left out.
+        orig_diff = ''.join([
+            '@@ -1,4 +1,5 @@\n',
+            '-#\n',
+            '@@ -8,18 +9,19 @\n'
+            ' #\n #\n #\n+#\n',
+        ])
+        new_diff = ''.join([
+            '@@ -1,10 +1,14 @@\n'
+            '-#\n',
+        ])
+
+        new_opcodes = list(filter_interdiff_opcodes(opcodes, orig_diff,
+                                                    new_diff))
+
+        self.assertEqual(new_opcodes, [
+            ('equal', 0, 2, 0, 2),
+            ('replace', 2, 15, 2, 15),
+            ('filtered-equal', 15, 100, 15, 100),
+        ])
+        self._sanity_check_opcodes(new_opcodes)
 
     def test_post_process_filtered_equals(self):
         """Testing post_process_filtered_equals"""
@@ -1362,6 +1449,21 @@ class ProcessorsTests(TestCase):
                 }),
                 ('equal', 40, 50, 30, 40, {}),
             ])
+
+    def _sanity_check_opcodes(self, opcodes):
+        prev_i2 = None
+        prev_j2 = None
+
+        for tag, i1, i2, j1, j2 in opcodes:
+            if tag == 'replace':
+                self.assertEqual((i2 - i1), (j2 - j1))
+
+            if prev_i2 is not None and prev_j2 is not None:
+                self.assertEqual(i1, prev_i2)
+                self.assertEqual(j1, prev_j2)
+
+            prev_i2 = i2
+            prev_j2 = j2
 
 
 class DiffChunkGeneratorTests(TestCase):
