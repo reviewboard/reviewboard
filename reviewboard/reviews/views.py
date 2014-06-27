@@ -438,10 +438,8 @@ def review_detail(request,
 
     if changedescs:
         # We sort from newest to oldest, so the latest one is the first.
-        latest_changedesc = changedescs[0]
-        latest_timestamp = latest_changedesc.timestamp
+        latest_timestamp = changedescs[0].timestamp
     else:
-        latest_changedesc = None
         latest_timestamp = None
 
     # Now that we have the list of public reviews and all that metadata,
@@ -689,15 +687,8 @@ def review_detail(request,
 
     entries.sort(key=lambda item: item['timestamp'])
 
-    close_description = ''
-    close_description_rich_text = False
-
-    if latest_changedesc and 'status' in latest_changedesc.fields_changed:
-        status = latest_changedesc.fields_changed['status']['new'][0]
-
-        if status in (ReviewRequest.DISCARDED, ReviewRequest.SUBMITTED):
-            close_description = latest_changedesc.text
-            close_description_rich_text = latest_changedesc.rich_text
+    close_description, close_description_rich_text = \
+        review_request.get_close_description()
 
     context_data = make_review_request_context(request, review_request, {
         'blocks': blocks,
@@ -707,7 +698,6 @@ def review_detail(request,
         'last_activity_time': last_activity_time,
         'review': pending_review,
         'request': request,
-        'latest_changedesc': latest_changedesc,
         'close_description': close_description,
         'close_description_rich_text': close_description_rich_text,
         'PRE_CREATION': PRE_CREATION,
@@ -821,12 +811,6 @@ class ReviewsDiffViewerView(DiffViewerView):
         file_attachments = list(self.review_request.get_file_attachments())
         screenshots = list(self.review_request.get_screenshots())
 
-        try:
-            latest_changedesc = \
-                self.review_request.changedescs.filter(public=True).latest()
-        except ChangeDescription.DoesNotExist:
-            latest_changedesc = None
-
         # Compute the lists of comments based on filediffs and interfilediffs.
         # We do this using the 'through' table so that we can select_related
         # the reviews and comments.
@@ -841,15 +825,8 @@ class ReviewsDiffViewerView(DiffViewerView):
             key = (comment.filediff_id, comment.interfilediff_id)
             comments.setdefault(key, []).append(comment)
 
-        close_description = ''
-        close_description_rich_text = False
-
-        if latest_changedesc and 'status' in latest_changedesc.fields_changed:
-            status = latest_changedesc.fields_changed['status']['new'][0]
-
-            if status in (ReviewRequest.DISCARDED, ReviewRequest.SUBMITTED):
-                close_description = latest_changedesc.text
-                close_description_rich_text = latest_changedesc.rich_text
+        close_description, close_description_rich_text = \
+            self.review_request.get_close_description()
 
         context = super(ReviewsDiffViewerView, self).get_context_data(
             *args, **kwargs)
