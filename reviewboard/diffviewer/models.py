@@ -262,7 +262,8 @@ class FileDiff(models.Model):
                             'un-migrated FileDiff %s' % self.pk)
             self._migrate_diff_data(False)
 
-        if (raw_insert_count is not None and
+        if (insert_count is not None and
+            raw_insert_count is not None and
             self.diff_hash.insert_count is not None and
             self.diff_hash.insert_count != insert_count):
             # Allow overriding, but warn. This really shouldn't be called.
@@ -273,7 +274,8 @@ class FileDiff(models.Model):
                                insert_count,
                                self.pk))
 
-        if (raw_delete_count is not None and
+        if (delete_count is not None and
+            raw_delete_count is not None and
             self.diff_hash.delete_count is not None and
             self.diff_hash.delete_count != delete_count):
             # Allow overriding, but warn. This really shouldn't be called.
