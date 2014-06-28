@@ -373,7 +373,8 @@ class SVNTool(SCMTool):
                                              local_site_name)
 
         if path.startswith('https://'):
-            client = cls.build_client(path, local_site_name=local_site_name)[1]
+            client = cls.build_client(path, username, password,
+                                      local_site_name=local_site_name)[1]
             client.accept_ssl_certificate(path, cls.on_ssl_failure)
 
     @classmethod
