@@ -130,15 +130,6 @@ class ReviewRequestManager(ConcurrencyManager):
             diffset_history=diffset_history,
             local_site=local_site)
 
-        if commit_id:
-            if create_from_commit_id:
-                review_request.update_from_commit_id(commit_id)
-            else:
-                review_request.commit_id = commit_id
-
-        review_request.validate_unique()
-        review_request.save()
-
         if local_site:
             # We want to atomically set the local_id to be a monotonically
             # increasing ID unique to the local_site. This isn't really
@@ -164,6 +155,20 @@ class ReviewRequestManager(ConcurrencyManager):
             transaction.commit()
 
             review_request = ReviewRequest.objects.get(pk=review_request.pk)
+
+        if commit_id:
+            try:
+                if create_from_commit_id:
+                    review_request.update_from_commit_id(commit_id)
+                else:
+                    review_request.commit_id = commit_id
+
+                review_request.validate_unique()
+                review_request.save()
+            except Exception, e:
+                logging.error('Unable to update new review request %d from '
+                              'change number %s: %s',
+                              review_request.pk, changenum, e, exc_info=1)
 
         return review_request
 
