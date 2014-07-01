@@ -596,7 +596,7 @@ class Site(object):
         url = get_register_support_url(force_is_admin=True)
 
         try:
-            urlopen(url, timeout=10).read()
+            urlopen(url, timeout=5).read()
         except:
             # There may be a number of issues preventing this from working,
             # such as a restricted network environment or a server issue on
