@@ -7266,6 +7266,8 @@ class ReviewRequestResource(WebAPIResource):
                 draft.update_from_changenum(changenum)
             except InvalidChangeNumberError:
                 return INVALID_CHANGE_NUMBER
+            except EmptyChangeSetError:
+                return EMPTY_CHANGESET
 
             draft.save()
             review_request.reopen()
