@@ -1,6 +1,8 @@
 from __future__ import unicode_literals
 
+from django.contrib.auth import logout
 from django.utils import six
+from djblets.webapi.decorators import webapi_login_required
 from djblets.webapi.resources import get_resource_for_object
 
 from reviewboard.webapi.base import WebAPIResource
@@ -18,6 +20,7 @@ class SessionResource(WebAPIResource):
     """
     name = 'session'
     singleton = True
+    allowed_methods = ('GET', 'DELETE')
 
     @webapi_check_local_site
     @webapi_check_login_required
@@ -43,6 +46,14 @@ class SessionResource(WebAPIResource):
         return 200, {
             self.name: data,
         }
+
+    @webapi_check_local_site
+    @webapi_login_required
+    def delete(self, request, *args, **kwargs):
+        """Deletes a Session, returns confirmation."""
+        logout(request)
+
+        return 204, {}
 
     def get_related_links(self, obj=None, request=None, *args, **kwargs):
         links = {}
