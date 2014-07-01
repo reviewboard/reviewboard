@@ -6,6 +6,7 @@ import os
 
 from django.conf import settings
 from django.contrib.auth.models import AnonymousUser, User
+from django.core.exceptions import ValidationError
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.template import Context, Template
 from django.utils import six
@@ -35,6 +36,83 @@ from reviewboard.testing import TestCase
 class ReviewRequestManagerTests(TestCase):
     """Tests ReviewRequestManager functions."""
     fixtures = ['test_users']
+
+    @add_fixtures(['test_scmtools'])
+    def test_create_with_site(self):
+        """Testing ReviewRequest.objects.create with LocalSite"""
+        user = User.objects.get(username='doc')
+        local_site = LocalSite.objects.create(name='test')
+        repository = self.create_repository()
+
+        review_request = ReviewRequest.objects.create(
+            user, repository, local_site=local_site)
+        self.assertEqual(review_request.repository, repository)
+        self.assertEqual(review_request.local_site, local_site)
+        self.assertEqual(review_request.local_id, 1)
+
+    @add_fixtures(['test_scmtools'])
+    def test_create_with_site_and_commit_id(self):
+        """Testing ReviewRequest.objects.create with LocalSite and commit ID"""
+        user = User.objects.get(username='doc')
+        local_site = LocalSite.objects.create(name='test')
+        repository = self.create_repository()
+
+        review_request = ReviewRequest.objects.create(
+            user, repository,
+            commit_id='123',
+            local_site=local_site)
+        self.assertEqual(review_request.repository, repository)
+        self.assertEqual(review_request.commit_id, '123')
+        self.assertEqual(review_request.local_site, local_site)
+        self.assertEqual(review_request.local_id, 1)
+
+    @add_fixtures(['test_scmtools'])
+    def test_create_with_site_and_commit_id_not_unique(self):
+        """Testing ReviewRequest.objects.create with LocalSite and
+        commit ID that is not unique
+        """
+        user = User.objects.get(username='doc')
+        local_site = LocalSite.objects.create(name='test')
+        repository = self.create_repository()
+
+        # This one should be fine.
+        ReviewRequest.objects.create(user, repository, commit_id='123',
+                                     local_site=local_site)
+        self.assertEqual(local_site.review_requests.count(), 1)
+
+        # This one will yell.
+        self.assertRaises(
+            ValidationError,
+            lambda: ReviewRequest.objects.create(
+                user, repository,
+                commit_id='123',
+                local_site=local_site))
+
+        # Make sure that entry doesn't exist in the database.
+        self.assertEqual(local_site.review_requests.count(), 1)
+
+    @add_fixtures(['test_scmtools'])
+    def test_create_with_site_and_commit_id_and_fetch_problem(self):
+        """Testing ReviewRequest.objects.create with LocalSite and
+        commit ID with problem fetching commit details
+        """
+        user = User.objects.get(username='doc')
+        local_site = LocalSite.objects.create(name='test')
+        repository = self.create_repository()
+
+        self.assertEqual(local_site.review_requests.count(), 0)
+
+        ReviewRequest.objects.create(
+            user, repository,
+            commit_id='123',
+            local_site=local_site,
+            create_from_commit_id=True)
+
+        # Make sure that entry doesn't exist in the database.
+        self.assertEqual(local_site.review_requests.count(), 1)
+        review_request = local_site.review_requests.get()
+        self.assertEqual(review_request.local_id, 1)
+        self.assertEqual(review_request.commit_id, '123')
 
     def test_public(self):
         """Testing ReviewRequest.objects.public"""

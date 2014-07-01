@@ -225,7 +225,8 @@ class ReviewRequest(BaseReviewRequestDetails):
         _('dropped issue count'),
         initializer=_initialize_issue_counts)
 
-    local_site = models.ForeignKey(LocalSite, blank=True, null=True)
+    local_site = models.ForeignKey(LocalSite, blank=True, null=True,
+                                   related_name='review_requests')
     local_id = models.IntegerField('site-local ID', blank=True, null=True)
 
     # Set this up with the ReviewRequestManager
