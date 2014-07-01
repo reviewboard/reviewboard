@@ -1,4 +1,5 @@
 import base64
+import sys
 import time
 from datetime import datetime
 from hashlib import sha1
@@ -32,6 +33,7 @@ def serialize_support_data(request=None, force_is_admin=False):
         '%d' % User.objects.filter(is_active=True).count(),
         '%d' % int(time.mktime(datetime.now().timetuple())),
         siteconfig.get('company'),
+        '%s.%s.%s' % sys.version_info[:3],
     ]))
 
 
