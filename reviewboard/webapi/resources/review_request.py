@@ -716,6 +716,8 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
                 draft.update_from_commit_id(six.text_type(changenum))
             except InvalidChangeNumberError:
                 return INVALID_CHANGE_NUMBER
+            except EmptyChangeSetError:
+                return EMPTY_CHANGESET
 
             draft.save()
             review_request.reopen()
