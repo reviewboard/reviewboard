@@ -98,8 +98,14 @@ class ReviewUI(object):
 
         draft = self.review_request.get_draft(request.user)
         review_request_details = draft or self.review_request
+
+        close_description, close_description_rich_text = \
+            self.review_request.get_close_description()
+
         context = {
             'caption': self.get_caption(draft),
+            'close_description': close_description,
+            'close_description_rich_text': close_description_rich_text,
             'comments': self.get_comments(),
             'draft': draft,
             'last_activity_time': last_activity_time,

@@ -749,6 +749,9 @@ class ResourceItemTests(BaseRepositoryTests):
 
         repo = Repository.objects.get(pk=repo_id)
         self.assertEqual(repo.name[:23], 'ar:New Test Repository:')
+        self.assertTrue(repo.archived)
+        self.assertFalse(repo.public)
+        self.assertIsNotNone(repo.archived_timestamp)
 
     def _put_repository(self, use_local_site, data={}, expected_status=200):
         repo_name = 'New Test Repository'

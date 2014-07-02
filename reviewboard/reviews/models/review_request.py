@@ -225,7 +225,8 @@ class ReviewRequest(BaseReviewRequestDetails):
         _('dropped issue count'),
         initializer=_initialize_issue_counts)
 
-    local_site = models.ForeignKey(LocalSite, blank=True, null=True)
+    local_site = models.ForeignKey(LocalSite, blank=True, null=True,
+                                   related_name='review_requests')
     local_id = models.IntegerField('site-local ID', blank=True, null=True)
 
     # Set this up with the ReviewRequestManager
@@ -533,6 +534,30 @@ class ReviewRequest(BaseReviewRequestDetails):
                 history=self.diffset_history_id).latest()
         except DiffSet.DoesNotExist:
             return None
+
+    def get_close_description(self):
+        """Returns a tuple (description, is_rich_text) for the close text.
+
+        This is a helper which is used to gather the data which is rendered in
+        the close description boxes on various pages.
+        """
+        try:
+            latest_changedesc = \
+                self.changedescs.filter(public=True).latest()
+        except ChangeDescription.DoesNotExist:
+            latest_changedesc = None
+
+        close_description = ''
+        is_rich_text = False
+
+        if latest_changedesc and 'status' in latest_changedesc.fields_changed:
+            status = latest_changedesc.fields_changed['status']['new'][0]
+
+            if status in (ReviewRequest.DISCARDED, ReviewRequest.SUBMITTED):
+                close_description = latest_changedesc.text
+                is_rich_text = latest_changedesc.rich_text
+
+        return (close_description, is_rich_text)
 
     def get_blocks(self):
         """Returns the list of review request this one blocks.

@@ -14,6 +14,9 @@
 {%  definevar "review_ui_box_content" %}{% block review_ui_box_content %}{% endblock %}{% enddefinevar %}
 
 <div id="review_request" class="review-ui-box{% if review_ui_box_content %} has-review-ui-box-content{% endif %}">
+{%  include "reviews/trophy_box.html" %}
+{%  include "reviews/review_header.html" %}
+
 {%  box "review-request" %}
 <div class="actions-container">
  {% star review_request %}

@@ -1,9 +1,12 @@
 from __future__ import unicode_literals
 
+from time import time
+
 from django.contrib.auth.models import User
 from django.core.cache import cache
 from django.core.exceptions import ImproperlyConfigured, ValidationError
 from django.db import models
+from django.utils import timezone
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.http import urlquote
 from django.utils.translation import ugettext_lazy as _
@@ -118,6 +121,14 @@ class Repository(models.Model):
                     'shown when creating new review requests. Existing '
                     'review requests are unaffected.'))
 
+    archived = models.BooleanField(
+        _('Archived'),
+        default=False,
+        help_text=_("Archived repositories do not show up in lists of "
+                    "repositories, and aren't open to new review requests."))
+
+    archived_timestamp = models.DateTimeField(null=True, blank=True)
+
     # Access control
     local_site = models.ForeignKey(LocalSite,
                                    verbose_name=_('Local site'),
@@ -197,6 +208,27 @@ class Repository(models.Model):
             'username': username,
             'password': password,
         }
+
+    def archive(self, save=True):
+        """Archives a repository.
+
+        The repository won't appear in any public lists of repositories,
+        and won't be used when looking up repositories. Review requests
+        can't be posted against an archived repository.
+
+        New repositories can be created with the same information as the
+        archived repository.
+        """
+        # This should be sufficiently unlikely to create duplicates. time()
+        # will use up a max of 8 characters, so we slice the name down to
+        # make the result fit in 64 characters
+        self.name = 'ar:%s:%x' % (self.name[:50], int(time()))
+        self.archived = True
+        self.public = False
+        self.archived_timestamp = timezone.now()
+
+        if save:
+            self.save()
 
     def get_file(self, path, revision, base_commit_id=None, request=None):
         """Returns a file from the repository.
@@ -481,4 +513,4 @@ class Repository(models.Model):
         # archiving repositories. We should really remove this constraint from
         # the tables and enforce it in code whenever visible=True
         unique_together = (('name', 'local_site'),
-                           ('path', 'local_site'))
+                           ('archived_timestamp', 'path', 'local_site'))
