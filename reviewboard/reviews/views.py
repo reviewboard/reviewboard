@@ -9,14 +9,19 @@ from django.contrib.auth.models import User
 from django.contrib.sites.models import Site
 from django.core.exceptions import MultipleObjectsReturned, ObjectDoesNotExist
 from django.db.models import Q
-from django.http import (HttpResponse, HttpResponseRedirect, Http404,
-                         HttpResponseNotModified, HttpResponseServerError)
+from django.http import (Http404,
+                         HttpResponse,
+                         HttpResponseNotFound,
+                         HttpResponseNotModified,
+                         HttpResponseRedirect,
+                         HttpResponseServerError)
 from django.shortcuts import (get_object_or_404, get_list_or_404, render,
                               render_to_response)
 from django.template.context import RequestContext
 from django.template.loader import render_to_string
 from django.utils import six, timezone
 from django.utils.decorators import method_decorator
+from django.utils.html import escape
 from django.utils.http import http_date
 from django.utils.safestring import mark_safe
 from django.utils.timezone import utc
@@ -41,6 +46,8 @@ from reviewboard.diffviewer.diffutils import (convert_to_unicode,
 from reviewboard.diffviewer.models import DiffSet
 from reviewboard.diffviewer.views import (DiffFragmentView, DiffViewerView,
                                           exception_traceback_string)
+from reviewboard.hostingsvcs.bugtracker import BugTracker
+from reviewboard.hostingsvcs.models import HostingServiceAccount
 from reviewboard.reviews.ui.screenshot import LegacyScreenshotReviewUI
 from reviewboard.reviews.context import (comment_counts,
                                          diffsets_with_comments,
@@ -1549,6 +1556,67 @@ def user_infobox(request, username,
     set_etag(response, etag)
 
     return response
+
+
+def bug_url(request, review_request_id, bug_id, local_site=None):
+    """Redirects user to bug tracker issue page."""
+    review_request, response = \
+        _find_review_request(request, review_request_id, local_site)
+
+    if not review_request:
+        return response
+
+    return HttpResponseRedirect(review_request.repository.bug_tracker % bug_id)
+
+
+def bug_infobox(request, review_request_id, bug_id,
+                template_name='reviews/bug_infobox.html',
+                local_site=None):
+    """Displays a bug info popup.
+
+    This is meant to be embedded in other pages, rather than being
+    a standalone page.
+    """
+    review_request, response = \
+        _find_review_request(request, review_request_id, local_site)
+
+    if not review_request:
+        return response
+
+    repository = review_request.repository
+    bug_tracker_cls = repository.bug_tracker_service
+    if not bug_tracker_cls:
+        return HttpResponseNotFound(_('Unable to find bug tracker service'))
+
+    bug_tracker = bug_tracker_cls(HostingServiceAccount())
+
+    if not isinstance(bug_tracker, BugTracker):
+        return HttpResponseNotFound(
+            _('Bug tracker %s does not support metadata') % bug_tracker.name)
+
+    bug_info = bug_tracker.get_bug_info(repository, bug_id)
+    bug_description = bug_info['description']
+    bug_summary = bug_info['summary']
+    bug_status = bug_info['status']
+
+    if not bug_summary and not bug_description:
+        return HttpResponseNotFound(
+            _('No bug metadata found for bug %(bug_id)s on bug tracker '
+              '%(bug_tracker)s') % {
+                'bug_id': bug_id,
+                'bug_tracker': bug_tracker.name,
+            })
+
+    # Don't do anything for single newlines, but treat two newlines as a
+    # paragraph break.
+    escaped_description = escape(bug_description).replace('\n\n', '<br/><br/>')
+
+    return render_to_response(template_name, RequestContext(request, {
+        'bug_id': bug_id,
+        'bug_description': mark_safe(escaped_description),
+        'bug_status': bug_status,
+        'bug_summary': bug_summary
+    }))
 
 
 def _download_diff_file(modified, request, review_request_id, revision,

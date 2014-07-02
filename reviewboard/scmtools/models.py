@@ -8,6 +8,7 @@ from django.core.exceptions import ImproperlyConfigured, ValidationError
 from django.db import models
 from django.utils import timezone
 from django.utils.encoding import python_2_unicode_compatible
+from django.utils.functional import cached_property
 from django.utils.http import urlquote
 from django.utils.translation import ugettext_lazy as _
 from djblets.cache.backend import cache_memoize, make_cache_key
@@ -16,6 +17,7 @@ from djblets.log import log_timed
 from django.utils import six
 
 from reviewboard.hostingsvcs.models import HostingServiceAccount
+from reviewboard.hostingsvcs.service import get_hosting_service
 from reviewboard.scmtools.managers import RepositoryManager, ToolManager
 from reviewboard.scmtools.signals import (checked_file_exists,
                                           checking_file_exists,
@@ -166,10 +168,19 @@ class Repository(models.Model):
         cls = self.tool.get_scmtool_class()
         return cls(self)
 
-    @property
+    @cached_property
     def hosting_service(self):
         if self.hosting_account:
             return self.hosting_account.service
+
+        return None
+
+    @cached_property
+    def bug_tracker_service(self):
+        """Returns selected bug tracker service if one exists."""
+        bug_tracker_type = self.extra_data.get('bug_tracker_type')
+        if bug_tracker_type:
+            return get_hosting_service(bug_tracker_type)
 
         return None
 

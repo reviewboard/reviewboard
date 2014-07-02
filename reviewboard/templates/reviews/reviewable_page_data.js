@@ -1,7 +1,7 @@
 {% load djblets_js reviewtags %}
         el: document.body,
         reviewRequestData: {
-            bugTrackerURL: "{{review_request.repository.bug_tracker|escapejs}}",
+            bugTrackerURL: "{% if review_request.repository.bug_tracker %}{% url 'bug_url' review_request.display_id '--bug_id--' %}{% endif %}",
             id: {{review_request.display_id}},
             localSitePrefix: "{% if review_request.local_site %}s/{{review_request.local_site.name}}/{% endif %}",
             branch: "{{review_request_details.branch|escapejs}}",

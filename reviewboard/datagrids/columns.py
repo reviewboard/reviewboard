@@ -1,11 +1,9 @@
 from __future__ import unicode_literals
 
-import logging
-
 from django.core.exceptions import ObjectDoesNotExist
 from django.template.defaultfilters import date
 from django.utils import six
-from django.utils.html import conditional_escape
+from django.utils.html import conditional_escape, format_html_join
 from django.utils.six.moves import reduce
 from django.utils.translation import ugettext_lazy as _, ugettext
 from djblets.datagrid.grids import Column, DateTimeColumn
@@ -60,15 +58,20 @@ class BugsColumn(Column):
     def render_data(self, state, review_request):
         bugs = review_request.get_bug_list()
         repository = review_request.repository
+        local_site_name = None
+
+        if review_request.local_site:
+            local_site_name = review_request.local_site.name
 
         if repository and repository.bug_tracker:
-            try:
-                return ', '.join(['<a href="%s">%s</a>' %
-                                  (repository.bug_tracker % bug, bug)
-                                  for bug in bugs])
-            except TypeError:
-                logging.warning('Invalid bug tracker format when rendering '
-                                'bugs column: %s' % repository.bug_tracker)
+            return format_html_join(
+                ', ',
+                '<a href="{0}">{1}</a>',
+                ((local_site_reverse('bug_url',
+                                     local_site_name=local_site_name,
+                                     args=(review_request.display_id, bug)),
+                  bug)
+                 for bug in bugs))
 
         return ', '.join(bugs)
 

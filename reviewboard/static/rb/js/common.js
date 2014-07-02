@@ -359,10 +359,10 @@ $.fn.user_infobox = function() {
         HIDE_DELAY_MS = 300,
         OFFSET_LEFT = -20,
         OFFSET_TOP = 10,
-        infobox = $("#user-infobox");
+        infobox = $("#user_infobox");
 
     if (infobox.length === 0) {
-        infobox = $("<div id='user-infobox'/>'").hide();
+        infobox = $("<div id='user_infobox'/>'").hide();
         $(document.body).append(infobox);
     }
 
@@ -421,6 +421,78 @@ $.fn.user_infobox = function() {
     });
 };
 
+var gBugInfoBoxCache = {};
+
+/*
+ * Displays a infobox when hovering over a bug.
+ *
+ * The infobox is displayed after a 1 second delay.
+ */
+$.fn.bug_infobox = function() {
+    var POPUP_DELAY_MS = 500,
+        HIDE_DELAY_MS = 300,
+        OFFSET_LEFT = -20,
+        OFFSET_TOP = 10,
+        $infobox = $('#bug_infobox');
+
+    if ($infobox.length === 0) {
+        $infobox = $("<div id='bug_infobox' />'")
+            .hide()
+            .appendTo(document.body);
+    }
+
+    function showInfobox(url, self) {
+        $infobox
+            .empty()
+            .html(gBugInfoBoxCache[url])
+            .positionToSide(self, {
+                side: 'tb',
+                xOffset: OFFSET_LEFT,
+                yDistance: OFFSET_TOP,
+                fitOnScreen: true
+            })
+            .fadeIn();
+    }
+
+    function fetchInbobox(url, self) {
+        if (!gBugInfoBoxCache[url]) {
+            $.get(url, function(responseText) {
+                gBugInfoBoxCache[url] = responseText;
+            }) .done(function() { showInfobox(url, self); });
+        } else {
+            showInfobox(url, self);
+        }
+    }
+
+    return this.each(function() {
+        var self = $(this),
+            timeout = null,
+            url = self.attr('href') + 'infobox/';
+
+        self.on('mouseover', function() {
+            timeout = setTimeout(function() {
+                fetchInbobox(url, self);
+            }, POPUP_DELAY_MS);
+        });
+
+        $([self[0], $infobox[0]]).on({
+            mouseover: function() {
+                if ($infobox.is(':visible')) {
+                    clearTimeout(timeout);
+                }
+            },
+            mouseout: function() {
+                clearTimeout(timeout);
+
+                if ($infobox.is(':visible')) {
+                    timeout = setTimeout(function() {
+                        $infobox.fadeOut();
+                    }, HIDE_DELAY_MS);
+                }
+            }
+        });
+    });
+};
 
 $(document).ready(function() {
     $('<div id="activity-indicator" />')
@@ -430,6 +502,7 @@ $(document).ready(function() {
 
     $("#search_field").searchAutoComplete();
     $('.user').user_infobox();
+    $('.bug').bug_infobox();
     $("time.timesince").timesince();
 
     $('.gravatar').retinaGravatar();

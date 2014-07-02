@@ -503,18 +503,7 @@ body.admin #navbar {
  * User page hover
  ****************************************************************************/
 
-#user-infobox {
-  background: #F9F9F9;
-  border: 1px black solid;
-  display: block;
-  min-height: 12em;
-  padding: 1em;
-  position: absolute;
-  min-width: 30em;
-  z-index: @z-index-dialog;
-  .border-radius(10px);
-  .box-shadow(0px 0px 4px #000);
-
+#user_infobox {
   &.loading {
     background-image: url("../images/spinner.gif");
     background-position: 1em 1em;
@@ -542,17 +531,7 @@ body.admin #navbar {
     }
   }
 
-  p {
-    font-size: 1.2em;
-    margin: 0.5em 0;
-    padding: 0;
-  }
-
   h2 {
-    font-size: 1.4em;
-    margin: 0 0 0.5em 0;
-    padding: 0;
-
     a {
       color: inherit;
     }
@@ -576,6 +555,52 @@ body.admin #navbar {
   position: relative;
 }
 
+
+/****************************************************************************
+ * Bug hover
+ ****************************************************************************/
+
+#bug_infobox {
+  max-width: 50em;
+  max-height: 25em;
+  overflow: hidden;
+
+  .bug-infobox-text {
+    color: black;
+    float: left;
+    word-wrap: break-word;
+
+    h2 {
+      margin-top: 0;
+      padding-top: 0;
+    }
+  }
+}
+
+#user-infobox, #bug_infobox {
+  background: #F9F9F9;
+  border: 1px black solid;
+  display: block;
+  min-height: 12em;
+  padding: 1em;
+  position: absolute;
+  min-width: 40em;
+  z-index: @z-index-dialog;
+  .border-radius(10px);
+  .box-shadow(0px 0px 4px #000);
+
+  h2 {
+    font-size: 1.4em;
+    margin: 0 0 0.5em 0;
+    padding: 0;
+  }
+
+  p {
+    font-size: 1.2em;
+    margin: 0.5em 0;
+    padding: 0;
+  }
+}
 
 /****************************************************************************
  * New Review Request

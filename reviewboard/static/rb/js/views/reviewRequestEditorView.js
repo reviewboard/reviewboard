@@ -269,14 +269,22 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
             useEditIconOnly: true,
             formatter: function(view, data, $el) {
                 var reviewRequest = view.model.get('reviewRequest'),
-                    bugTrackerURL = reviewRequest.get('bugTrackerURL');
+                    bugTrackerURL = reviewRequest.get('bugTrackerURL'),
+                    bugList,
+                    $bugList;
 
                 data = data || [];
 
                 if (bugTrackerURL) {
-                    $el.html(view.urlizeList(data, function(item) {
-                        return bugTrackerURL.replace('%s', item);
-                    }, _.escape));
+                    bugList = view.urlizeList(data, function(item) {
+                        return bugTrackerURL.replace('--bug_id--', item);
+                    });
+
+                    $bugList = $(bugList)
+                        .addClass('bug')
+                        .bug_infobox();
+
+                    $el.html($bugList);
                 } else {
                     $el.text(data.join(", "));
                 }
