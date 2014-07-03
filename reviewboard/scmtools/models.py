@@ -178,9 +178,16 @@ class Repository(models.Model):
     @cached_property
     def bug_tracker_service(self):
         """Returns selected bug tracker service if one exists."""
-        bug_tracker_type = self.extra_data.get('bug_tracker_type')
-        if bug_tracker_type:
-            return get_hosting_service(bug_tracker_type)
+        if self.extra_data.get('bug_tracker_use_hosting'):
+            return self.hosting_service
+        else:
+            bug_tracker_type = self.extra_data.get('bug_tracker_type')
+            if bug_tracker_type:
+                bug_tracker_cls = get_hosting_service(bug_tracker_type)
+
+                # TODO: we need to figure out some way of storing a second
+                # hosting service account for bug trackers.
+                return bug_tracker_cls(HostingServiceAccount())
 
         return None
 

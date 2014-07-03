@@ -19,6 +19,7 @@ from django.utils.translation import ugettext_lazy as _
 from django.views.decorators.http import require_POST
 from djblets.siteconfig.models import SiteConfiguration
 
+from reviewboard.hostingsvcs.bugtracker import BugTracker
 from reviewboard.hostingsvcs.errors import (AuthorizationError,
                                             HostingServiceError,
                                             InvalidPlanError,
@@ -275,6 +276,16 @@ class GitHubClient(HostingServiceClient):
                             url, e, exc_info=1)
             raise SCMError(six.text_type(e))
 
+    def api_get_issue(self, repo_api_url, issue_id):
+        url = self._build_api_url(repo_api_url, 'issues/%s' % issue_id)
+
+        try:
+            return self.api_get(url)
+        except Exception as e:
+            logging.warning('GitHub: Failed to fetch issue from %s: %s',
+                            url, e, exc_info=1)
+            raise SCMError(six.text_type(e))
+
     def api_get_remote_repositories(self, api_url, owner, owner_type,
                                     filter_type=None, start=None,
                                     per_page=None):
@@ -376,7 +387,7 @@ class GitHubClient(HostingServiceClient):
             raise HostingServiceError(six.text_type(e), http_code=e.code)
 
 
-class GitHub(HostingService):
+class GitHub(HostingService, BugTracker):
     name = _('GitHub')
     plans = [
         ('public', {
@@ -869,6 +880,28 @@ class GitHub(HostingService):
                                 path=repo['clone_url'],
                                 mirror_path=repo['mirror_url'],
                                 extra_data=repo)
+
+    def get_bug_info_uncached(self, repository, bug_id):
+        """Get the bug info from the server."""
+        result = {
+            'summary': '',
+            'description': '',
+            'status': '',
+        }
+
+        repo_api_url = self._get_repo_api_url(repository)
+        try:
+            issue = self.client.api_get_issue(repo_api_url, bug_id)
+            result = {
+                'summary': issue['title'],
+                'description': issue['body'],
+                'status': issue['state'],
+            }
+        except:
+            # Errors in fetching are already logged in api_get_issue
+            pass
+
+        return result
 
     def _reset_authorization(self, client_id, client_secret, token):
         """Resets the authorization info for an OAuth app-linked token.

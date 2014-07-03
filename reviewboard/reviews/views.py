@@ -47,7 +47,6 @@ from reviewboard.diffviewer.models import DiffSet
 from reviewboard.diffviewer.views import (DiffFragmentView, DiffViewerView,
                                           exception_traceback_string)
 from reviewboard.hostingsvcs.bugtracker import BugTracker
-from reviewboard.hostingsvcs.models import HostingServiceAccount
 from reviewboard.reviews.ui.screenshot import LegacyScreenshotReviewUI
 from reviewboard.reviews.context import (comment_counts,
                                          diffsets_with_comments,
@@ -1584,11 +1583,10 @@ def bug_infobox(request, review_request_id, bug_id,
         return response
 
     repository = review_request.repository
-    bug_tracker_cls = repository.bug_tracker_service
-    if not bug_tracker_cls:
-        return HttpResponseNotFound(_('Unable to find bug tracker service'))
 
-    bug_tracker = bug_tracker_cls(HostingServiceAccount())
+    bug_tracker = repository.bug_tracker_service
+    if not bug_tracker:
+        return HttpResponseNotFound(_('Unable to find bug tracker service'))
 
     if not isinstance(bug_tracker, BugTracker):
         return HttpResponseNotFound(
