@@ -974,7 +974,7 @@ class CommonSVNTestsBase(SCMTestCase):
 
         self.assertEqual(len(branches), 2)
         self.assertEqual(branches[0], Branch(id='trunk', name='trunk',
-                                             commit='5', default=True))
+                                             commit='9', default=True))
         self.assertEqual(branches[1], Branch(id='branches/branch1',
                                              name='branch1',
                                              commit='7', default=False))
@@ -1040,6 +1040,10 @@ class CommonSVNTestsBase(SCMTestCase):
                          '928336c082dd756e3f7af4cde4724ebf')
         self.assertEqual(md5(commit.diff.encode('utf-8')).hexdigest(),
                          '56e50374056931c03a333f234fa63375')
+
+    def test_utf8_keywords(self):
+        """Testing SVN (<backend>) with UTF-8 files with keywords"""
+        self.repository.get_file('trunk/utf8-file.txt', '9')
 
 
 class PySVNTests(CommonSVNTestsBase):

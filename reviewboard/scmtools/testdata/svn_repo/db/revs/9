@@ -1,0 +1,58 @@
+PLAIN
+K 12
+svn:keywords
+V 2
+Id
+END
+ENDREP
+id: f.0.r9/42
+type: file
+pred: f.0.r8/132
+count: 1
+text: 8 0 119 106 c4b92447ccf65beb73a5527facd2af45
+props: 9 0 29 0 ff5c3c1f7bdb48ba0201950780ae7e31
+cpath: /trunk/utf8-file.txt
+copyroot: 0 /
+
+PLAIN
+K 3
+doc
+V 14
+dir 2.0.r5/695
+K 13
+utf8-file.txt
+V 14
+file f.0.r9/42
+END
+ENDREP
+id: 1.0.r9/320
+type: dir
+pred: 1.0.r8/346
+count: 6
+text: 9 236 71 71 eebfb87e2465f63049de4ddabd706aff
+cpath: /trunk
+copyroot: 0 /
+
+PLAIN
+K 8
+branches
+V 14
+dir a.0.r7/192
+K 5
+trunk
+V 14
+dir 1.0.r9/320
+END
+ENDREP
+id: 0.0.r9/531
+type: dir
+pred: 0.0.r8/557
+count: 9
+text: 9 451 67 67 57764d41d0c876f9c685a8cf2d219865
+cpath: /
+copyroot: 0 /
+
+f.0.t8-1 modify false true /trunk/utf8-file.txt
+
+
+531 657
