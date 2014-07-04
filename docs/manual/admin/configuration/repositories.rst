@@ -393,7 +393,7 @@ particular, the following connection types can be used:
 * ``:ext:``
 * ``:fork:``
 * ``:gserver:``
-* ``:kgserver:``
+* ``:kserver:``
 * ``:local:``
 * ``:pserver:``
 * ``:server:``
@@ -401,13 +401,13 @@ particular, the following connection types can be used:
 If you use one of these connection types and provide it for the `Path field`_,
 you won't need to fill in the `Username and Password fields`_.
 
-If you use ``:pserver:``, you can instead provide a Path of the form
-``hostname:port/path`` and then specify the username and password in the
-appropriate fields.
+If you user ``:pserver:``, ``:gserver:``, or ``:kserver:``, you can opt not to
+include the username or password in the string, and just fill them in in the
+form.
 
 Some example of valid paths include:
 
-* ``cvs.example.com/cvsroot``
+* ``:pserver:cvs.example.com/cvsroot``
 * ``:pserver:anonymous@cvs.example.com/cvsroot``
 * ``:pserver:myuser:mypass@cvs.example.com:1234/cvsroot``
 * ``:local:C:\CVSROOTS\myproject``

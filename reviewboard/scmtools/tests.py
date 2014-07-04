@@ -426,29 +426,81 @@ class CVSTests(SCMTestCase):
         except ImportError:
             raise nose.SkipTest('cvs binary not found')
 
-    def test_path_with_port(self):
-        """Testing parsing a CVSROOT with a port"""
-        repo = Repository(name="CVS",
-                          path="example.com:123/cvsroot/test",
-                          username="anonymous",
-                          tool=Tool.objects.get(name="CVS"))
-        tool = repo.get_scmtool()
-
-        self.assertEqual(tool.repopath, "/cvsroot/test")
-        self.assertEqual(tool.client.cvsroot,
-                         ":pserver:anonymous@example.com:123/cvsroot/test")
+    def test_build_cvsroot_with_port(self):
+        """Testing CVSTool.build_cvsroot with a port"""
+        self._test_build_cvsroot(
+            repo_path='example.com:123/cvsroot/test',
+            username='anonymous',
+            expected_cvsroot=':pserver:anonymous@example.com:123/cvsroot/test',
+            expected_path='/cvsroot/test')
 
     def test_path_without_port(self):
-        """Testing parsing a CVSROOT without a port"""
-        repo = Repository(name="CVS",
-                          path="example.com:/cvsroot/test",
-                          username="anonymous",
-                          tool=Tool.objects.get(name="CVS"))
-        tool = repo.get_scmtool()
+        """Testing CVSTool.build_cvsroot without a port"""
+        self._test_build_cvsroot(
+            repo_path='example.com:/cvsroot/test',
+            username='anonymous',
+            expected_cvsroot=':pserver:anonymous@example.com:/cvsroot/test',
+            expected_path='/cvsroot/test')
 
-        self.assertEqual(tool.repopath, "/cvsroot/test")
-        self.assertEqual(tool.client.cvsroot,
-                         ":pserver:anonymous@example.com:/cvsroot/test")
+    def test_path_with_pserver_and_no_user_or_password(self):
+        """Testing CVSTool.build_cvsroot with :pserver: and no user or
+        password
+        """
+        self._test_build_cvsroot(
+            repo_path=':pserver:example.com:/cvsroot/test',
+            expected_cvsroot=':pserver:example.com:/cvsroot/test',
+            expected_path='/cvsroot/test')
+
+    def test_path_with_pserver_and_inline_user(self):
+        """Testing CVSTool.build_cvsroot with :pserver: and inline user"""
+        self._test_build_cvsroot(
+            repo_path=':pserver:anonymous@example.com:/cvsroot/test',
+            expected_cvsroot=':pserver:anonymous@example.com:/cvsroot/test',
+            expected_path='/cvsroot/test')
+
+    def test_path_with_pserver_and_inline_user_and_password(self):
+        """Testing CVSTool.build_cvsroot with :pserver: and inline user and
+        password
+        """
+        self._test_build_cvsroot(
+            repo_path=':pserver:anonymous:pass@example.com:/cvsroot/test',
+            expected_cvsroot=':pserver:anonymous:pass@example.com:'
+                             '/cvsroot/test',
+            expected_path='/cvsroot/test')
+
+    def test_path_with_pserver_and_form_user(self):
+        """Testing CVSTool.build_cvsroot with :pserver: and form-provided
+        user
+        """
+        self._test_build_cvsroot(
+            repo_path=':pserver:example.com:/cvsroot/test',
+            username='anonymous',
+            expected_cvsroot=':pserver:anonymous@example.com:/cvsroot/test',
+            expected_path='/cvsroot/test')
+
+    def test_path_with_pserver_and_form_user_and_password(self):
+        """Testing CVSTool.build_cvsroot with :pserver: and form-provided
+        user and password
+        """
+        self._test_build_cvsroot(
+            repo_path=':pserver:example.com:/cvsroot/test',
+            username='anonymous',
+            password='pass',
+            expected_cvsroot=':pserver:anonymous:pass@example.com:'
+                             '/cvsroot/test',
+            expected_path='/cvsroot/test')
+
+    def test_path_with_pserver_and_inline_takes_precedence(self):
+        """Testing CVSTool.build_cvsroot with :pserver: and inline user/password
+        taking precedence
+        """
+        self._test_build_cvsroot(
+            repo_path=':pserver:anonymous:pass@example.com:/cvsroot/test',
+            username='grumpy',
+            password='grr',
+            expected_cvsroot=':pserver:anonymous:pass@example.com:'
+                             '/cvsroot/test',
+            expected_path='/cvsroot/test')
 
     def test_get_file(self):
         """Testing CVSTool.get_file"""
@@ -480,7 +532,7 @@ class CVSTests(SCMTestCase):
                           lambda: self.tool.get_file('hello', PRE_CREATION))
 
     def test_revision_parsing(self):
-        """Testing revision number parsing"""
+        """Testing CVSTool revision number parsing"""
         self.assertEqual(self.tool.parse_diff_revision('', 'PRE-CREATION')[1],
                          PRE_CREATION)
         self.assertEqual(
@@ -647,7 +699,7 @@ class CVSTests(SCMTestCase):
         self.assertEqual(file.delete_count, 1)
 
     def test_bad_root(self):
-        """Testing a bad CVSROOT"""
+        """Testing CVSTool with a bad CVSROOT"""
         file = 'test/testfile'
         rev = Revision('1.1')
         badrepo = Repository(name='CVS',
@@ -664,6 +716,14 @@ class CVSTests(SCMTestCase):
     def test_ssh_with_site(self):
         """Testing a SSH-backed CVS repository with a LocalSite"""
         self._test_ssh_with_site(self.cvs_ssh_path, 'CVSROOT/modules')
+
+    def _test_build_cvsroot(self, repo_path, expected_cvsroot, expected_path,
+                            username=None, password=None):
+        cvsroot, norm_path = self.tool.build_cvsroot(repo_path, username,
+                                                     password)
+
+        self.assertEqual(cvsroot, expected_cvsroot)
+        self.assertEqual(norm_path, expected_path)
 
 
 class CommonSVNTestsBase(SCMTestCase):

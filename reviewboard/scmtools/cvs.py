@@ -33,7 +33,10 @@ class CVSTool(SCMTool):
     }
 
     rev_re = re.compile(r'^.*?(\d+(\.\d+)+)\r?$')
-    repopath_re = re.compile(r'^(?P<hostname>.*):(?P<port>\d+)?(?P<path>.*)')
+    repopath_re = re.compile(
+        r'^((?P<cnxmethod>:[gkp]server:)'
+        r'((?P<username>[^:@]+)(:(?P<password>[^@]+))?@)?)?'
+        r'(?P<hostname>[^:]+):(?P<port>\d+)?(?P<path>.*)')
     ext_cvsroot_re = re.compile(r':ext:([^@]+@)?(?P<hostname>[^:/]+)')
 
     def __init__(self, repository):
@@ -94,30 +97,36 @@ class CVSTool(SCMTool):
         #  :local:e:\path
         #  :fork:/path
 
-        if not path.startswith(":"):
-            # The user has a path or something. We'll want to parse out the
-            # server name, port (if specified) and path and build a :pserver:
-            # CVSROOT.
-            m = cls.repopath_re.match(path)
+        m = cls.repopath_re.match(path)
 
-            if m:
-                path = m.group("path")
-                cvsroot = ":pserver:"
+        if m:
+            # The user either specified a valid :pserver: path (or equivalent),
+            # or a simply hostname:port/path. In either case, we'll want to
+            # construct our own CVSROOT based on that information and the
+            # provided username and password.
+            #
+            # Note that any username/password found in the path takes
+            # precedence.
+            cvsroot = m.group('cnxmethod') or ':pserver:'
+            username = m.group('username') or username
+            password = m.group('password') or password
+            path = m.group('path')
 
-                if username:
-                    if password:
-                        cvsroot += '%s:%s@' % (username, password)
-                    else:
-                        cvsroot += '%s@' % (username)
+            if username:
+                if password:
+                    cvsroot += '%s:%s@' % (username, password)
+                else:
+                    cvsroot += '%s@' % (username)
 
-                cvsroot += "%s:%s%s" % (m.group("hostname"),
-                                        m.group("port") or "",
-                                        path)
-                return cvsroot, path
+            cvsroot += '%s:%s%s' % (m.group('hostname'),
+                                    m.group('port') or '',
+                                    path)
+        else:
+            # We couldn't parse this as a standard CVSROOT. Assume it's a
+            # local path or another format (like :ext:) and let CVS handle it.
+            cvsroot = path
 
-        # We couldn't parse this as a hostname:port/path. Assume it's a local
-        # path or a full CVSROOT and let CVS handle it.
-        return path, path
+        return cvsroot, path
 
     @classmethod
     def check_repository(cls, path, username=None, password=None,
