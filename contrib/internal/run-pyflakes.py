@@ -11,16 +11,17 @@ import subprocess
 import sys
 
 
-module_exclusions = [
+module_exclusions = (
     'build',
     'djblets',
     'django_evolution',
     'dist',
     'ez_setup.py',
-    'htdocs',
+    'fabfile.py',
     'settings_local.py',
+    'reviewboard/htdocs',
     'ReviewBoard.egg-info',
-]
+)
 
 
 def scan_for_modules():
@@ -53,13 +54,14 @@ def main():
             if not line.startswith("#"):
                 exclusions[line.rstrip()] = 1
 
-    # Now filter thin
+    # Now filter things
     for line in contents:
         line = line.rstrip()
         test_line = re.sub(r':[0-9]+:', r':*:', line, 1)
         test_line = re.sub(r'line [0-9]+', r'line *', test_line)
 
-        if test_line not in exclusions:
+        if (test_line not in exclusions and
+            not test_line.startswith(module_exclusions)):
             print(line)
 
 

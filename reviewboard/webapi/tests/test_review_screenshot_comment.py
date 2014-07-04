@@ -208,8 +208,6 @@ class ResourceItemTests(CommentItemMixin, ReviewRequestChildItemMixin,
         DELETE review-requests/<id>/reviews/<id>/screenshot-comments/<id>/ API
         with Does Not Exist error
         """
-        x, y, w, h = (2, 2, 10, 10)
-
         review_request = self.create_review_request(publish=True)
         self.create_screenshot(review_request)
         review = self.create_review(review_request, user=self.user)

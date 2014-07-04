@@ -2,7 +2,6 @@ from __future__ import unicode_literals
 
 from django.utils import six
 from djblets.testing.decorators import add_fixtures
-from djblets.webapi.errors import INVALID_FORM_DATA
 
 from reviewboard.webapi.resources import resources
 from reviewboard.webapi.errors import REPO_NOT_IMPLEMENTED
