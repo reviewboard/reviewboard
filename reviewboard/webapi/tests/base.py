@@ -103,9 +103,9 @@ class BaseWebAPITestCase(TestCase, EmailTestHelper):
 
         return response
 
-    def apiGet(self, path, query={}, follow_redirects=False,
-               expected_status=200, expected_redirects=[],
-               expected_headers={}, expected_mimetype=None):
+    def api_get(self, path, query={}, follow_redirects=False,
+                expected_status=200, expected_redirects=[],
+                expected_headers={}, expected_mimetype=None):
         path = self._normalize_path(path)
 
         print('GETing %s' % path)
@@ -151,14 +151,14 @@ class BaseWebAPITestCase(TestCase, EmailTestHelper):
 
         return self._get_result(response, expected_status), response
 
-    def apiPost(self, *args, **kwargs):
+    def api_post(self, *args, **kwargs):
         rsp, result = self.api_post_with_response(*args, **kwargs)
 
         return rsp
 
-    def apiPut(self, path, query={}, expected_status=200,
-               follow_redirects=False, expected_redirects=[],
-               expected_mimetype=None):
+    def api_put(self, path, query={}, expected_status=200,
+                follow_redirects=False, expected_redirects=[],
+                expected_mimetype=None):
         path = self._normalize_path(path)
 
         print('PUTing to %s' % path)
@@ -172,7 +172,7 @@ class BaseWebAPITestCase(TestCase, EmailTestHelper):
 
         return self._get_result(response, expected_status)
 
-    def apiDelete(self, path, expected_status=204):
+    def api_delete(self, path, expected_status=204):
         path = self._normalize_path(path)
 
         print('DELETEing %s' % path)
@@ -293,7 +293,7 @@ class BaseWebAPITestCase(TestCase, EmailTestHelper):
 
         review = Review.objects.get(pk=review_id)
 
-        rsp = self.apiPost(
+        rsp = self.api_post(
             get_review_diff_comment_list_url(review, local_site_name),
             data,
             expected_mimetype=review_diff_comment_item_mimetype)

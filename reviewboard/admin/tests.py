@@ -28,7 +28,7 @@ class UpdateTests(TestCase):
         # Make sure we don't break further tests by resetting this fully.
         checks.reset_check_cache()
 
-        # If testManualUpdatesRequiredBadUpload failed in the middle, it could
+        # If test_manual_updates_bad_upload failed in the middle, it could
         # neglect to fix the MEDIA_ROOT, which will break a bunch of future
         # tests. Make sure it's always what we expect.
         settings.MEDIA_ROOT = self.old_media_root
@@ -36,7 +36,7 @@ class UpdateTests(TestCase):
         siteconfig.set('site_media_root', self.old_media_root)
         siteconfig.save()
 
-    def testManualUpdatesRequired(self):
+    def test_manual_updates(self):
         """Testing check_updates_required with valid configuration"""
         # NOTE: This is assuming the install is fine. It should be given
         #       that we set things like the uploaded path correctly to
@@ -45,7 +45,7 @@ class UpdateTests(TestCase):
 
         self.assertEqual(len(updates_required), 0)
 
-    def testManualUpdatesRequiredBadUpload(self):
+    def test_manual_updates_bad_upload(self):
         """Testing check_updates_required with a bad upload directory"""
         siteconfig = SiteConfiguration.objects.get_current()
 

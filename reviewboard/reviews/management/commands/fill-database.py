@@ -123,7 +123,7 @@ class Command(NoArgsCommand):
         random.seed()
 
         if review_requests:
-            num_of_requests = self.parseCommand("review_requests",
+            num_of_requests = self.parse_command("review_requests",
                                                 review_requests)
 
             # Setup repository.
@@ -140,7 +140,7 @@ class Command(NoArgsCommand):
                 tool=Tool.objects.get(name="Git"))
 
         if diffs:
-            num_of_diffs = self.parseCommand("diffs", diffs)
+            num_of_diffs = self.parse_command("diffs", diffs)
 
             # Create the diff directory locations.
             diff_dir_tmp = os.path.abspath(
@@ -162,10 +162,10 @@ class Command(NoArgsCommand):
                 raise CommandError("No diff files in this directory")
 
         if reviews:
-            num_of_reviews = self.parseCommand("reviews", reviews)
+            num_of_reviews = self.parse_command("reviews", reviews)
 
         if diff_comments:
-            num_of_diff_comments = self.parseCommand("diff-comments",
+            num_of_diff_comments = self.parse_command("diff-comments",
                                                      diff_comments)
 
         # Users is required for any other operation.
@@ -175,7 +175,7 @@ class Command(NoArgsCommand):
         # Start adding data to the database.
         for i in range(1, users + 1):
             new_user = User.objects.create(
-                username=self.randUsername(),  # Avoids having to flush db.
+                username=self.rand_username(),  # Avoids having to flush db.
                 first_name=random.choice(NAMES),
                 last_name=random.choice(NAMES),
                 email="test@example.com",
@@ -199,7 +199,7 @@ class Command(NoArgsCommand):
                 show_closed=True)
 
             # Review Requests.
-            req_val = self.pickRandomValue(num_of_requests)
+            req_val = self.pick_random_value(num_of_requests)
 
             if int(verbosity) > NORMAL:
                 self.stdout.write("For user %s:%s" % (i, new_user.username))
@@ -221,7 +221,7 @@ class Command(NoArgsCommand):
                 review_request.save()
 
                 # Add the diffs if any to add.
-                diff_val = self.pickRandomValue(num_of_diffs)
+                diff_val = self.pick_random_value(num_of_diffs)
 
                 # If adding diffs add history.
                 if diff_val > 0:
@@ -249,7 +249,7 @@ class Command(NoArgsCommand):
                     f.close()
 
                     # Add the reviews if any.
-                    review_val = self.pickRandomValue(num_of_reviews)
+                    review_val = self.pick_random_value(num_of_reviews)
 
                     for l in range(0, review_val):
                         if int(verbosity) > NORMAL:
@@ -263,7 +263,7 @@ class Command(NoArgsCommand):
                         reviews.publish(new_user)
 
                         # Add comments if any.
-                        comment_val = self.pickRandomValue(
+                        comment_val = self.pick_random_value(
                             num_of_diff_comments)
 
                         for m in range(0, comment_val):
@@ -317,7 +317,7 @@ class Command(NoArgsCommand):
                 self.stdout.write("user %s created successfully"
                                   % new_user.username)
 
-    def parseCommand(self, com_arg, com_string):
+    def parse_command(self, com_arg, com_string):
         """Parse the values given in the command line."""
         try:
             return tuple((int(item.strip()) for item in com_string.split(':')))
@@ -326,12 +326,12 @@ class Command(NoArgsCommand):
                                'values of type int.\nExample: --%s=2:5'
                                % (com_arg, com_arg))
 
-    def randUsername(self):
+    def rand_username(self):
         """Used to generate random usernames so no flushing needed."""
         return ''.join(random.choice(string.ascii_lowercase)
                        for x in range(0, random.randrange(5, 9)))
 
-    def pickRandomValue(self, value):
+    def pick_random_value(self, value):
         """Pick a random value out of a range.
 
         If the 'value' tuple is empty, this returns 0. If 'value' contains a

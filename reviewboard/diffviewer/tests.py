@@ -28,29 +28,29 @@ from reviewboard.testing import TestCase
 
 
 class MyersDifferTest(TestCase):
-    def testDiff(self):
-        """Testing myers differ"""
-        self.__test_diff(["1", "2", "3"],
-                         ["1", "2", "3"],
-                         [("equal", 0, 3, 0, 3), ])
+    def test_diff(self):
+        """Testing MyersDiffer"""
+        self._test_diff(["1", "2", "3"],
+                        ["1", "2", "3"],
+                        [("equal", 0, 3, 0, 3), ])
 
-        self.__test_diff(["1", "2", "3"],
-                         [],
-                         [("delete", 0, 3, 0, 0), ])
+        self._test_diff(["1", "2", "3"],
+                        [],
+                        [("delete", 0, 3, 0, 0), ])
 
-        self.__test_diff("1\n2\n3\n",
-                         "0\n1\n2\n3\n",
-                         [("insert", 0, 0, 0, 2),
-                          ("equal", 0, 6, 2, 8)])
+        self._test_diff("1\n2\n3\n",
+                        "0\n1\n2\n3\n",
+                        [("insert", 0, 0, 0, 2),
+                         ("equal", 0, 6, 2, 8)])
 
-        self.__test_diff("1\n2\n3\n7\n",
-                         "1\n2\n4\n5\n6\n7\n",
-                         [("equal", 0, 4, 0, 4),
-                          ("replace", 4, 5, 4, 5),
-                          ("insert", 5, 5, 5, 9),
-                          ("equal", 5, 8, 9, 12)])
+        self._test_diff("1\n2\n3\n7\n",
+                        "1\n2\n4\n5\n6\n7\n",
+                        [("equal", 0, 4, 0, 4),
+                         ("replace", 4, 5, 4, 5),
+                         ("insert", 5, 5, 5, 9),
+                         ("equal", 5, 8, 9, 12)])
 
-    def __test_diff(self, a, b, expected):
+    def _test_diff(self, a, b, expected):
         opcodes = list(MyersDiffer(a, b).get_opcodes())
         self.assertEquals(opcodes, expected)
 
@@ -58,9 +58,9 @@ class MyersDifferTest(TestCase):
 class InterestingLinesTest(TestCase):
     PREFIX = os.path.join(os.path.dirname(__file__), 'testdata')
 
-    def testCSharp(self):
+    def test_csharp(self):
         """Testing interesting lines scanner with a C# file"""
-        lines = self.__get_lines("helloworld.cs")
+        lines = self._get_lines("helloworld.cs")
 
         self.assertEqual(len(lines[0]), 2)
         self.assertEqual(lines[0][0], (0, 'public class HelloWorld {\n'))
@@ -69,9 +69,9 @@ class InterestingLinesTest(TestCase):
         self.assertEqual(lines[1][0], (3, 'public class HelloWorld\n'))
         self.assertEqual(lines[1][1], (8, '\tpublic static void Main()\n'))
 
-    def testJava(self):
+    def test_java(self):
         """Testing interesting lines scanner with a Java file"""
-        lines = self.__get_lines("helloworld.java")
+        lines = self._get_lines("helloworld.java")
 
         self.assertEqual(len(lines[0]), 2)
         self.assertEqual(lines[0][0], (0, 'class HelloWorld {\n'))
@@ -83,9 +83,9 @@ class InterestingLinesTest(TestCase):
         self.assertEqual(lines[1][1],
                          (8, '\tpublic static void main(String[] args)\n'))
 
-    def testJavaScript(self):
+    def test_javascript(self):
         """Testing interesting lines scanner with a JavaScript file"""
-        lines = self.__get_lines("helloworld.js")
+        lines = self._get_lines("helloworld.js")
 
         self.assertEqual(len(lines[0]), 3)
         self.assertEqual(lines[0][0], (0, 'function helloWorld() {\n'))
@@ -97,9 +97,9 @@ class InterestingLinesTest(TestCase):
         self.assertEqual(lines[1][1], (12, '\thelloWorld2: function()\n'))
         self.assertEqual(lines[1][2], (18, 'var helloWorld3 = function()\n'))
 
-    def testObjectiveC(self):
+    def test_objective_c(self):
         """Testing interesting lines scanner with an Objective C file"""
-        lines = self.__get_lines("helloworld.m")
+        lines = self._get_lines("helloworld.m")
 
         self.assertEqual(len(lines[0]), 3)
         self.assertEqual(lines[0][0], (0, '@interface MyClass : Object\n'))
@@ -111,9 +111,9 @@ class InterestingLinesTest(TestCase):
         self.assertEqual(lines[1][1], (4, '@implementation MyClass\n'))
         self.assertEqual(lines[1][2], (8, '- (void) sayHello\n'))
 
-    def testPerl(self):
+    def test_perl(self):
         """Testing interesting lines scanner with a Perl file"""
-        lines = self.__get_lines("helloworld.pl")
+        lines = self._get_lines("helloworld.pl")
 
         self.assertEqual(len(lines[0]), 1)
         self.assertEqual(lines[0][0], (0, 'sub helloWorld {\n'))
@@ -121,9 +121,9 @@ class InterestingLinesTest(TestCase):
         self.assertEqual(len(lines[1]), 1)
         self.assertEqual(lines[1][0], (1, 'sub helloWorld\n'))
 
-    def testPHP(self):
+    def test_php(self):
         """Testing interesting lines scanner with a PHP file"""
-        lines = self.__get_lines("helloworld.php")
+        lines = self._get_lines("helloworld.php")
 
         self.assertEqual(len(lines[0]), 2)
         self.assertEqual(lines[0][0], (1, 'class HelloWorld {\n'))
@@ -134,9 +134,9 @@ class InterestingLinesTest(TestCase):
         self.assertEqual(lines[1][1], (9, '\tfunction helloWorld()\n'))
         self.assertEqual(lines[1][2], (14, '\tpublic function foo() {\n'))
 
-    def testPython(self):
+    def test_python(self):
         """Testing interesting lines scanner with a Python file"""
-        lines = self.__get_lines("helloworld.py")
+        lines = self._get_lines("helloworld.py")
 
         self.assertEqual(len(lines[0]), 2)
         self.assertEqual(lines[0][0], (0, 'class HelloWorld:\n'))
@@ -146,9 +146,9 @@ class InterestingLinesTest(TestCase):
         self.assertEqual(lines[1][0], (0, 'class HelloWorld:\n'))
         self.assertEqual(lines[1][1], (3, '    def main(self):\n'))
 
-    def testRuby(self):
+    def test_ruby(self):
         """Testing interesting lines scanner with a Ruby file"""
-        lines = self.__get_lines("helloworld.rb")
+        lines = self._get_lines("helloworld.rb")
 
         self.assertEqual(len(lines[0]), 2)
         self.assertEqual(lines[0][0], (0, 'class HelloWorld\n'))
@@ -158,7 +158,7 @@ class InterestingLinesTest(TestCase):
         self.assertEqual(lines[1][0], (1, 'class HelloWorld\n'))
         self.assertEqual(lines[1][1], (3, '\tdef helloWorld()\n'))
 
-    def __get_lines(self, filename):
+    def _get_lines(self, filename):
         with open(os.path.join(self.PREFIX, "orig_src", filename), "r") as f:
             a = f.readlines()
 
@@ -187,7 +187,7 @@ class DiffParserTest(TestCase):
         f.close()
         return data
 
-    def compareDiffs(self, files, testdir):
+    def _compare_diffs(self, files, testdir):
         self.assertEqual(len(files), 14)
 
         for file in files:
@@ -208,21 +208,20 @@ class DiffParserTest(TestCase):
 
             # Can't really compare the strings because of timestamps...
 
-    def testUnifiedDiff(self):
-        """Testing parse on a unified diff"""
+    def test_unified_diff(self):
+        """Testing DiffParser.parse on a unified diff"""
         data = self.diff('-u')
         files = diffparser.DiffParser(data).parse()
-        self.compareDiffs(files, "unified")
+        self._compare_diffs(files, "unified")
 
-    def testContextDiff(self):
-        """Testing parse on a context diff"""
+    def test_context_diff(self):
+        """Testing DiffParser.parse on a context diff"""
         data = self.diff('-c')
         files = diffparser.DiffParser(data).parse()
-        self.compareDiffs(files, "context")
+        self._compare_diffs(files, "context")
 
-    def testPatch(self):
-        """Testing patching"""
-
+    def test_patch(self):
+        """Testing diffutils.patch"""
         file = 'foo.c'
 
         old = self._get_file('orig_src', file)
@@ -235,39 +234,41 @@ class DiffParserTest(TestCase):
         diff = self._get_file('diffs', 'unified', 'README.diff')
         self.assertRaises(Exception, lambda: diffutils.patch(diff, old, file))
 
-    def testEmptyPatch(self):
-        """Testing patching with an empty diff"""
+    def test_empty_patch(self):
+        """Testing diffutils.patch with an empty diff"""
         old = 'This is a test'
         diff = ''
         patched = diffutils.patch(diff, old, 'test.c')
         self.assertEqual(patched, old)
 
-    def testPatchCRLFFileCRLFDiff(self):
-        """Testing patching a CRLF file with a CRLF diff"""
+    def test_patch_crlf_file_crlf_diff(self):
+        """Testing diffutils.patch with a CRLF file and a CRLF diff"""
         old = self._get_file('orig_src', 'README.crlf')
         new = self._get_file('new_src', 'README')
         diff = self._get_file('diffs', 'unified', 'README.crlf.diff')
         patched = diffutils.patch(diff, old, new)
         self.assertEqual(patched, new)
 
-    def testPatchCRFileCRLFDiff(self):
-        """Testing patching a CR file with a CRLF diff"""
+    def test_patch_cr_file_crlf_diff(self):
+        """Testing diffutils.patch with a CR file and a CRLF diff"""
         old = self._get_file('orig_src', 'README')
         new = self._get_file('new_src', 'README')
         diff = self._get_file('diffs', 'unified', 'README.crlf.diff')
         patched = diffutils.patch(diff, old, new)
         self.assertEqual(patched, new)
 
-    def testPatchCRLFFileCRDiff(self):
-        """Testing patching a CRLF file with a CR diff"""
+    def test_patch_crlf_file_cr_diff(self):
+        """Testing diffutils.patch with a CRLF file and a CR diff"""
         old = self._get_file('orig_src', 'README.crlf')
         new = self._get_file('new_src', 'README')
         diff = self._get_file('diffs', 'unified', 'README.diff')
         patched = diffutils.patch(diff, old, new)
         self.assertEqual(patched, new)
 
-    def testPatchFileWithFakeNoNewline(self):
-        """Testing patching a file indicating no newline with a trailing \\r"""
+    def test_patch_file_with_fake_no_newline(self):
+        """Testing diffutils.patch with a file indicating no newline
+        with a trailing \\r
+        """
         old = self._get_file('orig_src', 'README.nonewline')
         new = self._get_file('new_src', 'README.nonewline')
         diff = self._get_file('diffs', 'unified', 'README.nonewline.diff')
@@ -790,7 +791,7 @@ class HighlightRegionTest(TestCase):
         siteconfig = SiteConfiguration.objects.get_current()
         siteconfig.set('diffviewer_syntax_highlighting', True)
 
-    def testHighlightRegion(self):
+    def test_highlight_region(self):
         """Testing highlightregion"""
         self.assertEquals(highlightregion("", None), "")
 
