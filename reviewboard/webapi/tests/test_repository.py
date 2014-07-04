@@ -46,7 +46,7 @@ class BaseRepositoryTests(BaseWebAPITestCase):
 
     def _verify_repository_info(self, rsp, repo_name, repo_path, data):
         self.assertEqual(rsp['stat'], 'ok')
-        self.assertTrue('repository' in rsp)
+        self.assertIn('repository', rsp)
 
         repository = Repository.objects.get(pk=rsp['repository']['id'])
 
@@ -384,9 +384,9 @@ class ResourceListTests(BaseRepositoryTests):
         rsp = self._post_repository(False, expected_status=403)
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], BAD_HOST_KEY.code)
-        self.assertTrue('hostname' in rsp)
-        self.assertTrue('expected_key' in rsp)
-        self.assertTrue('key' in rsp)
+        self.assertIn('hostname', rsp)
+        self.assertIn('expected_key', rsp)
+        self.assertIn('key', rsp)
         self.assertEqual(rsp['hostname'], hostname)
         self.assertEqual(rsp['expected_key'], expected_key.get_base64())
         self.assertEqual(rsp['key'], key.get_base64())
@@ -436,8 +436,8 @@ class ResourceListTests(BaseRepositoryTests):
         rsp = self._post_repository(False, expected_status=403)
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], UNVERIFIED_HOST_KEY.code)
-        self.assertTrue('hostname' in rsp)
-        self.assertTrue('key' in rsp)
+        self.assertIn('hostname', rsp)
+        self.assertIn('key', rsp)
         self.assertEqual(rsp['hostname'], hostname)
         self.assertEqual(rsp['key'], key.get_base64())
 
@@ -491,7 +491,7 @@ class ResourceListTests(BaseRepositoryTests):
         rsp = self._post_repository(False, expected_status=403)
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], UNVERIFIED_HOST_CERT.code)
-        self.assertTrue('certificate' in rsp)
+        self.assertIn('certificate', rsp)
         self.assertEqual(rsp['certificate']['failures'], cert.failures)
         self.assertEqual(rsp['certificate']['fingerprint'], cert.fingerprint)
         self.assertEqual(rsp['certificate']['hostname'], cert.hostname)
@@ -537,7 +537,7 @@ class ResourceListTests(BaseRepositoryTests):
         self.assertTrue(saw['accept_certificate'])
 
         repository = Repository.objects.get(pk=rsp['repository']['id'])
-        self.assertTrue('cert' in repository.extra_data)
+        self.assertIn('cert', repository.extra_data)
         self.assertEqual(repository.extra_data['cert']['fingerprint'], '123')
 
     def test_post_with_missing_user_key(self):
@@ -566,7 +566,7 @@ class ResourceListTests(BaseRepositoryTests):
         rsp = self._post_repository(False, expected_status=403)
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], REPO_AUTHENTICATION_ERROR.code)
-        self.assertTrue('reason' in rsp)
+        self.assertIn('reason', rsp)
 
     def test_post_full_info(self):
         """Testing the POST repositories/ API with all available info"""

@@ -104,9 +104,9 @@ class ResourceItemTests(BaseWebAPITestCase):
                            expected_mimetype=user_item_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(rsp['user']['username'], user.username)
-        self.assertFalse('first_name' in rsp['user'])
-        self.assertFalse('last_name' in rsp['user'])
-        self.assertFalse('email' in rsp['user'])
+        self.assertNotIn('first_name', rsp['user'])
+        self.assertNotIn('last_name', rsp['user'])
+        self.assertNotIn('email', rsp['user'])
 
     @add_fixtures(['test_site'])
     def test_get_missing_user_with_site(self):

@@ -1023,8 +1023,8 @@ class UploadDiffFormTests(SpyAgency, TestCase):
         self.assertEqual(filediff.diff, diff)
         self.assertEqual(filediff.parent_diff, parent_diff_1)
 
-        self.assertTrue(('/README', 'd6613f4') in saw_file_exists)
-        self.assertFalse(('/UNUSED', '1234567') in saw_file_exists)
+        self.assertIn(('/README', 'd6613f4'), saw_file_exists)
+        self.assertNotIn(('/UNUSED', '1234567'), saw_file_exists)
         self.assertEqual(len(saw_file_exists), 1)
 
     def test_mercurial_parent_diff_base_rev(self):

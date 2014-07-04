@@ -139,7 +139,7 @@ class ResourceTests(BaseWebAPITestCase):
 
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], INVALID_FORM_DATA.code)
-        self.assertTrue('basedir' in rsp['fields'])
+        self.assertIn('basedir', rsp['fields'])
 
     def test_post_with_files_not_found(self):
         """Testing the POST validation/diffs/ API

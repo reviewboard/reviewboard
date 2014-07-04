@@ -26,7 +26,7 @@ class BaseCommentListMixin(object):
 
         rsp = self.api_post(url, data, expected_mimetype=mimetype)
         self.assertEqual(rsp['stat'], 'ok')
-        self.assertTrue(self.resource.item_result_key in rsp)
+        self.assertIn(self.resource.item_result_key, rsp)
 
         comment_rsp = rsp[self.resource.item_result_key]
         self.assertEqual(comment_rsp['text'], comment_text)
@@ -117,7 +117,7 @@ class BaseCommentItemMixin(object):
         rsp = self.api_put(url, data, expected_mimetype=mimetype)
 
         self.assertEqual(rsp['stat'], 'ok')
-        self.assertTrue(self.resource.item_result_key in rsp)
+        self.assertIn(self.resource.item_result_key, rsp)
 
         comment_rsp = rsp[self.resource.item_result_key]
         self.assertEqual(comment_rsp['text'], comment_text)
@@ -146,7 +146,7 @@ class BaseCommentItemMixin(object):
         rsp = self.api_put(url, data, expected_mimetype=mimetype)
 
         self.assertEqual(rsp['stat'], 'ok')
-        self.assertTrue(self.resource.item_result_key in rsp)
+        self.assertIn(self.resource.item_result_key, rsp)
 
         comment_rsp = rsp[self.resource.item_result_key]
         self.assertEqual(comment_rsp['text'], expected_text)

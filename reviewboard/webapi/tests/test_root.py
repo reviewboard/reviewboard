@@ -29,8 +29,8 @@ class ResourceTests(BaseWebAPITestCase):
         rsp = self.api_get(get_root_url(),
                            expected_mimetype=root_item_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
-        self.assertTrue('uri_templates' in rsp)
-        self.assertTrue('repository' in rsp['uri_templates'])
+        self.assertIn('uri_templates', rsp)
+        self.assertIn('repository', rsp['uri_templates'])
         self.assertEqual(rsp['uri_templates']['repository'],
                          'http://testserver/api/repositories/{repository_id}/')
 
@@ -43,8 +43,8 @@ class ResourceTests(BaseWebAPITestCase):
         rsp = self.api_get(get_root_url('local-site-1'),
                            expected_mimetype=root_item_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
-        self.assertTrue('uri_templates' in rsp)
-        self.assertTrue('repository' in rsp['uri_templates'])
+        self.assertIn('uri_templates', rsp)
+        self.assertIn('repository', rsp['uri_templates'])
         self.assertEqual(rsp['uri_templates']['repository'],
                          'http://testserver/s/local-site-1/api/'
                          'repositories/{repository_id}/')
@@ -68,19 +68,19 @@ class ResourceTests(BaseWebAPITestCase):
         rsp = self.api_get(get_root_url('local-site-2'),
                            expected_mimetype=root_item_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
-        self.assertTrue('uri_templates' in rsp)
-        self.assertTrue('repository' in rsp['uri_templates'])
+        self.assertIn('uri_templates', rsp)
+        self.assertIn('repository', rsp['uri_templates'])
         self.assertEqual(rsp['uri_templates']['repository'],
                          'http://testserver/s/local-site-2/api/'
                          'repositories/{repository_id}/')
 
     def _check_common_root_fields(self, item_rsp):
-        self.assertTrue('product' in item_rsp)
-        self.assertTrue('site' in item_rsp)
-        self.assertTrue('capabilities' in item_rsp)
+        self.assertIn('product', item_rsp)
+        self.assertIn('site', item_rsp)
+        self.assertIn('capabilities', item_rsp)
 
         caps = item_rsp['capabilities']
-        self.assertTrue('diffs' in caps)
+        self.assertIn('diffs', caps)
 
         diffs_caps = caps['diffs']
         self.assertTrue(diffs_caps['moved_files'])

@@ -131,7 +131,7 @@ class BeanstalkTests(ServiceTests):
         self.assertEqual(
             fields['path'],
             'https://mydomain.svn.beanstalkapp.com/myrepo/')
-        self.assertFalse('mirror_path' in fields)
+        self.assertNotIn('mirror_path', fields)
 
     def test_authorize(self):
         """Testing Beanstalk authorization password storage"""
@@ -142,7 +142,7 @@ class BeanstalkTests(ServiceTests):
 
         service.authorize('myuser', 'abc123', None)
 
-        self.assertTrue('password' in account.data)
+        self.assertIn('password', account.data)
         self.assertNotEqual(account.data['password'], 'abc123')
         self.assertTrue(service.is_authorized())
 
@@ -449,7 +449,7 @@ class BitbucketTests(ServiceTests):
 
         service.authorize('myuser', 'abc123', None)
 
-        self.assertTrue('password' in account.data)
+        self.assertIn('password', account.data)
         self.assertNotEqual(account.data['password'], 'abc123')
         self.assertTrue(service.is_authorized())
 
@@ -1236,7 +1236,7 @@ class GitHubTests(ServiceTests):
                 step[0] += 1
 
                 query = parsed.query.split('&')
-                self.assertTrue(('sha=%s' % commit_sha) in query)
+                self.assertIn(('sha=%s' % commit_sha), query)
 
                 return commits_api_response, None
             elif parsed.path.startswith('/repos/myuser/myrepo/compare/'):
@@ -1738,7 +1738,7 @@ class UnfuddleTests(ServiceTests):
         service.authorize('myuser', 'abc123',
                           unfuddle_account_domain='mydomain')
 
-        self.assertTrue('password' in account.data)
+        self.assertIn('password', account.data)
         self.assertNotEqual(account.data['password'], 'abc123')
         self.assertTrue(service.is_authorized())
 

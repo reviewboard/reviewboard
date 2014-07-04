@@ -327,7 +327,7 @@ class ResourceListTests(BaseWebAPITestCase):
 
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], INVALID_FORM_DATA.code)
-        self.assertTrue('file_regex' in rsp['fields'])
+        self.assertIn('file_regex', rsp['fields'])
 
     @add_fixtures(['test_users'])
     def test_post_with_invalid_username(self):
@@ -343,8 +343,8 @@ class ResourceListTests(BaseWebAPITestCase):
             },
             expected_status=400)
 
-        self.assertTrue('fields' in rsp)
-        self.assertTrue('users' in rsp['fields'])
+        self.assertIn('fields', rsp)
+        self.assertIn('users', rsp['fields'])
 
     @add_fixtures(['test_users', 'test_site'])
     def test_post_with_user_invalid_site(self):
@@ -364,8 +364,8 @@ class ResourceListTests(BaseWebAPITestCase):
             },
             expected_status=400)
 
-        self.assertTrue('fields' in rsp)
-        self.assertTrue('users' in rsp['fields'])
+        self.assertIn('fields', rsp)
+        self.assertIn('users', rsp['fields'])
 
     @add_fixtures(['test_users'])
     def test_post_with_invalid_group(self):
@@ -381,8 +381,8 @@ class ResourceListTests(BaseWebAPITestCase):
             },
             expected_status=400)
 
-        self.assertTrue('fields' in rsp)
-        self.assertTrue('groups' in rsp['fields'])
+        self.assertIn('fields', rsp)
+        self.assertIn('groups', rsp['fields'])
 
     @add_fixtures(['test_users', 'test_site'])
     def test_post_with_group_invalid_site(self):
@@ -403,8 +403,8 @@ class ResourceListTests(BaseWebAPITestCase):
             },
             expected_status=400)
 
-        self.assertTrue('fields' in rsp)
-        self.assertTrue('groups' in rsp['fields'])
+        self.assertIn('fields', rsp)
+        self.assertIn('groups', rsp['fields'])
 
     @add_fixtures(['test_users'])
     def test_post_with_invalid_repository(self):
@@ -420,8 +420,8 @@ class ResourceListTests(BaseWebAPITestCase):
             },
             expected_status=400)
 
-        self.assertTrue('fields' in rsp)
-        self.assertTrue('repositories' in rsp['fields'])
+        self.assertIn('fields', rsp)
+        self.assertIn('repositories', rsp['fields'])
 
     @add_fixtures(['test_users', 'test_site', 'test_scmtools'])
     def test_post_with_repository_invalid_site(self):
@@ -441,8 +441,8 @@ class ResourceListTests(BaseWebAPITestCase):
             },
             expected_status=400)
 
-        self.assertTrue('fields' in rsp)
-        self.assertTrue('repositories' in rsp['fields'])
+        self.assertIn('fields', rsp)
+        self.assertIn('repositories', rsp['fields'])
 
 
 @six.add_metaclass(BasicTestsMetaclass)
@@ -631,8 +631,8 @@ class ResourceItemTests(BaseWebAPITestCase):
             {'users': 'foo'},
             expected_status=400)
 
-        self.assertTrue('fields' in rsp)
-        self.assertTrue('users' in rsp['fields'])
+        self.assertIn('fields', rsp)
+        self.assertIn('users', rsp['fields'])
 
     @add_fixtures(['test_users', 'test_site'])
     def test_put_with_user_invalid_site(self):
@@ -651,8 +651,8 @@ class ResourceItemTests(BaseWebAPITestCase):
             {'users': 'grumpy'},
             expected_status=400)
 
-        self.assertTrue('fields' in rsp)
-        self.assertTrue('users' in rsp['fields'])
+        self.assertIn('fields', rsp)
+        self.assertIn('users', rsp['fields'])
 
     @add_fixtures(['test_users'])
     def test_put_with_invalid_group(self):
@@ -667,8 +667,8 @@ class ResourceItemTests(BaseWebAPITestCase):
             {'groups': 'foo'},
             expected_status=400)
 
-        self.assertTrue('fields' in rsp)
-        self.assertTrue('groups' in rsp['fields'])
+        self.assertIn('fields', rsp)
+        self.assertIn('groups', rsp['fields'])
 
     @add_fixtures(['test_users', 'test_site'])
     def test_put_with_group_invalid_site(self):
@@ -687,8 +687,8 @@ class ResourceItemTests(BaseWebAPITestCase):
             {'groups': 'group1'},
             expected_status=400)
 
-        self.assertTrue('fields' in rsp)
-        self.assertTrue('groups' in rsp['fields'])
+        self.assertIn('fields', rsp)
+        self.assertIn('groups', rsp['fields'])
 
     @add_fixtures(['test_users'])
     def test_put_with_invalid_repository(self):
@@ -705,8 +705,8 @@ class ResourceItemTests(BaseWebAPITestCase):
             {'repositories': '12345'},
             expected_status=400)
 
-        self.assertTrue('fields' in rsp)
-        self.assertTrue('repositories' in rsp['fields'])
+        self.assertIn('fields', rsp)
+        self.assertIn('repositories', rsp['fields'])
 
     @add_fixtures(['test_users', 'test_site', 'test_scmtools'])
     def test_put_with_repository_invalid_site(self):
@@ -725,5 +725,5 @@ class ResourceItemTests(BaseWebAPITestCase):
             {'repositories': six.text_type(repository.pk)},
             expected_status=400)
 
-        self.assertTrue('fields' in rsp)
-        self.assertTrue('repositories' in rsp['fields'])
+        self.assertIn('fields', rsp)
+        self.assertIn('repositories', rsp['fields'])

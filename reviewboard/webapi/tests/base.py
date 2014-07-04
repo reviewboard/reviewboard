@@ -117,7 +117,7 @@ class BaseWebAPITestCase(TestCase, EmailTestHelper):
             content_type='text/html; charset=utf-8')
 
         for header, value in six.iteritems(expected_headers):
-            self.assertTrue(header in response)
+            self.assertIn(header, response)
             self.assertEqual(response[header], value)
 
         if expected_status == 302:
@@ -187,10 +187,10 @@ class BaseWebAPITestCase(TestCase, EmailTestHelper):
         self.assertEquals(response.status_code, 200)
 
         if check_last_modified:
-            self.assertTrue('Last-Modified' in response)
+            self.assertIn('Last-Modified', response)
 
         if check_etag:
-            self.assertTrue('ETag' in response)
+            self.assertIn('ETag', response)
 
     def assertHttpNotModified(self, response):
         self.assertEquals(response.status_code, 304)

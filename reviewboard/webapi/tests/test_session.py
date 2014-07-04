@@ -44,7 +44,7 @@ class ResourceTests(BaseWebAPITestCase):
         rsp = self.api_get(get_session_url(),
                            expected_mimetype=session_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
-        self.assertTrue('session' in rsp)
+        self.assertIn('session', rsp)
         self.assertFalse(rsp['session']['authenticated'])
 
     #

@@ -161,7 +161,7 @@ class ResourceListTests(CommentListMixin, ReviewRequestChildListMixin,
             'interdiff-revision': interdiff_revision,
         }, expected_mimetype=review_diff_comment_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
-        self.assertTrue('diff_comments' in rsp)
+        self.assertIn('diff_comments', rsp)
         self.assertEqual(len(rsp['diff_comments']), 1)
         self.assertEqual(rsp['diff_comments'][0]['text'], comment_text)
 
@@ -219,7 +219,7 @@ class ResourceListTests(CommentListMixin, ReviewRequestChildListMixin,
             expected_mimetype=review_diff_comment_item_mimetype)
 
         self.assertEqual(rsp['stat'], 'ok')
-        self.assertTrue('diff_comment' in rsp)
+        self.assertIn('diff_comment', rsp)
         self.assertEqual(rsp['diff_comment']['text'], diff_comment_text)
         self.assertTrue(rsp['diff_comment']['issue_opened'])
 
@@ -251,7 +251,7 @@ class ResourceListTests(CommentListMixin, ReviewRequestChildListMixin,
             expected_mimetype=review_diff_comment_item_mimetype)
 
         self.assertEqual(rsp['stat'], 'ok')
-        self.assertTrue('diff_comment' in rsp)
+        self.assertIn('diff_comment', rsp)
         self.assertEqual(rsp['diff_comment']['text'], comment_text)
 
         comment = Comment.objects.get(pk=rsp['diff_comment']['id'])
@@ -330,7 +330,7 @@ class ResourceItemTests(CommentItemMixin, ReviewRequestChildItemMixin,
         rsp = self.api_get(get_review_diff_comment_list_url(review),
                            expected_mimetype=review_diff_comment_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
-        self.assertTrue('diff_comments' in rsp)
+        self.assertIn('diff_comments', rsp)
         self.assertEqual(len(rsp['diff_comments']), 0)
 
     #

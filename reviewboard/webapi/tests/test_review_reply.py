@@ -266,8 +266,8 @@ class ResourceItemTests(ReviewItemMixin, ReviewRequestChildItemMixin,
             get_review_reply_list_url(review),
             expected_mimetype=review_reply_item_mimetype)
 
-        self.assertTrue('Location' in response)
-        self.assertTrue('stat' in rsp)
+        self.assertIn('Location', response)
+        self.assertIn('stat', rsp)
         self.assertEqual(rsp['stat'], 'ok')
 
         rsp = self.api_put(

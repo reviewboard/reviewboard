@@ -2180,7 +2180,7 @@ class PolicyTests(TestCase):
         self.assertTrue(self.repo.is_accessible_by(self.user))
         self.assertTrue(self.repo.is_accessible_by(self.anonymous))
 
-        self.assertTrue(self.repo in Repository.objects.accessible(self.user))
+        self.assertIn(self.repo, Repository.objects.accessible(self.user))
         self.assertTrue(
             self.repo in Repository.objects.accessible(self.anonymous))
 
@@ -2192,7 +2192,7 @@ class PolicyTests(TestCase):
         self.assertFalse(self.repo.is_accessible_by(self.user))
         self.assertFalse(self.repo.is_accessible_by(self.anonymous))
 
-        self.assertFalse(self.repo in Repository.objects.accessible(self.user))
+        self.assertNotIn(self.repo, Repository.objects.accessible(self.user))
         self.assertFalse(
             self.repo in Repository.objects.accessible(self.anonymous))
 
@@ -2205,7 +2205,7 @@ class PolicyTests(TestCase):
         self.assertTrue(self.repo.is_accessible_by(self.user))
         self.assertFalse(self.repo.is_accessible_by(self.anonymous))
 
-        self.assertTrue(self.repo in Repository.objects.accessible(self.user))
+        self.assertIn(self.repo, Repository.objects.accessible(self.user))
         self.assertFalse(
             self.repo in Repository.objects.accessible(self.anonymous))
 
@@ -2221,7 +2221,7 @@ class PolicyTests(TestCase):
         self.assertTrue(self.repo.is_accessible_by(self.user))
         self.assertFalse(self.repo.is_accessible_by(self.anonymous))
 
-        self.assertTrue(self.repo in Repository.objects.accessible(self.user))
+        self.assertIn(self.repo, Repository.objects.accessible(self.user))
         self.assertFalse(
             self.repo in Repository.objects.accessible(self.anonymous))
 
@@ -2535,7 +2535,7 @@ class RepositoryFormTests(TestCase):
         repository = form.save()
         self.assertFalse(repository.extra_data['bug_tracker_use_hosting'])
         self.assertEqual(repository.bug_tracker, 'http://example.com/issue/%s')
-        self.assertFalse('bug_tracker_type' in repository.extra_data)
+        self.assertNotIn('bug_tracker_type', repository.extra_data)
 
     def test_with_hosting_service_bug_tracker_service(self):
         """Testing RepositoryForm with a bug tracker service"""
@@ -2625,7 +2625,7 @@ class RepositoryFormTests(TestCase):
         self.assertTrue(repository.extra_data['bug_tracker_use_hosting'])
         self.assertEqual(repository.bug_tracker,
                          'http://example.com/testuser/testrepo/issue/%s')
-        self.assertFalse('bug_tracker_type' in repository.extra_data)
+        self.assertNotIn('bug_tracker_type', repository.extra_data)
         self.assertFalse('bug_tracker-test_repo_name'
                          in repository.extra_data)
         self.assertFalse('bug_tracker-hosting_account_username'
@@ -2663,7 +2663,7 @@ class RepositoryFormTests(TestCase):
         self.assertTrue(repository.extra_data['bug_tracker_use_hosting'])
         self.assertEqual(repository.bug_tracker,
                          'https://example.com/testrepo/issue/%s')
-        self.assertFalse('bug_tracker_type' in repository.extra_data)
+        self.assertNotIn('bug_tracker_type', repository.extra_data)
         self.assertFalse('bug_tracker-test_repo_name'
                          in repository.extra_data)
         self.assertFalse('bug_tracker_hosting_url'
@@ -2688,7 +2688,7 @@ class RepositoryFormTests(TestCase):
         repository = form.save()
         self.assertFalse(repository.extra_data['bug_tracker_use_hosting'])
         self.assertEqual(repository.bug_tracker, '')
-        self.assertFalse('bug_tracker_type' in repository.extra_data)
+        self.assertNotIn('bug_tracker_type', repository.extra_data)
 
     def test_with_hosting_service_with_existing_custom_bug_tracker(self):
         """Testing RepositoryForm with existing custom bug tracker"""
@@ -2716,8 +2716,8 @@ class RepositoryFormTests(TestCase):
             form._get_field_data('bug_tracker_hosting_account_username'),
             'testuser')
 
-        self.assertTrue('test' in form.bug_tracker_forms)
-        self.assertTrue('default' in form.bug_tracker_forms['test'])
+        self.assertIn('test', form.bug_tracker_forms)
+        self.assertIn('default', form.bug_tracker_forms['test'])
         bitbucket_form = form.bug_tracker_forms['test']['default']
         self.assertEqual(
             bitbucket_form.fields['test_repo_name'].initial,

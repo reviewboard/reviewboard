@@ -762,7 +762,7 @@ class ResourceListTests(ExtraDataListMixin, BaseWebAPITestCase):
             expected_mimetype=review_request_item_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
 
-        self.assertFalse('repository' in rsp['review_request']['links'])
+        self.assertNotIn('repository', rsp['review_request']['links'])
 
         # See if we can fetch this. Also return it for use in other
         # unit tests.

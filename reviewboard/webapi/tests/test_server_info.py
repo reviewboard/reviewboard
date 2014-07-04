@@ -23,12 +23,12 @@ class ResourceTests(BaseWebAPITestCase):
         return get_server_info_url()
 
     def compare_item(self, item_rsp, obj):
-        self.assertTrue('product' in item_rsp)
-        self.assertTrue('site' in item_rsp)
-        self.assertTrue('capabilities' in item_rsp)
+        self.assertIn('product', item_rsp)
+        self.assertIn('site', item_rsp)
+        self.assertIn('capabilities', item_rsp)
 
         caps = item_rsp['capabilities']
-        self.assertTrue('diffs' in caps)
+        self.assertIn('diffs', caps)
 
         diffs_caps = caps['diffs']
         self.assertTrue(diffs_caps['moved_files'])

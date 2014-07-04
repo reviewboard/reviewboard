@@ -594,12 +594,12 @@ class ReviewRequestManagerTests(TestCase):
         r_summaries = [r.summary for r in review_requests]
 
         for summary in r_summaries:
-            self.assertTrue(summary in summaries,
+            self.assertIn(summary, summaries,
                             'summary "%s" not found in summary list'
                             % summary)
 
         for summary in summaries:
-            self.assertTrue(summary in r_summaries,
+            self.assertIn(summary, r_summaries,
                             'summary "%s" not found in review request list'
                             % summary)
 
@@ -1050,10 +1050,10 @@ class ViewTests(TestCase):
         self.assertEqual(len(files), 2)
 
         self.assertEqual(files[0]['depot_filename'], '/newfile')
-        self.assertTrue('interfilediff' in files[0])
+        self.assertIn('interfilediff', files[0])
 
         self.assertEqual(files[1]['depot_filename'], '/readme')
-        self.assertTrue('interfilediff' in files[1])
+        self.assertIn('interfilediff', files[1])
 
     # Bug 847
     def test_interdiff_new_file(self):
@@ -1131,7 +1131,7 @@ class ViewTests(TestCase):
         self.assertEqual(len(files), 1)
 
         self.assertEqual(files[0]['depot_filename'], '/newfile')
-        self.assertTrue('interfilediff' in files[0])
+        self.assertIn('interfilediff', files[0])
 
     def test_review_request_etag_with_issues(self):
         """Testing review request ETags with issue status toggling"""
@@ -1208,11 +1208,11 @@ class DraftTests(TestCase):
         changes = draft.publish()
         fields = changes.fields_changed
 
-        self.assertTrue("summary" in fields)
-        self.assertTrue("description" in fields)
-        self.assertTrue("testing_done" in fields)
-        self.assertTrue("branch" in fields)
-        self.assertTrue("bugs_closed" in fields)
+        self.assertIn("summary", fields)
+        self.assertIn("description", fields)
+        self.assertIn("testing_done", fields)
+        self.assertIn("branch", fields)
+        self.assertIn("bugs_closed", fields)
 
         old_bugs_norm = set([(bug,) for bug in old_bugs])
         new_bugs_norm = set([(bug,) for bug in new_bugs])
@@ -1439,12 +1439,12 @@ class DefaultReviewerTests(TestCase):
 
         default_reviewers = DefaultReviewer.objects.for_repository(repo1, None)
         self.assertEqual(len(default_reviewers), 2)
-        self.assertTrue(default_reviewer1 in default_reviewers)
-        self.assertTrue(default_reviewer2 in default_reviewers)
+        self.assertIn(default_reviewer1, default_reviewers)
+        self.assertIn(default_reviewer2, default_reviewers)
 
         default_reviewers = DefaultReviewer.objects.for_repository(repo2, None)
         self.assertEqual(len(default_reviewers), 1)
-        self.assertTrue(default_reviewer2 in default_reviewers)
+        self.assertIn(default_reviewer2, default_reviewers)
 
     def test_for_repository_with_localsite(self):
         """Testing DefaultReviewer.objects.for_repository with a LocalSite."""
@@ -1460,11 +1460,11 @@ class DefaultReviewerTests(TestCase):
         default_reviewers = DefaultReviewer.objects.for_repository(
             None, test_site)
         self.assertEqual(len(default_reviewers), 1)
-        self.assertTrue(default_reviewer1 in default_reviewers)
+        self.assertIn(default_reviewer1, default_reviewers)
 
         default_reviewers = DefaultReviewer.objects.for_repository(None, None)
         self.assertEqual(len(default_reviewers), 1)
-        self.assertTrue(default_reviewer2 in default_reviewers)
+        self.assertIn(default_reviewer2, default_reviewers)
 
     def test_form_with_localsite(self):
         """Testing DefaultReviewerForm with a LocalSite."""
@@ -2379,8 +2379,8 @@ class PolicyTests(TestCase):
         self.assertTrue(group.is_accessible_by(self.user))
         self.assertTrue(group.is_accessible_by(self.anonymous))
 
-        self.assertTrue(group in Group.objects.accessible(self.user))
-        self.assertTrue(group in Group.objects.accessible(self.anonymous))
+        self.assertIn(group, Group.objects.accessible(self.user))
+        self.assertIn(group, Group.objects.accessible(self.anonymous))
 
     def test_group_invite_only_access_denied(self):
         """Testing no access to unjoined invite-only group"""
@@ -2390,8 +2390,8 @@ class PolicyTests(TestCase):
         self.assertFalse(group.is_accessible_by(self.user))
         self.assertFalse(group.is_accessible_by(self.anonymous))
 
-        self.assertFalse(group in Group.objects.accessible(self.user))
-        self.assertFalse(group in Group.objects.accessible(self.anonymous))
+        self.assertNotIn(group, Group.objects.accessible(self.user))
+        self.assertNotIn(group, Group.objects.accessible(self.anonymous))
 
     def test_group_invite_only_access_allowed(self):
         """Testing access to joined invite-only group"""
@@ -2402,8 +2402,8 @@ class PolicyTests(TestCase):
         self.assertTrue(group.is_accessible_by(self.user))
         self.assertFalse(group.is_accessible_by(self.anonymous))
 
-        self.assertTrue(group in Group.objects.accessible(self.user))
-        self.assertFalse(group in Group.objects.accessible(self.anonymous))
+        self.assertIn(group, Group.objects.accessible(self.user))
+        self.assertNotIn(group, Group.objects.accessible(self.anonymous))
 
     def test_group_public_hidden(self):
         """Testing visibility of a hidden public group"""

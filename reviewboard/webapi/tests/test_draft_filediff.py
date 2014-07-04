@@ -191,7 +191,7 @@ class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase):
                 expected_mimetype=filediff_item_mimetype)
 
         self.assertEqual(rsp['stat'], 'ok')
-        self.assertTrue('dest_attachment' in rsp['file'])
+        self.assertIn('dest_attachment', rsp['file'])
 
         attachment = FileAttachment.objects.get(
             pk=rsp['file']['dest_attachment']['id'])
@@ -242,7 +242,7 @@ class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase):
                 expected_mimetype=filediff_item_mimetype)
 
         self.assertEqual(rsp['stat'], 'ok')
-        self.assertTrue('dest_attachment' in rsp['file'])
+        self.assertIn('dest_attachment', rsp['file'])
 
         attachment = FileAttachment.objects.get(
             pk=rsp['file']['dest_attachment']['id'])
@@ -298,5 +298,5 @@ class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase):
 
             self.assertEqual(rsp['stat'], 'fail')
             self.assertEqual(rsp['err']['code'], INVALID_FORM_DATA.code)
-            self.assertTrue('fields' in rsp)
-            self.assertTrue('dest_attachment_file' in rsp['fields'])
+            self.assertIn('fields', rsp)
+            self.assertIn('dest_attachment_file', rsp['fields'])

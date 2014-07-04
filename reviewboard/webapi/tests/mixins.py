@@ -251,7 +251,7 @@ class BasicGetItemTestsMixin(BasicTestsMixin):
 
         rsp = self.api_get(url, expected_mimetype=mimetype)
         self.assertEqual(rsp['stat'], 'ok')
-        self.assertTrue(self.resource.item_result_key in rsp)
+        self.assertIn(self.resource.item_result_key, rsp)
 
         item_rsp = rsp[self.resource.item_result_key]
         self.compare_item(item_rsp, item)
@@ -276,7 +276,7 @@ class BasicGetItemTestsWithLocalSiteMixin(BasicGetItemTestsMixin):
 
         rsp = self.api_get(url, expected_mimetype=mimetype)
         self.assertEqual(rsp['stat'], 'ok')
-        self.assertTrue(self.resource.item_result_key in rsp)
+        self.assertIn(self.resource.item_result_key, rsp)
 
         item_rsp = rsp[self.resource.item_result_key]
         self.compare_item(item_rsp, item)
@@ -322,7 +322,7 @@ class BasicGetListTestsMixin(BasicTestsMixin):
 
         rsp = self.api_get(url, expected_mimetype=mimetype)
         self.assertEqual(rsp['stat'], 'ok')
-        self.assertTrue(self.resource.list_result_key in rsp)
+        self.assertIn(self.resource.list_result_key, rsp)
 
         items_rsp = rsp[self.resource.list_result_key]
         self.assertEqual(len(items), len(items_rsp))
@@ -351,7 +351,7 @@ class BasicGetListTestsWithLocalSiteMixin(BasicGetListTestsMixin):
 
         rsp = self.api_get(url, expected_mimetype=mimetype)
         self.assertEqual(rsp['stat'], 'ok')
-        self.assertTrue(self.resource.list_result_key in rsp)
+        self.assertIn(self.resource.list_result_key, rsp)
 
         items_rsp = rsp[self.resource.list_result_key]
         self.assertEqual(len(items), len(items_rsp))
@@ -507,7 +507,7 @@ class BasicPutTestsMixin(BasicTestsMixin):
 
         rsp = self.api_put(url, put_data, expected_mimetype=mimetype)
         self.assertEqual(rsp['stat'], 'ok')
-        self.assertTrue(self.resource.item_result_key in rsp)
+        self.assertIn(self.resource.item_result_key, rsp)
 
         self.check_put_result(self.user, rsp[self.resource.item_result_key],
                               item, *cb_args)
@@ -549,7 +549,7 @@ class BasicPutTestsWithLocalSiteMixin(BasicPutTestsMixin):
 
         rsp = self.api_put(url, put_data, expected_mimetype=mimetype)
         self.assertEqual(rsp['stat'], 'ok')
-        self.assertTrue(self.resource.item_result_key in rsp)
+        self.assertIn(self.resource.item_result_key, rsp)
 
         self.check_put_result(self.user, rsp[self.resource.item_result_key],
                               item, *cb_args)

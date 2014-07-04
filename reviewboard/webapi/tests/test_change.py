@@ -249,15 +249,15 @@ class ResourceItemTests(ReviewRequestChildItemMixin, BaseWebAPITestCase):
             else:
                 self.assertEqual(field_data['old'], [old])
                 self.assertEqual(field_data['new'], [new])
-                self.assertTrue('removed' not in field_data)
-                self.assertTrue('added' not in field_data)
+                self.assertNotIn('removed', field_data)
+                self.assertNotIn('added', field_data)
 
-        self.assertTrue('screenshot_captions' in change.fields_changed)
+        self.assertIn('screenshot_captions', change.fields_changed)
         field_data = change.fields_changed['screenshot_captions']
         screenshot_id = six.text_type(screenshot3.pk)
-        self.assertTrue(screenshot_id in field_data)
-        self.assertTrue('old' in field_data[screenshot_id])
-        self.assertTrue('new' in field_data[screenshot_id])
+        self.assertIn(screenshot_id, field_data)
+        self.assertIn('old', field_data[screenshot_id])
+        self.assertIn('new', field_data[screenshot_id])
         self.assertEqual(field_data[screenshot_id]['old'][0],
                          old_screenshot_caption)
         self.assertEqual(field_data[screenshot_id]['new'][0],
@@ -280,17 +280,17 @@ class ResourceItemTests(ReviewRequestChildItemMixin, BaseWebAPITestCase):
         for field, data in six.iteritems(test_data):
             old, new, removed, added = data
 
-            self.assertTrue(field in fields_changed)
+            self.assertIn(field, fields_changed)
             field_data = fields_changed[field]
 
             if field == 'diff':
-                self.assertTrue('added' in field_data)
+                self.assertIn('added', field_data)
                 self.assertEqual(field_data['added']['id'], added.pk)
             elif field in model_fields:
-                self.assertTrue('old' in field_data)
-                self.assertTrue('new' in field_data)
-                self.assertTrue('added' in field_data)
-                self.assertTrue('removed' in field_data)
+                self.assertIn('old', field_data)
+                self.assertIn('new', field_data)
+                self.assertIn('added', field_data)
+                self.assertIn('removed', field_data)
                 self.assertEqual(
                     [item['id'] for item in field_data['old']],
                     [obj.pk for obj in old])
@@ -304,25 +304,25 @@ class ResourceItemTests(ReviewRequestChildItemMixin, BaseWebAPITestCase):
                     [item['id'] for item in field_data['added']],
                     [obj.pk for obj in added])
             else:
-                self.assertTrue('old' in field_data)
-                self.assertTrue('new' in field_data)
+                self.assertIn('old', field_data)
+                self.assertIn('new', field_data)
                 self.assertEqual(field_data['old'], old)
                 self.assertEqual(field_data['new'], new)
 
                 if isinstance(old, list):
-                    self.assertTrue('added' in field_data)
-                    self.assertTrue('removed' in field_data)
+                    self.assertIn('added', field_data)
+                    self.assertIn('removed', field_data)
 
                     self.assertEqual(field_data['added'], added)
                     self.assertEqual(field_data['removed'], removed)
 
-        self.assertTrue('screenshot_captions' in fields_changed)
+        self.assertIn('screenshot_captions', fields_changed)
         field_data = fields_changed['screenshot_captions']
         self.assertEqual(len(field_data), 1)
         screenshot_data = field_data[0]
-        self.assertTrue('old' in screenshot_data)
-        self.assertTrue('new' in screenshot_data)
-        self.assertTrue('screenshot' in screenshot_data)
+        self.assertIn('old', screenshot_data)
+        self.assertIn('new', screenshot_data)
+        self.assertIn('screenshot', screenshot_data)
         self.assertEqual(screenshot_data['old'], old_screenshot_caption)
         self.assertEqual(screenshot_data['new'], new_screenshot_caption)
         self.assertEqual(screenshot_data['screenshot']['id'], screenshot3.pk)

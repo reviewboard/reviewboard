@@ -146,7 +146,7 @@ class ResourceListTests(CommentListMixin, ReviewRequestChildListMixin,
             get_review_screenshot_comment_list_url(review),
             expected_mimetype=screenshot_comment_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
-        self.assertTrue('screenshot_comments' in rsp)
+        self.assertIn('screenshot_comments', rsp)
         self.assertEqual(len(rsp['screenshot_comments']), 1)
         self.assertEqual(rsp['screenshot_comments'][0]['text'], comment_text)
         self.assertTrue(rsp['screenshot_comments'][0]['issue_opened'])

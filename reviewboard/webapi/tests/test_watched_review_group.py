@@ -70,7 +70,7 @@ class ResourceListTests(BaseWebAPITestCase):
 
     def check_post_result(self, user, rsp, group):
         profile = user.get_profile()
-        self.assertTrue(group in profile.starred_groups.all())
+        self.assertIn(group, profile.starred_groups.all())
 
     def test_post_with_does_not_exist_error(self):
         """Testing the POST users/<username>/watched/review-groups/ API
@@ -123,7 +123,7 @@ class ResourceItemTests(BaseWebAPITestCase):
                 [profile, group])
 
     def check_delete_result(self, user, profile, group):
-        self.assertFalse(group in profile.starred_groups.all())
+        self.assertNotIn(group, profile.starred_groups.all())
 
     def test_delete_with_does_not_exist_error(self):
         """Testing the DELETE users/<username>/watched/review-groups/<id>/ API
