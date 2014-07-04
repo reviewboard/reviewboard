@@ -88,8 +88,8 @@ class ResourceListTests(ReviewRequestChildListMixin, BaseWebAPITestCase):
 
         self.client.logout()
 
-        rsp = self.apiGet(get_filediff_comment_list_url(filediff),
-                          expected_mimetype=filediff_comment_list_mimetype)
+        rsp = self.api_get(get_filediff_comment_list_url(filediff),
+                           expected_mimetype=filediff_comment_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(len(rsp['diff_comments']), 1)
         self.assertEqual(rsp['diff_comments'][0]['text'], comment.text)
@@ -114,7 +114,7 @@ class ResourceListTests(ReviewRequestChildListMixin, BaseWebAPITestCase):
         self.create_diff_comment(review, filediff,
                                  first_line=diff_comment_line + 1)
 
-        rsp = self.apiGet(get_filediff_comment_list_url(filediff), {
+        rsp = self.api_get(get_filediff_comment_list_url(filediff), {
             'line': diff_comment_line,
         }, expected_mimetype=filediff_comment_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')

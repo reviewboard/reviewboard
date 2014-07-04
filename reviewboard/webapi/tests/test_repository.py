@@ -116,9 +116,9 @@ class ResourceListTests(BaseRepositoryTests):
         self.create_repository(name='test1', tool_name='Test', visible=False)
         self.create_repository(name='test2', tool_name='Test', visible=True)
 
-        rsp = self.apiGet(get_repository_list_url(),
-                          query={'show-invisible': True},
-                          expected_mimetype=repository_list_mimetype)
+        rsp = self.api_get(get_repository_list_url(),
+                           query={'show-invisible': True},
+                           expected_mimetype=repository_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(len(rsp['repositories']), 2)
         self.assertEqual(rsp['repositories'][0]['name'], 'test1')
@@ -129,8 +129,8 @@ class ResourceListTests(BaseRepositoryTests):
         self.create_repository(name='test1', tool_name='Test')
         self.create_repository(name='test2', tool_name='Test')
 
-        rsp = self.apiGet(get_repository_list_url() + '?name=test1',
-                          expected_mimetype=repository_list_mimetype)
+        rsp = self.api_get(get_repository_list_url() + '?name=test1',
+                           expected_mimetype=repository_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(len(rsp['repositories']), 1)
         self.assertEqual(rsp['repositories'][0]['name'], 'test1')
@@ -141,8 +141,8 @@ class ResourceListTests(BaseRepositoryTests):
         self.create_repository(name='test2', tool_name='Test')
         self.create_repository(name='test3', tool_name='Test')
 
-        rsp = self.apiGet(get_repository_list_url() + '?name=test1,test2',
-                          expected_mimetype=repository_list_mimetype)
+        rsp = self.api_get(get_repository_list_url() + '?name=test1,test2',
+                           expected_mimetype=repository_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(len(rsp['repositories']), 2)
         self.assertEqual(rsp['repositories'][0]['name'], 'test1')
@@ -153,8 +153,8 @@ class ResourceListTests(BaseRepositoryTests):
         self.create_repository(name='test1', path='dummy1', tool_name='Test')
         self.create_repository(name='test2', path='dummy2', tool_name='Test')
 
-        rsp = self.apiGet(get_repository_list_url() + '?path=dummy1',
-                          expected_mimetype=repository_list_mimetype)
+        rsp = self.api_get(get_repository_list_url() + '?path=dummy1',
+                           expected_mimetype=repository_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(len(rsp['repositories']), 1)
         self.assertEqual(rsp['repositories'][0]['name'], 'test1')
@@ -165,8 +165,8 @@ class ResourceListTests(BaseRepositoryTests):
         self.create_repository(name='test2', path='dummy2', tool_name='Test')
         self.create_repository(name='test3', path='dummy3', tool_name='Test')
 
-        rsp = self.apiGet(get_repository_list_url() + '?path=dummy1,dummy2',
-                          expected_mimetype=repository_list_mimetype)
+        rsp = self.api_get(get_repository_list_url() + '?path=dummy1,dummy2',
+                           expected_mimetype=repository_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(len(rsp['repositories']), 2)
         self.assertEqual(rsp['repositories'][0]['name'], 'test1')
@@ -178,14 +178,14 @@ class ResourceListTests(BaseRepositoryTests):
         self.create_repository(name='test2', path='dummy2', tool_name='Test')
         self.create_repository(name='test3', path='dummy3', tool_name='Test')
 
-        rsp = self.apiGet(get_repository_list_url() + '?name-or-path=test1',
-                          expected_mimetype=repository_list_mimetype)
+        rsp = self.api_get(get_repository_list_url() + '?name-or-path=test1',
+                           expected_mimetype=repository_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(len(rsp['repositories']), 1)
         self.assertEqual(rsp['repositories'][0]['name'], 'test1')
 
-        rsp = self.apiGet(get_repository_list_url() + '?name-or-path=dummy2',
-                          expected_mimetype=repository_list_mimetype)
+        rsp = self.api_get(get_repository_list_url() + '?name-or-path=dummy2',
+                           expected_mimetype=repository_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(len(rsp['repositories']), 1)
         self.assertEqual(rsp['repositories'][0]['name'], 'test2')
@@ -198,7 +198,7 @@ class ResourceListTests(BaseRepositoryTests):
         self.create_repository(name='test2', path='dummy2', tool_name='Test')
         self.create_repository(name='test3', path='dummy3', tool_name='Test')
 
-        rsp = self.apiGet(
+        rsp = self.api_get(
             get_repository_list_url() + '?name-or-path=test1,dummy2',
             expected_mimetype=repository_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
@@ -211,8 +211,8 @@ class ResourceListTests(BaseRepositoryTests):
         self.create_repository(name='test1', path='dummy1', tool_name='Git')
         self.create_repository(name='test2', path='dummy2', tool_name='Test')
 
-        rsp = self.apiGet(get_repository_list_url() + '?tool=Git',
-                          expected_mimetype=repository_list_mimetype)
+        rsp = self.api_get(get_repository_list_url() + '?tool=Git',
+                           expected_mimetype=repository_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(len(rsp['repositories']), 1)
         self.assertEqual(rsp['repositories'][0]['name'], 'test1')
@@ -224,8 +224,8 @@ class ResourceListTests(BaseRepositoryTests):
         self.create_repository(name='test3', path='dummy3',
                                tool_name='Subversion')
 
-        rsp = self.apiGet(get_repository_list_url() + '?tool=Git,Subversion',
-                          expected_mimetype=repository_list_mimetype)
+        rsp = self.api_get(get_repository_list_url() + '?tool=Git,Subversion',
+                           expected_mimetype=repository_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(len(rsp['repositories']), 2)
         self.assertEqual(rsp['repositories'][0]['name'], 'test1')
@@ -243,7 +243,7 @@ class ResourceListTests(BaseRepositoryTests):
             tool=Tool.objects.get(name='Git'),
             hosting_account=hosting_account)
 
-        rsp = self.apiGet(
+        rsp = self.api_get(
             get_repository_list_url() + '?hosting-service=github',
             expected_mimetype=repository_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
@@ -275,7 +275,7 @@ class ResourceListTests(BaseRepositoryTests):
             tool=Tool.objects.get(name='Subversion'),
             hosting_account=hosting_account)
 
-        rsp = self.apiGet(
+        rsp = self.api_get(
             get_repository_list_url() + '?hosting-service=github,beanstalk',
             expected_mimetype=repository_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
@@ -303,8 +303,8 @@ class ResourceListTests(BaseRepositoryTests):
             username='my-username',
             tool=Tool.objects.get(name='Subversion'))
 
-        rsp = self.apiGet(get_repository_list_url() + '?username=my-username',
-                          expected_mimetype=repository_list_mimetype)
+        rsp = self.api_get(get_repository_list_url() + '?username=my-username',
+                           expected_mimetype=repository_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(len(rsp['repositories']), 2)
         self.assertEqual(rsp['repositories'][0]['name'],
@@ -332,7 +332,7 @@ class ResourceListTests(BaseRepositoryTests):
             username='my-username-2',
             tool=Tool.objects.get(name='Subversion'))
 
-        rsp = self.apiGet(
+        rsp = self.api_get(
             get_repository_list_url() + '?username=my-username,my-username-2',
             expected_mimetype=repository_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
@@ -599,7 +599,7 @@ class ResourceListTests(BaseRepositoryTests):
         else:
             local_site_name = None
 
-        rsp = self.apiPost(
+        rsp = self.api_post(
             get_repository_list_url(local_site_name),
             dict({
                 'name': repo_name,
@@ -768,7 +768,7 @@ class ResourceItemTests(BaseRepositoryTests):
         else:
             expected_mimetype = None
 
-        rsp = self.apiPut(
+        rsp = self.api_put(
             get_repository_item_url(repo, local_site_name),
             dict({
                 'name': repo_name,
@@ -796,7 +796,7 @@ class ResourceItemTests(BaseRepositoryTests):
             request = ReviewRequest.objects.create(self.user, repo)
             request.save()
 
-        self.apiDelete(get_repository_item_url(repo, local_site_name),
-                       expected_status=expected_status)
+        self.api_delete(get_repository_item_url(repo, local_site_name),
+                        expected_status=expected_status)
 
         return repo.pk

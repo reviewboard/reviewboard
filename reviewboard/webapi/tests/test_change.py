@@ -49,8 +49,8 @@ class ResourceListTests(ReviewRequestChildListMixin, BaseWebAPITestCase):
         change2.save()
         review_request.changedescs.add(change2)
 
-        rsp = self.apiGet(get_change_list_url(review_request),
-                          expected_mimetype=change_list_mimetype)
+        rsp = self.api_get(get_change_list_url(review_request),
+                           expected_mimetype=change_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(len(rsp['changes']), 2)
 
@@ -80,7 +80,7 @@ class ResourceListTests(ReviewRequestChildListMixin, BaseWebAPITestCase):
         change2.save()
         review_request.changedescs.add(change2)
 
-        rsp = self.apiGet(
+        rsp = self.api_get(
             get_change_list_url(review_request, self.local_site_name),
             expected_mimetype=change_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
@@ -97,7 +97,7 @@ class ResourceListTests(ReviewRequestChildListMixin, BaseWebAPITestCase):
         review_request = self.create_review_request(publish=True,
                                                     with_local_site=True)
 
-        rsp = self.apiGet(
+        rsp = self.api_get(
             get_change_list_url(review_request, self.local_site_name),
             expected_status=403)
         self.assertEqual(rsp['stat'], 'fail')
@@ -113,7 +113,7 @@ class ResourceListTests(ReviewRequestChildListMixin, BaseWebAPITestCase):
         """
         review_request = self.create_review_request()
 
-        self.apiPost(get_change_list_url(review_request), expected_status=405)
+        self.api_post(get_change_list_url(review_request), expected_status=405)
 
 
 class ResourceItemTests(ReviewRequestChildItemMixin, BaseWebAPITestCase):
@@ -140,7 +140,7 @@ class ResourceItemTests(ReviewRequestChildItemMixin, BaseWebAPITestCase):
         change = ChangeDescription.objects.create(public=True)
         review_request.changedescs.add(change)
 
-        self.apiDelete(get_change_item_url(change), expected_status=405)
+        self.api_delete(get_change_item_url(change), expected_status=405)
 
     #
     # HTTP GET tests
@@ -264,14 +264,14 @@ class ResourceItemTests(ReviewRequestChildItemMixin, BaseWebAPITestCase):
                          new_screenshot_caption)
 
         # Now confirm with the API
-        rsp = self.apiGet(get_change_list_url(r),
-                          expected_mimetype=change_list_mimetype)
+        rsp = self.api_get(get_change_list_url(r),
+                           expected_mimetype=change_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(len(rsp['changes']), 1)
 
         self.assertEqual(rsp['changes'][0]['id'], change.pk)
-        rsp = self.apiGet(rsp['changes'][0]['links']['self']['href'],
-                          expected_mimetype=change_item_mimetype)
+        rsp = self.api_get(rsp['changes'][0]['links']['self']['href'],
+                           expected_mimetype=change_item_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(rsp['change']['text'], changedesc_text)
 
@@ -343,7 +343,7 @@ class ResourceItemTests(ReviewRequestChildItemMixin, BaseWebAPITestCase):
         change.save()
         review_request.changedescs.add(change)
 
-        rsp = self.apiGet(
+        rsp = self.api_get(
             get_change_item_url(change, self.local_site_name),
             expected_mimetype=change_item_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
@@ -363,7 +363,7 @@ class ResourceItemTests(ReviewRequestChildItemMixin, BaseWebAPITestCase):
         change.save()
         review_request.changedescs.add(change)
 
-        rsp = self.apiGet(
+        rsp = self.api_get(
             get_change_item_url(change, self.local_site_name),
             expected_status=403)
         self.assertEqual(rsp['stat'], 'fail')
@@ -394,4 +394,4 @@ class ResourceItemTests(ReviewRequestChildItemMixin, BaseWebAPITestCase):
         change = ChangeDescription.objects.create(public=True)
         review_request.changedescs.add(change)
 
-        self.apiPut(get_change_item_url(change), {}, expected_status=405)
+        self.api_put(get_change_item_url(change), {}, expected_status=405)

@@ -63,8 +63,8 @@ class ResourceListTests(ExtraDataListMixin, BaseWebAPITestCase):
         self.assertNotEqual(review_request.submitter, self.user)
         self.create_diffset(review_request, draft=True)
 
-        self.apiGet(get_draft_diff_list_url(review_request),
-                    expected_status=403)
+        self.api_get(get_draft_diff_list_url(review_request),
+                     expected_status=403)
 
     #
     # HTTP POST tests
@@ -113,8 +113,8 @@ class ResourceListTests(ExtraDataListMixin, BaseWebAPITestCase):
         review_request = self.create_review_request(repository=repository,
                                                     submitter=self.user)
 
-        rsp = self.apiPost(get_draft_diff_list_url(review_request),
-                           expected_status=400)
+        rsp = self.api_post(get_draft_diff_list_url(review_request),
+                            expected_status=400)
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], INVALID_FORM_DATA.code)
         self.assertTrue('path' in rsp['fields'])
@@ -130,7 +130,7 @@ class ResourceListTests(ExtraDataListMixin, BaseWebAPITestCase):
                                      'testdata', 'git_readme.diff')
 
         with open(diff_filename, 'r') as f:
-            rsp = self.apiPost(
+            rsp = self.api_post(
                 get_draft_diff_list_url(review_request),
                 {'path': f},
                 expected_status=400)
@@ -155,7 +155,7 @@ class ResourceListTests(ExtraDataListMixin, BaseWebAPITestCase):
                                      'testdata', 'git_readme.diff')
 
         with open(diff_filename, 'r') as f:
-            rsp = self.apiPost(
+            rsp = self.api_post(
                 get_draft_diff_list_url(review_request),
                 {
                     'path': f,
@@ -227,7 +227,7 @@ class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase):
         self.assertNotEqual(review_request.submitter, self.user)
         diffset = self.create_diffset(review_request, draft=True)
 
-        self.apiGet(
+        self.api_get(
             get_draft_diff_item_url(review_request, diffset.revision),
             expected_status=403)
 

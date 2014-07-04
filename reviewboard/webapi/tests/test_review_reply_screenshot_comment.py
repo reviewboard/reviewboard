@@ -125,7 +125,7 @@ class ResourceListTests(CommentReplyListMixin, ReviewRequestChildListMixin,
                                                        reply_to=comment)
 
         # Now post another reply to the same comment in the same review.
-        rsp = self.apiPost(
+        rsp = self.api_post(
             get_review_reply_screenshot_comment_list_url(reply),
             {
                 'reply_to_id': comment.pk,

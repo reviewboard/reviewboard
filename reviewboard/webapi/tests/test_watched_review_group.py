@@ -76,7 +76,7 @@ class ResourceListTests(BaseWebAPITestCase):
         """Testing the POST users/<username>/watched/review-groups/ API
         with Does Not Exist error
         """
-        rsp = self.apiPost(
+        rsp = self.api_post(
             get_watched_review_group_list_url(self.user.username),
             {'object_id': 'invalidgroup'},
             expected_status=404)
@@ -89,7 +89,7 @@ class ResourceListTests(BaseWebAPITestCase):
         with a local site and Does Not Exist error
         """
         user = self._login_user(local_site=True)
-        rsp = self.apiPost(
+        rsp = self.api_post(
             get_watched_review_group_list_url(user.username,
                                               self.local_site_name),
             {'object_id': 'devgroup'},
@@ -129,7 +129,7 @@ class ResourceItemTests(BaseWebAPITestCase):
         """Testing the DELETE users/<username>/watched/review-groups/<id>/ API
         with Does Not Exist error
         """
-        rsp = self.apiDelete(
+        rsp = self.api_delete(
             get_watched_review_group_item_url(self.user.username,
                                               'invalidgroup'),
             expected_status=404)
@@ -148,7 +148,7 @@ class ResourceItemTests(BaseWebAPITestCase):
 
         expected_url = self.base_url + get_review_group_item_url(group.name)
 
-        self.apiGet(
+        self.api_get(
             get_watched_review_group_item_url(self.user.username, group.pk),
             expected_status=302,
             expected_headers={
@@ -170,7 +170,7 @@ class ResourceItemTests(BaseWebAPITestCase):
             self.base_url +
             get_review_group_item_url(group.name, self.local_site_name))
 
-        self.apiGet(
+        self.api_get(
             get_watched_review_group_item_url(user.username, group.pk,
                                               self.local_site_name),
             expected_status=302,
@@ -187,7 +187,7 @@ class ResourceItemTests(BaseWebAPITestCase):
         profile = self.user.get_profile()
         profile.starred_groups.add(group)
 
-        rsp = self.apiGet(
+        rsp = self.api_get(
             get_watched_review_group_item_url(self.user.username, group.pk,
                                               self.local_site_name),
             expected_status=403)

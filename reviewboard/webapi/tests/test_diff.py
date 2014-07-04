@@ -110,8 +110,8 @@ class ResourceListTests(ExtraDataListMixin, ReviewRequestChildListMixin,
             repository=repository,
             submitter=self.user)
 
-        rsp = self.apiPost(get_diff_list_url(review_request),
-                           expected_status=400)
+        rsp = self.api_post(get_diff_list_url(review_request),
+                            expected_status=400)
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], INVALID_FORM_DATA.code)
         self.assertTrue('path' in rsp['fields'])
@@ -127,7 +127,7 @@ class ResourceListTests(ExtraDataListMixin, ReviewRequestChildListMixin,
         diff_filename = os.path.join(os.path.dirname(scmtools.__file__),
                                      'testdata', 'git_readme.diff')
         with open(diff_filename, "r") as f:
-            rsp = self.apiPost(
+            rsp = self.api_post(
                 get_diff_list_url(review_request),
                 {'path': f},
                 expected_status=400)
@@ -152,7 +152,7 @@ class ResourceListTests(ExtraDataListMixin, ReviewRequestChildListMixin,
         diff_filename = os.path.join(os.path.dirname(scmtools.__file__),
                                      'testdata', 'git_readme.diff')
         with open(diff_filename, "r") as f:
-            rsp = self.apiPost(
+            rsp = self.api_post(
                 get_diff_list_url(review_request),
                 {
                     'path': f,
@@ -177,7 +177,7 @@ class ResourceListTests(ExtraDataListMixin, ReviewRequestChildListMixin,
         diff_filename = os.path.join(os.path.dirname(scmtools.__file__),
                                      'testdata', 'git_readme.diff')
         with open(diff_filename, 'r') as f:
-            rsp = self.apiPost(
+            rsp = self.api_post(
                 get_diff_list_url(review_request),
                 {
                     'path': f,
@@ -197,7 +197,7 @@ class ResourceListTests(ExtraDataListMixin, ReviewRequestChildListMixin,
         diff_filename = os.path.join(os.path.dirname(scmtools.__file__),
                                      'testdata', 'git_readme.diff')
         with open(diff_filename, 'r') as f:
-            rsp = self.apiPost(
+            rsp = self.api_post(
                 get_diff_list_url(review_request),
                 {
                     'path': f,

@@ -142,7 +142,7 @@ class ResourceListTests(CommentListMixin, ReviewRequestChildListMixin,
             self._create_screenshot_review_with_issue(
                 publish=False, comment_text=comment_text)
 
-        rsp = self.apiGet(
+        rsp = self.api_get(
             get_review_screenshot_comment_list_url(review),
             expected_mimetype=screenshot_comment_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
@@ -212,8 +212,8 @@ class ResourceItemTests(CommentItemMixin, ReviewRequestChildItemMixin,
         self.create_screenshot(review_request)
         review = self.create_review(review_request, user=self.user)
 
-        self.apiDelete(get_review_screenshot_comment_item_url(review, 123),
-                       expected_status=404)
+        self.api_delete(get_review_screenshot_comment_item_url(review, 123),
+                        expected_status=404)
 
     #
     # HTTP GET tests
@@ -270,7 +270,7 @@ class ResourceItemTests(CommentItemMixin, ReviewRequestChildItemMixin,
         comment, review, review_request = \
             self._create_screenshot_review_with_issue()
 
-        rsp = self.apiPut(
+        rsp = self.api_put(
             get_review_screenshot_comment_item_url(review, comment.pk),
             {'issue_opened': False},
             expected_mimetype=screenshot_comment_item_mimetype)
@@ -287,7 +287,7 @@ class ResourceItemTests(CommentItemMixin, ReviewRequestChildItemMixin,
 
         # The issue_status should not be able to be changed while the review is
         # unpublished.
-        rsp = self.apiPut(
+        rsp = self.api_put(
             get_review_screenshot_comment_item_url(review, comment.pk),
             {'issue_status': 'resolved'},
             expected_mimetype=screenshot_comment_item_mimetype)
@@ -305,7 +305,7 @@ class ResourceItemTests(CommentItemMixin, ReviewRequestChildItemMixin,
         comment, review, review_request = \
             self._create_screenshot_review_with_issue(publish=True)
 
-        rsp = self.apiPut(
+        rsp = self.api_put(
             get_review_screenshot_comment_item_url(review, comment.pk),
             {'issue_status': 'resolved'},
             expected_mimetype=screenshot_comment_item_mimetype)
@@ -327,7 +327,7 @@ class ResourceItemTests(CommentItemMixin, ReviewRequestChildItemMixin,
 
         # The review/comment (and therefore issue) is still owned by self.user,
         # so we should be able to change the issue status.
-        rsp = self.apiPut(
+        rsp = self.api_put(
             get_review_screenshot_comment_item_url(review, comment.pk),
             {'issue_status': 'dropped'},
             expected_mimetype=screenshot_comment_item_mimetype)
@@ -350,7 +350,7 @@ class ResourceItemTests(CommentItemMixin, ReviewRequestChildItemMixin,
         review.user = new_owner
         review.save()
 
-        rsp = self.apiPut(
+        rsp = self.api_put(
             get_review_screenshot_comment_item_url(review, comment.pk),
             {'issue_status': 'dropped'},
             expected_status=403)
@@ -375,7 +375,7 @@ class ResourceItemTests(CommentItemMixin, ReviewRequestChildItemMixin,
 
         # First, let's ensure that the user that has created the comment
         # cannot alter the issue_status while the review is unpublished.
-        rsp = self.apiPut(
+        rsp = self.api_put(
             get_review_screenshot_comment_item_url(review, comment.pk),
             {'issue_status': 'resolved'},
             expected_mimetype=screenshot_comment_item_mimetype)
@@ -391,7 +391,7 @@ class ResourceItemTests(CommentItemMixin, ReviewRequestChildItemMixin,
         review.public = True
         review.save()
 
-        rsp = self.apiPut(
+        rsp = self.api_put(
             rsp['screenshot_comment']['links']['self']['href'],
             {'issue_status': 'resolved'},
             expected_mimetype=screenshot_comment_item_mimetype)
@@ -403,7 +403,7 @@ class ResourceItemTests(CommentItemMixin, ReviewRequestChildItemMixin,
         review_request.publish(review_request.submitter)
 
         # Try altering the issue_status. This should be allowed.
-        rsp = self.apiPut(
+        rsp = self.api_put(
             rsp['screenshot_comment']['links']['self']['href'],
             {'issue_status': 'open'},
             expected_mimetype=screenshot_comment_item_mimetype)

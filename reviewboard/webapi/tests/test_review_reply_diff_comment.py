@@ -134,7 +134,7 @@ class ResourceListTests(CommentReplyListMixin, ReviewRequestChildListMixin,
                                                  reply_to=comment)
 
         # Now do it again.
-        rsp = self.apiPost(
+        rsp = self.api_post(
             get_review_reply_diff_comment_list_url(reply),
             {
                 'reply_to_id': comment.pk,

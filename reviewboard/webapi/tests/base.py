@@ -326,7 +326,7 @@ class BaseWebAPITestCase(TestCase, EmailTestHelper):
             post_data['issue_status'] = issue_status
 
         review = Review.objects.get(pk=review_id)
-        rsp = self.apiPost(
+        rsp = self.api_post(
             get_screenshot_comment_list_url(review, local_site_name),
             post_data,
             expected_mimetype=screenshot_comment_item_mimetype)
@@ -346,7 +346,7 @@ class BaseWebAPITestCase(TestCase, EmailTestHelper):
         else:
             local_site_name = None
 
-        self.apiDelete(
+        self.api_delete(
             get_screenshot_list_url(review_request, local_site_name) +
             six.text_type(screenshot.id) + '/')
 
@@ -376,7 +376,7 @@ class BaseWebAPITestCase(TestCase, EmailTestHelper):
             post_data['issue_status'] = issue_status
 
         review = Review.objects.get(pk=review_id)
-        rsp = self.apiPost(
+        rsp = self.api_post(
             get_review_file_attachment_comment_list_url(review,
                                                         local_site_name),
             post_data,

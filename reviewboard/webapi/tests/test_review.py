@@ -68,7 +68,7 @@ class ResourceListTests(ReviewListMixin, ReviewRequestChildListMixin,
         self.create_review(review_request, publish=True)
         self.create_review(review_request, publish=True)
 
-        rsp = self.apiGet(get_review_list_url(review_request), {
+        rsp = self.api_get(get_review_list_url(review_request), {
             'counts-only': 1,
         }, expected_mimetype=review_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
@@ -86,8 +86,8 @@ class ResourceListTests(ReviewListMixin, ReviewRequestChildListMixin,
         review_request.target_groups.add(group)
         review_request.save()
 
-        rsp = self.apiGet(get_review_list_url(review_request),
-                          expected_status=403)
+        rsp = self.api_get(get_review_list_url(review_request),
+                           expected_status=403)
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
@@ -168,8 +168,8 @@ class ResourceItemTests(ReviewItemMixin, ReviewRequestChildItemMixin,
         review = self.create_review(review_request, user=self.user,
                                     publish=True)
 
-        self.apiDelete(get_review_item_url(review_request, review.id),
-                       expected_status=403)
+        self.api_delete(get_review_item_url(review_request, review.id),
+                        expected_status=403)
         self.assertEqual(review_request.reviews.count(), 1)
 
     def test_delete_with_does_not_exist(self):
@@ -178,8 +178,8 @@ class ResourceItemTests(ReviewItemMixin, ReviewRequestChildItemMixin,
         """
         review_request = self.create_review_request(publish=True)
 
-        rsp = self.apiDelete(get_review_item_url(review_request, 919239),
-                             expected_status=404)
+        rsp = self.api_delete(get_review_item_url(review_request, 919239),
+                              expected_status=404)
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], DOES_NOT_EXIST.code)
 
@@ -247,7 +247,7 @@ class ResourceItemTests(ReviewItemMixin, ReviewRequestChildItemMixin,
         review = self.create_review(review_request, user=self.user,
                                     publish=True)
 
-        self.apiPut(
+        self.api_put(
             get_review_item_url(review_request, review.id),
             {'ship_it': True},
             expected_status=403)
@@ -267,7 +267,7 @@ class ResourceItemTests(ReviewItemMixin, ReviewRequestChildItemMixin,
 
         review = self.create_review(review_request, user=self.user)
 
-        self.apiPut(
+        self.api_put(
             get_review_item_url(review_request, review.pk),
             {
                 'public': True,

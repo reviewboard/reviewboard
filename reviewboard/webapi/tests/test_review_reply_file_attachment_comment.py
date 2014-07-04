@@ -132,7 +132,7 @@ class ResourceListTests(CommentReplyListMixin, ReviewRequestChildListMixin,
         review_request.file_attachments.remove(file_attachment)
 
         # Now make the reply.
-        rsp = self.apiPost(
+        rsp = self.api_post(
             comments_url,
             {
                 'reply_to_id': comment.id,
@@ -159,7 +159,7 @@ class ResourceListTests(CommentReplyListMixin, ReviewRequestChildListMixin,
                                             reply_to=comment)
 
         # Now post another reply to the same comment in the same review.
-        rsp = self.apiPost(
+        rsp = self.api_post(
             get_review_reply_file_attachment_comment_list_url(reply),
             {
                 'reply_to_id': comment.pk,

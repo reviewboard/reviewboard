@@ -86,7 +86,7 @@ class ResourceListTests(BaseWebAPITestCase):
         self.assertNotEqual(review_request.submitter, self.user)
 
         f = open(self._getTrophyFilename(), "r")
-        rsp = self.apiPost(
+        rsp = self.api_post(
             get_screenshot_draft_list_url(review_request),
             {
                 'caption': 'Trophy',

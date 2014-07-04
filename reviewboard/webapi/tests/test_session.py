@@ -41,8 +41,8 @@ class ResourceTests(BaseWebAPITestCase):
     def test_get_with_anonymous_user(self):
         """Testing the GET session/ API with anonymous user"""
         self.client.logout()
-        rsp = self.apiGet(get_session_url(),
-                          expected_mimetype=session_mimetype)
+        rsp = self.api_get(get_session_url(),
+                           expected_mimetype=session_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
         self.assertTrue('session' in rsp)
         self.assertFalse(rsp['session']['authenticated'])
@@ -67,6 +67,6 @@ class ResourceTests(BaseWebAPITestCase):
         self.client.logout()
         self.client.cookies = SimpleCookie()
 
-        rsp = self.apiDelete(url, expected_status=401)
+        rsp = self.api_delete(url, expected_status=401)
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], NOT_LOGGED_IN.code)
