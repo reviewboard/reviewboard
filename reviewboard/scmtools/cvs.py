@@ -1,5 +1,6 @@
 from __future__ import unicode_literals
 
+import logging
 import os
 import re
 import tempfile
@@ -154,7 +155,9 @@ class CVSTool(SCMTool):
 
         try:
             client.check_repository()
-        except (SCMError, SSHError, FileNotFoundError):
+        except (AuthenticationError, SCMError):
+            raise
+        except (SSHError, FileNotFoundError):
             raise RepositoryNotFoundError()
 
     @classmethod
@@ -344,5 +347,19 @@ class CVSClient(object):
         p = SCMTool.popen(['cvs', '-f', '-d', self.cvsroot, 'version'],
                           self.local_site_name)
         errmsg = six.text_type(p.stderr.read())
+
         if p.wait() != 0:
+            logging.error('CVS repository validation failed for '
+                          'CVSROOT %s: %s',
+                          self.cvsroot, errmsg)
+
+            auth_failed_prefix = 'cvs version: authorization failed: '
+
+            # See if there's an "authorization failed" anywhere in here. If so,
+            # we want to raise AuthenticationError with that error message.
+            for line in errmsg.splitlines():
+                if line.startswith(auth_failed_prefix):
+                    raise AuthenticationError(
+                        msg=line[len(auth_failed_prefix):].strip())
+
             raise SCMError(errmsg)
