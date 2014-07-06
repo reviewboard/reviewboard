@@ -127,10 +127,10 @@ class HookTests(TestCase):
 
         content = t.render(context).strip()
 
-        self.assertTrue(('id="%s"' % action['id']) in content)
-        self.assertTrue((">%s &#9662;" % action['label']) in content)
-        self.assertTrue(self._build_action_template(action['items'][0]) in
-                        content)
+        self.assertIn(('id="%s"' % action['id']), content)
+        self.assertIn((">%s &#9662;" % action['label']), content)
+        self.assertIn(self._build_action_template(action['items'][0]),
+                      content)
 
     def _build_action_template(self, action):
         return ('<li><a id="%(id)s" href="%(url)s">'

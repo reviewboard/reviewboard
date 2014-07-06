@@ -22,7 +22,7 @@ class BaseViewTestCase(TestCase):
         self.siteconfig.set("auth_require_sitewide_login", False)
         self.siteconfig.save()
 
-    def getContextVar(self, response, varname):
+    def _get_context_var(self, response, varname):
         for context in response.context:
             if varname in context:
                 return context[varname]
@@ -44,7 +44,7 @@ class AllReviewRequestViewTests(BaseViewTestCase):
         response = self.client.get('/r/')
         self.assertEqual(response.status_code, 200)
 
-        datagrid = self.getContextVar(response, 'datagrid')
+        datagrid = self._get_context_var(response, 'datagrid')
         self.assertTrue(datagrid)
         self.assertEqual(len(datagrid.rows), 3)
         self.assertEqual(datagrid.rows[0]['object'].summary, 'Test 3')
@@ -99,7 +99,7 @@ class AllReviewRequestViewTests(BaseViewTestCase):
         response = self.client.get('/r/')
         self.assertEqual(response.status_code, 200)
 
-        datagrid = self.getContextVar(response, 'datagrid')
+        datagrid = self._get_context_var(response, 'datagrid')
         self.assertTrue(datagrid)
         self.assertEqual(len(datagrid.rows), 4)
         self.assertEqual(datagrid.rows[0]['object'].summary, 'Test 4')
@@ -125,7 +125,7 @@ class AllReviewRequestViewTests(BaseViewTestCase):
         response = self.client.get('/r/')
         self.assertEqual(response.status_code, 200)
 
-        datagrid = self.getContextVar(response, 'datagrid')
+        datagrid = self._get_context_var(response, 'datagrid')
         self.assertTrue(datagrid)
         self.assertEqual(len(datagrid.rows), 2)
         self.assertEqual(datagrid.rows[0]['object'].summary, 'Test 2')
@@ -155,7 +155,7 @@ class DashboardViewTests(BaseViewTestCase):
         response = self.client.get('/dashboard/', {'view': 'incoming'})
         self.assertEqual(response.status_code, 200)
 
-        datagrid = self.getContextVar(response, 'datagrid')
+        datagrid = self._get_context_var(response, 'datagrid')
         self.assertTrue(datagrid)
         self.assertEqual(len(datagrid.rows), 2)
         self.assertEqual(datagrid.rows[0]['object'].summary, 'Test 2')
@@ -183,7 +183,7 @@ class DashboardViewTests(BaseViewTestCase):
         response = self.client.get('/dashboard/', {'view': 'outgoing'})
         self.assertEqual(response.status_code, 200)
 
-        datagrid = self.getContextVar(response, 'datagrid')
+        datagrid = self._get_context_var(response, 'datagrid')
         self.assertTrue(datagrid)
         self.assertEqual(len(datagrid.rows), 2)
         self.assertEqual(datagrid.rows[0]['object'].summary, 'Test 2')
@@ -207,7 +207,7 @@ class DashboardViewTests(BaseViewTestCase):
         response = self.client.get('/dashboard/', {'view': 'mine'})
         self.assertEqual(response.status_code, 200)
 
-        datagrid = self.getContextVar(response, 'datagrid')
+        datagrid = self._get_context_var(response, 'datagrid')
         self.assertTrue(datagrid is not None)
         self.assertEqual(len(datagrid.rows), 2)
         self.assertEqual(datagrid.rows[0]['object'].summary, 'Test 2')
@@ -238,7 +238,7 @@ class DashboardViewTests(BaseViewTestCase):
         response = self.client.get('/dashboard/', {'view': 'to-me'})
         self.assertEqual(response.status_code, 200)
 
-        datagrid = self.getContextVar(response, 'datagrid')
+        datagrid = self._get_context_var(response, 'datagrid')
         self.assertTrue(datagrid)
         self.assertEqual(len(datagrid.rows), 2)
         self.assertEqual(datagrid.rows[0]['object'].summary, 'Test 2')
@@ -270,7 +270,7 @@ class DashboardViewTests(BaseViewTestCase):
                                     'group': 'devgroup'})
         self.assertEqual(response.status_code, 200)
 
-        datagrid = self.getContextVar(response, 'datagrid')
+        datagrid = self._get_context_var(response, 'datagrid')
         self.assertTrue(datagrid)
         self.assertEqual(len(datagrid.rows), 2)
         self.assertEqual(datagrid.rows[0]['object'].summary, 'Test 2')
@@ -345,7 +345,8 @@ class DashboardViewTests(BaseViewTestCase):
         response = self.client.get('/dashboard/')
         self.assertEqual(response.status_code, 200)
 
-        sidebar_items = self.getContextVar(response, 'datagrid').sidebar_items
+        sidebar_items = \
+            self._get_context_var(response, 'datagrid').sidebar_items
         self.assertEqual(len(sidebar_items), 2)
 
         # Test the Outgoing section.
@@ -386,7 +387,7 @@ class GroupListViewTests(BaseViewTestCase):
         response = self.client.get('/groups/')
         self.assertEqual(response.status_code, 200)
 
-        datagrid = self.getContextVar(response, 'datagrid')
+        datagrid = self._get_context_var(response, 'datagrid')
         self.assertTrue(datagrid)
         self.assertEqual(len(datagrid.rows), 4)
         self.assertEqual(datagrid.rows[0]['object'].name, 'devgroup')
@@ -412,7 +413,7 @@ class SubmitterListViewTests(BaseViewTestCase):
         response = self.client.get('/users/')
         self.assertEqual(response.status_code, 200)
 
-        datagrid = self.getContextVar(response, 'datagrid')
+        datagrid = self._get_context_var(response, 'datagrid')
         self.assertTrue(datagrid)
         self.assertEqual(len(datagrid.rows), 4)
         self.assertEqual(datagrid.rows[0]['object'].username, 'admin')
@@ -459,7 +460,7 @@ class SubmitterViewTests(BaseViewTestCase):
         response = self.client.get('/users/grumpy/')
         self.assertEqual(response.status_code, 200)
 
-        datagrid = self.getContextVar(response, 'datagrid')
+        datagrid = self._get_context_var(response, 'datagrid')
         self.assertIsNotNone(datagrid)
         self.assertEqual(len(datagrid.rows), 1)
         self.assertEqual(datagrid.rows[0]['object'].summary, 'Summary 1')
@@ -480,10 +481,11 @@ class SubmitterViewTests(BaseViewTestCase):
         response = self.client.get('/users/grumpy/')
         self.assertEqual(response.status_code, 200)
 
-        datagrid = self.getContextVar(response, 'datagrid')
+        datagrid = self._get_context_var(response, 'datagrid')
         self.assertIsNotNone(datagrid)
 
-        sidebar_items = self.getContextVar(response, 'datagrid').sidebar_items
+        sidebar_items = \
+            self._get_context_var(response, 'datagrid').sidebar_items
         self.assertEqual(len(sidebar_items), 2)
 
         # Test the User Profile section.

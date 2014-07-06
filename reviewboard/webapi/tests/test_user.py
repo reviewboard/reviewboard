@@ -49,8 +49,8 @@ class ResourceListTests(BaseWebAPITestCase):
 
     def test_get_with_q(self):
         """Testing the GET users/?q= API"""
-        rsp = self.apiGet(get_user_list_url(), {'q': 'gru'},
-                          expected_mimetype=user_list_mimetype)
+        rsp = self.api_get(get_user_list_url(), {'q': 'gru'},
+                           expected_mimetype=user_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(len(rsp['users']), 1)  # grumpy
 
@@ -100,17 +100,17 @@ class ResourceItemTests(BaseWebAPITestCase):
         profile.is_private = True
         profile.save()
 
-        rsp = self.apiGet(get_user_item_url(username, self.local_site_name),
-                          expected_mimetype=user_item_mimetype)
+        rsp = self.api_get(get_user_item_url(username, self.local_site_name),
+                           expected_mimetype=user_item_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(rsp['user']['username'], user.username)
-        self.assertFalse('first_name' in rsp['user'])
-        self.assertFalse('last_name' in rsp['user'])
-        self.assertFalse('email' in rsp['user'])
+        self.assertNotIn('first_name', rsp['user'])
+        self.assertNotIn('last_name', rsp['user'])
+        self.assertNotIn('email', rsp['user'])
 
     @add_fixtures(['test_site'])
     def test_get_missing_user_with_site(self):
         """Testing the GET users/<username>/ API with a local site"""
         self._login_user(local_site=True)
-        self.apiGet(get_user_item_url('dopey', self.local_site_name),
-                    expected_status=404)
+        self.api_get(get_user_item_url('dopey', self.local_site_name),
+                     expected_status=404)

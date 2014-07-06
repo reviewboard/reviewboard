@@ -57,7 +57,7 @@ class ResourceListTests(BaseWebAPITestCase):
         with a local site and Does Not Exist error
         """
         self._login_user(local_site=True)
-        rsp = self.apiGet(
+        rsp = self.api_get(
             get_watched_review_request_list_url(self.user.username,
                                                 self.local_site_name),
             expected_status=404)
@@ -96,7 +96,7 @@ class ResourceListTests(BaseWebAPITestCase):
         """Testing the POST users/<username>/watched/review-requests/
         with Does Not Exist error
         """
-        rsp = self.apiPost(
+        rsp = self.api_post(
             get_watched_review_request_list_url(self.user.username),
             {'object_id': 999},
             expected_status=404)
@@ -110,7 +110,7 @@ class ResourceListTests(BaseWebAPITestCase):
         """
         user = self._login_user(local_site=True)
 
-        rsp = self.apiPost(
+        rsp = self.api_post(
             get_watched_review_request_list_url(user.username,
                                                 self.local_site_name),
             {'object_id': 10},
@@ -154,7 +154,7 @@ class ResourceItemTests(BaseWebAPITestCase):
         """Testing the DELETE users/<username>/watched/review_request/<id>/ API
         with Does Not Exist error
         """
-        rsp = self.apiDelete(
+        rsp = self.api_delete(
             get_watched_review_request_item_url(self.user.username, 999),
             expected_status=404)
         self.assertEqual(rsp['stat'], 'fail')
@@ -174,7 +174,7 @@ class ResourceItemTests(BaseWebAPITestCase):
         expected_url = (self.base_url +
                         get_review_request_item_url(review_request.display_id))
 
-        self.apiGet(
+        self.api_get(
             get_watched_review_request_item_url(self.user.username,
                                                 review_request.display_id),
             expected_status=302,
@@ -198,7 +198,7 @@ class ResourceItemTests(BaseWebAPITestCase):
                         get_review_request_item_url(review_request.display_id,
                                                     self.local_site_name))
 
-        self.apiGet(
+        self.api_get(
             get_watched_review_request_item_url(user.username,
                                                 review_request.display_id,
                                                 self.local_site_name),
@@ -217,7 +217,7 @@ class ResourceItemTests(BaseWebAPITestCase):
         profile = self.user.get_profile()
         profile.starred_review_requests.add(review_request)
 
-        rsp = self.apiGet(
+        rsp = self.api_get(
             get_watched_review_request_item_url(self.user.username,
                                                 review_request.display_id,
                                                 self.local_site_name),

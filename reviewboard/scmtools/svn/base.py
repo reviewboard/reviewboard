@@ -105,16 +105,16 @@ class Client(object):
         """
         def repl(m):
             if m.group(2):
-                return "$%s::%s$" % (m.group(1), " " * len(m.group(3)))
+                return b'$%s::%s$' % (m.group(1), b' ' * len(m.group(3)))
 
-            return "$%s$" % m.group(1)
+            return b'$%s$' % m.group(1)
 
         # Get any aliased keywords
-        keywords = [keyword
+        keywords = [re.escape(keyword).encode('utf-8')
                     for name in re.split(r'\W+', keyword_str)
                     for keyword in self.keywords.get(name, [])]
 
-        return re.sub(r"\$(%s):(:?)([^\$\n\r]*)\$" % '|'.join(keywords),
+        return re.sub(b'\\$(%s):(:?)([^\\$\\n\\r]*)\$' % b'|'.join(keywords),
                       repl, data)
 
     def get_filenames_in_revision(self, revision):

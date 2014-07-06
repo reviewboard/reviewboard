@@ -32,24 +32,24 @@ class ResourceTests(BaseWebAPITestCase):
 
     def test_get(self):
         """Testing the GET validation/diffs/ API"""
-        self.apiGet(get_validate_diff_url(),
-                    expected_mimetype=validate_diff_mimetype)
+        self.api_get(get_validate_diff_url(),
+                     expected_mimetype=validate_diff_mimetype)
 
     @add_fixtures(['test_site'])
     def test_get_with_site(self):
         """Testing the GET validation/diffs/ API with access to local site"""
         self._login_user(local_site=True)
 
-        self.apiGet(get_validate_diff_url(self.local_site_name),
-                    expected_mimetype=validate_diff_mimetype)
+        self.api_get(get_validate_diff_url(self.local_site_name),
+                     expected_mimetype=validate_diff_mimetype)
 
     @add_fixtures(['test_site'])
     def test_get_with_site_no_access(self):
         """Testing the GET validation/diffs/ API
         without access to local site
         """
-        self.apiGet(get_validate_diff_url(self.local_site_name),
-                    expected_status=403)
+        self.api_get(get_validate_diff_url(self.local_site_name),
+                     expected_status=403)
 
     #
     # HTTP POST tests
@@ -63,7 +63,7 @@ class ResourceTests(BaseWebAPITestCase):
                                      'testdata', 'git_readme.diff')
         f = open(diff_filename, "r")
 
-        self.apiPost(
+        self.api_post(
             get_validate_diff_url(),
             {
                 'repository': repository.pk,
@@ -89,7 +89,7 @@ class ResourceTests(BaseWebAPITestCase):
                                      'testdata', 'git_readme.diff')
 
         with open(diff_filename, 'r') as fp:
-            self.apiPost(
+            self.api_post(
                 get_validate_diff_url(self.local_site_name),
                 {
                     'repository': repository.pk,
@@ -111,7 +111,7 @@ class ResourceTests(BaseWebAPITestCase):
                                      'testdata', 'git_readme.diff')
 
         with open(diff_filename, 'r') as fp:
-            self.apiPost(
+            self.api_post(
                 get_validate_diff_url(self.local_site_name),
                 {
                     'repository': repository.pk,
@@ -128,7 +128,7 @@ class ResourceTests(BaseWebAPITestCase):
                                      'testdata', 'git_readme.diff')
         f = open(diff_filename, 'r')
 
-        rsp = self.apiPost(
+        rsp = self.api_post(
             get_validate_diff_url(),
             {
                 'repository': repository.pk,
@@ -139,7 +139,7 @@ class ResourceTests(BaseWebAPITestCase):
 
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], INVALID_FORM_DATA.code)
-        self.assertTrue('basedir' in rsp['fields'])
+        self.assertIn('basedir', rsp['fields'])
 
     def test_post_with_files_not_found(self):
         """Testing the POST validation/diffs/ API
@@ -151,7 +151,7 @@ class ResourceTests(BaseWebAPITestCase):
                                      'testdata', 'git_file_not_found.diff')
         f = open(diff_filename, 'r')
 
-        rsp = self.apiPost(
+        rsp = self.api_post(
             get_validate_diff_url(),
             {
                 'repository': repository.pk,
@@ -173,7 +173,7 @@ class ResourceTests(BaseWebAPITestCase):
         diff_filename = os.path.join(os.path.dirname(scmtools.__file__),
                                      'testdata', 'stunnel.pem')
         f = open(diff_filename, 'r')
-        rsp = self.apiPost(
+        rsp = self.api_post(
             get_validate_diff_url(),
             {
                 'repository': repository.pk,

@@ -142,7 +142,7 @@ class ResourceListTests(CommentListMixin, ReviewRequestChildListMixin,
         """
         review = self._create_diff_review()
 
-        rsp = self.apiGet(get_review_diff_comment_list_url(review), {
+        rsp = self.api_get(get_review_diff_comment_list_url(review), {
             'counts-only': 1,
         }, expected_mimetype=review_diff_comment_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
@@ -157,11 +157,11 @@ class ResourceListTests(CommentListMixin, ReviewRequestChildListMixin,
         comment, review_request, review, interdiff_revision = \
             self._common_post_interdiff_comments(comment_text)
 
-        rsp = self.apiGet(get_review_diff_comment_list_url(review), {
+        rsp = self.api_get(get_review_diff_comment_list_url(review), {
             'interdiff-revision': interdiff_revision,
         }, expected_mimetype=review_diff_comment_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
-        self.assertTrue('diff_comments' in rsp)
+        self.assertIn('diff_comments', rsp)
         self.assertEqual(len(rsp['diff_comments']), 1)
         self.assertEqual(rsp['diff_comments'][0]['text'], comment_text)
 
@@ -207,7 +207,7 @@ class ResourceListTests(CommentListMixin, ReviewRequestChildListMixin,
 
         review_request, filediff = self._create_diff_review_request()
         review = self.create_review(review_request, user=self.user)
-        rsp = self.apiPost(
+        rsp = self.api_post(
             get_review_diff_comment_list_url(review),
             {
                 'filediff_id': filediff.pk,
@@ -219,7 +219,7 @@ class ResourceListTests(CommentListMixin, ReviewRequestChildListMixin,
             expected_mimetype=review_diff_comment_item_mimetype)
 
         self.assertEqual(rsp['stat'], 'ok')
-        self.assertTrue('diff_comment' in rsp)
+        self.assertIn('diff_comment', rsp)
         self.assertEqual(rsp['diff_comment']['text'], diff_comment_text)
         self.assertTrue(rsp['diff_comment']['issue_opened'])
 
@@ -238,7 +238,7 @@ class ResourceListTests(CommentListMixin, ReviewRequestChildListMixin,
 
         review = self.create_review(review_request, user=self.user)
 
-        rsp = self.apiPost(
+        rsp = self.api_post(
             get_review_diff_comment_list_url(review),
             {
                 'filediff_id': filediff.pk,
@@ -251,7 +251,7 @@ class ResourceListTests(CommentListMixin, ReviewRequestChildListMixin,
             expected_mimetype=review_diff_comment_item_mimetype)
 
         self.assertEqual(rsp['stat'], 'ok')
-        self.assertTrue('diff_comment' in rsp)
+        self.assertIn('diff_comment', rsp)
         self.assertEqual(rsp['diff_comment']['text'], comment_text)
 
         comment = Comment.objects.get(pk=rsp['diff_comment']['id'])
@@ -325,12 +325,12 @@ class ResourceItemTests(CommentItemMixin, ReviewRequestChildItemMixin,
         comment, review_request, review, interdiff_revision = \
             self._common_post_interdiff_comments(comment_text)
 
-        self.apiDelete(get_review_diff_comment_item_url(review, comment.pk))
+        self.api_delete(get_review_diff_comment_item_url(review, comment.pk))
 
-        rsp = self.apiGet(get_review_diff_comment_list_url(review),
-                          expected_mimetype=review_diff_comment_list_mimetype)
+        rsp = self.api_get(get_review_diff_comment_list_url(review),
+                           expected_mimetype=review_diff_comment_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
-        self.assertTrue('diff_comments' in rsp)
+        self.assertIn('diff_comments', rsp)
         self.assertEqual(len(rsp['diff_comments']), 0)
 
     #
@@ -403,7 +403,7 @@ class ResourceItemTests(CommentItemMixin, ReviewRequestChildItemMixin,
         """
         comment, review, review_request = self._create_diff_review_with_issue()
 
-        rsp = self.apiPut(
+        rsp = self.api_put(
             get_review_diff_comment_item_url(review, comment.id),
             {'issue_opened': False},
             expected_mimetype=review_diff_comment_item_mimetype)
@@ -419,7 +419,7 @@ class ResourceItemTests(CommentItemMixin, ReviewRequestChildItemMixin,
 
         # The issue_status should not be able to be changed while the review is
         # unpublished.
-        rsp = self.apiPut(
+        rsp = self.api_put(
             get_review_diff_comment_item_url(review, comment.id),
             {'issue_status': 'resolved'},
             expected_mimetype=review_diff_comment_item_mimetype)
@@ -436,7 +436,7 @@ class ResourceItemTests(CommentItemMixin, ReviewRequestChildItemMixin,
         comment, review, review_request = self._create_diff_review_with_issue(
             publish=True)
 
-        rsp = self.apiPut(
+        rsp = self.api_put(
             get_review_diff_comment_item_url(review, comment.id),
             {'issue_status': 'resolved'},
             expected_mimetype=review_diff_comment_item_mimetype)
@@ -458,7 +458,7 @@ class ResourceItemTests(CommentItemMixin, ReviewRequestChildItemMixin,
 
         # The review/comment (and therefore issue) is still owned by self.user,
         # so we should be able to change the issue status.
-        rsp = self.apiPut(
+        rsp = self.api_put(
             get_review_diff_comment_item_url(review, comment.id),
             {'issue_status': 'dropped'},
             expected_mimetype=review_diff_comment_item_mimetype)
@@ -481,7 +481,7 @@ class ResourceItemTests(CommentItemMixin, ReviewRequestChildItemMixin,
         review.user = new_owner
         review.save()
 
-        rsp = self.apiPut(
+        rsp = self.api_put(
             get_review_diff_comment_item_url(review, comment.id),
             {'issue_status': 'dropped'},
             expected_status=403)
@@ -495,7 +495,7 @@ class ResourceItemTests(CommentItemMixin, ReviewRequestChildItemMixin,
         """
         comment, review, review_request = self._create_diff_review_with_issue()
 
-        rsp = self.apiPut(
+        rsp = self.api_put(
             get_review_diff_comment_item_url(review, comment.id),
             {'issue_opened': False},
             expected_mimetype=review_diff_comment_item_mimetype)

@@ -91,7 +91,7 @@ class ResourceListTests(ExtraDataListMixin, ReviewRequestChildListMixin,
                 [review_request])
 
     def check_post_result(self, user, rsp, review_request):
-        self.assertTrue('diff' in rsp)
+        self.assertIn('diff', rsp)
         item_rsp = rsp['diff']
 
         draft = review_request.get_draft()
@@ -110,11 +110,11 @@ class ResourceListTests(ExtraDataListMixin, ReviewRequestChildListMixin,
             repository=repository,
             submitter=self.user)
 
-        rsp = self.apiPost(get_diff_list_url(review_request),
-                           expected_status=400)
+        rsp = self.api_post(get_diff_list_url(review_request),
+                            expected_status=400)
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], INVALID_FORM_DATA.code)
-        self.assertTrue('path' in rsp['fields'])
+        self.assertIn('path', rsp['fields'])
 
         # Now test with a valid path and an invalid basedir.
         # This is necessary because basedir is "optional" as defined by
@@ -127,14 +127,14 @@ class ResourceListTests(ExtraDataListMixin, ReviewRequestChildListMixin,
         diff_filename = os.path.join(os.path.dirname(scmtools.__file__),
                                      'testdata', 'git_readme.diff')
         with open(diff_filename, "r") as f:
-            rsp = self.apiPost(
+            rsp = self.api_post(
                 get_diff_list_url(review_request),
                 {'path': f},
                 expected_status=400)
 
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], INVALID_FORM_DATA.code)
-        self.assertTrue('basedir' in rsp['fields'])
+        self.assertIn('basedir', rsp['fields'])
 
     def test_post_too_big(self):
         """Testing the POST review-requests/<id>/diffs/ API
@@ -152,7 +152,7 @@ class ResourceListTests(ExtraDataListMixin, ReviewRequestChildListMixin,
         diff_filename = os.path.join(os.path.dirname(scmtools.__file__),
                                      'testdata', 'git_readme.diff')
         with open(diff_filename, "r") as f:
-            rsp = self.apiPost(
+            rsp = self.api_post(
                 get_diff_list_url(review_request),
                 {
                     'path': f,
@@ -162,8 +162,8 @@ class ResourceListTests(ExtraDataListMixin, ReviewRequestChildListMixin,
 
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], DIFF_TOO_BIG.code)
-        self.assertTrue('reason' in rsp)
-        self.assertTrue('max_size' in rsp)
+        self.assertIn('reason', rsp)
+        self.assertIn('max_size', rsp)
         self.assertEqual(rsp['max_size'],
                          self.siteconfig.get('diffviewer_max_diff_size'))
 
@@ -177,7 +177,7 @@ class ResourceListTests(ExtraDataListMixin, ReviewRequestChildListMixin,
         diff_filename = os.path.join(os.path.dirname(scmtools.__file__),
                                      'testdata', 'git_readme.diff')
         with open(diff_filename, 'r') as f:
-            rsp = self.apiPost(
+            rsp = self.api_post(
                 get_diff_list_url(review_request),
                 {
                     'path': f,
@@ -197,7 +197,7 @@ class ResourceListTests(ExtraDataListMixin, ReviewRequestChildListMixin,
         diff_filename = os.path.join(os.path.dirname(scmtools.__file__),
                                      'testdata', 'git_readme.diff')
         with open(diff_filename, 'r') as f:
-            rsp = self.apiPost(
+            rsp = self.api_post(
                 get_diff_list_url(review_request),
                 {
                     'path': f,

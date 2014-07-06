@@ -383,28 +383,28 @@ def dynamic_activity_data(request):
     }
 
     def large_stats_data(range_start, range_end):
-        def get_objects(modelName, timestampField, dateField):
+        def get_objects(model_name, timestamp_field, date_field):
             """Perform timestamp based queries.
 
             This method receives a dynamic model name and performs a filter
             query. Later the results are grouped by day and prepared for the
             charting library.
             """
-            args = '%s__range' % timestampField
-            q = modelName.objects.filter(**{
+            args = '%s__range' % timestamp_field
+            q = model_name.objects.filter(**{
                 args: (range_start, range_end)
             })
-            q = q.extra({timestampField: dateField})
-            q = q.values(timestampField)
+            q = q.extra({timestamp_field: date_field})
+            q = q.values(timestamp_field)
             q = q.annotate(created_count=Count('pk'))
-            q = q.order_by(timestampField)
+            q = q.order_by(timestamp_field)
 
             data = []
 
             for obj in q:
                 data.append([
                     time.mktime(time.strptime(
-                        six.text_type(obj[timestampField]),
+                        six.text_type(obj[timestamp_field]),
                         "%Y-%m-%d")) * 1000,
                     obj['created_count']
                 ])

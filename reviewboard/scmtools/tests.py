@@ -426,29 +426,81 @@ class CVSTests(SCMTestCase):
         except ImportError:
             raise nose.SkipTest('cvs binary not found')
 
-    def test_path_with_port(self):
-        """Testing parsing a CVSROOT with a port"""
-        repo = Repository(name="CVS",
-                          path="example.com:123/cvsroot/test",
-                          username="anonymous",
-                          tool=Tool.objects.get(name="CVS"))
-        tool = repo.get_scmtool()
-
-        self.assertEqual(tool.repopath, "/cvsroot/test")
-        self.assertEqual(tool.client.cvsroot,
-                         ":pserver:anonymous@example.com:123/cvsroot/test")
+    def test_build_cvsroot_with_port(self):
+        """Testing CVSTool.build_cvsroot with a port"""
+        self._test_build_cvsroot(
+            repo_path='example.com:123/cvsroot/test',
+            username='anonymous',
+            expected_cvsroot=':pserver:anonymous@example.com:123/cvsroot/test',
+            expected_path='/cvsroot/test')
 
     def test_path_without_port(self):
-        """Testing parsing a CVSROOT without a port"""
-        repo = Repository(name="CVS",
-                          path="example.com:/cvsroot/test",
-                          username="anonymous",
-                          tool=Tool.objects.get(name="CVS"))
-        tool = repo.get_scmtool()
+        """Testing CVSTool.build_cvsroot without a port"""
+        self._test_build_cvsroot(
+            repo_path='example.com:/cvsroot/test',
+            username='anonymous',
+            expected_cvsroot=':pserver:anonymous@example.com:/cvsroot/test',
+            expected_path='/cvsroot/test')
 
-        self.assertEqual(tool.repopath, "/cvsroot/test")
-        self.assertEqual(tool.client.cvsroot,
-                         ":pserver:anonymous@example.com:/cvsroot/test")
+    def test_path_with_pserver_and_no_user_or_password(self):
+        """Testing CVSTool.build_cvsroot with :pserver: and no user or
+        password
+        """
+        self._test_build_cvsroot(
+            repo_path=':pserver:example.com:/cvsroot/test',
+            expected_cvsroot=':pserver:example.com:/cvsroot/test',
+            expected_path='/cvsroot/test')
+
+    def test_path_with_pserver_and_inline_user(self):
+        """Testing CVSTool.build_cvsroot with :pserver: and inline user"""
+        self._test_build_cvsroot(
+            repo_path=':pserver:anonymous@example.com:/cvsroot/test',
+            expected_cvsroot=':pserver:anonymous@example.com:/cvsroot/test',
+            expected_path='/cvsroot/test')
+
+    def test_path_with_pserver_and_inline_user_and_password(self):
+        """Testing CVSTool.build_cvsroot with :pserver: and inline user and
+        password
+        """
+        self._test_build_cvsroot(
+            repo_path=':pserver:anonymous:pass@example.com:/cvsroot/test',
+            expected_cvsroot=':pserver:anonymous:pass@example.com:'
+                             '/cvsroot/test',
+            expected_path='/cvsroot/test')
+
+    def test_path_with_pserver_and_form_user(self):
+        """Testing CVSTool.build_cvsroot with :pserver: and form-provided
+        user
+        """
+        self._test_build_cvsroot(
+            repo_path=':pserver:example.com:/cvsroot/test',
+            username='anonymous',
+            expected_cvsroot=':pserver:anonymous@example.com:/cvsroot/test',
+            expected_path='/cvsroot/test')
+
+    def test_path_with_pserver_and_form_user_and_password(self):
+        """Testing CVSTool.build_cvsroot with :pserver: and form-provided
+        user and password
+        """
+        self._test_build_cvsroot(
+            repo_path=':pserver:example.com:/cvsroot/test',
+            username='anonymous',
+            password='pass',
+            expected_cvsroot=':pserver:anonymous:pass@example.com:'
+                             '/cvsroot/test',
+            expected_path='/cvsroot/test')
+
+    def test_path_with_pserver_and_inline_takes_precedence(self):
+        """Testing CVSTool.build_cvsroot with :pserver: and inline user/password
+        taking precedence
+        """
+        self._test_build_cvsroot(
+            repo_path=':pserver:anonymous:pass@example.com:/cvsroot/test',
+            username='grumpy',
+            password='grr',
+            expected_cvsroot=':pserver:anonymous:pass@example.com:'
+                             '/cvsroot/test',
+            expected_path='/cvsroot/test')
 
     def test_get_file(self):
         """Testing CVSTool.get_file"""
@@ -480,7 +532,7 @@ class CVSTests(SCMTestCase):
                           lambda: self.tool.get_file('hello', PRE_CREATION))
 
     def test_revision_parsing(self):
-        """Testing revision number parsing"""
+        """Testing CVSTool revision number parsing"""
         self.assertEqual(self.tool.parse_diff_revision('', 'PRE-CREATION')[1],
                          PRE_CREATION)
         self.assertEqual(
@@ -647,7 +699,7 @@ class CVSTests(SCMTestCase):
         self.assertEqual(file.delete_count, 1)
 
     def test_bad_root(self):
-        """Testing a bad CVSROOT"""
+        """Testing CVSTool with a bad CVSROOT"""
         file = 'test/testfile'
         rev = Revision('1.1')
         badrepo = Repository(name='CVS',
@@ -664,6 +716,14 @@ class CVSTests(SCMTestCase):
     def test_ssh_with_site(self):
         """Testing a SSH-backed CVS repository with a LocalSite"""
         self._test_ssh_with_site(self.cvs_ssh_path, 'CVSROOT/modules')
+
+    def _test_build_cvsroot(self, repo_path, expected_cvsroot, expected_path,
+                            username=None, password=None):
+        cvsroot, norm_path = self.tool.build_cvsroot(repo_path, username,
+                                                     password)
+
+        self.assertEqual(cvsroot, expected_cvsroot)
+        self.assertEqual(norm_path, expected_path)
 
 
 class CommonSVNTestsBase(SCMTestCase):
@@ -1012,7 +1072,7 @@ class CommonSVNTestsBase(SCMTestCase):
 
         self.assertEqual(len(branches), 2)
         self.assertEqual(branches[0], Branch(id='trunk', name='trunk',
-                                             commit='5', default=True))
+                                             commit='9', default=True))
         self.assertEqual(branches[1], Branch(id='branches/branch1',
                                              name='branch1',
                                              commit='7', default=False))
@@ -1078,6 +1138,10 @@ class CommonSVNTestsBase(SCMTestCase):
                          '928336c082dd756e3f7af4cde4724ebf')
         self.assertEqual(md5(commit.diff.encode('utf-8')).hexdigest(),
                          '56e50374056931c03a333f234fa63375')
+
+    def test_utf8_keywords(self):
+        """Testing SVN (<backend>) with UTF-8 files with keywords"""
+        self.repository.get_file('trunk/utf8-file.txt', '9')
 
 
 class PySVNTests(CommonSVNTestsBase):
@@ -2296,7 +2360,7 @@ class PolicyTests(TestCase):
         self.assertTrue(self.repo.is_accessible_by(self.user))
         self.assertTrue(self.repo.is_accessible_by(self.anonymous))
 
-        self.assertTrue(self.repo in Repository.objects.accessible(self.user))
+        self.assertIn(self.repo, Repository.objects.accessible(self.user))
         self.assertTrue(
             self.repo in Repository.objects.accessible(self.anonymous))
 
@@ -2308,7 +2372,7 @@ class PolicyTests(TestCase):
         self.assertFalse(self.repo.is_accessible_by(self.user))
         self.assertFalse(self.repo.is_accessible_by(self.anonymous))
 
-        self.assertFalse(self.repo in Repository.objects.accessible(self.user))
+        self.assertNotIn(self.repo, Repository.objects.accessible(self.user))
         self.assertFalse(
             self.repo in Repository.objects.accessible(self.anonymous))
 
@@ -2321,7 +2385,7 @@ class PolicyTests(TestCase):
         self.assertTrue(self.repo.is_accessible_by(self.user))
         self.assertFalse(self.repo.is_accessible_by(self.anonymous))
 
-        self.assertTrue(self.repo in Repository.objects.accessible(self.user))
+        self.assertIn(self.repo, Repository.objects.accessible(self.user))
         self.assertFalse(
             self.repo in Repository.objects.accessible(self.anonymous))
 
@@ -2337,7 +2401,7 @@ class PolicyTests(TestCase):
         self.assertTrue(self.repo.is_accessible_by(self.user))
         self.assertFalse(self.repo.is_accessible_by(self.anonymous))
 
-        self.assertTrue(self.repo in Repository.objects.accessible(self.user))
+        self.assertIn(self.repo, Repository.objects.accessible(self.user))
         self.assertFalse(
             self.repo in Repository.objects.accessible(self.anonymous))
 
@@ -2651,7 +2715,7 @@ class RepositoryFormTests(TestCase):
         repository = form.save()
         self.assertFalse(repository.extra_data['bug_tracker_use_hosting'])
         self.assertEqual(repository.bug_tracker, 'http://example.com/issue/%s')
-        self.assertFalse('bug_tracker_type' in repository.extra_data)
+        self.assertNotIn('bug_tracker_type', repository.extra_data)
 
     def test_with_hosting_service_bug_tracker_service(self):
         """Testing RepositoryForm with a bug tracker service"""
@@ -2741,7 +2805,7 @@ class RepositoryFormTests(TestCase):
         self.assertTrue(repository.extra_data['bug_tracker_use_hosting'])
         self.assertEqual(repository.bug_tracker,
                          'http://example.com/testuser/testrepo/issue/%s')
-        self.assertFalse('bug_tracker_type' in repository.extra_data)
+        self.assertNotIn('bug_tracker_type', repository.extra_data)
         self.assertFalse('bug_tracker-test_repo_name'
                          in repository.extra_data)
         self.assertFalse('bug_tracker-hosting_account_username'
@@ -2779,7 +2843,7 @@ class RepositoryFormTests(TestCase):
         self.assertTrue(repository.extra_data['bug_tracker_use_hosting'])
         self.assertEqual(repository.bug_tracker,
                          'https://example.com/testrepo/issue/%s')
-        self.assertFalse('bug_tracker_type' in repository.extra_data)
+        self.assertNotIn('bug_tracker_type', repository.extra_data)
         self.assertFalse('bug_tracker-test_repo_name'
                          in repository.extra_data)
         self.assertFalse('bug_tracker_hosting_url'
@@ -2804,7 +2868,7 @@ class RepositoryFormTests(TestCase):
         repository = form.save()
         self.assertFalse(repository.extra_data['bug_tracker_use_hosting'])
         self.assertEqual(repository.bug_tracker, '')
-        self.assertFalse('bug_tracker_type' in repository.extra_data)
+        self.assertNotIn('bug_tracker_type', repository.extra_data)
 
     def test_with_hosting_service_with_existing_custom_bug_tracker(self):
         """Testing RepositoryForm with existing custom bug tracker"""
@@ -2832,8 +2896,8 @@ class RepositoryFormTests(TestCase):
             form._get_field_data('bug_tracker_hosting_account_username'),
             'testuser')
 
-        self.assertTrue('test' in form.bug_tracker_forms)
-        self.assertTrue('default' in form.bug_tracker_forms['test'])
+        self.assertIn('test', form.bug_tracker_forms)
+        self.assertIn('default', form.bug_tracker_forms['test'])
         bitbucket_form = form.bug_tracker_forms['test']['default']
         self.assertEqual(
             bitbucket_form.fields['test_repo_name'].initial,

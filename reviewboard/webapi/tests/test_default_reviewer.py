@@ -45,8 +45,8 @@ class ResourceListTests(BaseWebAPITestCase):
         default_reviewer.groups.add(group)
         default_reviewer.repository.add(repository)
 
-        rsp = self.apiGet(get_default_reviewer_list_url(),
-                          expected_mimetype=default_reviewer_list_mimetype)
+        rsp = self.api_get(get_default_reviewer_list_url(),
+                           expected_mimetype=default_reviewer_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
 
         default_reviewers = rsp['default_reviewers']
@@ -77,8 +77,8 @@ class ResourceListTests(BaseWebAPITestCase):
         DefaultReviewer.objects.create(name='default2', file_regex='/foo')
 
         # Test for non-LocalSite ones.
-        rsp = self.apiGet(get_default_reviewer_list_url(),
-                          expected_mimetype=default_reviewer_list_mimetype)
+        rsp = self.api_get(get_default_reviewer_list_url(),
+                           expected_mimetype=default_reviewer_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
 
         default_reviewers = rsp['default_reviewers']
@@ -88,8 +88,8 @@ class ResourceListTests(BaseWebAPITestCase):
 
         # Now test for the ones in the LocalSite.
         self._login_user(local_site=True)
-        rsp = self.apiGet(get_default_reviewer_list_url(self.local_site_name),
-                          expected_mimetype=default_reviewer_list_mimetype)
+        rsp = self.api_get(get_default_reviewer_list_url(self.local_site_name),
+                           expected_mimetype=default_reviewer_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
 
         default_reviewers = rsp['default_reviewers']
@@ -102,8 +102,8 @@ class ResourceListTests(BaseWebAPITestCase):
         """Testing the GET default-reviewers/ API
         with a local site and Permission Denied error
         """
-        self.apiGet(get_default_reviewer_list_url(self.local_site_name),
-                    expected_status=403)
+        self.api_get(get_default_reviewer_list_url(self.local_site_name),
+                     expected_status=403)
 
     @add_fixtures(['test_scmtools'])
     def test_get_with_repositories(self):
@@ -121,9 +121,9 @@ class ResourceListTests(BaseWebAPITestCase):
         default_reviewer.repository.add(repository2)
 
         # Test singling out one repository.
-        rsp = self.apiGet('%s?repositories=%s'
-                          % (get_default_reviewer_list_url(), repository2.pk),
-                          expected_mimetype=default_reviewer_list_mimetype)
+        rsp = self.api_get('%s?repositories=%s'
+                           % (get_default_reviewer_list_url(), repository2.pk),
+                           expected_mimetype=default_reviewer_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
         default_reviewers = rsp['default_reviewers']
         self.assertEqual(len(default_reviewers), 2)
@@ -131,10 +131,10 @@ class ResourceListTests(BaseWebAPITestCase):
         self.assertEqual(default_reviewers[1]['name'], 'default2')
 
         # Test requiring more than one.
-        rsp = self.apiGet('%s?repositories=%s,%s'
-                          % (get_default_reviewer_list_url(), repository1.pk,
-                             repository2.pk),
-                          expected_mimetype=default_reviewer_list_mimetype)
+        rsp = self.api_get('%s?repositories=%s,%s'
+                           % (get_default_reviewer_list_url(), repository1.pk,
+                              repository2.pk),
+                           expected_mimetype=default_reviewer_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
         default_reviewers = rsp['default_reviewers']
         self.assertEqual(len(default_reviewers), 1)
@@ -155,8 +155,8 @@ class ResourceListTests(BaseWebAPITestCase):
         default_reviewer.people.add(user2)
 
         # Test singling out one user.
-        rsp = self.apiGet('%s?users=dopey' % get_default_reviewer_list_url(),
-                          expected_mimetype=default_reviewer_list_mimetype)
+        rsp = self.api_get('%s?users=dopey' % get_default_reviewer_list_url(),
+                           expected_mimetype=default_reviewer_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
         default_reviewers = rsp['default_reviewers']
         self.assertEqual(len(default_reviewers), 2)
@@ -164,7 +164,7 @@ class ResourceListTests(BaseWebAPITestCase):
         self.assertEqual(default_reviewers[1]['name'], 'default2')
 
         # Test requiring more than one.
-        rsp = self.apiGet(
+        rsp = self.api_get(
             '%s?users=doc,dopey' % get_default_reviewer_list_url(),
             expected_mimetype=default_reviewer_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
@@ -187,7 +187,7 @@ class ResourceListTests(BaseWebAPITestCase):
         default_reviewer.groups.add(group2)
 
         # Test singling out one group.
-        rsp = self.apiGet(
+        rsp = self.api_get(
             '%s?groups=group2' % get_default_reviewer_list_url(),
             expected_mimetype=default_reviewer_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
@@ -197,7 +197,7 @@ class ResourceListTests(BaseWebAPITestCase):
         self.assertEqual(default_reviewers[1]['name'], 'default2')
 
         # Test requiring more than one.
-        rsp = self.apiGet(
+        rsp = self.api_get(
             '%s?groups=group1,group2' % get_default_reviewer_list_url(),
             expected_mimetype=default_reviewer_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
@@ -281,7 +281,7 @@ class ResourceListTests(BaseWebAPITestCase):
         name = 'default1'
         file_regex = '.*'
 
-        rsp = self.apiPost(
+        rsp = self.api_post(
             get_default_reviewer_list_url(),
             {
                 'name': name,
@@ -304,7 +304,7 @@ class ResourceListTests(BaseWebAPITestCase):
         """
         self._login_user()
 
-        self.apiPost(
+        self.api_post(
             get_default_reviewer_list_url(),
             {
                 'name': 'default1',
@@ -317,7 +317,7 @@ class ResourceListTests(BaseWebAPITestCase):
         """Testing the POST default-reviewers/ API with an invalid regex"""
         self._login_user(admin=True)
 
-        rsp = self.apiPost(
+        rsp = self.api_post(
             get_default_reviewer_list_url(),
             {
                 'name': 'default1',
@@ -327,14 +327,14 @@ class ResourceListTests(BaseWebAPITestCase):
 
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], INVALID_FORM_DATA.code)
-        self.assertTrue('file_regex' in rsp['fields'])
+        self.assertIn('file_regex', rsp['fields'])
 
     @add_fixtures(['test_users'])
     def test_post_with_invalid_username(self):
         """Testing the POST default-reviewers/ API with invalid username"""
         self._login_user(admin=True)
 
-        rsp = self.apiPost(
+        rsp = self.api_post(
             get_default_reviewer_list_url(),
             {
                 'name': 'default1',
@@ -343,8 +343,8 @@ class ResourceListTests(BaseWebAPITestCase):
             },
             expected_status=400)
 
-        self.assertTrue('fields' in rsp)
-        self.assertTrue('users' in rsp['fields'])
+        self.assertIn('fields', rsp)
+        self.assertIn('users', rsp['fields'])
 
     @add_fixtures(['test_users', 'test_site'])
     def test_post_with_user_invalid_site(self):
@@ -355,7 +355,7 @@ class ResourceListTests(BaseWebAPITestCase):
 
         local_site = LocalSite.objects.get(name=self.local_site_name)
 
-        rsp = self.apiPost(
+        rsp = self.api_post(
             get_default_reviewer_list_url(local_site),
             {
                 'name': 'default1',
@@ -364,15 +364,15 @@ class ResourceListTests(BaseWebAPITestCase):
             },
             expected_status=400)
 
-        self.assertTrue('fields' in rsp)
-        self.assertTrue('users' in rsp['fields'])
+        self.assertIn('fields', rsp)
+        self.assertIn('users', rsp['fields'])
 
     @add_fixtures(['test_users'])
     def test_post_with_invalid_group(self):
         """Testing the POST default-reviewers/ API with invalid group"""
         self._login_user(admin=True)
 
-        rsp = self.apiPost(
+        rsp = self.api_post(
             get_default_reviewer_list_url(),
             {
                 'name': 'default1',
@@ -381,8 +381,8 @@ class ResourceListTests(BaseWebAPITestCase):
             },
             expected_status=400)
 
-        self.assertTrue('fields' in rsp)
-        self.assertTrue('groups' in rsp['fields'])
+        self.assertIn('fields', rsp)
+        self.assertIn('groups', rsp['fields'])
 
     @add_fixtures(['test_users', 'test_site'])
     def test_post_with_group_invalid_site(self):
@@ -394,7 +394,7 @@ class ResourceListTests(BaseWebAPITestCase):
         local_site = LocalSite.objects.get(name=self.local_site_name)
         Group.objects.create(name='group1', local_site=local_site)
 
-        rsp = self.apiPost(
+        rsp = self.api_post(
             get_default_reviewer_list_url(),
             {
                 'name': 'default1',
@@ -403,15 +403,15 @@ class ResourceListTests(BaseWebAPITestCase):
             },
             expected_status=400)
 
-        self.assertTrue('fields' in rsp)
-        self.assertTrue('groups' in rsp['fields'])
+        self.assertIn('fields', rsp)
+        self.assertIn('groups', rsp['fields'])
 
     @add_fixtures(['test_users'])
     def test_post_with_invalid_repository(self):
         """Testing the POST default-reviewers/ API with invalid repository"""
         self._login_user(admin=True)
 
-        rsp = self.apiPost(
+        rsp = self.api_post(
             get_default_reviewer_list_url(),
             {
                 'name': 'default1',
@@ -420,8 +420,8 @@ class ResourceListTests(BaseWebAPITestCase):
             },
             expected_status=400)
 
-        self.assertTrue('fields' in rsp)
-        self.assertTrue('repositories' in rsp['fields'])
+        self.assertIn('fields', rsp)
+        self.assertIn('repositories', rsp['fields'])
 
     @add_fixtures(['test_users', 'test_site', 'test_scmtools'])
     def test_post_with_repository_invalid_site(self):
@@ -432,7 +432,7 @@ class ResourceListTests(BaseWebAPITestCase):
 
         self._login_user(admin=True)
 
-        rsp = self.apiPost(
+        rsp = self.api_post(
             get_default_reviewer_list_url(),
             {
                 'name': 'default1',
@@ -441,8 +441,8 @@ class ResourceListTests(BaseWebAPITestCase):
             },
             expected_status=400)
 
-        self.assertTrue('fields' in rsp)
-        self.assertTrue('repositories' in rsp['fields'])
+        self.assertIn('fields', rsp)
+        self.assertIn('repositories', rsp['fields'])
 
 
 @six.add_metaclass(BasicTestsMetaclass)
@@ -626,13 +626,13 @@ class ResourceItemTests(BaseWebAPITestCase):
         default_reviewer = DefaultReviewer.objects.create(
             name='default1', file_regex='.*')
 
-        rsp = self.apiPut(
+        rsp = self.api_put(
             get_default_reviewer_item_url(default_reviewer.pk),
             {'users': 'foo'},
             expected_status=400)
 
-        self.assertTrue('fields' in rsp)
-        self.assertTrue('users' in rsp['fields'])
+        self.assertIn('fields', rsp)
+        self.assertIn('users', rsp['fields'])
 
     @add_fixtures(['test_users', 'test_site'])
     def test_put_with_user_invalid_site(self):
@@ -645,14 +645,14 @@ class ResourceItemTests(BaseWebAPITestCase):
         default_reviewer = DefaultReviewer.objects.create(
             name='default1', file_regex='.*', local_site=local_site)
 
-        rsp = self.apiPut(
+        rsp = self.api_put(
             get_default_reviewer_item_url(default_reviewer.pk,
                                           self.local_site_name),
             {'users': 'grumpy'},
             expected_status=400)
 
-        self.assertTrue('fields' in rsp)
-        self.assertTrue('users' in rsp['fields'])
+        self.assertIn('fields', rsp)
+        self.assertIn('users', rsp['fields'])
 
     @add_fixtures(['test_users'])
     def test_put_with_invalid_group(self):
@@ -662,13 +662,13 @@ class ResourceItemTests(BaseWebAPITestCase):
         default_reviewer = DefaultReviewer.objects.create(
             name='default1', file_regex='.*')
 
-        rsp = self.apiPut(
+        rsp = self.api_put(
             get_default_reviewer_item_url(default_reviewer.pk),
             {'groups': 'foo'},
             expected_status=400)
 
-        self.assertTrue('fields' in rsp)
-        self.assertTrue('groups' in rsp['fields'])
+        self.assertIn('fields', rsp)
+        self.assertIn('groups', rsp['fields'])
 
     @add_fixtures(['test_users', 'test_site'])
     def test_put_with_group_invalid_site(self):
@@ -682,13 +682,13 @@ class ResourceItemTests(BaseWebAPITestCase):
             name='default1', file_regex='.*')
         Group.objects.create(name='group1', local_site=local_site)
 
-        rsp = self.apiPut(
+        rsp = self.api_put(
             get_default_reviewer_item_url(default_reviewer.pk),
             {'groups': 'group1'},
             expected_status=400)
 
-        self.assertTrue('fields' in rsp)
-        self.assertTrue('groups' in rsp['fields'])
+        self.assertIn('fields', rsp)
+        self.assertIn('groups', rsp['fields'])
 
     @add_fixtures(['test_users'])
     def test_put_with_invalid_repository(self):
@@ -700,13 +700,13 @@ class ResourceItemTests(BaseWebAPITestCase):
         default_reviewer = DefaultReviewer.objects.create(
             name='default1', file_regex='.*')
 
-        rsp = self.apiPut(
+        rsp = self.api_put(
             get_default_reviewer_item_url(default_reviewer.pk),
             {'repositories': '12345'},
             expected_status=400)
 
-        self.assertTrue('fields' in rsp)
-        self.assertTrue('repositories' in rsp['fields'])
+        self.assertIn('fields', rsp)
+        self.assertIn('repositories', rsp['fields'])
 
     @add_fixtures(['test_users', 'test_site', 'test_scmtools'])
     def test_put_with_repository_invalid_site(self):
@@ -720,10 +720,10 @@ class ResourceItemTests(BaseWebAPITestCase):
 
         self._login_user(admin=True)
 
-        rsp = self.apiPut(
+        rsp = self.api_put(
             get_default_reviewer_item_url(default_reviewer.pk),
             {'repositories': six.text_type(repository.pk)},
             expected_status=400)
 
-        self.assertTrue('fields' in rsp)
-        self.assertTrue('repositories' in rsp['fields'])
+        self.assertIn('fields', rsp)
+        self.assertIn('repositories', rsp['fields'])

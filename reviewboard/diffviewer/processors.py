@@ -122,15 +122,62 @@ def filter_interdiff_opcodes(opcodes, filediff_data, interfilediff_data):
             # This chunk is valid. It may only be a portion of the real
             # chunk, though. We'll need to split it up into a known valid
             # segment first, and yield that.
+            if orig_range:
+                cap_i2 = orig_range[1] + 1
+            else:
+                cap_i2 = i2
+
+            if new_range:
+                cap_j2 = new_range[1] + 1
+            else:
+                cap_j2 = j2
+
             if orig_starts_valid:
-                valid_i2 = min(i2, orig_range[1] + 1)
+                valid_i2 = min(i2, cap_i2)
             else:
                 valid_i2 = i2
 
             if new_starts_valid:
-                valid_j2 = min(j2, new_range[1] + 1)
+                valid_j2 = min(j2, cap_j2)
             else:
                 valid_j2 = j2
+
+            if tag in ('equal', 'replace'):
+                # We need to take care to not let the replace lines have
+                # differing ranges for the orig and modified files. We want the
+                # replace to take up the full bounds of the two sides, but
+                # capped to the valid chunk range.
+                #
+                # For this, we need to pick a consistent value for the length
+                # of the range. We know at least one side will be within
+                # bounds, since we have a valid chunk and at least one is
+                # capped to be <= the end of the range.
+                #
+                # If one side is out of bounds of the range, the other range
+                # will win. If both are in bounds, the largest wins.
+                i_diff = valid_i2 - i1
+                j_diff = valid_j2 - j1
+
+                if valid_i2 > cap_i2:
+                    # Sanity-check that valid_j2 is in bounds. We don't need
+                    # to check this in the following conditionals, though,
+                    # since that's covered by the conditionals themselves.
+                    assert valid_j2 <= cap_j2
+
+                    max_cap = j_diff
+                elif valid_j2 > cap_j2:
+                    max_cap = i_diff
+                else:
+                    max_cap = max(i_diff, j_diff)
+
+                # Set each valid range to be the same length.
+                valid_i2 = i1 + max_cap
+                valid_j2 = j1 + max_cap
+
+                # Update the caps, so that we'll process whatever we've
+                # chopped off.
+                cap_i2 = valid_i2
+                cap_j2 = valid_j2
 
             yield tag, i1, valid_i2, j1, valid_j2
 
@@ -140,11 +187,11 @@ def filter_interdiff_opcodes(opcodes, filediff_data, interfilediff_data):
             # There were more parts of this range remaining. We know they're
             # all invalid, so let's update i1 and j1 to point to the start
             # of those invalid ranges, and mark them.
-            if orig_range is not None and i2 > orig_range[1]:
-                i1 = orig_range[1] + 1
+            if orig_range is not None and i2 + 1 > cap_i2:
+                i1 = cap_i2
 
-            if new_range is not None and j2 > new_range[1]:
-                j1 = new_range[1] + 1
+            if new_range is not None and j2 + 1 > cap_j2:
+                j1 = cap_j2
 
             valid_chunk = False
 

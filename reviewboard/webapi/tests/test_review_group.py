@@ -66,8 +66,8 @@ class ResourceListTests(ExtraDataListMixin, BaseWebAPITestCase):
         self.create_review_group(name='docgroup')
         self.create_review_group(name='devgroup')
 
-        rsp = self.apiGet(get_review_group_list_url(), {'q': 'dev'},
-                          expected_mimetype=review_group_list_mimetype)
+        rsp = self.api_get(get_review_group_list_url(), {'q': 'dev'},
+                           expected_mimetype=review_group_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(len(rsp['groups']), 1)  # devgroup
 
@@ -104,7 +104,7 @@ class ResourceListTests(ExtraDataListMixin, BaseWebAPITestCase):
 
         self._login_user(admin=True)
 
-        rsp = self.apiPost(
+        rsp = self.api_post(
             get_review_group_list_url(),
             {
                 'name': name,
@@ -125,7 +125,7 @@ class ResourceListTests(ExtraDataListMixin, BaseWebAPITestCase):
         self._login_user(local_site=True, admin=True)
         local_site = LocalSite.objects.get(name=self.local_site_name)
 
-        rsp = self.apiPost(
+        rsp = self.api_post(
             get_review_group_list_url(local_site),
             {
                 'name': 'mygroup',
@@ -141,7 +141,7 @@ class ResourceListTests(ExtraDataListMixin, BaseWebAPITestCase):
         self._login_user(admin=True)
         group = self.create_review_group()
 
-        rsp = self.apiPost(
+        rsp = self.api_post(
             get_review_group_list_url(),
             {
                 'name': group.name,
@@ -189,8 +189,8 @@ class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase):
         group = Group.objects.create(name='test-group', invite_only=True)
         group.users.add(self.user)
 
-        self.apiDelete(get_review_group_item_url('test-group'),
-                       expected_status=403)
+        self.api_delete(get_review_group_item_url('test-group'),
+                        expected_status=403)
 
     @add_fixtures(['test_scmtools'])
     def test_delete_with_review_requests(self):
@@ -204,8 +204,8 @@ class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase):
         request = ReviewRequest.objects.create(self.user, repository)
         request.target_groups.add(group)
 
-        self.apiDelete(get_review_group_item_url('test-group'),
-                       expected_status=204)
+        self.api_delete(get_review_group_item_url('test-group'),
+                        expected_status=204)
 
         request = ReviewRequest.objects.get(pk=request.id)
         self.assertEqual(request.target_groups.count(), 0)
@@ -233,8 +233,8 @@ class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase):
         group = Group.objects.create(name='test-group', invite_only=True)
         group.users.add(self.user)
 
-        rsp = self.apiGet(get_review_group_item_url(group.name),
-                          expected_mimetype=review_group_item_mimetype)
+        rsp = self.api_get(get_review_group_item_url(group.name),
+                           expected_mimetype=review_group_item_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(rsp['group']['invite_only'], True)
 
@@ -244,8 +244,8 @@ class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase):
         """
         group = Group.objects.create(name='test-group', invite_only=True)
 
-        rsp = self.apiGet(get_review_group_item_url(group.name),
-                          expected_status=403)
+        rsp = self.api_get(get_review_group_item_url(group.name),
+                           expected_status=403)
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
@@ -276,7 +276,7 @@ class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase):
         group = self.create_review_group(
             with_local_site=(local_site is not None))
 
-        rsp = self.apiPut(
+        rsp = self.api_put(
             get_review_group_item_url(group.name, local_site),
             {
                 'name': 'mygroup',
@@ -295,7 +295,7 @@ class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase):
         group2 = self.create_review_group(name='group2')
 
         self._login_user(admin=True)
-        rsp = self.apiPut(
+        rsp = self.api_put(
             get_review_group_item_url(group.name),
             {'name': group2.name},
             expected_status=409)

@@ -114,7 +114,7 @@ class ResourceListTests(ReviewRequestChildListMixin, BaseWebAPITestCase):
 
         with open(self._getTrophyFilename(), "r") as f:
             self.assertTrue(f)
-            rsp = self.apiPost(
+            rsp = self.api_post(
                 get_file_attachment_list_url(review_request),
                 {
                     'caption': 'Trophy',

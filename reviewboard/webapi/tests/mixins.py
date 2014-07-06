@@ -149,7 +149,7 @@ class BasicDeleteTestsMixin(BasicTestsMixin):
         url, cb_args = self.setup_basic_delete_test(self.user, False, None)
         self.assertFalse(url.startswith('/s/' + self.local_site_name))
 
-        self.apiDelete(url)
+        self.api_delete(url)
         self.check_delete_result(self.user, *cb_args)
 
     @test_template
@@ -163,7 +163,7 @@ class BasicDeleteTestsMixin(BasicTestsMixin):
         url, cb_args = self.setup_basic_delete_test(user, False, None)
         self.assertFalse(url.startswith('/s/' + self.local_site_name))
 
-        rsp = self.apiDelete(url, expected_status=403)
+        rsp = self.api_delete(url, expected_status=403)
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
@@ -186,7 +186,7 @@ class BasicDeleteTestsWithLocalSiteMixin(BasicDeleteTestsMixin):
                                                     self.local_site_name)
         self.assertTrue(url.startswith('/s/' + self.local_site_name))
 
-        self.apiDelete(url)
+        self.api_delete(url)
         self.check_delete_result(user, *cb_args)
 
     @add_fixtures(['test_site'])
@@ -202,7 +202,7 @@ class BasicDeleteTestsWithLocalSiteMixin(BasicDeleteTestsMixin):
         self.assertTrue(url.startswith('/s/' + self.local_site_name))
 
         user = self._login_user()
-        rsp = self.apiDelete(url, expected_status=403)
+        rsp = self.api_delete(url, expected_status=403)
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
@@ -224,7 +224,7 @@ class BasicDeleteNotAllowedTestsMixin(BasicTestsMixin):
         """Testing the DELETE <URL> API gives Method Not Allowed"""
         url = self.setup_http_not_allowed_item_test(self.user)
 
-        self.apiDelete(url, expected_status=405)
+        self.api_delete(url, expected_status=405)
 
 
 class BasicGetItemTestsMixin(BasicTestsMixin):
@@ -251,9 +251,9 @@ class BasicGetItemTestsMixin(BasicTestsMixin):
         url, mimetype, item = self.setup_basic_get_test(self.user, False, None)
         self.assertFalse(url.startswith('/s/' + self.local_site_name))
 
-        rsp = self.apiGet(url, expected_mimetype=mimetype)
+        rsp = self.api_get(url, expected_mimetype=mimetype)
         self.assertEqual(rsp['stat'], 'ok')
-        self.assertTrue(self.resource.item_result_key in rsp)
+        self.assertIn(self.resource.item_result_key, rsp)
 
         item_rsp = rsp[self.resource.item_result_key]
         self.compare_item(item_rsp, item)
@@ -277,7 +277,7 @@ class BasicGetItemTestsWithLocalSiteMixin(BasicGetItemTestsMixin):
             self.setup_basic_get_test(user, True, self.local_site_name)
         self.assertTrue(url.startswith('/s/' + self.local_site_name))
 
-        rsp = self.apiGet(url, expected_mimetype=mimetype)
+        rsp = self.api_get(url, expected_mimetype=mimetype)
         self.assertEqual(rsp['stat'], 'ok')
         self.assertIn(self.resource.item_result_key, rsp)
 
@@ -294,7 +294,7 @@ class BasicGetItemTestsWithLocalSiteMixin(BasicGetItemTestsMixin):
             self.setup_basic_get_test(self.user, True, self.local_site_name)
         self.assertTrue(url.startswith('/s/' + self.local_site_name))
 
-        rsp = self.apiGet(url, expected_status=403)
+        rsp = self.api_get(url, expected_status=403)
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
@@ -325,9 +325,9 @@ class BasicGetListTestsMixin(BasicTestsMixin):
                                                          None, True)
         self.assertFalse(url.startswith('/s/' + self.local_site_name))
 
-        rsp = self.apiGet(url, expected_mimetype=mimetype)
+        rsp = self.api_get(url, expected_mimetype=mimetype)
         self.assertEqual(rsp['stat'], 'ok')
-        self.assertTrue(self.resource.list_result_key in rsp)
+        self.assertIn(self.resource.list_result_key, rsp)
 
         items_rsp = rsp[self.resource.list_result_key]
         self.assertEqual(len(items), len(items_rsp))
@@ -355,9 +355,9 @@ class BasicGetListTestsWithLocalSiteMixin(BasicGetListTestsMixin):
                                                          True)
         self.assertTrue(url.startswith('/s/' + self.local_site_name))
 
-        rsp = self.apiGet(url, expected_mimetype=mimetype)
+        rsp = self.api_get(url, expected_mimetype=mimetype)
         self.assertEqual(rsp['stat'], 'ok')
-        self.assertTrue(self.resource.list_result_key in rsp)
+        self.assertIn(self.resource.list_result_key, rsp)
 
         items_rsp = rsp[self.resource.list_result_key]
         self.assertEqual(len(items), len(items_rsp))
@@ -376,7 +376,7 @@ class BasicGetListTestsWithLocalSiteMixin(BasicGetListTestsMixin):
                                                          False)
         self.assertTrue(url.startswith('/s/' + self.local_site_name))
 
-        rsp = self.apiGet(url, expected_status=403)
+        rsp = self.api_get(url, expected_status=403)
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
@@ -413,7 +413,7 @@ class BasicPostTestsMixin(BasicTestsMixin):
             self.setup_basic_post_test(self.user, False, None, True)
         self.assertFalse(url.startswith('/s/' + self.local_site_name))
 
-        rsp = self.apiPost(url, post_data, expected_mimetype=mimetype)
+        rsp = self.api_post(url, post_data, expected_mimetype=mimetype)
         self._close_file_handles(post_data)
         self.assertEqual(rsp['stat'], 'ok')
         self.check_post_result(self.user, rsp, *cb_args)
@@ -437,7 +437,7 @@ class BasicPostTestsWithLocalSiteMixin(BasicPostTestsMixin):
             self.setup_basic_post_test(user, True, self.local_site_name, True)
         self.assertTrue(url.startswith('/s/' + self.local_site_name))
 
-        rsp = self.apiPost(url, post_data, expected_mimetype=mimetype)
+        rsp = self.api_post(url, post_data, expected_mimetype=mimetype)
         self._close_file_handles(post_data)
         self.assertEqual(rsp['stat'], 'ok')
         self.check_post_result(user, rsp, *cb_args)
@@ -455,7 +455,7 @@ class BasicPostTestsWithLocalSiteMixin(BasicPostTestsMixin):
 
         self._login_user()
 
-        rsp = self.apiPost(url, post_data, expected_status=403)
+        rsp = self.api_post(url, post_data, expected_status=403)
         self._close_file_handles(post_data)
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
@@ -476,7 +476,7 @@ class BasicPostNotAllowedTestsMixin(BasicTestsMixin):
         """Testing the POST <URL> API gives Method Not Allowed"""
         url = self.setup_http_not_allowed_list_test(self.user)
 
-        self.apiPost(url, {}, expected_status=405)
+        self.api_post(url, {}, expected_status=405)
 
 
 class BasicPutTestsMixin(BasicTestsMixin):
@@ -511,9 +511,9 @@ class BasicPutTestsMixin(BasicTestsMixin):
             self.setup_basic_put_test(self.user, False, None, True)
         self.assertFalse(url.startswith('/s/' + self.local_site_name))
 
-        rsp = self.apiPut(url, put_data, expected_mimetype=mimetype)
+        rsp = self.api_put(url, put_data, expected_mimetype=mimetype)
         self.assertEqual(rsp['stat'], 'ok')
-        self.assertTrue(self.resource.item_result_key in rsp)
+        self.assertIn(self.resource.item_result_key, rsp)
 
         self.check_put_result(self.user, rsp[self.resource.item_result_key],
                               item, *cb_args)
@@ -530,7 +530,7 @@ class BasicPutTestsMixin(BasicTestsMixin):
             self.setup_basic_put_test(user, False, None, False)
         self.assertFalse(url.startswith('/s/' + self.local_site_name))
 
-        rsp = self.apiPut(url, put_data, expected_status=403)
+        rsp = self.api_put(url, put_data, expected_status=403)
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
@@ -553,9 +553,9 @@ class BasicPutTestsWithLocalSiteMixin(BasicPutTestsMixin):
             self.setup_basic_put_test(user, True, self.local_site_name, True)
         self.assertTrue(url.startswith('/s/' + self.local_site_name))
 
-        rsp = self.apiPut(url, put_data, expected_mimetype=mimetype)
+        rsp = self.api_put(url, put_data, expected_mimetype=mimetype)
         self.assertEqual(rsp['stat'], 'ok')
-        self.assertTrue(self.resource.item_result_key in rsp)
+        self.assertIn(self.resource.item_result_key, rsp)
 
         self.check_put_result(self.user, rsp[self.resource.item_result_key],
                               item, *cb_args)
@@ -573,7 +573,7 @@ class BasicPutTestsWithLocalSiteMixin(BasicPutTestsMixin):
         self.assertTrue(url.startswith('/s/' + self.local_site_name))
 
         user = self._login_user()
-        rsp = self.apiPut(url, put_data, expected_status=403)
+        rsp = self.api_put(url, put_data, expected_status=403)
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
@@ -595,7 +595,7 @@ class BasicPutNotAllowedTestsMixin(BasicTestsMixin):
         """Testing the PUT <URL> API gives Method Not Allowed"""
         url = self.setup_http_not_allowed_item_test(self.user)
 
-        self.apiPut(url, {}, expected_status=405)
+        self.api_put(url, {}, expected_status=405)
 
 
 class BaseReviewRequestChildMixin(object):
@@ -624,7 +624,7 @@ class BaseReviewRequestChildMixin(object):
 
         url, mimetype = self.setup_review_request_child_test(review_request)
 
-        rsp = self.apiGet(url, expected_mimetype=mimetype)
+        rsp = self.api_get(url, expected_mimetype=mimetype)
         self.assertEqual(rsp['stat'], 'ok')
 
     @test_template
@@ -638,7 +638,7 @@ class BaseReviewRequestChildMixin(object):
 
         url, mimetype = self.setup_review_request_child_test(review_request)
 
-        rsp = self.apiGet(url, expected_status=403)
+        rsp = self.api_get(url, expected_status=403)
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
@@ -655,7 +655,7 @@ class BaseReviewRequestChildMixin(object):
 
         url, mimetype = self.setup_review_request_child_test(review_request)
 
-        rsp = self.apiGet(url, expected_mimetype=mimetype)
+        rsp = self.api_get(url, expected_mimetype=mimetype)
         self.assertEqual(rsp['stat'], 'ok')
 
     @add_fixtures(['test_scmtools'])
@@ -670,7 +670,7 @@ class BaseReviewRequestChildMixin(object):
 
         url, mimetype = self.setup_review_request_child_test(review_request)
 
-        rsp = self.apiGet(url, expected_status=403)
+        rsp = self.api_get(url, expected_status=403)
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 

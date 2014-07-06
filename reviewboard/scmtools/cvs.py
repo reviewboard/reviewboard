@@ -1,5 +1,6 @@
 from __future__ import unicode_literals
 
+import logging
 import os
 import re
 import tempfile
@@ -32,7 +33,10 @@ class CVSTool(SCMTool):
     }
 
     rev_re = re.compile(r'^.*?(\d+(\.\d+)+)\r?$')
-    repopath_re = re.compile(r'^(?P<hostname>.*):(?P<port>\d+)?(?P<path>.*)')
+    repopath_re = re.compile(
+        r'^((?P<cnxmethod>:[gkp]server:)'
+        r'((?P<username>[^:@]+)(:(?P<password>[^@]+))?@)?)?'
+        r'(?P<hostname>[^:]+):(?P<port>\d+)?(?P<path>.*)')
     ext_cvsroot_re = re.compile(r':ext:([^@]+@)?(?P<hostname>[^:/]+)')
 
     def __init__(self, repository):
@@ -93,30 +97,36 @@ class CVSTool(SCMTool):
         #  :local:e:\path
         #  :fork:/path
 
-        if not path.startswith(":"):
-            # The user has a path or something. We'll want to parse out the
-            # server name, port (if specified) and path and build a :pserver:
-            # CVSROOT.
-            m = cls.repopath_re.match(path)
+        m = cls.repopath_re.match(path)
 
-            if m:
-                path = m.group("path")
-                cvsroot = ":pserver:"
+        if m:
+            # The user either specified a valid :pserver: path (or equivalent),
+            # or a simply hostname:port/path. In either case, we'll want to
+            # construct our own CVSROOT based on that information and the
+            # provided username and password.
+            #
+            # Note that any username/password found in the path takes
+            # precedence.
+            cvsroot = m.group('cnxmethod') or ':pserver:'
+            username = m.group('username') or username
+            password = m.group('password') or password
+            path = m.group('path')
 
-                if username:
-                    if password:
-                        cvsroot += '%s:%s@' % (username, password)
-                    else:
-                        cvsroot += '%s@' % (username)
+            if username:
+                if password:
+                    cvsroot += '%s:%s@' % (username, password)
+                else:
+                    cvsroot += '%s@' % (username)
 
-                cvsroot += "%s:%s%s" % (m.group("hostname"),
-                                        m.group("port") or "",
-                                        path)
-                return cvsroot, path
+            cvsroot += '%s:%s%s' % (m.group('hostname'),
+                                    m.group('port') or '',
+                                    path)
+        else:
+            # We couldn't parse this as a standard CVSROOT. Assume it's a
+            # local path or another format (like :ext:) and let CVS handle it.
+            cvsroot = path
 
-        # We couldn't parse this as a hostname:port/path. Assume it's a local
-        # path or a full CVSROOT and let CVS handle it.
-        return path, path
+        return cvsroot, path
 
     @classmethod
     def check_repository(cls, path, username=None, password=None,
@@ -154,7 +164,9 @@ class CVSTool(SCMTool):
 
         try:
             client.check_repository()
-        except (SCMError, SSHError, FileNotFoundError):
+        except (AuthenticationError, SCMError):
+            raise
+        except (SSHError, FileNotFoundError):
             raise RepositoryNotFoundError()
 
     @classmethod
@@ -344,5 +356,19 @@ class CVSClient(object):
         p = SCMTool.popen(['cvs', '-f', '-d', self.cvsroot, 'version'],
                           self.local_site_name)
         errmsg = six.text_type(p.stderr.read())
+
         if p.wait() != 0:
+            logging.error('CVS repository validation failed for '
+                          'CVSROOT %s: %s',
+                          self.cvsroot, errmsg)
+
+            auth_failed_prefix = 'cvs version: authorization failed: '
+
+            # See if there's an "authorization failed" anywhere in here. If so,
+            # we want to raise AuthenticationError with that error message.
+            for line in errmsg.splitlines():
+                if line.startswith(auth_failed_prefix):
+                    raise AuthenticationError(
+                        msg=line[len(auth_failed_prefix):].strip())
+
             raise SCMError(errmsg)

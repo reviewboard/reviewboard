@@ -62,7 +62,7 @@ class ResourceTests(BaseWebAPITestCase):
         """
         repository = self.create_repository(tool_name='CVS')
 
-        rsp = self.apiGet(get_repository_branches_url(repository),
-                          expected_status=501)
+        rsp = self.api_get(get_repository_branches_url(repository),
+                           expected_status=501)
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], REPO_NOT_IMPLEMENTED.code)

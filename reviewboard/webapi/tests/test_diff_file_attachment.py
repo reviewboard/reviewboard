@@ -66,12 +66,12 @@ class ResourceListTests(BaseWebAPITestCase):
                                          filename='text.txt',
                                          mimetype='text/plain')
 
-        rsp = self.apiGet(
+        rsp = self.api_get(
             get_diff_file_attachment_list_url(repository) +
             '?mimetype=image/png',
             expected_mimetype=diff_file_attachment_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
-        self.assertTrue('diff_file_attachments' in rsp)
+        self.assertIn('diff_file_attachments', rsp)
 
         attachments_rsp = rsp['diff_file_attachments']
         self.assertEqual(len(attachments_rsp), 1)
@@ -100,12 +100,12 @@ class ResourceListTests(BaseWebAPITestCase):
                                          caption='File 2',
                                          filename='/test-file-2')
 
-        rsp = self.apiGet(
+        rsp = self.api_get(
             get_diff_file_attachment_list_url(repository) +
             '?repository-file-path=/test-file-1',
             expected_mimetype=diff_file_attachment_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
-        self.assertTrue('diff_file_attachments' in rsp)
+        self.assertIn('diff_file_attachments', rsp)
 
         attachments_rsp = rsp['diff_file_attachments']
         self.assertEqual(len(attachments_rsp), 1)
@@ -138,12 +138,12 @@ class ResourceListTests(BaseWebAPITestCase):
                                          caption='File 2',
                                          filename='/test-file-2')
 
-        rsp = self.apiGet(
+        rsp = self.api_get(
             get_diff_file_attachment_list_url(repository) +
             '?repository-revision=5',
             expected_mimetype=diff_file_attachment_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
-        self.assertTrue('diff_file_attachments' in rsp)
+        self.assertIn('diff_file_attachments', rsp)
 
         attachments_rsp = rsp['diff_file_attachments']
         self.assertEqual(len(attachments_rsp), 1)
@@ -200,12 +200,12 @@ class ResourceItemTests(BaseWebAPITestCase):
         filediff = self.create_filediff(diffset)
         attachment = self.create_diff_file_attachment(filediff)
 
-        rsp = self.apiGet(
+        rsp = self.api_get(
             get_diff_file_attachment_item_url(attachment, repository),
             expected_mimetype=diff_file_attachment_item_mimetype)
 
         self.assertEqual(rsp['stat'], 'ok')
-        self.assertTrue('diff_file_attachment' in rsp)
+        self.assertIn('diff_file_attachment', rsp)
 
         attachment_rsp = rsp['diff_file_attachment']
         self.assertEqual(attachment_rsp['id'], attachment.pk)
@@ -222,7 +222,7 @@ class ResourceItemTests(BaseWebAPITestCase):
         filediff = self.create_filediff(diffset)
         attachment = self.create_diff_file_attachment(filediff)
 
-        rsp = self.apiGet(
+        rsp = self.api_get(
             get_diff_file_attachment_item_url(attachment, repository),
             expected_status=403)
 

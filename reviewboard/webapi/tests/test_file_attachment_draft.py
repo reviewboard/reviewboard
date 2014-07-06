@@ -73,12 +73,12 @@ class ResourceListTests(BaseWebAPITestCase):
         draft = review_request.get_draft()
         self.assertIsNotNone(draft)
 
-        self.assertTrue('draft_file_attachment' in rsp)
+        self.assertIn('draft_file_attachment', rsp)
         item_rsp = rsp['draft_file_attachment']
 
         attachment = FileAttachment.objects.get(pk=item_rsp['id'])
-        self.assertTrue(attachment in draft.file_attachments.all())
-        self.assertFalse(attachment in review_request.file_attachments.all())
+        self.assertIn(attachment, draft.file_attachments.all())
+        self.assertNotIn(attachment, review_request.file_attachments.all())
         self.compare_item(item_rsp, attachment)
 
     def test_post_with_permission_denied_error(self):
@@ -90,7 +90,7 @@ class ResourceListTests(BaseWebAPITestCase):
 
         f = open(self._getTrophyFilename(), "r")
         self.assertTrue(f)
-        rsp = self.apiPost(
+        rsp = self.api_post(
             get_draft_file_attachment_list_url(review_request),
             {
                 'caption': 'Trophy',

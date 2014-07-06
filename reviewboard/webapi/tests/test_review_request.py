@@ -76,18 +76,18 @@ class ResourceListTests(ExtraDataListMixin, BaseWebAPITestCase):
 
         url = get_review_request_list_url()
 
-        rsp = self.apiGet(url, {'status': 'submitted'},
-                          expected_mimetype=review_request_list_mimetype)
+        rsp = self.api_get(url, {'status': 'submitted'},
+                           expected_mimetype=review_request_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(len(rsp['review_requests']), 2)
 
-        rsp = self.apiGet(url, {'status': 'discarded'},
-                          expected_mimetype=review_request_list_mimetype)
+        rsp = self.api_get(url, {'status': 'discarded'},
+                           expected_mimetype=review_request_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(len(rsp['review_requests']), 1)
 
-        rsp = self.apiGet(url, {'status': 'all'},
-                          expected_mimetype=review_request_list_mimetype)
+        rsp = self.api_get(url, {'status': 'all'},
+                           expected_mimetype=review_request_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(len(rsp['review_requests']), 6)
 
@@ -96,7 +96,7 @@ class ResourceListTests(ExtraDataListMixin, BaseWebAPITestCase):
         self.create_review_request(publish=True)
         self.create_review_request(publish=True)
 
-        rsp = self.apiGet(get_review_request_list_url(), {
+        rsp = self.api_get(get_review_request_list_url(), {
             'counts-only': 1,
         }, expected_mimetype=review_request_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
@@ -111,7 +111,7 @@ class ResourceListTests(ExtraDataListMixin, BaseWebAPITestCase):
         review_request = self.create_review_request(publish=True)
         review_request.target_groups.add(group)
 
-        rsp = self.apiGet(get_review_request_list_url(), {
+        rsp = self.api_get(get_review_request_list_url(), {
             'to-groups': 'devgroup',
         }, expected_mimetype=review_request_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
@@ -135,14 +135,14 @@ class ResourceListTests(ExtraDataListMixin, BaseWebAPITestCase):
 
         url = get_review_request_list_url()
 
-        rsp = self.apiGet(url, {
+        rsp = self.api_get(url, {
             'status': 'submitted',
             'to-groups': 'devgroup',
         }, expected_mimetype=review_request_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(len(rsp['review_requests']), 1)
 
-        rsp = self.apiGet(url, {
+        rsp = self.api_get(url, {
             'status': 'discarded',
             'to-groups': 'devgroup',
         }, expected_mimetype=review_request_list_mimetype)
@@ -159,7 +159,7 @@ class ResourceListTests(ExtraDataListMixin, BaseWebAPITestCase):
         review_request = self.create_review_request(publish=True)
         review_request.target_groups.add(group)
 
-        rsp = self.apiGet(get_review_request_list_url(), {
+        rsp = self.api_get(get_review_request_list_url(), {
             'to-groups': 'devgroup',
             'counts-only': 1,
         }, expected_mimetype=review_request_list_mimetype)
@@ -178,7 +178,7 @@ class ResourceListTests(ExtraDataListMixin, BaseWebAPITestCase):
         review_request = self.create_review_request(publish=True)
         review_request.target_people.add(grumpy)
 
-        rsp = self.apiGet(get_review_request_list_url(), {
+        rsp = self.api_get(get_review_request_list_url(), {
             'to-users': 'grumpy',
         }, expected_mimetype=review_request_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
@@ -201,7 +201,7 @@ class ResourceListTests(ExtraDataListMixin, BaseWebAPITestCase):
 
         url = get_review_request_list_url()
 
-        rsp = self.apiGet(url, {
+        rsp = self.api_get(url, {
             'status': 'submitted',
             'to-users': 'grumpy',
         }, expected_mimetype=review_request_list_mimetype)
@@ -209,7 +209,7 @@ class ResourceListTests(ExtraDataListMixin, BaseWebAPITestCase):
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(len(rsp['review_requests']), 1)
 
-        rsp = self.apiGet(url, {
+        rsp = self.api_get(url, {
             'status': 'discarded',
             'to-users': 'grumpy',
         }, expected_mimetype=review_request_list_mimetype)
@@ -228,7 +228,7 @@ class ResourceListTests(ExtraDataListMixin, BaseWebAPITestCase):
         review_request = self.create_review_request(publish=True)
         review_request.target_people.add(grumpy)
 
-        rsp = self.apiGet(get_review_request_list_url(), {
+        rsp = self.api_get(get_review_request_list_url(), {
             'to-users': 'grumpy',
             'counts-only': 1,
         }, expected_mimetype=review_request_list_mimetype)
@@ -237,7 +237,7 @@ class ResourceListTests(ExtraDataListMixin, BaseWebAPITestCase):
 
     def test_get_with_to_users_directly(self):
         """Testing the GET review-requests/?to-users-directly= API"""
-        rsp = self.apiGet(get_review_request_list_url(), {
+        rsp = self.api_get(get_review_request_list_url(), {
             'to-users-directly': 'doc',
         }, expected_mimetype=review_request_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
@@ -248,7 +248,7 @@ class ResourceListTests(ExtraDataListMixin, BaseWebAPITestCase):
         """Testing the GET review-requests/?to-users-directly=&status= API"""
         url = get_review_request_list_url()
 
-        rsp = self.apiGet(url, {
+        rsp = self.api_get(url, {
             'status': 'submitted',
             'to-users-directly': 'doc'
         }, expected_mimetype=review_request_list_mimetype)
@@ -257,7 +257,7 @@ class ResourceListTests(ExtraDataListMixin, BaseWebAPITestCase):
             len(rsp['review_requests']),
             ReviewRequest.objects.to_user_directly("doc", status='S').count())
 
-        rsp = self.apiGet(url, {
+        rsp = self.api_get(url, {
             'status': 'discarded',
             'to-users-directly': 'doc'
         }, expected_mimetype=review_request_list_mimetype)
@@ -270,7 +270,7 @@ class ResourceListTests(ExtraDataListMixin, BaseWebAPITestCase):
         """Testing the
         GET review-requests/?to-users-directly=&counts-only=1 API
         """
-        rsp = self.apiGet(get_review_request_list_url(), {
+        rsp = self.api_get(get_review_request_list_url(), {
             'to-users-directly': 'doc',
             'counts-only': 1,
         }, expected_mimetype=review_request_list_mimetype)
@@ -280,7 +280,7 @@ class ResourceListTests(ExtraDataListMixin, BaseWebAPITestCase):
 
     def test_get_with_from_user(self):
         """Testing the GET review-requests/?from-user= API"""
-        rsp = self.apiGet(get_review_request_list_url(), {
+        rsp = self.api_get(get_review_request_list_url(), {
             'from-user': 'grumpy',
         }, expected_mimetype=review_request_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
@@ -291,7 +291,7 @@ class ResourceListTests(ExtraDataListMixin, BaseWebAPITestCase):
         """Testing the GET review-requests/?from-user=&status= API"""
         url = get_review_request_list_url()
 
-        rsp = self.apiGet(url, {
+        rsp = self.api_get(url, {
             'status': 'submitted',
             'from-user': 'grumpy',
         }, expected_mimetype=review_request_list_mimetype)
@@ -300,7 +300,7 @@ class ResourceListTests(ExtraDataListMixin, BaseWebAPITestCase):
             len(rsp['review_requests']),
             ReviewRequest.objects.from_user("grumpy", status='S').count())
 
-        rsp = self.apiGet(url, {
+        rsp = self.api_get(url, {
             'status': 'discarded',
             'from-user': 'grumpy',
         }, expected_mimetype=review_request_list_mimetype)
@@ -311,7 +311,7 @@ class ResourceListTests(ExtraDataListMixin, BaseWebAPITestCase):
 
     def test_get_with_from_user_and_counts_only(self):
         """Testing the GET review-requests/?from-user=&counts-only=1 API"""
-        rsp = self.apiGet(get_review_request_list_url(), {
+        rsp = self.api_get(get_review_request_list_url(), {
             'from-user': 'grumpy',
             'counts-only': 1,
         }, expected_mimetype=review_request_list_mimetype)
@@ -513,7 +513,7 @@ class ResourceListTests(ExtraDataListMixin, BaseWebAPITestCase):
         review_request = self.create_review_request(publish=True)
         self.create_review(review_request, ship_it=True, publish=True)
 
-        rsp = self.apiGet(get_review_request_list_url(), {
+        rsp = self.api_get(get_review_request_list_url(), {
             'ship-it': 0,
         }, expected_mimetype=review_request_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
@@ -531,7 +531,7 @@ class ResourceListTests(ExtraDataListMixin, BaseWebAPITestCase):
         review_request = self.create_review_request(publish=True)
         self.create_review(review_request, ship_it=True, publish=True)
 
-        rsp = self.apiGet(get_review_request_list_url(), {
+        rsp = self.api_get(get_review_request_list_url(), {
             'ship-it': 1,
         }, expected_mimetype=review_request_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
@@ -557,7 +557,7 @@ class ResourceListTests(ExtraDataListMixin, BaseWebAPITestCase):
         r = public_review_requests[start_index]
         timestamp = r.time_added.isoformat()
 
-        rsp = self.apiGet(get_review_request_list_url(), {
+        rsp = self.api_get(get_review_request_list_url(), {
             'time-added-from': timestamp,
             'counts-only': 1,
         }, expected_mimetype=review_request_list_mimetype)
@@ -585,7 +585,7 @@ class ResourceListTests(ExtraDataListMixin, BaseWebAPITestCase):
         r = public_review_requests[start_index]
         timestamp = r.time_added.isoformat()
 
-        rsp = self.apiGet(get_review_request_list_url(), {
+        rsp = self.api_get(get_review_request_list_url(), {
             'time-added-to': timestamp,
             'counts-only': 1,
         }, expected_mimetype=review_request_list_mimetype)
@@ -612,7 +612,7 @@ class ResourceListTests(ExtraDataListMixin, BaseWebAPITestCase):
         r = public_review_requests[start_index]
         timestamp = r.last_updated.isoformat()
 
-        rsp = self.apiGet(get_review_request_list_url(), {
+        rsp = self.api_get(get_review_request_list_url(), {
             'last-updated-from': timestamp,
             'counts-only': 1,
         }, expected_mimetype=review_request_list_mimetype)
@@ -639,7 +639,7 @@ class ResourceListTests(ExtraDataListMixin, BaseWebAPITestCase):
         r = public_review_requests[start_index]
         timestamp = r.last_updated.isoformat()
 
-        rsp = self.apiGet(get_review_request_list_url(), {
+        rsp = self.api_get(get_review_request_list_url(), {
             'last-updated-to': timestamp,
             'counts-only': 1,
         }, expected_mimetype=review_request_list_mimetype)
@@ -664,7 +664,7 @@ class ResourceListTests(ExtraDataListMixin, BaseWebAPITestCase):
         review_request.changenum = 1234
         review_request.save()
 
-        rsp = self.apiGet(get_review_request_list_url(), {
+        rsp = self.api_get(get_review_request_list_url(), {
             'repository': review_request.repository.id,
             'changenum': review_request.changenum,
         }, expected_mimetype=review_request_list_mimetype)
@@ -697,7 +697,7 @@ class ResourceListTests(ExtraDataListMixin, BaseWebAPITestCase):
 
         commit_id = six.text_type(review_request.changenum)
 
-        rsp = self.apiGet(get_review_request_list_url(), {
+        rsp = self.api_get(get_review_request_list_url(), {
             'repository': review_request.repository.id,
             'commit-id': review_request.commit,
         }, expected_mimetype=review_request_list_mimetype)
@@ -741,7 +741,7 @@ class ResourceListTests(ExtraDataListMixin, BaseWebAPITestCase):
         """Testing the POST review-requests/ API with a repository name"""
         repository = self.create_repository()
 
-        rsp = self.apiPost(
+        rsp = self.api_post(
             get_review_request_list_url(),
             {'repository': repository.name},
             expected_mimetype=review_request_item_mimetype)
@@ -757,12 +757,12 @@ class ResourceListTests(ExtraDataListMixin, BaseWebAPITestCase):
     @add_fixtures(['test_scmtools'])
     def test_post_with_no_repository(self):
         """Testing the POST review-requests/ API with no repository"""
-        rsp = self.apiPost(
+        rsp = self.api_post(
             get_review_request_list_url(),
             expected_mimetype=review_request_item_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
 
-        self.assertFalse('repository' in rsp['review_request']['links'])
+        self.assertNotIn('repository', rsp['review_request']['links'])
 
         # See if we can fetch this. Also return it for use in other
         # unit tests.
@@ -778,7 +778,7 @@ class ResourceListTests(ExtraDataListMixin, BaseWebAPITestCase):
         repository = self.create_repository()
 
         self._login_user(local_site=True)
-        rsp = self.apiPost(
+        rsp = self.api_post(
             get_review_request_list_url(self.local_site_name),
             {'repository': repository.path},
             expected_status=400)
@@ -789,7 +789,7 @@ class ResourceListTests(ExtraDataListMixin, BaseWebAPITestCase):
         """Testing the POST review-requests/ API
         with Invalid Repository error
         """
-        rsp = self.apiPost(
+        rsp = self.api_post(
             get_review_request_list_url(),
             {'repository': 'gobbledygook'},
             expected_status=400)
@@ -803,7 +803,7 @@ class ResourceListTests(ExtraDataListMixin, BaseWebAPITestCase):
         """
         repository = self.create_repository(with_local_site=True)
 
-        rsp = self.apiPost(
+        rsp = self.api_post(
             get_review_request_list_url(),
             {'repository': repository.path},
             expected_status=400)
@@ -816,7 +816,7 @@ class ResourceListTests(ExtraDataListMixin, BaseWebAPITestCase):
         repository = self.create_repository()
         commit_id = 'abc123'
 
-        rsp = self.apiPost(
+        rsp = self.api_post(
             get_review_request_list_url(),
             {
                 'repository': repository.name,
@@ -839,7 +839,7 @@ class ResourceListTests(ExtraDataListMixin, BaseWebAPITestCase):
         repository = self.create_repository(tool_name='Test')
         commit_id = 'abc123'
 
-        rsp = self.apiPost(
+        rsp = self.api_post(
             get_review_request_list_url(),
             {
                 'repository': repository.name,
@@ -910,7 +910,7 @@ class ResourceListTests(ExtraDataListMixin, BaseWebAPITestCase):
         """
         repository = self.create_repository()
 
-        rsp = self.apiPost(
+        rsp = self.api_post(
             get_review_request_list_url(),
             {
                 'repository': repository.path,
@@ -921,7 +921,7 @@ class ResourceListTests(ExtraDataListMixin, BaseWebAPITestCase):
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
     def _test_get_with_field_count(self, query_arg, value, expected_count):
-        rsp = self.apiGet(get_review_request_list_url(), {
+        rsp = self.api_get(get_review_request_list_url(), {
             query_arg: value,
         }, expected_mimetype=review_request_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
@@ -938,7 +938,7 @@ class ResourceListTests(ExtraDataListMixin, BaseWebAPITestCase):
         else:
             local_site_name = None
 
-        rsp = self.apiPost(
+        rsp = self.api_post(
             get_review_request_list_url(local_site_name),
             {
                 'submit_as': submit_as_username,
@@ -997,7 +997,7 @@ class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase):
         review_request = self.create_review_request(publish=True)
         self.assertNotEqual(review_request.submitter, self.user)
 
-        rsp = self.apiDelete(
+        rsp = self.api_delete(
             get_review_request_item_url(review_request.display_id),
             expected_status=403)
         self.assertEqual(rsp['stat'], 'fail')
@@ -1012,8 +1012,8 @@ class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase):
         self.user.save()
         self.assertTrue(self.user.has_perm('reviews.delete_reviewrequest'))
 
-        rsp = self.apiDelete(get_review_request_item_url(999),
-                             expected_status=404)
+        rsp = self.api_delete(get_review_request_item_url(999),
+                              expected_status=404)
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], DOES_NOT_EXIST.code)
 
@@ -1034,7 +1034,7 @@ class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase):
 
         review_request = self.create_review_request(with_local_site=True)
 
-        self.apiDelete(
+        self.api_delete(
             get_review_request_item_url(review_request.display_id,
                                         self.local_site_name),
             expected_status=403)
@@ -1047,7 +1047,7 @@ class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase):
         self.user = self._login_user(local_site=True, admin=True)
         review_request = self.create_review_request(with_local_site=True)
 
-        self.apiDelete(
+        self.api_delete(
             get_review_request_item_url(review_request.display_id,
                                         self.local_site_name),
             expected_status=403)
@@ -1073,7 +1073,7 @@ class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase):
         review_request = self.create_review_request(public=False)
         self.assertNotEqual(review_request.submitter, self.user)
 
-        rsp = self.apiGet(
+        rsp = self.api_get(
             get_review_request_item_url(review_request.display_id),
             expected_status=403)
         self.assertEqual(rsp['stat'], 'fail')
@@ -1091,7 +1091,7 @@ class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase):
         review_request.target_groups.add(group)
         review_request.save()
 
-        rsp = self.apiGet(
+        rsp = self.api_get(
             get_review_request_item_url(review_request.display_id),
             expected_status=403)
         self.assertEqual(rsp['stat'], 'fail')
@@ -1111,7 +1111,7 @@ class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase):
         review_request.target_people.add(self.user)
         review_request.save()
 
-        rsp = self.apiGet(
+        rsp = self.api_get(
             get_review_request_item_url(review_request.display_id),
             expected_mimetype=review_request_item_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
@@ -1157,7 +1157,7 @@ class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase):
         """Testing the PUT review-requests/<id>/?status=discarded API"""
         r = self.create_review_request(submitter=self.user, publish=True)
 
-        rsp = self.apiPut(
+        rsp = self.api_put(
             get_review_request_item_url(r.display_id),
             {
                 'status': 'discarded',
@@ -1184,7 +1184,7 @@ class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase):
         r = self.create_review_request()
         self.assertNotEqual(r.submitter, self.user)
 
-        rsp = self.apiPut(
+        rsp = self.api_put(
             get_review_request_item_url(r.display_id),
             {'status': 'discarded'},
             expected_status=403)
@@ -1198,7 +1198,7 @@ class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase):
         r.close(ReviewRequest.SUBMITTED)
         r.save()
 
-        rsp = self.apiPut(
+        rsp = self.api_put(
             get_review_request_item_url(r.display_id),
             {'status': 'pending'},
             expected_mimetype=review_request_item_mimetype)
@@ -1212,7 +1212,7 @@ class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase):
         """Testing the PUT review-requests/<id>/?status=submitted API"""
         r = self.create_review_request(submitter=self.user, publish=True)
 
-        rsp = self.apiPut(
+        rsp = self.api_put(
             get_review_request_item_url(r.display_id),
             {
                 'status': 'submitted',
@@ -1241,7 +1241,7 @@ class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase):
         r = self.create_review_request(submitter='doc', with_local_site=True,
                                        publish=True)
 
-        rsp = self.apiPut(
+        rsp = self.api_put(
             get_review_request_item_url(r.display_id, self.local_site_name),
             {
                 'status': 'submitted',
@@ -1269,7 +1269,7 @@ class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase):
         r = self.create_review_request(submitter='doc', with_local_site=True,
                                        publish=True)
 
-        self.apiPut(
+        self.api_put(
             get_review_request_item_url(r.display_id, self.local_site_name),
             {'status': 'submitted'},
             expected_status=403)
@@ -1299,7 +1299,7 @@ class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase):
         self.assertNotEqual(review_request.submitter.username,
                             self.user.username)
 
-        self.apiPut(
+        self.api_put(
             get_review_request_item_url(review_request.display_id),
             {
                 'status': 'submitted',
@@ -1345,7 +1345,7 @@ class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase):
         else:
             local_site_name = None
 
-        rsp = self.apiPut(
+        rsp = self.api_put(
             get_review_request_item_url(review_request.display_id,
                                         local_site_name),
             {

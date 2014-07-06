@@ -54,7 +54,7 @@ class ResourceListTests(ReviewRequestChildListMixin, BaseWebAPITestCase):
         with an invalid review request ID
         """
         screenshot_invalid_id_url = get_screenshot_list_url(999999)
-        rsp = self.apiGet(screenshot_invalid_id_url, expected_status=404)
+        rsp = self.api_get(screenshot_invalid_id_url, expected_status=404)
 
         self.assertEqual(rsp['stat'], 'fail')
 
@@ -97,7 +97,7 @@ class ResourceListTests(ReviewRequestChildListMixin, BaseWebAPITestCase):
 
         f = open(self._getTrophyFilename(), "r")
         self.assertTrue(f)
-        rsp = self.apiPost(
+        rsp = self.api_post(
             get_screenshot_list_url(review_request),
             {
                 'caption': 'Trophy',

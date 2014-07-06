@@ -1,3 +1,4 @@
+contrib/internal/build-media.py:*: 'pkg_resources' imported but unused
 docs/manual/_ext/webapidocs.py:*: redefinition of unused 'json' from line *
 reviewboard/__init__.py:*: 'reviewboard' imported but unused
 reviewboard/accounts/backends.py:*: redefinition of unused 'sha1' from line *

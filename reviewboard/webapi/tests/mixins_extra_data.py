@@ -23,7 +23,7 @@ class ExtraDataListMixin(object):
             self.setup_basic_post_test(self.user, False, None, True)
         data.update(extra_fields)
 
-        rsp = self.apiPost(url, data, expected_mimetype=mimetype)
+        rsp = self.api_post(url, data, expected_mimetype=mimetype)
         self.assertEqual(rsp['stat'], 'ok')
 
         item_rsp = rsp[self.resource.item_result_key]
@@ -57,7 +57,7 @@ class ExtraDataItemMixin(object):
             self.setup_basic_put_test(self.user, False, None, True)
         data.update(extra_fields)
 
-        rsp = self.apiPut(url, data, expected_mimetype=mimetype)
+        rsp = self.api_put(url, data, expected_mimetype=mimetype)
         self.assertEqual(rsp['stat'], 'ok')
 
         item_rsp = rsp[self.resource.item_result_key]

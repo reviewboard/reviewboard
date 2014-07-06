@@ -83,7 +83,7 @@ class ResourceListTests(ReviewListMixin, ReviewRequestChildListMixin,
         review = self._create_test_review()
         self.create_reply(review, user=self.user, publish=True)
 
-        rsp = self.apiGet(
+        rsp = self.api_get(
             '%s?counts-only=1' % get_review_reply_list_url(review),
             expected_mimetype=review_reply_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
@@ -120,7 +120,7 @@ class ResourceListTests(ReviewListMixin, ReviewRequestChildListMixin,
         review_request = self.create_review_request(publish=True)
         review = self.create_review(review_request, publish=True)
 
-        rsp = self.apiPost(
+        rsp = self.api_post(
             get_review_reply_list_url(review),
             {'body_top': body_top},
             expected_mimetype=review_reply_item_mimetype)
@@ -139,7 +139,7 @@ class ResourceListTests(ReviewListMixin, ReviewRequestChildListMixin,
         review_request = self.create_review_request(publish=True)
         review = self.create_review(review_request, publish=True)
 
-        rsp = self.apiPost(
+        rsp = self.api_post(
             get_review_reply_list_url(review),
             {'body_bottom': body_bottom},
             expected_mimetype=review_reply_item_mimetype)
@@ -266,11 +266,11 @@ class ResourceItemTests(ReviewItemMixin, ReviewRequestChildItemMixin,
             get_review_reply_list_url(review),
             expected_mimetype=review_reply_item_mimetype)
 
-        self.assertTrue('Location' in response)
-        self.assertTrue('stat' in rsp)
+        self.assertIn('Location', response)
+        self.assertIn('stat', rsp)
         self.assertEqual(rsp['stat'], 'ok')
 
-        rsp = self.apiPut(
+        rsp = self.api_put(
             response['Location'],
             {
                 'body_top': 'Test',

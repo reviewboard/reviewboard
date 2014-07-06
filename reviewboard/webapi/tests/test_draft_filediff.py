@@ -71,7 +71,7 @@ class ResourceListTests(BaseWebAPITestCase):
         self.assertNotEqual(review_request.submitter, self.user)
         diffset = self.create_diffset(review_request, draft=True)
 
-        self.apiGet(
+        self.api_get(
             get_draft_filediff_list_url(diffset, review_request),
             expected_status=403)
 
@@ -125,7 +125,7 @@ class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase):
         diffset = self.create_diffset(review_request, draft=True)
         filediff = self.create_filediff(diffset)
 
-        self.apiGet(
+        self.api_get(
             get_draft_filediff_item_url(filediff, review_request),
             expected_status=403)
 
@@ -164,7 +164,7 @@ class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase):
                                      'testdata', 'git_binary_image_new.diff')
 
         with open(diff_filename, 'r') as f:
-            rsp = self.apiPost(
+            rsp = self.api_post(
                 get_diff_list_url(review_request),
                 {
                     'path': f,
@@ -182,7 +182,7 @@ class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase):
         self.assertEqual(filediff.source_file, 'trophy.png')
 
         with open(self._getTrophyFilename(), 'r') as f:
-            rsp = self.apiPut(
+            rsp = self.api_put(
                 get_draft_filediff_item_url(filediff, review_request) +
                 '?expand=dest_attachment',
                 {
@@ -191,7 +191,7 @@ class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase):
                 expected_mimetype=filediff_item_mimetype)
 
         self.assertEqual(rsp['stat'], 'ok')
-        self.assertTrue('dest_attachment' in rsp['file'])
+        self.assertIn('dest_attachment', rsp['file'])
 
         attachment = FileAttachment.objects.get(
             pk=rsp['file']['dest_attachment']['id'])
@@ -215,7 +215,7 @@ class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase):
                                      'git_binary_image_modified.diff')
 
         with open(diff_filename, 'r') as f:
-            rsp = self.apiPost(
+            rsp = self.api_post(
                 get_diff_list_url(review_request),
                 {
                     'path': f,
@@ -233,7 +233,7 @@ class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase):
         self.assertEqual(filediff.source_file, 'trophy.png')
 
         with open(self._getTrophyFilename(), 'r') as f:
-            rsp = self.apiPut(
+            rsp = self.api_put(
                 get_draft_filediff_item_url(filediff, review_request) +
                 '?expand=dest_attachment',
                 {
@@ -242,7 +242,7 @@ class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase):
                 expected_mimetype=filediff_item_mimetype)
 
         self.assertEqual(rsp['stat'], 'ok')
-        self.assertTrue('dest_attachment' in rsp['file'])
+        self.assertIn('dest_attachment', rsp['file'])
 
         attachment = FileAttachment.objects.get(
             pk=rsp['file']['dest_attachment']['id'])
@@ -266,7 +266,7 @@ class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase):
                                      'git_binary_image_modified.diff')
 
         with open(diff_filename, 'r') as f:
-            rsp = self.apiPost(
+            rsp = self.api_post(
                 get_diff_list_url(review_request),
                 {
                     'path': f,
@@ -281,7 +281,7 @@ class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase):
         trophy_filename = self._getTrophyFilename()
 
         with open(trophy_filename, 'r') as f:
-            self.apiPut(
+            self.api_put(
                 url,
                 {
                     'dest_attachment_file': f,
@@ -289,7 +289,7 @@ class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase):
                 expected_mimetype=filediff_item_mimetype)
 
         with open(trophy_filename, 'r') as f:
-            rsp = self.apiPut(
+            rsp = self.api_put(
                 url,
                 {
                     'dest_attachment_file': f,
@@ -298,5 +298,5 @@ class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase):
 
             self.assertEqual(rsp['stat'], 'fail')
             self.assertEqual(rsp['err']['code'], INVALID_FORM_DATA.code)
-            self.assertTrue('fields' in rsp)
-            self.assertTrue('dest_attachment_file' in rsp['fields'])
+            self.assertIn('fields', rsp)
+            self.assertIn('dest_attachment_file', rsp['fields'])

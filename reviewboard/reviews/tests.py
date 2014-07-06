@@ -594,12 +594,12 @@ class ReviewRequestManagerTests(TestCase):
         r_summaries = [r.summary for r in review_requests]
 
         for summary in r_summaries:
-            self.assertTrue(summary in summaries,
+            self.assertIn(summary, summaries,
                             'summary "%s" not found in summary list'
                             % summary)
 
         for summary in summaries:
-            self.assertTrue(summary in r_summaries,
+            self.assertIn(summary, r_summaries,
                             'summary "%s" not found in review request list'
                             % summary)
 
@@ -640,30 +640,30 @@ class ViewTests(TestCase):
         self.siteconfig.set("auth_require_sitewide_login", False)
         self.siteconfig.save()
 
-    def getContextVar(self, response, varname):
+    def _get_context_var(self, response, varname):
         for context in response.context:
             if varname in context:
                 return context[varname]
 
         return None
 
-    def testReviewDetail0(self):
-        """Testing review_detail redirect"""
+    def test_review_detail_redirect_no_slash(self):
+        """Testing review_detail view redirecting with no trailing slash"""
         response = self.client.get('/r/1')
         self.assertEqual(response.status_code, 301)
 
-    def testReviewDetail1(self):
-        """Testing review_detail view (1)"""
+    def test_review_detail(self):
+        """Testing review_detail view"""
         review_request = self.create_review_request(publish=True)
 
         response = self.client.get('/r/%d/' % review_request.id)
         self.assertEqual(response.status_code, 200)
 
-        request = self.getContextVar(response, 'review_request')
+        request = self._get_context_var(response, 'review_request')
         self.assertEqual(request.pk, review_request.pk)
 
-    def testReviewDetail2(self):
-        """Testing review_detail view (3)"""
+    def test_review_detail_context(self):
+        """Testing review_detail view's context"""
         # Make sure this request is made while logged in, to catch the
         # login-only pieces of the review_detail view.
         self.client.login(username='admin', password='admin')
@@ -683,7 +683,7 @@ class ViewTests(TestCase):
         response = self.client.get('/r/%s/' % review_request.pk)
         self.assertEqual(response.status_code, 200)
 
-        request = self.getContextVar(response, 'review_request')
+        request = self._get_context_var(response, 'review_request')
         self.assertEqual(request.submitter.username, username)
         self.assertEqual(request.summary, summary)
         self.assertEqual(request.description, description)
@@ -691,7 +691,7 @@ class ViewTests(TestCase):
         self.assertEqual(request.pk, review_request.pk)
 
     def test_review_detail_diff_comment_ordering(self):
-        """Testing order of diff comments on a review."""
+        """Testing review_detail and ordering of diff comments on a review"""
         comment_text_1 = "Comment text 1"
         comment_text_2 = "Comment text 2"
         comment_text_3 = "Comment text 3"
@@ -904,7 +904,7 @@ class ViewTests(TestCase):
         self.assertEqual(comments[0].text, comment_text_1)
         self.assertEqual(comments[1].text, comment_text_2)
 
-    def testReviewDetailSitewideLogin(self):
+    def test_review_detail_sitewide_login(self):
         """Testing review_detail view with site-wide login enabled"""
         self.siteconfig.set("auth_require_sitewide_login", True)
         self.siteconfig.save()
@@ -914,8 +914,8 @@ class ViewTests(TestCase):
         response = self.client.get('/r/1/')
         self.assertEqual(response.status_code, 302)
 
-    def testNewReviewRequest0(self):
-        """Testing new_review_request view (basic responses)"""
+    def test_new_review_request(self):
+        """Testing new_review_request view"""
         response = self.client.get('/r/new')
         self.assertEqual(response.status_code, 301)
 
@@ -928,7 +928,7 @@ class ViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
 
     # Bug 892
-    def testInterdiff(self):
+    def test_interdiff(self):
         """Testing the diff viewer with interdiffs"""
         review_request = self.create_review_request(create_repository=True,
                                                     publish=True)
@@ -1036,27 +1036,27 @@ class ViewTests(TestCase):
 
         # Useful for debugging any actual errors here.
         if response.status_code != 200:
-            print("Error: %s" % self.getContextVar(response, 'error'))
-            print(self.getContextVar(response, 'trace'))
+            print("Error: %s" % self._get_context_var(response, 'error'))
+            print(self._get_context_var(response, 'trace'))
 
         self.assertEqual(response.status_code, 200)
 
         self.assertEqual(
-            self.getContextVar(response, 'diff_context')['num_diffs'],
+            self._get_context_var(response, 'diff_context')['num_diffs'],
             2)
 
-        files = self.getContextVar(response, 'files')
+        files = self._get_context_var(response, 'files')
         self.assertTrue(files)
         self.assertEqual(len(files), 2)
 
         self.assertEqual(files[0]['depot_filename'], '/newfile')
-        self.assertTrue('interfilediff' in files[0])
+        self.assertIn('interfilediff', files[0])
 
         self.assertEqual(files[1]['depot_filename'], '/readme')
-        self.assertTrue('interfilediff' in files[1])
+        self.assertIn('interfilediff', files[1])
 
     # Bug 847
-    def testInterdiffNewFile(self):
+    def test_interdiff_new_file(self):
         """Testing the diff viewer with interdiffs containing new files"""
         review_request = self.create_review_request(create_repository=True,
                                                     publish=True)
@@ -1117,21 +1117,21 @@ class ViewTests(TestCase):
 
         # Useful for debugging any actual errors here.
         if response.status_code != 200:
-            print("Error: %s" % self.getContextVar(response, 'error'))
-            print(self.getContextVar(response, 'trace'))
+            print("Error: %s" % self._get_context_var(response, 'error'))
+            print(self._get_context_var(response, 'trace'))
 
         self.assertEqual(response.status_code, 200)
 
         self.assertEqual(
-            self.getContextVar(response, 'diff_context')['num_diffs'],
+            self._get_context_var(response, 'diff_context')['num_diffs'],
             2)
 
-        files = self.getContextVar(response, 'files')
+        files = self._get_context_var(response, 'files')
         self.assertTrue(files)
         self.assertEqual(len(files), 1)
 
         self.assertEqual(files[0]['depot_filename'], '/newfile')
-        self.assertTrue('interfilediff' in files[0])
+        self.assertIn('interfilediff', files[0])
 
     def test_review_request_etag_with_issues(self):
         """Testing review request ETags with issue status toggling"""
@@ -1186,9 +1186,9 @@ class ViewTests(TestCase):
 class DraftTests(TestCase):
     fixtures = ['test_users', 'test_scmtools']
 
-    def testDraftChanges(self):
+    def test_draft_changes(self):
         """Testing recording of draft changes."""
-        draft = self.getDraft()
+        draft = self._get_draft()
         review_request = draft.review_request
 
         old_summary = review_request.summary
@@ -1208,11 +1208,11 @@ class DraftTests(TestCase):
         changes = draft.publish()
         fields = changes.fields_changed
 
-        self.assertTrue("summary" in fields)
-        self.assertTrue("description" in fields)
-        self.assertTrue("testing_done" in fields)
-        self.assertTrue("branch" in fields)
-        self.assertTrue("bugs_closed" in fields)
+        self.assertIn("summary", fields)
+        self.assertIn("description", fields)
+        self.assertIn("testing_done", fields)
+        self.assertIn("branch", fields)
+        self.assertIn("bugs_closed", fields)
 
         old_bugs_norm = set([(bug,) for bug in old_bugs])
         new_bugs_norm = set([(bug,) for bug in new_bugs])
@@ -1230,7 +1230,7 @@ class DraftTests(TestCase):
         self.assertEqual(set(fields["bugs_closed"]["removed"]), old_bugs_norm)
         self.assertEqual(set(fields["bugs_closed"]["added"]), new_bugs_norm)
 
-    def getDraft(self):
+    def _get_draft(self):
         """Convenience function for getting a new draft to work with."""
         review_request = self.create_review_request(publish=True)
         return ReviewRequestDraft.create(review_request)
@@ -1366,9 +1366,8 @@ class PostCommitTests(SpyAgency, TestCase):
 class ConcurrencyTests(TestCase):
     fixtures = ['test_users', 'test_scmtools']
 
-    def testDuplicateReviews(self):
+    def test_duplicate_reviews(self):
         """Testing consolidation of duplicate reviews"""
-
         body_top = "This is the body_top."
         body_bottom = "This is the body_bottom."
         comment_text_1 = "Comment text 1"
@@ -1440,12 +1439,12 @@ class DefaultReviewerTests(TestCase):
 
         default_reviewers = DefaultReviewer.objects.for_repository(repo1, None)
         self.assertEqual(len(default_reviewers), 2)
-        self.assertTrue(default_reviewer1 in default_reviewers)
-        self.assertTrue(default_reviewer2 in default_reviewers)
+        self.assertIn(default_reviewer1, default_reviewers)
+        self.assertIn(default_reviewer2, default_reviewers)
 
         default_reviewers = DefaultReviewer.objects.for_repository(repo2, None)
         self.assertEqual(len(default_reviewers), 1)
-        self.assertTrue(default_reviewer2 in default_reviewers)
+        self.assertIn(default_reviewer2, default_reviewers)
 
     def test_for_repository_with_localsite(self):
         """Testing DefaultReviewer.objects.for_repository with a LocalSite."""
@@ -1461,11 +1460,11 @@ class DefaultReviewerTests(TestCase):
         default_reviewers = DefaultReviewer.objects.for_repository(
             None, test_site)
         self.assertEqual(len(default_reviewers), 1)
-        self.assertTrue(default_reviewer1 in default_reviewers)
+        self.assertIn(default_reviewer1, default_reviewers)
 
         default_reviewers = DefaultReviewer.objects.for_repository(None, None)
         self.assertEqual(len(default_reviewers), 1)
-        self.assertTrue(default_reviewer2 in default_reviewers)
+        self.assertIn(default_reviewer2, default_reviewers)
 
     def test_form_with_localsite(self):
         """Testing DefaultReviewerForm with a LocalSite."""
@@ -1597,7 +1596,7 @@ class GroupTests(TestCase):
 
 
 class IfNeatNumberTagTests(TestCase):
-    def testMilestones(self):
+    def test_milestones(self):
         """Testing the ifneatnumber tag with milestone numbers"""
         self.assertNeatNumberResult(100, "")
         self.assertNeatNumberResult(1000, "milestone")
@@ -1605,7 +1604,7 @@ class IfNeatNumberTagTests(TestCase):
         self.assertNeatNumberResult(20000, "milestone")
         self.assertNeatNumberResult(20001, "")
 
-    def testPalindrome(self):
+    def test_palindrome(self):
         """Testing the ifneatnumber tag with palindrome numbers"""
         self.assertNeatNumberResult(101, "")
         self.assertNeatNumberResult(1001, "palindrome")
@@ -2380,8 +2379,8 @@ class PolicyTests(TestCase):
         self.assertTrue(group.is_accessible_by(self.user))
         self.assertTrue(group.is_accessible_by(self.anonymous))
 
-        self.assertTrue(group in Group.objects.accessible(self.user))
-        self.assertTrue(group in Group.objects.accessible(self.anonymous))
+        self.assertIn(group, Group.objects.accessible(self.user))
+        self.assertIn(group, Group.objects.accessible(self.anonymous))
 
     def test_group_invite_only_access_denied(self):
         """Testing no access to unjoined invite-only group"""
@@ -2391,8 +2390,8 @@ class PolicyTests(TestCase):
         self.assertFalse(group.is_accessible_by(self.user))
         self.assertFalse(group.is_accessible_by(self.anonymous))
 
-        self.assertFalse(group in Group.objects.accessible(self.user))
-        self.assertFalse(group in Group.objects.accessible(self.anonymous))
+        self.assertNotIn(group, Group.objects.accessible(self.user))
+        self.assertNotIn(group, Group.objects.accessible(self.anonymous))
 
     def test_group_invite_only_access_allowed(self):
         """Testing access to joined invite-only group"""
@@ -2403,8 +2402,8 @@ class PolicyTests(TestCase):
         self.assertTrue(group.is_accessible_by(self.user))
         self.assertFalse(group.is_accessible_by(self.anonymous))
 
-        self.assertTrue(group in Group.objects.accessible(self.user))
-        self.assertFalse(group in Group.objects.accessible(self.anonymous))
+        self.assertIn(group, Group.objects.accessible(self.user))
+        self.assertNotIn(group, Group.objects.accessible(self.anonymous))
 
     def test_group_public_hidden(self):
         """Testing visibility of a hidden public group"""
@@ -2589,7 +2588,7 @@ class PolicyTests(TestCase):
 
 
 class UserInfoboxTests(TestCase):
-    def testUnicode(self):
+    def test_unicode(self):
         """Testing user_infobox with a user with non-ascii characters"""
         user = User.objects.create_user('test', 'test@example.com')
         user.first_name = 'Test\u21b9'

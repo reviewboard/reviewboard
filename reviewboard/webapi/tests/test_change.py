@@ -49,8 +49,8 @@ class ResourceListTests(ReviewRequestChildListMixin, BaseWebAPITestCase):
         change2.save()
         review_request.changedescs.add(change2)
 
-        rsp = self.apiGet(get_change_list_url(review_request),
-                          expected_mimetype=change_list_mimetype)
+        rsp = self.api_get(get_change_list_url(review_request),
+                           expected_mimetype=change_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(len(rsp['changes']), 2)
 
@@ -80,7 +80,7 @@ class ResourceListTests(ReviewRequestChildListMixin, BaseWebAPITestCase):
         change2.save()
         review_request.changedescs.add(change2)
 
-        rsp = self.apiGet(
+        rsp = self.api_get(
             get_change_list_url(review_request, self.local_site_name),
             expected_mimetype=change_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
@@ -97,7 +97,7 @@ class ResourceListTests(ReviewRequestChildListMixin, BaseWebAPITestCase):
         review_request = self.create_review_request(publish=True,
                                                     with_local_site=True)
 
-        rsp = self.apiGet(
+        rsp = self.api_get(
             get_change_list_url(review_request, self.local_site_name),
             expected_status=403)
         self.assertEqual(rsp['stat'], 'fail')
@@ -113,7 +113,7 @@ class ResourceListTests(ReviewRequestChildListMixin, BaseWebAPITestCase):
         """
         review_request = self.create_review_request()
 
-        self.apiPost(get_change_list_url(review_request), expected_status=405)
+        self.api_post(get_change_list_url(review_request), expected_status=405)
 
 
 class ResourceItemTests(ReviewRequestChildItemMixin, BaseWebAPITestCase):
@@ -140,7 +140,7 @@ class ResourceItemTests(ReviewRequestChildItemMixin, BaseWebAPITestCase):
         change = ChangeDescription.objects.create(public=True)
         review_request.changedescs.add(change)
 
-        self.apiDelete(get_change_item_url(change), expected_status=405)
+        self.api_delete(get_change_item_url(change), expected_status=405)
 
     #
     # HTTP GET tests
@@ -249,29 +249,29 @@ class ResourceItemTests(ReviewRequestChildItemMixin, BaseWebAPITestCase):
             else:
                 self.assertEqual(field_data['old'], [old])
                 self.assertEqual(field_data['new'], [new])
-                self.assertTrue('removed' not in field_data)
-                self.assertTrue('added' not in field_data)
+                self.assertNotIn('removed', field_data)
+                self.assertNotIn('added', field_data)
 
-        self.assertTrue('screenshot_captions' in change.fields_changed)
+        self.assertIn('screenshot_captions', change.fields_changed)
         field_data = change.fields_changed['screenshot_captions']
         screenshot_id = six.text_type(screenshot3.pk)
-        self.assertTrue(screenshot_id in field_data)
-        self.assertTrue('old' in field_data[screenshot_id])
-        self.assertTrue('new' in field_data[screenshot_id])
+        self.assertIn(screenshot_id, field_data)
+        self.assertIn('old', field_data[screenshot_id])
+        self.assertIn('new', field_data[screenshot_id])
         self.assertEqual(field_data[screenshot_id]['old'][0],
                          old_screenshot_caption)
         self.assertEqual(field_data[screenshot_id]['new'][0],
                          new_screenshot_caption)
 
         # Now confirm with the API
-        rsp = self.apiGet(get_change_list_url(r),
-                          expected_mimetype=change_list_mimetype)
+        rsp = self.api_get(get_change_list_url(r),
+                           expected_mimetype=change_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(len(rsp['changes']), 1)
 
         self.assertEqual(rsp['changes'][0]['id'], change.pk)
-        rsp = self.apiGet(rsp['changes'][0]['links']['self']['href'],
-                          expected_mimetype=change_item_mimetype)
+        rsp = self.api_get(rsp['changes'][0]['links']['self']['href'],
+                           expected_mimetype=change_item_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(rsp['change']['text'], changedesc_text)
 
@@ -280,17 +280,17 @@ class ResourceItemTests(ReviewRequestChildItemMixin, BaseWebAPITestCase):
         for field, data in six.iteritems(test_data):
             old, new, removed, added = data
 
-            self.assertTrue(field in fields_changed)
+            self.assertIn(field, fields_changed)
             field_data = fields_changed[field]
 
             if field == 'diff':
-                self.assertTrue('added' in field_data)
+                self.assertIn('added', field_data)
                 self.assertEqual(field_data['added']['id'], added.pk)
             elif field in model_fields:
-                self.assertTrue('old' in field_data)
-                self.assertTrue('new' in field_data)
-                self.assertTrue('added' in field_data)
-                self.assertTrue('removed' in field_data)
+                self.assertIn('old', field_data)
+                self.assertIn('new', field_data)
+                self.assertIn('added', field_data)
+                self.assertIn('removed', field_data)
                 self.assertEqual(
                     [item['id'] for item in field_data['old']],
                     [obj.pk for obj in old])
@@ -304,25 +304,25 @@ class ResourceItemTests(ReviewRequestChildItemMixin, BaseWebAPITestCase):
                     [item['id'] for item in field_data['added']],
                     [obj.pk for obj in added])
             else:
-                self.assertTrue('old' in field_data)
-                self.assertTrue('new' in field_data)
+                self.assertIn('old', field_data)
+                self.assertIn('new', field_data)
                 self.assertEqual(field_data['old'], old)
                 self.assertEqual(field_data['new'], new)
 
                 if isinstance(old, list):
-                    self.assertTrue('added' in field_data)
-                    self.assertTrue('removed' in field_data)
+                    self.assertIn('added', field_data)
+                    self.assertIn('removed', field_data)
 
                     self.assertEqual(field_data['added'], added)
                     self.assertEqual(field_data['removed'], removed)
 
-        self.assertTrue('screenshot_captions' in fields_changed)
+        self.assertIn('screenshot_captions', fields_changed)
         field_data = fields_changed['screenshot_captions']
         self.assertEqual(len(field_data), 1)
         screenshot_data = field_data[0]
-        self.assertTrue('old' in screenshot_data)
-        self.assertTrue('new' in screenshot_data)
-        self.assertTrue('screenshot' in screenshot_data)
+        self.assertIn('old', screenshot_data)
+        self.assertIn('new', screenshot_data)
+        self.assertIn('screenshot', screenshot_data)
         self.assertEqual(screenshot_data['old'], old_screenshot_caption)
         self.assertEqual(screenshot_data['new'], new_screenshot_caption)
         self.assertEqual(screenshot_data['screenshot']['id'], screenshot3.pk)
@@ -343,7 +343,7 @@ class ResourceItemTests(ReviewRequestChildItemMixin, BaseWebAPITestCase):
         change.save()
         review_request.changedescs.add(change)
 
-        rsp = self.apiGet(
+        rsp = self.api_get(
             get_change_item_url(change, self.local_site_name),
             expected_mimetype=change_item_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
@@ -363,7 +363,7 @@ class ResourceItemTests(ReviewRequestChildItemMixin, BaseWebAPITestCase):
         change.save()
         review_request.changedescs.add(change)
 
-        rsp = self.apiGet(
+        rsp = self.api_get(
             get_change_item_url(change, self.local_site_name),
             expected_status=403)
         self.assertEqual(rsp['stat'], 'fail')
@@ -394,4 +394,4 @@ class ResourceItemTests(ReviewRequestChildItemMixin, BaseWebAPITestCase):
         change = ChangeDescription.objects.create(public=True)
         review_request.changedescs.add(change)
 
-        self.apiPut(get_change_item_url(change), {}, expected_status=405)
+        self.api_put(get_change_item_url(change), {}, expected_status=405)
