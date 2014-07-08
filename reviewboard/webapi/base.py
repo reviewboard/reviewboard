@@ -1,5 +1,6 @@
 from __future__ import unicode_literals
 
+from django.contrib import auth
 from django.db.models import Q
 from django.utils import six
 from django.utils.encoding import force_unicode
@@ -13,6 +14,7 @@ from reviewboard.site.models import LocalSite
 from reviewboard.site.urlresolvers import local_site_reverse
 from reviewboard.webapi.decorators import (webapi_check_local_site,
                                            webapi_check_login_required)
+from reviewboard.webapi.models import WebAPIToken
 
 
 CUSTOM_MIMETYPE_BASE = 'application/vnd.reviewboard.org'
@@ -23,6 +25,12 @@ class WebAPIResource(DjbletsWebAPIResource):
     """A specialization of the Djblets WebAPIResource for Review Board."""
 
     mimetype_vendor = 'reviewboard.org'
+
+    def call_method_view(self, request, method, view, *args, **kwargs):
+        # This will associate the token, if any, with the request.
+        self._get_api_token_for_request(request)
+
+        return view(request, *args, **kwargs)
 
     def has_access_permissions(self, *args, **kwargs):
         # By default, raise an exception if this is called. Specific resources
@@ -146,6 +154,24 @@ class WebAPIResource(DjbletsWebAPIResource):
                 q = q & Q(**{query_field: request.GET[param]})
 
         return q
+
+    def _get_api_token_for_request(self, request):
+        webapi_token = getattr(request, '_webapi_token', None)
+
+        if not webapi_token:
+            webapi_token_id = request.session.get('webapi_token_id')
+
+            if webapi_token_id:
+                try:
+                    webapi_token = WebAPIToken.objects.get(pk=webapi_token_id,
+                                                           user=request.user)
+                except WebAPIToken.DoesNotExist:
+                    # This token is no longer valid. Log the user out.
+                    auth.logout(request)
+
+                request._webapi_token = webapi_token
+
+        return webapi_token
 
     def _get_resource_url(self, name, local_site_name=None, request=None,
                           **kwargs):

@@ -184,6 +184,12 @@ WEB_API_ENCODERS = (
     'djblets.webapi.encoders.ResourceAPIEncoder',
 )
 
+# The backends that are used to authenticate requests against the web API.
+WEB_API_AUTH_BACKENDS = (
+    'djblets.webapi.auth.WebAPIBasicAuthBackend',
+    'reviewboard.webapi.auth_backends.WebAPITokenAuthBackend',
+)
+
 SESSION_ENGINE = 'django.contrib.sessions.backends.cached_db'
 
 # Set up a default cache backend. This will mostly be useful for

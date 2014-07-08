@@ -324,6 +324,11 @@ def load_site_config(full_reload=False):
                 # Set the dirty flag so we save this back
                 dirty = True
 
+    # Add APITokenBackend to the list of auth backends. This one is always
+    # present, and is used only for API requests.
+    settings.AUTHENTICATION_BACKENDS += (
+        'reviewboard.webapi.auth_backends.TokenAuthBackend',
+    )
 
     # Set the storage backend
     storage_backend = siteconfig.settings.get('storage_backend', 'builtin')

@@ -1,6 +1,7 @@
 from __future__ import unicode_literals
 
 from django.http import HttpRequest
+from djblets.db.query import get_object_or_none
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.webapi.decorators import (webapi_decorator,
                                        webapi_login_required,
@@ -94,18 +95,28 @@ def webapi_check_local_site(view_func):
     def _check(*args, **kwargs):
         request = _find_httprequest(args)
         local_site_name = kwargs.get('local_site_name', None)
+        webapi_token = getattr(request, '_webapi_token', None)
+
+        if webapi_token:
+            restrict_to_local_site = request._webapi_token.local_site_id
+        else:
+            restrict_to_local_site = None
 
         if local_site_name:
-            try:
-                local_site = LocalSite.objects.get(name=local_site_name)
+            local_site = get_object_or_none(LocalSite, name=local_site_name)
 
-                if not local_site.is_accessible_by(request.user):
-                    if request.user.is_authenticated():
-                        return PERMISSION_DENIED
-                    else:
-                        return NOT_LOGGED_IN
-            except LocalSite.DoesNotExist:
+            if not local_site:
                 return DOES_NOT_EXIST
+            elif not local_site.is_accessible_by(request.user):
+                if request.user.is_authenticated():
+                    return PERMISSION_DENIED
+                else:
+                    return NOT_LOGGED_IN
+            elif (restrict_to_local_site and
+                  restrict_to_local_site != local_site.pk):
+                return PERMISSION_DENIED
+        elif restrict_to_local_site is not None:
+            return PERMISSION_DENIED
 
         return view_func(*args, **kwargs)
 
