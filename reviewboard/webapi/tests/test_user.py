@@ -5,7 +5,6 @@ from django.utils import six
 from djblets.testing.decorators import add_fixtures
 
 from reviewboard.accounts.models import Profile
-from reviewboard.site.models import LocalSite
 from reviewboard.webapi.resources import resources
 from reviewboard.webapi.tests.base import BaseWebAPITestCase
 from reviewboard.webapi.tests.mimetypes import (user_item_mimetype,
@@ -38,7 +37,7 @@ class ResourceListTests(BaseWebAPITestCase):
         if not populate_items:
             items = []
         elif with_local_site:
-            local_site = LocalSite.objects.get(name=local_site_name)
+            local_site = self.get_local_site(name=local_site_name)
             items = list(local_site.users.all())
         else:
             items = list(User.objects.all())

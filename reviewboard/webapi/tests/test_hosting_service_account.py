@@ -3,7 +3,6 @@ from __future__ import unicode_literals
 from django.utils import six
 
 from reviewboard.hostingsvcs.models import HostingServiceAccount
-from reviewboard.site.models import LocalSite
 from reviewboard.webapi.resources import resources
 from reviewboard.webapi.tests.base import BaseWebAPITestCase
 from reviewboard.webapi.tests.mimetypes import (
@@ -43,7 +42,7 @@ class ResourceListTests(BaseWebAPITestCase):
                              populate_items):
         if populate_items:
             if with_local_site:
-                local_site = LocalSite.objects.get(name=local_site_name)
+                local_site = self.get_local_site(name=local_site_name)
             else:
                 local_site = None
 
@@ -142,7 +141,7 @@ class ResourceItemTests(BaseWebAPITestCase):
 
     def setup_basic_get_test(self, user, with_local_site, local_site_name):
         if with_local_site:
-            local_site = LocalSite.objects.get(name=local_site_name)
+            local_site = self.get_local_site(name=local_site_name)
         else:
             local_site = None
 

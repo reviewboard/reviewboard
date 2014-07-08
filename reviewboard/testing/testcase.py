@@ -59,6 +59,8 @@ class TestCase(DjbletsTestCase):
 
         initialize()
 
+        self._local_sites = {}
+
         # Clear the cache so that previous tests don't impact this one.
         cache.clear()
 
@@ -80,9 +82,15 @@ class TestCase(DjbletsTestCase):
     def get_local_site_or_none(self, name):
         """Returns a LocalSite matching the name, if provided, or None."""
         if name:
-            return LocalSite.objects.get(name=name)
+            return self.get_local_site(name=name)
         else:
             return None
+
+    def get_local_site(self, name):
+        if name not in self._local_sites:
+            self._local_sites[name] = LocalSite.objects.get(name=name)
+
+        return self._local_sites[name]
 
     def create_webapi_token(self, user, note='Sample note',
                             policy={'access': 'rw'},
@@ -90,7 +98,7 @@ class TestCase(DjbletsTestCase):
                             **kwargs):
         """Creates a WebAPIToken for testing."""
         if with_local_site:
-            local_site = LocalSite.objects.get(name=self.local_site_name)
+            local_site = self.get_local_site(name=self.local_site_name)
         else:
             local_site = None
 
@@ -280,7 +288,7 @@ class TestCase(DjbletsTestCase):
         """
         if not local_site:
             if with_local_site:
-                local_site = LocalSite.objects.get(name=self.local_site_name)
+                local_site = self.get_local_site(name=self.local_site_name)
             else:
                 local_site = None
 
@@ -327,7 +335,7 @@ class TestCase(DjbletsTestCase):
         If publish is True, ReviewRequest.publish() will be called.
         """
         if with_local_site:
-            local_site = LocalSite.objects.get(name=self.local_site_name)
+            local_site = self.get_local_site(name=self.local_site_name)
         else:
             local_site = None
             local_id = None
@@ -398,7 +406,7 @@ class TestCase(DjbletsTestCase):
         populated with default data that can be overridden by the caller.
         """
         if not local_site and with_local_site:
-            local_site = LocalSite.objects.get(name=self.local_site_name)
+            local_site = self.get_local_site(name=self.local_site_name)
 
         return Group.objects.create(
             name=name,

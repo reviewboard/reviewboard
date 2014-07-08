@@ -8,7 +8,6 @@ from djblets.webapi.errors import PERMISSION_DENIED
 
 from reviewboard.accounts.models import LocalSiteProfile
 from reviewboard.reviews.models import ReviewRequest, ReviewRequestDraft
-from reviewboard.site.models import LocalSite
 from reviewboard.webapi.resources import resources
 from reviewboard.webapi.tests.base import BaseWebAPITestCase
 from reviewboard.webapi.tests.mimetypes import \
@@ -474,7 +473,7 @@ class ResourceTests(ExtraDataListMixin, ExtraDataItemMixin,
         """
         self.user = self._login_user(local_site=True)
 
-        local_site = LocalSite.objects.get(name=self.local_site_name)
+        local_site = self.get_local_site(name=self.local_site_name)
 
         site_profile = LocalSiteProfile.objects.create(
             local_site=local_site,
@@ -493,7 +492,7 @@ class ResourceTests(ExtraDataListMixin, ExtraDataItemMixin,
         self.user = self._login_user(local_site=True, admin=True)
 
         self._test_put_as_other_user(
-            LocalSite.objects.get(name=self.local_site_name))
+            self.get_local_site(name=self.local_site_name))
 
     def _create_update_review_request(self, api_func, expected_status,
                                       review_request=None,

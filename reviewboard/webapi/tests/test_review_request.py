@@ -882,7 +882,7 @@ class ResourceListTests(ExtraDataListMixin, BaseWebAPITestCase):
         """
         self.user = self._login_user(local_site=True)
 
-        local_site = LocalSite.objects.get(name=self.local_site_name)
+        local_site = self.get_local_site(name=self.local_site_name)
 
         site_profile = LocalSiteProfile.objects.create(
             local_site=local_site,
@@ -901,7 +901,7 @@ class ResourceListTests(ExtraDataListMixin, BaseWebAPITestCase):
         self._login_user(local_site=True, admin=True)
 
         self._test_post_with_submit_as(
-            LocalSite.objects.get(name=self.local_site_name))
+            self.get_local_site(name=self.local_site_name))
 
     @add_fixtures(['test_scmtools'])
     def test_post_with_submit_as_and_permission_denied_error(self):
@@ -1023,7 +1023,7 @@ class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase):
         with a local site and a local permission is not allowed
         """
         self.user = self._login_user(local_site=True)
-        local_site = LocalSite.objects.get(name=self.local_site_name)
+        local_site = self.get_local_site(name=self.local_site_name)
 
         site_profile = LocalSiteProfile.objects.create(
             user=self.user,
@@ -1313,7 +1313,7 @@ class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase):
         """
         self.user = self._login_user(local_site=True)
 
-        local_site = LocalSite.objects.get(name=self.local_site_name)
+        local_site = self.get_local_site(name=self.local_site_name)
 
         site_profile = LocalSiteProfile.objects.create(
             local_site=local_site,
@@ -1332,7 +1332,7 @@ class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase):
         self.user = self._login_user(local_site=True, admin=True)
 
         self._test_put_status_as_other_user(
-            LocalSite.objects.get(name=self.local_site_name))
+            self.get_local_site(name=self.local_site_name))
 
     def _test_put_status_as_other_user(self, local_site=None):
         review_request = self.create_review_request(

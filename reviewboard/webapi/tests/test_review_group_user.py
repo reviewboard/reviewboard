@@ -5,7 +5,6 @@ from django.utils import six
 from djblets.testing.decorators import add_fixtures
 from djblets.webapi.errors import PERMISSION_DENIED
 
-from reviewboard.site.models import LocalSite
 from reviewboard.webapi.resources import resources
 from reviewboard.webapi.errors import INVALID_USER
 from reviewboard.webapi.tests.base import BaseWebAPITestCase
@@ -151,7 +150,7 @@ class ResourceListTests(BaseWebAPITestCase):
         """
         self.assertFalse(self.user.is_superuser)
 
-        local_site = LocalSite.objects.get(name=self.local_site_name)
+        local_site = self.get_local_site(name=self.local_site_name)
         local_site.users.add(self.user)
 
         group = self.create_review_group(with_local_site=True)
@@ -241,7 +240,7 @@ class ResourceItemTests(BaseWebAPITestCase):
         """
         self.assertFalse(self.user.is_superuser)
 
-        local_site = LocalSite.objects.get(name=self.local_site_name)
+        local_site = self.get_local_site(name=self.local_site_name)
         local_site.users.add(self.user)
 
         group = self.create_review_group(with_local_site=True)

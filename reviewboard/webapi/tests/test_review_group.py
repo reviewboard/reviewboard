@@ -123,7 +123,7 @@ class ResourceListTests(ExtraDataListMixin, BaseWebAPITestCase):
     def test_post_with_site_admin(self):
         """Testing the POST groups/ API with a local site admin"""
         self._login_user(local_site=True, admin=True)
-        local_site = LocalSite.objects.get(name=self.local_site_name)
+        local_site = self.get_local_site(name=self.local_site_name)
 
         rsp = self.api_post(
             get_review_group_list_url(local_site),
