@@ -19,6 +19,22 @@ def _normalize_id(value, allowed_cls, id_field='pk', ischecker=isinstance):
 
 
 #
+# APITokenResource
+#
+def get_api_token_list_url(user, local_site_name=None):
+    return resources.api_token.get_list_url(
+        local_site_name=local_site_name,
+        username=user.username)
+
+
+def get_api_token_item_url(token, local_site_name=None):
+    return resources.api_token.get_item_url(
+        local_site_name=local_site_name,
+        username=token.user.username,
+        api_token_id=token.pk)
+
+
+#
 # ChangeResource
 #
 def get_change_list_url(review_request, local_site_name=None):

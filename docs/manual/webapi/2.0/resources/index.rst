@@ -174,6 +174,8 @@ Users
 .. toctree::
    :maxdepth: 1
 
+   api-token-list
+   api-token
    session
    user-list
    user

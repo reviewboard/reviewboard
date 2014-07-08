@@ -7,6 +7,8 @@ from djblets.testing.decorators import add_fixtures
 from djblets.util.decorators import simple_decorator
 from djblets.webapi.errors import PERMISSION_DENIED
 
+from reviewboard.webapi.models import WebAPIToken
+
 
 @simple_decorator
 def test_template(test_func):
@@ -117,6 +119,26 @@ class BasicTestsMixin(object):
             if isinstance(value, file):
                 value.close()
 
+    def _authenticate_basic_tests(self,
+                                  with_local_site=False,
+                                  with_admin=False,
+                                  with_webapi_token=False,
+                                  webapi_token_local_site_id=None):
+        user = self._login_user(local_site=with_local_site,
+                                admin=with_admin)
+
+        if with_webapi_token:
+            webapi_token = WebAPIToken.objects.get_or_create(
+                user=user,
+                token='abc123',
+                local_site_id=webapi_token_local_site_id)[0]
+
+            session = self.client.session
+            session['webapi_token_id'] = webapi_token.pk
+            session.save()
+
+        return user
+
 
 class BasicDeleteTestsMixin(BasicTestsMixin):
     """Mixin to add basic HTTP DELETE unit tests.
@@ -178,13 +200,7 @@ class BasicDeleteTestsWithLocalSiteMixin(BasicDeleteTestsMixin):
     @test_template
     def test_delete_with_site(self):
         """Testing the DELETE <URL> API with access to a local site"""
-        self.load_fixtures(self.basic_delete_fixtures)
-
-        user = self._login_user(local_site=True,
-                                admin=self.basic_delete_use_admin)
-        url, cb_args = self.setup_basic_delete_test(user, True,
-                                                    self.local_site_name)
-        self.assertTrue(url.startswith('/s/' + self.local_site_name))
+        user, url, cb_args = self._setup_test_delete_with_site()
 
         self.api_delete(url)
         self.check_delete_result(user, *cb_args)
@@ -193,18 +209,54 @@ class BasicDeleteTestsWithLocalSiteMixin(BasicDeleteTestsMixin):
     @test_template
     def test_delete_with_site_no_access(self):
         """Testing the DELETE <URL> API without access to a local site"""
+        user, url, cb_args = self._setup_test_delete_with_site()
+
+        self._login_user()
+
+        rsp = self.api_delete(url, expected_status=403)
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
+
+    @add_fixtures(['test_site'])
+    @test_template
+    def test_delete_with_restrict_site_and_allowed(self):
+        """Testing the DELETE <URL> API with access to a local site
+        and session restricted to the site
+        """
+        user, url, cb_args = self._setup_test_delete_with_site(
+            with_webapi_token=True,
+            webapi_token_local_site_id=self.local_site_id)
+
+        self.api_delete(url)
+        self.check_delete_result(user, *cb_args)
+
+    @add_fixtures(['test_site'])
+    @test_template
+    def test_delete_with_restrict_site_and_not_allowed(self):
+        """Testing the DELETE <URL> API with access to a local site
+        and session restricted to a different site
+        """
+        user, url, cb_args = self._setup_test_delete_with_site(
+            with_webapi_token=True,
+            webapi_token_local_site_id=self.local_site_id + 1)
+
+        rsp = self.api_delete(url, expected_status=403)
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
+
+    def _setup_test_delete_with_site(self, **auth_kwargs):
         self.load_fixtures(self.basic_delete_fixtures)
 
-        user = self._login_user(local_site=True,
-                                admin=self.basic_delete_use_admin)
+        user = self._authenticate_basic_tests(
+            with_local_site=True,
+            with_admin=self.basic_delete_use_admin,
+            **auth_kwargs)
+
         url, cb_args = self.setup_basic_delete_test(user, True,
                                                     self.local_site_name)
         self.assertTrue(url.startswith('/s/' + self.local_site_name))
 
-        user = self._login_user()
-        rsp = self.api_delete(url, expected_status=403)
-        self.assertEqual(rsp['stat'], 'fail')
-        self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
+        return user, url, cb_args
 
 
 class BasicDeleteNotAllowedTestsMixin(BasicTestsMixin):
@@ -276,13 +328,7 @@ class BasicGetItemTestsWithLocalSiteMixin(BasicGetItemTestsMixin):
     @test_template
     def test_get_with_site(self):
         """Testing the GET <URL> API with access to a local site"""
-        self.load_fixtures(self.basic_get_fixtures)
-
-        user = self._login_user(local_site=True,
-                                admin=self.basic_get_use_admin)
-        url, mimetype, item = \
-            self.setup_basic_get_test(user, True, self.local_site_name)
-        self.assertTrue(url.startswith('/s/' + self.local_site_name))
+        user, url, mimetype, item = self._setup_test_get_with_site()
 
         rsp = self.api_get(url,
                            expected_mimetype=mimetype,
@@ -301,15 +347,58 @@ class BasicGetItemTestsWithLocalSiteMixin(BasicGetItemTestsMixin):
     @test_template
     def test_get_with_site_no_access(self):
         """Testing the GET <URL> API without access to a local site"""
-        self.load_fixtures(self.basic_get_fixtures)
+        user, url, mimetype, item = self._setup_test_get_with_site()
 
-        url, mimetype, item = \
-            self.setup_basic_get_test(self.user, True, self.local_site_name)
-        self.assertTrue(url.startswith('/s/' + self.local_site_name))
+        self._login_user()
 
         rsp = self.api_get(url, expected_status=403)
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
+
+    @add_fixtures(['test_site'])
+    @test_template
+    def test_get_with_restrict_site_and_allowed(self):
+        """Testing the GET <URL> API with access to a local site
+        and session restricted to the site
+        """
+        user, url, mimetype, item = self._setup_test_get_with_site(
+            with_webapi_token=True,
+            webapi_token_local_site_id=self.local_site_id)
+
+        rsp = self.api_get(url, expected_mimetype=mimetype)
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertIn(self.resource.item_result_key, rsp)
+
+        item_rsp = rsp[self.resource.item_result_key]
+        self.compare_item(item_rsp, item)
+
+    @add_fixtures(['test_site'])
+    @test_template
+    def test_get_with_restrict_site_and_not_allowed(self):
+        """Testing the GET <URL> API with access to a local site
+        and session restricted to a different site
+        """
+        user, url, mimetype, item = self._setup_test_get_with_site(
+            with_webapi_token=True,
+            webapi_token_local_site_id=self.local_site_id + 1)
+
+        rsp = self.api_get(url, expected_status=403)
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
+
+    def _setup_test_get_with_site(self, **auth_kwargs):
+        self.load_fixtures(self.basic_get_fixtures)
+
+        user = self._authenticate_basic_tests(
+            with_local_site=True,
+            with_admin=self.basic_get_use_admin,
+            **auth_kwargs)
+
+        url, mimetype, item = \
+            self.setup_basic_get_test(user, True, self.local_site_name)
+        self.assertTrue(url.startswith('/s/' + self.local_site_name))
+
+        return user, url, mimetype, item
 
 
 class BasicGetListTestsMixin(BasicTestsMixin):
@@ -359,14 +448,7 @@ class BasicGetListTestsWithLocalSiteMixin(BasicGetListTestsMixin):
     @test_template
     def test_get_with_site(self):
         """Testing the GET <URL> API with access to a local site"""
-        self.load_fixtures(self.basic_get_fixtures)
-
-        user = self._login_user(local_site=True,
-                                admin=self.basic_get_use_admin)
-        url, mimetype, items = self.setup_basic_get_test(user, True,
-                                                         self.local_site_name,
-                                                         True)
-        self.assertTrue(url.startswith('/s/' + self.local_site_name))
+        user, url, mimetype, items = self._setup_test_get_list_with_site()
 
         rsp = self.api_get(url, expected_mimetype=mimetype)
         self.assertEqual(rsp['stat'], 'ok')
@@ -382,16 +464,62 @@ class BasicGetListTestsWithLocalSiteMixin(BasicGetListTestsMixin):
     @test_template
     def test_get_with_site_no_access(self):
         """Testing the GET <URL> API without access to a local site"""
-        self.load_fixtures(self.basic_get_fixtures)
+        user, url, mimetype, items = self._setup_test_get_list_with_site()
 
-        url, mimetype, items = self.setup_basic_get_test(self.user, True,
-                                                         self.local_site_name,
-                                                         False)
-        self.assertTrue(url.startswith('/s/' + self.local_site_name))
+        self._login_user()
 
         rsp = self.api_get(url, expected_status=403)
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
+
+    @add_fixtures(['test_site'])
+    @test_template
+    def test_get_with_restrict_site_and_allowed(self):
+        """Testing the GET <URL> API with access to a local site
+        and session restricted to the site
+        """
+        user, url, mimetype, items = self._setup_test_get_list_with_site(
+            with_webapi_token=True,
+            webapi_token_local_site_id=self.local_site_id)
+
+        rsp = self.api_get(url, expected_mimetype=mimetype)
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertIn(self.resource.list_result_key, rsp)
+
+        items_rsp = rsp[self.resource.list_result_key]
+        self.assertEqual(len(items), len(items_rsp))
+
+        for i in range(len(items)):
+            self.compare_item(items_rsp[i], items[i])
+
+    @add_fixtures(['test_site'])
+    @test_template
+    def test_get_with_restrict_site_and_not_allowed(self):
+        """Testing the GET <URL> API with access to a local site
+        and session restricted to a different site
+        """
+        user, url, mimetype, items = self._setup_test_get_list_with_site(
+            with_webapi_token=True,
+            webapi_token_local_site_id=self.local_site_id + 1)
+
+        rsp = self.api_get(url, expected_status=403)
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
+
+    def _setup_test_get_list_with_site(self, **auth_kwargs):
+        self.load_fixtures(self.basic_get_fixtures)
+
+        user = self._authenticate_basic_tests(
+            with_local_site=True,
+            with_admin=self.basic_get_use_admin,
+            **auth_kwargs)
+
+        url, mimetype, items = self.setup_basic_get_test(user, True,
+                                                         self.local_site_name,
+                                                         True)
+        self.assertTrue(url.startswith('/s/' + self.local_site_name))
+
+        return user, url, mimetype, items
 
 
 class BasicPostTestsMixin(BasicTestsMixin):
@@ -442,13 +570,8 @@ class BasicPostTestsWithLocalSiteMixin(BasicPostTestsMixin):
     @test_template
     def test_post_with_site(self):
         """Testing the POST <URL> API with access to a local site"""
-        self.load_fixtures(self.basic_post_fixtures)
-
-        user = self._login_user(local_site=True,
-                                admin=self.basic_post_use_admin)
-        url, mimetype, post_data, cb_args = \
-            self.setup_basic_post_test(user, True, self.local_site_name, True)
-        self.assertTrue(url.startswith('/s/' + self.local_site_name))
+        user, url, mimetype, post_data, cb_args = \
+            self._setup_test_post_with_site()
 
         rsp = self.api_post(url, post_data, expected_mimetype=mimetype)
         self._close_file_handles(post_data)
@@ -459,12 +582,8 @@ class BasicPostTestsWithLocalSiteMixin(BasicPostTestsMixin):
     @test_template
     def test_post_with_site_no_access(self):
         """Testing the POST <URL> API without access to a local site"""
-        self.load_fixtures(self.basic_post_fixtures)
-
-        user = self._login_user(local_site=True)
-        url, mimetype, post_data, cb_args = \
-            self.setup_basic_post_test(user, True, self.local_site_name, False)
-        self.assertTrue(url.startswith('/s/' + self.local_site_name))
+        user, url, mimetype, post_data, cb_args = \
+            self._setup_test_post_with_site()
 
         self._login_user()
 
@@ -472,6 +591,52 @@ class BasicPostTestsWithLocalSiteMixin(BasicPostTestsMixin):
         self._close_file_handles(post_data)
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
+
+    @add_fixtures(['test_site'])
+    @test_template
+    def test_post_with_restrict_site_and_allowed(self):
+        """Testing the POST <URL> API with access to a local site
+        and session restricted to the site
+        """
+        user, url, mimetype, post_data, cb_args = \
+            self._setup_test_post_with_site(
+                with_webapi_token=True,
+                webapi_token_local_site_id=self.local_site_id)
+
+        rsp = self.api_post(url, post_data, expected_mimetype=mimetype)
+        self._close_file_handles(post_data)
+        self.assertEqual(rsp['stat'], 'ok')
+        self.check_post_result(user, rsp, *cb_args)
+
+    @add_fixtures(['test_site'])
+    @test_template
+    def test_post_with_restrict_site_and_not_allowed(self):
+        """Testing the POST <URL> API with access to a local site
+        and session restricted to a different site
+        """
+        user, url, mimetype, post_data, cb_args = \
+            self._setup_test_post_with_site(
+                with_webapi_token=True,
+                webapi_token_local_site_id=self.local_site_id + 1)
+
+        rsp = self.api_post(url, post_data, expected_status=403)
+        self._close_file_handles(post_data)
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
+
+    def _setup_test_post_with_site(self, **auth_kwargs):
+        self.load_fixtures(self.basic_post_fixtures)
+
+        user = self._authenticate_basic_tests(
+            with_local_site=True,
+            with_admin=self.basic_post_use_admin,
+            **auth_kwargs)
+
+        url, mimetype, post_data, cb_args = \
+            self.setup_basic_post_test(user, True, self.local_site_name, True)
+        self.assertTrue(url.startswith('/s/' + self.local_site_name))
+
+        return user, url, mimetype, post_data, cb_args
 
 
 class BasicPostNotAllowedTestsMixin(BasicTestsMixin):
@@ -558,37 +723,75 @@ class BasicPutTestsWithLocalSiteMixin(BasicPutTestsMixin):
     @test_template
     def test_put_with_site(self):
         """Testing the PUT <URL> API with access to a local site"""
-        self.load_fixtures(self.basic_put_fixtures)
-
-        user = self._login_user(local_site=True,
-                                admin=self.basic_put_use_admin)
-        url, mimetype, put_data, item, cb_args = \
-            self.setup_basic_put_test(user, True, self.local_site_name, True)
-        self.assertTrue(url.startswith('/s/' + self.local_site_name))
+        user, url, mimetype, put_data, item, cb_args = \
+            self._setup_test_put_with_site()
 
         rsp = self.api_put(url, put_data, expected_mimetype=mimetype)
         self.assertEqual(rsp['stat'], 'ok')
         self.assertIn(self.resource.item_result_key, rsp)
 
-        self.check_put_result(self.user, rsp[self.resource.item_result_key],
+        self.check_put_result(user, rsp[self.resource.item_result_key],
                               item, *cb_args)
 
     @add_fixtures(['test_site'])
     @test_template
     def test_put_with_site_no_access(self):
         """Testing the PUT <URL> API without access to a local site"""
-        self.load_fixtures(self.basic_put_fixtures)
+        user, url, mimetype, put_data, item, cb_args = \
+            self._setup_test_put_with_site()
 
-        user = self._login_user(local_site=True,
-                                admin=self.basic_put_use_admin)
-        url, mimetype, put_data, item, cb_args = \
-            self.setup_basic_put_test(user, True, self.local_site_name, False)
-        self.assertTrue(url.startswith('/s/' + self.local_site_name))
+        self._login_user()
 
-        user = self._login_user()
         rsp = self.api_put(url, put_data, expected_status=403)
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
+
+    @add_fixtures(['test_site'])
+    @test_template
+    def test_put_with_restrict_site_and_allowed(self):
+        """Testing the PUT <URL> API with access to a local site
+        and session restricted to the site
+        """
+        user, url, mimetype, put_data, item, cb_args = \
+            self._setup_test_put_with_site(
+                with_webapi_token=True,
+                webapi_token_local_site_id=self.local_site_id)
+
+        rsp = self.api_put(url, put_data, expected_mimetype=mimetype)
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertIn(self.resource.item_result_key, rsp)
+
+        self.check_put_result(user, rsp[self.resource.item_result_key],
+                              item, *cb_args)
+
+    @add_fixtures(['test_site'])
+    @test_template
+    def test_put_with_restrict_site_and_not_allowed(self):
+        """Testing the PUT <URL> API with access to a local site
+        and session restricted to a different site
+        """
+        user, url, mimetype, put_data, item, cb_args = \
+            self._setup_test_put_with_site(
+                with_webapi_token=True,
+                webapi_token_local_site_id=self.local_site_id + 1)
+
+        rsp = self.api_put(url, put_data, expected_status=403)
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
+
+    def _setup_test_put_with_site(self, **auth_kwargs):
+        self.load_fixtures(self.basic_put_fixtures)
+
+        user = self._authenticate_basic_tests(
+            with_local_site=True,
+            with_admin=self.basic_put_use_admin,
+            **auth_kwargs)
+
+        url, mimetype, put_data, item, cb_args = \
+            self.setup_basic_put_test(user, True, self.local_site_name, True)
+        self.assertTrue(url.startswith('/s/' + self.local_site_name))
+
+        return user, url, mimetype, put_data, item, cb_args
 
 
 class BasicPutNotAllowedTestsMixin(BasicTestsMixin):

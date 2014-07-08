@@ -5,6 +5,10 @@ def _build_mimetype(resource_name, fmt='json'):
     return 'application/vnd.reviewboard.org.%s+%s' % (resource_name, fmt)
 
 
+api_token_list_mimetype = _build_mimetype('api-tokens')
+api_token_item_mimetype = _build_mimetype('api-token')
+
+
 change_list_mimetype = _build_mimetype('review-request-changes')
 change_item_mimetype = _build_mimetype('review-request-change')
 

@@ -72,6 +72,7 @@ class DummyRequest(HttpRequest):
         self.method = 'GET'
         self.path = ''
         self.user = User.objects.all()[0]
+        self.session = {}
 
         # This is normally set internally by Djblets, but we don't
         # go through the standard __call__ flow.
@@ -845,9 +846,12 @@ def uncamelcase(name, separator='_'):
 
 def get_resource_title(resource, is_list, append_resource=True):
     """Returns a human-readable name for the resource."""
-    class_name = resource.__class__.__name__
-    class_name = class_name.replace('Resource', '')
-    normalized_title = title(uncamelcase(class_name, ' '))
+    if hasattr(resource, 'verbose_name'):
+        normalized_title = resource.verbose_name
+    else:
+        class_name = resource.__class__.__name__
+        class_name = class_name.replace('Resource', '')
+        normalized_title = title(uncamelcase(class_name, ' '))
 
     if is_list:
         s = '%s List' % normalized_title

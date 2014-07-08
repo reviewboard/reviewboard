@@ -27,6 +27,7 @@ class UserResource(WebAPIResource, DjbletsUserResource):
     ``last_name``, and ``fullname`` will be omitted for non-staff users.
     """
     item_child_resources = [
+        resources.api_token,
         resources.watched,
     ]
 
