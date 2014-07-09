@@ -36,6 +36,7 @@ class ReviewReplyResource(BaseReviewResource):
     """
     name = 'reply'
     name_plural = 'replies'
+    policy_id = 'review_reply'
     fields = {
         'body_bottom': {
             'type': six.text_type,

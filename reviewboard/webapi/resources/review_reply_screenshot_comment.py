@@ -33,6 +33,7 @@ class ReviewReplyScreenshotCommentResource(BaseScreenshotCommentResource):
     possible values listed in the ``text_type`` field below.
     """
     allowed_methods = ('GET', 'POST', 'PUT', 'DELETE')
+    policy_id = 'review_reply_screenshot_comment'
     model_parent_key = 'review'
     fields = dict({
         'reply_to': {

@@ -19,6 +19,7 @@ class ServerInfoResource(WebAPIResource):
     This is deprecated in favor of the data in the root resource.
     """
     name = 'info'
+    policy_id = 'server_info'
     singleton = True
     mimetype_item_resource_name = 'server-info'
 

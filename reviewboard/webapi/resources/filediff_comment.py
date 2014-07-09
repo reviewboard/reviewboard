@@ -21,6 +21,7 @@ class FileDiffCommentResource(BaseDiffCommentResource):
     possible values listed in the ``text_type`` field below.
     """
     allowed_methods = ('GET',)
+    policy_id = 'diff_comment'
     model_parent_key = 'filediff'
     uri_object_key = None
 

@@ -22,6 +22,7 @@ class DraftFileDiffResource(FileDiffResource):
     applies to exactly one file on a repository.
     """
     name = 'draft_file'
+    policy_id = 'draft_file_diff'
     uri_name = 'files'
     allowed_methods = ('GET', 'PUT')
     item_result_key = 'file'

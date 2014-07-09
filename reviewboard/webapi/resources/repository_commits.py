@@ -45,6 +45,7 @@ class RepositoryCommitsResource(WebAPIResource):
     This is not available for all types of repositories.
     """
     name = 'commits'
+    policy_id = 'repository_commits'
     singleton = True
     allowed_methods = ('GET',)
     mimetype_item_resource_name = 'repository-commits'

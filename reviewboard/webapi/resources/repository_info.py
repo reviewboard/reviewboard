@@ -19,6 +19,7 @@ class RepositoryInfoResource(WebAPIResource):
     will be specific to that type of repository.
     """
     name = 'info'
+    policy_id = 'repository_info'
     singleton = True
     allowed_methods = ('GET',)
     mimetype_item_resource_name = 'repository-info'

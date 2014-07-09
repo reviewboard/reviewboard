@@ -33,6 +33,7 @@ class FileDiffResource(WebAPIResource):
     """
     model = FileDiff
     name = 'file'
+    policy_id = 'file_diff'
     allowed_methods = ('GET', 'PUT')
     fields = {
         'id': {
