@@ -153,7 +153,6 @@ RB_BUILTIN_APPS = [
     'djblets.pipeline',
     'djblets.siteconfig',
     'djblets.util',
-    'djblets.webapi',
     'haystack',
     'pipeline',  # Must be after djblets.pipeline
     'reviewboard',
@@ -161,16 +160,13 @@ RB_BUILTIN_APPS = [
     'reviewboard.admin',
     'reviewboard.attachments',
     'reviewboard.changedescs',
-    'reviewboard.datagrids',
     'reviewboard.diffviewer',
     'reviewboard.extensions',
     'reviewboard.hostingsvcs',
     'reviewboard.notifications',
     'reviewboard.reviews',
-    'reviewboard.reviews.ui',
     'reviewboard.scmtools',
     'reviewboard.site',
-    'reviewboard.ssh',
     'reviewboard.webapi',
 ]
 RB_EXTRA_APPS = []
