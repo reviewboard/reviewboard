@@ -539,7 +539,7 @@ class SubmitterViewTests(BaseViewTestCase):
         response = self.client.get('/users/grumpy/reviews/')
         self.assertEqual(response.status_code, 200)
 
-        datagrid = self.getContextVar(response, 'datagrid')
+        datagrid = self._get_context_var(response, 'datagrid')
         self.assertIsNotNone(datagrid)
         self.assertEqual(len(datagrid.rows), 1)
         self.assertEqual(datagrid.rows[0]['object'].review_request,
