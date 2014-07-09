@@ -152,7 +152,7 @@ function createWidgetAdderModals() {
         modal: true,
         autoOpen: false,
         resizable: false,
-        buttons: buttonsPrimary,
+        buttons: buttonsPrimary
     });
 
     buttonsSecondary[buttonText] = function() {
@@ -165,14 +165,18 @@ function createWidgetAdderModals() {
         modal: true,
         autoOpen: false,
         resizable: false,
-        buttons: buttonsSecondary,
+        buttons: buttonsSecondary
     });
 }
 
 $(document).ready(function() {
-    var adminExtras = $("#admin-extras");
-    var primary_total, primary_unselected, primary_selected;
-    var secondary_total, secondary_unselected, secondary_selected;
+    var adminExtras = $("#admin-extras"),
+        primary_total,
+        primary_unselected,
+        primary_selected,
+        secondary_total,
+        secondary_unselected,
+        secondary_selected;
 
     function refreshWidgets() {
         var sideWidth = $("#admin-actions").outerWidth(),
