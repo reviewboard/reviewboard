@@ -70,7 +70,7 @@ class ResourceListTests(BaseWebAPITestCase):
             service_name='github',
             username='bob')
 
-        rsp = self.apiGet(
+        rsp = self.api_get(
             get_hosting_service_account_list_url(),
             query={'service': 'github'},
             expected_mimetype=hosting_service_account_list_mimetype)
@@ -88,7 +88,7 @@ class ResourceListTests(BaseWebAPITestCase):
             service_name='googlecode',
             username='frank')
 
-        rsp = self.apiGet(
+        rsp = self.api_get(
             get_hosting_service_account_list_url(),
             query={'username': 'bob'},
             expected_mimetype=hosting_service_account_list_mimetype)
