@@ -1,6 +1,7 @@
 from __future__ import unicode_literals
 
 import json
+import re
 
 from django import forms
 from django.core.exceptions import ValidationError
@@ -56,6 +57,10 @@ class GitLab(HostingService):
     supports_bug_trackers = True
     supports_repositories = True
     supported_scmtools = ['Git']
+
+    # Pagination links (in GitLab 6.8.0+) take the form:
+    # '<http://gitlab/api/v3/projects?page=2&per_page=100>; rel="next"'
+    LINK_HEADER_RE = re.compile(r'\<(?P<url>[^\>]+)\>; rel="next"')
 
     plans = [
         ('personal', {
@@ -154,9 +159,10 @@ class GitLab(HostingService):
         This will perform an API request to fetch the contents of a file.
         """
         try:
-            return self._api_get(
+            data, headers = self._api_get(
                 self._get_blob_url(repository, path, revision, base_commit_id),
                 raw_content=True)
+            return data
         except (HTTPError, URLError):
             raise FileNotFoundError(path, revision)
 
@@ -245,14 +251,10 @@ class GitLab(HostingService):
     def _api_get_repositories(self):
         """Returns a list of repositories the user has access to.
 
-        This will fetch up to 100 repositories from GitLab. These are all
-        repositories the user has any form of access to.
+        These are all repositories the user has any form of access to.
 
-        We cannot go beyond 100 repositories, due to GitLab's limits,
-        and there's no pagination information available, so if users
-        have more than 100 repositories, they may be out of luck.
         """
-        return self._api_get(
+        return self._api_get_list(
             '%s?per_page=100'
             % self._build_api_url(self.account.hosting_url, 'projects'))
 
@@ -353,15 +355,38 @@ class GitLab(HostingService):
                 })
 
             if raw_content:
-                return data
+                return data, headers
             else:
-                return json.loads(data)
+                return json.loads(data), headers
         except HTTPError as e:
             if e.code == 401:
                 raise AuthorizationError(
                     ugettext('The login or password is incorrect.'))
 
             raise
+
+    def _api_get_list(self, url):
+        """Makes a request to a GitLab list API and returns the full list.
+
+        If the server provides a "next" link in the headers (GitLab 6.8.0+),
+        this will follow that link and fetch all the results. Otherwise, this
+        will provide only the first page of results.
+        """
+        all_data = []
+
+        while url:
+            data, headers = self._api_get(url)
+
+            all_data += data
+
+            url = None
+            for link in headers.get('link', '').split(', '):
+                m = self.LINK_HEADER_RE.match(link)
+                if m:
+                    url = m.group('url')
+                    break
+
+        return all_data
 
     def _is_email(self, email):
         """Returns True if given string is valid e-mail address"""
