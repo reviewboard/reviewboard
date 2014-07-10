@@ -383,7 +383,14 @@ class DiffField(BuiltinLocalsFieldMixin, BaseReviewRequestField):
         added_diff_info = info['added'][0]
         review_request = self.review_request_details.get_review_request()
 
-        diffset = self.diffsets_by_id[added_diff_info[2]]
+        try:
+            diffset = self.diffsets_by_id[added_diff_info[2]]
+        except KeyError:
+            # If a published revision of a diff has been deleted from the
+            # database, this will explode. Just return a blank string for this,
+            # so that it doesn't show a traceback.
+            return ''
+
         diff_revision = diffset.revision
         past_revision = diff_revision - 1
         diff_url = added_diff_info[1]
