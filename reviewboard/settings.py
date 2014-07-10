@@ -51,9 +51,9 @@ USE_I18N = True
 
 # List of callables that know how to import templates from various sources.
 TEMPLATE_LOADERS = (
-    ('django.template.loaders.cached.Loader', (
+    ('djblets.template.loaders.conditional_cached.Loader', (
         'django.template.loaders.filesystem.Loader',
-        'django.template.loaders.app_directories.Loader',
+        'djblets.template.loaders.namespaced_app_dirs.Loader',
         'djblets.extensions.loaders.load_template_source',
     )),
 )
