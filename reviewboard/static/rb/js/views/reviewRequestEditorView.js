@@ -707,7 +707,7 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
         if (fields.length === 0) {
             this.model.publishDraft();
         } else {
-            fields.inlineEditor("save");
+            fields.inlineEditor("submit");
         }
     },
 
