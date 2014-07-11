@@ -32,22 +32,19 @@ index the database. This is done through the ``rebuild_index`` and
 ``update_index`` management commands (The ``index`` command will be
 deprecated in a future release).
 
-To perform an index update::
-
-    $ rb-site manage /path/to/site update_index
-
-
 To perform a full index::
 
     $ rb-site manage /path/to/site rebuild_index
 
+To perform an index update::
 
-These commands should be run periodically in a task scheduler, such as
-:command:`cron` on Linux. It is advisable to update the index
-roughly every 10 minutes, and a full index once a week during off-peak
-hours.
+    $ rb-site manage /path/to/site update_index -a <hours>
 
-A sample ``crontab`` entry is available at :file:`conf/search-cron.conf` under
+where ``<hours>`` is the number of hours since the last update. We recommend
+using ``-a 1`` and run the update command every 10 minutes. This command should
+be run periodically in a task scheduler, such as :command:`cron` on Linux.
+
+A sample ``crontab`` entry is available at :file:`conf/cron.conf` under
 an installed site directory.
 
 The generated search index will be placed in the
