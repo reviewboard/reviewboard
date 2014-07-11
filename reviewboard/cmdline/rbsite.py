@@ -14,7 +14,7 @@ import textwrap
 import warnings
 import subprocess
 from optparse import OptionGroup, OptionParser
-from random import choice
+from random import choice as random_choice
 
 from django.db.utils import OperationalError
 from django.utils import six
@@ -283,6 +283,11 @@ class Site(object):
             # compatibility
             return (2, 2)
 
+    def generate_cron_files(self):
+        self.process_template("cmdline/conf/cron.conf.in",
+                              os.path.join(self.install_dir, "conf",
+                                           "cron.conf"))
+
     def generate_config_files(self):
         web_conf_filename = ""
         enable_fastcgi = False
@@ -319,8 +324,7 @@ class Site(object):
 
         self.process_template("cmdline/conf/%s.in" % web_conf_filename,
                               os.path.join(conf_dir, web_conf_filename))
-        self.process_template("cmdline/conf/search-cron.conf.in",
-                              os.path.join(conf_dir, "search-cron.conf"))
+        self.generate_cron_files()
         if enable_fastcgi:
             fcgi_filename = os.path.join(htdocs_dir, "reviewboard.fcgi")
             self.process_template("cmdline/conf/reviewboard.fcgi.in",
@@ -334,7 +338,7 @@ class Site(object):
 
         # Generate a secret key based on Django's code.
         secret_key = ''.join([
-            choice('abcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*(-_=+)')
+            random_choice('abcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*(-_=+)')
             for i in range(50)
         ])
 
@@ -680,9 +684,17 @@ class Site(object):
         """
         Generates a file from a template.
         """
-        domain_name_escaped = self.domain_name.replace(".", "\\.")
+        domain_name = self.domain_name or ''
+        domain_name_escaped = domain_name.replace(".", "\\.")
         template = pkg_resources.resource_string("reviewboard", template_path)
         sitedir = os.path.abspath(self.install_dir).replace("\\", "/")
+
+        if self.site_root:
+            site_root = self.site_root
+            site_root_noslash = site_root[1:-1]
+        else:
+            site_root = '/'
+            site_root_noslash = ''
 
         # Check if this is a .exe.
         if (hasattr(sys, "frozen") or         # new py2exe
@@ -696,11 +708,11 @@ class Site(object):
             'rbsite': rbsite_path,
             'port': self.web_server_port,
             'sitedir': sitedir,
-            'sitedomain': self.domain_name,
+            'sitedomain': domain_name,
             'sitedomain_escaped': domain_name_escaped,
             'siteid': self.site_id,
-            'siteroot': self.site_root,
-            'siteroot_noslash': self.site_root[1:-1],
+            'siteroot': site_root,
+            'siteroot_noslash': site_root_noslash,
         }
 
         if hasattr(self, 'apache_auth'):
@@ -1649,6 +1661,7 @@ class UpgradeCommand(Command):
 
         print("Rebuilding directory structure")
         site.rebuild_site_directory()
+        site.generate_cron_files()
 
         if site.get_settings_upgrade_needed():
             print("Upgrading site settings_local.py")
