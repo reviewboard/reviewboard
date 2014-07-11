@@ -1,0 +1,7 @@
+{% extends "djblets.extensions:extensions/extension_list.html" %}
+{% load i18n %}
+
+{% block extension_list_actions %}
+<li><a href="https://www.reviewboard.org/store/">{% trans "Get more extensions" %}</a></li>
+{{block.super}}
+{% endblock %}
