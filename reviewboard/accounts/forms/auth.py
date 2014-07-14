@@ -4,6 +4,9 @@ import re
 import sre_constants
 
 from django import forms
+from django.contrib.auth.models import User
+from django.contrib.auth.forms import \
+    AuthenticationForm as DjangoAuthenticationForm
 from django.core.exceptions import ValidationError
 from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext_lazy as _
@@ -334,3 +337,21 @@ class X509SettingsForm(SiteSettingsForm):
 
     class Meta:
         title = _('X.509 Client Certificate Authentication Settings')
+
+
+class AuthenticationForm(DjangoAuthenticationForm):
+    """Form used for user logins.
+
+    This extends Django's built-in AuthenticationForm implementation to allow
+    users to specify their e-mail address in place of their username.
+    """
+    def clean_username(self):
+        username = self.cleaned_data.get('username')
+
+        if not User.objects.filter(username=username).exists():
+            try:
+                username = User.objects.get(email=username).username
+            except (User.DoesNotExist, User.MultipleObjectsReturned):
+                pass
+
+        return username
