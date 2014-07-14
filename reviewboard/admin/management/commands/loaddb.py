@@ -25,6 +25,12 @@ class Command(BaseCommand):
         if not os.path.exists(filename):
             raise CommandError("%s does not exist." % filename)
 
+        try:
+            import django_reset
+        except ImportError:
+            raise CommandError("Before using this command, you need to "
+                               "install the 'django-reset' package")
+
         confirm = input("""
 This will wipe out your existing database prior to loading. It is highly
 recommended that you have a full SQL database dump in case things go wrong.

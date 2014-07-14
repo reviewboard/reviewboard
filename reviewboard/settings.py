@@ -173,6 +173,15 @@ RB_BUILTIN_APPS = [
     'reviewboard.ssh',
     'reviewboard.webapi',
 ]
+
+# If installed, add django_reset to INSTALLED_APPS. This is used for the
+# 'manage.py reset' command, which is very useful during development.
+try:
+    import django_reset
+    RB_BUILTIN_APPS.append('django_reset')
+except ImportError:
+    pass
+
 RB_EXTRA_APPS = []
 
 WEB_API_ENCODERS = (
