@@ -2,6 +2,7 @@ from __future__ import unicode_literals
 
 from django.conf.urls import patterns, url
 
+from reviewboard.accounts.forms.auth import AuthenticationForm
 from reviewboard.accounts.views import MyAccountView
 
 
@@ -19,7 +20,10 @@ urlpatterns += patterns(
     "django.contrib.auth.views",
 
     url(r'^login/$', 'login',
-        {'template_name': 'accounts/login.html'},
+        {
+            'template_name': 'accounts/login.html',
+            'authentication_form': AuthenticationForm,
+        },
         name='login'),
     url(r'^logout/$', 'logout_then_login', name='logout'),
 
