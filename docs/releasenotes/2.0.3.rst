@@ -1,0 +1,259 @@
+================================
+Review Board 2.0.3 Release Notes
+================================
+
+**Release date:** July 14, 2014
+
+
+New Features
+============
+
+* Added a link to the new `Review Board Package Store`_ on the Extensions
+  page.
+
+  Administrators can follow this link to access the all-new Package Store,
+  where developers can submit their Review Board/RBTools extensions or
+  other third-party applications or scripts that work with Review Board.
+
+  Packages shown in the Package Store are shown with installation
+  instructions, screenshots, and release notes.
+
+  Note that packages listed are not verified to be stable or reliable. We
+  make no claims for any packages other than the ones that we provide.
+
+.. _`Review Board Package Store`: https://www.reviewboard.org/store/
+
+* Added support for posting empty added and deleted files.
+
+  0-length files, such as a blank :file:`__init__.py` file, can now be
+  posted for review. They'll be shown in the diff viewer as empty files.
+
+  RBTools 0.6.1 or higher is required for posting empty files for
+  Mercurial, Perforce, and Subversion repositories.
+
+  Patch by Anselina Chia.
+
+* Added support for more than 100 repositories on GitLab.
+
+  When running GitLab v6.8 or higher, Review Board can now see more than
+  100 repositories. Previously, due to API limitations, it was impossible
+  to see more than 100.
+
+  Patch by Thom Gerdes.
+
+* Users can now log in using their e-mail addresses.
+
+  It's common for users to try logging in with their e-mail address, since
+  they rarely have to type their username. We now allow logging in with
+  the e-mail address, provided there's only one registered user with that
+  address.
+
+* Added modern search indexing and session cleanup commands to the
+  sample crontab.
+
+  The sample crontab now has an improved command for updating the search
+  index, which should be quicker than what we had shown before.
+
+  It also contains an entry for calling the ``cleanup`` management command,
+  which will remove any stale sessions in the database. For old installs,
+  this should massively reduce the size of your database, if you haven't
+  already been calling it.
+
+* :command:`rb-site upgrade` now replaces the sample crontab. (:bug:`3435`)
+
+  Many old installs had ancient sample crontabs intended for search indexing
+  that no longer reflected the modern world. Now, when upgrading a site, a
+  :file:`cron.conf` will be written with the new recommended crontab
+  entries.
+
+  We recommend that all administrators look at this file and incorporate
+  it into their crontab.
+
+* Added a new :guilabel:`Company/Organization` setting in General Settings.
+
+  This can be used to specify the company or organization that owns the
+  server. It will be displayed when the user visits the support page.
+
+  This field is optional.
+
+* Added a setting for controlling whether support usage statistics are sent
+  to us.
+
+  We use these statistics to help us diagnose common trends in support
+  problems, to help prioritize supported platforms and versions, and to
+  provide better support pages when a particular install's users click
+  :guilabel:`Get Support`. This data is never provided in any form to
+  anybody but the core developers of Review Board.
+
+  This can be toggled in the Support Settings page. New sites will be
+  prompted during install by :command:`rb-site install`.
+
+
+Extensions
+==========
+
+Extension Media
+---------------
+
+* Extension media will now always be installed for the first time on new
+  servers, even if the settings data incorrectly claims it's been installed.
+
+  This can happen if an administrator moves Review Board to a new server
+  without copying over the old media.
+
+
+Review UIs
+----------
+
+* :py:class:`ReviewUI` subclasses can now selectively be enabled or disabled
+  for specific file attachments.
+
+  A :py:class:`ReviewUI` subclass can now implement :py:meth:`is_enabled_for`
+  to determine whether it should be enabled for a given file attachment,
+  depending on the attachment, review request, or user.
+
+
+Web API
+=======
+
+* When expanding links in resource payloads, infinite recursions should no
+  longer be possible. (:bug:`3442`)
+
+  This easily manifested by setting a review request's Depends On to itself,
+  or having two review requests depend on each other.
+
+
+Bug Fixes
+=========
+
+General
+-------
+
+* Fixed visual issues with the display of the "permission denied" boxes when
+  attempting to view review requests or pages that aren't accessible.
+
+* Fixed typos in some strings and the translations.
+
+* Review UI pages now show draft banners.
+
+* Fixed initializing logging when running on Windows.
+
+  Patch by Carlos Corrales.
+
+
+Diff Viewer
+-----------
+
+* Long lines in diffs now wrap properly. (:bug:`3309`)
+
+  Long lines, particularly those with many consecutive non-breaking
+  characters, didn't used to wrap very well. In 2.0, they ended up getting
+  cut off. Now, they wrap correctly, and column widths for both the
+  original and modified files stay consistent.
+
+* Fixed various breakages with interdiffs. (:bug:`3440`)
+
+  Some interdiffs would generate "replace" ranges that broke some logic
+  in our interdiff handling, resulting in an error when viewing the diff.
+  These should now be properly handled.
+
+* Viewing a diff fragment that has been deleted in the database now returns
+  a HTTP 404, rather than a 500 Internal Sever Error. (:bug:`3473`)
+
+  Patch by Erik Lattimore.
+
+
+File Attachments
+----------------
+
+* File attachment mimetypes are now guessed if the browser reports them as
+  :mimetype:`application/octet-stream`. (:bug:`2269`)
+
+
+Dashboard
+---------
+
+* Fixed review request counters in the dashboard getting out of sync with
+  reality. (:bug:`2268`)
+
+  Several fixes have gone in over time for this, but we have a much more
+  solid case now for fixing the remaining issues.
+
+* Fixed middle or control-clicking rows in the dashboard, in order to open
+  in new tabs/windows. (:bug:`2521`)
+
+
+Review Requests
+---------------
+
+* Diffs deleted from the database no longer break review requests that
+  formerly referenced them. (:bug:`3451`)
+
+* Fixed multi-line text fields disappearing when publishing drafts.
+
+* Attempting to set a review request's Depends On field to itself, or
+  having two review requests depend on each other, should no longer
+  break the page and result in timeouts. (:bug:`3442`)
+
+
+My Account Page
+---------------
+
+* The forms on the My Account page should now properly show any validation
+  errors.
+
+
+Administration
+--------------
+
+* Improved some text on the "Manual Updates Required" page to clarify
+  that the web server should be restarted after making changes.
+  (:bug:`3416`)
+
+* The ``loaddb`` management command now gives instructions on installing
+  the ``django-reset`` package, which is a prerequisite in modern versions
+  of Django.
+
+
+Repository Support
+------------------
+
+* Creating a repository with the same path as an archived repository no
+  longer results in errors.
+
+
+CVS
+~~~
+
+* Fixed Unicode issues with uploaded diff files.
+
+* CVS repository validation now displays any authentication-related errors,
+  instead of claiming the repository wasn't found.
+
+* When specifying a ``:pserver:`` (or similar) path, the username and
+  password fields are no longer ignored.
+
+
+Git
+~~~
+
+* Fixed Unicode errors when parsing Git diffs. (:bug:`3467`)
+
+
+Subversion
+~~~~~~~~~~
+
+* Fixed Unicode errors with UTF-8 files that have ``svn:keywords`` set.
+  (:bug:`3425`)
+
+
+Contributors
+============
+
+* Anselina Chia
+* Bruce Cran
+* Carlos Corrales
+* Christian Hammond
+* David Trowbridge
+* Erik Lattimore
+* Thom Gerdes

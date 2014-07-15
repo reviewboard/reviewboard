@@ -36,7 +36,8 @@ Updating Fixtures
 If you're going to add to the existing fixtures, you'll first want to modify
 :file:`settings_local.py`, set your database to be ``sqlite3`` (if it's
 not already) and change the database name to something like
-:file:`unittests.db`. Then::
+:file:`unittests.db`. You'll also need to install the ``django-reset`` package.
+Then::
 
    ./reviewboard/manage.py syncdb --noinput
    ./reviewboard/manage.py reset --noinput scmtools
