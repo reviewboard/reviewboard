@@ -108,8 +108,8 @@ class StandardAuthSettingsForm(SiteSettingsForm):
               'register an account and type in your new keys below.')
             % {
                 'recaptcha_url': 'http://www.recaptcha.net/',
-                'register_url': 'https://admin.recaptcha.net/recaptcha'
-                                '/createsite/',
+                'register_url': 'https://www.google.com/recaptcha/admin'
+                                '#createsite',
             }),
         required=False)
 
