@@ -38,7 +38,7 @@ To perform a full index::
 
 To perform an index update::
 
-    $ rb-site manage /path/to/site update_index -a <hours>
+    $ rb-site manage /path/to/site update_index -- -a <hours>
 
 where ``<hours>`` is the number of hours since the last update. We recommend
 using ``-a 1`` and run the update command every 10 minutes. This command should
