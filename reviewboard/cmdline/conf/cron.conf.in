@@ -1,5 +1,5 @@
 # Update search index every 10 minutes
-0,10,20,30,40,50 * * * * @rbsite@ manage "@sitedir@" update_index -a 1
+0,10,20,30,40,50 * * * * @rbsite@ manage "@sitedir@" update_index -- -a 1
 
 # Clear expired sessions once a day at 2am
 0 2 * * * @rbsite@ manage "@sitedir@" cleanup
