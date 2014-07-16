@@ -2526,9 +2526,14 @@ class UserResource(WebAPIResource, DjbletsUserResource):
 
     def get_queryset(self, request, local_site_name=None, *args, **kwargs):
         search_q = request.GET.get('q', None)
-
+        is_list = kwargs.get('is_list', False)
         local_site = _get_local_site(local_site_name)
-        if local_site:
+
+        # When accessing individual users (not is_list) on public local sites,
+        # we allow accessing any username. This is so that the links on reviews
+        # and review requests from non-members won't be 404. The list is still
+        # restricted to the members of the site to avoid leaking information.
+        if local_site and (is_list or not local_site.public):
             query = local_site.users.filter(is_active=True)
         else:
             query = self.model.objects.filter(is_active=True)
