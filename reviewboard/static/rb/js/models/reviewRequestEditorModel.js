@@ -190,7 +190,7 @@ RB.ReviewRequestEditor = Backbone.Model.extend({
      */
     publishDraft: function() {
         var reviewRequest = this.get('reviewRequest'),
-            onError = function(xhr) {
+            onError = function(model, xhr) {
                 this.trigger('publishError', xhr.errorText);
             };
 

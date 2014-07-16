@@ -59,7 +59,7 @@ RB.DraftReviewRequest = RB.BaseResource.extend(_.defaults({
 
                 if (validationError) {
                     if (_.isFunction(options.error)) {
-                        options.error.call(context, {
+                        options.error.call(context, this, {
                             errorText: validationError
                         });
                     }
