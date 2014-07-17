@@ -573,7 +573,9 @@ class ReviewRequestDataGrid(DataGrid):
         # Add local timezone info to the columns
         user = self.request.user
         if user.is_authenticated():
-            self.timezone = pytz.timezone(user.get_profile().timezone)
+            profile, is_new = Profile.objects.get_or_create(user=user)
+
+            self.timezone = pytz.timezone(profile.timezone)
             self.time_added.timezone = self.timezone
             self.last_updated.timezone = self.timezone
             self.diff_updated.timezone = self.timezone
