@@ -88,6 +88,7 @@
 
     #prompt-for-basedir,
     #prompt-for-diff,
+    #prompt-for-parent-diff,
     #prompt-for-change-number,
     #processing-diff,
     #uploading-diffs,
@@ -95,17 +96,24 @@
       display: none;
     }
 
-    #error-indicator {
+    #prompt-for-parent-diff {
+      line-height: 6em;
+
+      form {
+        margin-top: 4em;
+      }
+    }
+
+    #error-contents,
+    #parent-diff-error-contents {
+      position: relative;
+      margin: 0 10em;
       line-height: 12pt;
+      margin-bottom: 1em;
 
-      #error-contents {
-        position: relative;
-        margin: 0 10em;
-
-        img {
-          margin-right: 5px;
-          vertical-align: sub;
-        }
+      img {
+        margin-right: 5px;
+        vertical-align: sub;
       }
     }
 

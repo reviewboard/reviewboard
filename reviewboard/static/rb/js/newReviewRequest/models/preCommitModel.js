@@ -8,6 +8,7 @@ RB.PreCommitModel = Backbone.Model.extend({
         diffFile: null,
         diffValid: false,
         error: null,
+        parentDiffFile: null,
         repository: null,
         state: 0
     },
@@ -18,7 +19,8 @@ RB.PreCommitModel = Backbone.Model.extend({
         PROPMT_FOR_CHANGE_NUMBER: 2,
         PROCESSING_DIFF: 3,
         UPLOADING: 4,
-        ERROR: 5
+        PROMPT_FOR_PARENT_DIFF: 5,
+        ERROR: 6
     },
 
     /*
@@ -27,8 +29,8 @@ RB.PreCommitModel = Backbone.Model.extend({
     initialize: function() {
         _super(this).initialize.apply(this, arguments);
 
-        this.on('change:diffFile change:basedir change:changeNumber ' +
-                'change:diffValid',
+        this.on('change:diffFile change:parentDiffFile change:basedir ' +
+                'change:changeNumber change:diffValid',
                 this._updateState, this);
     },
 
@@ -45,6 +47,7 @@ RB.PreCommitModel = Backbone.Model.extend({
             diffFile: null,
             diffValid: false,
             error: null,
+            parentDiffFile: null,
             state: this.State.PROMPT_FOR_DIFF
         });
     },
@@ -57,6 +60,7 @@ RB.PreCommitModel = Backbone.Model.extend({
             changeNumber = this.get('changeNumber'),
             diff = this.get('diffFile'),
             diffValid = this.get('diffValid'),
+            parentDiff = this.get('parentDiffFile'),
             repository = this.get('repository'),
             requiresBasedir = repository.get('requiresBasedir'),
             requiresChangeNumber = repository.get('requiresChangeNumber'),
@@ -73,6 +77,13 @@ RB.PreCommitModel = Backbone.Model.extend({
                         this.set('state', this.State.PROCESSING_DIFF);
                         this._tryValidate();
                     }
+                }
+                break;
+
+            case this.State.PROMPT_FOR_PARENT_DIFF:
+                if (diff && parentDiff) {
+                    this.set('state', this.State.PROCESSING_DIFF);
+                    this._tryValidate();
                 }
                 break;
 
@@ -128,6 +139,7 @@ RB.PreCommitModel = Backbone.Model.extend({
      */
     _tryValidate: function() {
         var diff = this.get('diffFile'),
+            parentDiff = this.get('parentDiffFile'),
             repository = this.get('repository'),
             uploader = new RB.ValidateDiffModel();
 
@@ -139,7 +151,8 @@ RB.PreCommitModel = Backbone.Model.extend({
             repository: repository.get('id'),
             localSitePrefix: repository.get('localSitePrefix'),
             basedir: this.get('basedir'),
-            diff: diff
+            diff: diff,
+            parentDiff: parentDiff
         });
 
         uploader.save({
@@ -160,6 +173,7 @@ RB.PreCommitModel = Backbone.Model.extend({
      */
     _onValidateError: function(model, xhr) {
         var rsp = $.parseJSON(xhr.responseText),
+            newState = this.State.ERROR,
             error;
 
         switch (rsp.err.code) {
@@ -169,11 +183,15 @@ RB.PreCommitModel = Backbone.Model.extend({
                     error = gettext('The uploaded diff uses short revisions, but Review Board requires full revisions.<br />Please generate a new diff using the <code>--full-index</code> parameter.');
                 } else {
                     error = interpolate(
-                        gettext('The file "%s" (revision %s) was not found in the repository. If you want to use a parent diff, please create the review request with <code>rbt post</code>.'),
+                        gettext('The file "%s" (revision %s) was not found in the repository.'),
                         [rsp.file, rsp.revision]);
+
+                    if (this.get('parentDiffFile') === null) {
+                        // Allow the user to try providing a parent diff.
+                        newState = this.State.PROMPT_FOR_PARENT_DIFF;
+                    }
                 }
 
-                // TODO: allow users to add a parent diff
                 break;
 
             case RB.APIErrors.DIFF_PARSE_ERROR:
@@ -188,7 +206,7 @@ RB.PreCommitModel = Backbone.Model.extend({
 
         if (error) {
             this.set({
-                state: this.State.ERROR,
+                state: newState,
                 error: error
             });
         }
@@ -215,22 +233,18 @@ RB.PreCommitModel = Backbone.Model.extend({
 
                 diff.set({
                     basedir: this.get('basedir'),
-                    diff: this.get('diffFile')
+                    diff: this.get('diffFile'),
+                    parentDiff: this.get('parentDiffFile')
                 });
                 diff.url = reviewRequest.get('links').diffs.href;
                 diff.save({
                     success: function() {
                         window.location = reviewRequest.get('reviewURL');
                     },
-                    error: function() {
-                        // TODO: handle errors
-                    }
-                });
+                    error: this._onValidateError
+                }, this);
             },
-
-            error: function() {
-                // TODO: handle errors
-            }
+            error: this._onValidateError
         }, this);
     }
 });
