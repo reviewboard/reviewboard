@@ -200,7 +200,11 @@
 }
 
 .review-request {
-  @details-width: 30em;
+  /*
+   * Any changes to this need to be reflected in _resizeLayout in
+   * reviewRequestEditorView.js
+   */
+  @details-width: 300px;
 
   background-color: #fefadf;
   background-image: url('@{img_base}/review_request_box_top_bg.png');
@@ -333,6 +337,7 @@
         span {
           display: inline-block;
           margin-right: 4px;
+          word-wrap: break-word;
         }
 
         .editicon {

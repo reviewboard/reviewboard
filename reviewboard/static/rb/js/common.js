@@ -147,8 +147,8 @@ $.fn.formDlg = function(options) {
                     options.success(rsp);
                     box.remove();
                 },
-                error: function(rsp) { // error
-                    displayErrors(rsp);
+                error: function(model, xhr) {
+                    displayErrors($.parseJSON(xhr.responseText));
                 }
             });
         }
@@ -160,19 +160,13 @@ $.fn.formDlg = function(options) {
          * @param {object} rsp  The server response.
          */
         function displayErrors(rsp) {
-            var errorStr,
+            var errorStr = rsp.err.msg,
                 fieldName,
                 list,
                 i;
 
-            if (_.isObject(rsp)) {
-                errorStr = rsp.err.msg;
-
-                if (options.dataStoreObject.getErrorString) {
-                    errorStr = options.dataStoreObject.getErrorString(rsp);
-                }
-            } else {
-                errorStr = rsp;
+            if (options.dataStoreObject.getErrorString) {
+                errorStr = options.dataStoreObject.getErrorString(rsp);
             }
 
             errors
