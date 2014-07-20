@@ -18,6 +18,13 @@ RB.PreCommitView = Backbone.View.extend({
         '  <%= selectDiff %>',
         ' </form>',
         '</div>',
+        '<div class="input dnd" id="prompt-for-parent-diff">',
+        ' <form>',
+        '  <div id="parent-diff-error-contents" />',
+        '  <%= selectParentDiff %>',
+        ' </form>',
+        ' <a href="#" class="startover"><%- startOver %></a>',
+        '</div>',
         '<div class="input" id="prompt-for-basedir">',
         ' <form id="basedir-form">',
         '  <%- baseDir %>',
@@ -47,9 +54,18 @@ RB.PreCommitView = Backbone.View.extend({
         'dragover .dnd': '_onDragOver',
         'dragleave .dnd': '_onDragLeave',
         'drop .dnd': '_onDrop',
-        'submit #basedir-form': '_handleBasedir',
-        'submit #changenum-form': '_handleChangenum',
-        'click .startover': '_startOver'
+        'submit #basedir-form': '_onBasedirSubmit',
+        'submit #changenum-form': '_onChangenumSubmit',
+        'click .startover': '_onStartOverClicked',
+        'click #select-diff-file': '_onSelectFileClicked',
+        'click #select-parent-diff-file': '_onSelectFileClicked'
+    },
+
+    initialize: function() {
+        Backbone.View.initialize.apply(this, arguments);
+
+        this.listenTo(this.model, 'change:state', this._onStateChanged);
+        this.listenTo(this.model, 'change:error', this._onErrorChanged);
     },
 
     /*
@@ -63,47 +79,53 @@ RB.PreCommitView = Backbone.View.extend({
             tipHeader: gettext('Tip:'),
             tip: gettext('We recommend using <code>rbt post</code> from <a href="http://www.reviewboard.org/docs/rbtools/dev/">RBTools</a> to create and update review requests.'),
             selectDiff: gettext('<input type="button" id="select-diff-file" value="Select"> or drag and drop a diff file to begin.'),
+            selectParentDiff: gettext('<input type="button" id="select-parent-diff-file" value="Select"> or drag and drop a parent diff file if you have one.'),
             baseDir: gettext('What is the base directory for this diff?'),
             changeNum: gettext('What is the change number for this diff?'),
             startOver: gettext('Start Over'),
             ok: gettext('OK')
         }));
+
         this._$fileInput = $('<input type="file" />')
             .hide()
             .appendTo(this.$el)
             .change(function() {
                 self._handleFiles(self._$fileInput.get(0).files);
             });
-
         this._$promptForDiff = this.$('#prompt-for-diff');
+        this._$promptForParentDiff = this.$('#prompt-for-parent-diff');
         this._$promptForBasedir = this.$('#prompt-for-basedir');
         this._$promptForChangeNumber = this.$('#prompt-for-change-number');
         this._$processingDiff = this.$('#processing-diff');
         this._$uploading = this.$('#uploading-diffs');
         this._$error = this.$('#error-indicator');
         this._$errorContents = this.$('#error-contents');
+        this._$diffRevisionError = this.$('#parent-diff-error-contents');
 
-        this.$('#select-diff-file').click(function() {
-            self._$fileInput.click();
-        });
-
-        this.listenTo(this.model, 'change:state', this._onStateChanged);
-        this.listenTo(this.model, 'change:error', function(model, error) {
-            var innerHeight, outerHeight;
-
-            this._$errorContents.html(
-                '<div class="rb-icon rb-icon-warning"></div>' + error);
-
-            innerHeight = this._$errorContents.height();
-            outerHeight = this._$error.height();
-
-            this._$errorContents.css({
-                top: Math.floor((outerHeight - innerHeight) / 2) + 'px'
-            });
-        });
         this._onStateChanged(this.model, this.model.get('state'));
 
         return this;
+    },
+
+    /*
+     * Callback for when the model's error attribute changes.
+     *
+     * Updates the text and position of error indicators in the various pages.
+     */
+    _onErrorChanged: function(model, error) {
+        var errorHTML = '<div class="rb-icon rb-icon-warning"></div>' + error,
+            innerHeight,
+            outerHeight;
+
+        this._$errorContents.html(errorHTML);
+        this._$diffRevisionError.html(errorHTML);
+
+        innerHeight = this._$errorContents.height();
+        outerHeight = this._$error.height();
+
+        this._$errorContents.css({
+            top: Math.floor((outerHeight - innerHeight) / 2) + 'px'
+        });
     },
 
     /*
@@ -114,6 +136,8 @@ RB.PreCommitView = Backbone.View.extend({
     _onStateChanged: function(model, state) {
         this._$promptForDiff.setVisible(
             state === this.model.State.PROMPT_FOR_DIFF);
+        this._$promptForParentDiff.setVisible(
+            state === this.model.State.PROMPT_FOR_PARENT_DIFF);
         this._$promptForBasedir.setVisible(
             state === this.model.State.PROMPT_FOR_BASEDIR);
         this._$processingDiff.setVisible(
@@ -197,6 +221,10 @@ RB.PreCommitView = Backbone.View.extend({
                 this.model.set('diffFile', files[0]);
                 break;
 
+            case this.model.State.PROMPT_FOR_PARENT_DIFF:
+                this.model.set('parentDiffFile', files[0]);
+                break;
+
             default:
                 console.assert('File received in wrong state');
         }
@@ -205,7 +233,7 @@ RB.PreCommitView = Backbone.View.extend({
     /*
      * Handle when the user inputs a base directory.
      */
-    _handleBasedir: function() {
+    _onBasedirSubmit: function() {
         var basedir = this.$('#basedir-input').val();
 
         if (basedir) {
@@ -217,7 +245,7 @@ RB.PreCommitView = Backbone.View.extend({
     /*
      * Handle when the user inputs a change number.
      */
-    _handleChangenum: function() {
+    _onChangenumSubmit: function() {
         var changenum = this.$('#changenum-input').val();
 
         if (changenum) {
@@ -229,7 +257,7 @@ RB.PreCommitView = Backbone.View.extend({
     /*
      * Callback when "start over" is clicked.
      */
-    _startOver: function() {
+    _onStartOverClicked: function() {
         var input = this._$fileInput.clone(true);
 
         this._$fileInput.replaceWith(input);
@@ -238,5 +266,12 @@ RB.PreCommitView = Backbone.View.extend({
         this.model.startOver();
 
         return false;
+    },
+
+    /*
+     * Callback when "Select [diff file]" is clicked.
+     */
+    _onSelectFileClicked: function() {
+        this._$fileInput.click();
     }
 });
