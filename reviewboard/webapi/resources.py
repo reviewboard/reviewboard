@@ -1317,6 +1317,16 @@ class OriginalFileResource(WebAPIResource):
         file before applying a patch.
         """
         try:
+            review_request = review_request_resource.get_object(
+                request, *args, **kwargs)
+        except ObjectDoesNotExist:
+            return DOES_NOT_EXIST
+
+        if not review_request_resource.has_access_permissions(request,
+                                                              review_request):
+            return _no_access_error(request.user)
+
+        try:
             filediff = filediff_resource.get_object(request, *args, **kwargs)
         except ObjectDoesNotExist:
             return DOES_NOT_EXIST
@@ -1355,6 +1365,16 @@ class PatchedFileResource(WebAPIResource):
         The file is returned as :mimetype:`text/plain` and is the result
         of applying the patch to the original file.
         """
+        try:
+            review_request = review_request_resource.get_object(
+                request, *args, **kwargs)
+        except ObjectDoesNotExist:
+            return DOES_NOT_EXIST
+
+        if not review_request_resource.has_access_permissions(request,
+                                                              review_request):
+            return _no_access_error(request.user)
+
         try:
             filediff = filediff_resource.get_object(request, *args, **kwargs)
         except ObjectDoesNotExist:

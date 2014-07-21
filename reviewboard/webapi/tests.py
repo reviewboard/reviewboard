@@ -11,13 +11,14 @@ from djblets.siteconfig.models import SiteConfiguration
 from djblets.testing.decorators import add_fixtures
 from djblets.webapi.errors import DOES_NOT_EXIST, INVALID_FORM_DATA, \
                                   PERMISSION_DENIED
+from kgb import SpyAgency
 import paramiko
 
 from reviewboard import initialize
 from reviewboard.accounts.models import LocalSiteProfile
 from reviewboard.attachments.models import FileAttachment
 from reviewboard.changedescs.models import ChangeDescription
-from reviewboard.diffviewer.models import DiffSet
+from reviewboard.diffviewer.models import DiffSet, FileDiff
 from reviewboard.hostingsvcs.models import HostingServiceAccount
 from reviewboard.notifications.tests import EmailTestHelper
 from reviewboard.reviews.models import DefaultReviewer, \
@@ -120,7 +121,8 @@ class BaseWebAPITestCase(TestCase, EmailTestHelper):
 
     def apiGet(self, path, query={}, follow_redirects=False,
                expected_status=200, expected_redirects=[],
-               expected_headers={}, expected_mimetype=None):
+               expected_headers={}, expected_mimetype=None,
+               expected_json=True):
         path = self._normalize_path(path)
 
         print 'GETing %s' % path
@@ -136,10 +138,10 @@ class BaseWebAPITestCase(TestCase, EmailTestHelper):
             self.assertTrue(header in response)
             self.assertEqual(response[header], value)
 
-        if expected_status == 302:
-            rsp = response.content
-        else:
+        if expected_status != 302 and expected_json:
             rsp = simplejson.loads(response.content)
+        else:
+            rsp = response.content
 
         print "Response: %s" % rsp
 
@@ -8398,3 +8400,237 @@ class DefaultReviewerResourceTests(BaseWebAPITestCase):
             kwargs={
                 'default_reviewer_id': default_reviewer_id,
             })
+
+
+class OriginalFileResourceTests(SpyAgency, BaseWebAPITestCase):
+    """Testing the OriginalFileResource APIs."""
+    mimetype = 'text/plain'
+    fixtures = ['test_users', 'test_scmtools']
+
+    def setUp(self):
+        super(OriginalFileResourceTests, self).setUp()
+
+        self.spy_on(Repository.get_file,
+                    call_fake=lambda *args, **kwargs: 'Hello, world!\n')
+
+    def test_get(self):
+        """Testing the GET review-requests/<id>/diffs/<id>/files/<id>/original-file/ API"""
+        user = User.objects.get(username='doc')
+        url = self._setup_test(user)
+
+        data = self.apiGet(url,
+                           expected_mimetype=self.mimetype,
+                           expected_json=False)
+        self.assertEqual(data, 'Hello, world!\n')
+
+    def test_get_with_private_repository(self):
+        """Testing the GET review-requests/<id>/diffs/<id>/files/<id>/original-file/ API with access to review request on a private repository"""
+        user = User.objects.get(username='doc')
+        self.assertNotEqual(user, self.user)
+
+        self.repository.public = False
+        self.repository.users.add(self.user)
+        self.repository.save()
+
+        url = self._setup_test(user)
+
+        data = self.apiGet(url,
+                           expected_mimetype=self.mimetype,
+                           expected_json=False)
+        self.assertEqual(data, 'Hello, world!\n')
+
+    def test_get_with_private_repository_no_access(self):
+        """Testing the GET review-requests/<id>/diffs/<id>/files/<id>/original-file/ API without access to review request on a private repository"""
+        user = User.objects.get(username='doc')
+        self.assertNotEqual(user, self.user)
+
+        self.repository.public = False
+        self.repository.save()
+
+        url = self._setup_test(user)
+
+        rsp = self.apiGet(url, expected_status=403)
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
+
+    def test_get_with_private_group(self):
+        """Testing the GET review-requests/<id>/diffs/<id>/files/<id>/original-file/ API with access to review request on a private group"""
+        user = User.objects.get(username='doc')
+        self.assertNotEqual(user, self.user)
+
+        group = Group.objects.create(name='test-group', invite_only=True)
+        group.users.add(self.user)
+        url = self._setup_test(user, group)
+
+        data = self.apiGet(url,
+                           expected_mimetype=self.mimetype,
+                           expected_json=False)
+        self.assertEqual(data, 'Hello, world!\n')
+
+    def test_get_with_private_group_no_access(self):
+        """Testing the GET review-requests/<id>/diffs/<id>/files/<id>/original-file/ API without access to review request on a private repository"""
+        user = User.objects.get(username='doc')
+        self.assertNotEqual(user, self.user)
+
+        group = Group.objects.create(name='test-group', invite_only=True)
+        url = self._setup_test(user, group)
+
+        rsp = self.apiGet(url, expected_status=403)
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
+
+    def get_url(self, review_request, diffset, filediff):
+        return local_site_reverse(
+            'original-file-resource',
+            kwargs={
+                'review_request_id': review_request.display_id,
+                'diff_revision': diffset.revision,
+                'filediff_id': filediff.pk,
+            })
+
+    def _setup_test(self, user, group=None):
+        review_request = ReviewRequest.objects.create(user, self.repository)
+
+        if group:
+            review_request.target_groups.add(group)
+
+        review_request.publish(user)
+
+        diffset = DiffSet.objects.create(
+            name='diffset',
+            revision=1,
+            repository=self.repository)
+        review_request.diffset_history.diffsets.add(diffset)
+
+        filediff = FileDiff.objects.create(
+            diffset=diffset,
+            source_file='README',
+            dest_file='README',
+            source_revision='123',
+            dest_detail='124',
+            status=FileDiff.MODIFIED,
+            diff='')
+
+        return self.get_url(review_request, diffset, filediff)
+
+
+class PatchedFileResourceTests(SpyAgency, BaseWebAPITestCase):
+    """Testing the PatchedFileResource APIs."""
+    mimetype = 'text/plain'
+    fixtures = ['test_users', 'test_scmtools']
+
+    FILEDIFF_DATA = (
+        '--- README\trevision 123\n'
+        '+++ README\trevision 123\n'
+        '@@ -1 +1 @@\n'
+        '-Hello, world!\n'
+        '+Hello, everybody!\n'
+    )
+
+    def setUp(self):
+        super(PatchedFileResourceTests, self).setUp()
+
+        self.spy_on(Repository.get_file,
+                    call_fake=lambda *args, **kwargs: 'Hello, world!\n')
+        self.spy_on(SVNTool.normalize_patch,
+                    call_fake=lambda self, patch, *args, **kwargs: patch)
+
+    def test_get(self):
+        """Testing the GET review-requests/<id>/diffs/<id>/files/<id>/patched-file/ API"""
+        user = User.objects.get(username='doc')
+        url = self._setup_test(user)
+
+        data = self.apiGet(url,
+                           expected_mimetype=self.mimetype,
+                           expected_json=False)
+        self.assertEqual(data, 'Hello, everybody!\n')
+
+    def test_get_with_private_repository(self):
+        """Testing the GET review-requests/<id>/diffs/<id>/files/<id>/patched-file/ API with access to review request on a private repository"""
+        user = User.objects.get(username='doc')
+        self.assertNotEqual(user, self.user)
+
+        self.repository.public = False
+        self.repository.users.add(self.user)
+        self.repository.save()
+
+        url = self._setup_test(user)
+
+        data = self.apiGet(url,
+                           expected_mimetype=self.mimetype,
+                           expected_json=False)
+        self.assertEqual(data, 'Hello, everybody!\n')
+
+    def test_get_with_private_repository_no_access(self):
+        """Testing the GET review-requests/<id>/diffs/<id>/files/<id>/patched-file/ API without access to review request on a private repository"""
+        user = User.objects.get(username='doc')
+        self.assertNotEqual(user, self.user)
+
+        self.repository.public = False
+        self.repository.save()
+
+        url = self._setup_test(user)
+
+        rsp = self.apiGet(url, expected_status=403)
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
+
+    def test_get_with_private_group(self):
+        """Testing the GET review-requests/<id>/diffs/<id>/files/<id>/patched-file/ API with access to review request on a private group"""
+        user = User.objects.get(username='doc')
+        self.assertNotEqual(user, self.user)
+
+        group = Group.objects.create(name='test-group', invite_only=True)
+        group.users.add(self.user)
+        url = self._setup_test(user, group)
+
+        data = self.apiGet(url,
+                           expected_mimetype=self.mimetype,
+                           expected_json=False)
+        self.assertEqual(data, 'Hello, everybody!\n')
+
+    def test_get_with_private_group_no_access(self):
+        """Testing the GET review-requests/<id>/diffs/<id>/files/<id>/patched-file/ API without access to review request on a private repository"""
+        user = User.objects.get(username='doc')
+        self.assertNotEqual(user, self.user)
+
+        group = Group.objects.create(name='test-group', invite_only=True)
+        url = self._setup_test(user, group)
+
+        rsp = self.apiGet(url, expected_status=403)
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
+
+    def get_url(self, review_request, diffset, filediff):
+        return local_site_reverse(
+            'patched-file-resource',
+            kwargs={
+                'review_request_id': review_request.display_id,
+                'diff_revision': diffset.revision,
+                'filediff_id': filediff.pk,
+            })
+
+    def _setup_test(self, user, group=None):
+        review_request = ReviewRequest.objects.create(user, self.repository)
+
+        if group:
+            review_request.target_groups.add(group)
+
+        review_request.publish(user)
+
+        diffset = DiffSet.objects.create(
+            name='diffset',
+            revision=1,
+            repository=self.repository)
+        review_request.diffset_history.diffsets.add(diffset)
+
+        filediff = FileDiff.objects.create(
+            diffset=diffset,
+            source_file='README',
+            dest_file='README',
+            source_revision='123',
+            dest_detail='124',
+            status=FileDiff.MODIFIED,
+            diff=self.FILEDIFF_DATA)
+
+        return self.get_url(review_request, diffset, filediff)
