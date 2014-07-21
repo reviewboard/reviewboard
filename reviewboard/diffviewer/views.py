@@ -175,7 +175,10 @@ def view_diff_fragment(
             file = files[0]
 
             if 'index' in request.GET:
-                file['index'] = request.GET.get('index')
+                try:
+                    file['index'] = int(request.GET.get('index'))
+                except ValueError:
+                    pass
 
             return file
 
