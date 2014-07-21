@@ -62,8 +62,6 @@ RB.PreCommitView = Backbone.View.extend({
     },
 
     initialize: function() {
-        Backbone.View.initialize.apply(this, arguments);
-
         this.listenTo(this.model, 'change:state', this._onStateChanged);
         this.listenTo(this.model, 'change:error', this._onErrorChanged);
     },
