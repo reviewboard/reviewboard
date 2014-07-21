@@ -44,6 +44,14 @@ class TestCase(DjbletsTestCase):
 
     ws_re = re.compile(r'\s+')
 
+    DEFAULT_FILEDIFF_DATA = (
+        b'--- README\trevision 123\n'
+        b'+++ README\trevision 123\n'
+        b'@@ -1 +1 @@\n'
+        b'-Hello, world!\n'
+        b'+Hello, everybody!\n'
+    )
+
     def setUp(self):
         super(TestCase, self).setUp()
 
@@ -218,7 +226,8 @@ class TestCase(DjbletsTestCase):
 
     def create_filediff(self, diffset, source_file='/test-file',
                         dest_file='/test-file', source_revision='123',
-                        dest_detail='124', diff=''):
+                        dest_detail='124', status=FileDiff.MODIFIED,
+                        diff=DEFAULT_FILEDIFF_DATA):
         """Creates a FileDiff for testing.
 
         The FileDiff is tied to the given DiffSet. It's populated with
@@ -230,7 +239,7 @@ class TestCase(DjbletsTestCase):
             dest_file=dest_file,
             source_revision=source_revision,
             dest_detail=dest_detail,
-            status=FileDiff.MODIFIED,
+            status=status,
             diff=diff)
 
     def create_repository(self, with_local_site=False, name='Test Repo',

@@ -59,6 +59,9 @@ class TestTool(GitTool):
                 b"1.7.1",
             ]))
 
+    def get_file(self, path, revision):
+        return 'Hello, world!\n'
+
     def file_exists(self, path, revision):
         if path == '/FILE_FOUND':
             return True

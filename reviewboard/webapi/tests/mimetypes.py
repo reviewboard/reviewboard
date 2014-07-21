@@ -46,6 +46,10 @@ filediff_comment_list_mimetype = _build_mimetype('file-diff-comments')
 filediff_comment_item_mimetype = _build_mimetype('file-diff-comment')
 
 
+original_file_mimetype = 'text/plain'
+patched_file_mimetype = 'text/plain'
+
+
 repository_list_mimetype = _build_mimetype('repositories')
 repository_item_mimetype = _build_mimetype('repository')
 
