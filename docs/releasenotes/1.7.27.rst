@@ -1,0 +1,98 @@
+=================================
+Review Board 1.7.27 Release Notes
+=================================
+
+**Release date**: July 22, 2014
+
+
+Security Updates
+================
+
+This release fixes a couple of security vulnerabilities that came to our
+attention.
+
+We strongly recommend that everyone upgrade to this release.
+
+* Fixed a vulnerability where a URL to a diff fragment could be crafted that
+  would inject custom HTML into the page. An attacker could send such a URL
+  to another user and execute code in their browser session.
+
+  This was reported by Uchida. A CVE number is pending.
+
+* The Original File and Patched File resources could be used to access files
+  on a private review request that the user did not have access to, if they
+  knew the approciate database IDs.
+
+  A CVE number is pending.
+
+
+New Features
+============
+
+* Added a new :guilabel:`Company/Organization` setting in General Settings.
+
+  This can be used to specify the company or organization that owns the
+  server. It will be displayed when the user visits the support page.
+
+  This field is optional.
+
+* Added a setting for controlling whether support usage statistics are sent
+  to us.
+
+  We use these statistics to help us diagnose common trends in support
+  problems, to help prioritize supported platforms and versions, and to
+  provide better support pages when a particular install's users click
+  :guilabel:`Get Support`. This data is never provided in any form to
+  anybody but the core developers of Review Board.
+
+  This can be toggled in the Support Settings page. New sites will be
+  prompted during install by :command:`rb-site install`.
+
+
+Extensions
+==========
+
+Review UIs
+----------
+
+* :py:class:`ReviewUI` subclasses can now selectively be enabled or disabled
+  for specific file attachments.
+
+  A :py:class:`ReviewUI` subclass can now implement :py:meth:`is_enabled_for`
+  to determine whether it should be enabled for a given file attachment,
+  depending on the attachment, review request, or user.
+
+
+Web API
+=======
+
+* Creating or updating a review request using an empty change number will
+  now properly show the Empty Changeset error response.
+
+
+Bug Fixes
+=========
+
+* Fixed the URL to the Recaptcha registration page. (:bug:`3471`)
+
+* The per-user option for choosing whether to receive e-mail is now properly
+  shown in the My Account page.
+
+* Fixed review request counters in the dashboard getting out of sync with
+  reality. (:bug:`2268`)
+
+* The All Review Requests and User pages no longer break if the user doesn't
+  yet have a profile set up. (:bug:`3083`)
+
+* Fixed review request breakages when posting changes on a Local Site with
+  an invalid Perforce/Plastic change number.
+
+* Fixed various breakages when referring to users on a public Local Site
+  that aren't members of the site. (:bug:`3484`)
+
+
+Contributors
+============
+
+* Christian Hammond
+* David Trowbridge

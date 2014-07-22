@@ -217,7 +217,7 @@ TEST_RUNNER = 'reviewboard.test.RBTestRunner'
 # start out, instead of encountering them later on.  Most of the magic for this
 # happens in manage.py, not here.
 install_help = '''
-Please see http://www.reviewboard.org/docs/manual/dev/admin/
+Please see https://www.reviewboard.org/docs/manual/dev/admin/
 for help setting up Review Board.
 '''
 

@@ -298,7 +298,7 @@ class NewsWidget(Widget):
     template = 'admin/widgets/w-news.html'
     actions = [
         {
-            'url': 'http://www.reviewboard.org/news/',
+            'url': 'https://www.reviewboard.org/news/',
             'label': _('More'),
         },
         {

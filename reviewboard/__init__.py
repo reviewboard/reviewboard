@@ -60,7 +60,7 @@ def get_manual_url():
     else:
         manual_ver = 'dev'
 
-    return 'http://www.reviewboard.org/docs/manual/%s/' % manual_ver
+    return 'https://www.reviewboard.org/docs/manual/%s/' % manual_ver
 
 
 def initialize():
