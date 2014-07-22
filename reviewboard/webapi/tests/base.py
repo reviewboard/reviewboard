@@ -105,7 +105,8 @@ class BaseWebAPITestCase(TestCase, EmailTestHelper):
 
     def api_get(self, path, query={}, follow_redirects=False,
                 expected_status=200, expected_redirects=[],
-                expected_headers={}, expected_mimetype=None):
+                expected_headers={}, expected_mimetype=None,
+                expected_json=True):
         path = self._normalize_path(path)
 
         print('GETing %s' % path)
@@ -120,10 +121,10 @@ class BaseWebAPITestCase(TestCase, EmailTestHelper):
             self.assertIn(header, response)
             self.assertEqual(response[header], value)
 
-        if expected_status == 302:
-            rsp = response.content
-        else:
+        if expected_status != 302 and expected_json:
             rsp = json.loads(response.content)
+        else:
+            rsp = response.content
 
         print("Response: %s" % rsp)
 

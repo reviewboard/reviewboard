@@ -30,8 +30,8 @@ class DraftFileDiffResource(FileDiffResource):
     mimetype_item_resource_name = 'file'
 
     item_child_resources = [
-        resources.original_file,
-        resources.patched_file,
+        resources.draft_original_file,
+        resources.draft_patched_file,
     ]
 
     def get_queryset(self, request, diff_revision, *args, **kwargs):

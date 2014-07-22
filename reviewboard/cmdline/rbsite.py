@@ -11,8 +11,9 @@ import re
 import shutil
 import sys
 import textwrap
-import warnings
 import subprocess
+import urllib2
+import warnings
 from optparse import OptionGroup, OptionParser
 from random import choice as random_choice
 
@@ -1574,7 +1575,23 @@ class InstallCommand(Command):
         ui.text(page, 'To enable PDF document review, enhanced scalability, '
                       'GitHub Enterprise support, and more, download '
                       'Power Pack at:')
-        ui.urllink(page, 'http://www.reviewboard.org/powerpack/')
+        ui.urllink(page, 'https://www.reviewboard.org/powerpack/')
+
+        ui.text(page, 'Your install key for Power Pack is: %s'
+                      % get_install_key())
+
+        ui.text(page, 'Support contracts for Review Board are also available:')
+        ui.urllink(page, 'https://www.beanbaginc.com/support/contracts/')
+
+
+    def show_get_more(self):
+        from reviewboard.admin.support import get_install_key
+
+        page = ui.page('Get more out of Review Board', allow_back=False)
+        ui.text(page, 'To enable PDF document review, enhanced scalability, '
+                      'GitHub Enterprise support, and more, download '
+                      'Power Pack at:')
+        ui.urllink(page, 'https://www.reviewboard.org/powerpack/')
 
         ui.text(page, 'Your install key for Power Pack is: %s'
                       % get_install_key())

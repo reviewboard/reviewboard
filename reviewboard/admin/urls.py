@@ -33,7 +33,7 @@ from django.views.generic import RedirectView
 from reviewboard.admin import forms
 
 
-NEWS_FEED = "http://www.reviewboard.org/news/feed/"
+NEWS_FEED = "https://www.reviewboard.org/news/feed/"
 
 settings_urlpatterns = patterns(
     'reviewboard.admin.views',

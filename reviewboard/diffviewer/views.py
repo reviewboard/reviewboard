@@ -373,7 +373,10 @@ class DiffFragmentView(View):
             file = files[0]
 
             if 'index' in self.request.GET:
-                file['index'] = self.request.GET.get('index')
+                try:
+                    file['index'] = int(self.request.GET.get('index'))
+                except ValueError:
+                    pass
 
             return file
 

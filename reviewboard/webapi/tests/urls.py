@@ -135,6 +135,30 @@ def get_draft_filediff_item_url(filediff, review_request,
 
 
 #
+# DraftOriginalFileResource
+#
+def get_draft_original_file_url(review_request, diffset, filediff,
+                                local_site_name=None):
+    return resources.draft_original_file.get_list_url(
+        local_site_name=local_site_name,
+        review_request_id=review_request.display_id,
+        diff_revision=diffset.revision,
+        filediff_id=filediff.pk)
+
+
+#
+# DraftPatchedFileResource
+#
+def get_draft_patched_file_url(review_request, diffset, filediff,
+                               local_site_name=None):
+    return resources.draft_patched_file.get_list_url(
+        local_site_name=local_site_name,
+        review_request_id=review_request.display_id,
+        diff_revision=diffset.revision,
+        filediff_id=filediff.pk)
+
+
+#
 # FileAttachmentResource
 #
 def get_file_attachment_list_url(review_request, local_site_name=None):
@@ -247,6 +271,30 @@ def get_hosting_service_account_item_url(account_or_id, local_site_name=None):
     return resources.hosting_service_account.get_item_url(
         local_site_name=local_site_name,
         account_id=account_id)
+
+
+#
+# OriginalFileResource
+#
+def get_original_file_url(review_request, diffset, filediff,
+                          local_site_name=None):
+    return resources.original_file.get_list_url(
+        local_site_name=local_site_name,
+        review_request_id=review_request.display_id,
+        diff_revision=diffset.revision,
+        filediff_id=filediff.pk)
+
+
+#
+# PatchedFileResource
+#
+def get_patched_file_url(review_request, diffset, filediff,
+                         local_site_name=None):
+    return resources.patched_file.get_list_url(
+        local_site_name=local_site_name,
+        review_request_id=review_request.display_id,
+        diff_revision=diffset.revision,
+        filediff_id=filediff.pk)
 
 
 #

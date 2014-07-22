@@ -56,6 +56,10 @@ hosting_service_account_item_mimetype = \
     _build_mimetype('hosting-service-account')
 
 
+original_file_mimetype = 'text/plain'
+patched_file_mimetype = 'text/plain'
+
+
 remote_repository_list_mimetype = _build_mimetype('remote-repositories')
 remote_repository_item_mimetype = _build_mimetype('remote-repository')
 

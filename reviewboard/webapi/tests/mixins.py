@@ -236,6 +236,7 @@ class BasicGetItemTestsMixin(BasicTestsMixin):
     fixture names to import.
     """
     basic_get_fixtures = []
+    basic_get_returns_json = True
     basic_get_use_admin = False
 
     def setup_basic_get_test(self, user, with_local_site, local_site_name):
@@ -251,12 +252,18 @@ class BasicGetItemTestsMixin(BasicTestsMixin):
         url, mimetype, item = self.setup_basic_get_test(self.user, False, None)
         self.assertFalse(url.startswith('/s/' + self.local_site_name))
 
-        rsp = self.api_get(url, expected_mimetype=mimetype)
-        self.assertEqual(rsp['stat'], 'ok')
-        self.assertIn(self.resource.item_result_key, rsp)
+        rsp = self.api_get(url,
+                           expected_mimetype=mimetype,
+                           expected_json=self.basic_get_returns_json)
 
-        item_rsp = rsp[self.resource.item_result_key]
-        self.compare_item(item_rsp, item)
+        if self.basic_get_returns_json:
+            self.assertEqual(rsp['stat'], 'ok')
+            self.assertIn(self.resource.item_result_key, rsp)
+
+            item_rsp = rsp[self.resource.item_result_key]
+            self.compare_item(item_rsp, item)
+        else:
+            self.compare_item(rsp, item)
 
 
 class BasicGetItemTestsWithLocalSiteMixin(BasicGetItemTestsMixin):
@@ -277,12 +284,18 @@ class BasicGetItemTestsWithLocalSiteMixin(BasicGetItemTestsMixin):
             self.setup_basic_get_test(user, True, self.local_site_name)
         self.assertTrue(url.startswith('/s/' + self.local_site_name))
 
-        rsp = self.api_get(url, expected_mimetype=mimetype)
-        self.assertEqual(rsp['stat'], 'ok')
-        self.assertIn(self.resource.item_result_key, rsp)
+        rsp = self.api_get(url,
+                           expected_mimetype=mimetype,
+                           expected_json=self.basic_get_returns_json)
 
-        item_rsp = rsp[self.resource.item_result_key]
-        self.compare_item(item_rsp, item)
+        if self.basic_get_returns_json:
+            self.assertEqual(rsp['stat'], 'ok')
+            self.assertIn(self.resource.item_result_key, rsp)
+
+            item_rsp = rsp[self.resource.item_result_key]
+            self.compare_item(item_rsp, item)
+        else:
+            self.compare_item(rsp, item)
 
     @add_fixtures(['test_site'])
     @test_template
@@ -607,6 +620,8 @@ class BaseReviewRequestChildMixin(object):
 
     This applies to immediate children and any further down the tree.
     """
+    basic_get_returns_json = True
+
     def setup_review_request_child_test(self, review_request):
         raise NotImplementedError(
             "%s doesn't implement setup_review_request_child_test"
@@ -624,8 +639,9 @@ class BaseReviewRequestChildMixin(object):
 
         url, mimetype = self.setup_review_request_child_test(review_request)
 
-        rsp = self.api_get(url, expected_mimetype=mimetype)
-        self.assertEqual(rsp['stat'], 'ok')
+        self.api_get(url,
+                     expected_mimetype=mimetype,
+                     expected_json=self.basic_get_returns_json)
 
     @test_template
     def test_get_with_private_group_no_access(self):
@@ -648,15 +664,16 @@ class BaseReviewRequestChildMixin(object):
         """Testing the GET <URL> API
         with access to review request on a private repository
         """
-        repository = self.create_repository(public=False)
+        repository = self.create_repository(public=False, tool_name='Test')
         repository.users.add(self.user)
         review_request = self.create_review_request(repository=repository,
                                                     publish=True)
 
         url, mimetype = self.setup_review_request_child_test(review_request)
 
-        rsp = self.api_get(url, expected_mimetype=mimetype)
-        self.assertEqual(rsp['stat'], 'ok')
+        self.api_get(url,
+                     expected_mimetype=mimetype,
+                     expected_json=self.basic_get_returns_json)
 
     @add_fixtures(['test_scmtools'])
     @test_template
@@ -664,7 +681,7 @@ class BaseReviewRequestChildMixin(object):
         """Testing the GET <URL> API
         without access to review request on a private repository
         """
-        repository = self.create_repository(public=False)
+        repository = self.create_repository(public=False, tool_name='Test')
         review_request = self.create_review_request(repository=repository,
                                                     publish=True)
 

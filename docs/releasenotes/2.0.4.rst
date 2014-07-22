@@ -1,0 +1,81 @@
+================================
+Review Board 2.0.4 Release Notes
+================================
+
+**Release date**: July 22, 2014
+
+
+Security Updates
+================
+
+This release fixes a couple of security vulnerabilities that came to our
+attention. These have not been publicly disclosed.
+
+* Fixed a vulnerability where a URL to a diff fragment could be crafted that
+  would inject custom HTML into the page. An attacker could send such a URL
+  to another user and execute code in their browser session.
+
+  This was reported by Uchida. A CVE number is pending.
+
+* The Original File and Patched File resources could be used to access files
+  on a private review request that the user did not have access to, if they
+  knew the approciate database IDs.
+
+  A CVE number is pending.
+
+
+New Features
+============
+
+* Added support for parent diffs in the New Review Request page.
+
+  When uploading a diff, Review Board will now detect if a parent diff is
+  needed for the patch to apply. If so, the user will be shown an appropriate
+  error and then shown fields for uploading a parent diff.
+
+
+Localization
+============
+
+* Updated the Italian translations.
+
+
+Bug Fixes
+=========
+
+* Fixed the URL to the Recaptcha registration page. (:bug:`3471`)
+
+* Fixed the command line used for ``update_index`` in the example crontab.
+
+
+Review Requests
+---------------
+
+* Fixed the display of errors when failing to publish a draft review
+  request.
+
+  Patch by Mark Côté.
+
+* When uploading file attachments, malformed mimetypes provided by the
+  browser will be ignored, and a proper mimetype will be guessed.
+  (:bug:`3427`)
+
+* Long strings in the right-hand review request fields no longer cause
+  fields to overlap. (:bug:`3371`)
+
+* Fixed the display of errors in the Upload Diff and Add File dialogs.
+  (:bug:`3413`)
+
+
+Subversion
+----------
+
+* Fixed a Unicode compatibility issue when fetching files using PySVN.
+
+
+Contributors
+============
+
+* Christian Hammond
+* David Trowbridge
+* Mark Côté

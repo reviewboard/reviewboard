@@ -75,7 +75,7 @@ RB.PreCommitView = Backbone.View.extend({
         this.$el.html(this.template({
             pendingChangeHeader: gettext('New Review Request for Pending Change'),
             tipHeader: gettext('Tip:'),
-            tip: gettext('We recommend using <code>rbt post</code> from <a href="http://www.reviewboard.org/docs/rbtools/dev/">RBTools</a> to create and update review requests.'),
+            tip: gettext('We recommend using <code>rbt post</code> from <a href="https://www.reviewboard.org/docs/rbtools/dev/">RBTools</a> to create and update review requests.'),
             selectDiff: gettext('<input type="button" id="select-diff-file" value="Select"> or drag and drop a diff file to begin.'),
             selectParentDiff: gettext('<input type="button" id="select-parent-diff-file" value="Select"> or drag and drop a parent diff file if you have one.'),
             baseDir: gettext('What is the base directory for this diff?'),

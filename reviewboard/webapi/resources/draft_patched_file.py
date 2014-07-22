@@ -8,28 +8,27 @@ from reviewboard.webapi.resources.base_patched_file import \
     BasePatchedFileResource
 
 
-class PatchedFileResource(BasePatchedFileResource):
-    """Provides the patched file corresponding to a file diff."""
-    name = 'patched_file'
+class DraftPatchedFileResource(BasePatchedFileResource):
+    """Provides the patched file corresponding to a draft file diff."""
+    name = 'draft_patched_file'
 
     def get_filediff(self, request, *args, **kwargs):
         """Returns the FileDiff, or an error, for the given parameters."""
-        review_request_resource = resources.review_request
+        draft_resource = resources.review_request_draft
 
         try:
-            review_request = review_request_resource.get_object(
-                request, *args, **kwargs)
+            draft = draft_resource.get_object(request, *args, **kwargs)
         except ObjectDoesNotExist:
             return DOES_NOT_EXIST
 
-        if not review_request_resource.has_access_permissions(request,
-                                                              review_request):
+        if not draft_resource.has_access_permissions(request, draft):
             return self._no_access_error(request.user)
 
         try:
-            return resources.filediff.get_object(request, *args, **kwargs)
+            return resources.draft_filediff.get_object(request, *args,
+                                                       **kwargs)
         except ObjectDoesNotExist:
             return DOES_NOT_EXIST
 
 
-patched_file_resource = PatchedFileResource()
+draft_patched_file_resource = DraftPatchedFileResource()
