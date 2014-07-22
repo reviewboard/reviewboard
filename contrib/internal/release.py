@@ -29,7 +29,7 @@ RELEASES_BUCKET_NAME = 'downloads.reviewboard.org'
 RELEASES_BUCKET_KEY = '/releases/%s/%s.%s/' % (PACKAGE_NAME,
                                                __version_info__[0],
                                                __version_info__[1])
-RBWEBSITE_API_URL = 'http://www.reviewboard.org/api/'
+RBWEBSITE_API_URL = 'https://www.reviewboard.org/api/'
 RELEASES_API_URL = '%sproducts/reviewboard/releases/' % RBWEBSITE_API_URL
 
 

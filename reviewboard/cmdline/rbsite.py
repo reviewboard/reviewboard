@@ -18,7 +18,7 @@ from random import choice
 from reviewboard import get_version_string
 
 
-DOCS_BASE = "http://www.reviewboard.org/docs/manual/dev/"
+DOCS_BASE = "https://www.reviewboard.org/docs/manual/dev/"
 
 SITELIST_FILE_UNIX = "/etc/reviewboard/sites"
 
@@ -1893,7 +1893,7 @@ class InstallCommand(Command):
         ui.text(page, 'To enable PDF document review, enhanced scalability, '
                       'GitHub Enterprise support, and more, download '
                       'Power Pack at:')
-        ui.urllink(page, 'http://www.reviewboard.org/powerpack/')
+        ui.urllink(page, 'https://www.reviewboard.org/powerpack/')
 
         ui.text(page, 'Your install key for Power Pack is: %s'
                       % get_install_key())

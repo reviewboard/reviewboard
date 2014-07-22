@@ -288,7 +288,7 @@ class NewsWidget(Widget):
     icon = 'rb/images/rss.png'
     actions = [
         {
-            'url': 'http://www.reviewboard.org/news/',
+            'url': 'https://www.reviewboard.org/news/',
             'label': _('More'),
         },
         {

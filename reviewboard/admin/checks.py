@@ -223,7 +223,7 @@ def get_can_enable_search():
             'PyLucene (with JCC) is required to enable search. See the '
             '<a href="%(url)s">documentation</a> for instructions.'
         ) % {
-            'url': 'http://www.reviewboard.org/docs/manual/dev/admin/'
+            'url': 'https://www.reviewboard.org/docs/manual/dev/admin/'
                    'installation/linux/#installing-pylucene'
         })
 
