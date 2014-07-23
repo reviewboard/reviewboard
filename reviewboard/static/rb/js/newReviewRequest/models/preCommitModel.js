@@ -10,6 +10,7 @@ RB.PreCommitModel = Backbone.Model.extend({
         error: null,
         parentDiffFile: null,
         repository: null,
+        reviewRequest: null,
         state: 0
     },
 
@@ -48,6 +49,7 @@ RB.PreCommitModel = Backbone.Model.extend({
             diffValid: false,
             error: null,
             parentDiffFile: null,
+            reviewRequest: null,
             state: this.State.PROMPT_FOR_DIFF
         });
     },
@@ -117,7 +119,12 @@ RB.PreCommitModel = Backbone.Model.extend({
             case this.State.PROCESSING_DIFF:
                 if (diffValid) {
                     this.set('state', this.State.UPLOADING);
-                    this._createReviewRequest();
+
+                    if (this.get('reviewRequest') === null) {
+                        this._createReviewRequest();
+                    } else {
+                        this._createDiff();
+                    }
                 }
                 break;
 
@@ -229,20 +236,31 @@ RB.PreCommitModel = Backbone.Model.extend({
 
         reviewRequest.save({
             success: function() {
-                var diff = reviewRequest.createDiff();
+                this.set('reviewRequest', reviewRequest);
+                this._createDiff();
+            },
+            error: this._onValidateError
+        }, this);
+    },
 
-                diff.set({
-                    basedir: this.get('basedir'),
-                    diff: this.get('diffFile'),
-                    parentDiff: this.get('parentDiffFile')
-                });
-                diff.url = reviewRequest.get('links').diffs.href;
-                diff.save({
-                    success: function() {
-                        window.location = reviewRequest.get('reviewURL');
-                    },
-                    error: this._onValidateError
-                }, this);
+    /*
+     * Create the diff.
+     *
+     * This requires that the review request object already exists.
+     */
+    _createDiff: function() {
+        var reviewRequest = this.get('reviewRequest'),
+            diff = reviewRequest.createDiff();
+
+        diff.set({
+            basedir: this.get('basedir'),
+            diff: this.get('diffFile'),
+            parentDiff: this.get('parentDiffFile')
+        });
+        diff.url = reviewRequest.get('links').diffs.href;
+        diff.save({
+            success: function() {
+                window.location = reviewRequest.get('reviewURL');
             },
             error: this._onValidateError
         }, this);
