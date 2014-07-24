@@ -16,12 +16,6 @@ RB.TextCommentRowSelector = Backbone.View.extend({
         '</span>'
     ].join('')),
 
-    linkTemplate: _.template([
-    '<th>',
-        '<a href="<%- linkToRow %>" class="copylink"><%- lineNumber %></a>',
-    '</th>'
-    ].join('')),
-
     events: {
         'mousedown': '_onMouseDown',
         'mouseup': '_onMouseUp',
@@ -41,8 +35,6 @@ RB.TextCommentRowSelector = Backbone.View.extend({
         this._endLineNum = 0;
         this._lastSeenIndex = 0;
 
-        this._oldLinkLineNum = 0;
-        this._oldLinkRow = null;
         this._$ghostCommentFlag = null;
         this._$ghostCommentFlagCell = null;
     },
@@ -69,19 +61,6 @@ RB.TextCommentRowSelector = Backbone.View.extend({
             })
             .hide()
             .appendTo('body');
-
-        this._$link = $(this.linkTemplate({
-            lineNumber: this.lineNumber,
-            linkToRow: this.linkToRow
-        }));
-        this._$link.on({
-            mousedown: _.bind(this._onMouseDown, this),
-            mouseup: _.bind(this._onMouseUp, this),
-            mouseover: _.bind(this._onMouseOver, this),
-            mouseout: _.bind(this._onMouseOut, this)
-        })
-        .hide()
-        .appendTo('body');
 
         return this;
     },
@@ -236,114 +215,6 @@ RB.TextCommentRowSelector = Backbone.View.extend({
     },
 
     /*
-     * Adds a link to code line number, when the code line number is hovered.
-     */
-    _addLinkToCopy: function($row) {
-        var lineNum,
-            file,
-            trLine,
-            linkToCodeLine,
-            commentFlag;
-
-        /* This ensures, that the link is added only when the row changes. */
-        if (this._oldLinkRow === null ||
-            this._oldLinkLineNum !== $row.attr('line')) {
-            if (this._oldLinkRow !== null) {
-                /* Remove the previous link, when user is on different row. */
-                this._removeLinkToCopy(this._oldLinkRow);
-            }
-            /*
-             * File id and line number should be
-             * enough to identify the right row.
-             */
-            lineNum = this.getLineNum($row[0]);
-            file = $row.parents('table')[0].id;
-            trLine = $row.attr('line');
-            linkToCodeLine = '#' + file + ',' + trLine;
-
-            /*
-             * Note:
-             * first() and last() selectors are used below to get or insert
-             * the exact line numbers in case of two column diff.
-             *
-             * First we try clone the comment flag, it doesn't matter if it
-             * doesn't exist. The first column code line number is saved
-             * to lineNum variable. We use the template to replace the th with
-             * a link. After the link is inserted, we append the possible
-             * comment flag to the element.
-             */
-            commentFlag = $row.find('.commentflag').clone();
-            $row.find('.commentflag').remove();
-            lineNum = $row.find('th').first().text();
-            $row.find('th')
-                .first()
-                .replaceWith(this.linkTemplate({
-                    lineNumber: lineNum,
-                    linkToRow: linkToCodeLine
-                }));
-            commentFlag.appendTo($row.find('th').first());
-
-            /*
-             * If the diff has two columns, we have to replace the second line
-             * number also with a link. The last() selector is used
-             * to get the second columns code line number.
-             */
-            if ($row.find('th').length > 1) {
-                lineNum = $row.children('th').last().text();
-                $row.children('th').last()
-                    .replaceWith(this.linkTemplate({
-                        lineNumber: lineNum,
-                        linkToRow: linkToCodeLine
-                    }));
-            }
-            this._highlightRow($row);
-            this._oldLinkLineNum = $row.attr('line');
-            this._oldLinkRow = $row;
-        }
-    },
-
-    /*
-     * Removes the the code line link when hover has moved on.
-     */
-    _removeLinkToCopy: function($row) {
-        var lineNum,
-            commentFlag;
-
-        lineNum = this.getLineNum($row[0]);
-        if (lineNum) {
-            /*
-             * Note:
-             * first() and last() selectors are used below to get or insert
-             * the exact line numbers in case of two column diff.
-             *
-             * First we clone the possible comment flag, it doesn't matter if
-             * the flag doesn't exist. Then we remove the comment flag to get
-             * easier access to the line number. The link is removed by adding
-             * the line number as a text to th element.
-             * After the line number is in place, we append the possible
-             * comment flag to the element.
-             */
-
-            commentFlag = $row.find('.commentflag').clone();
-            $row.find('.commentflag').remove();
-            lineNum = $row.find('th').first().text();
-            $row.find('th').first().text(lineNum);
-            commentFlag.appendTo($row.find('th').first());
-
-            /*
-             * If the diff has two columns, we have return the basic line
-             * number also to the second column. The last() selector is used
-             * to get the second columns code line number.
-             */
-            if ($row.find('th').length > 1) {
-                lineNum = $row.find('th').last().text();
-                $row.find('th').last().text(lineNum);
-            }
-            $row.removeClass('selected');
-        }
-    },
-
-    /*
      * Resets the selection information.
      */
     _reset: function() {
@@ -397,10 +268,6 @@ RB.TextCommentRowSelector = Backbone.View.extend({
      */
     _getActualLineNumCell: function($node) {
         if ($node.hasClass('commentflag')) {
-            // Navigate up out of <a class="copylink"> elements
-            if ($node.hasClass('copylink')) {
-                $node = $node.parent();
-            }
             if ($node[0] === this._$ghostCommentFlag[0]) {
                 $node = this._$ghostCommentFlagCell;
             } else {
@@ -417,15 +284,13 @@ RB.TextCommentRowSelector = Backbone.View.extend({
     _onMouseDown: function(e) {
         var node = e.target;
 
-        if (e.button === 0) {
-            if (this._$ghostCommentFlagCell) {
-                node = this._$ghostCommentFlagCell[0];
-            }
+        if (this._$ghostCommentFlagCell) {
+            node = this._$ghostCommentFlagCell[0];
+        }
 
-            if (this._isLineNumCell(node)) {
-                this._begin($(node.parentNode));
-                return false;
-            }
+        if (this._isLineNumCell(node)) {
+            this._begin($(node.parentNode));
+            return false;
         }
 
         return true;
@@ -465,7 +330,6 @@ RB.TextCommentRowSelector = Backbone.View.extend({
             $row = $node.parent();
 
         if (this._isLineNumCell($node[0])) {
-            this._addLinkToCopy($row);
             if (this._$begin) {
                 this._addRow($row);
             } else {
