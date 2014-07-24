@@ -501,9 +501,6 @@ class SummaryColumn(Column):
         summary = conditional_escape(review_request.summary)
         labels = {}
 
-        if not summary:
-            summary = '&nbsp;<i>%s</i>' % _('No Summary')
-
         if review_request.submitter_id == state.datagrid.request.user.id:
             if review_request.draft_summary is not None:
                 summary = conditional_escape(review_request.draft_summary)
@@ -518,6 +515,9 @@ class SummaryColumn(Column):
             labels.update({_('Discarded'): 'label-discarded'})
 
         display_data = ''
+
+        if not summary:
+            summary = '&nbsp;<i>%s</i>' % _('No Summary')
 
         for label in labels:
             display_data += '<span class="%s">[%s] </span>' % (
