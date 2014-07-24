@@ -224,7 +224,11 @@ DraftBannerView = BannerView.extend({
      * Discards the draft of the review request.
      */
     _onDiscardDraftClicked: function() {
-        this.reviewRequest.draft.destroy();
+        this.reviewRequest.draft.destroy({
+            error: function(xhr) {
+                alert(xhr.errorText);
+            }
+        });
 
         return false;
     },
