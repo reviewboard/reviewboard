@@ -447,7 +447,7 @@ class Site(object):
 
         try:
             return FileDiff.objects.unmigrated().count() > 0
-        except OperationalError:
+        except:
             # Very likely, there was no diffviewer_filediff.diff_hash_id
             # column, indicating a pre-1.7 database. We want to assume
             # a dedup is needed.
