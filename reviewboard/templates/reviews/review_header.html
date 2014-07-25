@@ -16,7 +16,7 @@
 {% elif review_request.status == 'D' %}
 <div class="banner" id="discard-banner">
  <h1>{% trans "This change has been discarded." %}</h1>
-{% if request.user.pk == review_request.submitter_id %}
+{% if request.user.pk == review_request.submitter_id or perms.reviews.can_change_status %}
  <input type="submit" id="btn-review-request-reopen"
   value="{% trans "Reopen for Review" %}" />
 {% endif %}
