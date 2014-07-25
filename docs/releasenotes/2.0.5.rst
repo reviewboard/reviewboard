@@ -1,0 +1,60 @@
+================================
+Review Board 2.0.5 Release Notes
+================================
+
+**Release date**: July 25, 2014
+
+
+New Features
+============
+
+* Commits shown in the New Review Request page now show the commit
+  revision/ID.
+
+
+Bug Fixes
+=========
+
+Installation/Upgrade
+--------------------
+
+* Fixed issues upgrading from pre-2.0 releases (through a dependency on a
+  newer version of Django Evolution).
+
+* Fixed checking whether diffs need to be migrated on some databases when
+  upgrading from pre-2.0 releases. (:bug:`3500`)
+
+* Deprecation warnings involving :py:mod:`djblets.util.fields` should no
+  longer appear when upgrading.
+
+
+Review Requests
+---------------
+
+* Administrators (or those with the
+  :ref:`"Can Change Status" permission <can-change-status-permission>`) can
+  now re-open discarded review requests. (:bug:`2989`)
+
+* Fixed the New Review Request page on Local Sites.
+
+* Fixed links to diffs on the review request page on Local Sites.
+
+* Fixed showing error messages when failing to discard drafts. (:bug:`3453`)
+
+* Pressing :kbd:`Control-S` on a text area to save no longer hides the
+  text area. (:bug:`3489`)
+
+
+Dashboard
+---------
+
+* Empty draft summaries now show "No Summary" in italics, instead of appearing
+  blank.
+
+
+Contributors
+============
+
+* Andrew Hills
+* Christian Hammond
+* David Trowbridge
