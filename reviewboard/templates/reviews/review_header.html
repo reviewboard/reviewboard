@@ -16,11 +16,9 @@
 {% elif review_request.status == 'D' %}
  <div class="banner" id="discard-banner">
   <h1>{% trans "This change has been discarded." %}</h1>
-{%  if request.user.pk == review_request.submitter_id %}
+{%  if request.user.pk == review_request.submitter_id or perms.reviews.can_change_status %}
   <input type="submit" id="btn-review-request-reopen"
          value="{% trans "Reopen for Review" %}" />
-{%  endif %}
-{%  if request.user.pk == review_request.submitter_id or perms.reviews.can_change_status %}
   <p><label for="field_changedescription">{% trans "Describe the reason it's discarded (optional):" %}</label></p>
   <pre id="field_changedescription" class="field field-text-area editable{% if close_description %} loading{% endif %}" data-rich-text="true" data-field-id="field_changedescription">{{close_description|markdown_escape:close_description_rich_text}}</pre>
 {%  elif close_description %}

@@ -431,12 +431,20 @@ class DiffField(BuiltinLocalsFieldMixin, BaseReviewRequestField):
             line_counts=mark_safe(' '.join(line_counts))))
 
         if past_revision > 0:
+            if review_request.local_site:
+                local_site_name = review_request.local_site.name
+            else:
+                local_site_name = None
+
             # This is not the first diff revision. Include an interdiff link.
-            interdiff_url = local_site_reverse('view-interdiff', args=[
-                review_request.display_id,
-                past_revision,
-                diff_revision,
-            ])
+            interdiff_url = local_site_reverse(
+                'view-interdiff',
+                local_site_name=local_site_name,
+                args=[
+                    review_request.display_id,
+                    past_revision,
+                    diff_revision,
+                ])
 
             s.append(format_html(
                 '<p><a href="{url}">{text}</a>',
@@ -511,7 +519,7 @@ class DiffField(BuiltinLocalsFieldMixin, BaseReviewRequestField):
         review_request = self.review_request_details.get_review_request()
 
         if review_request.local_site:
-            local_site_name = review_request.local_site_name
+            local_site_name = review_request.local_site.name
         else:
             local_site_name = None
 
