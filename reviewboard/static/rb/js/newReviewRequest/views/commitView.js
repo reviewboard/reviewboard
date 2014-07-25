@@ -16,10 +16,7 @@ RB.CommitView = Backbone.View.extend({
         '   <div class="rb-icon rb-icon-jump-to jump-to-commit"/>',
         '  <% } %>',
         '</div>',
-        '<div>',
-        ' by <span class="author"><%- authorName %></span>, ',
-        ' <time class="timesince" datetime="<%- date.toISOString() %>"></time>',
-        '</div>'
+        '<div><%= details %></div>'
     ].join('')),
 
     events: {
@@ -30,7 +27,22 @@ RB.CommitView = Backbone.View.extend({
      * Render the view.
      */
     render: function() {
-        this.$el.html(this.template(this.model.attributes));
+        var commitID = this.model.get('id');
+
+        if (commitID.length === 40) {
+            commitID = commitID.slice(0, 7);
+        }
+
+        this.$el.html(this.template(_.defaults({
+            'details': interpolate(
+                gettext('Revision %(revision)s by <span class="author">%(author)s</span>, <time class="timesince" datetime="%(date)s"></time>.'),
+                {
+                    revision: _.escape(commitID),
+                    author: _.escape(this.model.get('authorName')),
+                    date: this.model.get('date').toISOString()
+                },
+                true)
+        }, this.model.attributes)));
         this.$('.timesince').timesince();
 
         return this;
