@@ -103,7 +103,8 @@ RB.PostCommitView = Backbone.View.extend({
         this._commitsView.setPending(commit);
 
         reviewRequest = new RB.ReviewRequest({
-            repository: repository.id
+            repository: repository.id,
+            localSitePrefix: repository.get('localSitePrefix')
         });
 
         reviewRequest.createFromCommit({
