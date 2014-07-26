@@ -396,7 +396,9 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
     initialize: function() {
         var $issueSummary = $('#issue-summary');
 
-        _.bindAll(this, '_checkResizeLayout');
+        _.bindAll(this, '_checkResizeLayout', '_onCloseDiscardedClicked',
+                  '_onCloseSubmittedClicked', '_onDeleteReviewRequestClicked',
+                  '_onUpdateDiffClicked');
         this._scheduleResizeLayout = _.throttle(this._checkResizeLayout, 100);
 
         this._fieldEditors = {};
@@ -773,6 +775,7 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
         var $closeDiscarded = this.$('#discard-review-request-link'),
             $closeSubmitted = this.$('#link-review-request-close-submitted'),
             $deletePermanently = this.$('#delete-review-request-link'),
+            $updateDiff = this.$('#upload-diff-link'),
             $menuitem;
 
         /* Provide support for expanding submenus in the action list. */
@@ -803,10 +806,10 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
          * We don't want the click event filtering from these down to the
          * parent menu, so we can't use events above.
          */
-        $closeDiscarded.click(_.bind(this._onCloseDiscardedClicked, this));
-        $closeSubmitted.click(_.bind(this._onCloseSubmittedClicked, this));
-        $deletePermanently.click(_.bind(this._onDeleteReviewRequestClicked,
-                                        this));
+        $closeDiscarded.click(this._onCloseDiscardedClicked);
+        $closeSubmitted.click(this._onCloseSubmittedClicked);
+        $deletePermanently.click(this._onDeleteReviewRequestClicked);
+        $updateDiff.click(this._onUpdateDiffClicked);
     },
 
     /*
@@ -1285,6 +1288,22 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
             });
 
         return false;
+    },
+
+    /*
+     * Handler for Update -> Update Diff.
+     */
+    _onUpdateDiffClicked: function() {
+        var reviewRequest = this.model.get('reviewRequest');
+            updateDiffView = new RB.UpdateDiffView({
+                model: new RB.UploadDiffModel({
+                    changeNumber: reviewRequest.get('commitID'),
+                    repository: reviewRequest.get('repository'),
+                    reviewRequest: reviewRequest
+                })
+            });
+
+        updateDiffView.render();
     },
 
     _refreshPage: function() {

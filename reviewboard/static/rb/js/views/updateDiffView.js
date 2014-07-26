@@ -1,18 +1,10 @@
 /*
- * A view for pre-commit review request creation.
- *
- * This will guide users through several steps, depending on the requirements of
- * the repository.
+ * A view for updating the diff on a review request.
  */
-RB.PreCommitView = RB.UploadDiffView.extend({
-    className: 'pre-commit',
+RB.UpdateDiffView = RB.UploadDiffView.extend({
+    className: 'update-diff',
 
     template: _.template([
-        '<div class="section-header"><%- pendingChangeHeader %></div>',
-        '<div class="tip">',
-        ' <strong><%- tipHeader %></strong>',
-        ' <%= tip %>',
-        '</div>',
         '<div class="input dnd" id="prompt-for-diff">',
         ' <form>',
         '  <%= selectDiff %>',
@@ -33,19 +25,28 @@ RB.PreCommitView = RB.UploadDiffView.extend({
         ' </form>',
         ' <a href="#" class="startover"><%- startOver %></a>',
         '</div>',
-        '<div class="input" id="prompt-for-change-number">',
-        ' <form id="changenum-form">',
-        '  <%- changeNum %>',
-        '  <input type="number" step="1" id="changenum-input" />',
-        '  <input type="submit" value="<%- ok %>" />',
-        ' </form>',
-        ' <a href="#" class="startover"><%- startOver %></a>',
-        '</div>',
         '<div class="input" id="processing-diff"></div>',
         '<div class="input" id="uploading-diffs"></div>',
         '<div class="input" id="error-indicator">',
         ' <div id="error-contents" />',
         ' <a href="#" class="startover"><%- startOver %></a>',
         '</div>'
-    ].join(''))
+    ].join('')),
+
+    /*
+     * Render the view.
+     */
+    render: function() {
+        _super(this).render.call(this);
+
+        this.$el.modalBox({
+            title: gettext('Update Diff'),
+            buttons: [
+                $('<input type="button" />')
+                    .val(gettext('Cancel'))
+            ]
+        });
+
+        return this;
+    }
 });

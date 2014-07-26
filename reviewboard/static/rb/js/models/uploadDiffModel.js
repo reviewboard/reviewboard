@@ -1,7 +1,8 @@
 /*
- * A model for pre-commit review request creation.
+ * A model for uploading diffs (either to an existing review request, or
+ * creating a new review request).
  */
-RB.PreCommitModel = Backbone.Model.extend({
+RB.UploadDiffModel = Backbone.Model.extend({
     defaults: {
         basedir: null,
         changeNumber: null,
@@ -52,6 +53,29 @@ RB.PreCommitModel = Backbone.Model.extend({
             reviewRequest: null,
             state: this.State.PROMPT_FOR_DIFF
         });
+    },
+
+    /*
+     * Handle a selected diff file.
+     *
+     * In the case where the current state is PROMPT_FOR_DIFF or
+     * PROMPT_FOR_PARENT_DIFF, this will take the diff file and set the
+     * relevant attribute, triggering the validation stage.
+     */
+    handleFiles: function(files) {
+        switch (this.get('state')) {
+            case this.State.PROMPT_FOR_DIFF:
+                this.set('diffFile', files[0]);
+                break;
+
+            case this.State.PROMPT_FOR_PARENT_DIFF:
+                this.set('parentDiffFile', files[0]);
+                break;
+
+            default:
+                console.assert('File received in wrong state');
+                break;
+        }
     },
 
     /*

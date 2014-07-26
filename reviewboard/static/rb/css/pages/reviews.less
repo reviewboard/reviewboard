@@ -2086,4 +2086,65 @@
 }
 
 
+/****************************************************************************
+ * "Update Diff" dialog
+ ****************************************************************************/
+
+.update-diff {
+  width: 60em;
+  height: 16em;
+
+  #prompt-for-basedir,
+  #prompt-for-diff,
+  #prompt-for-parent-diff,
+  #processing-diff,
+  #uploading-diffs,
+  #error-indicator {
+    display: none;
+  }
+
+  #error-contents,
+  #parent-diff-error-contents {
+    position: relative;
+    margin: 0 5em;
+    line-height: 12pt;
+    margin-bottom: 1em;
+
+    img {
+      margin-right: 5px;
+      vertical-align: sub;
+    }
+  }
+
+  #processing-diff,
+  #uploading-diffs {
+    background: url('@{img_base}/spinner.gif') center center no-repeat;
+  }
+
+  .input {
+    text-align: center;
+    vertical-align: middle;
+    height: 16em;
+    line-height: 16em;
+    margin: 2em 2em 6em 2em;
+    border: 1px solid @grey;
+    .border-radius(@box-border-radius);
+    background-color: lighten(@light-grey, 10%);
+    position: relative;
+
+    .startover {
+      position: absolute;
+      bottom: 0;
+      right: 5px;
+      line-height: 14pt;
+    }
+  }
+
+  .drag-hover {
+    border: 1px solid darken(@grey, 4%);
+    .box-shadow(inset @box-shadow);
+  }
+}
+
+
 // vim: set et ts=2 sw=2:

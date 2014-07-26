@@ -10,9 +10,24 @@
             changeDescription: "{{draft.changedesc.text|escapejs}}",
 {% endif %}
             description: "{{review_request_details.description|escapejs}}",
-            hasDraft: {% if draft %}true{% else %}false{% endif %},
+            hasDraft: {{draft|yesno:'true,false'}},
             lastUpdatedTimestamp: {{review_request.last_updated|json_dumps}},
-            public: {% if review_request.public %}true{% else %}false{% endif %},
+            public: {{review_request.public|yesno:'true,false'}},
+{% if review_request.repository %}
+            repository: new RB.Repository({
+{%  with repo=review_request.repository %}
+{%   with scmtool=repo.get_scmtool %}
+                id: {{repo.id}},
+                localSitePrefix: '{% if review_request.local_site %}s/{{review_request.local_site.name}}/{% endif %}',
+                name: '{{repo.name|escapejs}}',
+                requiresBasedir: {{scmtool.get_diffs_use_absolute_paths|yesno:'false,true'}},
+                requiresChangeNumber: {{scmtool.supports_pending_changesets|yesno:'true,false'}},
+                scmtoolName: '{{scmtool.name|escapejs}}',
+                supportsPostCommit: {{repo.supports_post_commit|yesno:'true,false'}}
+{%   endwith %}
+{%  endwith %}
+            }),
+{% endif %}
             reviewURL: "{{review_request.get_absolute_url|escapejs}}",
             state: RB.ReviewRequest.{% if review_request.status == 'P' %}PENDING{% elif review_request.status == 'D' %}CLOSE_DISCARDED{% elif review_request.status == 'S' %}CLOSE_SUBMITTED{% endif %},
             summary: "{{review_request_details.summary|escapejs}}",

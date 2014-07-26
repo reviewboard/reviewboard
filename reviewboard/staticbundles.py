@@ -170,6 +170,7 @@ PIPELINE_JS = dict({
             'rb/js/models/screenshotReviewableModel.js',
             'rb/js/models/textBasedCommentBlockModel.js',
             'rb/js/models/textBasedReviewableModel.js',
+            'rb/js/models/uploadDiffModel.js',
             'rb/js/pages/models/diffViewerPageModel.js',
             'rb/js/pages/views/reviewablePageView.js',
             'rb/js/pages/views/reviewRequestPageView.js',
@@ -203,6 +204,8 @@ PIPELINE_JS = dict({
             'rb/js/views/textBasedReviewableView.js',
             'rb/js/views/textCommentRowSelector.js',
             'rb/js/views/markdownReviewableView.js',
+            'rb/js/views/uploadDiffView.js',
+            'rb/js/views/updateDiffView.js',
             'rb/js/diffviewer/models/diffCommentBlockModel.js',
             'rb/js/diffviewer/models/diffCommentsHintModel.js',
             'rb/js/diffviewer/models/diffFileModel.js',
@@ -227,10 +230,11 @@ PIPELINE_JS = dict({
     'newReviewRequest': {
         'source_filenames': (
             # Note: These are roughly in dependency order.
+            'rb/js/models/uploadDiffModel.js',
             'rb/js/newReviewRequest/models/postCommitModel.js',
-            'rb/js/newReviewRequest/models/preCommitModel.js',
             'rb/js/newReviewRequest/models/newReviewRequestModel.js',
             'rb/js/views/collectionView.js',
+            'rb/js/views/uploadDiffView.js',
             'rb/js/newReviewRequest/views/branchView.js',
             'rb/js/newReviewRequest/views/branchesView.js',
             'rb/js/newReviewRequest/views/commitView.js',
