@@ -32,6 +32,7 @@ PIPELINE_JS = dict({
             'lib/js/jasmine-html-1.3.1.js',
             'lib/js/jasmine.suites-1.0.js',
             'rb/js/collections/tests/filteredCollectionTests.js',
+            'rb/js/configForms/models/tests/resourceListItemModelTests.js',
             'rb/js/diffviewer/models/tests/diffFileModelTests.js',
             'rb/js/diffviewer/models/tests/diffReviewableModelTests.js',
             'rb/js/diffviewer/models/tests/diffRevisionModelTests.js',
@@ -145,6 +146,13 @@ PIPELINE_JS = dict({
             'rb/js/accountPrefsPage/views/joinedGroupsView.js',
         ),
         'output_filename': 'rb/js/account-page.min.js',
+    },
+    'config-forms': {
+        'source_filenames': (
+            'rb/js/configForms/base.js',
+            'rb/js/configForms/models/resourceListItemModel.js',
+        ),
+        'output_filename': 'rb/js/config-forms.min.js',
     },
     'dashboard': {
         'source_filenames': (
