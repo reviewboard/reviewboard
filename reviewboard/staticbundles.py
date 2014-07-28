@@ -26,6 +26,12 @@ PIPELINE_JS = dict({
         ),
         'output_filename': 'lib/js/3rdparty.min.js',
     },
+    '3rdparty-jsonlint': {
+        'source_filenames': (
+            'lib/js/jsonlint.js',
+        ),
+        'output_filename': 'lib/js/3rdparty-jsonlint.min.js',
+    },
     'js-tests': {
         'source_filenames': (
             'lib/js/jasmine-1.3.1.js',
@@ -107,6 +113,7 @@ PIPELINE_JS = dict({
             'rb/js/extensions/models/reviewDialogCommentHookModel.js',
             'rb/js/pages/models/pageManagerModel.js',
             'rb/js/resources/models/baseResourceModel.js',
+            'rb/js/resources/models/apiTokenModel.js',
             'rb/js/resources/models/repositoryBranchModel.js',
             'rb/js/resources/models/repositoryCommitModel.js',
             'rb/js/resources/models/draftResourceChildModelMixin.js',
@@ -143,6 +150,7 @@ PIPELINE_JS = dict({
     'account-page': {
         'source_filenames': (
             'rb/js/accountPrefsPage/views/accountPrefsPageView.js',
+            'rb/js/accountPrefsPage/views/apiTokensView.js',
             'rb/js/accountPrefsPage/views/joinedGroupsView.js',
         ),
         'output_filename': 'rb/js/account-page.min.js',
@@ -296,6 +304,12 @@ PIPELINE_CSS = dict({
         ),
         'output_filename': 'rb/css/js-tests.min.css',
         'absolute_paths': False,
+    },
+    'account-page': {
+        'source_filenames': (
+            'rb/css/pages/my-account.less',
+        ),
+        'output_filename': 'rb/css/account-page.min.js',
     },
     'reviews': {
         'source_filenames': (

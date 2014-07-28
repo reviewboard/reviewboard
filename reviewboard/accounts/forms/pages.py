@@ -75,6 +75,56 @@ class AccountSettingsForm(AccountPageForm):
                              _('Your settings have been saved.'))
 
 
+class APITokensForm(AccountPageForm):
+    """Form for showing a user's API tokens."""
+    form_id = 'api_tokens'
+    form_title = _('API Tokens')
+    save_label = None
+
+    js_view_class = 'RB.APITokensView'
+
+    def get_js_view_data(self):
+        # Fetch the list of the user's API tokens, globally.
+        api_tokens = self.user.webapi_tokens.all()
+
+        # Group the API tokens by LocalSite or the global site.
+        serialized_api_tokens = SortedDict()
+        serialized_api_tokens[''] = \
+            self._serialize_api_tokens(None, api_tokens)
+
+        for local_site in self.page.config_view.ordered_user_local_sites:
+            serialized_api_tokens[local_site.name] = \
+                self._serialize_api_tokens(local_site, api_tokens)
+
+        return {
+            'apiTokens': serialized_api_tokens,
+        }
+
+    def _serialize_api_tokens(self, local_site, api_tokens):
+        if local_site:
+            local_site_prefix = local_site_reverse(
+                'root',
+                local_site_name=local_site.name)[1:]
+        else:
+            local_site_prefix = None
+
+        return {
+            'localSitePrefix': local_site_prefix,
+            'tokens': [
+                {
+                    'id': api_token.pk,
+                    'tokenValue': api_token.token,
+                    'timeAdded': api_token.time_added,
+                    'lastUpdated': api_token.last_updated,
+                    'note': api_token.note,
+                    'policy': api_token.policy,
+                }
+                for api_token in api_tokens
+                if api_token.local_site == local_site
+            ]
+        }
+
+
 class ChangePasswordForm(AccountPageForm):
     """Form for changing a user's password."""
     form_id = 'change_password'
@@ -203,11 +253,11 @@ class GroupsForm(AccountPageForm):
         # Fetch the list of IDs of groups the user has joined.
         joined_group_ids = self.user.review_groups.values_list('pk', flat=True)
 
-        # Fetch the list of gorups available to the user.
+        # Fetch the list of groups available to the user.
         serialized_groups = SortedDict()
         serialized_groups[''] = self._serialize_groups(None, joined_group_ids)
 
-        for local_site in self.user.local_site.order_by('name'):
+        for local_site in self.page.config_view.ordered_user_local_sites:
             serialized_groups[local_site.name] = self._serialize_groups(
                 local_site, joined_group_ids)
 
