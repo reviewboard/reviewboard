@@ -389,7 +389,6 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
         var $issueSummary = $('#issue-summary');
 
         _.bindAll(this, '_checkResizeLayout');
-        this._scheduleResizeLayout = _.throttle(this._checkResizeLayout, 100);
 
         this._fieldEditors = {};
         this._hasFields = (this.$('.editable').length > 0);
@@ -1180,6 +1179,16 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
             }
         }
     },
+
+    /*
+     * Schedules a layout resize after the stack unwinds.
+     *
+     * This will only trigger a layout resize after the stack has unwound,
+     * and only once every 100 milliseconds at most.
+     */
+    _scheduleResizeLayout: _.throttle(function() {
+        _.defer(this._checkResizeLayout);
+    }, 100),
 
     /*
      * Formats the contents of a field.
