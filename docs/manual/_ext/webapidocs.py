@@ -270,8 +270,10 @@ class ResourceDirective(Directive):
         uri_template = get_resource_uri_template(resource, not is_list)
         append_detail_row(tbody, "URI", nodes.literal(text=uri_template))
 
-        # URI Parameters
-        #append_detail_row(tbody, "URI Parameters", '')
+        # Token Policy ID
+        if hasattr(resource, 'policy_id'):
+            append_detail_row(tbody, "Token Policy ID",
+                              nodes.literal(text=resource.policy_id))
 
         # HTTP Methods
         allowed_http_methods = self.get_http_methods(resource, is_list)
