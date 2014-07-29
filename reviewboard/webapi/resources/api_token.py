@@ -2,8 +2,9 @@ from __future__ import unicode_literals
 
 import json
 
-from django.core.exceptions import ObjectDoesNotExist
+from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.utils import six
+from django.utils.translation import ugettext as _
 from djblets.util.decorators import augment_method_from
 from djblets.webapi.decorators import (webapi_login_required,
                                        webapi_request_fields,
@@ -198,10 +199,10 @@ class APITokenResource(WebAPIResource):
         if 'policy' in kwargs:
             try:
                 token.policy = self._validate_policy(kwargs['policy'])
-            except Exception as e:
+            except ValidationError as e:
                 return INVALID_FORM_DATA, {
                     'fields': {
-                        'policy': six.text_type(e),
+                        'policy': e.message,
                     },
                 }
 
@@ -235,8 +236,17 @@ class APITokenResource(WebAPIResource):
         """
         pass
 
-    def _validate_policy(self, policy):
-        return json.loads(policy)
+    def _validate_policy(self, policy_str):
+        try:
+            policy = json.loads(policy_str)
+        except Exception as e:
+            raise ValidationError(
+                _('The policy is not valid JSON: %s')
+                % six.text_type(e))
+
+        self.model.validate_policy(policy)
+
+        return policy
 
 
 api_token_resource = APITokenResource()

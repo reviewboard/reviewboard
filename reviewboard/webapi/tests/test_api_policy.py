@@ -1,9 +1,11 @@
 from __future__ import unicode_literals
 
+from django.core.exceptions import ValidationError
 from django.utils import six
 
 from reviewboard.testing import TestCase
 from reviewboard.webapi.base import WebAPIResource
+from reviewboard.webapi.models import WebAPIToken
 
 
 class PolicyTestResource(WebAPIResource):
@@ -303,3 +305,332 @@ class APIPolicyTests(TestCase):
             if allowed:
                 self.fail('Expected %s to be blocked, but was allowed'
                           % method)
+
+
+class APIPolicyValidationTests(TestCase):
+    """Tests API policy validation."""
+    def test_empty(self):
+        """Testing WebAPIToken.validate_policy with empty policy"""
+        WebAPIToken.validate_policy({})
+
+    def test_not_object(self):
+        """Testing WebAPIToken.validate_policy without JSON object"""
+        self.assertRaisesMessage(
+            ValidationError,
+            'The policy must be a JSON object.',
+            WebAPIToken.validate_policy,
+            [])
+
+    #
+    # Top-level 'resources' object
+    #
+
+    def test_no_resources_section(self):
+        """Testing WebAPIToken.validate_policy with non-empty policy and
+        no resources section
+        """
+        self.assertRaisesMessage(
+            ValidationError,
+            "The policy is missing a 'resources' section.",
+            WebAPIToken.validate_policy,
+            {
+                'foo': {}
+            })
+
+    def test_resources_empty(self):
+        """Testing WebAPIToken.validate_policy with empty resources section"""
+        self.assertRaisesMessage(
+            ValidationError,
+            "The policy's 'resources' section must not be empty.",
+            WebAPIToken.validate_policy,
+            {
+                'resources': {}
+            })
+
+    def test_resources_invalid_format(self):
+        """Testing WebAPIToken.validate_policy with resources not an object"""
+        self.assertRaisesMessage(
+            ValidationError,
+            "The policy's 'resources' section must be a JSON object.",
+            WebAPIToken.validate_policy,
+            {
+                'resources': []
+            })
+
+    #
+    # '*' section
+    #
+
+    def test_global_valid(self):
+        """Testing WebAPIToken.validate_policy with valid '*' section"""
+        WebAPIToken.validate_policy({
+            'resources': {
+                '*': {
+                    'allow': ['*'],
+                    'block': ['POST'],
+                }
+            }
+        })
+
+    def test_empty_global(self):
+        """Testing WebAPIToken.validate_policy with empty '*' section"""
+        self.assertRaisesMessage(
+            ValidationError,
+            "The 'resources.*' section must have 'allow' and/or 'block' "
+            "rules.",
+            WebAPIToken.validate_policy,
+            {
+                'resources': {
+                    '*': {}
+                }
+            })
+
+    def test_global_not_object(self):
+        """Testing WebAPIToken.validate_policy with '*' section not a
+        JSON object
+        """
+        self.assertRaisesMessage(
+            ValidationError,
+            "The 'resources.*' section must be a JSON object.",
+            WebAPIToken.validate_policy,
+            {
+                'resources': {
+                    '*': []
+                }
+            })
+
+    def test_global_allow_not_list(self):
+        """Testing WebAPIToken.validate_policy with *.allow not a list"""
+        self.assertRaisesMessage(
+            ValidationError,
+            "The 'resources.*' section's 'allow' rule must be a list.",
+            WebAPIToken.validate_policy,
+            {
+                'resources': {
+                    '*': {
+                        'allow': {}
+                    }
+                }
+            })
+
+    def test_global_block_not_list(self):
+        """Testing WebAPIToken.validate_policy with *.block not a list"""
+        self.assertRaisesMessage(
+            ValidationError,
+            "The 'resources.*' section's 'block' rule must be a list.",
+            WebAPIToken.validate_policy,
+            {
+                'resources': {
+                    '*': {
+                        'block': {}
+                    }
+                }
+            })
+
+    #
+    # resource-specific '*' section
+    #
+
+    def test_resource_global_valid(self):
+        """Testing WebAPIToken.validate_policy with <resource>.* valid"""
+        WebAPIToken.validate_policy({
+            'resources': {
+                'repository': {
+                    '*': {
+                        'allow': ['*'],
+                        'block': ['POST'],
+                    },
+                }
+            }
+        })
+
+    def test_resource_global_empty(self):
+        """Testing WebAPIToken.validate_policy with <resource>.* empty"""
+        self.assertRaisesMessage(
+            ValidationError,
+            "The 'resources.repository.*' section must have 'allow' and/or "
+            "'block' rules.",
+            WebAPIToken.validate_policy,
+            {
+                'resources': {
+                    'repository': {
+                        '*': {}
+                    }
+                }
+            })
+
+    def test_resource_global_invalid_policy_id(self):
+        """Testing WebAPIToken.validate_policy with <resource>.* with
+        invalid policy ID
+        """
+        self.assertRaisesMessage(
+            ValidationError,
+            "'foobar' is not a valid resource policy ID.",
+            WebAPIToken.validate_policy,
+            {
+                'resources': {
+                    'foobar': {
+                        '*': {
+                            'allow': ['*'],
+                        }
+                    }
+                }
+            })
+
+    def test_resource_global_not_object(self):
+        """Testing WebAPIToken.validate_policy with <resource>.* not an
+        object
+        """
+        self.assertRaisesMessage(
+            ValidationError,
+            "The 'resources.repository.*' section must be a JSON object.",
+            WebAPIToken.validate_policy,
+            {
+                'resources': {
+                    'repository': {
+                        '*': []
+                    }
+                }
+            })
+
+    def test_resource_global_allow_not_list(self):
+        """Testing WebAPIToken.validate_policy with <resource>.*.allow not
+        a list
+        """
+        self.assertRaisesMessage(
+            ValidationError,
+            "The 'resources.repository.*' section's 'allow' rule must be a "
+            "list.",
+            WebAPIToken.validate_policy,
+            {
+                'resources': {
+                    'repository': {
+                        '*': {
+                            'allow': {}
+                        }
+                    }
+                }
+            })
+
+    def test_resource_global_block_not_list(self):
+        """Testing WebAPIToken.validate_policy with <resource>.*.block not
+        a list
+        """
+        self.assertRaisesMessage(
+            ValidationError,
+            "The 'resources.repository.*' section's 'block' rule must be a "
+            "list.",
+            WebAPIToken.validate_policy,
+            {
+                'resources': {
+                    'repository': {
+                        '*': {
+                            'block': {}
+                        }
+                    }
+                }
+            })
+
+    #
+    # resource-specific ID section
+    #
+
+    def test_resource_id_valid(self):
+        """Testing WebAPIToken.validate_policy with <resource>.<id> valid"""
+        WebAPIToken.validate_policy({
+            'resources': {
+                'repository': {
+                    '42': {
+                        'allow': ['*'],
+                        'block': ['POST'],
+                    },
+                }
+            }
+        })
+
+    def test_resource_id_empty(self):
+        """Testing WebAPIToken.validate_policy with <resource>.<id> empty"""
+        self.assertRaisesMessage(
+            ValidationError,
+            "The 'resources.repository.42' section must have 'allow' and/or "
+            "'block' rules.",
+            WebAPIToken.validate_policy,
+            {
+                'resources': {
+                    'repository': {
+                        '42': {}
+                    }
+                }
+            })
+
+    def test_resource_id_invalid_id_type(self):
+        """Testing WebAPIToken.validate_policy with <resource>.<id> with
+        invalid ID type
+        """
+        self.assertRaisesMessage(
+            ValidationError,
+            "42 must be a string in 'resources.repository'",
+            WebAPIToken.validate_policy,
+            {
+                'resources': {
+                    'repository': {
+                        42: {
+                            'allow': ['*'],
+                        }
+                    }
+                }
+            })
+
+    def test_resource_id_not_object(self):
+        """Testing WebAPIToken.validate_policy with <resource>.<id> not an
+        object
+        """
+        self.assertRaisesMessage(
+            ValidationError,
+            "The 'resources.repository.42' section must be a JSON object.",
+            WebAPIToken.validate_policy,
+            {
+                'resources': {
+                    'repository': {
+                        '42': []
+                    }
+                }
+            })
+
+    def test_resource_id_allow_not_list(self):
+        """Testing WebAPIToken.validate_policy with <resource>.<id>.allow not
+        a list
+        """
+        self.assertRaisesMessage(
+            ValidationError,
+            "The 'resources.repository.42' section's 'allow' rule must "
+            "be a list.",
+            WebAPIToken.validate_policy,
+            {
+                'resources': {
+                    'repository': {
+                        '42': {
+                            'allow': {}
+                        }
+                    }
+                }
+            })
+
+    def test_resource_id_block_not_list(self):
+        """Testing WebAPIToken.validate_policy with <resource>.<id>.block not
+        a list
+        """
+        self.assertRaisesMessage(
+            ValidationError,
+            "The 'resources.repository.42' section's 'block' rule must "
+            "be a list.",
+            WebAPIToken.validate_policy,
+            {
+                'resources': {
+                    'repository': {
+                        '42': {
+                            'block': {}
+                        }
+                    }
+                }
+            })
