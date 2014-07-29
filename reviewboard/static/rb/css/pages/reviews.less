@@ -1222,186 +1222,189 @@
 /****************************************************************************
  * Uploaded files
  ****************************************************************************/
-.file-container .file {
-  @file-attachment-width: 300px;
-
-  background-color: #FEFEFE;
-  border: 1px #CCCCCC solid;
-  display: block;
+.file-container {
   float: left;
-  position: relative;
-  margin: 0 1.5em 1.5em 0;
-  max-width: @file-attachment-width;
-  width: @file-attachment-width;
-  .border-radius(@box-border-radius);
-  .box-shadow(@box-shadow);
 
-  .actions {
-    li {
-      line-height: 16px;
+  .file {
+    @file-attachment-width: 300px;
 
-      &:first-child a {
-        .border-radius(0 0 0 @box-inner-border-radius);
-      }
+    background-color: #FEFEFE;
+    border: 1px #CCCCCC solid;
+    display: block;
+    position: relative;
+    margin: 0 1.5em 1.5em 0;
+    max-width: @file-attachment-width;
+    width: @file-attachment-width;
+    .border-radius(@box-border-radius);
+    .box-shadow(@box-shadow);
 
-      &:last-child a {
-        .border-radius(0 @box-inner-border-radius 0 0);
-      }
+    .actions {
+      li {
+        line-height: 16px;
 
-      &:first-child:last-child a {
-        .border-radius(0 @box-inner-border-radius 0 @box-inner-border-radius);
-      }
+        &:first-child a {
+          .border-radius(0 0 0 @box-inner-border-radius);
+        }
 
-      &:hover {
-        background: transparent;
-      }
+        &:last-child a {
+          .border-radius(0 @box-inner-border-radius 0 0);
+        }
 
-      a {
-        border-left: 1px #DDD solid;
-        border-bottom: 1px #DDD solid;
-        color: black;
-        padding: 6px 8px;
+        &:first-child:last-child a {
+          .border-radius(0 @box-inner-border-radius 0 @box-inner-border-radius);
+        }
 
         &:hover {
-          background: #EEEEEE;
-          text-decoration: none;
+          background: transparent;
+        }
+
+        a {
+          border-left: 1px #DDD solid;
+          border-bottom: 1px #DDD solid;
+          color: black;
+          padding: 6px 8px;
+
+          &:hover {
+            background: #EEEEEE;
+            text-decoration: none;
+          }
         }
       }
     }
-  }
 
-  .file-header {
-    @file-header-height: 2.5em;
+    .file-header {
+      @file-header-height: 2.5em;
 
-    background: white;
-    padding: 0 0.5em;
-    line-height: @file-header-height;
-    height: @file-header-height;
-    .border-radius(@box-border-radius @box-border-radius 0 0);
-    .ellipsize();
+      background: white;
+      padding: 0 0.5em;
+      line-height: @file-header-height;
+      height: @file-header-height;
+      .border-radius(@box-border-radius @box-border-radius 0 0);
+      .ellipsize();
 
-    a {
-      color: blue;
-      font-weight: bold;
-      text-decoration: none;
+      a {
+        color: blue;
+        font-weight: bold;
+        text-decoration: none;
+      }
+
+      img {
+        vertical-align: middle;
+      }
     }
 
-    img {
-      vertical-align: middle;
-    }
-  }
+    .file-thumbnail-container {
+      @thumbnail-height: 100px;
 
-  .file-thumbnail-container {
-    @thumbnail-height: 100px;
+      background: white;
+      height: @thumbnail-height;
+      padding: 1em;
+      text-align: center;
 
-    background: white;
-    height: @thumbnail-height;
-    padding: 1em;
-    text-align: center;
+      a {
+        color: black;
+        text-decoration: none;
+      }
 
-    a {
-      color: black;
-      text-decoration: none;
-    }
-
-    pre {
-      font-size: x-small;
-    }
-
-    .thumbnail-properties () {
-      max-height: @thumbnail-height;
-      max-width: 100%;
-      margin: 0;
-      padding: 0;
-    }
-
-    .file-thumbnail-overlay {
-      .thumbnail-properties();
-      position: absolute;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      z-index: @z-index-event-overlay;
-    }
-
-    .file-thumbnail {
-      .thumbnail-properties();
-      border: 0;
-      overflow: hidden;
-      text-align: left;
-      white-space: nowrap;
-      vertical-align: middle;
-    }
-
-    .file-thumbnail-clipped {
-      .thumbnail-properties();
-      border: 0;
-      overflow: hidden;
-      text-align: left;
-      font-size: 8pt;
-
-      /* Override the styling used for the <pre>s for fields. */
       pre {
-        background-color: transparent;
-        border: 0;
+        font-size: x-small;
+      }
+
+      .thumbnail-properties () {
+        max-height: @thumbnail-height;
+        max-width: 100%;
         margin: 0;
         padding: 0;
       }
-    }
-  }
 
-  .file-caption-container {
-    @caption-height: 27px;
+      .file-thumbnail-overlay {
+        .thumbnail-properties();
+        position: absolute;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: @z-index-event-overlay;
+      }
 
-    border-top: 1px #EEEEEE solid;
-    line-height: 2.5em;
-    padding: 0 25px;
-    position: relative;
-    text-align: center;
-    .border-radius(0 0 7px 7px);
+      .file-thumbnail {
+        .thumbnail-properties();
+        border: 0;
+        overflow: hidden;
+        text-align: left;
+        white-space: nowrap;
+        vertical-align: middle;
+      }
 
-    a {
-      color: black;
-      text-decoration: none;
+      .file-thumbnail-clipped {
+        .thumbnail-properties();
+        border: 0;
+        overflow: hidden;
+        text-align: left;
+        font-size: 8pt;
 
-      &.empty-caption {
-        color: gray;
-        font-style: italic;
+        /* Override the styling used for the <pre>s for fields. */
+        pre {
+          background-color: transparent;
+          border: 0;
+          margin: 0;
+          padding: 0;
+        }
       }
     }
 
-    .file-caption {
-      line-height: @caption-height;
-      height: @caption-height;
-      .ellipsize();
-    }
+    .file-caption-container {
+      @caption-height: 27px;
 
-    .inline-editor-form > input {
-      border: 0;
-      font-family: inherit;
-      font-size: inherit;
-      height: @caption-height;
-      margin: 0;
-      padding-top: 0;
-      padding-bottom: 0;
-      text-align: inherit;
-      vertical-align: bottom;
-      .box-sizing(border-box);
+      border-top: 1px #EEEEEE solid;
+      line-height: 2.5em;
+      padding: 0 25px;
+      position: relative;
+      text-align: center;
+      .border-radius(0 0 7px 7px);
 
-      &:focus {
-        outline: 0;
+      a {
+        color: black;
+        text-decoration: none;
+
+        &.empty-caption {
+          color: gray;
+          font-style: italic;
+        }
       }
 
-      &::-ms-clear {
-        display: none;
+      .file-caption {
+        line-height: @caption-height;
+        height: @caption-height;
+        .ellipsize();
       }
-    }
 
-    .rb-icon-edit {
-      vertical-align: middle;
-      position: absolute;
-      right: 4px;
-      bottom: 4px;
+      .inline-editor-form > input {
+        border: 0;
+        font-family: inherit;
+        font-size: inherit;
+        height: @caption-height;
+        margin: 0;
+        padding-top: 0;
+        padding-bottom: 0;
+        text-align: inherit;
+        vertical-align: bottom;
+        .box-sizing(border-box);
+
+        &:focus {
+          outline: 0;
+        }
+
+        &::-ms-clear {
+          display: none;
+        }
+      }
+
+      .rb-icon-edit {
+        vertical-align: middle;
+        position: absolute;
+        right: 4px;
+        bottom: 4px;
+      }
     }
   }
 }
