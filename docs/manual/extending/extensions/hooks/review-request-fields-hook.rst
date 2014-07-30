@@ -46,12 +46,12 @@ Example
 
 
     class MilestoneField(BaseEditableField):
-        fieldset_id = 'myvendor_milestone'
+        field_id = 'myvendor_milestone'
         label = 'Milestone'
 
 
     class NotesField(BaseTextAreaField):
-        fieldset_id = 'myvendor_notes'
+        field_id = 'myvendor_notes'
         label = 'Notes'
 
 

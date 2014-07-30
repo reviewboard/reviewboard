@@ -34,4 +34,5 @@ database schema migrations.
 
 
 .. _`Django Models`: https://docs.djangoproject.com/en/dev/topics/db/models/
-.. _`Django Evolution`: http://django-evolution.googlecode.com/
+.. _`Django apps`: https://docs.djangoproject.com/en/dev/ref/applications/
+.. _`Django Evolution`: https://github.com/beanbaginc/django-evolution/blob/master/docs/evolution.txt
