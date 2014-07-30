@@ -991,7 +991,7 @@ class RepositoryForm(forms.ModelForm):
 
         for dep in scmtool_class.dependencies.get('modules', []):
             if not has_module(dep):
-                errors.append(_('The Python module "%s" is not installed.'
+                errors.append(_('The Python module "%s" is not installed. '
                                 'You may need to restart the server '
                                 'after installing it.') % dep)
 
@@ -1187,7 +1187,11 @@ class RepositoryForm(forms.ModelForm):
                 if self.cleaned_data['trust_host']:
                     try:
                         self.cert = scmtool_class.accept_certificate(
-                            path, self.local_site_name, e.certificate)
+                            path,
+                            username=username,
+                            password=password,
+                            local_site_name=self.local_site_name,
+                            certificate=e.certificate)
                     except IOError as e:
                         raise ValidationError(e)
                 else:

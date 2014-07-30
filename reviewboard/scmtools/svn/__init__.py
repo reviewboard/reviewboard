@@ -378,9 +378,11 @@ class SVNTool(SCMTool):
             client.accept_ssl_certificate(path, cls.on_ssl_failure)
 
     @classmethod
-    def accept_certificate(cls, path, local_site_name=None, certificate=None):
+    def accept_certificate(cls, path, username=None, password=None,
+                           local_site_name=None, certificate=None):
         """Accepts the certificate for the given repository path."""
-        client = cls.build_client(path, local_site_name=local_site_name)[1]
+        client = cls.build_client(path, username, password,
+                                  local_site_name=local_site_name)[1]
 
         return client.accept_ssl_certificate(path)
 
