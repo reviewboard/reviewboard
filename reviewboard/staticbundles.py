@@ -309,7 +309,7 @@ PIPELINE_CSS = dict({
         'source_filenames': (
             'rb/css/pages/my-account.less',
         ),
-        'output_filename': 'rb/css/account-page.min.js',
+        'output_filename': 'rb/css/account-page.min.css',
     },
     'reviews': {
         'source_filenames': (
