@@ -45,12 +45,12 @@ RB.FileAttachmentThumbnail = Backbone.View.extend({
         ' </div>',
         ' <div class="file-thumbnail-container" />',
         ' <div class="file-caption-container">',
-        '  <div class="file-caption can-edit">',
-        '   <a href="<%= downloadURL %>" "',
-        '      class="edit <% if (!caption) { %>empty-caption<% } %>">',
-        '    <% if (caption) { %><%= caption %><% } else { %><%- noCaptionText %><% } %>',
-        '   </a>',
-        '  </div>',
+        '  <div class="file-caption can-edit">', /* spaceless */
+        '<a href="<%= downloadURL %>" "',
+        '   class="edit <% if (!caption) { %>empty-caption<% } %>">',
+        '<% if (caption) { %><%= caption %><% } else { %><%- noCaptionText %><% } %>',
+        '</a>',
+        '</div>', /* endspaceless */
         ' </div>',
         '</div>'
     ].join('')),
