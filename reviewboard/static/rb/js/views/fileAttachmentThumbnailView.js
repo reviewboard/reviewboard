@@ -156,20 +156,28 @@ RB.FileAttachmentThumbnail = Backbone.View.extend({
             this._$caption
                 .inlineEditor({
                     editIconClass: 'rb-icon rb-icon-edit',
-                    showButtons: false
+                    showButtons: true
                 })
                 .on({
+                    beginEditPreShow: function() {
+                        self.$el.addClass('editing');
+                    },
                     beginEdit: function() {
-                         if ($(this).hasClass('empty-caption')) {
-                             $(this).inlineEditor('field').val('');
-                         }
+                        var $this = $(this);
+
+                        if ($this.hasClass('empty-caption')) {
+                            $this.inlineEditor('field').val('');
+                        }
 
                         self.trigger('beginEdit');
                     },
                     cancel: function() {
+                        self.$el.removeClass('editing');
                         self.trigger('endEdit');
                     },
                     complete: function(e, value) {
+                        self.$el.removeClass('editing');
+
                         /*
                          * We want to set the caption after ready() finishes,
                          * it case it loads state and overwrites.

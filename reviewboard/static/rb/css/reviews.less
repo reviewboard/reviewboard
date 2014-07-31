@@ -1205,11 +1205,26 @@
  * Uploaded files
  ****************************************************************************/
 .file-container {
+  &.editing .file {
+    .border-radius(@box-border-radius @box-border-radius 0 0);
+
+    .file-caption-container {
+      padding-left: 0;
+      padding-right: 0;
+
+      .file-caption {
+        text-overflow: initial;
+      }
+    }
+  }
+
   .file {
+    @file-attachment-bg: white;
     @file-attachment-width: 300px;
+    @file-attachment-border-color: #CCCCCC;
 
     background-color: #FEFEFE;
-    border: 1px #CCCCCC solid;
+    border: 1px @file-attachment-border-color solid;
     display: block;
     float: left;
     position: relative;
@@ -1218,6 +1233,7 @@
     width: @file-attachment-width;
     .border-radius(@box-border-radius);
     .box-shadow(@box-shadow);
+    .box-sizing(border-box);
 
     .actions {
       li {
@@ -1256,7 +1272,7 @@
     .file-header {
       @file-header-height: 2.5em;
 
-      background: white;
+      background: @file-attachment-bg;
       padding: 0 0.5em;
       line-height: @file-header-height;
       height: @file-header-height;
@@ -1277,7 +1293,7 @@
     .file-thumbnail-container {
       @thumbnail-height: 100px;
 
-      background: white;
+      background: @file-attachment-bg;
       height: @thumbnail-height;
       padding: 1em;
       text-align: center;
@@ -1334,11 +1350,11 @@
     }
 
     .file-caption-container {
-      @caption-height: 27px;
+      @caption-height: 31px;
 
       border-top: 1px #EEEEEE solid;
       line-height: 2.5em;
-      padding: 0 25px;
+      padding: 0 30px;
       position: relative;
       text-align: center;
       .border-radius(0 0 7px 7px);
@@ -1357,9 +1373,34 @@
         line-height: @caption-height;
         height: @caption-height;
         .ellipsize();
+
+        .buttons {
+          /*
+           * This provides enough padding to cleanly cover much of any file
+           * attachment's header below.
+           */
+          @buttons-padding-vert: 5px;
+
+          position: absolute;
+          padding: @buttons-padding-vert 0;
+
+          /* Line up with .file's side borders. */
+          margin: 0 0 0 -1px;
+
+          text-align: center;
+          background: darken(@file-attachment-bg, 5%);
+          border: 1px @file-attachment-border-color solid;
+          border-top: 0;
+          width: @file-attachment-width;
+          .border-radius(0 0 @box-border-radius @box-border-radius);
+          .box-sizing(border-box);
+          .box-shadow(@box-shadow);
+          z-index: @z-index-deco;
+        }
       }
 
-      .inline-editor-form > input {
+      .inline-editor-form > input[type='text'] {
+        background: transparent;
         border: 0;
         font-family: inherit;
         font-size: inherit;
@@ -1367,6 +1408,13 @@
         margin: 0;
         padding-top: 0;
         padding-bottom: 0;
+
+        /*
+         * The 4px is needed to align the input with the text. It matches
+         * the margin between the text and pencil.
+         */
+        padding: 0 @edit-icon-margin 0 0;
+
         text-align: inherit;
         vertical-align: bottom;
         .box-sizing(border-box);
@@ -1383,8 +1431,8 @@
       .rb-icon-edit {
         vertical-align: middle;
         position: absolute;
-        right: 4px;
-        bottom: 4px;
+        right: 6px;
+        bottom: 6px;
       }
     }
   }
