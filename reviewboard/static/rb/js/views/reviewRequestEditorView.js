@@ -919,7 +919,6 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
                 editIconClass: 'rb-icon rb-icon-edit',
                 enabled: this.model.get(editableProp),
                 multiline: multiline,
-                showButtons: multiline,
                 useEditIconOnly: fieldOptions.useEditIconOnly,
                 showRequiredFlag: $el.hasClass('required'),
                 deferEventSetup: _.has(fieldOptions, 'autocomplete')
