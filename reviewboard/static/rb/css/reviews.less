@@ -1423,6 +1423,15 @@
           outline: 0;
         }
 
+        /*
+         * The box shadow doesn't display correctly in file attachment
+         * thumbnails, so hide it. There will be a red background instead.
+         */
+        &:not(:focus) {
+          background: rgba(255, 0, 0, 0.15);
+          .box-shadow(none);
+        }
+
         &::-ms-clear {
           display: none;
         }
