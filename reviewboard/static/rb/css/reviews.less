@@ -156,31 +156,6 @@
 /****************************************************************************
  * Review Request Box
  ****************************************************************************/
-.inline-editor-form {
-  &.summary-editor {
-    margin-top: -2px;
-    margin-left: -3px;
-  }
-
-  .buttons input[type='button'] {
-    margin-left: 0;
-    margin-right: 6px;
-  }
-
-  textarea + .buttons,
-  .markdown-editor + .buttons {
-    margin-top: 6px;
-  }
-
-  input[type] + .buttons {
-    padding-left: 6px;
-  }
-
-  input[type='text']:not(:focus) {
-    .box-shadow(0px 0px 4px rgba(255, 0, 0, .75));
-  }
-}
-
 .markdown-info {
   color: blue;
   font-size: 8pt;
@@ -252,6 +227,17 @@
 
   .content-divider {
     border-top: 1px #C2C1B0 solid;
+  }
+
+  .inline-editor-form {
+    &.summary-editor {
+      margin-top: -2px;
+      margin-left: -3px;
+    }
+
+    input[type='text']:not(:focus) {
+      .box-shadow(0px 0px 4px rgba(255, 0, 0, .75));
+    }
   }
 
   .main {

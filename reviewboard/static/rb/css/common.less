@@ -427,13 +427,22 @@ input[type=submit].btn {
   padding: 0;
   white-space: nowrap;
 
-  input[type="submit"] {
-    margin-left: 5px;
+  .buttons input[type='button'] {
+    margin-left: 6px;
+    margin-right: 0;
+
+    &:first-child {
+      margin-left: 0;
+    }
   }
 
   input[type="text"] {
     border: 1px #888a85 solid;
     padding: 1px 2px;
+  }
+
+  input[type] + .buttons {
+    padding-left: 6px;
   }
 
   textarea {
@@ -448,6 +457,11 @@ input[type=submit].btn {
      */
     -moz-padding-start: 9px;
     -moz-padding-end: 9px;
+  }
+
+  textarea + .buttons,
+  .markdown-editor + .buttons {
+    margin-top: 6px;
   }
 }
 
