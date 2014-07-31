@@ -424,10 +424,12 @@ $.fn.infobox = function(id) {
 
 $.fn.user_infobox = function() {
     $(this).infobox('user_infobox');
+    return this;
 };
 
 $.fn.bug_infobox = function() {
     $(this).infobox('bug_infobox');
+    return this;
 };
 
 
