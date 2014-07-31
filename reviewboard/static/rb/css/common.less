@@ -181,11 +181,15 @@ span {
  * Inline editor forms
  ****************************************************************************/
 .editicon {
-  margin-left: 4px;
+  margin-left: @edit-icon-margin;
 
   .rb-icon {
     vertical-align: bottom;
   }
+}
+
+.editable, .editicon {
+  line-height: 14px;
 }
 
 .inline-editor-form {
@@ -194,13 +198,22 @@ span {
   padding: 0;
   white-space: nowrap;
 
-  input[type="submit"] {
-    margin-left: 5px;
+  .buttons input[type='button'] {
+    margin-left: 6px;
+    margin-right: 0;
+
+    &:first-child {
+      margin-left: 0;
+    }
   }
 
   input[type="text"] {
     border: 1px #888a85 solid;
     padding: 1px 2px;
+  }
+
+  input[type] + .buttons {
+    padding-left: 6px;
   }
 
   textarea {
@@ -215,6 +228,11 @@ span {
      */
     -moz-padding-start: 9px;
     -moz-padding-end: 9px;
+  }
+
+  textarea + .buttons,
+  .markdown-editor + .buttons {
+    margin-top: 6px;
   }
 }
 

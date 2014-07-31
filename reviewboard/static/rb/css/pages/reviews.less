@@ -160,31 +160,6 @@
 /****************************************************************************
  * Review Request Box
  ****************************************************************************/
-.inline-editor-form {
-  &.summary-editor {
-    margin-top: -2px;
-    margin-left: -3px;
-  }
-
-  .buttons input[type='button'] {
-    margin-left: 0;
-    margin-right: 6px;
-  }
-
-  textarea + .buttons,
-  .markdown-editor + .buttons {
-    margin-top: 6px;
-  }
-
-  input[type] + .buttons {
-    padding-left: 6px;
-  }
-
-  input[type='text']:not(:focus) {
-    .box-shadow(0px 0px 4px rgba(255, 0, 0, .75));
-  }
-}
-
 .markdown-info {
   color: blue;
   font-size: 8pt;
@@ -256,6 +231,17 @@
 
   .content-divider {
     border-top: 1px #C2C1B0 solid;
+  }
+
+  .inline-editor-form {
+    &.summary-editor {
+      margin-top: -2px;
+      margin-left: -3px;
+    }
+
+    input[type='text']:not(:focus) {
+      .box-shadow(0px 0px 4px rgba(255, 0, 0, .75));
+    }
   }
 
   .main {
@@ -367,6 +353,16 @@
 
     #target_people .inactive {
       text-decoration: line-through;
+    }
+
+    .buttons {
+      display: block;
+      margin-bottom: 1em;
+      padding: 6px 0 0 0;
+
+      input {
+        font-size: 11px;
+      }
     }
   }
 
@@ -1225,6 +1221,19 @@
 .file-container {
   float: left;
 
+  &.editing .file {
+    .border-radius(@box-border-radius @box-border-radius 0 0);
+
+    .file-caption-container {
+      padding-left: 0;
+      padding-right: 0;
+
+      .file-caption {
+        text-overflow: initial;
+      }
+    }
+  }
+
   .file {
     @file-attachment-width: 300px;
 
@@ -1275,7 +1284,7 @@
     .file-header {
       @file-header-height: 2.5em;
 
-      background: white;
+      background: @file-attachment-bg;
       padding: 0 0.5em;
       line-height: @file-header-height;
       height: @file-header-height;
@@ -1296,7 +1305,7 @@
     .file-thumbnail-container {
       @thumbnail-height: 100px;
 
-      background: white;
+      background: @file-attachment-bg;
       height: @thumbnail-height;
       padding: 1em;
       text-align: center;
@@ -1353,11 +1362,11 @@
     }
 
     .file-caption-container {
-      @caption-height: 27px;
+      @caption-height: 31px;
 
       border-top: 1px #EEEEEE solid;
       line-height: 2.5em;
-      padding: 0 25px;
+      padding: 0 30px;
       position: relative;
       text-align: center;
       .border-radius(0 0 7px 7px);
@@ -1376,9 +1385,34 @@
         line-height: @caption-height;
         height: @caption-height;
         .ellipsize();
+
+        .buttons {
+          /*
+           * This provides enough padding to cleanly cover much of any file
+           * attachment's header below.
+           */
+          @buttons-padding-vert: 5px;
+
+          position: absolute;
+          padding: @buttons-padding-vert 0;
+
+          /* Line up with .file's side borders. */
+          margin: 0 0 0 -1px;
+
+          text-align: center;
+          background: darken(@file-attachment-bg, 5%);
+          border: 1px @file-attachment-border-color solid;
+          border-top: 0;
+          width: @file-attachment-width;
+          .border-radius(0 0 @box-border-radius @box-border-radius);
+          .box-sizing(border-box);
+          .box-shadow(@box-shadow);
+          z-index: @z-index-deco;
+        }
       }
 
-      .inline-editor-form > input {
+      .inline-editor-form > input[type='text'] {
+        background: transparent;
         border: 0;
         font-family: inherit;
         font-size: inherit;
@@ -1386,12 +1420,28 @@
         margin: 0;
         padding-top: 0;
         padding-bottom: 0;
+
+        /*
+         * The 4px is needed to align the input with the text. It matches
+         * the margin between the text and pencil.
+         */
+        padding: 0 @edit-icon-margin 0 0;
+
         text-align: inherit;
         vertical-align: bottom;
         .box-sizing(border-box);
 
         &:focus {
           outline: 0;
+        }
+
+        /*
+         * The box shadow doesn't display correctly in file attachment
+         * thumbnails, so hide it. There will be a red background instead.
+         */
+        &:not(:focus) {
+          background: rgba(255, 0, 0, 0.15);
+          .box-shadow(none);
         }
 
         &::-ms-clear {
@@ -1402,8 +1452,8 @@
       .rb-icon-edit {
         vertical-align: middle;
         position: absolute;
-        right: 4px;
-        bottom: 4px;
+        right: 6px;
+        bottom: 6px;
       }
     }
   }
@@ -1718,7 +1768,7 @@
   label {
     /* Keep the label from shifting when the pencil icon is hidden/shown. */
     display: block;
-    min-height: 15px;
+    line-height: 16px;
     vertical-align: top;
   }
 
