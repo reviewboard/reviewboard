@@ -365,12 +365,17 @@ class BasicGetItemTestsWithLocalSiteMixin(BasicGetItemTestsMixin):
             with_webapi_token=True,
             webapi_token_local_site_id=self.local_site_id)
 
-        rsp = self.api_get(url, expected_mimetype=mimetype)
-        self.assertEqual(rsp['stat'], 'ok')
-        self.assertIn(self.resource.item_result_key, rsp)
+        rsp = self.api_get(url, expected_mimetype=mimetype,
+                           expected_json=self.basic_get_returns_json)
 
-        item_rsp = rsp[self.resource.item_result_key]
-        self.compare_item(item_rsp, item)
+        if self.basic_get_returns_json:
+            self.assertEqual(rsp['stat'], 'ok')
+            self.assertIn(self.resource.item_result_key, rsp)
+
+            item_rsp = rsp[self.resource.item_result_key]
+            self.compare_item(item_rsp, item)
+        else:
+            self.compare_item(rsp, item)
 
     @add_fixtures(['test_site'])
     @test_template
