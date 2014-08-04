@@ -49,29 +49,29 @@ class SVNTool(SCMTool):
         'modules': ['pysvn'],
     }
 
-    AUTHOR_KEYWORDS   = ['Author', 'LastChangedBy']
-    DATE_KEYWORDS     = ['Date', 'LastChangedDate']
-    REVISION_KEYWORDS = ['Revision', 'LastChangedRevision', 'Rev']
-    URL_KEYWORDS      = ['HeadURL', 'URL']
-    ID_KEYWORDS       = ['Id']
-    HEADER_KEYWORDS   = ['Header']
+    AUTHOR_KEYWORDS   = ['author', 'lastchangedby']
+    DATE_KEYWORDS     = ['date', 'lastchangeddate']
+    REVISION_KEYWORDS = ['revision', 'lastchangedrevision', 'rev']
+    URL_KEYWORDS      = ['headurl', 'url']
+    ID_KEYWORDS       = ['id']
+    HEADER_KEYWORDS   = ['header']
 
     # Mapping of keywords to known aliases
     keywords = {
         # Standard keywords
-        'Author':              AUTHOR_KEYWORDS,
-        'Date':                DATE_KEYWORDS,
-        'Revision':            REVISION_KEYWORDS,
-        'HeadURL':             URL_KEYWORDS,
-        'Id':                  ID_KEYWORDS,
-        'Header':              HEADER_KEYWORDS,
+        'author':              AUTHOR_KEYWORDS,
+        'date':                DATE_KEYWORDS,
+        'revision':            REVISION_KEYWORDS,
+        'headurl':             URL_KEYWORDS,
+        'id':                  ID_KEYWORDS,
+        'header':              HEADER_KEYWORDS,
 
         # Aliases
-        'LastChangedBy':       AUTHOR_KEYWORDS,
-        'LastChangedDate':     DATE_KEYWORDS,
-        'LastChangedRevision': REVISION_KEYWORDS,
-        'Rev':                 REVISION_KEYWORDS,
-        'URL':                 URL_KEYWORDS,
+        'lastchangedby':       AUTHOR_KEYWORDS,
+        'lastchangeddate':     DATE_KEYWORDS,
+        'lastchangedrevision': REVISION_KEYWORDS,
+        'rev':                 REVISION_KEYWORDS,
+        'url':                 URL_KEYWORDS,
     }
 
     def __init__(self, repository):
@@ -236,12 +236,12 @@ class SVNTool(SCMTool):
             return "$%s$" % m.group(1)
 
         # Get any aliased keywords
-        keywords = [keyword
+        keywords = [re.escape(keyword)
                     for name in re.split(r'\W+', keyword_str)
-                    for keyword in self.keywords.get(name, [])]
+                    for keyword in self.keywords.get(name.lower(), [])]
 
         return re.sub(r"\$(%s):(:?)([^\$\n\r]*)\$" % '|'.join(keywords),
-                      repl, data)
+                      repl, data, flags=re.IGNORECASE)
 
 
     def parse_diff_revision(self, file_str, revision_str, *args, **kwargs):
