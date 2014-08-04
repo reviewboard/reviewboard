@@ -72,17 +72,16 @@ class Client(base.Client):
             return cb(normpath, normrev)
 
         except ClientError as e:
-            stre = six.text_type(e)
-            if 'File not found' in stre or 'path not found' in stre:
-                raise FileNotFoundError(path, revision,
-                                        detail=six.text_type(e))
-            elif 'callback_ssl_server_trust_prompt required' in stre:
+            exc = bytes(e).decode('utf-8')
+            if 'File not found' in exc or 'path not found' in exc:
+                raise FileNotFoundError(path, revision, detail=exc)
+            elif 'callback_ssl_server_trust_prompt required' in exc:
                 raise SCMError(
                     _('HTTPS certificate not accepted.  Please ensure that '
                       'the proper certificate exists in %s '
                       'for the user that reviewboard is running as.')
                     % os.path.join(self.config_dir, 'auth'))
-            elif 'callback_get_login required' in stre:
+            elif 'callback_get_login required' in exc:
                 raise AuthenticationError(
                     msg=_('Login to the SCM server failed.'))
             else:
