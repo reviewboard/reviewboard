@@ -48,7 +48,8 @@ class Command(NoArgsCommand):
             'Condensed stored diffs from %s bytes to %s bytes '
             '(%d%% savings)\n'
             % (intcomma(old_diff_size), intcomma(new_diff_size),
-               float(new_diff_size) / float(old_diff_size) * 100.0))
+               (float(old_diff_size - new_diff_size) /
+                float(old_diff_size) * 100.0)))
 
     def _on_processed_filediff(self, filediff):
         self.i += 1
