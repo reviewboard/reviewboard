@@ -404,7 +404,7 @@ class GitLab(HostingService):
         """Returns a list of projects in the given group."""
         return self._api_get(
             self._build_api_url(self.account.hosting_url, 'groups',
-                                six.text_type(group_id)))
+                                six.text_type(group_id)))[0]
 
     def _api_get_groups(self):
         """Returns a list of groups the user has access to.
@@ -414,7 +414,7 @@ class GitLab(HostingService):
         """
         return self._api_get(
             '%s?per_page=100'
-            % self._build_api_url(self.account.hosting_url, 'groups'))
+            % self._build_api_url(self.account.hosting_url, 'groups'))[0]
 
     def _api_get_repositories(self):
         """Returns a list of repositories the user has access to.
