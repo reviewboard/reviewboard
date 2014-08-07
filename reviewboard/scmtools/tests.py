@@ -807,6 +807,27 @@ class SubversionTests(SCMTestCase):
         self.assertEqual(files[0].origFile, 'binfile')
         self.assertTrue(files[0].binary)
 
+    def test_collapse_keywords(self):
+        """Testing SVN keyword collapsing"""
+        keyword_test_data = [
+            ('Id',
+             '/* $Id: test2.c 3 2014-08-04 22:55:09Z david $ */',
+             '/* $Id$ */'),
+            ('id',
+             '/* $Id: test2.c 3 2014-08-04 22:55:09Z david $ */',
+             '/* $Id$ */'),
+            ('id',
+             '/* $id: test2.c 3 2014-08-04 22:55:09Z david $ */',
+             '/* $id$ */'),
+            ('Id',
+             '/* $id: test2.c 3 2014-08-04 22:55:09Z david $ */',
+             '/* $id$ */')
+        ]
+
+        for keyword, data, result in keyword_test_data:
+            self.assertEqual(self.tool.collapse_keywords(data, keyword),
+                             result)
+
 
 class PerforceTests(SCMTestCase):
     """Unit tests for perforce.

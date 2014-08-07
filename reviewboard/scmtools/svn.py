@@ -240,8 +240,9 @@ class SVNTool(SCMTool):
                     for name in re.split(r'\W+', keyword_str)
                     for keyword in self.keywords.get(name.lower(), [])]
 
-        return re.sub(r"\$(%s):(:?)([^\$\n\r]*)\$" % '|'.join(keywords),
-                      repl, data, flags=re.IGNORECASE)
+        regex = re.compile(r"\$(%s):(:?)([^\$\n\r]*)\$" % '|'.join(keywords),
+                           re.IGNORECASE)
+        return regex.sub(repl, data)
 
 
     def parse_diff_revision(self, file_str, revision_str, *args, **kwargs):
