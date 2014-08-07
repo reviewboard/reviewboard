@@ -1153,6 +1153,27 @@ class SubvertpyTests(CommonSVNTestsBase):
     backend = 'reviewboard.scmtools.svn.subvertpy'
     backend_name = 'subvertpy'
 
+    def test_collapse_keywords(self):
+        """Testing SVN keyword collapsing"""
+        keyword_test_data = [
+            ('Id',
+             '/* $Id: test2.c 3 2014-08-04 22:55:09Z david $ */',
+             '/* $Id$ */'),
+            ('id',
+             '/* $Id: test2.c 3 2014-08-04 22:55:09Z david $ */',
+             '/* $Id$ */'),
+            ('id',
+             '/* $id: test2.c 3 2014-08-04 22:55:09Z david $ */',
+             '/* $id$ */'),
+            ('Id',
+             '/* $id: test2.c 3 2014-08-04 22:55:09Z david $ */',
+             '/* $id$ */')
+        ]
+
+        for keyword, data, result in keyword_test_data:
+            self.assertEqual(self.tool.client.collapse_keywords(data, keyword),
+                             result)
+
 
 class PerforceTests(SCMTestCase):
     """Unit tests for perforce.
