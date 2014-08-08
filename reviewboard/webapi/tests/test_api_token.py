@@ -26,8 +26,16 @@ def _compare_item(self, item_rsp, api_token):
     self.assertEqual(item_rsp['extra_data'], api_token.extra_data)
 
 
+class APITokenTestsMixin(object):
+    token_data = {
+        'note': 'This is my new token.',
+        'policy': '{"perms": "ro", "resources": {"*": {"allow": ["*"]}}}',
+    }
+
+
 @six.add_metaclass(BasicTestsMetaclass)
-class ResourceListTests(SpyAgency, ExtraDataListMixin, BaseWebAPITestCase):
+class ResourceListTests(SpyAgency, ExtraDataListMixin, BaseWebAPITestCase,
+                        APITokenTestsMixin):
     """Testing the APITokenResource list APIs."""
     fixtures = ['test_users']
     sample_api_url = 'users/<username>/api-tokens/'
@@ -67,10 +75,7 @@ class ResourceListTests(SpyAgency, ExtraDataListMixin, BaseWebAPITestCase):
     def setup_basic_post_test(self, user, with_local_site, local_site_name,
                               post_valid_data):
         if post_valid_data:
-            post_data = {
-                'note': 'This is my new token.',
-                'policy': '{"perms": "ro"}',
-            }
+            post_data = self.token_data
         else:
             post_data = {}
 
@@ -102,13 +107,9 @@ class ResourceListTests(SpyAgency, ExtraDataListMixin, BaseWebAPITestCase):
         self.spy_on(WebAPIToken.objects.generate_token,
                     call_fake=_generate_token)
 
-        rsp = self.api_post(
-            get_api_token_list_url(self.user),
-            {
-                'note': 'This is my new token.',
-                'policy': '{"perms": "ro"}',
-            },
-            expected_status=500)
+        rsp = self.api_post(get_api_token_list_url(self.user),
+                            self.token_data,
+                            expected_status=500)
 
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], TOKEN_GENERATION_FAILED.code)
@@ -118,7 +119,8 @@ class ResourceListTests(SpyAgency, ExtraDataListMixin, BaseWebAPITestCase):
 
 
 @six.add_metaclass(BasicTestsMetaclass)
-class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase):
+class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase,
+                        APITokenTestsMixin):
     """Testing the APITokenResource item APIs."""
     fixtures = ['test_users']
     sample_api_url = 'users/<username>/api-tokens/<id>/'
@@ -169,10 +171,7 @@ class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase):
 
         return (get_api_token_item_url(token, local_site_name),
                 api_token_item_mimetype,
-                {
-                    'note': 'This is my new note',
-                    'policy': '{"perms": "ro"}',
-                },
+                self.token_data,
                 token,
                 [])
 
