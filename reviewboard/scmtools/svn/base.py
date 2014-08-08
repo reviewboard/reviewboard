@@ -114,8 +114,9 @@ class Client(object):
                     for name in re.split(r'\W+', keyword_str)
                     for keyword in self.keywords.get(name.lower(), [])]
 
-        return re.sub(b'\\$(%s):(:?)([^\\$\\n\\r]*)\$' % b'|'.join(keywords),
-                      repl, data, flags=re.IGNORECASE)
+        regex = re.compile(r"\$(%s):(:?)([^\$\n\r]*)\$" % '|'.join(keywords),
+                           re.IGNORECASE)
+        return regex.sub(repl, data)
 
     def get_filenames_in_revision(self, revision):
         """Returns a list of filenames associated with the revision."""
