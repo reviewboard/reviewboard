@@ -66,6 +66,9 @@ class ProfileTests(TestCase):
 
 
 class AccountPageTests(TestCase):
+    builtin_pages = set(['settings', 'authentication', 'profile', 'groups',
+                         'api-tokens'])
+
     """Testing account page functionality."""
     def tearDown(self):
         # Force the next request to re-populate the list of default pages.
@@ -74,12 +77,10 @@ class AccountPageTests(TestCase):
     def test_default_pages(self):
         """Testing default list of account pages"""
         page_classes = list(get_page_classes())
-        self.assertEqual(len(page_classes), 4)
+        self.assertEqual(len(page_classes), len(self.builtin_pages))
 
         page_class_ids = [page_cls.page_id for page_cls in page_classes]
-        self.assertEqual(
-            set(page_class_ids),
-            set(['settings', 'authentication', 'profile', 'groups']))
+        self.assertEqual(set(page_class_ids), self.builtin_pages)
 
     def test_register_account_page_class(self):
         """Testing register_account_page_class"""
@@ -90,7 +91,7 @@ class AccountPageTests(TestCase):
         register_account_page_class(MyPage)
 
         page_classes = list(get_page_classes())
-        self.assertEqual(len(page_classes), 5)
+        self.assertEqual(len(page_classes), len(self.builtin_pages) + 1)
         self.assertEqual(page_classes[-1], MyPage)
 
     def test_register_account_page_class_with_duplicate(self):
@@ -113,7 +114,7 @@ class AccountPageTests(TestCase):
         unregister_account_page_class(MyPage)
 
         page_classes = list(get_page_classes())
-        self.assertEqual(len(page_classes), 4)
+        self.assertEqual(len(page_classes), len(self.builtin_pages))
 
     def test_unregister_unknown_account_page_class(self):
         """Testing unregister_account_page_class with unknown page"""
