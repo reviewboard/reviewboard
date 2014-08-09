@@ -1,10 +1,12 @@
 from __future__ import unicode_literals
 
 import sys
+from datetime import datetime, timedelta
 
 from django.conf import settings
 from django.contrib.humanize.templatetags.humanize import intcomma
 from django.core.management.base import NoArgsCommand
+from django.utils.translation import ugettext as _, ungettext_lazy as N_
 
 from reviewboard.diffviewer.models import FileDiff
 
@@ -12,6 +14,23 @@ from reviewboard.diffviewer.models import FileDiff
 class Command(NoArgsCommand):
     help = ('Condenses the diffs stored in the database, reducing space '
             'requirements')
+
+    DELAY_SHOW_REMAINING_SECS = 30
+
+    TIME_REMAINING_CHUNKS = (
+        (60 * 60 * 24 * 365, N_('%d year', '%d years')),
+        (60 * 60 * 24 * 30, N_('%d month', '%d months')),
+        (60 * 60 * 24 * 7, N_('%d week', '%d weeks')),
+        (60 * 60 * 24, N_('%d day', '%d days')),
+        (60 * 60, N_('%d hour', '%d hours')),
+        (60, N_('%d minute', '%d minutes'))
+    )
+
+    # We add a bunch of spaces in order to override any previous
+    # content on the line, for when it shrinks.
+    TIME_REMAINING_STR = _('%s remaining                                  ')
+
+    CALC_TIME_REMAINING_STR = _('Calculating time remaining')
 
     def handle_noargs(self, **options):
         self.count = FileDiff.objects.unmigrated().count()
@@ -35,7 +54,10 @@ class Command(NoArgsCommand):
         settings.DEBUG = False
 
         self.i = 0
-        self.prev_pct = -1
+        self.start_time = datetime.now()
+        self.prev_prefix_len = 0
+        self.prev_time_remaining_s = ''
+        self.show_remaining = False
 
         info = FileDiff.objects.migrate_all(self._on_processed_filediff)
 
@@ -53,12 +75,82 @@ class Command(NoArgsCommand):
 
     def _on_processed_filediff(self, filediff):
         self.i += 1
-        pct = self.i * 100 / self.count
 
-        if pct != self.prev_pct:
+        # Pull these out in order to reduce repeated access of the same
+        # attributes.
+        count = self.count
+        i = self.i
+
+        if i % 20 == 0 or i == count:
+            pct = i * 100 / count
+            delta_secs = (datetime.now() - self.start_time).total_seconds()
+
+            if (not self.show_remaining and
+                delta_secs >= self.DELAY_SHOW_REMAINING_SECS):
+                self.show_remaining = True
+
+            if self.show_remaining:
+                secs_left = (delta_secs / i) * (count - i)
+
+                # We add a bunch of spaces in order to override any previous
+                # content on the line, for when it shrinks.
+                time_remaining_s = (self.TIME_REMAINING_STR
+                                    % self._time_remaining(secs_left))
+            else:
+                time_remaining_s = self.CALC_TIME_REMAINING_STR
+
+            prefix_s = '  [%s%%] %s/%s - ' % (pct, i, count)
+
             # NOTE: We use sys.stdout here instead of self.stderr in order
             #       to control newlines. Command.stderr will force a \n for
             #       each write.
-            sys.stdout.write("  [%s%%]\r" % pct)
+            sys.stdout.write(prefix_s)
+
+            # Only write out the time remaining string if it has changed or
+            # there's been a shift in the length of the prefix. This reduces
+            # how much we have to write to the terminal, and how often, by
+            # a fair amount.
+            if (self.prev_prefix_len != len(prefix_s) or
+                self.prev_time_remaining_s != time_remaining_s):
+                # Something has changed, so output the string and then cache
+                # the values for the next call.
+                sys.stdout.write(time_remaining_s)
+
+                self.prev_prefix_len = len(prefix_s)
+                self.prev_time_remaining_s = time_remaining_s
+
+            sys.stdout.write('\r')
             sys.stdout.flush()
-            self.prev_pct = pct
+
+    def _time_remaining(self, secs_left):
+        """Returns a string representing the time remaining for the operation.
+
+        This is a simplified version of Django's timeuntil() function that
+        does fewer calculations in order to reduce the amount of time we
+        have to spend every loop. For instance, it doesn't bother with
+        constructing datetimes and recomputing deltas, since we already
+        have those, and it doesn't rebuild the TIME_REMAINING_CHUNKS
+        every time it's called. It also handles seconds.
+        """
+        delta = timedelta(seconds=secs_left)
+        since = delta.days * 24 * 60 * 60 + delta.seconds
+
+        if since < 60:
+            return '%s seconds' % since
+
+        for i, (seconds, name) in enumerate(self.TIME_REMAINING_CHUNKS):
+            count = since // seconds
+
+            if count != 0:
+                break
+
+        result = name % count
+
+        if i + 1 < len(self.TIME_REMAINING_CHUNKS):
+            seconds2, name2 = self.TIME_REMAINING_CHUNKS[i + 1]
+            count2 = (since - (seconds * count)) // seconds2
+
+            if count2 != 0:
+                result += ', ' + name2 % count2
+
+        return result
