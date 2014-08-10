@@ -148,9 +148,6 @@ RB.ReviewablePageView = Backbone.View.extend({
         this._updatesBubble = null;
         this._favIconURL = null;
         this._favIconNotifyURL = null;
-
-        /* XXX This is needed until other code is moved over. */
-        window.gReviewRequest = this.reviewRequest;
     },
 
     /*
