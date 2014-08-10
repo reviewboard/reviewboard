@@ -198,6 +198,7 @@ PIPELINE_JS = dict({
             'rb/js/views/diffFragmentQueueView.js',
             'rb/js/views/dndUploaderView.js',
             'rb/js/views/draftReviewBannerView.js',
+            'rb/js/views/uploadAttachmentView.js',
             'rb/js/views/fileAttachmentCommentBlockView.js',
             'rb/js/views/fileAttachmentReviewableView.js',
             'rb/js/views/fileAttachmentThumbnailView.js',
