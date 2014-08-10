@@ -160,7 +160,8 @@ class Repository(models.Model):
     objects = RepositoryManager()
 
     BRANCHES_CACHE_PERIOD = 60 * 5  # 5 minutes
-    COMMITS_CACHE_PERIOD = 60 * 60 * 24  # 1 day
+    COMMITS_CACHE_PERIOD_SHORT = 60 * 5  # 5 minutes
+    COMMITS_CACHE_PERIOD_LONG = 60 * 60 * 24  # 1 day
 
     def get_scmtool(self):
         cls = self.tool.get_scmtool_class()
@@ -299,8 +300,6 @@ class Repository(models.Model):
         """
         hosting_service = self.hosting_service
 
-        cache_key = make_cache_key('repository-commits:%s:%s:%s'
-                                   % (self.pk, branch, start))
         commits_kwargs = {
             'branch': branch,
             'start': start,
@@ -318,11 +317,19 @@ class Repository(models.Model):
         # the "new review request" page more frequently than they're pushing
         # code, and will usually save 1 API request when they go to actually
         # create a new review request.
-        commits = cache_memoize(cache_key, commits_callable)
+        if branch and start:
+            cache_period = self.COMMITS_CACHE_PERIOD_LONG
+        else:
+            cache_period = self.COMMITS_CACHE_PERIOD_SHORT
+
+        cache_key = make_cache_key('repository-commits:%s:%s:%s'
+                                   % (self.pk, branch, start))
+        commits = cache_memoize(cache_key, commits_callable,
+                                cache_period)
 
         for commit in commits:
             cache.set(self.get_commit_cache_key(commit.id),
-                      commit, self.COMMITS_CACHE_PERIOD)
+                      commit, self.COMMITS_CACHE_PERIOD_LONG)
 
         return commits
 
