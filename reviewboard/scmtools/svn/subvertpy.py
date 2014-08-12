@@ -279,7 +279,10 @@ class Client(base.Client):
         else:
             depth = 0  # This will trigger recurse=False for SVN < 1.5.
 
-        dirents = self.client.list(B(self.normalize_path(path)), None, depth)
+        # subvertpy asserts that svn_uri not ends with slash
+        norm_path = B(self.normalize_path(path)).rstrip('/')
+
+        dirents = self.client.list(norm_path, None, depth)
 
         for name, dirent in six.iteritems(dirents):
             if name:
