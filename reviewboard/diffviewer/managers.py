@@ -54,8 +54,8 @@ class FileDiffManager(models.Manager):
             for filediff in unmigrated_filediffs[:OBJECT_LIMIT].iterator():
                 total_diffs_migrated += 1
 
-                diff_size = len(filediff.diff64)
-                parent_diff_size = len(filediff.parent_diff64)
+                diff_size = len(filediff.get_diff64_base64())
+                parent_diff_size = len(filediff.get_parent_diff64_base64())
 
                 total_diff_size += diff_size + parent_diff_size
 
