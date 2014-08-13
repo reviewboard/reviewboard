@@ -8,9 +8,6 @@ from django.utils.six.moves import cStringIO as StringIO
 from markdown import Markdown, markdown, markdownFromFile
 
 
-# NOTE: Any changes made here or in markdown_escape below should be
-#       reflected in reviewboard/static/rb/js/utils/textUtils.js.
-
 MARKDOWN_SPECIAL_CHARS = re.escape(r''.join(Markdown.ESCAPED_CHARS))
 MARKDOWN_SPECIAL_CHARS_RE = re.compile(r'([%s])' % MARKDOWN_SPECIAL_CHARS)
 
@@ -77,9 +74,18 @@ def markdown_escape(text):
     This will escape the provided text so that none of the characters will
     be rendered specially by Markdown.
     """
-    return ESCAPE_CHARS_RE.sub(
+    text = ESCAPE_CHARS_RE.sub(
         lambda m: MARKDOWN_SPECIAL_CHARS_RE.sub(r'\\\1', m.group(0)),
         text)
+
+    split = text.split('\n')
+    for i, line in enumerate(split):
+        if line.startswith('    '):
+            split[i] = '&nbsp;' + line[1:]
+        elif line.startswith('\t'):
+            split[i] = '&nbsp;' + line
+
+    return '\n'.join(split)
 
 
 def markdown_unescape(escaped_text):
@@ -88,7 +94,16 @@ def markdown_unescape(escaped_text):
     This will unescape the provided Markdown-formatted text so that any
     escaped characters will be unescaped.
     """
-    return UNESCAPE_CHARS_RE.sub(r'\1', escaped_text)
+    text = UNESCAPE_CHARS_RE.sub(r'\1', escaped_text)
+
+    split = text.split('\n')
+    for i, line in enumerate(split):
+        if line.startswith('&nbsp;   '):
+            split[i] = ' ' + line[6:]
+        elif line.startswith('&nbsp;\t'):
+            split[i] = line[6:]
+
+    return '\n'.join(split)
 
 
 def markdown_escape_field(model, field_name):
