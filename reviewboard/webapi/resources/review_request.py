@@ -522,6 +522,9 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
         user = request.user
         local_site = self._get_local_site(local_site_name)
 
+        changenum = changenum or None
+        commit_id = commit_id or None
+
         if changenum is not None and commit_id is None:
             commit_id = six.text_type(changenum)
 
