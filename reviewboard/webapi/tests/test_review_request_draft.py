@@ -246,6 +246,23 @@ class ResourceTests(ExtraDataListMixin, ExtraDataItemMixin,
         review_request = ReviewRequest.objects.get(pk=review_request.pk)
         self.assertNotEqual(review_request.commit_id, commit_id)
 
+    def test_put_with_commit_id_empty_string(self):
+        """Testing the PUT review-requests/<id>/draft/ API with commit_id=''"""
+        review_request = self.create_review_request(submitter=self.user,
+                                                    publish=True)
+
+        rsp = self.api_put(
+            get_review_request_draft_url(review_request),
+            {
+                'commit_id': '',
+            },
+            expected_mimetype=review_request_draft_item_mimetype)
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertIsNone(rsp['draft']['commit_id'])
+
+        review_request = ReviewRequest.objects.get(pk=review_request.pk)
+        self.assertIsNone(review_request.commit_id)
+
     @add_fixtures(['test_scmtools'])
     def test_put_with_commit_id_with_update_from_commit_id(self):
         """Testing the PUT review-requests/<id>/draft/ API with

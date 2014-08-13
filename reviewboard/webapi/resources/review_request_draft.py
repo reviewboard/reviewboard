@@ -333,6 +333,9 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
         modified_objects = []
         invalid_fields = {}
 
+        if kwargs.get('commit_id') == '':
+            kwargs['commit_id'] = None
+
         old_rich_text = draft.rich_text
         old_changedesc_rich_text = (draft.changedesc_id is not None and
                                     draft.changedesc.rich_text)

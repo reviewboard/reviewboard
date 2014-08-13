@@ -832,6 +832,25 @@ class ResourceListTests(ExtraDataListMixin, BaseWebAPITestCase):
         self.assertEqual(review_request.commit, commit_id)
 
     @add_fixtures(['test_scmtools'])
+    def test_post_with_commit_id_empty_string(self):
+        """Testing the POST review-requests/ API with commit_id=''"""
+        repository = self.create_repository()
+
+        rsp = self.api_post(
+            get_review_request_list_url(),
+            {
+                'repository': repository.name,
+                'commit_id': '',
+            },
+            expected_mimetype=review_request_item_mimetype)
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertIsNone(rsp['review_request']['commit_id'])
+
+        review_request = \
+            ReviewRequest.objects.get(pk=rsp['review_request']['id'])
+        self.assertIsNone(review_request.commit)
+
+    @add_fixtures(['test_scmtools'])
     def test_post_with_commit_id_and_create_from_commit_id(self):
         """Testing the POST review-requests/ API with
         commit_id and create_from_commit_id
