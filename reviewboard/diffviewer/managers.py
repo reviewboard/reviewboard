@@ -1,6 +1,8 @@
 from __future__ import unicode_literals
 
+import bz2
 import gc
+import hashlib
 import os
 
 from django.db import models, reset_queries
@@ -8,7 +10,6 @@ from django.db.models import Q
 from django.utils.encoding import smart_unicode
 from django.utils.six.moves import range
 from django.utils.translation import ugettext as _
-from djblets.db.fields import Base64DecodedValue
 from djblets.siteconfig.models import SiteConfiguration
 
 from reviewboard.diffviewer.differ import DiffCompatVersion
@@ -85,22 +86,54 @@ class FileDiffManager(models.Manager):
         }
 
 
-class FileDiffDataManager(models.Manager):
+class RawFileDiffDataManager(models.Manager):
+    """A custom manager for RawFileDiffData.
+
+    This provides conveniences for creating an entry based on a
+    LegacyFileDiffData object.
     """
-    A custom manager for FileDiffData
+    def process_diff_data(self, data):
+        """Processes a diff, returning the resulting content and compression.
 
-    Sets the binary data to a Base64DecodedValue, so that Base64Field is
-    forced to encode the data. This is a workaround to Base64Field checking
-    if the object has been saved into the database using the pk.
-    """
-    def get_or_create(self, *args, **kwargs):
-        defaults = kwargs.get('defaults', {})
+        If the content would benefit from being compressed, this will
+        return the compressed content and the value for the compression
+        flag. Otherwise, it will return the raw content.
+        """
+        compressed_data = bz2.compress(data, 9)
 
-        if defaults and defaults['binary']:
-            defaults['binary'] = \
-                Base64DecodedValue(kwargs['defaults']['binary'])
+        if len(compressed_data) < len(data):
+            return compressed_data, self.model.COMPRESSION_BZIP2
+        else:
+            return data, None
 
-        return super(FileDiffDataManager, self).get_or_create(*args, **kwargs)
+    def get_or_create_from_data(self, data):
+        binary_hash = self._hash_hexdigest(data)
+        processed_data, compression = self.process_diff_data(data)
+
+        return self.get_or_create(
+            binary_hash=binary_hash,
+            defaults={
+                'binary': processed_data,
+                'compression': compression,
+            })
+
+    def create_from_legacy(self, legacy, save=True):
+        processed_data, compression = self.process_diff_data(legacy.binary)
+
+        raw_file_diff_data = self.model(binary_hash=legacy.binary_hash,
+                                        binary=processed_data,
+                                        compression=compression)
+        raw_file_diff_data.extra_data = legacy.extra_data
+
+        if save:
+            raw_file_diff_data.save()
+
+        return raw_file_diff_data
+
+    def _hash_hexdigest(self, diff):
+        hasher = hashlib.sha1()
+        hasher.update(diff)
+        return hasher.hexdigest()
 
 
 class DiffSetManager(models.Manager):
