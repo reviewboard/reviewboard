@@ -222,7 +222,7 @@ RB.DiffRevisionSelectorView = Backbone.View.extend({
 
         console.assert(this._mouseActive);
 
-        mouseX = window.scrollX + ev.clientX - this._$trough.offset().left;
+        mouseX = window.pageXOffset + ev.clientX - this._$trough.offset().left;
 
         for (i = 0; i < positionsLen; i++) {
             dist = Math.abs(positions[i] - mouseX);
