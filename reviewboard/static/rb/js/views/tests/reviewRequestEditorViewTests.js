@@ -442,9 +442,9 @@ suite('rb/views/ReviewRequestEditorView', function() {
                     reviewRequest.draft.set('bugsClosed', [1, 2, 3]);
 
                     expect($field.html()).toBe(
-                        '<a href="http://issues/?id=1">1</a>, ' +
-                        '<a href="http://issues/?id=2">2</a>, ' +
-                        '<a href="http://issues/?id=3">3</a>');
+                        '<a class="bug" href="http://issues/?id=%s">1</a>, ' +
+                        '<a class="bug" href="http://issues/?id=%s">2</a>, ' +
+                        '<a class="bug" href="http://issues/?id=%s">3</a>');
                 });
 
                 it('Without bugTrackerURL', function() {
