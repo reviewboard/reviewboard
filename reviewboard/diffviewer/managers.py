@@ -1,6 +1,8 @@
+import gc
 import os
 
-from django.db import models
+from django.db import models, reset_queries
+from django.db.models import Q
 from django.utils.encoding import smart_unicode
 from django.utils.translation import ugettext as _
 from djblets.siteconfig.models import SiteConfiguration
@@ -9,6 +11,75 @@ from djblets.util.fields import Base64DecodedValue
 from reviewboard.diffviewer.differ import DiffCompatVersion
 from reviewboard.diffviewer.errors import DiffTooBigError, EmptyDiffError
 from reviewboard.scmtools.core import PRE_CREATION, UNKNOWN, FileNotFoundError
+
+
+class FileDiffManager(models.Manager):
+    """A manager for FileDiff objects.
+
+    This contains utility methods for locating FileDiffs that haven't been
+    migrated to use FileDiffData.
+    """
+    def unmigrated(self):
+        """Queries FileDiffs that store their own diff content."""
+        return self.exclude(
+            Q(diff_hash__isnull=False) &
+            (Q(parent_diff_hash__isnull=False) | Q(parent_diff64='')))
+
+    def migrate_all(self, processed_filediff_cb=None):
+        """Migrates diff content in FileDiffs to use FileDiffData for storage.
+
+        This will run through all unmigrated FileDiffs and migrate them,
+        condensing their storage needs and removing the content from
+        FileDiffs.
+
+        This will return a dictionary with the result of the process.
+        """
+        unmigrated_filediffs = self.unmigrated()
+
+        OBJECT_LIMIT = 200
+        total_diffs_migrated = 0
+        total_diff_size = 0
+        total_bytes_saved = 0
+
+        count = unmigrated_filediffs.count()
+
+        for i in range(0, count, OBJECT_LIMIT):
+            # Every time we work on a batch of FileDiffs, we're re-querying
+            # the list of unmigrated FileDiffs. No previously processed
+            # FileDiff will be returned in the results. That's why we're
+            # indexing from 0 to OBJECT_LIMIT, instead of from 'i'.
+            for filediff in unmigrated_filediffs[:OBJECT_LIMIT].iterator():
+                total_diffs_migrated += 1
+
+                diff_size = len(filediff.get_diff64_base64())
+                parent_diff_size = len(filediff.get_parent_diff64_base64())
+
+                total_diff_size += diff_size + parent_diff_size
+
+                diff_hash_is_new, parent_diff_hash_is_new = \
+                    filediff._migrate_diff_data()
+
+                if diff_size > 0 and not diff_hash_is_new:
+                    total_bytes_saved += diff_size
+
+                if parent_diff_size > 0 and not parent_diff_hash_is_new:
+                    total_bytes_saved += parent_diff_size
+
+                if callable(processed_filediff_cb):
+                    processed_filediff_cb(filediff)
+
+            # Do all we can to limit the memory usage by resetting any stored
+            # queries (if DEBUG is True), and force garbage collection of
+            # anything we may have from processing a FileDiff.
+            reset_queries()
+            gc.collect()
+
+        return {
+            'diffs_migrated': total_diffs_migrated,
+            'old_diff_size': total_diff_size,
+            'new_diff_size': total_diff_size - total_bytes_saved,
+            'bytes_saved': total_bytes_saved,
+        }
 
 
 class FileDiffDataManager(models.Manager):

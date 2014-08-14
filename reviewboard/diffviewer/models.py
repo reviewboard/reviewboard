@@ -1,11 +1,14 @@
 import hashlib
+import logging
 
 from django.db import models
 from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
 from djblets.util.fields import Base64Field
 
-from reviewboard.diffviewer.managers import FileDiffDataManager, DiffSetManager
+from reviewboard.diffviewer.managers import (FileDiffDataManager,
+                                             FileDiffManager,
+                                             DiffSetManager)
 from reviewboard.scmtools.core import PRE_CREATION
 from reviewboard.scmtools.models import Repository
 
@@ -59,6 +62,8 @@ class FileDiff(models.Model):
                                          related_name='parent_filediff_set')
     status = models.CharField(_("status"), max_length=1, choices=STATUSES)
 
+    objects = FileDiffManager()
+
     @property
     def source_file_display(self):
         tool = self.diffset.repository.get_scmtool()
@@ -86,12 +91,10 @@ class FileDiff(models.Model):
         return self.source_revision == PRE_CREATION
 
     def _get_diff(self):
-        # If the diff is not in FileDiffData, it is in FileDiff.
         if not self.diff_hash:
-            return self.diff64
-        else:
-            # Data exists in FileDiffData, retrieve it.
-            return self.diff_hash.binary
+            self._migrate_diff_data()
+
+        return self.diff_hash.binary
 
     def _set_diff(self, diff):
         hashkey = self._hash_hexdigest(diff)
@@ -101,13 +104,18 @@ class FileDiff(models.Model):
             binary_hash=hashkey, defaults={'binary': diff})
         self.diff64 = ""
 
+        return is_new
+
     diff = property(_get_diff, _set_diff)
 
     def _get_parent_diff(self):
-        if not self.parent_diff_hash:
-            return self.parent_diff64
-        else:
+        if self.parent_diff64 and not self.parent_diff_hash:
+            self._migrate_diff_data()
+
+        if self.parent_diff_hash:
             return self.parent_diff_hash.binary
+        else:
+            return None
 
     def _set_parent_diff(self, parent_diff):
         if parent_diff != "":
@@ -118,12 +126,39 @@ class FileDiff(models.Model):
                 binary_hash=hashkey, defaults={'binary': parent_diff})
             self.parent_diff64 = ""
 
+            return is_new
+        else:
+            return False
+
     parent_diff = property(_get_parent_diff, _set_parent_diff)
 
     def _hash_hexdigest(self, diff):
         hasher = hashlib.sha1()
         hasher.update(diff)
         return hasher.hexdigest()
+
+    def _migrate_diff_data(self):
+        """Migrates the data stored in the FileDiff to a FileDiffData."""
+        needs_save = False
+        diff_hash_is_new = False
+        parent_diff_hash_is_new = False
+
+        if not self.diff_hash:
+            logging.debug('Migrating FileDiff %s diff data to FileDiffData'
+                          % self.pk)
+            needs_save = True
+            diff_hash_is_new = self._set_diff(self.diff64)
+
+        if self.parent_diff64 and not self.parent_diff_hash:
+            logging.debug('Migrating FileDiff %s parent_diff data to '
+                          'FileDiffData' % self.pk)
+            needs_save = True
+            parent_diff_hash_is_new = self._set_parent_diff(self.parent_diff64)
+
+        if needs_save:
+            self.save()
+
+        return diff_hash_is_new, parent_diff_hash_is_new
 
     def __unicode__(self):
         return u"%s (%s) -> %s (%s)" % (self.source_file, self.source_revision,
