@@ -257,8 +257,8 @@ suite('rb/views/ReviewDialogView', function() {
                     expect(dlg._commentViews.length).toBe(1);
 
                     commentView = dlg._commentViews[0];
-                    expect(commentView.textEditor.getText()).toBe(
-                        diffCommentPayload.text);
+                    expect(commentView.$editor.text())
+                        .toBe(diffCommentPayload.text);
                     expect(commentView.$issueOpened.prop('checked'))
                         .toBe(diffCommentPayload.issue_opened);
 
@@ -282,8 +282,8 @@ suite('rb/views/ReviewDialogView', function() {
                     expect(dlg._commentViews.length).toBe(1);
 
                     commentView = dlg._commentViews[0];
-                    expect(commentView.textEditor.getText()).toBe(
-                        fileAttachmentCommentPayload.text);
+                    expect(commentView.$editor.text())
+                        .toBe(fileAttachmentCommentPayload.text);
                     expect(commentView.$issueOpened.prop('checked')).toBe(
                         fileAttachmentCommentPayload.issue_opened);
                     expect(commentView.$('img').attr('src')).toBe(
@@ -314,8 +314,8 @@ suite('rb/views/ReviewDialogView', function() {
                     expect(dlg._commentViews.length).toBe(1);
 
                     commentView = dlg._commentViews[0];
-                    expect(commentView.textEditor.getText()).toBe(
-                        screenshotCommentPayload.text);
+                    expect(commentView.$editor.text())
+                        .toBe(screenshotCommentPayload.text);
                     expect(commentView.$issueOpened.prop('checked')).toBe(
                         screenshotCommentPayload.issue_opened);
 
@@ -344,33 +344,7 @@ suite('rb/views/ReviewDialogView', function() {
         describe('Saving', function() {
             var fileAttachmentCommentsPayload,
                 diffCommentsPayload,
-                screenshotCommentsPayload,
-                commentView,
-                comment;
-
-            function testSaveComment() {
-                var newCommentText = 'New commet text',
-                    newIssueOpened = false;
-
-                dlg = createCommentDialog();
-
-                expect(dlg._commentViews.length).toBe(1);
-
-                commentView = dlg._commentViews[0];
-                comment = commentView.model;
-
-                /* Set some new state for the comment. */
-                commentView.textEditor.setText(newCommentText);
-                commentView.$issueOpened.prop('checked', newIssueOpened);
-
-                spyOn(comment, 'save');
-
-                dlg._saveReview();
-
-                expect(comment.save).toHaveBeenCalled();
-                expect(comment.get('text')).toBe(newCommentText);
-                expect(comment.get('issueOpened')).toBe(newIssueOpened);
-            }
+                screenshotCommentsPayload;
 
             beforeEach(function() {
                 review.set({
@@ -428,31 +402,6 @@ suite('rb/views/ReviewDialogView', function() {
                 expect(dlg._bodyBottomEditor.getText()).toBe(bodyBottomText);
                 expect(dlg._$shipIt.prop('checked')).toBe(shipIt);
                 expect(review.save).toHaveBeenCalled();
-            });
-
-            it('Diff comments', function() {
-                diffCommentsPayload.total_results = 1;
-                diffCommentsPayload.diff_comments = [diffCommentPayload];
-
-                testSaveComment();
-            });
-
-            it('File attachment comments', function() {
-                fileAttachmentCommentsPayload.total_results = 1;
-                fileAttachmentCommentsPayload.file_attachment_comments = [
-                    fileAttachmentCommentPayload
-                ];
-
-                testSaveComment();
-            });
-
-            it('Screenshot comments', function() {
-                screenshotCommentsPayload.total_results = 1;
-                screenshotCommentsPayload.screenshot_comments = [
-                    screenshotCommentPayload
-                ];
-
-                testSaveComment();
             });
         });
     });

@@ -72,4 +72,13 @@ RB.formatText = function($el, text, bugTrackerURL) {
 };
 
 
+/*
+ * Format a timestamp in the same way that Django templates would.
+ */
+RB.FormatTimestamp = function(timestamp) {
+    return timestamp.format('MMMM Do, YYYY, h:mm ') +
+           (timestamp.hour() < 12 ? 'a.m.' : 'p.m.');
+};
+
+
 }());
