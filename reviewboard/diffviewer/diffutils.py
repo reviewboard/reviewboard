@@ -94,7 +94,7 @@ def patch(diff, file, filename, request=None):
     log_timer = log_timed("Patching file %s" % filename,
                           request=request)
 
-    if diff.strip() == "":
+    if not diff.strip():
         # Someone uploaded an unchanged file. Return the one we're patching.
         return file
 
