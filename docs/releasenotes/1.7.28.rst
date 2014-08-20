@@ -1,0 +1,42 @@
+=================================
+Review Board 1.7.28 Release Notes
+=================================
+
+**Release date**: TBD
+
+
+New Features
+============
+
+* Added the `condensediffs` management command.
+
+  Review Board 1.7.x introduced a new storage mechanism for diff data, which
+  can cut down on the size of the data stored in the database. This new
+  mechanism was used for newly-posted diffs, but old data was still in the
+  previous format.
+
+  Old diffs will now be migrated to the new format whenever they are accessed,
+  or the entire database can be converted at once using
+  :command:`rb-site manage /path/to/site condensediffs`.
+
+
+Bug Fixes
+=========
+
+* SVN keywords are now handled in a case-insensitive way, preventing issues
+  when keywords were added in all uppercase or lowercase.
+
+* File attachment mimetypes are now guessed if the browser doesn't have a
+  specific mimetype to show us, or sent us an invalid mimetype. (:bug:`2269`,
+  :bug:`3427`)
+
+* Administrators (or those with the
+  :ref:`"Can Change Status" permission <can-change-status-permission>`) can
+  now re-open discarded review requests. (:bug:`2989`)
+
+
+Contributors
+============
+
+* Christian Hammond
+* David Trowbridge
