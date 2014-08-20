@@ -2,7 +2,15 @@
 Review Board 1.7.28 Release Notes
 =================================
 
-**Release date**: TBD
+**Release date**: August 20, 2014
+
+
+Security Updates
+================
+
+This release depends on Django 1.4.14 or higher, which fixes a number of
+`security vulnerabilities found
+<https://www.djangoproject.com/weblog/2014/aug/20/security/>`_.
 
 
 New Features
