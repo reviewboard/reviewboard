@@ -2,7 +2,7 @@
 Review Board 2.0.6 Release Notes
 ================================
 
-**Release date**: TBD
+**Release date**: August 20, 2014
 
 
 New Features

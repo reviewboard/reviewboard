@@ -7,11 +7,11 @@ from __future__ import unicode_literals
 #
 #   (Major, Minor, Micro, Patch, alpha/beta/rc/final, Release Number, Released)
 #
-VERSION = (2, 0, 5, 0, 'final', 0, True)
+VERSION = (2, 0, 6, 0, 'final', 0, True)
 
 
 # Required version of Django
-django_version = 'Django>=1.6.5,<1.7'
+django_version = 'Django>=1.6.6,<1.7'
 
 
 def get_version_string():
