@@ -112,10 +112,12 @@ class HgDiffParser(DiffParser):
                     # Uncommitted revision
                     name_start_ix = 3
                     info['newInfo'] = "Uncommitted"
-                info['newFile'] = info['origFile'] = \
-                    b' '.join(split_line[name_start_ix:])
+
+                info['newFile'] = info['origFile'] = b' '.join(
+                    split_line[name_start_ix:])
                 info['origInfo'] = split_line[2]
-                info['orig_changeset_id'] = split_line[2]
+                info['origChangesetId'] = split_line[2]
+                self.orig_changeset_id = split_line[2]
             except ValueError:
                 raise DiffParserError("The diff file is missing revision "
                                       "information", linenum)
@@ -131,7 +133,7 @@ class HgDiffParser(DiffParser):
             self.is_git_diff = True
 
             info['origInfo'] = self.orig_changeset_id
-            info['orig_changeset_id'] = self.orig_changeset_id
+            info['origChangesetId'] = self.orig_changeset_id
 
             if not self.new_changeset_id:
                 info['newInfo'] = "Uncommitted"
