@@ -16,7 +16,7 @@ This release depends on Django 1.4.14 or higher, which fixes a number of
 New Features
 ============
 
-* Added the `condensediffs` management command.
+* Added the :command:`condensediffs` management command.
 
   Review Board 1.7.x introduced a new storage mechanism for diff data, which
   can cut down on the size of the data stored in the database. This new
