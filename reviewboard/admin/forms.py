@@ -46,6 +46,7 @@ from djblets.siteconfig.models import SiteConfiguration
 
 from reviewboard.accounts.forms.auth import LegacyAuthModuleSettingsForm
 from reviewboard.admin.checks import (get_can_use_amazon_s3,
+                                      get_can_use_openstack_swift,
                                       get_can_use_couchdb)
 from reviewboard.admin.siteconfig import load_site_config
 from reviewboard.admin.support import get_install_key
@@ -798,6 +799,7 @@ class StorageSettingsForm(SiteSettingsForm):
         choices=(
             ('filesystem', _('Host file system')),
             ('s3', _('Amazon S3')),
+            ('swift', _('OpenStack Swift')),
             # TODO: I haven't tested CouchDB at all, so it's turned off
             #('couchdb', _('CouchDB')),
         ),
@@ -846,6 +848,42 @@ class StorageSettingsForm(SiteSettingsForm):
     #'aws_querystring_expire': 'AWS_QUERYSTRING_EXPIRE',
     #'aws_s3_secure_urls':     'AWS_S3_SECURE_URLS',
 
+    swift_auth_url = forms.CharField(
+        label=_('Swift auth URL'),
+        help_text=_('The URL for the auth server, '
+                    'e.g. http://127.0.0.1:5000/v2.0'),
+        required=True,
+        widget=forms.TextInput(attrs={'size': '40'}))
+
+    swift_username = forms.CharField(
+        label=_('Swift username'),
+        help_text=_('The username to use to authenticate, '
+                    'e.g. system:root'),
+        required=True,
+        widget=forms.TextInput(attrs={'size': '40'}))
+
+    swift_key = forms.CharField(
+        label=_('Swift key'),
+        help_text=_('The key (password) to use to authenticate.'),
+        required=True,
+        widget=forms.TextInput(attrs={'size': '40'}))
+
+    swift_auth_version = forms.ChoiceField(
+        label=_('Swift auth version'),
+        choices=(
+            ('1', _('1.0')),
+            ('2', _('2.0')),
+        ),
+        help_text=_('The version of the authentication protocol to use.'),
+        required=True)
+
+    swift_container_name = forms.CharField(
+        label=_('Swift container name'),
+        help_text=_('The container in which to store the files. '
+                    'This container must be publicly readable.'),
+        required=True,
+        widget=forms.TextInput(attrs={'size': '40'}))
+
     couchdb_default_server = forms.CharField(
         label=_('Default server'),
         help_text=_('For example, "http://couchdb.local:5984"'),
@@ -865,6 +903,15 @@ class StorageSettingsForm(SiteSettingsForm):
             self.disabled_fields['aws_s3_bucket_name'] = True
             self.disabled_fields['aws_calling_format'] = True
             self.disabled_reasons['aws_access_key_id'] = reason
+
+        can_use_openstack_swift, reason = get_can_use_openstack_swift()
+        if not can_use_openstack_swift:
+            self.disabled_fields['swift_auth_url'] = True
+            self.disabled_fields['swift_username'] = True
+            self.disabled_fields['swift_key'] = True
+            self.disabled_fields['swift_auth_version'] = True
+            self.disabled_fields['swift_container_name'] = True
+            self.disabled_reasons['swift_auth_url'] = reason
 
         can_use_couchdb, reason = get_can_use_couchdb()
         if not can_use_couchdb:
@@ -914,6 +961,16 @@ class StorageSettingsForm(SiteSettingsForm):
                            'aws_secret_access_key',
                            'aws_s3_bucket_name',
                            'aws_calling_format'),
+            },
+            {
+                'id': 'storage_swift',
+                'classes': ('wide', 'hidden'),
+                'title': _('OpenStack Swift Settings'),
+                'fields': ('swift_auth_url',
+                           'swift_username',
+                           'swift_key',
+                           'swift_auth_version',
+                           'swift_container_name'),
             },
             {
                 'id': 'storage_couchdb',

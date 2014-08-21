@@ -53,6 +53,7 @@ from reviewboard.signals import site_settings_loaded
 storage_backend_map = {
     'builtin': 'django.core.files.storage.FileSystemStorage',
     's3':      'storages.backends.s3boto.S3BotoStorage',
+    'swift':   'swift.storage.SwiftStorage',
 }
 
 
@@ -100,6 +101,11 @@ settings_map.update({
     'aws_querystring_expire':  'AWS_QUERYSTRING_EXPIRE',
     'aws_s3_secure_urls':      'AWS_S3_SECURE_URLS',
     'aws_s3_bucket_name':      'AWS_STORAGE_BUCKET_NAME',
+    'swift_auth_url':          'SWIFT_AUTH_URL',
+    'swift_username':          'SWIFT_USERNAME',
+    'swift_key':               'SWIFT_KEY',
+    'swift_auth_version':      'SWIFT_AUTH_VERSION',
+    'swift_container_name':    'SWIFT_CONTAINER_NAME',
     'couchdb_default_server':  'COUCHDB_DEFAULT_SERVER',
     'couchdb_storage_options': 'COUCHDB_STORAGE_OPTIONS',
 })
@@ -161,6 +167,11 @@ defaults.update({
     'aws_querystring_expire':  60,
     'aws_s3_secure_urls':      False,
     'aws_s3_bucket_name':      '',
+    'swift_auth_url':          '',
+    'swift_username':          '',
+    'swift_key':               '',
+    'swift_auth_version':      '1',
+    'swift_container_name':    '',
     'couchdb_default_server':  '',
     'couchdb_storage_options': {},
 })
@@ -350,6 +361,19 @@ def load_site_config(full_reload=False):
         settings.AWS_CALLING_FORMAT = int(siteconfig.get('aws_calling_format'))
     except ValueError:
         settings.AWS_CALLING_FORMAT = 0
+
+    settings.SWIFT_AUTH_URL = six.text_type(
+        siteconfig.get('swift_auth_url'))
+    settings.SWIFT_USERNAME = six.text_type(
+        siteconfig.get('swift_username'))
+    settings.SWIFT_KEY = six.text_type(
+        siteconfig.get('swift_key'))
+    try:
+        settings.SWIFT_AUTH_VERSION = int(siteconfig.get('swift_auth_version'))
+    except:
+        settings.SWIFT_AUTH_VERSION = 1
+    settings.SWIFT_CONTAINER_NAME = six.text_type(
+        siteconfig.get('swift_container_name'))
 
     if siteconfig.settings.get('site_domain_method', 'http') == 'https':
         os.environ['HTTPS'] = 'on'

@@ -249,6 +249,20 @@ def get_can_use_amazon_s3():
         return (False, _('Amazon S3 backend failed to load: %s') % e)
 
 
+def get_can_use_openstack_swift():
+    """Checks whether django-storage-swift is installed."""
+    try:
+        if has_module('swift.storage', members=['SwiftStorage']):
+            return (True, None)
+        else:
+            return (False, _(
+                'OpenStack Swift depends on django-storage-swift, '
+                'which is not installed'
+            ))
+    except ImproperlyConfigured as e:
+        return (False, _('OpenStack Swift backend failed to load: %s') % e)
+
+
 def get_can_use_couchdb():
     """Checks whether django-storages (CouchDB backend) is installed."""
     if has_module('storages.backends.couchdb', members=['CouchDBStorage']):
