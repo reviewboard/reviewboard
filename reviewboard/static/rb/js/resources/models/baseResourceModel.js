@@ -323,7 +323,7 @@ RB.BaseResource = Backbone.Model.extend({
                         this._saveWithFiles(files, readers, saveOptions);
                     }
                 }, this);
-                reader.readAsBinaryString(file);
+                reader.readAsArrayBuffer(file);
             }, this);
         } else {
             Backbone.Model.prototype.save.call(this, {}, saveOptions);
@@ -346,7 +346,10 @@ RB.BaseResource = Backbone.Model.extend({
         _.each(_.zip(this.payloadFileKeys, files, fileReaders), function(data) {
             var key = data[0],
                 file = data[1],
-                reader = data[2];
+                reader = data[2],
+                fileBlobLen,
+                fileBlob,
+                i;
 
             if (!file || !reader) {
                 return;
@@ -357,7 +360,14 @@ RB.BaseResource = Backbone.Model.extend({
                       key + '"; filename="' + file.name + '"\r\n');
             blob.push('Content-Type: ' + file.type + '\r\n');
             blob.push('\r\n');
-            blob.push(reader.result);
+
+            fileBlob = new Int8Array(reader.result);
+            fileBlobLen = fileBlob.length;
+
+            for (i = 0; i < fileBlobLen; i++) {
+                blob.push(String.fromCharCode(fileBlob[i]));
+            }
+
             blob.push('\r\n');
         });
 
