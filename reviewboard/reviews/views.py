@@ -941,7 +941,7 @@ def raw_diff(request, review_request_id, revision=None, local_site=None):
     tool = review_request.repository.get_scmtool()
     data = tool.get_parser('').raw_diff(diffset)
 
-    resp = HttpResponse(data, mimetype='text/x-patch')
+    resp = HttpResponse(data, content_type='text/x-patch')
 
     if diffset.name == 'diff':
         filename = "rb%d.patch" % review_request.display_id
@@ -1304,7 +1304,7 @@ def preview_review_request_email(
             'domain': Site.objects.get_current().domain,
             'domain_method': siteconfig.get("site_domain_method"),
         }, **extra_context)),
-    ), mimetype=mimetype)
+    ), content_type=mimetype)
 
 
 @check_login_required
@@ -1358,7 +1358,7 @@ def preview_review_email(request, review_request_id, review_id, format,
 
     return HttpResponse(
         render_to_string(template_name, RequestContext(request, context)),
-        mimetype=mimetype)
+        content_type=mimetype)
 
 
 @check_login_required
@@ -1413,7 +1413,7 @@ def preview_reply_email(request, review_request_id, review_id, reply_id,
 
     return HttpResponse(
         render_to_string(template_name, RequestContext(request, context)),
-        mimetype=mimetype)
+        content_type=mimetype)
 
 
 @check_login_required
@@ -1577,7 +1577,7 @@ def _download_diff_file(modified, request, review_request_id, revision,
 
     data = convert_to_unicode(data, encoding_list)[1]
 
-    return HttpResponse(data, mimetype='text/plain; charset=utf-8')
+    return HttpResponse(data, content_type='text/plain; charset=utf-8')
 
 
 @check_login_required

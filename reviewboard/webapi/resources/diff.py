@@ -171,7 +171,7 @@ class DiffResource(WebAPIResource):
         tool = review_request.repository.get_scmtool()
         data = tool.get_parser('').raw_diff(diffset)
 
-        resp = HttpResponse(data, mimetype='text/x-patch')
+        resp = HttpResponse(data, content_type='text/x-patch')
 
         if diffset.name == 'diff':
             filename = 'bug%s.patch' % \

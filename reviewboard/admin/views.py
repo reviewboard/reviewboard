@@ -198,7 +198,7 @@ def widget_activity(request):
     activity_data = dynamic_activity_data(request)
 
     return HttpResponse(json.dumps(activity_data),
-                        mimetype="application/json")
+                        content_type="application/json")
 
 
 def support_redirect(request):
