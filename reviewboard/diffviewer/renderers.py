@@ -75,7 +75,8 @@ class DiffRenderer(object):
 
         if cache:
             return cache_memoize(self.make_cache_key(),
-                                 self.render_to_string_uncached)
+                                 self.render_to_string_uncached,
+                                 large_data=True)
         else:
             return self.render_to_string_uncached()
 
