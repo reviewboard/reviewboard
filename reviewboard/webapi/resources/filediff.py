@@ -392,7 +392,7 @@ class FileDiffResource(WebAPIResource):
         except ObjectDoesNotExist:
             return DOES_NOT_EXIST
 
-        resp = HttpResponse(filediff.diff, mimetype='text/x-patch')
+        resp = HttpResponse(filediff.diff, content_type='text/x-patch')
         filename = '%s.patch' % urllib_quote(filediff.source_file)
         resp['Content-Disposition'] = 'inline; filename=%s' % filename
         set_last_modified(resp, filediff.diffset.timestamp)

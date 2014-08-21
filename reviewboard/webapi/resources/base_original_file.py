@@ -43,7 +43,7 @@ class BaseOriginalFileResource(WebAPIResource):
         elif isinstance(result, WebAPIError):
             return result
         else:
-            raise ValueError(_('Unexpected result from get_filediff'))
+            raise ValueError('Unexpected result from get_filediff')
 
         if filediff.is_new:
             return DOES_NOT_EXIST
@@ -59,7 +59,7 @@ class BaseOriginalFileResource(WebAPIResource):
                           request=request)
             return FILE_RETRIEVAL_ERROR
 
-        resp = HttpResponse(orig_file, mimetype='text/plain')
+        resp = HttpResponse(orig_file, content_type='text/plain')
         filename = urllib_quote(filediff.source_file)
         resp['Content-Disposition'] = 'inline; filename=%s' % filename
         set_last_modified(resp, filediff.diffset.timestamp)

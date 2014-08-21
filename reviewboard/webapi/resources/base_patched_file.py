@@ -44,7 +44,7 @@ class BasePatchedFileResource(WebAPIResource):
         elif isinstance(result, WebAPIError):
             return result
         else:
-            raise ValueError(_('Unexpected result from get_filediff'))
+            raise ValueError('Unexpected result from get_filediff')
 
         if filediff.deleted:
             return DOES_NOT_EXIST
@@ -69,7 +69,7 @@ class BasePatchedFileResource(WebAPIResource):
                           request=request)
             return FILE_RETRIEVAL_ERROR
 
-        resp = HttpResponse(patched_file, mimetype='text/plain')
+        resp = HttpResponse(patched_file, content_type='text/plain')
         filename = urllib_quote(filediff.dest_file)
         resp['Content-Disposition'] = 'inline; filename=%s' % filename
         set_last_modified(resp, filediff.diffset.timestamp)
