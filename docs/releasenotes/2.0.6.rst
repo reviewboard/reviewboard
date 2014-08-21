@@ -1,0 +1,113 @@
+================================
+Review Board 2.0.6 Release Notes
+================================
+
+**Release date**: August 20, 2014
+
+
+New Features
+============
+
+* The :command:`condensediffs` management command now shows an estimated
+  time remaining until completion.
+
+
+Usability Improvements
+======================
+
+* All edit fields on the review request page now have OK/Cancel buttons, in
+  order to prevent confusion about how to save or cancel editing (:bug:`3474`)
+
+* Modal boxes (such as the file upload dialog) now appear and fade in the
+  background faster.
+
+
+Bug Fixes
+=========
+
+Markdown
+--------
+
+* Leading spaces in plain text are now escaped when rendering to Markdown.
+  (:bug:`3503`)
+
+
+Review Requests
+---------------
+
+* Fixed a breakage that resulted in posting changes using RBTools with a
+  blank commit ID.
+
+* Fixed a regression in 2.0.5 where the height of the text fields could
+  overflow the height of the review request box.
+
+* Prevented some text from jumping when going in/out of edit mode for
+  fields.
+
+* Fixed the display of unfocused editors in file attachment thumbnails.
+
+
+Diff Viewer
+-----------
+
+* Fixed the revision selector on Internet Explorer. (:bug:`3373`)
+
+
+File Attachments
+----------------
+
+* File attachment mimetypes are now guessed if the browser doesn't have a
+  specific mimetype to show us, or sent us an invalid mimetype.
+  (:bug:`2269`, :bug:`3427`)
+
+
+New Review Request Page
+-----------------------
+
+* The list of commits is no longer cached so aggressively, meaning that
+  new commits will show up in the list quicker. (:bug:`3511`)
+
+* Fixed uploading diffs on Internet Explorer. (:bug:`3441`)
+
+
+Subversion
+----------
+
+* SVN credentials are now passed in the request to verify a self-signed
+  certificate, fixing some problems people had with verification.
+
+* SVN keywords are now handled in a case-insensitive way, preventing issues
+  when keywords were added in all uppercase or lowercase.
+
+* Fixed unicode issues when processing errors from PySVN. (:bug:`3518`)
+
+* Fixed a crash with Subvertpy when handling file paths ending in a slash.
+
+  Patch by Georgy Dyuldin
+
+
+Administration
+--------------
+
+* Fixed the file sizes and percentages in :command:`condensediffs` to be
+  more accurate.
+
+
+Extensions
+----------
+
+* Fixed thread-related issues with installing extension data and media
+  files.
+
+* 404 Not Found pages should no longer crash when using TemplateHooks.
+
+  Patch by Mike Conley.
+
+
+Contributors
+============
+
+* Christian Hammond
+* David Trowbridge
+* Georgy Dyuldin
+* Mike Conley
