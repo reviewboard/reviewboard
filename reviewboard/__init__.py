@@ -4,7 +4,7 @@
 #
 #   (Major, Minor, Micro, Patch, alpha/beta/rc/final, Release Number, Released)
 #
-VERSION = (1, 7, 28, 0, 'final', 0, True)
+VERSION = (1, 7, 29, 0, 'alpha', 0, False)
 
 # Required version of Django
 django_version = 'Django>=1.4.14,<1.5'
