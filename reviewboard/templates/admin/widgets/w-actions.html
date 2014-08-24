@@ -10,24 +10,24 @@
 
 {% if show_sidebar %}
 <div class="admin-widget admin-sidebar" id="widget-sys-settings">
-  <h1 class="widget-heading">{% trans "System Settings" %}</h1>
-  <div class="widget-content">
-     <ul>
-      {% admin_subnav "settings-general" _("General") %}
-      {% admin_subnav "settings-authentication" _("Authentication") %}
-      {% admin_subnav "settings-email" _("E-Mail") %}
-      {% admin_subnav "settings-diffs" _("Diff Viewer") %}
-      {% admin_subnav "settings-logging" _("Logging") %}
-      {% admin_subnav "settings-ssh" _("SSH")  %}
-      {% admin_subnav "settings-storage" _("File Storage") %}
-      {% admin_subnav "settings-support" _("Support") %}
-     </ul>
-  </div>
+ <h1 class="widget-heading">{% trans "System Settings" %}</h1>
+ <div class="widget-content">
+  <ul>
+{% admin_subnav "settings-general" _("General") %}
+{% admin_subnav "settings-authentication" _("Authentication") %}
+{% admin_subnav "settings-email" _("E-Mail") %}
+{% admin_subnav "settings-diffs" _("Diff Viewer") %}
+{% admin_subnav "settings-logging" _("Logging") %}
+{% admin_subnav "settings-ssh" _("SSH")  %}
+{% admin_subnav "settings-storage" _("File Storage") %}
+{% admin_subnav "settings-support" _("Support") %}
+  </ul>
+ </div>
 </div>
 
 <div class="admin-widget admin-sidebar" id="widget-manage">
-  <h1 class="widget-heading">{% trans "Manage" %}</h1>
-  <div class="widget-content action-box">
+ <h1 class="widget-heading">{% trans "Manage" %}</h1>
+ <div class="widget-content action-box">
   <table summary="{% trans "Common management operations." %}">
    <tbody>
     <tr>
@@ -36,23 +36,33 @@
      <td width="40" class="td-right"><a class="addlink" href="{{SITE_ROOT}}admin/db/auth/user/add/">{% trans "Add" %} <div class="rb-icon rb-icon-admin-add"></div></a></td>
     </tr>
     <tr>
-      <th scope="row"><a href="{{SITE_ROOT}}admin/db/reviews/group/">{% trans "Review Groups" %}</a></th>
-      <td class="count">{{count_review_groups}}</td>
-      <td class="td-right"><a class="addlink" href="{{SITE_ROOT}}admin/db/reviews/group/add/">{% trans "Add" %} <div class="rb-icon rb-icon-admin-add"></div></a></td>
+     <th scope="row"><a href="{{SITE_ROOT}}admin/db/reviews/group/">{% trans "Review Groups" %}</a></th>
+     <td class="count">{{count_review_groups}}</td>
+     <td class="td-right"><a class="addlink" href="{{SITE_ROOT}}admin/db/reviews/group/add/">{% trans "Add" %} <div class="rb-icon rb-icon-admin-add"></div></a></td>
     </tr>
     <tr>
-      <th scope="row"><a href="{{SITE_ROOT}}admin/db/reviews/defaultreviewer/">{% trans "Default Reviewers" %}</a></th>
-      <td class="count">{{count_default_reviewers}}</td>
-      <td class="td-right"><a class="addlink" href="{{SITE_ROOT}}admin/db/reviews/defaultreviewer/add/">{% trans "Add" %} <div class="rb-icon rb-icon-admin-add"></div></a></td>
+     <th scope="row"><a href="{{SITE_ROOT}}admin/db/reviews/defaultreviewer/">{% trans "Default Reviewers" %}</a></th>
+     <td class="count">{{count_default_reviewers}}</td>
+     <td class="td-right"><a class="addlink" href="{{SITE_ROOT}}admin/db/reviews/defaultreviewer/add/">{% trans "Add" %} <div class="rb-icon rb-icon-admin-add"></div></a></td>
     </tr>
     <tr>
-       <th scope="row"><a href="{{SITE_ROOT}}admin/db/scmtools/repository/">{% trans "Repositories" %}</a></th>
-       <td class="count">{{count_repository}}</td>
-       <td class="td-right"><a class="addlink" href="{{SITE_ROOT}}admin/db/scmtools/repository/add/">{% trans "Add" %} <div class="rb-icon rb-icon-admin-add"></div></a></td>
+     <th scope="row"><a href="{{SITE_ROOT}}admin/db/scmtools/repository/">{% trans "Repositories" %}</a></th>
+     <td class="count">{{count_repository}}</td>
+     <td class="td-right"><a class="addlink" href="{{SITE_ROOT}}admin/db/scmtools/repository/add/">{% trans "Add" %} <div class="rb-icon rb-icon-admin-add"></div></a></td>
+    </tr>
+    <tr>
+     <th scope="row"><a href="{{SITE_ROOT}}admin/db/notifications/webhooktarget/">{% trans "Webhooks" %}</a></th>
+     <td class="count">{{count_webhooks}}</td>
+     <td class="td-right"><a class="addlink" href="{{SITE_ROOT}}admin/db/notifications/webhooktarget/add/">{% trans "Add" %} <div class="rb-icon rb-icon-admin-add"></div></a></td>
+    </tr>
+    <tr>
+     <th scope="row"><a href="{{SITE_ROOT}}admin/db/hostingsvcs/hostingserviceaccount/">{% trans "Hosting Accounts" %}</a></th>
+     <td class="count">{{count_hosting_accounts}}</td>
+     <td class="td-right"><a class="addlink" href="{{SITE_ROOT}}admin/db/hostingsvcs/hostingserviceaccount/add/">{% trans "Add" %} <div class="rb-icon rb-icon-admin-add"></div></a></td>
     </tr>
    </tbody>
   </table>
-  </div>
+ </div>
 </div>
 
 <div class="admin-widget admin-sidebar" id="widget-system-info">
