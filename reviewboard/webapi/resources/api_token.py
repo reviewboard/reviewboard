@@ -30,6 +30,8 @@ class APITokenResource(WebAPIResource):
     name = 'api_token'
     verbose_name = 'API Token'
 
+    api_token_access_allowed = False
+
     added_in = '2.1'
 
     fields = {

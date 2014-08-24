@@ -2,6 +2,7 @@ from __future__ import unicode_literals
 
 from django.utils import six
 from djblets.db.query import get_object_or_none
+from djblets.webapi.errors import PERMISSION_DENIED
 from kgb import SpyAgency
 
 from reviewboard.site.models import LocalSite
@@ -40,6 +41,7 @@ class ResourceListTests(SpyAgency, ExtraDataListMixin, BaseWebAPITestCase,
     fixtures = ['test_users']
     sample_api_url = 'users/<username>/api-tokens/'
     resource = resources.api_token
+    test_api_token_access = False
 
     compare_item = _compare_item
 
@@ -67,6 +69,17 @@ class ResourceListTests(SpyAgency, ExtraDataListMixin, BaseWebAPITestCase,
         return (get_api_token_list_url(user, local_site_name),
                 api_token_list_mimetype,
                 items)
+
+    def test_get_with_api_token_auth_denied(self):
+        """Testing the GET users/<username>/api-tokens/ API denies access
+        when using token-based authentication
+        """
+        user = self._authenticate_basic_tests(with_webapi_token=True)
+        url = self.setup_basic_get_test(user, False, None, True)[0]
+
+        rsp = self.api_get(url, expected_status=403)
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
     #
     # HTTP POST tests
@@ -117,6 +130,17 @@ class ResourceListTests(SpyAgency, ExtraDataListMixin, BaseWebAPITestCase,
                          'Could not create a unique API token. '
                          'Please try again.')
 
+    def test_post_with_api_token_auth_denied(self):
+        """Testing the POST users/<username>/api-tokens/ API denies access
+        when using token-based authentication
+        """
+        user = self._authenticate_basic_tests(with_webapi_token=True)
+        url = self.setup_basic_post_test(user, False, None, True)[0]
+
+        rsp = self.api_get(url, expected_status=403)
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
+
 
 @six.add_metaclass(BasicTestsMetaclass)
 class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase,
@@ -125,6 +149,7 @@ class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase,
     fixtures = ['test_users']
     sample_api_url = 'users/<username>/api-tokens/<id>/'
     resource = resources.api_token
+    test_api_token_access = False
 
     compare_item = _compare_item
 
@@ -140,6 +165,17 @@ class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase,
 
     def check_delete_result(self, user, token_id):
         self.assertIsNone(get_object_or_none(WebAPIToken, pk=token_id))
+
+    def test_delete_with_api_token_auth_denied(self):
+        """Testing the DELETE users/<username>/api-tokens/<id>/ API denies
+        access when using token-based authentication
+        """
+        user = self._authenticate_basic_tests(with_webapi_token=True)
+        url = self.setup_basic_delete_test(user, False, None)[0]
+
+        rsp = self.api_get(url, expected_status=403)
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
     #
     # HTTP GET tests
@@ -161,6 +197,17 @@ class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase,
         self._testHttpCaching(get_api_token_item_url(token),
                               check_last_modified=True)
 
+    def test_get_with_api_token_auth_denied(self):
+        """Testing the GET users/<username>/api-tokens/<id>/ API denies access
+        when using token-based authentication
+        """
+        user = self._authenticate_basic_tests(with_webapi_token=True)
+        url = self.setup_basic_get_test(user, False, None)[0]
+
+        rsp = self.api_get(url, expected_status=403)
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
+
     #
     # HTTP PUT tests
     #
@@ -177,3 +224,14 @@ class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase,
 
     def check_put_result(self, user, item_rsp, token):
         self.compare_item(item_rsp, WebAPIToken.objects.get(pk=token.pk))
+
+    def test_put_with_api_token_auth_denied(self):
+        """Testing the PUT users/<username>/api-tokens/<id>/ API denies access
+        when using token-based authentication
+        """
+        user = self._authenticate_basic_tests(with_webapi_token=True)
+        url = self.setup_basic_put_test(user, False, None, True)[0]
+
+        rsp = self.api_get(url, expected_status=403)
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)

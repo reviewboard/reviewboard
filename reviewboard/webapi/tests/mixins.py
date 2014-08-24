@@ -46,6 +46,7 @@ class BasicTestsMetaclass(type):
     """
     def __new__(meta, name, bases, d):
         test_local_sites = d.get('test_local_sites', True)
+        test_api_token_access = d.get('test_api_token_access', True)
         resource = d['resource']
         is_singleton = False
         is_list = False
@@ -63,47 +64,66 @@ class BasicTestsMetaclass(type):
 
         if 'DELETE' in test_http_methods and not is_list:
             if 'DELETE' not in resource.allowed_methods:
-                mixin = BasicDeleteNotAllowedTestsMixin
+                mixins = (BasicDeleteNotAllowedTestsMixin,)
             elif test_local_sites:
-                mixin = BasicDeleteTestsWithLocalSiteMixin
-            else:
-                mixin = BasicDeleteTestsMixin
+                mixins = (BasicDeleteTestsWithLocalSiteMixin,)
 
-            bases = (mixin,) + bases
+                if test_api_token_access:
+                    mixins += (BasicDeleteTestsWithLocalSiteAndAPITokenMixin,)
+            else:
+                mixins = (BasicDeleteTestsMixin,)
+
+            bases = mixins + bases
 
         if 'GET' in test_http_methods:
             if is_list:
                 if test_local_sites:
-                    mixin = BasicGetListTestsWithLocalSiteMixin
+                    mixins = (BasicGetListTestsWithLocalSiteMixin,)
+
+                    if test_api_token_access:
+                        mixins += (
+                            BasicGetListTestsWithLocalSiteAndAPITokenMixin,
+                        )
                 else:
-                    mixin = BasicGetListTestsMixin
+                    mixins = (BasicGetListTestsMixin,)
             else:
                 if test_local_sites:
-                    mixin = BasicGetItemTestsWithLocalSiteMixin
-                else:
-                    mixin = BasicGetItemTestsMixin
+                    mixins = (BasicGetItemTestsWithLocalSiteMixin,)
 
-            bases = (mixin,) + bases
+                    if test_api_token_access:
+                        mixins += (
+                          BasicGetItemTestsWithLocalSiteAndAPITokenMixin,
+                        )
+                else:
+                    mixins = (BasicGetItemTestsMixin,)
+
+            bases = mixins + bases
 
         if 'POST' in test_http_methods and (is_list or is_singleton):
             if 'POST' not in resource.allowed_methods:
-                mixin = BasicPostNotAllowedTestsMixin
+                mixins = (BasicPostNotAllowedTestsMixin,)
             elif test_local_sites:
-                mixin = BasicPostTestsWithLocalSiteMixin
-            else:
-                mixin = BasicPostTestsMixin
+                mixins = (BasicPostTestsWithLocalSiteMixin,)
 
-            bases = (mixin,) + bases
+                if test_api_token_access:
+                    mixins += (BasicPostTestsWithLocalSiteAndAPITokenMixin,)
+            else:
+                mixins = (BasicPostTestsMixin,)
+
+            bases = mixins + bases
 
         if 'PUT' in test_http_methods and not is_list:
             if 'PUT' not in resource.allowed_methods:
-                mixin = BasicPutNotAllowedTestsMixin
+                mixins = (BasicPutNotAllowedTestsMixin,)
             elif test_local_sites:
-                mixin = BasicPutTestsWithLocalSiteMixin
-            else:
-                mixin = BasicPutTestsMixin
+                mixins = (BasicPutTestsWithLocalSiteMixin,)
 
-            bases = (mixin,) + bases
+                if test_api_token_access:
+                    mixins += (BasicPutTestsWithLocalSiteAndAPITokenMixin,)
+            else:
+                mixins = (BasicPutTestsMixin,)
+
+            bases = mixins + bases
 
         return super(BasicTestsMetaclass, meta).__new__(meta, name, bases, d)
 
@@ -217,6 +237,27 @@ class BasicDeleteTestsWithLocalSiteMixin(BasicDeleteTestsMixin):
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
+    def _setup_test_delete_with_site(self, **auth_kwargs):
+        self.load_fixtures(self.basic_delete_fixtures)
+
+        user = self._authenticate_basic_tests(
+            with_local_site=True,
+            with_admin=self.basic_delete_use_admin,
+            **auth_kwargs)
+
+        url, cb_args = self.setup_basic_delete_test(user, True,
+                                                    self.local_site_name)
+        self.assertTrue(url.startswith('/s/' + self.local_site_name))
+
+        return user, url, cb_args
+
+
+class BasicDeleteTestsWithLocalSiteAndAPITokenMixin(object):
+    """Adds basic HTTP DELETE unit tests with Local Sites and API tokens.
+
+    This adds additional tests for checking API token access for local
+    sites.
+    """
     @add_fixtures(['test_site'])
     @test_template
     def test_delete_with_restrict_site_and_allowed(self):
@@ -243,20 +284,6 @@ class BasicDeleteTestsWithLocalSiteMixin(BasicDeleteTestsMixin):
         rsp = self.api_delete(url, expected_status=403)
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
-
-    def _setup_test_delete_with_site(self, **auth_kwargs):
-        self.load_fixtures(self.basic_delete_fixtures)
-
-        user = self._authenticate_basic_tests(
-            with_local_site=True,
-            with_admin=self.basic_delete_use_admin,
-            **auth_kwargs)
-
-        url, cb_args = self.setup_basic_delete_test(user, True,
-                                                    self.local_site_name)
-        self.assertTrue(url.startswith('/s/' + self.local_site_name))
-
-        return user, url, cb_args
 
 
 class BasicDeleteNotAllowedTestsMixin(BasicTestsMixin):
@@ -355,6 +382,27 @@ class BasicGetItemTestsWithLocalSiteMixin(BasicGetItemTestsMixin):
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
+    def _setup_test_get_with_site(self, **auth_kwargs):
+        self.load_fixtures(self.basic_get_fixtures)
+
+        user = self._authenticate_basic_tests(
+            with_local_site=True,
+            with_admin=self.basic_get_use_admin,
+            **auth_kwargs)
+
+        url, mimetype, item = \
+            self.setup_basic_get_test(user, True, self.local_site_name)
+        self.assertTrue(url.startswith('/s/' + self.local_site_name))
+
+        return user, url, mimetype, item
+
+
+class BasicGetItemTestsWithLocalSiteAndAPITokenMixin(object):
+    """Adds HTTP GET tests for item resources with Local Sites and API tokens.
+
+    This adds additional tests for checking API token access for local
+    sites.
+    """
     @add_fixtures(['test_site'])
     @test_template
     def test_get_with_restrict_site_and_allowed(self):
@@ -390,20 +438,6 @@ class BasicGetItemTestsWithLocalSiteMixin(BasicGetItemTestsMixin):
         rsp = self.api_get(url, expected_status=403)
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
-
-    def _setup_test_get_with_site(self, **auth_kwargs):
-        self.load_fixtures(self.basic_get_fixtures)
-
-        user = self._authenticate_basic_tests(
-            with_local_site=True,
-            with_admin=self.basic_get_use_admin,
-            **auth_kwargs)
-
-        url, mimetype, item = \
-            self.setup_basic_get_test(user, True, self.local_site_name)
-        self.assertTrue(url.startswith('/s/' + self.local_site_name))
-
-        return user, url, mimetype, item
 
 
 class BasicGetListTestsMixin(BasicTestsMixin):
@@ -477,6 +511,28 @@ class BasicGetListTestsWithLocalSiteMixin(BasicGetListTestsMixin):
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
+    def _setup_test_get_list_with_site(self, **auth_kwargs):
+        self.load_fixtures(self.basic_get_fixtures)
+
+        user = self._authenticate_basic_tests(
+            with_local_site=True,
+            with_admin=self.basic_get_use_admin,
+            **auth_kwargs)
+
+        url, mimetype, items = self.setup_basic_get_test(user, True,
+                                                         self.local_site_name,
+                                                         True)
+        self.assertTrue(url.startswith('/s/' + self.local_site_name))
+
+        return user, url, mimetype, items
+
+
+class BasicGetListTestsWithLocalSiteAndAPITokenMixin(object):
+    """Adds HTTP GET tests for lists with Local Sites and API tokens.
+
+    This adds additional tests for checking API token access for local
+    sites.
+    """
     @add_fixtures(['test_site'])
     @test_template
     def test_get_with_restrict_site_and_allowed(self):
@@ -511,20 +567,6 @@ class BasicGetListTestsWithLocalSiteMixin(BasicGetListTestsMixin):
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
-    def _setup_test_get_list_with_site(self, **auth_kwargs):
-        self.load_fixtures(self.basic_get_fixtures)
-
-        user = self._authenticate_basic_tests(
-            with_local_site=True,
-            with_admin=self.basic_get_use_admin,
-            **auth_kwargs)
-
-        url, mimetype, items = self.setup_basic_get_test(user, True,
-                                                         self.local_site_name,
-                                                         True)
-        self.assertTrue(url.startswith('/s/' + self.local_site_name))
-
-        return user, url, mimetype, items
 
 
 class BasicPostTestsMixin(BasicTestsMixin):
@@ -597,6 +639,27 @@ class BasicPostTestsWithLocalSiteMixin(BasicPostTestsMixin):
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
+    def _setup_test_post_with_site(self, **auth_kwargs):
+        self.load_fixtures(self.basic_post_fixtures)
+
+        user = self._authenticate_basic_tests(
+            with_local_site=True,
+            with_admin=self.basic_post_use_admin,
+            **auth_kwargs)
+
+        url, mimetype, post_data, cb_args = \
+            self.setup_basic_post_test(user, True, self.local_site_name, True)
+        self.assertTrue(url.startswith('/s/' + self.local_site_name))
+
+        return user, url, mimetype, post_data, cb_args
+
+
+class BasicPostTestsWithLocalSiteAndAPITokenMixin(object):
+    """Adds HTTP POST tests with Local Sites and API tokens.
+
+    This adds additional tests for checking API token access for local
+    sites.
+    """
     @add_fixtures(['test_site'])
     @test_template
     def test_post_with_restrict_site_and_allowed(self):
@@ -628,20 +691,6 @@ class BasicPostTestsWithLocalSiteMixin(BasicPostTestsMixin):
         self._close_file_handles(post_data)
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
-
-    def _setup_test_post_with_site(self, **auth_kwargs):
-        self.load_fixtures(self.basic_post_fixtures)
-
-        user = self._authenticate_basic_tests(
-            with_local_site=True,
-            with_admin=self.basic_post_use_admin,
-            **auth_kwargs)
-
-        url, mimetype, post_data, cb_args = \
-            self.setup_basic_post_test(user, True, self.local_site_name, True)
-        self.assertTrue(url.startswith('/s/' + self.local_site_name))
-
-        return user, url, mimetype, post_data, cb_args
 
 
 class BasicPostNotAllowedTestsMixin(BasicTestsMixin):
@@ -751,6 +800,27 @@ class BasicPutTestsWithLocalSiteMixin(BasicPutTestsMixin):
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
+    def _setup_test_put_with_site(self, **auth_kwargs):
+        self.load_fixtures(self.basic_put_fixtures)
+
+        user = self._authenticate_basic_tests(
+            with_local_site=True,
+            with_admin=self.basic_put_use_admin,
+            **auth_kwargs)
+
+        url, mimetype, put_data, item, cb_args = \
+            self.setup_basic_put_test(user, True, self.local_site_name, True)
+        self.assertTrue(url.startswith('/s/' + self.local_site_name))
+
+        return user, url, mimetype, put_data, item, cb_args
+
+
+class BasicPutTestsWithLocalSiteAndAPITokenMixin(object):
+    """Adds HTTP PUT tests with Local Sites and API tokens.
+
+    This adds additional tests for checking API token access for local
+    sites.
+    """
     @add_fixtures(['test_site'])
     @test_template
     def test_put_with_restrict_site_and_allowed(self):
@@ -784,19 +854,6 @@ class BasicPutTestsWithLocalSiteMixin(BasicPutTestsMixin):
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
-    def _setup_test_put_with_site(self, **auth_kwargs):
-        self.load_fixtures(self.basic_put_fixtures)
-
-        user = self._authenticate_basic_tests(
-            with_local_site=True,
-            with_admin=self.basic_put_use_admin,
-            **auth_kwargs)
-
-        url, mimetype, put_data, item, cb_args = \
-            self.setup_basic_put_test(user, True, self.local_site_name, True)
-        self.assertTrue(url.startswith('/s/' + self.local_site_name))
-
-        return user, url, mimetype, put_data, item, cb_args
 
 
 class BasicPutNotAllowedTestsMixin(BasicTestsMixin):

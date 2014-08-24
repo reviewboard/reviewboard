@@ -26,6 +26,8 @@ class WebAPIResource(DjbletsWebAPIResource):
 
     mimetype_vendor = 'reviewboard.org'
 
+    api_token_access_allowed = True
+
     @property
     def policy_id(self):
         """Returns the ID used for access policies.
@@ -40,6 +42,9 @@ class WebAPIResource(DjbletsWebAPIResource):
         webapi_token = self._get_api_token_for_request(request)
 
         if webapi_token:
+            if not self.api_token_access_allowed:
+                return PERMISSION_DENIED
+
             policy = webapi_token.policy
             resources_policy = policy.get('resources')
 
