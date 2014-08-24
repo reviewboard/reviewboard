@@ -410,7 +410,8 @@ class PerforceTool(SCMTool):
         return PerforceDiffParser(data)
 
     @classmethod
-    def accept_certificate(cls, path, local_site_name=None, certificate=None):
+    def accept_certificate(cls, path, username=None, password=None,
+                           local_site_name=None, certificate=None):
         """Accepts the certificate for the given repository path."""
         args = ['p4', '-p', path, 'trust', '-i', certificate.fingerprint]
         p = subprocess.Popen(args, stdout=subprocess.PIPE,
