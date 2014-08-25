@@ -6,7 +6,6 @@ import os
 
 from django.conf import settings
 from django.contrib.auth.models import AnonymousUser, User
-from django.core.exceptions import ValidationError
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.template import Context, Template
 from django.utils import six
@@ -27,6 +26,7 @@ from reviewboard.reviews.models import (Comment,
                                         Review,
                                         Screenshot)
 from reviewboard.scmtools.core import Commit
+from reviewboard.scmtools.errors import ChangeNumberInUseError
 from reviewboard.scmtools.models import Repository, Tool
 from reviewboard.site.models import LocalSite
 from reviewboard.site.urlresolvers import local_site_reverse
@@ -67,9 +67,9 @@ class ReviewRequestManagerTests(TestCase):
         self.assertEqual(review_request.local_id, 1)
 
     @add_fixtures(['test_scmtools'])
-    def test_create_with_site_and_commit_id_not_unique(self):
+    def test_create_with_site_and_commit_id_conflicts_review_request(self):
         """Testing ReviewRequest.objects.create with LocalSite and
-        commit ID that is not unique
+        commit ID that conflicts with a review request
         """
         user = User.objects.get(username='doc')
         local_site = LocalSite.objects.create(name='test')
@@ -82,7 +82,36 @@ class ReviewRequestManagerTests(TestCase):
 
         # This one will yell.
         self.assertRaises(
-            ValidationError,
+            ChangeNumberInUseError,
+            lambda: ReviewRequest.objects.create(
+                user, repository,
+                commit_id='123',
+                local_site=local_site))
+
+        # Make sure that entry doesn't exist in the database.
+        self.assertEqual(local_site.review_requests.count(), 1)
+
+    @add_fixtures(['test_scmtools'])
+    def test_create_with_site_and_commit_id_conflicts_draft(self):
+        """Testing ReviewRequest.objects.create with LocalSite and
+        commit ID that conflicts with a draft
+        """
+        user = User.objects.get(username='doc')
+        local_site = LocalSite.objects.create(name='test')
+        repository = self.create_repository()
+
+        # This one should be fine.
+        existing_review_request = ReviewRequest.objects.create(
+            user, repository, local_site=local_site)
+        existing_draft = ReviewRequestDraft.create(existing_review_request)
+        existing_draft.commit_id = '123'
+        existing_draft.save()
+
+        self.assertEqual(local_site.review_requests.count(), 1)
+
+        # This one will yell.
+        self.assertRaises(
+            ChangeNumberInUseError,
             lambda: ReviewRequest.objects.create(
                 user, repository,
                 commit_id='123',

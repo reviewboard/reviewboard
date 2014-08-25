@@ -20,7 +20,8 @@ from reviewboard.scmtools.errors import InvalidChangeNumberError
 from reviewboard.webapi.base import WebAPIResource
 from reviewboard.webapi.decorators import webapi_check_local_site
 from reviewboard.webapi.encoder import status_to_string
-from reviewboard.webapi.errors import INVALID_CHANGE_NUMBER, PUBLISH_ERROR
+from reviewboard.webapi.errors import (COMMIT_ID_ALREADY_EXISTS,
+                                       INVALID_CHANGE_NUMBER, PUBLISH_ERROR)
 from reviewboard.webapi.mixins import MarkdownFieldsMixin
 from reviewboard.webapi.resources import resources
 
@@ -262,6 +263,9 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
 
     @webapi_check_local_site
     @webapi_login_required
+    @webapi_response_errors(COMMIT_ID_ALREADY_EXISTS, DOES_NOT_EXIST,
+                            INVALID_CHANGE_NUMBER, INVALID_FORM_DATA,
+                            NOT_LOGGED_IN, PERMISSION_DENIED, PUBLISH_ERROR)
     @webapi_request_fields(
         optional=CREATE_UPDATE_OPTIONAL_FIELDS,
         allow_unknown=True
@@ -285,6 +289,9 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
 
     @webapi_check_local_site
     @webapi_login_required
+    @webapi_response_errors(COMMIT_ID_ALREADY_EXISTS, DOES_NOT_EXIST,
+                            INVALID_CHANGE_NUMBER, INVALID_FORM_DATA,
+                            NOT_LOGGED_IN, PERMISSION_DENIED, PUBLISH_ERROR)
     @webapi_request_fields(
         optional=CREATE_UPDATE_OPTIONAL_FIELDS,
         allow_unknown=True
@@ -324,16 +331,39 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
         except ReviewRequest.DoesNotExist:
             return DOES_NOT_EXIST
 
+        if kwargs.get('commit_id') == '':
+            kwargs['commit_id'] = None
+
+        commit_id = kwargs.get('commit_id', None)
+
         try:
             draft = self.prepare_draft(request, review_request)
         except PermissionDenied:
             return self._no_access_error(request.user)
 
+        if (commit_id and commit_id != review_request.commit_id and
+            commit_id != draft.commit_id):
+            # Check to make sure the new commit ID isn't being used already
+            # in another review request or draft.
+            repository = review_request.repository
+
+            existing_review_request = ReviewRequest.objects.filter(
+                commit_id=commit_id,
+                repository=repository)
+
+            if (existing_review_request and
+                existing_review_request != review_request):
+                return COMMIT_ID_ALREADY_EXISTS
+
+            existing_draft = ReviewRequestDraft.objects.filter(
+                commit_id=commit_id,
+                review_request__repository=repository)
+
+            if existing_draft and existing_draft != draft:
+                return COMMIT_ID_ALREADY_EXISTS
+
         modified_objects = []
         invalid_fields = {}
-
-        if kwargs.get('commit_id') == '':
-            kwargs['commit_id'] = None
 
         old_rich_text = draft.rich_text
         old_changedesc_rich_text = (draft.changedesc_id is not None and
@@ -351,8 +381,6 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
                     invalid_fields[field_name] = invalid
                 elif field_modified_objects:
                     modified_objects += field_modified_objects
-
-        commit_id = kwargs.get('commit_id', None)
 
         if commit_id and update_from_commit_id:
             try:
