@@ -1,13 +1,15 @@
 from __future__ import unicode_literals
 
 from django.core.exceptions import ObjectDoesNotExist
+from django.utils import six
 from djblets.webapi.decorators import webapi_response_errors
 from djblets.webapi.errors import DOES_NOT_EXIST
 
+from reviewboard.scmtools.errors import SCMError
 from reviewboard.webapi.base import WebAPIResource
 from reviewboard.webapi.decorators import (webapi_check_login_required,
                                            webapi_check_local_site)
-from reviewboard.webapi.errors import REPO_NOT_IMPLEMENTED
+from reviewboard.webapi.errors import REPO_INFO_ERROR, REPO_NOT_IMPLEMENTED
 from reviewboard.webapi.resources import resources
 
 
@@ -39,7 +41,8 @@ class RepositoryBranchesResource(WebAPIResource):
 
     @webapi_check_local_site
     @webapi_check_login_required
-    @webapi_response_errors(DOES_NOT_EXIST, REPO_NOT_IMPLEMENTED)
+    @webapi_response_errors(DOES_NOT_EXIST, REPO_INFO_ERROR,
+                            REPO_NOT_IMPLEMENTED)
     def get(self, request, *args, **kwargs):
         """Retrieves an array of the branches in a repository."""
         try:
@@ -61,6 +64,8 @@ class RepositoryBranchesResource(WebAPIResource):
             return 200, {
                 self.item_result_key: branches,
             }
+        except SCMError as e:
+            return REPO_INFO_ERROR.with_message(six.text_type(e))
         except NotImplementedError:
             return REPO_NOT_IMPLEMENTED
 
