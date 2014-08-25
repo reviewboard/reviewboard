@@ -585,11 +585,16 @@ class FileAttachmentsField(BuiltinLocalsFieldMixin, BaseCommaEditableField):
         template = get_template(self.thumbnail_template)
         review_request = self.review_request_details.get_review_request()
 
+        if review_request.local_site:
+            local_site_name = review_request.local_site.name
+        else:
+            local_site_name = None
+
         return ''.join([
             template.render(Context({
                 'file': self.file_attachment_id_map[pk],
                 'review_request': review_request,
-                'local_site_name': review_request.local_site.name,
+                'local_site_name': local_site_name,
             }))
             for caption, filename, pk in values
         ])
