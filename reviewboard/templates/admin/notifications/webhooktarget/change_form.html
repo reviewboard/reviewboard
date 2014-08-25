@@ -1,0 +1,16 @@
+{% extends "admin/change_form.html" %}
+{% load compressed %}
+
+{% block scripts-post %}
+{{block.super}}
+{%  compressed_js "webhooks-form" %}
+
+<script>
+$(document).ready(function() {
+    var view = new RB.WebhookFormView({
+        el: $('#webhooktarget_form')
+    });
+    view.render();
+});
+</script>
+{% endblock %}

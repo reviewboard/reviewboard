@@ -3,13 +3,20 @@ from __future__ import unicode_literals
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.core import mail
+from django.template import TemplateSyntaxError
+from django.utils.six.moves.urllib.request import urlopen
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.testing.decorators import add_fixtures
+from kgb import SpyAgency
 
 from reviewboard.admin.siteconfig import load_site_config
 from reviewboard.notifications.email import (build_email_address,
                                              get_email_address_for_user,
                                              get_email_addresses_for_group)
+from reviewboard.notifications.models import WebHookTarget
+from reviewboard.notifications.webhooks import (FakeHTTPRequest,
+                                                dispatch_webhook_event,
+                                                render_custom_content)
 from reviewboard.reviews.models import Group, Review, ReviewRequest
 from reviewboard.site.models import LocalSite
 from reviewboard.testing import TestCase
@@ -411,3 +418,349 @@ class ReviewRequestEmailTests(TestCase, EmailTestHelper):
 
     def _get_sender(self, user):
         return build_email_address(user.get_full_name(), self.sender)
+
+
+class WebHookCustomContentTests(TestCase):
+    """Unit tests for render_custom_content."""
+    def test_with_valid_template(self):
+        """Tests render_custom_content with a valid template"""
+        s = render_custom_content(
+            '{% if mybool %}{{s1}}{% else %}{{s2}}{% endif %}',
+            {
+                'mybool': True,
+                's1': 'Hi!',
+                's2': 'Bye!',
+            })
+
+        self.assertEqual(s, 'Hi!')
+
+    def test_with_blocked_block_tag(self):
+        """Tests render_custom_content with blocked {% block %}"""
+        with self.assertRaisesMessage(TemplateSyntaxError,
+                                      "Invalid block tag: 'block'"):
+            render_custom_content('{% block foo %}{% endblock %})')
+
+    def test_with_blocked_debug_tag(self):
+        """Tests render_custom_content with blocked {% debug %}"""
+        with self.assertRaisesMessage(TemplateSyntaxError,
+                                      "Invalid block tag: 'debug'"):
+            render_custom_content('{% debug %}')
+
+    def test_with_blocked_extends_tag(self):
+        """Tests render_custom_content with blocked {% extends %}"""
+        with self.assertRaisesMessage(TemplateSyntaxError,
+                                      "Invalid block tag: 'extends'"):
+            render_custom_content('{% extends "base.html" %}')
+
+    def test_with_blocked_include_tag(self):
+        """Tests render_custom_content with blocked {% include %}"""
+        with self.assertRaisesMessage(TemplateSyntaxError,
+                                      "Invalid block tag: 'include'"):
+            render_custom_content('{% include "base.html" %}')
+
+    def test_with_blocked_load_tag(self):
+        """Tests render_custom_content with blocked {% load %}"""
+        with self.assertRaisesMessage(TemplateSyntaxError,
+                                      "Invalid block tag: 'load'"):
+            render_custom_content('{% load i18n %}')
+
+    def test_with_blocked_ssi_tag(self):
+        """Tests render_custom_content with blocked {% ssi %}"""
+        with self.assertRaisesMessage(TemplateSyntaxError,
+                                      "Invalid block tag: 'ssi'"):
+            render_custom_content('{% ssi "foo.html" %}')
+
+    def test_with_unknown_vars(self):
+        """Tests render_custom_content with unknown variables"""
+        s = render_custom_content('{{settings.DEBUG}};{{settings.DATABASES}}')
+        self.assertEqual(s, ';')
+
+
+class WebHookDispatchTests(SpyAgency, TestCase):
+    """Unit tests for dispatching webhooks."""
+    ENDPOINT_URL = 'http://example.com/endpoint/'
+
+    def test_dispatch_custom_payload(self):
+        """Test dispatch_webhook_event with custom payload"""
+        custom_content = (
+            '{\n'
+            '{% for i in items %}'
+            '  "item{{i}}": true{% if not forloop.last %},{% endif %}\n'
+            '{% endfor %}'
+            '}')
+        handler = WebHookTarget(events='my-event',
+                                url=self.ENDPOINT_URL,
+                                encoding=WebHookTarget.ENCODING_JSON,
+                                use_custom_content=True,
+                                custom_content=custom_content)
+
+        self._test_dispatch(
+            handler,
+            'my-event',
+            {
+                'items': [1, 2, 3],
+            },
+            'application/json',
+            ('{\n'
+             '  "item1": true,\n'
+             '  "item2": true,\n'
+             '  "item3": true\n'
+             '}'))
+
+    def test_dispatch_form_data(self):
+        """Test dispatch_webhook_event with Form Data payload"""
+        handler = WebHookTarget(events='my-event',
+                                url=self.ENDPOINT_URL,
+                                encoding=WebHookTarget.ENCODING_FORM_DATA)
+
+        self._test_dispatch(
+            handler,
+            'my-event',
+            {
+                'items': [1, 2, 3],
+            },
+            'application/x-www-form-urlencoded',
+            'payload=%7B%22items%22%3A+%5B1%2C+2%2C+3%5D%7D')
+
+    def test_dispatch_json(self):
+        """Test dispatch_webhook_event with JSON payload"""
+        handler = WebHookTarget(events='my-event',
+                                url=self.ENDPOINT_URL,
+                                encoding=WebHookTarget.ENCODING_JSON)
+
+        self._test_dispatch(
+            handler,
+            'my-event',
+            {
+                'items': [1, 2, 3],
+            },
+            'application/json',
+            '{"items": [1, 2, 3]}')
+
+    def test_dispatch_xml(self):
+        """Test dispatch_webhook_event with XML payload"""
+        handler = WebHookTarget(events='my-event',
+                                url=self.ENDPOINT_URL,
+                                encoding=WebHookTarget.ENCODING_XML)
+
+        self._test_dispatch(
+            handler,
+            'my-event',
+            {
+                'items': [1, 2, 3],
+            },
+            'application/xml',
+            ('<?xml version="1.0" encoding="utf-8"?>\n'
+             '<rsp>\n'
+             ' <items>\n'
+             '  <array>\n'
+             '   <item>1</item>\n'
+             '   <item>2</item>\n'
+             '   <item>3</item>\n'
+             '  </array>\n'
+             ' </items>\n'
+             '</rsp>'))
+
+    def test_dispatch_with_secret(self):
+        """Test dispatch_webhook_event with HMAC secret"""
+        handler = WebHookTarget(events='my-event',
+                                url=self.ENDPOINT_URL,
+                                encoding=WebHookTarget.ENCODING_JSON,
+                                secret='foobar123')
+
+        self._test_dispatch(
+            handler,
+            'my-event',
+            {
+                'items': [1, 2, 3],
+            },
+            'application/json',
+            '{"items": [1, 2, 3]}',
+            'sha1=cf27ad0de6b5f0c4e77e45bec9f4846e')
+
+    def _test_dispatch(self, handler, event, payload, expected_content_type,
+                       expected_data, expected_sig_header=None):
+        def _urlopen(request):
+            self.assertEqual(request.get_full_url(), self.ENDPOINT_URL)
+            self.assertEqual(request.headers['X-reviewboard-event'], event)
+            self.assertEqual(request.headers['Content-type'],
+                             expected_content_type)
+            self.assertEqual(request.data, expected_data)
+            self.assertEqual(request.headers['Content-length'],
+                             len(expected_data))
+
+            if expected_sig_header:
+                self.assertIn('X-hub-signature', request.headers)
+                self.assertEqual(request.headers['X-hub-signature'],
+                                 expected_sig_header)
+            else:
+                self.assertNotIn('X-hub-signature', request.headers)
+
+        self.spy_on(urlopen, call_fake=_urlopen)
+
+        request = FakeHTTPRequest(None)
+        dispatch_webhook_event(request, [handler], event, payload)
+
+
+class WebHookTargetManagerTests(TestCase):
+    """Unit tests for WebHookTargetManager."""
+    ENDPOINT_URL = 'http://example.com/endpoint/'
+
+    def test_for_event(self):
+        """Testing WebHookTargetManager.for_event"""
+        # These should not match.
+        WebHookTarget.objects.create(
+            events='event1',
+            url=self.ENDPOINT_URL,
+            enabled=True,
+            apply_to=WebHookTarget.APPLY_TO_ALL)
+
+        WebHookTarget.objects.create(
+            events='event3',
+            url=self.ENDPOINT_URL,
+            enabled=False,
+            apply_to=WebHookTarget.APPLY_TO_ALL)
+
+        # These should match.
+        target1 = WebHookTarget.objects.create(
+            events='event2,event3',
+            url=self.ENDPOINT_URL,
+            enabled=True,
+            apply_to=WebHookTarget.APPLY_TO_ALL)
+
+        target2 = WebHookTarget.objects.create(
+            events='*',
+            url=self.ENDPOINT_URL,
+            enabled=True,
+            apply_to=WebHookTarget.APPLY_TO_ALL)
+
+        targets = WebHookTarget.objects.for_event('event3')
+        self.assertEqual(targets, [target1, target2])
+
+    def test_for_event_with_local_site(self):
+        """Testing WebHookTargetManager.for_event with Local Sites"""
+        site = LocalSite.objects.create(name='test-site')
+
+        # These should not match.
+        WebHookTarget.objects.create(
+            events='event1',
+            url=self.ENDPOINT_URL,
+            enabled=True,
+            apply_to=WebHookTarget.APPLY_TO_ALL)
+
+        WebHookTarget.objects.create(
+            events='event1',
+            url=self.ENDPOINT_URL,
+            enabled=False,
+            local_site=site,
+            apply_to=WebHookTarget.APPLY_TO_ALL)
+
+        # This should match.
+        target = WebHookTarget.objects.create(
+            events='event1,event2',
+            url=self.ENDPOINT_URL,
+            enabled=True,
+            local_site=site,
+            apply_to=WebHookTarget.APPLY_TO_ALL)
+
+        targets = WebHookTarget.objects.for_event('event1',
+                                                  local_site_id=site.pk)
+        self.assertEqual(targets, [target])
+
+    @add_fixtures(['test_scmtools'])
+    def test_for_event_with_repository(self):
+        """Testing WebHookTargetManager.for_event with repository"""
+        repository1 = self.create_repository()
+        repository2 = self.create_repository()
+
+        # These should not match.
+        unused_target1 = WebHookTarget.objects.create(
+            events='event1',
+            url=self.ENDPOINT_URL,
+            enabled=False,
+            apply_to=WebHookTarget.APPLY_TO_SELECTED_REPOS)
+        unused_target1.repositories.add(repository2)
+
+        unused_target2 = WebHookTarget.objects.create(
+            events='event1',
+            url=self.ENDPOINT_URL,
+            enabled=False,
+            apply_to=WebHookTarget.APPLY_TO_SELECTED_REPOS)
+        unused_target2.repositories.add(repository1)
+
+        WebHookTarget.objects.create(
+            events='event3',
+            url=self.ENDPOINT_URL,
+            enabled=True,
+            apply_to=WebHookTarget.APPLY_TO_ALL)
+
+        WebHookTarget.objects.create(
+            events='event1',
+            url=self.ENDPOINT_URL,
+            enabled=True,
+            apply_to=WebHookTarget.APPLY_TO_NO_REPOS)
+
+        # These should match.
+        target1 = WebHookTarget.objects.create(
+            events='event1,event2',
+            url=self.ENDPOINT_URL,
+            enabled=True,
+            apply_to=WebHookTarget.APPLY_TO_ALL)
+
+        target2 = WebHookTarget.objects.create(
+            events='event1',
+            url=self.ENDPOINT_URL,
+            enabled=True,
+            apply_to=WebHookTarget.APPLY_TO_SELECTED_REPOS)
+        target2.repositories.add(repository1)
+
+        targets = WebHookTarget.objects.for_event('event1',
+                                                  repository_id=repository1.pk)
+        self.assertEqual(targets, [target1, target2])
+
+    @add_fixtures(['test_scmtools'])
+    def test_for_event_with_no_repository(self):
+        """Testing WebHookTargetManager.for_event with no repository"""
+        repository = self.create_repository()
+
+        # These should not match.
+        unused_target1 = WebHookTarget.objects.create(
+            events='event1',
+            url=self.ENDPOINT_URL,
+            enabled=True,
+            apply_to=WebHookTarget.APPLY_TO_SELECTED_REPOS)
+        unused_target1.repositories.add(repository)
+
+        WebHookTarget.objects.create(
+            events='event1',
+            url=self.ENDPOINT_URL,
+            enabled=False,
+            apply_to=WebHookTarget.APPLY_TO_NO_REPOS)
+
+        WebHookTarget.objects.create(
+            events='event2',
+            url=self.ENDPOINT_URL,
+            enabled=True,
+            apply_to=WebHookTarget.APPLY_TO_NO_REPOS)
+
+        # These should match.
+        target1 = WebHookTarget.objects.create(
+            events='event1,event2',
+            url=self.ENDPOINT_URL,
+            enabled=True,
+            apply_to=WebHookTarget.APPLY_TO_ALL)
+
+        target2 = WebHookTarget.objects.create(
+            events='event1',
+            url=self.ENDPOINT_URL,
+            enabled=True,
+            apply_to=WebHookTarget.APPLY_TO_NO_REPOS)
+
+        targets = WebHookTarget.objects.for_event('event1')
+        self.assertEqual(targets, [target1, target2])
+
+    def test_for_event_with_all_events(self):
+        """Testing WebHookTargetManager.for_event with ALL_EVENTS"""
+        with self.assertRaisesMessage(ValueError,
+                                      '"*" is not a valid event choice'):
+            WebHookTarget.objects.for_event(WebHookTarget.ALL_EVENTS)

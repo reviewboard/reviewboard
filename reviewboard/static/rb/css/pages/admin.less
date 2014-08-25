@@ -376,6 +376,22 @@ textarea {
 }
 
 
+.form-row ul {
+  list-style: none;
+}
+
+.form-row .CodeMirror {
+  /*
+   * Optimistically, make this look like a text field. This looks fine
+   * on Chrome, but terribly on Firefox, so we don't bother with the
+   * Firefox equivalent.
+   */
+  -webkit-appearance: textfield;
+
+  border: 1px #DDD solid;
+}
+
+
 /****************************************************************************
  * Messages and errors
  ****************************************************************************/
@@ -1253,4 +1269,19 @@ table#change-history {
     }
   }
 }
-// vim: set et ts=2 sw=2:
+
+
+/***************************************************************************
+ * Webhook page
+ ***************************************************************************/
+
+#webhooktarget_form {
+  /*
+   * Hide some rows by default. These will be shown if other options are
+   * enabled.
+   */
+  .field-repositories,
+  .field-custom_content {
+    display: none;
+  }
+}

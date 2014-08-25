@@ -5,10 +5,14 @@ import logging
 
 from django.contrib.sites.models import Site
 from django.http.request import HttpRequest
+from django.utils.six.moves.urllib.parse import urlencode
 from django.utils.six.moves.urllib.request import Request, urlopen
+from django.template import Context, Lexer, Parser
 from djblets.siteconfig.models import SiteConfiguration
-from djblets.webapi.encoders import BasicAPIEncoder, JSONEncoderAdapter
+from djblets.webapi.encoders import (BasicAPIEncoder, JSONEncoderAdapter,
+                                     XMLEncoderAdapter)
 
+from reviewboard import get_package_version
 from reviewboard.notifications.models import WebHookTarget
 from reviewboard.reviews.models import Review, ReviewRequest
 from reviewboard.reviews.signals import (review_request_closed,
@@ -48,36 +52,94 @@ class FakeHTTPRequest(HttpRequest):
         return self._host
 
 
-def get_handlers(event, local_site):
-    """Get a list of matching webhook handlers for the given event."""
-    return [
-        target
-        for target in WebHookTarget.objects.filter(local_site=local_site,
-                                                   enabled=True)
-        if event in target.handlers or '*' in target.handlers
-    ]
+class CustomPayloadParser(Parser):
+    """A custom template parser that blocks certain tags.
+
+    This extends Django's Parser class for template parsing, and removes
+    some built-in tags, in order to prevent mailicious use.
+    """
+    BLACKLISTED_TAGS = ('block', 'debug', 'extends', 'include', 'load', 'ssi')
+
+    def __init__(self, *args, **kwargs):
+        super(CustomPayloadParser, self).__init__(*args, **kwargs)
+
+        # Remove some built-in tags that we don't want to expose.
+        # There are no built-in filters we have to worry about.
+        for tag_name in self.BLACKLISTED_TAGS:
+            try:
+                del self.tags[tag_name]
+            except KeyError:
+                pass
 
 
-def dispatch(request, handlers, event, payload):
-    """Dispatch the given event and payload to the given handlers."""
+def render_custom_content(body, context_data={}):
+    """Renders custom content for the payload using Django templating.
+
+    This will take the custom payload content template provided by
+    the user and render it using a stripped down version of Django's
+    templating system.
+
+    In order to keep the payload safe, we use a limited Context along with a
+    custom Parser that blocks certain template tags. This gives us
+    tags like {% for %} and {% if %}, but blacklists tags like {% load %}
+    and {% include %}.
+    """
+    lexer = Lexer(body, origin=None)
+    parser = CustomPayloadParser(lexer.tokenize())
+    nodes = parser.parse()
+
+    return nodes.render(Context(context_data))
+
+
+def dispatch_webhook_event(request, webhook_targets, event, payload):
+    """Dispatch the given event and payload to the given webhook targets."""
     encoder = BasicAPIEncoder()
-    adapter = JSONEncoderAdapter(encoder)
-    body = adapter.encode(payload, request=request)
-    body = body.encode('utf-8')
+    bodies = {}
 
-    headers = {
-        'X-ReviewBoard-Event': event,
-        'Content-Type': 'application/json',
-        'Content-Length': len(body),
-    }
+    for webhook_target in webhook_targets:
+        if webhook_target.use_custom_content:
+            body = render_custom_content(webhook_target.custom_content,
+                                         payload)
+        else:
+            encoding = webhook_target.encoding
 
-    for handler in handlers:
-        signer = hmac.new(handler.secret.encode('utf-8'), body)
-        headers['X-ReviewBoard-Signature'] = signer.hexdigest()
+            if encoding not in bodies:
+                if encoding == webhook_target.ENCODING_JSON:
+                    adapter = JSONEncoderAdapter(encoder)
+                    body = adapter.encode(payload, request=request)
+                elif encoding == webhook_target.ENCODING_XML:
+                    adapter = XMLEncoderAdapter(encoder)
+                    body = adapter.encode(payload, request=request)
+                elif encoding == webhook_target.ENCODING_FORM_DATA:
+                    adapter = JSONEncoderAdapter(encoder)
+                    body = urlencode({
+                        'payload': adapter.encode(payload, request=request),
+                    })
+                else:
+                    logging.error('Unexpected WebHookTarget encoding "%s" for '
+                                  'ID %s',
+                                  encoding, webhook_target.pk)
+                    continue
+
+                body = body.encode('utf-8')
+                bodies[encoding] = body
+            else:
+                body = bodies[encoding]
+
+        headers = {
+            'X-ReviewBoard-Event': event,
+            'Content-Type': webhook_target.encoding,
+            'Content-Length': len(body),
+            'User-Agent': 'ReviewBoard-WebHook/%s' % get_package_version(),
+        }
+
+        if webhook_target.secret:
+            signer = hmac.new(webhook_target.secret.encode('utf-8'), body)
+            headers['X-Hub-Signature'] = 'sha1=%s' % signer.hexdigest()
 
         logging.info('Dispatching webhook for event %s to %s',
-                     event, handler.url)
-        urlopen(Request(handler.url, body, headers))
+                     event, webhook_target.url)
+        urlopen(Request(webhook_target.url, body, headers))
 
 
 def _serialize_review(review, request):
@@ -102,12 +164,12 @@ def _serialize_review(review, request):
     }
 
 
-def review_request_closed_cb(sender, user, review_request, type,
-                             **kwargs):
+def review_request_closed_cb(sender, user, review_request, type, **kwargs):
     event = 'review_request_closed'
-    handlers = get_handlers(event, review_request.local_site)
+    webhook_targets = WebHookTarget.objects.for_event(
+        event, review_request.local_site_id, review_request.repository_id)
 
-    if handlers:
+    if webhook_targets:
         request = FakeHTTPRequest(user)
         payload = {
             'event': event,
@@ -118,15 +180,16 @@ def review_request_closed_cb(sender, user, review_request, type,
                 review_request, request=request),
         }
 
-        dispatch(request, handlers, event, payload)
+        dispatch_webhook_event(request, webhook_targets, event, payload)
 
 
 def review_request_published_cb(sender, user, review_request, changedesc,
                                 **kwargs):
     event = 'review_request_published'
-    handlers = get_handlers(event, review_request.local_site)
+    webhook_targets = WebHookTarget.objects.for_event(
+        event, review_request.local_site_id, review_request.repository_id)
 
-    if handlers:
+    if webhook_targets:
         request = FakeHTTPRequest(user)
         payload = {
             'event': event,
@@ -139,14 +202,15 @@ def review_request_published_cb(sender, user, review_request, changedesc,
             payload['change'] = resources.change.serialize_object(
                 changedesc, request=request),
 
-        dispatch(request, handlers, event, payload)
+        dispatch_webhook_event(request, webhook_targets, event, payload)
 
 
 def review_request_reopened_cb(sender, user, review_request, **kwargs):
     event = 'review_request_reopened'
-    handlers = get_handlers(event, review_request.local_site)
+    webhook_targets = WebHookTarget.objects.for_event(
+        event, review_request.local_site_id, review_request.repository_id)
 
-    if handlers:
+    if webhook_targets:
         request = FakeHTTPRequest(user)
         payload = {
             'event': event,
@@ -156,29 +220,33 @@ def review_request_reopened_cb(sender, user, review_request, **kwargs):
                 review_request, request=request),
         }
 
-        dispatch(request, handlers, event, payload)
+        dispatch_webhook_event(request, webhook_targets, event, payload)
 
 
 def review_published_cb(sender, user, review, **kwargs):
     event = 'review_published'
-    handlers = get_handlers(event, review.review_request.local_site)
+    review_request = review.review_request
+    webhook_targets = WebHookTarget.objects.for_event(
+        event, review_request.local_site_id, review_request.repository_id)
 
-    if handlers:
+    if webhook_targets:
         request = FakeHTTPRequest(user)
         payload = _serialize_review(review, request)
         payload['event'] = event
-        dispatch(request, handlers, event, payload)
+        dispatch_webhook_event(request, webhook_targets, event, payload)
 
 
 def reply_published_cb(sender, user, reply, **kwargs):
     event = 'reply_published'
-    handlers = get_handlers(event, reply.review_request.local_site)
+    review_request = reply.review_request
+    webhook_targets = WebHookTarget.objects.for_event(
+        event, review_request.local_site_id, review_request.repository_id)
 
-    if handlers:
+    if webhook_targets:
         request = FakeHTTPRequest(user)
         payload = _serialize_review(reply, request)
         payload['event'] = event
-        dispatch(request, handlers, event, payload)
+        dispatch_webhook_event(request, webhook_targets, event, payload)
 
 
 def connect_signals():

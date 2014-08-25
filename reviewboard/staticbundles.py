@@ -278,6 +278,12 @@ PIPELINE_JS = dict({
         ),
         'output_filename': 'rb/js/repositoryform.min.js',
     },
+    'webhooks-form': {
+        'source_filenames': (
+            'rb/js/webhooksAdmin/views/webhookFormView.js',
+        ),
+        'output_filename': 'rb/js/webhooks-form.min.js',
+    },
 }, **DJBLETS_PIPELINE_JS)
 
 
