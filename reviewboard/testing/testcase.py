@@ -288,6 +288,7 @@ class TestCase(DjbletsTestCase):
                               testing_done='Testing',
                               submitter='doc', local_id=1001,
                               status='P', public=False, publish=False,
+                              commit_id=None,
                               repository=None, id=None,
                               create_repository=False):
         """Creates a ReviewRequest for testing.
@@ -327,6 +328,7 @@ class TestCase(DjbletsTestCase):
             diffset_history=DiffSetHistory.objects.create(),
             repository=repository,
             public=public,
+            commit_id=commit_id,
             status=status)
 
         # Set this separately to avoid issues with CounterField updates.

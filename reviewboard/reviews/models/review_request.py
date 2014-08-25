@@ -631,6 +631,8 @@ class ReviewRequest(BaseReviewRequestDetails):
 
             if type == self.SUBMITTED:
                 self.public = True
+            else:
+                self.commit_id = None
 
             self.status = type
             self.save(update_counts=True)
