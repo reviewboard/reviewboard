@@ -589,6 +589,7 @@ class FileAttachmentsField(BuiltinLocalsFieldMixin, BaseCommaEditableField):
             template.render(Context({
                 'file': self.file_attachment_id_map[pk],
                 'review_request': review_request,
+                'local_site_name': review_request.local_site.name,
             }))
             for caption, filename, pk in values
         ])
