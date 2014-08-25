@@ -622,6 +622,15 @@ class ReviewRequestTests(TestCase):
         review_request.close(ReviewRequest.SUBMITTED)
         self.assertTrue(review_request.public)
 
+    def test_close_removes_commit_id(self):
+        """Testing ReviewRequest.close with discarded removes commit ID"""
+        review_request = self.create_review_request(publish=True,
+                                                    commit_id='123')
+        self.assertEqual(review_request.commit_id, '123')
+        review_request.close(ReviewRequest.DISCARDED)
+
+        self.assertIsNone(review_request.commit_id)
+
     def test_unicode_summary_and_str(self):
         """Testing ReviewRequest.__str__ with unicode summaries."""
         review_request = self.create_review_request(
