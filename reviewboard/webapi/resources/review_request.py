@@ -297,7 +297,7 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
             if 'to-groups' in request.GET:
                 for group_name in request.GET.get('to-groups').split(','):
                     q = q & self.model.objects.get_to_group_query(group_name,
-                                                                  None)
+                                                                  local_site)
 
             if 'to-users' in request.GET:
                 for username in request.GET.get('to-users').split(','):
