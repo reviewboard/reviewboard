@@ -129,7 +129,7 @@ class SVNTool(SCMTool):
         try:
             root_dirents = self.client.list_dir('/')
         except Exception as e:
-            raise SCMError(e)
+            raise self.normalize_error(e)
 
         if 'trunk' in root_dirents:
             # Looks like the standard layout. Adds trunk and any branches.
@@ -146,7 +146,7 @@ class SVNTool(SCMTool):
                         for name in sorted(six.iterkeys(dirents))
                     ]
                 except Exception as e:
-                    raise SCMError(e)
+                    raise self.normalize_error(e)
         else:
             # If the repository doesn't use the standard layout, just use a
             # listing of the root directory as the "branches". This probably
@@ -218,7 +218,7 @@ class SVNTool(SCMTool):
         try:
             diff = self.client.diff(base_revision, revision)
         except Exception as e:
-            raise SCMError(e)
+            raise self.normalize_error(e)
 
         commit = Commit(author_name, six.text_type(revision), date,
                         message, six.text_type(base_revision))
@@ -303,6 +303,15 @@ class SVNTool(SCMTool):
             default=default)
 
     @classmethod
+    def normalize_error(cls, e):
+        if 'callback_get_login required' in six.text_type(e):
+            raise AuthenticationError(
+                msg='Authentication failed when talking to the Subversion '
+                    'repository')
+        else:
+            raise SCMError(e)
+
+    @classmethod
     def _ssl_server_trust_prompt(cls, trust_dict, repository):
         """Callback for SSL cert verification.
 
@@ -321,8 +330,10 @@ class SVNTool(SCMTool):
         logging.error('SVN: Failed to get repository information '
                       'for %s: %s' % (path, e))
 
-        if 'callback_get_login required' in six.text_type(e):
-            raise AuthenticationError(msg="Authentication failed")
+        error = SVNTool.normalize_error(e)
+
+        if isinstance(error, AuthenticationError):
+            raise error
 
         if cert_data:
             failures = cert_data['failures']

@@ -22,7 +22,7 @@ from django.utils.translation import ugettext as _
 
 from reviewboard.scmtools.core import Revision, HEAD, PRE_CREATION
 from reviewboard.scmtools.errors import FileNotFoundError, SCMError
-from reviewboard.scmtools.svn import base
+from reviewboard.scmtools.svn import base, SVNTool
 
 B = six.binary_type
 DIFF_UNIFIED = [B('-u')]
@@ -130,7 +130,7 @@ class Client(base.Client):
             base = os.path.basename(self.repopath)
             info = self.client.info(self.repopath, 'HEAD')[base]
         except SubversionException as e:
-            raise SCMError(e)
+            raise SVNTool.normalize_error(e)
 
         return {
             'uuid': info.repos_uuid,
