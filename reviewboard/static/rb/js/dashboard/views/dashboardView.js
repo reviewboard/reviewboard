@@ -299,8 +299,10 @@ RB.DashboardView = Backbone.View.extend({
      * of the page, minus some padding.
      */
     _updateSize: function() {
-        this.$el.outerHeight(this._$window.height() - this.$el.offset().top -
-                             this._getBottomSpacing());
+        this.$el
+            .show()
+            .outerHeight(this._$window.height() - this.$el.offset().top -
+                         this._getBottomSpacing());
         this._datagrid.resizeToFit();
     },
 
