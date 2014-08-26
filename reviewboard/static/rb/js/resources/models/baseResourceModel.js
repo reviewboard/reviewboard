@@ -614,15 +614,11 @@ RB.BaseResource = Backbone.Model.extend({
         }
 
         syncOptions.error = _.bind(function(xhr) {
-            var rsp = null,
-                text;
+            var rsp;
 
-            try {
-                rsp = $.parseJSON(xhr.responseText);
-                text = rsp.err.msg;
-            } catch (e) {
-                text = 'HTTP ' + xhr.status + ' ' + xhr.statusText;
-            }
+            RB.storeAPIError(xhr);
+
+            rsp = xhr.errorPayload;
 
             if (rsp && _.has(rsp, this.rspNamespace)) {
                 /*
@@ -634,8 +630,6 @@ RB.BaseResource = Backbone.Model.extend({
             }
 
             if (_.isFunction(options.error)) {
-                xhr.errorText = text;
-                xhr.errorPayload = rsp;
                 options.error(xhr);
             }
         }, this);

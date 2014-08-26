@@ -9,6 +9,24 @@
 RB.PostCommitView = Backbone.View.extend({
     className: 'post-commit',
 
+    loadErrorTemplate: _.template([
+        '<div class="error">',
+        ' <p><%- errorLoadingText %></p>',
+        ' <p class="error-text">',
+        '  <% _.each(errorLines, function(line) { %><%- line %><br /><% }); %>',
+        ' </p>',
+        ' <p>',
+        '  <%- temporaryFailureText %>',
+        '  <a href="#" id="reload_<%- reloadID %>"><%- tryAgainText %></a>',
+        ' </p>',
+        '</div>'
+    ].join('')),
+
+    events: {
+        'click #reload_branches': '_loadBranches',
+        'click #reload_commits': '_loadCommits'
+    },
+
     /*
      * Initialize the view.
      */
@@ -17,15 +35,9 @@ RB.PostCommitView = Backbone.View.extend({
             repository = model.get('repository'),
             branches = repository.branches;
 
-        // Set up the branch selector and bind it to the "branch" attribute
-        if (!branches.loaded) {
-            branches.fetch({
-                success: function() {
-                    branches.loaded = true;
-                }
-            });
-        }
+        this._$error = null;
 
+        // Set up the branch selector and bind it to the "branch" attribute
         this._branchesView = new RB.BranchesView({
             collection: branches
         });
@@ -34,6 +46,10 @@ RB.PostCommitView = Backbone.View.extend({
         }, this);
 
         this.listenTo(model, 'change:branch', this._onBranchChanged);
+
+        if (!branches.loaded) {
+            this._loadBranches();
+        }
     },
 
     /*
@@ -58,6 +74,91 @@ RB.PostCommitView = Backbone.View.extend({
     },
 
     /*
+     * Loads the list of branches from the repository.
+     *
+     * If there's an error loading the branches, the branches selector and
+     * commits list will be hidden, and an error will be displayed along
+     * with the message from the server. The user will have the ability to
+     * try again.
+     */
+    _loadBranches: function() {
+        var branches = this.model.get('repository').branches;
+
+        this._clearLoadError();
+
+        branches.fetch({
+            success: function() {
+                branches.loaded = true;
+
+                this._branchesView.$el.show();
+
+                if (this._commitsView) {
+                    this._commitsView.$el.show();
+                }
+            },
+            error: function(collection, xhr) {
+                this._branchesView.$el.hide();
+
+                if (this._commitsView) {
+                    this._commitsView.$el.hide();
+                }
+
+                this._showLoadError('branches', xhr);
+            }
+        }, this);
+    },
+
+    /*
+     * Loads the list of commits from the repository.
+     *
+     * If there's an error loading the commits, the commits list will be
+     * hidden, and an error will be displayed along with the message from
+     * the server. The user will have the ability to try again.
+     */
+    _loadCommits: function() {
+        this._clearLoadError();
+
+        this._commitsCollection.fetch({
+            success: function() {
+                this._commitsView.$el.show();
+            },
+            error: function(collection, xhr) {
+                this._commitsView.$el.hide();
+                this._showLoadError('commits', xhr);
+            }
+        }, this);
+    },
+
+    /*
+     * Clears any displayed error message.
+     */
+    _clearLoadError: function() {
+        if (this._$error) {
+            this._$error.remove();
+            this._$error = null;
+        }
+    },
+
+    /*
+     * Shows an error message indicating a load failure.
+     *
+     * The message from the server will be displayed along with some
+     * helpful text and a link for trying the request again.
+     */
+    _showLoadError: function(reloadID, xhr) {
+        this._clearLoadError();
+
+        this._$error = $(this.loadErrorTemplate({
+                errorLoadingText: gettext('There was an error loading information from this repository:'),
+                temporaryFailureText: gettext('This may be a temporary failure.'),
+                tryAgainText: gettext('Try again'),
+                errorLines: xhr.errorText.split('\n'),
+                reloadID: reloadID
+            }))
+            .appendTo(this.$el);
+    },
+
+    /*
      * Callback for when the user chooses a different branch.
      *
      * Fetches a new list of commits starting from the tip of the selected
@@ -73,7 +174,6 @@ RB.PostCommitView = Backbone.View.extend({
             this.model.get('repository').getCommits({
                 branch: branch.id
             });
-        this._commitsCollection.fetch();
         this.listenTo(this._commitsCollection, 'create', this._onCreateReviewRequest);
 
         this._commitsView = new RB.CommitsView({
@@ -82,6 +182,8 @@ RB.PostCommitView = Backbone.View.extend({
         if (this._rendered) {
             this.$el.append(this._commitsView.render().el);
         }
+
+        this._loadCommits();
     },
 
     /*

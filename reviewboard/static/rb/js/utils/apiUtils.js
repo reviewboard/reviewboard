@@ -170,6 +170,28 @@ RB.apiCall = function(options) {
     }
 };
 
+/*
+ * Parses API error information from a response and stores it.
+ *
+ * The xhr object provided will be extended with two new attributes:
+ * 'errorText' and 'errorPayload'. These represent the response's error
+ * message and full error payload, respectively.
+ */
+RB.storeAPIError = function(xhr) {
+    var rsp = null,
+        text;
+
+    try {
+        rsp = $.parseJSON(xhr.responseText);
+        text = rsp.err.msg;
+    } catch (e) {
+        text = 'HTTP ' + xhr.status + ' ' + xhr.statusText;
+    }
+
+    xhr.errorText = text;
+    xhr.errorPayload = rsp;
+};
+
 RB.ajaxOptions = {
     enableQueuing: true,
     enableIndicator: true

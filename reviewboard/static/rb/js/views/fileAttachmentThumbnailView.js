@@ -38,17 +38,17 @@ RB.FileAttachmentThumbnail = Backbone.View.extend({
         '<div class="file">',
         ' <ul class="actions" />',
         ' <div class="file-header">',
-        '  <a class="download" href="<%= downloadURL %>">',
-        '   <img class="icon" src="<%= iconURL %>" />',
-        '   <span class="filename"><%= filename %></span>',
+        '  <a class="download">',
+        '   <img class="icon" />',
+        '   <span class="filename"><%- filename %></span>',
         '  </a>',
         ' </div>',
         ' <div class="file-thumbnail-container" />',
         ' <div class="file-caption-container">',
         '  <div class="file-caption can-edit">', /* spaceless */
-        '<a href="<%= downloadURL %>" "',
+        '<a href="<%- downloadURL %>"',
         '   class="edit <% if (!caption) { %>empty-caption<% } %>">',
-        '<% if (caption) { %><%= caption %><% } else { %><%- noCaptionText %><% } %>',
+        '<% if (caption) { %><%- caption %><% } else { %><%- noCaptionText %><% } %>',
         '</a>',
         '</div>', /* endspaceless */
         ' </div>',
@@ -58,7 +58,7 @@ RB.FileAttachmentThumbnail = Backbone.View.extend({
     actionsTemplate: _.template([
         '<% if (loaded) { %>',
         '<%   if (reviewURL) { %>',
-        ' <li class="file-review"><a href="<%= reviewURL %>"><%- reviewText %></a></li>',
+        ' <li class="file-review"><a href="<%- reviewURL %>"><%- reviewText %></a></li>',
         '<%   } else { %>',
         ' <li class="file-add-comment"><a href="#"><%- addCommentText %></a></li>',
         '<%   } %>',
@@ -74,10 +74,10 @@ RB.FileAttachmentThumbnail = Backbone.View.extend({
     thumbnailContainerTemplate: _.template([
         '<% if (!loaded) { %>',
         ' <img class="file-thumbnail spinner" width="16" height="16" ',
-              'src="<%= spinnerURL %>" />',
+              'src="<%- spinnerURL %>" />',
         '<% } else { %>',
         '<%   if (reviewURL) { %>',
-        ' <a href="<%= reviewURL %>" class="file-thumbnail-overlay"',
+        ' <a href="<%- reviewURL %>" class="file-thumbnail-overlay"',
         '    alt="<%- reviewAltText %>" title="<%- reviewAltText %>"> </a>',
         '<%   } %>',
         '<%=  thumbnailHTML %>',
@@ -121,19 +121,25 @@ RB.FileAttachmentThumbnail = Backbone.View.extend({
         this._$caption = this._$captionContainer.find('a.edit');
         this._$addCommentButton = this.$('.file-add-comment a');
 
-        this.model.on('destroy', function() {
+        this.listenTo(this.model, 'destroy', function() {
             this.$el.fadeOut(function() {
                 self.remove();
             });
-        }, this);
+        });
 
-        this.model.on('change:caption', this._onCaptionChanged, this);
+        this.listenTo(this.model, 'change:caption', this._onCaptionChanged);
         this._onCaptionChanged();
 
         if (this.options.renderThumbnail) {
             this._$actions = this.$('.actions');
             this._$fileHeader = this.$('.file-header');
+            this._$captionContainer = this.$('.file-caption-container');
             this._$thumbnailContainer = this.$('.file-thumbnail-container');
+
+            this._$fileHeader.find('.download')
+                .bindProperty('href', this.model, 'downloadURL', {
+                    elementToModel: false
+                });
 
             this._$fileHeader.find('.icon')
                 .bindProperty('src', this.model, 'iconURL', {
@@ -145,10 +151,15 @@ RB.FileAttachmentThumbnail = Backbone.View.extend({
                     elementToModel: false
                 });
 
-            this.model.on('change:loaded', this._onLoadedChanged, this);
+            this._$caption.bindProperty('href', this.model, 'downloadURL', {
+                elementToModel: false
+            });
+
+            this.listenTo(this.model, 'change:loaded', this._onLoadedChanged);
             this._onLoadedChanged();
 
-            this.model.on('change:thumbnailHTML', this._renderThumbnail, this);
+            this.listenTo(this.model, 'change:thumbnailHTML',
+                          this._renderThumbnail);
             this._renderThumbnail();
         }
 

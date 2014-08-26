@@ -1,7 +1,7 @@
 /*
  * A collection of branches in a repository.
  */
-RB.RepositoryBranches = Backbone.Collection.extend({
+RB.RepositoryBranches = RB.BaseCollection.extend({
     model: RB.RepositoryBranch,
 
     parse: function(response) {

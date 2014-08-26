@@ -9,11 +9,13 @@
    <li class="file-add-comment"><a href="#">{% trans "New Comment" %}</a></li>
 {%   endif %}
 {%   if request.user.pk == review_request.submitter_id or perms.reviews.delete_file %}
+{%    if review_request.status == 'P' %}
    <li class="delete">
     <a href="#" alt="{% trans 'Delete this file' %}" title="{% trans 'Delete this file' %}">
      <span class="ui-icon ui-icon-trash"></span>
     </a>
    </li>
+{%    endif %}
 {%   endif %}
   </ul>
   <div class="file-header">

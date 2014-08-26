@@ -109,4 +109,128 @@ suite('rb/newReviewRequest/views/PostCommitView', function() {
         call = RB.ReviewRequest.prototype.save.mostRecentCall;
         expect(call.object.get('commitID')).toBe(commit.get('id'));
     });
+
+    describe('Error handling', function() {
+        describe('Branches', function() {
+            var xhr = {
+                    errorText: 'Oh no'
+                },
+                returnError;
+
+            beforeEach(function() {
+                spyOn(repository.branches, 'fetch').andCallFake(
+                    function(options, context) {
+                        if (returnError) {
+                            options.error.call(context, repository.branches,
+                                               xhr);
+                        } else {
+                            options.success.call(context);
+                        }
+                    });
+
+                returnError = true;
+
+                spyOn(RB.PostCommitView.prototype, '_showLoadError')
+                    .andCallThrough();
+
+                view._loadBranches();
+            });
+
+            it('UI state', function() {
+                expect(repository.branches.fetch).toHaveBeenCalled();
+                expect(view._showLoadError).toHaveBeenCalledWith(
+                    'branches', xhr);
+                expect(view._branchesView.$el.css('display')).toBe('none');
+                expect(view._$error).toBeTruthy();
+                expect(view._$error.length).toBe(1);
+                expect(view._commitsView).toBeFalsy();
+                expect(view._$error.find('.error-text').text().strip())
+                    .toBe('Oh no');
+                expect(view._$error.find('a')[0].id).toBe('reload_branches');
+            });
+
+            it('Reloading', function() {
+                var $reload;
+                spyOn(view, '_loadBranches').andCallThrough();
+
+                /* Make sure the spy is called from the event handler. */
+                view.delegateEvents();
+
+                returnError = false;
+
+                expect(view._$error).toBeTruthy();
+                $reload = view._$error.find('#reload_branches');
+                expect($reload.length).toBe(1);
+                $reload.click();
+
+                expect(view._loadBranches).toHaveBeenCalled();
+
+                expect(view._$error).toBe(null);
+                expect(view._branchesView.$el.css('display'))
+                    .toBe('inline-block');
+            });
+        });
+
+        describe('Commits', function() {
+            var xhr = {
+                    errorText: 'Oh no'
+                },
+                returnError;
+
+            beforeEach(function() {
+                view.render();
+
+                spyOn(RB.RepositoryCommits.prototype, 'fetch').andCallFake(
+                    function(options, context) {
+                        if (returnError) {
+                            options.error.call(context, repository.commits,
+                                               xhr);
+                        } else {
+                            options.success.call(context);
+                        }
+                    });
+
+                returnError = true;
+
+                spyOn(RB.PostCommitView.prototype, '_showLoadError')
+                    .andCallThrough();
+
+                view._loadCommits();
+            });
+
+            it('UI state', function() {
+                expect(view._commitsCollection.fetch).toHaveBeenCalled();
+                expect(view._showLoadError).toHaveBeenCalledWith(
+                    'commits', xhr);
+                expect(view._commitsView.$el.css('display')).toBe('none');
+                expect(view._$error).toBeTruthy();
+                expect(view._$error.length).toBe(1);
+                expect(view._commitsView).toBeTruthy();
+                expect(view._commitsView.$el.css('display')).toBe('none');
+                expect(view._$error.find('.error-text').text().strip())
+                    .toBe('Oh no');
+                expect(view._$error.find('a')[0].id).toBe('reload_commits');
+            });
+
+            it('Reloading', function() {
+                var $reload;
+                spyOn(view, '_loadCommits').andCallThrough();
+
+                /* Make sure the spy is called from the event handler. */
+                view.delegateEvents();
+
+                returnError = false;
+
+                expect(view._$error).toBeTruthy();
+                $reload = view._$error.find('#reload_commits');
+                expect($reload.length).toBe(1);
+                $reload.click();
+
+                expect(view._loadCommits).toHaveBeenCalled();
+
+                expect(view._$error).toBe(null);
+                expect(view._commitsView.$el.css('display')).toBe('block');
+            });
+        });
+    });
 });

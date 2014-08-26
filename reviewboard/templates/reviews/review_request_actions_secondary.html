@@ -15,6 +15,7 @@
 {%  endif %}
 {% endif %}
 {% if request.user.pk == review_request.submitter_id or perms.reviews.can_edit_reviewrequest %}
+{%  if review_request.status == 'P' %}
  <li>
   <a class="menu-title" id="update-review-request-link" href="#">{% trans "Update" %} &#9662;</a>
   <ul class="menu" style="display: none;">
@@ -24,4 +25,5 @@
    <li><a id="upload-file-link" href="#">{% trans "Add File" %}</a></li>
   </ul>
  </li>
+{%  endif %}
 {% endif %}
