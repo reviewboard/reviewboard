@@ -246,6 +246,55 @@ class ResourceTests(ExtraDataListMixin, ExtraDataItemMixin,
         review_request = ReviewRequest.objects.get(pk=review_request.pk)
         self.assertNotEqual(review_request.commit_id, commit_id)
 
+    def test_put_with_commit_id_and_used_in_review_request(self):
+        """Testing the PUT review-requests/<id>/draft/ API with commit_id
+        used in another review request
+        """
+        commit_id = 'abc123'
+
+        self.create_review_request(submitter=self.user,
+                                   commit_id=commit_id,
+                                   publish=True)
+
+        review_request = self.create_review_request(submitter=self.user,
+                                                    publish=True)
+
+        self.api_put(
+            get_review_request_draft_url(review_request),
+            {
+                'commit_id': commit_id,
+            },
+            expected_status=409)
+
+        review_request = ReviewRequest.objects.get(pk=review_request.pk)
+        self.assertIsNone(review_request.commit_id, None)
+
+    def test_put_with_commit_id_and_used_in_draft(self):
+        """Testing the PUT review-requests/<id>/draft/ API with commit_id
+        used in another review request draft
+        """
+        commit_id = 'abc123'
+
+        existing_review_request = self.create_review_request(
+            submitter=self.user,
+            publish=True)
+        existing_draft = ReviewRequestDraft.create(existing_review_request)
+        existing_draft.commit_id = commit_id
+        existing_draft.save()
+
+        review_request = self.create_review_request(submitter=self.user,
+                                                    publish=True)
+
+        self.api_put(
+            get_review_request_draft_url(review_request),
+            {
+                'commit_id': commit_id,
+            },
+            expected_status=409)
+
+        review_request = ReviewRequest.objects.get(pk=review_request.pk)
+        self.assertIsNone(review_request.commit_id, None)
+
     def test_put_with_commit_id_empty_string(self):
         """Testing the PUT review-requests/<id>/draft/ API with commit_id=''"""
         review_request = self.create_review_request(submitter=self.user,

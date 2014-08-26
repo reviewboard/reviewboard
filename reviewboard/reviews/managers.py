@@ -103,12 +103,22 @@ class ReviewRequestManager(ConcurrencyManager):
         Creates a new review request, optionally filling in fields based off
         a change number.
         """
-        if commit_id and create_from_commit_id:
+        if commit_id:
             # Try both the new commit_id and old changenum versions
             try:
                 review_request = self.get(commit_id=commit_id,
                                           repository=repository)
                 raise ChangeNumberInUseError(review_request)
+            except ObjectDoesNotExist:
+                pass
+
+            try:
+                from reviewboard.reviews.models import ReviewRequestDraft
+
+                draft = ReviewRequestDraft.objects.get(
+                    commit_id=commit_id,
+                    review_request__repository=repository)
+                raise ChangeNumberInUseError(draft.review_request)
             except ObjectDoesNotExist:
                 pass
 

@@ -985,7 +985,7 @@ class FileDiffMigrationTests(TestCase):
             '-blah..\n'
             '+blah blah\n')
 
-        repository = Repository.objects.get(pk=1)
+        repository = self.create_repository()
         diffset = DiffSet.objects.create(name='test',
                                          revision=1,
                                          repository=repository)

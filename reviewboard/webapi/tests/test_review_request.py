@@ -8,7 +8,8 @@ from djblets.testing.decorators import add_fixtures
 from djblets.webapi.errors import DOES_NOT_EXIST, PERMISSION_DENIED
 
 from reviewboard.accounts.models import LocalSiteProfile
-from reviewboard.reviews.models import BaseComment, ReviewRequest
+from reviewboard.reviews.models import (BaseComment, ReviewRequest,
+                                        ReviewRequestDraft)
 from reviewboard.site.models import LocalSite
 from reviewboard.webapi.errors import INVALID_REPOSITORY
 from reviewboard.webapi.resources import resources
@@ -830,6 +831,49 @@ class ResourceListTests(ExtraDataListMixin, BaseWebAPITestCase):
         review_request = \
             ReviewRequest.objects.get(pk=rsp['review_request']['id'])
         self.assertEqual(review_request.commit, commit_id)
+
+    @add_fixtures(['test_scmtools'])
+    def test_post_with_commit_id_and_used_in_review_request(self):
+        """Testing the POST review-requests/ API with commit_id used in
+        another review request
+        """
+        repository = self.create_repository()
+        commit_id = 'abc123'
+
+        self.create_review_request(commit_id=commit_id,
+                                   repository=repository,
+                                   publish=True)
+
+        self.api_post(
+            get_review_request_list_url(),
+            {
+                'repository': repository.name,
+                'commit_id': commit_id,
+            },
+            expected_status=409)
+
+    @add_fixtures(['test_scmtools'])
+    def test_post_with_commit_id_and_used_in_draft(self):
+        """Testing the POST review-requests/ API with commit_id used in
+        another review request draft
+        """
+        repository = self.create_repository()
+        commit_id = 'abc123'
+
+        existing_review_request = self.create_review_request(
+            repository=repository,
+            publish=True)
+        existing_draft = ReviewRequestDraft.create(existing_review_request)
+        existing_draft.commit_id = commit_id
+        existing_draft.save()
+
+        self.api_post(
+            get_review_request_list_url(),
+            {
+                'repository': repository.name,
+                'commit_id': commit_id,
+            },
+            expected_status=409)
 
     @add_fixtures(['test_scmtools'])
     def test_post_with_commit_id_empty_string(self):
