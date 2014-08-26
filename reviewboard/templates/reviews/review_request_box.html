@@ -81,7 +81,9 @@
      <div class="screenshot-caption">
       <a href="{{image.get_absolute_url}}" class="edit">{% if draft %}{{image.draft_caption|default:image.caption}}{% else %}{{image.caption}}{% endif %}</a>
 {%  if request.user.pk == review_request.submitter_id or perms.reviews.delete_screenshot %}
+{%   if review_request.status == 'P' %}
       <a href="#" class="delete rb-icon rb-icon-delete" title="{% trans "Delete Screenshot" %}"></a>
+{%   endif %}
 {%  endif %}
      </div>
     </div>
