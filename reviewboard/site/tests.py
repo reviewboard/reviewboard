@@ -102,6 +102,47 @@ class PermissionWrapperTests(TestCase):
         self.assertNotIn('reviews.fake_permission', perms)
 
 
+class AdminPermissionTests(TestCase):
+    fixtures = ['test_users', 'test_site']
+
+    def setUp(self):
+        super(AdminPermissionTests, self).setUp()
+
+        self.user = User.objects.get(username='doc')
+        self.assertFalse(self.user.is_superuser)
+
+        self.local_site = LocalSite.objects.get(name=self.local_site_name)
+        self.local_site.admins.add(self.user)
+
+    def test_assigned_permissions(self):
+        """Testing LocalSite assigned admin permissions"""
+        self.assertTrue(self.user.has_perm(
+            'hostingsvcs.create_hostingserviceaccount', self.local_site))
+        self.assertTrue(self.user.has_perm(
+            'reviews.can_change_status', self.local_site))
+        self.assertTrue(self.user.has_perm(
+            'reviews.can_edit_reviewrequest', self.local_site))
+        self.assertTrue(self.user.has_perm(
+            'reviews.can_submit_as_another_user', self.local_site))
+        self.assertTrue(self.user.has_perm(
+            'reviews.change_default_reviewer', self.local_site))
+        self.assertTrue(self.user.has_perm(
+            'reviews.add_group', self.local_site))
+        self.assertTrue(self.user.has_perm(
+            'reviews.change_group', self.local_site))
+        self.assertTrue(self.user.has_perm(
+            'scmtools.add_repository', self.local_site))
+        self.assertTrue(self.user.has_perm(
+            'scmtools.change_repository', self.local_site))
+
+    def test_invalid_permissions(self):
+        """Testing LocalSite invalid admin permissions"""
+        self.assertFalse(self.user.has_perm(
+            'reviews.delete_reviewrequest', self.local_site))
+        self.assertFalse(self.user.has_perm(
+            'dummy.permission', self.local_site))
+
+
 class TemplateTagTests(TestCase):
     def test_local_site_url_with_no_local_site(self):
         """Testing localsite's {% url %} with no local site"""

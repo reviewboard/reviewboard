@@ -160,6 +160,18 @@ class StandardAuthBackend(AuthBackend, ModelBackend):
     supports_change_email = True
     supports_change_password = True
 
+    _VALID_LOCAL_SITE_PERMISSIONS = [
+        'hostingsvcs.create_hostingserviceaccount',
+        'reviews.add_group',
+        'reviews.can_change_status',
+        'reviews.can_edit_reviewrequest',
+        'reviews.can_submit_as_another_user',
+        'reviews.change_default_reviewer',
+        'reviews.change_group',
+        'scmtools.add_repository',
+        'scmtools.change_repository',
+    ]
+
     def authenticate(self, username, password):
         return ModelBackend.authenticate(self, username, password)
 
@@ -257,7 +269,7 @@ class StandardAuthBackend(AuthBackend, ModelBackend):
                 user._local_site_admin_for[obj.pk] = obj.is_mutable_by(user)
 
             if user._local_site_admin_for[obj.pk]:
-                return True
+                return perm in self._VALID_LOCAL_SITE_PERMISSIONS
 
         return super(StandardAuthBackend, self).has_perm(user, perm, obj)
 
