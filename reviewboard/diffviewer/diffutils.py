@@ -252,11 +252,21 @@ def get_diff_files(diffset, filediff=None, interdiffset=None, request=None):
     # source file.
     interdiff_map = {}
 
+    # Filediffs that were created with leading slashes stripped won't match
+    # those created with them present, so we need to compare them without in
+    # order for the filenames to match up properly.
+    parser = diffset.repository.get_scmtool().get_parser('')
+
+    def _normfile(filename):
+        return parser.normalize_diff_filename(filename)
+
     if interdiffset:
         for interfilediff in interdiffset.files.all():
+            interfilediff_source_file = _normfile(interfilediff.source_file)
+
             if (not filediff or
-                    filediff.source_file == interfilediff.source_file):
-                interdiff_map[interfilediff.source_file] = interfilediff
+                _normfile(filediff.source_file) == interfilediff_source_file):
+                interdiff_map[interfilediff_source_file] = interfilediff
 
     # In order to support interdiffs properly, we need to display diffs
     # on every file in the union of both diffsets. Iterating over one diffset
@@ -270,7 +280,7 @@ def get_diff_files(diffset, filediff=None, interdiffset=None, request=None):
 
     filediff_parts = [
         (temp_filediff,
-         interdiff_map.pop(temp_filediff.source_file, None),
+         interdiff_map.pop(_normfile(temp_filediff.source_file), None),
          has_interdiffset)
         for temp_filediff in filediffs
     ]
