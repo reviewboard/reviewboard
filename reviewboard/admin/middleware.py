@@ -78,6 +78,22 @@ class CheckUpdatesRequiredMiddleware(object):
         return None
 
 
+class ExtraExceptionInfoMiddleware(object):
+    """Adds extra debugging information to exception e-mails.
+
+    If an exception occurs, the META field will be updated to contain
+    the username and e-mail address of the user who triggered the error
+    (if any), and the Local Site name (if any).
+    """
+    def process_exception(self, request, exception):
+        if request.user.is_authenticated():
+            request.META['USERNAME'] = request.user.username
+            request.META['USER_EMAIL'] = request.user.email
+
+        if hasattr(request, '_local_site_name'):
+            request.META['LOCAL_SITE'] = request._local_site_name
+
+
 class X509AuthMiddleware(object):
     """
     Middleware that authenticates a user using the environment variables set by
