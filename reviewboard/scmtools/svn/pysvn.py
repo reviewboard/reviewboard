@@ -23,10 +23,8 @@ from django.utils.six.moves.urllib.parse import (urlsplit, urlunsplit, quote)
 from django.utils.translation import ugettext as _
 
 from reviewboard.scmtools.core import HEAD, PRE_CREATION
-from reviewboard.scmtools.errors import (AuthenticationError,
-                                         FileNotFoundError,
-                                         SCMError)
-from reviewboard.scmtools.svn import base
+from reviewboard.scmtools.errors import FileNotFoundError, SCMError
+from reviewboard.scmtools.svn import base, SVNTool
 
 
 class Client(base.Client):
@@ -81,11 +79,8 @@ class Client(base.Client):
                       'the proper certificate exists in %s '
                       'for the user that reviewboard is running as.')
                     % os.path.join(self.config_dir, 'auth'))
-            elif 'callback_get_login required' in exc:
-                raise AuthenticationError(
-                    msg=_('Login to the SCM server failed.'))
             else:
-                raise SCMError(e)
+                raise SVNTool.normalize_error(e)
 
     def _get_file_data(self, normpath, normrev):
         data = self.client.cat(normpath, normrev)
@@ -146,7 +141,7 @@ class Client(base.Client):
         try:
             info = self.client.info2(self.repopath, recurse=False)
         except ClientError as e:
-            raise SCMError(e)
+            raise SVNTool.normalize_error(e)
 
         return {
             'uuid': info[0][1].repos_UUID,

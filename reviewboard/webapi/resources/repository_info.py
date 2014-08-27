@@ -1,9 +1,11 @@
 from __future__ import unicode_literals
 
 from django.core.exceptions import ObjectDoesNotExist
+from django.utils import six
 from djblets.webapi.decorators import webapi_response_errors
 from djblets.webapi.errors import DOES_NOT_EXIST
 
+from reviewboard.scmtools.errors import AuthenticationError
 from reviewboard.webapi.base import WebAPIResource
 from reviewboard.webapi.decorators import (webapi_check_local_site,
                                            webapi_check_login_required)
@@ -44,6 +46,8 @@ class RepositoryInfoResource(WebAPIResource):
             }
         except NotImplementedError:
             return REPO_NOT_IMPLEMENTED
+        except AuthenticationError as e:
+            return REPO_INFO_ERROR.with_message(six.text_type(e))
         except:
             return REPO_INFO_ERROR
 
