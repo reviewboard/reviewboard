@@ -291,12 +291,24 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
      */
     _renderFileDiff: function(diffReviewable) {
         var elementName = 'file' + diffReviewable.get('fileDiffID'),
-            diffReviewableView = new RB.DiffReviewableView({
-                el: $('#' + elementName),
-                model: diffReviewable
-            }),
+            $el = $('#' + elementName),
+            diffReviewableView,
             $anchor,
             urlSplit;
+
+        if ($el.length === 0) {
+            /*
+             * The user changed revsions before the file finished loading, and
+             * the target element no longer exists. Just return.
+             */
+            $.funcQueue('diff_files').next();
+            return;
+        }
+
+        diffReviewableView = new RB.DiffReviewableView({
+            el: $el,
+            model: diffReviewable
+        });
 
         this._diffFileIndexView.addDiff(this._diffReviewableViews.length,
                                         diffReviewableView);
