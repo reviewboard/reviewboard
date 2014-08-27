@@ -201,6 +201,6 @@ def widget_activity(request):
                         content_type="application/json")
 
 
-def support_redirect(request):
+def support_redirect(request, **kwargs):
     """Redirects to the Beanbag support page for Review Board."""
     return HttpResponseRedirect(get_support_url(request))
