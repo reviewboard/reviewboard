@@ -102,7 +102,8 @@ class RepositoryCommitsResource(WebAPIResource):
             commit_ids.append(commit.id)
 
         by_commit_id = {}
-        for obj in ReviewRequest.objects.filter(commit_id__in=commit_ids):
+        for obj in ReviewRequest.objects.filter(repository=repository,
+                                                commit_id__in=commit_ids):
             by_commit_id[obj.commit_id] = obj
 
         for commit in commits:
