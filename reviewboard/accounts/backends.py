@@ -161,6 +161,7 @@ class StandardAuthBackend(AuthBackend, ModelBackend):
     supports_change_password = True
 
     _VALID_LOCAL_SITE_PERMISSIONS = [
+        'hostingsvcs.change_hostingserviceaccount',
         'hostingsvcs.create_hostingserviceaccount',
         'reviews.add_group',
         'reviews.can_change_status',
@@ -168,6 +169,8 @@ class StandardAuthBackend(AuthBackend, ModelBackend):
         'reviews.can_submit_as_another_user',
         'reviews.change_default_reviewer',
         'reviews.change_group',
+        'reviews.delete_file',
+        'reviews.delete_screenshot',
         'scmtools.add_repository',
         'scmtools.change_repository',
     ]

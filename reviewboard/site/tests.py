@@ -117,6 +117,8 @@ class AdminPermissionTests(TestCase):
     def test_assigned_permissions(self):
         """Testing LocalSite assigned admin permissions"""
         self.assertTrue(self.user.has_perm(
+            'hostingsvcs.change_hostingserviceaccount', self.local_site))
+        self.assertTrue(self.user.has_perm(
             'hostingsvcs.create_hostingserviceaccount', self.local_site))
         self.assertTrue(self.user.has_perm(
             'reviews.can_change_status', self.local_site))
@@ -130,6 +132,10 @@ class AdminPermissionTests(TestCase):
             'reviews.add_group', self.local_site))
         self.assertTrue(self.user.has_perm(
             'reviews.change_group', self.local_site))
+        self.assertTrue(self.user.has_perm(
+            'reviews.delete_file', self.local_site))
+        self.assertTrue(self.user.has_perm(
+            'reviews.delete_screenshot', self.local_site))
         self.assertTrue(self.user.has_perm(
             'scmtools.add_repository', self.local_site))
         self.assertTrue(self.user.has_perm(

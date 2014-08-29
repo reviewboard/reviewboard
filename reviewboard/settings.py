@@ -83,9 +83,13 @@ MIDDLEWARE_CLASSES = [
     'reviewboard.admin.middleware.X509AuthMiddleware',
     'reviewboard.site.middleware.LocalSiteMiddleware',
 
-    # Keep this last so that everything is initialized before middleware
-    # from extensions are run.
+    # Keep this second to last so that everything is initialized before
+    # middleware from extensions are run.
     'djblets.extensions.middleware.ExtensionsMiddlewareRunner',
+
+    # Keep this last so we can set the details for an exception as soon as
+    # possible.
+    'reviewboard.admin.middleware.ExtraExceptionInfoMiddleware',
 ]
 RB_EXTRA_MIDDLEWARE_CLASSES = []
 
