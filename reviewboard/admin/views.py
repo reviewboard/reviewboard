@@ -234,11 +234,9 @@ def widget_select(request):
 
     if widget_type == 'primary':
         selections_key = 'primary_widget_selections'
-        positions_key = 'primary_widget_positions'
         widgets = primary_widgets
     else:
         selections_key = 'secondary_widget_selections'
-        positions_key = 'secondary_widget_positions'
         widgets = secondary_widgets
 
     initial_selections = {}

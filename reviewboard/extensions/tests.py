@@ -61,8 +61,7 @@ class HookTests(TestCase):
             'url': 'foo-url',
         }
 
-        hook = ReviewRequestActionHook(extension=self.extension,
-                                       actions=[action])
+        ReviewRequestActionHook(extension=self.extension, actions=[action])
 
         context = Context({})
 
