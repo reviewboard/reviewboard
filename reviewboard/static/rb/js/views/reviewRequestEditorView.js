@@ -388,7 +388,7 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
     initialize: function() {
         var $issueSummary = $('#issue-summary');
 
-        _.bindAll(this, '_checkResizeLayout');
+        _.bindAll(this, '_checkResizeLayout', '_scheduleResizeLayout');
 
         this._fieldEditors = {};
         this._hasFields = (this.$('.editable').length > 0);
