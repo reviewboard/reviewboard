@@ -40,7 +40,7 @@ class DiffContextResource(WebAPIResource):
                 'type': int,
                 'description': 'Which revision of the diff to show.',
             },
-            'interdiff_revision': {
+            'interdiff-revision': {
                 'type': int,
                 'description': 'A tip revision for showing interdiffs. If '
                                'this is provided, the ``revision`` field will '
@@ -53,15 +53,23 @@ class DiffContextResource(WebAPIResource):
         },
     )
     @webapi_response_errors(DOES_NOT_EXIST)
-    def get(self, request, review_request_id, revision=None,
-            interdiff_revision=None, local_site_name=None, *args, **kwargs):
+    def get(self, request, review_request_id, local_site_name=None,
+            *args, **kwargs):
         """Returns the context info for a particular revision or interdiff.
 
         The output of this is more or less internal to the Review Board web UI.
         The result will be an object with several fields for the files in the
         diff, pagination information, and other data which is used to render
         the diff viewer page.
+
+        Note that in versions 2.0.0 through 2.0.6, the 'interdiff-revision'
+        parameter was named 'interdiff_revision'. Because of the internal
+        nature of this API, this was changed without adding backwards
+        compatibility for 2.0.7.
         """
+        revision = request.GET.get('revision')
+        interdiff_revision = request.GET.get('interdiff-revision')
+
         try:
             view = DiffViewerContextView.as_view()
             context = view(request, local_site_name, review_request_id,
