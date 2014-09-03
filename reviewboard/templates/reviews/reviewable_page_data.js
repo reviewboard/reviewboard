@@ -27,7 +27,7 @@
 {% for user in review_request_details.target_people.all %}
                 {
                     username: "{{user.username|escapejs}}",
-                    url: "{{user.get_absolute_url}}"
+                    url: "{% url 'user' user %}"
                 }{% if not forloop.last %},{% endif %}
 {% endfor %}{% endspaceless %}],
             testingDone: "{{review_request_details.testing_done|escapejs}}"

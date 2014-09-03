@@ -191,9 +191,13 @@ class SubmitterField(BuiltinFieldMixin, BaseReviewRequestField):
     label = _('Submitter')
 
     def render_value(self, user):
-        return ('<a class="user" href="%s">%s</a>'
-                % (escape(user.get_absolute_url()),
-                   escape(user.get_full_name() or user.username)))
+        return format_html(
+            '<a class="user" href="{0}">{1}</a>',
+            local_site_reverse(
+                'user',
+                local_site_name=self.review_request_details.local_site.name,
+                args=[user]),
+            user.get_full_name() or user.username)
 
 
 class RepositoryField(BuiltinFieldMixin, BaseReviewRequestField):
@@ -649,10 +653,14 @@ class TargetPeopleField(BuiltinFieldMixin, BaseModelListEditableField):
         if not user.is_active:
             extra_classes.append('inactive')
 
-        return ('<a href="%s" class="%s">%s</a>'
-                % (escape(user.get_absolute_url()),
-                   ' '.join(extra_classes),
-                   escape(user.username)))
+        return format_html(
+            '<a href="{0}" class="{1}">{2}</a>',
+            local_site_reverse(
+                'user',
+                local_site_name=self.review_request_details.local_site.name,
+                args=[user]),
+            ' '.join(extra_classes),
+            user.username)
 
 
 class MainFieldSet(BaseReviewRequestFieldSet):
