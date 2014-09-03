@@ -476,10 +476,10 @@ class BaseTextAreaField(BaseEditableField):
         new_value = ''
 
         if 'old' in info:
-            old_value = info['old'][0]
+            old_value = info['old'][0] or ''
 
         if 'new' in info:
-            new_value = info['new'][0]
+            new_value = info['new'][0] or ''
 
         old_value = render_markdown(old_value)
         new_value = render_markdown(new_value)
