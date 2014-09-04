@@ -97,7 +97,7 @@ class RawFileDiffData(models.Model):
                       'RawFileDiffData %s' % self.pk)
 
         try:
-            files = tool.get_parser(self.binary).parse()
+            files = tool.get_parser(self.content).parse()
 
             if len(files) != 1:
                 raise DiffParserError(
