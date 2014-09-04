@@ -48,6 +48,9 @@ RB.FloatingBannerView = Backbone.View.extend({
     _updateFloatPosition: function() {
         var $container,
             containerTop,
+            containerBottom,
+            containerHeight,
+            wasFloating,
             windowTop,
             topOffset,
             outerHeight;
@@ -72,30 +75,65 @@ RB.FloatingBannerView = Backbone.View.extend({
         $container = this.options.$floatContainer;
 
         containerTop = $container.offset().top;
+        containerHeight = $container.outerHeight();
+        containerBottom = containerTop + containerHeight;
         windowTop = $(window).scrollTop();
         topOffset = this._$floatSpacer.offset().top - windowTop;
-        outerHeight = this.$el.outerHeight();
+        outerHeight = this.$el.outerHeight(true);
+
+        wasFloating = this.$el.hasClass('floating');
 
         if (!$container.hasClass(this.options.noFloatContainerClass) &&
             topOffset < 0 &&
             containerTop < windowTop &&
-            windowTop < (containerTop + $container.outerHeight() -
-                         outerHeight)) {
-            this.$el
-                .addClass('floating')
-                .css({
-                    top: 0,
-                    position: 'fixed'
-                });
+            windowTop < containerBottom) {
+            /*
+             * We're floating! If we just entered this state, set the
+             * appropriate styles on the element.
+             *
+             * We'll then want to set the top to 0, unless the user is
+             * scrolling the banner out of view. In that case, figure out how
+             * much to show, and set the appropriate offset.
+             */
+            if (!wasFloating) {
+                /*
+                 * Set the spacer to be the dimensions of the docked banner,
+                 * so that the container doesn't change sizes when we go into
+                 * float mode.
+                 */
+                this._$floatSpacer
+                    .height(this.$el.outerHeight())
+                    .css({
+                        'margin-top': this.$el.css('margin-top'),
+                        'margin-bottom': this.$el.css('margin-bottom'),
+                    });
+
+                this.$el
+                    .addClass('floating')
+                    .css('position', 'fixed');
+            }
+
+            this.$el.css('top',
+                         windowTop > containerBottom - outerHeight
+                         ? containerBottom - outerHeight - windowTop
+                         : 0);
 
             this._updateSize();
-        } else {
+        } else if (wasFloating) {
+            /*
+             * We're now longer floating. Unset the styles on the banner and
+             * on the spacer (in order to prevent the spacer from taking up
+             * any additional room.
+             */
             this.$el
                 .removeClass('floating')
                 .css({
                     top: '',
                     position: ''
                 });
+            this._$floatSpacer
+                .height('auto')
+                .css('margin', 0);
         }
     }
 });

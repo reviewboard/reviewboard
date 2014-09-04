@@ -7,7 +7,7 @@
  </div>
 {% endif %}
  <div class="infobox-text">
-  <h2 class="nickname"><a href="{{requested_user.get_absolute_url}}">{{requested_user}}</a></h2>
+  <h2 class="nickname"><a href="{% url 'user' requested_user %}">{{requested_user}}</a></h2>
 {% if show_profile %}
   <p class="fn">{{requested_user.first_name}} {{requested_user.last_name}}</p>
 {% if request.user.is_authenticated %}

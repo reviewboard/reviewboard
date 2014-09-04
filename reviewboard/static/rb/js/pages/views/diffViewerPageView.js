@@ -634,7 +634,7 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
             contextURL += '?revision=' + tip;
             $downloadLink.show();
         } else {
-            contextURL += '?revision=' + base + '&interdiff_revision=' + tip;
+            contextURL += '?revision=' + base + '&interdiff-revision=' + tip;
             $downloadLink.hide();
         }
 
