@@ -1,0 +1,234 @@
+================================
+Review Board 2.0.7 Release Notes
+================================
+
+**Release date**: September 15, 2014
+
+
+Backwards-Incompatibility
+=========================
+
+* The experimental per-repository incoming webhooks for marking pushed changes
+  as submitted have changed.
+
+  If you've already configured the incoming webhooks for GitHub, Bitbucket, or
+  Google Code, you'll need to remove them and re-configure them, as the URLs
+  have all changed. See below for more information on setting these new hooks.
+
+* The ``interdiff_revision`` query field on
+  :ref:`webapi2.0-diff-context-resource` has been renamed to
+  ``interdiff-revision``.
+
+  See the information in the Web API section below.
+
+
+New Features
+============
+
+* Improved the security and setup of per-repository incoming webhooks.
+
+  The incoming webhooks used to mark changes as submitted have been largely
+  rewritten. The new ones make use of a secret UUID value either in the URL
+  or configured on the hosting service in order to prevent either
+  intentional or unintentional requests to the webhook URL.
+
+  This breaks any existing webhooks that have been configured,
+  but configuring the new ones is now very easy.
+
+  The repository list in the administration UI now includes a
+  :guilabel:`[Hooks]` link next to any repositories that support hooks.
+  Clicking this will provide simple instructions on usage and on configuring
+  the hook.
+
+* Added simple RBTools configuration instructions for repositories.
+
+  The repository list now contains :guilabel:`[RBTools Setup]` links next
+  to each repository. Clicking this will provide simple instructions for
+  configuring RBTools for that repository.
+
+* Added additional debug information for HTTP 500 error e-mails.
+
+  When something breaks on Review Board, administrators will generally
+  receive error e-mails detailing the breakage. These e-mails now contain
+  information in the "META" section on the user who encountered the error
+  (through the "USERNAME" and "USER_EMAIL" fields). If the error occurred
+  on a Local Site, then "LOCAL_SITE" will also be provided.
+
+
+Usability Improvements
+======================
+
+* The New Review Request page now displays helpful error messages when
+  failing to load branches or commits from the server.
+
+
+Web API
+=======
+
+* The ``?to-groups=`` query on :ref:`webapi2.0-review-request-list-resource`
+  now works with Local Sites. (:bug:`3539`)
+
+* The ``interdiff_revision`` query field on
+  :ref:`webapi2.0-diff-context-resource` has been renamed to
+  ``interdiff-revision``.
+
+  The old name was unintentional, and caused some breakages when being used
+  with RBTools.
+
+  This API is considered internal and subject to change. As such, we're not
+  providing backwards-compatibility with the old name.
+
+* Authenticating with a garbage "Authorization" header now properly logs
+  the failure and returns an Unauthorized code, instead of crashing.
+
+* Issuing a PUT request on :ref:`webapi2.0-review-request-resource` and
+  specifying a change number for a review request without a repository no
+  longer results in an error.
+
+
+Bug Fixes
+=========
+
+General
+-------
+
+* Fixed deprecation warning log messages involving mimetypes.
+
+* Fixed the "Get Support" link when on Local Sites.
+
+* Removed the maximum password length when registering new accounts.
+
+
+Dashboard
+---------
+
+* The Dashboard no longer initially appears squashed when loading the page.
+
+
+Review Requests
+---------------
+
+* The reply draft banner now smoothly scrolls with the page, and doesn't
+  cause stutters when reaching the end of the review.
+
+* Review request e-mails no longer contain extra blank lines in blocks of
+  text, like the review request Description or Testing Done fields.
+
+* The associated commit ID is now removed when discarding a review request,
+  preventing conflicts when posting a new review request with the same
+  commit ID.
+
+* Posting a change with a commit ID will now fail gracefully if another draft
+  has the same commit ID, instead of breaking on publish. (:bug:`3508`)
+
+* Closed review requests must now be reopened before uploading a new diff.
+
+* Fixed the display of the file attachment caption editor for newly uploaded
+  file attachments.
+
+* Fixed links to files on newly uploaded file attachments.
+
+* The drag-and-drop indicator on a review request is now only shown if the
+  review request is editable by the user. (:bug:`3542`)
+
+  Patch by David Kus.
+
+* Fixed the size of single-line text fields on Firefox.
+
+* Fixed JavaScript errors when resizing the page.
+
+* "Review request changed" boxes showing changes on text fields that were
+  provided by extensions no longer break the page if the text field was
+  previously empty. (:bug:`3549`)
+
+* Fixed links to uploaded file attachments and users when using Local Sites.
+
+* Users who are admins on Local Sites will no longer see "Delete Permanently"
+  under the Close menu.
+
+
+Diff Viewer
+-----------
+
+* Fixed showing interdiffs between diffs uploaded before Review Board 2.0.x
+  and diffs uploaded after.
+
+* Fixed JavaScript errors when changing diff revisions too fast. (:bug:`3514`)
+
+* Fixed issues caching large rendered diff fragments.
+
+* Fixed a UnicodeWarning log message that could result when generating diffs.
+
+
+New Review Request Page
+-----------------------
+
+* Listed commits no longer link to review requests that happen to have the
+  same commit ID but are on different repositories. (:bug:`3545`)
+
+
+Administration
+--------------
+
+* Fixed automating :command:`rb-site install` without specifying a company
+  name or administrator e-mail address. (:bug:`3544`)
+
+* Fixed hosting service account associations when configuring certain
+  repositories.
+
+  When configuring new or existing repositories to be backed by a hosting
+  service, the account information wouldn't always stay associated. This
+  would happen for Google Code, Codebase HQ, Fedora Hosted, and Gitorious
+  repositories.
+
+  Existing repositories that were previously configured against one of these
+  hosting services should be re-configured to set the service's information
+  again.
+
+* Fixed the sporadic existence of incoming per-repository webhook URLs.
+
+  The first few requests made to a per-repository webhook URL could fail if
+  that web server thread or process hadn't already performed operations
+  involving repositories or hosting services. The URLs, in this case,
+  weren't even registered yet. They're now all registered when first
+  initializing Review Board.
+
+* Fixed per-repository webhook URLs for Local Sites.
+
+* Fixed the ``condensediffs`` management command on Python 2.6.
+
+* Fixed the default crontab entry for clearing sessions to not use a
+  deprecated command. (:bug:`3535`)
+
+  Patch by Barret Rennie.
+
+
+Mercurial
+---------
+
+* Fixed breakages when posting parent diffs using Mercurial.
+
+  Patch by Steven MacLeod.
+
+
+Perforce
+--------
+
+* Fixed accepting certificates for Perforce repositories. (:bug:`3512`)
+
+
+Subversion
+----------
+
+* Fixed the display of some obscure-looking error messages (such as
+  "callback_get_login required").
+
+
+Contributors
+============
+
+* Barret Rennie
+* Christian Hammond
+* David Kus
+* David Trowbridge
+* Steven MacLeod
