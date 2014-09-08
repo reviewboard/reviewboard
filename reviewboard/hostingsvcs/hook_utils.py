@@ -5,13 +5,12 @@ import re
 
 from django.conf import settings
 from django.contrib.sites.models import Site
-from django.core.urlresolvers import resolve, Resolver404
-from django.http import Http404
+from django.db.models import Q
 from django.utils import six
 from djblets.siteconfig.models import SiteConfiguration
 
 from reviewboard.reviews.models import ReviewRequest
-from reviewboard.reviews.views import _find_review_request_object
+from reviewboard.site.models import LocalSite
 from reviewboard.site.urlresolvers import local_site_reverse
 
 
@@ -79,35 +78,66 @@ def close_review_request(review_request, review_request_id, description):
                   review_request_id, review_request.status)
 
 
-def close_all_review_requests(review_id_to_commits):
+def close_all_review_requests(review_request_id_to_commits, local_site_name,
+                              repository_id, hosting_service_id):
     """Closes each review request in the given dictionary as submitted.
 
     The provided dictionary should map a review request ID (int) to commits
     associated with that review request ID (list of strings). Commits that are
     not associated with any review requests have the key None.
     """
-    for review_request_id in review_id_to_commits:
-        if not review_request_id:
-            logging.debug('No matching review request ID found for commits: ' +
-                          ', '.join(review_id_to_commits[review_request_id]))
-            continue
-
+    if local_site_name:
         try:
-            match = resolve('/r/%s/' % review_request_id)
-        except Resolver404, e:
-            logging.error('Could not resolve URL: %s', e)
-            continue
+            local_site = LocalSite.objects.get(name=local_site_name)
+        except LocalSite.DoesNotExist:
+            logging.error('close_all_review_requests: Local Site %s does '
+                          'not exist.',
+                          local_site_name)
+            return
+    else:
+        local_site = None
 
-        local_site = match.kwargs.get('local_site', None)
-        description = ('Pushed to ' +
-                       ', '.join(review_id_to_commits[review_request_id]))
+    # Some of the entries we get may have 'None' keys, so filter them out.
+    review_request_ids = [
+        review_request_id
+        for review_request_id in review_request_id_to_commits
+        if review_request_id is not None
+    ]
 
-        try:
-            review_request = \
-                _find_review_request_object(review_request_id, local_site)
-        except Http404, e:
-            logging.error('Review request #%s does not exist.',
-                          review_request_id)
-            continue
+    if not review_request_ids:
+        return
 
-        close_review_request(review_request, review_request_id, description)
+    # Look up all review requests that match the given repository, hosting
+    # service ID, and Local Site.
+    q = (Q(repository=repository_id) &
+         Q(repository__hosting_account__service_name=hosting_service_id))
+
+    if local_site:
+        q &= Q(local_id__in=review_request_ids) & Q(local_site=local_site)
+    else:
+        q &= Q(pk__in=review_request_ids)
+
+    review_requests = list(ReviewRequest.objects.filter(q))
+
+    # Check if there are any listed that we couldn't find, and log them.
+    if len(review_request_ids) != len(review_requests):
+        id_to_review_request = dict(*[
+            (review_request.display_id, review_request)
+            for review_request in review_requests
+        ])
+
+        for review_request_id in review_request_ids:
+            if review_request_id not in id_to_review_request:
+                logging.error('close_all_review_requests: Review request #%s '
+                              'does not exist.',
+                              review_request_id)
+
+    # Close any review requests we did find.
+    for review_request in review_requests:
+        review_request_id = review_request.display_id
+
+        close_review_request(
+            review_request,
+            review_request_id,
+            ('Pushed to ' +
+             ', '.join(review_request_id_to_commits[review_request_id])))

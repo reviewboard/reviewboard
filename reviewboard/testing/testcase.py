@@ -282,7 +282,8 @@ class TestCase(DjbletsTestCase):
             path=path,
             **kwargs)
 
-    def create_review_request(self, with_local_site=False, with_diffs=False,
+    def create_review_request(self, with_local_site=False, local_site=None,
+                              with_diffs=False,
                               summary='Test Summary',
                               description='Test Description',
                               testing_done='Testing',
@@ -303,10 +304,13 @@ class TestCase(DjbletsTestCase):
 
         If publish is True, ReviewRequest.publish() will be called.
         """
-        if with_local_site:
-            local_site = LocalSite.objects.get(name=self.local_site_name)
-        else:
-            local_site = None
+        if not local_site:
+            if with_local_site:
+                local_site = LocalSite.objects.get(name=self.local_site_name)
+            else:
+                local_site = None
+
+        if not local_site:
             local_id = None
 
         if create_repository:

@@ -1,6 +1,7 @@
 from __future__ import unicode_literals
 
 import json
+import logging
 from collections import defaultdict
 
 from django import forms
@@ -64,7 +65,9 @@ class Bitbucket(HostingService):
         '',
 
         url(r'^hooks/close-submitted/$',
-            'reviewboard.hostingsvcs.bitbucket.post_receive_hook_close_submitted'),
+            'reviewboard.hostingsvcs.bitbucket'
+            '.post_receive_hook_close_submitted',
+            name='bitbucket-hooks-close-submitted'),
     )
 
     supported_scmtools = ['Git', 'Mercurial']
@@ -266,36 +269,49 @@ class Bitbucket(HostingService):
 
 
 @require_POST
-def post_receive_hook_close_submitted(request, *args, **kwargs):
+def post_receive_hook_close_submitted(request, local_site_name=None,
+                                      repository_id=None,
+                                      hosting_service_id=None):
     """Closes review requests as submitted automatically after a push."""
     if 'payload' not in request.POST:
-        return HttpResponse()
+        return HttpResponse(status=400)
 
-    payload = json.loads(request.POST['payload'])
+    try:
+        payload = json.loads(request.POST['payload'])
+    except ValueError as e:
+        logging.error('The payload is not in JSON format: %s', e)
+        return HttpResponse(status=400)
+
     server_url = get_server_url(request)
-    review_id_to_commits = get_review_id_to_commits_map(payload, server_url)
-    close_all_review_requests(review_id_to_commits)
+    review_request_id_to_commits = \
+        _get_review_request_id_to_commits_map(payload, server_url)
+
+    if review_request_id_to_commits:
+        close_all_review_requests(review_request_id_to_commits,
+                                  local_site_name, repository_id,
+                                  hosting_service_id)
+
     return HttpResponse()
 
 
-def get_review_id_to_commits_map(payload, server_url):
+def _get_review_request_id_to_commits_map(payload, server_url):
     """Returns a dictionary, mapping a review request ID to a list of commits.
 
-    If a commit's commit message does not contain a review request ID, we append
-    the commit to the key None.
+    If a commit's commit message does not contain a review request ID, we
+    append the commit to the key None.
     """
-    review_id_to_commits_map = defaultdict(list)
+    review_request_id_to_commits_map = defaultdict(list)
     commits = payload.get('commits', [])
 
     for commit in commits:
-        commit_hash = commit.get('raw_node', None)
-        commit_message = commit.get('message', None)
-        branch_name = commit.get('branch', None)
+        commit_hash = commit.get('raw_node')
+        commit_message = commit.get('message')
+        branch_name = commit.get('branch')
 
         if branch_name:
-            review_request_id = get_review_request_id(commit_message, server_url,
-                                                      commit_hash)
-            commit_entry = '%s (%s)' % (branch_name, commit_hash[:7])
-            review_id_to_commits_map[review_request_id].append(commit_entry)
+            review_request_id = get_review_request_id(
+                commit_message, server_url, commit_hash)
+            review_request_id_to_commits_map[review_request_id].append(
+                '%s (%s)' % (branch_name, commit_hash[:7]))
 
-    return review_id_to_commits_map
+    return review_request_id_to_commits_map
