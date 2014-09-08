@@ -4,14 +4,19 @@ from django.core.urlresolvers import NoReverseMatch, reverse
 
 
 def local_site_reverse(viewname, request=None, local_site_name=None,
-                       args=None, kwargs=None, *func_args, **func_kwargs):
+                       local_site=None, args=None, kwargs=None,
+                       *func_args, **func_kwargs):
     """Reverses a URL name, returning a working URL.
 
     This works much like Django's reverse(), but handles returning a
     localsite version of a URL when invoked with a request within a localsite.
     """
-    if request or local_site_name:
-        if request and not local_site_name:
+    assert not (local_site_name and local_site)
+
+    if request or local_site_name or local_site:
+        if local_site:
+            local_site_name = local_site.name
+        elif request and not local_site_name:
             local_site_name = getattr(request, '_local_site_name', None)
 
         if local_site_name:
