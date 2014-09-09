@@ -3,15 +3,18 @@ from __future__ import unicode_literals
 from django.contrib import admin
 from django.db.models.signals import pre_delete
 from django.dispatch import receiver
+from django.shortcuts import get_object_or_404, render_to_response
+from django.template import RequestContext
 from django.utils.translation import ugettext_lazy as _
 
 from reviewboard.accounts.admin import fix_review_counts
+from reviewboard.admin.server import get_server_url
 from reviewboard.scmtools.forms import RepositoryForm
 from reviewboard.scmtools.models import Repository, Tool
 
 
 class RepositoryAdmin(admin.ModelAdmin):
-    list_display = ('__str__', 'path', 'hosting', 'visible')
+    list_display = ('__str__', 'path', 'hosting', '_visible', 'inline_actions')
     raw_id_fields = ('local_site',)
     fieldsets = (
         (_('General Information'), {
@@ -84,6 +87,44 @@ class RepositoryAdmin(admin.ModelAdmin):
                 return '%s@%s' % (account.username, account.service.name)
 
         return ''
+
+    def inline_actions(self, repository):
+        return ('<div class="admin-inline-actions">'
+                ' <a class="action-rbtools-setup"'
+                '    href="%(id)s/rbtools-setup/">[%(rbtools_setup)s]</a>'
+                '</div>'
+                % {
+                    'id': repository.pk,
+                    'rbtools_setup': _('RBTools Setup'),
+                })
+    inline_actions.allow_tags = True
+    inline_actions.short_description = ''
+
+    def _visible(self, repository):
+        return repository.visible
+    _visible.boolean = True
+    _visible.short_description = _('Show')
+
+    def get_urls(self):
+        from django.conf.urls import patterns
+
+        return patterns(
+            '',
+
+            (r'^(?P<repository_id>[0-9]+)/rbtools-setup/$',
+             self.admin_site.admin_view(self.rbtools_setup)),
+        ) + super(RepositoryAdmin, self).get_urls()
+
+    def rbtools_setup(self, request, repository_id):
+        repository = get_object_or_404(Repository, pk=repository_id)
+
+        return render_to_response(
+            'admin/scmtools/repository/rbtools_setup.html',
+            RequestContext(request, {
+                'repository': repository,
+                'reviewboard_url': get_server_url(
+                    local_site=repository.local_site),
+            }))
 
 
 @receiver(pre_delete, sender=Repository,

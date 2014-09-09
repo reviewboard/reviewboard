@@ -900,9 +900,23 @@ td, th {
       tbody {
         td, th {
           border: 0;
+          vertical-align: middle;
 
           &:first-child {
             border: 0;
+          }
+
+          .admin-inline-actions {
+            white-space: nowrap;
+
+            a {
+              font-weight: bold;
+              margin-left: 1em;
+
+              &:first-child {
+                margin-left: 0;
+              }
+            }
           }
         }
       }
@@ -1116,6 +1130,26 @@ table#change-history {
 
   tbody th {
     width: 16em;
+  }
+}
+
+
+/****************************************************************************
+ * Modal boxes
+ ****************************************************************************/
+.modalbox-contents {
+  p, pre {
+    color: black;
+    font-size: 12px;
+
+    a {
+      color: blue;
+      font-weight: bold;
+    }
+  }
+
+  pre {
+    margin: 2em 1em;
   }
 }
 
