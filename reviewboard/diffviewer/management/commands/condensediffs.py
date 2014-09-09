@@ -1,3 +1,5 @@
+from __future__ import division
+
 import sys
 from datetime import datetime, timedelta
 
@@ -69,7 +71,7 @@ class Command(NoArgsCommand):
             '(%d%% savings)\n'
             % (intcomma(old_diff_size), intcomma(new_diff_size),
                (float(old_diff_size - new_diff_size) /
-                float(old_diff_size) * 100.0)))
+                float(old_diff_size) * 100)))
 
     def _on_processed_filediff(self, filediff):
         self.i += 1
@@ -80,15 +82,21 @@ class Command(NoArgsCommand):
         i = self.i
 
         if i % 20 == 0 or i == count:
-            pct = i * 100 / count
-            delta_secs = (datetime.now() - self.start_time).total_seconds()
+            pct = i * 100 // count
+            delta = datetime.now() - self.start_time
+
+            # XXX: This can be replaced with total_seconds() once we no longer
+            # have to support Python 2.6
+            delta_secs = ((delta.microseconds +
+                           (delta.seconds + delta.days * 24 * 3600) * 10**6)
+                          / 10**6)
 
             if (not self.show_remaining and
                 delta_secs >= self.DELAY_SHOW_REMAINING_SECS):
                 self.show_remaining = True
 
             if self.show_remaining:
-                secs_left = (delta_secs / i) * (count - i)
+                secs_left = (delta_secs // i) * (count - i)
 
                 # We add a bunch of spaces in order to override any previous
                 # content on the line, for when it shrinks.
