@@ -92,6 +92,7 @@ localsite_urlpatterns = patterns(
 )
 
 localsite_urlpatterns += datagrid_urlpatterns
+localsite_urlpatterns += hostingsvcs_urlpatterns
 
 
 # Main includes
@@ -105,4 +106,3 @@ urlpatterns += patterns(
 )
 
 urlpatterns += localsite_urlpatterns
-urlpatterns += hostingsvcs_urlpatterns

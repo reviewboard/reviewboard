@@ -10,5 +10,5 @@ dynamic_urls = DynamicURLResolver()
 urlpatterns = patterns(
     '',
 
-    (r'^repos/(?P<repo_id>\d+)/', include(patterns('', dynamic_urls))),
+    (r'^repos/(?P<repository_id>\d+)/', include(patterns('', dynamic_urls))),
 )

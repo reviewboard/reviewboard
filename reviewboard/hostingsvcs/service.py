@@ -450,7 +450,8 @@ def _add_hosting_service_url_pattern(name, cls):
     if cls.repository_url_patterns:
         cls_urlpatterns = patterns(
             '',
-            url(r'^' + name + '/', include(cls.repository_url_patterns))
+            url(r'^(?P<hosting_service_id>' + name + ')/',
+                include(cls.repository_url_patterns))
         )
         _hostingsvcs_urlpatterns[name] = cls_urlpatterns
         hostingsvcs_urls.dynamic_urls.add_patterns(cls_urlpatterns)

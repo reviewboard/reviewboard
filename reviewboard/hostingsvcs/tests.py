@@ -6,11 +6,13 @@ from textwrap import dedent
 
 from django.conf.urls import patterns, url
 from django.core.exceptions import ObjectDoesNotExist
+from django.core.urlresolvers import NoReverseMatch
 from django.http import HttpResponse
 from django.utils import six
 from django.utils.six.moves import cStringIO as StringIO
 from django.utils.six.moves.urllib.error import HTTPError
 from django.utils.six.moves.urllib.parse import urlparse
+from djblets.testing.decorators import add_fixtures
 from kgb import SpyAgency
 
 from reviewboard.hostingsvcs.errors import RepositoryError
@@ -20,10 +22,13 @@ from reviewboard.hostingsvcs.service import (get_hosting_service,
                                              HostingService,
                                              register_hosting_service,
                                              unregister_hosting_service)
+from reviewboard.reviews.models import ReviewRequest
 from reviewboard.scmtools.core import Branch
 from reviewboard.scmtools.crypto_utils import encrypt_password
 from reviewboard.scmtools.errors import FileNotFoundError, SCMError
 from reviewboard.scmtools.models import Repository, Tool
+from reviewboard.site.models import LocalSite
+from reviewboard.site.urlresolvers import local_site_reverse
 from reviewboard.testing import TestCase
 
 
@@ -67,7 +72,7 @@ class ServiceTests(SpyAgency, TestCase):
 
         return form
 
-    def _get_hosting_account(self, use_url=False):
+    def _get_hosting_account(self, use_url=False, local_site=None):
         if use_url:
             hosting_url = 'https://example.com'
         else:
@@ -75,7 +80,8 @@ class ServiceTests(SpyAgency, TestCase):
 
         return HostingServiceAccount(service_name=self.service_name,
                                      username='myuser',
-                                     hosting_url=hosting_url)
+                                     hosting_url=hosting_url,
+                                     local_site=local_site)
 
     def _get_service(self):
         return self._get_hosting_account().service
@@ -517,6 +523,145 @@ class BitbucketTests(ServiceTests):
             expected_revision='123',
             expected_found=False,
             expected_http_called=False)
+
+    @add_fixtures(['test_users', 'test_scmtools'])
+    def test_close_submitted_hook(self):
+        """Testing BitBucket close_submitted hook"""
+        self._test_post_commit_hook()
+
+    @add_fixtures(['test_site', 'test_users', 'test_scmtools'])
+    def test_close_submitted_hook_with_local_site(self):
+        """Testing BitBucket close_submitted hook with a Local Site"""
+        self._test_post_commit_hook(
+            LocalSite.objects.get(name=self.local_site_name))
+
+    @add_fixtures(['test_users', 'test_scmtools'])
+    def test_close_submitted_hook_with_invalid_repo(self):
+        """Testing BitBucket close_submitted hook with invalid repository"""
+        repository = self.create_repository()
+
+        review_request = self.create_review_request(repository=repository,
+                                                    publish=True)
+        self.assertTrue(review_request.public)
+        self.assertEqual(review_request.status, review_request.PENDING_REVIEW)
+
+        url = local_site_reverse(
+            'bitbucket-hooks-close-submitted',
+            kwargs={
+                'repository_id': repository.pk,
+                'hosting_service_id': 'bitbucket',
+            })
+
+        self._post_commit_hook_payload(url, review_request)
+
+        review_request = ReviewRequest.objects.get(pk=review_request.pk)
+        self.assertTrue(review_request.public)
+        self.assertEqual(review_request.status, review_request.PENDING_REVIEW)
+        self.assertEqual(review_request.changedescs.count(), 0)
+
+    @add_fixtures(['test_users', 'test_scmtools'])
+    def test_close_submitted_hook_with_invalid_site(self):
+        """Testing BitBucket close_submitted hook with invalid Local Site"""
+        repository = self.create_repository()
+
+        review_request = self.create_review_request(repository=repository,
+                                                    publish=True)
+        self.assertTrue(review_request.public)
+        self.assertEqual(review_request.status, review_request.PENDING_REVIEW)
+
+        url = local_site_reverse(
+            'bitbucket-hooks-close-submitted',
+            local_site_name='badsite',
+            kwargs={
+                'repository_id': repository.pk,
+                'hosting_service_id': 'bitbucket',
+            })
+
+        self._post_commit_hook_payload(url, review_request)
+
+        review_request = ReviewRequest.objects.get(pk=review_request.pk)
+        self.assertTrue(review_request.public)
+        self.assertEqual(review_request.status, review_request.PENDING_REVIEW)
+        self.assertEqual(review_request.changedescs.count(), 0)
+
+    @add_fixtures(['test_users', 'test_scmtools'])
+    def test_close_submitted_hook_with_invalid_service_id(self):
+        """Testing BitBucket close_submitted hook with invalid hosting
+        service ID
+        """
+        repository = self.create_repository()
+
+        review_request = self.create_review_request(repository=repository,
+                                                    publish=True)
+        self.assertTrue(review_request.public)
+        self.assertEqual(review_request.status, review_request.PENDING_REVIEW)
+
+        # We'll test against GitHub's hooks for this test.
+        url = local_site_reverse(
+            'github-hooks-close-submitted',
+            kwargs={
+                'repository_id': repository.pk,
+                'hosting_service_id': 'github',
+            })
+
+        self._post_commit_hook_payload(url, review_request)
+
+        review_request = ReviewRequest.objects.get(pk=review_request.pk)
+        self.assertTrue(review_request.public)
+        self.assertEqual(review_request.status, review_request.PENDING_REVIEW)
+        self.assertEqual(review_request.changedescs.count(), 0)
+
+    def _test_post_commit_hook(self, local_site=None):
+        account = self._get_hosting_account(local_site=local_site)
+        account.save()
+
+        repository = self.create_repository(hosting_account=account,
+                                            local_site=local_site)
+
+        review_request = self.create_review_request(repository=repository,
+                                                    local_site=local_site,
+                                                    publish=True)
+        self.assertTrue(review_request.public)
+        self.assertEqual(review_request.status, review_request.PENDING_REVIEW)
+
+        url = local_site_reverse(
+            'bitbucket-hooks-close-submitted',
+            local_site=local_site,
+            kwargs={
+                'repository_id': repository.pk,
+                'hosting_service_id': 'bitbucket',
+            })
+
+        self._post_commit_hook_payload(url, review_request)
+
+        review_request = ReviewRequest.objects.get(pk=review_request.pk)
+        self.assertTrue(review_request.public)
+        self.assertEqual(review_request.status, review_request.SUBMITTED)
+        self.assertEqual(review_request.changedescs.count(), 1)
+
+        changedesc = review_request.changedescs.get()
+        self.assertEqual(changedesc.text, 'Pushed to master (1c44b46)')
+
+    def _post_commit_hook_payload(self, url, review_request):
+        self.client.post(
+            url,
+            data={
+                'payload': json.dumps({
+                    # NOTE: This payload only contains the content we make
+                    #       use of in the hook.
+                    'commits': [
+                        {
+                            'raw_node': '1c44b461cebe5874a857c51a4a13a84'
+                                        '9a4d1e52d',
+                            'branch': 'master',
+                            'message': 'This is my fancy commit\n'
+                                       '\n'
+                                       'Reviewed at http://example.com%s'
+                                       % review_request.get_absolute_url(),
+                        },
+                    ]
+                }),
+            })
 
     def _test_get_file(self, tool_name, revision, base_commit_id,
                        expected_revision):
@@ -1596,6 +1741,142 @@ class GitHubTests(ServiceTests):
         self.assertRaises(ObjectDoesNotExist,
                           service.get_remote_repository, 'myuser/invalid')
 
+    @add_fixtures(['test_users', 'test_scmtools'])
+    def test_close_submitted_hook(self):
+        """Testing GitHub close_submitted hook"""
+        self._test_post_commit_hook()
+
+    @add_fixtures(['test_site', 'test_users', 'test_scmtools'])
+    def test_close_submitted_hook_with_local_site(self):
+        """Testing GitHub close_submitted hook with a Local Site"""
+        self._test_post_commit_hook(
+            LocalSite.objects.get(name=self.local_site_name))
+
+    @add_fixtures(['test_users', 'test_scmtools'])
+    def test_close_submitted_hook_with_invalid_repo(self):
+        """Testing GitHub close_submitted hook with invalid repository"""
+        repository = self.create_repository()
+
+        review_request = self.create_review_request(repository=repository,
+                                                    publish=True)
+        self.assertTrue(review_request.public)
+        self.assertEqual(review_request.status, review_request.PENDING_REVIEW)
+
+        url = local_site_reverse(
+            'github-hooks-close-submitted',
+            kwargs={
+                'repository_id': repository.pk,
+                'hosting_service_id': 'github',
+            })
+
+        self._post_commit_hook_payload(url, review_request)
+
+        review_request = ReviewRequest.objects.get(pk=review_request.pk)
+        self.assertTrue(review_request.public)
+        self.assertEqual(review_request.status, review_request.PENDING_REVIEW)
+        self.assertEqual(review_request.changedescs.count(), 0)
+
+    @add_fixtures(['test_users', 'test_scmtools'])
+    def test_close_submitted_hook_with_invalid_site(self):
+        """Testing GitHub close_submitted hook with invalid Local Site"""
+        repository = self.create_repository()
+
+        review_request = self.create_review_request(repository=repository,
+                                                    publish=True)
+        self.assertTrue(review_request.public)
+        self.assertEqual(review_request.status, review_request.PENDING_REVIEW)
+
+        url = local_site_reverse(
+            'github-hooks-close-submitted',
+            local_site_name='badsite',
+            kwargs={
+                'repository_id': repository.pk,
+                'hosting_service_id': 'github',
+            })
+
+        self._post_commit_hook_payload(url, review_request)
+
+        review_request = ReviewRequest.objects.get(pk=review_request.pk)
+        self.assertTrue(review_request.public)
+        self.assertEqual(review_request.status, review_request.PENDING_REVIEW)
+        self.assertEqual(review_request.changedescs.count(), 0)
+
+    @add_fixtures(['test_users', 'test_scmtools'])
+    def test_close_submitted_hook_with_invalid_service_id(self):
+        """Testing GitHub close_submitted hook with invalid hosting service ID
+        """
+        repository = self.create_repository()
+
+        review_request = self.create_review_request(repository=repository,
+                                                    publish=True)
+        self.assertTrue(review_request.public)
+        self.assertEqual(review_request.status, review_request.PENDING_REVIEW)
+
+        # We'll test against Bitbucket's hooks for this test.
+        url = local_site_reverse(
+            'bitbucket-hooks-close-submitted',
+            kwargs={
+                'repository_id': repository.pk,
+                'hosting_service_id': 'bitbucket',
+            })
+
+        self._post_commit_hook_payload(url, review_request)
+
+        review_request = ReviewRequest.objects.get(pk=review_request.pk)
+        self.assertTrue(review_request.public)
+        self.assertEqual(review_request.status, review_request.PENDING_REVIEW)
+        self.assertEqual(review_request.changedescs.count(), 0)
+
+    def _test_post_commit_hook(self, local_site=None):
+        account = self._get_hosting_account(local_site=local_site)
+        account.save()
+
+        repository = self.create_repository(hosting_account=account,
+                                            local_site=local_site)
+
+        review_request = self.create_review_request(repository=repository,
+                                                    local_site=local_site,
+                                                    publish=True)
+        self.assertTrue(review_request.public)
+        self.assertEqual(review_request.status, review_request.PENDING_REVIEW)
+
+        url = local_site_reverse(
+            'github-hooks-close-submitted',
+            local_site=local_site,
+            kwargs={
+                'repository_id': repository.pk,
+                'hosting_service_id': 'github',
+            })
+
+        self._post_commit_hook_payload(url, review_request)
+
+        review_request = ReviewRequest.objects.get(pk=review_request.pk)
+        self.assertTrue(review_request.public)
+        self.assertEqual(review_request.status, review_request.SUBMITTED)
+        self.assertEqual(review_request.changedescs.count(), 1)
+
+        changedesc = review_request.changedescs.get()
+        self.assertEqual(changedesc.text, 'Pushed to master (1c44b46)')
+
+    def _post_commit_hook_payload(self, url, review_request):
+        self.client.post(
+            url,
+            json.dumps({
+                # NOTE: This payload only contains the content we make
+                #       use of in the hook.
+                'ref': 'refs/heads/master',
+                'commits': [
+                    {
+                        'id': '1c44b461cebe5874a857c51a4a13a849a4d1e52d',
+                        'message': 'This is my fancy commit\n'
+                                   '\n'
+                                   'Reviewed at http://example.com%s'
+                                   % review_request.get_absolute_url(),
+                    },
+                ]
+            }),
+            content_type='application/json')
+
     def _test_check_repository(self, expected_user='myuser', **kwargs):
         def _http_get(service, url, *args, **kwargs):
             self.assertEqual(
@@ -1928,6 +2209,142 @@ class GoogleCodeTests(ServiceTests):
         self.assertEqual(fields['path'], 'http://myproj.googlecode.com/svn')
         self.assertEqual(fields['mirror_path'],
                          'https://myproj.googlecode.com/svn')
+
+    @add_fixtures(['test_users', 'test_scmtools'])
+    def test_close_submitted_hook(self):
+        """Testing Google Code close_submitted hook"""
+        self._test_post_commit_hook()
+
+    @add_fixtures(['test_site', 'test_users', 'test_scmtools'])
+    def test_close_submitted_hook_with_local_site(self):
+        """Testing Google Code close_submitted hook with a Local Site"""
+        self._test_post_commit_hook(
+            LocalSite.objects.get(name=self.local_site_name))
+
+    @add_fixtures(['test_users', 'test_scmtools'])
+    def test_close_submitted_hook_with_invalid_repo(self):
+        """Testing Google Code close_submitted hook with invalid repository"""
+        repository = self.create_repository()
+
+        review_request = self.create_review_request(repository=repository,
+                                                    publish=True)
+        self.assertTrue(review_request.public)
+        self.assertEqual(review_request.status, review_request.PENDING_REVIEW)
+
+        url = local_site_reverse(
+            'googlecode-hooks-close-submitted',
+            kwargs={
+                'repository_id': repository.pk,
+                'hosting_service_id': 'googlecode',
+            })
+
+        self._post_commit_hook_payload(url, review_request)
+
+        review_request = ReviewRequest.objects.get(pk=review_request.pk)
+        self.assertTrue(review_request.public)
+        self.assertEqual(review_request.status, review_request.PENDING_REVIEW)
+        self.assertEqual(review_request.changedescs.count(), 0)
+
+    @add_fixtures(['test_users', 'test_scmtools'])
+    def test_close_submitted_hook_with_invalid_site(self):
+        """Testing Google Code close_submitted hook with invalid Local Site"""
+        repository = self.create_repository()
+
+        review_request = self.create_review_request(repository=repository,
+                                                    publish=True)
+        self.assertTrue(review_request.public)
+        self.assertEqual(review_request.status, review_request.PENDING_REVIEW)
+
+        url = local_site_reverse(
+            'googlecode-hooks-close-submitted',
+            local_site_name='badsite',
+            kwargs={
+                'repository_id': repository.pk,
+                'hosting_service_id': 'googlecode',
+            })
+
+        self._post_commit_hook_payload(url, review_request)
+
+        review_request = ReviewRequest.objects.get(pk=review_request.pk)
+        self.assertTrue(review_request.public)
+        self.assertEqual(review_request.status, review_request.PENDING_REVIEW)
+        self.assertEqual(review_request.changedescs.count(), 0)
+
+    @add_fixtures(['test_users', 'test_scmtools'])
+    def test_close_submitted_hook_with_invalid_service_id(self):
+        """Testing Google Code close_submitted hook with invalid hosting service ID
+        """
+        repository = self.create_repository()
+
+        review_request = self.create_review_request(repository=repository,
+                                                    publish=True)
+        self.assertTrue(review_request.public)
+        self.assertEqual(review_request.status, review_request.PENDING_REVIEW)
+
+        # We'll test against Bitbucket's hooks for this test.
+        url = local_site_reverse(
+            'bitbucket-hooks-close-submitted',
+            kwargs={
+                'repository_id': repository.pk,
+                'hosting_service_id': 'bitbucket',
+            })
+
+        self._post_commit_hook_payload(url, review_request)
+
+        review_request = ReviewRequest.objects.get(pk=review_request.pk)
+        self.assertTrue(review_request.public)
+        self.assertEqual(review_request.status, review_request.PENDING_REVIEW)
+        self.assertEqual(review_request.changedescs.count(), 0)
+
+    def _test_post_commit_hook(self, local_site=None):
+        account = self._get_hosting_account(local_site=local_site)
+        account.save()
+
+        repository = self.create_repository(hosting_account=account,
+                                            local_site=local_site)
+
+        review_request = self.create_review_request(repository=repository,
+                                                    local_site=local_site,
+                                                    publish=True)
+        self.assertTrue(review_request.public)
+        self.assertEqual(review_request.status, review_request.PENDING_REVIEW)
+
+        url = local_site_reverse(
+            'googlecode-hooks-close-submitted',
+            local_site=local_site,
+            kwargs={
+                'repository_id': repository.pk,
+                'hosting_service_id': 'googlecode',
+            })
+
+        self._post_commit_hook_payload(url, review_request)
+
+        review_request = ReviewRequest.objects.get(pk=review_request.pk)
+        self.assertTrue(review_request.public)
+        self.assertEqual(review_request.status, review_request.SUBMITTED)
+        self.assertEqual(review_request.changedescs.count(), 1)
+
+        changedesc = review_request.changedescs.get()
+        self.assertEqual(changedesc.text, 'Pushed to master (1c44b46)')
+
+    def _post_commit_hook_payload(self, url, review_request):
+        self.client.post(
+            url,
+            json.dumps({
+                # NOTE: This payload only contains the content we make
+                #       use of in the hook.
+                'repository_path': 'master',
+                'revisions': [
+                    {
+                        'revision': '1c44b461cebe5874a857c51a4a13a849a4d1e52d',
+                        'message': 'This is my fancy commit\n'
+                                   '\n'
+                                   'Reviewed at http://example.com%s'
+                                   % review_request.get_absolute_url(),
+                    },
+                ]
+            }),
+            content_type='application/json')
 
 
 class RedmineTests(ServiceTests):
@@ -2303,56 +2720,86 @@ def hosting_service_url_test_view(request, repo_id):
     return HttpResponse(str(repo_id))
 
 
-class HostingServiceUrlPatternTests(TestCase):
-    """Unit tests for generating URL patterns."""
-    test_url = '/repos/1/DummyService/hooks/pre-commit/'
-
+class HostingServiceRegistrationTests(TestCase):
+    """Unit tests for Hosting Service registration."""
     class DummyService(HostingService):
         name = 'DummyService'
 
+    class DummyServiceWithURLs(HostingService):
+        name = 'DummyServiceWithURLs'
+
         repository_url_patterns = patterns(
             '',
-            url(r'^hooks/pre-commit/$',
-            hosting_service_url_test_view)
+
+            url(r'^hooks/pre-commit/$', hosting_service_url_test_view,
+                name='dummy-service-post-commit-hook'),
         )
 
-    def test_url_registration(self):
-        """Testing the registration and unregistration of a hosting service"""
-        # Testing hosting service and URL registration
-        register_hosting_service('DummyService', self.DummyService)
-        response = self.client.get(self.test_url)
-        self.assertEqual(response.status_code, 200)
+    def tearDown(self):
+        super(HostingServiceRegistrationTests, self).tearDown()
+
+        # Unregister the service, going back to a default state. It's okay
+        # if it fails.
+        #
+        # This will match whichever service we added for testing.
+        try:
+            unregister_hosting_service('dummy-service')
+        except KeyError:
+            pass
+
+    def test_register_without_urls(self):
+        """Testing HostingService registration"""
+        register_hosting_service('dummy-service', self.DummyService)
+
+        with self.assertRaises(KeyError):
+            register_hosting_service('dummy-service', self.DummyService)
+
+    def test_unregister(self):
+        """Testing HostingService unregistration"""
+        register_hosting_service('dummy-service', self.DummyService)
+        unregister_hosting_service('dummy-service')
+
+    def test_registration_with_urls(self):
+        """Testing HostingService registration with URLs"""
+        register_hosting_service('dummy-service', self.DummyServiceWithURLs)
+
+        self.assertEqual(
+            local_site_reverse(
+                'dummy-service-post-commit-hook',
+                kwargs={
+                    'repository_id': 1,
+                    'hosting_service_id': 'dummy-service',
+                }),
+            '/repos/1/dummy-service/hooks/pre-commit/')
+
+        self.assertEqual(
+            local_site_reverse(
+                'dummy-service-post-commit-hook',
+                local_site_name='test-site',
+                kwargs={
+                    'repository_id': 1,
+                    'hosting_service_id': 'dummy-service',
+                }),
+            '/s/test-site/repos/1/dummy-service/hooks/pre-commit/')
 
         # Once registered, should not be able to register again
-        self.assertRaises(KeyError,
-                          register_hosting_service,
-                          'DummyService',
-                          self.DummyService)
+        with self.assertRaises(KeyError):
+            register_hosting_service('dummy-service',
+                                     self.DummyServiceWithURLs)
 
-        # Testing unregistration of hosting service. Should not be
-        # able to resolve the URL
-        unregister_hosting_service('DummyService')
-        response = self.client.get(self.test_url)
-        self.assertEqual(response.status_code, 404)
+    def test_unregistration_with_urls(self):
+        """Testing HostingService unregistration with URLs"""
+        register_hosting_service('dummy-service', self.DummyServiceWithURLs)
+        unregister_hosting_service('dummy-service')
+
+        with self.assertRaises(NoReverseMatch):
+            local_site_reverse(
+                'dummy-service-post-commit-hook',
+                kwargs={
+                    'repository_id': 1,
+                    'hosting_service_id': 'dummy-service',
+                }),
 
         # Once unregistered, should not be able to unregister again
-        self.assertRaises(KeyError,
-                          unregister_hosting_service,
-                          'DummyService')
-
-        # Should not add repository_url_patterns if it is None.
-        # But should still register the hosting service
-        self.DummyService.repository_url_patterns = None
-        register_hosting_service('DummyService', self.DummyService)
-        self.assertRaises(KeyError,
-                          register_hosting_service,
-                          'DummyService',
-                          self.DummyService)
-        response = self.client.get(self.test_url)
-        self.assertEqual(response.status_code, 404)
-
-        # Should be able to unregister successfully after the previous
-        # test.
-        unregister_hosting_service('DummyService')
-        response = self.client.get(self.test_url)
-        self.assertEqual(response.status_code, 404)
+        with self.assertRaises(KeyError):
+            unregister_hosting_service('dummy-service')

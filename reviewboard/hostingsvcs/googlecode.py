@@ -34,8 +34,11 @@ class GoogleCode(HostingService):
 
     repository_url_patterns = patterns(
         '',
+
         url(r'^hooks/close-submitted/$',
-            'reviewboard.hostingsvcs.googlecode.post_receive_hook_close_submitted'),
+            'reviewboard.hostingsvcs.googlecode'
+            '.post_receive_hook_close_submitted',
+            name='googlecode-hooks-close-submitted'),
     )
 
     repository_fields = {
@@ -58,21 +61,30 @@ class GoogleCode(HostingService):
 
 
 @require_POST
-def post_receive_hook_close_submitted(request, *args, **kwargs):
+def post_receive_hook_close_submitted(request, local_site_name=None,
+                                      repository_id=None,
+                                      hosting_service_id=None):
     """Closes review requests as submitted automatically after a push."""
     try:
         payload = json.loads(request.body)
     except KeyError as e:
         logging.error('There is no JSON payload in the POST request: %s', e,
                       exc_info=1)
-        return HttpResponse(status=415)
+        return HttpResponse(status=400)
     except ValueError as e:
         logging.error('The payload is not in JSON format: %s', e,
                       exc_info=1)
-        return HttpResponse(status=415)
+        return HttpResponse(status=400)
 
     server_url = get_server_url(request)
-    close_review_requests(payload, server_url)
+    review_request_id_to_commits_map = \
+        close_review_requests(payload, server_url)
+
+    if review_request_id_to_commits_map:
+        close_all_review_requests(review_request_id_to_commits_map,
+                                  local_site_name, repository_id,
+                                  hosting_service_id)
+
     return HttpResponse()
 
 
@@ -83,11 +95,11 @@ def close_review_requests(payload, server_url):
     # which SCM tool was used for the commit. That's why the only way
     # to close a review request through this hook is by adding the review
     # request id in the commit message.
-    review_id_to_commits_map = defaultdict(list)
+    review_request_id_to_commits_map = defaultdict(list)
     branch_name = payload.get('repository_path')
 
     if not branch_name:
-        return review_id_to_commits_map
+        return review_request_id_to_commits_map
 
     revisions = payload.get('revisions', [])
 
@@ -100,7 +112,7 @@ def close_review_requests(payload, server_url):
         commit_message = revision.get('message')
         review_request_id = get_review_request_id(commit_message, server_url,
                                                   None)
-        commit_entry = '%s (%s)' % (branch_name, revision_id)
-        review_id_to_commits_map[review_request_id].append(commit_entry)
+        review_request_id_to_commits_map[review_request_id].append(
+            '%s (%s)' % (branch_name, revision_id))
 
-    close_all_review_requests(review_id_to_commits_map)
+    return review_request_id_to_commits_map
