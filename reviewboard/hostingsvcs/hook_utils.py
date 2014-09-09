@@ -4,23 +4,11 @@ import logging
 import re
 
 from django.conf import settings
-from django.contrib.sites.models import Site
 from django.db.models import Q
 from django.utils import six
-from djblets.siteconfig.models import SiteConfiguration
 
 from reviewboard.reviews.models import ReviewRequest
 from reviewboard.site.models import LocalSite
-from reviewboard.site.urlresolvers import local_site_reverse
-
-
-def get_server_url(request):
-    """Returns the server's URL."""
-    site = Site.objects.get_current()
-    siteconfig = SiteConfiguration.objects.get_current()
-
-    return '%s://%s%s' % (siteconfig.get('site_domain_method'), site.domain,
-                          local_site_reverse('root', request=request))
 
 
 def get_git_branch_name(ref_name):

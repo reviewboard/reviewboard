@@ -10,10 +10,10 @@ from django.http import HttpResponse
 from django.utils.translation import ugettext_lazy as _
 from django.views.decorators.http import require_POST
 
+from reviewboard.admin.server import get_server_url
 from reviewboard.hostingsvcs.forms import HostingServiceForm
 from reviewboard.hostingsvcs.hook_utils import (close_all_review_requests,
-                                                get_review_request_id,
-                                                get_server_url)
+                                                get_review_request_id)
 from reviewboard.hostingsvcs.service import HostingService
 
 
@@ -76,7 +76,7 @@ def post_receive_hook_close_submitted(request, local_site_name=None,
                       exc_info=1)
         return HttpResponse(status=400)
 
-    server_url = get_server_url(request)
+    server_url = get_server_url(request=request)
     review_request_id_to_commits_map = \
         close_review_requests(payload, server_url)
 

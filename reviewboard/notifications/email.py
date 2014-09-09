@@ -10,9 +10,11 @@ from django.core.urlresolvers import reverse
 from django.db.models import Q
 from django.template.loader import render_to_string
 from django.utils import timezone
+from django.utils.six.moves.urllib.parse import urljoin
 from djblets.siteconfig.models import SiteConfiguration
 
 from reviewboard.accounts.signals import user_registered
+from reviewboard.admin.server import get_server_url
 from reviewboard.reviews.models import ReviewRequest, Review
 from reviewboard.reviews.signals import (review_request_published,
                                          review_published, reply_published,
@@ -246,11 +248,12 @@ def send_review_mail(user, review_request, subject, in_reply_to,
         to_field = recipients
         cc_field = set()
 
-    base_url = '%s://%s' % (domain_method, current_site.domain)
+    base_url = get_server_url(local_site=local_site)
 
     headers = {
         'X-ReviewBoard-URL': base_url,
-        'X-ReviewRequest-URL': base_url + review_request.get_absolute_url(),
+        'X-ReviewRequest-URL': urljoin(base_url,
+                                       review_request.get_absolute_url()),
         'X-ReviewGroup': ', '.join(group.name for group in
                                    review_request.target_groups.all()),
     }
