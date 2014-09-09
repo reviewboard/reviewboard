@@ -1,4 +1,4 @@
-from __future__ import unicode_literals
+from __future__ import unicode_literals, division
 
 import sys
 from datetime import datetime, timedelta
@@ -71,7 +71,7 @@ class Command(NoArgsCommand):
                 'old_size': intcomma(old_diff_size),
                 'new_size': intcomma(new_diff_size),
                 'savings_pct': (float(old_diff_size - new_diff_size) /
-                                float(old_diff_size) * 100.0),
+                                float(old_diff_size) * 100),
             })
 
     def _on_batch_done(self, processed_count, total_count):
@@ -81,14 +81,20 @@ class Command(NoArgsCommand):
         amount of time remaining.
         """
         pct = processed_count * 100 / total_count
-        delta_secs = (datetime.now() - self.start_time).total_seconds()
+        delta = datetime.now() - self.start_time
+
+        # XXX: This can be replaced with total_seconds() once we no longer have
+        # to support Python 2.6
+        delta_secs = ((delta.microseconds +
+                       (delta.seconds + delta.days * 24 * 3600) * 10**6)
+                      / 10**6)
 
         if (not self.show_remaining and
             delta_secs >= self.DELAY_SHOW_REMAINING_SECS):
             self.show_remaining = True
 
         if self.show_remaining:
-            secs_left = ((delta_secs / processed_count) *
+            secs_left = ((delta_secs // processed_count) *
                          (total_count - processed_count))
 
             time_remaining_s = (self.TIME_REMAINING_STR
