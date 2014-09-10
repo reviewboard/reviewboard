@@ -127,7 +127,7 @@ suite('rb/utils/linkifyUtils', function() {
 
     describe('Bug References', function() {
         describe('With bugTrackerURL', function() {
-            var bugTrackerURL = 'http://issues/?id=%s';
+            var bugTrackerURL = 'http://issues/?id=--bug_id--';
 
             it('bug 123', function() {
                 expect(RB.LinkifyUtils.linkifyText('bug 123', bugTrackerURL)).toBe(
