@@ -12,13 +12,16 @@ from django.conf.urls import patterns, url
 from django.contrib.sites.models import Site
 from django.core.cache import cache
 from django.http import HttpResponse, HttpResponseBadRequest
+from django.template import RequestContext
+from django.template.loader import render_to_string
 from django.utils import six
 from django.utils.six.moves.urllib.error import HTTPError, URLError
+from django.utils.six.moves.urllib.parse import urljoin
 from django.utils.translation import ugettext_lazy as _
 from django.views.decorators.http import require_POST
 from djblets.siteconfig.models import SiteConfiguration
 
-from reviewboard.admin.server import get_server_url
+from reviewboard.admin.server import build_server_url, get_server_url
 from reviewboard.hostingsvcs.errors import (AuthorizationError,
                                             HostingServiceError,
                                             InvalidPlanError,
@@ -264,6 +267,8 @@ class GitHub(HostingService):
     supports_repositories = True
     supports_two_factor_auth = True
     supported_scmtools = ['Git']
+
+    has_repository_hook_instructions = True
 
     client_class = GitHubClient
 
@@ -668,6 +673,33 @@ class GitHub(HostingService):
 
         return Commit(author_name, revision, date, message, parent_revision,
                       diff=diff)
+
+    def get_repository_hook_instructions(self, request, repository):
+        """Returns instructions for setting up incoming webhooks."""
+        plan = repository.extra_data['repository_plan']
+        add_webhook_url = urljoin(
+            self.account.hosting_url or 'https://github.com/',
+            '%s/%s/settings/hooks/new'
+            % (self._get_repository_owner_raw(plan, repository.extra_data),
+               self._get_repository_name_raw(plan, repository.extra_data)))
+
+        webhook_endpoint_url = build_server_url(local_site_reverse(
+            'github-hooks-close-submitted',
+            local_site=repository.local_site,
+            kwargs={
+                'repository_id': repository.pk,
+                'hosting_service_id': repository.hosting_account.service_name,
+            }))
+
+        return render_to_string(
+            'hostingsvcs/github/repo_hook_instructions.html',
+            RequestContext(request, {
+                'repository': repository,
+                'server_url': get_server_url(),
+                'add_webhook_url': add_webhook_url,
+                'webhook_endpoint_url': webhook_endpoint_url,
+                'hook_uuid': repository.get_or_create_hooks_uuid(),
+            }))
 
     def _reset_authorization(self, client_id, client_secret, token):
         """Resets the authorization info for an OAuth app-linked token.
