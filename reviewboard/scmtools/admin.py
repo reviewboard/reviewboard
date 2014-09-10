@@ -73,7 +73,7 @@ class RepositoryAdmin(admin.ModelAdmin):
         (_('Internal State'), {
             'description': _('<p>This is advanced state that should not be '
                              'modified unless something is wrong.</p>'),
-            'fields': ('local_site', 'extra_data'),
+            'fields': ('local_site', 'hooks_uuid', 'extra_data'),
             'classes': ['collapse'],
         }),
     )
