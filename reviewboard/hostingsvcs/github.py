@@ -1,5 +1,6 @@
 from __future__ import unicode_literals
 
+import hmac
 import json
 import logging
 import uuid
@@ -10,7 +11,7 @@ from django.conf import settings
 from django.conf.urls import patterns, url
 from django.contrib.sites.models import Site
 from django.core.cache import cache
-from django.http import HttpResponse
+from django.http import HttpResponse, HttpResponseBadRequest
 from django.utils import six
 from django.utils.six.moves.urllib.error import HTTPError, URLError
 from django.utils.translation import ugettext_lazy as _
@@ -26,6 +27,7 @@ from reviewboard.hostingsvcs.errors import (AuthorizationError,
 from reviewboard.hostingsvcs.forms import HostingServiceForm
 from reviewboard.hostingsvcs.hook_utils import (close_all_review_requests,
                                                 get_git_branch_name,
+                                                get_repository_for_hook,
                                                 get_review_request_id)
 from reviewboard.hostingsvcs.service import (HostingService,
                                              HostingServiceClient)
@@ -747,11 +749,24 @@ def post_receive_hook_close_submitted(request, local_site_name=None,
                                       repository_id=None,
                                       hosting_service_id=None):
     """Closes review requests as submitted automatically after a push."""
+    if request.META.get('HTTP_X_GITHUB_EVENT') != 'push':
+        return HttpResponseBadRequest('Only "push" events are supported.')
+
+    repository = get_repository_for_hook(repository_id, hosting_service_id,
+                                         local_site_name)
+
+    # Validate the hook against the stored UUID.
+    m = hmac.new(bytes(repository.get_or_create_hooks_uuid()))
+    m.update(request.body)
+
+    if m.hexdigest() != request.META.get('HTTP_X_HUB_SIGNATURE'):
+        return HttpResponseBadRequest('Bad signature.')
+
     try:
         payload = json.loads(request.body)
     except ValueError as e:
         logging.error('The payload is not in JSON format: %s', e)
-        return HttpResponse(status=400)
+        return HttpResponseBadRequest('Invalid payload format')
 
     server_url = get_server_url(request=request)
     review_request_id_to_commits = \
@@ -759,7 +774,7 @@ def post_receive_hook_close_submitted(request, local_site_name=None,
 
     if review_request_id_to_commits:
         close_all_review_requests(review_request_id_to_commits,
-                                  local_site_name, repository_id,
+                                  local_site_name, repository,
                                   hosting_service_id)
 
     return HttpResponse()
