@@ -1,0 +1,21 @@
+{% extends "admin/change_list.html" %}
+
+{% block scripts %}
+{{block.super}}
+
+<script>
+function showInstructionsBox(url, title) {
+    $('<div>')
+        .load(url)
+        .modalBox({
+            title: title
+        });
+}
+
+$(document).on('click', '.action-rbtools-setup', function(evt) {
+    evt.preventDefault();
+    showInstructionsBox(evt.target.href,
+                        gettext('RBTools Setup Instructions'));
+});
+</script>
+{% endblock %}

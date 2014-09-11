@@ -4,6 +4,7 @@ from django.conf import settings
 from django.contrib.auth.models import User
 from django.core import mail
 from djblets.siteconfig.models import SiteConfiguration
+from djblets.testing.decorators import add_fixtures
 
 from reviewboard.admin.siteconfig import load_site_config
 from reviewboard.notifications.email import (build_email_address,
@@ -132,18 +133,69 @@ class ReviewRequestEmailTests(TestCase, EmailTestHelper):
         from_email = get_email_address_for_user(review.user)
 
         self.assertEqual(len(mail.outbox), 1)
-        self.assertEqual(mail.outbox[0].from_email, self.sender)
-        self.assertEqual(mail.outbox[0].extra_headers['From'], from_email)
-        self.assertEqual(mail.outbox[0].subject,
+        email = mail.outbox[0]
+        self.assertEqual(email.from_email, self.sender)
+        self.assertEqual(email.extra_headers['From'], from_email)
+        self.assertEqual(email.extra_headers['X-ReviewBoard-URL'],
+                         'http://example.com/')
+        self.assertEqual(email.extra_headers['X-ReviewRequest-URL'],
+                         'http://example.com/r/%s/'
+                         % review_request.display_id)
+        self.assertEqual(email.subject,
                          'Re: Review Request %s: My test review request'
-                         % review_request.pk)
+                         % review_request.display_id)
         self.assertValidRecipients([
             review_request.submitter.username,
             'grumpy',
             'doc',
         ])
 
-        message = mail.outbox[0].message()
+        message = email.message()
+        self.assertEqual(message['Sender'], self._get_sender(review.user))
+
+    @add_fixtures(['test_site'])
+    def test_review_email_with_site(self):
+        """Testing sending an e-mail when replying to a review request
+        on a Local Site
+        """
+        review_request = self.create_review_request(
+            summary='My test review request',
+            with_local_site=True)
+        review_request.target_people.add(User.objects.get(username='grumpy'))
+        review_request.target_people.add(User.objects.get(username='doc'))
+        review_request.publish(review_request.submitter)
+
+        # Ensure all the reviewers are on the site.
+        site = review_request.local_site
+        site.users.add(*list(review_request.target_people.all()))
+
+        # Clear the outbox.
+        mail.outbox = []
+
+        review = self.create_review(review_request=review_request)
+        review.publish()
+
+        from_email = get_email_address_for_user(review.user)
+
+        self.assertEqual(len(mail.outbox), 1)
+        email = mail.outbox[0]
+        self.assertEqual(email.from_email, self.sender)
+        self.assertEqual(email.extra_headers['From'], from_email)
+        self.assertEqual(email.extra_headers['X-ReviewBoard-URL'],
+                         'http://example.com/s/local-site-1/')
+        self.assertEqual(email.extra_headers['X-ReviewRequest-URL'],
+                         'http://example.com/s/local-site-1/r/%s/'
+                         % review_request.display_id)
+        self.assertEqual(email.subject,
+                         'Re: Review Request %s: My test review request'
+                         % review_request.display_id)
+        self.assertValidRecipients([
+            review_request.submitter.username,
+            'grumpy',
+            'doc',
+        ])
+
+        message = email.message()
         self.assertEqual(message['Sender'], self._get_sender(review.user))
 
     def test_profile_should_send_email_setting(self):

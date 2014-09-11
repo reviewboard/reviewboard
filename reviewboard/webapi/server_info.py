@@ -1,11 +1,9 @@
 from __future__ import unicode_literals
 
 from django.conf import settings
-from django.contrib.sites.models import Site
-from djblets.siteconfig.models import SiteConfiguration
 
 from reviewboard import get_version_string, get_package_version, is_release
-from reviewboard.site.urlresolvers import local_site_reverse
+from reviewboard.admin.server import get_server_url
 
 
 def get_server_info(request=None):
@@ -14,12 +12,6 @@ def get_server_info(request=None):
     This is used for the root resource and for the deprecated server
     info resource.
     """
-    site = Site.objects.get_current()
-    siteconfig = SiteConfiguration.objects.get_current()
-
-    url = '%s://%s%s' % (siteconfig.get('site_domain_method'), site.domain,
-                         local_site_reverse('root', request=request))
-
     return {
         'product': {
             'name': 'Review Board',
@@ -28,7 +20,7 @@ def get_server_info(request=None):
             'is_release': is_release(),
         },
         'site': {
-            'url': url,
+            'url': get_server_url(request=request),
             'administrators': [
                 {
                     'name': name,
