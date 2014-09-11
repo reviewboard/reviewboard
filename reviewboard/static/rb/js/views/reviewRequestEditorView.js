@@ -541,9 +541,11 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
                 this.formatText($el, $el.text());
             }, this);
 
-            this.dndUploader = new RB.DnDUploader({
-                reviewRequestEditor: this.model
-            });
+            if (this.model.get('editable')) {
+                this.dndUploader = new RB.DnDUploader({
+                    reviewRequestEditor: this.model
+                });
+            }
 
             /*
              * Update the layout constraints any time these properties
