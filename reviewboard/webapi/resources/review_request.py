@@ -706,6 +706,9 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
 
         # Preserve the old changenum behavior.
         if changenum is not None:
+            if review_request.repository is None:
+                return INVALID_CHANGE_NUMBER
+
             if changenum != review_request.changenum:
                 review_request.commit = changenum
 
