@@ -6,21 +6,25 @@ from collections import defaultdict
 
 from django import forms
 from django.conf.urls import patterns, url
-from django.http import HttpResponse
+from django.http import HttpResponse, HttpResponseBadRequest
+from django.template import RequestContext
+from django.template.loader import render_to_string
 from django.utils.six.moves.urllib.error import HTTPError, URLError
 from django.utils.six.moves.urllib.parse import quote
 from django.utils.translation import ugettext_lazy as _
 from django.views.decorators.http import require_POST
 
-from reviewboard.admin.server import get_server_url
+from reviewboard.admin.server import build_server_url, get_server_url
 from reviewboard.hostingsvcs.errors import InvalidPlanError
 from reviewboard.hostingsvcs.forms import HostingServiceForm
 from reviewboard.hostingsvcs.hook_utils import (close_all_review_requests,
+                                                get_repository_for_hook,
                                                 get_review_request_id)
 from reviewboard.hostingsvcs.service import HostingService
 from reviewboard.scmtools.crypto_utils import (decrypt_password,
                                                encrypt_password)
 from reviewboard.scmtools.errors import FileNotFoundError
+from reviewboard.site.urlresolvers import local_site_reverse
 
 
 class BitbucketPersonalForm(HostingServiceForm):
@@ -61,10 +65,12 @@ class Bitbucket(HostingService):
     supports_repositories = True
     supports_bug_trackers = True
 
+    has_repository_hook_instructions = True
+
     repository_url_patterns = patterns(
         '',
 
-        url(r'^hooks/close-submitted/$',
+        url(r'^hooks/(?P<hooks_uuid>[a-z0-9]+)/close-submitted/$',
             'reviewboard.hostingsvcs.bitbucket'
             '.post_receive_hook_close_submitted',
             name='bitbucket-hooks-close-submitted'),
@@ -183,6 +189,30 @@ class Bitbucket(HostingService):
         except (URLError, HTTPError, FileNotFoundError):
             return False
 
+    def get_repository_hook_instructions(self, request, repository):
+        """Returns instructions for setting up incoming webhooks."""
+        webhook_endpoint_url = build_server_url(local_site_reverse(
+            'bitbucket-hooks-close-submitted',
+            local_site=repository.local_site,
+            kwargs={
+                'repository_id': repository.pk,
+                'hosting_service_id': repository.hosting_account.service_name,
+                'hooks_uuid': repository.get_or_create_hooks_uuid(),
+            }))
+        add_webhook_url = (
+            'https://bitbucket.org/%s/%s/admin/hooks?service=POST&url=%s'
+            % (self._get_repository_owner(repository),
+               self._get_repository_name(repository),
+               webhook_endpoint_url))
+
+        return render_to_string(
+            'hostingsvcs/bitbucket/repo_hook_instructions.html',
+            RequestContext(request, {
+                'repository': repository,
+                'server_url': get_server_url(),
+                'add_webhook_url': add_webhook_url,
+            }))
+
     def _api_get_repository(self, username, repo_name):
         url = self._build_api_url('repositories/%s/%s'
                                   % (username, repo_name))
@@ -271,16 +301,20 @@ class Bitbucket(HostingService):
 @require_POST
 def post_receive_hook_close_submitted(request, local_site_name=None,
                                       repository_id=None,
-                                      hosting_service_id=None):
+                                      hosting_service_id=None,
+                                      hooks_uuid=None):
     """Closes review requests as submitted automatically after a push."""
+    repository = get_repository_for_hook(repository_id, hosting_service_id,
+                                         local_site_name, hooks_uuid)
+
     if 'payload' not in request.POST:
-        return HttpResponse(status=400)
+        return HttpResponseBadRequest('Missing payload')
 
     try:
         payload = json.loads(request.POST['payload'])
     except ValueError as e:
         logging.error('The payload is not in JSON format: %s', e)
-        return HttpResponse(status=400)
+        return HttpResponseBadRequest('Invalid payload format')
 
     server_url = get_server_url(request=request)
     review_request_id_to_commits = \
@@ -288,7 +322,7 @@ def post_receive_hook_close_submitted(request, local_site_name=None,
 
     if review_request_id_to_commits:
         close_all_review_requests(review_request_id_to_commits,
-                                  local_site_name, repository_id,
+                                  local_site_name, repository,
                                   hosting_service_id)
 
     return HttpResponse()

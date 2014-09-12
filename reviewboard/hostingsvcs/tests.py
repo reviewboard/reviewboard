@@ -549,19 +549,26 @@ class BitbucketTests(ServiceTests):
             kwargs={
                 'repository_id': repository.pk,
                 'hosting_service_id': 'bitbucket',
+                'hooks_uuid': repository.get_or_create_hooks_uuid(),
             })
 
-        self._post_commit_hook_payload(url, review_request)
+        response = self._post_commit_hook_payload(url, review_request)
+        self.assertEqual(response.status_code, 404)
 
         review_request = ReviewRequest.objects.get(pk=review_request.pk)
         self.assertTrue(review_request.public)
         self.assertEqual(review_request.status, review_request.PENDING_REVIEW)
         self.assertEqual(review_request.changedescs.count(), 0)
 
-    @add_fixtures(['test_users', 'test_scmtools'])
+    @add_fixtures(['test_site', 'test_users', 'test_scmtools'])
     def test_close_submitted_hook_with_invalid_site(self):
         """Testing BitBucket close_submitted hook with invalid Local Site"""
-        repository = self.create_repository()
+        local_site = LocalSite.objects.get(name=self.local_site_name)
+        account = self._get_hosting_account(local_site=local_site)
+        account.save()
+
+        repository = self.create_repository(hosting_account=account,
+                                            local_site=local_site)
 
         review_request = self.create_review_request(repository=repository,
                                                     publish=True)
@@ -574,9 +581,11 @@ class BitbucketTests(ServiceTests):
             kwargs={
                 'repository_id': repository.pk,
                 'hosting_service_id': 'bitbucket',
+                'hooks_uuid': repository.get_or_create_hooks_uuid(),
             })
 
-        self._post_commit_hook_payload(url, review_request)
+        response = self._post_commit_hook_payload(url, review_request)
+        self.assertEqual(response.status_code, 404)
 
         review_request = ReviewRequest.objects.get(pk=review_request.pk)
         self.assertTrue(review_request.public)
@@ -588,22 +597,27 @@ class BitbucketTests(ServiceTests):
         """Testing BitBucket close_submitted hook with invalid hosting
         service ID
         """
-        repository = self.create_repository()
+        # We'll test against GitHub for this test.
+        account = self._get_hosting_account()
+        account.service_name = 'github'
+        account.save()
+        repository = self.create_repository(hosting_account=account)
 
         review_request = self.create_review_request(repository=repository,
                                                     publish=True)
         self.assertTrue(review_request.public)
         self.assertEqual(review_request.status, review_request.PENDING_REVIEW)
 
-        # We'll test against GitHub's hooks for this test.
         url = local_site_reverse(
-            'github-hooks-close-submitted',
+            'bitbucket-hooks-close-submitted',
             kwargs={
                 'repository_id': repository.pk,
-                'hosting_service_id': 'github',
+                'hosting_service_id': 'bitbucket',
+                'hooks_uuid': repository.get_or_create_hooks_uuid(),
             })
 
-        self._post_commit_hook_payload(url, review_request)
+        response = self._post_commit_hook_payload(url, review_request)
+        self.assertEqual(response.status_code, 404)
 
         review_request = ReviewRequest.objects.get(pk=review_request.pk)
         self.assertTrue(review_request.public)
@@ -629,6 +643,7 @@ class BitbucketTests(ServiceTests):
             kwargs={
                 'repository_id': repository.pk,
                 'hosting_service_id': 'bitbucket',
+                'hooks_uuid': repository.get_or_create_hooks_uuid(),
             })
 
         self._post_commit_hook_payload(url, review_request)
@@ -642,7 +657,7 @@ class BitbucketTests(ServiceTests):
         self.assertEqual(changedesc.text, 'Pushed to master (1c44b46)')
 
     def _post_commit_hook_payload(self, url, review_request):
-        self.client.post(
+        return self.client.post(
             url,
             data={
                 'payload': json.dumps({
@@ -2023,6 +2038,7 @@ class GoogleCodeTests(ServiceTests):
             kwargs={
                 'repository_id': repository.pk,
                 'hosting_service_id': 'bitbucket',
+                'hooks_uuid': repository.get_or_create_hooks_uuid(),
             })
 
         self._post_commit_hook_payload(url, review_request)

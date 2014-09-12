@@ -22,10 +22,13 @@ def get_git_branch_name(ref_name):
 
 
 def get_repository_for_hook(repository_id, hosting_service_id,
-                            local_site_name):
+                            local_site_name, hooks_uuid=None):
     """Returns a Repository for the given hook parameters."""
     q = (Q(pk=repository_id) &
          Q(hosting_account__service_name=hosting_service_id))
+
+    if hooks_uuid:
+        q &= Q(hooks_uuid=hooks_uuid)
 
     if local_site_name:
         q &= Q(local_site__name=local_site_name)
