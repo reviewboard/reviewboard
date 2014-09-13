@@ -908,6 +908,7 @@ td, th {
           }
 
           .admin-inline-actions {
+            text-align: right;
             white-space: nowrap;
 
             a {
@@ -1139,9 +1140,15 @@ table#change-history {
  * Modal boxes
  ****************************************************************************/
 .modalbox-contents {
+  padding: 1em;
+  max-width: 70em;
+
   p, pre {
     color: black;
-    font-size: 12px;
+
+    &:first-child {
+      margin-top: 0;
+    }
 
     a {
       color: blue;
@@ -1149,8 +1156,20 @@ table#change-history {
     }
   }
 
+  p, pre, th, td {
+    font-size: 12px;
+  }
+
   pre {
     margin: 2em 1em;
+  }
+
+  table.sample-fields {
+    margin-left: 1em;
+
+    th {
+      text-align: right;
+    }
   }
 }
 

@@ -5,17 +5,24 @@
 
 <script>
 function showInstructionsBox(url, title) {
-    $('<div>')
-        .load(url)
-        .modalBox({
-            title: title
+    var $el = $('<div>')
+        .load(url, function() {
+            $el.modalBox({
+                title: title
+            });
         });
 }
 
-$(document).on('click', '.action-rbtools-setup', function(evt) {
-    evt.preventDefault();
-    showInstructionsBox(evt.target.href,
-                        gettext('RBTools Setup Instructions'));
-});
+$(document)
+    .on('click', '.action-hooks-setup', function(evt) {
+        evt.preventDefault();
+        showInstructionsBox(evt.target.href,
+                            gettext('Hooks Setup Instructions'));
+    })
+    .on('click', '.action-rbtools-setup', function(evt) {
+        evt.preventDefault();
+        showInstructionsBox(evt.target.href,
+                            gettext('RBTools Setup Instructions'));
+    });
 </script>
 {% endblock %}

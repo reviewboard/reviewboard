@@ -1,0 +1,40 @@
+{% load i18n %}
+
+<p>
+{% blocktrans %}
+ Review Board supports closing review requests that are referenced in
+ commit messages for any changes pushed to this repository. These references
+ are in the form of:
+{% endblocktrans %}
+</p>
+<pre>Reviewed at {{server_url}}r/123/</pre>
+<p>
+ Or:
+</p>
+<pre>Review Request #123</pre>
+<p>
+{% blocktrans %}
+ To configure this,
+ <a href="{{add_webhook_url}}" target="_blank">add a new webhook</a>
+ for your GitHub repository and set:
+{% endblocktrans %}
+</p>
+<table class="sample-fields">
+ <tr>
+  <th>Payload URL:</th>
+  <td><tt>{{webhook_endpoint_url}}</tt></td>
+ </tr>
+ <tr>
+  <th>Content type:</th>
+  <td><tt>application/json</tt></td>
+ </tr>
+ <tr>
+  <th>Secret:</th>
+  <td><tt>{{hook_uuid}}</tt></td>
+ </tr>
+</table>
+<p>
+{% blocktrans %}
+ Then click <b>Add webhook</b>. You're done!
+{% endblocktrans %}
+</p>

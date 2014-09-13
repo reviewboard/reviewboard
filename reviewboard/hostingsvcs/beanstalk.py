@@ -14,10 +14,10 @@ from django.utils.six.moves.urllib.parse import quote
 from django.utils.translation import ugettext_lazy as _
 from django.views.decorators.http import require_POST
 
+from reviewboard.admin.server import get_server_url
 from reviewboard.hostingsvcs.forms import HostingServiceForm
 from reviewboard.hostingsvcs.hook_utils import (close_all_review_requests,
-                                                get_review_request_id,
-                                                get_server_url)
+                                                get_review_request_id)
 from reviewboard.hostingsvcs.service import HostingService
 from reviewboard.scmtools.crypto_utils import (decrypt_password,
                                                encrypt_password)
@@ -217,7 +217,7 @@ class Beanstalk(HostingService):
 def process_post_receive_hook(request, *args, **kwargs):
     """Closes review requests as submitted automatically after a push."""
     try:
-        server_url = get_server_url(request)
+        server_url = get_server_url(request=request)
 
         # Check if it's a git or an SVN repository and close accordingly.
         if 'payload' in request.POST:

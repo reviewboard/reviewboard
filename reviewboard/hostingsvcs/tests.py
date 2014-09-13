@@ -1,5 +1,6 @@
 from __future__ import print_function, unicode_literals
 
+import hmac
 import json
 from hashlib import md5
 from textwrap import dedent
@@ -1769,7 +1770,9 @@ class GitHubTests(ServiceTests):
                 'hosting_service_id': 'github',
             })
 
-        self._post_commit_hook_payload(url, review_request)
+        response = self._post_commit_hook_payload(
+            url, review_request, repository.get_or_create_hooks_uuid())
+        self.assertEqual(response.status_code, 404)
 
         review_request = ReviewRequest.objects.get(pk=review_request.pk)
         self.assertTrue(review_request.public)
@@ -1794,7 +1797,9 @@ class GitHubTests(ServiceTests):
                 'hosting_service_id': 'github',
             })
 
-        self._post_commit_hook_payload(url, review_request)
+        response = self._post_commit_hook_payload(
+            url, review_request, repository.get_or_create_hooks_uuid())
+        self.assertEqual(response.status_code, 404)
 
         review_request = ReviewRequest.objects.get(pk=review_request.pk)
         self.assertTrue(review_request.public)
@@ -1805,22 +1810,84 @@ class GitHubTests(ServiceTests):
     def test_close_submitted_hook_with_invalid_service_id(self):
         """Testing GitHub close_submitted hook with invalid hosting service ID
         """
-        repository = self.create_repository()
+        # We'll test against Bitbucket for this test.
+        account = self._get_hosting_account()
+        account.service_name = 'bitbucket'
+        account.save()
+        repository = self.create_repository(hosting_account=account)
 
         review_request = self.create_review_request(repository=repository,
                                                     publish=True)
         self.assertTrue(review_request.public)
         self.assertEqual(review_request.status, review_request.PENDING_REVIEW)
 
-        # We'll test against Bitbucket's hooks for this test.
         url = local_site_reverse(
-            'bitbucket-hooks-close-submitted',
+            'github-hooks-close-submitted',
             kwargs={
                 'repository_id': repository.pk,
-                'hosting_service_id': 'bitbucket',
+                'hosting_service_id': 'github',
             })
 
-        self._post_commit_hook_payload(url, review_request)
+        response = self._post_commit_hook_payload(
+            url, review_request, repository.get_or_create_hooks_uuid())
+        self.assertEqual(response.status_code, 404)
+
+        review_request = ReviewRequest.objects.get(pk=review_request.pk)
+        self.assertTrue(review_request.public)
+        self.assertEqual(review_request.status, review_request.PENDING_REVIEW)
+        self.assertEqual(review_request.changedescs.count(), 0)
+
+    @add_fixtures(['test_users', 'test_scmtools'])
+    def test_close_submitted_hook_with_invalid_event(self):
+        """Testing GitHub close_submitted hook with non-push event"""
+        account = self._get_hosting_account()
+        account.save()
+
+        repository = self.create_repository(hosting_account=account)
+        review_request = self.create_review_request(repository=repository,
+                                                    publish=True)
+        self.assertTrue(review_request.public)
+        self.assertEqual(review_request.status, review_request.PENDING_REVIEW)
+
+        url = local_site_reverse(
+            'github-hooks-close-submitted',
+            kwargs={
+                'repository_id': repository.pk,
+                'hosting_service_id': 'github',
+            })
+
+        response = self._post_commit_hook_payload(
+            url, review_request, repository.get_or_create_hooks_uuid(),
+            event='foo')
+        self.assertEqual(response.status_code, 400)
+
+        review_request = ReviewRequest.objects.get(pk=review_request.pk)
+        self.assertTrue(review_request.public)
+        self.assertEqual(review_request.status, review_request.PENDING_REVIEW)
+        self.assertEqual(review_request.changedescs.count(), 0)
+
+    @add_fixtures(['test_users', 'test_scmtools'])
+    def test_close_submitted_hook_with_invalid_signature(self):
+        """Testing GitHub close_submitted hook with invalid signature"""
+        account = self._get_hosting_account()
+        account.save()
+
+        repository = self.create_repository(hosting_account=account)
+        review_request = self.create_review_request(repository=repository,
+                                                    publish=True)
+        self.assertTrue(review_request.public)
+        self.assertEqual(review_request.status, review_request.PENDING_REVIEW)
+
+        url = local_site_reverse(
+            'github-hooks-close-submitted',
+            kwargs={
+                'repository_id': repository.pk,
+                'hosting_service_id': 'github',
+            })
+
+        response = self._post_commit_hook_payload(
+            url, review_request, 'bad-secret')
+        self.assertEqual(response.status_code, 400)
 
         review_request = ReviewRequest.objects.get(pk=review_request.pk)
         self.assertTrue(review_request.public)
@@ -1848,7 +1915,9 @@ class GitHubTests(ServiceTests):
                 'hosting_service_id': 'github',
             })
 
-        self._post_commit_hook_payload(url, review_request)
+        response = self._post_commit_hook_payload(
+            url, review_request, repository.get_or_create_hooks_uuid())
+        self.assertEqual(response.status_code, 200)
 
         review_request = ReviewRequest.objects.get(pk=review_request.pk)
         self.assertTrue(review_request.public)
@@ -1858,24 +1927,32 @@ class GitHubTests(ServiceTests):
         changedesc = review_request.changedescs.get()
         self.assertEqual(changedesc.text, 'Pushed to master (1c44b46)')
 
-    def _post_commit_hook_payload(self, url, review_request):
-        self.client.post(
+    def _post_commit_hook_payload(self, url, review_request, secret,
+                                  event='push'):
+        payload = json.dumps({
+            # NOTE: This payload only contains the content we make
+            #       use of in the hook.
+            'ref': 'refs/heads/master',
+            'commits': [
+                {
+                    'id': '1c44b461cebe5874a857c51a4a13a849a4d1e52d',
+                    'message': 'This is my fancy commit\n'
+                               '\n'
+                               'Reviewed at http://example.com%s'
+                               % review_request.get_absolute_url(),
+                },
+            ]
+        })
+
+        m = hmac.new(bytes(secret))
+        m.update(payload)
+
+        return self.client.post(
             url,
-            json.dumps({
-                # NOTE: This payload only contains the content we make
-                #       use of in the hook.
-                'ref': 'refs/heads/master',
-                'commits': [
-                    {
-                        'id': '1c44b461cebe5874a857c51a4a13a849a4d1e52d',
-                        'message': 'This is my fancy commit\n'
-                                   '\n'
-                                   'Reviewed at http://example.com%s'
-                                   % review_request.get_absolute_url(),
-                    },
-                ]
-            }),
-            content_type='application/json')
+            payload,
+            content_type='application/json',
+            HTTP_X_GITHUB_EVENT=event,
+            HTTP_X_HUB_SIGNATURE=m.hexdigest())
 
     def _test_check_repository(self, expected_user='myuser', **kwargs):
         def _http_get(service, url, *args, **kwargs):

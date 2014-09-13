@@ -5,9 +5,11 @@ import re
 
 from django.conf import settings
 from django.db.models import Q
+from django.shortcuts import get_object_or_404
 from django.utils import six
 
 from reviewboard.reviews.models import ReviewRequest
+from reviewboard.scmtools.models import Repository
 from reviewboard.site.models import LocalSite
 
 
@@ -17,6 +19,20 @@ def get_git_branch_name(ref_name):
 
     if ref_name.startswith(branch_ref_prefix):
         return ref_name[len(branch_ref_prefix):]
+
+
+def get_repository_for_hook(repository_id, hosting_service_id,
+                            local_site_name):
+    """Returns a Repository for the given hook parameters."""
+    q = (Q(pk=repository_id) &
+         Q(hosting_account__service_name=hosting_service_id))
+
+    if local_site_name:
+        q &= Q(local_site__name=local_site_name)
+    else:
+        q &= Q(local_site__isnull=True)
+
+    return get_object_or_404(Repository, q)
 
 
 def get_review_request_id(commit_message, server_url, commit_id):
@@ -67,7 +83,7 @@ def close_review_request(review_request, review_request_id, description):
 
 
 def close_all_review_requests(review_request_id_to_commits, local_site_name,
-                              repository_id, hosting_service_id):
+                              repository, hosting_service_id):
     """Closes each review request in the given dictionary as submitted.
 
     The provided dictionary should map a review request ID (int) to commits
@@ -97,7 +113,7 @@ def close_all_review_requests(review_request_id_to_commits, local_site_name,
 
     # Look up all review requests that match the given repository, hosting
     # service ID, and Local Site.
-    q = (Q(repository=repository_id) &
+    q = (Q(repository=repository) &
          Q(repository__hosting_account__service_name=hosting_service_id))
 
     if local_site:

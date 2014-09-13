@@ -1,20 +1,23 @@
 from __future__ import unicode_literals
 
+import logging
+import uuid
 from time import time
 
 from django.contrib.auth.models import User
 from django.core.cache import cache
 from django.core.exceptions import ImproperlyConfigured, ValidationError
 from django.db import models
-from django.utils import timezone
+from django.db import IntegrityError
+from django.utils import six, timezone
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.functional import cached_property
 from django.utils.http import urlquote
+from django.utils.six.moves import range
 from django.utils.translation import ugettext_lazy as _
 from djblets.cache.backend import cache_memoize, make_cache_key
 from djblets.db.fields import JSONField
 from djblets.log import log_timed
-from django.utils import six
 
 from reviewboard.hostingsvcs.models import HostingServiceAccount
 from reviewboard.hostingsvcs.service import get_hosting_service
@@ -159,6 +162,14 @@ class Repository(models.Model):
         help_text=_('A list of invite-only review groups whose members have '
                     'explicit access to the repository.'))
 
+    hooks_uuid = models.CharField(
+        _('Hooks UUID'),
+        max_length=32,
+        null=True,
+        blank=True,
+        help_text=_('Unique identifier used for validating incoming '
+                    'webhooks.'))
+
     objects = RepositoryManager()
 
     BRANCHES_CACHE_PERIOD = 60 * 5  # 5 minutes
@@ -227,6 +238,33 @@ class Repository(models.Model):
             'username': username,
             'password': password,
         }
+
+    def get_or_create_hooks_uuid(self, max_attempts=20):
+        """Returns a hooks UUID, creating one if necessary.
+
+        If a hooks UUID isn't already saved, then this will try to generate one
+        that doesn't conflict with any other registered hooks UUID. It will try
+        up to `max_attempts` times, and if it fails, None will be returned.
+        """
+        if not self.hooks_uuid:
+            for attempt in range(max_attempts):
+                self.hooks_uuid = uuid.uuid4().hex
+
+                try:
+                    self.save(update_fields=['hooks_uuid'])
+                    break
+                except IntegrityError:
+                    # We hit a collision with the token value. Try again.
+                    self.hooks_uuid = None
+
+            if not self.hooks_uuid:
+                s = ('Unable to generate a unique hooks UUID for '
+                     'repository %s after %d attempts'
+                     % (self.pk, max_attempts))
+                logging.error(s)
+                raise Exception(s)
+
+        return self.hooks_uuid
 
     def archive(self, save=True):
         """Archives a repository.
@@ -538,4 +576,5 @@ class Repository(models.Model):
         # archiving repositories. We should really remove this constraint from
         # the tables and enforce it in code whenever visible=True
         unique_together = (('name', 'local_site'),
-                           ('archived_timestamp', 'path', 'local_site'))
+                           ('archived_timestamp', 'path', 'local_site'),
+                           ('hooks_uuid', 'local_site'))

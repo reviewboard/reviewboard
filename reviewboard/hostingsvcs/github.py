@@ -1,5 +1,6 @@
 from __future__ import unicode_literals
 
+import hmac
 import json
 import logging
 import re
@@ -12,14 +13,17 @@ from django.conf.urls import patterns, url
 from django.contrib.sites.models import Site
 from django.core.cache import cache
 from django.core.exceptions import ObjectDoesNotExist
-from django.http import HttpResponse
+from django.http import HttpResponse, HttpResponseBadRequest
+from django.template import RequestContext
+from django.template.loader import render_to_string
 from django.utils import six
 from django.utils.six.moves.urllib.error import HTTPError, URLError
+from django.utils.six.moves.urllib.parse import urljoin
 from django.utils.translation import ugettext_lazy as _
 from django.views.decorators.http import require_POST
 from djblets.siteconfig.models import SiteConfiguration
 
-from reviewboard.admin.server import get_server_url
+from reviewboard.admin.server import build_server_url, get_server_url
 from reviewboard.hostingsvcs.bugtracker import BugTracker
 from reviewboard.hostingsvcs.errors import (AuthorizationError,
                                             HostingServiceError,
@@ -29,6 +33,7 @@ from reviewboard.hostingsvcs.errors import (AuthorizationError,
 from reviewboard.hostingsvcs.forms import HostingServiceForm
 from reviewboard.hostingsvcs.hook_utils import (close_all_review_requests,
                                                 get_git_branch_name,
+                                                get_repository_for_hook,
                                                 get_review_request_id)
 from reviewboard.hostingsvcs.repository import RemoteRepository
 from reviewboard.hostingsvcs.service import (HostingService,
@@ -462,6 +467,8 @@ class GitHub(HostingService, BugTracker):
     supports_two_factor_auth = True
     supports_list_remote_repositories = True
     supported_scmtools = ['Git']
+
+    has_repository_hook_instructions = True
 
     client_class = GitHubClient
 
@@ -904,6 +911,33 @@ class GitHub(HostingService, BugTracker):
 
         return result
 
+    def get_repository_hook_instructions(self, request, repository):
+        """Returns instructions for setting up incoming webhooks."""
+        plan = repository.extra_data['repository_plan']
+        add_webhook_url = urljoin(
+            self.account.hosting_url or 'https://github.com/',
+            '%s/%s/settings/hooks/new'
+            % (self._get_repository_owner_raw(plan, repository.extra_data),
+               self._get_repository_name_raw(plan, repository.extra_data)))
+
+        webhook_endpoint_url = build_server_url(local_site_reverse(
+            'github-hooks-close-submitted',
+            local_site=repository.local_site,
+            kwargs={
+                'repository_id': repository.pk,
+                'hosting_service_id': repository.hosting_account.service_name,
+            }))
+
+        return render_to_string(
+            'hostingsvcs/github/repo_hook_instructions.html',
+            RequestContext(request, {
+                'repository': repository,
+                'server_url': get_server_url(),
+                'add_webhook_url': add_webhook_url,
+                'webhook_endpoint_url': webhook_endpoint_url,
+                'hook_uuid': repository.get_or_create_hooks_uuid(),
+            }))
+
     def _reset_authorization(self, client_id, client_secret, token):
         """Resets the authorization info for an OAuth app-linked token.
 
@@ -978,11 +1012,24 @@ def post_receive_hook_close_submitted(request, local_site_name=None,
                                       repository_id=None,
                                       hosting_service_id=None):
     """Closes review requests as submitted automatically after a push."""
+    if request.META.get('HTTP_X_GITHUB_EVENT') != 'push':
+        return HttpResponseBadRequest('Only "push" events are supported.')
+
+    repository = get_repository_for_hook(repository_id, hosting_service_id,
+                                         local_site_name)
+
+    # Validate the hook against the stored UUID.
+    m = hmac.new(bytes(repository.get_or_create_hooks_uuid()))
+    m.update(request.body)
+
+    if m.hexdigest() != request.META.get('HTTP_X_HUB_SIGNATURE'):
+        return HttpResponseBadRequest('Bad signature.')
+
     try:
         payload = json.loads(request.body)
     except ValueError as e:
         logging.error('The payload is not in JSON format: %s', e)
-        return HttpResponse(status=400)
+        return HttpResponseBadRequest('Invalid payload format')
 
     server_url = get_server_url(request=request)
     review_request_id_to_commits = \
@@ -990,7 +1037,7 @@ def post_receive_hook_close_submitted(request, local_site_name=None,
 
     if review_request_id_to_commits:
         close_all_review_requests(review_request_id_to_commits,
-                                  local_site_name, repository_id,
+                                  local_site_name, repository,
                                   hosting_service_id)
 
     return HttpResponse()

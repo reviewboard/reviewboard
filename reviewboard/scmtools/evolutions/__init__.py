@@ -13,4 +13,5 @@ SEQUENCE = [
     'repository_extra_data_null',
     'unique_together_baseline',
     'repository_archive',
+    'repository_hooks_uuid',
 ]

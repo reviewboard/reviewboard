@@ -3,8 +3,10 @@ from __future__ import unicode_literals
 from django.contrib import admin
 from django.db.models.signals import pre_delete
 from django.dispatch import receiver
+from django.http import HttpResponse, HttpResponseNotFound
 from django.shortcuts import get_object_or_404, render_to_response
 from django.template import RequestContext
+from django.utils.html import format_html
 from django.utils.translation import ugettext_lazy as _
 
 from reviewboard.accounts.admin import fix_review_counts
@@ -15,6 +17,7 @@ from reviewboard.scmtools.models import Repository, Tool
 
 class RepositoryAdmin(admin.ModelAdmin):
     list_display = ('__str__', 'path', 'hosting', '_visible', 'inline_actions')
+    list_select_related = ('hosting_account',)
     raw_id_fields = ('local_site',)
     fieldsets = (
         (_('General Information'), {
@@ -73,7 +76,7 @@ class RepositoryAdmin(admin.ModelAdmin):
         (_('Internal State'), {
             'description': _('<p>This is advanced state that should not be '
                              'modified unless something is wrong.</p>'),
-            'fields': ('local_site', 'extra_data'),
+            'fields': ('local_site', 'hooks_uuid', 'extra_data'),
             'classes': ['collapse'],
         }),
     )
@@ -89,14 +92,25 @@ class RepositoryAdmin(admin.ModelAdmin):
         return ''
 
     def inline_actions(self, repository):
-        return ('<div class="admin-inline-actions">'
-                ' <a class="action-rbtools-setup"'
-                '    href="%(id)s/rbtools-setup/">[%(rbtools_setup)s]</a>'
-                '</div>'
-                % {
-                    'id': repository.pk,
-                    'rbtools_setup': _('RBTools Setup'),
-                })
+        s = ['<div class="admin-inline-actions">']
+
+        if repository.hosting_account:
+            service = repository.hosting_account.service
+
+            if service and service.has_repository_hook_instructions:
+                s.append(format_html(
+                    '<a class="action-hooks-setup"'
+                    '   href="{0}/hooks-setup/">[{1}]</a>',
+                    repository.pk, _('Hooks')))
+
+        s.append(format_html(
+            '<a class="action-rbtools-setup"'
+            '   href="{0}/rbtools-setup/">[{1}]</a>',
+            repository.pk, _('RBTools Setup')))
+
+        s.append('</div>')
+
+        return ''.join(s)
     inline_actions.allow_tags = True
     inline_actions.short_description = ''
 
@@ -111,9 +125,24 @@ class RepositoryAdmin(admin.ModelAdmin):
         return patterns(
             '',
 
+            (r'^(?P<repository_id>[0-9]+)/hooks-setup/$',
+             self.admin_site.admin_view(self.hooks_setup)),
+
             (r'^(?P<repository_id>[0-9]+)/rbtools-setup/$',
              self.admin_site.admin_view(self.rbtools_setup)),
         ) + super(RepositoryAdmin, self).get_urls()
+
+    def hooks_setup(self, request, repository_id):
+        repository = get_object_or_404(Repository, pk=repository_id)
+
+        if repository.hosting_account:
+            service = repository.hosting_account.service
+
+            if service and service.has_repository_hook_instructions:
+                return HttpResponse(service.get_repository_hook_instructions(
+                    request, repository))
+
+        return HttpResponseNotFound()
 
     def rbtools_setup(self, request, repository_id):
         repository = get_object_or_404(Repository, pk=repository_id)

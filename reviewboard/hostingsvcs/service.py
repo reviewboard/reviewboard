@@ -171,6 +171,7 @@ class HostingService(object):
     supports_ssh_key_association = False
     supports_two_factor_auth = False
     supports_list_remote_repositories = False
+    has_repository_hook_instructions = False
 
     self_hosted = False
     repository_url_patterns = None
@@ -362,6 +363,19 @@ class HostingService(object):
                     })
 
         return results
+
+    def get_repository_hook_instructions(self, request, repository):
+        """Returns instructions for setting up incoming webhooks.
+
+        Subclasses can override this (and set
+        `has_repository_hook_instructions = True` on the subclass) to provide
+        instructions that administrators can see when trying to configure an
+        incoming webhook for the hosting service.
+
+        This is expected to return HTML for the instructions. The function
+        is responsible for escaping any content.
+        """
+        raise NotImplementedError
 
     @classmethod
     def get_bug_tracker_requires_username(cls, plan=None):
