@@ -6,6 +6,7 @@ import logging
 import mimetools
 
 from django.conf.urls import include, patterns, url
+from django.dispatch import receiver
 from django.utils import six
 from django.utils.six.moves.urllib.parse import urlparse
 from django.utils.six.moves.urllib.request import (Request as BaseURLRequest,
@@ -15,6 +16,7 @@ from django.utils.translation import ugettext_lazy as _
 from pkg_resources import iter_entry_points
 
 import reviewboard.hostingsvcs.urls as hostingsvcs_urls
+from reviewboard.signals import initializing
 
 
 class URLRequest(BaseURLRequest):
@@ -492,3 +494,8 @@ def unregister_hosting_service(name):
         hostingsvc_urlpattern = _hostingsvcs_urlpatterns[name]
         hostingsvcs_urls.dynamic_urls.remove_patterns(hostingsvc_urlpattern)
         del _hostingsvcs_urlpatterns[name]
+
+
+@receiver(initializing, dispatch_uid='populate_hosting_services')
+def _on_initializing(**kwargs):
+    _populate_hosting_services()
