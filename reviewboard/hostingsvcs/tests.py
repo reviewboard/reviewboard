@@ -2017,9 +2017,11 @@ class GoogleCodeTests(ServiceTests):
             kwargs={
                 'repository_id': repository.pk,
                 'hosting_service_id': 'googlecode',
+                'hooks_uuid': repository.get_or_create_hooks_uuid(),
             })
 
-        self._post_commit_hook_payload(url, review_request)
+        response = self._post_commit_hook_payload(url, review_request)
+        self.assertEqual(response.status_code, 404)
 
         review_request = ReviewRequest.objects.get(pk=review_request.pk)
         self.assertTrue(review_request.public)
@@ -2042,9 +2044,11 @@ class GoogleCodeTests(ServiceTests):
             kwargs={
                 'repository_id': repository.pk,
                 'hosting_service_id': 'googlecode',
+                'hooks_uuid': repository.get_or_create_hooks_uuid(),
             })
 
-        self._post_commit_hook_payload(url, review_request)
+        response = self._post_commit_hook_payload(url, review_request)
+        self.assertEqual(response.status_code, 404)
 
         review_request = ReviewRequest.objects.get(pk=review_request.pk)
         self.assertTrue(review_request.public)
@@ -2055,23 +2059,55 @@ class GoogleCodeTests(ServiceTests):
     def test_close_submitted_hook_with_invalid_service_id(self):
         """Testing Google Code close_submitted hook with invalid hosting service ID
         """
-        repository = self.create_repository()
+        # We'll test against Bitbucket for this test.
+        account = self._get_hosting_account()
+        account.service_name = 'bitbucket'
+        account.save()
+        repository = self.create_repository(hosting_account=account)
 
         review_request = self.create_review_request(repository=repository,
                                                     publish=True)
         self.assertTrue(review_request.public)
         self.assertEqual(review_request.status, review_request.PENDING_REVIEW)
 
-        # We'll test against Bitbucket's hooks for this test.
         url = local_site_reverse(
-            'bitbucket-hooks-close-submitted',
+            'googlecode-hooks-close-submitted',
             kwargs={
                 'repository_id': repository.pk,
-                'hosting_service_id': 'bitbucket',
+                'hosting_service_id': 'googlecode',
                 'hooks_uuid': repository.get_or_create_hooks_uuid(),
             })
 
-        self._post_commit_hook_payload(url, review_request)
+        response = self._post_commit_hook_payload(url, review_request)
+        self.assertEqual(response.status_code, 404)
+
+        review_request = ReviewRequest.objects.get(pk=review_request.pk)
+        self.assertTrue(review_request.public)
+        self.assertEqual(review_request.status, review_request.PENDING_REVIEW)
+        self.assertEqual(review_request.changedescs.count(), 0)
+
+    @add_fixtures(['test_users', 'test_scmtools'])
+    def test_close_submitted_hook_with_invalid_hooks_uuid(self):
+        """Testing Google Code close_submitted hook with invalid hooks UUID"""
+        account = self._get_hosting_account()
+        account.save()
+        repository = self.create_repository(hosting_account=account)
+
+        review_request = self.create_review_request(repository=repository,
+                                                    publish=True)
+        self.assertTrue(review_request.public)
+        self.assertEqual(review_request.status, review_request.PENDING_REVIEW)
+
+        url = local_site_reverse(
+            'googlecode-hooks-close-submitted',
+            kwargs={
+                'repository_id': repository.pk,
+                'hosting_service_id': 'googlecode',
+                'hooks_uuid': 'abc123',
+            })
+
+        response = self._post_commit_hook_payload(url, review_request)
+        self.assertEqual(response.status_code, 404)
 
         review_request = ReviewRequest.objects.get(pk=review_request.pk)
         self.assertTrue(review_request.public)
@@ -2097,9 +2133,11 @@ class GoogleCodeTests(ServiceTests):
             kwargs={
                 'repository_id': repository.pk,
                 'hosting_service_id': 'googlecode',
+                'hooks_uuid': repository.get_or_create_hooks_uuid(),
             })
 
-        self._post_commit_hook_payload(url, review_request)
+        response = self._post_commit_hook_payload(url, review_request)
+        self.assertEqual(response.status_code, 200)
 
         review_request = ReviewRequest.objects.get(pk=review_request.pk)
         self.assertTrue(review_request.public)
@@ -2110,7 +2148,7 @@ class GoogleCodeTests(ServiceTests):
         self.assertEqual(changedesc.text, 'Pushed to master (1c44b46)')
 
     def _post_commit_hook_payload(self, url, review_request):
-        self.client.post(
+        return self.client.post(
             url,
             json.dumps({
                 # NOTE: This payload only contains the content we make

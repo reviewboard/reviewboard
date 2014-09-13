@@ -1,0 +1,28 @@
+{% load i18n %}
+
+<p>
+{% blocktrans %}
+ Review Board supports closing review requests that are referenced in
+ commit messages for any changes pushed to this repository. These references
+ are in the form of:
+{% endblocktrans %}
+</p>
+<pre>Reviewed at {{server_url}}r/123/</pre>
+<p>
+ Or:
+</p>
+<pre>Review Request #123</pre>
+<p>
+{% blocktrans %}
+ To configure this,
+ <a href="{{add_webhook_url}}" target="_blank">fill in the post-commit webhook</a>
+ for your Google Code repository (toward the bottom of the page) with the following
+ URL:
+{% endblocktrans %}
+</p>
+<pre>{{webhook_endpoint_url}}</pre>
+<p>
+{% blocktrans %}
+ Then click <b>Save changes</b>. You're done!
+{% endblocktrans %}
+</p>
