@@ -1472,6 +1472,36 @@ class GitHubTests(ServiceTests):
             LocalSite.objects.get(name=self.local_site_name))
 
     @add_fixtures(['test_users', 'test_scmtools'])
+    def test_close_submitted_hook_ping(self):
+        """Testing GitHub close_submitted hook ping"""
+        account = self._get_hosting_account()
+        account.save()
+
+        repository = self.create_repository(hosting_account=account)
+
+        review_request = self.create_review_request(repository=repository,
+                                                    publish=True)
+        self.assertTrue(review_request.public)
+        self.assertEqual(review_request.status, review_request.PENDING_REVIEW)
+
+        url = local_site_reverse(
+            'github-hooks-close-submitted',
+            kwargs={
+                'repository_id': repository.pk,
+                'hosting_service_id': 'github',
+            })
+
+        response = self._post_commit_hook_payload(
+            url, review_request, repository.get_or_create_hooks_uuid(),
+            event='ping')
+        self.assertEqual(response.status_code, 200)
+
+        review_request = ReviewRequest.objects.get(pk=review_request.pk)
+        self.assertTrue(review_request.public)
+        self.assertEqual(review_request.status, review_request.PENDING_REVIEW)
+        self.assertEqual(review_request.changedescs.count(), 0)
+
+    @add_fixtures(['test_users', 'test_scmtools'])
     def test_close_submitted_hook_with_invalid_repo(self):
         """Testing GitHub close_submitted hook with invalid repository"""
         repository = self.create_repository()
@@ -1670,7 +1700,7 @@ class GitHubTests(ServiceTests):
             payload,
             content_type='application/json',
             HTTP_X_GITHUB_EVENT=event,
-            HTTP_X_HUB_SIGNATURE=m.hexdigest())
+            HTTP_X_HUB_SIGNATURE='sha1=%s' % m.hexdigest())
 
     def _test_check_repository(self, expected_user='myuser', **kwargs):
         def _http_get(service, url, *args, **kwargs):

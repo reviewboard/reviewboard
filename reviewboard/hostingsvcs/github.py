@@ -781,8 +781,15 @@ def post_receive_hook_close_submitted(request, local_site_name=None,
                                       repository_id=None,
                                       hosting_service_id=None):
     """Closes review requests as submitted automatically after a push."""
-    if request.META.get('HTTP_X_GITHUB_EVENT') != 'push':
-        return HttpResponseBadRequest('Only "push" events are supported.')
+    hook_event = request.META.get('HTTP_X_GITHUB_EVENT')
+
+    if hook_event == 'ping':
+        # GitHub is checking that this hook is valid, so accept the request
+        # and return.
+        return HttpResponse()
+    elif hook_event != 'push':
+        return HttpResponseBadRequest(
+            'Only "ping" and "push" events are supported.')
 
     repository = get_repository_for_hook(repository_id, hosting_service_id,
                                          local_site_name)
@@ -791,7 +798,13 @@ def post_receive_hook_close_submitted(request, local_site_name=None,
     m = hmac.new(bytes(repository.get_or_create_hooks_uuid()))
     m.update(request.body)
 
-    if m.hexdigest() != request.META.get('HTTP_X_HUB_SIGNATURE'):
+    sig_parts = request.META.get('HTTP_X_HUB_SIGNATURE').split('=')
+
+    if sig_parts[0] != 'sha1' or len(sig_parts) != 2:
+        # We don't know what this is.
+        return HttpResponseBadRequest('Unsupported HTTP_X_HUB_SIGNATURE')
+
+    if m.hexdigest() != sig_parts[1]:
         return HttpResponseBadRequest('Bad signature.')
 
     try:
