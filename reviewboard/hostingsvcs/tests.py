@@ -1,5 +1,6 @@
 from __future__ import print_function, unicode_literals
 
+import hashlib
 import hmac
 import json
 from hashlib import md5
@@ -1989,8 +1990,7 @@ class GitHubTests(ServiceTests):
             ]
         })
 
-        m = hmac.new(bytes(secret))
-        m.update(payload)
+        m = hmac.new(bytes(secret), payload, hashlib.sha1)
 
         return self.client.post(
             url,

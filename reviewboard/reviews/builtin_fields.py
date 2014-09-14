@@ -194,7 +194,7 @@ class SubmitterField(BuiltinFieldMixin, BaseReviewRequestField):
             '<a class="user" href="{0}">{1}</a>',
             local_site_reverse(
                 'user',
-                local_site_name=self.review_request_details.local_site.name,
+                local_site=self.review_request_details.local_site,
                 args=[user]),
             user.get_full_name() or user.username)
 
@@ -435,15 +435,10 @@ class DiffField(BuiltinLocalsFieldMixin, BaseReviewRequestField):
             line_counts=mark_safe(' '.join(line_counts))))
 
         if past_revision > 0:
-            if review_request.local_site:
-                local_site_name = review_request.local_site.name
-            else:
-                local_site_name = None
-
             # This is not the first diff revision. Include an interdiff link.
             interdiff_url = local_site_reverse(
                 'view-interdiff',
-                local_site_name=local_site_name,
+                local_site=review_request.local_site,
                 args=[
                     review_request.display_id,
                     past_revision,
@@ -522,14 +517,9 @@ class DiffField(BuiltinLocalsFieldMixin, BaseReviewRequestField):
     def record_change_entry(self, changedesc, unused, diffset):
         review_request = self.review_request_details.get_review_request()
 
-        if review_request.local_site:
-            local_site_name = review_request.local_site.name
-        else:
-            local_site_name = None
-
         url = local_site_reverse(
             'view-diff-revision',
-            local_site_name=local_site_name,
+            local_site=review_request.local_site,
             args=[review_request.display_id, diffset.revision])
 
         changedesc.fields_changed['diff'] = {
@@ -663,7 +653,7 @@ class TargetPeopleField(BuiltinFieldMixin, BaseModelListEditableField):
             '<a href="{0}" class="{1}">{2}</a>',
             local_site_reverse(
                 'user',
-                local_site_name=self.review_request_details.local_site.name,
+                local_site=self.review_request_details.local_site,
                 args=[user]),
             ' '.join(extra_classes),
             user.username)

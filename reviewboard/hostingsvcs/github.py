@@ -1,5 +1,6 @@
 from __future__ import unicode_literals
 
+import hashlib
 import hmac
 import json
 import logging
@@ -1026,8 +1027,8 @@ def post_receive_hook_close_submitted(request, local_site_name=None,
                                          local_site_name)
 
     # Validate the hook against the stored UUID.
-    m = hmac.new(bytes(repository.get_or_create_hooks_uuid()))
-    m.update(request.body)
+    m = hmac.new(bytes(repository.get_or_create_hooks_uuid()), request.body,
+                 hashlib.sha1)
 
     sig_parts = request.META.get('HTTP_X_HUB_SIGNATURE').split('=')
 
