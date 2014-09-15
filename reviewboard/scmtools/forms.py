@@ -579,6 +579,7 @@ class RepositoryForm(forms.ModelForm):
                 ])
                 return
 
+        if hosting_account:
             # Flag that we've linked the account. If there are any
             # validation errors, and this flag is set, we tell the user
             # that we successfully linked and they don't have to do it
