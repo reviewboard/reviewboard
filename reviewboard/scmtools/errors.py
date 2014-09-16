@@ -53,6 +53,9 @@ class FileNotFoundError(SCMError):
     def __init__(self, path, revision=None, detail=None, base_commit_id=None):
         from reviewboard.scmtools.core import HEAD
 
+        if isinstance(path, bytes):
+            path = path.decode('utf-8', 'ignore')
+
         if revision is None or revision == HEAD and base_commit_id is None:
             msg = (_("The file '%s' could not be found in the repository")
                    % path)
