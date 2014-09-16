@@ -1,9 +1,10 @@
 from __future__ import unicode_literals
 
 from django.core.exceptions import ObjectDoesNotExist
+from django.core.urlresolvers import NoReverseMatch
 from django.template.defaultfilters import date
 from django.utils import six
-from django.utils.html import conditional_escape, format_html_join
+from django.utils.html import conditional_escape, escape, format_html
 from django.utils.six.moves import reduce
 from django.utils.translation import ugettext_lazy as _, ugettext
 from djblets.datagrid.grids import Column, DateTimeColumn
@@ -64,14 +65,19 @@ class BugsColumn(Column):
             local_site_name = review_request.local_site.name
 
         if repository and repository.bug_tracker:
-            return format_html_join(
-                ', ',
-                '<a href="{0}">{1}</a>',
-                ((local_site_reverse('bug_url',
-                                     local_site_name=local_site_name,
-                                     args=(review_request.display_id, bug)),
-                  bug)
-                 for bug in bugs))
+            links = []
+            for bug in bugs:
+                try:
+                    url = local_site_reverse(
+                        'bug_url',
+                        local_site_name=local_site_name,
+                        args=(review_request.display_id, bug))
+                    links.append(
+                        format_html('<a href="{0}">{1}</a>', url, bug))
+                except NoReverseMatch:
+                    links.append(escape(bug))
+
+            return ', '.join(links)
 
         return ', '.join(bugs)
 
