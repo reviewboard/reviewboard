@@ -205,59 +205,59 @@ class SandboxExtension(Extension):
 
 class ReviewRequestApprovalTestHook(ReviewRequestApprovalHook):
     def is_approved(self, review_request, prev_approved, prev_failure):
-        raise StandardError
+        raise Exception
 
 
 class NavigationBarTestHook(NavigationBarHook):
     def get_entries(self, context):
-        raise StandardError
+        raise Exception
 
 
 class DiffViewerActionTestHook(DiffViewerActionHook):
     def get_actions(self, context):
-        raise StandardError
+        raise Exception
 
 
 class HeaderActionTestHook(HeaderActionHook):
     def get_actions(self, context):
-        raise StandardError
+        raise Exception
 
 
 class HeaderDropdownActionTestHook(HeaderDropdownActionHook):
     def get_actions(self, context):
-        raise StandardError
+        raise Exception
 
 
 class ReviewRequestActionTestHook(ReviewRequestActionHook):
     def get_actions(self, context):
-        raise StandardError
+        raise Exception
 
 
 class ReviewRequestDropdownActionTestHook(ReviewRequestDropdownActionHook):
     def get_actions(self, context):
-        raise StandardError
+        raise Exception
 
 
 class CommentDetailDisplayTestHook(CommentDetailDisplayHook):
     def render_review_comment_detail(self, comment):
-        raise StandardError
+        raise Exception
 
     def render_email_comment_detail(self, comment, is_html):
-        raise StandardError
+        raise Exception
 
 
 class BaseReviewRequestTestShouldRenderField(BaseReviewRequestField):
     field_id = 'should_render'
 
     def should_render(self, value):
-        raise StandardError
+        raise Exception
 
 
 class BaseReviewRequestTestInitField(BaseReviewRequestField):
     field_id = 'init_field'
 
     def __init__(self, review_request_details):
-        raise StandardError
+        raise Exception
 
 
 class TestIsEmptyField(BaseReviewRequestField):
@@ -284,7 +284,7 @@ class BaseReviewRequestTestIsEmptyFieldset(BaseReviewRequestFieldSet):
 
     @classmethod
     def is_empty(cls):
-        raise StandardError
+        raise Exception
 
 
 class BaseReviewRequestTestInitFieldset(BaseReviewRequestFieldSet):
@@ -292,7 +292,7 @@ class BaseReviewRequestTestInitFieldset(BaseReviewRequestFieldSet):
     field_classes = [TestInitField]
 
     def __init__(self, review_request_details):
-        raise StandardError
+        raise Exception
 
 
 class SandboxTests(TestCase):
