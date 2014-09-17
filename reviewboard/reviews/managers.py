@@ -144,7 +144,7 @@ class ReviewRequestManager(ConcurrencyManager):
             if create_from_commit_id:
                 try:
                     review_request.update_from_commit_id(commit_id)
-                except Exception, e:
+                except Exception as e:
                     review_request.commit_id = commit_id
                     logging.error('Unable to update new review request from '
                                   'commit ID %s: %s',

@@ -118,21 +118,21 @@ class FileAttachmentTests(BaseFileAttachmentTestCase):
             file_attachment = form.create(file, review_request)
 
             self.assertEqual(file_attachment.thumbnail,
-                             u'<div class="file-thumbnail-clipped"><pre>'
-                             u'UTF-16le encoded sample plain-text file</pre>'
-                             u'<pre>\u203e\u203e\u203e\u203e\u203e\u203e'
-                             u'\u203e\u203e\u203e\u203e\u203e\u203e\u203e'
-                             u'\u203e\u203e\u203e\u203e\u203e\u203e\u203e'
-                             u'\u203e\u203e\u203e\u203e\u203e\u203e\u203e'
-                             u'\u203e\u203e\u203e\u203e\u203e\u203e\u203e'
-                             u'\u203e\u203e\u203e\u203e\u203e</pre><pre>'
-                             u'</pre><pre>Markus Kuhn [\u02c8ma\u02b3k\u028as'
-                             u' ku\u02d0n] &lt;http://www.cl.cam.ac.uk/~mgk25/'
-                             u'&gt; \u2014 2002-07-25</pre><pre></pre><pre>'
-                             u'</pre><pre>The ASCII compatible UTF-8 encoding '
-                             u'used in this plain-text file</pre><pre>is '
-                             u'defined in Unicode, ISO 10646-1, and RFC 2279.'
-                             u'</pre></div>')
+                             '<div class="file-thumbnail-clipped"><pre>'
+                             'UTF-16le encoded sample plain-text file</pre>'
+                             '<pre>\u203e\u203e\u203e\u203e\u203e\u203e'
+                             '\u203e\u203e\u203e\u203e\u203e\u203e\u203e'
+                             '\u203e\u203e\u203e\u203e\u203e\u203e\u203e'
+                             '\u203e\u203e\u203e\u203e\u203e\u203e\u203e'
+                             '\u203e\u203e\u203e\u203e\u203e\u203e\u203e'
+                             '\u203e\u203e\u203e\u203e\u203e</pre><pre>'
+                             '</pre><pre>Markus Kuhn [\u02c8ma\u02b3k\u028as'
+                             ' ku\u02d0n] &lt;http://www.cl.cam.ac.uk/~mgk25/'
+                             '&gt; \u2014 2002-07-25</pre><pre></pre><pre>'
+                             '</pre><pre>The ASCII compatible UTF-8 encoding '
+                             'used in this plain-text file</pre><pre>is '
+                             'defined in Unicode, ISO 10646-1, and RFC 2279.'
+                             '</pre></div>')
 
 
 class MimetypeTest(MimetypeHandler):
