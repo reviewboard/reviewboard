@@ -589,7 +589,10 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
      *
      * This will always implicitly navigate to page 1 of any paginated diffs.
      */
-    _onRevisionSelected: function(base, tip) {
+    _onRevisionSelected: function(revisions) {
+        var base = revisions[0],
+            tip = revisions[1];
+
         if (base === 0) {
             this.router.navigate(tip + '/', {trigger: true});
         } else {

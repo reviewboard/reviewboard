@@ -90,7 +90,7 @@ RB.DiffCommentsHintView = Backbone.View.extend({
         var $target = $(ev.currentTarget);
 
         if (!$target.hasClass('current')) {
-            this.trigger('revisionSelected', 0, $target.data('revision'));
+            this.trigger('revisionSelected', [0, $target.data('revision')]);
         }
     },
 
@@ -102,8 +102,8 @@ RB.DiffCommentsHintView = Backbone.View.extend({
 
         if (!$target.hasClass('current')) {
             this.trigger('revisionSelected',
-                         $target.data('first-revision'),
-                         $target.data('second-revision'));
+                         [$target.data('first-revision'),
+                          $target.data('second-revision')]);
         }
     }
 });
