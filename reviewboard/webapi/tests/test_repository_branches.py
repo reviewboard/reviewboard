@@ -9,6 +9,7 @@ from reviewboard.webapi.tests.mimetypes import \
     repository_branches_item_mimetype
 from reviewboard.webapi.tests.mixins import BasicTestsMetaclass
 from reviewboard.webapi.tests.urls import get_repository_branches_url
+import nose
 
 
 @six.add_metaclass(BasicTestsMetaclass)
@@ -62,7 +63,11 @@ class ResourceTests(BaseWebAPITestCase):
         """
         repository = self.create_repository(tool_name='CVS')
 
-        rsp = self.api_get(get_repository_branches_url(repository),
-                           expected_status=501)
+        try:
+            rsp = self.api_get(get_repository_branches_url(repository),
+                               expected_status=501)
+        except ImportError:
+            raise nose.SkipTest("cvs binary not found")
+
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], REPO_NOT_IMPLEMENTED.code)
