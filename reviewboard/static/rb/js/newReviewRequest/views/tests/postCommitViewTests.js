@@ -167,7 +167,7 @@ suite('rb/newReviewRequest/views/PostCommitView', function() {
 
                 expect(view._$error).toBe(null);
                 expect(view._branchesView.$el.css('display'))
-                    .toBe('inline-block');
+                    .toBe('block');
             });
         });
 
