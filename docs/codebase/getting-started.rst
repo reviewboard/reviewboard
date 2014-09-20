@@ -376,10 +376,10 @@ Specify the port you want to use in ``PORT_NUMBER`` above.
 Running Unit Tests
 ------------------
 
-Both Djblets and Review Board have unit tests that can be run to make sure
-you don't break anything. It is important that you run these before posting
-code for review. We also request that new code include additions to the
-unit tests.
+Djblets, Review Board and RBTools all have unit tests that can be run
+to make sure you don't break anything. It is important that you run
+these before posting code for review. We also request that new code
+include additions to the unit tests.
 
 To run our unit test suite for Djblets, type::
 
@@ -390,6 +390,11 @@ For Review Board, type::
 
     $ cd reviewboard
     $ ./reviewboard/manage.py test
+
+For RBTools, type::
+
+    $ cd rbtools
+    $ nosetests -v
 
 If you're updating the unit tests, you may want to see the
 :ref:`Unit Test Fixtures` documentation.
