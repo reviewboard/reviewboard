@@ -74,6 +74,7 @@ class ResourceListTests(ExtraDataListMixin, BaseWebAPITestCase):
         self.create_review_request(publish=True, status='P')
         self.create_review_request(publish=True, status='P')
         self.create_review_request(publish=True, status='P')
+        self.create_review_request(public=False, status='P')
 
         url = get_review_request_list_url()
 
@@ -91,6 +92,12 @@ class ResourceListTests(ExtraDataListMixin, BaseWebAPITestCase):
                            expected_mimetype=review_request_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(len(rsp['review_requests']), 6)
+
+        self._login_user(admin=True)
+        rsp = self.api_get(url, {'status': 'all'},
+                           expected_mimetype=review_request_list_mimetype)
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(len(rsp['review_requests']), 7)
 
     def test_get_with_counts_only(self):
         """Testing the GET review-requests/?counts-only=1 API"""
