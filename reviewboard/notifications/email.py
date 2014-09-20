@@ -12,8 +12,8 @@ from django.template.loader import render_to_string
 from django.utils import timezone
 from django.utils.six.moves.urllib.parse import urljoin
 from djblets.siteconfig.models import SiteConfiguration
+from djblets.auth.signals import user_registered
 
-from reviewboard.accounts.signals import user_registered
 from reviewboard.admin.server import get_server_url
 from reviewboard.reviews.models import ReviewRequest, Review
 from reviewboard.reviews.signals import (review_request_published,

@@ -14,7 +14,6 @@ from djblets.util.decorators import augment_method_from
 from reviewboard.accounts.backends import get_enabled_auth_backends
 from reviewboard.accounts.forms.registration import RegistrationForm
 from reviewboard.accounts.pages import get_page_classes
-from reviewboard.accounts.signals import user_registered
 
 
 @csrf_protect
@@ -30,11 +29,6 @@ def account_register(request, next_url='dashboard'):
             siteconfig.get("auth_enable_registration")):
         response = register(request, next_page=reverse(next_url),
                             form_class=RegistrationForm)
-
-        if request.user.is_authenticated():
-            # This will trigger sending an e-mail notification for
-            # user registration, if enabled.
-            user_registered.send(sender=None, user=request.user)
 
         return response
 
