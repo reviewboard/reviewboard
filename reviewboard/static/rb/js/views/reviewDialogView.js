@@ -735,17 +735,7 @@ RB.ReviewDialogView = Backbone.View.extend({
 
                     $('<input type="button"/>')
                         .val(gettext('Discard Review'))
-                        .click(_.bind(function() {
-                            this.close();
-                            this.model.destroy({
-                                success: function() {
-                                    RB.DraftReviewBannerView.instance
-                                        .hideAndReload();
-                                }
-                            });
-
-                            return false;
-                        }, this)),
+                        .click(_.bind(this._onDiscardClicked, this)),
 
                     $('<input type="button"/>')
                         .val(gettext('Close'))
@@ -761,6 +751,39 @@ RB.ReviewDialogView = Backbone.View.extend({
 
         /* Must be done after the dialog is rendered. */
         this._$buttons = this._$dlg.modalBox('buttons');
+    },
+
+
+    /*
+     * Handler for the Discard Review button.
+     *
+     * Prompts the user to confirm that they want the review discarded.
+     * If they confirm, the review will be discarded.
+     */
+    _onDiscardClicked: function () {
+        var model = this.model,
+            self = this;
+
+        $('<p/>')
+            .text(gettext('If you discard this review, all related comments will be permanently deleted.'))
+            .modalBox({
+                title: gettext('Are you sure you want to discard this review?'),
+                buttons: [
+                    $('<input type="button" value="' + gettext('Cancel') + '"/>'),
+                    $('<input type="button" value="' + gettext('Discard') + '"/>')
+                        .click(function() {
+                            self.close();
+                            model.destroy({
+                                success: function() {
+                                    RB.DraftReviewBannerView.instance
+                                        .hideAndReload();
+                                }
+                            });
+                        })
+                ]
+            });
+
+        return false;
     },
 
     /*
