@@ -192,7 +192,17 @@ class ReviewRequestManagerTests(TestCase):
                 'Test 4',
                 'Test 3',
                 'Test 2',
-                'Test 1'
+                'Test 1',
+            ])
+        self.assertValidSummaries(
+            ReviewRequest.objects.public(status=None, show_private=True),
+            [
+                'Test 6',
+                'Test 5',
+                'Test 4',
+                'Test 3',
+                'Test 2',
+                'Test 1',
             ])
 
     @add_fixtures(['test_scmtools'])

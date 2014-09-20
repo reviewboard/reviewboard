@@ -379,10 +379,12 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
 
             status = string_to_status(request.GET.get('status', 'pending'))
 
-            queryset = self.model.objects.public(user=request.user,
-                                                 status=status,
-                                                 local_site=local_site,
-                                                 extra_query=q)
+            queryset = self.model.objects.public(
+                user=request.user,
+                status=status,
+                local_site=local_site,
+                extra_query=q,
+                show_private=request.user.is_staff)
 
             return queryset
         else:
