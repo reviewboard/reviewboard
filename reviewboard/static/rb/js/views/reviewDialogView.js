@@ -760,7 +760,7 @@ RB.ReviewDialogView = Backbone.View.extend({
      * Prompts the user to confirm that they want the review discarded.
      * If they confirm, the review will be discarded.
      */
-    _onDiscardClicked: function () {
+    _onDiscardClicked: function() {
         var model = this.model,
             self = this;
 
@@ -769,8 +769,10 @@ RB.ReviewDialogView = Backbone.View.extend({
             .modalBox({
                 title: gettext('Are you sure you want to discard this review?'),
                 buttons: [
-                    $('<input type="button" value="' + gettext('Cancel') + '"/>'),
-                    $('<input type="button" value="' + gettext('Discard') + '"/>')
+                    $('<input type="button"/>')
+                        .val(gettext('Cancel')),
+                    $('<input type="button"/>')
+                        .val(gettext('Discard'))
                         .click(function() {
                             self.close();
                             model.destroy({
