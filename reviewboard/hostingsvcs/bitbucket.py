@@ -205,9 +205,19 @@ class Bitbucket(HostingService):
                self._get_repository_name(repository),
                webhook_endpoint_url))
 
+        example_id = 123
+        example_url = build_server_url(local_site_reverse(
+            'review-request-detail',
+            local_site=repository.local_site,
+            kwargs={
+                'review_request_id': example_id,
+            }))
+
         return render_to_string(
             'hostingsvcs/bitbucket/repo_hook_instructions.html',
             RequestContext(request, {
+                'example_id': example_id,
+                'example_url': example_url,
                 'repository': repository,
                 'server_url': get_server_url(),
                 'add_webhook_url': add_webhook_url,
