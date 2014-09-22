@@ -38,5 +38,5 @@ RB.BaseCollection = Backbone.Collection.extend({
                 }
             }, this)
         }, options));
-    },
+    }
 });
