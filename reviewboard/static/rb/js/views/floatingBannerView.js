@@ -105,7 +105,7 @@ RB.FloatingBannerView = Backbone.View.extend({
                     .height(this.$el.outerHeight())
                     .css({
                         'margin-top': this.$el.css('margin-top'),
-                        'margin-bottom': this.$el.css('margin-bottom'),
+                        'margin-bottom': this.$el.css('margin-bottom')
                     });
 
                 this.$el
