@@ -418,8 +418,6 @@ PolicyEditorView = Backbone.View.extend({
      */
     save: function(closeOnSave) {
         var policyStr = this._codeMirror.getValue().strip(),
-            resources,
-            section,
             policy;
 
         try {

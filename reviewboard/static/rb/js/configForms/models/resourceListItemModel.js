@@ -70,7 +70,7 @@ RB.Config.ResourceListItem = Djblets.Config.ListItem.extend({
     /*
      * Creates the Resource for this list item, with the given attributes.
      */
-    createResource: function(attrs) {
+    createResource: function(/* attrs */) {
         console.assert(false, 'createResource must be implemented');
     },
 
