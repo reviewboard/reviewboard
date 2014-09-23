@@ -384,7 +384,10 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
                 status=status,
                 local_site=local_site,
                 extra_query=q,
-                show_private=request.user.is_staff)
+                show_all_unpublished=(
+                    'show-all-unpublished' in request.GET and
+                    request.user.is_superuser
+                ))
 
             return queryset
         else:
@@ -815,6 +818,13 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
                 'type': int,
                 'description': 'The ID of the repository that the review '
                                'requests must be on.',
+            },
+            'show-all-unpublished': {
+                'type': bool,
+                'description': 'If set, and if the user is an admin, '
+                               'unpublished review requests will also '
+                               'be returned.',
+                'aded_in': '2.0.8',
             },
             'issue-dropped-count': {
                 'type': bool,
