@@ -1,0 +1,177 @@
+================================
+Review Board 2.0.8 Release Notes
+================================
+
+**Release date**: TBD
+
+
+Upgrade Notes
+=============
+
+* This release fixes some compatibility issues involving the newly-released
+  Python-Markdown_ 2.5.
+
+  Python-Markdown 2.5 does not work with Python 2.6. Users who have recently
+  installed or upgraded Review Board on Python 2.6 may have noticed several
+  error messages involving "importlib," which are due to that new release.
+
+  Review Board 2.0.8 and higher now install Python-Markdown 2.4.1, which
+  is compatible with Python 2.6.
+
+* This release doesn't contain any new database schema changes.
+
+
+.. _Python-Markdown: https://pythonhosted.org/Markdown/
+
+
+New Features
+============
+
+* Clicking :guilabel:`Discard Review` in the Review dialog now prompts
+  for confirmation. (:bug:`3300`)
+
+  Patch by Justin Maillet.
+
+* Added some enhanced debugging for incorrect review request issue counts.
+
+  Some people have reported bugs when upgrading to Review Board 2.0.x
+  where the issue counts shown on the dashboard were incorrect. We are
+  working to track those down, and in this release, we've made it easier
+  to provide debug information to us.
+
+  A new ``rb-site <path> reset-issue-counts`` management command has been
+  added, which will reset the counts for individual review requests, or
+  for all review requests in the database.
+
+  If you are encountering a review request with broken issue counts, please
+  run::
+
+      rb-site <path> reset-issue-counts --recalculate --verbosity=2 <id>
+
+  Where ``<path>`` is the path to your Review Board site directory, and
+  ``<id>`` is the ID of the review request. This will provide some debug
+  information.
+
+  If the count for that review request is still incorrect, please
+  `file a bug report <reviewboard.org/bugs/new/>`_ with the output.
+
+
+Web API
+=======
+
+* :ref:`webapi2.0-review-request-list-resource` now allows admin users to
+  list all users' unpublished review requests. (:bug:`2766`)
+
+  When querying this resource, pass ``?show-all-unpublished=`` to specify
+  that all review requests, published or unpublished, should be shown.
+  This requires the user performing the request to have full admin access.
+
+  Patch by Ryan Done.
+
+
+Bug Fixes
+=========
+
+General
+-------
+
+* Fixed compatibility with Python 2.6 on systems with newer versions of
+  Python-Markdown.
+
+* Fixed some JavaScript syntax errors on Internet Explorer.
+
+
+Diff Viewer
+-----------
+
+* Double-clicking a comment flag no longer results in the dialog showing
+  twice and preventing the new comment from saving. (:bug:`3437`)
+
+  Patch by Daid Kus.
+
+
+Review Requests
+---------------
+
+* The first item in the auto-completion dropdown list will only replace
+  the input text if the input text is a prefix for the item. (:bug:`3444`)
+
+  Patch by Andrew Hong.
+
+* The comma key no longer triggers auto-completion. (:bug:`3444`)
+
+  Now, only Tab and Enter trigger auto-completion of the selected item.
+
+  Patch by Andrew Hong.
+
+* Pressing Delete no longer hides the auto-completion dropdown.
+
+  Patch by Andrew Hong.
+
+* Linking to collapsed reviews now expands the review. (:bug:`3532`)
+
+  Patch by Yanjia Xin.
+
+* Fixed drag-and-dropping file attachments on Firefox.
+
+
+New Review Request Page
+-----------------------
+
+* Fixed page breakages when encountering Unicode characters with values over
+  127 in patch files. (:bug:`3579`)
+
+* Bullet-proofed the page to not completely break when encountering
+  unexpected errors.
+
+
+Bitbucket
+---------
+
+* Fixed error reporting when things go wrong with Bitbucket API calls.
+
+* Fixed username validation when linking an account.
+
+* Fixed repository name validation when configuring a repository.
+
+
+Administration
+--------------
+
+* Fixed sending new user registration e-mails only when the registration
+  succeeded. (:bug:`3438`)
+
+  Patch by Azad Salahli.
+
+* The example usage instructions for post-commit hooks now shows the
+  proper URLs on Local Sites.
+
+* Fixed some cases where newly configured repositories would conflict with
+  each other, due to the ``hooks_uuid`` field not having a correct
+  value.
+
+* Added help text for the ``rb-site manage`` command when running
+  ``rb-site --help``.
+
+
+Subversion
+----------
+
+* Fixed File Not Found errors from the repository for Unicode paths.
+  (:bug:`3425`)
+
+* Fixed ``KeyError: u'message'`` errors when attempting to list commits
+  without a commit message. (:bug:`3579`)
+
+
+Contributors
+============
+
+* Andrew Hong
+* Azad Salahli
+* Christian Hammond
+* David Kus
+* David Trowbridge
+* Justin Maillet
+* Ryan Done
+* Yanjia Xin
