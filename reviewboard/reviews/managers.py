@@ -290,18 +290,18 @@ class ReviewRequestManager(ConcurrencyManager):
 
     def _query(self, user=None, status='P', with_counts=False,
                extra_query=None, local_site=None, filter_private=False,
-               show_inactive=False, show_private=False):
+               show_inactive=False, show_all_unpublished=False):
         from reviewboard.reviews.models import Group
 
         is_authenticated = (user is not None and user.is_authenticated())
 
-        query = Q(public=True)
+        if show_all_unpublished:
+            query = Q()
+        else:
+            query = Q(public=True)
 
-        if show_private:
-            query = query | Q(public=False)
-
-        if is_authenticated:
-            query = query | Q(submitter=user)
+            if is_authenticated:
+                query = query | Q(submitter=user)
 
         if not show_inactive:
             query = query & Q(submitter__is_active=True)

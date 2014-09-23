@@ -195,7 +195,8 @@ class ReviewRequestManagerTests(TestCase):
                 'Test 1',
             ])
         self.assertValidSummaries(
-            ReviewRequest.objects.public(status=None, show_private=True),
+            ReviewRequest.objects.public(status=None,
+                                         show_all_unpublished=True),
             [
                 'Test 6',
                 'Test 5',

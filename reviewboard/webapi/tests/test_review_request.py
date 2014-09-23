@@ -97,6 +97,17 @@ class ResourceListTests(ExtraDataListMixin, BaseWebAPITestCase):
         rsp = self.api_get(url, {'status': 'all'},
                            expected_mimetype=review_request_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(len(rsp['review_requests']), 6)
+
+        self._login_user(admin=True)
+        rsp = self.api_get(
+            url,
+            {
+                'status': 'all',
+                'show-all-unpublished': True,
+            },
+            expected_mimetype=review_request_list_mimetype)
+        self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(len(rsp['review_requests']), 7)
 
     def test_get_with_counts_only(self):

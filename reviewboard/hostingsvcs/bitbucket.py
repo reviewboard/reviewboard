@@ -9,13 +9,17 @@ from django.conf.urls import patterns, url
 from django.http import HttpResponse, HttpResponseBadRequest
 from django.template import RequestContext
 from django.template.loader import render_to_string
+from django.utils import six
 from django.utils.six.moves.urllib.error import HTTPError, URLError
 from django.utils.six.moves.urllib.parse import quote
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import ugettext_lazy as _, ugettext
 from django.views.decorators.http import require_POST
 
 from reviewboard.admin.server import build_server_url, get_server_url
-from reviewboard.hostingsvcs.errors import InvalidPlanError
+from reviewboard.hostingsvcs.errors import (AuthorizationError,
+                                            HostingServiceError,
+                                            InvalidPlanError,
+                                            RepositoryError)
 from reviewboard.hostingsvcs.forms import HostingServiceForm
 from reviewboard.hostingsvcs.hook_utils import (close_all_review_requests,
                                                 get_repository_for_hook,
@@ -139,9 +143,28 @@ class Bitbucket(HostingService):
         information on the repository. This will throw an exception if
         the repository was not found, and return cleanly if it was found.
         """
-        self._api_get_repository(
-            self._get_repository_owner_raw(plan, kwargs),
-            self._get_repository_name_raw(plan, kwargs))
+        repo_name = self._get_repository_name_raw(plan, kwargs)
+
+        if '/' in repo_name:
+            raise RepositoryError(ugettext(
+                'Please specify just the name of the repository, not '
+                'a path.'))
+
+        if '.git' in repo_name:
+            raise RepositoryError(ugettext(
+                'Please specify just the name of the repository without '
+                '".git".'))
+
+        try:
+            self._api_get_repository(
+                self._get_repository_owner_raw(plan, kwargs),
+                self._get_repository_name_raw(plan, kwargs))
+        except HostingServiceError as e:
+            if six.text_type(e) == 'Resource not found':
+                raise RepositoryError(
+                    ugettext('A repository with this name was not found.'))
+
+            raise
 
     def authorize(self, username, password, *args, **kwargs):
         """Authorizes the Bitbucket repository.
@@ -151,7 +174,13 @@ class Bitbucket(HostingService):
         encrypted, for use in later API requests.
         """
         self.account.data['password'] = encrypt_password(password)
-        self.account.save()
+
+        try:
+            self._api_get(self._build_api_url('user'))
+            self.account.save()
+        except Exception:
+            del self.account.data['password']
+            raise
 
     def is_authorized(self):
         """Determines if the account has supported authorization tokens.
@@ -301,11 +330,33 @@ class Bitbucket(HostingService):
             else:
                 return json.loads(data)
         except HTTPError as e:
-            # Bitbucket's API documentation doesn't provide any information
-            # on an error structure, and the API browser shows that we
-            # sometimes get a raw error string, and sometimes raw HTML.
-            # We'll just have to return what we get for now.
-            raise Exception(e.read())
+            self._check_api_error(e)
+
+    def _check_api_error(self, e):
+        data = e.read()
+
+        try:
+            rsp = json.loads(data)
+        except:
+            rsp = None
+
+        message = data
+
+        if rsp and 'error' in rsp:
+            error = rsp['error']
+
+            if 'message' in error:
+                message = error['message']
+
+        if message:
+            message = six.text_type(message)
+
+        if e.code == 401:
+            raise AuthorizationError(
+                message or ugettext('Invalid Bitbucket username or password'))
+        else:
+            raise HostingServiceError(
+                message or ugettext('Unknown error when talking to Bitbucket'))
 
 
 @require_POST
