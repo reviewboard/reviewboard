@@ -408,6 +408,19 @@ class Repository(models.Model):
         """
         return user.has_perm('scmtools.change_repository', self.local_site)
 
+    def save(self, **kwargs):
+        """Saves the repository.
+
+        This will perform any data normalization needed, and then save the
+        repository to the database.
+        """
+        # Prevent empty strings from saving in the admin UI, which could lead
+        # to database-level validation errors.
+        if self.hooks_uuid == '':
+            self.hooks_uuid = None
+
+        return super(Repository, self).save(**kwargs)
+
     def __str__(self):
         return self.name
 
