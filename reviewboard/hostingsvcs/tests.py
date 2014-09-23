@@ -16,7 +16,8 @@ from django.utils.six.moves.urllib.parse import urlparse
 from djblets.testing.decorators import add_fixtures
 from kgb import SpyAgency
 
-from reviewboard.hostingsvcs.errors import RepositoryError
+from reviewboard.hostingsvcs.errors import (AuthorizationError,
+                                            RepositoryError)
 from reviewboard.hostingsvcs.models import HostingServiceAccount
 from reviewboard.hostingsvcs.service import (get_hosting_service,
                                              HostingService,
@@ -368,9 +369,8 @@ class BitbucketTests(ServiceTests):
             return b'{}', {}
 
         account = self._get_hosting_account()
+        account.data['password'] = encrypt_password('abc123')
         service = account.service
-
-        service.authorize('myuser', 'abc123', None)
 
         self.spy_on(service.client.http_get, call_fake=_http_get)
 
@@ -430,7 +430,7 @@ class BitbucketTests(ServiceTests):
         account = self._get_hosting_account()
         service = account.service
 
-        service.authorize('myuser', 'abc123', None)
+        account.data['password'] = encrypt_password('abc123')
 
         self.spy_on(service.client.http_get, call_fake=_http_get)
 
@@ -439,10 +439,41 @@ class BitbucketTests(ServiceTests):
                                  plan='team')
         self.assertTrue(service.client.http_get.called)
 
+    def test_check_repository_with_slash(self):
+        """Testing Bitbucket check_repository with /"""
+        account = self._get_hosting_account()
+        account.data['password'] = encrypt_password('abc123')
+        service = account.service
+
+        with self.assertRaisesMessage(RepositoryError,
+                                      'Please specify just the name of the '
+                                      'repository, not a path.'):
+            service.check_repository(bitbucket_team_name='myteam',
+                                     bitbucket_team_repo_name='myteam/myrepo',
+                                     plan='team')
+
+    def test_check_repository_with_dot_git(self):
+        """Testing Bitbucket check_repository with .git"""
+        account = self._get_hosting_account()
+        account.data['password'] = encrypt_password('abc123')
+        service = account.service
+
+        with self.assertRaisesMessage(RepositoryError,
+                                      'Please specify just the name of the '
+                                      'repository without ".git".'):
+            service.check_repository(bitbucket_team_name='myteam',
+                                     bitbucket_team_repo_name='myrepo.git',
+                                     plan='team')
+
     def test_authorize(self):
-        """Testing Bitbucket authorization password storage"""
+        """Testing Bitbucket authorization"""
+        def _http_get(self, *args, **kwargs):
+            return '{}', {}
+
         account = self._get_hosting_account()
         service = account.service
+
+        self.spy_on(service.client.http_get, call_fake=_http_get)
 
         self.assertFalse(service.is_authorized())
 
@@ -451,6 +482,26 @@ class BitbucketTests(ServiceTests):
         self.assertIn('password', account.data)
         self.assertNotEqual(account.data['password'], 'abc123')
         self.assertTrue(service.is_authorized())
+
+    def test_authorize_with_bad_credentials(self):
+        """Testing Bitbucket authorization with bad credentials"""
+        def _http_get(service, url, *args, **kwargs):
+            raise HTTPError(url, 401, '', {}, StringIO(''))
+
+        account = self._get_hosting_account()
+        service = account.service
+
+        self.spy_on(service.client.http_get, call_fake=_http_get)
+
+        self.assertFalse(service.is_authorized())
+
+        with self.assertRaisesMessage(AuthorizationError,
+                                      'Invalid Bitbucket username or '
+                                      'password'):
+            service.authorize('myuser', 'abc123', None)
+
+        self.assertNotIn('password', account.data)
+        self.assertFalse(service.is_authorized())
 
     def test_get_file_with_mercurial_and_base_commit_id(self):
         """Testing Bitbucket get_file with Mercurial and base commit ID"""
@@ -696,7 +747,7 @@ class BitbucketTests(ServiceTests):
             'bitbucket_repo_name': 'myrepo',
         }
 
-        service.authorize('myuser', 'abc123', None)
+        account.data['password'] = encrypt_password('abc123')
 
         self.spy_on(service.client.http_get, call_fake=_http_get)
 
@@ -728,7 +779,7 @@ class BitbucketTests(ServiceTests):
             'bitbucket_repo_name': 'myrepo',
         }
 
-        service.authorize('myuser', 'abc123', None)
+        account.data['password'] = encrypt_password('abc123')
 
         self.spy_on(service.client.http_get, call_fake=_http_get)
 
