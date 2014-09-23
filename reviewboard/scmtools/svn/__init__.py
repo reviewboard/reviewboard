@@ -180,7 +180,7 @@ class SVNTool(SCMTool):
                 commit.get('author', ''),
                 commit['revision'],
                 commit['date'].isoformat(),
-                commit['message'],
+                commit.get('message', ''),
                 parent['revision']))
 
         # If there were fewer than the requested number of commits fetched,
@@ -189,10 +189,10 @@ class SVNTool(SCMTool):
         if len(commits) < self.COMMITS_PAGE_LIMIT:
             commit = commits[-1]
             results.append(Commit(
-                commit['author'],
+                commit.get('author', ''),
                 commit['revision'],
                 commit['date'].isoformat(),
-                commit['message']))
+                commit.get('message', '')))
 
         return results
 
