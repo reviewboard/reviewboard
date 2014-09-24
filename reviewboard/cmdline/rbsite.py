@@ -1771,9 +1771,17 @@ class UpgradeCommand(Command):
 
 
 class ManageCommand(Command):
-    """
-    Runs a manage.py command on the site.
-    """
+    """Runs a Django management command on the site."""
+    help_text = (
+        'Runs a Django management command on the site. '
+        'Usage: `rb-site <path> manage <command> -- <arguments>.` '
+        'Run `manage -- --help` for the list of commands.'
+    )
+
+    def add_options(self, parser):
+        group = OptionGroup(parser, "'manage' command", self.help_text)
+        parser.add_option_group(group)
+
     def run(self):
         site.setup_settings()
 
