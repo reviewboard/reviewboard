@@ -7,6 +7,7 @@ import time
 from django.core.cache import cache
 from django.contrib.auth.models import User
 from django.db.models.aggregates import Count
+from django.db.models.signals import post_save, post_delete
 from django.template.context import RequestContext
 from django.template.loader import render_to_string
 from django.utils import six
@@ -113,9 +114,10 @@ def get_sync_num():
     return cache.get(KEY)
 
 
-def increment_sync_num():
+def _increment_sync_num(*args, **kwargs):
     """Increment the sync_num."""
     KEY = datetime.date.today()
+
     if cache.get(KEY) is not None:
         cache.incr(KEY)
 
@@ -480,6 +482,17 @@ class ActivityGraphWidget(Widget):
         },
     ]
     has_data = False
+
+
+def init_widgets():
+    """Initializes the widgets subsystem.
+
+    This will listen for events in order to manage the widget caches.
+    """
+    post_save.connect(_increment_sync_num, sender=Group)
+    post_save.connect(_increment_sync_num, sender=Repository)
+    post_delete.connect(_increment_sync_num, sender=Group)
+    post_delete.connect(_increment_sync_num, sender=Repository)
 
 
 def register(widget, primary=False):
