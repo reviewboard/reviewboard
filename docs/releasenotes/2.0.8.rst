@@ -46,7 +46,7 @@ New Features
   If you are encountering a review request with broken issue counts, please
   run::
 
-      rb-site <path> reset-issue-counts --recalculate --verbosity=2 <id>
+      rb-site manage <path> reset-issue-counts -- --recalculate --verbosity=2 <id>
 
   Where ``<path>`` is the path to your Review Board site directory, and
   ``<id>`` is the ID of the review request. This will provide some debug
