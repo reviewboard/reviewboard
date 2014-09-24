@@ -17,3 +17,8 @@ class PublishError(Exception):
 
     def __str__(self):
         return 'Publish error: %s' % self.msg
+
+
+class NotModifiedError(Exception):
+    """Error when a review's state is not modified."""
+    pass

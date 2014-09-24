@@ -68,8 +68,7 @@ REPO_INFO_ERROR = WebAPIError(
 
 NOTHING_TO_PUBLISH = WebAPIError(
     211,
-    "You attempted to publish a review request that doesn't have an "
-    "associated draft.",
+    "You attempted to publish a review request without any modifications.",
     http_status=400)  # 400 Bad Request
 
 EMPTY_CHANGESET = WebAPIError(

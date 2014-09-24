@@ -14,14 +14,15 @@ from djblets.webapi.decorators import (webapi_login_required,
 from djblets.webapi.errors import (DOES_NOT_EXIST, INVALID_FORM_DATA,
                                    NOT_LOGGED_IN, PERMISSION_DENIED)
 
-from reviewboard.reviews.errors import PublishError
+from reviewboard.reviews.errors import NotModifiedError, PublishError
 from reviewboard.reviews.models import Group, ReviewRequest, ReviewRequestDraft
 from reviewboard.scmtools.errors import InvalidChangeNumberError
 from reviewboard.webapi.base import WebAPIResource
 from reviewboard.webapi.decorators import webapi_check_local_site
 from reviewboard.webapi.encoder import status_to_string
 from reviewboard.webapi.errors import (COMMIT_ID_ALREADY_EXISTS,
-                                       INVALID_CHANGE_NUMBER, PUBLISH_ERROR)
+                                       INVALID_CHANGE_NUMBER,
+                                       NOTHING_TO_PUBLISH, PUBLISH_ERROR)
 from reviewboard.webapi.mixins import MarkdownFieldsMixin
 from reviewboard.webapi.resources import resources
 
@@ -426,6 +427,8 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
                 review_request.publish(user=request.user)
             except PublishError as e:
                 return PUBLISH_ERROR.with_message(e.msg)
+            except NotModifiedError:
+                return NOTHING_TO_PUBLISH
 
         return 200, {
             self.item_result_key: draft,

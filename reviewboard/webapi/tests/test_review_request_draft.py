@@ -8,6 +8,7 @@ from djblets.webapi.errors import PERMISSION_DENIED
 
 from reviewboard.accounts.models import LocalSiteProfile
 from reviewboard.reviews.models import ReviewRequest, ReviewRequestDraft
+from reviewboard.webapi.errors import NOTHING_TO_PUBLISH
 from reviewboard.webapi.resources import resources
 from reviewboard.webapi.tests.base import BaseWebAPITestCase
 from reviewboard.webapi.tests.mimetypes import \
@@ -139,6 +140,23 @@ class ResourceTests(ExtraDataListMixin, ExtraDataItemMixin,
         draft = ReviewRequestDraft.objects.get(pk=rsp['draft']['id'])
         self.assertNotEqual(draft.changedesc, None)
         self.assertEqual(draft.changedesc.text, changedesc)
+
+    def test_put_with_no_changes(self):
+        """Testing the PUT review-requests/<id>/draft/ API
+        with no changes made to the fields
+        """
+        review_request = self.create_review_request(submitter=self.user,
+                                                    publish=True)
+
+        ReviewRequestDraft.create(review_request)
+
+        rsp = self.api_put(
+            get_review_request_draft_url(review_request),
+            {'public': True},
+            expected_status=NOTHING_TO_PUBLISH.http_status)
+
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertEqual(rsp['err']['code'], NOTHING_TO_PUBLISH.code)
 
     def test_put_with_text_type_markdown_all_fields(self):
         """Testing the PUT review-requests/<id>/draft/ API
