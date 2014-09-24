@@ -1308,7 +1308,7 @@
     "pk": 146, 
     "model": "auth.permission", 
     "fields": {
-        "codename": "add_filediffdata", 
+        "codename": "add_legacyfilediffdata", 
         "name": "Can add file diff data", 
         "content_type": 33
     }
@@ -1317,7 +1317,7 @@
     "pk": 147, 
     "model": "auth.permission", 
     "fields": {
-        "codename": "change_filediffdata", 
+        "codename": "change_legacyfilediffdata", 
         "name": "Can change file diff data", 
         "content_type": 33
     }
@@ -1326,7 +1326,7 @@
     "pk": 148, 
     "model": "auth.permission", 
     "fields": {
-        "codename": "delete_filediffdata", 
+        "codename": "delete_legacyfilediffdata", 
         "name": "Can delete file diff data", 
         "content_type": 33
     }
@@ -1593,7 +1593,7 @@
 },
 {
     "pk": "0948b063a6540a177fccdfb02fc42735e675c89d", 
-    "model": "diffviewer.filediffdata", 
+    "model": "diffviewer.legacyfilediffdata", 
     "fields": {
         "binary": "SW5kZXg6IFRFU1RJTkcNCj09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09\nPT09PT09PT09PT09PT09PT09PT09PT09PT0NCi0tLSBURVNUSU5HCShyZXZpc2lvbiAwKQ0KKysr\nIFRFU1RJTkcJKHJldmlzaW9uIDApDQpAQCAtMCwwICsxIEBADQorVGhpcyBpcyBhIHRlc3QhDQo=\n", 
         "extra_data": "{}"
@@ -1601,7 +1601,7 @@
 },
 {
     "pk": "da39a3ee5e6b4b0d3255bfef95601890afd80709", 
-    "model": "diffviewer.filediffdata", 
+    "model": "diffviewer.legacyfilediffdata", 
     "fields": {
         "binary": "", 
         "extra_data": "{}"
@@ -1609,7 +1609,7 @@
 },
 {
     "pk": "f92e30b3437a4a253c2f48bb7b77eb86620e75cc", 
-    "model": "diffviewer.filediffdata", 
+    "model": "diffviewer.legacyfilediffdata", 
     "fields": {
         "binary": "SW5kZXg6IC90cnVuay9yZXZpZXdib2FyZC9zZXR0aW5nc19sb2NhbC5weS50bXBsCj09PT09PT09\nPT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09\nPT0KLS0tIC90cnVuay9yZXZpZXdib2FyZC9zZXR0aW5nc19sb2NhbC5weS50bXBsCShyZXZpc2lv\nbiAxNzk3KQorKysgL3RydW5rL3Jldmlld2JvYXJkL3NldHRpbmdzX2xvY2FsLnB5LnRtcGwJKHdv\ncmtpbmcgY29weSkKQEAgLTEzLDE1ICsxMywxNSBAQAogIyBkamFuZ28gaW5zdGFsbGF0aW9ucywg\ndGhlIGJlc3Qgb3B0aW9uIGlzIHByb2JhYmx5IHRvIHVzZSBtZW1jYWNoZWQuCiBDQUNIRV9CQUNL\nRU5EID0gJ2xvY21lbTovLy8nCiAKLSMgTG9jYWwgdGltZSB6b25lIGZvciB0aGlzIGluc3RhbGxh\ndGlvbi4gQWxsIGNob2ljZXMgY2FuIGJlIGZvdW5kIGhlcmU6Ci0jIGh0dHA6Ly93d3cucG9zdGdy\nZXNxbC5vcmcvZG9jcy84LjEvc3RhdGljL2RhdGV0aW1lLWtleXdvcmRzLmh0bWwjREFURVRJTUUt\nVElNRVpPTkUtU0VULVRBQkxFCi1USU1FX1pPTkUgPSAnVVMvUGFjaWZpYycKLQogIyBMYW5ndWFn\nZSBjb2RlIGZvciB0aGlzIGluc3RhbGxhdGlvbi4gQWxsIGNob2ljZXMgY2FuIGJlIGZvdW5kIGhl\ncmU6CiAjIGh0dHA6Ly93d3cudzMub3JnL1RSL1JFQy1odG1sNDAvc3RydWN0L2RpcmxhbmcuaHRt\nbCNsYW5nY29kZXMKICMgaHR0cDovL2Jsb2dzLmxhdy5oYXJ2YXJkLmVkdS90ZWNoL3N0b3JpZXMv\nc3RvcnlSZWFkZXIkMTUKIExBTkdVQUdFX0NPREUgPSAnZW4tdXMnCiAKKyMgTG9jYWwgdGltZSB6\nb25lIGZvciB0aGlzIGluc3RhbGxhdGlvbi4gQWxsIGNob2ljZXMgY2FuIGJlIGZvdW5kIGhlcmU6\nCisjIGh0dHA6Ly93d3cucG9zdGdyZXNxbC5vcmcvZG9jcy84LjEvc3RhdGljL2RhdGV0aW1lLWtl\neXdvcmRzLmh0bWwjREFURVRJTUUtVElNRVpPTkUtU0VULVRBQkxFCitUSU1FX1pPTkUgPSAnVVMv\nUGFjaWZpYycKKwogIyBUaGlzIHNob3VsZCBtYXRjaCB0aGUgSUQgb2YgdGhlIFNpdGUgb2JqZWN0\nIGluIHRoZSBkYXRhYmFzZS4gIFRoaXMgaXMgdXNlZCB0bwogIyBmaWd1cmUgb3V0IFVSTHMgdG8g\nc3RpY2sgaW4gZS1tYWlscyBhbmQgcmVsYXRlZCBwYWdlcy4KIFNJVEVfSUQgPSAxCkBAIC0zNCw3\nICszNCw2IEBACiAjIHRvIGxvYWQgdGhlIGludGVybmF0aW9uYWxpemF0aW9uIG1hY2hpbmVyeS4K\nIFVTRV9JMThOID0gVHJ1ZQogCi0KICMgVExTIGZvciBMREFQLiAgSWYgeW91J3JlIHVzaW5nIExE\nQVAgYXV0aGVudGljYXRpb24gYW5kIHlvdXIgTERBUCBzZXJ2ZXIKICMgZG9lc24ndCBzdXBwb3J0\nIGxkYXBzOi8vLCB5b3UgY2FuIGVuYWJsZSBzdGFydC1UTFMgd2l0aCB0aGlzLgogTERBUF9UTFMg\nPSBGYWxzZQo=\n", 
         "extra_data": "{}"
@@ -1620,7 +1620,7 @@
     "model": "diffviewer.filediff", 
     "fields": {
         "status": "", 
-        "diff_hash": null, 
+        "legacy_diff_hash": null, 
         "binary": false, 
         "diffset": 1, 
         "dest_detail": "(revision 321)", 
@@ -1630,7 +1630,7 @@
         "dest_file": "/trunk/reviewboard/reviews/views.py", 
         "parent_diff64": "", 
         "extra_data": "{}", 
-        "parent_diff_hash": null
+        "legacy_parent_diff_hash": null
     }
 },
 {
@@ -1638,7 +1638,7 @@
     "model": "diffviewer.filediff", 
     "fields": {
         "status": "", 
-        "diff_hash": null, 
+        "legacy_diff_hash": null, 
         "binary": false, 
         "diffset": 1, 
         "dest_detail": "(revision 321)", 
@@ -1648,7 +1648,7 @@
         "dest_file": "/trunk/reviewboard/reviews/models.py", 
         "parent_diff64": "", 
         "extra_data": "{}", 
-        "parent_diff_hash": null
+        "legacy_parent_diff_hash": null
     }
 },
 {
@@ -1656,7 +1656,7 @@
     "model": "diffviewer.filediff", 
     "fields": {
         "status": "", 
-        "diff_hash": null, 
+        "legacy_diff_hash": null, 
         "binary": false, 
         "diffset": 1, 
         "dest_detail": "(revision 321)", 
@@ -1666,7 +1666,7 @@
         "dest_file": "/trunk/reviewboard/reviews/templatetags/reviewtags.py", 
         "parent_diff64": "", 
         "extra_data": "{}", 
-        "parent_diff_hash": null
+        "legacy_parent_diff_hash": null
     }
 },
 {
@@ -1674,7 +1674,7 @@
     "model": "diffviewer.filediff", 
     "fields": {
         "status": "", 
-        "diff_hash": null, 
+        "legacy_diff_hash": null, 
         "binary": false, 
         "diffset": 1, 
         "dest_detail": "(revision 321)", 
@@ -1684,7 +1684,7 @@
         "dest_file": "/trunk/reviewboard/reviews/forms.py", 
         "parent_diff64": "", 
         "extra_data": "{}", 
-        "parent_diff_hash": null
+        "legacy_parent_diff_hash": null
     }
 },
 {
@@ -1692,7 +1692,7 @@
     "model": "diffviewer.filediff", 
     "fields": {
         "status": "", 
-        "diff_hash": null, 
+        "legacy_diff_hash": null, 
         "binary": false, 
         "diffset": 1, 
         "dest_detail": "(revision 321)", 
@@ -1702,7 +1702,7 @@
         "dest_file": "/trunk/reviewboard/urls.py", 
         "parent_diff64": "", 
         "extra_data": "{}", 
-        "parent_diff_hash": null
+        "legacy_parent_diff_hash": null
     }
 },
 {
@@ -1710,7 +1710,7 @@
     "model": "diffviewer.filediff", 
     "fields": {
         "status": "", 
-        "diff_hash": null, 
+        "legacy_diff_hash": null, 
         "binary": false, 
         "diffset": 1, 
         "dest_detail": "(revision 321)", 
@@ -1720,7 +1720,7 @@
         "dest_file": "/trunk/reviewboard/templates/reviews/line_comments.html", 
         "parent_diff64": "", 
         "extra_data": "{}", 
-        "parent_diff_hash": null
+        "legacy_parent_diff_hash": null
     }
 },
 {
@@ -1728,7 +1728,7 @@
     "model": "diffviewer.filediff", 
     "fields": {
         "status": "", 
-        "diff_hash": null, 
+        "legacy_diff_hash": null, 
         "binary": false, 
         "diffset": 1, 
         "dest_detail": "(revision 321)", 
@@ -1738,7 +1738,7 @@
         "dest_file": "/trunk/reviewboard/templates/diffviewer/view_diff.html", 
         "parent_diff64": "", 
         "extra_data": "{}", 
-        "parent_diff_hash": null
+        "legacy_parent_diff_hash": null
     }
 },
 {
@@ -1746,7 +1746,7 @@
     "model": "diffviewer.filediff", 
     "fields": {
         "status": "", 
-        "diff_hash": null, 
+        "legacy_diff_hash": null, 
         "binary": false, 
         "diffset": 2, 
         "dest_detail": "(working copy)", 
@@ -1756,7 +1756,7 @@
         "dest_file": "/trunk/reviewboard/accounts/views.py", 
         "parent_diff64": "", 
         "extra_data": "{}", 
-        "parent_diff_hash": null
+        "legacy_parent_diff_hash": null
     }
 },
 {
@@ -1764,7 +1764,7 @@
     "model": "diffviewer.filediff", 
     "fields": {
         "status": "", 
-        "diff_hash": null, 
+        "legacy_diff_hash": null, 
         "binary": false, 
         "diffset": 2, 
         "dest_detail": "(working copy)", 
@@ -1774,7 +1774,7 @@
         "dest_file": "/trunk/reviewboard/reviews/forms.py", 
         "parent_diff64": "", 
         "extra_data": "{}", 
-        "parent_diff_hash": null
+        "legacy_parent_diff_hash": null
     }
 },
 {
@@ -1782,7 +1782,7 @@
     "model": "diffviewer.filediff", 
     "fields": {
         "status": "", 
-        "diff_hash": null, 
+        "legacy_diff_hash": null, 
         "binary": false, 
         "diffset": 2, 
         "dest_detail": "(working copy)", 
@@ -1792,7 +1792,7 @@
         "dest_file": "/trunk/reviewboard/diffviewer/forms.py", 
         "parent_diff64": "", 
         "extra_data": "{}", 
-        "parent_diff_hash": null
+        "legacy_parent_diff_hash": null
     }
 },
 {
@@ -1800,7 +1800,7 @@
     "model": "diffviewer.filediff", 
     "fields": {
         "status": "", 
-        "diff_hash": null, 
+        "legacy_diff_hash": null, 
         "binary": false, 
         "diffset": 3, 
         "dest_detail": "(working copy)", 
@@ -1810,7 +1810,7 @@
         "dest_file": "/trunk/reviewboard/reviews/json.py", 
         "parent_diff64": "", 
         "extra_data": "{}", 
-        "parent_diff_hash": null
+        "legacy_parent_diff_hash": null
     }
 },
 {
@@ -1818,7 +1818,7 @@
     "model": "diffviewer.filediff", 
     "fields": {
         "status": "", 
-        "diff_hash": null, 
+        "legacy_diff_hash": null, 
         "binary": false, 
         "diffset": 3, 
         "dest_detail": "(working copy)", 
@@ -1828,7 +1828,7 @@
         "dest_file": "/trunk/reviewboard/reviews/urls/json.py", 
         "parent_diff64": "", 
         "extra_data": "{}", 
-        "parent_diff_hash": null
+        "legacy_parent_diff_hash": null
     }
 },
 {
@@ -1836,7 +1836,7 @@
     "model": "diffviewer.filediff", 
     "fields": {
         "status": "", 
-        "diff_hash": null, 
+        "legacy_diff_hash": null, 
         "binary": false, 
         "diffset": 3, 
         "dest_detail": "(revision 0)", 
@@ -1846,7 +1846,7 @@
         "dest_file": "/trunk/reviewboard/htdocs/images/delete.svg", 
         "parent_diff64": "", 
         "extra_data": "{}", 
-        "parent_diff_hash": null
+        "legacy_parent_diff_hash": null
     }
 },
 {
@@ -1854,7 +1854,7 @@
     "model": "diffviewer.filediff", 
     "fields": {
         "status": "", 
-        "diff_hash": null, 
+        "legacy_diff_hash": null, 
         "binary": false, 
         "diffset": 3, 
         "dest_detail": "(working copy)", 
@@ -1864,7 +1864,7 @@
         "dest_file": "/trunk/reviewboard/htdocs/scripts/reviews.js", 
         "parent_diff64": "", 
         "extra_data": "{}", 
-        "parent_diff_hash": null
+        "legacy_parent_diff_hash": null
     }
 },
 {
@@ -1872,7 +1872,7 @@
     "model": "diffviewer.filediff", 
     "fields": {
         "status": "", 
-        "diff_hash": null, 
+        "legacy_diff_hash": null, 
         "binary": false, 
         "diffset": 3, 
         "dest_detail": "(revision 0)", 
@@ -1882,7 +1882,7 @@
         "dest_file": "/trunk/reviewboard/htdocs/scripts/rb/dialogs.js", 
         "parent_diff64": "", 
         "extra_data": "{}", 
-        "parent_diff_hash": null
+        "legacy_parent_diff_hash": null
     }
 },
 {
@@ -1890,7 +1890,7 @@
     "model": "diffviewer.filediff", 
     "fields": {
         "status": "", 
-        "diff_hash": null, 
+        "legacy_diff_hash": null, 
         "binary": false, 
         "diffset": 3, 
         "dest_detail": "(working copy)", 
@@ -1900,7 +1900,7 @@
         "dest_file": "/trunk/reviewboard/templates/reviews/review_request_box.html", 
         "parent_diff64": "", 
         "extra_data": "{}", 
-        "parent_diff_hash": null
+        "legacy_parent_diff_hash": null
     }
 },
 {
@@ -1908,7 +1908,7 @@
     "model": "diffviewer.filediff", 
     "fields": {
         "status": "", 
-        "diff_hash": null, 
+        "legacy_diff_hash": null, 
         "binary": false, 
         "diffset": 3, 
         "dest_detail": "(working copy)", 
@@ -1918,7 +1918,7 @@
         "dest_file": "/trunk/reviewboard/templates/reviews/review_detail.html", 
         "parent_diff64": "", 
         "extra_data": "{}", 
-        "parent_diff_hash": null
+        "legacy_parent_diff_hash": null
     }
 },
 {
@@ -1926,7 +1926,7 @@
     "model": "diffviewer.filediff", 
     "fields": {
         "status": "", 
-        "diff_hash": null, 
+        "legacy_diff_hash": null, 
         "binary": false, 
         "diffset": 4, 
         "dest_detail": "(revision 0)", 
@@ -1936,7 +1936,7 @@
         "dest_file": "/trunk/reviewboard/reviews/tests.py", 
         "parent_diff64": "", 
         "extra_data": "{}", 
-        "parent_diff_hash": null
+        "legacy_parent_diff_hash": null
     }
 },
 {
@@ -1944,7 +1944,7 @@
     "model": "diffviewer.filediff", 
     "fields": {
         "status": "", 
-        "diff_hash": null, 
+        "legacy_diff_hash": null, 
         "binary": false, 
         "diffset": 4, 
         "dest_detail": "(working copy)", 
@@ -1954,7 +1954,7 @@
         "dest_file": "/trunk/reviewboard/reviews/email.py", 
         "parent_diff64": "", 
         "extra_data": "{}", 
-        "parent_diff_hash": null
+        "legacy_parent_diff_hash": null
     }
 },
 {
@@ -1962,7 +1962,7 @@
     "model": "diffviewer.filediff", 
     "fields": {
         "status": "", 
-        "diff_hash": null, 
+        "legacy_diff_hash": null, 
         "binary": false, 
         "diffset": 5, 
         "dest_detail": "(working copy)", 
@@ -1972,7 +1972,7 @@
         "dest_file": "/trunk/reviewboard/reviews/views.py", 
         "parent_diff64": "", 
         "extra_data": "{}", 
-        "parent_diff_hash": null
+        "legacy_parent_diff_hash": null
     }
 },
 {
@@ -1980,7 +1980,7 @@
     "model": "diffviewer.filediff", 
     "fields": {
         "status": "", 
-        "diff_hash": null, 
+        "legacy_diff_hash": null, 
         "binary": false, 
         "diffset": 5, 
         "dest_detail": "(working copy)", 
@@ -1990,7 +1990,7 @@
         "dest_file": "/trunk/reviewboard/diffviewer/views.py", 
         "parent_diff64": "", 
         "extra_data": "{}", 
-        "parent_diff_hash": null
+        "legacy_parent_diff_hash": null
     }
 },
 {
@@ -1998,7 +1998,7 @@
     "model": "diffviewer.filediff", 
     "fields": {
         "status": "", 
-        "diff_hash": null, 
+        "legacy_diff_hash": null, 
         "binary": false, 
         "diffset": 5, 
         "dest_detail": "(working copy)", 
@@ -2008,7 +2008,7 @@
         "dest_file": "/trunk/reviewboard/templates/reviews/review_request_box.html", 
         "parent_diff64": "", 
         "extra_data": "{}", 
-        "parent_diff_hash": null
+        "legacy_parent_diff_hash": null
     }
 },
 {
@@ -2016,7 +2016,7 @@
     "model": "diffviewer.filediff", 
     "fields": {
         "status": "", 
-        "diff_hash": null, 
+        "legacy_diff_hash": null, 
         "binary": false, 
         "diffset": 5, 
         "dest_detail": "(working copy)", 
@@ -2026,7 +2026,7 @@
         "dest_file": "/trunk/reviewboard/templates/diffviewer/view_diff.html", 
         "parent_diff64": "", 
         "extra_data": "{}", 
-        "parent_diff_hash": null
+        "legacy_parent_diff_hash": null
     }
 },
 {
@@ -2034,7 +2034,7 @@
     "model": "diffviewer.filediff", 
     "fields": {
         "status": "", 
-        "diff_hash": null, 
+        "legacy_diff_hash": null, 
         "binary": false, 
         "diffset": 5, 
         "dest_detail": "(working copy)", 
@@ -2044,7 +2044,7 @@
         "dest_file": "/trunk/reviewboard/urls.py", 
         "parent_diff64": "", 
         "extra_data": "{}", 
-        "parent_diff_hash": null
+        "legacy_parent_diff_hash": null
     }
 },
 {
@@ -2052,7 +2052,7 @@
     "model": "diffviewer.filediff", 
     "fields": {
         "status": "", 
-        "diff_hash": null, 
+        "legacy_diff_hash": null, 
         "binary": false, 
         "diffset": 6, 
         "dest_detail": "(working copy)", 
@@ -2062,7 +2062,7 @@
         "dest_file": "/trunk/reviewboard/htdocs/scripts/diffviewer.js", 
         "parent_diff64": "", 
         "extra_data": "{}", 
-        "parent_diff_hash": null
+        "legacy_parent_diff_hash": null
     }
 },
 {
@@ -2070,7 +2070,7 @@
     "model": "diffviewer.filediff", 
     "fields": {
         "status": "", 
-        "diff_hash": null, 
+        "legacy_diff_hash": null, 
         "binary": false, 
         "diffset": 6, 
         "dest_detail": "(working copy)", 
@@ -2080,7 +2080,7 @@
         "dest_file": "/trunk/reviewboard/templates/diffviewer/view_diff.html", 
         "parent_diff64": "", 
         "extra_data": "{}", 
-        "parent_diff_hash": null
+        "legacy_parent_diff_hash": null
     }
 },
 {
@@ -2088,7 +2088,7 @@
     "model": "diffviewer.filediff", 
     "fields": {
         "status": "", 
-        "diff_hash": null, 
+        "legacy_diff_hash": null, 
         "binary": false, 
         "diffset": 7, 
         "dest_detail": "(working copy)", 
@@ -2098,7 +2098,7 @@
         "dest_file": "/trunk/reviewboard/htdocs/css/common.css", 
         "parent_diff64": "", 
         "extra_data": "{}", 
-        "parent_diff_hash": null
+        "legacy_parent_diff_hash": null
     }
 },
 {
@@ -2106,7 +2106,7 @@
     "model": "diffviewer.filediff", 
     "fields": {
         "status": "", 
-        "diff_hash": null, 
+        "legacy_diff_hash": null, 
         "binary": false, 
         "diffset": 7, 
         "dest_detail": "(working copy)", 
@@ -2116,7 +2116,7 @@
         "dest_file": "/trunk/reviewboard/templates/accounts/login.html", 
         "parent_diff64": "", 
         "extra_data": "{}", 
-        "parent_diff_hash": null
+        "legacy_parent_diff_hash": null
     }
 },
 {
@@ -2124,7 +2124,7 @@
     "model": "diffviewer.filediff", 
     "fields": {
         "status": "", 
-        "diff_hash": null, 
+        "legacy_diff_hash": null, 
         "binary": false, 
         "diffset": 7, 
         "dest_detail": "(working copy)", 
@@ -2134,7 +2134,7 @@
         "dest_file": "/trunk/reviewboard/urls.py", 
         "parent_diff64": "", 
         "extra_data": "{}", 
-        "parent_diff_hash": null
+        "legacy_parent_diff_hash": null
     }
 },
 {
@@ -2142,7 +2142,7 @@
     "model": "diffviewer.filediff", 
     "fields": {
         "status": "", 
-        "diff_hash": "f92e30b3437a4a253c2f48bb7b77eb86620e75cc", 
+        "legacy_diff_hash": "f92e30b3437a4a253c2f48bb7b77eb86620e75cc", 
         "binary": false, 
         "diffset": 8, 
         "dest_detail": "(working copy)", 
@@ -2152,7 +2152,7 @@
         "dest_file": "/trunk/reviewboard/settings_local.py.tmpl", 
         "parent_diff64": "", 
         "extra_data": "{}", 
-        "parent_diff_hash": null
+        "legacy_parent_diff_hash": null
     }
 },
 {
@@ -2160,7 +2160,7 @@
     "model": "diffviewer.filediff", 
     "fields": {
         "status": "", 
-        "diff_hash": null, 
+        "legacy_diff_hash": null, 
         "binary": false, 
         "diffset": 10, 
         "dest_detail": "(working copy)", 
@@ -2170,7 +2170,7 @@
         "dest_file": "/trunk/reviewboard/settings_local.py.tmpl", 
         "parent_diff64": "", 
         "extra_data": "{}", 
-        "parent_diff_hash": null
+        "legacy_parent_diff_hash": null
     }
 },
 {
@@ -2178,7 +2178,7 @@
     "model": "diffviewer.filediff", 
     "fields": {
         "status": "", 
-        "diff_hash": "0948b063a6540a177fccdfb02fc42735e675c89d", 
+        "legacy_diff_hash": "0948b063a6540a177fccdfb02fc42735e675c89d", 
         "binary": false, 
         "diffset": 8, 
         "dest_detail": "(revision 0)", 
@@ -2188,7 +2188,7 @@
         "dest_file": "/trunk/reviewboard/TESTING", 
         "parent_diff64": "", 
         "extra_data": "{}", 
-        "parent_diff_hash": null
+        "legacy_parent_diff_hash": null
     }
 },
 {
@@ -2196,7 +2196,7 @@
     "model": "diffviewer.filediff", 
     "fields": {
         "status": "", 
-        "diff_hash": null, 
+        "legacy_diff_hash": null, 
         "binary": false, 
         "diffset": 10, 
         "dest_detail": "(revision 0)", 
@@ -2206,7 +2206,7 @@
         "dest_file": "/trunk/reviewboard/TESTING", 
         "parent_diff64": "", 
         "extra_data": "{}", 
-        "parent_diff_hash": null
+        "legacy_parent_diff_hash": null
     }
 },
 {
@@ -2214,7 +2214,7 @@
     "model": "diffviewer.filediff", 
     "fields": {
         "status": "", 
-        "diff_hash": null, 
+        "legacy_diff_hash": null, 
         "binary": false, 
         "diffset": 11, 
         "dest_detail": "(revision 0)", 
@@ -2224,7 +2224,7 @@
         "dest_file": "/trunk/reviewboard/NEW_FILE", 
         "parent_diff64": "", 
         "extra_data": "{}", 
-        "parent_diff_hash": null
+        "legacy_parent_diff_hash": null
     }
 },
 {
@@ -2232,7 +2232,7 @@
     "model": "diffviewer.filediff", 
     "fields": {
         "status": "", 
-        "diff_hash": null, 
+        "legacy_diff_hash": null, 
         "binary": false, 
         "diffset": 11, 
         "dest_detail": "(revision 0)", 
@@ -2242,7 +2242,7 @@
         "dest_file": "/trunk/reviewboard/TESTING", 
         "parent_diff64": "", 
         "extra_data": "{}", 
-        "parent_diff_hash": null
+        "legacy_parent_diff_hash": null
     }
 },
 {
@@ -2250,7 +2250,7 @@
     "model": "diffviewer.filediff", 
     "fields": {
         "status": "", 
-        "diff_hash": null, 
+        "legacy_diff_hash": null, 
         "binary": false, 
         "diffset": 11, 
         "dest_detail": "(working copy)", 
@@ -2260,7 +2260,7 @@
         "dest_file": "/trunk/reviewboard/settings_local.py.tmpl", 
         "parent_diff64": "", 
         "extra_data": "{}", 
-        "parent_diff_hash": null
+        "legacy_parent_diff_hash": null
     }
 },
 {
@@ -2268,7 +2268,7 @@
     "model": "diffviewer.filediff", 
     "fields": {
         "status": "M", 
-        "diff_hash": "da39a3ee5e6b4b0d3255bfef95601890afd80709", 
+        "legacy_diff_hash": "da39a3ee5e6b4b0d3255bfef95601890afd80709", 
         "binary": true, 
         "diffset": 12, 
         "dest_detail": "124", 
@@ -2278,7 +2278,7 @@
         "dest_file": "/images/spritesheet.png", 
         "parent_diff64": "", 
         "extra_data": "{}", 
-        "parent_diff_hash": null
+        "legacy_parent_diff_hash": null
     }
 },
 {
@@ -2286,7 +2286,7 @@
     "model": "diffviewer.filediff", 
     "fields": {
         "status": "M", 
-        "diff_hash": null, 
+        "legacy_diff_hash": null, 
         "binary": true, 
         "diffset": 12, 
         "dest_detail": "1", 
@@ -2296,7 +2296,7 @@
         "dest_file": "/images/logo.png", 
         "parent_diff64": "", 
         "extra_data": "{}", 
-        "parent_diff_hash": null
+        "legacy_parent_diff_hash": null
     }
 },
 {
