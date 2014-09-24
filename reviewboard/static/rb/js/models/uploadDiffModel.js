@@ -207,32 +207,46 @@ RB.UploadDiffModel = Backbone.Model.extend({
             newState = this.State.ERROR,
             error;
 
-        switch (rsp.err.code) {
-            case RB.APIErrors.REPO_FILE_NOT_FOUND:
-                if (   this.get('repository').get('scmtoolName') === 'Git'
-                    && rsp.revision.length !== 40) {
-                    error = gettext('The uploaded diff uses short revisions, but Review Board requires full revisions.<br />Please generate a new diff using the <code>--full-index</code> parameter.');
-                } else {
-                    error = interpolate(
-                        gettext('The file "%s" (revision %s) was not found in the repository.'),
-                        [rsp.file, rsp.revision]);
+        if (rsp !== null) {
+            switch (rsp.err.code) {
+                case RB.APIErrors.REPO_FILE_NOT_FOUND:
+                    if (   this.get('repository').get('scmtoolName') === 'Git'
+                        && rsp.revision.length !== 40) {
+                        error = gettext('The uploaded diff uses short revisions, but Review Board requires full revisions.<br />Please generate a new diff using the <code>--full-index</code> parameter.');
+                    } else {
+                        error = interpolate(
+                            gettext('The file "%(file)s" (revision %(revision)s) was not found in the repository.'),
+                            {
+                                file: rsp.file,
+                                revision: rsp.revision
+                            },
+                            true);
 
-                    if (this.get('parentDiffFile') === null) {
-                        // Allow the user to try providing a parent diff.
-                        newState = this.State.PROMPT_FOR_PARENT_DIFF;
+                        if (this.get('parentDiffFile') === null) {
+                            // Allow the user to try providing a parent diff.
+                            newState = this.State.PROMPT_FOR_PARENT_DIFF;
+                        }
                     }
-                }
 
-                break;
+                    break;
 
-            case RB.APIErrors.DIFF_PARSE_ERROR:
-                error = rsp.err.msg + '<br />' +
-                        'Line ' + rsp.linenum + ': ' + rsp.reason;
-                break;
+                case RB.APIErrors.DIFF_PARSE_ERROR:
+                    error = interpolate(
+                        gettext('%(error)s<br />Line %(line)s: %(reason)s'),
+                        {
+                            error: rsp.err.msg,
+                            line: rsp.linenum,
+                            reason: rsp.reason
+                        },
+                        true);
+                    break;
 
-            default:
-                error = rsp.err.msg;
-                break;
+                default:
+                    error = rsp.err.msg;
+                    break;
+            }
+        } else {
+            error = gettext('Unknown error');
         }
 
         if (error) {
