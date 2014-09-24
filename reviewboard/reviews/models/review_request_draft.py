@@ -11,6 +11,7 @@ from djblets.db.managers import ConcurrencyManager
 from reviewboard.attachments.models import FileAttachment
 from reviewboard.changedescs.models import ChangeDescription
 from reviewboard.diffviewer.models import DiffSet
+from reviewboard.reviews.errors import NotModifiedError
 from reviewboard.reviews.models.group import Group
 from reviewboard.reviews.models.base_review_request_details import \
     BaseReviewRequestDetails
@@ -306,6 +307,10 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
         if self.diffset:
             self.diffset.history = review_request.diffset_history
             self.diffset.save(update_fields=['history'])
+
+        # If no changes were made, raise exception and do not save
+        if self.changedesc and not self.changedesc.has_modified_fields():
+            raise NotModifiedError()
 
         if self.changedesc:
             self.changedesc.timestamp = timezone.now()

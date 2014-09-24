@@ -586,7 +586,10 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
 
         this.model.on('publishError', function(errorText) {
             alert(errorText);
-        });
+
+            this.$('#btn-draft-publish').enable();
+            this.$('#btn-draft-discard').enable();
+        }, this);
 
         this.model.on('saved', this.showBanner, this);
         this.model.on('published', this._refreshPage, this);

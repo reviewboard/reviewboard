@@ -96,6 +96,14 @@ class ChangeDescription(models.Model):
     def __str__(self):
         return self.text
 
+    def has_modified_fields(self):
+        """Determines if the 'fields_changed' variable is non-empty
+
+        Uses the 'fields_changed' variable to determine if there are any
+        current modifications being tracked to this ChangedDescription object.
+        """
+        return bool(self.fields_changed)
+
     class Meta:
         ordering = ['-timestamp']
         get_latest_by = "timestamp"
