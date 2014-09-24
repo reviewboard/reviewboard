@@ -2,7 +2,7 @@
 Review Board 2.0.8 Release Notes
 ================================
 
-**Release date**: TBD
+**Release date**: September 24, 2014
 
 
 Upgrade Notes
