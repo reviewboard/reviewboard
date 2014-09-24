@@ -39,8 +39,8 @@ New Features
   working to track those down, and in this release, we've made it easier
   to provide debug information to us.
 
-  A new ``rb-site <path> reset-issue-counts`` management command has been
-  added, which will reset the counts for individual review requests, or
+  A new ``rb-site manage <path> reset-issue-counts`` management command has
+  been added, which will reset the counts for individual review requests, or
   for all review requests in the database.
 
   If you are encountering a review request with broken issue counts, please
