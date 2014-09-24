@@ -361,7 +361,7 @@ RB.BaseResource = Backbone.Model.extend({
             blob.push('Content-Type: ' + file.type + '\r\n');
             blob.push('\r\n');
 
-            fileBlob = new Int8Array(reader.result);
+            fileBlob = new Uint8Array(reader.result);
             fileBlobLen = fileBlob.length;
 
             for (i = 0; i < fileBlobLen; i++) {
