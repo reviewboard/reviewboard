@@ -1774,7 +1774,7 @@ class ManageCommand(Command):
     """Runs a Django management command on the site."""
     help_text = (
         'Runs a Django management command on the site. '
-        'Usage: `rb-site <path> manage <command> -- <arguments>.` '
+        'Usage: `rb-site manage <path> <command> -- <arguments>.` '
         'Run `manage -- --help` for the list of commands.'
     )
 
