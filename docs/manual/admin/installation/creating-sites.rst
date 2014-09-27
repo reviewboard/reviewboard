@@ -14,6 +14,72 @@ here, we will use :file:`/var/www/reviews.example.com`. The directory
 should not exist yet. :command:`rb-site` will create it.
 
 
+Creating the Database
+=====================
+
+Before you create the Review Board site, you'll need to create a database. The
+particular steps for this depend on the database server software that you
+intend to use.
+
+.. admonition:: SQLite should only be used for test installations.
+
+   While useful and portable, SQLite does not handle large loads with many
+   concurrent users very well. We strongly recommend using MySQL or
+   PostgreSQL for a real deployment.
+
+   We don't officially support converting a database from SQLite to other
+   databases, so it's important that you choose something that will work
+   for you long-term.
+
+
+MySQL
+-----
+
+In MySQL, before creating your database, make sure that your server is
+configured to use the UTF-8 encoding for text. In the file :file:`my.cnf`, add
+the following settings::
+
+    [client]
+    default-character-set=utf8
+
+    [mysqld]
+    character-set-server=utf8
+
+After making these changes, restart your MySQL server.
+
+Next, start up the mysql command prompt as your root user, and create a new
+database and user (replacing ``myuser`` and ``myspassword`` with your desired
+username and password, respectively)::
+
+    $ mysql -u root -p
+    mysql> CREATE DATABASE reviewboard CHARACTER SET utf8;
+    mysql> CREATE USER 'myuser'@'localhost' IDENTIFIED BY 'mypassword';
+    mysql> GRANT ALL PRIVILEGES ON reviewboard.* to 'myuser'@'localhost';
+
+
+PostgreSQL
+----------
+
+To create a Postgres database, you'll need to run several commands as the
+``postgres`` user. Start by running the following command (the particular
+username may depend on your choice of operating system)::
+
+    $ sudo su - postgres
+
+Next, as the postgres user, create a database and a user to access it::
+
+    $ createdb reviewboard
+    $ createuser -P
+
+The second of these commands will ask you several questions. For the last three
+questions (relating to permissions), reply 'n'.
+
+Finally, grant permissions for this user to your new database::
+
+    $ psql
+    => GRANT ALL PRIVILEGES ON DATABASE reviewboard to myuser
+
+
 Beginning Installation
 ======================
 
@@ -43,16 +109,6 @@ their documentation on how to set them up and configure them.
    with Review Board's dashboard and extensions implementations. In order for
    Review Board to work correctly, it should use the single-threaded Prefork
    MPM.
-
-.. admonition:: SQLite should only be used for test installations.
-
-   While useful and portable, SQLite does not handle large loads with many
-   concurrent users very well. We strongly recommend using MySQL or
-   PostgreSQL for a real deployment.
-
-   We don't officially support converting a database from SQLite to other
-   databases, so it's important that you choose something that will work
-   for you long-term.
 
 Once you have answered all the questions and completed the installation,
 you'll need to change some directory permissions and install your web server
