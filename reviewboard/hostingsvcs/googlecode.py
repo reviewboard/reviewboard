@@ -147,8 +147,7 @@ def close_review_requests(payload, server_url):
             revision_id = revision_id[:7]
 
         commit_message = revision.get('message')
-        review_request_id = get_review_request_id(commit_message, server_url,
-                                                  None)
+        review_request_id = get_review_request_id(commit_message, server_url)
         review_request_id_to_commits_map[review_request_id].append(
             '%s (%s)' % (branch_name, revision_id))
 

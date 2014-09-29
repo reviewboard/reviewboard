@@ -38,7 +38,8 @@ def get_repository_for_hook(repository_id, hosting_service_id,
     return get_object_or_404(Repository, q)
 
 
-def get_review_request_id(commit_message, server_url, commit_id):
+def get_review_request_id(commit_message, server_url, commit_id=None,
+                          repository=None):
     """Returns the review request ID matching the pushed commit.
 
     We first use a regex (that can be overriden in settings_local.py) to try to
@@ -62,10 +63,13 @@ def get_review_request_id(commit_message, server_url, commit_id):
         except ValueError:
             logging.error('The review request ID must be an integer.')
             review_request_id = None
-    else:
+    elif commit_id:
+        assert repository
+
         try:
             review_request = ReviewRequest.objects.get(
-                commit_id=six.text_type(commit_id))
+                commit_id=six.text_type(commit_id),
+                repository=repository)
             review_request_id = review_request.display_id
         except ReviewRequest.DoesNotExist:
             review_request_id = None
