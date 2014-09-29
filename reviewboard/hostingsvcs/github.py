@@ -826,7 +826,7 @@ def post_receive_hook_close_submitted(request, local_site_name=None,
 
     server_url = get_server_url(request=request)
     review_request_id_to_commits = \
-        _get_review_request_id_to_commits_map(payload, server_url)
+        _get_review_request_id_to_commits_map(payload, server_url, repository)
 
     if review_request_id_to_commits:
         close_all_review_requests(review_request_id_to_commits,
@@ -836,7 +836,7 @@ def post_receive_hook_close_submitted(request, local_site_name=None,
     return HttpResponse()
 
 
-def _get_review_request_id_to_commits_map(payload, server_url):
+def _get_review_request_id_to_commits_map(payload, server_url, repository):
     """Returns a dictionary, mapping a review request ID to a list of commits.
 
     If a commit's commit message does not contain a review request ID, we append
@@ -858,7 +858,7 @@ def _get_review_request_id_to_commits_map(payload, server_url):
         commit_hash = commit.get('id')
         commit_message = commit.get('message')
         review_request_id = get_review_request_id(commit_message, server_url,
-                                                  commit_hash)
+                                                  commit_hash, repository)
 
         review_request_id_to_commits_map[review_request_id].append(
             '%s (%s)' % (branch_name, commit_hash[:7]))
