@@ -112,10 +112,14 @@ def get_email_addresses_for_group(g):
             # attached to it, so just return their custom list as-is.
             return g.mailing_list.split(',')
     else:
+        users_q = Q(is_active=True)
+
         local_site = g.local_site
-        users = g.users.filter(Q(is_active=True) &
-                               (Q(local_site=local_site) |
-                                Q(local_site_admins=local_site)))
+        if local_site:
+            users_q = users_q & (Q(local_site=local_site) |
+                                 Q(local_site_admins=local_site))
+
+        users = g.users.filter(users_q)
 
         return [get_email_address_for_user(u)
                 for u in users
