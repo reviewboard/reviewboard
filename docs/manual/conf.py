@@ -224,7 +224,7 @@ latex_show_pagerefs = True
 
 
 intersphinx_mapping = {
-    'rbtools': ('http://reviewboard.org/docs/rbtools/dev', None),
+    'rbtools': ('https://reviewboard.org/docs/rbtools/dev/', None),
 }
 
 todo_include_todos = True
