@@ -115,10 +115,14 @@ def get_email_addresses_for_group(g):
             addresses = [u'"%s" <%s>' % (g.display_name, g.mailing_list)]
 
     if not (g.mailing_list and g.email_list_only):
+        users_q = Q(is_active=True)
+
         local_site = g.local_site
-        users = g.users.filter(Q(is_active=True) &
-                               (Q(local_site=local_site) |
-                                Q(local_site_admins=local_site)))
+        if local_site:
+            users_q = users_q & (Q(local_site=local_site) |
+                                 Q(local_site_admins=local_site))
+
+        users = g.users.filter(users_q)
 
         addresses.extend([get_email_address_for_user(u)
                           for u in users

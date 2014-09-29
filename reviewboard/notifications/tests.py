@@ -116,6 +116,27 @@ class ReviewRequestEmailTests(TestCase, EmailTestHelper):
         self.assertEqual(message['Sender'],
                          self._get_sender(review_request.submitter))
 
+    def test_review_request_email_local_site_group(self):
+        """Testing sending email when a group member is part of a Local Site"""
+        # This was bug 3581.
+        local_site = LocalSite.objects.create(name=self.local_site_name)
+
+        group = self.create_review_group()
+        user = User.objects.get(username='grumpy')
+
+        local_site.users.add(user)
+        local_site.admins.add(user)
+        local_site.save()
+        group.users.add(user)
+        group.save()
+
+        review_request = self.create_review_request()
+        review_request.target_groups.add(group)
+        review_request.publish(review_request.submitter)
+
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertValidRecipients(['doc', 'grumpy'])
+
     def test_review_email(self):
         """Testing sending an e-mail when replying to a review request"""
         review_request = self.create_review_request(
