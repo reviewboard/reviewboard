@@ -206,8 +206,8 @@ class SVNTool(SCMTool):
         commits = self.client.get_log('/', start=revision, limit=2)
 
         commit = commits[0]
-        message = commit['message'].decode('utf-8', 'replace')
-        author_name = commit['author'].decode('utf-8', 'replace')
+        message = commit.get('message', b'').decode('utf-8', 'replace')
+        author_name = commit.get('author', b'').decode('utf-8', 'replace')
         date = commit['date'].isoformat()
 
         if len(commits) > 1:
