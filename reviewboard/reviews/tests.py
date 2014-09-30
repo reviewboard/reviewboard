@@ -2333,6 +2333,11 @@ class IssueCounterTests(TestCase):
         # One comment without an issue opened.
         create_comment_func(review, issue_opened=False)
 
+        # One comment without an issue opened, which will have its
+        # status set to a valid status, while closed.
+        closed_with_status_comment = \
+            create_comment_func(review, issue_opened=False)
+
         # Three comments with an issue opened.
         for i in range(3):
             create_comment_func(review, issue_opened=True)
@@ -2378,6 +2383,9 @@ class IssueCounterTests(TestCase):
         for comment in resolved_comments:
             comment.issue_status = Comment.RESOLVED
             comment.save()
+
+        closed_with_status_comment.issue_status = Comment.OPEN
+        closed_with_status_comment.save()
 
         self._reload_object()
         self.assertEqual(self.review_request.issue_open_count, 3)
