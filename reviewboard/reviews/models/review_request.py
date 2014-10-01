@@ -49,10 +49,13 @@ def fetch_issue_counts(review_request, extra_query=None):
 
     issue_statuses = review_request.reviews.filter(q).values(
         'comments__pk',
+        'comments__issue_opened',
         'comments__issue_status',
         'file_attachment_comments__pk',
+        'file_attachment_comments__issue_opened',
         'file_attachment_comments__issue_status',
         'screenshot_comments__pk',
+        'screenshot_comments__issue_opened',
         'screenshot_comments__issue_status')
 
     if issue_statuses:
@@ -64,9 +67,10 @@ def fetch_issue_counts(review_request, extra_query=None):
 
         for issue_fields in issue_statuses:
             for key, comments in six.iteritems(comment_fields):
+                issue_opened = issue_fields[key + '__issue_opened']
                 comment_pk = issue_fields[key + '__pk']
 
-                if comment_pk not in comments:
+                if issue_opened and comment_pk not in comments:
                     comments.add(comment_pk)
                     issue_status = issue_fields[key + '__issue_status']
 

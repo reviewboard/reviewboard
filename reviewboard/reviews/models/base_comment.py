@@ -143,6 +143,7 @@ class BaseComment(models.Model):
                 review.save()
             else:
                 if (not self.is_reply() and
+                    self.issue_opened and
                     self._loaded_issue_status != self.issue_status):
                     # The user has toggled the issue status of this comment,
                     # so update the issue counts for the review request.
