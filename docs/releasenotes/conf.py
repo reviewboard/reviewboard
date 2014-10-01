@@ -205,4 +205,6 @@ latex_documents = [
 
 
 # Example configuration for intersphinx: refer to the Python standard library.
-intersphinx_mapping = {'https://www.reviewboard.org/docs/manual/dev': None}
+intersphinx_mapping = {
+    'https://www.reviewboard.org/docs/manual/dev/': None,
+}

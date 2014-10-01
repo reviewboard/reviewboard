@@ -33,7 +33,7 @@ Example
         name = 'Sample Authentication'
 
         def authenticate(self, username, password):
-            if username == 'superuser' and password = 's3cr3t':
+            if username == 'superuser' and password == 's3cr3t':
                 return self.get_or_create_user(username, password=password)
 
             return None
