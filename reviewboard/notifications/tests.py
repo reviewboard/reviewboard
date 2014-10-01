@@ -764,3 +764,168 @@ class WebHookTargetManagerTests(TestCase):
         with self.assertRaisesMessage(ValueError,
                                       '"*" is not a valid event choice'):
             WebHookTarget.objects.for_event(WebHookTarget.ALL_EVENTS)
+
+
+class WebHookSignalDispatchTests(SpyAgency, TestCase):
+    """Unit tests for dispatching webhooks by signals."""
+    ENDPOINT_URL = 'http://example.com/endpoint/'
+
+    def setUp(self):
+        super(WebHookSignalDispatchTests, self).setUp()
+
+        self.spy_on(dispatch_webhook_event, call_original=False)
+
+    @add_fixtures(['test_users'])
+    def test_review_request_closed_submitted(self):
+        """Testing webhook dispatch from 'review_request_closed' signal
+        with submitted
+        """
+        target = WebHookTarget.objects.create(events='review_request_closed',
+                                              url=self.ENDPOINT_URL)
+
+        review_request = self.create_review_request()
+        review_request.close(review_request.SUBMITTED)
+
+        spy = dispatch_webhook_event.spy
+        self.assertTrue(spy.called)
+        self.assertEqual(len(spy.calls), 1)
+
+        last_call = spy.last_call
+        self.assertEqual(last_call.args[1], [target])
+        self.assertEqual(last_call.args[2], 'review_request_closed')
+
+        payload = last_call.args[3]
+        self.assertEqual(payload['event'], 'review_request_closed')
+        self.assertEqual(payload['closed_by']['id'],
+                         review_request.submitter.pk)
+        self.assertEqual(payload['close_type'], 'submitted')
+        self.assertEqual(payload['review_request']['id'],
+                         review_request.display_id)
+
+    @add_fixtures(['test_users'])
+    def test_review_request_closed_discarded(self):
+        """Testing webhook dispatch from 'review_request_closed' signal
+        with discarded
+        """
+        target = WebHookTarget.objects.create(events='review_request_closed',
+                                              url=self.ENDPOINT_URL)
+
+        review_request = self.create_review_request()
+        review_request.close(review_request.DISCARDED)
+
+        spy = dispatch_webhook_event.spy
+        self.assertTrue(spy.called)
+        self.assertEqual(len(spy.calls), 1)
+
+        last_call = spy.last_call
+        self.assertEqual(last_call.args[1], [target])
+        self.assertEqual(last_call.args[2], 'review_request_closed')
+
+        payload = last_call.args[3]
+        self.assertEqual(payload['event'], 'review_request_closed')
+        self.assertEqual(payload['closed_by']['id'],
+                         review_request.submitter.pk)
+        self.assertEqual(payload['close_type'], 'discarded')
+        self.assertEqual(payload['review_request']['id'],
+                         review_request.display_id)
+
+    @add_fixtures(['test_users'])
+    def test_review_request_published(self):
+        """Testing webhook dispatch from 'review_request_published' signal"""
+        target = WebHookTarget.objects.create(
+            events='review_request_published',
+            url=self.ENDPOINT_URL)
+
+        review_request = self.create_review_request()
+        review_request.publish(review_request.submitter)
+
+        spy = dispatch_webhook_event.spy
+        self.assertTrue(spy.called)
+        self.assertEqual(len(spy.calls), 1)
+
+        last_call = spy.last_call
+        self.assertEqual(last_call.args[1], [target])
+        self.assertEqual(last_call.args[2], 'review_request_published')
+
+        payload = last_call.args[3]
+        self.assertEqual(payload['event'], 'review_request_published')
+        self.assertIn('is_new', payload)
+        self.assertEqual(payload['review_request']['id'],
+                         review_request.display_id)
+
+    @add_fixtures(['test_users'])
+    def test_review_request_reopened(self):
+        """Testing webhook dispatch from 'review_request_reopened' signal"""
+        target = WebHookTarget.objects.create(
+            events='review_request_reopened',
+            url=self.ENDPOINT_URL)
+
+        review_request = self.create_review_request()
+        review_request.close(review_request.SUBMITTED)
+        review_request.reopen()
+
+        spy = dispatch_webhook_event.spy
+        self.assertTrue(spy.called)
+        self.assertEqual(len(spy.calls), 1)
+
+        last_call = spy.last_call
+        self.assertEqual(last_call.args[1], [target])
+        self.assertEqual(last_call.args[2], 'review_request_reopened')
+
+        payload = last_call.args[3]
+        self.assertEqual(payload['event'], 'review_request_reopened')
+        self.assertEqual(payload['reopened_by']['id'],
+                         review_request.submitter.pk)
+        self.assertEqual(payload['review_request']['id'],
+                         review_request.display_id)
+
+    @add_fixtures(['test_users'])
+    def test_review_published(self):
+        """Testing webhook dispatch from 'review_published' signal"""
+        target = WebHookTarget.objects.create(events='review_published',
+                                              url=self.ENDPOINT_URL)
+
+        review_request = self.create_review_request()
+        review = self.create_review(review_request)
+        review.publish()
+
+        spy = dispatch_webhook_event.spy
+        self.assertTrue(spy.called)
+        self.assertEqual(len(spy.calls), 1)
+
+        last_call = spy.last_call
+        self.assertEqual(last_call.args[1], [target])
+        self.assertEqual(last_call.args[2], 'review_published')
+
+        payload = last_call.args[3]
+        self.assertEqual(payload['event'], 'review_published')
+        self.assertEqual(payload['review']['id'], review.pk)
+        self.assertIn('diff_comments', payload)
+        self.assertIn('screenshot_comments', payload)
+        self.assertIn('file_attachment_comments', payload)
+
+    @add_fixtures(['test_users'])
+    def test_reply_published(self):
+        """Testing webhook dispatch from 'reply_published' signal"""
+        target = WebHookTarget.objects.create(events='reply_published',
+                                              url=self.ENDPOINT_URL)
+
+        review_request = self.create_review_request()
+        review = self.create_review(review_request)
+        reply = self.create_reply(review)
+        reply.publish()
+
+        spy = dispatch_webhook_event.spy
+        self.assertTrue(spy.called)
+        self.assertEqual(len(spy.calls), 1)
+
+        last_call = spy.last_call
+        self.assertEqual(last_call.args[1], [target])
+        self.assertEqual(last_call.args[2], 'reply_published')
+
+        payload = last_call.args[3]
+        self.assertEqual(payload['event'], 'reply_published')
+        self.assertEqual(payload['reply']['id'], reply.pk)
+        self.assertIn('diff_comments', payload)
+        self.assertIn('screenshot_comments', payload)
+        self.assertIn('file_attachment_comments', payload)

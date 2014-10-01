@@ -142,9 +142,9 @@ def dispatch_webhook_event(request, webhook_targets, event, payload):
         urlopen(Request(webhook_target.url, body, headers))
 
 
-def _serialize_review(review, request):
+def _serialize_review(review, request, review_key):
     return {
-        'review': resources.review.serialize_object(
+        review_key: resources.review.serialize_object(
             review, request=request),
         'diff_comments': [
             resources.filediff_comment.serialize_object(
@@ -170,12 +170,25 @@ def review_request_closed_cb(sender, user, review_request, type, **kwargs):
         event, review_request.local_site_id, review_request.repository_id)
 
     if webhook_targets:
+        if type == review_request.SUBMITTED:
+            close_type = 'submitted'
+        elif type == review_request.DISCARDED:
+            close_type = 'discarded'
+        else:
+            logging.error('Unexpected close type %s for review request %s '
+                          'when dispatching webhook.',
+                          type, review_request.pk)
+            return
+
+        if not user:
+            user = review_request.submitter
+
         request = FakeHTTPRequest(user)
         payload = {
             'event': event,
             'closed_by': resources.user.serialize_object(
                 user, request=request),
-            'close_type': type,
+            'close_type': close_type,
             'review_request': resources.review_request.serialize_object(
                 review_request, request=request),
         }
@@ -211,6 +224,9 @@ def review_request_reopened_cb(sender, user, review_request, **kwargs):
         event, review_request.local_site_id, review_request.repository_id)
 
     if webhook_targets:
+        if not user:
+            user = review_request.submitter
+
         request = FakeHTTPRequest(user)
         payload = {
             'event': event,
@@ -231,7 +247,7 @@ def review_published_cb(sender, user, review, **kwargs):
 
     if webhook_targets:
         request = FakeHTTPRequest(user)
-        payload = _serialize_review(review, request)
+        payload = _serialize_review(review, request, 'review')
         payload['event'] = event
         dispatch_webhook_event(request, webhook_targets, event, payload)
 
@@ -244,7 +260,7 @@ def reply_published_cb(sender, user, reply, **kwargs):
 
     if webhook_targets:
         request = FakeHTTPRequest(user)
-        payload = _serialize_review(reply, request)
+        payload = _serialize_review(reply, request, 'reply')
         payload['event'] = event
         dispatch_webhook_event(request, webhook_targets, event, payload)
 
