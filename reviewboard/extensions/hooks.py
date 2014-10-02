@@ -472,3 +472,32 @@ class UserPageSidebarItemsHook(DataGridSidebarItemsHook):
     def __init__(self, extension, item_classes):
         super(UserPageSidebarItemsHook, self).__init__(
             extension, UserPageReviewRequestDataGrid, item_classes)
+
+
+__all__ = [
+    'AccountPageFormsHook',
+    'AccountPagesHook',
+    'ActionHook',
+    'AuthBackendHook',
+    'CommentDetailDisplayHook',
+    'DashboardColumnsHook',
+    'DashboardSidebarItemsHook',
+    'DataGridColumnsHook',
+    'DataGridSidebarItemsHook',
+    'DiffViewerActionHook',
+    'ExtensionHook',
+    'FileAttachmentThumbnailHook',
+    'HeaderActionHook',
+    'HeaderDropdownActionHook',
+    'NavigationBarHook',
+    'ReviewRequestActionHook',
+    'ReviewRequestApprovalHook',
+    'ReviewRequestDropdownActionHook',
+    'ReviewRequestFieldSetsHook',
+    'ReviewRequestFieldsHook',
+    'ReviewUIHook',
+    'SignalHook',
+    'TemplateHook',
+    'URLHook',
+    'UserPageSidebarItemsHook',
+]
