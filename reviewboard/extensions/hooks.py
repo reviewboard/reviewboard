@@ -193,16 +193,27 @@ class NavigationBarHook(ExtensionHook):
     Only one of ``url`` or ``url_name`` is required. ``url_name`` will
     take precedence.
 
+    Optionally, a callable can be passed in for ``is_enabled_for``, which takes
+    a single argument (the user) and returns True or False, indicating whether
+    the entries should be shown. If this is not passed in, the entries are
+    always shown (including for anonymous users).
+
     If your hook needs to access the template context, it can override
     get_entries and return results from there.
     """
-    def __init__(self, extension, entries={}, *args, **kwargs):
+    def __init__(self, extension, entries={}, is_enabled_for=None,
+                 *args, **kwargs):
         super(NavigationBarHook, self).__init__(extension, *args,
                                                 **kwargs)
         self.entries = entries
+        self.is_enabled_for = is_enabled_for
 
     def get_entries(self, context):
-        return self.entries
+        if (not callable(self.is_enabled_for) or
+            self.is_enabled_for(context.get('user', None))):
+            return self.entries
+        else:
+            return []
 
 
 @six.add_metaclass(ExtensionHookPoint)
