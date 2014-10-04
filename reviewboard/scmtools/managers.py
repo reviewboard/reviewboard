@@ -71,3 +71,16 @@ class RepositoryManager(Manager):
 
     def can_create(self, user, local_site=None):
         return user.has_perm('scmtools.add_repository', local_site)
+
+    def encrypt_plain_text_passwords(self):
+        """Encrypts any stored plain-text passwords."""
+        qs = self.exclude(
+            Q(encrypted_password=None) |
+            Q(encrypted_password='') |
+            Q(encrypted_password__startswith=
+              self.model.ENCRYPTED_PASSWORD_PREFIX))
+        qs = qs.only('encrypted_password')
+
+        for repository in qs:
+            # This will trigger a migration of the password.
+            repository.password
