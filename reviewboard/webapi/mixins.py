@@ -1,8 +1,11 @@
 from __future__ import unicode_literals
 
+from django.utils.html import escape
+
 from reviewboard.reviews.markdown_utils import (markdown_escape,
                                                 markdown_set_field_escaped,
-                                                markdown_unescape)
+                                                markdown_unescape,
+                                                render_markdown)
 
 
 class MarkdownFieldsMixin(object):
@@ -22,8 +25,9 @@ class MarkdownFieldsMixin(object):
     """
     TEXT_TYPE_PLAIN = 'plain'
     TEXT_TYPE_MARKDOWN = 'markdown'
+    TEXT_TYPE_HTML = 'html'
 
-    TEXT_TYPES = (TEXT_TYPE_PLAIN, TEXT_TYPE_MARKDOWN)
+    TEXT_TYPES = (TEXT_TYPE_PLAIN, TEXT_TYPE_MARKDOWN, TEXT_TYPE_HTML)
     SAVEABLE_TEXT_TYPES = TEXT_TYPES
 
     def serialize_text_type_field(self, obj, request=None, **kwargs):
@@ -60,6 +64,11 @@ class MarkdownFieldsMixin(object):
             text = markdown_unescape(text)
         elif text_type == self.TEXT_TYPE_MARKDOWN and not obj.rich_text:
             text = markdown_escape(text)
+        elif text_type == self.TEXT_TYPE_HTML:
+            if obj.rich_text:
+                text = render_markdown(text)
+            else:
+                text = escape(text)
 
         return text
 
