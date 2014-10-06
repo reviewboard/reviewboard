@@ -75,10 +75,16 @@ RB.ReviewReplyEditor = Backbone.Model.extend({
 
                 if (text) {
                     obj.set(valueAttr, text);
-                    obj.set('richText', true);
+                    obj.set({
+                        richText: true,
+                        forceTextType: 'html'
+                    });
                     obj.save({
                         success: function() {
-                            this.set('hasDraft', true);
+                            this.set({
+                                hasDraft: true,
+                                text: obj.get(valueAttr)
+                            });
                             this.trigger('saved');
                         }
                     }, this);

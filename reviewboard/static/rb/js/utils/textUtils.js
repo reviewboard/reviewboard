@@ -29,47 +29,19 @@ if (marked !== undefined) {
  * links to review requests and bug trackers but otherwise leave the text alone.
  */
 RB.formatText = function($el, options) {
-    var markedUp = options.newText;
+    options = options || {};
 
     if ($el.data('rich-text')) {
-        /*
-         * If there's an inline editor attached to this element, set up some
-         * options first. Primarily, we need to pass in the raw value of the
-         * text as an option, rather than let it pull it out of the DOM.
-         */
-        if ($el.data('inlineEditor')) {
-            $el.inlineEditor('option', {
-                hasRawValue: true,
-                matchHeight: false,
-                rawValue: options.newText
-            });
+        if (options.newText !== undefined) {
+            $el
+                .html(options.newText)
+                .addClass('rich-text')
         }
 
-        if (markedUp.length > 0) {
-            // Now linkify and markdown-ize
-            markedUp = RB.LinkifyUtils.linkifyReviewRequests(markedUp, true);
-            markedUp = RB.LinkifyUtils.linkifyBugs(markedUp,
-                                                   options.bugTrackerURL,
-                                                   true);
-            markedUp = marked(markedUp);
-
-            /*
-             * markup() adds newlines to each directive, resulting in a trailing
-             * newline for the contents. Since this may be formatted inside a
-             * <pre>, we want to make sure we don't have that extra newline.
-             */
-            markedUp = markedUp.trim();
-        }
-
-        $el
-            .empty()
-            .append(markedUp)
-            .addClass('rich-text')
-            .removeClass('loading')
-            .find('a')
-                .attr('target', '_blank');
-    } else {
-        $el.html(RB.LinkifyUtils.linkifyText(options.newText,
+        $el.find('a').attr('target', '_blank');
+        RB.LinkifyUtils.linkifyChildren($el[0], options.bugTrackerURL);
+    } else if (options.newText !== undefined) {
+        $el.html(RB.LinkifyUtils.linkifyText(options.text,
                                              options.bugTrackerURL));
     }
 };

@@ -37,7 +37,7 @@ RB.ReviewRequest = RB.BaseResource.extend({
     rspNamespace: 'review_request',
 
     extraQueryArgs: {
-        'force-text-type': 'markdown'
+        'force-text-type': 'html'
     },
 
     initialize: function() {

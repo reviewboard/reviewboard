@@ -10,6 +10,7 @@ from django.template.defaultfilters import stringfilter
 from django.template.loader import render_to_string
 from django.utils import six
 from django.utils.html import escape
+from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext_lazy as _
 from djblets.util.decorators import basictag, blocktag
 from djblets.util.humanize import humanize_list
@@ -17,7 +18,8 @@ from djblets.util.humanize import humanize_list
 from reviewboard.accounts.models import Profile
 from reviewboard.reviews.fields import (get_review_request_fieldset,
                                         get_review_request_fieldsets)
-from reviewboard.reviews.markdown_utils import markdown_escape
+from reviewboard.reviews.markdown_utils import (markdown_escape,
+                                                render_markdown)
 from reviewboard.reviews.models import (BaseComment, Group,
                                         ReviewRequest, ScreenshotComment,
                                         FileAttachmentComment)
@@ -493,3 +495,11 @@ def markdown_escape_filter(text, is_rich_text):
         return text
     else:
         return markdown_escape(text)
+
+
+@register.filter('render_markdown')
+def _render_markdown(text, is_rich_text):
+    if is_rich_text:
+        return mark_safe(render_markdown(text))
+    else:
+        return text

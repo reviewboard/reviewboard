@@ -2742,19 +2742,6 @@ class MarkdownUtilsTests(TestCase):
         self.assertEqual(markdown_escape('[foo] ](link)'),
                          r'\[foo\] \](link)')
 
-    def test_markdown_escape_code_blocks(self):
-        """Testing markdown_escape with indented code blocks"""
-        self.assertEqual(
-            markdown_escape('    code\n'
-                            '    code'),
-            ('&nbsp;   code\n'
-             '&nbsp;   code'))
-        self.assertEqual(
-            markdown_escape('\tcode\n'
-                            '\tcode'),
-            ('&nbsp;\tcode\n'
-             '&nbsp;\tcode'))
-
     def test_markdown_unescape(self):
         """Testing markdown_unescape"""
         self.assertEqual(markdown_unescape(self.ESCAPED_TEXT),
