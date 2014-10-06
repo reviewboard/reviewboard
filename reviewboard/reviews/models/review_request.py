@@ -656,6 +656,7 @@ class ReviewRequest(BaseReviewRequestDetails):
             changedesc = self.changedescs.filter(public=True).latest()
             changedesc.timestamp = timezone.now()
             changedesc.text = description or ""
+            changedesc.rich_text = rich_text
             changedesc.save()
 
             # Needed to renew last-update.

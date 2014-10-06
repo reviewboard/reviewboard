@@ -80,7 +80,10 @@ RB.ReviewRequestEditor = Backbone.Model.extend({
         if (fieldName === 'changeDescription' && _.has(options, 'closeType')) {
             reviewRequest.close({
                 type: options.closeType,
-                description: value
+                description: value,
+                postData: {
+                    text_type: 'markdown'
+                }
             });
 
             reviewRequest.draft.set(fieldName, value);

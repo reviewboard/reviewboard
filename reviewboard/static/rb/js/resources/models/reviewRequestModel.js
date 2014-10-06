@@ -204,6 +204,10 @@ RB.ReviewRequest = RB.BaseResource.extend({
             data.description = options.description;
         }
 
+        if (options.postData !== undefined) {
+            _.extend(data, options.postData);
+        }
+
         changingState = (options.type !== this.get('state'));
 
         saveOptions = _.defaults({

@@ -647,11 +647,16 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
                                'used if the review request have been '
                                'submitted or discarded.',
             },
+            'text_type': {
+                'type': MarkdownFieldsMixin.SAVEABLE_TEXT_TYPES,
+                'description': 'The text mode for the description of the '
+                               'update field. The default is "plain".',
+            },
         },
         allow_unknown=True
     )
     def update(self, request, status=None, changenum=None, description=None,
-               extra_fields={}, *args, **kwargs):
+               text_type=None, extra_fields={}, *args, **kwargs):
         """Updates the status of the review request.
 
         The only supported update to a review request's resource is to change
@@ -699,8 +704,11 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
              review_request.status != ReviewRequest.PENDING_REVIEW)):
             try:
                 if status in self._close_type_map:
-                    review_request.close(self._close_type_map[status],
-                                         request.user, description)
+                    review_request.close(
+                        self._close_type_map[status],
+                        request.user,
+                        description,
+                        rich_text=(text_type == self.TEXT_TYPE_MARKDOWN))
                 elif status == 'pending':
                     review_request.reopen(request.user)
                 else:

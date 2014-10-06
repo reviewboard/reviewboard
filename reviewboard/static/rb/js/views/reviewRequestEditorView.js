@@ -526,7 +526,24 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
             _.each(this._fieldEditors, function(fieldOptions, fieldID) {
                 this.setupFieldEditor(fieldID);
             }, this);
+        }
 
+        /*
+         * We need to show any banners before we continue with field setup,
+         * since the banners register and set up fields as well.
+         *
+         * If we do this any later, formatText() will be called prematurely,
+         * preventing proper Markdown text loading and saving from working
+         * correctly.
+         */
+        if (this._$bannersContainer.children().filter(':visible').length > 0) {
+            this.showBanner();
+        }
+
+        /*
+         * Let's resume with the field setup now.
+         */
+        if (this._hasFields) {
             /*
              * Linkify any text in the description, testing done, and change
              * description fields.
@@ -579,10 +596,6 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
         }
 
         this._setupActions();
-
-        if (this._$bannersContainer.children().filter(':visible').length > 0) {
-            this.showBanner();
-        }
 
         this.model.on('publishError', function(errorText) {
             alert(errorText);
