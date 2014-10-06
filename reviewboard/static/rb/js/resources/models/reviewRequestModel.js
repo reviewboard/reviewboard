@@ -201,7 +201,7 @@ RB.ReviewRequest = RB.BaseResource.extend({
         }
 
         if (options.description !== undefined) {
-            data.description = options.description;
+            data.close_description = options.description;
         }
 
         if (options.postData !== undefined) {

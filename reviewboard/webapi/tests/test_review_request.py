@@ -1234,6 +1234,32 @@ class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase):
         review_request = ReviewRequest.objects.get(pk=review_request.pk)
         self.compare_item(item_rsp, review_request)
 
+    def test_put_status_legacy_description(self):
+        """Testing the PUT review-requests/<id>/?status= API
+        with legacy description= field
+        """
+        r = self.create_review_request(submitter=self.user, publish=True)
+
+        rsp = self.api_put(
+            get_review_request_item_url(r.display_id),
+            {
+                'status': 'discarded',
+                'description': 'comment',
+            },
+            expected_mimetype=review_request_item_mimetype)
+
+        self.assertEqual(rsp['stat'], 'ok')
+
+        r = ReviewRequest.objects.get(pk=r.id)
+        self.assertEqual(r.status, 'D')
+
+        c = r.changedescs.latest('timestamp')
+        self.assertEqual(c.text, 'comment')
+
+        fc_status = c.fields_changed['status']
+        self.assertEqual(fc_status['old'][0], 'P')
+        self.assertEqual(fc_status['new'][0], 'D')
+
     def test_put_status_discarded(self):
         """Testing the PUT review-requests/<id>/?status=discarded API"""
         r = self.create_review_request(submitter=self.user, publish=True)
@@ -1242,7 +1268,7 @@ class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase):
             get_review_request_item_url(r.display_id),
             {
                 'status': 'discarded',
-                'description': 'comment',
+                'close_description': 'comment',
             },
             expected_mimetype=review_request_item_mimetype)
 
@@ -1297,7 +1323,7 @@ class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase):
             get_review_request_item_url(r.display_id),
             {
                 'status': 'submitted',
-                'description': 'comment',
+                'close_description': 'comment',
             },
             expected_mimetype=review_request_item_mimetype)
 
@@ -1326,7 +1352,7 @@ class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase):
             get_review_request_item_url(r.display_id, self.local_site_name),
             {
                 'status': 'submitted',
-                'description': 'comment'
+                'close_description': 'comment'
             },
             expected_mimetype=review_request_item_mimetype)
 

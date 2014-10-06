@@ -552,11 +552,21 @@ class ReviewRequest(BaseReviewRequestDetails):
         This is a helper which is used to gather the data which is rendered in
         the close description boxes on various pages.
         """
-        try:
-            latest_changedesc = \
-                self.changedescs.filter(public=True).latest()
-        except ChangeDescription.DoesNotExist:
-            latest_changedesc = None
+        # We're fetching all entries instead of just public ones because
+        # another query may have already prefetched the list of
+        # changedescs. In this case, a new filter() would result in more
+        # queries.
+        #
+        # Realistically, there will only ever be at most a single
+        # non-public change description (the current draft), so we
+        # wouldn't be saving much of anything with a filter.
+        changedescs = list(self.changedescs.all())
+        latest_changedesc = None
+
+        for changedesc in changedescs:
+            if changedesc.public:
+                latest_changedesc = changedesc
+                break
 
         close_description = ''
         is_rich_text = False
