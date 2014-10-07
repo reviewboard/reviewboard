@@ -34,15 +34,8 @@ ESCAPE_CHARS_RE = re.compile(r"""
     # _ indicates italic, and __ indicates bold, but not when in the middle
     # of a word.
     #
-    # Ideally, we'd go ahead and prevent escaping there, but marked.js doesn't
-    # handle this very well. For now, we have to escape it no matter where
-    # it is. Until that's fixed, we can't use these rules:
-    #
-    #    | (?<!\w|_)(__?)
-    #    | (__?)(?!\w|_)
-    #
-    # but must instead use this:
-    | _
+    | (?<!\w|_)(__?)
+    | (__?)(?!\w|_)
 
     # This is an alternate format for italic and bold, using * instead of _.
     | (?<!\w|\*)(\*\*?)
