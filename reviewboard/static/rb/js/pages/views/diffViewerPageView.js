@@ -85,7 +85,7 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
          * which isn't a valid URL.
          */
         if (window.location.hash === '#index_header') {
-            window.location.hash = '';
+            window.location.replace('#');
         }
 
         Backbone.history.start({
