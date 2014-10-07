@@ -73,7 +73,14 @@ class VMwarePerforceTool(PerforceTool):
         # here, since it can appear multiple times.
         sections = {}
         branches = [branch]
-        for start, end in zip(section_indices, section_indices[:1]):
+
+        for i in range(len(section_indices)):
+            start = section_indices[i]
+            try:
+                end = section_indices[i + 1]
+            except IndexError:
+                end = None
+
             name = locations[start]
             if name == 'Merge to:':
                 # Include merge information in the branch field
