@@ -56,7 +56,8 @@ class ReviewReplyScreenshotCommentResource(BaseScreenshotCommentResource):
                             NOT_LOGGED_IN, PERMISSION_DENIED)
     @webapi_request_fields(
         required=BaseScreenshotCommentResource.REPLY_REQUIRED_CREATE_FIELDS,
-        optional=BaseScreenshotCommentResource.REPLY_OPTIONAL_CREATE_FIELDS
+        optional=BaseScreenshotCommentResource.REPLY_OPTIONAL_CREATE_FIELDS,
+        allow_unknown=True
     )
     def create(self, request, reply_to_id, *args, **kwargs):
         """Creates a reply to a screenshot comment on a review.
@@ -130,7 +131,8 @@ class ReviewReplyScreenshotCommentResource(BaseScreenshotCommentResource):
     @webapi_login_required
     @webapi_response_errors(DOES_NOT_EXIST, NOT_LOGGED_IN, PERMISSION_DENIED)
     @webapi_request_fields(
-        optional=BaseScreenshotCommentResource.REPLY_OPTIONAL_UPDATE_FIELDS
+        optional=BaseScreenshotCommentResource.REPLY_OPTIONAL_UPDATE_FIELDS,
+        allow_unknown=True
     )
     def update(self, request, *args, **kwargs):
         """Updates a reply to a screenshot comment.
