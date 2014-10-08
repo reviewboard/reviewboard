@@ -110,9 +110,9 @@ Code Samples
 ============
 
 When writing reviews, It's often very useful to write small snippets of code.
-Markdown allows you to notate which parts of your text are code, and the result
-will be rendered with syntax highlighting. This can be especially nice for
-proposing changes.
+Markdown allows you to notate which parts of your text are code or terminal
+text, and optionally render code with syntax highlighting. This can be
+especially nice for proposing changes.
 
 Code can be formatted inside a line by enclosing the text in single backticks.
 This is often useful when referring to symbols from the code::
@@ -120,24 +120,67 @@ This is often useful when referring to symbols from the code::
     I think it would be nice if you moved this code up near the `do_foo` method.
 
 Longer code samples can be denoted using block notation. Any blocks which are
-indented at least 4 spaces will be treated as a code block. In addition, code
-blocks can be notated without indentation by surrounding the block with triple
-backticks, using the syntax from GitHub Flavored Markdown. This also allows
-you to explicitly state what language the code is written in, for syntax
-highlighting::
+indented at least 4 spaces will be treated as a code block. This code will not
+be syntax-highlighted, but instead will be shown as plain text.
 
-    Here's an indented code block:
+.. code-block:: text
+
+    The following code block will not be syntax-highlighted.
 
         def test():
-	    logging.error('Test failed')
+            logging.error('Test failed')
 
-    And a "fenced" code block:
+In addition, code blocks can be notated without indentation by surrounding
+the block with triple backticks using the syntax from GitHub Flavored
+Markdown.
 
-    ```javascript
+.. code-block:: text
+
+    The following code block will not be syntax-highlighted.
+
+    ```
     function test() {
         console.log('Test failed');
     }
     ```
+
+You can specify a language name after the first set of backticks in order to
+enable syntax highlighting for the code. For instance:
+
+.. code-block:: text
+
+    The following code block WILL be syntax-highlighted.
+
+    ```javascript
+    function test() {
+        console.log('Test passed!');
+    }
+    ```
+
+Some of the most common language codes you may want to use include:
+
+* C: ``c``
+* C++: ``cpp``, ``c++``
+* C#: ``csharp``
+* CSS: ``css``
+* CoffeeScript: ``coffeescript``
+* HTML: ``html``
+* JSON: ``json``
+* Java: ``java``
+* JavaScript: ``javascript``, ``js``
+* Objective-C: ``objective-c``, ``obj-c``, ``objc``
+* Objective-C++: ``objective-c++``, ``obj-c++``, ``objc++``
+* PHP: ``php``
+* Perl: ``perl``, ``pl``
+* Python 3: ``python3``, ``py3``
+* Python: ``python``, ``py``
+* Ruby: ``ruby``, ``rb``
+* Snobol: ``snobol``
+* XML: ``xml``
+
+For the complete list, look through the Pygments
+`list of lexers <http://pygments.org/docs/lexers/>`_. Any of the
+"short names" listed can be used.
 
 
 Escaping

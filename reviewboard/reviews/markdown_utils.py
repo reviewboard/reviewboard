@@ -58,6 +58,11 @@ MARKDOWN_KWARGS = {
     'extensions': [
         'fenced_code', 'codehilite', 'sane_lists', 'smart_strong'
     ],
+    'extension_configs': {
+        'codehilite': {
+            'guess_lang': False,
+        },
+    },
 }
 
 
