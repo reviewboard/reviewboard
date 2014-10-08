@@ -69,6 +69,13 @@ class BaseCommentResource(MarkdownFieldsMixin, WebAPIResource):
     }
 
     _COMMON_OPTIONAL_CREATE_FIELDS = {
+        'force_text_type': {
+            'type': MarkdownFieldsMixin.TEXT_TYPES,
+            'description': 'The text type, if any, to force for returned '
+                           'text fields. The contents will be converted '
+                           'to the requested type in the payload, but '
+                           'will not be saved as that type.',
+        },
         'text_type': {
             'type': MarkdownFieldsMixin.SAVEABLE_TEXT_TYPES,
             'description': 'The content type for the comment text field. '
@@ -77,6 +84,13 @@ class BaseCommentResource(MarkdownFieldsMixin, WebAPIResource):
     }
 
     _COMMON_OPTIONAL_UPDATE_FIELDS = {
+        'force_text_type': {
+            'type': MarkdownFieldsMixin.TEXT_TYPES,
+            'description': 'The text type, if any, to force for returned '
+                           'text fields. The contents will be converted '
+                           'to the requested type in the payload, but '
+                           'will not be saved as that type.',
+        },
         'text': {
             'type': six.text_type,
             'description': 'The comment text.',

@@ -494,6 +494,13 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
                                'commit ID.',
                 'added_in': '2.0',
             },
+            'force_text_type': {
+                'type': MarkdownFieldsMixin.TEXT_TYPES,
+                'description': 'The text type, if any, to force for returned '
+                               'text fields. The contents will be converted '
+                               'to the requested type in the payload, but '
+                               'will not be saved as that type.',
+            },
             'repository': {
                 'type': six.text_type,
                 'description': 'The path or ID of the repository that the '
@@ -684,6 +691,13 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
                                'This is deprecated. Instead, set '
                                '``close_description``.',
                 'deprecated_in': '2.0.9',
+            },
+            'force_text_type': {
+                'type': MarkdownFieldsMixin.TEXT_TYPES,
+                'description': 'The text type, if any, to force for returned '
+                               'text fields. The contents will be converted '
+                               'to the requested type in the payload, but '
+                               'will not be saved as that type.',
             },
             'text_type': {
                 'type': MarkdownFieldsMixin.SAVEABLE_TEXT_TYPES,

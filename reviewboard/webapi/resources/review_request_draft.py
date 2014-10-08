@@ -180,6 +180,13 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
             'type': six.text_type,
             'description': 'The new review request description.',
         },
+        'force_text_type': {
+            'type': MarkdownFieldsMixin.TEXT_TYPES,
+            'description': 'The text type, if any, to force for returned '
+                           'text fields. The contents will be converted '
+                           'to the requested type in the payload, but '
+                           'will not be saved as that type.',
+        },
         'public': {
             'type': bool,
             'description': 'Whether or not to make the review public. '

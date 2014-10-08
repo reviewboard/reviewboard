@@ -29,7 +29,7 @@ class MarkdownFieldsMixin(object):
     TEXT_TYPE_HTML = 'html'
 
     TEXT_TYPES = (TEXT_TYPE_PLAIN, TEXT_TYPE_MARKDOWN, TEXT_TYPE_HTML)
-    SAVEABLE_TEXT_TYPES = TEXT_TYPES
+    SAVEABLE_TEXT_TYPES = (TEXT_TYPE_PLAIN, TEXT_TYPE_MARKDOWN)
 
     def serialize_text_type_field(self, obj, request=None, **kwargs):
         return self.get_requested_text_type(obj, request)
@@ -60,7 +60,10 @@ class MarkdownFieldsMixin(object):
         this will fall back to the proper type for the given object.
         """
         if request:
-            text_type = request.GET.get('force-text-type')
+            if request.method == 'GET':
+                text_type = request.GET.get('force-text-type')
+            else:
+                text_type = request.POST.get('force_text_type')
         else:
             text_type = None
 
