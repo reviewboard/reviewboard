@@ -15,6 +15,7 @@ from djblets.webapi.errors import (DOES_NOT_EXIST, INVALID_FORM_DATA,
                                    NOT_LOGGED_IN, PERMISSION_DENIED)
 
 from reviewboard.reviews.errors import NotModifiedError, PublishError
+from reviewboard.reviews.fields import get_review_request_field
 from reviewboard.reviews.models import Group, ReviewRequest, ReviewRequestDraft
 from reviewboard.scmtools.errors import InvalidChangeNumberError
 from reviewboard.webapi.base import WebAPIResource
@@ -252,6 +253,11 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
 
     def serialize_testing_done_field(self, obj, **kwargs):
         return self.normalize_text(obj, obj.testing_done, **kwargs)
+
+    def get_extra_data_field_supports_markdown(self, review_request, key):
+        field_cls = get_review_request_field(key)
+
+        return field_cls and getattr(field_cls, 'enable_markdown', False)
 
     def has_access_permissions(self, request, draft, *args, **kwargs):
         return draft.is_accessible_by(request.user)

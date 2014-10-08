@@ -1,5 +1,6 @@
 from __future__ import unicode_literals
 
+from django.utils import six
 from django.utils.html import escape
 
 from reviewboard.reviews.markdown_utils import (markdown_escape,
@@ -32,6 +33,25 @@ class MarkdownFieldsMixin(object):
 
     def serialize_text_type_field(self, obj, request=None, **kwargs):
         return self.get_requested_text_type(obj, request)
+
+    def serialize_extra_data_field(self, obj, **kwargs):
+        extra_data = {}
+
+        for key, value in six.iteritems(obj.extra_data):
+            if value and self.get_extra_data_field_supports_markdown(obj, key):
+                extra_data[key] = self.normalize_text(obj, value, **kwargs)
+            else:
+                extra_data[key] = value
+
+        return extra_data
+
+    def get_extra_data_field_supports_markdown(self, obj, key):
+        """Returns whether a particular field in extra_data supports Markdown.
+
+        If the field supports Markdown text, the value will be normalized
+        based on the requested ?force-text-type= parameter.
+        """
+        return False
 
     def get_requested_text_type(self, obj, request=None):
         """Returns the text type requested by the user.

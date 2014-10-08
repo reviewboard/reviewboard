@@ -21,6 +21,7 @@ from reviewboard.diffviewer.errors import (DiffTooBigError,
                                            DiffParserError,
                                            EmptyDiffError)
 from reviewboard.reviews.errors import PermissionError
+from reviewboard.reviews.fields import get_review_request_field
 from reviewboard.reviews.models import ReviewRequest
 from reviewboard.scmtools.errors import (AuthenticationError,
                                          ChangeNumberInUseError,
@@ -423,6 +424,11 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
             return self.normalize_text(obj, close_description, **kwargs)
         else:
             return None
+
+    def get_extra_data_field_supports_markdown(self, review_request, key):
+        field_cls = get_review_request_field(key)
+
+        return field_cls and getattr(field_cls, 'enable_markdown', False)
 
     def serialize_ship_it_count_field(self, obj, **kwargs):
         return obj.shipit_count
