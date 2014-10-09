@@ -65,6 +65,26 @@ RB.ReviewRequestEditor = Backbone.Model.extend({
     },
 
     /*
+     * Returns a field from the draft.
+     *
+     * This will look either in the draft's data or in the extraData (for
+     * custom fields), returning the value provided either when the page
+     * was generated or when it was last edited.
+     */
+    getDraftField: function(fieldName, options) {
+        var reviewRequest = this.get('reviewRequest'),
+            draft = reviewRequest.draft;
+
+        if (options.useExtraData) {
+            return draft.get('extraData')[options.fieldID];
+        } else if (fieldName === 'closeDescription') {
+            return reviewRequest.get(fieldName);
+        } else {
+            return draft.get(fieldName);
+        }
+    },
+
+    /*
      * Sets a field in the draft.
      *
      * If we're in the process of publishing, this will check if we have saved
@@ -77,20 +97,18 @@ RB.ReviewRequestEditor = Backbone.Model.extend({
 
         options = options || {};
 
-        if (fieldName === 'changeDescription' && _.has(options, 'closeType')) {
-            reviewRequest.close({
-                type: options.closeType,
-                description: value,
-                postData: {
-                    text_type: 'markdown'
-                }
-            });
-
-            reviewRequest.draft.set(fieldName, value);
-
-            if (_.isFunction(options.success)) {
-                options.success.call(context);
-            }
+        if (fieldName === 'closeDescription' && _.has(options, 'closeType')) {
+            reviewRequest.close(
+                {
+                    type: options.closeType,
+                    description: value,
+                    success: options.success,
+                    error: options.error,
+                    postData: {
+                        text_type: 'markdown'
+                    }
+                },
+                context);
 
             return;
         }

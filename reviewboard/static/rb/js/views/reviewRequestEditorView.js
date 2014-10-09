@@ -20,6 +20,8 @@ BannerView = Backbone.View.extend({
     showChangesField: true,
     describeText: '',
     fieldOptions: {},
+    descriptionFieldID: 'changedescription',
+    descriptionFieldName: null,
 
     template: _.template([
         '<h1><%- title %></h1>',
@@ -47,8 +49,8 @@ BannerView = Backbone.View.extend({
             this.reviewRequestEditorView.model.get('reviewRequest');
 
         this.reviewRequestEditorView.registerField(_.defaults({
-            fieldID: 'changedescription',
-            fieldName: 'changeDescription',
+            fieldID: this.descriptionFieldID,
+            fieldName: this.descriptionFieldName,
             elementOptional: true,
             editMarkdown: true,
             useExtraData: false,
@@ -91,7 +93,7 @@ BannerView = Backbone.View.extend({
             this.$buttons.prop('disabled', false);
         }, this);
 
-        this.reviewRequestEditorView.setupFieldEditor('changedescription');
+        this.reviewRequestEditorView.setupFieldEditor(this.descriptionFieldID);
 
         return this;
     }
@@ -105,12 +107,15 @@ BannerView = Backbone.View.extend({
  * to subclasses to provide the other details.
  */
 ClosedBannerView = BannerView.extend({
+    descriptionFieldName: 'closeDescription',
+
     actions: [
         {
             id: 'btn-review-request-reopen',
             label: gettext('Reopen for Review')
         }
     ],
+
     fieldOptions: {
         statusField: true
     },
@@ -166,6 +171,7 @@ DraftBannerView = BannerView.extend({
     id: 'draft-banner',
     subtitle: 'Be sure to publish when finished.',
     describeText: 'Describe your changes (optional):',
+    descriptionFieldName: 'changeDescription',
 
     events: {
         'click #btn-draft-publish': '_onPublishDraftClicked',
@@ -643,7 +649,8 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
      */
     setupFieldEditor: function(fieldID) {
         var fieldOptions = this._fieldEditors[fieldID],
-            $el = this.$(fieldOptions.selector);
+            $el = this.$(fieldOptions.selector),
+            listenObj;
 
         if ($el.length === 0) {
             return;
@@ -656,7 +663,14 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
             $el.inlineEditor('setupEvents');
         }
 
-        this.listenTo(this.draft, 'change:' + fieldOptions.fieldName,
+        /* TODO: Support listening to extraData fields. */
+        if (fieldOptions.fieldName === 'closeDescription') {
+            listenObj = this.model.get('reviewRequest');
+        } else {
+            listenObj = this.draft;
+        }
+
+        this.listenTo(listenObj, 'change:' + fieldOptions.fieldName,
                       _.bind(this._formatField, this, fieldOptions));
     },
 
@@ -1216,14 +1230,8 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
     _formatField: function(fieldOptions) {
         var formatter = fieldOptions.formatter,
             $el = this.$(fieldOptions.selector),
-            reviewRequest = this.model.get('reviewRequest'),
-            value;
-
-        if (fieldOptions.useExtraData) {
-            value = reviewRequest.draft.get('extraData')[fieldOptions.fieldID];
-        } else {
-            value = reviewRequest.draft.get(fieldOptions.fieldName);
-        }
+            value = this.model.getDraftField(fieldOptions.fieldName,
+                                             fieldOptions);
 
         if (_.isFunction(formatter)) {
             formatter.call(fieldOptions.context || this, this, value, $el);

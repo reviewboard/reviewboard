@@ -228,7 +228,7 @@ suite('rb/resources/models/ReviewRequest', function() {
             spyOn($, 'ajax').andCallFake(function(request) {
                 expect(request.type).toBe('PUT');
                 expect(request.data.status).toBe('submitted');
-                expect(request.data.description).toBe('test');
+                expect(request.data.close_description).toBe('test');
 
                 request.success({
                     stat: 'ok',

@@ -144,6 +144,19 @@ suite('rb/models/ReviewRequestEditor', function() {
 
             describe('Special fields', function() {
                 describe('changeDescription', function() {
+                    it('Draft description', function() {
+                        spyOn(reviewRequest, 'close');
+                        spyOn(reviewRequest.draft, 'save');
+
+                        editor.setDraftField('closeDescription',
+                                             'My description');
+
+                        expect(reviewRequest.close).not.toHaveBeenCalled();
+                        expect(reviewRequest.draft.save).toHaveBeenCalled();
+                    });
+                });
+
+                describe('closeDescription', function() {
                     it('Discarded description', function() {
                         spyOn(reviewRequest, 'close')
                             .andCallFake(function(options) {
@@ -153,23 +166,12 @@ suite('rb/models/ReviewRequestEditor', function() {
                                     .toBe('My description');
                             });
 
-                        editor.setDraftField('changeDescription',
+                        editor.setDraftField('closeDescription',
                                              'My description', {
                             closeType: RB.ReviewRequest.CLOSE_DISCARDED
                         });
 
                         expect(reviewRequest.close).toHaveBeenCalled();
-                    });
-
-                    it('Draft description', function() {
-                        spyOn(reviewRequest, 'close');
-                        spyOn(reviewRequest.draft, 'save');
-
-                        editor.setDraftField('changeDescription',
-                                             'My description');
-
-                        expect(reviewRequest.close).not.toHaveBeenCalled();
-                        expect(reviewRequest.draft.save).toHaveBeenCalled();
                     });
 
                     it('Submitted description', function() {
@@ -181,7 +183,7 @@ suite('rb/models/ReviewRequestEditor', function() {
                                     .toBe('My description');
                             });
 
-                        editor.setDraftField('changeDescription',
+                        editor.setDraftField('closeDescription',
                                              'My description', {
                             closeType: RB.ReviewRequest.CLOSE_SUBMITTED
                         });
