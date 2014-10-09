@@ -28,8 +28,8 @@ if (marked !== undefined) {
  * Otherwise, if it's not expected and won't be converted, then it will add
  * links to review requests and bug trackers but otherwise leave the text alone.
  */
-RB.formatText = function($el, text, bugTrackerURL) {
-    var markedUp = text;
+RB.formatText = function($el, options) {
+    var markedUp = options.newText;
 
     if ($el.data('rich-text')) {
         /*
@@ -41,14 +41,16 @@ RB.formatText = function($el, text, bugTrackerURL) {
             $el.inlineEditor('option', {
                 hasRawValue: true,
                 matchHeight: false,
-                rawValue: text
+                rawValue: options.newText
             });
         }
 
         if (markedUp.length > 0) {
             // Now linkify and markdown-ize
             markedUp = RB.LinkifyUtils.linkifyReviewRequests(markedUp, true);
-            markedUp = RB.LinkifyUtils.linkifyBugs(markedUp, bugTrackerURL, true);
+            markedUp = RB.LinkifyUtils.linkifyBugs(markedUp,
+                                                   options.bugTrackerURL,
+                                                   true);
             markedUp = marked(markedUp);
 
             /*
@@ -67,7 +69,8 @@ RB.formatText = function($el, text, bugTrackerURL) {
             .find('a')
                 .attr('target', '_blank');
     } else {
-        $el.html(RB.LinkifyUtils.linkifyText(text, bugTrackerURL));
+        $el.html(RB.LinkifyUtils.linkifyText(options.newText,
+                                             options.bugTrackerURL));
     }
 };
 
