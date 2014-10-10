@@ -136,8 +136,7 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
                 })
 
         if draft.changedesc is None and review_request.public:
-            draft.changedesc = ChangeDescription.objects.create(
-                rich_text=draft.rich_text)
+            draft.changedesc = ChangeDescription.objects.create()
 
         if draft_is_new:
             draft.target_groups = review_request.target_groups.all()
@@ -322,7 +321,6 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
 
         if self.changedesc:
             self.changedesc.timestamp = timezone.now()
-            self.changedesc.rich_text = self.rich_text
             self.changedesc.public = True
             self.changedesc.save()
             review_request.changedescs.add(self.changedesc)

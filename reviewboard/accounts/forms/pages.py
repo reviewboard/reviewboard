@@ -50,8 +50,12 @@ class AccountSettingsForm(AccountPageForm):
 
     should_send_own_updates = forms.BooleanField(
         label=_('Get e-mail notifications for my own activity'),
-        required=False,
-    )
+        required=False)
+
+    default_use_rich_text = forms.BooleanField(
+        label=_('Enable Markdown for new review requests, reviews and '
+                'comments by default'),
+        required=False)
 
     def load(self):
         self.set_initial({
@@ -60,6 +64,7 @@ class AccountSettingsForm(AccountPageForm):
             'should_send_own_updates': self.profile.should_send_own_updates,
             'syntax_highlighting': self.profile.syntax_highlighting,
             'timezone': self.profile.timezone,
+            'default_use_rich_text': self.profile.should_use_rich_text,
         })
 
         siteconfig = SiteConfiguration.objects.get_current()
@@ -76,6 +81,8 @@ class AccountSettingsForm(AccountPageForm):
         self.profile.should_send_email = self.cleaned_data['should_send_email']
         self.profile.should_send_own_updates = \
             self.cleaned_data['should_send_own_updates']
+        self.profile.default_use_rich_text = \
+            self.cleaned_data['default_use_rich_text']
         self.profile.timezone = self.cleaned_data['timezone']
         self.profile.save()
 
