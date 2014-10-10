@@ -59,8 +59,10 @@ UNESCAPE_CHARS_RE = re.compile(r'\\([%s])' % MARKDOWN_SPECIAL_CHARS)
 MARKDOWN_KWARGS = {
     'safe_mode': 'escape',
     'output_format': 'xhtml1',
+    'lazy_ol': False,
     'extensions': [
-        'fenced_code', 'codehilite', 'sane_lists', 'smart_strong'
+        'fenced_code', 'codehilite', 'sane_lists', 'smart_strong', 'nl2br',
+        'reviewboard.reviews.markdown_extensions',
     ],
     'extension_configs': {
         'codehilite': {
