@@ -895,6 +895,9 @@ class StorageSettingsForm(SiteSettingsForm):
             if storage_backend != 's3':
                 set_fieldset_required('storage_s3', False)
 
+            if storage_backend != 'swift':
+                set_fieldset_required('storage_swift', False)
+
             if storage_backend != 'couchdb':
                 set_fieldset_required('storage_couchdb', False)
 
