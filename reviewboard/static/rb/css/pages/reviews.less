@@ -1266,7 +1266,7 @@
     @file-attachment-border-color: #CCCCCC;
 
     background-color: #FEFEFE;
-    border: 1px #CCCCCC solid;
+    border: 1px @file-attachment-border-color solid;
     display: block;
     position: relative;
     margin: 0 1.5em 1.5em 0;
@@ -1279,20 +1279,42 @@
       li {
         line-height: 16px;
 
-        &:first-child a {
-          .border-radius(0 0 0 @box-inner-border-radius);
-        }
-
         &:last-child a {
           .border-radius(0 @box-inner-border-radius 0 0);
         }
 
-        &:first-child:last-child a {
-          .border-radius(0 @box-inner-border-radius 0 @box-inner-border-radius);
-        }
-
         &:hover {
           background: transparent;
+        }
+
+        .file-attachment-menu {
+          border: 1px @file-attachment-border-color solid;
+          float: none;
+          list-style: none;
+          margin: -1px 0 0;
+          padding: 0;
+          position: absolute;
+	  right: -1px;
+          z-index: @z-index-menu;
+          .border-radius(0 0 @box-border-radius @box-border-radius);
+          .box-shadow(none);
+
+          li {
+            background: white;
+            border: 0;
+            float: none;
+            margin: 0;
+            padding: 0;
+
+            &:last-child {
+              .border-radius(0 0 @box-inner-border-radius @box-inner-border-radius);
+            }
+
+            a, a:hover {
+              border: 0;
+              border-radius: inherit;
+            }
+          }
         }
 
         a {

@@ -846,6 +846,9 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
             .hover(showMenu, hideMenu)
             .toggle(showMenu, hideMenu);
 
+        $('.actions > li:has(ul.file-attachment-menu)')
+            .hover(showMenu, hideMenu);
+
         /*
          * We don't want the click event filtering from these down to the
          * parent menu, so we can't use events above.

@@ -57,16 +57,20 @@ RB.FileAttachmentThumbnail = Backbone.View.extend({
 
     actionsTemplate: _.template([
         '<% if (loaded) { %>',
-        '<%   if (reviewURL) { %>',
-        ' <li class="file-review"><a href="<%- reviewURL %>"><%- reviewText %></a></li>',
-        '<%   } else { %>',
-        ' <li class="file-add-comment"><a href="#"><%- addCommentText %></a></li>',
-        '<%   } %>',
-        ' <li class="delete">',
-        '  <a href="#" alt="<%- deleteFileText %>"',
-        '     title="<%- deleteFileText %>">',
-        '   <span class="ui-icon ui-icon-trash"></span>',
-        '  </a>',
+        ' <li>',
+        '<%  if (reviewURL) { %>',
+        '   <li class="file-review"><a href="<%- reviewURL %>"><%- reviewText %></a></li>',
+        '<%  } else { %>',
+        '   <li class="file-add-comment"><a href="#"><%- commentText %></a></li>',
+        '<%  } %>',
+        ' </li>',
+        ' <li>',
+        '  <a class="thumbnail-actions" href="#">&#9662;</a>',
+        '  <ul class="file-attachment-menu" style="display: none;">',
+        '   <li class="delete">',
+        '    <a href="#"><%- deleteText %></a>',
+        '   </li>',
+        '  </ul>',
         ' </li>',
         '<% } %>'
     ].join('')),
@@ -342,9 +346,9 @@ RB.FileAttachmentThumbnail = Backbone.View.extend({
         }
 
         this._$actions.html(this.actionsTemplate(_.defaults({
-            deleteFileText: gettext('Delete this file'),
+            deleteText: gettext('Delete'),
             reviewText: gettext('Review'),
-            addCommentText: gettext('New Comment')
+            commentText: gettext('Comment')
         }, this.model.attributes)));
     },
 
