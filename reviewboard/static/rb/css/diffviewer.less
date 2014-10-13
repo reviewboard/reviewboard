@@ -75,6 +75,22 @@
     }
   }
 
+  &.selecting-col-1 {
+    td.r {
+      &, * {
+        .unselectable();
+      }
+    }
+  }
+
+  &.selecting-col-3 {
+    td.l {
+      &, * {
+        .unselectable();
+      }
+    }
+  }
+
   a {
     color: black;
     text-decoration: none;
@@ -214,6 +230,8 @@
         text-align: right;
         vertical-align: top;
         cursor: pointer;
+
+        .unselectable();
       }
     }
 
@@ -483,6 +501,7 @@
 
     span {
       background: transparent !important;
+      .unselectable();
     }
   }
 }

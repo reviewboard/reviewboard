@@ -17,6 +17,7 @@ RB.TextCommentRowSelector = Backbone.View.extend({
     ].join('')),
 
     events: {
+        'copy': '_onCopy',
         'mousedown': '_onMouseDown',
         'mouseup': '_onMouseUp',
         'mouseover': '_onMouseOver',
@@ -34,6 +35,19 @@ RB.TextCommentRowSelector = Backbone.View.extend({
         this._beginLineNum = 0;
         this._endLineNum = 0;
         this._lastSeenIndex = 0;
+        this._selectionClass = null;
+
+        /*
+         * Support setting the clipboard only if we have the necessary
+         * functions. This may still be turned off later if we can't
+         * actually set the data.
+         */
+        this._supportsSetClipboard = (
+            window.getSelection !== undefined &&
+            window.Range !== undefined &&
+            window.Range.prototype.cloneContents !== undefined);
+
+        this._newlineChar = null;
 
         this._$ghostCommentFlag = null;
         this._$ghostCommentFlagCell = null;
@@ -279,10 +293,99 @@ RB.TextCommentRowSelector = Backbone.View.extend({
     },
 
     /*
+     * Handler for when the user copies text in a column.
+     *
+     * This will begin the process of capturing any selected text in
+     * a column to the clipboard in a cross-browser way.
+     */
+    _onCopy: function(e) {
+        var clipboardData = e.originalEvent.clipboardData ||
+                            window.clipboardData;
+
+        if (clipboardData && this._supportsSetClipboard &&
+            this._copySelectionToClipboard(clipboardData)) {
+            /*
+             * Prevent the default copy action from occurring.
+             */
+            return false;
+        }
+    },
+
+    /*
+     * Copies the current selection to the clipboard.
+     *
+     * This will locate the desired text to copy, based on the selection
+     * range within the column where selection started. It will then
+     * extract the code from the <pre> tags and build a string to set in
+     * the clipboard.
+     *
+     * This requires support in the browser for setting clipboard contents
+     * on copy. If the browser does not support this, the default behavior
+     * will be used.
+     */
+    _copySelectionToClipboard: function(clipboardData) {
+        var sel = window.getSelection(),
+            range = sel.getRangeAt(0),
+            doc = range.cloneContents(),
+            nodes = doc.querySelectorAll('tr'),
+            s = '',
+            pre;
+
+        if (this._newlineChar === null) {
+            /*
+             * Figure out what newline character should be used on this
+             * platform. Ideally, we'd determine this from some browser
+             * behavior, but it doesn't seem that can be consistently
+             * determined.
+             */
+            if (navigator.appVersion.indexOf('Win') !== -1) {
+                this._newlineChar = '\r\n';
+            } else {
+                this._newlineChar = '\n';
+            }
+        }
+
+        _.each(nodes, function(tr, i) {
+            if (tr.cells.length === 1) {
+                cell = tr.cells[0];
+            } else {
+                cell = tr.cells[this._selectedCellIndex];
+            }
+
+            if (cell) {
+                pre = cell.querySelector('pre');
+
+                if (pre) {
+                    if (i > 0) {
+                        s += this._newlineChar;
+                    }
+
+                    s += pre.textContent;
+                }
+            }
+        }, this);
+
+        try {
+            clipboardData.setData('text', s);
+        } catch (e) {
+            /* Let the native behavior take over. */
+            this._supportsSetClipboard = false;
+            return false;
+        }
+
+        return true;
+    },
+
+    /*
      * Handles the mouse down event, which begins selection for comments.
      */
     _onMouseDown: function(e) {
-        var node = e.target;
+        var node = e.target,
+            $node;
+
+        if (this._selectionClass) {
+            this.$el.removeClass(this._selectionClass);
+        }
 
         if (this._$ghostCommentFlagCell) {
             node = this._$ghostCommentFlagCell[0];
@@ -291,6 +394,18 @@ RB.TextCommentRowSelector = Backbone.View.extend({
         if (this._isLineNumCell(node)) {
             this._begin($(node.parentNode));
             return false;
+        } else {
+            if (node.tagName === 'TD') {
+                $node = $(node);
+            } else {
+                $node = $(node).parentsUntil('tr', 'td');
+            }
+
+            if ($node.length > 0) {
+                this._selectionClass = 'selecting-col-' + $node[0].cellIndex;
+                this._selectedCellIndex = $node[0].cellIndex;
+                this.$el.addClass(this._selectionClass);
+            }
         }
 
         return true;

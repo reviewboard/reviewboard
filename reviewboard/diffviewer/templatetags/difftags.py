@@ -219,8 +219,8 @@ def diff_lines(file, chunk, standalone, line_fmt, anchor_fmt,
 
     for i, line in enumerate(lines):
         row_classes = []
-        cell_1_classes = []
-        cell_2_classes = []
+        cell_1_classes = ['l']
+        cell_2_classes = ['r']
         row_class_attr = ''
         cell_1_class_attr = ''
         cell_2_class_attr = ''
