@@ -73,6 +73,67 @@ class ResourceTests(ExtraDataListMixin, ExtraDataItemMixin,
                 review_request_draft_item_mimetype,
                 draft)
 
+    def test_get_with_markdown_and_force_text_type_markdown(self):
+        """Testing the GET review-requests/<id>/draft/ API
+        with text_type=markdown and ?force-text-type=markdown
+        """
+        self._test_get_with_force_text_type(
+            text=r'\# `This` is a **test**',
+            rich_text=True,
+            force_text_type='markdown',
+            expected_text=r'\# `This` is a **test**')
+
+    def test_get_with_markdown_and_force_text_type_plain(self):
+        """Testing the GET review-requests/<id>/draft/ API
+        with text_type=markdown and ?force-text-type=plain
+        """
+        self._test_get_with_force_text_type(
+            text=r'\# `This` is a **test**',
+            rich_text=True,
+            force_text_type='plain',
+            expected_text='# `This` is a **test**')
+
+    def test_get_with_markdown_and_force_text_type_html(self):
+        """Testing the GET review-requests/<id>/draft/ API
+        with text_type=markdown and ?force-text-type=html
+        """
+        self._test_get_with_force_text_type(
+            text=r'\# `This` is a **test**',
+            rich_text=True,
+            force_text_type='html',
+            expected_text='<p># <code>This</code> is a '
+                          '<strong>test</strong></p>')
+
+    def test_get_with_plain_and_force_text_type_markdown(self):
+        """Testing the GET review-requests/<id>/draft/ API
+        with text_type=plain and ?force-text-type=markdown
+        """
+        self._test_get_with_force_text_type(
+            text='#<`This` is a **test**>',
+            rich_text=False,
+            force_text_type='markdown',
+            expected_text=r'\#<\`This\` is a \*\*test\*\*\>')
+
+    def test_get_with_plain_and_force_text_type_plain(self):
+        """Testing the GET review-requests/<id>/draft/ API
+        with text_type=plain and ?force-text-type=plain
+        """
+        self._test_get_with_force_text_type(
+            text='#<`This` is a **test**>',
+            rich_text=False,
+            force_text_type='plain',
+            expected_text='#<`This` is a **test**>')
+
+    def test_get_with_plain_and_force_text_type_html(self):
+        """Testing the GET review-requests/<id>/draft/ API
+        with text_type=plain and ?force-text-type=html
+        """
+        self._test_get_with_force_text_type(
+            text='#<`This` is a **test**>',
+            rich_text=False,
+            force_text_type='html',
+            expected_text='#&lt;`This` is a **test**&gt;')
+
     #
     # HTTP POST tests
     #
@@ -642,6 +703,31 @@ class ResourceTests(ExtraDataListMixin, ExtraDataItemMixin,
 
         return self._create_update_review_request(
             api_func, expected_status, review_request, self.local_site_name)
+
+    def _test_get_with_force_text_type(self, text, rich_text,
+                                       force_text_type, expected_text):
+        url, mimetype, draft = \
+            self.setup_basic_get_test(self.user, False, None)
+
+        draft.description = text
+        draft.testing_done = text
+        draft.rich_text = rich_text
+        draft.save()
+
+        draft.changedesc.text = text
+        draft.changedesc.rich_text = rich_text
+        draft.changedesc.save()
+
+        rsp = self.api_get(url + '?force-text-type=%s' % force_text_type,
+                           expected_mimetype=mimetype)
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertIn(self.resource.item_result_key, rsp)
+
+        draft_rsp = rsp[self.resource.item_result_key]
+        self.assertEqual(draft_rsp['text_type'], force_text_type)
+        self.assertEqual(draft_rsp['changedescription'], expected_text)
+        self.assertEqual(draft_rsp['description'], expected_text)
+        self.assertEqual(draft_rsp['testing_done'], expected_text)
 
     def _test_put_with_text_type_all_fields(self, text_type):
         text = '`This` is a **test**'

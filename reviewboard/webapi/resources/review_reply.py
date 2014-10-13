@@ -114,6 +114,13 @@ class ReviewReplyResource(BaseReviewResource):
                 'description': 'The response to the review content below '
                                'the comments.',
             },
+            'force_text_type': {
+                'type': MarkdownFieldsMixin.TEXT_TYPES,
+                'description': 'The text type, if any, to force for returned '
+                               'text fields. The contents will be converted '
+                               'to the requested type in the payload, but '
+                               'will not be saved as that type.',
+            },
             'public': {
                 'type': bool,
                 'description': 'Whether or not to make the reply public. '
@@ -198,6 +205,13 @@ class ReviewReplyResource(BaseReviewResource):
                 'type': six.text_type,
                 'description': 'The response to the review content below '
                                'the comments.',
+            },
+            'force_text_type': {
+                'type': MarkdownFieldsMixin.TEXT_TYPES,
+                'description': 'The text type, if any, to force for returned '
+                               'text fields. The contents will be converted '
+                               'to the requested type in the payload, but '
+                               'will not be saved as that type.',
             },
             'public': {
                 'type': bool,

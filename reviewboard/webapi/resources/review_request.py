@@ -21,6 +21,7 @@ from reviewboard.diffviewer.errors import (DiffTooBigError,
                                            DiffParserError,
                                            EmptyDiffError)
 from reviewboard.reviews.errors import PermissionError
+from reviewboard.reviews.fields import get_review_request_field
 from reviewboard.reviews.models import ReviewRequest
 from reviewboard.scmtools.errors import (AuthenticationError,
                                          ChangeNumberInUseError,
@@ -107,6 +108,12 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
                      'ReviewRequestResource'],
             'description': 'The list of review requests that this '
                            'review request is blocking.',
+        },
+        'close_description': {
+            'type': six.text_type,
+            'description': 'The text describing the closing of the review '
+                           'request.',
+            'added_in': '2.0.9',
         },
         'depends_on': {
             'type': ['reviewboard.webapi.resources.review_request.'
@@ -388,10 +395,10 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
                     'show-all-unpublished' in request.GET and
                     request.user.is_superuser
                 ))
-
-            return queryset
         else:
-            return self.model.objects.filter(local_site=local_site)
+            queryset = self.model.objects.filter(local_site=local_site)
+
+        return queryset.prefetch_related('changedescs')
 
     def has_access_permissions(self, request, review_request, *args, **kwargs):
         return review_request.is_accessible_by(request.user)
@@ -404,6 +411,24 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
 
     def serialize_bugs_closed_field(self, obj, **kwargs):
         return obj.get_bug_list()
+
+    def serialize_close_description_field(self, obj, **kwargs):
+        if obj.status in (obj.SUBMITTED, obj.DISCARDED):
+            if hasattr(obj, '_close_description'):
+                # This was set when updating the description in a POST, so
+                # use that instead of looking up from the database again.
+                close_description = obj._close_description
+            else:
+                close_description = obj.get_close_description()[0]
+
+            return self.normalize_text(obj, close_description, **kwargs)
+        else:
+            return None
+
+    def get_extra_data_field_supports_markdown(self, review_request, key):
+        field_cls = get_review_request_field(key)
+
+        return field_cls and getattr(field_cls, 'enable_markdown', False)
 
     def serialize_ship_it_count_field(self, obj, **kwargs):
         return obj.shipit_count
@@ -468,6 +493,13 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
                                'supported) the idff will be based on the '
                                'commit ID.',
                 'added_in': '2.0',
+            },
+            'force_text_type': {
+                'type': MarkdownFieldsMixin.TEXT_TYPES,
+                'description': 'The text type, if any, to force for returned '
+                               'text fields. The contents will be converted '
+                               'to the requested type in the payload, but '
+                               'will not be saved as that type.',
             },
             'repository': {
                 'type': six.text_type,
@@ -641,16 +673,42 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
                                ' on the draft.',
                 'deprecated_in': '2.0',
             },
+            'close_description': {
+                'type': six.text_type,
+                'description': 'The description of the update. Should only be '
+                               'used if the review request have been '
+                               'submitted or discarded.\n'
+                               '\n'
+                               'This replaces the old ``description`` field.',
+                'added_in': '2.0.9',
+            },
             'description': {
                 'type': six.text_type,
                 'description': 'The description of the update. Should only be '
                                'used if the review request have been '
-                               'submitted or discarded.',
+                               'submitted or discarded.\n'
+                               '\n'
+                               'This is deprecated. Instead, set '
+                               '``close_description``.',
+                'deprecated_in': '2.0.9',
+            },
+            'force_text_type': {
+                'type': MarkdownFieldsMixin.TEXT_TYPES,
+                'description': 'The text type, if any, to force for returned '
+                               'text fields. The contents will be converted '
+                               'to the requested type in the payload, but '
+                               'will not be saved as that type.',
+            },
+            'text_type': {
+                'type': MarkdownFieldsMixin.SAVEABLE_TEXT_TYPES,
+                'description': 'The text mode for the description of the '
+                               'update field. The default is "plain".',
             },
         },
         allow_unknown=True
     )
-    def update(self, request, status=None, changenum=None, description=None,
+    def update(self, request, status=None, changenum=None,
+               close_description=None, description=None, text_type=None,
                extra_fields={}, *args, **kwargs):
         """Updates the status of the review request.
 
@@ -699,8 +757,17 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
              review_request.status != ReviewRequest.PENDING_REVIEW)):
             try:
                 if status in self._close_type_map:
-                    review_request.close(self._close_type_map[status],
-                                         request.user, description)
+                    close_description = close_description or description
+
+                    review_request.close(
+                        self._close_type_map[status],
+                        request.user,
+                        close_description,
+                        rich_text=(text_type == self.TEXT_TYPE_MARKDOWN))
+
+                    # Set this so that we'll return this new value when
+                    # serializing the object.
+                    review_request._close_description = close_description
                 elif status == 'pending':
                     review_request.reopen(request.user)
                 else:

@@ -9,6 +9,7 @@
 {% if draft.changedesc %}
             changeDescription: "{{draft.changedesc.text|escapejs}}",
 {% endif %}
+            closeDescription: "{{close_description|escapejs}}",
             description: "{{review_request_details.description|escapejs}}",
             hasDraft: {{draft|yesno:'true,false'}},
             lastUpdatedTimestamp: {{review_request.last_updated|json_dumps}},

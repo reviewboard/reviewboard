@@ -17,7 +17,7 @@ RB.ReviewRequest = RB.BaseResource.extend({
         bugTrackerURL: null,
         bugsClosed: null,
         commitID: null,
-        changeDescription: null,
+        closeDescription: null,
         dependsOn: [],
         description: null,
         draftReview: null,
@@ -51,7 +51,6 @@ RB.ReviewRequest = RB.BaseResource.extend({
             parentObject: this,
             branch: this.get('branch'),
             bugsClosed: this.get('bugsClosed'),
-            changeDescription: this.get('changeDescription'),
             dependsOn: this.get('dependsOn'),
             description: this.get('description'),
             richText: this.get('richText'),
@@ -201,7 +200,11 @@ RB.ReviewRequest = RB.BaseResource.extend({
         }
 
         if (options.description !== undefined) {
-            data.description = options.description;
+            data.close_description = options.description;
+        }
+
+        if (options.postData !== undefined) {
+            _.extend(data, options.postData);
         }
 
         changingState = (options.type !== this.get('state'));
@@ -355,6 +358,7 @@ RB.ReviewRequest = RB.BaseResource.extend({
         return {
             branch: rsp.branch,
             bugsClosed: rsp.bugs_closed,
+            closeDescription: rsp.close_description,
             dependsOn: rsp.depends_on,
             description: rsp.description,
             lastUpdated: rsp.last_updated,

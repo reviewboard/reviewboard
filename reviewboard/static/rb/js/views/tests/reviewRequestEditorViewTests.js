@@ -506,16 +506,16 @@ suite('rb/views/ReviewRequestEditorView', function() {
 
                 describe('Formatting', function() {
                     it('Links', function() {
-                        reviewRequest.draft.set('changeDescription',
-                                                'Testing /r/123');
+                        reviewRequest.set('closeDescription',
+                                          'Testing /r/123');
 
                         expect($field.text()).toBe('Testing /r/123');
                         expect($field.find('a').attr('href')).toBe('/r/123/');
                     });
 
                     it('Markdown', function() {
-                        reviewRequest.draft.set('changeDescription',
-                                                '`This` is a **test**');
+                        reviewRequest.set('closeDescription',
+                                          '`This` is a **test**');
 
                         expect($field.html()).toBe(
                             '<p><code>This</code> is a ' +

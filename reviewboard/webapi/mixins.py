@@ -1,8 +1,12 @@
 from __future__ import unicode_literals
 
+from django.utils import six
+from django.utils.html import escape
+
 from reviewboard.reviews.markdown_utils import (markdown_escape,
                                                 markdown_set_field_escaped,
-                                                markdown_unescape)
+                                                markdown_unescape,
+                                                render_markdown)
 
 
 class MarkdownFieldsMixin(object):
@@ -22,12 +26,32 @@ class MarkdownFieldsMixin(object):
     """
     TEXT_TYPE_PLAIN = 'plain'
     TEXT_TYPE_MARKDOWN = 'markdown'
+    TEXT_TYPE_HTML = 'html'
 
-    TEXT_TYPES = (TEXT_TYPE_PLAIN, TEXT_TYPE_MARKDOWN)
-    SAVEABLE_TEXT_TYPES = TEXT_TYPES
+    TEXT_TYPES = (TEXT_TYPE_PLAIN, TEXT_TYPE_MARKDOWN, TEXT_TYPE_HTML)
+    SAVEABLE_TEXT_TYPES = (TEXT_TYPE_PLAIN, TEXT_TYPE_MARKDOWN)
 
     def serialize_text_type_field(self, obj, request=None, **kwargs):
         return self.get_requested_text_type(obj, request)
+
+    def serialize_extra_data_field(self, obj, **kwargs):
+        extra_data = {}
+
+        for key, value in six.iteritems(obj.extra_data):
+            if value and self.get_extra_data_field_supports_markdown(obj, key):
+                extra_data[key] = self.normalize_text(obj, value, **kwargs)
+            else:
+                extra_data[key] = value
+
+        return extra_data
+
+    def get_extra_data_field_supports_markdown(self, obj, key):
+        """Returns whether a particular field in extra_data supports Markdown.
+
+        If the field supports Markdown text, the value will be normalized
+        based on the requested ?force-text-type= parameter.
+        """
+        return False
 
     def get_requested_text_type(self, obj, request=None):
         """Returns the text type requested by the user.
@@ -36,7 +60,10 @@ class MarkdownFieldsMixin(object):
         this will fall back to the proper type for the given object.
         """
         if request:
-            text_type = request.GET.get('force-text-type')
+            if request.method == 'GET':
+                text_type = request.GET.get('force-text-type')
+            else:
+                text_type = request.POST.get('force_text_type')
         else:
             text_type = None
 
@@ -60,6 +87,11 @@ class MarkdownFieldsMixin(object):
             text = markdown_unescape(text)
         elif text_type == self.TEXT_TYPE_MARKDOWN and not obj.rich_text:
             text = markdown_escape(text)
+        elif text_type == self.TEXT_TYPE_HTML:
+            if obj.rich_text:
+                text = render_markdown(text)
+            else:
+                text = escape(text)
 
         return text
 

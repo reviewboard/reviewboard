@@ -15,7 +15,7 @@ RB.ChangeBoxView = RB.CollapsableBoxView.extend({
 
         _super(this).render.call(this);
 
-        RB.formatText($text, $text.text());
+        this.reviewRequestEditorView.formatText($text);
 
         _.each(this.$('.diff-index tr'), function(rowEl) {
             var $row = $(rowEl),
