@@ -50,6 +50,8 @@ BaseCommentView = Backbone.View.extend({
         this.$editor = null;
 
         this._hookViews = [];
+
+        this.model.set('includeRawTextFields', true);
     },
 
     remove: function() {
@@ -142,6 +144,7 @@ BaseCommentView = Backbone.View.extend({
             .on({
                 complete: _.bind(function(e, value) {
                     this.model.set({
+                        forceTextType: 'html',
                         text: value,
                         richText: true
                     });
@@ -189,8 +192,15 @@ BaseCommentView = Backbone.View.extend({
         var reviewRequest = this.model.get('parentObject').get('parentObject');
 
         if (this.$editor) {
-            RB.formatText(this.$editor, text,
-                          reviewRequest.get('bugTrackerURL'));
+            this.$editor.inlineEditor('option', {
+                hasRawValue: true,
+                rawValue: this.model.get('rawTextFields').text
+            });
+
+            RB.formatText(this.$editor, {
+                newText: text,
+                bugTrackerURL: reviewRequest.get('bugTrackerURL')
+            });
         }
     }
 });
@@ -388,7 +398,10 @@ HeaderFooterCommentView = Backbone.View.extend({
             .on({
                 complete: _.bind(function(e, value) {
                     this.model.set(this.propertyName, value);
-                    this.model.set('richText', true);
+                    this.model.set({
+                        forceTextType: 'html',
+                        richText: true
+                    });
                     this.model.save();
                 }, this),
                 cancel: _.bind(function() {
@@ -407,7 +420,8 @@ HeaderFooterCommentView = Backbone.View.extend({
         this._$editorContainer = this.$('.comment-text-field');
         this._$linkContainer = this.$('.add-link-container');
 
-        this.model.on('change:' + this.propertyName, this.renderText, this);
+        this.listenTo(this.model, 'change:' + this.propertyName,
+                      this.renderText);
         this.renderText(this.model, text);
     },
 
@@ -418,11 +432,18 @@ HeaderFooterCommentView = Backbone.View.extend({
         var reviewRequest = this.model.get('parentObject');
 
         if (this.$editor) {
+            this.$editor.inlineEditor('option', {
+                hasRawValue: true,
+                rawValue: this.model.get('rawTextFields')[this.propertyName]
+            });
+
             if (text) {
                 this._$editorContainer.show();
                 this._$linkContainer.hide();
-                RB.formatText(this.$editor, text,
-                              reviewRequest.get('bugTrackerURL'));
+                RB.formatText(this.$editor, {
+                    newText: text,
+                    bugTrackerURL: reviewRequest.get('bugTrackerURL')
+                });
             } else {
                 this._$editorContainer.hide();
                 this._$linkContainer.show();
@@ -553,6 +574,8 @@ RB.ReviewDialogView = Backbone.View.extend({
             }));
         });
 
+        this.model.set('includeRawTextFields', true);
+
         this.options.reviewRequestEditor.incr('editCount');
     },
 
@@ -604,6 +627,9 @@ RB.ReviewDialogView = Backbone.View.extend({
         });
 
         this.model.ready({
+            data: {
+                'include-raw-text-fields': true
+            },
             ready: function() {
                 this._renderDialog();
                 this._bodyTopView.render();
@@ -681,6 +707,10 @@ RB.ReviewDialogView = Backbone.View.extend({
 
         if (collection) {
             collection.fetchAll({
+                data: {
+                    'force-text-type': 'html',
+                    'include-raw-text-fields': true
+                },
                 success: function() {
                     if (collection === this._diffCommentsCollection) {
                         this._diffQueue.loadFragments();

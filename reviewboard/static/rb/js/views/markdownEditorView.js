@@ -217,7 +217,7 @@ RB.MarkdownEditorView = Backbone.View.extend({
             },
 
             setFieldValue: function(editor, value) {
-                markdownEditor.setText(value);
+                markdownEditor.setText(value || '');
             },
 
             getFieldValue: function() {
