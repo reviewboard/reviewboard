@@ -11,7 +11,8 @@ from django.utils.translation import ugettext_lazy as _
 from djblets.db.fields import CounterField, ModificationTimestampField
 from djblets.db.query import get_object_or_none
 
-from reviewboard.attachments.models import FileAttachment
+from reviewboard.attachments.models import (FileAttachment,
+                                            FileAttachmentHistory)
 from reviewboard.changedescs.models import ChangeDescription
 from reviewboard.diffviewer.models import DiffSet, DiffSetHistory
 from reviewboard.reviews.errors import PermissionError
@@ -199,6 +200,11 @@ class ReviewRequest(BaseReviewRequestDetails):
         help_text=_("A list of file attachments that used to be but are no "
                     "longer associated with this review request."),
         related_name="inactive_review_request",
+        blank=True)
+    file_attachment_histories = models.ManyToManyField(
+        FileAttachmentHistory,
+        related_name='review_request',
+        verbose_name=_('file attachment histories'),
         blank=True)
 
     changedescs = models.ManyToManyField(

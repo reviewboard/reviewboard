@@ -27,4 +27,5 @@ SEQUENCE = [
     'group_mailing_list_charfield',
     'review_request_draft_commit_id',
     'group_email_list_only',
+    'review_request_file_attachment_histories',
 ]

@@ -6,12 +6,32 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
+from djblets.db.fields import RelationCounterField
 
 from reviewboard.admin.server import build_server_url
 from reviewboard.attachments.managers import FileAttachmentManager
 from reviewboard.attachments.mimetypes import MimetypeHandler
 from reviewboard.diffviewer.models import FileDiff
 from reviewboard.scmtools.models import Repository
+
+
+class FileAttachmentHistory(models.Model):
+    """Revision history for a single file attachment.
+
+    This tracks multiple revisions of the same file attachment (for instance,
+    when someone replaces a screenshot with an updated version).
+    """
+    display_position = models.IntegerField()
+    latest_revision = RelationCounterField('file_attachments')
+
+    def get_revision_to_id_map(self):
+        """Returns a map from revision number to FileAttachment ID."""
+        results = {}
+
+        for attachment in self.file_attachments.all():
+            results[attachment.attachment_revision] = attachment.id
+
+        return results
 
 
 @python_2_unicode_compatible
@@ -54,6 +74,12 @@ class FileAttachment(models.Model):
                                           blank=True,
                                           null=True,
                                           related_name='added_attachments')
+
+    attachment_history = models.ForeignKey(FileAttachmentHistory,
+                                           blank=True,
+                                           null=True,
+                                           related_name='file_attachments')
+    attachment_revision = models.IntegerField(default=0)
 
     objects = FileAttachmentManager()
 
@@ -108,6 +134,12 @@ class FileAttachment(models.Model):
         """Returns if this file attachment is associated with a diff."""
         return (self.repository_id is not None or
                 self.added_in_filediff_id is not None)
+
+    @property
+    def num_revisions(self):
+        """Returns the number of revisions of this attachment."""
+        return FileAttachment.objects.filter(
+            attachment_history=self.attachment_history_id).count() - 1
 
     def __str__(self):
         return self.caption
