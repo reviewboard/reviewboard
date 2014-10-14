@@ -42,8 +42,10 @@ class ReviewReplyDraftResource(WebAPIResource):
             return DOES_NOT_EXIST
 
         return 302, {}, {
-            'Location': resources.review_reply.get_href(reply, request,
-                                                        *args, **kwargs),
+            'Location': self._build_redirect_with_args(
+                request,
+                resources.review_reply.get_href(review, request, *args,
+                                                **kwargs)),
         }
 
 
