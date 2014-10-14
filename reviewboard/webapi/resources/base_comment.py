@@ -43,6 +43,7 @@ class BaseCommentResource(MarkdownFieldsMixin, WebAPIResource):
         'text': {
             'type': six.text_type,
             'description': 'The comment text.',
+            'supports_text_types': True,
         },
         'text_type': {
             'type': MarkdownFieldsMixin.TEXT_TYPES,
@@ -136,9 +137,6 @@ class BaseCommentResource(MarkdownFieldsMixin, WebAPIResource):
 
     def serialize_issue_status_field(self, obj, **kwargs):
         return BaseComment.issue_status_to_string(obj.issue_status)
-
-    def serialize_text_field(self, obj, **kwargs):
-        return self.normalize_text(obj, obj.text, **kwargs)
 
     def has_access_permissions(self, request, obj, *args, **kwargs):
         return obj.is_accessible_by(request.user)

@@ -96,6 +96,7 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
             'description': 'A custom description of what changes are being '
                            'made in this update. It often will be used to '
                            'describe the changes in the diff.',
+            'supports_text_types': True,
         },
         'commit_id': {
             'type': six.text_type,
@@ -106,6 +107,7 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
         'description': {
             'type': six.text_type,
             'description': 'The new review request description.',
+            'supports_text_types': True,
         },
         'extra_data': {
             'type': dict,
@@ -136,6 +138,7 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
         'testing_done': {
             'type': six.text_type,
             'description': 'The new testing done text.',
+            'supports_text_types': True,
         },
         'text_type': {
             'type': MarkdownFieldsMixin.TEXT_TYPES,
@@ -245,7 +248,7 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
 
     def serialize_changedescription_field(self, obj, **kwargs):
         if obj.changedesc:
-            return self.normalize_text(obj, obj.changedesc.text, **kwargs)
+            return obj.changedesc.text
         else:
             return ''
 
@@ -254,12 +257,6 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
 
     def serialize_public_field(self, obj, **kwargs):
         return False
-
-    def serialize_description_field(self, obj, **kwargs):
-        return self.normalize_text(obj, obj.description, **kwargs)
-
-    def serialize_testing_done_field(self, obj, **kwargs):
-        return self.normalize_text(obj, obj.testing_done, **kwargs)
 
     def get_extra_data_field_supports_markdown(self, review_request, key):
         field_cls = get_review_request_field(key)

@@ -212,6 +212,18 @@ class ReviewItemMixin(ExtraDataItemMixin):
         self.assertEqual(review_rsp['text_type'], force_text_type)
         self.assertEqual(review_rsp['body_top'], expected_text)
         self.assertEqual(review_rsp['body_bottom'], expected_text)
+        self.assertNotIn('raw_text_fields', review_rsp)
+
+        rsp = self.api_get('%s?force-text-type=%s&include-raw-text-fields=1'
+                           % (url, force_text_type),
+                           expected_mimetype=mimetype)
+        self.assertEqual(rsp['stat'], 'ok')
+
+        review_rsp = rsp[self.resource.item_result_key]
+        self.assertIn('raw_text_fields', review_rsp)
+        raw_text_fields = review_rsp['raw_text_fields']
+        self.assertEqual(raw_text_fields['body_top'], text)
+        self.assertEqual(raw_text_fields['body_bottom'], text)
 
     def _test_put_with_text_type_all_fields(self, text_type):
         body_top = '`This` is **body_top**'
