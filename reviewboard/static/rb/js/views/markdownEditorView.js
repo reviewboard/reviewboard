@@ -135,7 +135,17 @@ RB.MarkdownEditorView = Backbone.View.extend({
         }, this), 250));
 
         this._codeMirror.on('change', _.throttle(_.bind(function() {
-            var clientHeight = this._codeMirror.getScrollInfo().clientHeight;
+            var clientHeight;
+
+            /*
+             * Make sure that the editor wasn't closed before the throttled
+             * handler was reached.
+             */
+            if (this._codeMirror === null) {
+                return;
+            }
+
+            clientHeight = this._codeMirror.getScrollInfo().clientHeight;
 
             if (clientHeight !== this._prevClientHeight) {
                 this._prevClientHeight = clientHeight;
