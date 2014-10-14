@@ -130,11 +130,11 @@ RB.MarkdownEditorView = Backbone.View.extend({
                 .css('min-height', this.options.minHeight);
         }
 
-        this._codeMirror.on('viewportChange', _.bind(function() {
+        this._codeMirror.on('viewportChange', _.throttle(_.bind(function() {
             this.$el.triggerHandler('resize');
-        }, this));
+        }, this), 250));
 
-        this._codeMirror.on('change', _.bind(function() {
+        this._codeMirror.on('change', _.throttle(_.bind(function() {
             var clientHeight = this._codeMirror.getScrollInfo().clientHeight;
 
             if (clientHeight !== this._prevClientHeight) {
@@ -143,7 +143,7 @@ RB.MarkdownEditorView = Backbone.View.extend({
             }
 
             this.trigger('change');
-        }, this));
+        }, this), 500));
 
         this.focus();
     },
