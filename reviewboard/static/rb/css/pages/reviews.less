@@ -839,7 +839,7 @@
     }
 
     /* Used in the textarea field diffs and the Change Summary section. */
-    pre {
+    > pre {
       background-color: #FFFFFF;
       border: @textarea-border;
       padding: @textarea-editor-padding;
@@ -2150,31 +2150,10 @@
 
   pre {
     .pre-wrap;
+    margin-left: 2.5em;
 
     * {
       .pre-wrap;
-    }
-
-    code {
-      border: none;
-      color: black;
-      display: block;
-      margin-left: 2.5em;
-      .box-sizing(border-box);
-
-      .linenums {
-        /* On Firefox, we'll be one pixel too far to the right, so adjust it. */
-        -moz-margin-start: -1px;
-
-        li {
-          list-style: none;
-          margin: 0;
-
-          p {
-            margin: 0;
-          }
-        }
-      }
     }
   }
 

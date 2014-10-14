@@ -495,7 +495,8 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
      */
     render: function() {
         var reviewRequest = this.model.get('reviewRequest'),
-            draft = reviewRequest.draft;
+            draft = reviewRequest.draft,
+            extraData = draft.get('extraData');
 
         this._$box = this.$('.review-request');
         this._$warning = $('#review-request-warning');
@@ -515,7 +516,8 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
                 var $field = $(field),
                     fieldID = $field.data('field-id'),
                     isCommaEditable,
-                    fieldInfo;
+                    fieldInfo,
+                    rawValue;
 
                 if (!this._fieldEditors[fieldID] &&
                     $field.hasClass('editable')) {
@@ -524,6 +526,10 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
                     fieldInfo = {
                         fieldID: fieldID
                     };
+
+                    rawValue = $field.data('raw-value');
+                    extraData[fieldID] = rawValue || '';
+                    $field.removeAttr('data-raw-value');
 
                     if (isCommaEditable) {
                         fieldInfo.useEditIconOnly = true;
@@ -577,11 +583,7 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
              * though.
              */
             _.each(this.$('.field-text-area'), function(el) {
-                var $el = $(el);
-
-                this.formatText($el, {
-                    newText: $el.text()
-                });
+                this.formatText($(el));
             }, this);
 
             if (this.model.get('editable')) {
@@ -805,7 +807,6 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
         var reviewRequest = this.model.get('reviewRequest');
 
         RB.formatText($el, _.defaults({
-            newText: options.newText || '',
             bugTrackerURL: reviewRequest.get('bugTrackerURL')
         }, options));
 
@@ -984,9 +985,17 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
             };
 
         if (fieldOptions.editMarkdown) {
-            _.extend(options, RB.MarkdownEditorView.getInlineEditorOptions({
-                minHeight: 0
-            }));
+            _.extend(
+                options,
+                RB.MarkdownEditorView.getInlineEditorOptions({
+                    minHeight: 0
+                }),
+                {
+                    matchHeight: false,
+                    hasRawValue: true,
+                    rawValue: model.getDraftField(fieldOptions.fieldName,
+                                                  fieldOptions) || ''
+                });
         }
 
         $el
@@ -1010,6 +1019,7 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
                            .find('.markdown-info')
                            .remove();
                     }
+
                     this._scheduleResizeLayout();
                     model.decr('editCount');
                     model.setDraftField(

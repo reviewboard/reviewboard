@@ -512,15 +512,6 @@ suite('rb/views/ReviewRequestEditorView', function() {
                         expect($field.text()).toBe('Testing /r/123');
                         expect($field.find('a').attr('href')).toBe('/r/123/');
                     });
-
-                    it('Markdown', function() {
-                        reviewRequest.set('closeDescription',
-                                          '`This` is a **test**');
-
-                        expect($field.html()).toBe(
-                            '<p><code>This</code> is a ' +
-                            '<strong>test</strong></p>');
-                    });
                 });
 
                 editCountTests();
@@ -569,14 +560,6 @@ suite('rb/views/ReviewRequestEditorView', function() {
                     expect($field.text()).toBe('Testing /r/123');
                     expect($field.find('a').attr('href')).toBe('/r/123/');
                 });
-
-                it('Markdown', function() {
-                    reviewRequest.draft.set('description',
-                                            '`This` is a **test**');
-
-                    expect($field.html()).toBe(
-                        '<p><code>This</code> is a <strong>test</strong></p>');
-                });
             });
 
             editCountTests();
@@ -608,14 +591,6 @@ suite('rb/views/ReviewRequestEditorView', function() {
 
                     expect($field.text()).toBe('Testing /r/123');
                     expect($field.find('a').attr('href')).toBe('/r/123/');
-                });
-
-                it('Markdown', function() {
-                    reviewRequest.draft.set('testingDone',
-                                            '`This` is a **test**');
-
-                    expect($field.html()).toBe(
-                        '<p><code>This</code> is a <strong>test</strong></p>');
                 });
             });
 

@@ -7,10 +7,10 @@
             branch: "{{review_request_details.branch|escapejs}}",
             bugsClosed: {{review_request_details.get_bug_list|json_dumps}},
 {% if draft.changedesc %}
-            changeDescription: "{{draft.changedesc.text|escapejs}}",
+            changeDescription: "{{draft.changedesc.text|markdown_escape:review_request_details.rich_text|escapejs}}",
 {% endif %}
-            closeDescription: "{{close_description|escapejs}}",
-            description: "{{review_request_details.description|escapejs}}",
+            closeDescription: "{{close_description|markdown_escape:review_request_details.rich_text|escapejs}}",
+            description: "{{review_request_details.description|markdown_escape:review_request_details.rich_text|escapejs}}",
             hasDraft: {{draft|yesno:'true,false'}},
             lastUpdatedTimestamp: {{review_request.last_updated|json_dumps}},
             public: {{review_request.public|yesno:'true,false'}},
@@ -46,7 +46,7 @@
                     url: "{% url 'user' user %}"
                 }{% if not forloop.last %},{% endif %}
 {% endfor %}{% endspaceless %}],
-            testingDone: "{{review_request_details.testing_done|escapejs}}"
+            testingDone: "{{review_request_details.testing_done|markdown_escape:review_request_details.rich_text|escapejs}}"
         },
         editorData: {
             mutableByUser: {{mutable_by_user|yesno:'true,false'}},

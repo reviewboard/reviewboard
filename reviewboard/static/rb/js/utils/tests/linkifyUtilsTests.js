@@ -1,4 +1,56 @@
 suite('rb/utils/linkifyUtils', function() {
+    var bugTrackerURL = 'http://issues/?id=--bug_id--';
+
+    describe('linkifyChildren', function() {
+        it('URLs', function() {
+            var $el = $('<p><span>http://example.com</span></p>');
+
+            RB.LinkifyUtils.linkifyChildren($el[0]);
+
+            expect($el.html()).toBe(
+                '<span><a target="_blank" href="http://example.com">' +
+                'http://example.com</a></span>');
+        });
+
+        it('Bugs', function() {
+            var $el = $('<p><span>Bug #123</span></p>');
+
+            RB.LinkifyUtils.linkifyChildren($el[0], bugTrackerURL);
+
+            expect($el.html()).toBe(
+                '<span><a target="_blank" href="http://issues/?id=123">' +
+                'Bug #123</a></span>');
+        });
+
+        it('/r/ paths', function() {
+            var $el = $('<p><span>/r/123/</span></p>');
+
+            RB.LinkifyUtils.linkifyChildren($el[0]);
+
+            expect($el.html()).toBe(
+                '<span><a target="_blank" href="/r/123/">' +
+                '/r/123/</a></span>');
+        });
+
+        it('Skips <a> elements', function() {
+            var $el = $('<p><span><a href="http://example.com">/r/123</a>' +
+                        '</span></p>');
+
+            RB.LinkifyUtils.linkifyChildren($el[0]);
+
+            expect($el.html()).toBe(
+                '<span><a href="http://example.com">/r/123</a></span>');
+        });
+
+        it('Skips <pre> elements', function() {
+            var $el = $('<div><pre>/r/123</pre></div>');
+
+            RB.LinkifyUtils.linkifyChildren($el[0]);
+
+            expect($el.html()).toBe('<pre>/r/123</pre>');
+        });
+    });
+
     describe('linkifyText', function() {
         describe('URLs', function() {
             it('http-based URLs', function() {
@@ -127,8 +179,6 @@ suite('rb/utils/linkifyUtils', function() {
 
     describe('Bug References', function() {
         describe('With bugTrackerURL', function() {
-            var bugTrackerURL = 'http://issues/?id=--bug_id--';
-
             it('bug 123', function() {
                 expect(RB.LinkifyUtils.linkifyText('bug 123', bugTrackerURL)).toBe(
                     '<a target="_blank" href="http://issues/?id=123">' +

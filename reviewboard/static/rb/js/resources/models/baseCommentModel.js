@@ -7,6 +7,11 @@
  */
 RB.BaseComment = RB.BaseResource.extend({
     defaults: _.defaults({
+        /*
+         * The text format type to request for text in all responses.
+         */
+        forceTextType: null,
+
         /* Whether or not an issue is opened. */
         issueOpened: true,
 
@@ -25,7 +30,7 @@ RB.BaseComment = RB.BaseResource.extend({
     }, RB.BaseResource.prototype.defaults),
 
     extraQueryArgs: {
-        'force-text-type': 'markdown'
+        'force-text-type': 'html'
     },
 
     supportsExtraData: true,
@@ -50,6 +55,7 @@ RB.BaseComment = RB.BaseResource.extend({
      */
     toJSON: function() {
         var data = _.defaults({
+                force_text_type: this.get('forceTextType') || undefined,
                 issue_opened: this.get('issueOpened'),
                 text_type: this.get('richText') ? 'markdown' : 'plain',
                 text: this.get('text')

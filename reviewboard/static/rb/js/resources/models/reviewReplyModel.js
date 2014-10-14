@@ -5,6 +5,11 @@
  */
 RB.ReviewReply = RB.BaseResource.extend({
     defaults: _.defaults({
+        /*
+         * The text format type to request for text in all responses.
+         */
+        forceTextType: null,
+
         review: null,
         'public': false,
         richText: false,
@@ -17,7 +22,7 @@ RB.ReviewReply = RB.BaseResource.extend({
     listKey: 'replies',
 
     extraQueryArgs: {
-        'force-text-type': 'markdown'
+        'force-text-type': 'html'
     },
 
     COMMENT_LINK_NAMES: [
@@ -31,6 +36,7 @@ RB.ReviewReply = RB.BaseResource.extend({
             'public': this.get('public'),
             'body_top': this.get('bodyTop'),
             'body_bottom': this.get('bodyBottom'),
+            'force_text_type': this.get('forceTextType') || undefined,
             'text_type': this.get('richText') ? 'markdown' : 'plain'
         };
     },
