@@ -31,7 +31,8 @@ RB.FileAttachmentThumbnail = Backbone.View.extend({
 
     events: {
         'click .delete': '_onDeleteClicked',
-        'click .file-add-comment a': '_onAddCommentClicked'
+        'click .file-add-comment a': '_onAddCommentClicked',
+        'click .update a': '_onUpdateClicked'
     },
 
     template: _.template([
@@ -67,6 +68,12 @@ RB.FileAttachmentThumbnail = Backbone.View.extend({
         ' <li>',
         '  <a class="thumbnail-actions" href="#">&#9662;</a>',
         '  <ul class="file-attachment-menu" style="display: none;">',
+        '<%   if (attachmentHistoryID) { %>',
+        '   <li class="update">',
+        '    <a href="#" data-attachment-history-id="<%- attachmentHistoryID %>"',
+        '       ><%- updateText %></a>',
+        '   </li>',
+        '<%   } %>',
         '   <li class="delete">',
         '    <a href="#"><%- deleteText %></a>',
         '   </li>',
@@ -348,7 +355,8 @@ RB.FileAttachmentThumbnail = Backbone.View.extend({
         this._$actions.html(this.actionsTemplate(_.defaults({
             deleteText: gettext('Delete'),
             reviewText: gettext('Review'),
-            commentText: gettext('Comment')
+            commentText: gettext('Comment'),
+            updateText: gettext('Update')
         }, this.model.attributes)));
     },
 
@@ -382,6 +390,27 @@ RB.FileAttachmentThumbnail = Backbone.View.extend({
         e.stopPropagation();
 
         this.showCommentDlg();
+    },
+
+    /*
+     * Handler for the Update button.
+     *
+     * Shows the upload form.
+     */
+    _onUpdateClicked: function(e) {
+        var updateDlg;
+
+        e.preventDefault();
+        e.stopPropagation();
+
+        updateDlg = new RB.UploadAttachmentView({
+            attachmentHistoryID: $(e.target).data('attachment-history-id'),
+            reviewRequest: this.options.reviewRequest
+        });
+        updateDlg.render();
+
+        // Hide the menu because the dialog is now shown.
+        this.$('.attachment-menu').hide();
     },
 
     /*

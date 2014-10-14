@@ -8,6 +8,7 @@ from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
 from djblets.db.fields import JSONField
 
+from reviewboard.attachments.models import FileAttachmentHistory
 from reviewboard.diffviewer.models import DiffSet
 from reviewboard.reviews.markdown_utils import markdown_escape
 from reviewboard.reviews.models.default_reviewer import DefaultReviewer
@@ -94,9 +95,32 @@ class BaseReviewRequestDetails(models.Model):
         """
         review_request = self.get_review_request()
 
-        for file_attachment in self.file_attachments.all():
-            file_attachment._review_request = review_request
-            yield file_attachment
+        def get_attachments():
+            for file_attachment in self.file_attachments.all():
+                file_attachment._review_request = review_request
+
+                # Handle legacy entries which don't have an associated
+                # FileAttachmentHistory entry.
+                if (not file_attachment.is_from_diff and
+                    file_attachment.attachment_history is None):
+                    history = FileAttachmentHistory.objects.create(
+                        display_position=FileAttachmentHistory
+                            .compute_next_display_position(
+                                review_request))
+
+                    file_attachment.attachment_history = history
+                    file_attachment.save(update_fields=['attachment_history'])
+
+                yield file_attachment
+
+        def get_display_position(attachment):
+            if attachment.attachment_history_id is not None:
+                return attachment.attachment_history.display_position
+            else:
+                return 0
+
+        return sorted(list(get_attachments()),
+                      key=get_display_position)
 
     def get_inactive_file_attachments(self):
         """Returns all inactive file attachments on a review request.

@@ -67,6 +67,11 @@ class BaseFileAttachmentResource(WebAPIResource):
             'type': six.text_type,
             'description': 'The URL to a review UI for this file.',
         },
+        'attachment_history_id': {
+            'type': int,
+            'description': 'ID of the corresponding FileAttachmentHistory.',
+            'added_in': '2.1',
+        },
     }
 
     uri_object_key = 'file_attachment_id'
@@ -155,6 +160,12 @@ class BaseFileAttachmentResource(WebAPIResource):
                 'description': 'The optional caption describing the '
                                'file.',
             },
+            'attachment_history': {
+                'type': int,
+                'description': 'ID of the corresponding '
+                               'FileAttachmentHistory.',
+                'added_in': '2.1',
+            },
         },
     )
     def create(self, request, *args, **kwargs):
@@ -184,7 +195,7 @@ class BaseFileAttachmentResource(WebAPIResource):
             return self._no_access_error(request.user)
 
         form_data = request.POST.copy()
-        form = UploadFileForm(form_data, request.FILES)
+        form = UploadFileForm(review_request, form_data, request.FILES)
 
         if not form.is_valid():
             return INVALID_FORM_DATA, {
@@ -192,7 +203,7 @@ class BaseFileAttachmentResource(WebAPIResource):
             }
 
         try:
-            file = form.create(request.FILES['path'], review_request)
+            file = form.create()
         except ValueError as e:
             return INVALID_FORM_DATA, {
                 'fields': {
@@ -290,8 +301,17 @@ class BaseFileAttachmentResource(WebAPIResource):
         except PermissionDenied:
             return self._no_access_error(request.user)
 
-        draft.file_attachments.remove(file_attachment)
-        draft.inactive_file_attachments.add(file_attachment)
+        if file_attachment.attachment_history_id is None:
+            draft.file_attachments.remove(file_attachment)
+            draft.inactive_file_attachments.add(file_attachment)
+        else:
+            # "Delete" all revisions of the given file
+            all_revs = FileAttachment.objects.filter(
+                attachment_history=file_attachment.attachment_history_id)
+            for revision in all_revs:
+                draft.file_attachments.remove(revision)
+                draft.inactive_file_attachments.add(revision)
+
         draft.save()
 
         return 204, {}

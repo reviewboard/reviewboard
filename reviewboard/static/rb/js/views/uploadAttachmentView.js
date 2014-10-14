@@ -24,21 +24,21 @@ RB.UploadAttachmentView = Backbone.View.extend({
         '    </tr>',
         '   </tbody>',
         '  </table>',
-        '  <% if (attachmentHistoryId >= 0) { %>',
+        '  <% if (attachmentHistoryID >= 0) { %>',
         '    <input type="hidden" name="attachment_history_id"',
-        '           value="<%- attachmentHistoryId %>" />',
+        '           value="<%- attachmentHistoryID %>" />',
         '  <% } %>',
         ' </form>',
         '</div>'
     ].join('')),
 
     /*
-     * Initializes the view. New attachments don't have attachmentHistoryId
+     * Initializes the view. New attachments don't have attachmentHistoryID
      * specified, so we set it to default value of -1.
      */
     initialize: function(options) {
         this.options = $.extend({
-            attachmentHistoryId: -1
+            attachmentHistoryID: -1
         }, options);
     },
 
@@ -97,7 +97,7 @@ RB.UploadAttachmentView = Backbone.View.extend({
 
         this.$el
             .append(this.template({
-                attachmentHistoryId: this.options.attachmentHistoryId,
+                attachmentHistoryID: this.options.attachmentHistoryID,
                 captionText: gettext("Caption:"),
                 pathText: gettext("Path:")
             }))

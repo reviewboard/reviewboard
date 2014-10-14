@@ -3,6 +3,9 @@
  */
 RB.FileAttachment = RB.BaseResource.extend({
     defaults: _.defaults({
+        /* The file attachment's history ID. */
+        attachmentHistoryID: null,
+
         /* The file attachment's caption. */
         caption: null,
 
@@ -37,6 +40,8 @@ RB.FileAttachment = RB.BaseResource.extend({
         };
 
         if (this.isNew()) {
+            payload.attachment_history_id =
+                this.get('attachmentHistoryID') || null;
             payload.path = this.get('file');
         }
 
@@ -48,6 +53,7 @@ RB.FileAttachment = RB.BaseResource.extend({
      */
     parseResourceData: function(rsp) {
         return {
+            attachmentHistoryID: rsp.attachment_history_id,
             caption: rsp.caption,
             downloadURL: rsp.url,
             filename: rsp.filename,

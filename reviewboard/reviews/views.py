@@ -37,7 +37,8 @@ from haystack.views import SearchView
 from reviewboard.accounts.decorators import (check_login_required,
                                              valid_prefs_required)
 from reviewboard.accounts.models import ReviewRequestVisit, Profile
-from reviewboard.attachments.models import FileAttachment
+from reviewboard.attachments.models import (FileAttachment,
+                                            FileAttachmentHistory)
 from reviewboard.changedescs.models import ChangeDescription
 from reviewboard.diffviewer.diffutils import (convert_to_unicode,
                                               get_file_chunks_in_range,
@@ -276,6 +277,22 @@ def new_review_request(request,
     return render_to_response(template_name, RequestContext(request, {
         'repos': valid_repos,
     }))
+
+
+def _get_latest_file_attachments(file_attachments):
+    file_attachment_histories = FileAttachmentHistory.objects.filter(
+        file_attachments__in=file_attachments)
+    latest = dict([
+        (data['id'], data['latest_revision'])
+        for data in file_attachment_histories.values('id', 'latest_revision')
+    ])
+
+    return [
+        f
+        for f in file_attachments
+        if (not f.is_from_diff and
+            f.attachment_revision == latest[f.attachment_history_id])
+    ]
 
 
 @check_login_required
@@ -695,6 +712,8 @@ def review_detail(request,
     close_description, close_description_rich_text = \
         review_request.get_close_description()
 
+    latest_file_attachments = _get_latest_file_attachments(file_attachments)
+
     context_data = make_review_request_context(request, review_request, {
         'blocks': blocks,
         'draft': draft,
@@ -707,9 +726,7 @@ def review_detail(request,
         'close_description_rich_text': close_description_rich_text,
         'issues': issues,
         'has_diffs': (draft and draft.diffset) or len(diffsets) > 0,
-        'file_attachments': [file_attachment
-                             for file_attachment in file_attachments
-                             if not file_attachment.is_from_diff],
+        'file_attachments': latest_file_attachments,
         'all_file_attachments': file_attachments,
         'screenshots': screenshots,
     })
@@ -815,6 +832,9 @@ class ReviewsDiffViewerView(DiffViewerView):
         file_attachments = list(self.review_request.get_file_attachments())
         screenshots = list(self.review_request.get_screenshots())
 
+        latest_file_attachments = \
+            _get_latest_file_attachments(file_attachments)
+
         # Compute the lists of comments based on filediffs and interfilediffs.
         # We do this using the 'through' table so that we can select_related
         # the reviews and comments.
@@ -844,9 +864,7 @@ class ReviewsDiffViewerView(DiffViewerView):
             'review_request_details': self.draft or self.review_request,
             'draft': self.draft,
             'last_activity_time': last_activity_time,
-            'file_attachments': [file_attachment
-                                 for file_attachment in file_attachments
-                                 if not file_attachment.is_from_diff],
+            'file_attachments': latest_file_attachments,
             'all_file_attachments': file_attachments,
             'screenshots': screenshots,
             'comments': comments,

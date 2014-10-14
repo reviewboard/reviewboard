@@ -4,6 +4,7 @@ import os
 
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
+from django.db.models import Max
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
 from djblets.db.fields import RelationCounterField
@@ -32,6 +33,20 @@ class FileAttachmentHistory(models.Model):
             results[attachment.attachment_revision] = attachment.id
 
         return results
+
+    @staticmethod
+    def compute_next_display_position(review_request):
+        """Compute the display position for a new FileAttachmentHistory."""
+        # Right now, display_position is monotonically increasing for each
+        # review request. In the future this might be extended to allow the
+        # user to change the order of attachments on the page.
+        max_position = (
+            FileAttachmentHistory.objects
+            .filter(review_request=review_request)
+            .aggregate(Max('display_position'))
+            .get('display_position__max')) or 0
+
+        return max_position + 1
 
 
 @python_2_unicode_compatible
@@ -176,3 +191,6 @@ class FileAttachment(models.Model):
             return url
 
         return build_server_url(url)
+
+    class Meta:
+        get_latest_by = 'attachment_revision'

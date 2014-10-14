@@ -137,7 +137,7 @@ class DraftFileDiffResource(FileDiffResource):
 
             dest_attachment_file = request.FILES.get('dest_attachment_file')
 
-            form = UploadFileForm({}, {
+            form = UploadFileForm(review_request_draft.review_request, {}, {
                 'path': dest_attachment_file,
             })
 
@@ -146,9 +146,7 @@ class DraftFileDiffResource(FileDiffResource):
                     'fields': self._get_form_errors(form),
                 }
 
-            form.create(dest_attachment_file,
-                        review_request_draft.review_request,
-                        filediff)
+            form.create(filediff)
 
         if extra_fields:
             self._import_extra_data(filediff.extra_data, extra_fields)

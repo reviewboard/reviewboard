@@ -12,13 +12,11 @@
    <li>
     <a class="thumbnail-actions" href="#">&#9662;</a>
     <ul class="file-attachment-menu" style="display: none;">
-{%  comment %}
 {%  if review_request.status == 'P' %}
      <li class="update">
       <a href="#" data-attachment-history-id="{{file.attachment_history.id}}">{% trans "Update" %}</a>
      </li>
 {%  endif %}
-{%  endcomment %}
      <li class="delete">
       <a href="#">{% trans "Delete" %}</a>
      </li>

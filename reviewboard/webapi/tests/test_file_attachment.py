@@ -1,9 +1,10 @@
 from __future__ import unicode_literals
 
 from django.utils import six
-from djblets.webapi.errors import PERMISSION_DENIED
+from djblets.webapi.errors import INVALID_FORM_DATA, PERMISSION_DENIED
 
-from reviewboard.attachments.models import FileAttachment
+from reviewboard.attachments.models import (FileAttachment,
+                                            FileAttachmentHistory)
 from reviewboard.webapi.resources import resources
 from reviewboard.webapi.tests.base import BaseWebAPITestCase
 from reviewboard.webapi.tests.mimetypes import (file_attachment_item_mimetype,
@@ -124,6 +125,83 @@ class ResourceListTests(ReviewRequestChildListMixin, BaseWebAPITestCase):
 
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
+
+    def test_post_with_attachment_history_id(self):
+        """Testing the POST review-requests/<id>/file-attachments/ API with a
+        file attachment history
+        """
+        review_request = self.create_review_request(submitter=self.user,
+                                                    publish=True)
+        history = FileAttachmentHistory.objects.create(display_position=0)
+        review_request.file_attachment_histories.add(history)
+
+        self.assertEqual(history.latest_revision, 0)
+
+        with open(self._getTrophyFilename(), "r") as f:
+            self.assertTrue(f)
+            rsp = self.api_post(
+                get_file_attachment_list_url(review_request),
+                {
+                    'path': f,
+                    'attachment_history': history.pk,
+                },
+                expected_mimetype=file_attachment_item_mimetype)
+
+            self.assertEqual(rsp['stat'], 'ok')
+            self.assertEqual(rsp['file_attachment']['attachment_history_id'],
+                             history.pk)
+
+            history = FileAttachmentHistory.objects.get(pk=history.pk)
+            self.assertEqual(history.latest_revision, 1)
+
+            review_request.get_draft().publish()
+
+            # Add a second revision
+            f.seek(0)
+            rsp = self.api_post(
+                get_file_attachment_list_url(review_request),
+                {
+                    'path': f,
+                    'attachment_history': history.pk,
+                },
+                expected_mimetype=file_attachment_item_mimetype)
+
+            self.assertEqual(rsp['stat'], 'ok')
+            self.assertEqual(rsp['file_attachment']['attachment_history_id'],
+                             history.pk)
+
+            history = FileAttachmentHistory.objects.get(pk=history.pk)
+            self.assertEqual(history.latest_revision, 2)
+
+    def test_post_with_attachment_history_id_wrong_review_request(self):
+        """Testing the POST review-requests/<id>/file-attachments/ API with a
+        file attachment history belonging to a different reiew request
+        """
+        review_request_1 = self.create_review_request(submitter=self.user,
+                                                      publish=True)
+        history = FileAttachmentHistory.objects.create(display_position=0)
+        review_request_1.file_attachment_histories.add(history)
+
+        review_request_2 = self.create_review_request(submitter=self.user,
+                                                      publish=True)
+
+        self.assertEqual(history.latest_revision, 0)
+
+        with open(self._getTrophyFilename(), "r") as f:
+            self.assertTrue(f)
+            rsp = self.api_post(
+                get_file_attachment_list_url(review_request_2),
+                {
+                    'path': f,
+                    'attachment_history': history.pk,
+                },
+                expected_status=400)
+
+            self.assertEqual(rsp['stat'], 'fail')
+            self.assertEqual(rsp['err']['code'], INVALID_FORM_DATA.code)
+
+            history = FileAttachmentHistory.objects.get(pk=history.pk)
+            self.assertEqual(history.latest_revision, 0)
 
 
 @six.add_metaclass(BasicTestsMetaclass)
