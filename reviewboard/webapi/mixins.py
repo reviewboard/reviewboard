@@ -59,7 +59,11 @@ class MarkdownFieldsMixin(object):
             for field, field_info in six.iteritems(self.fields):
                 if field_info.get('supports_text_types'):
                     value = data.get(field)
-                    data[field] = self._normalize_text(obj, value, **kwargs)
+
+                    if value is None:
+                        data[field] = value
+                    else:
+                        data[field] = self._normalize_text(obj, value, **kwargs)
 
                     if include_raw_text_fields:
                         raw_fields[field] = value
