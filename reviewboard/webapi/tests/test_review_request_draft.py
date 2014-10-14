@@ -728,6 +728,19 @@ class ResourceTests(ExtraDataListMixin, ExtraDataItemMixin,
         self.assertEqual(draft_rsp['changedescription'], expected_text)
         self.assertEqual(draft_rsp['description'], expected_text)
         self.assertEqual(draft_rsp['testing_done'], expected_text)
+        self.assertNotIn('raw_text_fields', draft_rsp)
+
+        rsp = self.api_get('%s?force-text-type=%s&include-raw-text-fields=1'
+                           % (url, force_text_type),
+                           expected_mimetype=mimetype)
+        self.assertEqual(rsp['stat'], 'ok')
+
+        draft_rsp = rsp[self.resource.item_result_key]
+        self.assertIn('raw_text_fields', draft_rsp)
+        raw_text_fields = draft_rsp['raw_text_fields']
+        self.assertEqual(raw_text_fields['changedescription'], text)
+        self.assertEqual(raw_text_fields['description'], text)
+        self.assertEqual(raw_text_fields['testing_done'], text)
 
     def _test_put_with_text_type_all_fields(self, text_type):
         text = '`This` is a **test**'

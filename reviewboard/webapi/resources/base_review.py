@@ -30,10 +30,12 @@ class BaseReviewResource(MarkdownFieldsMixin, WebAPIResource):
         'body_bottom': {
             'type': six.text_type,
             'description': 'The review content below the comments.',
+            'supports_text_types': True,
         },
         'body_top': {
             'type': six.text_type,
             'description': 'The review content above the comments.',
+            'supports_text_types': True,
         },
         'extra_data': {
             'type': dict,
@@ -72,12 +74,6 @@ class BaseReviewResource(MarkdownFieldsMixin, WebAPIResource):
     last_modified_field = 'timestamp'
 
     allowed_methods = ('GET', 'POST', 'PUT', 'DELETE')
-
-    def serialize_body_top_field(self, obj, **kwargs):
-        return self.normalize_text(obj, obj.body_top, **kwargs)
-
-    def serialize_body_bottom_field(self, obj, **kwargs):
-        return self.normalize_text(obj, obj.body_bottom, **kwargs)
 
     def get_queryset(self, request, is_list=False, *args, **kwargs):
         review_request = resources.review_request.get_object(

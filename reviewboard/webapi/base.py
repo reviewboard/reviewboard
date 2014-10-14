@@ -4,8 +4,10 @@ from django.contrib import auth
 from django.db.models import Q
 from django.utils import six
 from django.utils.encoding import force_unicode
+from django.utils.six.moves.urllib.parse import quote as urllib_quote
 from djblets.util.decorators import augment_method_from
-from djblets.webapi.decorators import (webapi_login_required,
+from djblets.webapi.decorators import (SPECIAL_PARAMS,
+                                       webapi_login_required,
                                        webapi_request_fields)
 from djblets.webapi.errors import NOT_LOGGED_IN, PERMISSION_DENIED
 from djblets.webapi.resources import WebAPIResource as DjbletsWebAPIResource
@@ -352,3 +354,26 @@ class WebAPIResource(DjbletsWebAPIResource):
                     extra_data[key] = value
                 elif key in extra_data:
                     del extra_data[key]
+
+    def _build_redirect_with_args(self, request, new_url):
+        """Builds a redirect URL with existing query string arguments.
+
+        This will construct a URL that contains all the query string arguments
+        provided in this request.
+
+        This will not include the special arguments handled by the base
+        WebAPIResource in Djblets. Those will be specially added
+        automatically, so there's no need to do this twice here.
+        """
+        query_str = '&'.join([
+            '%s=%s' % (urllib_quote(key), urllib_quote(value))
+            for key, value in six.iteritems(request.GET)
+            if key not in SPECIAL_PARAMS
+        ])
+
+        if '?' in new_url:
+            new_url += '&' + query_str
+        else:
+            new_url += '?' + query_str
+
+        return new_url

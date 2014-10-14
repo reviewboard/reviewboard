@@ -114,6 +114,7 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
             'description': 'The text describing the closing of the review '
                            'request.',
             'added_in': '2.0.9',
+            'supports_text_types': True,
         },
         'depends_on': {
             'type': ['reviewboard.webapi.resources.review_request.'
@@ -209,11 +210,13 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
         'description': {
             'type': six.text_type,
             'description': "The review request's description.",
+            'supports_text_types': True,
         },
         'testing_done': {
             'type': six.text_type,
             'description': 'The information on the testing that was done '
                            'for the change.',
+            'supports_text_types': True,
         },
         'bugs_closed': {
             'type': [six.text_type],
@@ -417,11 +420,9 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
             if hasattr(obj, '_close_description'):
                 # This was set when updating the description in a POST, so
                 # use that instead of looking up from the database again.
-                close_description = obj._close_description
+                return obj._close_description
             else:
-                close_description = obj.get_close_description()[0]
-
-            return self.normalize_text(obj, close_description, **kwargs)
+                return obj.get_close_description()[0]
         else:
             return None
 
@@ -447,12 +448,6 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
 
     def serialize_commit_id_field(self, obj, **kwargs):
         return obj.commit
-
-    def serialize_description_field(self, obj, **kwargs):
-        return self.normalize_text(obj, obj.description, **kwargs)
-
-    def serialize_testing_done_field(self, obj, **kwargs):
-        return self.normalize_text(obj, obj.testing_done, **kwargs)
 
     @webapi_check_local_site
     @webapi_login_required

@@ -42,11 +42,13 @@ class ReviewReplyResource(BaseReviewResource):
             'type': six.text_type,
             'description': 'The response to the review content below '
                            'the comments.',
+            'supports_text_types': True,
         },
         'body_top': {
             'type': six.text_type,
             'description': 'The response to the review content above '
                            'the comments.',
+            'supports_text_types': True,
         },
         'extra_data': {
             'type': dict,
