@@ -1,24 +1,6 @@
 (function() {
 
 
-// If `marked` is defined, initialize it with our preferred options
-if (marked !== undefined) {
-    marked.setOptions({
-        gfm: true,
-        tables: true,
-        breaks: true,
-        pedantic: false,
-        sanitize: true,
-        smartLists: true,
-        langPrefix : 'language-',
-        highlight: function(code, lang) {
-            // Use google code prettify to render syntax highlighting
-            return prettyPrintOne(_.escape(code), lang, true /* line nos. */);
-        }
-    });
-}
-
-
 /*
  * Format the given text and put it into $el.
  *
@@ -35,7 +17,7 @@ RB.formatText = function($el, options) {
         if (options.newText !== undefined) {
             $el
                 .html(options.newText)
-                .addClass('rich-text')
+                .addClass('rich-text');
         }
 
         $el.find('a').attr('target', '_blank');
