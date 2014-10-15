@@ -250,11 +250,17 @@ class TextMimetype(MimetypeHandler):
         """Returns the HTML for a thumbnail preview for a text file."""
         try:
             f = self.attachment.file.file
+        except IOError as e:
+            logging.error('Failed to locate file attachment %s: %s',
+                          self.attachment.pk, e)
+            return ''
+
+        try:
             f.open()
             data = f.read(self.FILE_CROP_CHAR_LIMIT)
         except (ValueError, IOError) as e:
-            logging.error('Failed to read from file attachment %s: %s'
-                          % (self.attachment.pk, e))
+            logging.error('Failed to read from file attachment %s: %s',
+                          self.attachment.pk, e)
             return ''
         finally:
             f.close()
