@@ -446,13 +446,32 @@ suite('rb/views/ReviewRequestEditorView', function() {
 
             describe('Formatting', function() {
                 it('With bugTrackerURL', function() {
-                    reviewRequest.set('bugTrackerURL', 'http://issues/?id=%s');
+                    var $links,
+                        $link;
+
+                    reviewRequest.set('bugTrackerURL',
+                                      'http://issues/?id=--bug_id--');
                     reviewRequest.draft.set('bugsClosed', [1, 2, 3]);
 
-                    expect($field.html()).toBe(
-                        '<a class="bug" href="http://issues/?id=%s">1</a>, ' +
-                        '<a class="bug" href="http://issues/?id=%s">2</a>, ' +
-                        '<a class="bug" href="http://issues/?id=%s">3</a>');
+                    expect($field.text()).toBe('1, 2, 3');
+
+                    $links = $field.children('a');
+                    expect($links.length).toBe(3);
+
+                    $link = $links.eq(0);
+                    expect($link.hasClass('bug')).toBe(true);
+                    expect($link.text()).toBe('1');
+                    expect($link.attr('href')).toBe('http://issues/?id=1');
+
+                    $link = $links.eq(1);
+                    expect($link.hasClass('bug')).toBe(true);
+                    expect($link.text()).toBe('2');
+                    expect($link.attr('href')).toBe('http://issues/?id=2');
+
+                    $link = $links.eq(2);
+                    expect($link.hasClass('bug')).toBe(true);
+                    expect($link.text()).toBe('3');
+                    expect($link.attr('href')).toBe('http://issues/?id=3');
                 });
 
                 it('Without bugTrackerURL', function() {
