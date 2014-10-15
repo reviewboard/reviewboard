@@ -89,6 +89,21 @@
       background-color: @review-request-action-active-bg;
     }
 
+    &.has-menu {
+      &:hover > ul {
+        visibility: visible;
+        .opacity(100);
+      }
+
+      > ul {
+        display: block !important;
+        visibility: hidden;
+        z-index: @z-index-menu;
+        .opacity(0);
+        .transition(visibility 0.1s, opacity 0.1s;);
+      }
+    }
+
     &.primary {
       background-color: @review-request-action-primary-bg;
     }

@@ -4,12 +4,12 @@
   <ul class="actions">
 {% has_usable_review_ui request.user review_request file as use_review_ui %}
 {% if use_review_ui %}
-   <li class="{% if file.review_ui.allow_inline %}file-review-inline %}{% else %}file-review{% endif %}"><a href="{% url 'file-attachment' review_request.display_id file.pk %}">{% trans "Review" %}</a></li>
+   <li class="{% if file.review_ui.allow_inline %}file-review-inline{% else %}file-review{% endif %}"><a href="{% url 'file-attachment' review_request.display_id file.pk %}">{% trans "Review" %}</a></li>
 {% else %}
    <li class="file-add-comment"><a href="#">{% trans "Comment" %}</a></li>
 {% endif %}
 {% if request.user.pk == review_request.submitter_id or perms.reviews.delete_file %}
-   <li>
+   <li class="has-menu">
     <a class="thumbnail-actions" href="#">&#9662;</a>
     <ul class="file-attachment-menu" style="display: none;">
 {%  if review_request.status == 'P' %}

@@ -58,13 +58,11 @@ RB.FileAttachmentThumbnail = Backbone.View.extend({
 
     actionsTemplate: _.template([
         '<% if (loaded) { %>',
-        ' <li>',
         '<%  if (reviewURL) { %>',
         '   <li class="file-review"><a href="<%- reviewURL %>"><%- reviewText %></a></li>',
         '<%  } else { %>',
         '   <li class="file-add-comment"><a href="#"><%- commentText %></a></li>',
         '<%  } %>',
-        ' </li>',
         ' <li>',
         '  <a class="thumbnail-actions" href="#">&#9662;</a>',
         '  <ul class="file-attachment-menu" style="display: none;">',
@@ -408,9 +406,6 @@ RB.FileAttachmentThumbnail = Backbone.View.extend({
             reviewRequest: this.options.reviewRequest
         });
         updateDlg.render();
-
-        // Hide the menu because the dialog is now shown.
-        this.$('.attachment-menu').hide();
     },
 
     /*

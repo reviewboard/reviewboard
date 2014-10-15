@@ -405,6 +405,10 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
         }
     ],
 
+    events: {
+        'click .has-menu': '_onMenuClicked'
+    },
+
     initialize: function() {
         var $issueSummary = $('#issue-summary');
 
@@ -820,35 +824,7 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
         var $closeDiscarded = this.$('#discard-review-request-link'),
             $closeSubmitted = this.$('#link-review-request-close-submitted'),
             $deletePermanently = this.$('#delete-review-request-link'),
-            $updateDiff = this.$('#upload-diff-link'),
-            $menuitem;
-
-        /* Provide support for expanding submenus in the action list. */
-        function showMenu() {
-            if ($menuitem) {
-                $menuitem.children('ul').fadeOut('fast');
-                $menuitem = null;
-            }
-
-            $(this).children('ul').fadeIn('fast');
-        }
-
-        function hideMenu() {
-            $menuitem = $(this);
-
-            setTimeout(function() {
-                if ($menuitem) {
-                    $menuitem.children('ul').fadeOut('fast');
-                }
-            }, 400);
-        }
-
-        this.$(".actions > li:has(ul.menu)")
-            .hover(showMenu, hideMenu)
-            .toggle(showMenu, hideMenu);
-
-        $('.actions > li:has(ul.file-attachment-menu)')
-            .hover(showMenu, hideMenu);
+            $updateDiff = this.$('#upload-diff-link');
 
         /*
          * We don't want the click event filtering from these down to the
@@ -1364,6 +1340,16 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
             });
 
         updateDiffView.render();
+    },
+
+    /*
+     * Generic handler for menu clicks.
+     *
+     * This simply prevents the click from bubbling up or invoking the
+     * default action.
+     */
+    _onMenuClicked: function() {
+        return false;
     },
 
     _refreshPage: function() {
