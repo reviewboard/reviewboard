@@ -3,12 +3,12 @@
 {% condense %}
 {% ifnotequal reply.body_top "" %}
 > On {{review.time_emailed}}, {{review.user|user_displayname}} wrote:
-{{review.body_top|markdown_email_text:review.rich_text|quote_text:2}}{% for reply_review in review.public_replies %}{% ifnotequal reply_review.body_top "" %}{% ifnotequal reply_review reply %}
+{{review.body_top|markdown_email_text:review.body_top_rich_text|quote_text:2}}{% for reply_review in review.public_replies %}{% ifnotequal reply_review.body_top "" %}{% ifnotequal reply_review reply %}
 > 
 > {{reply_review.user|user_displayname}} wrote:
-{{reply_review.body_top|markdown_email_text:reply_review.rich_text|indent|quote_text}}{% endifnotequal %}{% endifnotequal %}{% endfor %}
+{{reply_review.body_top|markdown_email_text:reply_review.body_top_rich_text|indent|quote_text}}{% endifnotequal %}{% endifnotequal %}{% endfor %}
 
-{{reply.body_top|markdown_email_text:reply.rich_text}}
+{{reply.body_top|markdown_email_text:reply.body_top_rich_text}}
 {% endifnotequal %}
 
 
@@ -57,12 +57,12 @@
 
 {% ifnotequal reply.body_bottom "" %}
 On {{review.time_emailed}}, {{review_request.submitter|user_displayname}} wrote:
-{{review.body_bottom|markdown_email_text:review.rich_text|quote_text:2}}{% for reply_review in review.public_replies %}{% ifnotequal reply_review.body_bottom "" %}{% ifnotequal reply_review reply %}
+{{review.body_bottom|markdown_email_text:review.body_bottom_rich_text|quote_text:2}}{% for reply_review in review.public_replies %}{% ifnotequal reply_review.body_bottom "" %}{% ifnotequal reply_review reply %}
 > 
 > {{reply_review.user|user_displayname}} wrote:
-{{reply_review.body_bottom|markdown_email_text:reply_review.rich_text|indent|quote_text}}{% endifnotequal %}{% endifnotequal %}{% endfor %}
+{{reply_review.body_bottom|markdown_email_text:reply_review.body_bottom_rich_text|indent|quote_text}}{% endifnotequal %}{% endifnotequal %}{% endfor %}
 
-{{reply.body_bottom|markdown_email_text:reply.rich_text}}
+{{reply.body_bottom|markdown_email_text:reply.body_bottom_rich_text}}
 {% endifnotequal %}
 
 - {% ifnotequal reply.user.first_name "" %}{{reply.user.first_name}}{% else %}{{reply.user.username}}{% endifnotequal %}

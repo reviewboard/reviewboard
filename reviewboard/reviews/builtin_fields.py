@@ -56,10 +56,7 @@ class BuiltinTextAreaFieldMixin(BuiltinFieldMixin):
     still escape the text if it's not in Markdown format before
     rendering.
     """
-    always_render_markdown = True
-
-    def is_text_markdown(self, value):
-        return self.review_request_details.rich_text
+    pass
 
 
 class BuiltinLocalsFieldMixin(BuiltinFieldMixin):
@@ -178,11 +175,17 @@ class DescriptionField(BuiltinTextAreaFieldMixin, BaseTextAreaField):
     label = _('Description')
     is_required = True
 
+    def is_text_markdown(self, value):
+        return self.review_request_details.description_rich_text
+
 
 class TestingDoneField(BuiltinTextAreaFieldMixin, BaseTextAreaField):
     """The Testing Done field on a review request."""
     field_id = 'testing_done'
     label = _('Testing Done')
+
+    def is_text_markdown(self, value):
+        return self.review_request_details.testing_done_rich_text
 
 
 class SubmitterField(BuiltinFieldMixin, BaseReviewRequestField):

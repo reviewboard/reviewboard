@@ -7,10 +7,10 @@
             branch: "{{review_request_details.branch|escapejs}}",
             bugsClosed: {{review_request_details.get_bug_list|json_dumps}},
 {% if draft.changedesc %}
-            changeDescription: "{{draft.changedesc.text|markdown_escape:review_request_details.rich_text|escapejs}}",
+            changeDescription: "{{draft.changedesc.text|markdown_escape:draft.changedesc.rich_text|escapejs}}",
 {% endif %}
-            closeDescription: "{{close_description|markdown_escape:review_request_details.rich_text|escapejs}}",
-            description: "{{review_request_details.description|markdown_escape:review_request_details.rich_text|escapejs}}",
+            closeDescription: "{{close_description|markdown_escape:close_description_rich_text|escapejs}}",
+            description: "{{review_request_details.description|markdown_escape:review_request_details.description_rich_text|escapejs}}",
             hasDraft: {% if draft %}true{% else %}false{% endif %},
             lastUpdatedTimestamp: {{review_request.last_updated|json_dumps}},
             public: {% if review_request.public %}true{% else %}false{% endif %},
@@ -31,7 +31,7 @@
                     url: "{% url 'user' user %}"
                 }{% if not forloop.last %},{% endif %}
 {% endfor %}{% endspaceless %}],
-            testingDone: "{{review_request_details.testing_done|markdown_escape:review_request_details.rich_text|escapejs}}"
+            testingDone: "{{review_request_details.testing_done|markdown_escape:review_request_details.testing_done_rich_text|escapejs}}"
         },
         editorData: {
             mutableByUser: {{mutable_by_user|yesno:'true,false'}},

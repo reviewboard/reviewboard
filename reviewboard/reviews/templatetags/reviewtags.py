@@ -170,9 +170,11 @@ def reply_list(context, entry, comment, context_type, context_id):
         replies = getattr(review, "public_%s_replies" % context_type)()
 
         for reply in replies:
-            s += generate_reply_html(reply, reply.timestamp,
-                                     getattr(reply, context_type),
-                                     reply.rich_text)
+            s += generate_reply_html(
+                reply,
+                reply.timestamp,
+                getattr(reply, context_type),
+                getattr(reply, '%s_rich_text' % context_type))
 
         return s
     else:

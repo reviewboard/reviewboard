@@ -25,15 +25,26 @@ class BaseReviewRequestDetails(models.Model):
     MAX_SUMMARY_LENGTH = 300
 
     summary = models.CharField(_("summary"), max_length=MAX_SUMMARY_LENGTH)
+
     description = models.TextField(_("description"), blank=True)
+    description_rich_text = models.BooleanField(
+        _('description in rich text'),
+        default=False)
+
     testing_done = models.TextField(_("testing done"), blank=True)
+    testing_done_rich_text = models.BooleanField(
+        _('testing done in rich text'),
+        default=False)
+
     bugs_closed = models.CharField(_("bugs"), max_length=300, blank=True)
     branch = models.CharField(_("branch"), max_length=300, blank=True)
-    rich_text = models.BooleanField(_("rich text"), default=False)
     commit_id = models.CharField(_('commit ID'), max_length=64, blank=True,
                                  null=True, db_index=True)
 
     extra_data = JSONField(null=True)
+
+    # Deprecated and no longer used for new review requests as of 2.0.9.
+    rich_text = models.BooleanField(_("rich text"), default=False)
 
     def get_review_request(self):
         raise NotImplementedError
@@ -204,13 +215,14 @@ class BaseReviewRequestDetails(models.Model):
         # specialized systems may support the other fields, but we don't want
         # to clobber the user-entered values if they don't.
         self.commit = commit_id
+        description = changeset.description
+        testing_done = changeset.testing_done
 
-        if self.rich_text:
-            description = markdown_escape(changeset.description)
-            testing_done = markdown_escape(changeset.testing_done)
-        else:
-            description = changeset.description
-            testing_done = changeset.testing_done
+        if self.description_rich_text:
+            description = markdown_escape(description)
+
+        if self.testing_done_rich_text:
+            testing_done = markdown_escape(testing_done)
 
         self.summary = changeset.summary
         self.description = description
@@ -232,14 +244,15 @@ class BaseReviewRequestDetails(models.Model):
         """
         commit = self.repository.get_change(commit_id)
         summary, message = commit.split_message()
+        message = message.strip()
 
         self.commit = commit_id
-
         self.summary = summary.strip()
-        if self.rich_text:
-            self.description = markdown_escape(message.strip())
+
+        if self.description_rich_text:
+            self.description = markdown_escape(message)
         else:
-            self.description = message.strip()
+            self.description = message
 
         DiffSet.objects.create_from_data(
             repository=self.repository,

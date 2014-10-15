@@ -123,6 +123,10 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
                     'testing_done': review_request.testing_done,
                     'bugs_closed': review_request.bugs_closed,
                     'branch': review_request.branch,
+                    'description_rich_text':
+                        review_request.description_rich_text,
+                    'testing_done_rich_text':
+                        review_request.testing_done_rich_text,
                     'rich_text': review_request.rich_text,
                     'commit_id': review_request.commit_id,
                 })
@@ -319,6 +323,8 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
             self.changedesc.save()
             review_request.changedescs.add(self.changedesc)
 
+        review_request.description_rich_text = self.description_rich_text
+        review_request.testing_done_rich_text = self.testing_done_rich_text
         review_request.rich_text = self.rich_text
         review_request.save()
 

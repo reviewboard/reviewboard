@@ -1394,7 +1394,7 @@ class PostCommitTests(SpyAgency, TestCase):
 
         review_request = ReviewRequest.objects.create(self.user,
                                                       self.repository)
-        review_request.rich_text = True
+        review_request.description_rich_text = True
         review_request.update_from_commit_id('4')
 
         self.assertEqual(review_request.summary, '* No escaping')
