@@ -5,6 +5,13 @@
  * Review-specific macros
  ****************************************************************************/
 
+/* Keep the label from shifting when the pencil icon is hidden/shown. */
+.inline-editor-label() {
+  display: block;
+  line-height: 16px;
+  vertical-align: top;
+}
+
 .rich-text-loading() {
   color: transparent;
   background: white url("../images/spinner.gif") no-repeat @box-padding @box-padding;
@@ -697,11 +704,15 @@
         padding: 5px;
 
         dt {
-          label a {
-            color: #AB5603;
-            font-size: 1.1em;
-            font-weight: bold;
-            text-decoration: none;
+          label {
+            .inline-editor-label();
+
+            a {
+              color: #AB5603;
+              font-size: 1.1em;
+              font-weight: bold;
+              text-decoration: none;
+            }
           }
 
           span {
@@ -1172,6 +1183,10 @@
 
   .edit-field {
     margin: 1em 0;
+
+    label {
+      .inline-editor-label();
+    }
 
     textarea {
       background-color: @textarea-editor-background;
@@ -1766,10 +1781,7 @@
 #discard-banner,
 #submitted-banner {
   label {
-    /* Keep the label from shifting when the pencil icon is hidden/shown. */
-    display: block;
-    line-height: 16px;
-    vertical-align: top;
+    .inline-editor-label();
   }
 
   &>p {
