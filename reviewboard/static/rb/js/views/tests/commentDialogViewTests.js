@@ -630,32 +630,40 @@ suite('rb/views/CommentDialogView', function() {
                 var $textarea;
 
                 function simulateTyping(text) {
-                    var i,
-                        c,
-                        e;
+                    runs(function() {
+                        var i,
+                            c,
+                            e;
 
-                    $textarea.focus();
+                        dlg._textEditor.on('change', function() {
+                            changed = true;
+                        });
 
-                    for (i = 0; i < text.length; i++) {
-                        c = text.charCodeAt(i);
+                        $textarea.focus();
 
-                        e = $.Event('keydown');
-                        e.which = c;
-                        $textarea.trigger(e);
+                        for (i = 0; i < text.length; i++) {
+                            c = text.charCodeAt(i);
 
-                        e = $.Event('keypress');
-                        e.which = c;
-                        $textarea.trigger(e);
+                            e = $.Event('keydown');
+                            e.which = c;
+                            $textarea.trigger(e);
 
-                        dlg._textEditor.setText(dlg._textEditor.getText() +
-                                                text[i]);
+                            e = $.Event('keypress');
+                            e.which = c;
+                            $textarea.trigger(e);
 
-                        e = $.Event('keyup');
-                        e.which = c;
-                        $textarea.trigger(e);
-                    }
+                            dlg._textEditor.setText(dlg._textEditor.getText() +
+                                                    text[i]);
 
-                    expect(dlg._textEditor.getText()).toEqual(text);
+                            e = $.Event('keyup');
+                            e.which = c;
+                            $textarea.trigger(e);
+                        }
+                    });
+
+                    waitsFor(function() {
+                        return dlg._textEditor.getText() === text;
+                    });
                 }
 
                 beforeEach(function() {
@@ -667,7 +675,10 @@ suite('rb/views/CommentDialogView', function() {
                     var text = 'foo';
 
                     simulateTyping(text);
-                    expect(editor.get('text')).toEqual(text);
+
+                    runs(function() {
+                        expect(editor.get('text')).toEqual(text);
+                    });
                 });
 
                 it('Editor to dialog', function() {

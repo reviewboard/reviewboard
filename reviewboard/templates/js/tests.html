@@ -27,6 +27,11 @@ $(document).ready(function() {
     // Disable animations so we don't have to worry about them in tests.
     $.fx.off = true;
 
+    // Disable throttling of callbacks when possible.
+    _.throttle = function(cb) {
+        return cb;
+    };
+
     jasmineEnv.specFilter = function(spec) {
         return htmlReporter.specFilter(spec);
     };

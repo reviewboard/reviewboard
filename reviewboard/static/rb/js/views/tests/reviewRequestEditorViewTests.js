@@ -372,21 +372,29 @@ suite('rb/views/ReviewRequestEditorView', function() {
 
         function savingTest() {
             it('Saves', function() {
-                $field.inlineEditor('startEdit');
+                runs(function() {
+                    $field.inlineEditor('startEdit');
 
-                if ($field.data('rich-text')) {
-                    $input.data('markdown-editor').setText('My Value');
-                } else {
-                    $input.val('My Value');
-                }
+                    if ($field.data('rich-text')) {
+                        $input.data('markdown-editor').setText('My Value');
+                    } else {
+                        $input.val('My Value');
+                    }
 
-                $input.triggerHandler('keyup');
+                    $input.triggerHandler('keyup');
+                    expect($field.inlineEditor('value')).toBe('My Value');
+                });
 
-                expect($field.inlineEditor('value')).toBe('My Value');
-                expect($field.inlineEditor('dirty')).toBe(true);
-                $field.inlineEditor('submit');
+                waitsFor(function() {
+                    return $field.inlineEditor('dirty')
+                });
 
-                expect(reviewRequest.draft.save).toHaveBeenCalled();
+                runs(function() {
+                    expect($field.inlineEditor('dirty')).toBe(true);
+                    $field.inlineEditor('submit');
+
+                    expect(reviewRequest.draft.save).toHaveBeenCalled();
+                });
             });
         }
 
