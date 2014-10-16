@@ -35,12 +35,24 @@ class ResourceTests(ExtraDataListMixin, ExtraDataItemMixin,
         self.assertEqual(item_rsp['testing_done'], draft.testing_done)
         self.assertEqual(item_rsp['extra_data'], draft.extra_data)
         self.assertEqual(item_rsp['changedescription'], changedesc.text)
-        self.assertEqual(draft.rich_text, changedesc.rich_text)
 
-        if draft.rich_text:
-            self.assertEqual(item_rsp['text_type'], 'markdown')
+        if changedesc.rich_text:
+            self.assertEqual(item_rsp['changedescription_text_type'],
+                             'markdown')
         else:
-            self.assertEqual(item_rsp['text_type'], 'plain')
+            self.assertEqual(item_rsp['changedescription_text_type'],
+                             'plain')
+
+        if draft.description_rich_text:
+            self.assertEqual(item_rsp['description_text_type'], 'markdown')
+        else:
+            self.assertEqual(item_rsp['description_text_type'], 'plain')
+
+        if draft.testing_done_rich_text:
+            self.assertEqual(item_rsp['testing_done_text_type'], 'markdown')
+        else:
+            self.assertEqual(item_rsp['testing_done_text_type'], 'plain')
+
 
     #
     # HTTP DELETE tests
@@ -76,7 +88,7 @@ class ResourceTests(ExtraDataListMixin, ExtraDataItemMixin,
 
     def test_get_with_markdown_and_force_text_type_markdown(self):
         """Testing the GET review-requests/<id>/draft/ API
-        with text_type=markdown and ?force-text-type=markdown
+        with *_text_type=markdown and ?force-text-type=markdown
         """
         self._test_get_with_force_text_type(
             text=r'\# `This` is a **test**',
@@ -86,7 +98,7 @@ class ResourceTests(ExtraDataListMixin, ExtraDataItemMixin,
 
     def test_get_with_markdown_and_force_text_type_plain(self):
         """Testing the GET review-requests/<id>/draft/ API
-        with text_type=markdown and ?force-text-type=plain
+        with *_text_type=markdown and ?force-text-type=plain
         """
         self._test_get_with_force_text_type(
             text=r'\# `This` is a **test**',
@@ -96,7 +108,7 @@ class ResourceTests(ExtraDataListMixin, ExtraDataItemMixin,
 
     def test_get_with_markdown_and_force_text_type_html(self):
         """Testing the GET review-requests/<id>/draft/ API
-        with text_type=markdown and ?force-text-type=html
+        with *_text_type=markdown and ?force-text-type=html
         """
         self._test_get_with_force_text_type(
             text=r'\# `This` is a **test**',
@@ -107,7 +119,7 @@ class ResourceTests(ExtraDataListMixin, ExtraDataItemMixin,
 
     def test_get_with_plain_and_force_text_type_markdown(self):
         """Testing the GET review-requests/<id>/draft/ API
-        with text_type=plain and ?force-text-type=markdown
+        with *_text_type=plain and ?force-text-type=markdown
         """
         self._test_get_with_force_text_type(
             text='#<`This` is a **test**>',
@@ -117,7 +129,7 @@ class ResourceTests(ExtraDataListMixin, ExtraDataItemMixin,
 
     def test_get_with_plain_and_force_text_type_plain(self):
         """Testing the GET review-requests/<id>/draft/ API
-        with text_type=plain and ?force-text-type=plain
+        with *_text_type=plain and ?force-text-type=plain
         """
         self._test_get_with_force_text_type(
             text='#<`This` is a **test**>',
@@ -127,7 +139,7 @@ class ResourceTests(ExtraDataListMixin, ExtraDataItemMixin,
 
     def test_get_with_plain_and_force_text_type_html(self):
         """Testing the GET review-requests/<id>/draft/ API
-        with text_type=plain and ?force-text-type=html
+        with *_text_type=plain and ?force-text-type=html
         """
         self._test_get_with_force_text_type(
             text='#<`This` is a **test**>',
@@ -220,90 +232,93 @@ class ResourceTests(ExtraDataListMixin, ExtraDataItemMixin,
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], NOTHING_TO_PUBLISH.code)
 
-    def test_put_with_text_type_markdown_all_fields(self):
+    def test_put_with_text_type_markdown(self):
         """Testing the PUT review-requests/<id>/draft/ API
-        with text_type=markdown and all fields specified
+        with legacy text_type=markdown
         """
-        self._test_put_with_text_type_all_fields('markdown')
+        self._test_put_with_text_types(
+            text_type_field='text_type',
+            text_type_value='markdown',
+            expected_change_text_type='markdown',
+            expected_description_text_type='markdown',
+            expected_testing_done_text_type='markdown')
 
-    def test_put_with_text_type_plain_all_fields(self):
+    def test_put_with_text_type_plain(self):
         """Testing the PUT review-requests/<id>/draft/ API
-        with text_type=plain and all fields specified
+        with legacy text_type=plain
         """
-        self._test_put_with_text_type_all_fields('plain')
+        self._test_put_with_text_types(
+            text_type_field='text_type',
+            text_type_value='plain',
+            expected_change_text_type='plain',
+            expected_description_text_type='plain',
+            expected_testing_done_text_type='plain')
 
-    def test_put_with_text_type_markdown_escaping_all_fields(self):
+    def test_put_with_changedescription_text_type_markdown(self):
         """Testing the PUT review-requests/<id>/draft/ API
-        with changing text_type to 'markdown' and escaping all fields
+        with changedescription_text_type=markdown
         """
-        self._test_put_with_text_type_escaping_all_fields(
-            'markdown',
-            '`This` is a **test**',
-            '\\`This\\` is a \\*\\*test\\*\\*')
+        self._test_put_with_text_types(
+            text_type_field='changedescription_text_type',
+            text_type_value='markdown',
+            expected_change_text_type='markdown',
+            expected_description_text_type='plain',
+            expected_testing_done_text_type='plain')
 
-    def test_put_with_text_type_plain_unescaping_all_fields(self):
+    def test_put_with_changedescription_text_type_plain(self):
         """Testing the PUT review-requests/<id>/draft/ API
-        with changing text_type to 'plain' and unescaping all fields
+        with changedescription_text_type=plain
         """
-        self._test_put_with_text_type_escaping_all_fields(
-            'plain',
-            '\\`This\\` is a \\*\\*test\\*\\*',
-            '`This` is a **test**')
+        self._test_put_with_text_types(
+            text_type_field='changedescription_text_type',
+            text_type_value='plain',
+            expected_change_text_type='plain',
+            expected_description_text_type='plain',
+            expected_testing_done_text_type='plain')
 
-    def test_put_with_text_type_markdown_escaping_unspecified_fields(self):
+    def test_put_with_description_text_type_markdown(self):
         """Testing the PUT review-requests/<id>/draft/ API
-        with changing text_type to 'markdown' and escaping unspecified fields
+        with description_text_type=markdown
         """
-        self._test_put_with_text_type_escaping_unspecified_fields(
-            'markdown',
-            '`This` is a **test**',
-            '\\`This\\` is a \\*\\*test\\*\\*')
+        self._test_put_with_text_types(
+            text_type_field='description_text_type',
+            text_type_value='markdown',
+            expected_change_text_type='plain',
+            expected_description_text_type='markdown',
+            expected_testing_done_text_type='plain')
 
-    def test_put_with_text_type_plain_unescaping_unspecified_fields(self):
+    def test_put_with_description_text_type_plain(self):
         """Testing the PUT review-requests/<id>/draft/ API
-        with changing text_type to 'plain' and unescaping unspecified fields
+        with description_text_type=plain
         """
-        self._test_put_with_text_type_escaping_unspecified_fields(
-            'plain',
-            '\\`This\\` is a \\*\\*test\\*\\*',
-            '`This` is a **test**')
+        self._test_put_with_text_types(
+            text_type_field='description_text_type',
+            text_type_value='plain',
+            expected_change_text_type='plain',
+            expected_description_text_type='plain',
+            expected_testing_done_text_type='plain')
 
-    def test_put_without_text_type_and_escaping_provided_fields(self):
+    def test_put_with_testing_done_text_type_markdown(self):
         """Testing the PUT review-requests/<id>/draft/ API
-        without changing text_type and with escaping provided fields
+        with testing_done_text_type=markdown
         """
-        review_request = self.create_review_request(submitter=self.user,
-                                                    publish=True)
-        review_request.rich_text = True
-        review_request.save()
+        self._test_put_with_text_types(
+            text_type_field='testing_done_text_type',
+            text_type_value='markdown',
+            expected_change_text_type='plain',
+            expected_description_text_type='plain',
+            expected_testing_done_text_type='markdown')
 
-        draft = ReviewRequestDraft.create(review_request)
-
-        self.assertTrue(draft.rich_text)
-        self.assertTrue(draft.changedesc.rich_text)
-
-        rsp = self.api_put(
-            get_review_request_draft_url(review_request),
-            {
-                'description': 'This is **Description**',
-                'testing_done': 'This is **Testing Done**',
-                'changedescription': 'This is **Change Description**',
-            },
-            expected_mimetype=review_request_draft_item_mimetype)
-
-        self.assertEqual(rsp['stat'], 'ok')
-
-        draft_rsp = rsp['draft']
-        self.assertEqual(draft_rsp['text_type'], 'markdown')
-        self.assertEqual(draft_rsp['description'],
-                         'This is \*\*Description\*\*')
-        self.assertEqual(draft_rsp['testing_done'],
-                         'This is \*\*Testing Done\*\*')
-        self.assertEqual(draft_rsp['changedescription'],
-                         'This is \*\*Change Description\*\*')
-
-        draft = ReviewRequestDraft.objects.get(pk=rsp['draft']['id'])
-        self.compare_item(draft_rsp, draft)
+    def test_put_with_testing_done_text_type_plain(self):
+        """Testing the PUT review-requests/<id>/draft/ API
+        with testing_done_text_type=plain
+        """
+        self._test_put_with_text_types(
+            text_type_field='testing_done_text_type',
+            text_type_value='plain',
+            expected_change_text_type='plain',
+            expected_description_text_type='plain',
+            expected_testing_done_text_type='plain')
 
     def test_put_with_commit_id(self):
         """Testing the PUT review-requests/<id>/draft/ API with commit_id"""
@@ -712,7 +727,8 @@ class ResourceTests(ExtraDataListMixin, ExtraDataItemMixin,
 
         draft.description = text
         draft.testing_done = text
-        draft.rich_text = rich_text
+        draft.description_rich_text = rich_text
+        draft.testing_done_rich_text = rich_text
         draft.save()
 
         draft.changedesc.text = text
@@ -725,7 +741,8 @@ class ResourceTests(ExtraDataListMixin, ExtraDataItemMixin,
         self.assertIn(self.resource.item_result_key, rsp)
 
         draft_rsp = rsp[self.resource.item_result_key]
-        self.assertEqual(draft_rsp['text_type'], force_text_type)
+        self.assertEqual(draft_rsp['description_text_type'], force_text_type)
+        self.assertEqual(draft_rsp['testing_done_text_type'], force_text_type)
         self.assertEqual(draft_rsp['changedescription'], expected_text)
         self.assertEqual(draft_rsp['description'], expected_text)
         self.assertEqual(draft_rsp['testing_done'], expected_text)
@@ -743,7 +760,10 @@ class ResourceTests(ExtraDataListMixin, ExtraDataItemMixin,
         self.assertEqual(raw_text_fields['description'], text)
         self.assertEqual(raw_text_fields['testing_done'], text)
 
-    def _test_put_with_text_type_all_fields(self, text_type):
+    def _test_put_with_text_types(self, text_type_field, text_type_value,
+                                  expected_change_text_type,
+                                  expected_description_text_type,
+                                  expected_testing_done_text_type):
         text = '`This` is a **test**'
 
         review_request = self.create_review_request(submitter=self.user,
@@ -752,91 +772,25 @@ class ResourceTests(ExtraDataListMixin, ExtraDataItemMixin,
         rsp = self.api_put(
             get_review_request_draft_url(review_request),
             {
-                'text_type': text_type,
                 'changedescription': text,
                 'description': text,
                 'testing_done': text,
+                text_type_field: text_type_value,
             },
             expected_mimetype=review_request_draft_item_mimetype)
 
         self.assertEqual(rsp['stat'], 'ok')
 
         draft_rsp = rsp['draft']
-        self.assertEqual(draft_rsp['text_type'], text_type)
         self.assertEqual(draft_rsp['changedescription'], text)
         self.assertEqual(draft_rsp['description'], text)
         self.assertEqual(draft_rsp['testing_done'], text)
-
-        draft = ReviewRequestDraft.objects.get(pk=rsp['draft']['id'])
-        self.compare_item(draft_rsp, draft)
-
-    def _test_put_with_text_type_escaping_all_fields(
-            self, text_type, text, expected_text):
-        self.assertIn(text_type, ('markdown', 'plain'))
-        rich_text = (text_type == 'markdown')
-
-        review_request = self.create_review_request(submitter=self.user,
-                                                    publish=True)
-        review_request.rich_text = not rich_text
-        review_request.description = text
-        review_request.testing_done = text
-        review_request.save()
-
-        draft = ReviewRequestDraft.create(review_request)
-        draft.changedesc.text = text
-        draft.changedesc.save()
-
-        rsp = self.api_put(
-            get_review_request_draft_url(review_request),
-            {
-                'text_type': text_type,
-            },
-            expected_mimetype=review_request_draft_item_mimetype)
-
-        self.assertEqual(rsp['stat'], 'ok')
-
-        draft_rsp = rsp['draft']
-        self.assertEqual(draft_rsp['text_type'], text_type)
-        self.assertEqual(draft_rsp['changedescription'], expected_text)
-        self.assertEqual(draft_rsp['description'], expected_text)
-        self.assertEqual(draft_rsp['testing_done'], expected_text)
-
-        draft = ReviewRequestDraft.objects.get(pk=rsp['draft']['id'])
-        self.compare_item(draft_rsp, draft)
-
-    def _test_put_with_text_type_escaping_unspecified_fields(
-            self, text_type, text, expected_text):
-        self.assertIn(text_type, ('markdown', 'plain'))
-        rich_text = (text_type == 'markdown')
-
-        description = '`This` is the **description**'
-
-        review_request = self.create_review_request(submitter=self.user,
-                                                    publish=True)
-        review_request.rich_text = not rich_text
-        review_request.description = text
-        review_request.testing_done = text
-        review_request.save()
-
-        draft = ReviewRequestDraft.create(review_request)
-        draft.changedesc.text = text
-        draft.changedesc.save()
-
-        rsp = self.api_put(
-            get_review_request_draft_url(review_request),
-            {
-                'text_type': text_type,
-                'description': description,
-            },
-            expected_mimetype=review_request_draft_item_mimetype)
-
-        self.assertEqual(rsp['stat'], 'ok')
-
-        draft_rsp = rsp['draft']
-        self.assertEqual(draft_rsp['text_type'], text_type)
-        self.assertEqual(draft_rsp['changedescription'], expected_text)
-        self.assertEqual(draft_rsp['description'], description)
-        self.assertEqual(draft_rsp['testing_done'], expected_text)
+        self.assertEqual(draft_rsp['changedescription_text_type'],
+                         expected_change_text_type)
+        self.assertEqual(draft_rsp['description_text_type'],
+                         expected_description_text_type)
+        self.assertEqual(draft_rsp['testing_done_text_type'],
+                         expected_testing_done_text_type)
 
         draft = ReviewRequestDraft.objects.get(pk=rsp['draft']['id'])
         self.compare_item(draft_rsp, draft)

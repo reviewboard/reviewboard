@@ -49,45 +49,99 @@ class MarkdownFieldsMixin(object):
         data = super(MarkdownFieldsMixin, self).serialize_object(
             obj, *args, **kwargs)
 
-        requested_text_type = self._get_requested_text_type(obj, **kwargs)
+        request = kwargs.get('request')
 
-        if requested_text_type:
+        if not request:
+            force_text_type = None
+        elif request.method == 'GET':
+            force_text_type = request.GET.get('force-text-type')
+        else:
+            force_text_type = request.POST.get('force_text_type')
+
+        if force_text_type in self.TEXT_TYPES:
             include_raw_text_fields = \
                 self._get_include_raw_text_fields(obj, **kwargs)
-            raw_fields = {}
+        else:
+            force_text_type = None
+            include_raw_text_fields = False
 
-            for field, field_info in six.iteritems(self.fields):
-                if field_info.get('supports_text_types'):
-                    value = data.get(field)
+        raw_fields = {}
 
-                    if value is None:
-                        data[field] = value
-                    else:
-                        data[field] = self._normalize_text(obj, value, **kwargs)
+        for field, field_info in six.iteritems(self.fields):
+            if not field_info.get('supports_text_types'):
+                continue
 
-                    if include_raw_text_fields:
-                        raw_fields[field] = value
+            get_func = getattr(self, 'get_is_%s_rich_text' % field, None)
 
-            if 'extra_data' in data:
-                raw_extra_data = {}
-                extra_data = data['extra_data']
+            if six.callable(get_func):
+                getter = lambda obj, *args: get_func(obj)
+            else:
+                getter = lambda obj, data, field, default: \
+                    getattr(obj, field, default)
 
-                for key, value in six.iteritems(obj.extra_data):
-                    if (value and
-                        self.get_extra_data_field_supports_markdown(obj, key)):
-                        extra_data[key] = self._normalize_text(obj, value,
-                                                               **kwargs)
+            self._serialize_text_info(obj, data, raw_fields, field,
+                                      force_text_type,
+                                      include_raw_text_fields,
+                                      getter)
 
-                        if include_raw_text_fields:
-                            raw_extra_data[key] = value
+        if 'extra_data' in data:
+            raw_extra_data = {}
+            extra_data = data['extra_data']
 
-            if include_raw_text_fields:
-                data['raw_text_fields'] = raw_fields
+            for field, value in six.iteritems(obj.extra_data):
+                if not self.get_extra_data_field_supports_markdown(obj, field):
+                    continue
+
+                self._serialize_text_info(
+                    obj, extra_data, raw_extra_data, field, force_text_type,
+                    include_raw_text_fields,
+                    lambda obj, data, field, default: data.get(field, default))
+
+        if include_raw_text_fields:
+            data['raw_text_fields'] = raw_fields
 
         return data
 
+    def _serialize_text_info(self, obj, data, raw_data, field,
+                             force_text_type, include_raw_text_fields,
+                             getter, rich_text_field=None,
+                             default_is_rich_text=None):
+        if field == 'text':
+            text_type_field = 'text_type'
+            rich_text_field = rich_text_field or 'rich_text'
+        else:
+            text_type_field = '%s_text_type' % field
+            rich_text_field = rich_text_field or '%s_rich_text' % field
+
+        field_is_rich_text = getter(obj, data, rich_text_field,
+                                    default_is_rich_text)
+        assert field_is_rich_text is not None, \
+            'No value for field "%s" found in %r' % (rich_text_field, obj)
+
+        if force_text_type:
+            data[text_type_field] = force_text_type
+            value = data.get(field)
+
+            if value is not None:
+                data[field] = self._normalize_text(
+                    data[field], field_is_rich_text, force_text_type)
+
+            if include_raw_text_fields:
+                raw_data[field] = value
+                text_types_data = raw_data
+            else:
+                text_types_data = None
+        else:
+            text_types_data = data
+
+        if text_types_data is not None:
+            if field_is_rich_text:
+                text_types_data[text_type_field] = self.TEXT_TYPE_MARKDOWN
+            else:
+                text_types_data[text_type_field] = self.TEXT_TYPE_PLAIN
+
     def serialize_text_type_field(self, obj, request=None, **kwargs):
-        return self._get_requested_text_type(obj, request)
+        return None
 
     def get_extra_data_field_supports_markdown(self, obj, key):
         """Returns whether a particular field in extra_data supports Markdown.
@@ -96,34 +150,6 @@ class MarkdownFieldsMixin(object):
         based on the requested ?force-text-type= parameter.
         """
         return False
-
-    def _get_requested_text_type(self, obj, request=None, **kwargs):
-        """Returns the text type requested by the user.
-
-        If the user did not request a text type, or a valid text type,
-        this will fall back to the proper type for the given object.
-        """
-        if request and hasattr(request, '_rbapi_requested_text_type'):
-            text_type = request._rbapi_requested_text_type
-        else:
-            if request:
-                if request.method == 'GET':
-                    text_type = request.GET.get('force-text-type')
-                else:
-                    text_type = request.POST.get('force_text_type')
-            else:
-                text_type = None
-
-            if not text_type or text_type not in self.TEXT_TYPES:
-                if obj.rich_text:
-                    text_type = self.TEXT_TYPE_MARKDOWN
-                else:
-                    text_type = self.TEXT_TYPE_PLAIN
-
-            if request:
-                request._rbapi_requested_text_type = text_type
-
-        return text_type
 
     def _get_include_raw_text_fields(self, obj, request=None, **kwargs):
         """Returns whether raw text fields should be returned in the payload.
@@ -142,47 +168,71 @@ class MarkdownFieldsMixin(object):
 
         return include_raw_text in ('1', 'true')
 
-    def _normalize_text(self, obj, text, request=None, **kwargs):
+    def _normalize_text(self, text, field_is_rich_text, force_text_type):
         """Normalizes text to the proper format.
 
         This considers the requested text format, and whether or not the
-        object is set for having rich text.
+        value should be set for rich text.
         """
-        text_type = self._get_requested_text_type(obj, request)
+        assert force_text_type
 
-        if text_type == self.TEXT_TYPE_PLAIN and obj.rich_text:
+        if force_text_type == self.TEXT_TYPE_PLAIN and field_is_rich_text:
             text = markdown_unescape(text)
-        elif text_type == self.TEXT_TYPE_MARKDOWN and not obj.rich_text:
+        elif (force_text_type == self.TEXT_TYPE_MARKDOWN and
+              not field_is_rich_text):
             text = markdown_escape(text)
-        elif text_type == self.TEXT_TYPE_HTML:
-            if obj.rich_text:
+        elif force_text_type == self.TEXT_TYPE_HTML:
+            if field_is_rich_text:
                 text = render_markdown(text)
             else:
                 text = escape(text)
 
         return text
 
-    def normalize_markdown_fields(self, obj, text_fields, old_rich_text,
-                                  model_field_map={}, **kwargs):
+    def set_text_fields(self, obj, text_field,
+                        rich_text_field_name=None,
+                        text_type_field_name=None,
+                        text_model_field=None,
+                        **kwargs):
         """Normalizes Markdown-capable text fields that are being saved."""
-        if 'text_type' in kwargs:
-            rich_text = (kwargs['text_type'] == self.TEXT_TYPE_MARKDOWN)
+        if not text_model_field:
+            text_model_field = text_field
 
-            # If the caller has changed the rich_text setting, we will need to
-            # update any affected fields we already have stored that weren't
-            # changed in this request by escaping or unescaping their
-            # contents.
-            if rich_text != old_rich_text:
-                for text_field in text_fields:
-                    if text_field not in kwargs:
-                        model_field = \
-                            model_field_map.get(text_field, text_field)
-                        markdown_set_field_escaped(obj, model_field, rich_text)
+        if not text_type_field_name:
+            if text_field == 'text':
+                text_type_field_name = 'text_type'
+            else:
+                text_type_field_name = '%s_text_type' % text_field
+
+        if not rich_text_field_name:
+            if text_field == 'text':
+                rich_text_field_name = 'rich_text'
+            else:
+                rich_text_field_name = '%s_rich_text' % text_field
+
+        old_rich_text = getattr(obj, rich_text_field_name, None)
+
+        if text_field in kwargs:
+            setattr(obj, text_model_field, kwargs[text_field].strip())
+
+        if text_type_field_name in kwargs or 'text_type' in kwargs:
+            text_type = kwargs.get(text_type_field_name,
+                                   kwargs.get('text_type'))
+            rich_text = (text_type == self.TEXT_TYPE_MARKDOWN)
+
+            setattr(obj, rich_text_field_name, rich_text)
+
+            # If the caller has changed the text type for this field, but
+            # hasn't provided a new field value, then we will need to update
+            # the affected field's existing contents by escaping or
+            # unescaping.
+            if rich_text != old_rich_text and text_field not in kwargs:
+                markdown_set_field_escaped(obj, text_model_field,
+                                           rich_text)
         elif old_rich_text:
             # The user didn't specify rich-text, but the object may be set for
-            # for rich-text, in which case we'll need to pre-escape any text
-            # fields that came in.
-            for text_field in text_fields:
-                if text_field in kwargs:
-                    model_field = model_field_map.get(text_field, text_field)
-                    markdown_set_field_escaped(obj, model_field, old_rich_text)
+            # for rich-text, in which case we'll need to pre-escape the text
+            # field.
+            if text_field in kwargs:
+                markdown_set_field_escaped(obj, text_model_field,
+                                           old_rich_text)

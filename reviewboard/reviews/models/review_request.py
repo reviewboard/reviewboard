@@ -642,9 +642,10 @@ class ReviewRequest(BaseReviewRequestDetails):
             raise AttributeError("%s is not a valid close type" % type)
 
         if self.status != type:
+            # TODO: Use the user's default for rich_text.
             changedesc = ChangeDescription(public=True,
                                            text=description or "",
-                                           rich_text=rich_text)
+                                           rich_text=rich_text or False)
             changedesc.record_field_change('status', self.status, type)
             changedesc.save()
 

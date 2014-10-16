@@ -98,6 +98,12 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
                            'describe the changes in the diff.',
             'supports_text_types': True,
         },
+        'changedescription_text_type': {
+            'type': MarkdownFieldsMixin.TEXT_TYPES,
+            'description': 'The current or forced text type for the '
+                           'changedescription field.',
+            'added_in': '2.0.9',
+        },
         'commit_id': {
             'type': six.text_type,
             'description': 'The updated ID of the commit this review request '
@@ -108,6 +114,12 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
             'type': six.text_type,
             'description': 'The new review request description.',
             'supports_text_types': True,
+        },
+        'description_text_type': {
+            'type': MarkdownFieldsMixin.TEXT_TYPES,
+            'description': 'The current or forced text type for the '
+                           'description field.',
+            'added_in': '2.0.9',
         },
         'extra_data': {
             'type': dict,
@@ -140,10 +152,21 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
             'description': 'The new testing done text.',
             'supports_text_types': True,
         },
+        'testing_done_text_type': {
+            'type': MarkdownFieldsMixin.TEXT_TYPES,
+            'description': 'The current or forced text type for the '
+                           'testing_done field.',
+            'added_in': '2.0.9',
+        },
         'text_type': {
             'type': MarkdownFieldsMixin.TEXT_TYPES,
-            'description': 'The mode for the review request description '
-                           'and testing_done fields.',
+            'description': 'Formerly responsible for indicating the text '
+                           'type for text fields. Replaced by '
+                           'changedescription_text_type, '
+                           'description_text_type, and '
+                           'testing_done_text_type in 2.0.9.',
+            'added_in': '2.0',
+            'deprecated_in': '2.0.9',
         },
     }
 
@@ -179,9 +202,21 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
             'type': six.text_type,
             'description': 'The change description for this update.',
         },
+        'changedescription_text_type': {
+            'type': MarkdownFieldsMixin.SAVEABLE_TEXT_TYPES,
+            'description': 'The text type used for the changedescription '
+                           'field.',
+            'added_in': '2.0.9',
+        },
         'description': {
             'type': six.text_type,
             'description': 'The new review request description.',
+        },
+        'description_text_type': {
+            'type': MarkdownFieldsMixin.SAVEABLE_TEXT_TYPES,
+            'description': 'The text type used for the description '
+                           'field.',
+            'added_in': '2.0.9',
         },
         'force_text_type': {
             'type': MarkdownFieldsMixin.TEXT_TYPES,
@@ -214,11 +249,23 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
             'type': six.text_type,
             'description': 'The new testing done text.',
         },
+        'testing_done_text_type': {
+            'type': MarkdownFieldsMixin.SAVEABLE_TEXT_TYPES,
+            'description': 'The text type used for the testing_done '
+                           'field.',
+            'added_in': '2.0.9',
+        },
         'text_type': {
             'type': MarkdownFieldsMixin.SAVEABLE_TEXT_TYPES,
-            'description': 'The mode for the review request description '
-                           'and testing_done fields. the default is '
-                           '"plain".',
+            'description': 'The mode for the changedescription, description, '
+                           'and testing_done fields.\n'
+                           '\n'
+                           'This is deprecated. Please use '
+                           'changedescription_text_type, '
+                           'description_text_type, and '
+                           'testing_done_text_type instead.',
+            'added_in': '2.0',
+            'deprecated_in': '2.0.9',
         },
         'update_from_commit_id': {
             'type': bool,
@@ -243,6 +290,9 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
             request, *args, **kwargs)
         return self.model.objects.filter(review_request=review_request)
 
+    def get_is_changedescription_rich_text(self, obj):
+        return obj.changedesc_id is not None and obj.changedesc.rich_text
+
     def serialize_bugs_closed_field(self, obj, **kwargs):
         return obj.get_bug_list()
 
@@ -252,11 +302,23 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
         else:
             return ''
 
+    def serialize_changedescription_text_type_field(self, obj, **kwargs):
+        # This will be overridden by MarkdownFieldsMixin.
+        return None
+
+    def serialize_description_text_type_field(self, obj, **kwargs):
+        # This will be overridden by MarkdownFieldsMixin.
+        return None
+
     def serialize_status_field(self, obj, **kwargs):
         return status_to_string(obj.status)
 
     def serialize_public_field(self, obj, **kwargs):
         return False
+
+    def serialize_testing_done_text_type_field(self, obj, **kwargs):
+        # This will be overridden by MarkdownFieldsMixin.
+        return None
 
     def get_extra_data_field_supports_markdown(self, review_request, key):
         field_cls = get_review_request_field(key)
@@ -376,10 +438,6 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
         modified_objects = []
         invalid_fields = {}
 
-        old_rich_text = draft.rich_text
-        old_changedesc_rich_text = (draft.changedesc_id is not None and
-                                    draft.changedesc.rich_text)
-
         for field_name, field_info in six.iteritems(self.fields):
             if (field_info.get('mutable', True) and
                 kwargs.get(field_name, None) is not None):
@@ -403,19 +461,13 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
             changedesc = draft.changedesc
             modified_objects.append(draft.changedesc)
 
-            if 'text_type' in kwargs:
-                changedesc.rich_text = \
-                    (kwargs['text_type'] == self.TEXT_TYPE_MARKDOWN)
+            self.set_text_fields(changedesc, 'changedescription',
+                                 text_model_field='text',
+                                 rich_text_field_name='rich_text',
+                                 **kwargs)
 
-            self.normalize_markdown_fields(changedesc, ['changedescription'],
-                                           old_changedesc_rich_text,
-                                           model_field_map={
-                                               'changedescription': 'text',
-                                           },
-                                           **kwargs)
-
-        self.normalize_markdown_fields(draft, ['description', 'testing_done'],
-                                       old_rich_text, **kwargs)
+        self.set_text_fields(draft, 'description', **kwargs)
+        self.set_text_fields(draft, 'testing_done', **kwargs)
 
         self._import_extra_data(draft.extra_data, extra_fields)
 
@@ -541,8 +593,6 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
                 draft.changedesc.text = data
 
                 modified_objects.append(draft.changedesc)
-        elif field_name == 'text_type':
-            draft.rich_text = (data == self.TEXT_TYPE_MARKDOWN)
         else:
             if field_name == 'summary' and '\n' in data:
                 invalid_entries.append('Summary cannot contain newlines')

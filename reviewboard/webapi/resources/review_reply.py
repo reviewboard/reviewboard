@@ -43,11 +43,23 @@ class ReviewReplyResource(BaseReviewResource):
                            'the comments.',
             'supports_text_types': True,
         },
+        'body_bottom_text_type': {
+            'type': MarkdownFieldsMixin.TEXT_TYPES,
+            'description': 'The current or forced text type for the '
+                           'body_bottom field.',
+            'added_in': '2.0.9',
+        },
         'body_top': {
             'type': six.text_type,
             'description': 'The response to the review content above '
                            'the comments.',
             'supports_text_types': True,
+        },
+        'body_top_text_type': {
+            'type': MarkdownFieldsMixin.TEXT_TYPES,
+            'description': 'The current or forced text type for the '
+                           'body_top field.',
+            'added_in': '2.0.9',
         },
         'extra_data': {
             'type': dict,
@@ -65,8 +77,12 @@ class ReviewReplyResource(BaseReviewResource):
         },
         'text_type': {
             'type': MarkdownFieldsMixin.TEXT_TYPES,
-            'description': 'The mode for the body_top and body_bottom text '
-                           'fields.',
+            'description': 'Formerly responsible for indicating the text '
+                           'type for text fields. Replaced by '
+                           'body_top_text_type and body_bottom_text_type '
+                           'in 2.0.9.',
+            'added_in': '2.0',
+            'deprecated_in': '2.0.9',
         },
         'timestamp': {
             'type': six.text_type,
@@ -95,45 +111,73 @@ class ReviewReplyResource(BaseReviewResource):
     mimetype_list_resource_name = 'review-replies'
     mimetype_item_resource_name = 'review-reply'
 
+    CREATE_UPDATE_OPTIONAL_FIELDS = {
+        'body_top': {
+            'type': six.text_type,
+            'description': 'The response to the review content above '
+                           'the comments.',
+        },
+        'body_top_text_type': {
+            'type': MarkdownFieldsMixin.SAVEABLE_TEXT_TYPES,
+            'description': 'The text type used for the body_top '
+                           'field.',
+            'added_in': '2.0.9',
+        },
+        'body_bottom': {
+            'type': six.text_type,
+            'description': 'The response to the review content below '
+                           'the comments.',
+        },
+        'body_bottom_text_type': {
+            'type': MarkdownFieldsMixin.SAVEABLE_TEXT_TYPES,
+            'description': 'The text type used for the body_bottom '
+                           'field.',
+            'added_in': '2.0.9',
+        },
+        'force_text_type': {
+            'type': MarkdownFieldsMixin.TEXT_TYPES,
+            'description': 'The text type, if any, to force for returned '
+                           'text fields. The contents will be converted '
+                           'to the requested type in the payload, but '
+                           'will not be saved as that type.',
+        },
+        'public': {
+            'type': bool,
+            'description': 'Whether or not to make the reply public. '
+                           'If a reply is public, it cannot be made '
+                           'private again.',
+        },
+        'text_type': {
+            'type': MarkdownFieldsMixin.SAVEABLE_TEXT_TYPES,
+            'description': 'The mode for the body_top and body_bottom '
+                           'text fields.\n'
+                           '\n'
+                           'This is deprecated. Please use '
+                           'body_top_text_type and '
+                           'body_bottom_text_type instead.',
+            'added_in': '2.0',
+            'deprecated_in': '2.0.9',
+        },
+    }
+
     def get_base_reply_to_field(self, review_id, *args, **kwargs):
         return {
             'base_reply_to': Review.objects.get(pk=review_id),
         }
 
+    def serialize_body_top_text_type_field(self, obj, **kwargs):
+        # This will be overridden by MarkdownFieldsMixin.
+        return None
+
+    def serialize_body_bottom_text_type_field(self, obj, **kwargs):
+        # This will be overridden by MarkdownFieldsMixin.
+        return None
+
     @webapi_check_local_site
     @webapi_login_required
     @webapi_response_errors(DOES_NOT_EXIST, NOT_LOGGED_IN, PERMISSION_DENIED)
     @webapi_request_fields(
-        optional={
-            'body_top': {
-                'type': six.text_type,
-                'description': 'The response to the review content above '
-                               'the comments.',
-            },
-            'body_bottom': {
-                'type': six.text_type,
-                'description': 'The response to the review content below '
-                               'the comments.',
-            },
-            'force_text_type': {
-                'type': MarkdownFieldsMixin.TEXT_TYPES,
-                'description': 'The text type, if any, to force for returned '
-                               'text fields. The contents will be converted '
-                               'to the requested type in the payload, but '
-                               'will not be saved as that type.',
-            },
-            'public': {
-                'type': bool,
-                'description': 'Whether or not to make the reply public. '
-                               'If a reply is public, it cannot be made '
-                               'private again.',
-            },
-            'text_type': {
-                'type': MarkdownFieldsMixin.SAVEABLE_TEXT_TYPES,
-                'description': 'The mode for the body_top and body_bottom '
-                               'text fields. The default is "plain".',
-            },
-        },
+        optional=CREATE_UPDATE_OPTIONAL_FIELDS,
         allow_unknown=True
     )
     def create(self, request, *args, **kwargs):
@@ -196,37 +240,7 @@ class ReviewReplyResource(BaseReviewResource):
     @webapi_login_required
     @webapi_response_errors(DOES_NOT_EXIST, NOT_LOGGED_IN, PERMISSION_DENIED)
     @webapi_request_fields(
-        optional={
-            'body_top': {
-                'type': six.text_type,
-                'description': 'The response to the review content above '
-                               'the comments.',
-            },
-            'body_bottom': {
-                'type': six.text_type,
-                'description': 'The response to the review content below '
-                               'the comments.',
-            },
-            'force_text_type': {
-                'type': MarkdownFieldsMixin.TEXT_TYPES,
-                'description': 'The text type, if any, to force for returned '
-                               'text fields. The contents will be converted '
-                               'to the requested type in the payload, but '
-                               'will not be saved as that type.',
-            },
-            'public': {
-                'type': bool,
-                'description': 'Whether or not to make the reply public. '
-                               'If a reply is public, it cannot be made '
-                               'private again.',
-            },
-            'text_type': {
-                'type': MarkdownFieldsMixin.SAVEABLE_TEXT_TYPES,
-                'description': 'The mode for the body_top and body_bottom '
-                               'text fields. This default is to leave the '
-                               'mode unchanged.',
-            },
-        },
+        optional=CREATE_UPDATE_OPTIONAL_FIELDS,
         allow_unknown=True
     )
     def update(self, request, *args, **kwargs):
@@ -292,14 +306,10 @@ class ReviewReplyResource(BaseReviewResource):
             # to the user.
             return self._no_access_error(request.user)
 
-        old_rich_text = reply.rich_text
-
         for field in ('body_top', 'body_bottom'):
             value = kwargs.get(field, None)
 
             if value is not None:
-                setattr(reply, field, value.strip())
-
                 if value == '':
                     reply_to = None
                 else:
@@ -307,11 +317,8 @@ class ReviewReplyResource(BaseReviewResource):
 
                 setattr(reply, '%s_reply_to' % field, reply_to)
 
-        if 'text_type' in kwargs:
-            reply.rich_text = (kwargs['text_type'] == self.TEXT_TYPE_MARKDOWN)
-
-        self.normalize_markdown_fields(reply, ['body_top', 'body_bottom'],
-                                       old_rich_text, **kwargs)
+        self.set_text_fields(reply, 'body_top', **kwargs)
+        self.set_text_fields(reply, 'body_bottom', **kwargs)
 
         self._import_extra_data(reply.extra_data, extra_fields)
 
