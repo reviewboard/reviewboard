@@ -170,14 +170,20 @@ class TextBasedReviewUI(FileAttachmentReviewUI):
 
         Subclasses can override to do more specialized thumbnail rendering.
         """
-        if view_mode == 'source':
-            lines = self.get_text_lines()
-        elif view_mode == 'rendered':
-            lines = self.get_rendered_lines()
-        else:
-            logging.warning('Unexpected view mode "%s" when rendering '
-                            'comment thumbnail.',
-                            view_mode)
+        try:
+            if view_mode == 'source':
+                lines = self.get_text_lines()
+            elif view_mode == 'rendered':
+                lines = self.get_rendered_lines()
+            else:
+                logging.warning('Unexpected view mode "%s" when rendering '
+                                'comment thumbnail.',
+                                view_mode)
+                return ''
+        except Exception as e:
+            logging.error('Unable to generate text attachment comment '
+                          'thumbnail for comment %s: %s',
+                          comment, e)
             return ''
 
         # Grab only the lines we care about.
