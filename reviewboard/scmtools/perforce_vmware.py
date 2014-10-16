@@ -14,8 +14,9 @@ class VMwarePerforceTool(PerforceTool):
     name = "Perforce (VMware)"
 
     @staticmethod
-    def parse_change_desc(changedesc, changenum):
-        changeset = PerforceTool.parse_change_desc(changedesc, changenum)
+    def parse_change_desc(changedesc, changenum, allow_empty=False):
+        changeset = PerforceTool.parse_change_desc(changedesc, changenum,
+                                                   allow_empty)
 
         if not changeset:
             return None
