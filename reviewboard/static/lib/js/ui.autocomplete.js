@@ -122,6 +122,8 @@ $.widget("ui.rbautocomplete", {
                     }
                     break;
 
+                // matches also semicolon
+                case options.multiple && $.trim(options.multipleSeparator) == "," && KEY.COMMA:
                 case KEY.TAB:
                 case KEY.ENTER:
                     if (options.enterToURL && select.current()){
@@ -190,28 +192,21 @@ $.widget("ui.rbautocomplete", {
             $(input.form).unbind(".rbautocomplete");
         });
 
+
         // Private methods
         function selectCurrent() {
             var selected = select.selected();
-
-            // Return if none selected or input does not match the first item.
-            if (!selected ||
-                selected.result.indexOf(lastWord($input.val())) !== 0) {
+            if( !selected )
                 return false;
-            }
 
             var v = selected.result;
             previousValue = v;
 
-            if (options.multiple) {
+            if ( options.multiple ) {
                 var words = trimWords($input.val());
-
-                if (words.length > 1) {
-                    v = words.slice(0, words.length - 1)
-                        .join(options.multipleSeparator)
-                        + options.multipleSeparator + v;
+                if ( words.length > 1 ) {
+                    v = words.slice(0, words.length - 1).join( options.multipleSeparator ) + options.multipleSeparator + v;
                 }
-
                 v += options.multipleSeparator;
             }
 
@@ -222,6 +217,11 @@ $.widget("ui.rbautocomplete", {
         };
 
         function onChange(crap, skipPrevCheck) {
+            if( lastKeyPressCode == $.ui.keyCode.DELETE ) {
+                select.hide();
+                return;
+            }
+
             var currentValue = $input.val();
 
             if ( !skipPrevCheck && currentValue == previousValue )
