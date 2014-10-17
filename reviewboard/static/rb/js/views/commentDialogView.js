@@ -308,6 +308,12 @@ RB.CommentDialogView = Backbone.View.extend({
      * Saves the comment, creating it if it's new, and closes the dialog.
      */
     save: function() {
+        /*
+         * Set this immediately, in case new text has been set in the editor
+         * that we haven't been notified about yet.
+         */
+        this.model.set('text', this._textEditor.getText());
+
         if (this.model.get('canSave')) {
             this.model.save({
                 error: function(model, xhr) {
