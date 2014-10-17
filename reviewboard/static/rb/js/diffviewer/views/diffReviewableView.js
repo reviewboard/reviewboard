@@ -393,9 +393,6 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
             parentOffset,
             parentTop,
             parentHeight,
-            btnRight,
-            $btnParent,
-            parentLeft,
             i,
             y1,
             y2;
@@ -413,18 +410,6 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
             parentOffset = $tbody.offset();
             parentTop = parentOffset.top;
             parentHeight = $tbody.height();
-            btnRight = $button.data('rb-orig-right');
-
-            if (btnRight === undefined) {
-                /*
-                 * We need to do this because on Firefox, the computed "right"
-                 * position will change when we move the element, causing things
-                 * to jump. We're really just trying to look up what the
-                 * default is, so do that once and cache.
-                 */
-                btnRight = parseInt($button.css('right'), 10);
-                $button.data('rb-orig-right', btnRight);
-            }
 
             /*
              * We're going to first try to limit our processing to expanded
@@ -442,9 +427,6 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
                 if (   windowTop >= parentTop
                     && windowTop + windowHeight <= parentTop + parentHeight) {
                     if ($button.css('position') !== 'fixed') {
-                        $btnParent = $button.parent();
-                        parentLeft = $btnParent.offset().left;
-
                         /*
                          * Position this fixed in the center of the screen.
                          * It'll be less jumpy.
