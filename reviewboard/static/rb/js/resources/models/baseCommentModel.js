@@ -12,6 +12,12 @@ RB.BaseComment = RB.BaseResource.extend({
          */
         forceTextType: null,
 
+        /*
+         * Whether responses from the server should return raw text
+         * fields when forceTextType is used.
+         */
+        includeRawTextFields: false,
+
         /* Whether or not an issue is opened. */
         issueOpened: true,
 
@@ -21,6 +27,12 @@ RB.BaseComment = RB.BaseResource.extend({
          * This must be one of STATE_DROPPED, STATE_OPEN, or STATE_RESOLVED.
          */
         issueStatus: null,
+
+        /*
+         * Raw text fields, if forceTextType is used and the caller
+         * fetches or posts with include-raw-text-fields=1
+         */
+        rawTextFields: {},
 
         /* Whether the comment is saved in rich-text (Markdown) format. */
         richText: false,
@@ -62,6 +74,10 @@ RB.BaseComment = RB.BaseResource.extend({
             }, RB.BaseResource.prototype.toJSON.call(this)),
             parentObject;
 
+        if (this.get('includeRawTextFields')) {
+            data.include_raw_text_fields = true;
+        }
+
         if (this.get('loaded')) {
             parentObject = this.get('parentObject');
 
@@ -79,12 +95,20 @@ RB.BaseComment = RB.BaseResource.extend({
      * This must be overloaded by subclasses, and the parent version called.
      */
     parseResourceData: function(rsp) {
-        return {
+        var data = {
             issueOpened: rsp.issue_opened,
             issueStatus: rsp.issue_status,
             richText: rsp.text_type === 'markdown',
             text: rsp.text
         };
+
+        if (rsp.raw_text_fields) {
+            data.rawTextFields = {
+                text: rsp.raw_text_fields.text
+            };
+        }
+
+        return data;
     },
 
     /*

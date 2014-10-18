@@ -35,6 +35,8 @@ BaseCommentView = Backbone.View.extend({
         this._origIssueOpened = this.model.get('issueOpened');
         this._origExtraData = _.clone(this.model.get('extraData'));
         this._hookViews = [];
+
+        this.model.set('includeRawTextFields', true);
     },
 
     remove: function() {
@@ -338,6 +340,8 @@ RB.ReviewDialogView = Backbone.View.extend({
             }));
         });
 
+        this.model.set('includeRawTextFields', true);
+
         this.options.reviewRequestEditor.incr('editCount');
     },
 
@@ -385,6 +389,9 @@ RB.ReviewDialogView = Backbone.View.extend({
         this._bodyBottomEditor.hide();
 
         this.model.ready({
+            data: {
+                'include-raw-text-fields': true
+            },
             ready: function() {
                 var bodyBottom,
                     bodyTop;
@@ -451,6 +458,10 @@ RB.ReviewDialogView = Backbone.View.extend({
 
         if (collection) {
             collection.fetchAll({
+                data: {
+                    'force-text-type': 'markdown',
+                    'include-raw-text-fields': true
+                },
                 success: function() {
                     if (collection === this._diffCommentsCollection) {
                         this._diffQueue.loadFragments();

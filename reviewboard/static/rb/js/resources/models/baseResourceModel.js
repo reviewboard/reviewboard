@@ -593,7 +593,7 @@ RB.BaseResource = Backbone.Model.extend({
         if (method === 'read') {
             data = options.data || {};
 
-            if (this.extraQueryArgs.length > 0) {
+            if (!_.isEmpty(this.extraQueryArgs)) {
                 _.extend(data, this.extraQueryArgs);
             }
         } else {

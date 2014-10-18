@@ -6,12 +6,30 @@
  */
 RB.Review = RB.BaseResource.extend({
     defaults: _.defaults({
+        /*
+         * The text format type to request for text in all responses.
+         */
+        forceTextType: null,
+
         shipIt: false,
         'public': false,
         richText: false,
         bodyTop: null,
         bodyBottom: null,
         draftReply: null,
+
+        /*
+         * Whether responses from the server should return raw text
+         * fields when forceTextType is used.
+         */
+        includeRawTextFields: false,
+
+        /*
+         * Raw text fields, if forceTextType is used and the caller
+         * fetches or posts with includeRawTextFields=true.
+         */
+        rawTextFields: {},
+
         timestamp: null
     }, RB.BaseResource.prototype.defaults),
 
@@ -23,6 +41,7 @@ RB.Review = RB.BaseResource.extend({
 
     toJSON: function() {
         var data = {
+            force_text_type: this.get('forceTextType') || undefined,
             text_type: this.get('richText') ? 'markdown' : 'plain',
             ship_it: this.get('shipIt'),
             body_top: this.get('bodyTop'),
@@ -33,11 +52,15 @@ RB.Review = RB.BaseResource.extend({
             data['public'] = 1;
         }
 
+        if (this.get('includeRawTextFields')) {
+            data.include_raw_text_fields = 1;
+        }
+
         return data;
     },
 
     parseResourceData: function(rsp) {
-        return {
+        var data = {
             shipIt: rsp.ship_it,
             bodyTop: rsp.body_top,
             bodyBottom: rsp.body_bottom,
@@ -45,6 +68,15 @@ RB.Review = RB.BaseResource.extend({
             richText: rsp.text_type === 'markdown',
             timestamp: rsp.timestamp
         };
+
+        if (rsp.raw_text_fields) {
+            data.rawTextFields = {
+                bodyBottom: rsp.raw_text_fields.body_bottom,
+                bodyTop: rsp.raw_text_fields.body_top
+            };
+        }
+
+        return data;
     },
 
     createDiffComment: function(id, fileDiffID, interFileDiffID, beginLineNum,
