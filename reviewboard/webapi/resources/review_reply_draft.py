@@ -45,7 +45,7 @@ class ReviewReplyDraftResource(WebAPIResource):
         return 302, {}, {
             'Location': self._build_redirect_with_args(
                 request,
-                resources.review_reply.get_href(review, request, *args,
+                resources.review_reply.get_href(reply, request, *args,
                                                 **kwargs)),
         }
 

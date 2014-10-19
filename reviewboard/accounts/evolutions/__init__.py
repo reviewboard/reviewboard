@@ -10,4 +10,5 @@ SEQUENCE = [
     'unique_together_baseline',
     'profile_show_closed',
     'profile_should_send_email',
+    'profile_should_send_own_updates',
 ]
