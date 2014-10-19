@@ -35,7 +35,7 @@ BannerView = Backbone.View.extend({
         '<%- describeText %></label></p>',
         ' <pre id="field_changedescription"',
         '      class="editable field-text-area field"',
-        '      data-rich-text="true" data-field-id="changedescription">',
+        '      data-field-id="changedescription">',
         '<%- closeDescription %></pre>',
         '<% } %>'
     ].join('')),
@@ -52,11 +52,12 @@ BannerView = Backbone.View.extend({
             fieldID: this.descriptionFieldID,
             fieldName: this.descriptionFieldName,
             elementOptional: true,
-            editMarkdown: true,
+            allowMarkdown: true,
             useExtraData: false,
-            formatter: function(view, data, $el) {
+            formatter: function(view, data, $el, fieldOptions) {
                 view.formatText($el, {
-                    newText: data
+                    newText: data,
+                    fieldOptions: fieldOptions
                 });
             }
         }, this.fieldOptions));
@@ -308,10 +309,11 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
         },
         {
             fieldID: 'description',
-            editMarkdown: true,
-            formatter: function(view, data, $el) {
+            allowMarkdown: true,
+            formatter: function(view, data, $el, fieldOptions) {
                 view.formatText($el, {
-                    newText: data
+                    newText: data,
+                    fieldOptions: fieldOptions
                 });
             }
         },
@@ -388,10 +390,11 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
         {
             fieldID: 'testing_done',
             fieldName: 'testingDone',
-            editMarkdown: true,
-            formatter: function(view, data, $el) {
+            allowMarkdown: true,
+            formatter: function(view, data, $el, fieldOptions) {
                 view.formatText($el, {
-                    newText: data
+                    newText: data,
+                    fieldOptions: fieldOptions
                 });
             }
         }
@@ -465,16 +468,28 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
 
         console.assert(fieldID);
 
-        this._fieldEditors[fieldID] = _.extend({
+        options = _.extend({
             selector: '#field_' + fieldID,
             elementOptional: false,
             fieldID: fieldID,
             fieldName: fieldID,
             formatter: null,
             jsonFieldName: fieldID,
+            jsonRichTextFieldName: options.allowMarkdown
+                                   ? fieldID + '_text_type'
+                                   : null,
             useEditIconOnly: false,
             useExtraData: true
         }, options);
+
+        /*
+         * This must be done one we have a solid fieldName set.
+         */
+        options.richTextAttr = options.allowMarkdown
+                               ? options.fieldName + 'RichText'
+                               : null,
+
+        this._fieldEditors[fieldID] = options;
     },
 
     /*
@@ -527,11 +542,12 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
                             data = data || [];
                             $el.html(data.join(', '));
                         };
-                    } else if ($field.data('rich-text')) {
-                        fieldInfo.editMarkdown = true;
-                        fieldInfo.formatter = function(view, data, $el) {
+                    } else if (fieldInfo.allowMarkdown) {
+                        fieldInfo.formatter = function(view, data, $el,
+                                                       fieldOptions) {
                             view.formatText($el, {
-                                newText: data
+                                newText: data,
+                                fieldOptions: fieldOptions
                             });
                         };
                     }
@@ -794,11 +810,22 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
      * tracker.
      */
     formatText: function($el, options) {
-        var reviewRequest = this.model.get('reviewRequest');
+        var reviewRequest = this.model.get('reviewRequest'),
+            fieldOptions;
 
-        RB.formatText($el, _.defaults({
+        options = _.defaults({
             bugTrackerURL: reviewRequest.get('bugTrackerURL')
-        }, options));
+        }, options);
+
+        fieldOptions = options.fieldOptions;
+
+        if (fieldOptions && fieldOptions.richTextAttr) {
+            options.richText = this.model.getDraftField(
+                fieldOptions.richTextAttr,
+                fieldOptions);
+        }
+
+        RB.formatText($el, options);
 
         $el.find('img').load(this._checkResizeLayout);
     },
@@ -970,7 +997,7 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
                 deferEventSetup: _.has(fieldOptions, 'autocomplete')
             };
 
-        if (fieldOptions.editMarkdown) {
+        if (fieldOptions.allowMarkdown) {
             _.extend(
                 options,
                 RB.MarkdownEditorView.getInlineEditorOptions({
@@ -991,7 +1018,7 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
                     model.incr('editCount');
                 },
                 cancel: _.bind(function() {
-                    if (fieldOptions.editMarkdown) {
+                    if (fieldOptions.allowMarkdown) {
                         $el.inlineEditor('buttons')
                            .find('.markdown-info')
                            .remove();
@@ -1000,7 +1027,7 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
                     model.decr('editCount');
                 }, this),
                 complete: _.bind(function(e, value) {
-                    if (fieldOptions.editMarkdown) {
+                    if (fieldOptions.allowMarkdown) {
                         $el.inlineEditor('buttons')
                            .find('.markdown-info')
                            .remove();
@@ -1257,7 +1284,8 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
                                              fieldOptions);
 
         if (_.isFunction(formatter)) {
-            formatter.call(fieldOptions.context || this, this, value, $el);
+            formatter.call(fieldOptions.context || this, this, value, $el,
+                           fieldOptions);
         } else {
             $el.text(value);
         }

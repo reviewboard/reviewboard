@@ -82,7 +82,9 @@ def file_attachment_comments(context, file_attachment):
         if review and (review.public or review.user == user):
             comments.append({
                 'comment_id': comment.id,
-                'text': escape(comment.text),
+                'text': markdown_escape_filter(comment.text,
+                                               comment.rich_text),
+                'rich_text': comment.rich_text,
                 'user': {
                     'username': escape(review.user.username),
                     'name': escape(review.user.get_full_name() or

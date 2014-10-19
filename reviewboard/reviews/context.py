@@ -1,12 +1,12 @@
 from __future__ import unicode_literals
 
 from django.utils import six
-from django.utils.html import escape
 
 from reviewboard.attachments.forms import CommentFileForm, UploadFileForm
 from reviewboard.diffviewer.models import DiffSet
 from reviewboard.reviews.forms import UploadDiffForm, UploadScreenshotForm
 from reviewboard.reviews.models import BaseComment
+from reviewboard.reviews.templatetags.reviewtags import markdown_escape_filter
 
 
 def comment_counts(user, all_comments, filediff, interfilediff=None):
@@ -19,7 +19,8 @@ def comment_counts(user, all_comments, filediff, interfilediff=None):
       Key                Description
       =========== ==================================================
       comment_id         The ID of the comment
-      text               The text of the comment
+      text               The plain or rich text of the comment
+      rich_text          The rich text flag for the comment
       line               The first line number
       num_lines          The number of lines this comment spans
       user               A dictionary containing "username" and "name" keys
@@ -46,7 +47,9 @@ def comment_counts(user, all_comments, filediff, interfilediff=None):
 
             comment_dict.setdefault(key, []).append({
                 'comment_id': comment.id,
-                'text': escape(comment.text),
+                'text': markdown_escape_filter(comment.text,
+                                               comment.rich_text),
+                'rich_text': comment.rich_text,
                 'line': comment.first_line,
                 'num_lines': comment.num_lines,
                 'user': {

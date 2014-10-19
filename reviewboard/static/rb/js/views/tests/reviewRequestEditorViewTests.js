@@ -31,13 +31,11 @@ suite('rb/views/ReviewRequestEditorView', function() {
             '   <div class="content">',
             '    <pre id="field_description"',
             '         data-field-id="description"',
-            '         data-rich-text="true"',
             '         class="field field-text-area editable"></pre>',
             '   </div>',
             '   <div class="content">',
             '    <pre id="field_testing_done"',
             '         data-field-id="testing_done"',
-            '         data-rich-text="true"',
             '         class="field field-text-area editable"></pre>',
             '   </div>',
             '   <div class="content">',
@@ -375,7 +373,7 @@ suite('rb/views/ReviewRequestEditorView', function() {
                 runs(function() {
                     $field.inlineEditor('startEdit');
 
-                    if ($field.data('rich-text')) {
+                    if ($field.hasClass('field-text-area')) {
                         $input.data('markdown-editor').setText('My Value');
                     } else {
                         $input.val('My Value');

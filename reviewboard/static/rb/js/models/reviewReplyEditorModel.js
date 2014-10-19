@@ -37,17 +37,21 @@ RB.ReviewReplyEditor = Backbone.Model.extend({
         var contextType = this.get('contextType'),
             reviewReply = this.get('reviewReply'),
             valueAttr,
+            richTextAttr,
             ReplyClass,
             obj;
 
         if (contextType === 'body_top') {
             valueAttr = 'bodyTop';
+            richTextAttr = 'bodyTopRichText';
             obj = reviewReply;
         } else if (contextType === 'body_bottom') {
             valueAttr = 'bodyBottom';
+            richTextAttr = 'bodyBottomRichText';
             obj = reviewReply;
         } else {
             valueAttr = 'text';
+            richTextAttr = 'richText';
             obj = this.get('replyObject');
 
             if (!obj) {
@@ -75,10 +79,12 @@ RB.ReviewReplyEditor = Backbone.Model.extend({
 
                 if (text) {
                     obj.set(valueAttr, text);
+                    obj.set(richTextAttr, true);
                     obj.set({
-                        richText: true,
-                        forceTextType: 'html'
+                        forceTextType: 'html',
+                        includeRawTextFields: true
                     });
+
                     obj.save({
                         success: function() {
                             this.set({

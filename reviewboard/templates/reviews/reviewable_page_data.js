@@ -6,11 +6,10 @@
             localSitePrefix: "{% if review_request.local_site %}s/{{review_request.local_site.name}}/{% endif %}",
             branch: "{{review_request_details.branch|escapejs}}",
             bugsClosed: {{review_request_details.get_bug_list|json_dumps}},
-{% if draft.changedesc %}
-            changeDescription: "{{draft.changedesc.text|markdown_escape:draft.changedesc.rich_text|escapejs}}",
-{% endif %}
             closeDescription: "{{close_description|markdown_escape:close_description_rich_text|escapejs}}",
+            closeDescriptionRichText: {{close_description_rich_text|yesno:'true,false'}},
             description: "{{review_request_details.description|markdown_escape:review_request_details.description_rich_text|escapejs}}",
+            descriptionRichText: {{review_request_details.description_rich_text|yesno:'true,false'}},
             hasDraft: {% if draft %}true{% else %}false{% endif %},
             lastUpdatedTimestamp: {{review_request.last_updated|json_dumps}},
             public: {% if review_request.public %}true{% else %}false{% endif %},
@@ -31,7 +30,14 @@
                     url: "{% url 'user' user %}"
                 }{% if not forloop.last %},{% endif %}
 {% endfor %}{% endspaceless %}],
-            testingDone: "{{review_request_details.testing_done|markdown_escape:review_request_details.testing_done_rich_text|escapejs}}"
+            testingDone: "{{review_request_details.testing_done|markdown_escape:review_request_details.testing_done_rich_text|escapejs}}",
+            testingDoneRichText: {{review_request_details.testing_done_rich_text|yesno:'true,false'}}
+        },
+        extraReviewRequestDraftData: {
+{% if draft.changedesc %}
+            changeDescription: "{{draft.changedesc.text|markdown_escape:draft.changedesc.rich_text|escapejs}}",
+            changeDescriptionRichText: {{draft.changedesc.rich_text|yesno:'true,false'}}
+{% endif %}
         },
         editorData: {
             mutableByUser: {{mutable_by_user|yesno:'true,false'}},

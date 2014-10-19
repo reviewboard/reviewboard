@@ -340,7 +340,10 @@ RB.ReviewDialogView = Backbone.View.extend({
             }));
         });
 
-        this.model.set('includeRawTextFields', true);
+        this.model.set({
+            forceTextType: 'markdown',
+            includeRawTextFields: true
+        });
 
         this.options.reviewRequestEditor.incr('editCount');
     },
@@ -390,6 +393,7 @@ RB.ReviewDialogView = Backbone.View.extend({
 
         this.model.ready({
             data: {
+                'force-text-type': 'markdown',
                 'include-raw-text-fields': true
             },
             ready: function() {
@@ -617,7 +621,8 @@ RB.ReviewDialogView = Backbone.View.extend({
                 bodyTop: this._bodyTopEditor.getText(),
                 bodyBottom: this._bodyBottomEditor.getText(),
                 'public': publish,
-                richText: true
+                bodyTopRichText: true,
+                bodyBottomRichText: true
             });
 
             this.model.save({

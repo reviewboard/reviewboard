@@ -452,8 +452,6 @@ class BaseTextAreaField(BaseEditableField):
         attrs = super(BaseTextAreaField, self).get_data_attributes()
 
         if self.always_render_markdown or self.is_text_markdown(self.value):
-            attrs['rich-text'] = 'true'
-
             if self.is_text_markdown(self.value):
                 norm_value = self.value
             else:
