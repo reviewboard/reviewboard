@@ -594,7 +594,7 @@ RB.BaseResource = Backbone.Model.extend({
             data = options.data || {};
 
             if (!_.isEmpty(this.extraQueryArgs)) {
-                _.extend(data, this.extraQueryArgs);
+                data = _.extend({}, this.extraQueryArgs, data);
             }
         } else {
             data = options.form ? null

@@ -42,7 +42,8 @@ RB.BaseComment = RB.BaseResource.extend({
     }, RB.BaseResource.prototype.defaults),
 
     extraQueryArgs: {
-        'force-text-type': 'html'
+        'force-text-type': 'html',
+        'include-raw-text-fields': true
     },
 
     supportsExtraData: true,
@@ -95,12 +96,13 @@ RB.BaseComment = RB.BaseResource.extend({
      * This must be overloaded by subclasses, and the parent version called.
      */
     parseResourceData: function(rsp) {
-        var data = {
-            issueOpened: rsp.issue_opened,
-            issueStatus: rsp.issue_status,
-            richText: rsp.text_type === 'markdown',
-            text: rsp.text
-        };
+        var rawTextFields = rsp.raw_text_fields || rsp,
+            data = {
+                issueOpened: rsp.issue_opened,
+                issueStatus: rsp.issue_status,
+                richText: rawTextFields.text_type === 'markdown',
+                text: rsp.text
+            };
 
         if (rsp.raw_text_fields) {
             data.rawTextFields = {

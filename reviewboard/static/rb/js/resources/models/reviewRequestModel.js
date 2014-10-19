@@ -18,47 +18,53 @@ RB.ReviewRequest = RB.BaseResource.extend({
         bugsClosed: null,
         commitID: null,
         closeDescription: null,
+        closeDescriptionRichText: false,
         dependsOn: [],
         description: null,
+        descriptionRichText: false,
         draftReview: null,
         lastUpdated: null,
         localSitePrefix: null,
         'public': null,
         repository: null,
         reviewURL: null,
-        richText: false,
         state: null,
         summary: null,
         targetGroups: [],
         targetPeople: [],
-        testingDone: null
+        testingDone: null,
+        testingDoneRichText: false
     }),
 
     rspNamespace: 'review_request',
 
     extraQueryArgs: {
-        'force-text-type': 'html'
+        'force-text-type': 'html',
+        'include-raw-text-fields': true
     },
 
-    initialize: function() {
-        RB.BaseResource.prototype.initialize.apply(this, arguments);
+    initialize: function(attrs, options) {
+        options = options || {};
+
+        RB.BaseResource.prototype.initialize.call(this, attrs, options);
 
         this.reviews = new Backbone.Collection([], {
             model: RB.Review
         });
 
-        this.draft = new RB.DraftReviewRequest({
+        this.draft = new RB.DraftReviewRequest(_.defaults({
             parentObject: this,
             branch: this.get('branch'),
             bugsClosed: this.get('bugsClosed'),
             dependsOn: this.get('dependsOn'),
             description: this.get('description'),
-            richText: this.get('richText'),
+            descriptionRichText: this.get('descriptionRichText'),
             summary: this.get('summary'),
             targetGroups: this.get('targetGroups'),
             targetPeople: this.get('targetPeople'),
-            testingDone: this.get('testingDone')
-        });
+            testingDone: this.get('testingDone'),
+            testingDoneRichText: this.get('testingDoneRichText'),
+        }, options.extraDraftAttrs));
     },
 
     url: function() {
@@ -350,26 +356,32 @@ RB.ReviewRequest = RB.BaseResource.extend({
      */
     parseResourceData: function(rsp) {
         var state = {
-            pending: RB.ReviewRequest.PENDING,
-            discarded: RB.ReviewRequest.CLOSE_DISCARDED,
-            submitted: RB.ReviewRequest.CLOSE_SUBMITTED
-        }[rsp.status];
+                pending: RB.ReviewRequest.PENDING,
+                discarded: RB.ReviewRequest.CLOSE_DISCARDED,
+                submitted: RB.ReviewRequest.CLOSE_SUBMITTED
+            }[rsp.status],
+            rawTextFields = rsp.raw_text_fields || rsp;
 
         return {
             branch: rsp.branch,
             bugsClosed: rsp.bugs_closed,
             closeDescription: rsp.close_description,
+            closeDescriptionRichText:
+                rawTextFields.close_description_text_type === 'markdown',
             dependsOn: rsp.depends_on,
             description: rsp.description,
+            descriptionRichText:
+                rawTextFields.description_text_type === 'markdown',
             lastUpdated: rsp.last_updated,
             'public': rsp['public'],
             reviewURL: rsp.url,
-            richText: rsp.text_type === 'markdown',
             summary: rsp.summary,
             state: state,
             targetGroups: rsp.target_groups,
             targetPeople: rsp.target_people,
-            testingDone: rsp.testing_done
+            testingDone: rsp.testing_done,
+            testingDoneRichText:
+                rawTextFields.testing_done_text_type === 'markdown'
         };
     }
 }, {

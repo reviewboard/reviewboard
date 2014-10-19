@@ -11,12 +11,13 @@ RB.DraftReviewRequest = RB.BaseResource.extend(_.defaults({
         changeDescription: null,
         dependsOn: [],
         description: null,
+        descriptionRichText: false,
         'public': null,
-        richText: false,
         summary: null,
         targetGroups: [],
         targetPeople: [],
-        testingDone: null
+        testingDone: null,
+        testingDoneRichText: false
     }, RB.BaseResource.prototype.defaults),
 
     rspNamespace: 'draft',
@@ -26,7 +27,8 @@ RB.DraftReviewRequest = RB.BaseResource.extend(_.defaults({
     expandedFields: ['depends_on', 'target_people', 'target_groups'],
 
     extraQueryArgs: {
-        'force-text-type': 'html'
+        'force-text-type': 'html',
+        'include-raw-text-fields': true
     },
 
     url: function() {
@@ -101,18 +103,25 @@ RB.DraftReviewRequest = RB.BaseResource.extend(_.defaults({
     },
 
     parseResourceData: function(rsp) {
+        var rawTextFields = rsp.raw_text_fields || rsp;
+
         return {
             branch: rsp.branch,
             bugsClosed: rsp.bugs_closed,
             changeDescription: rsp.changedescription,
+            changeDescriptionRichText:
+                rawTextFields.changedescription_text_type === 'markdown',
             dependsOn: rsp.depends_on,
             description: rsp.description,
             'public': rsp['public'],
-            richText: rsp.text_type === 'markdown',
+            descriptionRichText:
+                rawTextFields.description_text_type === 'markdown',
             summary: rsp.summary,
             targetGroups: rsp.target_groups,
             targetPeople: rsp.target_people,
-            testingDone: rsp.testing_done
+            testingDone: rsp.testing_done,
+            testingDoneRichText:
+                rawTextFields.testing_done_text_type === 'markdown'
         };
     }
 }, RB.DraftResourceModelMixin),

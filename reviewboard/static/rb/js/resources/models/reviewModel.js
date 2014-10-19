@@ -13,9 +13,10 @@ RB.Review = RB.BaseResource.extend({
 
         shipIt: false,
         'public': false,
-        richText: false,
         bodyTop: null,
+        bodyTopRichText: false,
         bodyBottom: null,
+        bodyBottomRichText: false,
         draftReply: null,
 
         /*
@@ -36,16 +37,20 @@ RB.Review = RB.BaseResource.extend({
     rspNamespace: 'review',
 
     extraQueryArgs: {
-        'force-text-type': 'html'
+        'force-text-type': 'html',
+        'include-raw-text-fields': true
     },
 
     toJSON: function() {
         var data = {
             force_text_type: this.get('forceTextType') || undefined,
-            text_type: this.get('richText') ? 'markdown' : 'plain',
             ship_it: this.get('shipIt'),
             body_top: this.get('bodyTop'),
-            body_bottom: this.get('bodyBottom')
+            body_top_text_type: this.get('bodyTopRichText')
+                                ? 'markdown' : 'plain',
+            body_bottom: this.get('bodyBottom'),
+            body_bottom_text_type: this.get('bodyBottomRichText')
+                                   ? 'markdown' : 'plain'
         };
 
         if (this.get('public')) {
@@ -60,12 +65,17 @@ RB.Review = RB.BaseResource.extend({
     },
 
     parseResourceData: function(rsp) {
+        var rawTextFields = rsp.raw_text_fields || rsp;
+
         var data = {
             shipIt: rsp.ship_it,
             bodyTop: rsp.body_top,
+            bodyTopRichText:
+                rawTextFields.body_top_text_type === 'markdown',
             bodyBottom: rsp.body_bottom,
+            bodyBottomRichText:
+                rawTextFields.body_bottom_text_type === 'markdown',
             'public': rsp['public'],
-            richText: rsp.text_type === 'markdown',
             timestamp: rsp.timestamp
         };
 

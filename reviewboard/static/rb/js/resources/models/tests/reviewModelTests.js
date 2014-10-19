@@ -45,7 +45,8 @@ suite('rb/resources/models/Review', function() {
                     body_top: 'foo',
                     body_bottom: 'bar',
                     'public': false,
-                    text_type: 'markdown',
+                    body_top_text_type: 'markdown',
+                    body_bottom_text_type: 'plain',
                     ship_it: false
                 }
             });
@@ -55,7 +56,8 @@ suite('rb/resources/models/Review', function() {
             expect(data.bodyTop).toBe('foo');
             expect(data.bodyBottom).toBe('bar');
             expect(data['public']).toBe(false);
-            expect(data.richText).toBe(true);
+            expect(data.bodyTopRichText).toBe(true);
+            expect(data.bodyBottomRichText).toBe(false);
             expect(data.shipIt).toBe(false);
         });
     });
@@ -96,13 +98,23 @@ suite('rb/resources/models/Review', function() {
             });
         });
 
-        describe('richText field', function() {
+        describe('bodyTopRichText field', function() {
             it('With value', function() {
                 var data;
 
-                model.set('richText', true);
+                model.set('bodyTopRichText', true);
                 data = model.toJSON();
-                expect(data.text_type).toBe('markdown');
+                expect(data.body_top_text_type).toBe('markdown');
+            });
+        });
+
+        describe('bodyBottomRichText field', function() {
+            it('With value', function() {
+                var data;
+
+                model.set('bodyBottomRichText', true);
+                data = model.toJSON();
+                expect(data.body_bottom_text_type).toBe('markdown');
             });
         });
 
