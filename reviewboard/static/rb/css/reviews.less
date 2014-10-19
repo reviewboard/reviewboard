@@ -1184,19 +1184,10 @@
   .edit-field {
     margin: 1em 0;
 
-    label {
-      .inline-editor-label();
-    }
-
-    textarea {
-      background-color: @textarea-editor-background;
-      border: @textarea-border;
-      font-size: @textarea-font-size;
-      margin: @textarea-editor-margin;
-      padding: @textarea-editor-padding;
-      width: 100%;
-      height: 1.5em;
-      .box-sizing(border-box);
+    .comment-text-field {
+      label {
+        .inline-editor-label();
+      }
     }
   }
 
@@ -1604,10 +1595,6 @@
     border: 0;
     margin: 0 0 6px 0;
     padding: 0;
-  }
-
-  textarea {
-    font-size: 10pt;
   }
 
   img.ui-resizable-grip {

@@ -1020,7 +1020,7 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
         if (fieldOptions.allowMarkdown) {
             _.extend(
                 options,
-                RB.MarkdownEditorView.getInlineEditorOptions({
+                RB.TextEditorView.getInlineEditorOptions({
                     minHeight: 0
                 }),
                 {
@@ -1038,21 +1038,10 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
                     model.incr('editCount');
                 },
                 cancel: _.bind(function() {
-                    if (fieldOptions.allowMarkdown) {
-                        $el.inlineEditor('buttons')
-                           .find('.markdown-info')
-                           .remove();
-                    }
                     this._scheduleResizeLayout();
                     model.decr('editCount');
                 }, this),
                 complete: _.bind(function(e, value) {
-                    if (fieldOptions.allowMarkdown) {
-                        $el.inlineEditor('buttons')
-                           .find('.markdown-info')
-                           .remove();
-                    }
-
                     this._scheduleResizeLayout();
                     model.decr('editCount');
                     model.setDraftField(

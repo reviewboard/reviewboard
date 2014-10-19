@@ -226,7 +226,7 @@ RB.CommentDialogView = Backbone.View.extend({
          * We need to handle keypress here, rather than in events above,
          * because jQuery will actually handle it. Backbone fails to.
          */
-        this._textEditor = new RB.MarkdownEditorView({
+        this._textEditor = new RB.TextEditorView({
             el: this._$draftForm.find('.comment-text-field'),
             autoSize: false,
             minHeight: 0

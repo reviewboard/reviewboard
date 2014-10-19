@@ -94,7 +94,7 @@ BaseCommentView = Backbone.View.extend({
                 openAnIssueText: gettext('Open an issue')
             })));
 
-        this.textEditor = new RB.MarkdownEditorView({
+        this.textEditor = new RB.TextEditorView({
             el: this.$('.comment-text-field')
         });
         this.textEditor.render();
@@ -379,13 +379,13 @@ RB.ReviewDialogView = Backbone.View.extend({
         this._$comments = this.$el.children('.comments');
         this._$spinner = this.$el.children('.spinner');
 
-        this._bodyTopEditor = new RB.MarkdownEditorView({
+        this._bodyTopEditor = new RB.TextEditorView({
             el: this.$('.body-top')
         });
         this._bodyTopEditor.render();
         this._bodyTopEditor.show();
 
-        this._bodyBottomEditor = new RB.MarkdownEditorView({
+        this._bodyBottomEditor = new RB.TextEditorView({
             el: this.$('.body-bottom')
         });
         this._bodyBottomEditor.render();

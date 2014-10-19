@@ -115,7 +115,7 @@ RB.ReviewReplyEditorView = Backbone.View.extend({
                 multiline: true,
                 hasRawValue: true,
                 rawValue: this._$editor.data('raw-value') || ''
-            }, RB.MarkdownEditorView.getInlineEditorOptions()))
+            }, RB.TextEditorView.getInlineEditorOptions()))
             .removeAttr('data-raw-value')
             .on({
                 beginEdit: function() {
@@ -132,10 +132,6 @@ RB.ReviewReplyEditorView = Backbone.View.extend({
                     this.model.save();
                 }, this),
                 cancel: _.bind(function() {
-                    $draftComment.find('pre.reviewtext')
-                                 .inlineEditor('buttons')
-                                 .find('.markdown-info')
-                                 .remove();
                     if (pageEditState) {
                         pageEditState.decr('editCount');
                     }
