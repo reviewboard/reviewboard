@@ -48,10 +48,16 @@ class AccountSettingsForm(AccountPageForm):
         label=_('Get e-mail notification for review requests and reviews'),
         required=False)
 
+    should_send_own_updates = forms.BooleanField(
+        label=_('Get e-mail notifications for my own activity'),
+        required=False,
+    )
+
     def load(self):
         self.set_initial({
             'open_an_issue': self.profile.open_an_issue,
             'should_send_email': self.profile.should_send_email,
+            'should_send_own_updates': self.profile.should_send_own_updates,
             'syntax_highlighting': self.profile.syntax_highlighting,
             'timezone': self.profile.timezone,
         })
@@ -68,6 +74,8 @@ class AccountSettingsForm(AccountPageForm):
 
         self.profile.open_an_issue = self.cleaned_data['open_an_issue']
         self.profile.should_send_email = self.cleaned_data['should_send_email']
+        self.profile.should_send_own_updates = \
+            self.cleaned_data['should_send_own_updates']
         self.profile.timezone = self.cleaned_data['timezone']
         self.profile.save()
 
