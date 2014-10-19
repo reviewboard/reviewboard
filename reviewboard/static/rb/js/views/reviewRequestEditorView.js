@@ -476,7 +476,7 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
             formatter: null,
             jsonFieldName: fieldID,
             jsonRichTextFieldName: options.allowMarkdown
-                                   ? fieldID + '_text_type'
+                                   ? fieldID + '_rich_text'
                                    : null,
             useEditIconOnly: false,
             useExtraData: true
@@ -521,6 +521,7 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
                 var $field = $(field),
                     fieldID = $field.data('field-id'),
                     isCommaEditable,
+                    richTextFieldID,
                     fieldInfo,
                     rawValue;
 
@@ -533,8 +534,27 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
                     };
 
                     rawValue = $field.data('raw-value');
-                    extraData[fieldID] = rawValue || '';
+
+                    if (rawValue === undefined) {
+                        extraData[fieldID] = $field.text();
+                    } else {
+                        extraData[fieldID] = rawValue || '';
+                    }
+
                     $field.removeAttr('data-raw-value');
+
+                    if ($field.data('allow-markdown')) {
+                        fieldInfo.allowMarkdown = true;
+
+                        if (fieldID === 'text') {
+                            richTextFieldID = 'rich_text';
+                        } else {
+                            richTextFieldID = fieldID + '_rich_text';
+                        }
+
+                        extraData[richTextFieldID] =
+                            $field.hasClass('rich-text');
+                    }
 
                     if (isCommaEditable) {
                         fieldInfo.useEditIconOnly = true;

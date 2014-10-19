@@ -88,14 +88,20 @@ class MarkdownFieldsMixin(object):
             raw_extra_data = {}
             extra_data = data['extra_data']
 
-            for field, value in six.iteritems(obj.extra_data):
+            # Work on a copy of extra_data, in case we change it.
+            for field, value in six.iteritems(obj.extra_data.copy()):
                 if not self.get_extra_data_field_supports_markdown(obj, field):
                     continue
 
+                # Note that we assume all custom fields have rich text by
+                # default. This is to preserve compatibility with older
+                # fields. New fields will always have the rich text flag
+                # set to the proper value.
                 self._serialize_text_info(
                     obj, extra_data, raw_extra_data, field, force_text_type,
                     include_raw_text_fields,
-                    lambda obj, data, field, default: data.get(field, default))
+                    lambda obj, data, field, default: data.get(field, default),
+                    default_is_rich_text=True)
 
         if include_raw_text_fields:
             data['raw_text_fields'] = raw_fields

@@ -126,11 +126,12 @@ RB.ReviewRequestEditor = Backbone.Model.extend({
             if (options.useExtraData) {
                 jsonTextTypeFieldName = 'extra_data.' +
                                         options.jsonRichTextFieldName;
+                data[jsonTextTypeFieldName] = true;
             } else {
                 jsonTextTypeFieldName = options.jsonRichTextFieldName;
+                data[jsonTextTypeFieldName] = 'markdown';
             }
 
-            data[jsonTextTypeFieldName] = 'markdown';
             data.force_text_type = 'html';
             data.include_raw_text_fields = true;
         }

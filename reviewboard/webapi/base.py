@@ -189,6 +189,16 @@ class WebAPIResource(DjbletsWebAPIResource):
                 key = key[EXTRA_DATA_LEN:]
 
                 if value != '':
+                    if value in ('true', 'True', 'TRUE'):
+                        value = True
+                    elif value in ('false', 'False', 'FALSE'):
+                        value = False
+                    else:
+                        try:
+                            value = int(value)
+                        except ValueError:
+                            pass
+
                     extra_data[key] = value
                 elif key in extra_data:
                     del extra_data[key]

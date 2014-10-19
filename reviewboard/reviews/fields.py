@@ -431,7 +431,12 @@ class BaseTextAreaField(BaseEditableField):
         This can be overridden if the field needs to check something else
         to determine if the text is in Markdown format.
         """
-        return True
+        if self.field_id == 'text':
+            rich_text_key = 'rich_text'
+        else:
+            rich_text_key = '%s_rich_text' % self.field_id
+
+        return self.review_request_details.extra_data.get(rich_text_key, True)
 
     def get_css_classes(self):
         """Returns the list of CSS classes.
@@ -451,8 +456,11 @@ class BaseTextAreaField(BaseEditableField):
     def get_data_attributes(self):
         attrs = super(BaseTextAreaField, self).get_data_attributes()
 
-        if self.always_render_markdown or self.is_text_markdown(self.value):
-            if self.is_text_markdown(self.value):
+        if self.enable_markdown:
+            attrs['allow-markdown'] = True
+
+            if (self.always_render_markdown or
+                self.is_text_markdown(self.value)):
                 norm_value = self.value
             else:
                 norm_value = markdown_escape(self.value)

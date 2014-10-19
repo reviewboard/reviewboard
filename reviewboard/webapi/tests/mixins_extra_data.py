@@ -13,8 +13,8 @@ class ExtraDataListMixin(object):
             self._login_user(admin=True)
 
         extra_fields = {
-            'extra_data.foo': '123',
-            'extra_data.bar': '456',
+            'extra_data.foo': 123,
+            'extra_data.bar': 456,
             'extra_data.baz': '',
             'ignored': 'foo',
         }
@@ -47,8 +47,8 @@ class ExtraDataItemMixin(object):
             self._login_user(admin=True)
 
         extra_fields = {
-            'extra_data.foo': '123',
-            'extra_data.bar': '456',
+            'extra_data.foo': 123,
+            'extra_data.bar': 456,
             'extra_data.baz': '',
             'ignored': 'foo',
         }
