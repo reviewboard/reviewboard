@@ -29,7 +29,7 @@
 {%   for key, value in review_ui.get_js_model_data.items %}
                     {{key|json_dumps}}: {{value|json_dumps}},
 {%   endfor %}
-                    caption: '{{caption}}',
+                    caption: '{{caption|escapejs}}',
                     reviewRequest: page.reviewRequest,
                     serializedCommentBlocks: {{review_ui.get_comments_json}}
                 })
