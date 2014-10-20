@@ -177,9 +177,9 @@ comment again.
 Reading Existing Comments
 =========================
 
-The diff viewer will show blue comment flags along the left-hand side
-next to the line numbers that were already reviewed. The number inside the
-comment flag indicates how many comments were made on that line.
+Any existing comments will show up as blue clickable comment flags along the
+left-hand side of the diff viewer. Each comment flag corresponds to a line
+containing a comment.
 
 If you move the mouse cursor over the comment flag, a tooltip will appear
 showing a summary of the comments made.
