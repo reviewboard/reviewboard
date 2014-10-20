@@ -7,9 +7,10 @@ Reviewing File Attachments
 .. versionadded:: 1.6
 
 File attachments can be reviewed using Review Board. Some file types, such as
-images, have special interfaces for doing reviews.
-
-To learn how to review image files, read :ref:`Reviewing Images <reviewing-images>`.
+images, have special interfaces for doing reviews. For image files, see
+:ref:`Reviewing Images <reviewing-images>`. For Markdown files, see
+:ref:`Reviewing Markdown Files <reviewing-markdown>`. For other text files, see
+:ref:`Reviewing Text Files <reviewing-text-files>`.
 
 For other files, reviewers can download the files, and add comments to the
 attachment as a whole.
