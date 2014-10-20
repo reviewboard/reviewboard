@@ -76,8 +76,7 @@ class ChangeResource(MarkdownFieldsMixin, WebAPIResource):
         'text': {
             'type': six.text_type,
             'description': 'The description of the change written by the '
-                           'submitter.',
-            'supports_text_types': True,
+                           'submitter.'
         },
         'text_type': {
             'type': MarkdownFieldsMixin.TEXT_TYPES,
@@ -153,6 +152,9 @@ class ChangeResource(MarkdownFieldsMixin, WebAPIResource):
                 pass
 
         return fields_changed
+
+    def serialize_text_field(self, obj, **kwargs):
+        return self.normalize_text(obj, obj.text, **kwargs)
 
     def has_access_permissions(self, request, obj, *args, **kwargs):
         return obj.review_request.get().is_accessible_by(request.user)

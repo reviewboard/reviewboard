@@ -15,22 +15,14 @@ class MarkdownFieldsMixin(object):
     Any resource implementing this is assumed to have at least one
     Markdown-capable text field.
 
-    Clients can pass ``?force-text-type=`` (for GET) or ``force_text_type=``
-    (for POST/PUT) with a value of ``plain``, ``markdown`` or ``html`` to
-    return the given text fields in the payload using the requested format.
+    Clients can pass ``?force-text-type=`` with a value of ``plain`` or
+    ``markdown`` to provide those text fields in the requested format.
 
     When ``markdown`` is specified, the Markdown text fields will return valid
     Markdown content, escaping if necessary.
 
     When ``plain`` is specified, plain text will be returned instead. If
     the content was in Markdown before, this will unescape the content.
-
-    When ``html`` is specified, the content will be transformed into HTML
-    suitable for display.
-
-    Clients can also pass ``?include-raw-text-fields=1`` (for GET) or
-    ``include_raw_text_fields=`` (for POST/PUT) to return the raw fields
-    within a special ``raw_text_fields`` entry in the resource payload.
     """
     TEXT_TYPE_PLAIN = 'plain'
     TEXT_TYPE_MARKDOWN = 'markdown'
@@ -39,51 +31,19 @@ class MarkdownFieldsMixin(object):
     TEXT_TYPES = (TEXT_TYPE_PLAIN, TEXT_TYPE_MARKDOWN, TEXT_TYPE_HTML)
     SAVEABLE_TEXT_TYPES = (TEXT_TYPE_PLAIN, TEXT_TYPE_MARKDOWN)
 
-    def serialize_object(self, obj, *args, **kwargs):
-        """Serializes the object, transforming text fields.
-
-        This is a specialization of serialize_object that transforms any
-        text fields that support text types. It also handles attaching
-        the raw text to the payload, on request.
-        """
-        data = super(MarkdownFieldsMixin, self).serialize_object(
-            obj, *args, **kwargs)
-
-        requested_text_type = self._get_requested_text_type(obj, **kwargs)
-
-        if requested_text_type:
-            include_raw_text_fields = \
-                self._get_include_raw_text_fields(obj, **kwargs)
-            raw_fields = {}
-
-            for field, field_info in six.iteritems(self.fields):
-                if field_info.get('supports_text_types'):
-                    value = data.get(field)
-                    data[field] = self._normalize_text(obj, value, **kwargs)
-
-                    if include_raw_text_fields:
-                        raw_fields[field] = value
-
-            if 'extra_data' in data:
-                raw_extra_data = {}
-                extra_data = data['extra_data']
-
-                for key, value in six.iteritems(obj.extra_data):
-                    if (value and
-                        self.get_extra_data_field_supports_markdown(obj, key)):
-                        extra_data[key] = self._normalize_text(obj, value,
-                                                               **kwargs)
-
-                        if include_raw_text_fields:
-                            raw_extra_data[key] = value
-
-            if include_raw_text_fields:
-                data['raw_text_fields'] = raw_fields
-
-        return data
-
     def serialize_text_type_field(self, obj, request=None, **kwargs):
-        return self._get_requested_text_type(obj, request)
+        return self.get_requested_text_type(obj, request)
+
+    def serialize_extra_data_field(self, obj, **kwargs):
+        extra_data = {}
+
+        for key, value in six.iteritems(obj.extra_data):
+            if value and self.get_extra_data_field_supports_markdown(obj, key):
+                extra_data[key] = self.normalize_text(obj, value, **kwargs)
+            else:
+                extra_data[key] = value
+
+        return extra_data
 
     def get_extra_data_field_supports_markdown(self, obj, key):
         """Returns whether a particular field in extra_data supports Markdown.
@@ -93,58 +53,35 @@ class MarkdownFieldsMixin(object):
         """
         return False
 
-    def _get_requested_text_type(self, obj, request=None, **kwargs):
+    def get_requested_text_type(self, obj, request=None):
         """Returns the text type requested by the user.
 
         If the user did not request a text type, or a valid text type,
         this will fall back to the proper type for the given object.
         """
-        if request and hasattr(request, '_rbapi_requested_text_type'):
-            text_type = request._rbapi_requested_text_type
-        else:
-            if request:
-                if request.method == 'GET':
-                    text_type = request.GET.get('force-text-type')
-                else:
-                    text_type = request.POST.get('force_text_type')
+        if request:
+            if request.method == 'GET':
+                text_type = request.GET.get('force-text-type')
             else:
-                text_type = None
+                text_type = request.POST.get('force_text_type')
+        else:
+            text_type = None
 
-            if not text_type or text_type not in self.TEXT_TYPES:
-                if obj.rich_text:
-                    text_type = self.TEXT_TYPE_MARKDOWN
-                else:
-                    text_type = self.TEXT_TYPE_PLAIN
-
-            if request:
-                request._rbapi_requested_text_type = text_type
+        if not text_type or text_type not in self.TEXT_TYPES:
+            if obj.rich_text:
+                text_type = self.TEXT_TYPE_MARKDOWN
+            else:
+                text_type = self.TEXT_TYPE_PLAIN
 
         return text_type
 
-    def _get_include_raw_text_fields(self, obj, request=None, **kwargs):
-        """Returns whether raw text fields should be returned in the payload.
-
-        If ``?include-raw-text-fields=1`` (for GET) or
-        ``include_raw_text_fields=`` (for POST/PUT) is passed, this will
-        return True. Otherwise, it will return False.
-        """
-        include_raw_text = False
-
-        if request:
-            if request.method == 'GET':
-                include_raw_text = request.GET.get('include-raw-text-fields')
-            else:
-                include_raw_text = request.POST.get('include_raw_text_fields')
-
-        return include_raw_text in ('1', 'true')
-
-    def _normalize_text(self, obj, text, request=None, **kwargs):
+    def normalize_text(self, obj, text, request=None, **kwargs):
         """Normalizes text to the proper format.
 
         This considers the requested text format, and whether or not the
         object is set for having rich text.
         """
-        text_type = self._get_requested_text_type(obj, request)
+        text_type = self.get_requested_text_type(obj, request)
 
         if text_type == self.TEXT_TYPE_PLAIN and obj.rich_text:
             text = markdown_unescape(text)
