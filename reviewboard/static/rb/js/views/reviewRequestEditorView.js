@@ -55,9 +55,7 @@ BannerView = Backbone.View.extend({
             editMarkdown: true,
             useExtraData: false,
             formatter: function(view, data, $el) {
-                view.formatText($el, {
-                    newText: data
-                });
+                view.formatText($el, data);
             }
         }, this.fieldOptions));
 
@@ -310,9 +308,7 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
             fieldID: 'description',
             editMarkdown: true,
             formatter: function(view, data, $el) {
-                view.formatText($el, {
-                    newText: data
-                });
+                view.formatText($el, data);
             }
         },
         {
@@ -390,9 +386,7 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
             fieldName: 'testingDone',
             editMarkdown: true,
             formatter: function(view, data, $el) {
-                view.formatText($el, {
-                    newText: data
-                });
+                view.formatText($el, data);
             }
         }
     ],
@@ -524,9 +518,7 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
                     } else if ($field.data('rich-text')) {
                         fieldInfo.editMarkdown = true;
                         fieldInfo.formatter = function(view, data, $el) {
-                            view.formatText($el, {
-                                newText: data
-                            });
+                            view.formatText($el, data);
                         };
                     }
 
@@ -569,9 +561,7 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
             _.each(this.$('.field-text-area'), function(el) {
                 var $el = $(el);
 
-                this.formatText($el, {
-                    newText: $el.text()
-                });
+                this.formatText($el, $el.text());
             }, this);
 
             if (this.model.get('editable')) {
@@ -791,13 +781,10 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
      * This is a wrapper around RB.formatText that handles passing in the bug
      * tracker.
      */
-    formatText: function($el, options) {
+    formatText: function($el, text) {
         var reviewRequest = this.model.get('reviewRequest');
 
-        RB.formatText($el, _.defaults({
-            newText: options.newText || '',
-            bugTrackerURL: reviewRequest.get('bugTrackerURL')
-        }, options));
+        RB.formatText($el, text || '', reviewRequest.get('bugTrackerURL'));
 
         $el.find('img').load(this._checkResizeLayout);
     },

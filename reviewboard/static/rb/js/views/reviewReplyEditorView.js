@@ -69,10 +69,8 @@ RB.ReviewReplyEditorView = Backbone.View.extend({
             var reviewRequest = this.model.get('review').get('parentObject');
 
             if (this._$editor) {
-                RB.formatText(this._$editor, {
-                    newText: text,
-                    bugTrackerURL: reviewRequest.get('bugTrackerURL')
-                });
+                RB.formatText(this._$editor, text,
+                              reviewRequest.get('bugTrackerURL'));
             }
         }, this);
 
@@ -180,10 +178,8 @@ RB.ReviewReplyEditorView = Backbone.View.extend({
             .appendTo(this._$commentsList);
 
         if (options.text) {
-            RB.formatText($el.find('.reviewtext'), {
-                newText: options.text,
-                bugTrackerURL: reviewRequest.get('bugTrackerURL')
-            });
+            RB.formatText($el.find('.reviewtext'), options.text,
+                          reviewRequest.get('bugTrackerURL'));
         }
 
         return $el;
