@@ -58,7 +58,7 @@ RB.ReviewReplyEditorView = Backbone.View.extend({
 
             this.model.set({
                 commentID: $draftComment.data('comment-id'),
-                text: $draftComment.find('pre.reviewtext').html(),
+                text: $draftComment.find('pre.reviewtext').text(),
                 timestamp: new Date($time.attr('datetime')),
                 hasDraft: true
             });
@@ -106,17 +106,13 @@ RB.ReviewReplyEditorView = Backbone.View.extend({
 
         this._$draftComment = $draftComment;
 
-        this._$editor = $draftComment.find('pre.reviewtext');
-        this._$editor
+        this._$editor = $draftComment.find('pre.reviewtext')
             .inlineEditor(_.extend({
                 cls: 'inline-comment-editor',
                 editIconClass: 'rb-icon rb-icon-edit',
                 notifyUnchangedCompletion: true,
-                multiline: true,
-                hasRawValue: true,
-                rawValue: this._$editor.data('raw-value') || ''
+                multiline: true
             }, RB.MarkdownEditorView.getInlineEditorOptions()))
-            .removeAttr('data-raw-value')
             .on({
                 beginEdit: function() {
                     if (pageEditState) {

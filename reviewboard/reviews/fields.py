@@ -437,14 +437,16 @@ class BaseTextAreaField(BaseEditableField):
         """Returns the list of CSS classes.
 
         If Markdown is enabled, and the text is in Markdown format,
-        this will add a "rich-text" field.
+        this will add a loading spinner.
         """
         css_classes = super(BaseTextAreaField, self).get_css_classes()
 
         if (self.enable_markdown and self.value and
             (self.always_render_markdown or
              self.is_text_markdown(self.value))):
-            css_classes.add('rich-text')
+            # Only display a loading indicator if there's some processing
+            # to be done on this field.
+            css_classes.add('loading')
 
         return css_classes
 
@@ -452,14 +454,7 @@ class BaseTextAreaField(BaseEditableField):
         attrs = super(BaseTextAreaField, self).get_data_attributes()
 
         if self.always_render_markdown or self.is_text_markdown(self.value):
-            attrs['rich-text'] = 'true'
-
-            if self.is_text_markdown(self.value):
-                norm_value = self.value
-            else:
-                norm_value = markdown_escape(self.value)
-
-            attrs['raw-value'] = norm_value
+            attrs['rich-text'] = True
 
         return attrs
 
@@ -471,10 +466,10 @@ class BaseTextAreaField(BaseEditableField):
         """
         text = text or ''
 
-        if self.enable_markdown and self.value and self.is_text_markdown(text):
-            return render_markdown(text)
-        else:
-            return escape(text)
+        if self.enable_markdown and not self.is_text_markdown(text):
+            text = markdown_escape(text)
+
+        return escape(text)
 
     def render_change_entry_html(self, info):
         old_value = ''

@@ -83,9 +83,6 @@ RB.LinkifyUtils = {
     /*
      * Linkifies a block of text, turning URLs, /r/#/ paths, and bug numbers
      * into clickable links.
-     *
-     * Linkifying URLs can be disabled if it's known that all URLs would have
-     * already been linked.
      */
     linkifyText: function(text, bugTrackerURL) {
         text = text.htmlEncode();
@@ -93,44 +90,5 @@ RB.LinkifyUtils = {
         text = RB.LinkifyUtils.linkifyReviewRequests(text);
         text = RB.LinkifyUtils.linkifyBugs(text, bugTrackerURL);
         return text;
-    },
-
-    /*
-     * Linkifies text within a pre-established DOM tree.
-     *
-     * This iterates through a tree of nodes, linkifying any text nodes
-     * that reference bug URLs, review requests, or contain unlinked
-     * plain-text URLs.
-     *
-     * This will avoid linking anything within a <pre> tag, to avoid
-     * messing with code blocks, and <a> tags, to avoid linkifying existing
-     * links.
-     */
-    linkifyChildren: function(el, bugTrackerURL) {
-        var node,
-            nodeName,
-            nextNode,
-            newText;
-
-        for (node = el.childNodes[0]; node; node = nextNode) {
-            nextNode = node.nextSibling;
-
-            if (node.nodeType === node.TEXT_NODE) {
-                if (node.textContent) {
-                    newText = RB.LinkifyUtils.linkifyText(
-                        node.textContent, bugTrackerURL);
-
-                    if (newText !== node.textContent) {
-                        $(node).replaceWith(newText);
-                    }
-                }
-            } else if (node.nodeType === node.ELEMENT_NODE) {
-                nodeName = node.nodeName.toLowerCase();
-
-                if (nodeName !== 'pre' && nodeName !== 'a') {
-                    RB.LinkifyUtils.linkifyChildren(node, bugTrackerURL);
-                }
-            }
-        };
     }
 };

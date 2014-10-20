@@ -18,7 +18,7 @@ RB.Review = RB.BaseResource.extend({
     rspNamespace: 'review',
 
     extraQueryArgs: {
-        'force-text-type': 'html'
+        'force-text-type': 'markdown'
     },
 
     toJSON: function() {

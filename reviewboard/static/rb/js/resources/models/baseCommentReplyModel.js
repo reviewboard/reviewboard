@@ -7,11 +7,6 @@
  */
 RB.BaseCommentReply = RB.BaseResource.extend({
     defaults: _.defaults({
-        /*
-         * The text format type to request for text in all responses.
-         */
-        forceTextType: null,
-
         /* The ID of the comment being replied to. */
         replyToID: null,
 
@@ -42,7 +37,6 @@ RB.BaseCommentReply = RB.BaseResource.extend({
      */
     toJSON: function() {
         var data = {
-            force_text_type: this.get('forceTextType') || undefined,
             text: this.get('text'),
             text_type: this.get('richText') ? 'markdown' : 'plain'
         };

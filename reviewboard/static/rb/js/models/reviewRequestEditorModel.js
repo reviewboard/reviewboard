@@ -105,7 +105,6 @@ RB.ReviewRequestEditor = Backbone.Model.extend({
                     success: options.success,
                     error: options.error,
                     postData: {
-                        force_text_type: 'html',
                         text_type: 'markdown'
                     }
                 },
@@ -124,11 +123,6 @@ RB.ReviewRequestEditor = Backbone.Model.extend({
             }
 
             jsonFieldName = options.jsonFieldName;
-        }
-
-        if (options.editMarkdown) {
-            data.text_type = 'markdown';
-            data.force_text_type = 'html';
         }
 
         data[jsonFieldName] = value;

@@ -1,7 +1,6 @@
 {% load djblets_utils i18n reviewtags %}
 
 <div id="review_request_banners">
-
 {% if review_request.status == 'S' %}
  <div class="banner" id="submitted-banner">
   <h1>{% trans "This change has been marked as submitted." %}</h1>
@@ -9,12 +8,11 @@
   <input type="submit" id="btn-review-request-reopen"
          value="{% trans "Reopen for Review" %}" />
   <p><label for="field_changedescription">{% trans "Describe the submission (optional):" %}</label></p>
-  <pre id="field_changedescription" class="field field-text-area rich-text editable" data-rich-text="true" data-field-id="field_changedescription">{{close_description|render_markdown:close_description_rich_text}}</pre>
+  <pre id="field_changedescription" class="field field-text-area editable{% if close_description %} loading{% endif %}" data-rich-text="true" data-field-id="field_changedescription">{{close_description|markdown_escape:close_description_rich_text}}</pre>
 {%  elif close_description %}
-  <pre id="field_changedescription" class="field field-text-area rich-text" data-rich-text="true" data-field-id="field_changedescription">{{close_description|render_markdown:close_description_rich_text}}</pre>
+  <pre id="field_changedescription"{% if close_description %} class="field field-text-area loading"{% endif %} data-rich-text="true" data-field-id="field_changedescription">{{close_description|markdown_escape:close_description_rich_text}}</pre>
 {%  endif %}
  </div>
-
 {% elif review_request.status == 'D' %}
  <div class="banner" id="discard-banner">
   <h1>{% trans "This change has been discarded." %}</h1>
@@ -22,12 +20,11 @@
   <input type="submit" id="btn-review-request-reopen"
          value="{% trans "Reopen for Review" %}" />
   <p><label for="field_changedescription">{% trans "Describe the reason it's discarded (optional):" %}</label></p>
-  <pre id="field_changedescription" class="field field-text-area rich-text editable" data-rich-text="true" data-field-id="field_changedescription">{{close_description|render_markdown:close_description_rich_text}}</pre>
+  <pre id="field_changedescription" class="field field-text-area editable{% if close_description %} loading{% endif %}" data-rich-text="true" data-field-id="field_changedescription">{{close_description|markdown_escape:close_description_rich_text}}</pre>
 {%  elif close_description %}
-  <pre id="field_changedescription" class="field field-text-area rich-text" data-rich-text="true" data-field-id="field_changedescription">{{close_description|render_markdown:close_description_rich_text}}</pre>
+  <pre id="field field-text-area changedescription"{% if close_description %} loading{% endif %} data-rich-text="true" data-field-id="field_changedescription">{{close_description|markdown_escape:close_description_rich_text}}</pre>
 {%  endif %}
  </div>
-
 {% else %}{# pending review #}
 {%  if request.user.pk == review_request.submitter_id or perms.reviews.can_edit_reviewrequest %}
  <div class="banner" id="draft-banner" style="display:none;">
@@ -40,7 +37,7 @@
          value="{% trans "Discard Draft" %}" />
   <p><label for="field_changedescription">{% trans "Describe your changes (optional):" %}</label></p>
 {%    if draft.changedesc %}
-  <pre id="field_changedescription" class="field field-text-area editable rich-text" data-rich-text="true" data-field-id="field_changedescription">{{draft.changedesc.text|render_markdown:draft.changedesc.rich_text}}</pre>
+  <pre id="field_changedescription" class="field field-text-area editable{% if draft.changedesc.text %} loading{% endif %}" data-rich-text="true" data-field-id="field_changedescription">{{draft.changedesc.text|markdown_escape:draft.changedesc.rich_text}}</pre>
 {%    else %}
   <pre id="field_changedescription" class="field field-text-area editable" data-rich-text="true" data-field-id="field_changedescription"></pre>
 {%    endif %}

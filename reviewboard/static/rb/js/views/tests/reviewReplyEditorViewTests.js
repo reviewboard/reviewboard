@@ -111,6 +111,8 @@ suite('rb/views/ReviewReplyEditorView', function() {
             expect($draftEl).not.toBe($el);
             expect($el.hasClass('draft')).toBe(false);
             expect($el.data('comment-id')).toBe(16);
+            expect($el.find('.reviewtext').html())
+                .toBe('<p>Test <strong>comment</strong></p>');
             expect(view._$draftComment).toBe(null);
             expect($.fn.user_infobox).toHaveBeenCalled();
             expect($.fn.timesince).toHaveBeenCalled();

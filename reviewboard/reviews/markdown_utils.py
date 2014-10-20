@@ -72,9 +72,18 @@ def markdown_escape(text):
     This will escape the provided text so that none of the characters will
     be rendered specially by Markdown.
     """
-    return ESCAPE_CHARS_RE.sub(
+    text = ESCAPE_CHARS_RE.sub(
         lambda m: MARKDOWN_SPECIAL_CHARS_RE.sub(r'\\\1', m.group(0)),
         text)
+
+    split = text.split('\n')
+    for i, line in enumerate(split):
+        if line.startswith('    '):
+            split[i] = '&nbsp;' + line[1:]
+        elif line.startswith('\t'):
+            split[i] = '&nbsp;' + line
+
+    return '\n'.join(split)
 
 
 def markdown_unescape(escaped_text):

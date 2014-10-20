@@ -26,7 +26,7 @@ RB.DraftReviewRequest = RB.BaseResource.extend(_.defaults({
     expandedFields: ['depends_on', 'target_people', 'target_groups'],
 
     extraQueryArgs: {
-        'force-text-type': 'html'
+        'force-text-type': 'markdown'
     },
 
     url: function() {

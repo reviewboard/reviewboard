@@ -75,7 +75,7 @@ class MarkdownFieldsMixin(object):
 
         return text_type
 
-    def normalize_text(self, obj, text, request=None, **kwargs):
+    def normalize_text(self, obj, text, request=None):
         """Normalizes text to the proper format.
 
         This considers the requested text format, and whether or not the
