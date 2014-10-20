@@ -168,7 +168,7 @@
   font-size: 8pt;
   font-weight: normal;
   float: right;
-  line-height: 16px;
+  line-height: 25px;
   margin-right: 0.5em;
   text-decoration: none;
 
@@ -1607,6 +1607,10 @@
     z-index: @z-index-deco;
   }
 
+  .markdown-info {
+    line-height: 16px;
+  }
+
   .status {
     margin: 4px 0;
     font-style: italic;
@@ -1767,7 +1771,7 @@
 #draft-banner,
 #discard-banner,
 #submitted-banner {
-  label {
+  p label {
     .inline-editor-label();
   }
 

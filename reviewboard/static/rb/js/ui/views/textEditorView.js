@@ -37,7 +37,7 @@ CodeMirrorWrapper = Backbone.View.extend({
 
         this.setElement(this._codeMirror.getWrapperElement());
 
-        if (this.options.minHeight) {
+        if (this.options.minHeight !== undefined) {
             this.$el.css('min-height', this.options.minHeight);
         }
 
@@ -122,7 +122,7 @@ TextAreaWrapper = Backbone.View.extend({
                 return false;
             }, this));
 
-        if (options.minHeight) {
+        if (options.minHeight !== undefined) {
             if (options.autoSize) {
                 this.$el.autoSizeTextArea('setMinHeight',
                                           options.minHeight);
