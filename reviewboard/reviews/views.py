@@ -651,9 +651,10 @@ def review_detail(request,
                     fields_changed_groups.append(cur_field_changed_group)
 
                 if hasattr(field_cls, 'locals_vars'):
-                    field = field_cls(review_request, locals_vars=locals())
+                    field = field_cls(review_request, request=request,
+                                      locals_vars=locals())
                 else:
-                    field = field_cls(review_request)
+                    field = field_cls(review_request, request=request)
 
                 cur_field_changed_group['fields'] += \
                     field.get_change_entry_sections_html(

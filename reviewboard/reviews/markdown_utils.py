@@ -113,6 +113,29 @@ def markdown_unescape_field(model, field_name):
     setattr(model, field_name, markdown_unescape(getattr(model, field_name)))
 
 
+def normalize_text_for_edit(user, text, rich_text):
+    """Normalizes text, converting it for editing.
+
+    This will normalize text for editing based on the rich_text flag and
+    the user settings.
+
+    If the text is not in Markdown and the user edits in Markdown by default,
+    this will return the text escaped for edit. Otherwise, the text is
+    returned as-is.
+    """
+    if not rich_text and is_rich_text_default_for_user(user):
+        # This isn't rich text, but it's going to be edited as rich text,
+        # so escape it.
+        text = markdown_escape(text)
+
+    return text
+
+
+def is_rich_text_default_for_user(user):
+    """Returns whether the user edits in Markdown by default."""
+    return True
+
+
 def markdown_set_field_escaped(model, field, escaped):
     """Escapes or unescapes the specified field in a model."""
     if escaped:

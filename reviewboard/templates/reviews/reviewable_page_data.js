@@ -6,9 +6,9 @@
             localSitePrefix: "{% if review_request.local_site %}s/{{review_request.local_site.name}}/{% endif %}",
             branch: "{{review_request_details.branch|escapejs}}",
             bugsClosed: {{review_request_details.get_bug_list|json_dumps}},
-            closeDescription: "{{close_description|markdown_escape:close_description_rich_text|escapejs}}",
+            closeDescription: "{% normalize_text_for_edit close_description close_description_rich_text True %}",
             closeDescriptionRichText: {{close_description_rich_text|yesno:'true,false'}},
-            description: "{{review_request_details.description|markdown_escape:review_request_details.description_rich_text|escapejs}}",
+            description: "{% normalize_text_for_edit review_request_details.description review_request_details.description_rich_text True %}",
             descriptionRichText: {{review_request_details.description_rich_text|yesno:'true,false'}},
             hasDraft: {% if draft %}true{% else %}false{% endif %},
             lastUpdatedTimestamp: {{review_request.last_updated|json_dumps}},
@@ -30,12 +30,12 @@
                     url: "{% url 'user' user %}"
                 }{% if not forloop.last %},{% endif %}
 {% endfor %}{% endspaceless %}],
-            testingDone: "{{review_request_details.testing_done|markdown_escape:review_request_details.testing_done_rich_text|escapejs}}",
+            testingDone: "{% normalize_text_for_edit review_request_details.testing_done review_request_details.testing_done_rich_text True %}",
             testingDoneRichText: {{review_request_details.testing_done_rich_text|yesno:'true,false'}}
         },
         extraReviewRequestDraftData: {
 {% if draft.changedesc %}
-            changeDescription: "{{draft.changedesc.text|markdown_escape:draft.changedesc.rich_text|escapejs}}",
+            changeDescription: "{% normalize_text_for_edit draft.changedesc.text draft.changedesc.rich_text True %}",
             changeDescriptionRichText: {{draft.changedesc.rich_text|yesno:'true,false'}}
 {% endif %}
         },
