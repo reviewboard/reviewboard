@@ -668,7 +668,7 @@ suite('rb/views/CommentDialogView', function() {
 
                 beforeEach(function() {
                     dlg.open();
-                    $textarea = $(dlg._textEditor._codeMirror.getInputField());
+                    $textarea = $(dlg._textEditor.$('textarea'));
                 });
 
                 it('Dialog to editor', function() {

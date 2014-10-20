@@ -374,7 +374,7 @@ suite('rb/views/ReviewRequestEditorView', function() {
                     $field.inlineEditor('startEdit');
 
                     if ($field.hasClass('field-text-area')) {
-                        $input.data('markdown-editor').setText('My Value');
+                        $input.data('text-editor').setText('My Value');
                     } else {
                         $input.val('My Value');
                     }
@@ -491,7 +491,7 @@ suite('rb/views/ReviewRequestEditorView', function() {
 
                 it('Saves', function() {
                     $field.inlineEditor('startEdit');
-                    $input.data('markdown-editor').setText('My Value');
+                    $input.data('text-editor').setText('My Value');
                     $input.triggerHandler('keyup');
                     $field.inlineEditor('submit');
 

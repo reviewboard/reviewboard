@@ -117,9 +117,8 @@ TextAreaWrapper = Backbone.View.extend({
         this.$el
             .css('width', '100%')
             .appendTo(options.parentEl)
-            .on('change', _.bind(function() {
+            .on('change keydown keyup keypress', _.bind(function() {
                 this.trigger('change');
-                return false;
             }, this));
 
         if (options.minHeight !== undefined) {
