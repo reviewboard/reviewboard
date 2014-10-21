@@ -11,6 +11,7 @@ from django.template.context import RequestContext
 from django.template.loader import render_to_string
 from django.utils.translation import ugettext as _
 from django.views.decorators.csrf import csrf_protect
+from djblets.cache.forwarding_backend import DEFAULT_FORWARD_CACHE_ALIAS
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.siteconfig.views import site_settings as djblets_site_settings
 
@@ -66,10 +67,11 @@ def cache_stats(request, template_name="admin/cache_stats.html"):
     information as memory used, cache misses, and uptime.
     """
     cache_stats = get_cache_stats()
+    cache_info = settings.CACHES[DEFAULT_FORWARD_CACHE_ALIAS]
 
     return render_to_response(template_name, RequestContext(request, {
         'cache_hosts': cache_stats,
-        'cache_backend': settings.CACHES['default']['BACKEND'],
+        'cache_backend': cache_info['BACKEND'],
         'title': _("Server Cache"),
         'root_path': settings.SITE_ROOT + "admin/db/"
     }))

@@ -196,6 +196,9 @@ SESSION_ENGINE = 'django.contrib.sessions.backends.cached_db'
 
 # Set up a default cache backend. This will mostly be useful for
 # local development, as sites will override this.
+#
+# Later on, we'll swap this 'default' out for the forwarding cache,
+# and set up 'default' as the cache being forwarded to.
 CACHES = {
     'default': {
         'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
@@ -328,6 +331,18 @@ if 'staticfiles' not in CACHES:
         'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
         'LOCATION': 'staticfiles-filehashes',
     }
+
+
+# Set up a ForwardingCacheBackend, and forward to the user's specified cache.
+# We're swapping this around so that the 'default' is forced to be the
+# the forwarding backend, and the former 'default' is what's being forwarded
+# to. This is necessary because the settings_local.py will likely specify
+# a default.
+CACHES['forwarded_backend'] = CACHES['default']
+CACHES['default'] = {
+    'BACKEND': 'djblets.cache.forwarding_backend.ForwardingCacheBackend',
+    'LOCATION': 'forwarded_backend',
+}
 
 
 # URL prefix for media -- CSS, JavaScript and images. Make sure to use a
