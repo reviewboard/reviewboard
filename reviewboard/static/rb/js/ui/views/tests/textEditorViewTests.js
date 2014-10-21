@@ -2,16 +2,6 @@ suite('rb/ui/views/TextEditorView', function() {
     var view;
 
     describe('Construction', function() {
-        it('Defaults', function() {
-            view = new RB.TextEditorView();
-            view.render();
-            view.show();
-
-            expect(view.richText).toBe(false);
-            expect(view.$el.children('textarea').length).toBe(1);
-            expect(view.$el.children('.CodeMirror').length).toBe(0);
-        });
-
         it('Initial text', function() {
             view = new RB.TextEditorView({
                 text: 'Test'
@@ -21,28 +11,112 @@ suite('rb/ui/views/TextEditorView', function() {
             expect(view.getText()).toBe('Test');
         });
 
-        it('If plain text', function() {
-            view = new RB.TextEditorView({
-                richText: false
-            });
-            view.render();
-            view.show();
+        describe('Text field wrapper', function() {
+            it('If plain text', function() {
+                view = new RB.TextEditorView({
+                    richText: false
+                });
+                view.render();
+                view.show();
 
-            expect(view.richText).toBe(false);
-            expect(view.$el.children('textarea').length).toBe(1);
-            expect(view.$el.children('.CodeMirror').length).toBe(0);
+                expect(view.richText).toBe(false);
+                expect(view.$el.children('textarea').length).toBe(1);
+                expect(view.$el.children('.CodeMirror').length).toBe(0);
+            });
+
+            it('If Markdown', function() {
+                view = new RB.TextEditorView({
+                    richText: true
+                });
+                view.render();
+                view.show();
+
+                expect(view.richText).toBe(true);
+                expect(view.$el.children('textarea').length).toBe(0);
+                expect(view.$el.children('.CodeMirror').length).toBe(1);
+            });
         });
 
-        it('If Markdown', function() {
-            view = new RB.TextEditorView({
-                richText: true
-            });
-            view.render();
-            view.show();
+        describe('Default richText', function() {
+            describe('If user default is true', function() {
+                beforeEach(function() {
+                    RB.UserSession.instance.set('defaultUseRichText', true);
+                });
 
-            expect(view.richText).toBe(true);
-            expect(view.$el.children('textarea').length).toBe(0);
-            expect(view.$el.children('.CodeMirror').length).toBe(1);
+                it('And richText unset', function() {
+                    view = new RB.TextEditorView();
+                    view.render();
+                    view.show();
+
+                    expect(view.richText).toBe(true);
+                    expect(view.$el.children('textarea').length).toBe(0);
+                    expect(view.$el.children('.CodeMirror').length).toBe(1);
+                });
+
+                it('And richText=true', function() {
+                    view = new RB.TextEditorView({
+                        richText: true
+                    });
+                    view.render();
+                    view.show();
+
+                    expect(view.richText).toBe(true);
+                    expect(view.$el.children('textarea').length).toBe(0);
+                    expect(view.$el.children('.CodeMirror').length).toBe(1);
+                });
+
+                it('And richText=false', function() {
+                    view = new RB.TextEditorView({
+                        richText: false
+                    });
+                    view.render();
+                    view.show();
+
+                    expect(view.richText).toBe(true);
+                    expect(view.$el.children('textarea').length).toBe(0);
+                    expect(view.$el.children('.CodeMirror').length).toBe(1);
+                });
+            });
+
+            describe('If user default is false', function() {
+                beforeEach(function() {
+                    RB.UserSession.instance.set('defaultUseRichText', false);
+                });
+
+                it('And richText unset', function() {
+                    view = new RB.TextEditorView();
+                    view.render();
+                    view.show();
+
+                    expect(view.richText).toBe(false);
+                    expect(view.$el.children('textarea').length).toBe(1);
+                    expect(view.$el.children('.CodeMirror').length).toBe(0);
+                });
+
+                it('And richText=true', function() {
+                    view = new RB.TextEditorView({
+                        richText: true
+                    });
+                    view.render();
+                    view.show();
+
+                    expect(view.richText).toBe(true);
+                    expect(view.$el.children('textarea').length).toBe(0);
+                    expect(view.$el.children('.CodeMirror').length).toBe(1);
+                });
+
+                it('And richText=false', function() {
+                    view = new RB.TextEditorView({
+                        richText: false
+                    });
+                    view.render();
+                    view.show();
+
+                    expect(view.richText).toBe(false);
+                    expect(view.$el.children('textarea').length).toBe(1);
+                    expect(view.$el.children('.CodeMirror').length).toBe(0);
+                });
+            });
         });
     });
 

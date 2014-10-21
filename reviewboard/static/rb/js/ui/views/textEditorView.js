@@ -217,6 +217,22 @@ RB.TextEditorView = Backbone.View.extend({
         this.options = _.defaults(options || {}, this.defaultOptions);
         this.richText = !!this.options.richText;
         this._value = this.options.text || '';
+
+        /*
+         * If the user is defaulting to rich text, we're going to want to
+         * show the rich text UI by default, even if any bound rich text
+         * flag is set to False.
+         *
+         * This requires cooperation with the template or API results
+         * that end up backing this TextEditor. The expectation is that
+         * those will be providing escaped data for any plain text, if
+         * the user's set to use rich text by default. If this expectation
+         * holds, the user will have a consistent experience for any new
+         * text fields.
+         */
+        if (RB.UserSession.instance.get('defaultUseRichText')) {
+            this.setRichText(true);
+        }
     },
 
     /*

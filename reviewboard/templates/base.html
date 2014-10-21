@@ -101,6 +101,7 @@
 {%  if user_profile %}
         commentsOpenAnIssue: {{user_profile.open_an_issue|yesno:"true,false"}},
 {%  endif %}
+        defaultUseRichText: true,
         fullName: "{{request.user|user_displayname|escapejs}}",
         username: "{{request.user.username|escapejs}}",
         userPageURL: "{% url 'user' request.user %}",
