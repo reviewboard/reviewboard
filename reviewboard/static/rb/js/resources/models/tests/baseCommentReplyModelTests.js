@@ -80,12 +80,20 @@ suite('rb/resources/models/BaseCommentReply', function() {
         });
 
         describe('richText field', function() {
-            it('With value', function() {
+            it('With true', function() {
                 var data;
 
                 model.set('richText', true);
                 data = model.toJSON();
                 expect(data.text_type).toBe('markdown');
+            });
+
+            it('With false', function() {
+                var data;
+
+                model.set('richText', false);
+                data = model.toJSON();
+                expect(data.text_type).toBe('plain');
             });
         });
 

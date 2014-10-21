@@ -407,7 +407,7 @@ suite('rb/resources/models/ReviewReply', function() {
     });
 
     describe('toJSON', function() {
-        describe('body_top field', function() {
+        describe('bodyTop field', function() {
             it('With value', function() {
                 var data;
 
@@ -417,13 +417,49 @@ suite('rb/resources/models/ReviewReply', function() {
             });
         });
 
-        describe('body_bottom field', function() {
+        describe('bodyBottom field', function() {
             it('With value', function() {
                 var data;
 
                 model.set('bodyBottom', 'foo');
                 data = model.toJSON();
                 expect(data.body_bottom).toBe('foo');
+            });
+        });
+
+        describe('bodyTopRichText field', function() {
+            it('With true', function() {
+                var data;
+
+                model.set('bodyTopRichText', true);
+                data = model.toJSON();
+                expect(data.body_top_text_type).toBe('markdown');
+            });
+
+            it('With false', function() {
+                var data;
+
+                model.set('bodyTopRichText', false);
+                data = model.toJSON();
+                expect(data.body_top_text_type).toBe('plain');
+            });
+        });
+
+        describe('bodyBottomRichText field', function() {
+            it('With true', function() {
+                var data;
+
+                model.set('bodyBottomRichText', true);
+                data = model.toJSON();
+                expect(data.body_bottom_text_type).toBe('markdown');
+            });
+
+            it('With false', function() {
+                var data;
+
+                model.set('bodyBottomRichText', false);
+                data = model.toJSON();
+                expect(data.body_bottom_text_type).toBe('plain');
             });
         });
 
