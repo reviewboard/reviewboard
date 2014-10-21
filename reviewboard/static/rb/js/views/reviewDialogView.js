@@ -25,6 +25,12 @@ BaseCommentView = Backbone.View.extend({
         '         type="checkbox" />',
         '  <label for="<%= issueOpenedID %>"><%- openAnIssueText %></label>',
         ' </div>',
+        ' <div class="edit-field">',
+        '  <input class="enable-markdown" id="<%= enableMarkdownID %>" ',
+        '         type="checkbox" />',
+        '  <label for="<%= enableMarkdownID %>"><%- enableMarkdownText %>',
+        '</label>',
+        ' </div>',
         '</div>'
     ].join('')),
 
@@ -33,6 +39,7 @@ BaseCommentView = Backbone.View.extend({
         this.textEditor = null;
 
         this._origIssueOpened = this.model.get('issueOpened');
+        this._origRichText = this.model.get('richText');
         this._origExtraData = _.clone(this.model.get('extraData'));
         this._hookViews = [];
 
@@ -58,9 +65,11 @@ BaseCommentView = Backbone.View.extend({
     needsSave: function() {
         var newValue = this.textEditor.getText(),
             newIssueOpened = this.$issueOpened.prop('checked');
+            newRichText = this.textEditor.richText;
 
         return this.model.get('text') !== newValue ||
                this.model.get('issueOpened') !== newIssueOpened ||
+               this.model.get('richText') !== newRichText ||
                !_.isEqual(this.model.get('extraData'), this._origExtraData);
     },
 
@@ -73,7 +82,7 @@ BaseCommentView = Backbone.View.extend({
     save: function(options) {
         this.model.set({
             issueOpened: this.$issueOpened.prop('checked'),
-            richText: true,
+            richText: this.textEditor.richText,
             text: this.textEditor.getText()
         });
         this.model.save(options);
@@ -83,27 +92,32 @@ BaseCommentView = Backbone.View.extend({
      * Renders the comment view.
      */
     render: function() {
-        var $editFields,
-            text = this.model.get('text');
+        var $editFields;
 
         this.$el
             .append(this.renderThumbnail())
             .append($(this.editorTemplate({
                 text: this.model.get('text'),
                 issueOpenedID: _.uniqueId('issue-opened'),
-                openAnIssueText: gettext('Open an issue')
+                openAnIssueText: gettext('Open an issue'),
+                enableMarkdownID: _.uniqueId('enable-markdown'),
+                enableMarkdownText: gettext('Enable Markdown')
             })));
 
         this.textEditor = new RB.TextEditorView({
-            el: this.$('.comment-text-field')
+            el: this.$('.comment-text-field'),
+            text: this.model.get('text'),
+            bindRichText: {
+                model: this.model,
+                attrName: 'richText'
+            }
         });
         this.textEditor.render();
         this.textEditor.show();
+        this.textEditor.bindRichTextCheckbox(this.$('.enable-markdown'));
 
         this.$issueOpened = this.$('.issue-opened')
             .prop('checked', this.model.get('issueOpened'));
-
-        this.textEditor.setText(text);
 
         $editFields = this.$('.edit-fields');
 
@@ -271,11 +285,21 @@ RB.ReviewDialogView = Backbone.View.extend({
         '</div>',
         '<div class="edit-field">',
         ' <div class="body-top"></div>',
+        ' <span class="enable-markdown">',
+        '  <input id="enable_body_top_markdown" type="checkbox" />',
+        '  <label for="enable_body_top_markdown">',
+        '<%- enableMarkdownText %></label>',
+        ' </span>',
         '</div>',
         '<ul class="comments"></ul>',
         '<div class="spinner"></div>',
-        '<div class="edit-field">',
+        '<div class="edit-field" id="body_bottom_fields">',
         ' <div class="body-bottom"></div>',
+        ' <span class="enable-markdown">',
+        '  <input id="enable_body_bottom_markdown" type="checkbox" />',
+        '  <label for="enable_body_bottom_markdown">',
+        '<%- enableMarkdownText %></label>',
+        ' </span>',
         '</div>'
     ].join('')),
 
@@ -292,6 +316,7 @@ RB.ReviewDialogView = Backbone.View.extend({
         this._$spinner = null;
         this._bodyTopEditor = null;
         this._bodyBottomEditor = null;
+        this._$bodyBottomFields = null;
 
         this._commentViews = [];
 
@@ -340,10 +365,25 @@ RB.ReviewDialogView = Backbone.View.extend({
             }));
         });
 
-        this.model.set({
-            forceTextType: 'markdown',
-            includeRawTextFields: true
-        });
+        this._defaultUseRichText =
+            RB.UserSession.instance.get('defaultUseRichText');
+
+        if (this._defaultUseRichText) {
+            this.model.set({
+                forceTextType: 'markdown',
+                includeRawTextFields: true
+            });
+
+            this._queryData = {
+                'force-text-type': 'markdown',
+                'include-raw-text-fields': true
+            };
+        } else {
+            this._queryData = {
+                'force-text-type': undefined,
+                'include-raw-text-fields': undefined
+            };
+        }
 
         this.options.reviewRequestEditor.incr('editCount');
     },
@@ -369,33 +409,47 @@ RB.ReviewDialogView = Backbone.View.extend({
      * the server will begin loading and rendering.
      */
     render: function() {
+        var data;
+
         this.$el.html(this.template({
             shipItText: gettext('Ship It'),
             markdownDocsURL: MANUAL_URL + 'users/markdown/',
-            markdownText: gettext('Markdown Reference')
+            markdownText: gettext('Markdown Reference'),
+            enableMarkdownText: gettext('Enable Markdown')
         }));
 
         this._$shipIt = this.$('#id_shipit');
         this._$comments = this.$el.children('.comments');
         this._$spinner = this.$el.children('.spinner');
+        this._$bodyBottomFields = this.$el.children('#body_bottom_fields');
 
         this._bodyTopEditor = new RB.TextEditorView({
-            el: this.$('.body-top')
+            el: this.$('.body-top'),
+            bindRichText: {
+                model: this.model,
+                attrName: 'bodyTopRichText'
+            }
         });
         this._bodyTopEditor.render();
         this._bodyTopEditor.show();
+        this._bodyTopEditor.bindRichTextCheckbox(
+            this.$('#enable_body_top_markdown'));
 
         this._bodyBottomEditor = new RB.TextEditorView({
-            el: this.$('.body-bottom')
+            el: this.$('.body-bottom'),
+            bindRichText: {
+                model: this.model,
+                attrName: 'bodyBottomRichText'
+            }
         });
         this._bodyBottomEditor.render();
         this._bodyBottomEditor.hide();
+        this._$bodyBottomFields.hide();
+        this._bodyBottomEditor.bindRichTextCheckbox(
+            this.$('#enable_body_bottom_markdown'));
 
         this.model.ready({
-            data: {
-                'force-text-type': 'markdown',
-                'include-raw-text-fields': true
-            },
+            data: this._queryData,
             ready: function() {
                 var bodyBottom,
                     bodyTop;
@@ -445,6 +499,7 @@ RB.ReviewDialogView = Backbone.View.extend({
                  * comments. Otherwise, it's weird to have both
                  * textareas visible with nothing inbetween.
                  */
+                this._$bodyBottomFields.show();
                 this._bodyBottomEditor.show();
             }
         });
@@ -462,10 +517,7 @@ RB.ReviewDialogView = Backbone.View.extend({
 
         if (collection) {
             collection.fetchAll({
-                data: {
-                    'force-text-type': 'markdown',
-                    'include-raw-text-fields': true
-                },
+                data: this._queryData,
                 success: function() {
                     if (collection === this._diffCommentsCollection) {
                         this._diffQueue.loadFragments();
@@ -621,8 +673,8 @@ RB.ReviewDialogView = Backbone.View.extend({
                 bodyTop: this._bodyTopEditor.getText(),
                 bodyBottom: this._bodyBottomEditor.getText(),
                 'public': publish,
-                bodyTopRichText: true,
-                bodyBottomRichText: true
+                bodyTopRichText: this._bodyTopEditor.richText,
+                bodyBottomRichText: this._bodyBottomEditor.richText
             });
 
             this.model.save({
