@@ -218,6 +218,11 @@ RB.TextEditorView = Backbone.View.extend({
         this.richText = !!this.options.richText;
         this._value = this.options.text || '';
 
+        if (this.options.bindRichText) {
+            this.bindRichTextAttr(this.options.bindRichText.model,
+                                  this.options.bindRichText.attrName);
+        }
+
         /*
          * If the user is defaulting to rich text, we're going to want to
          * show the rich text UI by default, even if any bound rich text
@@ -266,6 +271,55 @@ RB.TextEditorView = Backbone.View.extend({
         } else {
             this.richText = richText;
         }
+
+        this.trigger('change:richText', richText);
+    },
+
+    /*
+     * Binds a richText attribute on a model to the mode on this editor.
+     *
+     * This editor's richText setting will stay in sync with the attribute
+     * on the given mode.
+     */
+    bindRichTextAttr: function(model, attrName) {
+        this.setRichText(model.get(attrName));
+
+        this.listenTo(model, 'change:' + attrName, function(model, value) {
+            this.setRichText(value);
+        });
+    },
+
+    /*
+     * Binds an Enable Markdown checkbox to this text editor.
+     *
+     * The checkbox will initially be set to the value of the editor's
+     * richText property. Toggling the checkbox will then manipulate that
+     * property.
+     */
+    bindRichTextCheckbox: function($checkbox) {
+        $checkbox
+            .prop('checked', this.richText)
+            .on('change', _.bind(function() {
+                this.setRichText($checkbox.prop('checked'));
+            }, this));
+
+        this.on('change:richText', function() {
+            $checkbox.prop('checked', this.richText);
+        }, this);
+    },
+
+    /*
+     * Binds the visibility of an element to the richText property.
+     *
+     * If richText ist true, the element will be shown. Otherwise, it
+     * will be hidden.
+     */
+    bindRichTextVisibility: function($el) {
+        $el.setVisible(this.richText);
+
+        this.on('change:richText', function() {
+            $el.setVisible(this.richText);
+        }, this);
     },
 
     /*
@@ -434,16 +488,8 @@ RB.TextEditorView = Backbone.View.extend({
                             id: _.uniqueId('markdown_check'),
                             type: 'checkbox'
                         })
-                        .prop('checked', textEditor.richText)
-                        .on('change', function() {
-                            var richText = $checkbox.prop('checked');
-
-                            textEditor.setRichText(richText);
-                            $markdownRef.setVisible(richText);
-
-                            return false;
-                        })
                         .appendTo($span);
+                    textEditor.bindRichTextCheckbox($checkbox);
 
                     $span.append($('<label/>')
                         .attr('for', $checkbox[0].id)
@@ -460,6 +506,7 @@ RB.TextEditorView = Backbone.View.extend({
                         .text(gettext('Markdown Reference'))
                         .setVisible(textEditor.richText)
                         .appendTo($buttons);
+                    textEditor.bindRichTextVisibility($markdownRef);
                 });
 
                 $editor.on('beginEdit', function() {
@@ -487,6 +534,13 @@ RB.TextEditorView = Backbone.View.extend({
                 return textEditor.isDirty(initialValue);
             }
         };
+    },
+
+    /*
+     * Returns the TextEditorView for an inlineEditor element.
+     */
+    getFromInlineEditor: function($editor) {
+        return $editor.inlineEditor('field').data('text-editor');
     }
 });
 

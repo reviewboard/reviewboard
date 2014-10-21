@@ -121,7 +121,165 @@ suite('rb/ui/views/TextEditorView', function() {
     });
 
     describe('Operations', function() {
+        describe('bindRichTextAttr', function() {
+            var myModel;
+
+            beforeEach(function() {
+                myModel = new Backbone.Model({
+                    richText: false
+                });
+
+                view = new RB.TextEditorView();
+            });
+
+            it('Updates on change', function() {
+                view.bindRichTextAttr(myModel, 'richText');
+                expect(view.richText).toBe(false);
+
+                myModel.set('richText', true);
+                expect(view.richText).toBe(true);
+            });
+
+            describe('Initial richText value', function() {
+                it('true', function() {
+                    myModel.set('richText', true);
+                    view.bindRichTextAttr(myModel, 'richText');
+
+                    expect(view.richText).toBe(true);
+                });
+
+                it('false', function() {
+                    myModel.set('richText', false);
+                    view.bindRichTextAttr(myModel, 'richText');
+
+                    expect(view.richText).toBe(false);
+                });
+            });
+        });
+
+        describe('bindRichTextCheckbox', function() {
+            var $checkbox;
+
+            beforeEach(function() {
+                $checkbox = $('<input type="checkbox"/>');
+
+                view = new RB.TextEditorView();
+                view.setRichText(false);
+            });
+
+            it('Checkbox reflects richText', function() {
+                view.bindRichTextCheckbox($checkbox);
+                expect($checkbox.prop('checked')).toBe(false);
+
+                view.setRichText(true);
+                expect($checkbox.prop('checked')).toBe(true);
+            });
+
+            describe('richText reflects checkbox', function() {
+                it('Checked', function() {
+                    view.setRichText(false);
+                    view.bindRichTextCheckbox($checkbox);
+
+                    $checkbox
+                        .prop('checked', true)
+                        .triggerHandler('change');
+
+                    expect(view.richText).toBe(true);
+                });
+
+                it('Unchecked', function() {
+                    view.setRichText(true);
+                    view.bindRichTextCheckbox($checkbox);
+
+                    $checkbox
+                        .prop('checked', false)
+                        .triggerHandler('change');
+
+                    expect(view.richText).toBe(false);
+                });
+            });
+
+            describe('Initial checked state', function() {
+                it('richText=true', function() {
+                    view.setRichText(true);
+                    view.bindRichTextCheckbox($checkbox);
+
+                    expect($checkbox.prop('checked')).toBe(true);
+                });
+
+                it('richText=false', function() {
+                    view.setRichText(false);
+                    view.bindRichTextCheckbox($checkbox);
+
+                    expect($checkbox.prop('checked')).toBe(false);
+                });
+            });
+        });
+
+        describe('bindRichTextVisibility', function() {
+            var $el;
+
+            beforeEach(function() {
+                $el = $('<div/>');
+
+                view = new RB.TextEditorView();
+                view.setRichText(false);
+            });
+
+            describe('Initial visibility', function() {
+                it('richText=true', function() {
+                    $el.hide();
+
+                    view.setRichText(true);
+                    view.bindRichTextVisibility($el);
+
+                    expect($el.css('display')).toBe('block');
+                });
+
+                it('richText=false', function() {
+                    view.bindRichTextVisibility($el);
+
+                    expect($el.css('display')).toBe('none');
+                });
+            });
+
+            describe('Toggles visibility on change', function() {
+                it('richText=true', function() {
+                    $el.hide();
+
+                    view.bindRichTextVisibility($el);
+                    expect($el.css('display')).toBe('none');
+
+                    view.setRichText(true);
+                    expect($el.css('display')).toBe('block');
+                });
+
+                it('richText=false', function() {
+                    view.setRichText(true);
+                    view.bindRichTextVisibility($el);
+                    expect($el.css('display')).toBe('block');
+
+                    view.setRichText(false);
+                    expect($el.css('display')).toBe('none');
+                });
+            });
+        });
+
         describe('setRichText', function() {
+            it('Emits change:richText', function() {
+                var emitted = false;
+
+                view.on('change:richText', function() {
+                    emitted = true;
+                });
+
+                view.show();
+                view.richText = false;
+                view.setRichText(true);
+
+                expect(emitted).toBe(true);
+            });
+
             describe('Markdown to Text', function() {
                 beforeEach(function() {
                     view = new RB.TextEditorView({
