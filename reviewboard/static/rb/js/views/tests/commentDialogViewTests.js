@@ -499,9 +499,15 @@ suite('rb/views/CommentDialogView', function() {
                 });
             }
 
+            function setupForRichText(richText, canSave) {
+                editor.set('richText', richText);
+                editor.set('canSave', !!canSave);
+                $textarea = dlg.$('textarea');
+            }
+
             beforeEach(function() {
                 dlg.open();
-                $textarea = dlg.$el.find('textarea');
+                $textarea = dlg.$('textarea');
             });
 
             describe('Control-Enter to save', function() {
@@ -511,20 +517,40 @@ suite('rb/views/CommentDialogView', function() {
                 });
 
                 describe('With editor.canSave=true', function() {
-                    beforeEach(function() {
-                        editor.set('canSave', true);
+                    describe('Keycode 10', function() {
+                        it('If Markdown', function() {
+                            setupForRichText(true, true);
+
+                            simulateKeyPress(10, false, true);
+                            expect(editor.save).toHaveBeenCalled();
+                            expect(dlg.close).toHaveBeenCalled();
+                        });
+
+                        it('If plain text', function() {
+                            setupForRichText(false, true);
+
+                            simulateKeyPress(10, false, true);
+                            expect(editor.save).toHaveBeenCalled();
+                            expect(dlg.close).toHaveBeenCalled();
+                        });
                     });
 
-                    it('Keycode 10', function() {
-                        simulateKeyPress(10, false, true);
-                        expect(editor.save).toHaveBeenCalled();
-                        expect(dlg.close).toHaveBeenCalled();
-                    });
+                    describe('Keycode 13', function() {
+                        it('If Markdown', function() {
+                            setupForRichText(true, true);
 
-                    it('Keycode 13', function() {
-                        simulateKeyPress(13, false, true);
-                        expect(editor.save).toHaveBeenCalled();
-                        expect(dlg.close).toHaveBeenCalled();
+                            simulateKeyPress(13, false, true);
+                            expect(editor.save).toHaveBeenCalled();
+                            expect(dlg.close).toHaveBeenCalled();
+                        });
+
+                        it('If plain text', function() {
+                            setupForRichText(false, true);
+
+                            simulateKeyPress(13, false, true);
+                            expect(editor.save).toHaveBeenCalled();
+                            expect(dlg.close).toHaveBeenCalled();
+                        });
                     });
                 });
 
@@ -533,35 +559,74 @@ suite('rb/views/CommentDialogView', function() {
                         editor.set('canSave', false);
                     });
 
-                    it('Keycode 10', function() {
-                        simulateKeyPress(10, false, true);
-                        expect(editor.save).not.toHaveBeenCalled();
-                        expect(dlg.close).not.toHaveBeenCalled();
+                    describe('Keycode 10', function() {
+                        it('If Markdown', function() {
+                            setupForRichText(true);
+
+                            simulateKeyPress(10, false, true);
+                            expect(editor.save).not.toHaveBeenCalled();
+                            expect(dlg.close).not.toHaveBeenCalled();
+                        });
+
+                        it('If plain text', function() {
+                            setupForRichText(false);
+
+                            simulateKeyPress(10, false, true);
+                            expect(editor.save).not.toHaveBeenCalled();
+                            expect(dlg.close).not.toHaveBeenCalled();
+                        });
                     });
 
-                    it('Keycode 13', function() {
-                        simulateKeyPress(13, false, true);
-                        expect(editor.save).not.toHaveBeenCalled();
-                        expect(dlg.close).not.toHaveBeenCalled();
+                    describe('Keycode 13', function() {
+                        it('If Markdown', function() {
+                            setupForRichText(true);
+
+                            simulateKeyPress(13, false, true);
+                            expect(editor.save).not.toHaveBeenCalled();
+                            expect(dlg.close).not.toHaveBeenCalled();
+                        });
+
+                        it('If plain text', function() {
+                            setupForRichText(false);
+
+                            simulateKeyPress(13, false, true);
+                            expect(editor.save).not.toHaveBeenCalled();
+                            expect(dlg.close).not.toHaveBeenCalled();
+                        });
                     });
                 });
             });
 
             describe('Escape to cancel', function() {
-                it('Pressing escape in text area', function() {
-                    spyOn(editor, 'cancel');
-                    spyOn(dlg, 'close');
+                describe('Pressing escape in text area', function() {
+                    beforeEach(function() {
+                        spyOn(editor, 'cancel');
+                        spyOn(dlg, 'close');
+                    });
 
-                    simulateKeyPress($.ui.keyCode.ESCAPE, false, false);
-                    expect(editor.cancel).toHaveBeenCalled();
-                    expect(dlg.close).toHaveBeenCalled();
+                    it('If Markdown', function() {
+                        setupForRichText(true);
+
+                        simulateKeyPress($.ui.keyCode.ESCAPE, false, false);
+                        expect(editor.cancel).toHaveBeenCalled();
+                        expect(dlg.close).toHaveBeenCalled();
+                    });
+
+                    it('If plain text', function() {
+                        setupForRichText(false);
+
+                        simulateKeyPress($.ui.keyCode.ESCAPE, false, false);
+                        expect(editor.cancel).toHaveBeenCalled();
+                        expect(dlg.close).toHaveBeenCalled();
+                    });
                 });
             });
 
             describe('Toggle open issue', function() {
                 var $checkbox;
 
-                function runToggleIssueTest(startState, keyCode) {
+                function runToggleIssueTest(richText, startState, keyCode) {
+                    setupForRichText(richText);
                     $checkbox.prop('checked', startState);
                     editor.set('openIssue', startState);
 
@@ -577,22 +642,46 @@ suite('rb/views/CommentDialogView', function() {
                 });
 
                 describe('Alt-I', function() {
-                    it('Checked to unchecked', function() {
-                        runToggleIssueTest(true, 'I');
+                    describe('Checked to unchecked', function() {
+                        it('If Markdown', function() {
+                            runToggleIssueTest(true, true, 'I');
+                        });
+
+                        it('If Markdown', function() {
+                            runToggleIssueTest(false, true, 'I');
+                        });
                     });
 
-                    it('Unchecked to checked', function() {
-                        runToggleIssueTest(false, 'I');
+                    describe('Unchecked to checked', function() {
+                        it('If Markdown', function() {
+                            runToggleIssueTest(true, false, 'I');
+                        });
+
+                        it('If plain text', function() {
+                            runToggleIssueTest(false, false, 'I');
+                        });
                     });
                 });
 
                 describe('Alt-i', function() {
-                    it('Checked to unchecked', function() {
-                        runToggleIssueTest(true, 'i');
+                    describe('Checked to unchecked', function() {
+                        it('If Markdown', function() {
+                            runToggleIssueTest(true, true, 'i');
+                        });
+
+                        it('If plain text', function() {
+                            runToggleIssueTest(false, true, 'i');
+                        });
                     });
 
-                    it('Unchecked to checked', function() {
-                        runToggleIssueTest(false, 'i');
+                    describe('Unchecked to checked', function() {
+                        it('If Markdown', function() {
+                            runToggleIssueTest(true, false, 'i');
+                        });
+
+                        it('If plain text', function() {
+                            runToggleIssueTest(false, false, 'i');
+                        });
                     });
                 });
             });
@@ -694,7 +783,7 @@ suite('rb/views/CommentDialogView', function() {
 
                 beforeEach(function() {
                     dlg.open();
-                    $checkbox = dlg.$el.find('input[type=checkbox]');
+                    $checkbox = dlg.$('#comment_issue');
                     $checkbox.prop('checked', false);
                     editor.set('openIssue', false);
                 });
@@ -707,6 +796,30 @@ suite('rb/views/CommentDialogView', function() {
                 it('Editor to dialog', function() {
                     editor.set('openIssue', true);
                     expect($checkbox.prop('checked')).toBe(true);
+                });
+            });
+
+            describe('Enable Markdown checkbox', function() {
+                var $checkbox;
+
+                beforeEach(function() {
+                    dlg.open();
+                    $checkbox = dlg.$('#enable_markdown');
+                    $checkbox.prop('checked', false);
+                    editor.set('richText', false);
+                    expect(dlg._textEditor.richText).toBe(false);
+                });
+
+                it('Dialog to editor', function() {
+                    $checkbox.click();
+                    expect(editor.get('richText')).toBe(true);
+                    expect(dlg._textEditor.richText).toBe(true);
+                });
+
+                it('Editor to dialog', function() {
+                    editor.set('richText', true);
+                    expect($checkbox.prop('checked')).toBe(true);
+                    expect(dlg._textEditor.richText).toBe(true);
                 });
             });
         });
@@ -725,7 +838,7 @@ suite('rb/views/CommentDialogView', function() {
                         model: editor
                     });
                     dlg.render();
-                    $checkbox = dlg.$el.find('input[type=checkbox]');
+                    $checkbox = dlg.$('#comment_issue');
 
                     expect(editor.get('openIssue')).toBe(true);
                     expect($checkbox.prop('checked')).toBe(true);
@@ -743,9 +856,47 @@ suite('rb/views/CommentDialogView', function() {
                         model: editor
                     });
                     dlg.render();
-                    $checkbox = dlg.$el.find('input[type=checkbox]');
+                    $checkbox = dlg.$('#comment_issue');
 
                     expect(editor.get('openIssue')).toBe(false);
+                    expect($checkbox.prop('checked')).toBe(false);
+                });
+            });
+
+            describe('Enable Markdown checkbox', function() {
+                it('When defaultUseRichText is true', function() {
+                    RB.UserSession.instance.set('defaultUseRichText', true);
+
+                    editor = new RB.CommentEditor({
+                        reviewRequest: reviewRequest,
+                        reviewRequestEditor: reviewRequestEditor
+                    });
+                    dlg = new RB.CommentDialogView({
+                        animate: false,
+                        model: editor
+                    });
+                    dlg.render();
+                    $checkbox = dlg.$('#enable_markdown');
+
+                    expect(editor.get('richText')).toBe(true);
+                    expect($checkbox.prop('checked')).toBe(true);
+                });
+
+                it('When defaultUseRichText is false', function() {
+                    RB.UserSession.instance.set('defaultUseRichText', false);
+
+                    editor = new RB.CommentEditor({
+                        reviewRequest: reviewRequest,
+                        reviewRequestEditor: reviewRequestEditor
+                    });
+                    dlg = new RB.CommentDialogView({
+                        animate: false,
+                        model: editor
+                    });
+                    dlg.render();
+                    $checkbox = dlg.$('#enable_markdown');
+
+                    expect(editor.get('richText')).toBe(false);
                     expect($checkbox.prop('checked')).toBe(false);
                 });
             });

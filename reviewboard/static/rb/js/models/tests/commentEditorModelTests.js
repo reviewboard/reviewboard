@@ -89,6 +89,36 @@ suite('rb/models/CommentEditor', function() {
                 expect(editor.get('openIssue')).toBe(true);
             });
         });
+
+        describe('richText', function() {
+            it('When user preference is true', function() {
+                RB.UserSession.instance.set('defaultUseRichText', true);
+
+                editor = new RB.CommentEditor({
+                    reviewRequest: reviewRequest
+                });
+                expect(editor.get('richText')).toBe(true);
+            });
+
+            it('When user preference is false', function() {
+                RB.UserSession.instance.set('defaultUseRichText', false);
+
+                editor = new RB.CommentEditor({
+                    reviewRequest: reviewRequest
+                });
+                expect(editor.get('richText')).toBe(false);
+            });
+
+            it('With explicitly set value', function() {
+                RB.UserSession.instance.set('defaultUseRichText', false);
+
+                editor = new RB.CommentEditor({
+                    richText: true,
+                    reviewRequest: reviewRequest
+                });
+                expect(editor.get('richText')).toBe(true);
+            });
+        });
     });
 
     describe('Capability states', function() {
@@ -386,7 +416,8 @@ suite('rb/models/CommentEditor', function() {
                 editor.set({
                     text: text,
                     issue_opened: issue_opened,
-                    canSave: true
+                    canSave: true,
+                    richText: true
                 });
                 editor.setExtraData('mykey', 'myvalue');
 
@@ -395,7 +426,7 @@ suite('rb/models/CommentEditor', function() {
                 expect(comment.save).toHaveBeenCalled();
                 expect(comment.get('text')).toBe(text);
                 expect(comment.get('issueOpened')).toBe(issue_opened);
-                expect(comment.get('issueOpened')).toBe(issue_opened);
+                expect(comment.get('richText')).toBe(true);
                 expect(comment.get('extraData')).toEqual({mykey: 'myvalue'});
                 expect(editor.get('dirty')).toBe(false);
                 expect(editor.trigger).toHaveBeenCalledWith('saved');
