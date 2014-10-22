@@ -388,7 +388,7 @@ def populate_diff_chunks(files, enable_syntax_highlighting=True,
             'chunks': chunks,
             'num_chunks': len(chunks),
             'changed_chunk_indexes': [],
-            'whitespace_only': True,
+            'whitespace_only': len(chunks) > 0,
         })
 
         for j, chunk in enumerate(chunks):
