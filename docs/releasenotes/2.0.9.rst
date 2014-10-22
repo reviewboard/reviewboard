@@ -1,0 +1,266 @@
+================================
+Review Board 2.0.9 Release Notes
+================================
+
+**Release date**: October 22, 2014
+
+
+Upgrade Notes
+=============
+
+* This release contains database schema changes.
+
+
+New Features
+============
+
+* Support copying text from columns in the diff viewer. (:bug:`1094`)
+
+  Previously, attempting to select code in the diff viewer would result in a
+  text selection rectangle that spanned columns and line numbers, making it
+  impossible to copy a block of code. This is now fixed for modern versions of
+  Chrome, Firefox, and Internet Explorer.
+
+* Support Markdown in the Submitted/Discarded description fields.
+
+* Allow users to opt out of e-mail notifications for their own actions.
+  (:bug:`3316`)
+
+  By default, Review Board sends email to everyone, including the author of a
+  given update. This is done in order to create a useful record of the
+  conversation in threaded e-mail clients.
+
+  Users can now set a flag in their account preferences to opt out of e-mail
+  for their own actions. Note that any e-mails which are sent to mailing lists
+  that the users are members of will still be delivered to them through the
+  mailing list.
+
+  Patch by Barret Rennie.
+
+
+Security Improvements
+======================
+
+* Hardened password storage for new and existing repositories.
+
+
+Usability Improvements
+======================
+
+* Fixed behavior of home/end keys in CodeMirror. (:bug:`3392`)
+
+  The behavior of home/end in Markdown editors did not match the native text
+  editing behavior when lines were long enough to wrap.
+
+
+Performance Improvements
+========================
+
+* Improve performance of editing text.
+
+  Interactive editing of text in the Markdown editors was slow, especially
+  when typing very fast. These performance problems have been fixed.
+
+* Improved the database query performance when querying some list resources in
+  the Web API.
+
+
+Extensions
+==========
+
+* Added an is_enabled_for mechanism for ``NavigationBarHook``.
+
+  ``NavigationBarHook`` can now decide whether or not to enable itself for
+  each user.
+
+* Fixed SignalHook disconnection when unloading extensions.
+
+  If an extension passed a sender into the SignalHook when connecting to a
+  signal, it would fail to disconnect when the extension was unloaded.
+
+  Patch by John Talling.
+
+
+Web API
+=======
+
+* Improved close description support in the API.
+
+  The Review Request resource now has a ``close_description`` field that is
+  set when the review request is marked as closed with a description.
+
+* Renamed the ``description`` field when closing review requests.
+
+  To match the new ``close_description`` field when fetching the review
+  request resource, the old ``description`` parameter used when closing a
+  review request has been renamed to ``close_description``.
+
+* Fixed the user resource with public Local Sites. (:bug:`3582`)
+
+  The Local Site specific :ref:`webapi2.0-user-resource` would return a 404
+  for any users who were not members of the Local Site, which caused problems
+  with :command:`rbt patch` and public Local Sites. This bug was fixed in the
+  1.7.x series, but it never made it across to 2.0.x or master.
+
+* Preserve query arguments when redirecting from Review/Reply draft resources.
+
+  The Review/Reply Draft resources redirect to a resource with the appropriate
+  ID, but when doing so, they don't preserve any query string arguments. This
+  means that if something like ``?api_format`` or ``?force-text-type`` is
+  used, it would be lost.
+
+* POST and PUT requests can now force the returned text types in payloads.
+
+  GET requests were able to set ``?force-text-type=`` to force any text fields
+  capable of rich text to be converted to the requested type in the returned
+  payload. POST and PUT requests now have this ability as well by setting
+  ``force_text_type=`` in the request data to the desired text type.
+
+* Custom text fields provided by extensions can now have their text type
+  forced.
+
+  Extensions may provide custom rich text fields, which have their values
+  stored in ``extra_data`` in the payload. These values will now respect the
+  ``?force-text-type=`` and ``force_text_type=`` arguments in requests.
+
+* Added support for forcing text to HTML in requests.
+
+  ``"html"`` is now a valid value for ``?force-text-type=`` and
+  ``force_text_type=``. The text, whether plain text or Markdown, will be
+  rendered to HTML.
+
+
+Bug Fixes
+=========
+
+General
+-------
+
+* Fixed Markdown escaping problems with intra-word underscores.
+
+  The version of marked.js that we were using has a bug where underscores in
+  the middle of a word were not properly ignored, even when GitHub Flavored
+  Markdown was enabled. Because of this, we were adding escaping to intra-word
+  underscores, but this caused that escaping to be visible when viewing text
+  that was rendered by the server-side Python-Markdown implementation.
+
+  We've upgraded to a fixed version of marked.js and made the escaping of
+  underscores more precise to fix this.
+
+* Fixed regressions in the autocomplete behavior for users and groups.
+
+  A change to the autocomplete behavior caused numerous problems with
+  selecting the default completion. This change has been reverted.
+
+* Fixed some small vertical shifts when opening and closing editors.
+
+* Fixed double-escaping of file attachment captions in the review pages.
+
+  If a file attachment caption included special characters such as double
+  quotes, they would be displayed incorrectly in the title of the review page
+  for that file.
+
+
+Dashboard
+---------
+
+* Fixed initial calculations for open issue counts on the dashboard.
+
+  The calculations for how many open issues were present on a review request
+  (done during the upgrade from 1.x to 2.0.x) were not quite right. If you
+  have incorrect issue counts in your dashboard, you can fix them by running
+  :command:`rb-site manage /path/to/site reset-issue-counts`.
+
+
+Diff Viewer
+-----------
+
+* When opening the diff viewer in Firefox, you no longer have to click
+  Back twice to get to the previous page.
+
+  Patch by Steven MacLeod.
+
+* Fixed a couple issues that could cause a "list index out of range" error
+  when viewing interdiffs containing deleted files. (:bug:`3481`)
+
+
+Review Requests
+---------------
+
+* Prevent users from publishing empty (no modifications made) review request
+  drafts. (:bug:`3452`)
+
+  It's possible to end up creating a draft on an existing review request that
+  doesn't contain any changed fields. Publishing this would create a "review
+  request changed" box with no entries in it. This is now prevented.
+
+  Patch by Mark Loyzer.
+
+* Fixed e-mail notifications when Local Site groups were present.
+  (:bug:`3581`)
+
+  In the case where the database had a Local Site configured with a review
+  group, and a user was a member of that group, there were cases where that
+  user might not get e-mail notifications for other review groups.
+
+* Prevent HTTP 500 errors when failing to generate a thumbnail for file
+  attachments.
+
+
+Administration
+--------------
+
+* Fixed saving file storage settings with choices other than local storage or
+  OpenStack Swift.
+
+  The file storage administration UI would fail to save correctly when trying
+  to configure Amazon S3 or other back-ends, due to some bugs in the OpenStack
+  Swift backend.
+
+  Patch by Andrew Hong.
+
+* Fixed usage of configured cache backends.
+
+  An upstream change in Django caused a regression in the caching behavior,
+  automatically using the "local memory" cache, regardless of what was
+  configured in the settings. This release fixes that, and in the process
+  makes it possible to switch cache backends without restarting the web
+  server.
+
+* Fixed the help output of the :command:`rb-site manage` command.
+
+* Fixed Python 2.6 compatibility with the :command:`condensediffs` management
+  command.
+
+
+Repository Hooks
+----------------
+
+* Fixed over-eager commit ID matching in the close-submitted hooks.
+
+  The hooks for closing review requests when code was pushed to a repository
+  would match review requests on the commit ID, but were not also matching the
+  repository. This meant that systems where commit IDs can conflict (such as
+  with Subversion) could end up closing the wrong review request.
+
+
+Subversion
+----------
+
+* Fixed a couple more issues with missing commit data.
+
+  In the post-commit section of the "New Review Request" page, commits that
+  lacked author information or commit messages would cause server errors.
+  These have been fixed.
+
+
+Contributors
+============
+
+* Andrew Hong
+* Barret Rennie
+* Christian Hammond
+* David Trowbridge
+* John Talling
+* Mark Loyzer
+* Steven MacLeod
