@@ -2,7 +2,7 @@
 Review Board 2.0.9 Release Notes
 ================================
 
-**Release date**: TBD
+**Release date**: October 22, 2014
 
 
 Upgrade Notes
@@ -38,13 +38,40 @@ New Features
   Patch by Barret Rennie.
 
 
+Security Improvements
+======================
+
+* Hardened password storage for new and existing repositories.
+
+
+Usability Improvements
+======================
+
+* Fixed behavior of home/end keys in CodeMirror. (:bug:`3392`)
+
+  The behavior of home/end in Markdown editors did not match the native text
+  editing behavior when lines were long enough to wrap.
+
+
+Performance Improvements
+========================
+
+* Improve performance of editing text.
+
+  Interactive editing of text in the Markdown editors was slow, especially
+  when typing very fast. These performance problems have been fixed.
+
+* Improved the database query performance when querying some list resources in
+  the Web API.
+
+
 Extensions
 ==========
 
 * Added an is_enabled_for mechanism for ``NavigationBarHook``.
 
-  ``NavigationBarHook`` can now decide whether or not to enable itself for each
-  user.
+  ``NavigationBarHook`` can now decide whether or not to enable itself for
+  each user.
 
 * Fixed SignalHook disconnection when unloading extensions.
 
@@ -59,28 +86,28 @@ Web API
 
 * Improved close description support in the API.
 
-  The Review Request resource now has a ``close_description`` field that is set
-  when the review request is marked as closed with a description.
+  The Review Request resource now has a ``close_description`` field that is
+  set when the review request is marked as closed with a description.
 
 * Renamed the ``description`` field when closing review requests.
 
-  To match the new ``close_description`` field when fetching the review request
-  resource, the old ``description`` parameter used when closing a review
-  request has been renamed to ``close_description``.
+  To match the new ``close_description`` field when fetching the review
+  request resource, the old ``description`` parameter used when closing a
+  review request has been renamed to ``close_description``.
 
 * Fixed the user resource with public Local Sites. (:bug:`3582`)
 
-  The Local Site specific :ref:`webapi2.0-user-resource` would return a 404 for
-  any users who were not members of the Local Site, which caused problems with
-  :command:`rbt patch` and public Local Sites. This bug was fixed in the 1.7.x
-  series, but it never made it across to 2.0.x or master.
+  The Local Site specific :ref:`webapi2.0-user-resource` would return a 404
+  for any users who were not members of the Local Site, which caused problems
+  with :command:`rbt patch` and public Local Sites. This bug was fixed in the
+  1.7.x series, but it never made it across to 2.0.x or master.
 
 * Preserve query arguments when redirecting from Review/Reply draft resources.
 
   The Review/Reply Draft resources redirect to a resource with the appropriate
   ID, but when doing so, they don't preserve any query string arguments. This
-  means that if something like ``?api_format`` or ``?force-text-type`` is used,
-  it would be lost.
+  means that if something like ``?api_format`` or ``?force-text-type`` is
+  used, it would be lost.
 
 * POST and PUT requests can now force the returned text types in payloads.
 
@@ -99,29 +126,8 @@ Web API
 * Added support for forcing text to HTML in requests.
 
   ``"html"`` is now a valid value for ``?force-text-type=`` and
-  ``force_text_typ=``. The text, whether plain text or Markdown, will be
+  ``force_text_type=``. The text, whether plain text or Markdown, will be
   rendered to HTML.
-
-
-Usability Improvements
-======================
-
-* Fixed behavior of home/end keys in CodeMirror. (:bug:`3392`)
-
-  The behavior of home/end in Markdown editors did not match the native text
-  editing behavior when lines were long enough to wrap.
-
-
-Performance Improvements
-========================
-
-* Improve performance of editing text in CodeMirror editors.
-
-  Interactive editing of text in the Markdown editors was slow, especially when
-  typing very fast. These performance problems have been fixed.
-
-* Improved the database query performance when querying some list resources in
-  the Web API.
 
 
 Bug Fixes
@@ -161,26 +167,21 @@ Dashboard
 * Fixed initial calculations for open issue counts on the dashboard.
 
   The calculations for how many open issues were present on a review request
-  (done during the upgrade from 1.x to 2.0.x) were not quite right. If you have
-  incorrect issue counts in your dashboard, you can fix them by running
+  (done during the upgrade from 1.x to 2.0.x) were not quite right. If you
+  have incorrect issue counts in your dashboard, you can fix them by running
   :command:`rb-site manage /path/to/site reset-issue-counts`.
 
 
 Diff Viewer
 -----------
 
-* Avoid creating an extra browser history entry when opening the diff viewer in
-  Firefox.
-
-  Firefox behaves differently from other browsers, in that changing the URL
-  hash using ``window.location.hash`` creates a new history entry. The initial
-  redirect that happens when loading the diff viewer pointing to #index_header
-  no longer creates a history entry.
+* When opening the diff viewer in Firefox, you no longer have to click
+  Back twice to get to the previous page.
 
   Patch by Steven MacLeod.
 
-* Fixed a couple issues that could cause a "list index out of range" error when
-  viewing interdiffs containing deleted files. (:bug:`3481`)
+* Fixed a couple issues that could cause a "list index out of range" error
+  when viewing interdiffs containing deleted files. (:bug:`3481`)
 
 
 Review Requests
@@ -195,7 +196,8 @@ Review Requests
 
   Patch by Mark Loyzer.
 
-* Fixed e-mail notifications when Local Site groups were present. (:bug:`3581`)
+* Fixed e-mail notifications when Local Site groups were present.
+  (:bug:`3581`)
 
   In the case where the database had a Local Site configured with a review
   group, and a user was a member of that group, there were cases where that
@@ -221,8 +223,9 @@ Administration
 
   An upstream change in Django caused a regression in the caching behavior,
   automatically using the "local memory" cache, regardless of what was
-  configured in the settings. This release fixes that, and in the process makes
-  it possible to switch cache backends without restarting the web server.
+  configured in the settings. This release fixes that, and in the process
+  makes it possible to switch cache backends without restarting the web
+  server.
 
 * Fixed the help output of the :command:`rb-site manage` command.
 
@@ -247,8 +250,8 @@ Subversion
 * Fixed a couple more issues with missing commit data.
 
   In the post-commit section of the "New Review Request" page, commits that
-  lacked author information or commit messages would cause server errors. These
-  have been fixed.
+  lacked author information or commit messages would cause server errors.
+  These have been fixed.
 
 
 Contributors
@@ -258,6 +261,6 @@ Contributors
 * Barret Rennie
 * Christian Hammond
 * David Trowbridge
-* John Talling.
+* John Talling
 * Mark Loyzer
 * Steven MacLeod
