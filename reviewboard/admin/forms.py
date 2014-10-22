@@ -33,13 +33,13 @@ import re
 from django import forms
 from django.contrib.sites.models import Site
 from django.conf import settings
-from django.core.cache import DEFAULT_CACHE_ALIAS
 from django.core.exceptions import ValidationError
 from django.core.mail import send_mail
 from django.utils import six
 from django.utils.six.moves.urllib.parse import urlparse
 from django.utils.translation import ugettext as _
 from djblets.cache.backend_compat import normalize_cache_backend
+from djblets.cache.forwarding_backend import DEFAULT_FORWARD_CACHE_ALIAS
 from djblets.forms.fields import TimeZoneField
 from djblets.log import restart_logging
 from djblets.siteconfig.forms import SiteSettingsForm
@@ -62,13 +62,14 @@ class GeneralSettingsForm(SiteSettingsForm):
 
     CACHE_BACKENDS_MAP = {
         'file': 'django.core.cache.backends.filebased.FileBasedCache',
-        'memcached': 'django.core.cache.backends.memcached.CacheClass',
+        'memcached': 'django.core.cache.backends.memcached.MemcachedCache',
         'locmem': 'django.core.cache.backends.locmem.LocMemCache',
     }
 
     CACHE_TYPES_MAP = {
         'django.core.cache.backends.filebased.FileBasedCache': 'file',
         'django.core.cache.backends.memcached.CacheClass': 'memcached',
+        'django.core.cache.backends.memcached.MemcachedCache': 'memcached',
         'django.core.cache.backends.locmem.LocMemCache': 'locmem',
     }
 
@@ -169,8 +170,11 @@ class GeneralSettingsForm(SiteSettingsForm):
         super(GeneralSettingsForm, self).load()
 
         # Load the cache settings.
-        cache_backend = normalize_cache_backend(
-            self.siteconfig.get('cache_backend'))
+        cache_backend_info = self.siteconfig.get('cache_backend')
+        cache_backend = (
+            normalize_cache_backend(cache_backend_info,
+                                    DEFAULT_FORWARD_CACHE_ALIAS) or
+            normalize_cache_backend(cache_backend_info))
 
         cache_type = self.CACHE_TYPES_MAP.get(cache_backend['BACKEND'],
                                               'custom')
@@ -237,7 +241,7 @@ class GeneralSettingsForm(SiteSettingsForm):
                     location = location.split(';')
 
             self.siteconfig.set('cache_backend', {
-                DEFAULT_CACHE_ALIAS: {
+                DEFAULT_FORWARD_CACHE_ALIAS: {
                     'BACKEND': self.CACHE_BACKENDS_MAP[cache_type],
                     'LOCATION': location,
                 }

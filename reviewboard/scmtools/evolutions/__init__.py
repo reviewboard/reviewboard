@@ -14,4 +14,5 @@ SEQUENCE = [
     'unique_together_baseline',
     'repository_archive',
     'repository_hooks_uuid',
+    'repository_raw_password',
 ]

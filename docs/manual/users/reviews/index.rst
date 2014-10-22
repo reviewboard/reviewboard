@@ -9,6 +9,7 @@ Reviewing
    reviewing-files
    reviewing-images
    reviewing-markdown
+   reviewing-text-files
    issue-tracking
    draft-banner
    editing-reviews
