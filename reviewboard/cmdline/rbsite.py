@@ -429,6 +429,15 @@ class Site(object):
         """
         self.run_manage_command("evolve", ["--noinput", "--execute"])
 
+    def encrypt_passwords(self):
+        """Hardens any password storage.
+
+        Any legacy plain-text passwords will be encrypted.
+        """
+        from reviewboard.scmtools.models import Repository
+
+        Repository.objects.encrypt_plain_text_passwords()
+
     def get_static_media_upgrade_needed(self):
         """Determines if a static media config upgrade is needed."""
         from djblets.siteconfig.models import SiteConfiguration
@@ -1679,6 +1688,8 @@ class UpgradeCommand(Command):
                   "\n"
                   "Resetting in-database caches.")
             site.run_manage_command("fixreviewcounts")
+
+        site.encrypt_passwords()
 
         from djblets.siteconfig.models import SiteConfiguration
 

@@ -113,6 +113,16 @@ class RepositoryForm(forms.ModelForm):
         help_text=_('The plan for your repository on this hosting service. '
                     'This must match what is set for your repository.'))
 
+    password = forms.CharField(
+        label=_('Password'),
+        required=False,
+        widget=forms.PasswordInput(
+            render_value=True,
+            attrs={
+                'size': '30',
+                'autocomplete': 'off',
+            }))
+
     # Auto SSH key association field
     associate_ssh_key = forms.BooleanField(
         label=_('Associate my SSH key with the hosting service'),
@@ -365,6 +375,7 @@ class RepositoryForm(forms.ModelForm):
         """
         self.fields['use_ticket_auth'].initial = \
             self.instance.extra_data.get('use_ticket_auth', False)
+        self.fields['password'].initial = self.instance.password
 
     def _populate_hosting_service_fields(self):
         """Populates all the main hosting service fields in the form.
@@ -916,6 +927,9 @@ class RepositoryForm(forms.ModelForm):
     def clean_mirror_path(self):
         return self.cleaned_data['mirror_path'].strip()
 
+    def clean_password(self):
+        return self.cleaned_data['password'].strip()
+
     def clean_bug_tracker_base_url(self):
         return self.cleaned_data['bug_tracker_base_url'].rstrip('/')
 
@@ -1045,6 +1059,8 @@ class RepositoryForm(forms.ModelForm):
         """
         repository = super(RepositoryForm, self).save(commit=False,
                                                       *args, **kwargs)
+        repository.password = self.cleaned_data['password'] or None
+
         bug_tracker_use_hosting = self.cleaned_data['bug_tracker_use_hosting']
 
         repository.extra_data = {
@@ -1234,9 +1250,6 @@ class RepositoryForm(forms.ModelForm):
             'bug_tracker': forms.TextInput(attrs={'size': '60'}),
             'username': forms.TextInput(attrs={'size': '30',
                                                'autocomplete': 'off'}),
-            'password': forms.PasswordInput(attrs={'size': '30',
-                                                   'autocomplete': 'off'},
-                                            render_value=True),
             'users': FilteredSelectMultiple(_('users with access'), False),
             'review_groups': FilteredSelectMultiple(
                 _('review groups with access'), False),

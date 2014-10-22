@@ -21,6 +21,8 @@ from djblets.log import log_timed
 
 from reviewboard.hostingsvcs.models import HostingServiceAccount
 from reviewboard.hostingsvcs.service import get_hosting_service
+from reviewboard.scmtools.crypto_utils import (decrypt_password,
+                                               encrypt_password)
 from reviewboard.scmtools.managers import RepositoryManager, ToolManager
 from reviewboard.scmtools.signals import (checked_file_exists,
                                           checking_file_exists,
@@ -82,6 +84,8 @@ class Tool(models.Model):
 
 @python_2_unicode_compatible
 class Repository(models.Model):
+    ENCRYPTED_PASSWORD_PREFIX = '\t'
+
     name = models.CharField(max_length=64)
     path = models.CharField(max_length=255)
     mirror_path = models.CharField(max_length=255, blank=True)
@@ -96,7 +100,8 @@ class Repository(models.Model):
                     "<tt>&lt;filename&gt;</tt> in the URL in place of the "
                     "revision and filename parts of the path."))
     username = models.CharField(max_length=32, blank=True)
-    password = models.CharField(max_length=128, blank=True)
+    encrypted_password = models.CharField(max_length=128, blank=True,
+                                          db_column='password')
     extra_data = JSONField(null=True)
 
     tool = models.ForeignKey(Tool, related_name="repositories")
@@ -175,6 +180,44 @@ class Repository(models.Model):
     BRANCHES_CACHE_PERIOD = 60 * 5  # 5 minutes
     COMMITS_CACHE_PERIOD_SHORT = 60 * 5  # 5 minutes
     COMMITS_CACHE_PERIOD_LONG = 60 * 60 * 24  # 1 day
+
+    def _set_password(self, value):
+        """Sets the password for the repository.
+
+        The password will be stored as an encrypted value, prefixed with a
+        tab character in order to differentiate between legacy plain-text
+        passwords.
+        """
+        if value:
+            value = encrypt_password(value)
+
+        self.encrypted_password = '%s%s' % (self.ENCRYPTED_PASSWORD_PREFIX,
+                                            value)
+
+    def _get_password(self):
+        """Returns the password for the repository.
+
+        If a password is stored and encrypted, it will be decrypted and
+        returned.
+
+        If the stored password is in plain-text, then it will be encrypted,
+        stored in the database, and returned.
+        """
+        password = self.encrypted_password
+
+        if not password:
+            password = None
+        elif password.startswith(self.ENCRYPTED_PASSWORD_PREFIX):
+            password = decrypt_password(
+                password[len(self.ENCRYPTED_PASSWORD_PREFIX):])
+        else:
+            # This is a plain-text password. Convert it.
+            self.password = password
+            self.save(update_fields=['encrypted_password'])
+
+        return password
+
+    password = property(_get_password, _set_password)
 
     def get_scmtool(self):
         cls = self.tool.get_scmtool_class()
