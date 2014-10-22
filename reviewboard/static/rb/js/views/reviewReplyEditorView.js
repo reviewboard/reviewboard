@@ -108,14 +108,19 @@ RB.ReviewReplyEditorView = Backbone.View.extend({
 
         this._$editor = $draftComment.find('pre.reviewtext');
         this._$editor
-            .inlineEditor(_.extend({
-                cls: 'inline-comment-editor',
-                editIconClass: 'rb-icon rb-icon-edit',
-                notifyUnchangedCompletion: true,
-                multiline: true,
-                hasRawValue: true,
-                rawValue: this._$editor.data('raw-value') || ''
-            }, RB.TextEditorView.getInlineEditorOptions()))
+            .inlineEditor(
+                _.extend({
+                    cls: 'inline-comment-editor',
+                    editIconClass: 'rb-icon rb-icon-edit',
+                    notifyUnchangedCompletion: true,
+                    multiline: true,
+                    hasRawValue: true,
+                    rawValue: this._$editor.data('raw-value') || ''
+                },
+                RB.TextEditorView.getInlineEditorOptions({
+                    richText: this._$editor.hasClass('rich-text')
+                }))
+            )
             .removeAttr('data-raw-value')
             .on({
                 beginEdit: function() {
@@ -124,11 +129,17 @@ RB.ReviewReplyEditorView = Backbone.View.extend({
                     }
                 },
                 complete: _.bind(function(e, value) {
+                    var textEditor = RB.TextEditorView.getFromInlineEditor(
+                        this._$editor);
+
                     if (pageEditState) {
                         pageEditState.decr('editCount');
                     }
 
-                    this.model.set('text', value);
+                    this.model.set({
+                        text: value,
+                        richText: textEditor.richText
+                    });
                     this.model.save();
                 }, this),
                 cancel: _.bind(function() {

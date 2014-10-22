@@ -475,9 +475,14 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
             fieldName: fieldID,
             formatter: null,
             jsonFieldName: fieldID,
-            jsonRichTextFieldName: options.allowMarkdown
-                                   ? fieldID + '_rich_text'
-                                   : null,
+            jsonRichTextFieldName:
+                options.useExtraData && options.allowMarkdown
+                ? fieldID + '_rich_text'
+                : null,
+            jsonTextTypeFieldName:
+                !options.useExtraData && options.allowMarkdown
+                ? fieldID + '_text_type'
+                : null,
             useEditIconOnly: false,
             useExtraData: true
         }, options);
@@ -487,7 +492,7 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
          */
         options.richTextAttr = options.allowMarkdown
                                ? options.fieldName + 'RichText'
-                               : null,
+                               : null;
 
         this._fieldEditors[fieldID] = options;
     },
@@ -1021,7 +1026,9 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
             _.extend(
                 options,
                 RB.TextEditorView.getInlineEditorOptions({
-                    minHeight: 0
+                    minHeight: 0,
+                    richText: model.getDraftField(fieldOptions.richTextAttr,
+                                                  fieldOptions)
                 }),
                 {
                     matchHeight: false,
@@ -1042,6 +1049,16 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
                     model.decr('editCount');
                 }, this),
                 complete: _.bind(function(e, value) {
+                    var extraOptions = {},
+                        textEditor;
+
+                    if (fieldOptions.allowMarkdown) {
+                        textEditor =
+                            RB.TextEditorView.getFromInlineEditor($el);
+
+                        extraOptions.richText = textEditor.richText;
+                    }
+
                     this._scheduleResizeLayout();
                     model.decr('editCount');
                     model.setDraftField(
@@ -1062,7 +1079,7 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
                                 this._formatField(fieldOptions);
                                 this.showBanner();
                             }
-                        }, fieldOptions),
+                        }, fieldOptions, extraOptions),
                         this);
                 }, this),
                 resize: this._checkResizeLayout

@@ -332,6 +332,9 @@ suite('rb/views/ReviewRequestEditorView', function() {
     describe('Fields', function() {
         var saveSpyFunc,
             jsonFieldName,
+            jsonTextTypeFieldName,
+            supportsRichText,
+            useExtraData,
             $field,
             $input;
 
@@ -351,6 +354,9 @@ suite('rb/views/ReviewRequestEditorView', function() {
         function setupFieldTests(options) {
             beforeEach(function() {
                 jsonFieldName = options.jsonFieldName;
+                jsonTextTypeFieldName = jsonFieldName + '_text_type';
+                supportsRichText = !!options.supportsRichText;
+                useExtraData = options.useExtraData;
                 $field = view.$(options.selector);
                 $input = $field.inlineEditor('field');
             });
@@ -368,30 +374,70 @@ suite('rb/views/ReviewRequestEditorView', function() {
             });
         }
 
+        function runSavingTest(richText, textType) {
+            runs(function() {
+                var textEditor;
+
+                $field.inlineEditor('startEdit');
+
+                if (supportsRichText) {
+                    expect($field.hasClass('field-text-area')).toBe(true);
+
+                    textEditor = $input.data('text-editor');
+                    textEditor.setText('My Value');
+                    textEditor.setRichText(richText);
+                } else {
+                    $input.val('My Value');
+                }
+
+                $input.triggerHandler('keyup');
+                expect($field.inlineEditor('value')).toBe('My Value');
+            });
+
+            waitsFor(function() {
+                return $field.inlineEditor('dirty');
+            });
+
+            runs(function() {
+                var expectedData = {},
+                    fieldPrefix = (useExtraData ? 'extra_data.' : '');
+
+                expectedData[fieldPrefix + jsonFieldName] = 'My Value';
+
+                if (supportsRichText) {
+                    expectedData[fieldPrefix + jsonTextTypeFieldName] =
+                        textType;
+
+                    expectedData.force_text_type = 'html';
+                    expectedData.include_raw_text_fields = true;
+                }
+
+                expect($field.inlineEditor('dirty')).toBe(true);
+                $field.inlineEditor('submit');
+
+                expect(reviewRequest.draft.save).toHaveBeenCalled();
+                expect(reviewRequest.draft.save.calls[0].args[0].data)
+                    .toEqual(expectedData);
+            });
+        }
+
         function savingTest() {
             it('Saves', function() {
-                runs(function() {
-                    $field.inlineEditor('startEdit');
+                expect(supportsRichText).toBe(false);
+                runSavingTest();
+            });
+        }
 
-                    if ($field.hasClass('field-text-area')) {
-                        $input.data('text-editor').setText('My Value');
-                    } else {
-                        $input.val('My Value');
-                    }
-
-                    $input.triggerHandler('keyup');
-                    expect($field.inlineEditor('value')).toBe('My Value');
+        function richTextSavingTest() {
+            describe('Saves', function() {
+                it('For Markdown', function() {
+                    expect(supportsRichText).toBe(true);
+                    runSavingTest(true, 'markdown');
                 });
 
-                waitsFor(function() {
-                    return $field.inlineEditor('dirty')
-                });
-
-                runs(function() {
-                    expect($field.inlineEditor('dirty')).toBe(true);
-                    $field.inlineEditor('submit');
-
-                    expect(reviewRequest.draft.save).toHaveBeenCalled();
+                it('For plain text', function() {
+                    expect(supportsRichText).toBe(true);
+                    runSavingTest(false, 'plain');
                 });
             });
         }
@@ -465,22 +511,18 @@ suite('rb/views/ReviewRequestEditorView', function() {
         });
 
         describe('Change Descriptions', function() {
-            function closeDescriptionTests(bannerSel, closeType) {
+            function closeDescriptionTests(options) {
                 beforeEach(function() {
-                    reviewRequest.set('state', closeType);
+                    reviewRequest.set('state', options.closeType);
                     view.showBanner();
 
-                    spyOn(reviewRequest, 'close')
-                        .andCallFake(function(options) {
-                            expect(options.type).toBe(closeType);
-                            expect(options.description).toBe(
-                                'My Value');
-                        });
+                    spyOn(reviewRequest, 'close').andCallThrough();
+                    spyOn(reviewRequest, 'save');
                 });
 
                 setupFieldTests({
                     jsonFieldName: 'changedescription',
-                    selector: bannerSel + ' #field_changedescription'
+                    selector: options.bannerSel + ' #field_changedescription'
                 });
 
                 hasEditorTest();
@@ -489,13 +531,43 @@ suite('rb/views/ReviewRequestEditorView', function() {
                     expect($input.is(':visible')).toBe(false);
                 });
 
-                it('Saves', function() {
-                    $field.inlineEditor('startEdit');
-                    $input.data('text-editor').setText('My Value');
-                    $input.triggerHandler('keyup');
-                    $field.inlineEditor('submit');
+                describe('Saves', function() {
+                    function testSave(richText, textType, setRichText) {
+                        var textEditor,
+                            expectedData = {
+                                status: options.jsonCloseType,
+                                force_text_type: 'html',
+                                include_raw_text_fields: true
+                            };
 
-                    expect(reviewRequest.close).toHaveBeenCalled();
+                        expectedData[options.jsonTextTypeFieldName] = textType;
+                        expectedData[options.jsonFieldName] = 'My Value';
+
+                        $field.inlineEditor('startEdit');
+
+                        textEditor = $input.data('text-editor');
+                        textEditor.setText('My Value');
+
+                        if (setRichText !== false) {
+                            textEditor.setRichText(richText);
+                        }
+
+                        $input.triggerHandler('keyup');
+                        $field.inlineEditor('submit');
+
+                        expect(reviewRequest.close).toHaveBeenCalled();
+                        expect(reviewRequest.save).toHaveBeenCalled();
+                        expect(reviewRequest.save.calls[0].args[0].data)
+                            .toEqual(expectedData);
+                    }
+
+                    it('For Markdown', function() {
+                        testSave(true, 'markdown');
+                    });
+
+                    it('For plain text', function() {
+                        testSave(false, 'plain');
+                    });
                 });
 
                 describe('State when statusEditable', function() {
@@ -524,8 +596,13 @@ suite('rb/views/ReviewRequestEditorView', function() {
             }
 
             describe('Discarded review requests', function() {
-                closeDescriptionTests('#discard-banner',
-                                      RB.ReviewRequest.CLOSE_DISCARDED);
+                closeDescriptionTests({
+                    bannerSel: '#discard-banner',
+                    closeType: RB.ReviewRequest.CLOSE_DISCARDED,
+                    jsonCloseType: 'discarded',
+                    jsonFieldName: 'close_description',
+                    jsonTextTypeFieldName: 'close_description_text_type'
+                });
             });
 
             describe('Draft review requests', function() {
@@ -534,30 +611,37 @@ suite('rb/views/ReviewRequestEditorView', function() {
                 });
 
                 setupFieldTests({
+                    supportsRichText: true,
                     jsonFieldName: 'changedescription',
                     selector: '#draft-banner #field_changedescription'
                 });
 
                 hasEditorTest();
-                savingTest();
+                richTextSavingTest();
 
                 editCountTests();
             });
 
             describe('Submitted review requests', function() {
-                closeDescriptionTests('#submitted-banner',
-                                      RB.ReviewRequest.CLOSE_SUBMITTED);
+                closeDescriptionTests({
+                    bannerSel: '#submitted-banner',
+                    closeType: RB.ReviewRequest.CLOSE_SUBMITTED,
+                    jsonCloseType: 'submitted',
+                    jsonFieldName: 'close_description',
+                    jsonTextTypeFieldName: 'close_description_text_type'
+                });
             });
         });
 
         describe('Description', function() {
             setupFieldTests({
+                supportsRichText: true,
                 jsonFieldName: 'description',
                 selector: '#field_description'
             });
 
             hasEditorTest();
-            savingTest();
+            richTextSavingTest();
 
             describe('Formatting', function() {
                 it('Links', function() {
@@ -584,12 +668,13 @@ suite('rb/views/ReviewRequestEditorView', function() {
 
         describe('Testing Done', function() {
             setupFieldTests({
+                supportsRichText: true,
                 jsonFieldName: 'testing_done',
                 selector: '#field_testing_done'
             });
 
             hasEditorTest();
-            savingTest();
+            richTextSavingTest();
 
             describe('Formatting', function() {
                 it('Links', function() {

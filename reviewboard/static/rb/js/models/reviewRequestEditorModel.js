@@ -95,20 +95,23 @@ RB.ReviewRequestEditor = Backbone.Model.extend({
         var reviewRequest = this.get('reviewRequest'),
             jsonFieldName,
             jsonTextTypeFieldName,
+            richText,
             data = {};
 
         options = options || {};
+        richText = !!options.richText;
 
         if (fieldName === 'closeDescription' && _.has(options, 'closeType')) {
             reviewRequest.close(
                 {
                     type: options.closeType,
+                    richText: richText,
                     description: value,
                     success: options.success,
                     error: options.error,
                     postData: {
                         force_text_type: 'html',
-                        text_type: 'markdown'
+                        include_raw_text_fields: true
                     }
                 },
                 context);
@@ -126,10 +129,10 @@ RB.ReviewRequestEditor = Backbone.Model.extend({
             if (options.useExtraData) {
                 jsonTextTypeFieldName = 'extra_data.' +
                                         options.jsonRichTextFieldName;
-                data[jsonTextTypeFieldName] = true;
+                data[jsonTextTypeFieldName] = richText;
             } else {
-                jsonTextTypeFieldName = options.jsonRichTextFieldName;
-                data[jsonTextTypeFieldName] = 'markdown';
+                jsonTextTypeFieldName = options.jsonTextTypeFieldName;
+                data[jsonTextTypeFieldName] = richText ? 'markdown' : 'plain';
             }
 
             data.force_text_type = 'html';

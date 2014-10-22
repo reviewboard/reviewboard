@@ -209,6 +209,11 @@ RB.ReviewRequest = RB.BaseResource.extend({
             data.close_description = options.description;
         }
 
+        if (options.richText !== undefined) {
+            data.close_description_text_type =
+                (options.richText ? 'markdown' : 'plain');
+        }
+
         if (options.postData !== undefined) {
             _.extend(data, options.postData);
         }
