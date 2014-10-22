@@ -78,13 +78,13 @@ def convert_line_endings(data):
     #
     # See http://code.google.com/p/reviewboard/issues/detail?id=386
     # and http://reviews.reviewboard.org/r/286/
-    if data == "":
-        return ""
+    if data == b"":
+        return b""
 
-    if data[-1] == "\r":
+    if data[-1] == b"\r":
         data = data[:-1]
 
-    return NEWLINE_CONVERSION_RE.sub('\n', data)
+    return NEWLINE_CONVERSION_RE.sub(b'\n', data)
 
 
 def patch(diff, file, filename, request=None):
@@ -309,10 +309,12 @@ def get_diff_files(diffset, filediff=None, interdiffset=None, request=None):
 
         if interdiffset:
             # First, find out if we want to even process this one.
-            # We only process if there's a difference in files.
-
+            # If the diffs are identical, or if the files were deleted in both
+            # cases, then we can be absolutely sure that there's nothing
+            # interesting to show to the user.
             if (filediff and interfilediff and
-                    filediff.diff == interfilediff.diff):
+                (filediff.diff == interfilediff.diff or
+                 (filediff.deleted and interfilediff.deleted))):
                 continue
 
             source_revision = _("Diff Revision %s") % diffset.revision
