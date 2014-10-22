@@ -2,6 +2,7 @@ from __future__ import unicode_literals
 
 import fnmatch
 import functools
+import hashlib
 import re
 
 from django.utils import six
@@ -159,6 +160,13 @@ class DiffChunkGenerator(object):
         old = get_original_file(self.filediff, self.request, encoding_list)
         new = get_patched_file(old, self.filediff, self.request)
 
+        if self.filediff.orig_sha1 is None:
+            self.filediff.extra_data.update({
+                'orig_sha1': self._get_checksum(old),
+                'patched_sha1': self._get_checksum(new),
+            })
+            self.filediff.save(update_fields=['extra_data'])
+
         if self.interfilediff:
             old = new
             interdiff_orig = get_original_file(self.interfilediff,
@@ -166,6 +174,13 @@ class DiffChunkGenerator(object):
                                                encoding_list)
             new = get_patched_file(interdiff_orig, self.interfilediff,
                                    self.request)
+
+            if self.interfilediff.orig_sha1 is None:
+                self.interfilediff.extra_data.update({
+                    'orig_sha1': self._get_checksum(interdiff_orig),
+                    'patched_sha1': self._get_checksum(new),
+                })
+                self.interfilediff.save(update_fields=['extra_data'])
         elif self.force_interdiff:
             # Basically, revert the change.
             old, new = new, old
@@ -629,6 +644,11 @@ class DiffChunkGenerator(object):
         lexer.add_filter('codetagify')
 
         return highlight(data, lexer, NoWrapperHtmlFormatter()).splitlines()
+
+    def _get_checksum(self, content):
+        hasher = hashlib.sha1()
+        hasher.update(content)
+        return hasher.hexdigest()
 
 
 def compute_chunk_last_header(lines, numlines, meta, last_header=None):
