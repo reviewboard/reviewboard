@@ -309,12 +309,15 @@ def get_diff_files(diffset, filediff=None, interdiffset=None, request=None):
 
         if interdiffset:
             # First, find out if we want to even process this one.
-            # If the diffs are identical, or if the files were deleted in both
-            # cases, then we can be absolutely sure that there's nothing
-            # interesting to show to the user.
+            # If the diffs are identical, or the patched files are identical,
+            # or if the files were deleted in both cases, then we can be
+            # absolutely sure that there's nothing interesting to show to
+            # the user.
             if (filediff and interfilediff and
                 (filediff.diff == interfilediff.diff or
-                 (filediff.deleted and interfilediff.deleted))):
+                 (filediff.deleted and interfilediff.deleted) or
+                 (filediff.patched_sha1 is not None and
+                  filediff.patched_sha1 == interfilediff.patched_sha1))):
                 continue
 
             source_revision = _("Diff Revision %s") % diffset.revision

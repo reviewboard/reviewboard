@@ -185,6 +185,14 @@ class FileDiff(models.Model):
 
     parent_diff = property(_get_parent_diff, _set_parent_diff)
 
+    @property
+    def orig_sha1(self):
+        return self.extra_data.get('orig_sha1')
+
+    @property
+    def patched_sha1(self):
+        return self.extra_data.get('patched_sha1')
+
     def get_line_counts(self):
         """Returns the stored line counts for the diff.
 
