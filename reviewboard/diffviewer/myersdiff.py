@@ -59,6 +59,10 @@ class MyersDiffer(Differ):
         """
         self._gen_diff_data()
 
+        if self.a_data.length == 0 and self.b_data.length == 0:
+            # There's nothing to process or yield. Bail.
+            return
+
         a_line = b_line = 0
         last_group = None
 
