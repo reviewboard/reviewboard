@@ -12,6 +12,7 @@ except ImportError:
         memcache = None
 
 from django.conf import settings
+from djblets.cache.forwarding_backend import DEFAULT_FORWARD_CACHE_ALIAS
 
 
 def get_memcached_hosts():
@@ -19,7 +20,7 @@ def get_memcached_hosts():
     if not memcache:
         return None
 
-    cache_info = settings.CACHES['default']
+    cache_info = settings.CACHES[DEFAULT_FORWARD_CACHE_ALIAS]
     backend = cache_info['BACKEND']
     locations = cache_info.get('LOCATION', [])
 
