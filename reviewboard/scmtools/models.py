@@ -187,10 +187,12 @@ class Repository(models.Model):
         passwords.
         """
         if value:
-            value = encrypt_password(value)
+            value = '%s%s' % (self.ENCRYPTED_PASSWORD_PREFIX,
+                              encrypt_password(value))
+        else:
+            value = ''
 
-        self.encrypted_password = '%s%s' % (self.ENCRYPTED_PASSWORD_PREFIX,
-                                            value)
+        self.encrypted_password = value
 
     def _get_password(self):
         """Returns the password for the repository.
@@ -203,11 +205,17 @@ class Repository(models.Model):
         """
         password = self.encrypted_password
 
-        if not password:
+        # NOTE: Due to a bug in 2.0.9, it was possible to get a string of
+        #       "\tNone", indicating no password. We have to check for this.
+        if not password or password == '\tNone':
             password = None
         elif password.startswith(self.ENCRYPTED_PASSWORD_PREFIX):
-            password = decrypt_password(
-                password[len(self.ENCRYPTED_PASSWORD_PREFIX):])
+            password = password[len(self.ENCRYPTED_PASSWORD_PREFIX):]
+
+            if password:
+                password = decrypt_password(password)
+            else:
+                password = None
         else:
             # This is a plain-text password. Convert it.
             self.password = password
