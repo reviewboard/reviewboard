@@ -24,7 +24,8 @@ class BaseReviewRequestDetails(models.Model):
     """
     MAX_SUMMARY_LENGTH = 300
 
-    summary = models.CharField(_("summary"), max_length=MAX_SUMMARY_LENGTH)
+    summary = models.CharField(_("summary"), max_length=MAX_SUMMARY_LENGTH,
+                               db_index=True)
     description = models.TextField(_("description"), blank=True)
     testing_done = models.TextField(_("testing done"), blank=True)
     bugs_closed = models.CharField(_("bugs"), max_length=300, blank=True)

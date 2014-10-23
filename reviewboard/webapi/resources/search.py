@@ -20,6 +20,8 @@ class SearchResource(WebAPIResource, DjbletsUserResource):
     name = 'search'
     singleton = True
 
+    MIN_SUMMARY_LEN = 4
+
     def has_access_permissions(self, request, *args, **kwargs):
         return True
 
@@ -71,11 +73,13 @@ class SearchResource(WebAPIResource, DjbletsUserResource):
             ReviewRequest.objects.filter(local_site=local_site)
 
         if search_q:
-            q = (Q(id__istartswith=search_q) |
-                 Q(summary__icontains=search_q))
+            q = Q(id__istartswith=search_q)
+
+            if len(search_q) >= self.MIN_SUMMARY_LEN:
+                q |= Q(summary__istartswith=search_q)
 
             if request.GET.get('id', None):
-                q = q | Q(id__istartswith=search_q)
+                q |= Q(id__istartswith=request.GET['id'])
 
             query_review_requests = query_review_requests.filter(q)
 

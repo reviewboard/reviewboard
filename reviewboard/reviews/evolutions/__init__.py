@@ -26,4 +26,5 @@ SEQUENCE = [
     'review_request_issue_counts',
     'group_mailing_list_charfield',
     'review_request_draft_commit_id',
+    'review_request_summary_index',
 ]
