@@ -28,4 +28,5 @@ SEQUENCE = [
     'review_request_draft_commit_id',
     'group_email_list_only',
     'review_request_file_attachment_histories',
+    'review_request_summary_index',
 ]

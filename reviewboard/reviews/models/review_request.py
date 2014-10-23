@@ -143,6 +143,11 @@ class ReviewRequest(BaseReviewRequestDetails):
         BaseComment.DROPPED: 'issue_dropped_count',
     }
 
+    summary = models.CharField(
+        _("summary"),
+        max_length=BaseReviewRequestDetails.MAX_SUMMARY_LENGTH,
+        db_index=True)
+
     submitter = models.ForeignKey(User, verbose_name=_("submitter"),
                                   related_name="review_requests")
     time_added = models.DateTimeField(_("time added"), default=timezone.now)

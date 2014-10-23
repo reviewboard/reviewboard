@@ -456,7 +456,7 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
             }
 
             if (((anchorTypes & this.ANCHOR_COMMENT) &&
-                 $anchor.hasClass('comment-anchor')) ||
+                 $anchor.hasClass('commentflag-anchor')) ||
                 ((anchorTypes & this.ANCHOR_FILE) &&
                  $anchor.hasClass('file-anchor')) ||
                 ((anchorTypes & this.ANCHOR_CHUNK) &&
