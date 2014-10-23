@@ -327,7 +327,17 @@ class UsersDataGrid(DataGrid):
         else:
             qs = queryset
 
-        super(UsersDataGrid, self).__init__(request, qs, title)
+        current_letter = request.GET.get('letter', 'A')
+
+        if current_letter.isalpha():
+            qs = qs.filter(username__istartswith=current_letter)
+        elif current_letter.isdecimal() or current_letter in ("_", "-", "."):
+            qs = qs.filter(username__regex=r"^[0-9_\-\.].*")
+        else:
+            raise Http404
+
+        super(UsersDataGrid, self).__init__(request, qs, title,
+                                            current_letter=current_letter)
 
         self.default_sort = ['username']
         self.profile_sort_field = 'sort_submitter_columns'

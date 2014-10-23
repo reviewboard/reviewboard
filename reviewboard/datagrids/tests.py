@@ -415,11 +415,26 @@ class SubmitterListViewTests(BaseViewTestCase):
 
         datagrid = self._get_context_var(response, 'datagrid')
         self.assertTrue(datagrid)
-        self.assertEqual(len(datagrid.rows), 4)
+        self.assertEqual(len(datagrid.rows), 1)
         self.assertEqual(datagrid.rows[0]['object'].username, 'admin')
-        self.assertEqual(datagrid.rows[1]['object'].username, 'doc')
-        self.assertEqual(datagrid.rows[2]['object'].username, 'dopey')
-        self.assertEqual(datagrid.rows[3]['object'].username, 'grumpy')
+
+        response = self.client.get('/users/?letter=D')
+        self.assertEqual(response.status_code, 200)
+
+        datagrid = self._get_context_var(response, 'datagrid')
+        self.assertTrue(datagrid)
+        self.assertEqual(len(datagrid.rows), 2)
+        self.assertEqual(datagrid.rows[0]['object'].username, 'doc')
+        self.assertEqual(datagrid.rows[1]['object'].username, 'dopey')
+
+        response = self.client.get('/users/?letter=G')
+        self.assertEqual(response.status_code, 200)
+
+        datagrid = self._get_context_var(response, 'datagrid')
+        self.assertTrue(datagrid)
+        self.assertEqual(len(datagrid.rows), 1)
+
+        self.assertEqual(datagrid.rows[0]['object'].username, 'grumpy')
 
     @add_fixtures(['test_users'])
     def test_as_anonymous_and_redirect(self):
