@@ -19,7 +19,6 @@ from reviewboard.ssh import utils as sshutils
 
 
 GIT_DIFF_EMPTY_CHANGESET_SIZE = 3
-GIT_DIFF_PREFIX = re.compile('^[ab]/')
 
 
 try:
@@ -210,14 +209,14 @@ class GitDiffParser(DiffParser):
 
         # Now we have a diff we are going to use so get the filenames + commits
         file_info = File()
-        file_info.data = self.lines[linenum] + b"\n"
+        file_info.data = self.lines[linenum] + b'\n'
         file_info.binary = False
-        diff_line = self.lines[linenum].split()
+        # We split at the b/ to deal with space in filenames
+        diff_line = self.lines[linenum].split(b' b/')
 
         try:
-            # Need to remove the "a/" and "b/" prefix
-            file_info.origFile = GIT_DIFF_PREFIX.sub(b"", diff_line[-2])
-            file_info.newFile = GIT_DIFF_PREFIX.sub(b"", diff_line[-1])
+            file_info.origFile = diff_line[-2].replace(b'diff --git a/', b'')
+            file_info.newFile = diff_line[-1]
 
             if isinstance(file_info.origFile, six.binary_type):
                 file_info.origFile = file_info.origFile.decode('utf-8')
