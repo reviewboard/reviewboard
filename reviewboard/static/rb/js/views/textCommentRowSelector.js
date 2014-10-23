@@ -345,25 +345,37 @@ RB.TextCommentRowSelector = Backbone.View.extend({
             }
         }
 
-        _.each(nodes, function(tr, i) {
-            if (tr.cells.length === 1) {
-                cell = tr.cells[0];
-            } else {
-                cell = tr.cells[this._selectedCellIndex];
-            }
-
-            if (cell) {
-                pre = cell.querySelector('pre');
-
-                if (pre) {
-                    if (i > 0) {
-                        s += this._newlineChar;
-                    }
-
-                    s += pre.textContent;
+        if (nodes.length > 0) {
+            /*
+             * The selection spans multiple rows. Find the blocks of text
+             * in the column we want, and copy those to the clipboard.
+             */
+            _.each(nodes, function(tr, i) {
+                if (tr.cells.length === 1) {
+                    cell = tr.cells[0];
+                } else {
+                    cell = tr.cells[this._selectedCellIndex];
                 }
-            }
-        }, this);
+
+                if (cell) {
+                    pre = cell.querySelector('pre');
+
+                    if (pre) {
+                        if (i > 0) {
+                            s += this._newlineChar;
+                        }
+
+                        s += pre.textContent;
+                    }
+                }
+            }, this);
+        } else {
+            /*
+             * The selection is constrained within a row. Grab the text
+             * from there.
+             */
+            s = $(doc).text();
+        }
 
         try {
             clipboardData.setData('text', s);
