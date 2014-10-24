@@ -1,0 +1,79 @@
+=================================
+Review Board 2.0.10 Release Notes
+=================================
+
+**Release date**: October 23, 2014
+
+
+Upgrade Notes
+=============
+
+* This release contains minor database schema changes to the
+  ``reviews_reviewrequest`` and ``reviews_reviewrequestdraft`` tables.
+  These changes simply add an index to the ``summary`` field.
+
+
+Performance Improvements
+========================
+
+* Sped up the Dashboard when using the People, Groups, or To Me columns.
+
+  These columns have been optimized to reduce the number of SQL queries,
+  greatly speeding up the dashboard when used.
+
+* Sped up searching of summaries in the search field. (:bug:`3619`)
+
+  There were performance issues with the search field when looking up
+  summaries. We were looking up text anywhere in the summary, but this
+  resulted in too much load on the database.
+
+  For now, we are limiting search to the beginning of the summary text.
+
+  In future versions, we plan to rework this search to allow for looking up
+  text anywhere in the summary.
+
+
+Bug Fixes
+=========
+
+Diff Viewer
+-----------
+
+* Fixed selection of text within a single line. (:bug:`3631`)
+
+  This broke with the improved column-based text selection support in 2.0.9.
+
+* Fixed navigating between comment flags through key bindings. (:bug:`3626`)
+
+
+Administration
+--------------
+
+* Fixed problems loading and saving empty passwords.
+
+  This broke with the hardened password storage in 2.0.9.
+
+* Fixed warnings in the log about naive timestamps.
+
+* Fixed searching for comment text for file attachment comments and
+  screenshot comments in the database viewer. (:bug:`3616`)
+
+
+Git
+---
+
+* Fixed filename parsing when referenced files in Git diffs contained spaces.
+  (:bug:`3558`)
+
+  While it doesn't cover every possible case, the Git diff parsing does
+  do a much better job now of dealing with filenames that contain spaces.
+
+  Patch by Pierre Wilmot.
+
+
+Contributors
+============
+
+* Christian Hammond
+* David Trowbridge
+* Pierre Wilmot
