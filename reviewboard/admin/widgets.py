@@ -10,7 +10,7 @@ from django.db.models.aggregates import Count
 from django.db.models.signals import post_save, post_delete
 from django.template.context import RequestContext
 from django.template.loader import render_to_string
-from django.utils import six
+from django.utils import six, timezone
 from django.utils.translation import ugettext_lazy as _
 from djblets.cache.backend import cache_memoize
 
@@ -145,7 +145,7 @@ class UserActivityWidget(Widget):
     ]
 
     def generate_data(self, request):
-        now = datetime.date.today()
+        now = timezone.now()
         users = User.objects
 
         week = datetime.timedelta(days=7)
@@ -376,8 +376,12 @@ def dynamic_activity_data(request):
         new_range_start = range_start
         new_range_end = range_end
     else:
-        new_range_end = datetime.date.today() + datetime.timedelta(days=1)
+        new_range_end = datetime.datetime.now() + datetime.timedelta(days=1)
         new_range_start = new_range_end - datetime.timedelta(days=days_total)
+
+    current_tz = timezone.get_current_timezone()
+    new_range_start = timezone.make_aware(new_range_start, current_tz)
+    new_range_end = timezone.make_aware(new_range_end, current_tz)
 
     response_data = {
         "range_start": new_range_start.strftime("%Y-%m-%d"),
