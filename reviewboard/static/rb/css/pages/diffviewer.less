@@ -29,6 +29,7 @@
   border-collapse: collapse;
   padding: 2px;
   width: 100%;
+  overflow: hidden;
 
   &.diff-error {
     td {
@@ -75,6 +76,10 @@
       &.right {
         width: 100%;
       }
+    }
+
+    td .diff-collapse-btn {
+      right: 50%;
     }
   }
 
@@ -239,8 +244,19 @@
         text-align: right;
         vertical-align: top;
         cursor: pointer;
+        /*
+         * The minimum width is calculated so that the th is always as wide as
+         * the expand by 20 lines button, which is 28px wide.
+         */
+        min-width: calc(28px - 1em - @linenum-padding-right);
 
         .unselectable();
+      }
+
+      &.comment-divider td {
+        height: 1px;
+        padding: 0;
+        background-color: #666 !important;
       }
     }
 

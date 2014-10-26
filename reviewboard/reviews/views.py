@@ -161,23 +161,42 @@ def _query_for_diff(review_request, user, revision, draft):
 def build_diff_comment_fragments(
     comments, context,
     comment_template_name='reviews/diff_comment_fragment.html',
-    error_template_name='diffviewer/diff_fragment_error.html'):
+    error_template_name='diffviewer/diff_fragment_error.html',
+    lines_of_context=None):
 
     comment_entries = []
     had_error = False
     siteconfig = SiteConfiguration.objects.get_current()
 
+    if lines_of_context is None:
+        lines_of_context = [0, 0]
+
     for comment in comments:
         try:
+            line_count = comment.filediff.get_line_counts()['total_line_count']
+
+            first_line = max(1, comment.first_line - lines_of_context[0])
+            last_line = min(comment.last_line + lines_of_context[1],
+                            line_count)
+            num_lines = last_line - first_line + 1
+
             content = render_to_string(comment_template_name, {
                 'comment': comment,
                 'chunks': list(get_file_chunks_in_range(context,
                                                         comment.filediff,
                                                         comment.interfilediff,
-                                                        comment.first_line,
-                                                        comment.num_lines)),
+                                                        first_line,
+                                                        num_lines)),
                 'domain': Site.objects.get_current().domain,
-                'domain_method': siteconfig.get("site_domain_method"),
+                'domain_method': siteconfig.get('site_domain_method'),
+                'lines_of_context': lines_of_context,
+                'expandable_above': first_line != 1,
+                'expandable_below': last_line != line_count,
+                'expandable_all': num_lines != line_count,
+                'collapsible': lines_of_context != [0, 0],
+                'lines_above': first_line - 1,
+                'lines_below': line_count - last_line,
+                'first_line': first_line,
             })
         except Exception as e:
             content = exception_traceback_string(
@@ -1007,17 +1026,38 @@ def comment_diff_fragments(
     if get_modified_since(request, latest_timestamp):
         return HttpResponseNotModified()
 
+    lines_of_context = request.GET.get('lines_of_context', '0,0')
+
+    try:
+        lines_of_context = [int(i) for i in lines_of_context.split(',')]
+
+        # Ensure that we have 2 values for lines_of_context. If only one is
+        # given, assume it is both the before and after context. If more than
+        # two are given, only consider the first two. If somehow we get no
+        # lines of context value, we will default to [0, 0].
+
+        if len(lines_of_context) == 1:
+            lines_of_context.append(lines_of_context[0])
+        elif len(lines_of_context) > 2:
+            lines_of_context = lines_of_context[0:2]
+        elif len(lines_of_context) == 0:
+            raise ValueError
+    except ValueError:
+        lines_of_context = [0, 0]
+
     context = RequestContext(request, {
         'comment_entries': [],
         'container_prefix': request.GET.get('container_prefix'),
         'queue_name': request.GET.get('queue'),
+        'show_controls': request.GET.get('show_controls', False),
     })
 
     had_error, context['comment_entries'] = \
         build_diff_comment_fragments(comments,
                                      context,
                                      comment_template_name,
-                                     error_template_name)
+                                     error_template_name,
+                                     lines_of_context=lines_of_context)
 
     page_content = render_to_string(template_name, context)
 

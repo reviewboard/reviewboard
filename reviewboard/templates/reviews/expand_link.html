@@ -1,0 +1,8 @@
+<a href="#" title="{{tooltip}}" class="diff-expand-btn"
+   data-comment-id="{{comment_id}}"
+{% if expand_pos %}
+   data-lines-of-context="{{expand_pos.0}},{{expand_pos.1}}"
+{% endif %}>
+ <div class="rb-icon {{image_class}}"></div>
+{% if text %}{{text}}{% endif %}
+</a>

@@ -9,7 +9,7 @@ from django.template import TemplateSyntaxError
 from django.template.defaultfilters import stringfilter
 from django.template.loader import render_to_string
 from django.utils import six
-from django.utils.html import escape
+from django.utils.html import escape, format_html
 from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext_lazy as _
 from djblets.util.decorators import basictag, blocktag
@@ -531,3 +531,49 @@ def _render_markdown(text, is_rich_text):
         return mark_safe(render_markdown(text))
     else:
         return text
+
+
+@register.tag
+@basictag(takes_context=True)
+def expand_fragment_link(context, expanding, tooltip,
+                         expand_above, expand_below, text=None):
+    """Renders a diff comment fragment expansion link.
+
+    This link will expand the context by the supplied `expanding_above` and
+    `expanding_below` values.
+
+    `expanding` is expected to be one of 'above', 'below', or 'line'."""
+
+    lines_of_context = context['lines_of_context']
+
+    image_class = 'rb-icon-diff-expand-%s' % expanding
+    expand_pos = (lines_of_context[0] + expand_above,
+                  lines_of_context[1] + expand_below)
+
+    return render_to_string('reviews/expand_link.html', {
+        'tooltip': tooltip,
+        'text': text,
+        'comment_id': context['comment'].id,
+        'expand_pos': expand_pos,
+        'image_class': image_class,
+    })
+
+
+@register.tag
+@basictag(takes_context=True)
+def expand_fragment_header_link(context, tooltip, line, text):
+    """Render a diff comment fragment header expansion link.
+
+    This link expands the context to contain the given line number."""
+
+    lines_of_context = context['lines_of_context']
+    num_lines = context['first_line'] - line
+    expand_pos = (lines_of_context[0] + num_lines, lines_of_context[1])
+
+    return render_to_string('reviews/expand_link.html', {
+        'tooltip': tooltip,
+        'text': format_html('<code>{0}</code>', text),
+        'comment_id': context['comment'].id,
+        'expand_pos': expand_pos,
+        'image_class': 'rb-icon-diff-expand-header',
+    })
