@@ -73,8 +73,9 @@ class UploadFileForm(forms.Form):
             attachment_history.display_position = \
                 FileAttachmentHistory.compute_next_display_position(
                     self.review_request)
-
             attachment_history.save()
+            self.review_request.file_attachment_histories.add(
+                attachment_history)
         else:
             attachment_history = self.cleaned_data['attachment_history']
 

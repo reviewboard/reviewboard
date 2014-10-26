@@ -107,6 +107,8 @@ class BaseReviewRequestDetails(models.Model):
                             .compute_next_display_position(
                                 review_request))
 
+                    review_request.file_attachment_histories.add(history)
+
                     file_attachment.attachment_history = history
                     file_attachment.save(update_fields=['attachment_history'])
 

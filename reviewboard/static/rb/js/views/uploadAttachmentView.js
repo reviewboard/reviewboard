@@ -25,7 +25,7 @@ RB.UploadAttachmentView = Backbone.View.extend({
         '   </tbody>',
         '  </table>',
         '  <% if (attachmentHistoryID >= 0) { %>',
-        '    <input type="hidden" name="attachment_history_id"',
+        '    <input type="hidden" name="attachment_history"',
         '           value="<%- attachmentHistoryID %>" />',
         '  <% } %>',
         ' </form>',

@@ -40,7 +40,7 @@ RB.FileAttachment = RB.BaseResource.extend({
         };
 
         if (this.isNew()) {
-            payload.attachment_history_id =
+            payload.attachment_history =
                 this.get('attachmentHistoryID') || null;
             payload.path = this.get('file');
         }
