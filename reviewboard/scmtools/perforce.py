@@ -1,5 +1,6 @@
 from __future__ import unicode_literals
 
+import logging
 import os
 import random
 import re
@@ -194,7 +195,17 @@ class PerforceClient(object):
         return result
 
     def _get_changeset(self, changesetid):
-        return self.p4.run_describe('-s', six.text_type(changesetid))
+        changesetid = six.text_type(changesetid)
+
+        try:
+            change = self.p4.run_change('-o', '-O', changesetid)
+            changesetid = change[0]['Change']
+        except Exception as e:
+            logging.warning('Failed to get updated changeset information for '
+                            'CLN %s (%s): %s',
+                            changesetid, self.p4port, e, exc_info=True)
+
+        return self.p4.run_describe('-s', changesetid)
 
     def get_changeset(self, changesetid):
         """
@@ -204,17 +215,6 @@ class PerforceClient(object):
 
     def get_info(self):
         return self._run_worker(self.p4.run_info)
-
-    def _get_pending_changesets(self, userid):
-        changesets = self.p4.run_changes('-s', 'pending', '-u', userid)
-        return map(self._get_changeset, [x.split()[1] for x in changesets])
-
-    def get_pending_changesets(self, userid):
-        """
-        Get a list of changeset descriptions for all pending changesets for a
-        given user.
-        """
-        return self._run_worker(lambda: self._get_pending_changesets(userid))
 
     def _get_file(self, path, revision):
         if revision == PRE_CREATION:
@@ -320,9 +320,6 @@ class PerforceTool(SCMTool):
                                     six.text_type(password))
         client.get_info()
 
-    def get_pending_changesets(self, userid):
-        return self.client.get_pending_changesets(userid)
-
     def get_changeset(self, changesetid, allow_empty=False):
         changeset = self.client.get_changeset(changesetid)
         if changeset:
@@ -354,7 +351,10 @@ class PerforceTool(SCMTool):
             return None
 
         changeset = ChangeSet()
-        changeset.changenum = changenum
+        try:
+            changeset.changenum = int(changedesc['change'])
+        except ValueError:
+            changeset.changenum = changenum
 
         # At it's most basic, a perforce changeset description has three
         # sections.
