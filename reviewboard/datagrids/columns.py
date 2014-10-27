@@ -156,6 +156,9 @@ class GroupsColumn(Column):
             shrink=False,
             *args, **kwargs)
 
+    def augment_queryset(self, state, queryset):
+        return queryset.prefetch_related('target_groups')
+
     def render_data(self, state, review_request):
         groups = review_request.target_groups.all()
         return reduce(lambda a, d: a + d.name + ' ', groups, '')
@@ -280,6 +283,9 @@ class PeopleColumn(Column):
             sortable=False,
             shrink=False,
             *args, **kwargs)
+
+    def augment_queryset(self, state, queryset):
+        return queryset.prefetch_related('target_people')
 
     def render_data(self, state, review_request):
         people = review_request.target_people.all()
@@ -521,11 +527,21 @@ class ToMeColumn(Column):
             shrink=True,
             *args, **kwargs)
 
-    def render_data(self, state, review_request):
+    def augment_queryset(self, state, queryset):
         user = state.datagrid.request.user
 
-        if (user.is_authenticated() and
-            review_request.target_people.filter(pk=user.pk).exists()):
+        if user.is_authenticated():
+            state.all_to_me = set(
+                user.directed_review_requests.filter(
+                    pk__in=state.datagrid.id_list).values_list('pk',
+                                                               flat=True))
+        else:
+            state.all_to_me = set()
+
+        return queryset
+
+    def render_data(self, state, review_request):
+        if review_request.pk in state.all_to_me:
             return ('<div title="%s"><b>&raquo;</b></div>'
                     % (self.detailed_label))
 

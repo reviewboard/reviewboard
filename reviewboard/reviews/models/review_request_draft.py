@@ -29,6 +29,10 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
     be modified and eventually saved or discarded. When saved, the new
     details are copied back over to the originating ReviewRequest.
     """
+    summary = models.CharField(
+        _("summary"),
+        max_length=BaseReviewRequestDetails.MAX_SUMMARY_LENGTH)
+
     review_request = models.ForeignKey(
         ReviewRequest,
         related_name="draft",

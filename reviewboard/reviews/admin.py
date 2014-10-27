@@ -233,7 +233,7 @@ class ScreenshotAdmin(admin.ModelAdmin):
 class ScreenshotCommentAdmin(admin.ModelAdmin):
     list_display = ('text', 'screenshot', 'review_request_id', 'timestamp')
     list_filter = ('timestamp',)
-    search_fields = ['caption']
+    search_fields = ['text']
     raw_id_fields = ('screenshot', 'reply_to')
 
     def review_request_id(self, obj):
@@ -245,7 +245,7 @@ class FileAttachmentCommentAdmin(admin.ModelAdmin):
     list_display = ('text', 'file_attachment', 'review_request_id',
                     'timestamp')
     list_filter = ('timestamp',)
-    search_fields = ['caption']
+    search_fields = ['text']
     raw_id_fields = ('file_attachment', 'reply_to')
 
     def review_request_id(self, obj):
