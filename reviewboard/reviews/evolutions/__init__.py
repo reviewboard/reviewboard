@@ -29,4 +29,5 @@ SEQUENCE = [
     'group_email_list_only',
     'review_request_file_attachment_histories',
     'review_request_summary_index',
+    'review_request_summary_index_manual',
 ]
