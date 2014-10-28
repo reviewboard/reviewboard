@@ -144,8 +144,7 @@ class ReviewRequest(BaseReviewRequestDetails):
 
     summary = models.CharField(
         _("summary"),
-        max_length=BaseReviewRequestDetails.MAX_SUMMARY_LENGTH,
-        db_index=True)
+        max_length=BaseReviewRequestDetails.MAX_SUMMARY_LENGTH)
 
     submitter = models.ForeignKey(User, verbose_name=_("submitter"),
                                   related_name="review_requests")
