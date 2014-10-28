@@ -337,7 +337,9 @@ class ChangeField(BuiltinFieldMixin, BaseReviewRequestField):
     def render_value(self, changenum):
         review_request = self.review_request_details.get_review_request()
 
-        if review_request.changeset_is_pending():
+        is_pending, changenum = review_request.changeset_is_pending(changenum)
+
+        if is_pending:
             return escape(_('%s (pending)') % changenum)
         else:
             return changenum

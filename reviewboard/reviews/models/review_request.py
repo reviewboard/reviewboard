@@ -3,11 +3,13 @@ from __future__ import unicode_literals
 import logging
 
 from django.contrib.auth.models import User
+from django.core.cache import cache
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
 from django.db.models import Count, Q
 from django.utils import six, timezone
 from django.utils.translation import ugettext_lazy as _
+from djblets.cache.backend import make_cache_key
 from djblets.db.fields import CounterField, ModificationTimestampField
 from djblets.db.query import get_object_or_none
 
@@ -144,8 +146,7 @@ class ReviewRequest(BaseReviewRequestDetails):
 
     summary = models.CharField(
         _("summary"),
-        max_length=BaseReviewRequestDetails.MAX_SUMMARY_LENGTH,
-        db_index=True)
+        max_length=BaseReviewRequestDetails.MAX_SUMMARY_LENGTH)
 
     submitter = models.ForeignKey(User, verbose_name=_("submitter"),
                                   related_name="review_requests")
@@ -498,21 +499,52 @@ class ReviewRequest(BaseReviewRequestDetails):
 
         return timestamp, updated_object
 
-    def changeset_is_pending(self):
+    def changeset_is_pending(self, commit_id):
         """Returns whether the associated changeset is pending commit.
 
         For repositories that support it, this will return whether the
         associated changeset is pending commit. This requires server-side
         knowledge of the change.
         """
-        changeset = None
-        commit_id = self.commit
-        if (self.repository.get_scmtool().supports_pending_changesets and
-            commit_id is not None):
-            changeset = self.repository.get_scmtool().get_changeset(
-                commit_id, allow_empty=True)
+        cache_key = make_cache_key(
+            'commit-id-is-pending-%d-%s' % (self.pk, commit_id))
 
-        return changeset and changeset.pending
+        cached_values = cache.get(cache_key)
+        if cached_values:
+            return cached_values
+
+        is_pending = False
+
+        scmtool = self.repository.get_scmtool()
+        if (scmtool.supports_pending_changesets and
+            commit_id is not None):
+            changeset = scmtool.get_changeset(commit_id, allow_empty=True)
+
+            if changeset:
+                is_pending = changeset.pending
+
+                new_commit_id = six.text_type(changeset.changenum)
+
+                if commit_id != new_commit_id:
+                    self.commit_id = new_commit_id
+                    self.save(update_fields=['commit_id'])
+                    commit_id = new_commit_id
+
+                    draft = self.get_draft()
+                    if draft:
+                        draft.commit_id = new_commit_id
+                        draft.save(update_fields=['commit_id'])
+
+                # If the changeset is pending, we cache for only one minute to
+                # speed things up a little bit when navigating through
+                # different pages. If the changeset is no longer pending, cache
+                # for the full default time.
+                if is_pending:
+                    cache.set(cache_key, (is_pending, commit_id), 60)
+                else:
+                    cache.set(cache_key, (is_pending, commit_id))
+
+        return is_pending, commit_id
 
     def get_absolute_url(self):
         if self.local_site:
