@@ -1,0 +1,44 @@
+=================================
+Review Board 2.0.11 Release Notes
+=================================
+
+**Release date**: October 27, 2014
+
+
+Upgrade Notes
+=============
+
+* This release contains a minor database schema change to the
+  ``reviews_reviewrequest`` table to reconstruct an index introduced in
+  in 2.0.10.
+
+  This is needed to support MySQL 5.6+ installations using UTF-8 with InnoDB
+  without using large InnoDB key lengths.
+
+
+New Features
+============
+
+* The :guilabel:`Change` field now shows the submitted change number after
+  submitting a change when using Perforce. (:bug:`2272`)
+
+  Previously, the :guilabel:`Change` field would only show the change number
+  of the original changeset, along with its pending status. Once the changeset
+  was submitted, that number wasn't very useful. This is now noticed, and the
+  resulting submitted change number is shown instead.
+
+
+Bug Fixes
+=========
+
+* Fixed an upgrade issue with MySQL 5.6+ using UTF-8 with InnoDB.
+
+* Fixed a crash when browsers report an unknown or invalid timezone.
+  (:bug:`3594`)
+
+
+Contributors
+============
+
+* Christian Hammond
+* David Trowbridge
