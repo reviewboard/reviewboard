@@ -168,9 +168,6 @@ class SCMTool(object):
     def get_changeset(self, changesetid, allow_empty=False):
         raise NotImplementedError
 
-    def get_pending_changesets(self, userid):
-        raise NotImplementedError
-
     def get_filenames_in_revision(self, revision):
         raise NotImplementedError
 

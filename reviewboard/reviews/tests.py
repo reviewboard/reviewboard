@@ -25,7 +25,7 @@ from reviewboard.reviews.models import (Comment,
                                         ReviewRequestDraft,
                                         Review,
                                         Screenshot)
-from reviewboard.scmtools.core import Commit
+from reviewboard.scmtools.core import ChangeSet, Commit
 from reviewboard.scmtools.errors import ChangeNumberInUseError
 from reviewboard.scmtools.models import Repository, Tool
 from reviewboard.site.models import LocalSite
@@ -644,7 +644,7 @@ class ReviewRequestManagerTests(TestCase):
                             % summary)
 
 
-class ReviewRequestTests(TestCase):
+class ReviewRequestTests(SpyAgency, TestCase):
     """Tests for ReviewRequest."""
     fixtures = ['test_users']
 
@@ -670,6 +670,48 @@ class ReviewRequestTests(TestCase):
         review_request.close(ReviewRequest.DISCARDED)
 
         self.assertIsNone(review_request.commit_id)
+
+    @add_fixtures(['test_scmtools'])
+    def test_changeset_update_commit_id(self):
+        """Testing ReviewRequest.changeset_is_pending update commit ID
+        behavior
+        """
+        current_commit_id = '123'
+        new_commit_id = '124'
+        review_request = self.create_review_request(
+            publish=True,
+            commit_id=current_commit_id,
+            create_repository=True)
+        draft = ReviewRequestDraft.create(review_request)
+        self.assertEqual(review_request.commit_id, current_commit_id)
+        self.assertEqual(draft.commit_id, current_commit_id)
+
+        def _get_fake_changeset(scmtool, commit_id, allow_empty=True):
+            self.assertEqual(commit_id, current_commit_id)
+
+            changeset = ChangeSet()
+            changeset.pending = False
+            changeset.changenum = int(new_commit_id)
+            return changeset
+
+        scmtool = review_request.repository.get_scmtool()
+        scmtool.supports_pending_changesets = True
+        self.spy_on(scmtool.get_changeset,
+                    call_fake=_get_fake_changeset)
+
+        self.spy_on(review_request.repository.get_scmtool,
+                    call_fake=lambda x: scmtool)
+
+        is_pending, new_commit_id = \
+            review_request.changeset_is_pending(current_commit_id)
+        self.assertEqual(is_pending, False)
+        self.assertEqual(new_commit_id, new_commit_id)
+
+        review_request = ReviewRequest.objects.get(pk=review_request.pk)
+        self.assertEqual(review_request.commit_id, new_commit_id)
+
+        draft = review_request.get_draft()
+        self.assertEqual(draft.commit_id, new_commit_id)
 
     def test_unicode_summary_and_str(self):
         """Testing ReviewRequest.__str__ with unicode summaries."""

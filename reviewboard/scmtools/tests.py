@@ -860,9 +860,6 @@ class CommonSVNTestsBase(SCMTestCase):
         self.assertRaises(NotImplementedError,
                           lambda: self.tool.get_changeset(1))
 
-        self.assertRaises(NotImplementedError,
-                          lambda: self.tool.get_pending_changesets(1))
-
     def test_binary_diff(self):
         """Testing SVN (<backend>) parsing SVN diff with binary file"""
         diff = (b'Index: binfile\n'
@@ -1710,9 +1707,6 @@ class MercurialTests(SCMTestCase):
 
         self.assertRaises(NotImplementedError,
                           lambda: self.tool.get_changeset(1))
-
-        self.assertRaises(NotImplementedError,
-                          lambda: self.tool.get_pending_changesets(1))
 
         self.assertEqual(self.tool.get_fields(),
                          ['diff_path', 'parent_diff_path'])

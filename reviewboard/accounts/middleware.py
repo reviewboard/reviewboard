@@ -13,5 +13,5 @@ class TimezoneMiddleware(object):
             try:
                 user = request.user.get_profile()
                 timezone.activate(pytz.timezone(user.timezone))
-            except Profile.DoesNotExist:
+            except (Profile.DoesNotExist, pytz.UnknownTimeZoneError):
                 pass
