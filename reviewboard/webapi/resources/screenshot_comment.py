@@ -11,8 +11,8 @@ class ScreenshotCommentResource(BaseScreenshotCommentResource):
     """Provides information on screenshots comments made on a review request.
 
     The list of comments cannot be modified from this resource. It's meant
-    purely as a way to see existing comments that were made on a diff. These
-    comments will span all public reviews.
+    purely as a way to see existing comments that were made on a screenshot.
+    These comments will span all public reviews.
 
     If the ``text_type`` field is set to ``markdown``, then the ``text``
     field should be interpreted by the client as Markdown text.
