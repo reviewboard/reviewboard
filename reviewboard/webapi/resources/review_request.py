@@ -69,14 +69,6 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
     When a review request is published, it can be reviewed by users. It can
     then be updated, again through the Review Request Draft resource, or closed
     as submitted or discarded.
-
-    If the ``text_type`` field is set to ``markdown``, then the ``description``
-    and ``testing_done`` fields should be interpreted by the client as Markdown
-    text.
-
-    The returned text in the payload can be provided in a different format
-    by passing ``?force-text-type=`` in the request. This accepts all the
-    possible values listed in the ``text_type`` field below.
     """
     model = ReviewRequest
     name = 'review_request'
@@ -721,6 +713,7 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
                                '\n'
                                'This replaces the old ``description`` field.',
                 'added_in': '2.0.9',
+                'supports_text_types': True,
             },
             'close_description_text_type': {
                 'type': MarkdownFieldsMixin.SAVEABLE_TEXT_TYPES,
@@ -738,6 +731,7 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
                                'This is deprecated. Instead, set '
                                '``close_description``.',
                 'deprecated_in': '2.0.9',
+                'supports_text_types': True,
             },
             'force_text_type': {
                 'type': MarkdownFieldsMixin.TEXT_TYPES,

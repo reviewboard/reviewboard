@@ -43,14 +43,6 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
     In order to access this resource, the user must either own the review
     request, or it must have the ``reviews.can_edit_reviewrequest`` permission
     set.
-
-    If the ``text_type`` field is set to ``markdown``, then the
-    ``changedescription``, ``description`` and ``testing_done`` fields
-    should be interpreted by the client as Markdown text.
-
-    The returned text in the payload can be provided in a different format
-    by passing ``?force-text-type=`` in the request. This accepts all the
-    possible values listed in the ``text_type`` field below.
     """
     model = ReviewRequestDraft
     name = 'draft'
@@ -201,6 +193,7 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
         'changedescription': {
             'type': six.text_type,
             'description': 'The change description for this update.',
+            'supports_text_types': True,
         },
         'changedescription_text_type': {
             'type': MarkdownFieldsMixin.SAVEABLE_TEXT_TYPES,
@@ -211,6 +204,7 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
         'description': {
             'type': six.text_type,
             'description': 'The new review request description.',
+            'supports_text_types': True,
         },
         'description_text_type': {
             'type': MarkdownFieldsMixin.SAVEABLE_TEXT_TYPES,
@@ -248,6 +242,7 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
         'testing_done': {
             'type': six.text_type,
             'description': 'The new testing done text.',
+            'supports_text_types': True,
         },
         'testing_done_text_type': {
             'type': MarkdownFieldsMixin.SAVEABLE_TEXT_TYPES,
@@ -381,17 +376,6 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
         review request itself, making it public, and sending out a notification
         (such as an e-mail) if configured on the server. The current draft will
         then be deleted.
-
-        If ``text_type`` is provided and changed from the original value,
-        then the ``changedescription``, ``description`` and ``testing_done``
-        fields will be set to be interpreted according to the new type.
-
-        When setting to ``markdown`` and not specifying any new text, the
-        existing text will be escaped so as not to be unintentionally
-        interpreted as Markdown.
-
-        When setting to ``plain``, and new text is not provided, the existing
-        text will be unescaped.
 
         Extra data can be stored on the review request for later lookup by
         passing ``extra_data.key_name=value``. The ``key_name`` and ``value``

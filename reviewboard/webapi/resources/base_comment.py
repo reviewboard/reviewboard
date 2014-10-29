@@ -66,6 +66,7 @@ class BaseCommentResource(MarkdownFieldsMixin, WebAPIResource):
         'text': {
             'type': six.text_type,
             'description': 'The comment text.',
+            'supports_text_types': True,
         },
     }
 
@@ -95,6 +96,7 @@ class BaseCommentResource(MarkdownFieldsMixin, WebAPIResource):
         'text': {
             'type': six.text_type,
             'description': 'The comment text.',
+            'supports_text_types': True,
         },
         'text_type': {
             'type': MarkdownFieldsMixin.SAVEABLE_TEXT_TYPES,

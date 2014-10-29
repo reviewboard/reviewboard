@@ -23,13 +23,6 @@ class ReviewReplyDiffCommentResource(BaseDiffCommentResource):
     If the reply is a draft, then comments can be added, deleted, or
     changed on this list. However, if the reply is already published,
     then no changed can be made.
-
-    If the ``text_type`` field is set to ``markdown``, then the ``text``
-    field should be interpreted by the client as Markdown text.
-
-    The returned text in the payload can be provided in a different format
-    by passing ``?force-text-type=`` in the request. This accepts all the
-    possible values listed in the ``text_type`` field below.
     """
     allowed_methods = ('GET', 'POST', 'PUT', 'DELETE')
     model_parent_key = 'review'
@@ -63,10 +56,6 @@ class ReviewReplyDiffCommentResource(BaseDiffCommentResource):
 
         This will create a new diff comment as part of this reply. The reply
         must be a draft reply.
-
-        If ``text_type`` is provided and set to ``markdown``, then the ``text``
-        field will be set to be interpreted as Markdown. Otherwise, it will be
-        interpreted as plain text.
         """
         try:
             resources.review_request.get_object(request, *args, **kwargs)
@@ -133,17 +122,6 @@ class ReviewReplyDiffCommentResource(BaseDiffCommentResource):
 
         This can only update the text in the comment. The comment being
         replied to cannot change.
-
-        If ``text_type`` is provided and changed from the original value, then
-        the ``text`` field will be set to be interpreted according to the new
-        type.
-
-        When setting to ``markdown`` and not specifying any new text, the
-        existing text will be escaped so as not to be unintentionally
-        interpreted as Markdown.
-
-        When setting to ``plain``, and new text is not provided, the existing
-        text will be unescaped.
         """
         try:
             resources.review_request.get_object(request, *args, **kwargs)

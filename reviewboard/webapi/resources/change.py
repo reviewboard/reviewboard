@@ -20,13 +20,6 @@ class ChangeResource(MarkdownFieldsMixin, WebAPIResource):
     change, and also includes a list of fields that were changed on the
     review request.
 
-    If the ``text_type`` field is set to ``markdown``, then the ``text``
-    field should be interpreted by the client as Markdown text.
-
-    The returned text in the payload can be provided in a different format
-    by passing ``?force-text-type=`` in the request. This accepts all the
-    possible values listed in the ``text_type`` field below.
-
     The list of fields changed are in ``fields_changed``. The keys are the
     names of the fields, and the values are details on that particular
     change to the field.

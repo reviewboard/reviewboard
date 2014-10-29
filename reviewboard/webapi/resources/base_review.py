@@ -99,6 +99,7 @@ class BaseReviewResource(MarkdownFieldsMixin, WebAPIResource):
         'body_top': {
             'type': six.text_type,
             'description': 'The review content above the comments.',
+            'supports_text_types': True,
         },
         'body_top_text_type': {
             'type': MarkdownFieldsMixin.SAVEABLE_TEXT_TYPES,
@@ -109,6 +110,7 @@ class BaseReviewResource(MarkdownFieldsMixin, WebAPIResource):
         'body_bottom': {
             'type': six.text_type,
             'description': 'The review content below the comments.',
+            'supports_text_types': True,
         },
         'body_bottom_text_type': {
             'type': MarkdownFieldsMixin.SAVEABLE_TEXT_TYPES,
@@ -192,10 +194,6 @@ class BaseReviewResource(MarkdownFieldsMixin, WebAPIResource):
         any number of the fields. If nothing is provided, the review will
         start off as blank.
 
-        If ``text_type`` is provided and set to ``markdown``, then the
-        ``body_top`` and ``body_bottom`` fields will be set to be interpreted
-        as Markdown. Otherwise, it will be interpreted as plain text.
-
         If the user submitting this review already has a pending draft review
         on this review request, then this will update the existing draft and
         return :http:`303`. Otherwise, this will create a new draft and
@@ -243,17 +241,6 @@ class BaseReviewResource(MarkdownFieldsMixin, WebAPIResource):
 
         Only the owner of a review can make changes. One or more fields can
         be updated at once.
-
-        If ``text_type`` is provided and changed from the original value, then
-        the ``body_top`` and ``body_bottom`` fields will be set to be
-        interpreted according to the new type.
-
-        When setting to ``markdown`` and not specifying any new text, the
-        existing text will be escaped so as not to be unintentionally
-        interpreted as Markdown.
-
-        When setting to ``plain``, and new text is not provided, the existing
-        text will be unescaped.
 
         The only special field is ``public``, which, if set to true, will
         publish the review. The review will then be made publicly visible. Once

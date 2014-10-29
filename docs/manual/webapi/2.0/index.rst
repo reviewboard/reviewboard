@@ -8,6 +8,7 @@ REST API 2.0
 
    overview
    authenticating
+   rich-text-fields
    resources/index
    errors/index
    glossary

@@ -25,14 +25,6 @@ class ReviewReplyResource(BaseReviewResource):
     A reply is much like a review, but is always tied to exactly one
     parent review. Every comment associated with a reply is also tied to
     a parent comment.
-
-    If the ``text_type`` field is set to ``markdown``, then the ``body_top``
-    and ``body_bottom`` fields field should be interpreted by the client as
-    Markdown text.
-
-    The returned text in the payload can be provided in a different format
-    by passing ``?force-text-type=`` in the request. This accepts all the
-    possible values listed in the ``text_type`` field below.
     """
     name = 'reply'
     name_plural = 'replies'
@@ -116,6 +108,7 @@ class ReviewReplyResource(BaseReviewResource):
             'type': six.text_type,
             'description': 'The response to the review content above '
                            'the comments.',
+            'supports_text_types': True,
         },
         'body_top_text_type': {
             'type': MarkdownFieldsMixin.SAVEABLE_TEXT_TYPES,
@@ -127,6 +120,7 @@ class ReviewReplyResource(BaseReviewResource):
             'type': six.text_type,
             'description': 'The response to the review content below '
                            'the comments.',
+            'supports_text_types': True,
         },
         'body_bottom_text_type': {
             'type': MarkdownFieldsMixin.SAVEABLE_TEXT_TYPES,
@@ -191,10 +185,6 @@ class ReviewReplyResource(BaseReviewResource):
         any number of the fields. If nothing is provided, the reply will
         start off as blank.
 
-        If ``text_type`` is provided and set to ``markdown``, then the
-        ``body_top`` and ``body_bottom`` fields will be set to be interpreted
-        as Markdown. Otherwise, it will be interpreted as plain text.
-
         If the user submitting this reply already has a pending draft reply
         on this review, then this will update the existing draft and
         return :http:`303`. Otherwise, this will create a new draft and
@@ -251,17 +241,6 @@ class ReviewReplyResource(BaseReviewResource):
 
         Only the owner of a reply can make changes. One or more fields can
         be updated at once.
-
-        If ``text_type`` is provided and changed from the original value, then
-        the ``body_top`` and ``body_bottom`` fields will be set to be
-        interpreted according to the new type.
-
-        When setting to ``markdown`` and not specifying any new text, the
-        existing text will be escaped so as not to be unintentionally
-        interpreted as Markdown.
-
-        When setting to ``plain``, and new text is not provided, the existing
-        text will be unescaped.
 
         The only special field is ``public``, which, if set to true, will
         publish the reply. The reply will then be made publicly visible. Once
