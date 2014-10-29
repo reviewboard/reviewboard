@@ -105,14 +105,14 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
             'type': six.text_type,
             'description': 'The text describing the closing of the review '
                            'request.',
-            'added_in': '2.0.9',
+            'added_in': '2.0.12',
             'supports_text_types': True,
         },
         'close_description_text_type': {
             'type': MarkdownFieldsMixin.TEXT_TYPES,
             'description': 'The current or forced text type for the '
                            'close_description field.',
-            'added_in': '2.0.9',
+            'added_in': '2.0.12',
         },
         'depends_on': {
             'type': ['reviewboard.webapi.resources.review_request.'
@@ -163,9 +163,9 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
                            'type for text fields. Replaced by '
                            'close_description_text_type, '
                            'description_text_type, and '
-                           'testing_done_text_type in 2.0.9.',
+                           'testing_done_text_type in 2.0.12.',
             'added_in': '2.0',
-            'deprecated_in': '2.0.9',
+            'deprecated_in': '2.0.12',
         },
         'status': {
             'type': ('discarded', 'pending', 'submitted'),
@@ -218,7 +218,7 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
             'type': MarkdownFieldsMixin.TEXT_TYPES,
             'description': 'The current or forced text type for the '
                            'description field.',
-            'added_in': '2.0.9',
+            'added_in': '2.0.12',
         },
         'testing_done': {
             'type': six.text_type,
@@ -230,7 +230,7 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
             'type': MarkdownFieldsMixin.TEXT_TYPES,
             'description': 'The current or forced text type for the '
                            'testing_done field.',
-            'added_in': '2.0.9',
+            'added_in': '2.0.12',
         },
         'bugs_closed': {
             'type': [six.text_type],
@@ -721,7 +721,7 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
                 'description': 'The text type for the close description '
                                'of the update field.',
                 'added_in': '2.0',
-                'deprecated_in': '2.0.9',
+                'deprecated_in': '2.0.12',
             },
             'description': {
                 'type': six.text_type,
@@ -749,7 +749,7 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
                                'This is deprecated. Please use '
                                'close_description_text_type instead.',
                 'added_in': '2.0',
-                'deprecated_in': '2.0.9',
+                'deprecated_in': '2.0.12',
             },
         },
         allow_unknown=True

@@ -36,7 +36,7 @@ class BaseReviewResource(MarkdownFieldsMixin, WebAPIResource):
             'type': MarkdownFieldsMixin.TEXT_TYPES,
             'description': 'The current or forced text type for the '
                            'body_bottom field.',
-            'added_in': '2.0.9',
+            'added_in': '2.0.12',
         },
         'body_top': {
             'type': six.text_type,
@@ -47,7 +47,7 @@ class BaseReviewResource(MarkdownFieldsMixin, WebAPIResource):
             'type': MarkdownFieldsMixin.TEXT_TYPES,
             'description': 'The current or forced text type for the '
                            'body_top field.',
-            'added_in': '2.0.9',
+            'added_in': '2.0.12',
         },
         'extra_data': {
             'type': dict,
@@ -73,9 +73,9 @@ class BaseReviewResource(MarkdownFieldsMixin, WebAPIResource):
             'description': 'Formerly responsible for indicating the text '
                            'type for text fields. Replaced by '
                            'body_top_text_type and body_bottom_text_type '
-                           'in 2.0.9.',
+                           'in 2.0.12.',
             'added_in': '2.0',
-            'deprecated_in': '2.0.9',
+            'deprecated_in': '2.0.12',
         },
         'timestamp': {
             'type': six.text_type,
@@ -105,7 +105,7 @@ class BaseReviewResource(MarkdownFieldsMixin, WebAPIResource):
             'type': MarkdownFieldsMixin.SAVEABLE_TEXT_TYPES,
             'description': 'The text type used for the body_top '
                            'field.',
-            'added_in': '2.0.9',
+            'added_in': '2.0.12',
         },
         'body_bottom': {
             'type': six.text_type,
@@ -116,7 +116,7 @@ class BaseReviewResource(MarkdownFieldsMixin, WebAPIResource):
             'type': MarkdownFieldsMixin.SAVEABLE_TEXT_TYPES,
             'description': 'The text type used for the body_bottom '
                            'field.',
-            'added_in': '2.0.9',
+            'added_in': '2.0.12',
         },
         'force_text_type': {
             'type': MarkdownFieldsMixin.TEXT_TYPES,
@@ -140,7 +140,7 @@ class BaseReviewResource(MarkdownFieldsMixin, WebAPIResource):
                            'body_top_text_type and '
                            'body_bottom_text_type instead.',
             'added_in': '2.0',
-            'deprecated_in': '2.0.9',
+            'deprecated_in': '2.0.12',
         },
     }
 

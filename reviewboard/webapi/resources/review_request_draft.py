@@ -96,7 +96,7 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
             'type': MarkdownFieldsMixin.TEXT_TYPES,
             'description': 'The current or forced text type for the '
                            'changedescription field.',
-            'added_in': '2.0.9',
+            'added_in': '2.0.12',
         },
         'commit_id': {
             'type': six.text_type,
@@ -113,7 +113,7 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
             'type': MarkdownFieldsMixin.TEXT_TYPES,
             'description': 'The current or forced text type for the '
                            'description field.',
-            'added_in': '2.0.9',
+            'added_in': '2.0.12',
         },
         'extra_data': {
             'type': dict,
@@ -150,7 +150,7 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
             'type': MarkdownFieldsMixin.TEXT_TYPES,
             'description': 'The current or forced text type for the '
                            'testing_done field.',
-            'added_in': '2.0.9',
+            'added_in': '2.0.12',
         },
         'text_type': {
             'type': MarkdownFieldsMixin.TEXT_TYPES,
@@ -158,9 +158,9 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
                            'type for text fields. Replaced by '
                            'changedescription_text_type, '
                            'description_text_type, and '
-                           'testing_done_text_type in 2.0.9.',
+                           'testing_done_text_type in 2.0.12.',
             'added_in': '2.0',
-            'deprecated_in': '2.0.9',
+            'deprecated_in': '2.0.12',
         },
     }
 
@@ -201,7 +201,7 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
             'type': MarkdownFieldsMixin.SAVEABLE_TEXT_TYPES,
             'description': 'The text type used for the changedescription '
                            'field.',
-            'added_in': '2.0.9',
+            'added_in': '2.0.12',
         },
         'description': {
             'type': six.text_type,
@@ -212,7 +212,7 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
             'type': MarkdownFieldsMixin.SAVEABLE_TEXT_TYPES,
             'description': 'The text type used for the description '
                            'field.',
-            'added_in': '2.0.9',
+            'added_in': '2.0.12',
         },
         'force_text_type': {
             'type': MarkdownFieldsMixin.TEXT_TYPES,
@@ -250,7 +250,7 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
             'type': MarkdownFieldsMixin.SAVEABLE_TEXT_TYPES,
             'description': 'The text type used for the testing_done '
                            'field.',
-            'added_in': '2.0.9',
+            'added_in': '2.0.12',
         },
         'text_type': {
             'type': MarkdownFieldsMixin.SAVEABLE_TEXT_TYPES,
@@ -262,7 +262,7 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
                            'description_text_type, and '
                            'testing_done_text_type instead.',
             'added_in': '2.0',
-            'deprecated_in': '2.0.9',
+            'deprecated_in': '2.0.12',
         },
         'update_from_commit_id': {
             'type': bool,
