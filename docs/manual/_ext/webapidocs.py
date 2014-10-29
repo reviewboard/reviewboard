@@ -402,8 +402,8 @@ class ResourceDirective(Directive):
         tgroup = nodes.tgroup(cols=3)
         table += tgroup
 
-        tgroup += nodes.colspec(colwidth=25, classes=['field'])
-        tgroup += nodes.colspec(colwidth=15, classes=['type'])
+        tgroup += nodes.colspec(colwidth=15, classes=['field'])
+        tgroup += nodes.colspec(colwidth=25, classes=['type'])
         tgroup += nodes.colspec(colwidth=60, classes=['description'])
 
         thead = nodes.thead()
@@ -429,11 +429,32 @@ class ResourceDirective(Directive):
                 type_node = nodes.inline()
                 type_node += get_type_name(info['type'])
 
-                append_row(tbody,
-                           [name_node,
-                            type_node,
-                            parse_text(self, info['description'],
-                                       where='%s field description' % field)])
+                description_node = parse_text(
+                    self, info['description'],
+                    where='%s field description' % field)
+
+                if 'added_in' in info:
+                    paragraph = nodes.paragraph()
+                    paragraph += nodes.emphasis(
+                        text='Added in %s\n' % info['added_in'],
+                        classes=['field-versioning'])
+                    description_node += paragraph
+
+                if 'deprecated_in' in info:
+                    paragraph = nodes.paragraph()
+                    paragraph += nodes.emphasis(
+                        text='Deprecated in %s\n' % info['deprecated_in'],
+                        classes=['field-versioning'])
+                    description_node += paragraph
+
+                if 'removed_in' in info:
+                    paragraph = nodes.paragraph()
+                    paragraph += nodes.emphasis(
+                        text='Removed in %s\n' % info['removed_in'],
+                        classes=['field-versioning'])
+                    description_node += paragraph
+
+                append_row(tbody, [name_node, type_node, description_node])
         else:
             for field in sorted(fields):
                 name = field
@@ -966,7 +987,7 @@ def build_example(headers, data, mimetype):
     else:
         code = data
 
-    return nodes.literal_block(code, code, language=language,
+    return nodes.literal_block(code, code, language=language or 'text',
                                classes=['example-payload'])
 
 

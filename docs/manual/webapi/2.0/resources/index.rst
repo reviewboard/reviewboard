@@ -116,6 +116,8 @@ Review Request Drafts
    draft-file-diff
    draft-file-attachment-list
    draft-file-attachment
+   draft-original-file
+   draft-patched-file
    draft-screenshot-list
    draft-screenshot
    review-request-draft

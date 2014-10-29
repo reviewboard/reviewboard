@@ -3620,7 +3620,7 @@
         "raw_file_url": "", 
         "bug_tracker": "http://code.google.com/p/reviewboard/issues/detail?id=%s", 
         "path": "http://reviewboard.googlecode.com/svn", 
-        "password": "", 
+        "encrypted_password": "", 
         "tool": 1, 
         "users": []
     }
@@ -3642,7 +3642,7 @@
         "raw_file_url": "", 
         "bug_tracker": "", 
         "path": "http://svn.navi.cx/misc", 
-        "password": "", 
+        "encrypted_password": "", 
         "tool": 1, 
         "users": []
     }

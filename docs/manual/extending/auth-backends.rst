@@ -354,7 +354,7 @@ Accessing Settings
 
 The authentication backend can access any settings stored in the site
 configuration database (such as those defined in the
-:ref:`Settings form <site-settings-forms>` through the
+:ref:`Settings form <site-settings>` through the
 :py:class:`djblets.siteconfig.models.SiteConfiguration` API.
 
 Working with this is pretty simple. First, you just need to get a
