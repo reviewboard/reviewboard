@@ -65,8 +65,7 @@ class ReviewFileAttachmentCommentResource(BaseFileAttachmentCommentResource):
         """Creates a file comment on a review.
 
         This will create a new comment on a file as part of a review.
-        The comment contains text and dimensions for the area being commented
-        on.
+        The comment contains text only.
 
         If ``text_type`` is provided and set to ``markdown``, then the ``text``
         field will be set to be interpreted as Markdown. Otherwise, it will be

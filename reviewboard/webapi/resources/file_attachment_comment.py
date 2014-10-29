@@ -8,7 +8,7 @@ from reviewboard.webapi.resources.base_file_attachment_comment import \
 
 
 class FileAttachmentCommentResource(BaseFileAttachmentCommentResource):
-    """Provides information on filess comments made on a review request.
+    """Provides information on file comments made on a review request.
 
     The list of comments cannot be modified from this resource. It's meant
     purely as a way to see existing comments that were made on a file. These
