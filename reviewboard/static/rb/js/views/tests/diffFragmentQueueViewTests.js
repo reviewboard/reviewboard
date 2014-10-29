@@ -33,7 +33,7 @@ suite('rb/views/DiffFragmentQueueView', function() {
 
             fragmentQueue.loadFragments();
 
-            expect(fragmentQueue._addScript).toHaveBeenCalledWith(
+            expect(fragmentQueue._addScript.mostRecentCall.args[0]).toBe(
                 '/r/123/fragments/diff-comments/' +
                 '123,124/?queue=diff_fragments&' +
                 'container_prefix=container1&' + AJAX_SERIAL
