@@ -6,6 +6,7 @@ from xml.dom.minidom import parseString
 from django.db.models import Model
 from django.utils import six
 from django.utils.six.moves import cStringIO as StringIO
+from djblets.siteconfig.models import SiteConfiguration
 from markdown import Markdown, markdown, markdownFromFile
 
 
@@ -146,7 +147,12 @@ def normalize_text_for_edit(user, text, rich_text):
 
 def is_rich_text_default_for_user(user):
     """Returns whether the user edits in Markdown by default."""
-    return True
+    if user.is_authenticated():
+        return user.get_profile().should_use_rich_text
+    else:
+        siteconfig = SiteConfiguration.objects.get_current()
+
+        return siteconfig.get('default_use_rich_text')
 
 
 def markdown_set_field_escaped(obj, field, escaped):
