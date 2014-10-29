@@ -966,7 +966,7 @@ def build_example(headers, data, mimetype):
     else:
         code = data
 
-    return nodes.literal_block(code, code, language=language,
+    return nodes.literal_block(code, code, language=language or 'text',
                                classes=['example-payload'])
 
 

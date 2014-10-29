@@ -194,7 +194,7 @@ Note that this is different from the :ref:`can-change-status-permission`.
 This permission (listed as ``reviews | review request | Can submit as user``)
 indicates that this user has the ability to post or modify a review request
 on another user's behalf through the API. This is useful from a
-:term:`post-commit hook`. See :ref:`automating-post-review` for more
+:term:`post-commit hook`. See :ref:`automating-rbt-post` for more
 information.
 
 

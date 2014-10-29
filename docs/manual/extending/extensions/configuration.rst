@@ -33,7 +33,7 @@ Default Settings
 
 Any settings not explicitly saved by the extension or loaded from the database
 will be looked up in :py:attr:`default_settings`. This can be defined on the
-Extension class. For example::
+Extension class.
 
 Here is an example extension setting :py:attr:`default_settings`:
 
