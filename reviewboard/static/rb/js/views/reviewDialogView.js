@@ -48,6 +48,7 @@ BaseCommentView = Backbone.View.extend({
     initialize: function() {
         this.$issueOpened = null;
         this.$editor = null;
+        this._origExtraData = _.clone(this.model.get('extraData'));
 
         this._hookViews = [];
 
