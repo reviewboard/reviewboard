@@ -103,6 +103,8 @@ class MarkdownFieldsMixin(object):
                     lambda obj, data, field, default: data.get(field, default),
                     default_is_rich_text=True)
 
+            raw_fields['extra_data'] = raw_extra_data
+
         if include_raw_text_fields:
             data['raw_text_fields'] = raw_fields
 

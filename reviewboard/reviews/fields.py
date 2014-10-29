@@ -434,11 +434,14 @@ class BaseTextAreaField(BaseEditableField):
         to determine if the text is in Markdown format.
         """
         if self.field_id == 'text':
-            rich_text_key = 'rich_text'
+            text_type_key = 'text_type'
         else:
-            rich_text_key = '%s_rich_text' % self.field_id
+            text_type_key = '%s_text_type' % self.field_id
 
-        return self.review_request_details.extra_data.get(rich_text_key, True)
+        text_type = self.review_request_details.extra_data.get(
+            text_type_key, 'plain')
+
+        return text_type == 'markdown'
 
     def get_css_classes(self):
         """Returns the list of CSS classes.

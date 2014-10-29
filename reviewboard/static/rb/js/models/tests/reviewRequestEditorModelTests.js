@@ -379,7 +379,7 @@ suite('rb/models/ReviewRequestEditor', function() {
 
             describe('Custom fields', function() {
                 describe('Rich text fields', function() {
-                    function testFields(richText) {
+                    function testFields(richText, textType) {
                         spyOn(reviewRequest.draft, 'save');
 
                         editor.setDraftField(
@@ -391,8 +391,8 @@ suite('rb/models/ReviewRequestEditor', function() {
                                 fieldID: 'myfield',
                                 richText: richText,
                                 jsonFieldName: 'myfield',
-                                jsonRichTextFieldName:
-                                    'myfield_rich_text'
+                                jsonTextTypeFieldName:
+                                    'myfield_text_type'
                             });
 
                         expect(reviewRequest.draft.save)
@@ -400,7 +400,7 @@ suite('rb/models/ReviewRequestEditor', function() {
                         expect(
                             reviewRequest.draft.save.calls[0].args[0].data
                         ).toEqual({
-                            'extra_data.myfield_rich_text': richText,
+                            'extra_data.myfield_text_type': textType,
                             'extra_data.myfield': 'Test text.',
                             force_text_type: 'html',
                             include_raw_text_fields: true
@@ -408,11 +408,11 @@ suite('rb/models/ReviewRequestEditor', function() {
                     }
 
                     it('For Markdown', function() {
-                        testFields(true);
+                        testFields(true, 'markdown');
                     });
 
                     it('For plain text', function() {
-                        testFields(false);
+                        testFields(false, 'plain');
                     });
                 });
             });

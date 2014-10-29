@@ -119,21 +119,20 @@ RB.ReviewRequestEditor = Backbone.Model.extend({
             return;
         }
 
+        jsonFieldName = options.jsonFieldName;
+
         if (options.useExtraData) {
-            jsonFieldName = 'extra_data.' + options.jsonFieldName;
-        } else {
-            jsonFieldName = options.jsonFieldName;
+            jsonFieldName = 'extra_data.' + jsonFieldName;
         }
 
         if (options.allowMarkdown) {
+            jsonTextTypeFieldName = options.jsonTextTypeFieldName;
+
             if (options.useExtraData) {
-                jsonTextTypeFieldName = 'extra_data.' +
-                                        options.jsonRichTextFieldName;
-                data[jsonTextTypeFieldName] = richText;
-            } else {
-                jsonTextTypeFieldName = options.jsonTextTypeFieldName;
-                data[jsonTextTypeFieldName] = richText ? 'markdown' : 'plain';
+                jsonTextTypeFieldName = 'extra_data.' + jsonTextTypeFieldName;
             }
+
+            data[jsonTextTypeFieldName] = richText ? 'markdown' : 'plain';
 
             data.force_text_type = 'html';
             data.include_raw_text_fields = true;

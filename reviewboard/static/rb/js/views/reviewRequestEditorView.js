@@ -464,7 +464,10 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
      *         Defaults to true for non-builtin fields.
      */
     registerField: function(options) {
-        var fieldID = options.fieldID;
+        var fieldID = options.fieldID,
+            useExtraData = options.useExtraData === undefined
+                           ? true
+                           : options.useExtraData;
 
         console.assert(fieldID);
 
@@ -475,16 +478,11 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
             fieldName: fieldID,
             formatter: null,
             jsonFieldName: fieldID,
-            jsonRichTextFieldName:
-                options.useExtraData && options.allowMarkdown
-                ? fieldID + '_rich_text'
-                : null,
-            jsonTextTypeFieldName:
-                !options.useExtraData && options.allowMarkdown
-                ? fieldID + '_text_type'
-                : null,
+            jsonTextTypeFieldName: options.allowMarkdown ?
+                                   fieldID + '_text_type'
+                                   : null,
             useEditIconOnly: false,
-            useExtraData: true
+            useExtraData: useExtraData
         }, options);
 
         /*
