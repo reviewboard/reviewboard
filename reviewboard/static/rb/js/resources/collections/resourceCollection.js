@@ -146,6 +146,8 @@ RB.ResourceCollection = RB.BaseCollection.extend({
             data = _.defaults(data, this.extraQueryData);
         }
 
+        options.data = data;
+
         if (this.parentResource) {
             this.parentResource.ready({
                 ready: function() {

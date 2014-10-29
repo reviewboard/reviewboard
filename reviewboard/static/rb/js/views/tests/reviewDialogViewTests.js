@@ -260,7 +260,10 @@ suite('rb/views/ReviewDialogView', function() {
                         testLoadReview();
 
                         expect(review.ready.calls[0].args[0].data)
-                            .toBe(undefined);
+                            .toEqual({
+                                'force-text-type': undefined,
+                                'include-raw-text-fields': undefined
+                            });
                     });
                 });
 

@@ -415,10 +415,17 @@ suite('rb/ui/views/TextEditorView', function() {
                     richText: false
                 });
 
+                expect($markdownCheckbox.prop('checked')).toBe(false);
+
+                /*
+                 * All this is needed to get Firefox and Chrome to play nice.
+                 */
                 $markdownCheckbox
                     .click()
+                    .prop('checked', true)
                     .trigger('change');
 
+                expect($markdownCheckbox.prop('checked')).toBe(true);
                 expect(view.richText).toBe(true);
             });
 
@@ -427,10 +434,17 @@ suite('rb/ui/views/TextEditorView', function() {
                     richText: true
                 });
 
+                expect($markdownCheckbox.prop('checked')).toBe(true);
+
+                /*
+                 * All this is needed to get Firefox and Chrome to play nice.
+                 */
                 $markdownCheckbox
                     .click()
+                    .prop('checked', false)
                     .trigger('change');
 
+                expect($markdownCheckbox.prop('checked')).toBe(false);
                 expect(view.richText).toBe(false);
             });
 
