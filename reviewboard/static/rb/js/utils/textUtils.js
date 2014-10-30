@@ -27,7 +27,8 @@ RB.formatText = function($el, options) {
     } else if (options.newText !== undefined) {
         $el
             .html(RB.LinkifyUtils.linkifyText(options.newText || '',
-                                              options.bugTrackerURL))
+                                              options.bugTrackerURL,
+                                              options.isHTMLEncoded))
             .removeClass('rich-text');
     }
 };

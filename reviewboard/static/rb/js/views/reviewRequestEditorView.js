@@ -837,7 +837,8 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
             fieldOptions;
 
         options = _.defaults({
-            bugTrackerURL: reviewRequest.get('bugTrackerURL')
+            bugTrackerURL: reviewRequest.get('bugTrackerURL'),
+            isHTMLEncoded: true
         }, options);
 
         fieldOptions = options.fieldOptions;
