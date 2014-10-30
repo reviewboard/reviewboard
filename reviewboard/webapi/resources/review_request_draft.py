@@ -14,8 +14,10 @@ from djblets.webapi.decorators import (webapi_login_required,
 from djblets.webapi.errors import (DOES_NOT_EXIST, INVALID_FORM_DATA,
                                    NOT_LOGGED_IN, PERMISSION_DENIED)
 
+from reviewboard.reviews.builtin_fields import BuiltinFieldMixin
 from reviewboard.reviews.errors import NotModifiedError, PublishError
-from reviewboard.reviews.fields import get_review_request_field
+from reviewboard.reviews.fields import (get_review_request_fields,
+                                        get_review_request_field)
 from reviewboard.reviews.models import Group, ReviewRequest, ReviewRequestDraft
 from reviewboard.scmtools.errors import InvalidChangeNumberError
 from reviewboard.webapi.base import WebAPIResource
@@ -452,6 +454,12 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
 
         self.set_text_fields(draft, 'description', **kwargs)
         self.set_text_fields(draft, 'testing_done', **kwargs)
+
+        for field_cls in get_review_request_fields():
+            if (not issubclass(field_cls, BuiltinFieldMixin) and
+                getattr(field_cls, 'enable_markdown', False)):
+                self.set_extra_data_text_fields(draft, field_cls.field_id,
+                                                extra_fields, **kwargs)
 
         self.import_extra_data(draft, draft.extra_data, extra_fields)
 

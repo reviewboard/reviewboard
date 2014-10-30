@@ -7,6 +7,8 @@ from djblets.testing.decorators import add_fixtures
 from djblets.webapi.errors import PERMISSION_DENIED
 
 from reviewboard.accounts.models import LocalSiteProfile
+from reviewboard.reviews.fields import (BaseTextAreaField,
+                                        get_review_request_fieldset)
 from reviewboard.reviews.models import ReviewRequest, ReviewRequestDraft
 from reviewboard.site.models import LocalSite
 from reviewboard.webapi.errors import NOTHING_TO_PUBLISH
@@ -241,7 +243,8 @@ class ResourceTests(ExtraDataListMixin, ExtraDataItemMixin,
             text_type_value='markdown',
             expected_change_text_type='markdown',
             expected_description_text_type='markdown',
-            expected_testing_done_text_type='markdown')
+            expected_testing_done_text_type='markdown',
+            expected_custom_field_text_type='markdown')
 
     def test_put_with_text_type_plain(self):
         """Testing the PUT review-requests/<id>/draft/ API
@@ -252,7 +255,8 @@ class ResourceTests(ExtraDataListMixin, ExtraDataItemMixin,
             text_type_value='plain',
             expected_change_text_type='plain',
             expected_description_text_type='plain',
-            expected_testing_done_text_type='plain')
+            expected_testing_done_text_type='plain',
+            expected_custom_field_text_type='plain')
 
     def test_put_with_changedescription_text_type_markdown(self):
         """Testing the PUT review-requests/<id>/draft/ API
@@ -263,7 +267,8 @@ class ResourceTests(ExtraDataListMixin, ExtraDataItemMixin,
             text_type_value='markdown',
             expected_change_text_type='markdown',
             expected_description_text_type='plain',
-            expected_testing_done_text_type='plain')
+            expected_testing_done_text_type='plain',
+            expected_custom_field_text_type='markdown')
 
     def test_put_with_changedescription_text_type_plain(self):
         """Testing the PUT review-requests/<id>/draft/ API
@@ -274,7 +279,8 @@ class ResourceTests(ExtraDataListMixin, ExtraDataItemMixin,
             text_type_value='plain',
             expected_change_text_type='plain',
             expected_description_text_type='plain',
-            expected_testing_done_text_type='plain')
+            expected_testing_done_text_type='plain',
+            expected_custom_field_text_type='markdown')
 
     def test_put_with_description_text_type_markdown(self):
         """Testing the PUT review-requests/<id>/draft/ API
@@ -285,7 +291,8 @@ class ResourceTests(ExtraDataListMixin, ExtraDataItemMixin,
             text_type_value='markdown',
             expected_change_text_type='plain',
             expected_description_text_type='markdown',
-            expected_testing_done_text_type='plain')
+            expected_testing_done_text_type='plain',
+            expected_custom_field_text_type='markdown')
 
     def test_put_with_description_text_type_plain(self):
         """Testing the PUT review-requests/<id>/draft/ API
@@ -296,7 +303,8 @@ class ResourceTests(ExtraDataListMixin, ExtraDataItemMixin,
             text_type_value='plain',
             expected_change_text_type='plain',
             expected_description_text_type='plain',
-            expected_testing_done_text_type='plain')
+            expected_testing_done_text_type='plain',
+            expected_custom_field_text_type='markdown')
 
     def test_put_with_testing_done_text_type_markdown(self):
         """Testing the PUT review-requests/<id>/draft/ API
@@ -307,7 +315,8 @@ class ResourceTests(ExtraDataListMixin, ExtraDataItemMixin,
             text_type_value='markdown',
             expected_change_text_type='plain',
             expected_description_text_type='plain',
-            expected_testing_done_text_type='markdown')
+            expected_testing_done_text_type='markdown',
+            expected_custom_field_text_type='markdown')
 
     def test_put_with_testing_done_text_type_plain(self):
         """Testing the PUT review-requests/<id>/draft/ API
@@ -318,7 +327,32 @@ class ResourceTests(ExtraDataListMixin, ExtraDataItemMixin,
             text_type_value='plain',
             expected_change_text_type='plain',
             expected_description_text_type='plain',
-            expected_testing_done_text_type='plain')
+            expected_testing_done_text_type='plain',
+            expected_custom_field_text_type='markdown')
+
+    def test_put_with_custom_field_text_type_markdown(self):
+        """Testing the PUT review-requests/<id>/draft/ API
+        with extra_data.*_text_type=markdown
+        """
+        self._test_put_with_text_types(
+            text_type_field='extra_data.mytext_text_type',
+            text_type_value='markdown',
+            expected_change_text_type='plain',
+            expected_description_text_type='plain',
+            expected_testing_done_text_type='plain',
+            expected_custom_field_text_type='markdown')
+
+    def test_put_with_custom_field_text_type_plain(self):
+        """Testing the PUT review-requests/<id>/draft/ API
+        with extra_data.*_text_type=plain
+        """
+        self._test_put_with_text_types(
+            text_type_field='extra_data.mytext_text_type',
+            text_type_value='plain',
+            expected_change_text_type='plain',
+            expected_description_text_type='plain',
+            expected_testing_done_text_type='plain',
+            expected_custom_field_text_type='plain')
 
     def test_put_with_commit_id(self):
         """Testing the PUT review-requests/<id>/draft/ API with commit_id"""
@@ -763,37 +797,52 @@ class ResourceTests(ExtraDataListMixin, ExtraDataItemMixin,
     def _test_put_with_text_types(self, text_type_field, text_type_value,
                                   expected_change_text_type,
                                   expected_description_text_type,
-                                  expected_testing_done_text_type):
+                                  expected_testing_done_text_type,
+                                  expected_custom_field_text_type):
         text = '`This` is a **test**'
 
-        review_request = self.create_review_request(submitter=self.user,
-                                                    publish=True)
+        class CustomField(BaseTextAreaField):
+            field_id = 'mytext'
 
-        rsp = self.api_put(
-            get_review_request_draft_url(review_request),
-            {
-                'changedescription': text,
-                'description': text,
-                'testing_done': text,
-                text_type_field: text_type_value,
-            },
-            expected_mimetype=review_request_draft_item_mimetype)
+        fieldset = get_review_request_fieldset('main')
+        fieldset.add_field(CustomField)
 
-        self.assertEqual(rsp['stat'], 'ok')
+        try:
+            review_request = self.create_review_request(submitter=self.user,
+                                                        publish=True)
 
-        draft_rsp = rsp['draft']
-        self.assertEqual(draft_rsp['changedescription'], text)
-        self.assertEqual(draft_rsp['description'], text)
-        self.assertEqual(draft_rsp['testing_done'], text)
-        self.assertEqual(draft_rsp['changedescription_text_type'],
-                         expected_change_text_type)
-        self.assertEqual(draft_rsp['description_text_type'],
-                         expected_description_text_type)
-        self.assertEqual(draft_rsp['testing_done_text_type'],
-                         expected_testing_done_text_type)
+            rsp = self.api_put(
+                get_review_request_draft_url(review_request),
+                {
+                    'changedescription': text,
+                    'description': text,
+                    'testing_done': text,
+                    'extra_data.mytext': text,
+                    text_type_field: text_type_value,
+                },
+                expected_mimetype=review_request_draft_item_mimetype)
 
-        draft = ReviewRequestDraft.objects.get(pk=rsp['draft']['id'])
-        self.compare_item(draft_rsp, draft)
+            self.assertEqual(rsp['stat'], 'ok')
+
+            draft_rsp = rsp['draft']
+            extra_data = draft_rsp['extra_data']
+            self.assertEqual(draft_rsp['changedescription'], text)
+            self.assertEqual(draft_rsp['description'], text)
+            self.assertEqual(draft_rsp['testing_done'], text)
+            self.assertEqual(extra_data['mytext'], text)
+            self.assertEqual(draft_rsp['changedescription_text_type'],
+                             expected_change_text_type)
+            self.assertEqual(draft_rsp['description_text_type'],
+                             expected_description_text_type)
+            self.assertEqual(draft_rsp['testing_done_text_type'],
+                             expected_testing_done_text_type)
+            self.assertEqual(extra_data['mytext_text_type'],
+                             expected_custom_field_text_type)
+
+            draft = ReviewRequestDraft.objects.get(pk=rsp['draft']['id'])
+            self.compare_item(draft_rsp, draft)
+        finally:
+            fieldset.remove_field(CustomField)
 
     def _test_put_as_other_user(self, local_site=None):
         review_request = self.create_review_request(
