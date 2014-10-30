@@ -217,6 +217,7 @@ RB.TextEditorView = Backbone.View.extend({
         this.options = _.defaults(options || {}, this.defaultOptions);
         this.richText = !!this.options.richText;
         this._value = this.options.text || '';
+        this._richTextDirty = false;
 
         if (this.options.bindRichText) {
             this.bindRichTextAttr(this.options.bindRichText.model,
@@ -268,11 +269,13 @@ RB.TextEditorView = Backbone.View.extend({
             this._hideEditor();
             this.richText = richText;
             this._showEditor();
+            this._richTextDirty = true;
         } else {
             this.richText = richText;
         }
 
         this.trigger('change:richText', richText);
+        this.trigger('change');
     },
 
     /*
@@ -326,7 +329,8 @@ RB.TextEditorView = Backbone.View.extend({
      * Returns whether or not the editor's contents have changed.
      */
     isDirty: function(initialValue) {
-        return this._editor ? this._editor.isDirty(initialValue) : false;
+        return this._editor &&
+               (this._richTextDirty || this._editor.isDirty(initialValue));
     },
 
     /*
@@ -406,6 +410,7 @@ RB.TextEditorView = Backbone.View.extend({
 
         this._editor.setText(this._value);
         this._value = '';
+        this._richTextDirty = false;
         this._prevClientHeight = null;
 
         this._editor.$el.on('resize', _.throttle(_.bind(function() {
@@ -444,6 +449,7 @@ RB.TextEditorView = Backbone.View.extend({
     _hideEditor: function() {
         if (this._editor) {
             this._value = this._editor.getText();
+            this._richTextDirty = false;
             this._editor.remove();
             this._editor = null;
 
@@ -469,7 +475,8 @@ RB.TextEditorView = Backbone.View.extend({
             multiline: true,
 
             createMultilineField: function(editor) {
-                var $editor = editor.element;
+                var $editor = editor.element,
+                    origRichText;
 
                 textEditor = new RB.TextEditorView(options);
                 textEditor.render();
@@ -511,9 +518,15 @@ RB.TextEditorView = Backbone.View.extend({
 
                 $editor.on('beginEdit', function() {
                     textEditor._showEditor();
+                    origRichText = textEditor.richText;
                 });
 
-                $editor.on('cancel complete', function() {
+                $editor.on('cancel', function() {
+                    textEditor._hideEditor();
+                    textEditor.setRichText(origRichText);
+                });
+
+                $editor.on('complete', function() {
                     textEditor._hideEditor();
                 });
 

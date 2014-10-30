@@ -280,6 +280,29 @@ suite('rb/ui/views/TextEditorView', function() {
                 expect(emitted).toBe(true);
             });
 
+            it('Emits change', function() {
+                var emitted = false;
+
+                view.on('change', function() {
+                    emitted = true;
+                });
+
+                view.show();
+                view.richText = false;
+                view.setRichText(true);
+
+                expect(emitted).toBe(true);
+            });
+
+            it('Marks dirty', function() {
+                view.show();
+                view.richText = false;
+                expect(view.isDirty()).toBe(false);
+
+                view.setRichText(true);
+                expect(view.isDirty()).toBe(true);
+            });
+
             describe('Markdown to Text', function() {
                 beforeEach(function() {
                     view = new RB.TextEditorView({
@@ -410,6 +433,16 @@ suite('rb/ui/views/TextEditorView', function() {
         }
 
         describe('Rich text checkbox', function() {
+            function setChecked(checked) {
+                /*
+                 * All this is needed to get Firefox and Chrome to play nice.
+                 */
+                $markdownCheckbox
+                    .click()
+                    .prop('checked', checked)
+                    .trigger('change');
+            }
+
             it('Checking', function() {
                 setupEditor({
                     richText: false
@@ -417,13 +450,7 @@ suite('rb/ui/views/TextEditorView', function() {
 
                 expect($markdownCheckbox.prop('checked')).toBe(false);
 
-                /*
-                 * All this is needed to get Firefox and Chrome to play nice.
-                 */
-                $markdownCheckbox
-                    .click()
-                    .prop('checked', true)
-                    .trigger('change');
+                setChecked(true);
 
                 expect($markdownCheckbox.prop('checked')).toBe(true);
                 expect(view.richText).toBe(true);
@@ -436,16 +463,24 @@ suite('rb/ui/views/TextEditorView', function() {
 
                 expect($markdownCheckbox.prop('checked')).toBe(true);
 
-                /*
-                 * All this is needed to get Firefox and Chrome to play nice.
-                 */
-                $markdownCheckbox
-                    .click()
-                    .prop('checked', false)
-                    .trigger('change');
+                setChecked(false);
 
                 expect($markdownCheckbox.prop('checked')).toBe(false);
                 expect(view.richText).toBe(false);
+            });
+
+            it('Resets after cancel', function() {
+                setupEditor({
+                    richText: true
+                });
+
+                setChecked(false);
+
+                $el.inlineEditor('cancel');
+
+                expect($markdownCheckbox.prop('checked')).toBe(true);
+                expect(view.richText).toBe(true);
+                expect(view.isDirty()).toBe(false);
             });
 
             describe('Initial state', function() {
