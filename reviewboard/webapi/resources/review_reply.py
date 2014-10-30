@@ -299,7 +299,7 @@ class ReviewReplyResource(BaseReviewResource):
         self.set_text_fields(reply, 'body_top', **kwargs)
         self.set_text_fields(reply, 'body_bottom', **kwargs)
 
-        self._import_extra_data(reply.extra_data, extra_fields)
+        self.import_extra_data(reply, reply.extra_data, extra_fields)
 
         if public:
             try:

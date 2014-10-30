@@ -636,8 +636,9 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
                 create_from_commit_id=create_from_commit_id)
 
             if extra_fields:
-                self._import_extra_data(review_request.extra_data,
-                                        extra_fields)
+                self.import_extra_data(review_request,
+                                       review_request.extra_data,
+                                       extra_fields)
                 review_request.save(update_fields=['extra_data'])
 
             return 201, {
@@ -856,7 +857,8 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
             review_request.reopen()
 
         if extra_fields:
-            self._import_extra_data(review_request.extra_data, extra_fields)
+            self.import_extra_data(review_request, review_request.extra_data,
+                                   extra_fields)
             review_request.save(update_fields=['extra_data'])
 
         return 200, {

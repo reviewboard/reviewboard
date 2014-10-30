@@ -150,7 +150,7 @@ class DraftFileDiffResource(FileDiffResource):
                         filediff)
 
         if extra_fields:
-            self._import_extra_data(filediff.extra_data, extra_fields)
+            self.import_extra_data(filediff, filediff.extra_data, extra_fields)
             filediff.save(update_fields=['extra_data'])
 
         return 200, {

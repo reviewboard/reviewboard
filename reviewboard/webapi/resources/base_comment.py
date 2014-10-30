@@ -161,7 +161,8 @@ class BaseCommentResource(MarkdownFieldsMixin, WebAPIResource):
             comment_kwargs[field] = kwargs.get(field)
 
         new_comment = self.model(**comment_kwargs)
-        self._import_extra_data(new_comment.extra_data, extra_fields)
+        self.import_extra_data(new_comment, new_comment.extra_data,
+                               extra_fields)
 
         if issue_opened:
             new_comment.issue_status = BaseComment.OPEN
@@ -199,7 +200,7 @@ class BaseCommentResource(MarkdownFieldsMixin, WebAPIResource):
         self.set_text_fields(comment, 'text', **kwargs)
 
         if not is_reply:
-            self._import_extra_data(comment.extra_data, extra_fields)
+            self.import_extra_data(comment, comment.extra_data, extra_fields)
 
         comment.save()
 

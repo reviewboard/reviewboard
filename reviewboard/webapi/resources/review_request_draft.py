@@ -453,7 +453,7 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
         self.set_text_fields(draft, 'description', **kwargs)
         self.set_text_fields(draft, 'testing_done', **kwargs)
 
-        self._import_extra_data(draft.extra_data, extra_fields)
+        self.import_extra_data(draft, draft.extra_data, extra_fields)
 
         if always_save or not invalid_fields:
             for obj in set(modified_objects):

@@ -293,7 +293,7 @@ class BaseReviewResource(MarkdownFieldsMixin, WebAPIResource):
         self.set_text_fields(review, 'body_top', **kwargs)
         self.set_text_fields(review, 'body_bottom', **kwargs)
 
-        self._import_extra_data(review.extra_data, extra_fields)
+        self.import_extra_data(review, review.extra_data, extra_fields)
 
         review.save()
 
