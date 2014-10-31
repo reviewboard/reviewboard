@@ -359,7 +359,7 @@ To install on Fedora_, type::
     $ yum install python-subvertpy
 
 On `RedHat Enterprise`_ and CentOS_, you may have to install subvertpy from
-scratch if you do not wish to add the EPEL_ repository. To install PySVN from
+scratch if you do not wish to add the EPEL repository. To install PySVN from
 EPEL, add its repository, then type::
 
     $ yum --enablerepo=epel install python-subvertpy
@@ -382,7 +382,7 @@ To install on Fedora_, type::
     $ yum install subversion pysvn
 
 `RedHat Enterprise`_ and CentOS_ provide subversion, but you may have to
-install PySVN from scratch if you do not wish to add the EPEL_ repository.
+install PySVN from scratch if you do not wish to add the EPEL repository.
 To install Subversion, type::
 
     $ yum install subversion

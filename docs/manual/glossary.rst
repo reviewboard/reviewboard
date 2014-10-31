@@ -48,7 +48,7 @@ Glossary
 
    Post-commit Hook
        A script that is executed after a commit is made to a repository.
-       See :ref:`automating-post-review` for ways to use post-commit hooks
+       See :ref:`automating-rbt-post` for ways to use post-commit hooks
        to automate submitting review requests to Review Board.
 
    Post-commit Review

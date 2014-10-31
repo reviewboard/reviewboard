@@ -27,7 +27,7 @@ class ReviewReplyResource(BaseReviewResource):
     a parent comment.
 
     If the ``text_type`` field is set to ``markdown``, then the ``body_top``
-    and ``body_bottom` fields field should be interpreted by the client as
+    and ``body_bottom`` fields field should be interpreted by the client as
     Markdown text.
 
     The returned text in the payload can be provided in a different format
