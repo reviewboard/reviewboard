@@ -829,6 +829,8 @@ RB.ReviewDialogView = Backbone.View.extend({
      * public=true).
      */
     _saveReview: function(publish) {
+        var madeChanges = false;
+
         this._$buttons.prop('disabled');
 
         $.funcQueue('reviewForm').clear();
@@ -836,6 +838,7 @@ RB.ReviewDialogView = Backbone.View.extend({
         function maybeSave(view) {
             if (view.needsSave()) {
                 $.funcQueue('reviewForm').add(function() {
+                    madeChanges = true;
                     view.save({
                         success: function() {
                             $.funcQueue('reviewForm').next();
@@ -850,20 +853,28 @@ RB.ReviewDialogView = Backbone.View.extend({
         _.each(this._commentViews, maybeSave);
 
         $.funcQueue('reviewForm').add(function() {
-            this.model.set({
-                'public': publish,
-                richText: true,
-                shipIt: this._$shipIt.prop('checked')
-            });
+            var shipIt = this._$shipIt.prop('checked');
 
-            this.model.save({
-                success: function() {
-                    $.funcQueue('reviewForm').next();
-                },
-                error: function() {
-                    console.log(arguments);
-                }
-            });
+            if (this.model.get('public') === publish &&
+                this.model.get('shipIt') === shipIt) {
+                $.funcQueue('reviewForm').next();
+            } else {
+                madeChanges = true;
+                this.model.set({
+                    'public': publish,
+                    richText: true,
+                    shipIt: shipIt
+                });
+
+                this.model.save({
+                    success: function() {
+                        $.funcQueue('reviewForm').next();
+                    },
+                    error: function() {
+                        console.log(arguments);
+                    }
+                });
+            }
         }, this);
 
         $.funcQueue('reviewForm').add(function() {
@@ -874,6 +885,8 @@ RB.ReviewDialogView = Backbone.View.extend({
             if (reviewBanner) {
                 if (publish) {
                     reviewBanner.hideAndReload();
+                } else if (this.model.isNew() && !madeChanges) {
+                    reviewBanner.hide();
                 } else {
                     reviewBanner.show();
                 }
