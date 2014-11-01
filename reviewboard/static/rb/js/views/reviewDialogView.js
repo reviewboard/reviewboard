@@ -636,12 +636,15 @@ RB.ReviewDialogView = Backbone.View.extend({
                 this._bodyTopView.render();
                 this._bodyBottomView.render();
 
+                if (this.model.isNew() || this.model.get('bodyTop') === '') {
+                    this._bodyTopView.openEditor();
+                }
+
                 if (this.model.isNew()) {
                     this._$spinner.remove();
                     this._$spinner = null;
 
                     this._handleEmptyReview();
-                    this._bodyTopView.openEditor();
                 } else {
                     this._$shipIt
                         .prop('checked', this.model.get('shipIt'))
