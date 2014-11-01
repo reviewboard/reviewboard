@@ -53,8 +53,7 @@ class AccountSettingsForm(AccountPageForm):
         required=False)
 
     default_use_rich_text = forms.BooleanField(
-        label=_('Enable Markdown for new review requests, reviews and '
-                'comments by default'),
+        label=_('Always use Markdown for text fields'),
         required=False)
 
     def load(self):
