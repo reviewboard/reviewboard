@@ -56,7 +56,14 @@ class BuiltinTextAreaFieldMixin(BuiltinFieldMixin):
     still escape the text if it's not in Markdown format before
     rendering.
     """
-    pass
+    def get_data_attributes(self):
+        attrs = super(BuiltinTextAreaFieldMixin, self).get_data_attributes()
+
+        # This is already available in the review request state fed to the
+        # page, so we don't need it in the data attributes as well.
+        attrs.pop('raw-value', None)
+
+        return attrs
 
 
 class BuiltinLocalsFieldMixin(BuiltinFieldMixin):

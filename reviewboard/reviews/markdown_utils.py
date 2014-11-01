@@ -137,6 +137,9 @@ def normalize_text_for_edit(user, text, rich_text):
     this will return the text escaped for edit. Otherwise, the text is
     returned as-is.
     """
+    if text is None:
+        return ''
+
     if not rich_text and is_rich_text_default_for_user(user):
         # This isn't rich text, but it's going to be edited as rich text,
         # so escape it.
