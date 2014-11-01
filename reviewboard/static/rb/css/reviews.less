@@ -219,16 +219,20 @@
       border: none;
     }
 
-    &>pre {
-      .pre-wrap;
-      background-color: #FFFFFF;
-      border: @textarea-border;
-      margin: @textarea-editor-margin;
-      padding: @textarea-editor-padding;
-    }
-
     .editable.loading {
       .rich-text-loading();
+    }
+
+    .field-container {
+      position: relative;
+
+      &>pre {
+        .pre-wrap;
+        background-color: #FFFFFF;
+        border: @textarea-border;
+        margin: @textarea-editor-margin;
+        padding: @textarea-editor-padding;
+      }
     }
   }
 

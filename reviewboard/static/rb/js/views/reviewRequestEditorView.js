@@ -420,6 +420,7 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
         this.banner = null;
         this._$main = null;
         this._$extra = null;
+        this._blockResizeLayout = false;
 
         if ($issueSummary.length > 0) {
             this.issueSummaryTableView = new RB.IssueSummaryTableView({
@@ -1188,7 +1189,7 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
          * (for instance, review UIs want to have the draft banners but not
          * the review request box). In this case, just skip all of this.
          */
-        if (this._$main.length !== 0) {
+        if (this._$main.length !== 0 && !this._blockResizeLayout) {
             this._resizeLayout();
         }
     },
@@ -1202,19 +1203,20 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
      */
     _resizeLayout: function() {
         var $lastContent = this._$main.children('.content:last-child'),
-            $lastEditable = $lastContent.children('.editable'),
-            lastContentTop = $lastContent.position().top,
-            editing = $lastEditable.inlineEditor('editing'),
-            $field = $lastEditable.inlineEditor('field'),
-            editor = $field.data('text-editor'),
+            $lastFieldContainer = $lastContent.children('.field-container'),
+            $lastEditable = $lastFieldContainer.children('.editable'),
+            lastContentTop = Math.ceil($lastContent.position().top),
+            editor = $lastEditable.inlineEditor('field').data('text-editor'),
             detailsWidth = 300, // Defined as @details-width in reviews.less
             detailsPadding = 10,
-            $details = $('#review_request_details'),
-            $detailsBody = $details.find('tbody'),
+            $detailsBody = $('#review_request_details tbody'),
             $detailsLabels = $detailsBody.find('th:first-child'),
             $detailsValues = $detailsBody.find('span'),
             contentHeight,
+            newEditableHeight,
             height;
+
+        this._blockResizeLayout = true;
 
         /*
          * Make sure that the details fields wrap correctly, even if they don't
@@ -1235,7 +1237,7 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
         $lastEditable.height('auto');
 
         if (editor) {
-          editor.setSize(null, 'auto');
+            editor.setSize(null, 'auto');
         }
 
         /*
@@ -1257,7 +1259,8 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
              * the content area of the content box.
              */
             contentHeight = $lastContent.height() +
-                            $lastContent.getExtents('p', 't');
+                            $lastContent.getExtents('p', 't') -
+                            Math.ceil($lastFieldContainer.position().top);
 
             /*
              * Set the height of the editor or the editable field placeholder,
@@ -1265,25 +1268,27 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
              * both, since this logic will be called again when the state
              * changes.
              */
-            if (editing && editor) {
+            if ($lastEditable.inlineEditor('editing') && editor) {
                 editor.setSize(
                     null,
-                    (contentHeight -
-                     $lastEditable.inlineEditor('buttons').outerHeight(true) -
-                     $field.position().top));
+                    contentHeight -
+                    $lastEditable.inlineEditor('buttons').outerHeight(true));
             } else {
                 /*
                  * It's possible to squish the editable element if we force
                  * a size, so make sure it's always at least the natural
                  * height.
                  */
-                $lastEditable.outerHeight(
-                    Math.max($lastEditable.outerHeight(true),
-                             contentHeight -
-                             $lastEditable.position().top),
-                    true);
+                newEditableHeight = contentHeight +
+                                    $lastEditable.getExtents('m', 'tb');
+
+                if (newEditableHeight > $lastEditable.outerHeight()) {
+                    $lastEditable.outerHeight(newEditableHeight);
+                }
             }
         }
+
+        this._blockResizeLayout = false;
     },
 
     /*

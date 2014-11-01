@@ -170,9 +170,17 @@ TextAreaWrapper = Backbone.View.extend({
      * Sets the size of the editor.
      */
     setSize: function(width, height) {
-        this.$el
-            .innerWidth(width)
-            .innerHeight(height);
+        if (width !== null) {
+            this.$el.innerWidth(width);
+        }
+
+        if (height !== null) {
+            if (height === 'auto' && this.options.autoSize) {
+                this.$el.autoSizeTextArea('autoSize', true);
+            } else {
+                this.$el.innerHeight(height);
+            }
+        }
     },
 
     /*
@@ -269,7 +277,10 @@ RB.TextEditorView = Backbone.View.extend({
             this._hideEditor();
             this.richText = richText;
             this._showEditor();
+
             this._richTextDirty = true;
+
+            this.$el.triggerHandler('resize');
         } else {
             this.richText = richText;
         }

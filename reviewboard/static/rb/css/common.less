@@ -34,7 +34,7 @@ label.required:after {
   color: @required-flag-color;
 }
 
-pre, textarea, .CodeMirror {
+pre, textarea, .CodeMirror, .editable.field-text-area {
   font-size: @textarea-font-size;
   font-family: @textarea-font-family;
   line-height: @textarea-line-height;
@@ -473,6 +473,7 @@ input[type=submit].btn {
   textarea + .buttons,
   .text-editor + .buttons {
     margin-top: 6px;
+    white-space: normal;
   }
 
   .enable-markdown {
@@ -488,6 +489,14 @@ input[type=submit].btn {
 
 .loading-indicator {
   display: inline;
+}
+
+.text-editor {
+  margin: @textarea-editor-margin;
+
+  textarea, .CodeMirror {
+    margin: 0;
+  }
 }
 
 
