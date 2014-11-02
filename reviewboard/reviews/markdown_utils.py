@@ -3,6 +3,7 @@ from __future__ import unicode_literals
 import re
 from xml.dom.minidom import parseString
 
+from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Model
 from django.utils import six
 from django.utils.six.moves import cStringIO as StringIO
@@ -151,11 +152,14 @@ def normalize_text_for_edit(user, text, rich_text):
 def is_rich_text_default_for_user(user):
     """Returns whether the user edits in Markdown by default."""
     if user.is_authenticated():
-        return user.get_profile().should_use_rich_text
-    else:
-        siteconfig = SiteConfiguration.objects.get_current()
+        try:
+            return user.get_profile().should_use_rich_text
+        except ObjectDoesNotExist:
+            pass
 
-        return siteconfig.get('default_use_rich_text')
+    siteconfig = SiteConfiguration.objects.get_current()
+
+    return siteconfig.get('default_use_rich_text')
 
 
 def markdown_set_field_escaped(obj, field, escaped):
