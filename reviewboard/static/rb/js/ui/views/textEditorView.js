@@ -340,7 +340,7 @@ RB.TextEditorView = Backbone.View.extend({
      * Returns whether or not the editor's contents have changed.
      */
     isDirty: function(initialValue) {
-        return this._editor &&
+        return this._editor !== null &&
                (this._richTextDirty || this._editor.isDirty(initialValue));
     },
 
