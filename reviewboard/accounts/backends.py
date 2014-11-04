@@ -548,7 +548,7 @@ class ActiveDirectoryBackend(AuthBackend):
         import DNS
         DNS.Base.DiscoverNameServers()
         q = '_ldap._tcp.%s' % (userdomain or self.get_domain_name())
-        req = DNS.Base.DnsRequest(q, qtype='SRV').req()
+        req = DNS.Base.DnsRequest(q, qtype=DNS.Type.SRV).req()
         return [x['data'][-2:] for x in req.answers]
 
     def can_recurse(self, depth):
