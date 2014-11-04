@@ -40,7 +40,7 @@ RB.ReviewRequest = RB.BaseResource.extend({
 
     extraQueryArgs: {
         'force-text-type': 'html',
-        'include-raw-text-fields': true
+        'include-text-types': 'raw'
     },
 
     initialize: function(attrs, options) {

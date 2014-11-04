@@ -409,7 +409,7 @@ suite('rb/views/ReviewRequestEditorView', function() {
                         textType;
 
                     expectedData.force_text_type = 'html';
-                    expectedData.include_raw_text_fields = true;
+                    expectedData.include_text_types = 'raw';
                 }
 
                 expect($field.inlineEditor('dirty')).toBe(true);
@@ -537,7 +537,7 @@ suite('rb/views/ReviewRequestEditorView', function() {
                             expectedData = {
                                 status: options.jsonCloseType,
                                 force_text_type: 'html',
-                                include_raw_text_fields: true
+                                include_text_types: 'raw'
                             };
 
                         expectedData[options.jsonTextTypeFieldName] = textType;

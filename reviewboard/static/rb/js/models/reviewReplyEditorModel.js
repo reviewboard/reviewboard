@@ -82,7 +82,7 @@ RB.ReviewReplyEditor = Backbone.Model.extend({
                     obj.set(richTextAttr, true);
                     obj.set({
                         forceTextType: 'html',
-                        includeRawTextFields: true
+                        includeTextTypes: 'raw'
                     });
 
                     obj.save({

@@ -111,7 +111,7 @@ RB.ReviewRequestEditor = Backbone.Model.extend({
                     error: options.error,
                     postData: {
                         force_text_type: 'html',
-                        include_raw_text_fields: true
+                        include_text_types: 'raw'
                     }
                 },
                 context);
@@ -135,7 +135,7 @@ RB.ReviewRequestEditor = Backbone.Model.extend({
             data[jsonTextTypeFieldName] = richText ? 'markdown' : 'plain';
 
             data.force_text_type = 'html';
-            data.include_raw_text_fields = true;
+            data.include_text_types = 'raw';
         }
 
         data[jsonFieldName] = value;

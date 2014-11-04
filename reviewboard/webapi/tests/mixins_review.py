@@ -236,7 +236,7 @@ class ReviewItemMixin(ExtraDataItemMixin):
         self.assertEqual(review_rsp['body_bottom'], expected_text)
         self.assertNotIn('raw_text_fields', review_rsp)
 
-        rsp = self.api_get('%s?force-text-type=%s&include-raw-text-fields=1'
+        rsp = self.api_get('%s?force-text-type=%s&include-text-types=raw'
                            % (url, force_text_type),
                            expected_mimetype=mimetype)
         self.assertEqual(rsp['stat'], 'ok')

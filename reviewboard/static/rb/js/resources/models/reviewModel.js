@@ -20,14 +20,14 @@ RB.Review = RB.BaseResource.extend({
         draftReply: null,
 
         /*
-         * Whether responses from the server should return raw text
-         * fields when forceTextType is used.
+         * A string containing a comma-separated list of text types to include
+         * in the payload.
          */
-        includeRawTextFields: false,
+        includeTextTypes: null,
 
         /*
          * Raw text fields, if forceTextType is used and the caller
-         * fetches or posts with includeRawTextFields=true.
+         * fetches or posts with includeTextTypes="raw".
          */
         rawTextFields: {},
 
@@ -39,6 +39,7 @@ RB.Review = RB.BaseResource.extend({
     toJSON: function() {
         var data = {
             force_text_type: this.get('forceTextType') || undefined,
+            include_text_types: this.get('includeTextTypes') || undefined,
             ship_it: this.get('shipIt'),
             body_top: this.get('bodyTop'),
             body_top_text_type: this.get('bodyTopRichText')
@@ -50,10 +51,6 @@ RB.Review = RB.BaseResource.extend({
 
         if (this.get('public')) {
             data['public'] = 1;
-        }
-
-        if (this.get('includeRawTextFields')) {
-            data.include_raw_text_fields = 1;
         }
 
         return data;

@@ -28,7 +28,7 @@ RB.DraftReviewRequest = RB.BaseResource.extend(_.defaults({
 
     extraQueryArgs: {
         'force-text-type': 'html',
-        'include-raw-text-fields': true
+        'include-text-types': 'raw'
     },
 
     url: function() {

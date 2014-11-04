@@ -14,11 +14,11 @@ RB.ReviewReply = RB.BaseResource.extend({
          * Whether responses from the server should return raw text
          * fields when forceTextType is used.
          */
-        includeRawTextFields: false,
+        includeTextTypes: null,
 
         /*
-         * Raw text fields, if forceTextType is used and the caller
-         * fetches or posts with include-raw-text-fields=1
+         * Raw text fields, if the caller fetches or posts with
+         * include-text-types=raw.
          */
         rawTextFields: {},
 
@@ -36,7 +36,7 @@ RB.ReviewReply = RB.BaseResource.extend({
 
     extraQueryArgs: {
         'force-text-type': 'html',
-        'include-raw-text-fields': true
+        'include-text-types': 'raw'
     },
 
     COMMENT_LINK_NAMES: [
@@ -55,8 +55,7 @@ RB.ReviewReply = RB.BaseResource.extend({
             body_bottom_text_type: this.get('bodyBottomRichText')
                                    ? 'markdown' : 'plain',
             force_text_type: this.get('forceTextType') || undefined,
-            include_raw_text_fields: this.get('includeRawTextFields') ||
-                                     undefined
+            include_text_types: this.get('includeTextTypes') || undefined
         };
     },
 

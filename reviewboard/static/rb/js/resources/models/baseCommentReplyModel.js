@@ -13,14 +13,14 @@ RB.BaseCommentReply = RB.BaseResource.extend({
         forceTextType: null,
 
         /*
-         * Whether responses from the server should return raw text
-         * fields when forceTextType is used.
+         * A string containing a comma-separated list of text types to include
+         * in the payload.
          */
-        includeRawTextFields: false,
+        includeTextTypes: null,
 
         /*
-         * Raw text fields, if forceTextType is used and the caller
-         * fetches or posts with include-raw-text-fields=1
+         * Raw text fields, if the caller fetches or posts with
+         * include-text-types=raw.
          */
         rawTextFields: {},
 
@@ -55,8 +55,7 @@ RB.BaseCommentReply = RB.BaseResource.extend({
     toJSON: function() {
         var data = {
             force_text_type: this.get('forceTextType') || undefined,
-            include_raw_text_fields: this.get('includeRawTextFields') ||
-                                     undefined,
+            include_text_types: this.get('includeTextTypes') || undefined,
             text: this.get('text'),
             text_type: this.get('richText') ? 'markdown' : 'plain'
         };

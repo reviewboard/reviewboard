@@ -28,16 +28,24 @@ class MarkdownFieldsMixin(object):
     When ``html`` is specified, the content will be transformed into HTML
     suitable for display.
 
-    Clients can also pass ``?include-raw-text-fields=1`` (for GET) or
-    ``include_raw_text_fields=`` (for POST/PUT) to return the raw fields
-    within a special ``raw_text_fields`` entry in the resource payload.
+    Clients can also pass ``?include-text-types=<type1>[,<type2>,...]``
+    (for GET) or ``include_text_types=<type1>[,<type2>,...]`` (for POST/PUT)
+    to return the text fields within special :samp:`{type}_text_fields`
+    entries in the resource payload. A special type of "raw" is allowed,
+    which will return the text types stored in the database.
+
+    (Note that passing ``?include-text-types=raw`` is equivalent to passing
+    ``?include-raw-text-fields=1`` in 2.0.9 and 2.0.10. The latter is
+    deprecated.)
     """
     TEXT_TYPE_PLAIN = 'plain'
     TEXT_TYPE_MARKDOWN = 'markdown'
     TEXT_TYPE_HTML = 'html'
+    TEXT_TYPE_RAW = 'raw'
 
     TEXT_TYPES = (TEXT_TYPE_PLAIN, TEXT_TYPE_MARKDOWN, TEXT_TYPE_HTML)
     SAVEABLE_TEXT_TYPES = (TEXT_TYPE_PLAIN, TEXT_TYPE_MARKDOWN)
+    INCLUDEABLE_TEXT_TYPES = TEXT_TYPES + (TEXT_TYPE_RAW,)
 
     DEFAULT_EXTRA_DATA_TEXT_TYPE = TEXT_TYPE_MARKDOWN
 
@@ -60,14 +68,13 @@ class MarkdownFieldsMixin(object):
         else:
             force_text_type = request.POST.get('force_text_type')
 
-        if force_text_type in self.TEXT_TYPES:
-            include_raw_text_fields = \
-                self._get_include_raw_text_fields(obj, **kwargs)
-        else:
+        if force_text_type not in self.TEXT_TYPES:
             force_text_type = None
-            include_raw_text_fields = False
 
-        raw_fields = {}
+        extra_text_type_fields = dict([
+            (extra_text_type, {})
+            for extra_text_type in self._get_extra_text_types(obj, **kwargs)
+        ])
 
         for field, field_info in six.iteritems(self.fields):
             if not field_info.get('supports_text_types'):
@@ -81,14 +88,12 @@ class MarkdownFieldsMixin(object):
                 getter = lambda obj, data, rich_text_field, text_type_field: \
                     getattr(obj, rich_text_field, None)
 
-            self._serialize_text_info(obj, data, raw_fields, field,
-                                      force_text_type,
-                                      include_raw_text_fields,
-                                      getter)
+            self._serialize_text_info(obj, data, extra_text_type_fields,
+                                      field, force_text_type, getter)
 
         if 'extra_data' in data:
-            raw_extra_data = {}
             extra_data = data['extra_data']
+            all_text_types_extra_data = {}
 
             # Work on a copy of extra_data, in case we change it.
             for field, value in six.iteritems(obj.extra_data.copy()):
@@ -100,19 +105,19 @@ class MarkdownFieldsMixin(object):
                 # fields. New fields will always have the text_type flag
                 # set to the proper value.
                 self._serialize_text_info(
-                    obj, extra_data, raw_extra_data, field, force_text_type,
-                    include_raw_text_fields, self._extra_data_rich_text_getter)
+                    obj, extra_data, all_text_types_extra_data, field,
+                    force_text_type, self._extra_data_rich_text_getter)
 
-            raw_fields['extra_data'] = raw_extra_data
+            for key, values in six.iteritems(all_text_types_extra_data):
+                extra_text_type_fields[key]['extra_data'] = values
 
-        if include_raw_text_fields:
-            data['raw_text_fields'] = raw_fields
+        for key, values in six.iteritems(extra_text_type_fields):
+            data[key + '_text_fields'] = values
 
         return data
 
-    def _serialize_text_info(self, obj, data, raw_data, field,
-                             force_text_type, include_raw_text_fields,
-                             getter):
+    def _serialize_text_info(self, obj, data, extra_text_type_fields, field,
+                             force_text_type, getter):
         text_type_field = self._get_text_type_field_name(field)
         rich_text_field = self._get_rich_text_field_name(field)
 
@@ -121,27 +126,35 @@ class MarkdownFieldsMixin(object):
         assert field_is_rich_text is not None, \
             'No value for field "%s" found in %r' % (rich_text_field, obj)
 
+        if field_is_rich_text:
+            field_text_type = self.TEXT_TYPE_MARKDOWN
+        else:
+            field_text_type = self.TEXT_TYPE_PLAIN
+
+        value = data.get(field)
+
         if force_text_type:
             data[text_type_field] = force_text_type
-            value = data.get(field)
 
             if value is not None:
                 data[field] = self._normalize_text(
-                    data[field], field_is_rich_text, force_text_type)
-
-            if include_raw_text_fields:
-                raw_data[field] = value
-                text_types_data = raw_data
-            else:
-                text_types_data = None
+                    value, field_is_rich_text, force_text_type)
         else:
-            text_types_data = data
+            data[text_type_field] = field_text_type
 
-        if text_types_data is not None:
-            if field_is_rich_text:
-                text_types_data[text_type_field] = self.TEXT_TYPE_MARKDOWN
+        for extra_text_type in extra_text_type_fields:
+            if extra_text_type == self.TEXT_TYPE_RAW:
+                norm_extra_text_type = field_text_type
+                norm_extra_value = value
             else:
-                text_types_data[text_type_field] = self.TEXT_TYPE_PLAIN
+                norm_extra_text_type = extra_text_type
+                norm_extra_value = self._normalize_text(
+                    value, field_is_rich_text, extra_text_type)
+
+            extra_text_type_fields[extra_text_type].update({
+                field: norm_extra_value,
+                text_type_field: norm_extra_text_type,
+            })
 
     def serialize_text_type_field(self, obj, request=None, **kwargs):
         return None
@@ -163,22 +176,36 @@ class MarkdownFieldsMixin(object):
         """
         return False
 
-    def _get_include_raw_text_fields(self, obj, request=None, **kwargs):
-        """Returns whether raw text fields should be returned in the payload.
+    def _get_extra_text_types(self, obj, request=None, **kwargs):
+        """Returns any extra text types that should be included in the payload.
 
-        If ``?include-raw-text-fields=1`` (for GET) or
-        ``include_raw_text_fields=`` (for POST/PUT) is passed, this will
-        return True. Otherwise, it will return False.
+        This will return the list of extra text types that can be included,
+        filtering the list by those that are supported.
+
+        It also checks for the older ``?include-raw-text-fields=1`` option,
+        which is the same as using ``?include-text-types=raw``.
         """
-        include_raw_text = False
+        extra_text_types = set()
 
         if request:
             if request.method == 'GET':
+                include_types = request.GET.get('include-text-types')
                 include_raw_text = request.GET.get('include-raw-text-fields')
             else:
+                include_types = request.POST.get('include_text_types')
                 include_raw_text = request.POST.get('include_raw_text_fields')
 
-        return include_raw_text in ('1', 'true')
+            if include_raw_text in ('1', 'true'):
+                extra_text_types.add(self.TEXT_TYPE_RAW)
+
+            if include_types:
+                extra_text_types.update([
+                    text_type
+                    for text_type in include_types.split(',')
+                    if text_type in self.INCLUDEABLE_TEXT_TYPES
+                ])
+
+        return extra_text_types
 
     def _normalize_text(self, text, field_is_rich_text, force_text_type):
         """Normalizes text to the proper format.
@@ -188,16 +215,17 @@ class MarkdownFieldsMixin(object):
         """
         assert force_text_type
 
-        if force_text_type == self.TEXT_TYPE_PLAIN and field_is_rich_text:
-            text = markdown_unescape(text)
-        elif (force_text_type == self.TEXT_TYPE_MARKDOWN and
-              not field_is_rich_text):
-            text = markdown_escape(text)
-        elif force_text_type == self.TEXT_TYPE_HTML:
-            if field_is_rich_text:
-                text = render_markdown(text)
-            else:
-                text = escape(text)
+        if text is not None:
+            if force_text_type == self.TEXT_TYPE_PLAIN and field_is_rich_text:
+                text = markdown_unescape(text)
+            elif (force_text_type == self.TEXT_TYPE_MARKDOWN and
+                  not field_is_rich_text):
+                text = markdown_escape(text)
+            elif force_text_type == self.TEXT_TYPE_HTML:
+                if field_is_rich_text:
+                    text = render_markdown(text)
+                else:
+                    text = escape(text)
 
         return text
 

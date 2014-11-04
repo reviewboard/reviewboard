@@ -207,7 +207,7 @@ suite('rb/models/ReviewRequestEditor', function() {
                                 changedescription_text_type: textType,
                                 changedescription: 'My description',
                                 force_text_type: 'html',
-                                include_raw_text_fields: true
+                                include_text_types: 'raw'
                             });
                         }
 
@@ -403,7 +403,7 @@ suite('rb/models/ReviewRequestEditor', function() {
                             'extra_data.myfield_text_type': textType,
                             'extra_data.myfield': 'Test text.',
                             force_text_type: 'html',
-                            include_raw_text_fields: true
+                            include_text_types: 'raw'
                         });
                     }
 

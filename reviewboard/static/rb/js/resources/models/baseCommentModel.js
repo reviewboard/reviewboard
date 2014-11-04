@@ -13,10 +13,10 @@ RB.BaseComment = RB.BaseResource.extend({
         forceTextType: null,
 
         /*
-         * Whether responses from the server should return raw text
-         * fields when forceTextType is used.
+         * A string containing a comma-separated list of text types to include
+         * in the payload.
          */
-        includeRawTextFields: false,
+        includeTextTypes: null,
 
         /* Whether or not an issue is opened. */
         issueOpened: true,
@@ -29,8 +29,8 @@ RB.BaseComment = RB.BaseResource.extend({
         issueStatus: null,
 
         /*
-         * Raw text fields, if forceTextType is used and the caller
-         * fetches or posts with include-raw-text-fields=1
+         * Raw text fields, if the caller fetches or posts with
+         * include-text-types=raw.
          */
         rawTextFields: {},
 
@@ -43,7 +43,7 @@ RB.BaseComment = RB.BaseResource.extend({
 
     extraQueryArgs: {
         'force-text-type': 'html',
-        'include-raw-text-fields': true
+        'include-text-types': 'raw'
     },
 
     supportsExtraData: true,
@@ -69,15 +69,12 @@ RB.BaseComment = RB.BaseResource.extend({
     toJSON: function() {
         var data = _.defaults({
                 force_text_type: this.get('forceTextType') || undefined,
+                include_text_types: this.get('includeTextTypes') || undefined,
                 issue_opened: this.get('issueOpened'),
                 text_type: this.get('richText') ? 'markdown' : 'plain',
                 text: this.get('text')
             }, RB.BaseResource.prototype.toJSON.call(this)),
             parentObject;
-
-        if (this.get('includeRawTextFields')) {
-            data.include_raw_text_fields = true;
-        }
 
         if (this.get('loaded')) {
             parentObject = this.get('parentObject');

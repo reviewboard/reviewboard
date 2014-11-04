@@ -43,7 +43,7 @@ BaseCommentView = Backbone.View.extend({
         this._origExtraData = _.clone(this.model.get('extraData'));
         this._hookViews = [];
 
-        this.model.set('includeRawTextFields', true);
+        this.model.set('includeTextTypes', 'raw');
     },
 
     remove: function() {
@@ -371,17 +371,17 @@ RB.ReviewDialogView = Backbone.View.extend({
         if (this._defaultUseRichText) {
             this.model.set({
                 forceTextType: 'markdown',
-                includeRawTextFields: true
+                includeTextTypes: 'raw'
             });
 
             this._queryData = {
                 'force-text-type': 'markdown',
-                'include-raw-text-fields': true
+                'include-text-types': 'raw'
             };
         } else {
             this._queryData = {
                 'force-text-type': undefined,
-                'include-raw-text-fields': undefined
+                'include-text-types': undefined
             };
         }
 

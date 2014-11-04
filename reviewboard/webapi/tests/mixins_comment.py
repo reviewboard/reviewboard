@@ -191,7 +191,7 @@ class BaseCommentItemMixin(object):
         self.assertEqual(comment_rsp['text'], expected_text)
         self.assertNotIn('raw_text_fields', comment_rsp)
 
-        rsp = self.api_get('%s?force-text-type=%s&include-raw-text-fields=1'
+        rsp = self.api_get('%s?force-text-type=%s&include-text-types=raw'
                            % (url, force_text_type),
                            expected_mimetype=mimetype)
         comment_rsp = rsp[self.resource.item_result_key]

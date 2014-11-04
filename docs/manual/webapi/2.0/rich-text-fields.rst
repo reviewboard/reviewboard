@@ -142,32 +142,40 @@ same way that it's rendered in the Review Board UI. It's up to the client to
 handle any styling.
 
 
-Including Raw Text Information
-------------------------------
+Including Extra Text Types
+--------------------------
 
-.. versionadded:: 2.0.9
+.. versionadded:: 2.0.12
 
-There are cases where a client wants to force text types for rendering, but
-also needs access to the original values and text types. This information can
-be optionally returned in any GET/POST/PUT request.
+While forcing text types will result in changes to the text fields in the
+payload, that's not always what's wanted. Sometimes the caller needs to get
+the text converted to multiple text types in a single request, or needs the
+converted text without modifying the original fields.
 
-To request this inforamtion, the client must send either a
-``?include-raw-text-fields=true`` query argument (for GET requests) or a
-``include_raw_text_fields=true`` form field (for POST/PUT requests).
+A client can request the text fields in one or more alternative formats by
+sending either an ``?include-text-types=`` query argument (for GET requests)
+or an ``include_text_types=`` form field (for POST/PUT requests).
 
-The payload will then contain a ``raw_text_fields`` field containing each of
-the text and text type fields along with their stored values.
+These take a comma-separated list of text types to convert to. All the above
+text types are available, as well as ``raw`` (which will provide the original
+values and text types).
 
-For example, if requesting a resource with
-``?force-text-type=html&include-raw-text-fields=true``, you might get:
+Any extra included text fields and text type fields will be provided in the
+payload under a :samp:`{type}_text_fields`. For example, when using
+``?include-text-types=html,raw``, the payload will contain
+``html_text_fields`` and ``raw_text_fields`` dictionaries, as in:
 
 .. code-block:: javascript
 
    {
        ...
 
-       "description": "<p>This is a <strong>test</strong>.</p>",
-       "description_text_type": "html",
+       "description": "This is a **test**.",
+       "description_text_type": "markdown",
+       "html_text_fields": {
+          "description": "<p>This is a <strong>test</strong>.</p>",
+          "description_text_type": "html"
+       },
        "raw_text_fields": {
            "description": "This is a **test**.",
            "description_text_type": "markdown"
@@ -177,7 +185,7 @@ For example, if requesting a resource with
    }
 
 Any custom text fields stored in ``extra_data`` will also be returned in an
-``extra_data`` dictionary within ``raw_text_fields``:
+``extra_data`` dictionary within the respective :samp:`{type}_text_fields`:
 
 .. code-block:: javascript
 
@@ -185,8 +193,14 @@ Any custom text fields stored in ``extra_data`` will also be returned in an
        ...,
 
        "extra_data": {
-           "myextension_text": "<p>This is a <strong>test</strong>.</p>",
-           "myextension_text_type": "html"
+           "myextension_text": "This is a **test**.",
+           "myextension_text_type": "markdown"
+       },
+       "html_text_fields": {
+           "extra_data": {
+               "myextension_text": "<p>This is a <strong>test</strong>.</p>",
+               "myextension_text_type": "html"
+           }
        },
        "raw_text_fields": {
            "extra_data": {
@@ -197,3 +211,9 @@ Any custom text fields stored in ``extra_data`` will also be returned in an
 
        ...
    }
+
+.. note::
+
+   Review Board 2.0.9 added support for ``?include-raw-text-fields=true``,
+   which is the equivalent of ``?include-text-types=raw``. This is still
+   supported, but deprecated as of 2.0.12.

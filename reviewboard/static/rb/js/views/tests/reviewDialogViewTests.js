@@ -249,7 +249,7 @@ suite('rb/views/ReviewDialogView', function() {
                         console.log(review.ready.calls);
                         expect(review.ready.calls[0].args[0].data).toEqual({
                             'force-text-type': 'markdown',
-                            'include-raw-text-fields': true
+                            'include-text-types': 'raw'
                         });
                     });
 
@@ -312,7 +312,7 @@ suite('rb/views/ReviewDialogView', function() {
                             'expand': 'filediff,interfilediff',
                             'order-by': 'filediff,first_line',
                             'force-text-type': 'markdown',
-                            'include-raw-text-fields': true
+                            'include-text-types': 'raw'
                         });
                     });
 
@@ -380,7 +380,7 @@ suite('rb/views/ReviewDialogView', function() {
                             'expand': 'diff_against_file_attachment,' +
                                       'file_attachment',
                             'force-text-type': 'markdown',
-                            'include-raw-text-fields': true
+                            'include-text-types': 'raw'
                         });
                     });
 
@@ -455,7 +455,7 @@ suite('rb/views/ReviewDialogView', function() {
                             'max-results': 50,
                             'expand': 'screenshot',
                             'force-text-type': 'markdown',
-                            'include-raw-text-fields': true
+                            'include-text-types': 'raw'
                         });
                     });
 

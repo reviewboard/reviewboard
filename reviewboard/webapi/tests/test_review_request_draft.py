@@ -782,7 +782,7 @@ class ResourceTests(ExtraDataListMixin, ExtraDataItemMixin,
         self.assertEqual(draft_rsp['testing_done'], expected_text)
         self.assertNotIn('raw_text_fields', draft_rsp)
 
-        rsp = self.api_get('%s?force-text-type=%s&include-raw-text-fields=1'
+        rsp = self.api_get('%s?force-text-type=%s&include-text-types=raw'
                            % (url, force_text_type),
                            expected_mimetype=mimetype)
         self.assertEqual(rsp['stat'], 'ok')
