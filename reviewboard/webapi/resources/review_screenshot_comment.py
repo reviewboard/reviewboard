@@ -21,13 +21,6 @@ class ReviewScreenshotCommentResource(BaseScreenshotCommentResource):
     If the review is a draft, then comments can be added, deleted, or
     changed on this list. However, if the review is already published,
     then no changes can be made.
-
-    If the ``text_type`` field is set to ``markdown``, then the ``text``
-    field should be interpreted by the client as Markdown text.
-
-    The returned text in the payload can be provided in a different format
-    by passing ``?force-text-type=`` in the request. This accepts all the
-    possible values listed in the ``text_type`` field below.
     """
     allowed_methods = ('GET', 'POST', 'PUT', 'DELETE')
     policy_id = 'review_screenshot_comment'
@@ -72,10 +65,6 @@ class ReviewScreenshotCommentResource(BaseScreenshotCommentResource):
         This will create a new comment on a screenshot as part of a review.
         The comment contains text and dimensions for the area being commented
         on.
-
-        If ``text_type`` is provided and set to ``markdown``, then the ``text``
-        field will be set to be interpreted as Markdown. Otherwise, it will be
-        interpreted as plain text.
         """
         try:
             review_request = \
@@ -137,17 +126,6 @@ class ReviewScreenshotCommentResource(BaseScreenshotCommentResource):
 
         This can update the text or region of an existing comment. It
         can only be done for comments that are part of a draft review.
-
-        If ``text_type`` is provided and changed from the original value, then
-        the ``text`` field will be set to be interpreted according to the new
-        type.
-
-        When setting to ``markdown`` and not specifying any new text, the
-        existing text will be escaped so as not to be unintentionally
-        interpreted as Markdown.
-
-        When setting to ``plain``, and new text is not provided, the existing
-        text will be unescaped.
         """
         try:
             resources.review_request.get_object(request, *args, **kwargs)

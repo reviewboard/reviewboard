@@ -183,6 +183,14 @@ class WebAPIResource(DjbletsWebAPIResource):
 
         return q
 
+    def can_import_extra_data_field(self, obj, field):
+        """Returns whether a particular field in extra_data can be imported.
+
+        Subclasses can use this to limit which fields are imported by
+        import_extra_data. By default, all fields can be imported.
+        """
+        return True
+
     def is_resource_method_allowed(self, resources_policy, method,
                                    resource_id):
         """Returns whether a method can be performed on a resource.
@@ -345,15 +353,26 @@ class WebAPIResource(DjbletsWebAPIResource):
         else:
             return NOT_LOGGED_IN
 
-    def _import_extra_data(self, extra_data, fields):
+    def import_extra_data(self, obj, extra_data, fields):
         for key, value in six.iteritems(fields):
             if key.startswith('extra_data.'):
                 key = key[EXTRA_DATA_LEN:]
 
-                if value != '':
-                    extra_data[key] = value
-                elif key in extra_data:
-                    del extra_data[key]
+                if self.can_import_extra_data_field(obj, key):
+                    if value != '':
+                        if value in ('true', 'True', 'TRUE'):
+                            value = True
+                        elif value in ('false', 'False', 'FALSE'):
+                            value = False
+                        else:
+                            try:
+                                value = int(value)
+                            except ValueError:
+                                pass
+
+                        extra_data[key] = value
+                    elif key in extra_data:
+                        del extra_data[key]
 
     def _build_redirect_with_args(self, request, new_url):
         """Builds a redirect URL with existing query string arguments.

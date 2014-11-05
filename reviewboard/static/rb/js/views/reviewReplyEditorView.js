@@ -20,8 +20,8 @@ RB.ReviewReplyEditorView = Backbone.View.extend({
         '<% } %>',
         '   </label>',
         '  </dt>',
-        '  <dd><pre id="<%= id %>" class="reviewtext rich-text"',
-        '           data-rich-text="true"><%- text %></pre></dd>',
+        '  <dd><pre id="<%= id %>" class="reviewtext rich-text">',
+        '<%- text %></pre></dd>',
         ' </dl>',
         '</li>'
     ].join('')),
@@ -108,14 +108,19 @@ RB.ReviewReplyEditorView = Backbone.View.extend({
 
         this._$editor = $draftComment.find('pre.reviewtext');
         this._$editor
-            .inlineEditor(_.extend({
-                cls: 'inline-comment-editor',
-                editIconClass: 'rb-icon rb-icon-edit',
-                notifyUnchangedCompletion: true,
-                multiline: true,
-                hasRawValue: true,
-                rawValue: this._$editor.data('raw-value') || ''
-            }, RB.MarkdownEditorView.getInlineEditorOptions()))
+            .inlineEditor(
+                _.extend({
+                    cls: 'inline-comment-editor',
+                    editIconClass: 'rb-icon rb-icon-edit',
+                    notifyUnchangedCompletion: true,
+                    multiline: true,
+                    hasRawValue: true,
+                    rawValue: this._$editor.data('raw-value') || ''
+                },
+                RB.TextEditorView.getInlineEditorOptions({
+                    richText: this._$editor.hasClass('rich-text')
+                }))
+            )
             .removeAttr('data-raw-value')
             .on({
                 beginEdit: function() {
@@ -124,18 +129,20 @@ RB.ReviewReplyEditorView = Backbone.View.extend({
                     }
                 },
                 complete: _.bind(function(e, value) {
+                    var textEditor = RB.TextEditorView.getFromInlineEditor(
+                        this._$editor);
+
                     if (pageEditState) {
                         pageEditState.decr('editCount');
                     }
 
-                    this.model.set('text', value);
+                    this.model.set({
+                        text: value,
+                        richText: textEditor.richText
+                    });
                     this.model.save();
                 }, this),
                 cancel: _.bind(function() {
-                    $draftComment.find('pre.reviewtext')
-                                 .inlineEditor('buttons')
-                                 .find('.markdown-info')
-                                 .remove();
                     if (pageEditState) {
                         pageEditState.decr('editCount');
                     }

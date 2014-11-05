@@ -8,6 +8,13 @@ var BaseCommentView,
     HeaderFooterCommentView;
 
 
+function _getRawValueFieldsName() {
+    return RB.UserSession.instance.get('defaultUseRichText')
+           ? 'markdownTextFields'
+           : 'rawTextFields';
+}
+
+
 /*
  * Base class for displaying a comment in the review dialog.
  */
@@ -48,11 +55,10 @@ BaseCommentView = Backbone.View.extend({
     initialize: function() {
         this.$issueOpened = null;
         this.$editor = null;
+        this.textEditor = null;
         this._origExtraData = _.clone(this.model.get('extraData'));
 
         this._hookViews = [];
-
-        this.model.set('includeRawTextFields', true);
     },
 
     remove: function() {
@@ -141,25 +147,30 @@ BaseCommentView = Backbone.View.extend({
                 editIconClass: 'rb-icon rb-icon-edit',
                 notifyUnchangedCompletion: true,
                 multiline: true
-            }, RB.MarkdownEditorView.getInlineEditorOptions()))
+            }, RB.TextEditorView.getInlineEditorOptions({
+                bindRichText: {
+                    model: this.model,
+                    attrName: 'richText'
+                }
+            })))
             .on({
                 complete: _.bind(function(e, value) {
                     this.model.set({
                         forceTextType: 'html',
                         text: value,
-                        richText: true
+                        richText: this.textEditor.richText
                     });
                     this.model.save();
-                }, this),
-                cancel: _.bind(function() {
-                    this.$editor
-                        .inlineEditor('buttons')
-                        .find('.markdown-info')
-                        .remove();
                 }, this)
             });
 
-        this.model.on('change:text', this.renderText, this);
+        this.textEditor = RB.TextEditorView.getFromInlineEditor(this.$editor);
+
+        this.listenTo(this.model, 'change:' + _getRawValueFieldsName(),
+                      this._updateRawValue);
+        this._updateRawValue();
+
+        this.listenTo(this.model, 'change:text', this.renderText);
         this.renderText(this.model, text);
 
         RB.ReviewDialogCommentHook.each(function(hook) {
@@ -190,17 +201,24 @@ BaseCommentView = Backbone.View.extend({
      * Renders the text for this comment.
      */
     renderText: function(model, text) {
-        var reviewRequest = this.model.get('parentObject').get('parentObject');
+        var reviewRequest = this.model.get('parentObject').get('parentObject'),
+            normTextFields;
 
+        if (this.$editor) {
+            RB.formatText(this.$editor, {
+                newText: text,
+                richText: this.model.get('richText'),
+                isHTMLEncoded: true,
+                bugTrackerURL: reviewRequest.get('bugTrackerURL')
+            });
+        }
+    },
+
+    _updateRawValue: function() {
         if (this.$editor) {
             this.$editor.inlineEditor('option', {
                 hasRawValue: true,
-                rawValue: this.model.get('rawTextFields').text
-            });
-
-            RB.formatText(this.$editor, {
-                newText: text,
-                bugTrackerURL: reviewRequest.get('bugTrackerURL')
+                rawValue: this.model.get(_getRawValueFieldsName()).text
             });
         }
     }
@@ -357,9 +375,12 @@ HeaderFooterCommentView = Backbone.View.extend({
     },
 
     initialize: function(options) {
-        this.$editor = null;
         this.propertyName = options.propertyName;
+        this.richTextPropertyName = options.richTextPropertyName;
         this.linkText = options.linkText;
+
+        this.$editor = null;
+        this.textEditor = null;
     },
 
     setLinkText: function(linkText) {
@@ -395,22 +416,23 @@ HeaderFooterCommentView = Backbone.View.extend({
                 editIconClass: 'rb-icon rb-icon-edit',
                 notifyUnchangedCompletion: true,
                 multiline: true
-            }, RB.MarkdownEditorView.getInlineEditorOptions()))
+            }, RB.TextEditorView.getInlineEditorOptions({
+                bindRichText: {
+                    model: this.model,
+                    attrName: this.richTextPropertyName
+                }
+            })))
             .on({
                 complete: _.bind(function(e, value) {
                     this.model.set(this.propertyName, value);
+                    this.model.set(this.richTextPropertyName,
+                                   this.textEditor.richText);
                     this.model.set({
-                        forceTextType: 'html',
-                        richText: true
+                        forceTextType: 'html'
                     });
                     this.model.save();
                 }, this),
                 cancel: _.bind(function() {
-                    this.$editor
-                        .inlineEditor('buttons')
-                        .find('.markdown-info')
-                        .remove();
-
                     if (!this.model.get(this.propertyName)) {
                         this._$editorContainer.hide();
                         this._$linkContainer.show();
@@ -418,8 +440,14 @@ HeaderFooterCommentView = Backbone.View.extend({
                 }, this)
             });
 
+        this.textEditor = RB.TextEditorView.getFromInlineEditor(this.$editor);
+
         this._$editorContainer = this.$('.comment-text-field');
         this._$linkContainer = this.$('.add-link-container');
+
+        this.listenTo(this.model, 'change:' + _getRawValueFieldsName(),
+                      this._updateRawValue);
+        this._updateRawValue();
 
         this.listenTo(this.model, 'change:' + this.propertyName,
                       this.renderText);
@@ -430,12 +458,17 @@ HeaderFooterCommentView = Backbone.View.extend({
      * Renders the text for this comment.
      */
     renderText: function(model, text) {
-        var reviewRequest = this.model.get('parentObject');
+        var reviewRequest = this.model.get('parentObject'),
+            normTextFields;
 
         if (this.$editor) {
+            normTextFields = RB.UserSession.instance.get('defaultUseRichText')
+                             ? this.model.get('markdownTextFields')
+                             : this.model.get('rawTextFields');
+
             this.$editor.inlineEditor('option', {
                 hasRawValue: true,
-                rawValue: this.model.get('rawTextFields')[this.propertyName]
+                rawValue: normTextFields[this.propertyName]
             });
 
             if (text) {
@@ -443,6 +476,8 @@ HeaderFooterCommentView = Backbone.View.extend({
                 this._$linkContainer.hide();
                 RB.formatText(this.$editor, {
                     newText: text,
+                    richText: this.model.get(this.richTextPropertyName),
+                    isHTMLEncoded: true,
                     bugTrackerURL: reviewRequest.get('bugTrackerURL')
                 });
             } else {
@@ -488,6 +523,15 @@ HeaderFooterCommentView = Backbone.View.extend({
         }
 
         return false;
+    },
+
+    _updateRawValue: function() {
+        if (this.$editor) {
+            this.$editor.inlineEditor('option', {
+                hasRawValue: true,
+                rawValue: this.model.get(_getRawValueFieldsName()).text
+            });
+        }
     }
 });
 
@@ -575,7 +619,20 @@ RB.ReviewDialogView = Backbone.View.extend({
             }));
         });
 
-        this.model.set('includeRawTextFields', true);
+        this._defaultUseRichText =
+            RB.UserSession.instance.get('defaultUseRichText');
+
+        this.model.set('forceTextType', 'html');
+        this._queryData = {
+            'force-text-type': 'html'
+        };
+
+        if (this._defaultUseRichText) {
+            this.model.set('includeTextTypes', 'raw,markdown')
+            this._queryData['include-text-types'] = 'raw,markdown';
+        } else {
+            this._queryData['include-text-types'] = 'raw';
+        }
 
         this.options.reviewRequestEditor.incr('editCount');
     },
@@ -617,6 +674,7 @@ RB.ReviewDialogView = Backbone.View.extend({
             model: this.model,
             el: this.$('.body-top'),
             propertyName: 'bodyTop',
+            richTextPropertyName: 'bodyTopRichText',
             linkText: gettext('Add header')
         });
 
@@ -624,13 +682,12 @@ RB.ReviewDialogView = Backbone.View.extend({
             model: this.model,
             el: this.$('.body-bottom'),
             propertyName: 'bodyBottom',
+            richTextPropertyName: 'bodyBottomRichText',
             linkText: gettext('Add footer')
         });
 
         this.model.ready({
-            data: {
-                'include-raw-text-fields': true
-            },
+            data: this._queryData,
             ready: function() {
                 this._renderDialog();
                 this._bodyTopView.render();
@@ -711,10 +768,7 @@ RB.ReviewDialogView = Backbone.View.extend({
 
         if (collection) {
             collection.fetchAll({
-                data: {
-                    'force-text-type': 'html',
-                    'include-raw-text-fields': true
-                },
+                data: this._queryData,
                 success: function() {
                     if (collection === this._diffCommentsCollection) {
                         this._diffQueue.loadFragments();
@@ -865,7 +919,6 @@ RB.ReviewDialogView = Backbone.View.extend({
                 madeChanges = true;
                 this.model.set({
                     'public': publish,
-                    richText: true,
                     shipIt: shipIt
                 });
 

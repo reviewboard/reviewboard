@@ -30,4 +30,5 @@ SEQUENCE = [
     'review_request_file_attachment_histories',
     'review_request_summary_index',
     'review_request_summary_index_manual',
+    'split_rich_text',
 ]

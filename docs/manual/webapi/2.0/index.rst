@@ -9,6 +9,7 @@ REST API 2.0
    overview
    authenticating
    api-token-policy
+   rich-text-fields
    resources/index
    errors/index
    glossary

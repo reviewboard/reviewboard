@@ -77,7 +77,8 @@ RB.ReviewRequestEditor = Backbone.Model.extend({
 
         if (options.useExtraData) {
             return draft.get('extraData')[options.fieldID];
-        } else if (fieldName === 'closeDescription') {
+        } else if (fieldName === 'closeDescription' ||
+                   fieldName === 'closeDescriptionRichText') {
             return reviewRequest.get(fieldName);
         } else {
             return draft.get(fieldName);
@@ -93,20 +94,24 @@ RB.ReviewRequestEditor = Backbone.Model.extend({
     setDraftField: function(fieldName, value, options, context) {
         var reviewRequest = this.get('reviewRequest'),
             jsonFieldName,
+            jsonTextTypeFieldName,
+            richText,
             data = {};
 
         options = options || {};
+        richText = !!options.richText;
 
         if (fieldName === 'closeDescription' && _.has(options, 'closeType')) {
             reviewRequest.close(
                 {
                     type: options.closeType,
+                    richText: richText,
                     description: value,
                     success: options.success,
                     error: options.error,
                     postData: {
                         force_text_type: 'html',
-                        text_type: 'markdown'
+                        include_text_types: 'raw'
                     }
                 },
                 context);
@@ -114,21 +119,23 @@ RB.ReviewRequestEditor = Backbone.Model.extend({
             return;
         }
 
-        if (options.useExtraData) {
-            jsonFieldName = 'extra_data.' + options.fieldID;
-        } else {
-            if (fieldName === 'changeDescription' ||
-                fieldName === 'description' ||
-                fieldName === 'testingDone') {
-                data.text_type = 'markdown';
-            }
+        jsonFieldName = options.jsonFieldName;
 
-            jsonFieldName = options.jsonFieldName;
+        if (options.useExtraData) {
+            jsonFieldName = 'extra_data.' + jsonFieldName;
         }
 
-        if (options.editMarkdown) {
-            data.text_type = 'markdown';
+        if (options.allowMarkdown) {
+            jsonTextTypeFieldName = options.jsonTextTypeFieldName;
+
+            if (options.useExtraData) {
+                jsonTextTypeFieldName = 'extra_data.' + jsonTextTypeFieldName;
+            }
+
+            data[jsonTextTypeFieldName] = richText ? 'markdown' : 'plain';
+
             data.force_text_type = 'html';
+            data.include_text_types = 'raw';
         }
 
         data[jsonFieldName] = value;

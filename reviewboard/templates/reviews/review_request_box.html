@@ -64,7 +64,9 @@
 {% for_review_request_field review_request_details 'main' %}
   <div class="content">
    <label class="textarea-label" for="field_{{field.field_id}}">{{field.label}}</label>
-   <{{field.tag_name|default:"div"}} id="field_{{field.field_id}}" class="field {{field.get_css_classes|join:' '}}" data-field-id="{{field.field_id}}"{% for key, value in field.get_data_attributes.items %} data-{{key}}="{{value}}"{% endfor %}>{{field.as_html|safe}}</{{field.tag_name|default:"div"}}>
+   <div class="field-container">
+    <{{field.tag_name|default:"div"}} id="field_{{field.field_id}}" class="field {{field.get_css_classes|join:' '}}" data-field-id="{{field.field_id}}"{% for key, value in field.get_data_attributes.items %} data-{{key}}="{{value}}"{% endfor %}>{{field.as_html|safe}}</{{field.tag_name|default:"div"}}>
+   </div>
   </div>
 {% end_for_review_request_field %}
  </div>

@@ -126,6 +126,10 @@ RB.CommentDialogView = Backbone.View.extend({
         '  <input type="checkbox" id="comment_issue" />',
         '  <label for="comment_issue" accesskey="i"><%= openAnIssueText %></label>',
         ' </div>',
+        ' <div class="comment-markdown-options">',
+        '  <input type="checkbox" id="enable_markdown" />',
+        '  <label for="enable_markdown" accesskey="m"><%= enableMarkdownText %></label>',
+        ' </div>',
         ' <div class="status"></div>',
         ' <div class="buttons">',
         '  <input type="button" class="save" value="<%- saveButton %>" ',
@@ -172,6 +176,7 @@ RB.CommentDialogView = Backbone.View.extend({
                     gettext('The review request\'s current <a href="%s">draft</a> needs to be published before you can comment.'),
                     [reviewRequest.get('reviewURL')]),
                 openAnIssueText: gettext('Open an <u>i</u>ssue'),
+                enableMarkdownText: gettext('Enable <u>M</u>arkdown'),
                 saveButton: gettext('Save'),
                 cancelButton: gettext('Cancel'),
                 deleteButton: gettext('Delete'),
@@ -181,11 +186,22 @@ RB.CommentDialogView = Backbone.View.extend({
         this._$draftForm    = this.$el.find('form');
         this._$commentsPane = this.$el.find('.other-comments');
         this._$statusField  = this._$draftForm.find(".status");
+
         this._$issueOptions = this._$draftForm.find(".comment-issue-options")
             .bindVisibility(this.model, 'canEdit');
+        this._$markdownOptions =
+            this._$draftForm.find(".comment-markdown-options")
+                .bindVisibility(this.model, 'canEdit');
 
         this._$issueField = this._$issueOptions.find('input')
             .bindProperty('checked', this.model, 'openIssue')
+            .bindProperty('disabled', this.model, 'editing', {
+                elementToModel: false,
+                inverse: true
+            });
+
+        this._$enableMarkdownField = this._$markdownOptions.find('input')
+            .bindProperty('checked', this.model, 'richText')
             .bindProperty('disabled', this.model, 'editing', {
                 elementToModel: false,
                 inverse: true
@@ -226,24 +242,32 @@ RB.CommentDialogView = Backbone.View.extend({
          * We need to handle keypress here, rather than in events above,
          * because jQuery will actually handle it. Backbone fails to.
          */
-        this._textEditor = new RB.MarkdownEditorView({
+        this._textEditor = new RB.TextEditorView({
             el: this._$draftForm.find('.comment-text-field'),
             autoSize: false,
-            minHeight: 0
+            minHeight: 0,
+            text: this.model.get('text'),
+            bindRichText: {
+                model: this.model,
+                attrName: 'richText'
+            }
         });
         this._textEditor.render();
         this._textEditor.show();
         this._textEditor.$el
             .keypress(_.bind(this._onTextKeyPress, this))
             .bindVisibility(this.model, 'canEdit');
-        this._textEditor.setText(this.model.get('text'));
         this._textEditor.on('change', function() {
             this.model.set('text', this._textEditor.getText());
         }, this);
+        this._textEditor.bindRichTextVisibility(
+            this._$draftForm.find('.markdown-info'));
 
-        this.model.on('change:text', function() {
+        this.listenTo(this.model, 'change:text', function() {
             this._textEditor.setText(this.model.get('text'));
-        }, this);
+        });
+
+        this.listenTo(this.model, 'change:richText', this._handleResize);
 
         this.$el
             .css("position", "absolute")
@@ -472,6 +496,7 @@ RB.CommentDialogView = Backbone.View.extend({
              this.$buttons.outerHeight(true) -
              this._$statusField.height() -
              this._$issueOptions.height() -
+             this._$markdownOptions.height() -
              $textField.getExtents("bmp", "b")));
     },
 
@@ -539,6 +564,14 @@ RB.CommentDialogView = Backbone.View.extend({
                 /* I */
                 if (e.altKey) {
                     this.model.set('openIssue', !this.model.get('openIssue'));
+                }
+                break;
+
+            case 77:
+            case 109:
+                /* M */
+                if (e.altKey) {
+                    this.model.set('richText', !this.model.get('richText'));
                 }
                 break;
 

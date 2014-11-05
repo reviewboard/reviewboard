@@ -430,7 +430,12 @@ class ResourceDirective(Directive):
                         name_node += nodes.inline(text=" (optional)")
 
                 type_node = nodes.inline()
-                type_node += get_type_name(info['type'])
+
+                if info.get('supports_text_types'):
+                    type_node += get_ref_to_doc('webapi2.0-text-fields',
+                                                'Rich Text')
+                else:
+                    type_node += get_type_name(info['type'])
 
                 description_node = parse_text(
                     self, info['description'],
@@ -902,11 +907,11 @@ def get_resource_docname(resource, is_list):
     return docname
 
 
-def get_ref_to_doc(refname):
+def get_ref_to_doc(refname, title=''):
     """Returns a node that links to a document with the given ref name."""
     ref = addnodes.pending_xref(reftype='ref', reftarget=refname,
-                                refexplicit=False, refdomain='std')
-    ref += nodes.literal('hello', 'hello', classes=['xref'])
+                                refexplicit=(title != ''), refdomain='std')
+    ref += nodes.literal(title, title, classes=['xref'])
     return ref
 
 

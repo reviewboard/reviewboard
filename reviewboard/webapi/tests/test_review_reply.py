@@ -50,10 +50,15 @@ class ResourceListTests(ReviewListMixin, ReviewRequestChildListMixin,
         self.assertEqual(item_rsp['body_top'], reply.body_top)
         self.assertEqual(item_rsp['body_bottom'], reply.body_bottom)
 
-        if reply.rich_text:
-            self.assertEqual(item_rsp['text_type'], 'markdown')
+        if reply.body_top_rich_text:
+            self.assertEqual(item_rsp['body_top_text_type'], 'markdown')
         else:
-            self.assertEqual(item_rsp['text_type'], 'plain')
+            self.assertEqual(item_rsp['body_top_text_type'], 'plain')
+
+        if reply.body_bottom_rich_text:
+            self.assertEqual(item_rsp['body_bottom_text_type'], 'markdown')
+        else:
+            self.assertEqual(item_rsp['body_bottom_text_type'], 'plain')
 
     #
     # HTTP GET tests
@@ -108,7 +113,7 @@ class ResourceListTests(ReviewListMixin, ReviewRequestChildListMixin,
 
     def check_post_result(self, user, rsp, review):
         reply = Review.objects.get(pk=rsp['reply']['id'])
-        self.assertFalse(reply.rich_text)
+        self.assertFalse(reply.body_top_rich_text)
         self.compare_item(rsp['reply'], reply)
 
     def test_post_with_body_top(self):
@@ -170,10 +175,15 @@ class ResourceItemTests(ReviewItemMixin, ReviewRequestChildItemMixin,
         self.assertEqual(item_rsp['body_top'], reply.body_top)
         self.assertEqual(item_rsp['body_bottom'], reply.body_bottom)
 
-        if reply.rich_text:
-            self.assertEqual(item_rsp['text_type'], 'markdown')
+        if reply.body_top_rich_text:
+            self.assertEqual(item_rsp['body_top_text_type'], 'markdown')
         else:
-            self.assertEqual(item_rsp['text_type'], 'plain')
+            self.assertEqual(item_rsp['body_top_text_type'], 'plain')
+
+        if reply.body_bottom_rich_text:
+            self.assertEqual(item_rsp['body_bottom_text_type'], 'markdown')
+        else:
+            self.assertEqual(item_rsp['body_bottom_text_type'], 'plain')
 
     #
     # HTTP DELETE tests
@@ -245,7 +255,7 @@ class ResourceItemTests(ReviewItemMixin, ReviewRequestChildItemMixin,
     def check_put_result(self, user, item_rsp, reply, *args):
         self.assertEqual(item_rsp['id'], reply.pk)
         self.assertEqual(item_rsp['body_top'], 'New body top')
-        self.assertEqual(item_rsp['text_type'], 'plain')
+        self.assertEqual(item_rsp['body_top_text_type'], 'plain')
 
         reply = Review.objects.get(pk=reply.pk)
         self.compare_item(item_rsp, reply)

@@ -55,6 +55,8 @@ def get_server_info(request=None):
             },
             'text': {
                 'markdown': True,
+                'per_field_text_types': True,
+                'can_include_raw_values': True,
             },
         }
     }

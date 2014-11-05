@@ -83,13 +83,15 @@ suite('rb/resources/models/DraftReviewRequest', function() {
                 branch: 'branch',
                 bugs_closed: 'bugsClosed',
                 changedescription: 'changeDescription',
+                changedescription_text_type: 'markdown',
                 description: 'description',
                 'public': 'public',
-                text_type: 'markdown',
+                description_text_type: 'markdown',
                 summary: 'summary',
                 target_groups: 'targetGroups',
                 target_people: 'targetPeople',
-                testing_done: 'testingDone'
+                testing_done: 'testingDone',
+                testing_done_text_type: 'plain'
             }
         });
 
@@ -98,13 +100,15 @@ suite('rb/resources/models/DraftReviewRequest', function() {
         expect(data.branch).toBe('branch');
         expect(data.bugsClosed).toBe('bugsClosed');
         expect(data.changeDescription).toBe('changeDescription');
+        expect(data.changeDescriptionRichText).toBe(true);
         expect(data.description).toBe('description');
+        expect(data.descriptionRichText).toBe(true);
         expect(data['public']).toBe('public');
-        expect(data.richText).toBe(true);
         expect(data.summary).toBe('summary');
         expect(data.targetGroups).toBe('targetGroups');
         expect(data.targetPeople).toBe('targetPeople');
         expect(data.testingDone).toBe('testingDone');
+        expect(data.testingDoneRichText).toBe(false);
     });
 
     describe('validate', function() {

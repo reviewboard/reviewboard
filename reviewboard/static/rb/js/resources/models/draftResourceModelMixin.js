@@ -138,7 +138,7 @@ RB.DraftResourceModelMixin = {
         data = options.data || {};
 
         if (!_.isEmpty(this.extraQueryArgs)) {
-            _.extend(data, this.extraQueryArgs);
+            data = _.extend({}, this.extraQueryArgs, data);
         }
 
         Backbone.Model.prototype.fetch.call(this, {

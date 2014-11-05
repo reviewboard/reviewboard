@@ -10,11 +10,24 @@ RB.ReviewReply = RB.BaseResource.extend({
          */
         forceTextType: null,
 
+        /*
+         * Whether responses from the server should return raw text
+         * fields when forceTextType is used.
+         */
+        includeTextTypes: null,
+
+        /*
+         * Raw text fields, if the caller fetches or posts with
+         * include-text-types=raw.
+         */
+        rawTextFields: {},
+
         review: null,
         'public': false,
-        richText: false,
         bodyTop: null,
+        bodyTopRichText: false,
         bodyBottom: null,
+        bodyBottomRichText: false,
         timestamp: null
     }, RB.BaseResource.prototype.defaults),
 
@@ -22,7 +35,8 @@ RB.ReviewReply = RB.BaseResource.extend({
     listKey: 'replies',
 
     extraQueryArgs: {
-        'force-text-type': 'html'
+        'force-text-type': 'html',
+        'include-text-types': 'raw'
     },
 
     COMMENT_LINK_NAMES: [
@@ -34,19 +48,29 @@ RB.ReviewReply = RB.BaseResource.extend({
     toJSON: function() {
         return {
             'public': this.get('public'),
-            'body_top': this.get('bodyTop'),
-            'body_bottom': this.get('bodyBottom'),
-            'force_text_type': this.get('forceTextType') || undefined,
-            'text_type': this.get('richText') ? 'markdown' : 'plain'
+            body_top: this.get('bodyTop'),
+            body_top_text_type: this.get('bodyTopRichText')
+                                ? 'markdown' : 'plain',
+            body_bottom: this.get('bodyBottom'),
+            body_bottom_text_type: this.get('bodyBottomRichText')
+                                   ? 'markdown' : 'plain',
+            force_text_type: this.get('forceTextType') || undefined,
+            include_text_types: this.get('includeTextTypes') || undefined
         };
     },
 
     parseResourceData: function(rsp) {
+        var rawTextFields = rsp.raw_text_fields || rsp;
+
         return {
             bodyTop: rsp.body_top,
             bodyBottom: rsp.body_bottom,
             'public': rsp['public'],
-            richText: rsp.text_type === 'markdown',
+            bodyTopRichText:
+                rawTextFields.body_top_text_type === 'markdown',
+            bodyBottomRichText:
+                rawTextFields.body_bottom_text_type === 'markdown',
+            rawTextFields: rsp.raw_text_fields || {},
             timestamp: rsp.timestamp
         };
     },

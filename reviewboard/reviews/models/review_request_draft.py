@@ -127,13 +127,16 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
                     'testing_done': review_request.testing_done,
                     'bugs_closed': review_request.bugs_closed,
                     'branch': review_request.branch,
+                    'description_rich_text':
+                        review_request.description_rich_text,
+                    'testing_done_rich_text':
+                        review_request.testing_done_rich_text,
                     'rich_text': review_request.rich_text,
                     'commit_id': review_request.commit_id,
                 })
 
         if draft.changedesc is None and review_request.public:
-            draft.changedesc = ChangeDescription.objects.create(
-                rich_text=draft.rich_text)
+            draft.changedesc = ChangeDescription.objects.create()
 
         if draft_is_new:
             draft.target_groups = review_request.target_groups.all()
@@ -318,11 +321,12 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
 
         if self.changedesc:
             self.changedesc.timestamp = timezone.now()
-            self.changedesc.rich_text = self.rich_text
             self.changedesc.public = True
             self.changedesc.save()
             review_request.changedescs.add(self.changedesc)
 
+        review_request.description_rich_text = self.description_rich_text
+        review_request.testing_done_rich_text = self.testing_done_rich_text
         review_request.rich_text = self.rich_text
         review_request.save()
 

@@ -3,8 +3,11 @@ from __future__ import unicode_literals
 import re
 from xml.dom.minidom import parseString
 
+from django.core.exceptions import ObjectDoesNotExist
+from django.db.models import Model
 from django.utils import six
 from django.utils.six.moves import cStringIO as StringIO
+from djblets.siteconfig.models import SiteConfiguration
 from markdown import Markdown, markdown, markdownFromFile
 
 
@@ -95,30 +98,76 @@ def markdown_unescape(escaped_text):
     return '\n'.join(split)
 
 
-def markdown_escape_field(model, field_name):
-    """Escapes Markdown text in a model's field.
+def markdown_escape_field(obj, field_name):
+    """Escapes Markdown text in a model or dictionary's field.
 
     This is a convenience around markdown_escape to escape the contents of
-    a particular field in a model.
+    a particular field in a model or dictionary.
     """
-    setattr(model, field_name, markdown_escape(getattr(model, field_name)))
+    if isinstance(obj, Model):
+        setattr(obj, field_name, markdown_escape(getattr(obj, field_name)))
+    elif isinstance(obj, dict):
+        obj[field_name] = markdown_escape(obj[field_name])
+    else:
+        raise TypeError('Unexpected type %r passed to markdown_escape_field'
+                        % obj)
 
 
-def markdown_unescape_field(model, field_name):
-    """Unescapes Markdown text in a model's field.
+def markdown_unescape_field(obj, field_name):
+    """Unescapes Markdown text in a model or dictionary's field.
 
     This is a convenience around markdown_unescape to unescape the contents of
-    a particular field in a model.
+    a particular field in a model or dictionary.
     """
-    setattr(model, field_name, markdown_unescape(getattr(model, field_name)))
-
-
-def markdown_set_field_escaped(model, field, escaped):
-    """Escapes or unescapes the specified field in a model."""
-    if escaped:
-        markdown_escape_field(model, field)
+    if isinstance(obj, Model):
+        setattr(obj, field_name, markdown_unescape(getattr(obj, field_name)))
+    elif isinstance(obj, dict):
+        obj[field_name] = markdown_unescape(obj[field_name])
     else:
-        markdown_unescape_field(model, field)
+        raise TypeError('Unexpected type %r passed to markdown_unescape_field'
+                        % obj)
+
+
+def normalize_text_for_edit(user, text, rich_text):
+    """Normalizes text, converting it for editing.
+
+    This will normalize text for editing based on the rich_text flag and
+    the user settings.
+
+    If the text is not in Markdown and the user edits in Markdown by default,
+    this will return the text escaped for edit. Otherwise, the text is
+    returned as-is.
+    """
+    if text is None:
+        return ''
+
+    if not rich_text and is_rich_text_default_for_user(user):
+        # This isn't rich text, but it's going to be edited as rich text,
+        # so escape it.
+        text = markdown_escape(text)
+
+    return text
+
+
+def is_rich_text_default_for_user(user):
+    """Returns whether the user edits in Markdown by default."""
+    if user.is_authenticated():
+        try:
+            return user.get_profile().should_use_rich_text
+        except ObjectDoesNotExist:
+            pass
+
+    siteconfig = SiteConfiguration.objects.get_current()
+
+    return siteconfig.get('default_use_rich_text')
+
+
+def markdown_set_field_escaped(obj, field, escaped):
+    """Escapes or unescapes the specified field in a model or dictionary."""
+    if escaped:
+        markdown_escape_field(obj, field)
+    else:
+        markdown_unescape_field(obj, field)
 
 
 def iter_markdown_lines(markdown_html):

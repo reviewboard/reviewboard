@@ -7,7 +7,7 @@ This is an automatically generated e-mail. To reply, visit:
 Ship it!
 {% endif %}
 {% if review.body_top %}
-{{review.body_top|markdown_email_text:review.rich_text}}
+{{review.body_top|markdown_email_text:review.body_top_rich_text}}
 {% endif %}{% for comment in review.file_attachment_comments.all %}
 
 File Attachment: {% if comment.file_attachment.caption %}{{comment.file_attachment.caption}} - {% endif %}{{comment.get_link_text}}
@@ -42,7 +42,7 @@ Screenshot: {{ comment.screenshot.caption }}
 {% endcondense %}{% endfilter %}
 
 {% endfor %}{% if review.body_bottom %}
-{{review.body_bottom|markdown_email_text:review.rich_text}}
+{{review.body_bottom|markdown_email_text:review.body_bottom_rich_text}}
 {% endif %}
 - {{review.user|user_displayname}}
 

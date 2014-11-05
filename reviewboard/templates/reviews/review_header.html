@@ -9,9 +9,9 @@
   <input type="submit" id="btn-review-request-reopen"
          value="{% trans "Reopen for Review" %}" />
   <p><label for="field_changedescription">{% trans "Describe the submission (optional):" %}</label></p>
-  <pre id="field_changedescription" class="field field-text-area rich-text editable" data-rich-text="true" data-field-id="field_changedescription">{{close_description|render_markdown:close_description_rich_text}}</pre>
+  <pre id="field_changedescription" class="field field-text-area editable {% rich_text_classname close_description_rich_text %}" data-field-id="field_changedescription">{{close_description|render_markdown:close_description_rich_text}}</pre>
 {%  elif close_description %}
-  <pre id="field_changedescription" class="field field-text-area rich-text" data-rich-text="true" data-field-id="field_changedescription">{{close_description|render_markdown:close_description_rich_text}}</pre>
+  <pre id="field_changedescription" class="field field-text-area {% rich_text_classname close_description_rich_text %}" data-field-id="field_changedescription">{{close_description|render_markdown:close_description_rich_text}}</pre>
 {%  endif %}
  </div>
 
@@ -22,9 +22,9 @@
   <input type="submit" id="btn-review-request-reopen"
          value="{% trans "Reopen for Review" %}" />
   <p><label for="field_changedescription">{% trans "Describe the reason it's discarded (optional):" %}</label></p>
-  <pre id="field_changedescription" class="field field-text-area rich-text editable" data-rich-text="true" data-field-id="field_changedescription">{{close_description|render_markdown:close_description_rich_text}}</pre>
+  <pre id="field_changedescription" class="field field-text-area editable {% rich_text_classname close_description_rich_text %}" data-field-id="field_changedescription">{{close_description|render_markdown:close_description_rich_text}}</pre>
 {%  elif close_description %}
-  <pre id="field_changedescription" class="field field-text-area rich-text" data-rich-text="true" data-field-id="field_changedescription">{{close_description|render_markdown:close_description_rich_text}}</pre>
+  <pre id="field_changedescription" class="field field-text-area {% rich_text_classname close_description_rich_text %}" data-field-id="field_changedescription">{{close_description|render_markdown:close_description_rich_text}}</pre>
 {%  endif %}
  </div>
 
@@ -40,9 +40,9 @@
          value="{% trans "Discard Draft" %}" />
   <p><label for="field_changedescription">{% trans "Describe your changes (optional):" %}</label></p>
 {%    if draft.changedesc %}
-  <pre id="field_changedescription" class="field field-text-area editable rich-text" data-rich-text="true" data-field-id="field_changedescription">{{draft.changedesc.text|render_markdown:draft.changedesc.rich_text}}</pre>
+  <pre id="field_changedescription" class="field field-text-area editable {% rich_text_classname draft.changedesc.rich_text %}" data-field-id="field_changedescription">{{draft.changedesc.text|render_markdown:draft.changedesc.rich_text}}</pre>
 {%    else %}
-  <pre id="field_changedescription" class="field field-text-area editable" data-rich-text="true" data-field-id="field_changedescription"></pre>
+  <pre id="field_changedescription" class="field field-text-area editable" data-field-id="field_changedescription"></pre>
 {%    endif %}
 {%    if draft.diffset %}
   <p>{% trans "This draft adds a new diff." %} <a href="{% url 'view-interdiff' review_request.display_id draft.diffset.revision|add:"-1" draft.diffset.revision %}">{% trans "Show changes" %}</a></p>

@@ -156,7 +156,7 @@ class APITokenResource(WebAPIResource):
             return TOKEN_GENERATION_FAILED.with_message(six.text_type(e))
 
         if extra_fields:
-            self._import_extra_data(token.extra_data, extra_fields)
+            self.import_extra_data(token, token.extra_data, extra_fields)
             token.save()
 
         return 201, {
@@ -209,7 +209,7 @@ class APITokenResource(WebAPIResource):
                 }
 
         if extra_fields:
-            self._import_extra_data(token.extra_data, extra_fields)
+            self.import_extra_data(token, token.extra_data, extra_fields)
 
         token.save()
 

@@ -87,8 +87,11 @@ RB.LinkifyUtils = {
      * Linkifying URLs can be disabled if it's known that all URLs would have
      * already been linked.
      */
-    linkifyText: function(text, bugTrackerURL) {
-        text = text.htmlEncode();
+    linkifyText: function(text, bugTrackerURL, isHTMLEncoded) {
+        if (!isHTMLEncoded) {
+            text = text.htmlEncode();
+        }
+
         text = RB.LinkifyUtils.linkifyURLs(text);
         text = RB.LinkifyUtils.linkifyReviewRequests(text);
         text = RB.LinkifyUtils.linkifyBugs(text, bugTrackerURL);

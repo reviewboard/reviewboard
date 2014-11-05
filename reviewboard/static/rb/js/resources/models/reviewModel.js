@@ -13,20 +13,27 @@ RB.Review = RB.BaseResource.extend({
 
         shipIt: false,
         'public': false,
-        richText: false,
         bodyTop: null,
+        bodyTopRichText: false,
         bodyBottom: null,
+        bodyBottomRichText: false,
         draftReply: null,
 
         /*
-         * Whether responses from the server should return raw text
-         * fields when forceTextType is used.
+         * A string containing a comma-separated list of text types to include
+         * in the payload.
          */
-        includeRawTextFields: false,
+        includeTextTypes: null,
 
         /*
-         * Raw text fields, if forceTextType is used and the caller
-         * fetches or posts with includeRawTextFields=true.
+         * Markdown-formatted text fields, if the caller fetches or posts with
+         * with includeTextTypes="markdown".
+         */
+        markdownTextFields: {},
+
+        /*
+         * Raw text fields, if the caller fetches or posts with
+         * includeTextTypes="raw".
          */
         rawTextFields: {},
 
@@ -35,37 +42,38 @@ RB.Review = RB.BaseResource.extend({
 
     rspNamespace: 'review',
 
-    extraQueryArgs: {
-        'force-text-type': 'html'
-    },
-
     toJSON: function() {
         var data = {
             force_text_type: this.get('forceTextType') || undefined,
-            text_type: this.get('richText') ? 'markdown' : 'plain',
+            include_text_types: this.get('includeTextTypes') || undefined,
             ship_it: this.get('shipIt'),
             body_top: this.get('bodyTop'),
-            body_bottom: this.get('bodyBottom')
+            body_top_text_type: this.get('bodyTopRichText')
+                                ? 'markdown' : 'plain',
+            body_bottom: this.get('bodyBottom'),
+            body_bottom_text_type: this.get('bodyBottomRichText')
+                                   ? 'markdown' : 'plain'
         };
 
         if (this.get('public')) {
             data['public'] = 1;
         }
 
-        if (this.get('includeRawTextFields')) {
-            data.include_raw_text_fields = 1;
-        }
-
         return data;
     },
 
     parseResourceData: function(rsp) {
+        var rawTextFields = rsp.raw_text_fields || rsp;
+
         var data = {
             shipIt: rsp.ship_it,
             bodyTop: rsp.body_top,
+            bodyTopRichText:
+                rawTextFields.body_top_text_type === 'markdown',
             bodyBottom: rsp.body_bottom,
+            bodyBottomRichText:
+                rawTextFields.body_bottom_text_type === 'markdown',
             'public': rsp['public'],
-            richText: rsp.text_type === 'markdown',
             timestamp: rsp.timestamp
         };
 
@@ -73,6 +81,13 @@ RB.Review = RB.BaseResource.extend({
             data.rawTextFields = {
                 bodyBottom: rsp.raw_text_fields.body_bottom,
                 bodyTop: rsp.raw_text_fields.body_top
+            };
+        }
+
+        if (rsp.markdown_text_fields) {
+            data.markdownTextFields = {
+                bodyBottom: rsp.markdown_text_fields.body_bottom,
+                bodyTop: rsp.markdown_text_fields.body_top
             };
         }
 

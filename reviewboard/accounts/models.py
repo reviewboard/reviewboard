@@ -10,6 +10,7 @@ from django.utils.translation import ugettext_lazy as _
 from djblets.db.fields import CounterField, JSONField
 from djblets.db.managers import ConcurrencyManager
 from djblets.forms.fields import TIMEZONE_CHOICES
+from djblets.siteconfig.models import SiteConfiguration
 
 from reviewboard.accounts.managers import ProfileManager, TrophyManager
 from reviewboard.accounts.trophies import TrophyType
@@ -94,6 +95,12 @@ class Profile(models.Model):
         help_text=_("Indicates whether the user wishes to default "
                     "to opening an issue or not."))
 
+    default_use_rich_text = models.NullBooleanField(
+        default=None,
+        verbose_name=_('enable Markdown by default'),
+        help_text=_('Indicates whether new posts or comments should default '
+                    'to being in Markdown format.'))
+
     # Indicate whether closed review requests should appear in the
     # review request lists (excluding the dashboard).
     show_closed = models.BooleanField(default=True)
@@ -128,6 +135,21 @@ class Profile(models.Model):
     extra_data = JSONField(null=True)
 
     objects = ProfileManager()
+
+    @property
+    def should_use_rich_text(self):
+        """Returns whether rich text should be used by default for this user.
+
+        If the user has chosen whether or not to use rich text explicitly,
+        then that choice will be respected. Otherwise, the system default is
+        used.
+        """
+        if self.default_use_rich_text is None:
+            siteconfig = SiteConfiguration.objects.get_current()
+
+            return siteconfig.get('default_use_rich_text')
+        else:
+            return self.default_use_rich_text
 
     def star_review_request(self, review_request):
         """Marks a review request as starred.

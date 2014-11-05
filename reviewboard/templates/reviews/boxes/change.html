@@ -28,7 +28,7 @@
 
 {%  if entry.changedesc.text %}
    <h3>{% trans "Change Summary:" %}</h3>
-   <pre class="changedesc-text rich-text" data-rich-text="true">{{entry.changedesc.text|render_markdown:entry.changedesc.rich_text}}</pre>
+   <pre class="changedesc-text {% rich_text_classname entry.changedesc.rich_text %}">{{entry.changedesc.text|render_markdown:entry.changedesc.rich_text}}</pre>
 {%  endif %}
 
 {%  for group in entry.fields_changed_groups %}

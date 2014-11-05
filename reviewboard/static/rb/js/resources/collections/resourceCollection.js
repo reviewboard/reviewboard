@@ -99,16 +99,14 @@ RB.ResourceCollection = RB.BaseCollection.extend({
      * pages.
      */
     fetch: function(options, context) {
-        var expandedFields = this.model.prototype.expandedFields;
+        var expandedFields = this.model.prototype.expandedFields,
+            data;
 
         options = options || {};
-
-        if (options.data === undefined) {
-            options.data = {};
-        }
+        data = _.extend({}, options.data);
 
         if (options.start !== undefined) {
-            options.data.start = options.start;
+            data.start = options.start;
         }
 
         /*
@@ -123,9 +121,9 @@ RB.ResourceCollection = RB.BaseCollection.extend({
         if (!this.extraQueryData ||
             this.extraQueryData['max-results'] === undefined) {
             if (options.maxResults !== undefined) {
-                options.data['max-results'] = options.maxResults;
+                data['max-results'] = options.maxResults;
             } else if (this.maxResults) {
-                options.data['max-results'] = this.maxResults;
+                data['max-results'] = this.maxResults;
             }
         }
 
@@ -141,12 +139,14 @@ RB.ResourceCollection = RB.BaseCollection.extend({
         options.remove = options.reset;
 
         if (expandedFields.length > 0) {
-            options.data.expand = expandedFields.join(',');
+            data.expand = expandedFields.join(',');
         }
 
         if (this.extraQueryData) {
-            options.data = _.defaults(options.data, this.extraQueryData);
+            data = _.defaults(data, this.extraQueryData);
         }
+
+        options.data = data;
 
         if (this.parentResource) {
             this.parentResource.ready({

@@ -192,6 +192,23 @@ span {
   line-height: 14px;
 }
 
+.inline-editor-form,
+.text-editor {
+  textarea {
+    border: 1px @textarea-border-color solid;
+    margin: 0;
+    outline: none;
+    padding: 10px;
+    .box-sizing(border-box);
+
+    /*
+     * This prevents extra spacing below a text area in different browsers.
+     * See http://stackoverflow.com/questions/7144843/extra-space-under-textarea-differs-along-browsers
+     */
+    vertical-align: top;
+  }
+}
+
 .inline-editor-form {
   display: block;
   margin: 0;
@@ -217,27 +234,36 @@ span {
   }
 
   textarea {
-    border: 1px #888a85 solid;
-    margin: 5px 0 0 0;
-    padding: 10px;
-    .box-sizing(border-box);
-
-    /*
-     * Firefox adds an extra pixel on the sides of the textarea, making
-     * alignment hard, so we need to subtract a pixel.
-     */
-    -moz-padding-start: 9px;
-    -moz-padding-end: 9px;
+    margin-top: 5px;
   }
 
   textarea + .buttons,
-  .markdown-editor + .buttons {
+  .text-editor + .buttons {
     margin-top: 6px;
+    white-space: normal;
+  }
+
+  .enable-markdown {
+    margin-left: 1em;
+
+    label {
+      color: black;
+      font-size: 8pt !important;
+      font-weight: normal;
+    }
   }
 }
 
 .loading-indicator {
   display: inline;
+}
+
+.text-editor {
+  margin: @textarea-editor-margin;
+
+  textarea, .CodeMirror {
+    margin: 0;
+  }
 }
 
 

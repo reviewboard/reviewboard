@@ -32,10 +32,22 @@ class BaseReviewResource(MarkdownFieldsMixin, WebAPIResource):
             'description': 'The review content below the comments.',
             'supports_text_types': True,
         },
+        'body_bottom_text_type': {
+            'type': MarkdownFieldsMixin.TEXT_TYPES,
+            'description': 'The current or forced text type for the '
+                           'body_bottom field.',
+            'added_in': '2.0.12',
+        },
         'body_top': {
             'type': six.text_type,
             'description': 'The review content above the comments.',
             'supports_text_types': True,
+        },
+        'body_top_text_type': {
+            'type': MarkdownFieldsMixin.TEXT_TYPES,
+            'description': 'The current or forced text type for the '
+                           'body_top field.',
+            'added_in': '2.0.12',
         },
         'extra_data': {
             'type': dict,
@@ -58,8 +70,12 @@ class BaseReviewResource(MarkdownFieldsMixin, WebAPIResource):
         },
         'text_type': {
             'type': MarkdownFieldsMixin.TEXT_TYPES,
-            'description': 'The mode for the body_top and body_bottom text '
-                           'fields.',
+            'description': 'Formerly responsible for indicating the text '
+                           'type for text fields. Replaced by '
+                           'body_top_text_type and body_bottom_text_type '
+                           'in 2.0.12.',
+            'added_in': '2.0',
+            'deprecated_in': '2.0.12',
         },
         'timestamp': {
             'type': six.text_type,
@@ -74,6 +90,59 @@ class BaseReviewResource(MarkdownFieldsMixin, WebAPIResource):
     last_modified_field = 'timestamp'
 
     allowed_methods = ('GET', 'POST', 'PUT', 'DELETE')
+
+    CREATE_UPDATE_OPTIONAL_FIELDS = {
+        'ship_it': {
+            'type': bool,
+            'description': 'Whether or not to mark the review "Ship It!"',
+        },
+        'body_top': {
+            'type': six.text_type,
+            'description': 'The review content above the comments.',
+            'supports_text_types': True,
+        },
+        'body_top_text_type': {
+            'type': MarkdownFieldsMixin.SAVEABLE_TEXT_TYPES,
+            'description': 'The text type used for the body_top '
+                           'field.',
+            'added_in': '2.0.12',
+        },
+        'body_bottom': {
+            'type': six.text_type,
+            'description': 'The review content below the comments.',
+            'supports_text_types': True,
+        },
+        'body_bottom_text_type': {
+            'type': MarkdownFieldsMixin.SAVEABLE_TEXT_TYPES,
+            'description': 'The text type used for the body_bottom '
+                           'field.',
+            'added_in': '2.0.12',
+        },
+        'force_text_type': {
+            'type': MarkdownFieldsMixin.TEXT_TYPES,
+            'description': 'The text type, if any, to force for returned '
+                           'text fields. The contents will be converted '
+                           'to the requested type in the payload, but '
+                           'will not be saved as that type.',
+        },
+        'public': {
+            'type': bool,
+            'description': 'Whether or not to make the review public. '
+                           'If a review is public, it cannot be made '
+                           'private again.',
+        },
+        'text_type': {
+            'type': MarkdownFieldsMixin.SAVEABLE_TEXT_TYPES,
+            'description': 'The mode for the body_top and body_bottom '
+                           'text fields.\n'
+                           '\n'
+                           'This is deprecated. Please use '
+                           'body_top_text_type and '
+                           'body_bottom_text_type instead.',
+            'added_in': '2.0',
+            'deprecated_in': '2.0.12',
+        },
+    }
 
     def get_queryset(self, request, is_list=False, *args, **kwargs):
         review_request = resources.review_request.get_object(
@@ -99,42 +168,19 @@ class BaseReviewResource(MarkdownFieldsMixin, WebAPIResource):
     def has_delete_permissions(self, request, review, *args, **kwargs):
         return review.is_mutable_by(request.user)
 
+    def serialize_body_top_text_type_field(self, obj, **kwargs):
+        # This will be overridden by MarkdownFieldsMixin.
+        return None
+
+    def serialize_body_bottom_text_type_field(self, obj, **kwargs):
+        # This will be overridden by MarkdownFieldsMixin.
+        return None
+
     @webapi_check_local_site
     @webapi_login_required
     @webapi_response_errors(DOES_NOT_EXIST, NOT_LOGGED_IN, PERMISSION_DENIED)
     @webapi_request_fields(
-        optional={
-            'ship_it': {
-                'type': bool,
-                'description': 'Whether or not to mark the review "Ship It!"',
-            },
-            'body_top': {
-                'type': six.text_type,
-                'description': 'The review content above the comments.',
-            },
-            'body_bottom': {
-                'type': six.text_type,
-                'description': 'The review content below the comments.',
-            },
-            'force_text_type': {
-                'type': MarkdownFieldsMixin.TEXT_TYPES,
-                'description': 'The text type, if any, to force for returned '
-                               'text fields. The contents will be converted '
-                               'to the requested type in the payload, but '
-                               'will not be saved as that type.',
-            },
-            'public': {
-                'type': bool,
-                'description': 'Whether or not to make the review public. '
-                               'If a review is public, it cannot be made '
-                               'private again.',
-            },
-            'text_type': {
-                'type': MarkdownFieldsMixin.SAVEABLE_TEXT_TYPES,
-                'description': 'The mode for the body_top and body_bottom '
-                               'text fields. The default is "plain".',
-            },
-        },
+        optional=CREATE_UPDATE_OPTIONAL_FIELDS,
         allow_unknown=True
     )
     def create(self, request, *args, **kwargs):
@@ -147,10 +193,6 @@ class BaseReviewResource(MarkdownFieldsMixin, WebAPIResource):
         Initial data for the review can be provided by passing data for
         any number of the fields. If nothing is provided, the review will
         start off as blank.
-
-        If ``text_type`` is provided and set to ``markdown``, then the
-        ``body_top`` and ``body_bottom`` fields will be set to be interpreted
-        as Markdown. Otherwise, it will be interpreted as plain text.
 
         If the user submitting this review already has a pending draft review
         on this review request, then this will update the existing draft and
@@ -191,38 +233,7 @@ class BaseReviewResource(MarkdownFieldsMixin, WebAPIResource):
     @webapi_login_required
     @webapi_response_errors(DOES_NOT_EXIST, NOT_LOGGED_IN, PERMISSION_DENIED)
     @webapi_request_fields(
-        optional={
-            'ship_it': {
-                'type': bool,
-                'description': 'Whether or not to mark the review "Ship It!"',
-            },
-            'body_top': {
-                'type': six.text_type,
-                'description': 'The review content above the comments.',
-            },
-            'body_bottom': {
-                'type': six.text_type,
-                'description': 'The review content below the comments.',
-            },
-            'force_text_type': {
-                'type': MarkdownFieldsMixin.TEXT_TYPES,
-                'description': 'The text type, if any, to force for returned '
-                               'text fields. The contents will be converted '
-                               'to the requested type in the payload, but '
-                               'will not be saved as that type.',
-            },
-            'public': {
-                'type': bool,
-                'description': 'Whether or not to make the review public. '
-                               'If a review is public, it cannot be made '
-                               'private again.',
-            },
-            'text_type': {
-                'type': MarkdownFieldsMixin.SAVEABLE_TEXT_TYPES,
-                'description': 'The mode for the body_top and body_bottom '
-                               'text fields. The default is "plain".',
-            },
-        },
+        optional=CREATE_UPDATE_OPTIONAL_FIELDS,
         allow_unknown=True
     )
     def update(self, request, *args, **kwargs):
@@ -230,17 +241,6 @@ class BaseReviewResource(MarkdownFieldsMixin, WebAPIResource):
 
         Only the owner of a review can make changes. One or more fields can
         be updated at once.
-
-        If ``text_type`` is provided and changed from the original value, then
-        the ``body_top`` and ``body_bottom`` fields will be set to be
-        interpreted according to the new type.
-
-        When setting to ``markdown`` and not specifying any new text, the
-        existing text will be escaped so as not to be unintentionally
-        interpreted as Markdown.
-
-        When setting to ``plain``, and new text is not provided, the existing
-        text will be unescaped.
 
         The only special field is ``public``, which, if set to true, will
         publish the review. The review will then be made publicly visible. Once
@@ -287,25 +287,13 @@ class BaseReviewResource(MarkdownFieldsMixin, WebAPIResource):
             # to the user.
             return self._no_access_error(request.user)
 
-        old_rich_text = review.rich_text
+        if 'ship_it' in kwargs:
+            review.ship_it = kwargs['ship_it']
 
-        for field in ('ship_it', 'body_top', 'body_bottom'):
-            value = kwargs.get(field, None)
+        self.set_text_fields(review, 'body_top', **kwargs)
+        self.set_text_fields(review, 'body_bottom', **kwargs)
 
-            if value is not None:
-                if isinstance(value, six.string_types):
-                    value = value.strip()
-
-                setattr(review, field, value)
-
-        if 'text_type' in kwargs:
-            review.rich_text = \
-                (kwargs['text_type'] == self.TEXT_TYPE_MARKDOWN)
-
-        self.normalize_markdown_fields(review, ['body_top', 'body_bottom'],
-                                       old_rich_text, **kwargs)
-
-        self._import_extra_data(review.extra_data, extra_fields)
+        self.import_extra_data(review, review.extra_data, extra_fields)
 
         review.save()
 

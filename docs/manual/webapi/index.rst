@@ -15,6 +15,7 @@ This is the modern API first made available in Review Board 1.5.
 
    2.0/overview
    2.0/authenticating
+   2.0/rich-text-fields
    2.0/resources/resource-tree
    2.0/resources/index
    2.0/errors/index
