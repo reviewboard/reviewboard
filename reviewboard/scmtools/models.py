@@ -591,7 +591,7 @@ class Repository(models.Model):
             if e:
                 encodings.append(e)
 
-        return encodings or ['iso-5589-15']
+        return encodings or ['iso-8859-15']
 
     def clean(self):
         """Clean method for checking null unique_together constraints.
