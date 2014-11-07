@@ -290,8 +290,8 @@ class BaseFileAttachmentResource(WebAPIResource):
         except PermissionDenied:
             return self._no_access_error(request.user)
 
-        draft.file_attachments.remove(file_attachment)
         draft.inactive_file_attachments.add(file_attachment)
+        draft.file_attachments.remove(file_attachment)
         draft.save()
 
         return 204, {}
