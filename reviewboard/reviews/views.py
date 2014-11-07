@@ -1466,6 +1466,21 @@ class ReviewRequestSearchView(SearchView):
     @method_decorator(check_login_required)
     @method_decorator(check_local_site_access)
     def __call__(self, request, local_site=None):
+        self.request = request
+
+        query = self.get_query()
+
+        # If the query is an integer, then assume that it's a review request
+        # ID that we'll want to redirect to. This mirrors behavior we've had
+        # since Review Board 1.7.
+        if query.isdigit():
+            try:
+                review_request = ReviewRequest.objects.for_id(query,
+                                                              local_site)
+                return HttpResponseRedirect(review_request.get_absolute_url())
+            except ReviewRequest.DoesNotExist:
+                pass
+
         siteconfig = SiteConfiguration.objects.get_current()
 
         if not siteconfig.get("search_enable"):
