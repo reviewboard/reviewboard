@@ -131,4 +131,33 @@ suite('rb/views/ReviewReplyEditorView', function() {
             expect(view._$draftComment.hasClass('draft')).toBe(true);
         });
     });
+
+    describe('Text rendering', function() {
+        function testRendering(richText, expectedHTML) {
+            var $comment,
+                $reviewText;
+
+            view.render();
+
+            $comment = view._makeCommentElement({
+                text: '<p><strong>Test</strong> &amp;lt;</p>',
+                richText: richText
+            });
+
+            $reviewText = $comment.find('.reviewtext');
+            expect($reviewText.length).toBe(1);
+            expect($reviewText.hasClass('rich-text')).toBe(richText);
+            expect($reviewText.html()).toBe(expectedHTML);
+        }
+
+        it('richText=true', function() {
+            testRendering(true, '<p><strong>Test</strong> &amp;lt;</p>');
+        });
+
+        it('richText=false', function() {
+            testRendering(false,
+                          '&lt;p&gt;&lt;strong&gt;Test&lt;/strong&gt; ' +
+                          '&amp;amp;lt;&lt;/p&gt;');
+        });
+    });
 });
