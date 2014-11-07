@@ -12,6 +12,12 @@ RB.BaseComment = RB.BaseResource.extend({
          */
         forceTextType: null,
 
+        /*
+         * A string containing a comma-separated list of text types to include
+         * in the payload.
+         */
+        includeTextTypes: null,
+
         /* Whether or not an issue is opened. */
         issueOpened: true,
 
@@ -22,6 +28,12 @@ RB.BaseComment = RB.BaseResource.extend({
          */
         issueStatus: null,
 
+        /*
+         * Raw text fields, if the caller fetches or posts with
+         * include-text-types=raw.
+         */
+        rawTextFields: {},
+
         /* Whether the comment is saved in rich-text (Markdown) format. */
         richText: false,
 
@@ -30,7 +42,8 @@ RB.BaseComment = RB.BaseResource.extend({
     }, RB.BaseResource.prototype.defaults),
 
     extraQueryArgs: {
-        'force-text-type': 'html'
+        'force-text-type': 'html',
+        'include-text-types': 'raw'
     },
 
     supportsExtraData: true,
@@ -56,6 +69,7 @@ RB.BaseComment = RB.BaseResource.extend({
     toJSON: function() {
         var data = _.defaults({
                 force_text_type: this.get('forceTextType') || undefined,
+                include_text_types: this.get('includeTextTypes') || undefined,
                 issue_opened: this.get('issueOpened'),
                 text_type: this.get('richText') ? 'markdown' : 'plain',
                 text: this.get('text')
@@ -79,12 +93,21 @@ RB.BaseComment = RB.BaseResource.extend({
      * This must be overloaded by subclasses, and the parent version called.
      */
     parseResourceData: function(rsp) {
-        return {
-            issueOpened: rsp.issue_opened,
-            issueStatus: rsp.issue_status,
-            richText: rsp.text_type === 'markdown',
-            text: rsp.text
-        };
+        var rawTextFields = rsp.raw_text_fields || rsp,
+            data = {
+                issueOpened: rsp.issue_opened,
+                issueStatus: rsp.issue_status,
+                richText: rawTextFields.text_type === 'markdown',
+                text: rsp.text
+            };
+
+        if (rsp.raw_text_fields) {
+            data.rawTextFields = {
+                text: rsp.raw_text_fields.text
+            };
+        }
+
+        return data;
     },
 
     /*

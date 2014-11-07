@@ -23,7 +23,7 @@ RB.CommentEditor = Backbone.Model.extend({
             publishedComments: [],
             publishedCommentsType: null,
             reviewRequest: null,
-            richText: true,
+            richText: userSession.get('defaultUseRichText'),
             statusText: '',
             text: ''
         };
@@ -59,7 +59,7 @@ RB.CommentEditor = Backbone.Model.extend({
                      dirty ? gettext('This comment has unsaved changes.') : '');
         }, this);
 
-        this.on('change:openIssue change:text', function() {
+        this.on('change:openIssue change:richText change:text', function() {
             if (this.get('editing')) {
                 this.set('dirty', true);
                 this._updateState();

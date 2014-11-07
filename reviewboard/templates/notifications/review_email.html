@@ -7,7 +7,7 @@
 {%  endif %}
 
 {% if review.body_top %}
- <pre style="{{precss}}">{{review.body_top|markdown_email_html:review.rich_text}}</pre>
+ <pre style="{{precss}}">{{review.body_top|markdown_email_html:review.body_top_rich_text}}</pre>
  <br />
 {% endif %}
 
@@ -62,7 +62,7 @@
 {% endfor %}
 
 {% if review.body_bottom %}
- <pre style="{{precss}}">{{review.body_bottom|markdown_email_html:review.rich_text}}</pre>
+ <pre style="{{precss}}">{{review.body_bottom|markdown_email_html:review.body_bottom_rich_text}}</pre>
 {% endif %}
 <p>- {{review.user|user_displayname}}</p>
 {% endblock %}

@@ -66,6 +66,7 @@ class BaseCommentResource(MarkdownFieldsMixin, WebAPIResource):
         'text': {
             'type': six.text_type,
             'description': 'The comment text.',
+            'supports_text_types': True,
         },
     }
 
@@ -95,6 +96,7 @@ class BaseCommentResource(MarkdownFieldsMixin, WebAPIResource):
         'text': {
             'type': six.text_type,
             'description': 'The comment text.',
+            'supports_text_types': True,
         },
         'text_type': {
             'type': MarkdownFieldsMixin.SAVEABLE_TEXT_TYPES,
@@ -159,7 +161,8 @@ class BaseCommentResource(MarkdownFieldsMixin, WebAPIResource):
             comment_kwargs[field] = kwargs.get(field)
 
         new_comment = self.model(**comment_kwargs)
-        self._import_extra_data(new_comment.extra_data, extra_fields)
+        self.import_extra_data(new_comment, new_comment.extra_data,
+                               extra_fields)
 
         if issue_opened:
             new_comment.issue_status = BaseComment.OPEN
@@ -185,9 +188,7 @@ class BaseCommentResource(MarkdownFieldsMixin, WebAPIResource):
             if comment.issue_opened and not kwargs.get('issue_opened', True):
                 comment.issue_status = None
 
-        old_rich_text = comment.rich_text
-
-        for field in ('text', 'issue_opened') + update_fields:
+        for field in ('issue_opened',) + update_fields:
             value = kwargs.get(field, None)
 
             if value is not None:
@@ -196,15 +197,10 @@ class BaseCommentResource(MarkdownFieldsMixin, WebAPIResource):
 
                 setattr(comment, field, value)
 
-        if 'text_type' in kwargs:
-            comment.rich_text = \
-                (kwargs['text_type'] == self.TEXT_TYPE_MARKDOWN)
-
-        self.normalize_markdown_fields(comment, ['text'], old_rich_text,
-                                       **kwargs)
+        self.set_text_fields(comment, 'text', **kwargs)
 
         if not is_reply:
-            self._import_extra_data(comment.extra_data, extra_fields)
+            self.import_extra_data(comment, comment.extra_data, extra_fields)
 
         comment.save()
 

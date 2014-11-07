@@ -6,27 +6,47 @@
  */
 RB.Review = RB.BaseResource.extend({
     defaults: _.defaults({
+        /*
+         * The text format type to request for text in all responses.
+         */
+        forceTextType: null,
+
         shipIt: false,
         'public': false,
-        richText: false,
         bodyTop: null,
+        bodyTopRichText: false,
         bodyBottom: null,
+        bodyBottomRichText: false,
         draftReply: null,
+
+        /*
+         * A string containing a comma-separated list of text types to include
+         * in the payload.
+         */
+        includeTextTypes: null,
+
+        /*
+         * Raw text fields, if forceTextType is used and the caller
+         * fetches or posts with includeTextTypes="raw".
+         */
+        rawTextFields: {},
+
         timestamp: null
     }, RB.BaseResource.prototype.defaults),
 
     rspNamespace: 'review',
 
-    extraQueryArgs: {
-        'force-text-type': 'html'
-    },
-
     toJSON: function() {
         var data = {
-            text_type: this.get('richText') ? 'markdown' : 'plain',
+            force_text_type: this.get('forceTextType') || undefined,
+            include_text_types: this.get('includeTextTypes') || undefined,
             ship_it: this.get('shipIt'),
             body_top: this.get('bodyTop'),
-            body_bottom: this.get('bodyBottom')
+            body_top_text_type: this.get('bodyTopRichText')
+                                ? 'markdown' : 'plain',
+            body_bottom: this.get('bodyBottom'),
+            body_bottom_text_type: this.get('bodyBottomRichText')
+                                   ? 'markdown' : 'plain'
         };
 
         if (this.get('public')) {
@@ -37,14 +57,28 @@ RB.Review = RB.BaseResource.extend({
     },
 
     parseResourceData: function(rsp) {
-        return {
+        var rawTextFields = rsp.raw_text_fields || rsp;
+
+        var data = {
             shipIt: rsp.ship_it,
             bodyTop: rsp.body_top,
+            bodyTopRichText:
+                rawTextFields.body_top_text_type === 'markdown',
             bodyBottom: rsp.body_bottom,
+            bodyBottomRichText:
+                rawTextFields.body_bottom_text_type === 'markdown',
             'public': rsp['public'],
-            richText: rsp.text_type === 'markdown',
             timestamp: rsp.timestamp
         };
+
+        if (rsp.raw_text_fields) {
+            data.rawTextFields = {
+                bodyBottom: rsp.raw_text_fields.body_bottom,
+                bodyTop: rsp.raw_text_fields.body_top
+            };
+        }
+
+        return data;
     },
 
     createDiffComment: function(id, fileDiffID, interFileDiffID, beginLineNum,

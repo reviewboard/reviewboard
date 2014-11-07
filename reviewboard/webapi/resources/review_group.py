@@ -243,7 +243,7 @@ class ReviewGroupResource(WebAPIResource):
             return GROUP_ALREADY_EXISTS
 
         if extra_fields:
-            self._import_extra_data(group.extra_data, extra_fields)
+            self.import_extra_data(group, group.extra_data, extra_fields)
             group.save(update_fields=['extra_data'])
 
         return 201, {
@@ -319,7 +319,7 @@ class ReviewGroupResource(WebAPIResource):
             if val is not None:
                 setattr(group, field, val)
 
-        self._import_extra_data(group.extra_data, extra_fields)
+        self.import_extra_data(group, group.extra_data, extra_fields)
 
         group.save()
 

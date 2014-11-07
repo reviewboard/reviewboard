@@ -55,11 +55,18 @@ class Review(models.Model):
         blank=True,
         help_text=_("The review text shown above the diff and screenshot "
                     "comments."))
+    body_top_rich_text = models.BooleanField(
+        _("body (top) in rich text"),
+        default=False)
+
     body_bottom = models.TextField(
         _("body (bottom)"),
         blank=True,
         help_text=_("The review text shown below the diff and screenshot "
                     "comments."))
+    body_bottom_rich_text = models.BooleanField(
+        _("body (bottom) in rich text"),
+        default=False)
 
     body_top_reply_to = models.ForeignKey(
         "self", blank=True, null=True,
@@ -85,9 +92,10 @@ class Review(models.Model):
         related_name="review",
         blank=True)
 
-    rich_text = models.BooleanField(_("rich text"), default=False)
-
     extra_data = JSONField(null=True)
+
+    # Deprecated and no longer used for new reviews as of 2.0.9.
+    rich_text = models.BooleanField(_("rich text"), default=False)
 
     # XXX Deprecated. This will be removed in a future release.
     reviewed_diffset = models.ForeignKey(

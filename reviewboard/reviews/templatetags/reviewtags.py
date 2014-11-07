@@ -6,7 +6,7 @@ import logging
 from django import template
 from django.db.models import Q
 from django.template import TemplateSyntaxError
-from django.template.defaultfilters import stringfilter
+from django.template.defaultfilters import escapejs, stringfilter
 from django.template.loader import render_to_string
 from django.utils import six
 from django.utils.html import escape
@@ -18,8 +18,9 @@ from djblets.util.humanize import humanize_list
 from reviewboard.accounts.models import Profile
 from reviewboard.reviews.fields import (get_review_request_fieldset,
                                         get_review_request_fieldsets)
-from reviewboard.reviews.markdown_utils import (markdown_escape,
-                                                render_markdown)
+from reviewboard.reviews.markdown_utils import (is_rich_text_default_for_user,
+                                                render_markdown,
+                                                normalize_text_for_edit)
 from reviewboard.reviews.models import (BaseComment, Group,
                                         ReviewRequest, ScreenshotComment,
                                         FileAttachmentComment)
@@ -82,7 +83,9 @@ def file_attachment_comments(context, file_attachment):
         if review and (review.public or review.user == user):
             comments.append({
                 'comment_id': comment.id,
-                'text': escape(comment.text),
+                'text': normalize_text_for_edit(user, comment.text,
+                                                comment.rich_text),
+                'rich_text': comment.rich_text,
                 'user': {
                     'username': escape(review.user.username),
                     'name': escape(review.user.get_full_name() or
@@ -123,8 +126,8 @@ def reply_list(context, entry, comment, context_type, context_id):
     """
     def generate_reply_html(reply, timestamp, text, rich_text,
                             comment_id=None):
-        new_context = context
-        new_context.update({
+        context.push()
+        context.update({
             'context_id': context_id,
             'id': reply.id,
             'review': review,
@@ -135,7 +138,11 @@ def reply_list(context, entry, comment, context_type, context_id):
             'comment_id': comment_id,
             'rich_text': rich_text,
         })
-        return render_to_string('reviews/review_reply.html', new_context)
+
+        result = render_to_string('reviews/review_reply.html', context)
+        context.pop()
+
+        return result
 
     def process_body_replies(queryset, attrname, user):
         if user.is_anonymous():
@@ -170,9 +177,11 @@ def reply_list(context, entry, comment, context_type, context_id):
         replies = getattr(review, "public_%s_replies" % context_type)()
 
         for reply in replies:
-            s += generate_reply_html(reply, reply.timestamp,
-                                     getattr(reply, context_type),
-                                     reply.rich_text)
+            s += generate_reply_html(
+                reply,
+                reply.timestamp,
+                getattr(reply, context_type),
+                getattr(reply, '%s_rich_text' % context_type))
 
         return s
     else:
@@ -207,6 +216,7 @@ def reply_section(context, entry, comment, context_type, context_id):
         'context_id': context_id,
         'user': context.get('user', None),
         'local_site_name': context.get('local_site_name'),
+        'request': context['request'],
     }
 
 
@@ -285,12 +295,14 @@ def for_review_request_field(context, nodelist, review_request_details,
     """
     s = []
 
+    request = context.get('request')
+
     if isinstance(fieldset, six.text_type):
         fieldset = get_review_request_fieldset(fieldset)
 
     for field_cls in fieldset.field_classes:
         try:
-            field = field_cls(review_request_details)
+            field = field_cls(review_request_details, request=request)
         except Exception as e:
             logging.error('Error instantiating ReviewRequestFieldset %r: %s',
                           field_cls, e, exc_info=1)
@@ -484,22 +496,29 @@ def pretty_print_issue_status(status):
     return BaseComment.issue_status_to_string(status)
 
 
-@register.filter('markdown_escape')
-def markdown_escape_filter(text, is_rich_text):
-    """Returns Markdown text, escaping if necessary.
-
-    If ``is_rich_text`` is ``True``, then the provided text will be
-    returned directly. Otherwise, it will first be escaped and then returned.
-    """
-    if is_rich_text:
-        return text
-    else:
-        return markdown_escape(text)
-
-
 @register.filter('render_markdown')
 def _render_markdown(text, is_rich_text):
     if is_rich_text:
         return mark_safe(render_markdown(text))
     else:
         return text
+
+
+@register.tag('normalize_text_for_edit')
+@basictag(takes_context=True)
+def _normalize_text_for_edit(context, text, rich_text, escape_js=False):
+    text = normalize_text_for_edit(context['request'].user, text, rich_text)
+
+    if escape_js:
+        text = escapejs(text)
+
+    return text
+
+
+@register.tag
+@basictag(takes_context=True)
+def rich_text_classname(context, rich_text):
+    if rich_text or is_rich_text_default_for_user(context['request'].user):
+        return 'rich-text'
+
+    return ''

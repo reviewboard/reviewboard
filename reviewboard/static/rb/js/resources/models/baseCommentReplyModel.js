@@ -12,6 +12,18 @@ RB.BaseCommentReply = RB.BaseResource.extend({
          */
         forceTextType: null,
 
+        /*
+         * A string containing a comma-separated list of text types to include
+         * in the payload.
+         */
+        includeTextTypes: null,
+
+        /*
+         * Raw text fields, if the caller fetches or posts with
+         * include-text-types=raw.
+         */
+        rawTextFields: {},
+
         /* The ID of the comment being replied to. */
         replyToID: null,
 
@@ -43,6 +55,7 @@ RB.BaseCommentReply = RB.BaseResource.extend({
     toJSON: function() {
         var data = {
             force_text_type: this.get('forceTextType') || undefined,
+            include_text_types: this.get('includeTextTypes') || undefined,
             text: this.get('text'),
             text_type: this.get('richText') ? 'markdown' : 'plain'
         };
@@ -60,10 +73,14 @@ RB.BaseCommentReply = RB.BaseResource.extend({
      * This must be overloaded by subclasses, and the parent version called.
      */
     parseResourceData: function(rsp) {
-        return {
-            text: rsp.text,
-            richText: rsp.text_type === 'markdown'
-        };
+        var rawTextFields = rsp.raw_text_fields || rsp,
+            data = {
+                text: rsp.text,
+                rawTextFields: rsp.raw_text_fields || {},
+                richText: rawTextFields.text_type === 'markdown'
+            };
+
+        return data;
     },
 
     /*

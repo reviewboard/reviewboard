@@ -35,7 +35,7 @@ BannerView = Backbone.View.extend({
         '<%- describeText %></label></p>',
         ' <pre id="field_changedescription"',
         '      class="editable field-text-area field"',
-        '      data-rich-text="true" data-field-id="changedescription">',
+        '      data-field-id="changedescription">',
         '<%- closeDescription %></pre>',
         '<% } %>'
     ].join('')),
@@ -52,11 +52,12 @@ BannerView = Backbone.View.extend({
             fieldID: this.descriptionFieldID,
             fieldName: this.descriptionFieldName,
             elementOptional: true,
-            editMarkdown: true,
+            allowMarkdown: true,
             useExtraData: false,
-            formatter: function(view, data, $el) {
+            formatter: function(view, data, $el, fieldOptions) {
                 view.formatText($el, {
-                    newText: data
+                    newText: data,
+                    fieldOptions: fieldOptions
                 });
             }
         }, this.fieldOptions));
@@ -308,10 +309,11 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
         },
         {
             fieldID: 'description',
-            editMarkdown: true,
-            formatter: function(view, data, $el) {
+            allowMarkdown: true,
+            formatter: function(view, data, $el, fieldOptions) {
                 view.formatText($el, {
-                    newText: data
+                    newText: data,
+                    fieldOptions: fieldOptions
                 });
             }
         },
@@ -388,10 +390,11 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
         {
             fieldID: 'testing_done',
             fieldName: 'testingDone',
-            editMarkdown: true,
-            formatter: function(view, data, $el) {
+            allowMarkdown: true,
+            formatter: function(view, data, $el, fieldOptions) {
                 view.formatText($el, {
-                    newText: data
+                    newText: data,
+                    fieldOptions: fieldOptions
                 });
             }
         }
@@ -417,6 +420,7 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
         this.banner = null;
         this._$main = null;
         this._$extra = null;
+        this._blockResizeLayout = false;
 
         if ($issueSummary.length > 0) {
             this.issueSummaryTableView = new RB.IssueSummaryTableView({
@@ -461,20 +465,35 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
      *         Defaults to true for non-builtin fields.
      */
     registerField: function(options) {
-        var fieldID = options.fieldID;
+        var fieldID = options.fieldID,
+            useExtraData = options.useExtraData === undefined
+                           ? true
+                           : options.useExtraData;
 
         console.assert(fieldID);
 
-        this._fieldEditors[fieldID] = _.extend({
+        options = _.extend({
             selector: '#field_' + fieldID,
             elementOptional: false,
             fieldID: fieldID,
             fieldName: fieldID,
             formatter: null,
             jsonFieldName: fieldID,
+            jsonTextTypeFieldName: options.allowMarkdown ?
+                                   fieldID + '_text_type'
+                                   : null,
             useEditIconOnly: false,
-            useExtraData: true
+            useExtraData: useExtraData
         }, options);
+
+        /*
+         * This must be done one we have a solid fieldName set.
+         */
+        options.richTextAttr = options.allowMarkdown
+                               ? options.fieldName + 'RichText'
+                               : null;
+
+        this._fieldEditors[fieldID] = options;
     },
 
     /*
@@ -506,6 +525,7 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
                 var $field = $(field),
                     fieldID = $field.data('field-id'),
                     isCommaEditable,
+                    richTextFieldID,
                     fieldInfo,
                     rawValue;
 
@@ -518,8 +538,27 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
                     };
 
                     rawValue = $field.data('raw-value');
-                    extraData[fieldID] = rawValue || '';
+
+                    if (rawValue === undefined) {
+                        extraData[fieldID] = $field.text();
+                    } else {
+                        extraData[fieldID] = rawValue || '';
+                    }
+
                     $field.removeAttr('data-raw-value');
+
+                    if ($field.data('allow-markdown')) {
+                        fieldInfo.allowMarkdown = true;
+
+                        if (fieldID === 'text') {
+                            richTextFieldID = 'rich_text';
+                        } else {
+                            richTextFieldID = fieldID + '_rich_text';
+                        }
+
+                        extraData[richTextFieldID] =
+                            $field.hasClass('rich-text');
+                    }
 
                     if (isCommaEditable) {
                         fieldInfo.useEditIconOnly = true;
@@ -527,11 +566,12 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
                             data = data || [];
                             $el.html(data.join(', '));
                         };
-                    } else if ($field.data('rich-text')) {
-                        fieldInfo.editMarkdown = true;
-                        fieldInfo.formatter = function(view, data, $el) {
+                    } else if (fieldInfo.allowMarkdown) {
+                        fieldInfo.formatter = function(view, data, $el,
+                                                       fieldOptions) {
                             view.formatText($el, {
-                                newText: data
+                                newText: data,
+                                fieldOptions: fieldOptions
                             });
                         };
                     }
@@ -794,11 +834,23 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
      * tracker.
      */
     formatText: function($el, options) {
-        var reviewRequest = this.model.get('reviewRequest');
+        var reviewRequest = this.model.get('reviewRequest'),
+            fieldOptions;
 
-        RB.formatText($el, _.defaults({
-            bugTrackerURL: reviewRequest.get('bugTrackerURL')
-        }, options));
+        options = _.defaults({
+            bugTrackerURL: reviewRequest.get('bugTrackerURL'),
+            isHTMLEncoded: true
+        }, options);
+
+        fieldOptions = options.fieldOptions;
+
+        if (fieldOptions && fieldOptions.richTextAttr) {
+            options.richText = this.model.getDraftField(
+                fieldOptions.richTextAttr,
+                fieldOptions);
+        }
+
+        RB.formatText($el, options);
 
         $el.find('img').load(this._checkResizeLayout);
     },
@@ -970,11 +1022,13 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
                 deferEventSetup: _.has(fieldOptions, 'autocomplete')
             };
 
-        if (fieldOptions.editMarkdown) {
+        if (fieldOptions.allowMarkdown) {
             _.extend(
                 options,
-                RB.MarkdownEditorView.getInlineEditorOptions({
-                    minHeight: 0
+                RB.TextEditorView.getInlineEditorOptions({
+                    minHeight: 0,
+                    richText: model.getDraftField(fieldOptions.richTextAttr,
+                                                  fieldOptions)
                 }),
                 {
                     matchHeight: false,
@@ -991,19 +1045,18 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
                     model.incr('editCount');
                 },
                 cancel: _.bind(function() {
-                    if (fieldOptions.editMarkdown) {
-                        $el.inlineEditor('buttons')
-                           .find('.markdown-info')
-                           .remove();
-                    }
                     this._scheduleResizeLayout();
                     model.decr('editCount');
                 }, this),
                 complete: _.bind(function(e, value) {
-                    if (fieldOptions.editMarkdown) {
-                        $el.inlineEditor('buttons')
-                           .find('.markdown-info')
-                           .remove();
+                    var extraOptions = {},
+                        textEditor;
+
+                    if (fieldOptions.allowMarkdown) {
+                        textEditor =
+                            RB.TextEditorView.getFromInlineEditor($el);
+
+                        extraOptions.richText = textEditor.richText;
                     }
 
                     this._scheduleResizeLayout();
@@ -1026,7 +1079,7 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
                                 this._formatField(fieldOptions);
                                 this.showBanner();
                             }
-                        }, fieldOptions),
+                        }, fieldOptions, extraOptions),
                         this);
                 }, this),
                 resize: this._checkResizeLayout
@@ -1136,7 +1189,7 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
          * (for instance, review UIs want to have the draft banners but not
          * the review request box). In this case, just skip all of this.
          */
-        if (this._$main.length !== 0) {
+        if (this._$main.length !== 0 && !this._blockResizeLayout) {
             this._resizeLayout();
         }
     },
@@ -1150,19 +1203,20 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
      */
     _resizeLayout: function() {
         var $lastContent = this._$main.children('.content:last-child'),
-            $lastEditable = $lastContent.children('.editable'),
-            lastContentTop = $lastContent.position().top,
-            editing = $lastEditable.inlineEditor('editing'),
-            $field = $lastEditable.inlineEditor('field'),
-            editor = $field.data('markdown-editor'),
+            $lastFieldContainer = $lastContent.children('.field-container'),
+            $lastEditable = $lastFieldContainer.children('.editable'),
+            lastContentTop = Math.ceil($lastContent.position().top),
+            editor = $lastEditable.inlineEditor('field').data('text-editor'),
             detailsWidth = 300, // Defined as @details-width in reviews.less
             detailsPadding = 10,
-            $details = $('#review_request_details'),
-            $detailsBody = $details.find('tbody'),
+            $detailsBody = $('#review_request_details tbody'),
             $detailsLabels = $detailsBody.find('th:first-child'),
             $detailsValues = $detailsBody.find('span'),
             contentHeight,
+            newEditableHeight,
             height;
+
+        this._blockResizeLayout = true;
 
         /*
          * Make sure that the details fields wrap correctly, even if they don't
@@ -1183,7 +1237,7 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
         $lastEditable.height('auto');
 
         if (editor) {
-          editor.setSize(null, 'auto');
+            editor.setSize(null, 'auto');
         }
 
         /*
@@ -1205,7 +1259,8 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
              * the content area of the content box.
              */
             contentHeight = $lastContent.height() +
-                            $lastContent.getExtents('p', 't');
+                            $lastContent.getExtents('p', 't') -
+                            Math.ceil($lastFieldContainer.position().top);
 
             /*
              * Set the height of the editor or the editable field placeholder,
@@ -1213,25 +1268,27 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
              * both, since this logic will be called again when the state
              * changes.
              */
-            if (editing && editor) {
+            if ($lastEditable.inlineEditor('editing') && editor) {
                 editor.setSize(
                     null,
-                    (contentHeight -
-                     $lastEditable.inlineEditor('buttons').outerHeight(true) -
-                     $field.position().top));
+                    contentHeight -
+                    $lastEditable.inlineEditor('buttons').outerHeight(true));
             } else {
                 /*
                  * It's possible to squish the editable element if we force
                  * a size, so make sure it's always at least the natural
                  * height.
                  */
-                $lastEditable.outerHeight(
-                    Math.max($lastEditable.outerHeight(true),
-                             contentHeight -
-                             $lastEditable.position().top),
-                    true);
+                newEditableHeight = contentHeight +
+                                    $lastEditable.getExtents('m', 'tb');
+
+                if (newEditableHeight > $lastEditable.outerHeight()) {
+                    $lastEditable.outerHeight(newEditableHeight);
+                }
             }
         }
+
+        this._blockResizeLayout = false;
     },
 
     /*
@@ -1257,7 +1314,8 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
                                              fieldOptions);
 
         if (_.isFunction(formatter)) {
-            formatter.call(fieldOptions.context || this, this, value, $el);
+            formatter.call(fieldOptions.context || this, this, value, $el,
+                           fieldOptions);
         } else {
             $el.text(value);
         }

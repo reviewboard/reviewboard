@@ -2,8 +2,7 @@
 {% load djblets_email djblets_utils markdown_email reviewtags %}
 
 {% block content %}
-{%  with review_request.rich_text as rich_text %}
-{%   if changes and changes.status and review_request.status in "SD" %}
+{%  if changes and changes.status and review_request.status in "SD" %}
 <table bgcolor="#e0e0e0" width="100%" cellpadding="12" style="border: 1px gray solid; border-radius: 6px; -moz-border-radius: 6px; -webkit-border-radius: 6px;">
  <tr>
   <td>
@@ -12,7 +11,7 @@
  </tr>
 </table>
 <br />
-{%   endif %}
+{%  endif %}
 
 <table bgcolor="#fefadf" width="100%" cellspacing="0" cellpadding="12" style="border: 1px #888a85 solid; border-radius: 6px; -moz-border-radius: 6px; -webkit-border-radius: 6px;">
  <tr>
@@ -21,11 +20,11 @@
 <div>Review request for {% reviewer_list review_request %}.</div>
 <div>By {{review_request.submitter|realname}}.</div>
 
-{%   if review_request.email_message_id %}
+{%  if review_request.email_message_id %}
 <p style="color: grey;"><i>Updated {{review_request.time_emailed}}</i></p>
-{%   endif %}
+{%  endif %}
 
-{%   if change_text %}
+{%  if change_text %}
 <h1 style="color: #575012; font-size: 10pt; margin-top: 1.5em;">Changes</h1>
 <table width="100%" bgcolor="#ffffff" cellspacing="0" cellpadding="10" style="border: 1px solid #b8b5a0">
  <tr>
@@ -34,9 +33,9 @@
   </td>
  </tr>
 </table>
-{%   endif %}
+{%  endif %}
 
-{%   if changes %}{% if changes.summary %}
+{%  if changes %}{% if changes.summary %}
 <h1 style="color: #575012; font-size: 10pt; margin-top: 1.5em;">Summary (updated)</h1>
 <table width="100%" bgcolor="#ffffff" cellspacing="0" cellpadding="10" style="border: 1px solid #b8b5a0">
  <tr>
@@ -45,79 +44,78 @@
   </td>
  </tr>
 </table>
-{%   endif %}{% endif %}
+{%  endif %}{% endif %}
 
-{%   if review_request.bugs_closed != "" %}
+{%  if review_request.bugs_closed != "" %}
 <div style="margin-top: 1.5em;">
  <b style="color: #575012; font-size: 10pt; margin-top: 1.5em;">Bugs: </b>
-{%    if review_request.repository.bug_tracker == "" %}
+{%   if review_request.repository.bug_tracker == "" %}
 {{review_request.get_bug_list|join:", "}}
-{%    else %}
-{%     for bug in review_request.get_bug_list %}
+{%   else %}
+{%    for bug in review_request.get_bug_list %}
  <a href="{{bug|bug_url:review_request}}">{{bug}}</a>{% if not forloop.last %}, {% endif %}
-{%     endfor %}
-{%    endif %}
-</div>
+{%    endfor %}
 {%   endif %}
+</div>
+{%  endif %}
 
-{%   if review_request.repository %}
+{%  if review_request.repository %}
 <div style="margin-top: 1.5em;">
  <b style="color: #575012; font-size: 10pt;">Repository: </b>
 {{review_request.repository.name}}
 </div>
-{%   endif %}
+{%  endif %}
 
 <h1 style="color: #575012; font-size: 10pt; margin-top: 1.5em;">Description {% if changes %}{% if changes.description %} (updated){% endif %}{% endif %}</h1>
  <table width="100%" bgcolor="#ffffff" cellspacing="0" cellpadding="10" style="border: 1px solid #b8b5a0">
  <tr>
   <td>
-   <pre style="margin: 0; padding: 0; {{precss}}">{{review_request.description|markdown_email_html:rich_text}}</pre>
+   <pre style="margin: 0; padding: 0; {{precss}}">{{review_request.description|markdown_email_html:review_request.description_rich_text}}</pre>
   </td>
  </tr>
 </table>
 
-{%   if review_request.testing_done != "" %}
+{%  if review_request.testing_done != "" %}
 <h1 style="color: #575012; font-size: 10pt; margin-top: 1.5em;">Testing {% if changes and changes.testing_done %}(updated){% endif %}</h1>
 <table width="100%" bgcolor="#ffffff" cellspacing="0" cellpadding="10" style="border: 1px solid #b8b5a0">
  <tr>
   <td>
-   <pre style="margin: 0; padding: 0; {{precss}}">{{review_request.testing_done|markdown_email_html:rich_text}}</pre>
+   <pre style="margin: 0; padding: 0; {{precss}}">{{review_request.testing_done|markdown_email_html:review_request.testing_done_rich_text}}</pre>
   </td>
  </tr>
 </table>
-{%   endif %}
+{%  endif %}
 
 <h1 style="color: #575012; font-size: 10pt; margin-top: 1.5em;">Diffs</b> {% if changes and changes.diff %}(updated){% endif %}</h1>
 <ul style="margin-left: 3em; padding-left: 0;">
-{% for filediff in review_request.diffset_history.diffsets.latest.files.all %}
+{%  for filediff in review_request.diffset_history.diffsets.latest.files.all %}
  <li>{{filediff.source_file_display}} <span style="color: grey">({{filediff.source_revision}})</span></li>
-{% endfor %}
+{%  endfor %}
 </ul>
 
 <p><a href="{{domain_method}}://{{domain}}{% url 'view-diff' review_request.display_id %}" style="margin-left: 3em;">View Diff</a></p>
 
 
-{%   if review_request.file_attachments.count %}
+{%  if review_request.file_attachments.count %}
 <h1 style="color: #575012; font-size: 10pt; margin-top: 1.5em;">File Attachments {% if changes and changes.files %}(updated){% endif %}</h1>
 
-{%    for file in review_request.file_attachments.all %}
+{%   for file in review_request.file_attachments.all %}
  <li><a href="{{file.get_absolute_url}}">{{file.caption|default:file.filename}}</a></li>
-{%    endfor %}
+{%   endfor %}
 </ul>
-{%   endif %}
+{%  endif %}
 
-{%   if review_request.screenshots.count %}
+{%  if review_request.screenshots.count %}
 <h1 style="color: #575012; font-size: 10pt; margin-top: 1.5em;">Screenshots {% if changes and changes.screenshots %}(updated){% endif %}</h1>
 
 <div>
-{%    for screenshot in review_request.screenshots.all %}
+{%   for screenshot in review_request.screenshots.all %}
  <a href="{{domain_method}}://{{domain}}{{screenshot.get_absolute_url}}"><img src="{{domain_method}}://{{domain}}{{screenshot.get_thumbnail_url}}" style="border: 1px black solid;" alt="{{screenshot.caption}}" /></a>
-{%    endfor %}
+{%   endfor %}
 </div>
-{%   endif %}
+{%  endif %}
 
   </td>
  </tr>
 </table>
-{%  endwith %}
 {% endblock content %}

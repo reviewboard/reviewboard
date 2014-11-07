@@ -126,8 +126,11 @@ RB.ReviewablePageView = Backbone.View.extend({
         console.assert(this.options.reviewRequestData);
         console.assert(this.options.editorData);
 
-        this.reviewRequest =
-            new RB.ReviewRequest(this.options.reviewRequestData);
+        this.reviewRequest = new RB.ReviewRequest(
+            this.options.reviewRequestData,
+            {
+                extraDraftAttrs: this.options.extraReviewRequestDraftData
+            });
 
         this.pendingReview = this.reviewRequest.createReview();
         this.commentIssueManager = new RB.CommentIssueManager({
@@ -262,8 +265,7 @@ RB.ReviewablePageView = Backbone.View.extend({
                 ready: function() {
                     this.pendingReview.set({
                         shipIt: true,
-                        bodyTop: gettext('Ship It!'),
-                        richText: true
+                        bodyTop: gettext('Ship It!')
                     });
                     this.pendingReview.publish();
                 }

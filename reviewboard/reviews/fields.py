@@ -10,8 +10,9 @@ from django.utils.safestring import mark_safe
 from reviewboard.diffviewer.diffutils import get_line_changed_regions
 from reviewboard.diffviewer.myersdiff import MyersDiffer
 from reviewboard.diffviewer.templatetags.difftags import highlightregion
-from reviewboard.reviews.markdown_utils import (iter_markdown_lines,
-                                                markdown_escape,
+from reviewboard.reviews.markdown_utils import (is_rich_text_default_for_user,
+                                                iter_markdown_lines,
+                                                normalize_text_for_edit,
                                                 render_markdown)
 
 
@@ -115,8 +116,9 @@ class BaseReviewRequestField(object):
 
     can_record_change_entry = property(lambda self: self.is_editable)
 
-    def __init__(self, review_request_details):
+    def __init__(self, review_request_details, request=None):
         self.review_request_details = review_request_details
+        self.request = request
 
     @property
     def value(self):
@@ -431,7 +433,15 @@ class BaseTextAreaField(BaseEditableField):
         This can be overridden if the field needs to check something else
         to determine if the text is in Markdown format.
         """
-        return True
+        if self.field_id == 'text':
+            text_type_key = 'text_type'
+        else:
+            text_type_key = '%s_text_type' % self.field_id
+
+        text_type = self.review_request_details.extra_data.get(
+            text_type_key, 'plain')
+
+        return text_type == 'markdown'
 
     def get_css_classes(self):
         """Returns the list of CSS classes.
@@ -442,8 +452,9 @@ class BaseTextAreaField(BaseEditableField):
         css_classes = super(BaseTextAreaField, self).get_css_classes()
 
         if (self.enable_markdown and self.value and
-            (self.always_render_markdown or
-             self.is_text_markdown(self.value))):
+            (self.should_render_as_markdown(self.value) or
+             (self.request.user and
+              is_rich_text_default_for_user(self.request.user)))):
             css_classes.add('rich-text')
 
         return css_classes
@@ -451,15 +462,18 @@ class BaseTextAreaField(BaseEditableField):
     def get_data_attributes(self):
         attrs = super(BaseTextAreaField, self).get_data_attributes()
 
-        if self.always_render_markdown or self.is_text_markdown(self.value):
-            attrs['rich-text'] = 'true'
-
-            if self.is_text_markdown(self.value):
-                norm_value = self.value
+        if self.enable_markdown:
+            if self.request:
+                user = self.request.user
             else:
-                norm_value = markdown_escape(self.value)
+                user = None
 
-            attrs['raw-value'] = norm_value
+            attrs.update({
+                'allow-markdown': True,
+                'raw-value': normalize_text_for_edit(
+                    user, self.value,
+                    self.should_render_as_markdown(self.value)),
+            })
 
         return attrs
 
@@ -471,10 +485,18 @@ class BaseTextAreaField(BaseEditableField):
         """
         text = text or ''
 
-        if self.enable_markdown and self.value and self.is_text_markdown(text):
+        if self.should_render_as_markdown(text):
             return render_markdown(text)
         else:
             return escape(text)
+
+    def should_render_as_markdown(self, value):
+        """Returns whether the text should be rendered as Markdown.
+
+        By default, this checks if the field is set to always render
+        any text as Markdown, or if the given text is in Markdown format.
+        """
+        return self.always_render_markdown or self.is_text_markdown(value)
 
     def render_change_entry_html(self, info):
         old_value = ''

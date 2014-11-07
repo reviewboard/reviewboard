@@ -8,6 +8,6 @@
       <span class="timestamp">{% localtime on %}{% blocktrans with timestamp as timestamp and timestamp|date:"c" as timestamp_raw %}<time class="timesince" datetime="{{timestamp_raw}}">{{timestamp}}</time> ({{timestamp}}){% endblocktrans %}{% endlocaltime %}</span>
       </label>
      </dt>
-     <dd><pre id="{% if draft %}draft{% endif %}comment_{{context_id}}-{{id}}" data-rich-text="true" data-raw-value="{{text}}" class="reviewtext rich-text">{{text|render_markdown:rich_text}}</pre></dd>
+     <dd><pre id="{% if draft %}draft{% endif %}comment_{{context_id}}-{{id}}" data-raw-value="{% normalize_text_for_edit text rich_text %}" class="reviewtext {% rich_text_classname rich_text %}">{{text|render_markdown:rich_text}}</pre></dd>
     </dl>
    </li>

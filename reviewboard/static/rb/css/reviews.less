@@ -168,7 +168,7 @@
   font-size: 8pt;
   font-weight: normal;
   float: right;
-  line-height: 16px;
+  line-height: 25px;
   margin-right: 0.5em;
   text-decoration: none;
 
@@ -219,16 +219,20 @@
       border: none;
     }
 
-    &>pre {
-      .pre-wrap;
-      background-color: #FFFFFF;
-      border: @textarea-border;
-      margin: @textarea-editor-margin;
-      padding: @textarea-editor-padding;
-    }
-
     .editable.loading {
       .rich-text-loading();
+    }
+
+    .field-container {
+      position: relative;
+
+      &>pre {
+        .pre-wrap;
+        background-color: #FFFFFF;
+        border: @textarea-border;
+        margin: @textarea-editor-margin;
+        padding: @textarea-editor-padding;
+      }
     }
   }
 
@@ -1184,19 +1188,10 @@
   .edit-field {
     margin: 1em 0;
 
-    label {
-      .inline-editor-label();
-    }
-
-    textarea {
-      background-color: @textarea-editor-background;
-      border: @textarea-border;
-      font-size: @textarea-font-size;
-      margin: @textarea-editor-margin;
-      padding: @textarea-editor-padding;
-      width: 100%;
-      height: 1.5em;
-      .box-sizing(border-box);
+    .comment-text-field {
+      label {
+        .inline-editor-label();
+      }
     }
   }
 
@@ -1606,10 +1601,6 @@
     padding: 0;
   }
 
-  textarea {
-    font-size: 10pt;
-  }
-
   img.ui-resizable-grip {
     /* Use -1 for bottom and right so it overlaps the resize borders. */
     bottom: -1px;
@@ -1618,6 +1609,10 @@
     position: absolute;
     right: -1px;
     z-index: @z-index-deco;
+  }
+
+  .markdown-info {
+    line-height: 16px;
   }
 
   .status {
@@ -1780,7 +1775,7 @@
 #draft-banner,
 #discard-banner,
 #submitted-banner {
-  label {
+  p label {
     .inline-editor-label();
   }
 

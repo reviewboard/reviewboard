@@ -124,6 +124,7 @@ defaults.update({
     'auth_x509_username_regex':            '',
     'auth_x509_autocreate_users':          False,
     'company':                             '',
+    'default_use_rich_text':               True,
     'diffviewer_context_num_lines':        5,
     'diffviewer_include_space_patterns':   [],
     'diffviewer_max_diff_size':            0,

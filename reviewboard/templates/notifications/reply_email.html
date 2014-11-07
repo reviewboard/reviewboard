@@ -8,7 +8,7 @@
 <blockquote style="margin-left: 1em; border-left: 2px solid #d0d0d0; padding-left: 10px;">
  <p style="margin-top: 0;">On {{review.time_emailed|date:"F jS, Y, P T"}}, <b>{{review.user|user_displayname}}</b> wrote:</p>
  <blockquote style="margin-left: 1em; border-left: 2px solid #d0d0d0; padding-left: 10px;">
-  <pre style="{{precss}}">{{review.body_top|markdown_email_html:review.rich_text}}</pre>
+  <pre style="{{precss}}">{{review.body_top|markdown_email_html:review.body_top_rich_text}}</pre>
  </blockquote>
 {%  endif %}
 {%  for reply_review in review.public_replies %}
@@ -16,7 +16,7 @@
 {%    if reply_review != reply %}
  <p>On {{reply_review.timestamp|date:"F jS, Y, P T"}}, <b>{{reply_review.user|user_displayname}}</b> wrote:</p>
  <blockquote style="margin-left: 1em; border-left: 2px solid #d0d0d0; padding-left: 10px;">
-  <pre style="{{precss}}">{{reply_review.body_top|markdown_email_html:reply_review.rich_text}}</pre>
+  <pre style="{{precss}}">{{reply_review.body_top|markdown_email_html:reply_review.body_top_rich_text}}</pre>
  </blockquote>
 {%    endif %}
 {%   endif %}
@@ -24,7 +24,7 @@
 {%  if review.body_top %}
 </blockquote>
 {%  endif %}
-<pre style="{{precss}}">{{reply.body_top|markdown_email_html:reply.rich_text}}</pre>
+<pre style="{{precss}}">{{reply.body_top|markdown_email_html:reply.body_top_rich_text}}</pre>
 <br />
 {% endif %}
 
@@ -126,7 +126,7 @@
 <blockquote style="margin-left: 1em; border-left: 2px solid #d0d0d0; padding-left: 10px;">
  <p style="margin-top: 0;">On {{review.time_emailed|date:"F jS, Y, P T"}}, <b>{{review.user|user_displayname}}</b> wrote:</p>
  <blockquote style="margin-left: 1em; border-left: 2px solid #d0d0d0; padding-left: 10px;">
-  <pre style="{{precss}}">{{review.body_bottom|markdown_email_html:review.rich_text}}</pre>
+  <pre style="{{precss}}">{{review.body_bottom|markdown_email_html:review.body_bottom_rich_text}}</pre>
  </blockquote>
 {%  endif %}
 {%  for reply_review in review.public_replies %}
@@ -134,7 +134,7 @@
 {%    if reply_review != reply %}
  <p>On {{reply_review.timestamp|date:"F jS, Y, P T"}}, <b>{{reply_review.user|user_displayname}}</b> wrote:</p>
  <blockquote style="margin-left: 1em; border-left: 2px solid #d0d0d0; padding-left: 10px;">
-  <pre style="{{precss}}">{{reply_review.body_bottom|markdown_email_html:reply_review.rich_text}}</pre>
+  <pre style="{{precss}}">{{reply_review.body_bottom|markdown_email_html:reply_review.body_bottom_rich_text}}</pre>
  </blockquote>
 {%    endif %}
 {%   endif %}
@@ -142,7 +142,7 @@
 {%  if review.body_bottom %}
 </blockquote>
 {%  endif %}
-<pre style="{{precss}}">{{reply.body_bottom|markdown_email_html:reply.rich_text}}</pre>
+<pre style="{{precss}}">{{reply.body_bottom|markdown_email_html:reply.body_bottom_rich_text}}</pre>
 <br />
 {% endif %}
 

@@ -593,8 +593,8 @@ RB.BaseResource = Backbone.Model.extend({
         if (method === 'read') {
             data = options.data || {};
 
-            if (this.extraQueryArgs.length > 0) {
-                _.extend(data, this.extraQueryArgs);
+            if (!_.isEmpty(this.extraQueryArgs)) {
+                data = _.extend({}, this.extraQueryArgs, data);
             }
         } else {
             data = options.form ? null

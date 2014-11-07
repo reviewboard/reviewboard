@@ -337,7 +337,7 @@ class DiffResource(WebAPIResource):
         draft.save()
 
         if extra_fields:
-            self._import_extra_data(diffset.extra_data, extra_fields)
+            self.import_extra_data(diffset, diffset.extra_data, extra_fields)
             diffset.save(update_fields=['extra_data'])
 
         if discarded_diffset:
@@ -377,7 +377,7 @@ class DiffResource(WebAPIResource):
             return self._no_access_error(request.user)
 
         if extra_fields:
-            self._import_extra_data(diffset.extra_data, extra_fields)
+            self.import_extra_data(diffset, diffset.extra_data, extra_fields)
             diffset.save(update_fields=['extra_data'])
 
         return 200, {

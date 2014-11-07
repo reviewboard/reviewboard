@@ -121,7 +121,8 @@ RB.DraftResourceModelMixin = {
      * an existing draft if one exists.
      */
     _retrieveDraft: function(options, context) {
-        var self = this;
+        var self = this,
+            data;
 
         if (!RB.UserSession.instance.get('authenticated')) {
             if (options.error) {
@@ -133,7 +134,16 @@ RB.DraftResourceModelMixin = {
             return;
         }
 
+        options = options || {};
+        data = options.data || {};
+
+        if (!_.isEmpty(this.extraQueryArgs)) {
+            data = _.extend({}, this.extraQueryArgs, data);
+        }
+
         Backbone.Model.prototype.fetch.call(this, {
+            data: data,
+            processData: true,
             success: function() {
                 /*
                  * There was an existing draft, and we were redirected to it

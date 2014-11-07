@@ -14,14 +14,6 @@ class ReviewResource(BaseReviewResource):
     file attachments. It may also have text preceding the comments (the
     ``body_top`` field), and text following the comments (``body_bottom``).
 
-    If the ``text_type`` field is set to ``markdown``, then the ``body_top``
-    and ``body_bottom`` fields should be interpreted by the client as Markdown
-    text.
-
-    The returned text in the payload can be provided in a different format
-    by passing ``?force-text-type=`` in the request. This accepts all the
-    possible values listed in the ``text_type`` field below.
-
     A review may have replies made. Replies are flat, not threaded. Like a
     review, there may be body text and there may be comments (which are replies
     to comments on the parent review).

@@ -69,14 +69,6 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
     When a review request is published, it can be reviewed by users. It can
     then be updated, again through the Review Request Draft resource, or closed
     as submitted or discarded.
-
-    If the ``text_type`` field is set to ``markdown``, then the ``description``
-    and ``testing_done`` fields should be interpreted by the client as Markdown
-    text.
-
-    The returned text in the payload can be provided in a different format
-    by passing ``?force-text-type=`` in the request. This accepts all the
-    possible values listed in the ``text_type`` field below.
     """
     model = ReviewRequest
     name = 'review_request'
@@ -113,8 +105,14 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
             'type': six.text_type,
             'description': 'The text describing the closing of the review '
                            'request.',
-            'added_in': '2.0.9',
+            'added_in': '2.0.12',
             'supports_text_types': True,
+        },
+        'close_description_text_type': {
+            'type': MarkdownFieldsMixin.TEXT_TYPES,
+            'description': 'The current or forced text type for the '
+                           'close_description field.',
+            'added_in': '2.0.12',
         },
         'depends_on': {
             'type': ['reviewboard.webapi.resources.review_request.'
@@ -161,9 +159,13 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
         },
         'text_type': {
             'type': MarkdownFieldsMixin.TEXT_TYPES,
-            'description': 'The mode for the review request description '
-                           'and testing_done fields.',
+            'description': 'Formerly responsible for indicating the text '
+                           'type for text fields. Replaced by '
+                           'close_description_text_type, '
+                           'description_text_type, and '
+                           'testing_done_text_type in 2.0.12.',
             'added_in': '2.0',
+            'deprecated_in': '2.0.12',
         },
         'status': {
             'type': ('discarded', 'pending', 'submitted'),
@@ -212,11 +214,23 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
             'description': "The review request's description.",
             'supports_text_types': True,
         },
+        'description_text_type': {
+            'type': MarkdownFieldsMixin.TEXT_TYPES,
+            'description': 'The current or forced text type for the '
+                           'description field.',
+            'added_in': '2.0.12',
+        },
         'testing_done': {
             'type': six.text_type,
             'description': 'The information on the testing that was done '
                            'for the change.',
             'supports_text_types': True,
+        },
+        'testing_done_text_type': {
+            'type': MarkdownFieldsMixin.TEXT_TYPES,
+            'description': 'The current or forced text type for the '
+                           'testing_done field.',
+            'added_in': '2.0.12',
         },
         'bugs_closed': {
             'type': [six.text_type],
@@ -412,6 +426,22 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
     def has_delete_permissions(self, request, review_request, *args, **kwargs):
         return review_request.is_deletable_by(request.user)
 
+    def get_extra_data_field_supports_markdown(self, review_request, key):
+        field_cls = get_review_request_field(key)
+
+        return field_cls and getattr(field_cls, 'enable_markdown', False)
+
+    def get_is_close_description_rich_text(self, obj):
+        if obj.status in (obj.SUBMITTED, obj.DISCARDED):
+            if hasattr(obj, '_close_description'):
+                # This was set when updating the description in a POST, so
+                # use that instead of looking up from the database again.
+                return obj._close_description_rich_text
+            else:
+                return obj.get_close_description()[1]
+        else:
+            return False
+
     def serialize_bugs_closed_field(self, obj, **kwargs):
         return obj.get_bug_list()
 
@@ -426,16 +456,23 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
         else:
             return None
 
-    def get_extra_data_field_supports_markdown(self, review_request, key):
-        field_cls = get_review_request_field(key)
+    def serialize_close_description_text_type_field(self, obj, **kwargs):
+        # This will be overridden by MarkdownFieldsMixin.
+        return None
 
-        return field_cls and getattr(field_cls, 'enable_markdown', False)
+    def serialize_description_text_type_field(self, obj, **kwargs):
+        # This will be overridden by MarkdownFieldsMixin.
+        return None
 
     def serialize_ship_it_count_field(self, obj, **kwargs):
         return obj.shipit_count
 
     def serialize_status_field(self, obj, **kwargs):
         return status_to_string(obj.status)
+
+    def serialize_testing_done_text_type_field(self, obj, **kwargs):
+        # This will be overridden by MarkdownFieldsMixin.
+        return None
 
     def serialize_id_field(self, obj, **kwargs):
         return obj.display_id
@@ -599,8 +636,9 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
                 create_from_commit_id=create_from_commit_id)
 
             if extra_fields:
-                self._import_extra_data(review_request.extra_data,
-                                        extra_fields)
+                self.import_extra_data(review_request,
+                                       review_request.extra_data,
+                                       extra_fields)
                 review_request.save(update_fields=['extra_data'])
 
             return 201, {
@@ -676,6 +714,14 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
                                '\n'
                                'This replaces the old ``description`` field.',
                 'added_in': '2.0.9',
+                'supports_text_types': True,
+            },
+            'close_description_text_type': {
+                'type': MarkdownFieldsMixin.SAVEABLE_TEXT_TYPES,
+                'description': 'The text type for the close description '
+                               'of the update field.',
+                'added_in': '2.0',
+                'deprecated_in': '2.0.12',
             },
             'description': {
                 'type': six.text_type,
@@ -686,6 +732,7 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
                                'This is deprecated. Instead, set '
                                '``close_description``.',
                 'deprecated_in': '2.0.9',
+                'supports_text_types': True,
             },
             'force_text_type': {
                 'type': MarkdownFieldsMixin.TEXT_TYPES,
@@ -696,14 +743,20 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
             },
             'text_type': {
                 'type': MarkdownFieldsMixin.SAVEABLE_TEXT_TYPES,
-                'description': 'The text mode for the description of the '
-                               'update field. The default is "plain".',
+                'description': 'The text type for the close description '
+                               'of the update field.\n'
+                               '\n'
+                               'This is deprecated. Please use '
+                               'close_description_text_type instead.',
+                'added_in': '2.0',
+                'deprecated_in': '2.0.12',
             },
         },
         allow_unknown=True
     )
     def update(self, request, status=None, changenum=None,
-               close_description=None, description=None, text_type=None,
+               close_description=None, close_description_text_type=None,
+               description=None, text_type=None,
                extra_fields={}, *args, **kwargs):
         """Updates the status of the review request.
 
@@ -753,16 +806,24 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
             try:
                 if status in self._close_type_map:
                     close_description = close_description or description
+                    close_description_text_type = \
+                        close_description_text_type or text_type
+
+                    close_description_rich_text = (
+                        close_description_text_type ==
+                        self.TEXT_TYPE_MARKDOWN)
 
                     review_request.close(
                         self._close_type_map[status],
                         request.user,
                         close_description,
-                        rich_text=(text_type == self.TEXT_TYPE_MARKDOWN))
+                        rich_text=close_description_rich_text)
 
                     # Set this so that we'll return this new value when
                     # serializing the object.
                     review_request._close_description = close_description
+                    review_request._close_description_rich_text = \
+                        close_description_rich_text
                 elif status == 'pending':
                     review_request.reopen(request.user)
                 else:
@@ -796,7 +857,8 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
             review_request.reopen()
 
         if extra_fields:
-            self._import_extra_data(review_request.extra_data, extra_fields)
+            self.import_extra_data(review_request, review_request.extra_data,
+                                   extra_fields)
             review_request.save(update_fields=['extra_data'])
 
         return 200, {

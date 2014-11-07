@@ -13,18 +13,23 @@
 RB.formatText = function($el, options) {
     options = options || {};
 
-    if ($el.data('rich-text')) {
+    if (options.richText) {
         if (options.newText !== undefined) {
-            $el
-                .html(options.newText)
-                .addClass('rich-text');
+            $el.html(options.newText)
         }
 
-        $el.find('a').attr('target', '_blank');
+        $el
+            .addClass('rich-text')
+            .find('a')
+                .attr('target', '_blank');
+
         RB.LinkifyUtils.linkifyChildren($el[0], options.bugTrackerURL);
     } else if (options.newText !== undefined) {
-        $el.html(RB.LinkifyUtils.linkifyText(options.text,
-                                             options.bugTrackerURL));
+        $el
+            .html(RB.LinkifyUtils.linkifyText(options.newText || '',
+                                              options.bugTrackerURL,
+                                              options.isHTMLEncoded))
+            .removeClass('rich-text');
     }
 };
 

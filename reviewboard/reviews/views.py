@@ -48,6 +48,7 @@ from reviewboard.reviews.context import (comment_counts,
                                          interdiffs_with_comments,
                                          make_review_request_context)
 from reviewboard.reviews.fields import get_review_request_fieldsets
+from reviewboard.reviews.markdown_utils import is_rich_text_default_for_user
 from reviewboard.reviews.models import (BaseComment, Comment,
                                         FileAttachmentComment,
                                         ReviewRequest, Review,
@@ -420,9 +421,10 @@ def review_detail(request,
 
     blocks = review_request.get_blocks()
 
-    etag = "%s:%s:%s:%s:%s:%s:%s:%s" % (
+    etag = "%s:%s:%s:%s:%s:%s:%s:%s:%s" % (
         request.user, last_activity_time, draft_timestamp,
         review_timestamp, review_request.last_review_activity_timestamp,
+        is_rich_text_default_for_user(request.user),
         ','.join([six.text_type(r.pk) for r in blocks]),
         int(starred), settings.AJAX_SERIAL
     )
@@ -651,9 +653,10 @@ def review_detail(request,
                     fields_changed_groups.append(cur_field_changed_group)
 
                 if hasattr(field_cls, 'locals_vars'):
-                    field = field_cls(review_request, locals_vars=locals())
+                    field = field_cls(review_request, request=request,
+                                      locals_vars=locals())
                 else:
-                    field = field_cls(review_request)
+                    field = field_cls(review_request, request=request)
 
                 cur_field_changed_group['fields'] += \
                     field.get_change_entry_sections_html(

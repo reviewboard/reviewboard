@@ -81,6 +81,41 @@ suite('rb/models/ReviewRequestEditor', function() {
             });
         });
 
+        describe('getDraftField', function() {
+            var value;
+
+            it('For closeDescription', function() {
+                reviewRequest.set('closeDescription', 'Test');
+
+                value = editor.getDraftField('closeDescription', {});
+                expect(value).toBe('Test');
+            });
+
+            it('For closeDescriptionRichText', function() {
+                reviewRequest.set('closeDescriptionRichText', true);
+
+                value = editor.getDraftField('closeDescriptionRichText', {});
+                expect(value).toBe(true);
+            });
+
+            it('For draft fields', function() {
+                reviewRequest.draft.set('description', 'Test');
+
+                value = editor.getDraftField('description', {});
+                expect(value).toBe('Test');
+            });
+
+            it('For custom fields', function() {
+                reviewRequest.draft.get('extraData').foo = 'Test';
+
+                value = editor.getDraftField('bar', {
+                    useExtraData: true,
+                    fieldID: 'foo'
+                });
+                expect(value).toBe('Test');
+            });
+        });
+
         describe('setDraftField', function() {
             var callbacks,
                 draft;
@@ -142,56 +177,104 @@ suite('rb/models/ReviewRequestEditor', function() {
                 });
             });
 
-            describe('Special fields', function() {
+            describe('Rich text fields', function() {
                 describe('changeDescription', function() {
-                    it('Draft description', function() {
-                        spyOn(reviewRequest, 'close');
-                        spyOn(reviewRequest.draft, 'save');
+                    describe('Draft description', function() {
+                        function testDraftDescription(richText, textType) {
+                            spyOn(reviewRequest, 'close');
+                            spyOn(reviewRequest.draft, 'save');
 
-                        editor.setDraftField('closeDescription',
-                                             'My description');
+                            editor.setDraftField(
+                                'changeDescription',
+                                'My description',
+                                {
+                                    allowMarkdown: true,
+                                    fieldID: 'changedescription',
+                                    richText: richText,
+                                    jsonFieldName: 'changedescription',
+                                    jsonTextTypeFieldName:
+                                        'changedescription_text_type'
+                                });
 
-                        expect(reviewRequest.close).not.toHaveBeenCalled();
-                        expect(reviewRequest.draft.save).toHaveBeenCalled();
+                            expect(reviewRequest.close)
+                                .not.toHaveBeenCalled();
+                            expect(reviewRequest.draft.save)
+                                .toHaveBeenCalled();
+
+                            expect(
+                                reviewRequest.draft.save.calls[0].args[0].data
+                            ).toEqual({
+                                changedescription_text_type: textType,
+                                changedescription: 'My description',
+                                force_text_type: 'html',
+                                include_text_types: 'raw'
+                            });
+                        }
+
+                        it('For Markdown', function() {
+                            testDraftDescription(true, 'markdown');
+                        });
+
+                        it('For plain text', function() {
+                            testDraftDescription(false, 'plain');
+                        });
                     });
                 });
 
                 describe('closeDescription', function() {
-                    it('Discarded description', function() {
+                    function testCloseDescription(closeType, richText) {
                         spyOn(reviewRequest, 'close')
                             .andCallFake(function(options) {
-                                expect(options.type).toBe(
-                                    RB.ReviewRequest.CLOSE_DISCARDED);
+                                expect(options.type).toBe(closeType);
                                 expect(options.description)
                                     .toBe('My description');
+                                expect(options.richText).toBe(richText);
                             });
 
                         editor.setDraftField('closeDescription',
                                              'My description', {
-                            closeType: RB.ReviewRequest.CLOSE_DISCARDED
+                            closeType: closeType,
+                            richText: richText
                         });
 
                         expect(reviewRequest.close).toHaveBeenCalled();
+                    }
+
+                    describe('Discarded description', function() {
+                        it('For Markdown', function() {
+                            testCloseDescription(
+                                RB.ReviewRequest.CLOSE_DISCARDED,
+                                true,
+                                'markdown');
+                        });
+
+                        it('For plain text', function() {
+                            testCloseDescription(
+                                RB.ReviewRequest.CLOSE_DISCARDED,
+                                false,
+                                'plain');
+                        });
                     });
 
-                    it('Submitted description', function() {
-                        spyOn(reviewRequest, 'close')
-                            .andCallFake(function(options) {
-                                expect(options.type).toBe(
-                                    RB.ReviewRequest.CLOSE_SUBMITTED);
-                                expect(options.description)
-                                    .toBe('My description');
-                            });
-
-                        editor.setDraftField('closeDescription',
-                                             'My description', {
-                            closeType: RB.ReviewRequest.CLOSE_SUBMITTED
+                    describe('Submitted description', function() {
+                        it('For Markdown', function() {
+                            testCloseDescription(
+                                RB.ReviewRequest.CLOSE_SUBMITTED,
+                                true,
+                                'markdown');
                         });
 
-                        expect(reviewRequest.close).toHaveBeenCalled();
+                        it('For plain text', function() {
+                            testCloseDescription(
+                                RB.ReviewRequest.CLOSE_SUBMITTED,
+                                false,
+                                'plain');
+                        });
                     });
                 });
+            });
 
+            describe('Special list fields', function() {
                 describe('targetGroups', function() {
                     it('Empty', function() {
                         spyOn(draft, 'save')
@@ -290,6 +373,46 @@ suite('rb/models/ReviewRequestEditor', function() {
                         expect(callbacks.error).toHaveBeenCalledWith({
                             errorText: "Users 'user1' and 'user2' do not exist."
                         });
+                    });
+                });
+            });
+
+            describe('Custom fields', function() {
+                describe('Rich text fields', function() {
+                    function testFields(richText, textType) {
+                        spyOn(reviewRequest.draft, 'save');
+
+                        editor.setDraftField(
+                            'myField',
+                            'Test text.',
+                            {
+                                allowMarkdown: true,
+                                useExtraData: true,
+                                fieldID: 'myfield',
+                                richText: richText,
+                                jsonFieldName: 'myfield',
+                                jsonTextTypeFieldName:
+                                    'myfield_text_type'
+                            });
+
+                        expect(reviewRequest.draft.save)
+                            .toHaveBeenCalled();
+                        expect(
+                            reviewRequest.draft.save.calls[0].args[0].data
+                        ).toEqual({
+                            'extra_data.myfield_text_type': textType,
+                            'extra_data.myfield': 'Test text.',
+                            force_text_type: 'html',
+                            include_text_types: 'raw'
+                        });
+                    }
+
+                    it('For Markdown', function() {
+                        testFields(true, 'markdown');
+                    });
+
+                    it('For plain text', function() {
+                        testFields(false, 'plain');
                     });
                 });
             });
