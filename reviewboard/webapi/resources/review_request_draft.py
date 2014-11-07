@@ -518,8 +518,7 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
                 try:
                     if field_name == "target_groups":
                         obj = Group.objects.get(
-                            (Q(name__iexact=value) |
-                             Q(display_name__iexact=value)) &
+                            Q(name__iexact=value) &
                             Q(local_site=local_site))
                     elif field_name == "target_people":
                         obj = self._find_user(username=value,
