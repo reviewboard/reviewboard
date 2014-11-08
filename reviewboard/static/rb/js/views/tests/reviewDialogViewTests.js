@@ -247,7 +247,6 @@ suite('rb/views/ReviewDialogView', function() {
 
                         testLoadReview();
 
-                        console.log(review.ready.calls);
                         expect(review.ready.calls[0].args[0].data).toEqual({
                             'force-text-type': 'html',
                             'include-text-types': 'raw,markdown'
