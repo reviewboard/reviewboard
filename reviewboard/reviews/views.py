@@ -1495,9 +1495,18 @@ def review_file_attachment(request, review_request_id, file_attachment_id,
     file_attachment = get_object_or_404(FileAttachment, pk=file_attachment_id)
     review_ui = file_attachment.review_ui
 
-    if review_ui and review_ui.is_enabled_for(user=request.user,
-                                              review_request=review_request,
-                                              file_attachment=file_attachment):
+    try:
+        is_enabled_for = review_ui.is_enabled_for(
+            user=request.user,
+            review_request=review_request,
+            file_attachment=file_attachment)
+    except Exception as e:
+        logging.error('Error when calling is_enabled_for for '
+                      'FileAttachmentReviewUI %r: %s',
+                      review_ui, e, exc_info=1)
+        is_enabled_for = False
+
+    if review_ui and is_enabled_for:
         return review_ui.render_to_response(request)
     else:
         raise Http404
