@@ -1,5 +1,7 @@
 from __future__ import unicode_literals
 
+import logging
+
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
 
@@ -30,21 +32,40 @@ class FileAttachmentComment(BaseComment):
         The thumbnail will be generated from the appropriate ReviewUI,
         if there is one for this type of file.
         """
-        if self.file_attachment.review_ui:
-            return self.file_attachment.review_ui.get_comment_thumbnail(self)
+        review_ui = self.file_attachment.review_ui
+
+        if review_ui:
+            try:
+                return review_ui.get_comment_thumbnail(self)
+            except Exception as e:
+                logging.error('Error when calling get_comment_thumbnail for '
+                              'FileAttachmentReviewUI %r: %s',
+                              review_ui, e, exc_info=1)
         else:
             return ''
 
     def get_absolute_url(self):
         """Returns the URL for this comment."""
-        if self.file_attachment.review_ui:
-            return self.file_attachment.review_ui.get_comment_link_url(self)
+        review_ui = self.file_attachment.review_ui
+        if review_ui:
+            try:
+                return review_ui.get_comment_link_url(self)
+            except Exception as e:
+                logging.error('Error when calling get_comment_thumbnail for '
+                              'FileAttachmentReviewUI %r: %s',
+                              review_ui, e, exc_info=1)
         else:
             return self.file_attachment.get_absolute_url()
 
     def get_link_text(self):
         """Returns the text for the link to the file."""
-        if self.file_attachment.review_ui:
-            return self.file_attachment.review_ui.get_comment_link_text(self)
+        review_ui = self.file_attachment.review_ui
+        if review_ui:
+            try:
+                return review_ui.get_comment_link_text(self)
+            except Exception as e:
+                logging.error('Error when calling get_comment_thumbnail for '
+                              'FileAttachmentReviewUI %r: %s',
+                              review_ui, e, exc_info=1)
         else:
             return self.file_attachment.filename

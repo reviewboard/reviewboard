@@ -371,10 +371,16 @@ def has_usable_review_ui(user, review_request, file_attachment):
     """Returns whether a review UI is set and can be used."""
     review_ui = file_attachment.review_ui
 
-    return (review_ui and
-            review_ui.is_enabled_for(user=user,
-                                     review_request=review_request,
-                                     file_attachment=file_attachment))
+    try:
+        return (review_ui and
+                review_ui.is_enabled_for(user=user,
+                                         review_request=review_request,
+                                         file_attachment=file_attachment))
+    except Exception as e:
+        logging.error('Error when calling is_enabled_for '
+                      'FileAttachmentReviewUI %r: %s',
+                      review_ui, e, exc_info=1)
+        return False
 
 
 @register.filter

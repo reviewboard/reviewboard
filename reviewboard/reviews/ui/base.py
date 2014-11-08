@@ -6,6 +6,7 @@ import os
 from uuid import uuid4
 
 import mimeparse
+from django.core.exceptions import ObjectDoesNotExist
 from django.http import HttpResponse
 from django.template.context import RequestContext
 from django.template.loader import render_to_string
@@ -135,15 +136,24 @@ class ReviewUI(object):
                 'review': self.review_request.get_pending_review(request.user),
                 'review_ui_inline': False,
             })
-
-        context.update(self.get_extra_context(request))
-
-        return render_to_string(
-            self.template_name,
-            RequestContext(
-                request,
-                make_review_request_context(request, self.review_request,
-                                            context)))
+        try:
+            context.update(self.get_extra_context(request))
+        except Exception as e:
+            logging.error('Error when calling get_extra_context for '
+                          'FileAttachmentReviewUI %r: %s',
+                          self, e, exc_info=1)
+        try:
+            return render_to_string(
+                self.template_name,
+                RequestContext(
+                    request,
+                    make_review_request_context(request, self.review_request,
+                                                context)))
+        except Exception as e:
+            logging.error('Error when calling get_js_model_data or '
+                          'get_js_view_data for FileAttachmentReviewUI '
+                          '%r: %s',
+                          self, e, exc_info=1)
 
     def get_comments(self):
         return self.obj.get_comments()
@@ -215,8 +225,13 @@ class ReviewUI(object):
         The result of this can be used directly in a template to provide
         comments to JavaScript functions.
         """
-        return mark_safe(json.dumps(
-            self.serialize_comments(self.get_comments())))
+        try:
+            return mark_safe(json.dumps(
+                self.serialize_comments(self.get_comments())))
+        except Exception as e:
+                logging.error('Error When calling serialize_comments for '
+                              'FileAttachmentReviewUI %r: %s',
+                              self, e, exc_info=1)
 
     def serialize_comments(self, comments):
         """Serializes the comments for the review UI target.
@@ -235,8 +250,13 @@ class ReviewUI(object):
                 logging.error('Missing Review for comment %r' % comment)
                 continue
 
-            if review and (review.public or review.user == user):
-                yield self.serialize_comment(comment)
+            try:
+                if review and (review.public or review.user == user):
+                    yield self.serialize_comment(comment)
+            except Exception as e:
+                logging.error('Error when calling serialize_comment for '
+                              'FileAttachmentReviewUI %r: %s',
+                              self, e, exc_info=1)
 
     def serialize_comment(self, comment):
         """Serializes a comment.
@@ -361,9 +381,13 @@ class FileAttachmentReviewUI(ReviewUI):
             if handler:
                 try:
                     return handler(attachment.get_review_request(), attachment)
-                except Exception as e:
+                except ObjectDoesNotExist as e:
                     logging.error('Unable to load review UI for %s: %s',
                                   attachment, e, exc_info=1)
+                except Exception as e:
+                    logging.error('Error instantiating '
+                                  'FileAttachmentReviewUI %r: %s',
+                                  handler, e, exc_info=1)
 
         return None
 
