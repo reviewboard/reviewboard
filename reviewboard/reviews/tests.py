@@ -8,7 +8,9 @@ from django.conf import settings
 from django.contrib.auth.models import AnonymousUser, User
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.template import Context, Template
+from django.test import RequestFactory
 from django.utils import six
+from django.utils.safestring import SafeText
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.testing.decorators import add_fixtures
 from kgb import SpyAgency
@@ -17,7 +19,8 @@ from reviewboard.accounts.models import Profile, LocalSiteProfile
 from reviewboard.attachments.models import FileAttachment
 from reviewboard.reviews.forms import DefaultReviewerForm, GroupForm
 from reviewboard.reviews.markdown_utils import (markdown_escape,
-                                                markdown_unescape)
+                                                markdown_unescape,
+                                                normalize_text_for_edit)
 from reviewboard.reviews.models import (Comment,
                                         DefaultReviewer,
                                         Group,
@@ -2799,3 +2802,109 @@ class MarkdownUtilsTests(TestCase):
                               '&nbsp;\tcode'),
             ('\tcode\n'
              '\tcode'))
+
+    def test_normalize_text_for_edit_rich_text_default_rich_text(self):
+        """Testing normalize_text_for_edit with rich text and
+        user defaults to rich text
+        """
+        user = User.objects.create_user('test', 'test@example.com')
+        Profile.objects.create(user=user, default_use_rich_text=True)
+
+        text = normalize_text_for_edit(user, text='&lt; "test" **foo**',
+                                       rich_text=True)
+        self.assertEqual(text, '&amp;lt; &quot;test&quot; **foo**')
+        self.assertTrue(isinstance(text, SafeText))
+
+    def test_normalize_text_for_edit_plain_text_default_rich_text(self):
+        """Testing normalize_text_for_edit with plain text and
+        user defaults to rich text
+        """
+        user = User.objects.create_user('test', 'test@example.com')
+        Profile.objects.create(user=user, default_use_rich_text=True)
+
+        text = normalize_text_for_edit(user, text='&lt; "test" **foo**',
+                                       rich_text=False)
+        self.assertEqual(text, r'&amp;lt; &quot;test&quot; \*\*foo\*\*')
+        self.assertTrue(isinstance(text, SafeText))
+
+    def test_normalize_text_for_edit_rich_text_default_plain_text(self):
+        """Testing normalize_text_for_edit with rich text and
+        user defaults to plain text
+        """
+        user = User.objects.create_user('test', 'test@example.com')
+        Profile.objects.create(user=user, default_use_rich_text=False)
+
+        text = normalize_text_for_edit(user, text='&lt; "test" **foo**',
+                                       rich_text=True)
+        self.assertEqual(text, '&amp;lt; &quot;test&quot; **foo**')
+        self.assertTrue(isinstance(text, SafeText))
+
+    def test_normalize_text_for_edit_plain_text_default_plain_text(self):
+        """Testing normalize_text_for_edit with plain text and
+        user defaults to plain text
+        """
+        user = User.objects.create_user('test', 'test@example.com')
+        Profile.objects.create(user=user, default_use_rich_text=False)
+
+        text = normalize_text_for_edit(user, text='&lt; "test" **foo**',
+                                       rich_text=True)
+        self.assertEqual(text, '&amp;lt; &quot;test&quot; **foo**')
+        self.assertTrue(isinstance(text, SafeText))
+
+    def test_normalize_text_for_edit_rich_text_no_escape(self):
+        """Testing normalize_text_for_edit with rich text and not
+        escaping to HTML
+        """
+        user = User.objects.create_user('test', 'test@example.com')
+        Profile.objects.create(user=user, default_use_rich_text=False)
+
+        text = normalize_text_for_edit(user, text='&lt; "test" **foo**',
+                                       rich_text=True, escape_html=False)
+        self.assertEqual(text, '&lt; "test" **foo**')
+        self.assertFalse(isinstance(text, SafeText))
+
+    def test_normalize_text_for_edit_plain_text_no_escape(self):
+        """Testing normalize_text_for_edit with plain text and not
+        escaping to HTML
+        """
+        user = User.objects.create_user('test', 'test@example.com')
+        Profile.objects.create(user=user, default_use_rich_text=False)
+
+        text = normalize_text_for_edit(user, text='&lt; "test" **foo**',
+                                       rich_text=True, escape_html=False)
+        self.assertEqual(text, '&lt; "test" **foo**')
+        self.assertFalse(isinstance(text, SafeText))
+
+
+class MarkdownTemplateTagsTests(TestCase):
+    """Unit tests for Markdown-related template tags."""
+    def setUp(self):
+        super(MarkdownTemplateTagsTests, self).setUp()
+
+        self.user = User.objects.create_user('test', 'test@example.com')
+        Profile.objects.create(user=self.user, default_use_rich_text=False)
+
+        request_factory = RequestFactory()
+        request = request_factory.get('/')
+
+        request.user = self.user
+        self.context = Context({
+            'request': request,
+        })
+
+    def test_normalize_text_for_edit_escape_html(self):
+        """Testing {% normalize_text_for_edit %} escaping for HTML"""
+        t = Template(
+            "{% load reviewtags %}"
+            "{% normalize_text_for_edit '&lt;foo **bar**' True %}")
+
+        self.assertEqual(t.render(self.context), '&amp;lt;foo **bar**')
+
+    def test_normalize_text_for_edit_escaping_js(self):
+        """Testing {% normalize_text_for_edit %} escaping for JavaScript"""
+        t = Template(
+            "{% load reviewtags %}"
+            "{% normalize_text_for_edit '&lt;foo **bar**' True True %}")
+
+        self.assertEqual(t.render(self.context),
+                         '\\u0026lt\\u003Bfoo **bar**')

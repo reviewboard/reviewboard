@@ -507,7 +507,8 @@ def _render_markdown(text, is_rich_text):
 @register.tag('normalize_text_for_edit')
 @basictag(takes_context=True)
 def _normalize_text_for_edit(context, text, rich_text, escape_js=False):
-    text = normalize_text_for_edit(context['request'].user, text, rich_text)
+    text = normalize_text_for_edit(context['request'].user, text, rich_text,
+                                   escape_html=not escape_js)
 
     if escape_js:
         text = escapejs(text)
