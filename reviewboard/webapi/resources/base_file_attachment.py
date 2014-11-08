@@ -302,15 +302,16 @@ class BaseFileAttachmentResource(WebAPIResource):
             return self._no_access_error(request.user)
 
         if file_attachment.attachment_history_id is None:
-            draft.file_attachments.remove(file_attachment)
             draft.inactive_file_attachments.add(file_attachment)
+            draft.file_attachments.remove(file_attachment)
         else:
             # "Delete" all revisions of the given file
             all_revs = FileAttachment.objects.filter(
                 attachment_history=file_attachment.attachment_history_id)
+
             for revision in all_revs:
-                draft.file_attachments.remove(revision)
                 draft.inactive_file_attachments.add(revision)
+                draft.file_attachments.remove(revision)
 
         draft.save()
 

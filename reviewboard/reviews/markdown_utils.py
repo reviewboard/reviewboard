@@ -6,6 +6,7 @@ from xml.dom.minidom import parseString
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Model
 from django.utils import six
+from django.utils.html import escape
 from django.utils.six.moves import cStringIO as StringIO
 from djblets.siteconfig.models import SiteConfiguration
 from markdown import Markdown, markdown, markdownFromFile
@@ -128,7 +129,7 @@ def markdown_unescape_field(obj, field_name):
                         % obj)
 
 
-def normalize_text_for_edit(user, text, rich_text):
+def normalize_text_for_edit(user, text, rich_text, escape_html=True):
     """Normalizes text, converting it for editing.
 
     This will normalize text for editing based on the rich_text flag and
@@ -145,6 +146,9 @@ def normalize_text_for_edit(user, text, rich_text):
         # This isn't rich text, but it's going to be edited as rich text,
         # so escape it.
         text = markdown_escape(text)
+
+    if escape_html:
+        text = escape(text)
 
     return text
 

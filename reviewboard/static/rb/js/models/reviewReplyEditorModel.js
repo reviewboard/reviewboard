@@ -13,6 +13,7 @@ RB.ReviewReplyEditor = Backbone.Model.extend({
         replyObject: null,
         review: null,
         reviewReply: null,
+        richText: null,
         text: ''
     },
 
@@ -79,7 +80,7 @@ RB.ReviewReplyEditor = Backbone.Model.extend({
 
                 if (text) {
                     obj.set(valueAttr, text);
-                    obj.set(richTextAttr, true);
+                    obj.set(richTextAttr, this.get('richText'));
                     obj.set({
                         forceTextType: 'html',
                         includeTextTypes: 'raw'
@@ -89,7 +90,8 @@ RB.ReviewReplyEditor = Backbone.Model.extend({
                         success: function() {
                             this.set({
                                 hasDraft: true,
-                                text: obj.get(valueAttr)
+                                text: obj.get(valueAttr),
+                                richText: obj.get(richTextAttr)
                             });
                             this.trigger('saved');
                         }

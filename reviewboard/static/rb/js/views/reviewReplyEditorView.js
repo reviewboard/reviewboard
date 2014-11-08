@@ -20,7 +20,7 @@ RB.ReviewReplyEditorView = Backbone.View.extend({
         '<% } %>',
         '   </label>',
         '  </dt>',
-        '  <dd><pre id="<%= id %>" class="reviewtext rich-text">',
+        '  <dd><pre id="<%= id %>" class="reviewtext">',
         '<%- text %></pre></dd>',
         ' </dl>',
         '</li>'
@@ -45,6 +45,7 @@ RB.ReviewReplyEditorView = Backbone.View.extend({
      */
     render: function() {
         var $draftComment,
+            $reviewText,
             $time;
 
         this._$addCommentLink = this.$('.add_comment_link');
@@ -55,26 +56,29 @@ RB.ReviewReplyEditorView = Backbone.View.extend({
 
         if ($draftComment.length !== 0) {
             $time = $draftComment.find('time');
+            $reviewText = $draftComment.find('.reviewtext');
 
             this.model.set({
                 commentID: $draftComment.data('comment-id'),
-                text: $draftComment.find('pre.reviewtext').html(),
+                text: $reviewText.html(),
                 timestamp: new Date($time.attr('datetime')),
+                richText: $reviewText.hasClass('rich-text'),
                 hasDraft: true
             });
             this._createCommentEditor($draftComment);
         }
 
-        this.model.on('change:text', function(model, text) {
+        this.listenTo(this.model, 'change:text change:richText', function() {
             var reviewRequest = this.model.get('review').get('parentObject');
 
             if (this._$editor) {
                 RB.formatText(this._$editor, {
-                    newText: text,
+                    newText: this.model.get('text'),
+                    richText: this.model.get('richText'),
                     bugTrackerURL: reviewRequest.get('bugTrackerURL')
                 });
             }
-        }, this);
+        });
 
         this.model.on('resetState', function() {
             if (this._$draftComment) {
@@ -193,6 +197,7 @@ RB.ReviewReplyEditorView = Backbone.View.extend({
         if (options.text) {
             RB.formatText($el.find('.reviewtext'), {
                 newText: options.text,
+                richText: options.richText,
                 bugTrackerURL: reviewRequest.get('bugTrackerURL')
             });
         }
@@ -223,6 +228,7 @@ RB.ReviewReplyEditorView = Backbone.View.extend({
             this._$draftComment.replaceWith(this._makeCommentElement({
                 commentID: this.model.get('commentID'),
                 text: this.model.get('text'),
+                richText: this.model.get('richText'),
                 isDraft: false
             }));
 

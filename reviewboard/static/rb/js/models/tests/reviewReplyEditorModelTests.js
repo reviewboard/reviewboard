@@ -63,11 +63,12 @@ suite('rb/models/ReviewReplyEditor', function() {
 
     describe('Methods', function() {
         describe('save', function() {
-            it('With body_top', function() {
+            function testBodySave(options) {
                 editor = new RB.ReviewReplyEditor({
-                    contextType: 'body_top',
+                    contextType: options.contextType,
                     review: review,
                     reviewReply: reviewReply,
+                    richText: options.richText,
                     text: 'My Text'
                 });
 
@@ -81,55 +82,33 @@ suite('rb/models/ReviewReplyEditor', function() {
 
                 expect(editor.get('replyObject')).toBe(reviewReply);
                 expect(editor.get('hasDraft')).toBe(true);
-                expect(reviewReply.get('bodyTop')).toBe('My Text');
+                expect(reviewReply.get(options.textAttr)).toBe('My Text');
+                expect(reviewReply.get(options.richTextAttr)).toBe(
+                    options.richText);
                 expect(reviewReply.ready).toHaveBeenCalled();
                 expect(reviewReply.save).toHaveBeenCalled();
                 expect(editor.trigger).toHaveBeenCalledWith('saving');
                 expect(editor.trigger).toHaveBeenCalledWith('saved');
-            });
+            }
 
-            it('With body_bottom', function() {
-                editor = new RB.ReviewReplyEditor({
-                    contextType: 'body_bottom',
-                    review: review,
-                    reviewReply: reviewReply,
-                    text: 'My Text'
-                });
-
-                spyOn(editor, 'trigger');
-                spyOn(reviewReply, 'save')
-                    .andCallFake(function(options, context) {
-                        options.success.call(context);
-                    });
-
-                editor.save();
-
-                expect(editor.get('replyObject')).toBe(reviewReply);
-                expect(editor.get('hasDraft')).toBe(true);
-                expect(reviewReply.get('bodyBottom')).toBe('My Text');
-                expect(reviewReply.ready).toHaveBeenCalled();
-                expect(reviewReply.save).toHaveBeenCalled();
-                expect(editor.trigger).toHaveBeenCalledWith('saving');
-                expect(editor.trigger).toHaveBeenCalledWith('saved');
-            });
-
-            it('With diff comments', function() {
+            function testCommentSave(options) {
                 var replyObject;
 
                 editor = new RB.ReviewReplyEditor({
-                    contextType: 'diff_comments',
+                    contextType: options.contextType,
                     hasDraft: false,
                     review: review,
                     reviewReply: reviewReply,
+                    richText: options.richText,
                     text: 'My Text'
                 });
 
                 spyOn(editor, 'trigger');
-                spyOn(RB.DiffCommentReply.prototype, 'ready')
+                spyOn(options.model.prototype, 'ready')
                     .andCallFake(function(options, context) {
                         options.ready.call(context);
                     });
-                spyOn(RB.DiffCommentReply.prototype, 'save')
+                spyOn(options.model.prototype, 'save')
                     .andCallFake(function(options, context) {
                         options.success.call(context);
                     });
@@ -139,87 +118,14 @@ suite('rb/models/ReviewReplyEditor', function() {
                 replyObject = editor.get('replyObject');
 
                 expect(editor.get('hasDraft')).toBe(true);
-                expect(replyObject instanceof RB.DiffCommentReply).toBe(true);
+                expect(replyObject instanceof options.model).toBe(true);
                 expect(replyObject.get('text')).toBe('My Text');
-                expect(RB.DiffCommentReply.prototype.ready).toHaveBeenCalled();
-                expect(RB.DiffCommentReply.prototype.save).toHaveBeenCalled();
+                expect(replyObject.get('richText')).toBe(options.richText);
+                expect(options.model.prototype.ready).toHaveBeenCalled();
+                expect(options.model.prototype.save).toHaveBeenCalled();
                 expect(editor.trigger).toHaveBeenCalledWith('saving');
                 expect(editor.trigger).toHaveBeenCalledWith('saved');
-            });
-
-            it('With file attachment comments', function() {
-                var replyObject;
-
-                editor = new RB.ReviewReplyEditor({
-                    contextType: 'file_attachment_comments',
-                    hasDraft: false,
-                    review: review,
-                    reviewReply: reviewReply,
-                    text: 'My Text'
-                });
-
-                spyOn(editor, 'trigger');
-                spyOn(RB.FileAttachmentCommentReply.prototype, 'ready')
-                    .andCallFake(function(options, context) {
-                        options.ready.call(context);
-                    });
-                spyOn(RB.FileAttachmentCommentReply.prototype, 'save')
-                    .andCallFake(function(options, context) {
-                        options.success.call(context);
-                    });
-
-                editor.save();
-
-                replyObject = editor.get('replyObject');
-
-                expect(editor.get('hasDraft')).toBe(true);
-                expect(replyObject instanceof RB.FileAttachmentCommentReply)
-                    .toBe(true);
-                expect(replyObject.get('text')).toBe('My Text');
-                expect(RB.FileAttachmentCommentReply.prototype.ready)
-                    .toHaveBeenCalled();
-                expect(RB.FileAttachmentCommentReply.prototype.save)
-                    .toHaveBeenCalled();
-                expect(editor.trigger).toHaveBeenCalledWith('saving');
-                expect(editor.trigger).toHaveBeenCalledWith('saved');
-            });
-
-            it('With screenshot comments', function() {
-                var replyObject;
-
-                editor = new RB.ReviewReplyEditor({
-                    contextType: 'screenshot_comments',
-                    hasDraft: false,
-                    review: review,
-                    reviewReply: reviewReply,
-                    text: 'My Text'
-                });
-
-                spyOn(editor, 'trigger');
-                spyOn(RB.ScreenshotCommentReply.prototype, 'ready')
-                    .andCallFake(function(options, context) {
-                        options.ready.call(context);
-                    });
-                spyOn(RB.ScreenshotCommentReply.prototype, 'save')
-                    .andCallFake(function(options, context) {
-                        options.success.call(context);
-                    });
-
-                editor.save();
-
-                replyObject = editor.get('replyObject');
-
-                expect(editor.get('hasDraft')).toBe(true);
-                expect(replyObject instanceof RB.ScreenshotCommentReply)
-                    .toBe(true);
-                expect(replyObject.get('text')).toBe('My Text');
-                expect(RB.ScreenshotCommentReply.prototype.ready)
-                    .toHaveBeenCalled();
-                expect(RB.ScreenshotCommentReply.prototype.save)
-                    .toHaveBeenCalled();
-                expect(editor.trigger).toHaveBeenCalledWith('saving');
-                expect(editor.trigger).toHaveBeenCalledWith('saved');
-            });
+            }
 
             it('With existing reply object', function() {
                 var replyObject = new RB.DiffCommentReply();
@@ -287,6 +193,98 @@ suite('rb/models/ReviewReplyEditor', function() {
                 expect(replyObject.save).not.toHaveBeenCalled();
                 expect(editor.resetStateIfEmpty).toHaveBeenCalled();
                 expect(editor.trigger).toHaveBeenCalledWith('saving');
+            });
+
+            describe('With body_top', function() {
+                function testSave(richText) {
+                    testBodySave({
+                        contextType: 'body_top',
+                        textAttr: 'bodyTop',
+                        richTextAttr: 'bodyTopRichText',
+                        richText: richText
+                    });
+                }
+
+                it('richText=true', function() {
+                    testSave(true);
+                });
+
+                it('richText=false', function() {
+                    testSave(false);
+                });
+            });
+
+            describe('With body_bottom', function() {
+                function testSave(richText) {
+                    testBodySave({
+                        contextType: 'body_bottom',
+                        textAttr: 'bodyBottom',
+                        richTextAttr: 'bodyBottomRichText',
+                        richText: richText
+                    });
+                }
+
+                it('richText=true', function() {
+                    testSave(true);
+                });
+
+                it('richText=false', function() {
+                    testSave(false);
+                });
+            });
+
+            describe('With diff comments', function() {
+                function testSave(richText) {
+                    testCommentSave({
+                        contextType: 'diff_comments',
+                        model: RB.DiffCommentReply,
+                        richText: richText
+                    });
+                }
+
+                it('richText=true', function() {
+                    testSave(true);
+                });
+
+                it('richText=false', function() {
+                    testSave(false);
+                });
+            });
+
+            describe('With file attachment comments', function() {
+                function testSave(richText) {
+                    testCommentSave({
+                        contextType: 'file_attachment_comments',
+                        model: RB.FileAttachmentCommentReply,
+                        richText: richText
+                    });
+                }
+
+                it('richText=true', function() {
+                    testSave(true);
+                });
+
+                it('richText=false', function() {
+                    testSave(false);
+                });
+            });
+
+            describe('With screenshot comments', function() {
+                function testSave(richText) {
+                    testCommentSave({
+                        contextType: 'screenshot_comments',
+                        model: RB.ScreenshotCommentReply,
+                        richText: richText
+                    });
+                }
+
+                it('richText=true', function() {
+                    testSave(true);
+                });
+
+                it('richText=false', function() {
+                    testSave(false);
+                });
             });
         });
 
