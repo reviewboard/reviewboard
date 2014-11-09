@@ -163,7 +163,8 @@ def build_diff_comment_fragments(
     comments, context,
     comment_template_name='reviews/diff_comment_fragment.html',
     error_template_name='diffviewer/diff_fragment_error.html',
-    lines_of_context=None):
+    lines_of_context=None,
+    show_controls=False):
 
     comment_entries = []
     had_error = False
@@ -191,8 +192,8 @@ def build_diff_comment_fragments(
                 'domain': Site.objects.get_current().domain,
                 'domain_method': siteconfig.get('site_domain_method'),
                 'lines_of_context': lines_of_context,
-                'expandable_above': first_line != 1,
-                'expandable_below': last_line != line_count,
+                'expandable_above': show_controls and first_line != 1,
+                'expandable_below': show_controls and last_line != line_count,
                 'expandable_all': num_lines != line_count,
                 'collapsible': lines_of_context != [0, 0],
                 'lines_above': first_line - 1,
@@ -1030,6 +1031,7 @@ def comment_diff_fragments(
         return HttpResponseNotModified()
 
     lines_of_context = request.GET.get('lines_of_context', '0,0')
+    container_prefix = request.GET.get('container_prefix')
 
     try:
         lines_of_context = [int(i) for i in lines_of_context.split(',')]
@@ -1050,17 +1052,19 @@ def comment_diff_fragments(
 
     context = RequestContext(request, {
         'comment_entries': [],
-        'container_prefix': request.GET.get('container_prefix'),
+        'container_prefix': container_prefix,
         'queue_name': request.GET.get('queue'),
         'show_controls': request.GET.get('show_controls', False),
     })
 
-    had_error, context['comment_entries'] = \
-        build_diff_comment_fragments(comments,
-                                     context,
-                                     comment_template_name,
-                                     error_template_name,
-                                     lines_of_context=lines_of_context)
+    had_error, context['comment_entries'] = (
+        build_diff_comment_fragments(
+            comments,
+            context,
+            comment_template_name,
+            error_template_name,
+            lines_of_context=lines_of_context,
+            show_controls='draft' not in container_prefix))
 
     page_content = render_to_string(template_name, context)
 
