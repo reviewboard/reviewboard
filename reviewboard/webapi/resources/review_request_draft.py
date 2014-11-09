@@ -4,7 +4,8 @@ import re
 
 from django.contrib import auth
 from django.contrib.auth.models import User
-from django.core.exceptions import PermissionDenied
+from django.core.exceptions import (ObjectDoesNotExist,
+                                    PermissionDenied)
 from django.db.models import Q
 from django.utils import six
 from djblets.util.decorators import augment_method_from
@@ -567,6 +568,8 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
                         obj = self._find_user(username=value,
                                               local_site=local_site,
                                               request=request)
+                        if obj is None:
+                            raise ObjectDoesNotExist
                     elif field_name == "depends_on":
                         obj = ReviewRequest.objects.for_id(value, local_site)
 
