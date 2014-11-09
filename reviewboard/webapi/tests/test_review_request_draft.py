@@ -5,6 +5,7 @@ from django.core import mail
 from django.utils import six
 from djblets.testing.decorators import add_fixtures
 from djblets.webapi.errors import PERMISSION_DENIED
+from kgb import SpyAgency
 
 from reviewboard.accounts.models import LocalSiteProfile
 from reviewboard.reviews.fields import (BaseTextAreaField,
@@ -22,7 +23,7 @@ from reviewboard.webapi.tests.urls import get_review_request_draft_url
 
 
 @six.add_metaclass(BasicTestsMetaclass)
-class ResourceTests(ExtraDataListMixin, ExtraDataItemMixin,
+class ResourceTests(SpyAgency, ExtraDataListMixin, ExtraDataItemMixin,
                     BaseWebAPITestCase):
     """Testing the ReviewRequestDraftResource API tests."""
     fixtures = ['test_users']
@@ -687,6 +688,28 @@ class ResourceTests(ExtraDataListMixin, ExtraDataItemMixin,
 
         self._test_put_as_other_user(
             self.get_local_site(name=self.local_site_name))
+
+    def test_put_find_user_fails(self):
+        """Testing the PUT review-requests/<id>/draft/ API
+        with _find_user failure
+        """
+        self.spy_on(resources.review_request_draft._find_user,
+                    call_fake=lambda *args, **kwargs: None)
+
+        review_request = self.create_review_request(
+            submitter=self.user)
+
+        ReviewRequestDraft.create(review_request)
+
+        rsp = self.api_put(
+            get_review_request_draft_url(review_request, None),
+            {
+                'target_people': 'grumpy'
+            },
+            expected_status=400)
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertEqual(rsp['err']['code'], 105)
+        self.assertTrue(resources.review_request_draft._find_user.called)
 
     def _create_update_review_request(self, api_func, expected_status,
                                       review_request=None,

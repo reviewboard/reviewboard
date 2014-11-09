@@ -8,6 +8,7 @@ from django.utils.html import escape, format_html, format_html_join
 from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext_lazy as _
 
+from reviewboard.attachments.models import FileAttachment
 from reviewboard.diffviewer.diffutils import get_sorted_filediffs
 from reviewboard.reviews.fields import (BaseCommaEditableField,
                                         BaseEditableField,
@@ -602,14 +603,23 @@ class FileAttachmentsField(BuiltinLocalsFieldMixin, BaseCommaEditableField):
         else:
             local_site_name = None
 
-        return ''.join([
-            template.render(Context({
-                'file': self.file_attachment_id_map[pk],
+        items = []
+        for caption, filename, pk in values:
+            if pk in self.file_attachment_id_map:
+                attachment = self.file_attachment_id_map[pk]
+            else:
+                try:
+                    attachment = FileAttachment.objects.get(pk=pk)
+                except FileAttachment.DoesNotExist:
+                    continue
+
+            items.push(template.render(Context({
+                'file': attachment,
                 'review_request': review_request,
                 'local_site_name': local_site_name,
-            }))
-            for caption, filename, pk in values
-        ])
+            })))
+
+        return ''.join(items)
 
 
 class ScreenshotCaptionsField(BaseCaptionsField):
