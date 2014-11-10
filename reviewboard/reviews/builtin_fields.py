@@ -607,7 +607,7 @@ class FileAttachmentsField(BuiltinLocalsFieldMixin, BaseCommaEditableField):
                 except FileAttachment.DoesNotExist:
                     continue
 
-            items.push(template.render(Context({
+            items.append(template.render(Context({
                 'file': attachment,
                 'review_request': review_request,
                 'local_site_name': local_site_name,
