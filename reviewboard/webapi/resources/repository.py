@@ -353,11 +353,18 @@ class RepositoryResource(WebAPIResource):
         try:
             repository.full_clean()
         except ValidationError as e:
-            return INVALID_FORM_DATA, {
-                'fields': {
-                    e.params['field']: e.message,
-                },
-            }
+            if 'field' in e.params:
+                return INVALID_FORM_DATA, {
+                    'fields': {
+                        e.params['field']: e.message,
+                    },
+                }
+            else:
+                return INVALID_FORM_DATA, {
+                    'fields': {
+                        'unknown': e.message,
+                    },
+                }
 
         repository.save()
 
