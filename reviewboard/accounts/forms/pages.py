@@ -1,5 +1,7 @@
 from __future__ import unicode_literals
 
+import logging
+
 from django import forms
 from django.contrib import messages
 from django.forms import widgets
@@ -168,7 +170,18 @@ class ChangePasswordForm(AccountPageForm):
 
         password = self.cleaned_data['old_password']
 
-        if not backend.authenticate(self.user.username, password):
+        try:
+            is_authenticated = backend.authenticate(self.user.username,
+                                                    password)
+        except Exception as e:
+            logging.error('Error when calling authenticate for auth backend '
+                          '%r: %s',
+                          backend, e, exc_info=1)
+            raise forms.ValidationError(_('Unexpected error when validating '
+                                          'the password. Please contact the '
+                                          'administrator.'))
+
+        if not is_authenticated:
             raise forms.ValidationError(_('This password is incorrect'))
 
     def clean_password2(self):
@@ -182,11 +195,22 @@ class ChangePasswordForm(AccountPageForm):
 
     def save(self):
         backend = get_enabled_auth_backends()[0]
-        backend.update_password(self.user, self.cleaned_data['password1'])
-        self.user.save()
 
-        messages.add_message(self.request, messages.INFO,
-                             _('Your password has been changed.'))
+        try:
+            backend.update_password(self.user, self.cleaned_data['password1'])
+
+            self.user.save()
+
+            messages.add_message(self.request, messages.INFO,
+                                 _('Your password has been changed.'))
+        except Exception as e:
+            logging.error('Error when calling update_password for auth '
+                          'backend %r: %s',
+                          backend, e, exc_info=1)
+            messages.add_message(self.request, messages.INFO,
+                                 _('Unexpected error when changing your '
+                                   'password. Please contact the '
+                                   'administrator.'))
 
 
 class ProfileForm(AccountPageForm):
@@ -231,14 +255,26 @@ class ProfileForm(AccountPageForm):
         if backend.supports_change_name:
             self.user.first_name = self.cleaned_data['first_name']
             self.user.last_name = self.cleaned_data['last_name']
-            backend.update_name(self.user)
+
+            try:
+                backend.update_name(self.user)
+            except Exception as e:
+                logging.error('Error when calling update_name for auth '
+                              'backend %r: %s',
+                              backend, e, exc_info=1)
 
         if backend.supports_change_email:
             new_email = self.cleaned_data['email']
 
             if new_email != self.user.email:
                 self.user.email = new_email
-                backend.update_email(self.user)
+
+                try:
+                    backend.update_email(self.user)
+                except Exception as e:
+                    logging.error('Error when calling update_email for auth '
+                                  'backend %r: %s',
+                                  backend, e, exc_info=1)
 
         self.user.save()
 

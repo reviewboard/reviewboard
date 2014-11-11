@@ -2,11 +2,20 @@ from __future__ import unicode_literals
 
 import re
 
+from django.contrib import messages
 from django.contrib.auth.models import User
+from django.core.exceptions import ValidationError
+from django.test.client import RequestFactory
 from djblets.testing.decorators import add_fixtures
+from kgb import SpyAgency
 
-from reviewboard.accounts.backends import INVALID_USERNAME_CHAR_REGEX
-from reviewboard.accounts.forms.pages import AccountPageForm
+from reviewboard.accounts.backends import (AuthBackend,
+                                           get_enabled_auth_backends,
+                                           INVALID_USERNAME_CHAR_REGEX)
+from reviewboard.accounts.forms.pages import (AccountPageForm,
+                                              ChangePasswordForm,
+                                              ProfileForm)
+from reviewboard.accounts.models import Profile
 from reviewboard.accounts.models import LocalSiteProfile, Trophy
 from reviewboard.accounts.pages import (AccountPage, get_page_classes,
                                         register_account_page_class,
@@ -262,3 +271,109 @@ class TrophyTests(TestCase):
                                                     submitter=user1)
         trophies = Trophy.objects.compute_trophies(review_request)
         self.assertFalse(trophies)
+
+
+class SandboxAuthBackend(AuthBackend):
+    backend_id = 'test-id'
+    name = 'test'
+    supports_change_name = True
+    supports_change_email = True
+    supports_change_password = True
+
+    def authenticate(self, username, password):
+        raise Exception
+
+    def update_password(self, user, password):
+        raise Exception
+
+    def update_name(self, user):
+        raise Exception
+
+    def update_email(self, user):
+        raise Exception
+
+
+class SandboxTests(SpyAgency, TestCase):
+    """Testing extension sandboxing."""
+    def setUp(self):
+        super(SandboxTests, self).setUp()
+
+        self.factory = RequestFactory()
+        self.request = self.factory.get('test')
+        self.user = User.objects.create_user(username='reviewboard', email='',
+                                             password='password')
+        self.profile = Profile.objects.get_or_create(user=self.user)
+        self.spy_on(get_enabled_auth_backends,
+                    call_fake=lambda: [SandboxAuthBackend()])
+
+        # Suppresses MessageFailure Exception at the end of save()
+        self.spy_on(messages.add_message,
+                    call_fake=lambda x, y, z: None)
+
+    def tearDown(self):
+        super(SandboxTests, self).tearDown()
+
+    def test_authenticate_auth_backend(self):
+        """Testing AuthBackend for authenticate"""
+        form = ChangePasswordForm(page=None, request=self.request,
+                                  user=self.user)
+        form.cleaned_data = {
+            'old_password': self.user.password,
+        }
+
+        self.spy_on(SandboxAuthBackend.authenticate)
+
+        self.assertRaisesMessage(
+            ValidationError,
+            'Unexpected error when validating the password. '
+            'Please contact the administrator.',
+            lambda: form.clean_old_password())
+        self.assertTrue(SandboxAuthBackend.authenticate.called)
+
+    def test_update_password_auth_backend(self):
+        """Testing AuthBackend for update_password"""
+        form = ChangePasswordForm(page=None, request=self.request,
+                                  user=self.user)
+        form.cleaned_data = {
+            'old_password': self.user.password,
+            'password1': 'password1',
+            'password2': 'password1',
+        }
+
+        self.spy_on(SandboxAuthBackend.update_password)
+
+        form.save()
+        self.assertTrue(SandboxAuthBackend.update_password.called)
+
+    def test_update_name_auth_backend(self):
+        """Testing AuthBackend for update_name"""
+        form = ProfileForm(page=None, request=self.request, user=self.user)
+        form.cleaned_data = {
+            'first_name': 'Barry',
+            'last_name': 'Allen',
+            'email': 'flash@example.com',
+            'profile_private': '',
+        }
+        self.user.email = 'flash@example.com'
+
+        self.spy_on(SandboxAuthBackend.update_name)
+
+        form.save()
+        self.assertTrue(SandboxAuthBackend.update_name.called)
+
+    def test_update_email_auth_backend(self):
+        """Testing AuthBackend for update_email"""
+        form = ProfileForm(page=None, request=self.request, user=self.user)
+        form.cleaned_data = {
+            'first_name': 'Barry',
+            'last_name': 'Allen',
+            'email': 'flash@example.com',
+            'profile_private': '',
+        }
+        self.user.first_name = 'Barry'
+        self.user.last_name = 'Allen'
+
+        self.spy_on(SandboxAuthBackend.update_email)
+
+        form.save()
+        self.assertTrue(SandboxAuthBackend.update_email.called)

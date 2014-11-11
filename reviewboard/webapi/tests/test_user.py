@@ -3,7 +3,10 @@ from __future__ import unicode_literals
 from django.contrib.auth.models import User
 from django.utils import six
 from djblets.testing.decorators import add_fixtures
+from kgb import SpyAgency
 
+from reviewboard.accounts.backends import (AuthBackend,
+                                           get_enabled_auth_backends)
 from reviewboard.accounts.models import Profile
 from reviewboard.webapi.resources import resources
 from reviewboard.webapi.tests.base import BaseWebAPITestCase
@@ -15,7 +18,7 @@ from reviewboard.webapi.tests.urls import (get_user_item_url,
 
 
 @six.add_metaclass(BasicTestsMetaclass)
-class ResourceListTests(BaseWebAPITestCase):
+class ResourceListTests(SpyAgency, BaseWebAPITestCase):
     """Testing the UserResource list API tests."""
     fixtures = ['test_users']
     sample_api_url = 'users/'
@@ -52,6 +55,50 @@ class ResourceListTests(BaseWebAPITestCase):
                            expected_mimetype=user_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(len(rsp['users']), 1)  # grumpy
+
+    def test_query_users_auth_backend(self):
+        """Testing the GET users/?q= API
+        with AuthBackend.query_users failure
+        """
+        class SandboxAuthBackend(AuthBackend):
+            backend_id = 'test-id'
+            name = 'test'
+
+            def query_users(self, query, request):
+                raise Exception
+
+        backend = SandboxAuthBackend()
+
+        self.spy_on(get_enabled_auth_backends, call_fake=lambda: [backend])
+        self.spy_on(backend.query_users)
+
+        rsp = self.api_get(get_user_list_url(), {'q': 'gru'},
+                           expected_mimetype=user_list_mimetype)
+        self.assertEqual(rsp['stat'], 'ok')
+
+        self.assertTrue(backend.query_users.called)
+
+    def test_search_users_auth_backend(self):
+        """Testing the GET users/?q= API
+        with AuthBackend.search_users failure
+        """
+        class SandboxAuthBackend(AuthBackend):
+            backend_id = 'test-id'
+            name = 'test'
+
+            def search_users(self, query, request):
+                raise Exception
+
+        backend = SandboxAuthBackend()
+
+        self.spy_on(get_enabled_auth_backends, call_fake=lambda: [backend])
+        self.spy_on(backend.search_users)
+
+        rsp = self.api_get(get_user_list_url(), {'q': 'gru'},
+                           expected_mimetype=user_list_mimetype)
+        self.assertEqual(rsp['stat'], 'ok')
+
+        self.assertTrue(backend.search_users.called)
 
 
 @six.add_metaclass(BasicTestsMetaclass)

@@ -1,12 +1,15 @@
 from __future__ import unicode_literals
 
+from django.contrib import auth
 from django.contrib.auth.models import User, Permission
 from django.db.models import Q
 from django.utils import six
 from djblets.db.query import get_object_or_none
 from djblets.testing.decorators import add_fixtures
 from djblets.webapi.errors import DOES_NOT_EXIST, PERMISSION_DENIED
+from kgb import SpyAgency
 
+from reviewboard.accounts.backends import AuthBackend
 from reviewboard.accounts.models import LocalSiteProfile
 from reviewboard.reviews.models import (BaseComment, ReviewRequest,
                                         ReviewRequestDraft)
@@ -26,7 +29,7 @@ from reviewboard.webapi.tests.urls import (get_repository_item_url,
 
 
 @six.add_metaclass(BasicTestsMetaclass)
-class ResourceListTests(ExtraDataListMixin, BaseWebAPITestCase):
+class ResourceListTests(SpyAgency, ExtraDataListMixin, BaseWebAPITestCase):
     """Testing the ReviewRequestResource list API tests."""
     fixtures = ['test_users']
     basic_post_fixtures = ['test_scmtools']
@@ -1000,6 +1003,37 @@ class ResourceListTests(ExtraDataListMixin, BaseWebAPITestCase):
             expected_status=403)
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
+
+    def test_get_or_create_user_auth_backend(self):
+        """Testing the POST review-requests/?submit_as= API
+        with AuthBackend.get_or_create_user failure
+        """
+        class SandboxAuthBackend(AuthBackend):
+            backend_id = 'test-id'
+            name = 'test'
+
+            def get_or_create_user(self, username, request=None,
+                                   password=None):
+                raise Exception
+
+        backend = SandboxAuthBackend()
+
+        self.spy_on(auth.get_backends, call_fake=lambda: [backend])
+
+        # First spy messes with User.has_perm, this lets it through
+        self.spy_on(User.has_perm, call_fake=lambda x, y, z: True)
+        self.spy_on(backend.get_or_create_user)
+
+        rsp = self.api_post(
+            get_review_request_list_url(None),
+            {
+                'submit_as': 'barry',
+            },
+            expected_mimetype=None,
+            expected_status=400)
+        self.assertEqual(rsp['stat'], 'fail')
+
+        self.assertTrue(backend.get_or_create_user.called)
 
     def _test_get_with_field_count(self, query_arg, value, expected_count):
         rsp = self.api_get(get_review_request_list_url(), {

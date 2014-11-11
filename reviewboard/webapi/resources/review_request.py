@@ -1197,8 +1197,10 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
                 for backend in auth.get_backends():
                     try:
                         return backend.get_or_create_user(username, request)
-                    except:
-                        pass
+                    except Exception as e:
+                        logging.error('Error when calling get_or_create_user '
+                                      'for auth backend %r: %s',
+                                      backend, e, exc_info=1)
 
         return user
 

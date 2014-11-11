@@ -1,5 +1,6 @@
 from __future__ import unicode_literals
 
+from django.contrib import auth
 from django.contrib.auth.models import Permission, User
 from django.core import mail
 from django.utils import six
@@ -7,6 +8,7 @@ from djblets.testing.decorators import add_fixtures
 from djblets.webapi.errors import PERMISSION_DENIED
 from kgb import SpyAgency
 
+from reviewboard.accounts.backends import AuthBackend
 from reviewboard.accounts.models import LocalSiteProfile
 from reviewboard.reviews.fields import (BaseTextAreaField,
                                         get_review_request_fieldset)
@@ -710,6 +712,41 @@ class ResourceTests(SpyAgency, ExtraDataListMixin, ExtraDataItemMixin,
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], 105)
         self.assertTrue(resources.review_request_draft._find_user.called)
+
+    def test_get_or_create_user_auth_backend(self):
+        """Testing the PUT review-requests/<id>/draft/ API
+        with AuthBackend.get_or_create_user failure
+        """
+        class SandboxAuthBackend(AuthBackend):
+            backend_id = 'test-id'
+            name = 'test'
+
+            def get_or_create_user(self, username, request=None,
+                                   password=None):
+                raise Exception
+
+        backend = SandboxAuthBackend()
+
+        self.spy_on(auth.get_backends, call_fake=lambda: [backend])
+
+        # The first spy messes with permissions, this lets it through
+        self.spy_on(ReviewRequest.is_mutable_by, call_fake=lambda x, y: True)
+        self.spy_on(backend.get_or_create_user)
+
+        review_request = self.create_review_request(
+            submitter=self.user)
+
+        ReviewRequestDraft.create(review_request)
+
+        rsp = self.api_put(
+            get_review_request_draft_url(review_request, None),
+            {
+                'target_people': 'Target',
+            },
+            expected_status=400)
+
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertTrue(backend.get_or_create_user.called)
 
     def _create_update_review_request(self, api_func, expected_status,
                                       review_request=None,
