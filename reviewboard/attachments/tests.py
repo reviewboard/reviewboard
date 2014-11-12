@@ -8,6 +8,7 @@ from django.contrib.auth.models import User
 from django.core.cache import cache
 from django.core.files.uploadedfile import SimpleUploadedFile
 from djblets.testing.decorators import add_fixtures
+from kgb import SpyAgency
 
 from reviewboard import initialize
 from reviewboard.attachments.forms import UploadFileForm
@@ -450,3 +451,57 @@ class DiffViewerFileAttachmentTests(BaseFileAttachmentTestCase):
                          orig_attachment)
         self.assertEqual(response.context['modified_diff_file_attachment'],
                          modified_attachment)
+
+
+class SandboxMimetypeHandler(MimetypeHandler):
+    supported_mimetypes = ['image/png']
+
+    def get_icon_url(self):
+        raise Exception
+
+    def get_thumbnail(self):
+        raise Exception
+
+    def set_thumbnail(self, data):
+        raise Exception
+
+
+class SandboxTests(SpyAgency, BaseFileAttachmentTestCase):
+    """Testing MimetypeHandler sandboxing."""
+    def setUp(self):
+        super(SandboxTests, self).setUp()
+
+        register_mimetype_handler(SandboxMimetypeHandler)
+
+        user = User.objects.create(username='reviewboard',
+                                   password='password', email='')
+
+        review_request = self.create_review_request(submitter=user)
+        self.file_attachment = self.create_file_attachment(
+            review_request=review_request)
+
+    def tearDown(self):
+        super(SandboxTests, self).tearDown()
+
+        unregister_mimetype_handler(SandboxMimetypeHandler)
+
+    def test_get_thumbnail(self):
+        """Testing FileAttachment sandboxes MimetypeHandler.get_thumbnail"""
+        self.spy_on(SandboxMimetypeHandler.get_thumbnail)
+
+        self.file_attachment.thumbnail
+        self.assertTrue(SandboxMimetypeHandler.get_thumbnail.called)
+
+    def test_set_thumbnail(self):
+        """Testing FileAttachment sandboxes MimetypeHandler.set_thumbnail"""
+        self.spy_on(SandboxMimetypeHandler.set_thumbnail)
+
+        self.file_attachment.thumbnail = None
+        self.assertTrue(SandboxMimetypeHandler.set_thumbnail.called)
+
+    def test_get_icon_url(self):
+        """Testing FileAttachment sandboxes MimetypeHandler.get_icon_url"""
+        self.spy_on(SandboxMimetypeHandler.get_icon_url)
+
+        self.file_attachment.icon_url
+        self.assertTrue(SandboxMimetypeHandler.get_icon_url.called)
