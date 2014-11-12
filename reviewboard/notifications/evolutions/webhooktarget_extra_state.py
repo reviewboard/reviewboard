@@ -13,6 +13,6 @@ MUTATIONS = [
              initial=False),
     AddField('WebHookTarget', 'apply_to', models.CharField, initial='A',
              max_length=1),
-    AddField('WebHookTarget', 'extra_data', JSONField, initial='{}'),
+    AddField('WebHookTarget', 'extra_data', JSONField, initial=None),
     RenameField('WebHookTarget', 'handlers', 'events'),
 ]
