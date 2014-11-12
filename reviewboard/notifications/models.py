@@ -115,7 +115,7 @@ class WebHookTarget(models.Model):
         help_text=_('If set, this Webhook will be limited to this site.'))
 
     extra_data = JSONField(
-        default={},
+        null=True,
         help_text=_('Extra JSON data that can be tied to this Webhook '
                     'registration. It will not be sent with the Webhook '
                     'request.'))

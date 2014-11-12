@@ -32,9 +32,9 @@ class WebAPIToken(models.Model):
     last_updated = models.DateTimeField(default=timezone.now)
 
     note = models.TextField(blank=True)
-    policy = JSONField(default={})
+    policy = JSONField(null=True)
 
-    extra_data = JSONField(default={})
+    extra_data = JSONField(null=True)
 
     objects = WebAPITokenManager()
 
