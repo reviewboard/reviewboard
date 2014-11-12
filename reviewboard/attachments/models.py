@@ -1,5 +1,6 @@
 from __future__ import unicode_literals
 
+import logging
 import os
 
 from django.core.exceptions import ObjectDoesNotExist
@@ -115,11 +116,23 @@ class FileAttachment(models.Model):
 
     def _get_thumbnail(self):
         """Returns the thumbnail for display."""
-        return self.mimetype_handler.get_thumbnail()
+        try:
+            return self.mimetype_handler.get_thumbnail()
+        except Exception as e:
+            logging.error('Error when calling get_thumbnail for '
+                          'MimetypeHandler %r: %s',
+                          self.mimetype_handler, e, exc_info=1)
+            return None
 
     def _set_thumbnail(self, data):
         """Set the thumbnail."""
-        self.mimetype_handler.set_thumbnail(data)
+        try:
+            self.mimetype_handler.set_thumbnail(data)
+        except Exception as e:
+            logging.error('Error when calling get_thumbnail for '
+                          'MimetypeHandler %r: %s',
+                          self.mimetype_handler, e, exc_info=1)
+            return None
 
     thumbnail = property(_get_thumbnail, _set_thumbnail)
 
@@ -142,7 +155,13 @@ class FileAttachment(models.Model):
     @property
     def icon_url(self):
         """Returns the icon URL for this file."""
-        return self.mimetype_handler.get_icon_url()
+        try:
+            return self.mimetype_handler.get_icon_url()
+        except Exception as e:
+            logging.error('Error when calling get_thumbnail for '
+                          'MimetypeHandler %r: %s',
+                          self.mimetype_handler, e, exc_info=1)
+            return None
 
     @property
     def is_from_diff(self):
