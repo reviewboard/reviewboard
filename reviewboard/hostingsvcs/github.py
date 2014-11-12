@@ -234,8 +234,14 @@ class GitHubClient(HostingServiceClient):
         except (URLError, HTTPError):
             raise FileNotFoundError(path, sha)
 
-    def api_get_commits(self, repo_api_url, start=None):
+    def api_get_commits(self, repo_api_url, branch=None, start=None):
         url = self._build_api_url(repo_api_url, 'commits')
+
+        # Note that we don't always use the branch, since the GitHub API
+        # doesn't support limiting by branch *and* starting at a SHA. So, the
+        # branch argument can be safely ignored if a sha is provided.
+        start = start or branch
+
         if start:
             url += '&sha=%s' % start
 
@@ -722,7 +728,8 @@ class GitHub(HostingService, BugTracker):
 
     def get_commits(self, repository, branch=None, start=None):
         repo_api_url = self._get_repo_api_url(repository)
-        commits = self.client.api_get_commits(repo_api_url, start=start)
+        commits = self.client.api_get_commits(repo_api_url, branch=branch,
+                                              start=start)
 
         results = []
         for item in commits:

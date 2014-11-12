@@ -172,7 +172,8 @@ RB.PostCommitView = Backbone.View.extend({
 
         this._commitsCollection =
             this.model.get('repository').getCommits({
-                branch: branch.id
+                branch: branch.id,
+                start: branch.get('commit')
             });
         this.listenTo(this._commitsCollection, 'create', this._onCreateReviewRequest);
 
