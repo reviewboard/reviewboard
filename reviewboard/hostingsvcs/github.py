@@ -552,6 +552,11 @@ class GitHub(HostingService):
         resource = 'commits'
         url = self._build_api_url(self._get_repo_api_url(repository), resource)
 
+        # Note that we don't always use the branch, since the GitHub API
+        # doesn't support limiting by branch *and* starting at a SHA. So, the
+        # branch argument can be safely ignored if a sha is provided.
+        start = start or branch
+
         if start:
             url += '&sha=%s' % start
 
