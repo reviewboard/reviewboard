@@ -6,7 +6,8 @@
  */
 RB.Dashboard = Backbone.Model.extend({
     defaults: {
-        count: 0
+        count: 0,
+        localSiteName: null
     },
 
     /*
@@ -26,8 +27,11 @@ RB.Dashboard = Backbone.Model.extend({
      * Adds a selected review request to be used for any actions.
      */
     select: function(id) {
+        var localSiteName = this.get('localSiteName');
+
         this.selection.add({
-            id: id
+            id: id,
+            localSitePrefix: localSiteName ? 's/' + localSiteName + '/' : null
         });
     },
 

@@ -5,10 +5,10 @@ import logging
 from django.core.exceptions import ObjectDoesNotExist
 from django.template.defaultfilters import date
 from django.utils import six
-from django.utils.html import conditional_escape
+from django.utils.html import conditional_escape, escape
 from django.utils.six.moves import reduce
 from django.utils.translation import ugettext_lazy as _, ugettext
-from djblets.datagrid.grids import Column, DateTimeColumn
+from djblets.datagrid.grids import CheckboxColumn, Column, DateTimeColumn
 
 from reviewboard.accounts.models import Profile
 from reviewboard.reviews.models import ReviewRequest
@@ -71,6 +71,21 @@ class BugsColumn(Column):
                                 'bugs column: %s' % repository.bug_tracker)
 
         return ', '.join(bugs)
+
+
+class ReviewRequestCheckboxColumn(CheckboxColumn):
+    def render_data(self, state, obj):
+        if self.is_selectable(state, obj):
+            checked = ''
+
+            if self.is_selected(state, obj):
+                checked = 'checked="true"'
+
+            return ('<input type="checkbox" data-object-id="%s" '
+                    'data-checkbox-name="%s" %s />'
+                    % (obj.display_id, escape(self.checkbox_name), checked))
+        else:
+            return ''
 
 
 class DateTimeSinceColumn(DateTimeColumn):
