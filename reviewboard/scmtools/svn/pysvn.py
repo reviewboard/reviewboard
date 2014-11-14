@@ -108,18 +108,6 @@ class Client(base.Client):
         """Returns a list of SVN keywords for a given path."""
         return self._do_on_path(self._get_file_keywords, path, revision)
 
-    def get_filenames_in_revision(self, revision):
-        """Returns a list of filenames associated with the revision."""
-        r = self._normalize_revision(revision)
-        logs = self.client.log(self.repopath, r, r, True)
-
-        if len(logs) == 0:
-            return []
-        elif len(logs) == 1:
-            return [f['path'] for f in logs[0]['changed_paths']]
-        else:
-            assert False
-
     def _normalize_revision(self, revision):
         if revision == HEAD:
             r = Revision(opt_revision_kind.head)

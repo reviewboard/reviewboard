@@ -41,8 +41,6 @@ class Tool(models.Model):
     # Templates can't access variables on a class properly. It'll attempt to
     # instantiate the class, which will fail without the necessary parameters.
     # So, we use these as convenient wrappers to do what the template can't do.
-    supports_authentication = property(
-        lambda x: x.scmtool_class.supports_authentication)
     supports_raw_file_urls = property(
         lambda x: x.scmtool_class.supports_raw_file_urls)
     supports_ticket_auth = property(
