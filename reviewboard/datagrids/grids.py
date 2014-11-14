@@ -6,7 +6,7 @@ from django.contrib.auth.models import User
 from django.http import Http404
 from django.utils.translation import ugettext_lazy as _
 from djblets.datagrid.grids import (CheckboxColumn, Column, DateTimeColumn,
-                                    DataGrid)
+                                    DataGrid, AlphanumericDataGrid)
 from djblets.util.templatetags.djblets_utils import ageid
 
 from reviewboard.accounts.models import Profile, LocalSiteProfile
@@ -309,7 +309,7 @@ class DashboardDataGrid(DataGridSidebarMixin, ReviewRequestDataGrid):
             profile, allow_hide_closed=False)
 
 
-class UsersDataGrid(DataGrid):
+class UsersDataGrid(AlphanumericDataGrid):
     """A datagrid showing a list of users registered on Review Board."""
     username = Column(_('Username'), link=True, sortable=True)
     fullname = Column(_('Full Name'), field_name='get_full_name',
@@ -327,17 +327,9 @@ class UsersDataGrid(DataGrid):
         else:
             qs = queryset
 
-        current_letter = request.GET.get('letter', 'A')
-
-        if current_letter.isalpha():
-            qs = qs.filter(username__istartswith=current_letter)
-        elif current_letter.isdecimal() or current_letter in ("_", "-", "."):
-            qs = qs.filter(username__regex=r"^[0-9_\-\.].*")
-        else:
-            raise Http404
-
-        super(UsersDataGrid, self).__init__(request, qs, title,
-                                            current_letter=current_letter)
+        super(UsersDataGrid, self).__init__(request, qs, title=title,
+                                            sortable_column='username',
+                                            extra_regex='^[0-9_\-\.].*')
 
         self.default_sort = ['username']
         self.profile_sort_field = 'sort_submitter_columns'
