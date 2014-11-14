@@ -55,10 +55,10 @@ def is_release():
 
 
 def get_manual_url():
-    if VERSION[4] == 'final' and is_release():
-        manual_ver = '%s.%s' % (VERSION[0], VERSION[1])
-    else:
+    if VERSION[2] == 0 and VERSION[4] != 'final':
         manual_ver = 'dev'
+    else:
+        manual_ver = '%s.%s' % (VERSION[0], VERSION[1])
 
     return 'https://www.reviewboard.org/docs/manual/%s/' % manual_ver
 

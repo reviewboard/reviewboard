@@ -636,9 +636,6 @@ class Repository(models.Model):
 
     class Meta:
         verbose_name_plural = "Repositories"
-        # TODO: the path:local_site unique constraint causes problems when
-        # archiving repositories. We should really remove this constraint from
-        # the tables and enforce it in code whenever visible=True
         unique_together = (('name', 'local_site'),
                            ('archived_timestamp', 'path', 'local_site'),
                            ('hooks_uuid', 'local_site'))

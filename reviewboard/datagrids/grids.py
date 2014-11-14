@@ -5,7 +5,7 @@ import pytz
 from django.contrib.auth.models import User
 from django.http import Http404
 from django.utils.translation import ugettext_lazy as _
-from djblets.datagrid.grids import (CheckboxColumn, Column, DateTimeColumn,
+from djblets.datagrid.grids import (Column, DateTimeColumn, DataGrid
                                     DataGrid, AlphanumericDataGrid)
 from djblets.util.templatetags.djblets_utils import ageid
 
@@ -24,6 +24,7 @@ from reviewboard.datagrids.columns import (BugsColumn,
                                            RepositoryColumn,
                                            ReviewCountColumn,
                                            ReviewGroupStarColumn,
+                                           ReviewRequestCheckboxColumn,
                                            ReviewRequestIDColumn,
                                            ReviewRequestStarColumn,
                                            ReviewSubmitterColumn,
@@ -222,7 +223,7 @@ class DashboardDataGrid(DataGridSidebarMixin, ReviewRequestDataGrid):
     """
     new_updates = NewUpdatesColumn()
     my_comments = MyCommentsColumn()
-    selected = CheckboxColumn()
+    selected = ReviewRequestCheckboxColumn()
 
     sidebar = Sidebar(
         [

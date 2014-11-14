@@ -12,7 +12,11 @@
     $(document).ready(function() {
         var dashboardView = new RB.DashboardView({
             el: $('#dashboard_container'),
-            model: new RB.Dashboard()
+            model: new RB.Dashboard({
+{%  if local_site_name %}
+                localSiteName: '{{local_site_name|escapejs}}'
+{%  endif %}
+            })
         });
         dashboardView.render();
     });
