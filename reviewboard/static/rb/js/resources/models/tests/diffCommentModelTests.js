@@ -91,6 +91,38 @@ suite('rb/resources/models/DiffComment', function() {
             expect(data.num_lines).toBe(6);
         });
 
+        describe('force_text_type field', function() {
+            it('With value', function() {
+                var data;
+
+                model.set('forceTextType', 'html');
+                data = model.toJSON();
+                expect(data.force_text_type).toBe('html');
+            });
+
+            it('Without value', function() {
+                var data = model.toJSON();
+
+                expect(data.force_text_type).toBe(undefined);
+            });
+        });
+
+        describe('include_text_types field', function() {
+            it('With value', function() {
+                var data;
+
+                model.set('includeTextTypes', 'html');
+                data = model.toJSON();
+                expect(data.include_text_types).toBe('html');
+            });
+
+            it('Without value', function() {
+                var data = model.toJSON();
+
+                expect(data.include_text_types).toBe(undefined);
+            });
+        });
+
         describe('filediff_id field', function() {
             it('When loaded', function() {
                 var data;

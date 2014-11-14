@@ -1,3 +1,9 @@
+(function() {
+
+
+var parentProto = RB.BaseComment.prototype;
+
+
 RB.FileAttachmentComment = RB.BaseComment.extend({
     defaults: _.defaults({
         /*
@@ -25,36 +31,41 @@ RB.FileAttachmentComment = RB.BaseComment.extend({
 
         /* The HTML representing a thumbnail, if any, for this comment. */
         thumbnailHTML: null
-    }, RB.BaseComment.prototype.defaults),
+    }, parentProto.defaults),
 
     rspNamespace: 'file_attachment_comment',
     expandedFields: ['diff_against_file_attachment', 'file_attachment'],
 
-    /*
-     * Serializes the comment to a payload that can be sent to the server.
-     */
-    toJSON: function() {
-        var data = RB.BaseComment.prototype.toJSON.call(this);
+    attrToJsonMap: _.defaults({
+        diffAgainstFileAttachmentID: 'diff_against_file_attachment_id',
+        fileAttachmentID: 'file_attachment_id',
+        linkText: 'link_text',
+        reviewURL: 'review_url',
+        thumbnailHTML: 'thumbnail_html'
+    }, parentProto.attrToJsonMap),
 
-        if (!this.get('loaded')) {
-            data.file_attachment_id = this.get('fileAttachmentID');
-            data.diff_against_file_attachment_id =
-                this.get('diffAgainstFileAttachmentID') || undefined;
-        }
+    serializedAttrs: [
+        'diffAgainstFileAttachmentID',
+        'fileAttachmentID'
+    ].concat(parentProto.serializedAttrs),
 
-        return data;
-    },
+    deserializedAttrs: [
+        'linkText',
+        'thumbnailHTML',
+        'reviewURL'
+    ].concat(parentProto.deserializedAttrs),
+
+    serializers: _.defaults({
+        fileAttachmentID: RB.JSONSerializers.onlyIfUnloaded,
+        diffAgainstFileAttachmentID: RB.JSONSerializers.onlyIfUnloadedAndValue
+    }, parentProto.serializers),
 
     /*
      * Deserializes comment data from an API payload.
      */
     parseResourceData: function(rsp) {
-        var result = RB.BaseComment.prototype.parseResourceData.call(this,
-                                                                     rsp);
+        var result = parentProto.parseResourceData.call(this, rsp);
 
-        result.linkText = rsp.link_text;
-        result.thumbnailHTML = rsp.thumbnail_html;
-        result.reviewURL = rsp.review_url;
         result.fileAttachment = new RB.FileAttachment(rsp.file_attachment, {
             parse: true
         });
@@ -93,3 +104,6 @@ RB.FileAttachmentComment = RB.BaseComment.extend({
         INVALID_FILE_ATTACHMENT_ID: 'fileAttachmentID must be a valid ID'
     }
 });
+
+
+})();

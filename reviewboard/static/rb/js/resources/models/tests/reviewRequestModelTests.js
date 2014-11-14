@@ -42,6 +42,45 @@ suite('rb/resources/models/ReviewRequest', function() {
         expect(fileAttachment.id).toBe(42);
     });
 
+    it('parse', function() {
+        console.log(reviewRequest);
+        var data = reviewRequest.parse({
+            stat: 'ok',
+            review_request: {
+                id: 1,
+                branch: 'branch',
+                bugs_closed: 'bugsClosed',
+                close_description: 'closeDescription',
+                close_description_text_type: 'markdown',
+                description: 'description',
+                description_text_type: 'markdown',
+                last_updated: 'lastUpdated',
+                'public': 'public',
+                summary: 'summary',
+                target_groups: 'targetGroups',
+                target_people: 'targetPeople',
+                testing_done: 'testingDone',
+                testing_done_text_type: 'plain'
+            }
+        });
+
+        expect(data).not.toBe(undefined);
+        expect(data.id).toBe(1);
+        expect(data.branch).toBe('branch');
+        expect(data.bugsClosed).toBe('bugsClosed');
+        expect(data.closeDescription).toBe('closeDescription');
+        expect(data.closeDescriptionRichText).toBe(true);
+        expect(data.description).toBe('description');
+        expect(data.descriptionRichText).toBe(true);
+        expect(data.lastUpdated).toBe('lastUpdated');
+        expect(data['public']).toBe('public');
+        expect(data.summary).toBe('summary');
+        expect(data.targetGroups).toBe('targetGroups');
+        expect(data.targetPeople).toBe('targetPeople');
+        expect(data.testingDone).toBe('testingDone');
+        expect(data.testingDoneRichText).toBe(false);
+    });
+
     it('reopen', function() {
         spyOn(RB, 'apiCall').andCallThrough();
         spyOn($, 'ajax').andCallFake(function(request) {

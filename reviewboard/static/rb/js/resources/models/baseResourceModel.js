@@ -37,6 +37,29 @@ RB.BaseResource = Backbone.Model.extend({
     supportsExtraData: false,
 
     /*
+     * A map of attribute names to resulting JSON field names.
+     *
+     * This is used to auto-generate a JSON payload from attribute names
+     * in toJSON().
+     *
+     * It's also needed if using attribute names in any save({attrs: [...]})
+     * calls.
+     */
+    attrToJsonMap: {},
+
+    /* A list of attributes to serialize in toJSON(). */
+    serializedAttrs: [],
+
+    /* A list of attributes to deserialize in parseResourceData(). */
+    deserializedAttrs: [],
+
+    /* Special serializer functions called in toJSON(). */
+    serializers: {},
+
+    /* Special deserializer functions called in parseResourceData(). */
+    deserializers: {},
+
+    /*
      * Returns the URL for this resource's instance.
      *
      * If this resource is loaded and has a URL to itself, that URL will
@@ -546,21 +569,72 @@ RB.BaseResource = Backbone.Model.extend({
     /*
      * Parses the resource data from a payload.
      *
-     * This is meant to be overridden by subclasses.
+     * By default, this will make use of attrToJsonMap and any
+     * jsonDeserializers to construct a resulting set of attributes.
+     *
+     * This can be overridden by subclasses.
      */
-    parseResourceData: function(/* rsp */) {
-        return {};
+    parseResourceData: function(rsp) {
+        var len = this.deserializedAttrs.length,
+            attrs = {},
+            attrName,
+            jsonField,
+            value,
+            i;
+
+        for (i = 0; i < len; i++) {
+            attrName = this.deserializedAttrs[i];
+            deserializer = this.deserializers[attrName];
+            jsonField = this.attrToJsonMap[attrName] || attrName;
+            value = rsp[jsonField];
+
+            if (deserializer) {
+                value = deserializer.call(this, value);
+            }
+
+            if (value !== undefined) {
+                attrs[attrName] = value;
+            }
+        }
+
+        return attrs;
     },
 
     /*
      * Serializes and returns object data for the purpose of saving.
      *
      * When saving to the server, the only data that will be sent in the
-     * API PUT/POST call will be the data returned from toJSON(). Subclasses
-     * must override this to specify what data they need to provide the API.
+     * API PUT/POST call will be the data returned from toJSON().
+     *
+     * This will build the list based on the serializedAttrs, serializers,
+     * and attrToJsonMap properties.
+     *
+     * Subclasses can override this to create custom serialization behavior.
      */
     toJSON: function() {
-        var data = {};
+        var serializerState = {
+                isNew: this.isNew(),
+                loaded: this.get('loaded')
+            },
+            len = this.serializedAttrs.length,
+            data = {},
+            attrName,
+            jsonField,
+            value,
+            i;
+
+        for (i = 0; i < len; i++) {
+            attrName = this.serializedAttrs[i];
+            serializer = this.serializers[attrName];
+            value = this.get(attrName);
+
+            if (serializer) {
+                value = serializer.call(this, value, serializerState);
+            }
+
+            jsonField = this.attrToJsonMap[attrName] || attrName;
+            data[jsonField] = value;
+        }
 
         if (this.supportsExtraData) {
             _.each(this.get('extraData'), function(value, key) {

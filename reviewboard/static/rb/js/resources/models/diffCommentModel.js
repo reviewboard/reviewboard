@@ -1,3 +1,9 @@
+(function() {
+
+
+var parentProto = RB.BaseComment.prototype;
+
+
 /*
  * Provides commenting functionality for diffs.
  *
@@ -26,10 +32,38 @@ RB.DiffComment = RB.BaseComment.extend({
          * interdiff range.
          */
         interFileDiffID: null
-    }, RB.BaseComment.prototype.defaults),
+    }, parentProto.defaults),
 
     rspNamespace: 'diff_comment',
     expandedFields: ['filediff', 'interfilediff'],
+
+    attrToJsonMap: _.defaults({
+        fileDiffID: 'filediff_id',
+        beginLineNum: 'first_line',
+        interFileDiffID: 'interfilediff_id',
+        numLines: 'num_lines'
+    }, parentProto.attrToJsonMap),
+
+    serializedAttrs: [
+        'beginLineNum',
+        'numLines',
+        'fileDiffID',
+        'interFileDiffID'
+    ].concat(parentProto.serializedAttrs),
+
+    deserializedAttrs: [
+        'beginLineNum',
+        'endLineNum'
+    ].concat(parentProto.deserializedAttrs),
+
+    serializers: _.defaults({
+        fileDiffID: RB.JSONSerializers.onlyIfUnloaded,
+        interFileDiffID: RB.JSONSerializers.onlyIfUnloadedAndValue,
+
+        numLines: function() {
+            return this.getNumLines();
+        }
+    }, parentProto.serializers),
 
     /*
      * Returns the total number of lines the comment spans.
@@ -39,36 +73,11 @@ RB.DiffComment = RB.BaseComment.extend({
     },
 
     /*
-     * Serializes the comment to a payload that can be sent to the server.
-     */
-    toJSON: function() {
-        var data = _.defaults({
-                first_line: this.get('beginLineNum'),
-                num_lines: this.getNumLines()
-            }, RB.BaseComment.prototype.toJSON.call(this)),
-            interFileDiffID;
-
-        if (!this.get('loaded')) {
-            interFileDiffID = this.get('interFileDiffID');
-
-            data.filediff_id = this.get('fileDiffID');
-
-            if (interFileDiffID) {
-                data.interfilediff_id = interFileDiffID;
-            }
-        }
-
-        return data;
-    },
-
-    /*
      * Deserializes comment data from an API payload.
      */
     parseResourceData: function(rsp) {
-        var result = RB.BaseComment.prototype.parseResourceData.call(this,
-                                                                     rsp);
+        var result = parentProto.parseResourceData.call(this, rsp);
 
-        result.beginLineNum = rsp.first_line;
         result.endLineNum = rsp.num_lines + result.beginLineNum - 1;
 
         result.fileDiff = new RB.FileDiff(rsp.filediff, {
@@ -122,7 +131,7 @@ RB.DiffComment = RB.BaseComment.extend({
             return strings.BEGINLINENUM_LTE_ENDLINENUM;
         }
 
-        return RB.BaseComment.prototype.validate.call(this, attrs, options);
+        return parentProto.validate.call(this, attrs, options);
     }
 }, {
     strings: {
@@ -132,3 +141,6 @@ RB.DiffComment = RB.BaseComment.extend({
         BEGINLINENUM_LTE_ENDLINENUM: 'beginLineNum must be <= endLineNum'
     }
 });
+
+
+})();

@@ -28,32 +28,26 @@ RB.FileAttachment = RB.BaseResource.extend({
     rspNamespace: 'file_attachment',
     payloadFileKeys: ['path'],
 
-    /*
-     * Serializes the changes to the file attachment to a payload.
-     */
-    toJSON: function() {
-        var payload = {
-            caption: this.get('caption')
-        };
-
-        if (this.isNew()) {
-            payload.path = this.get('file');
-        }
-
-        return payload;
+    attrToJsonMap: {
+        downloadURL: 'url',
+        file: 'path',
+        iconURL: 'icon_url',
+        reviewURL: 'review_url',
+        thumbnailHTML: 'thumbnail'
     },
 
-    /*
-     * Deserializes a file attachment data from an API payload.
-     */
-    parseResourceData: function(rsp) {
-        return {
-            caption: rsp.caption,
-            downloadURL: rsp.url,
-            filename: rsp.filename,
-            iconURL: rsp.icon_url,
-            reviewURL: rsp.review_url,
-            thumbnailHTML: rsp.thumbnail
-        };
+    serializedAttrs: ['caption', 'file'],
+
+    deserializedAttrs: [
+        'caption',
+        'downloadURL',
+        'filename',
+        'iconURL',
+        'reviewURL',
+        'thumbnailHTML'
+    ],
+
+    serializers: {
+        file: RB.JSONSerializers.onlyIfNew
     }
 });

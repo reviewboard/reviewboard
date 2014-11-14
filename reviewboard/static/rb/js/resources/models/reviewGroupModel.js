@@ -13,6 +13,8 @@ var GroupMember = RB.BaseResource.extend({
         loaded: true
     }, RB.BaseResource.prototype.defaults),
 
+    serializedAttrs: ['username'],
+
     /*
      * Returns a URL for this resource.
      *
@@ -37,15 +39,6 @@ var GroupMember = RB.BaseResource.extend({
      */
     isNew: function() {
         return !this.get('added');
-    },
-
-    /*
-     * Serializes the group membership creation request.
-     */
-    toJSON: function() {
-        return {
-            username: this.get('username')
-        };
     },
 
     /*

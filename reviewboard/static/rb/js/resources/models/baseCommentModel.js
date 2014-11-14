@@ -48,6 +48,49 @@ RB.BaseComment = RB.BaseResource.extend({
 
     supportsExtraData: true,
 
+    attrToJsonMap: {
+        forceTextType: 'force_text_type',
+        includeTextTypes: 'include_text_types',
+        issueOpened: 'issue_opened',
+        issueStatus: 'issue_status',
+        richText: 'text_type'
+    },
+
+    serializedAttrs: [
+        'forceTextType',
+        'includeTextTypes',
+        'issueOpened',
+        'issueStatus',
+        'richText',
+        'text'
+    ],
+
+    deserializedAttrs: [
+        'issueOpened',
+        'issueStatus',
+        'text'
+    ],
+
+    serializers: {
+        forceTextType: RB.JSONSerializers.onlyIfValue,
+        includeTextTypes: RB.JSONSerializers.onlyIfValue,
+        richText: RB.JSONSerializers.textType,
+
+        issueStatus: function(value) {
+            var parentObject;
+
+            if (this.get('loaded')) {
+                parentObject = this.get('parentObject');
+
+                if (parentObject.get('public')) {
+                    return value;
+                }
+            }
+
+            return undefined;
+        }
+    },
+
     /*
      * Destroys the comment if and only if the text is empty.
      *
@@ -62,44 +105,15 @@ RB.BaseComment = RB.BaseResource.extend({
     },
 
     /*
-     * Serializes the comment to a payload that can be sent to the server.
-     *
-     * This must be overloaded by subclasses, and the parent version called.
-     */
-    toJSON: function() {
-        var data = _.defaults({
-                force_text_type: this.get('forceTextType') || undefined,
-                include_text_types: this.get('includeTextTypes') || undefined,
-                issue_opened: this.get('issueOpened'),
-                text_type: this.get('richText') ? 'markdown' : 'plain',
-                text: this.get('text')
-            }, RB.BaseResource.prototype.toJSON.call(this)),
-            parentObject;
-
-        if (this.get('loaded')) {
-            parentObject = this.get('parentObject');
-
-            if (parentObject.get('public')) {
-                data.issue_status = this.get('issueStatus');
-            }
-        }
-
-        return data;
-    },
-
-    /*
      * Deserializes comment data from an API payload.
      *
      * This must be overloaded by subclasses, and the parent version called.
      */
     parseResourceData: function(rsp) {
         var rawTextFields = rsp.raw_text_fields || rsp,
-            data = {
-                issueOpened: rsp.issue_opened,
-                issueStatus: rsp.issue_status,
-                richText: rawTextFields.text_type === 'markdown',
-                text: rsp.text
-            };
+            data = RB.BaseResource.prototype.parseResourceData.call(this, rsp);
+
+        data.richText = (rawTextFields.text_type === 'markdown');
 
         if (rsp.raw_text_fields) {
             data.rawTextFields = {
