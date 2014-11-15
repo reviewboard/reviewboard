@@ -136,7 +136,9 @@ BaseCommentView = Backbone.View.extend({
             .change(_.bind(function() {
                 this.model.set('issueOpened',
                                this.$issueOpened.prop('checked'));
-                this.model.save();
+                this.model.save({
+                    attrs: ['forceTextType', 'includeTextTypes', 'issueOpened']
+                });
             }, this));
 
         $editFields = this.$('.edit-fields');
@@ -156,11 +158,13 @@ BaseCommentView = Backbone.View.extend({
             .on({
                 complete: _.bind(function(e, value) {
                     this.model.set({
-                        forceTextType: 'html',
                         text: value,
                         richText: this.textEditor.richText
                     });
-                    this.model.save();
+                    this.model.save({
+                        attrs: ['forceTextType', 'includeTextTypes',
+                                'richText', 'text'],
+                    });
                 }, this)
             });
 
@@ -427,10 +431,10 @@ HeaderFooterCommentView = Backbone.View.extend({
                     this.model.set(this.propertyName, value);
                     this.model.set(this.richTextPropertyName,
                                    this.textEditor.richText);
-                    this.model.set({
-                        forceTextType: 'html'
+                    this.model.save({
+                        attrs: [this.propertyName, this.richTextPropertyName,
+                                'forceTextType', 'includeTextTypes']
                     });
-                    this.model.save();
                 }, this),
                 cancel: _.bind(function() {
                     if (!this.model.get(this.propertyName)) {
@@ -526,10 +530,14 @@ HeaderFooterCommentView = Backbone.View.extend({
     },
 
     _updateRawValue: function() {
+        var rawValues;
+
         if (this.$editor) {
+            rawValues = this.model.get(_getRawValueFieldsName());
+
             this.$editor.inlineEditor('option', {
                 hasRawValue: true,
-                rawValue: this.model.get(_getRawValueFieldsName()).text
+                rawValue: rawValues[this.propertyName]
             });
         }
     }
@@ -622,17 +630,17 @@ RB.ReviewDialogView = Backbone.View.extend({
         this._defaultUseRichText =
             RB.UserSession.instance.get('defaultUseRichText');
 
-        this.model.set('forceTextType', 'html');
         this._queryData = {
             'force-text-type': 'html'
         };
 
         if (this._defaultUseRichText) {
-            this.model.set('includeTextTypes', 'raw,markdown')
             this._queryData['include-text-types'] = 'raw,markdown';
         } else {
             this._queryData['include-text-types'] = 'raw';
         }
+
+        this._setTextTypeAttributes(this.model);
 
         this.options.reviewRequestEditor.incr('editCount');
     },
@@ -708,7 +716,10 @@ RB.ReviewDialogView = Backbone.View.extend({
                         .change(_.bind(function() {
                             this.model.set('shipIt',
                                            this._$shipIt.prop('checked'));
-                            this.model.save();
+                            this.model.save({
+                                attrs: ['forceTextType', 'includeTextTypes',
+                                        'shipIt']
+                            });
                         }, this));
 
                     this._loadComments();
@@ -790,6 +801,8 @@ RB.ReviewDialogView = Backbone.View.extend({
      * Renders a comment to the dialog.
      */
     _renderComment: function(view) {
+        this._setTextTypeAttributes(view.model);
+
         this._commentViews.push(view);
         view.$el.appendTo(this._$comments);
         view.render();
@@ -923,6 +936,8 @@ RB.ReviewDialogView = Backbone.View.extend({
                 });
 
                 this.model.save({
+                    attrs: ['public', 'shipIt', 'forceTextType',
+                            'includeTextTypes'],
                     success: function() {
                         $.funcQueue('reviewForm').next();
                     },
@@ -950,6 +965,17 @@ RB.ReviewDialogView = Backbone.View.extend({
         }, this);
 
         $.funcQueue('reviewForm').start();
+    },
+
+    /*
+     * Sets the text attributes on a model for forcing and including types.
+     */
+    _setTextTypeAttributes: function(model) {
+        model.set({
+            forceTextType: 'html',
+            includeTextTypes: this._defaultUseRichText
+                              ? 'raw,markdown' : 'raw'
+        });
     }
 }, {
     /*
