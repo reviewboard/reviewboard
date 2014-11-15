@@ -5,8 +5,8 @@ import pytz
 from django.contrib.auth.models import User
 from django.http import Http404
 from django.utils.translation import ugettext_lazy as _
-from djblets.datagrid.grids import (Column, DateTimeColumn, DataGrid
-                                    DataGrid, AlphanumericDataGrid)
+from djblets.datagrid.grids import (Column, DateTimeColumn, DataGrid,
+                                    AlphanumericDataGrid)
 from djblets.util.templatetags.djblets_utils import ageid
 
 from reviewboard.accounts.models import Profile, LocalSiteProfile
