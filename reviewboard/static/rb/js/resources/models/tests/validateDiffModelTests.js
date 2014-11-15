@@ -17,4 +17,14 @@ suite('rb/resources/models/ValidateDiffModel', function() {
             });
         });
     });
+
+    describe('toJSON', function() {
+        it('repository field', function() {
+            var data;
+
+            model.set('repository', 123);
+            data = model.toJSON();
+            expect(model.get('repository')).toBe(123);
+        });
+    });
 });

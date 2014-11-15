@@ -16,6 +16,13 @@ RB.DefaultReviewer = RB.BaseResource.extend({
 
     rspNamespace: 'default_reviewer',
 
+    attrToJsonMap: {
+        fileRegex: 'file_regex'
+    },
+
+    serializedAttrs: ['fileRegex', 'name'],
+    deserializedAttrs: ['fileRegex', 'name'],
+
     /*
      * Returns the URL to the resource.
      */
@@ -28,25 +35,5 @@ RB.DefaultReviewer = RB.BaseResource.extend({
         }
 
         return url;
-    },
-
-    /*
-     * Generates a payload for sending to the server.
-     */
-    toJSON: function() {
-        return {
-            name: this.get('name'),
-            file_regex: this.get('fileRegex')
-        };
-    },
-
-    /*
-     * Parses the payload from the server.
-     */
-    parseResourceData: function(rsp) {
-        return {
-            name: rsp.name,
-            fileRegex: rsp.file_regex
-        };
     }
 });

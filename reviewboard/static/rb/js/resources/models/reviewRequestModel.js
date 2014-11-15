@@ -34,7 +34,7 @@ RB.ReviewRequest = RB.BaseResource.extend({
         targetPeople: [],
         testingDone: null,
         testingDoneRichText: false
-    }),
+    }, RB.BaseResource.prototype.defaults),
 
     rspNamespace: 'review_request',
 
@@ -42,6 +42,35 @@ RB.ReviewRequest = RB.BaseResource.extend({
         'force-text-type': 'html',
         'include-text-types': 'raw'
     },
+
+    attrToJsonMap: {
+        bugsClosed: 'bugs_closed',
+        closeDescription: 'close_description',
+        closeDescriptionRichText: 'close_description_text_type',
+        dependsOn: 'depends_on',
+        descriptionRichText: 'description_text_type',
+        lastUpdated: 'last_updated',
+        reviewURL: 'url',
+        targetGroups: 'target_groups',
+        targetPeople: 'target_people',
+        testingDone: 'testing_done',
+        testingDoneRichText: 'testing_done_text_type'
+    },
+
+    deserializedAttrs: [
+        'branch',
+        'bugsClosed',
+        'closeDescription',
+        'dependsOn',
+        'description',
+        'lastUpdated',
+        'public',
+        'reviewURL',
+        'summary',
+        'targetGroups',
+        'targetPeople',
+        'testingDone'
+    ],
 
     initialize: function(attrs, options) {
         options = options || {};
@@ -365,29 +394,18 @@ RB.ReviewRequest = RB.BaseResource.extend({
                 discarded: RB.ReviewRequest.CLOSE_DISCARDED,
                 submitted: RB.ReviewRequest.CLOSE_SUBMITTED
             }[rsp.status],
-            rawTextFields = rsp.raw_text_fields || rsp;
+            rawTextFields = rsp.raw_text_fields || rsp,
+            data = RB.BaseResource.prototype.parseResourceData.call(this, rsp);
 
-        return {
-            branch: rsp.branch,
-            bugsClosed: rsp.bugs_closed,
-            closeDescription: rsp.close_description,
-            closeDescriptionRichText:
-                rawTextFields.close_description_text_type === 'markdown',
-            dependsOn: rsp.depends_on,
-            description: rsp.description,
-            descriptionRichText:
-                rawTextFields.description_text_type === 'markdown',
-            lastUpdated: rsp.last_updated,
-            'public': rsp['public'],
-            reviewURL: rsp.url,
-            summary: rsp.summary,
-            state: state,
-            targetGroups: rsp.target_groups,
-            targetPeople: rsp.target_people,
-            testingDone: rsp.testing_done,
-            testingDoneRichText:
-                rawTextFields.testing_done_text_type === 'markdown'
-        };
+        data.state = state;
+        data.closeDescriptionRichText =
+            (rawTextFields.close_description_text_type === 'markdown');
+        data.descriptionRichText =
+            (rawTextFields.description_text_type === 'markdown');
+        data.testingDoneRichText =
+            (rawTextFields.testing_done_text_type === 'markdown');
+
+        return data;
     }
 }, {
     CHECK_UPDATES_MSECS: 5 * 60 * 1000, // Every 5 minutes

@@ -42,40 +42,60 @@ RB.Review = RB.BaseResource.extend({
 
     rspNamespace: 'review',
 
-    toJSON: function() {
-        var data = {
-            force_text_type: this.get('forceTextType') || undefined,
-            include_text_types: this.get('includeTextTypes') || undefined,
-            ship_it: this.get('shipIt'),
-            body_top: this.get('bodyTop'),
-            body_top_text_type: this.get('bodyTopRichText')
-                                ? 'markdown' : 'plain',
-            body_bottom: this.get('bodyBottom'),
-            body_bottom_text_type: this.get('bodyBottomRichText')
-                                   ? 'markdown' : 'plain'
-        };
+    attrToJsonMap: {
+        bodyBottom: 'body_bottom',
+        bodyBottomRichText: 'body_bottom_text_type',
+        bodyTop: 'body_top',
+        bodyTopRichText: 'body_top_text_type',
+        forceTextType: 'force_text_type',
+        includeTextTypes: 'include_text_types',
+        shipIt: 'ship_it'
+    },
 
-        if (this.get('public')) {
-            data['public'] = 1;
+    serializedAttrs: [
+        'forceTextType',
+        'includeTextTypes',
+        'shipIt',
+        'bodyTop',
+        'bodyTopRichText',
+        'bodyBottom',
+        'bodyBottomRichText',
+        'public'
+    ],
+
+    deserializedAttrs: [
+        'shipIt',
+        'bodyTop',
+        'bodyBottom',
+        'public',
+        'timestamp'
+    ],
+
+    serializers: {
+        forceTextType: RB.JSONSerializers.onlyIfValue,
+        includeTextTypes: RB.JSONSerializers.onlyIfValue,
+        bodyTopRichText: RB.JSONSerializers.textType,
+        bodyBottomRichText: RB.JSONSerializers.textType,
+
+        'public': function(value) {
+            return value ? 1 : undefined;
         }
+    },
 
-        return data;
+    deserializers: {
+        'public': function(value) {
+            return value === '1'
+        }
     },
 
     parseResourceData: function(rsp) {
-        var rawTextFields = rsp.raw_text_fields || rsp;
+        var rawTextFields = rsp.raw_text_fields || rsp,
+            data = RB.BaseResource.prototype.parseResourceData.call(this, rsp);
 
-        var data = {
-            shipIt: rsp.ship_it,
-            bodyTop: rsp.body_top,
-            bodyTopRichText:
-                rawTextFields.body_top_text_type === 'markdown',
-            bodyBottom: rsp.body_bottom,
-            bodyBottomRichText:
-                rawTextFields.body_bottom_text_type === 'markdown',
-            'public': rsp['public'],
-            timestamp: rsp.timestamp
-        };
+        data.bodyTopRichText =
+            (rawTextFields.body_top_text_type === 'markdown')
+        data.bodyBottomRichText =
+            (rawTextFields.body_bottom_text_type === 'markdown')
 
         if (rsp.raw_text_fields) {
             data.rawTextFields = {

@@ -20,15 +20,11 @@ RB.ValidateDiffModel = RB.Diff.extend({
         localSitePrefix: ''
     }, RB.Diff.prototype.defaults),
 
+    serializedAttrs: ['repository'],
+
     url: function() {
         return SITE_ROOT + this.get('localSitePrefix') +
                'api/validation/diffs/';
-    },
-
-    toJSON: function() {
-        var payload = _super(this).toJSON.apply(this, arguments);
-        payload.repository = this.get('repository');
-        return payload;
     },
 
     parse: function(/* response */) {

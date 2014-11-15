@@ -1,3 +1,9 @@
+(function() {
+
+
+var parentProto = RB.BaseComment.prototype;
+
+
 RB.ScreenshotComment = RB.BaseComment.extend({
     defaults: _.defaults({
         /* The X coordinate for the top-left of the comment region. */
@@ -20,41 +26,44 @@ RB.ScreenshotComment = RB.BaseComment.extend({
 
         /* The URL to an image depicting what was commented on. */
         thumbnailURL: null
-    }, RB.BaseComment.prototype.defaults),
+    }, parentProto.defaults),
 
     rspNamespace: 'screenshot_comment',
     expandedFields: ['screenshot'],
 
-    /*
-     * Serializes the comment to a payload that can be sent to the server.
-     */
-    toJSON: function() {
-        var data = RB.BaseComment.prototype.toJSON.call(this);
+    attrToJsonMap: _.defaults({
+        width: 'w',
+        height: 'h',
+        thumbnailURL: 'thumbnail_url',
+        screenshotID: 'screenshot_id'
+    }, parentProto.attrToJsonMap),
 
-        data.x = this.get('x');
-        data.y = this.get('y');
-        data.w = this.get('width');
-        data.h = this.get('height');
+    serializedAttrs: [
+        'x',
+        'y',
+        'width',
+        'height',
+        'screenshotID'
+    ].concat(parentProto.serializedAttrs),
 
-        if (!this.get('loaded')) {
-            data.screenshot_id = this.get('screenshotID');
-        }
+    deserializedAttrs: [
+        'x',
+        'y',
+        'width',
+        'height',
+        'thumbnailURL'
+    ].concat(parentProto.deserializedAttrs),
 
-        return data;
-    },
+    serializers: _.defaults({
+        screenshotID: RB.JSONSerializers.onlyIfUnloaded
+    }, parentProto.serializers),
 
     /*
      * Deserializes comment data from an API payload.
      */
     parseResourceData: function(rsp) {
-        var result = RB.BaseComment.prototype.parseResourceData.call(this,
-                                                                     rsp);
+        var result = parentProto.parseResourceData.call(this, rsp);
 
-        result.x = rsp.x;
-        result.y = rsp.y;
-        result.width = rsp.w;
-        result.height = rsp.h;
-        result.thumbnailURL = rsp.thumbnail_url;
         result.screenshot = new RB.Screenshot(rsp.screenshot, {
             parse: true
         });
@@ -92,7 +101,7 @@ RB.ScreenshotComment = RB.BaseComment.extend({
             return strings.INVALID_HEIGHT;
         }
 
-        return RB.BaseComment.prototype.validate.call(this, attrs, options);
+        return parentProto.validate.call(this, attrs, options);
     }
 }, {
     strings: {
@@ -103,3 +112,6 @@ RB.ScreenshotComment = RB.BaseComment.extend({
         INVALID_HEIGHT: 'height must be > 0'
     }
 });
+
+
+})();

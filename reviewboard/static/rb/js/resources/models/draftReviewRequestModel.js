@@ -31,6 +31,31 @@ RB.DraftReviewRequest = RB.BaseResource.extend(_.defaults({
         'include-text-types': 'raw'
     },
 
+    attrToJsonMap: {
+        bugsClosed: 'bugs_closed',
+        changeDescription: 'changedescription',
+        changeDescriptionRichText: 'changedescription_text_type',
+        dependsOn: 'depends_on',
+        descriptionRichText: 'description_text_type',
+        targetGroups: 'target_groups',
+        targetPeople: 'target_people',
+        testingDone: 'testing_done',
+        testingDoneRichText: 'testing_done_text_type'
+    },
+
+    deserializedAttrs: [
+        'branch',
+        'bugsClosed',
+        'changeDescription',
+        'dependsOn',
+        'description',
+        'public',
+        'summary',
+        'targetGroups',
+        'targetPeople',
+        'testingDone'
+    ],
+
     url: function() {
         return this.get('parentObject').get('links').draft.href;
     },
@@ -103,26 +128,17 @@ RB.DraftReviewRequest = RB.BaseResource.extend(_.defaults({
     },
 
     parseResourceData: function(rsp) {
-        var rawTextFields = rsp.raw_text_fields || rsp;
+        var rawTextFields = rsp.raw_text_fields || rsp,
+            data = RB.BaseResource.prototype.parseResourceData.call(this, rsp);
 
-        return {
-            branch: rsp.branch,
-            bugsClosed: rsp.bugs_closed,
-            changeDescription: rsp.changedescription,
-            changeDescriptionRichText:
-                rawTextFields.changedescription_text_type === 'markdown',
-            dependsOn: rsp.depends_on,
-            description: rsp.description,
-            'public': rsp['public'],
-            descriptionRichText:
-                rawTextFields.description_text_type === 'markdown',
-            summary: rsp.summary,
-            targetGroups: rsp.target_groups,
-            targetPeople: rsp.target_people,
-            testingDone: rsp.testing_done,
-            testingDoneRichText:
-                rawTextFields.testing_done_text_type === 'markdown'
-        };
+        data.changeDescriptionRichText =
+            (rawTextFields.changedescription_text_type === 'markdown');
+        data.descriptionRichText =
+            (rawTextFields.description_text_type === 'markdown');
+        data.testingDoneRichText =
+            (rawTextFields.testing_done_text_type === 'markdown');
+
+        return data;
     }
 }, RB.DraftResourceModelMixin),
 {

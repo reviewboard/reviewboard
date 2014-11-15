@@ -34,6 +34,32 @@ RB.BaseCommentReply = RB.BaseResource.extend({
         text: ''
     }, RB.BaseResource.prototype.defaults),
 
+    attrToJsonMap: {
+        forceTextType: 'force_text_type',
+        includeTextTypes: 'include_text_types',
+        replyToID: 'reply_to_id',
+        richText: 'text_type'
+    },
+
+    serializedAttrs: [
+        'forceTextType',
+        'includeTextTypes',
+        'replyToID',
+        'richText',
+        'text'
+    ],
+
+    deserializedAttrs: [
+        'text'
+    ],
+
+    serializers: {
+        forceTextType: RB.JSONSerializers.onlyIfValue,
+        includeTextTypes: RB.JSONSerializers.onlyIfValue,
+        replyToID: RB.JSONSerializers.onlyIfUnloaded,
+        richText: RB.JSONSerializers.textType
+    },
+
     /*
      * Destroys the comment reply if and only if the text is empty.
      *
@@ -48,37 +74,16 @@ RB.BaseCommentReply = RB.BaseResource.extend({
     },
 
     /*
-     * Serializes the comment reply to a payload that can be sent to the server.
-     *
-     * This must be overloaded by subclasses, and the parent version called.
-     */
-    toJSON: function() {
-        var data = {
-            force_text_type: this.get('forceTextType') || undefined,
-            include_text_types: this.get('includeTextTypes') || undefined,
-            text: this.get('text'),
-            text_type: this.get('richText') ? 'markdown' : 'plain'
-        };
-
-        if (!this.get('loaded')) {
-            data.reply_to_id = this.get('replyToID');
-        }
-
-        return data;
-    },
-
-    /*
      * Deserializes comment reply data from an API payload.
      *
      * This must be overloaded by subclasses, and the parent version called.
      */
     parseResourceData: function(rsp) {
         var rawTextFields = rsp.raw_text_fields || rsp,
-            data = {
-                text: rsp.text,
-                rawTextFields: rsp.raw_text_fields || {},
-                richText: rawTextFields.text_type === 'markdown'
-            };
+            data = RB.BaseResource.prototype.parseResourceData.call(this, rsp);
+
+        data.rawTextFields = rsp.raw_text_fields || {};
+        data.richText = (rawTextFields.text_type === 'markdown');
 
         return data;
     },

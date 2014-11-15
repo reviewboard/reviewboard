@@ -31,35 +31,33 @@ RB.FileAttachment = RB.BaseResource.extend({
     rspNamespace: 'file_attachment',
     payloadFileKeys: ['path'],
 
-    /*
-     * Serializes the changes to the file attachment to a payload.
-     */
-    toJSON: function() {
-        var payload = {
-            caption: this.get('caption')
-        };
-
-        if (this.isNew()) {
-            payload.attachment_history =
-                this.get('attachmentHistoryID') || null;
-            payload.path = this.get('file');
-        }
-
-        return payload;
+    attrToJsonMap: {
+        attachmentHistoryID: 'attachment_history_id',
+        downloadURL: 'url',
+        file: 'path',
+        iconURL: 'icon_url',
+        reviewURL: 'review_url',
+        thumbnailHTML: 'thumbnail'
     },
 
-    /*
-     * Deserializes a file attachment data from an API payload.
-     */
-    parseResourceData: function(rsp) {
-        return {
-            attachmentHistoryID: rsp.attachment_history_id,
-            caption: rsp.caption,
-            downloadURL: rsp.url,
-            filename: rsp.filename,
-            iconURL: rsp.icon_url,
-            reviewURL: rsp.review_url,
-            thumbnailHTML: rsp.thumbnail
-        };
+    serializedAttrs: [
+        'attachmentHistoryID',
+        'caption',
+        'file'
+    ],
+
+    deserializedAttrs: [
+        'attachmentHistoryID',
+        'caption',
+        'downloadURL',
+        'filename',
+        'iconURL',
+        'reviewURL',
+        'thumbnailHTML'
+    ],
+
+    serializers: {
+        attachmentHistoryID: RB.JSONSerializers.onlyIfNew,
+        file: RB.JSONSerializers.onlyIfNew
     }
 });
