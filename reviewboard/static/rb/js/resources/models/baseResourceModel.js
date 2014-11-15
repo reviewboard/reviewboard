@@ -671,8 +671,20 @@ RB.BaseResource = Backbone.Model.extend({
                 data = _.extend({}, this.extraQueryArgs, data);
             }
         } else {
-            data = options.form ? null
-                                : (options.attrs || model.toJSON(options));
+            if (options.form) {
+                data = null;
+            } else if (options.attrs && !_.isArray(options.attrs)) {
+                data = options.attrs;
+            } else {
+                data = model.toJSON(options);
+
+                if (options.attrs) {
+                    data = _.pick(data, _.map(options.attrs, function(attr) {
+                        return this.attrToJsonMap[attr] || attr;
+                    }, this));
+                }
+            }
+
             contentType = 'application/x-www-form-urlencoded';
         }
 
