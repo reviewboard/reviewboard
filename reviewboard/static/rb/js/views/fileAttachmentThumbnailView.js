@@ -206,7 +206,9 @@ RB.FileAttachmentThumbnail = Backbone.View.extend({
                             ready: function() {
                                 self.model.set('caption', value);
                                 self.trigger('endEdit');
-                                self.model.save();
+                                self.model.save({
+                                    attrs: ['caption']
+                                });
                             }
                         });
                     }
