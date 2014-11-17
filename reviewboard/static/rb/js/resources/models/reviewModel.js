@@ -82,12 +82,6 @@ RB.Review = RB.BaseResource.extend({
         }
     },
 
-    deserializers: {
-        'public': function(value) {
-            return value === '1'
-        }
-    },
-
     parseResourceData: function(rsp) {
         var rawTextFields = rsp.raw_text_fields || rsp,
             data = RB.BaseResource.prototype.parseResourceData.call(this, rsp);

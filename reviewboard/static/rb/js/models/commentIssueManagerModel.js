@@ -69,6 +69,7 @@ RB.CommentIssueManager = Backbone.Model.extend({
 
                 comment.set('issueStatus', state);
                 comment.save({
+                    attrs: ['issueStatus'],
                     success: function(comment, rsp) {
                         var rspComment = (rsp.diff_comment ||
                                           rsp.file_attachment_comment ||

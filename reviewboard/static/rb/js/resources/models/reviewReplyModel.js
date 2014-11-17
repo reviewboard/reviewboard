@@ -76,12 +76,6 @@ RB.ReviewReply = RB.BaseResource.extend({
         }
     },
 
-    deserializers: {
-        'public': function(value) {
-            return value === '1'
-        }
-    },
-
     COMMENT_LINK_NAMES: [
         'diff_comments',
         'file_attachment_comments',
