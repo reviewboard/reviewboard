@@ -153,24 +153,28 @@ RB.ReviewReplyEditor = Backbone.Model.extend({
 
         this.listenTo(reviewReply, 'published', function() {
             this.trigger('published');
-            this._resetState();
+            this._resetState(false);
         });
     },
 
     /*
      * Resets the state of the editor.
      */
-    _resetState: function() {
+    _resetState: function(shouldDiscardIfEmpty) {
         this.set({
             commentID: null,
             hasDraft: false,
             replyObject: null
         });
 
-        this.get('reviewReply').discardIfEmpty({
-            success: function() {
-                this.trigger('resetState');
-            }
-        }, this);
+        if (shouldDiscardIfEmpty === false) {
+            this.trigger('resetState');
+        } else {
+            this.get('reviewReply').discardIfEmpty({
+                success: function() {
+                    this.trigger('resetState');
+                }
+            }, this);
+        }
     }
 });
