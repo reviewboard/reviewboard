@@ -17,7 +17,11 @@ RB.DiffFragmentQueueView = Backbone.View.extend({
         this._queue = {};
         this._$window = $(window);
         this._$collapseButtons = $();
-        this._mouse = { x: NaN, y: NaN };
+        this._mouse = {
+            x: null,
+            y: null,
+            watchers: 0
+        };
 
         _.bindAll(this, '_onExpandOrCollapseFinished', '_onMouseMove',
                   '_onScrollOrResize', '_updateCollapseButtonPos');
@@ -246,7 +250,24 @@ RB.DiffFragmentQueueView = Backbone.View.extend({
      * Show the controls on the specified comment container.
      */
     _showControls: function($container) {
-        $container.find('td > div').not('.collapse-floater').slideDown('slow');
+        /*
+         * Monitor mousemove events for a bit to see if the cursor stays over
+         * the comment container instead of passing over it.
+         */
+        this._addMouseWatcher();
+
+        _.delay(
+            _.bind(function() {
+                if (this._isMouseOverTargetContainer($container)) {
+                    $container
+                        .find('td > div')
+                        .not('.collapse-floater')
+                        .slideDown('slow');
+                }
+
+                this._removeMouseWatcher();
+            }, this),
+            this._timeout);
     },
 
     /*
@@ -277,16 +298,53 @@ RB.DiffFragmentQueueView = Backbone.View.extend({
     },
 
     /*
+     * Add a mouse watcher.
+     *
+     * This function keeps track of the number of mouse watchers so that the
+     * event handler is not added twice. This is needed in the case of multiple
+     * _onExpandOrCollapse events firing.
+     */
+    _addMouseWatcher: function() {
+        if (this._mouse.watchers === 0) {
+            this._$window.on('mousemove', this._onMouseMove);
+        }
+
+        this._mouse.watchers++;
+    },
+
+    /*
+     * Remove a mouse watcher.
+     *
+     * This function keeps track of the number of mouse watchers so that the
+     * event handler is only removed if there are no active mouse watchers.
+     */
+    _removeMouseWatcher: function() {
+        this._mouse.watchers--;
+
+        if (this._mouse.watchers === 0) {
+            this._$window.off('mousemove', this._onMouseMove);
+
+            this._mouse.x = null;
+            this._mouse.y = null;
+        }
+    },
+
+    /*
+     * Determine if the mouse is currently over the target comment container.
+     */
+    _isMouseOverTargetContainer: function($target) {
+        var el = document.elementFromPoint(this._mouse.x, this._mouse.y),
+            $over = $(el).closest('.comment_container');
+
+        return $target.get(0) === $over.get(0);
+    },
+
+    /*
      * Handle a mousemove event and update the position we know for the mouse.
      */
     _onMouseMove: function(event) {
-        if (event !== undefined) {
-            this._mouse.x = event.clientX;
-            this._mouse.y = event.clientY;
-        } else {
-            this._mouse.x = NaN;
-            this._mouse.y = NaN;
-        }
+        this._mouse.x = event.clientX;
+        this._mouse.y = event.clientY;
     },
 
     /*
@@ -301,26 +359,14 @@ RB.DiffFragmentQueueView = Backbone.View.extend({
         RB.setActivityIndicator(false, {});
 
         /* We only need mousemove events for a short period of time. */
-        this._$window.on('mousemove', this._onMouseMove);
+        this._addMouseWatcher();
 
         _.delay(_.bind(function() {
-            /*
-             * Find the element the mouse is hovering over. This may or may not
-             * be a comment container.
-             */
-            var atPoint = document.elementFromPoint(this._mouse.x,
-                                                    this._mouse.y),
-                $over = $(atPoint).closest('.comment_container');
-
-            this._$window.off('mousemove', this._onMouseMove);
-
-            /*
-             * Are we still over top of the element that we expanded? If not
-             * we should hide the controls of the expanded element.
-             */
-            if ($over.get(0) !== $expanded.get(0)) {
+            if (!this._isMouseOverContainer($expanded)) {
                 this._hideControls($expanded);
             }
+
+            this._removeMouseWatcher();
         }, this), this._timeout);
     },
 
@@ -331,12 +377,18 @@ RB.DiffFragmentQueueView = Backbone.View.extend({
     _onFirstLoad: function(id) {
         var $container = this.$('#' + this.options.containerPrefix + '_' + id);
 
-        // Don't use _hideControls so that becomes invisible immediately.
+        /*
+         * Don't use _hideControls so that the controls become invisible
+         * immediately.
+         */
         $container.find('td > div').not('.collapse-floater').hide();
 
         $container.hoverIntent({
             timeout: this._timeout,
-            over: _.bind(function() { this._showControls($container); }, this),
+            over: _.bind(function(event) {
+                this._onMouseMove(event);
+                this._showControls($container);
+            }, this),
             out: _.bind(function() { this._hideControls($container); }, this)
         });
     }
