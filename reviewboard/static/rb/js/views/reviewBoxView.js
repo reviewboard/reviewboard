@@ -179,10 +179,6 @@ RB.ReviewBoxView = RB.CollapsableBoxView.extend({
             reviewReply = this.model.createReply();
         }
 
-        this.listenTo(reviewReply, 'destroyed published', function() {
-            this._setupNewReply();
-        });
-
         if (hadReviewReply) {
             this.stopListening(this._reviewReply);
 
@@ -196,6 +192,10 @@ RB.ReviewBoxView = RB.CollapsableBoxView.extend({
 
             this._hideReplyDraftBanner();
         }
+
+        this.listenTo(reviewReply, 'destroyed published', function() {
+            this._setupNewReply();
+        });
 
         this._reviewReply = reviewReply;
     },
