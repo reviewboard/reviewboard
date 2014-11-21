@@ -11,11 +11,14 @@ from reviewboard.extensions.hooks import (CommentDetailDisplayHook,
                                           DiffViewerActionHook,
                                           HeaderActionHook,
                                           HeaderDropdownActionHook,
+                                          HostingServiceHook,
                                           NavigationBarHook,
                                           ReviewRequestActionHook,
                                           ReviewRequestApprovalHook,
                                           ReviewRequestDropdownActionHook,
                                           ReviewRequestFieldSetsHook)
+from reviewboard.hostingsvcs.service import (get_hosting_service,
+                                             HostingService)
 from reviewboard.testing.testcase import TestCase
 from reviewboard.reviews.models.review_request import ReviewRequest
 from reviewboard.reviews.fields import (BaseReviewRequestField,
@@ -171,6 +174,39 @@ class HookTests(TestCase):
         """Testing header drop-down action extension hooks"""
         self._test_dropdown_action_hook('header_dropdown_action_hooks',
                                         HeaderDropdownActionHook)
+
+
+class TestService(HostingService):
+    name = 'test-service'
+
+
+class HostingServiceHookTests(TestCase):
+    """Testing HostingServiceHook."""
+    def setUp(self):
+        super(HostingServiceHookTests, self).setUp()
+
+        manager = ExtensionManager('')
+        self.extension = DummyExtension(extension_manager=manager)
+
+    def tearDown(self):
+        super(HostingServiceHookTests, self).tearDown()
+
+        self.extension.shutdown()
+
+    def test_register(self):
+        """Testing HostingServiceHook initializing"""
+        HostingServiceHook(extension=self.extension, service_cls=TestService)
+
+        self.assertNotEqual(None, get_hosting_service(TestService.name))
+
+    def test_unregister(self):
+        """Testing HostingServiceHook uninitializing"""
+        hook = HostingServiceHook(extension=self.extension,
+                                  service_cls=TestService)
+
+        hook.shutdown()
+
+        self.assertEqual(None, get_hosting_service(TestService.name))
 
 
 class SandboxExtension(Extension):
