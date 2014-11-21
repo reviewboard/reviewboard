@@ -14,6 +14,8 @@ from reviewboard.attachments.mimetypes import (register_mimetype_handler,
                                                unregister_mimetype_handler)
 from reviewboard.datagrids.grids import (DashboardDataGrid,
                                          UserPageReviewRequestDataGrid)
+from reviewboard.hostingsvcs.service import (register_hosting_service,
+                                             unregister_hosting_service)
 from reviewboard.reviews.fields import (get_review_request_fieldset,
                                         register_review_request_fieldset,
                                         unregister_review_request_fieldset)
@@ -177,6 +179,21 @@ class DashboardSidebarItemsHook(DataGridSidebarItemsHook):
     def __init__(self, extension, item_classes):
         super(DashboardSidebarItemsHook, self).__init__(
             extension, DashboardDataGrid, item_classes)
+
+
+@six.add_metaclass(ExtensionHookPoint)
+class HostingServiceHook(ExtensionHook):
+    """A hook for registering a hosting service."""
+    def __init__(self, extension, service_cls):
+        super(HostingServiceHook, self).__init__(extension)
+
+        self.name = service_cls.name
+        register_hosting_service(service_cls.name, service_cls)
+
+    def shutdown(self):
+        super(HostingServiceHook, self).shutdown()
+
+        unregister_hosting_service(self.name)
 
 
 @six.add_metaclass(ExtensionHookPoint)
@@ -500,6 +517,7 @@ __all__ = [
     'FileAttachmentThumbnailHook',
     'HeaderActionHook',
     'HeaderDropdownActionHook',
+    'HostingServiceHook',
     'NavigationBarHook',
     'ReviewRequestActionHook',
     'ReviewRequestApprovalHook',
