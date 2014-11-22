@@ -2,12 +2,14 @@ from __future__ import unicode_literals
 
 import logging
 import os
+import subprocess
 
 from django.contrib.staticfiles.templatetags.staticfiles import static
 from django.utils.html import escape
 from django.utils.encoding import smart_str, force_unicode
 from django.utils.safestring import mark_safe
 from djblets.cache.backend import cache_memoize
+from djblets.util.filesystem import is_exe_in_path
 from djblets.util.templatetags.djblets_images import thumbnail
 from pipeline.storage import default_storage
 from pygments import highlight
@@ -19,6 +21,70 @@ import mimeparse
 
 
 _registered_mimetype_handlers = []
+
+DEFAULT_MIMETYPE = 'application/octet-stream'
+
+
+def guess_mimetype(uploaded_file):
+    """Guess the mimetype of an uploaded file.
+
+    Uploaded files don't necessarily have valid mimetypes provided,
+    so attempt to guess them when they're blank.
+
+    This only works if `file` is in the path. If it's not, or guessing
+    fails, we fall back to a mimetype of application/octet-stream.
+    """
+    if not is_exe_in_path('file'):
+        return DEFAULT_MIMETYPE
+
+    # The browser didn't know what this was, so we'll need to do
+    # some guess work. If we have 'file' available, use that to
+    # figure it out.
+    p = subprocess.Popen(['file', '--mime-type', '-b', '-'],
+                         stdout=subprocess.PIPE,
+                         stderr=subprocess.PIPE,
+                         stdin=subprocess.PIPE)
+
+    # Write the content from the file until file has enough data to
+    # make a determination.
+    for chunk in uploaded_file.chunks():
+        try:
+            p.stdin.write(chunk)
+        except IOError:
+            # file closed, so we hopefully have an answer.
+            break
+
+    p.stdin.close()
+    ret = p.wait()
+
+    if ret == 0:
+        mimetype = p.stdout.read().strip()
+
+    # Reset the read position so we can properly save this.
+    uploaded_file.seek(0)
+
+    return mimetype or DEFAULT_MIMETYPE
+
+
+def get_uploaded_file_mimetype(uploaded_file):
+    """Returns the mimetype of a file that was uploaded.
+
+    There are several things that can go wrong with browser-provided
+    mimetypes. In one case (bug 3427), Firefox on Linux Mint was
+    providing a mimetype that looked like 'text/text/application/pdf',
+    which is unparseable. IE also has a habit of setting any unknown file
+    type to 'application/octet-stream', rather than just choosing not to
+    provide a mimetype. In the case where what we get from the browser
+    is obviously wrong, try to guess.
+    """
+    if (uploaded_file.content_type and
+        len(uploaded_file.content_type.split('/')) == 2 and
+            uploaded_file.content_type != 'application/octet-stream'):
+        mimetype = uploaded_file.content_type
+    else:
+        mimetype = guess_mimetype(uploaded_file)
+
+    return mimetype
 
 
 def register_mimetype_handler(handler):
