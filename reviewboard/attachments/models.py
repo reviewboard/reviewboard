@@ -3,6 +3,7 @@ from __future__ import unicode_literals
 import logging
 import os
 
+from django.contrib.auth.models import User
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
 from django.db.models import Max
@@ -15,6 +16,7 @@ from reviewboard.attachments.managers import FileAttachmentManager
 from reviewboard.attachments.mimetypes import MimetypeHandler
 from reviewboard.diffviewer.models import FileDiff
 from reviewboard.scmtools.models import Repository
+from reviewboard.site.models import LocalSite
 
 
 class FileAttachmentHistory(models.Model):
@@ -62,8 +64,20 @@ class FileAttachment(models.Model):
                                      max_length=256, blank=True)
     orig_filename = models.CharField(_('original filename'),
                                      max_length=256, blank=True, null=True)
+    user = models.ForeignKey(User,
+                             blank=True,
+                             null=True,
+                             related_name="file_attachments")
+
+    local_site = models.ForeignKey(LocalSite,
+                                   blank=True,
+                                   null=True,
+                                   related_name="file_attachments")
+
     file = models.FileField(_("file"),
                             max_length=512,
+                            blank=True,
+                            null=True,
                             upload_to=os.path.join('uploaded', 'files',
                                                    '%Y', '%m', '%d'))
     mimetype = models.CharField(_('mimetype'), max_length=256, blank=True)
@@ -142,7 +156,12 @@ class FileAttachment(models.Model):
         # Older versions of Review Board didn't store the original filename,
         # instead just using the FileField's name. Newer versions have
         # a dedicated filename field.
-        return self.orig_filename or os.path.basename(self.file.name)
+        if self.file:
+            alt = os.path.basename(self.file.name)
+        else:
+            alt = None
+
+        return self.orig_filename or alt
 
     @property
     def display_name(self):
@@ -204,12 +223,36 @@ class FileAttachment(models.Model):
         return self._comments
 
     def get_absolute_url(self):
+        if not self.file:
+            return None
+
         url = self.file.url
 
         if url.startswith('http:') or url.startswith('https:'):
             return url
 
         return build_server_url(url)
+
+    def is_accessible_by(self, user):
+        """Returns whether or not the user has access to this FileAttachment.
+
+        This checks that the user has access to the LocalSite if the attachment
+        is associated with a local site. This is only applicable for user owned
+        file attachments.
+        """
+        return (self.user and user.is_authenticated() and
+                (user.is_superuser or self.user == user) and
+                (not self.local_site or
+                 self.local_site.is_accessible_by(user)))
+
+    def is_mutable_by(self, user):
+        """Returns whether or not a user can modify this FileAttachment.
+
+        This checks that the user is either a superuser or the owner of the
+        file attachment. This is only applicable for user owned file
+        attachments.
+        """
+        return self.user and (user.is_superuser or self.user == user)
 
     class Meta:
         get_latest_by = 'attachment_revision'
