@@ -10,6 +10,8 @@ from reviewboard.accounts.backends import (register_auth_backend,
 from reviewboard.accounts.pages import (get_page_class,
                                         register_account_page_class,
                                         unregister_account_page_class)
+from reviewboard.admin.widgets import (register_admin_widget,
+                                       unregister_admin_widget)
 from reviewboard.attachments.mimetypes import (register_mimetype_handler,
                                                unregister_mimetype_handler)
 from reviewboard.datagrids.grids import (DashboardDataGrid,
@@ -110,6 +112,26 @@ class AccountPageFormsHook(ExtensionHook):
 
         for form_class in self.form_classes:
             page_class.remove_form(form_class)
+
+
+@six.add_metaclass(ExtensionHookPoint)
+class AdminWidgetHook(ExtensionHook):
+    """A hook for adding a new widget to the admin screen.
+
+    By default the new widget is added as a small widget in the right column
+    of the admin page. To instead add the new widget as a large widget in the
+    center of the admin page, pass in True for ``primary``.
+    """
+    def __init__(self, extension, widget_cls, primary=False):
+        super(AdminWidgetHook, self).__init__(extension)
+
+        self.widget_cls = widget_cls
+        register_admin_widget(widget_cls, primary)
+
+    def shutdown(self):
+        super(AdminWidgetHook, self).shutdown()
+
+        unregister_admin_widget(self.widget_cls)
 
 
 @six.add_metaclass(ExtensionHookPoint)
@@ -506,6 +528,7 @@ __all__ = [
     'AccountPageFormsHook',
     'AccountPagesHook',
     'ActionHook',
+    'AdminWidgetHook',
     'AuthBackendHook',
     'CommentDetailDisplayHook',
     'DashboardColumnsHook',

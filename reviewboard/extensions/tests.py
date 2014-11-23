@@ -6,8 +6,12 @@ from django.test.client import RequestFactory
 from djblets.extensions.manager import ExtensionManager
 from djblets.extensions.models import RegisteredExtension
 
+from reviewboard.admin.widgets import (primary_widgets,
+                                       secondary_widgets,
+                                       Widget)
 from reviewboard.extensions.base import Extension
-from reviewboard.extensions.hooks import (CommentDetailDisplayHook,
+from reviewboard.extensions.hooks import (AdminWidgetHook,
+                                          CommentDetailDisplayHook,
                                           DiffViewerActionHook,
                                           HeaderActionHook,
                                           HeaderDropdownActionHook,
@@ -226,6 +230,46 @@ class HostingServiceHookTests(TestCase):
         hook.shutdown()
 
         self.assertEqual(None, get_hosting_service(TestService.name))
+
+
+class TestWidget(Widget):
+    widget_id = 'test'
+    title = 'Testing Widget'
+
+
+class AdminWidgetHookTests(TestCase):
+    """Testing AdminWidgetHook."""
+    def setUp(self):
+        super(AdminWidgetHookTests, self).setUp()
+
+        manager = ExtensionManager('')
+        self.extension = DummyExtension(extension_manager=manager)
+
+    def tearDown(self):
+        super(AdminWidgetHookTests, self).tearDown()
+
+        self.extension.shutdown()
+
+    def test_register(self):
+        """Testing AdminWidgetHook initializing"""
+        AdminWidgetHook(extension=self.extension, widget_cls=TestWidget)
+
+        self.assertIn(TestWidget, secondary_widgets)
+
+    def test_register_with_primary(self):
+        """Testing AdminWidgetHook initializing with primary set"""
+        AdminWidgetHook(extension=self.extension, widget_cls=TestWidget,
+                        primary=True)
+
+        self.assertIn(TestWidget, primary_widgets)
+
+    def test_unregister(self):
+        """Testing AdminWidgetHook unitializing"""
+        hook = AdminWidgetHook(extension=self.extension, widget_cls=TestWidget)
+
+        hook.shutdown()
+
+        self.assertNotIn(TestWidget, secondary_widgets)
 
 
 class SandboxExtension(Extension):
