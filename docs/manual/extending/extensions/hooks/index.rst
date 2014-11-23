@@ -26,6 +26,7 @@ The following hooks are available for use by extensions.
    dashboard-columns-hook
    datagrid-columns-hook
    file-attachment-thumbnail-hook
+   hosting-service-hook
    navigation-bar-hook
    review-request-approval-hook
    review-request-fieldsets-hook
