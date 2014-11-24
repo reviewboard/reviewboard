@@ -25,6 +25,7 @@ def validate_bug_tracker(input_url):
               "encoded values (e.g. '%%20'), prepend the encoded values with "
               "an additional '%%'.") % input_url])
 
+
 def validate_bug_tracker_base_hosting_url(input_url):
     """Check that hosting service bug URLs don't contain %s."""
     # Try formatting the URL using an empty tuple to verify that it
