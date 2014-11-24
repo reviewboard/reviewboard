@@ -805,7 +805,7 @@ class StorageSettingsForm(SiteSettingsForm):
             ('filesystem', _('Host file system')),
             ('s3', _('Amazon S3')),
             # TODO: I haven't tested CouchDB at all, so it's turned off
-            #('couchdb', _('CouchDB')),
+            # ('couchdb', _('CouchDB')),
         ),
         help_text=_('Storage method and location for uploaded files, such as '
                     'screenshots and file attachments.'),
@@ -846,11 +846,11 @@ class StorageSettingsForm(SiteSettingsForm):
     # (especially AWS_HEADERS, which is a dictionary). For now, defaults will
     # suffice.
     #
-    #'aws_headers':            'AWS_HEADERS',
-    #'aws_default_acl':        'AWS_DEFAULT_ACL',
-    #'aws_querystring_active': 'AWS_QUERYSTRING_ACTIVE',
-    #'aws_querystring_expire': 'AWS_QUERYSTRING_EXPIRE',
-    #'aws_s3_secure_urls':     'AWS_S3_SECURE_URLS',
+    # 'aws_headers':            'AWS_HEADERS',
+    # 'aws_default_acl':        'AWS_DEFAULT_ACL',
+    # 'aws_querystring_active': 'AWS_QUERYSTRING_ACTIVE',
+    # 'aws_querystring_expire': 'AWS_QUERYSTRING_EXPIRE',
+    # 'aws_s3_secure_urls':     'AWS_S3_SECURE_URLS',
 
     couchdb_default_server = forms.CharField(
         label=_('Default server'),
@@ -861,7 +861,7 @@ class StorageSettingsForm(SiteSettingsForm):
     # how to let users set it via siteconfig, since it's a dictionary. Since I
     # haven't tested the CouchDB backend at all, it'll just sit here for now.
     #
-    #'couchdb_storage_options': 'COUCHDB_STORAGE_OPTIONS',
+    # 'couchdb_storage_options': 'COUCHDB_STORAGE_OPTIONS',
 
     def load(self):
         can_use_amazon_s3, reason = get_can_use_amazon_s3()
