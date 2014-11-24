@@ -51,7 +51,8 @@ def dashboard(request, template_name="admin/dashboard.html"):
 
     selected_secondary_widgets = []
     unselected_secondary_widgets = []
-    secondary_widget_selections = profile_data.get('secondary_widget_selections')
+    secondary_widget_selections = \
+        profile_data.get('secondary_widget_selections')
     if secondary_widget_selections:
         for s in secondary_widgets:
             if secondary_widget_selections[s.widget_id] == "1":
