@@ -1757,12 +1757,12 @@ class GitTests(SCMTestCase):
             raise nose.SkipTest('git binary not found')
 
     def _read_fixture(self, filename):
-        return open(
-            os.path.join(os.path.dirname(__file__), 'testdata', filename),
-            'r').read()
+        filename = os.path.join(os.path.dirname(__file__),
+                                'testdata', filename)
+        with open(filename, 'r') as f:
+            return f.read()
 
     def _get_file_in_diff(self, diff, filenum=0):
-        return self.tool.get_parser(diff).parse()[filenum]
         files = self.tool.get_parser(diff).parse()
         self.assertTrue(filenum < len(files))
         return files[filenum]
