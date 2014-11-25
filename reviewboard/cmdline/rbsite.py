@@ -1174,7 +1174,7 @@ class InstallCommand(Command):
                          help="port that the web server should listen on",
                          default='80')
         group.add_option("--python-loader",
-                        default='wsgi',
+                         default='wsgi',
                          help="python loader for apache (fastcgi or wsgi)")
         group.add_option("--admin-user", default="admin",
                          help="the site administrator's username")
