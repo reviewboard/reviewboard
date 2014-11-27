@@ -5,10 +5,14 @@ import shutil
 import tempfile
 
 from django.conf import settings
+from django.contrib.auth.models import User
 from django.forms import ValidationError
+from django.test.client import RequestFactory
 from djblets.siteconfig.models import SiteConfiguration
+from kgb import SpyAgency
 
 from reviewboard.admin import checks
+from reviewboard.admin.widgets import Widget
 from reviewboard.ssh.client import SSHClient
 from reviewboard.admin.validation import validate_bug_tracker
 from reviewboard.site.urlresolvers import local_site_reverse
@@ -159,3 +163,47 @@ class SSHSettingsFormTestCase(TestCase):
 
         # Check whether the key has been deleted.
         self.assertEqual(self.ssh_client.get_user_key(), None)
+
+
+class SandboxWidget(Widget):
+    def generate_data(self, request):
+        raise Exception
+
+    def generate_cache_key(self, request):
+        raise Exception
+
+
+class SandboxTests(SpyAgency, TestCase):
+    """Testing extension sandboxing."""
+    def setUp(self):
+        super(SandboxTests, self).setUp()
+
+        self.factory = RequestFactory()
+        self.request = self.factory.get('test')
+        self.request.user = User.objects.create_user(username='reviewboard',
+                                                     email='',
+                                                     password='password')
+
+    def tearDown(self):
+        super(SandboxTests, self).tearDown()
+
+    def test_generate_data_admin_widget(self):
+        """Testing Widget for generate_data"""
+        widget = SandboxWidget()
+
+        self.spy_on(widget.generate_data)
+
+        widget.cache_data = False
+        widget.render(request=self.request)
+
+        self.assertTrue(widget.generate_data.called)
+
+    def test_generate_cache_key_admin_widget(self):
+        """Testing Widget for generate_cache_key"""
+        widget = SandboxWidget()
+
+        self.spy_on(widget.generate_cache_key)
+
+        widget.render(request=self.request)
+
+        self.assertTrue(widget.generate_cache_key.called)

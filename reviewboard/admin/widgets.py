@@ -70,10 +70,21 @@ class Widget(object):
         """
         if self.has_data and self.data is None:
             if self.cache_data:
-                self.data = cache_memoize(self.generate_cache_key(request),
-                                          lambda: self.generate_data(request))
+                try:
+                    self.data = cache_memoize(self.generate_cache_key(request),
+                                              lambda: self.generate_data(request))
+                except Exception as e:
+                    logging.error('Error when calling generate_data or '
+                                  'generate_cache_key for Admin Widget '
+                                  '%r: %s',
+                                  self, e, exc_info=1)
             else:
-                self.data = self.generate_data(request)
+                try:
+                    self.data = self.generate_data(request)
+                except Exception as e:
+                    logging.error('Error when calling generate_data for Admin '
+                                  'Widget %r: %s',
+                                  self, e, exc_info=1)
 
         return render_to_string('admin/admin_widget.html',
                                 RequestContext(request, {
