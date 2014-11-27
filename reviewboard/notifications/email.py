@@ -313,7 +313,7 @@ def mail_review_request(review_request, changedesc=None, on_close=False):
     # If the review request is not yet public or has been discarded, don't send
     # any mail. Relax the "discarded" rule when e-mails are sent on closing
     # review requests
-    if (   not review_request.public
+    if (not review_request.public
         or (not on_close and review_request.status == 'D')):
         return
 
