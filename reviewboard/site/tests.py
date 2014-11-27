@@ -87,7 +87,7 @@ class PermissionWrapperTests(TestCase):
     @add_fixtures(['test_users', 'test_site'])
     def test_lookup_site_permission(self):
         """Testing AllPermsWrapper with site permission lookup"""
-        local_site  = LocalSite.objects.get(name=self.local_site_name)
+        local_site = LocalSite.objects.get(name=self.local_site_name)
 
         local_site_profile = LocalSiteProfile.objects.create(
             user=self.user,
