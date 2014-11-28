@@ -3281,3 +3281,37 @@ class HostingServiceRegistrationTests(TestCase):
         # Once unregistered, should not be able to unregister again
         with self.assertRaises(KeyError):
             unregister_hosting_service('dummy-service')
+
+
+class SandboxHostingService(HostingService):
+    name = 'sandbox'
+
+    def is_authorized(self):
+        raise Exception
+
+
+class SandboxTests(SpyAgency, TestCase):
+    """Testing extension sandboxing."""
+    def setUp(self):
+        super(SandboxTests, self).setUp()
+
+        register_hosting_service(SandboxHostingService.name,
+                                 SandboxHostingService)
+
+    def tearDown(self):
+        super(SandboxTests, self).tearDown()
+
+        unregister_hosting_service(SandboxHostingService.name)
+
+    def test_authenticate_auth_backend(self):
+        """Testing HostingService for is_authorized"""
+        account = HostingServiceAccount.objects.create(
+            service_name='sandbox')
+        service = SandboxHostingService(account=account)
+        account._service = service
+
+        self.spy_on(service.is_authorized)
+
+        account.is_authorized
+
+        self.assertTrue(service.is_authorized.called)

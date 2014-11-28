@@ -1,5 +1,7 @@
 from __future__ import unicode_literals
 
+import logging
+
 from django.db import models
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
@@ -45,7 +47,12 @@ class HostingServiceAccount(models.Model):
         service = self.service
 
         if service:
-            return service.is_authorized()
+            try:
+                return service.is_authorized()
+            except Exception as e:
+                logging.error('Error when calling is_authorized for '
+                              'HostingService %r: %s',
+                              service, e, exc_info=1)
         else:
             return False
 
