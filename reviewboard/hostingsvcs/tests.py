@@ -3303,7 +3303,7 @@ class SandboxTests(SpyAgency, TestCase):
 
         unregister_hosting_service(SandboxHostingService.name)
 
-    def test_authenticate_auth_backend(self):
+    def test_is_authorized_hosting_service(self):
         """Testing HostingService for is_authorized"""
         account = HostingServiceAccount.objects.create(
             service_name='sandbox')

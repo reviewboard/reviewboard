@@ -14,6 +14,7 @@ from django.core.cache import cache
 from django.utils import six
 from django.utils.six.moves import zip_longest
 from djblets.util.filesystem import is_exe_in_path
+from kgb import SpyAgency
 import nose
 
 from reviewboard.diffviewer.diffutils import patch
@@ -25,7 +26,7 @@ from reviewboard.hostingsvcs.service import (HostingService,
                                              unregister_hosting_service)
 from reviewboard.reviews.models import Group
 from reviewboard.scmtools.core import (Branch, ChangeSet, Commit, Revision,
-                                       HEAD, PRE_CREATION)
+                                       SCMTool, HEAD, PRE_CREATION)
 from reviewboard.scmtools.errors import (SCMError, FileNotFoundError,
                                          RepositoryNotFoundError,
                                          AuthenticationError)
@@ -2940,3 +2941,114 @@ class RepositoryFormTests(TestCase):
 
         form = RepositoryForm(instance=repository)
         self.assertTrue(form._get_field_data('bug_tracker_use_hosting'))
+
+
+class SandboxHostingService(HostingService):
+    name = 'sandbox'
+    supports_repositories = True
+    has_repository_hook_instructions = True
+
+    def get_password(self):
+        raise Exception
+
+    def authorize(self, username, password, hosting_url, local_site_name=None,
+                  *args, **kwargs):
+        raise Exception
+
+    def get_branches(self, repository):
+        raise Exception
+
+    def get_commits(self, repository, branch=None, start=None):
+        raise Exception
+
+    def get_change(self, repository, revision):
+        raise Exception
+
+    def get_repository_hook_instructions(self, request, repository):
+        raise Exception
+
+
+class SandboxTests(SpyAgency, TestCase):
+    """Testing extension sandboxing."""
+    def setUp(self):
+        super(SandboxTests, self).setUp()
+
+        register_hosting_service(SandboxHostingService.name,
+                                 SandboxHostingService)
+
+    def tearDown(self):
+        super(SandboxTests, self).tearDown()
+
+        unregister_hosting_service(SandboxHostingService.name)
+
+    def test_get_password_hosting_service(self):
+        """Testing HostingService for get_password"""
+        account = HostingServiceAccount.objects.create(
+            service_name='sandbox')
+        service = SandboxHostingService(account=account)
+        account._service = service
+        tool = Tool.objects.create()
+        repository = Repository.objects.create(tool=tool,
+                                               hosting_account=account)
+
+        self.spy_on(service.get_password)
+
+        repository.get_credentials
+
+        self.assertTrue(service.get_password.called)
+
+    def test_authorize_hosting_service(self):
+        """Testing HostingService for authorize"""
+        pass
+
+    def test_get_branches_hosting_service(self):
+        """Testing HostingService for get_branches"""
+        account = HostingServiceAccount.objects.create(
+            service_name='sandbox')
+        service = SandboxHostingService(account=account)
+        account._service = service
+        tool = Tool.objects.create()
+        repository = Repository.objects.create(tool=tool,
+                                               hosting_account=account)
+
+        self.spy_on(service.get_branches)
+
+        repository.get_branches
+
+        self.assertTrue(service.get_branches.called)
+
+    def test_get_commits_hosting_service(self):
+        """Testing HostingService for get_commits"""
+        account = HostingServiceAccount.objects.create(
+            service_name='sandbox')
+        service = SandboxHostingService(account=account)
+        account._service = service
+        tool = Tool.objects.create()
+        repository = Repository.objects.create(tool=tool,
+                                               hosting_account=account)
+
+        self.spy_on(service.get_commits)
+
+        repository.get_commits
+
+        self.assertTrue(service.get_commits.called)
+
+    def test_get_change_hosting_service(self):
+        """Testing HostingService for get_change"""
+        account = HostingServiceAccount.objects.create(
+            service_name='sandbox')
+        service = SandboxHostingService(account=account)
+        account._service = service
+        tool = Tool.objects.create()
+        repository = Repository.objects.create(tool=tool,
+                                               hosting_account=account)
+
+        self.spy_on(service.get_change)
+
+        repository.get_change
+
+        self.assertTrue(service.get_change.called)
+
+    def test_get_repository_hook_instructions_hosting_service(self):
+        """Testing HostingService for get_repository_hook_instructions"""
+        pass
