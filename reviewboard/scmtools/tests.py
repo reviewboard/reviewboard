@@ -554,7 +554,8 @@ class CVSTests(SCMTestCase):
     def test_simple_diff(self):
         """Testing parsing CVS simple diff"""
         diff = (b"Index: testfile\n"
-                b"===================================================================\n"
+                b"==========================================================="
+                b"========\n"
                 b"RCS file: %s/test/testfile,v\n"
                 b"retrieving revision 1.1.1.1\n"
                 b"diff -u -r1.1.1.1 testfile\n"
@@ -603,7 +604,8 @@ class CVSTests(SCMTestCase):
     def test_bad_diff(self):
         """Testing parsing CVS diff with bad info"""
         diff = (b"Index: newfile\n"
-                b"===================================================================\n"
+                b"==========================================================="
+                b"========\n"
                 b"diff -N newfile\n"
                 b"--- /dev/null\t1 Jan 1970 00:00:00 -0000\n"
                 b"+++ newfile\t26 Jul 2007 10:11:45 -0000\n"
@@ -616,7 +618,8 @@ class CVSTests(SCMTestCase):
     def test_bad_diff2(self):
         """Testing parsing CVS bad diff with new file"""
         diff = (b"Index: newfile\n"
-                b"===================================================================\n"
+                b"==========================================================="
+                b"========\n"
                 b"RCS file: newfile\n"
                 b"diff -N newfile\n"
                 b"--- /dev/null\n"
@@ -630,7 +633,8 @@ class CVSTests(SCMTestCase):
     def test_newfile_diff(self):
         """Testing parsing CVS diff with new file"""
         diff = (b"Index: newfile\n"
-                b"===================================================================\n"
+                b"==========================================================="
+                b"========\n"
                 b"RCS file: newfile\n"
                 b"diff -N newfile\n"
                 b"--- /dev/null\t1 Jan 1970 00:00:00 -0000\n"
@@ -650,7 +654,8 @@ class CVSTests(SCMTestCase):
     def test_inter_revision_diff(self):
         """Testing parsing CVS inter-revision diff"""
         diff = (b"Index: testfile\n"
-                b"===================================================================\n"
+                b"==========================================================="
+                b"========\n"
                 b"RCS file: %s/test/testfile,v\n"
                 b"retrieving revision 1.1\n"
                 b"retrieving revision 1.2\n"
@@ -675,7 +680,8 @@ class CVSTests(SCMTestCase):
     def test_unicode_diff(self):
         """Testing parsing CVS diff with unicode filenames"""
         diff = ("Index: téstfile\n"
-                "===================================================================\n"
+                "==========================================================="
+                "========\n"
                 "RCS file: %s/test/téstfile,v\n"
                 "retrieving revision 1.1.1.1\n"
                 "diff -u -r1.1.1.1 téstfile\n"
@@ -2688,7 +2694,8 @@ class RepositoryFormTests(TestCase):
         self.assertEqual(repository.extra_data['hosting_url'],
                          'https://example.com')
 
-    def test_with_hosting_service_self_hosted_and_invalid_existing_account(self):
+    def test_with_hosting_service_self_hosted_and_invalid_existing_account(
+            self):
         """Testing RepositoryForm with a self-hosted hosting service and
         invalid existing account
         """
@@ -2826,7 +2833,8 @@ class RepositoryFormTests(TestCase):
         self.assertFalse('bug_tracker-hosting_account_username'
                          in repository.extra_data)
 
-    def test_with_hosting_service_with_hosting_bug_tracker_and_self_hosted(self):
+    def test_with_hosting_service_with_hosting_bug_tracker_and_self_hosted(
+            self):
         """Testing RepositoryForm with self-hosted hosting service's bug
         tracker
         """
@@ -2918,7 +2926,8 @@ class RepositoryFormTests(TestCase):
             bitbucket_form.fields['test_repo_name'].initial,
             'testrepo')
 
-    def test_with_hosting_service_with_existing_bug_tracker_using_hosting(self):
+    def test_with_hosting_service_with_existing_bug_tracker_using_hosting(
+            self):
         """Testing RepositoryForm with existing bug tracker using hosting
         service
         """

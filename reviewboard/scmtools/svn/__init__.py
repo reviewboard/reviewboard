@@ -38,9 +38,9 @@ class SVNCertificateFailures:
     These map to the various SVN HTTPS certificate failures in libsvn.
     """
     NOT_YET_VALID = 1 << 0
-    EXPIRED       = 1 << 1
-    CN_MISMATCH   = 1 << 2
-    UNKNOWN_CA    = 1 << 3
+    EXPIRED = 1 << 1
+    CN_MISMATCH = 1 << 2
+    UNKNOWN_CA = 1 << 3
 
 
 class SVNTool(SCMTool):
