@@ -162,9 +162,9 @@ class ReviewRequestDataGrid(ShowClosedReviewRequestsMixin, DataGrid):
             self.last_updated.timezone = self.timezone
             self.diff_updated.timezone = self.timezone
 
-
     def load_extra_state(self, profile, allow_hide_closed=True):
-        return super(ReviewRequestDataGrid, self).load_extra_state(profile, allow_hide_closed)
+        return super(ReviewRequestDataGrid, self).load_extra_state(
+            profile, allow_hide_closed)
 
     def post_process_queryset(self, queryset):
         q = queryset.with_counts(self.request.user)
