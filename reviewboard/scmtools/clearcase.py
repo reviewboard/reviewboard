@@ -85,7 +85,7 @@ class ClearCaseTool(SCMTool):
 
             /vobs/comm/network/sntp/src/sntp.c
         """
-        if not '@@' in extended_path:
+        if '@@' not in extended_path:
             return HEAD, extended_path
 
         # Result of regular expression search result is list of tuples. We must
@@ -273,7 +273,7 @@ class ClearCaseTool(SCMTool):
         if extended_path.endswith(os.path.join(os.sep, 'main', '0')):
             revision = PRE_CREATION
         elif (extended_path.endswith('CHECKEDOUT')
-              or not '@@' in extended_path):
+              or '@@' not in extended_path):
             revision = HEAD
         else:
             revision = extended_path.rsplit('@@', 1)[1]
@@ -416,6 +416,7 @@ class ClearCaseDiffParser(DiffParser):
         if revision:
             relpath = relpath + "@@" + revision
         return relpath
+
 
 class ClearCaseDynamicViewClient(object):
     def __init__(self, path):

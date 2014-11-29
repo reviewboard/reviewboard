@@ -341,7 +341,7 @@ class CVSClient(object):
         # If the .cvspass file doesn't exist, CVS will return an error message
         # stating this. This is safe to ignore.
         if ((failure and not errmsg.startswith('==========')) and
-                not '.cvspass does not exist - creating new file' in errmsg):
+            '.cvspass does not exist - creating new file' not in errmsg):
             self.cleanup()
             raise SCMError(errmsg)
 

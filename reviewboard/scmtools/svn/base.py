@@ -22,19 +22,19 @@ class Client(object):
     # Mapping of keywords to known aliases
     keywords = {
         # Standard keywords
-        'author':              AUTHOR_KEYWORDS,
-        'date':                DATE_KEYWORDS,
-        'revision':            REVISION_KEYWORDS,
-        'headURL':             URL_KEYWORDS,
-        'id':                  ID_KEYWORDS,
-        'header':              HEADER_KEYWORDS,
+        'author': AUTHOR_KEYWORDS,
+        'date': DATE_KEYWORDS,
+        'revision': REVISION_KEYWORDS,
+        'headURL': URL_KEYWORDS,
+        'id': ID_KEYWORDS,
+        'header': HEADER_KEYWORDS,
 
         # Aliases
-        'lastchangedby':       AUTHOR_KEYWORDS,
-        'lastchangeddate':     DATE_KEYWORDS,
+        'lastchangedby': AUTHOR_KEYWORDS,
+        'lastchangeddate': DATE_KEYWORDS,
         'lastchangedrevision': REVISION_KEYWORDS,
-        'rev':                 REVISION_KEYWORDS,
-        'url':                 URL_KEYWORDS,
+        'rev': REVISION_KEYWORDS,
+        'url': URL_KEYWORDS,
     }
 
     def __init__(self, config_dir, repopath, username=None, password=None):
