@@ -22,7 +22,9 @@ from distutils.command.install_data import install_data
 from distutils.command.install import INSTALL_SCHEMES
 from distutils.core import Command
 
-from reviewboard import get_package_version, is_release, VERSION, django_version
+from reviewboard import (get_package_version,
+                         is_release, VERSION,
+                         django_version)
 
 
 # Make sure this is a version of Python we are compatible with. This should
@@ -67,7 +69,7 @@ class osx_install_data(install_data):
     def finalize_options(self):
         # By the time finalize_options is called, install.install_lib is
         # set to the fixed directory, so we set the installdir to install_lib.
-        # The # install_data class uses ('install_data', 'install_dir') instead.
+        # The install_data class uses ('install_data', 'install_dir') instead.
         self.set_undefined_options('install', ('install_lib', 'install_dir'))
         install_data.finalize_options(self)
 
@@ -151,7 +153,7 @@ setup(name=PACKAGE_NAME,
       maintainer="Christian Hammond",
       maintainer_email="christian@beanbaginc.com",
       packages=find_packages(),
-      entry_points = {
+      entry_points={
           'console_scripts': [
               'rb-site = reviewboard.cmdline.rbsite:main',
               'rbssh = reviewboard.cmdline.rbssh:main',
@@ -162,7 +164,7 @@ setup(name=PACKAGE_NAME,
               'bugzilla = reviewboard.hostingsvcs.bugzilla:Bugzilla',
               'codebasehq = reviewboard.hostingsvcs.codebasehq:CodebaseHQ',
               'fedorahosted = '
-                  'reviewboard.hostingsvcs.fedorahosted:FedoraHosted',
+              'reviewboard.hostingsvcs.fedorahosted:FedoraHosted',
               'fogbugz = reviewboard.hostingsvcs.fogbugz:FogBugz',
               'github = reviewboard.hostingsvcs.github:GitHub',
               'gitlab = reviewboard.hostingsvcs.gitlab:GitLab',
@@ -211,7 +213,7 @@ setup(name=PACKAGE_NAME,
           'recaptcha-client',
           'Whoosh>=2.6',
       ],
-      dependency_links = [
+      dependency_links=[
           'http://downloads.reviewboard.org/mirror/',
           'http://downloads.reviewboard.org/releases/Djblets/0.8/',
           'http://downloads.reviewboard.org/releases/django-evolution/0.7/',
@@ -230,5 +232,4 @@ setup(name=PACKAGE_NAME,
           "Programming Language :: Python",
           "Topic :: Software Development",
           "Topic :: Software Development :: Quality Assurance",
-      ]
-)
+      ])
