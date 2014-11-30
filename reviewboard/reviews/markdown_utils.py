@@ -20,20 +20,20 @@ MARKDOWN_SPECIAL_CHARS_RE = re.compile(r'([%s])' % MARKDOWN_SPECIAL_CHARS)
 # the markdown rendering, because otherwise it's annoying to look at the
 # source.
 MARKDOWN_ESCAPED_CHARS = set(Markdown.ESCAPED_CHARS)
-MARKDOWN_ESCAPED_CHARS -= set(['.', '#', '-', '+', '_', '(', ')', '*'])
+MARKDOWN_ESCAPED_CHARS -= set(['.', '#', '-', '+', '_', '(', ')', '*', '>'])
 
 ESCAPE_CHARS_RE = re.compile(r"""
     (
     # Numeric lists start with leading whitespace, one or more digits,
     # and then a period
-      ^\s*(\d+\.)+
+      ^\s*(\d+\.)\s
 
     # ATX-style headers start with a hash at the beginning of the line.
-    | ^\s*(\#)+
+    | ^\s*(\#+)
 
     # + and - have special meaning (lists, headers, and rules), but only if
     # they're at the start of the line.
-    | ^\s*[-\+]+
+    | ^\s*([-\+]+)
 
     # _ indicates italic, and __ indicates bold, but not when in the middle
     # of a word.
@@ -48,8 +48,14 @@ ESCAPE_CHARS_RE = re.compile(r"""
     # Named links are in the form of [name](url).
     | (\[) [^\]]* (\]) (\() [^\)]* (\))
 
+    # '>' need only be escaped for blockquotes ('> ...') or automatic links
+    # ('<http://...> or <user@example.com>).
+    | ^((?:\s*>)+)
+    | (?:<(?:(?:[Ff]|[Hh][Tt])[Tt][Pp][Ss]?://[^>]*))(>)
+    | (?:<[^> \!]*@[^> ]*)(>)
+
     # All other special characters
-    | [%s]
+    | ([%s])
     )
     """ % re.escape(''.join(MARKDOWN_ESCAPED_CHARS)),
     re.M | re.VERBOSE)
@@ -78,9 +84,21 @@ def markdown_escape(text):
     This will escape the provided text so that none of the characters will
     be rendered specially by Markdown.
     """
-    return ESCAPE_CHARS_RE.sub(
-        lambda m: MARKDOWN_SPECIAL_CHARS_RE.sub(r'\\\1', m.group(0)),
-        text)
+    def _escape_matches(m):
+        prev_end = m.start(0)
+        new_s = []
+
+        for i, group in enumerate(m.groups()[1:], start=2):
+            if group:
+                new_s.append(m.string[prev_end:m.start(i)])
+                new_s.append(MARKDOWN_SPECIAL_CHARS_RE.sub(r'\\\1', group))
+                prev_end = m.end(i)
+
+        new_s.append(m.string[prev_end:m.end(0)])
+
+        return ''.join(new_s)
+
+    return ESCAPE_CHARS_RE.sub(_escape_matches, text)
 
 
 def markdown_unescape(escaped_text):

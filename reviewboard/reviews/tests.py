@@ -2702,8 +2702,8 @@ class UserInfoboxTests(TestCase):
 
 
 class MarkdownUtilsTests(TestCase):
-    UNESCAPED_TEXT = r'\`*_{}[]()>#+-.!'
-    ESCAPED_TEXT = r'\\\`\*\_\{\}\[\]\(\)\>#+-.\!'
+    UNESCAPED_TEXT = r'\`*_{}[]()#+-.!'
+    ESCAPED_TEXT = r'\\\`\*\_\{\}\[\]\(\)#+-.\!'
 
     def test_markdown_escape(self):
         """Testing markdown_escape"""
@@ -2719,7 +2719,7 @@ class MarkdownUtilsTests(TestCase):
                             '  1. Line. 4.'),
             ('Line. 1.\n'
              '1\\. Line. 2.\n'
-             '1\\.2\\. Line. 3.\n'
+             '1.2. Line. 3.\n'
              '  1\\. Line. 4.'))
 
     def test_markdown_escape_atx_headers(self):
@@ -2787,6 +2787,28 @@ class MarkdownUtilsTests(TestCase):
         self.assertEqual(markdown_escape('](link)'), r'\](link)')
         self.assertEqual(markdown_escape('[foo] ](link)'),
                          r'\[foo\] \](link)')
+
+    def test_markdown_escape_gt_text(self):
+        """Testing markdown_escape with '>' for standard text"""
+        self.assertEqual(markdown_escape('<foo>'), r'<foo>')
+
+    def test_markdown_escape_gt_blockquotes(self):
+        """Testing markdown_escape with '>' for blockquotes"""
+        self.assertEqual(markdown_escape('>'), r'\>')
+        self.assertEqual(markdown_escape('> foo'), r'\> foo')
+        self.assertEqual(markdown_escape('  > foo'), r'  \> foo')
+        self.assertEqual(markdown_escape('> > foo'), r'\> \> foo')
+        self.assertEqual(markdown_escape('  > > foo'), r'  \> \> foo')
+
+    def test_markdown_escape_gt_autolinks(self):
+        """Testing markdown_escape with '>' for autolinks"""
+        self.assertEqual(markdown_escape('<http://www.example.com>'),
+                         r'<http://www.example.com\>')
+
+    def test_markdown_escape_gt_autoemail(self):
+        """Testing markdown_escape with '>' for autoemails"""
+        self.assertEqual(markdown_escape('<user@example.com>'),
+                         r'<user@example.com\>')
 
     def test_markdown_unescape(self):
         """Testing markdown_unescape"""
