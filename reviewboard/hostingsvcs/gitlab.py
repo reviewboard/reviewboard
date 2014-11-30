@@ -126,7 +126,7 @@ class GitLab(HostingService):
             rsp, headers = self.client.json_post(
                 url=self._build_api_url(hosting_url, 'session'),
                 fields={
-                    login_key : username,
+                    login_key: username,
                     'password': password,
                 })
         except HTTPError as e:
@@ -395,4 +395,3 @@ class GitLab(HostingService):
             return True
         except ValidationError:
             return False
-

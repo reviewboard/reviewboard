@@ -276,7 +276,6 @@ class GitHubClient(HostingServiceClient):
 
         return comparison['files'], tree_sha
 
-
     def api_get_heads(self, repo_api_url):
         url = self._build_api_url(repo_api_url, 'git/refs/heads')
 
@@ -1077,8 +1076,8 @@ def post_receive_hook_close_submitted(request, local_site_name=None,
 def _get_review_request_id_to_commits_map(payload, server_url, repository):
     """Returns a dictionary, mapping a review request ID to a list of commits.
 
-    If a commit's commit message does not contain a review request ID, we append
-    the commit to the key None.
+    If a commit's commit message does not contain a review request ID,
+    we append the commit to the key None.
     """
     review_request_id_to_commits_map = defaultdict(list)
 
