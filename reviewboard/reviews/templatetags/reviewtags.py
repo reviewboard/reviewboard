@@ -377,11 +377,12 @@ def for_review_request_fieldset(context, nodelist, review_request_details):
                     'fieldset': fieldset,
                     'show_fieldset_required': (
                         fieldset.show_required and
-                        review_request.status == ReviewRequest.PENDING_REVIEW and
+                        review_request.status ==
+                            ReviewRequest.PENDING_REVIEW and
                         review_request.is_mutable_by(user)),
                     'forloop': {
                         'first': is_first,
-                        }
+                    }
                 })
                 s.append(nodelist.render(context))
                 context.pop()
