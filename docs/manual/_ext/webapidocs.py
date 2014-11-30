@@ -379,8 +379,8 @@ class ResourceDirective(Directive):
                 field_type = self.get_resource_class(field_type)
 
             if type(field_type) is list:
-                return [nodes.inline(text='List of ')] + \
-                       get_type_name(field_type[0])
+                return ([nodes.inline(text='List of ')] +
+                        get_type_name(field_type[0]))
             elif type(field_type) is tuple:
                 value_nodes = []
 
@@ -657,7 +657,8 @@ class ResourceTreeDirective(Directive):
             self,
             ':ref:`%s <%s>`' %
             (get_resource_title(resource, is_list, False),
-             'webapi2.0-%s-resource' % get_resource_docname(resource, is_list)))
+             'webapi2.0-%s-resource'
+             % get_resource_docname(resource, is_list)))
 
         bullet_list = nodes.bullet_list()
         item += bullet_list
@@ -863,6 +864,7 @@ def append_detail_row(tbody, header_text, detail):
 FIRST_CAP_RE = re.compile(r'(.)([A-Z][a-z]+)')
 ALL_CAP_RE = re.compile(r'([a-z0-9])([A-Z])')
 
+
 def uncamelcase(name, separator='_'):
     """
     Converts a string from CamelCase into a lowercase name separated by
@@ -890,6 +892,7 @@ def get_resource_title(resource, is_list, append_resource=True):
         s += ' Resource'
 
     return s
+
 
 def get_resource_docname(resource, is_list):
     """Returns the name of the page used for a resource's documentation."""
