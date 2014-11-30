@@ -211,8 +211,10 @@ class FileAttachmentTests(BaseFileAttachmentTestCase):
         with open(filename) as f:
             review_request = self.create_review_request(publish=True)
 
-            file = SimpleUploadedFile(f.name, f.read(),
-                                      content_type='text/plain;charset=utf-16le')
+            file = SimpleUploadedFile(
+                f.name,
+                f.read(),
+                content_type='text/plain;charset=utf-16le')
             form = UploadFileForm(review_request, files={'path': file})
             form.is_valid()
 
