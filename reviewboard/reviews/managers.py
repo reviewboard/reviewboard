@@ -421,7 +421,8 @@ class ReviewManager(ConcurrencyManager):
                     setattr(master_review, attname, review_value)
 
             for attname in ["comments", "screenshot_comments",
-                            "file_attachment_comments"]:
+                            "file_attachment_comments",
+                            "general_comments"]:
                 master_m2m = getattr(master_review, attname)
                 review_m2m = getattr(review, attname)
 

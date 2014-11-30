@@ -19,9 +19,9 @@ from reviewboard import scmtools, initialize
 from reviewboard.attachments.models import FileAttachment
 from reviewboard.diffviewer.models import DiffSet, DiffSetHistory, FileDiff
 from reviewboard.reviews.models import (Comment, FileAttachmentComment,
-                                        Group, Review, ReviewRequest,
-                                        ReviewRequestDraft, Screenshot,
-                                        ScreenshotComment)
+                                        GeneralComment, Group, Review,
+                                        ReviewRequest, ReviewRequestDraft,
+                                        Screenshot, ScreenshotComment)
 from reviewboard.scmtools.models import Repository, Tool
 from reviewboard.site.models import LocalSite
 from reviewboard.webapi.models import WebAPIToken
@@ -495,6 +495,33 @@ class TestCase(DjbletsTestCase):
 
         comment.save()
         review.screenshot_comments.add(comment)
+
+        return comment
+
+    def create_general_comment(self, review, text='My comment',
+                               issue_opened=False, extra_fields=None,
+                               reply_to=None, **kwargs):
+        """Creates a GeneralComment for testing.
+
+        The comment is tied to the given Review. It is populated with
+        default data that can be overridden by the caller.
+        """
+        if issue_opened:
+            issue_status = Comment.OPEN
+        else:
+            issue_status = None
+
+        comment = GeneralComment(
+            text=text,
+            issue_opened=issue_opened,
+            issue_status=issue_status,
+            reply_to=reply_to)
+
+        if extra_fields:
+            comment.extra_data = extra_fields
+
+        comment.save()
+        review.general_comments.add(comment)
 
         return comment
 

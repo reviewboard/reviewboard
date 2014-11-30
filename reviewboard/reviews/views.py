@@ -58,8 +58,9 @@ from reviewboard.reviews.fields import get_review_request_fieldsets
 from reviewboard.reviews.markdown_utils import is_rich_text_default_for_user
 from reviewboard.reviews.models import (BaseComment, Comment,
                                         FileAttachmentComment,
-                                        ReviewRequest, Review,
-                                        Screenshot, ScreenshotComment)
+                                        GeneralComment, Review,
+                                        ReviewRequest, Screenshot,
+                                        ScreenshotComment)
 from reviewboard.scmtools.models import Repository
 from reviewboard.site.decorators import check_local_site_access
 from reviewboard.site.urlresolvers import local_site_reverse
@@ -511,7 +512,8 @@ def review_detail(request,
                 'comments': {
                     'diff_comments': [],
                     'screenshot_comments': [],
-                    'file_attachment_comments': []
+                    'file_attachment_comments': [],
+                    'general_comments': [],
                 },
                 'timestamp': review.timestamp,
                 'class': state,
@@ -572,7 +574,8 @@ def review_detail(request,
         (Comment, 'diff_comments',
          ('comment__filediff', 'comment__first_line', 'comment__timestamp')),
         (ScreenshotComment, 'screenshot_comments', None),
-        (FileAttachmentComment, 'file_attachment_comments', None)):
+        (FileAttachmentComment, 'file_attachment_comments', None),
+        (GeneralComment, 'general_comments', None)):
         # Due to how we initially made the schema, we have a ManyToManyField
         # inbetween comments and reviews, instead of comments having a
         # ForeignKey to the review. This makes it difficult to easily go
