@@ -568,7 +568,6 @@ class BasicGetListTestsWithLocalSiteAndAPITokenMixin(object):
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
 
-
 class BasicPostTestsMixin(BasicTestsMixin):
     """Mixin to add basic HTTP POST unit tests.
 
@@ -853,7 +852,6 @@ class BasicPutTestsWithLocalSiteAndAPITokenMixin(object):
         rsp = self.api_put(url, put_data, expected_status=403)
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
-
 
 
 class BasicPutNotAllowedTestsMixin(BasicTestsMixin):

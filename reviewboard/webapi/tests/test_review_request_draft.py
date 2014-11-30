@@ -57,7 +57,6 @@ class ResourceTests(SpyAgency, ExtraDataListMixin, ExtraDataItemMixin,
         else:
             self.assertEqual(item_rsp['testing_done_text_type'], 'plain')
 
-
     #
     # HTTP DELETE tests
     #

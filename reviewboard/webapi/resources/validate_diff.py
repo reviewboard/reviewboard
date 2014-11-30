@@ -101,8 +101,8 @@ class ValidateDiffResource(DiffResource):
         try:
             query = Q(pk=int(repository), local_site=local_site)
         except ValueError:
-            query = (  Q(local_site=local_site)
-                     & (  Q(path=repository)
+            query = (Q(local_site=local_site)
+                     & (Q(path=repository)
                         | Q(mirror_path=repository)
                         | Q(name=repository)))
 
