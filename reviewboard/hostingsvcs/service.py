@@ -237,6 +237,12 @@ class HostingService(object):
 
     def authorize(self, username, password, hosting_url, local_site_name=None,
                   *args, **kwargs):
+        """Authorizes an account for this hosting service.
+
+        This should be implemented by subclasses if needs_authorization is
+        True, and is expected to return True if authorized, or raise
+        AuthorizationError if not authorized.
+        """
         raise NotImplementedError
 
     def check_repository(self, path, username, password, scmtool_class,

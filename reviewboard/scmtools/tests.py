@@ -26,7 +26,7 @@ from reviewboard.hostingsvcs.service import (HostingService,
                                              unregister_hosting_service)
 from reviewboard.reviews.models import Group
 from reviewboard.scmtools.core import (Branch, ChangeSet, Commit, Revision,
-                                       SCMTool, HEAD, PRE_CREATION)
+                                       HEAD, PRE_CREATION)
 from reviewboard.scmtools.errors import (SCMError, FileNotFoundError,
                                          RepositoryNotFoundError,
                                          AuthenticationError)
@@ -2945,14 +2945,9 @@ class RepositoryFormTests(TestCase):
 
 class SandboxHostingService(HostingService):
     name = 'sandbox'
-    supports_repositories = True
     has_repository_hook_instructions = True
 
     def get_password(self):
-        raise Exception
-
-    def authorize(self, username, password, hosting_url, local_site_name=None,
-                  *args, **kwargs):
         raise Exception
 
     def get_branches(self, repository):
@@ -2993,13 +2988,9 @@ class SandboxTests(SpyAgency, TestCase):
 
         self.spy_on(service.get_password)
 
-        repository.get_credentials
+        repository.get_credentials()
 
         self.assertTrue(service.get_password.called)
-
-    def test_authorize_hosting_service(self):
-        """Testing HostingService for authorize"""
-        pass
 
     def test_get_branches_hosting_service(self):
         """Testing HostingService for get_branches"""
@@ -3013,8 +3004,10 @@ class SandboxTests(SpyAgency, TestCase):
 
         self.spy_on(service.get_branches)
 
-        repository.get_branches
-
+        # No data should returned in cache_memoize
+        self.assertRaisesMessage(TypeError,
+                                 "object of type 'NoneType' has no len()",
+                                 repository.get_branches)
         self.assertTrue(service.get_branches.called)
 
     def test_get_commits_hosting_service(self):
@@ -3029,8 +3022,10 @@ class SandboxTests(SpyAgency, TestCase):
 
         self.spy_on(service.get_commits)
 
-        repository.get_commits
-
+        # No data should be returned in cache_memoize
+        self.assertRaisesMessage(TypeError,
+                                 "object of type 'NoneType' has no len()",
+                                 repository.get_commits)
         self.assertTrue(service.get_commits.called)
 
     def test_get_change_hosting_service(self):
@@ -3042,10 +3037,11 @@ class SandboxTests(SpyAgency, TestCase):
         tool = Tool.objects.create()
         repository = Repository.objects.create(tool=tool,
                                                hosting_account=account)
+        revision = Revision(name='sandbox')
 
         self.spy_on(service.get_change)
 
-        repository.get_change
+        repository.get_change(revision=revision)
 
         self.assertTrue(service.get_change.called)
 

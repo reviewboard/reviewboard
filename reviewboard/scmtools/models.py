@@ -281,7 +281,13 @@ class Repository(models.Model):
 
         if self.hosting_account and self.hosting_account.service:
             username = username or self.hosting_account.username
-            password = password or self.hosting_account.service.get_password()
+            try:
+                password = (password or
+                            self.hosting_account.service.get_password())
+            except Exception as e:
+                logging.error('Error when calling get_password for '
+                              'HostingService %r: %s',
+                              self.hosting_account.service, e, exc_info=1)
 
         return {
             'username': username,
@@ -381,13 +387,23 @@ class Repository(models.Model):
 
         return exists
 
+    def _hosting_service_wrap_callback(self, callback, *args, **kargs):
+        """Wraps a callback function for sandboxing a HostingService."""
+        try:
+            callback(*args, **kargs)
+        except Exception as e:
+            logging.error('Error when calling %r from HostingService %r: %s',
+                          callback, self.hosting_service, e, exc_info=1)
+
     def get_branches(self):
         """Returns a list of branches."""
         hosting_service = self.hosting_service
 
         cache_key = make_cache_key('repository-branches:%s' % self.pk)
         if hosting_service:
-            branches_callable = lambda: hosting_service.get_branches(self)
+            service = self.hosting_service
+            branches_callable = lambda: self._hosting_service_wrap_callback(
+                service.get_branches, self)
         else:
             branches_callable = self.get_scmtool().get_branches
 
@@ -411,8 +427,10 @@ class Repository(models.Model):
         }
 
         if hosting_service:
+            service = self.hosting_service
             commits_callable = \
-                lambda: hosting_service.get_commits(self, **commits_kwargs)
+                lambda: self._hosting_service_wrap_callback(
+                    service.get_commits, self, **commits_kwargs)
         else:
             commits_callable = \
                 lambda: self.get_scmtool().get_commits(**commits_kwargs)
@@ -446,7 +464,9 @@ class Repository(models.Model):
         hosting_service = self.hosting_service
 
         if hosting_service:
-            return hosting_service.get_change(self, revision)
+            service = self.hosting_service
+            return self._hosting_service_wrap_callback(
+                service.get_change, self, revision)
         else:
             return self.get_scmtool().get_change(revision)
 
