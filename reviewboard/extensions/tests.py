@@ -183,11 +183,12 @@ class HookTests(TestCase):
             "{% load rb_extensions %}"
             "{% navigation_bar_hooks %}")
 
-        self.assertEqual(t.render(context).strip(),
-                         '<li><a href="%(url)s">%(label)s</a></li>' % {
-                             'label': entry['label'],
-                             'url': '/dashboard/',
-                         })
+        self.assertEqual(
+            t.render(context).strip(),
+            '<li><a href="%(url)s">%(label)s</a></li>' % {
+                'label': entry['label'],
+                'url': '/dashboard/',
+            })
 
     def test_header_hooks(self):
         """Testing header action extension hooks"""
@@ -512,7 +513,8 @@ class SandboxTests(TestCase):
         """Testing sandboxing ReivewRequestFieldset is_empty function in
         for_review_request_fieldset"""
         fieldset = [BaseReviewRequestTestIsEmptyFieldset]
-        ReviewRequestFieldSetsHook(extension=self.extension, fieldsets=fieldset)
+        ReviewRequestFieldSetsHook(extension=self.extension,
+                                   fieldsets=fieldset)
 
         review = ReviewRequest()
 
@@ -534,7 +536,8 @@ class SandboxTests(TestCase):
         """Testing sandboxing ReviewRequestFieldset init function in
         for_review_request_field"""
         fieldset = [TestInitFieldset]
-        ReviewRequestFieldSetsHook(extension=self.extension, fieldsets=fieldset)
+        ReviewRequestFieldSetsHook(extension=self.extension,
+                                   fieldsets=fieldset)
 
         review = ReviewRequest()
         context = Context({
@@ -553,7 +556,8 @@ class SandboxTests(TestCase):
         """Testing sandboxing ReviewRequestFieldset init function in
         for_review_request_fieldset"""
         fieldset = [BaseReviewRequestTestInitFieldset]
-        ReviewRequestFieldSetsHook(extension=self.extension, fieldsets=fieldset)
+        ReviewRequestFieldSetsHook(extension=self.extension,
+                                   fieldsets=fieldset)
 
         review = ReviewRequest()
         request = self.factory.get('test')
@@ -574,7 +578,8 @@ class SandboxTests(TestCase):
         """Testing sandboxing ReviewRequestFieldset should_render function in
         for_review_request_field"""
         fieldset = [TestShouldRenderFieldset]
-        ReviewRequestFieldSetsHook(extension=self.extension, fieldsets=fieldset)
+        ReviewRequestFieldSetsHook(extension=self.extension,
+                                   fieldsets=fieldset)
 
         review = ReviewRequest()
         context = Context({
@@ -584,7 +589,8 @@ class SandboxTests(TestCase):
 
         t = Template(
             "{% load reviewtags %}"
-            "{% for_review_request_field review_request_details 'test_should_render' %}"
+            "{% for_review_request_field review_request_details"
+            " 'test_should_render' %}"
             "{% end_for_review_request_field %}")
 
         t.render(context).strip()
