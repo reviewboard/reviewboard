@@ -188,7 +188,7 @@ class SandboxTests(SpyAgency, TestCase):
         super(SandboxTests, self).tearDown()
 
     def test_generate_data_admin_widget(self):
-        """Testing Widget for generate_data"""
+        """Testing admin widget sandboxing for generate_data"""
         widget = SandboxWidget()
 
         self.spy_on(widget.generate_data)
@@ -199,11 +199,15 @@ class SandboxTests(SpyAgency, TestCase):
         self.assertTrue(widget.generate_data.called)
 
     def test_generate_cache_key_admin_widget(self):
-        """Testing Widget for generate_cache_key"""
+        """Testing admin widget sandboxing for generate_cache_key"""
         widget = SandboxWidget()
 
         self.spy_on(widget.generate_cache_key)
 
-        widget.render(request=self.request)
+        # No data is returned inside cache_memoizes
+        self.assertRaisesMessage(TypeError,
+                                 "object of type 'NoneType' has no len()",
+                                 widget.render,
+                                 self.request)
 
         self.assertTrue(widget.generate_cache_key.called)
