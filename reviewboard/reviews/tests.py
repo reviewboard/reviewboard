@@ -20,7 +20,8 @@ from reviewboard.attachments.models import FileAttachment
 from reviewboard.reviews.forms import DefaultReviewerForm, GroupForm
 from reviewboard.reviews.markdown_utils import (markdown_escape,
                                                 markdown_unescape,
-                                                normalize_text_for_edit)
+                                                normalize_text_for_edit,
+                                                render_markdown)
 from reviewboard.reviews.models import (Comment,
                                         DefaultReviewer,
                                         Group,
@@ -2706,8 +2707,8 @@ class UserInfoboxTests(TestCase):
 
 
 class MarkdownUtilsTests(TestCase):
-    UNESCAPED_TEXT = r'\`*_{}[]()>#+-.!'
-    ESCAPED_TEXT = r'\\\`\*\_\{\}\[\]\(\)\>#+-.\!'
+    UNESCAPED_TEXT = r'\`*_{}[]()#+-.!'
+    ESCAPED_TEXT = r'\\\`\*\_\{\}\[\]\(\)#+-.\!'
 
     def test_markdown_escape(self):
         """Testing markdown_escape"""
@@ -2723,7 +2724,7 @@ class MarkdownUtilsTests(TestCase):
                             '  1. Line. 4.'),
             ('Line. 1.\n'
              '1\\. Line. 2.\n'
-             '1\\.2\\. Line. 3.\n'
+             '1.2. Line. 3.\n'
              '  1\\. Line. 4.'))
 
     def test_markdown_escape_atx_headers(self):
@@ -2791,6 +2792,28 @@ class MarkdownUtilsTests(TestCase):
         self.assertEqual(markdown_escape('](link)'), r'\](link)')
         self.assertEqual(markdown_escape('[foo] ](link)'),
                          r'\[foo\] \](link)')
+
+    def test_markdown_escape_gt_text(self):
+        """Testing markdown_escape with '>' for standard text"""
+        self.assertEqual(markdown_escape('<foo>'), r'<foo>')
+
+    def test_markdown_escape_gt_blockquotes(self):
+        """Testing markdown_escape with '>' for blockquotes"""
+        self.assertEqual(markdown_escape('>'), r'\>')
+        self.assertEqual(markdown_escape('> foo'), r'\> foo')
+        self.assertEqual(markdown_escape('  > foo'), r'  \> foo')
+        self.assertEqual(markdown_escape('> > foo'), r'\> \> foo')
+        self.assertEqual(markdown_escape('  > > foo'), r'  \> \> foo')
+
+    def test_markdown_escape_gt_autolinks(self):
+        """Testing markdown_escape with '>' for autolinks"""
+        self.assertEqual(markdown_escape('<http://www.example.com>'),
+                         r'<http://www.example.com\>')
+
+    def test_markdown_escape_gt_autoemail(self):
+        """Testing markdown_escape with '>' for autoemails"""
+        self.assertEqual(markdown_escape('<user@example.com>'),
+                         r'<user@example.com\>')
 
     def test_markdown_unescape(self):
         """Testing markdown_unescape"""
@@ -2879,6 +2902,225 @@ class MarkdownUtilsTests(TestCase):
                                        rich_text=True, escape_html=False)
         self.assertEqual(text, '&lt; "test" **foo**')
         self.assertFalse(isinstance(text, SafeText))
+
+
+class MarkdownRenderTests(TestCase):
+    """Unit tests for Markdown rendering."""
+    def test_code_1_blank_line(self):
+        """Testing Markdown rendering with code block and 1 surrounding blank
+        line
+        """
+        self.assertEqual(
+            render_markdown(
+                'begin:\n'
+                '\n'
+                '    if (1) {}\n'
+                '\n'
+                'done.'),
+            ('<p>begin:</p>\n'
+             '<div class="codehilite"><pre>if (1) {}\n'
+             '</pre></div>\n'
+             '<p>done.</p>'))
+
+    def test_code_2_blank_lines(self):
+        """Testing Markdown rendering with code block and 2 surrounding blank
+        lines
+        """
+        self.assertEqual(
+            render_markdown(
+                'begin:\n'
+                '\n'
+                '\n'
+                '    if (1) {}\n'
+                '\n'
+                '\n'
+                'done.'),
+            ('<p>begin:</p>\n'
+             '<p></p>\n'
+             '<div class="codehilite"><pre>if (1) {}\n'
+             '</pre></div>\n'
+             '<p></p>\n'
+             '<p>done.</p>'))
+
+    def test_code_3_blank_lines(self):
+        """Testing Markdown rendering with code block and 3 surrounding blank
+        lines
+        """
+        self.assertEqual(
+            render_markdown(
+                'begin:\n'
+                '\n'
+                '\n'
+                '\n'
+                '    if (1) {}\n'
+                '\n'
+                '\n'
+                '\n'
+                'done.'),
+            ('<p>begin:</p>\n'
+             '<p></p>\n'
+             '<p></p>\n'
+             '<div class="codehilite"><pre>if (1) {}\n'
+             '</pre></div>\n'
+             '<p></p>\n'
+             '<p></p>\n'
+             '<p>done.</p>'))
+
+    def test_code_4_blank_lines(self):
+        """Testing Markdown rendering with code block and 4 surrounding blank
+        lines
+        """
+        self.assertEqual(
+            render_markdown(
+                'begin:\n'
+                '\n'
+                '\n'
+                '\n'
+                '\n'
+                '    if (1) {}\n'
+                '\n'
+                '\n'
+                '\n'
+                '\n'
+                'done.'),
+            ('<p>begin:</p>\n'
+             '<p></p>\n'
+             '<p></p>\n'
+             '<p></p>\n'
+             '<div class="codehilite"><pre>if (1) {}\n'
+             '</pre></div>\n'
+             '<p></p>\n'
+             '<p></p>\n'
+             '<p></p>\n'
+             '<p>done.</p>'))
+
+    def test_lists_1_blank_line(self):
+        """Testing Markdown rendering with 1 blank lines between lists"""
+        # This really just results in a single list. This is Python Markdown
+        # behavior.
+        self.assertEqual(
+            render_markdown(
+                '1. item\n'
+                '\n'
+                '1. item'),
+            ('<ol>\n'
+             '<li>\n'
+             '<p>item</p>\n'
+             '</li>\n'
+             '<li>\n'
+             '<p>item</p>\n'
+             '</li>\n'
+             '</ol>'))
+
+    def test_lists_2_blank_line(self):
+        """Testing Markdown rendering with 2 blank lines between lists"""
+        self.assertEqual(
+            render_markdown(
+                '1. item\n'
+                '\n'
+                '\n'
+                '1. item'),
+            ('<ol>\n'
+             '<li>item</li>\n'
+             '</ol>\n'
+             '<p></p>\n'
+             '<ol>\n'
+             '<li>item</li>\n'
+             '</ol>'))
+
+    def test_lists_3_blank_line(self):
+        """Testing Markdown rendering with 3 blank lines between lists"""
+        self.assertEqual(
+            render_markdown(
+                '1. item\n'
+                '\n'
+                '\n'
+                '\n'
+                '1. item'),
+            ('<ol>\n'
+             '<li>item</li>\n'
+             '</ol>\n'
+             '<p></p>\n'
+             '<p></p>\n'
+             '<ol>\n'
+             '<li>item</li>\n'
+             '</ol>'))
+
+    def test_ol(self):
+        """Testing Markdown rendering with ordered lists"""
+        self.assertEqual(
+            render_markdown(
+                '1. Foo\n'
+                '2. Bar'),
+            ('<ol>\n'
+             '<li>Foo</li>\n'
+             '<li>Bar</li>\n'
+             '</ol>'))
+
+    def test_ol_start(self):
+        """Testing Markdown rendering with ordered lists using start="""
+        self.assertEqual(
+            render_markdown(
+                '5. Foo\n'
+                '6. Bar'),
+            ('<ol start="5" style="counter-reset: li 4">\n'
+             '<li>Foo</li>\n'
+             '<li>Bar</li>\n'
+             '</ol>'))
+
+    def test_text_0_blank_lines(self):
+        """Testing Markdown rendering with 0 blank lines between text"""
+        self.assertEqual(
+            render_markdown(
+                'begin:\n'
+                'done.'),
+            ('<p>begin:<br />\n'
+             'done.</p>'))
+
+    def test_text_1_blank_line(self):
+        """Testing Markdown rendering with 1 blank line between text"""
+        self.assertEqual(
+            render_markdown(
+                'begin:\n'
+                '\n'
+                'done.'),
+            ('<p>begin:</p>\n'
+             '<p>done.</p>'))
+
+    def test_text_2_blank_lines(self):
+        """Testing Markdown rendering with 2 blank lines between text"""
+        self.assertEqual(
+            render_markdown(
+                'begin:\n'
+                '\n'
+                '\n'
+                'done.'),
+            ('<p>begin:</p>\n'
+             '<p></p>\n'
+             '<p>done.</p>'))
+
+    def test_text_3_blank_lines(self):
+        """Testing Markdown rendering with 3 blank lines between text"""
+        self.assertEqual(
+            render_markdown(
+                'begin:\n'
+                '\n'
+                '\n'
+                '\n'
+                'done.'),
+            ('<p>begin:</p>\n'
+             '<p></p>\n'
+             '<p></p>\n'
+             '<p>done.</p>'))
+
+    def test_trailing_p_trimmed(self):
+        """Testing Markdown rendering trims trailing paragraphs"""
+        self.assertEqual(
+            render_markdown(
+                'begin:\n'
+                '\n'
+                '\n'),
+            '<p>begin:</p>')
 
 
 class MarkdownTemplateTagsTests(TestCase):
