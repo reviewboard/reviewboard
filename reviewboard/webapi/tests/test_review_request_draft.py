@@ -128,7 +128,7 @@ class ResourceTests(SpyAgency, ExtraDataListMixin, ExtraDataItemMixin,
             text='#<`This` is a **test**>',
             rich_text=False,
             force_text_type='markdown',
-            expected_text=r'\#<\`This\` is a \*\*test\*\*\>')
+            expected_text=r'\#<\`This\` is a \*\*test\*\*>')
 
     def test_get_with_plain_and_force_text_type_plain(self):
         """Testing the GET review-requests/<id>/draft/ API
