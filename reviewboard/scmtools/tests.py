@@ -9,8 +9,10 @@ from tempfile import mkdtemp
 
 from django import forms
 from django.conf import settings
+from django.contrib.admin.sites import AdminSite
 from django.contrib.auth.models import AnonymousUser, User
 from django.core.cache import cache
+from django.shortcuts import get_object_or_404
 from django.utils import six
 from django.utils.six.moves import zip_longest
 from djblets.util.filesystem import is_exe_in_path
@@ -25,6 +27,7 @@ from reviewboard.hostingsvcs.service import (HostingService,
                                              register_hosting_service,
                                              unregister_hosting_service)
 from reviewboard.reviews.models import Group
+from reviewboard.scmtools.admin import RepositoryAdmin
 from reviewboard.scmtools.core import (Branch, ChangeSet, Commit, Revision,
                                        HEAD, PRE_CREATION)
 from reviewboard.scmtools.errors import (SCMError, FileNotFoundError,
@@ -2970,6 +2973,14 @@ class SandboxTests(SpyAgency, TestCase):
 
         register_hosting_service(SandboxHostingService.name,
                                  SandboxHostingService)
+        self.account = HostingServiceAccount.objects.create(
+            service_name='sandbox')
+        self.service = SandboxHostingService(account=self.account)
+        self.account._service = self.service
+        tool = Tool.objects.create()
+        self.repository = Repository.objects.create(
+            tool=tool,
+            hosting_account=self.account)
 
     def tearDown(self):
         super(SandboxTests, self).tearDown()
@@ -2978,73 +2989,50 @@ class SandboxTests(SpyAgency, TestCase):
 
     def test_get_password_hosting_service(self):
         """Testing HostingService for get_password"""
-        account = HostingServiceAccount.objects.create(
-            service_name='sandbox')
-        service = SandboxHostingService(account=account)
-        account._service = service
-        tool = Tool.objects.create()
-        repository = Repository.objects.create(tool=tool,
-                                               hosting_account=account)
+        self.spy_on(self.service.get_password)
 
-        self.spy_on(service.get_password)
+        self.repository.get_credentials()
 
-        repository.get_credentials()
-
-        self.assertTrue(service.get_password.called)
+        self.assertTrue(self.service.get_password.called)
 
     def test_get_branches_hosting_service(self):
         """Testing HostingService for get_branches"""
-        account = HostingServiceAccount.objects.create(
-            service_name='sandbox')
-        service = SandboxHostingService(account=account)
-        account._service = service
-        tool = Tool.objects.create()
-        repository = Repository.objects.create(tool=tool,
-                                               hosting_account=account)
-
-        self.spy_on(service.get_branches)
+        self.spy_on(self.service.get_branches)
 
         # No data should returned in cache_memoize
         self.assertRaisesMessage(TypeError,
                                  "object of type 'NoneType' has no len()",
-                                 repository.get_branches)
-        self.assertTrue(service.get_branches.called)
+                                 self.repository.get_branches)
+        self.assertTrue(self.service.get_branches.called)
 
     def test_get_commits_hosting_service(self):
         """Testing HostingService for get_commits"""
-        account = HostingServiceAccount.objects.create(
-            service_name='sandbox')
-        service = SandboxHostingService(account=account)
-        account._service = service
-        tool = Tool.objects.create()
-        repository = Repository.objects.create(tool=tool,
-                                               hosting_account=account)
-
-        self.spy_on(service.get_commits)
+        self.spy_on(self.service.get_commits)
 
         # No data should be returned in cache_memoize
         self.assertRaisesMessage(TypeError,
                                  "object of type 'NoneType' has no len()",
-                                 repository.get_commits)
-        self.assertTrue(service.get_commits.called)
+                                 self.repository.get_commits)
+        self.assertTrue(self.service.get_commits.called)
 
     def test_get_change_hosting_service(self):
         """Testing HostingService for get_change"""
-        account = HostingServiceAccount.objects.create(
-            service_name='sandbox')
-        service = SandboxHostingService(account=account)
-        account._service = service
-        tool = Tool.objects.create()
-        repository = Repository.objects.create(tool=tool,
-                                               hosting_account=account)
         revision = Revision(name='sandbox')
 
-        self.spy_on(service.get_change)
+        self.spy_on(self.service.get_change)
 
-        repository.get_change(revision=revision)
+        self.repository.get_change(revision=revision)
 
-        self.assertTrue(service.get_change.called)
+        self.assertTrue(self.service.get_change.called)
 
     def test_get_repository_hook_instructions_hosting_service(self):
         """Testing HostingService for get_repository_hook_instructions"""
-        pass
+        admin = RepositoryAdmin(Repository, AdminSite())
+
+        self.spy_on(self.service.get_repository_hook_instructions)
+        self.spy_on(get_object_or_404,
+                    call_fake=lambda *args, **kwargs: self.repository)
+
+        admin.hooks_setup(None, self.repository.pk)
+
+        self.assertTrue(self.service.get_repository_hook_instructions.called)
