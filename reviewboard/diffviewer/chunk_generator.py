@@ -144,7 +144,8 @@ class DiffChunkGenerator(object):
 
         if (self.filediff.binary or
             self.filediff.source_revision == '' or
-            ((self.filediff.is_new or self.filediff.deleted) and
+            ((self.filediff.is_new or self.filediff.deleted or
+              self.filediff.moved) and
              counts['insert_count'] == 0 and
              counts['delete_count'] == 0)):
             return []
