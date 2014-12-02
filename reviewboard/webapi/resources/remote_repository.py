@@ -1,5 +1,7 @@
 from __future__ import unicode_literals
 
+import logging
+
 from django.utils import six
 from djblets.db.query import LocalDataQuerySet
 from djblets.util.decorators import augment_method_from
@@ -133,8 +135,15 @@ class RemoteRepositoryResource(WebAPIResource):
                     arg = name.replace('-', '_')
                     lookup_kwargs[arg] = kwargs[name]
 
-            result = account.service.get_remote_repositories(start=start,
-                                                             **lookup_kwargs)
+            try:
+                result = account.service.get_remote_repositories(
+                    start=start,
+                    **lookup_kwargs)
+            except Exception as e:
+                logging.error('Error when calling get_remote_repositories for '
+                              'HostingService %r: %s',
+                              account.service, e, exc_info=1)
+                result = None
         else:
             result = account.service.get_remote_repository(repository_id)
 
