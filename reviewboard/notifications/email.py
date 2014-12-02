@@ -229,14 +229,15 @@ def send_review_mail(user, review_request, subject, in_reply_to,
             if recipient.is_active and recipient.should_send_email():
                 recipients.add(get_email_address_for_user(recipient))
 
-    if not user.should_send_own_updates():
-        recipients.remove(from_email)
-
     for u in target_people:
         if u.should_send_email():
             email_address = get_email_address_for_user(u)
             recipients.add(email_address)
             to_field.add(email_address)
+
+    if not user.should_send_own_updates():
+        recipients.discard(from_email)
+        to_field.discard(from_email)
 
     siteconfig = current_site.config.get()
     domain_method = siteconfig.get("site_domain_method")
