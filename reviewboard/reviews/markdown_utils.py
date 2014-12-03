@@ -1,6 +1,7 @@
 from __future__ import unicode_literals
 
 import re
+import sys
 from xml.dom.minidom import parseString
 
 from django.core.exceptions import ObjectDoesNotExist
@@ -76,6 +77,9 @@ MARKDOWN_KWARGS = {
         },
     },
 }
+
+
+ILLEGAL_XML_CHARS_RE = None
 
 
 def markdown_escape(text):
@@ -258,8 +262,45 @@ def get_markdown_element_tree(markdown_html):
     if isinstance(markdown_html, six.text_type):
         markdown_html = markdown_html.encode('utf-8')
 
+    markdown_html = sanitize_illegal_chars_for_xml(markdown_html)
+
     doc = parseString(b'<html>%s</html>' % markdown_html)
     return doc.childNodes[0].childNodes
+
+
+def sanitize_illegal_chars_for_xml(s):
+    """Sanitize a string, removing characters illegal in XML.
+
+    This will remove a number of characters that would break the  XML parser.
+    They may be in the string due to a copy/paste.
+
+    This code is courtesy of the XmlRpcPlugin developers, as documented
+    here: http://stackoverflow.com/a/22273639
+    """
+    global ILLEGAL_XML_CHARS_RE
+
+    if ILLEGAL_XML_CHARS_RE is None:
+        _illegal_unichrs = [
+            (0x00, 0x08), (0x0B, 0x0C), (0x0E, 0x1F), (0x7F, 0x84),
+            (0x86, 0x9F), (0xFDD0, 0xFDDF), (0xFFFE, 0xFFFF)
+        ]
+
+        if sys.maxunicode > 0x10000:
+            _illegal_unichrs += [
+                (0x1FFFE, 0x1FFFF), (0x2FFFE, 0x2FFFF), (0x3FFFE, 0x3FFFF),
+                (0x4FFFE, 0x4FFFF), (0x5FFFE, 0x5FFFF), (0x6FFFE, 0x6FFFF),
+                (0x7FFFE, 0x7FFFF), (0x8FFFE, 0x8FFFF), (0x9FFFE, 0x9FFFF),
+                (0xAFFFE, 0xAFFFF), (0xBFFFE, 0xBFFFF), (0xCFFFE, 0xCFFFF),
+                (0xDFFFE, 0xDFFFF), (0xEFFFE, 0xEFFFF), (0xFFFFE, 0xFFFFF),
+                (0x10FFFE, 0x10FFFF)
+            ]
+
+        ILLEGAL_XML_CHARS_RE = re.compile('[%s]' % ''.join([
+            '%s-%s' % (unichr(low), unichr(high))
+            for low, high in _illegal_unichrs
+        ]))
+
+    return ILLEGAL_XML_CHARS_RE.sub('', s)
 
 
 def render_markdown(text):

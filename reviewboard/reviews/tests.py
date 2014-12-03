@@ -18,7 +18,8 @@ from kgb import SpyAgency
 from reviewboard.accounts.models import Profile, LocalSiteProfile
 from reviewboard.attachments.models import FileAttachment
 from reviewboard.reviews.forms import DefaultReviewerForm, GroupForm
-from reviewboard.reviews.markdown_utils import (markdown_escape,
+from reviewboard.reviews.markdown_utils import (get_markdown_element_tree,
+                                                markdown_escape,
                                                 markdown_unescape,
                                                 normalize_text_for_edit,
                                                 render_markdown)
@@ -2709,6 +2710,20 @@ class UserInfoboxTests(TestCase):
 class MarkdownUtilsTests(TestCase):
     UNESCAPED_TEXT = r'\`*_{}[]()#+-.!'
     ESCAPED_TEXT = r'\\\`\*\_\{\}\[\]\(\)#+-.\!'
+
+    def test_get_markdown_element_tree(self):
+        """Testing get_markdown_element_tree"""
+        node = get_markdown_element_tree(render_markdown('**Test**\nHi.'))
+
+        self.assertEqual(node[0].toxml(),
+                         '<p><strong>Test</strong><br/>\n'
+                         'Hi.</p>')
+
+    def test_get_markdown_element_tree_with_illegal_chars(self):
+        """Testing get_markdown_element_tree with illegal characters"""
+        node = get_markdown_element_tree(render_markdown('(**Test**\x0C)'))
+
+        self.assertEqual(node[0].toxml(), '<p>(<strong>Test</strong>)</p>')
 
     def test_markdown_escape(self):
         """Testing markdown_escape"""
