@@ -104,7 +104,7 @@ class TrimTrailingEmptyParagraphs(Treeprocessor):
         # Loop through the children from end to beginning, counting how many
         # of them are empty <p> elements.
         for child in reversed(root):
-            if child.tag != 'p' or child.text:
+            if child.tag != 'p' or child.text or len(child) > 0:
                 break
 
             start_i -= 1
