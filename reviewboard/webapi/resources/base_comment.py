@@ -83,6 +83,11 @@ class BaseCommentResource(MarkdownFieldsMixin, WebAPIResource):
             'description': 'The content type for the comment text field. '
                            'The default is "plain".',
         },
+        'include_text_types': {
+            'type': MarkdownFieldsMixin.INCLUDEABLE_TEXT_TYPES,
+            'description': 'The text types for the comment text field that '
+                           'can be returned. The default is "raw".'
+        },
     }
 
     _COMMON_OPTIONAL_UPDATE_FIELDS = {
@@ -102,6 +107,12 @@ class BaseCommentResource(MarkdownFieldsMixin, WebAPIResource):
             'type': MarkdownFieldsMixin.SAVEABLE_TEXT_TYPES,
             'description': 'The new content type for the comment text field. '
                            'The default is to leave the type unchanged.',
+        },
+        'include_text_types': {
+            'type': MarkdownFieldsMixin.INCLUDEABLE_TEXT_TYPES,
+            'description': 'The new text types for the comment text field '
+                           'that can be returned. The default is to leave '
+                           'the type unchanged.'
         },
     }
 

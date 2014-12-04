@@ -161,6 +161,11 @@ def _serialize_review(review, request, review_key):
                 comment, request=request)
             for comment in review.file_attachment_comments.all()
         ],
+        'general_comments': [
+            resources.general_comment.serialize_object(
+                comment, request=request)
+            for comment in review.general_comments.all()
+        ],
     }
 
 
