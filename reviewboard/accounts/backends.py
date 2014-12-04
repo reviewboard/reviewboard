@@ -371,6 +371,8 @@ class LDAPBackend(AuthBackend):
 
         if isinstance(username, six.text_type):
             username_bytes = username.encode('utf-8')
+        else:
+            username_bytes = username
 
         if isinstance(password, six.text_type):
             password = password.encode('utf-8')
@@ -653,6 +655,8 @@ class ActiveDirectoryBackend(AuthBackend):
 
         if isinstance(username, six.text_type):
             username_bytes = username.encode('utf-8')
+        else:
+            username_bytes = username
 
         if isinstance(user_subdomain, six.text_type):
             user_subdomain = user_subdomain.encode('utf-8')
