@@ -671,6 +671,23 @@ def get_user_item_url(username, local_site_name=None):
 
 
 #
+# UserFileAttachmentResource
+#
+def get_user_file_attachment_list_url(user, local_site_name=None):
+    return resources.user_file_attachment.get_list_url(
+        local_site_name=local_site_name,
+        username=user.username)
+
+
+def get_user_file_attachment_item_url(user, file_attachment,
+                                      local_site_name=None):
+    return resources.user_file_attachment.get_item_url(
+        local_site_name=local_site_name,
+        username=user.username,
+        file_attachment_id=file_attachment.id)
+
+
+#
 # ValidateDiffResource
 #
 def get_validate_diff_url(local_site_name=None):

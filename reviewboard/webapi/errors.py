@@ -156,3 +156,8 @@ TOKEN_GENERATION_FAILED = WebAPIError(
     228,
     'There was an error generating the API token. Please try again.',
     http_status=500)  # 500 Internal Server Error.
+
+FILE_ALREADY_EXISTS = WebAPIError(
+    229,
+    "There is already a file associated with this file attachment.",
+    http_status=400)  # 400 Bad Request

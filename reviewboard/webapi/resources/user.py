@@ -30,6 +30,7 @@ class UserResource(WebAPIResource, DjbletsUserResource):
     """
     item_child_resources = [
         resources.api_token,
+        resources.user_file_attachment,
         resources.watched,
     ]
 

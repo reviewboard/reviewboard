@@ -147,6 +147,10 @@ user_list_mimetype = _build_mimetype('users')
 user_item_mimetype = _build_mimetype('user')
 
 
+user_file_attachment_list_mimetype = _build_mimetype('user-file-attachments')
+user_file_attachment_item_mimetype = _build_mimetype('user-file-attachment')
+
+
 validate_diff_mimetype = _build_mimetype('diff-validation')
 
 

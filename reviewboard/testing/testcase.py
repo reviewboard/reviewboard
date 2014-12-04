@@ -208,17 +208,10 @@ class TestCase(DjbletsTestCase):
         The FileAttachment is tied to the given ReviewRequest. It's populated
         with default data that can be overridden by the caller.
         """
-        file_attachment = FileAttachment(
+        file_attachment = self._create_base_file_attachment(
             caption=caption,
             orig_filename=orig_filename,
-            mimetype='image/png',
             **kwargs)
-
-        filename = os.path.join(settings.STATIC_ROOT, 'rb', 'images',
-                                'trophy.png')
-
-        with open(filename, 'r') as f:
-            file_attachment.file.save(filename, File(f), save=True)
 
         if draft:
             review_request_draft = ReviewRequestDraft.create(review_request)
@@ -227,6 +220,31 @@ class TestCase(DjbletsTestCase):
             review_request.file_attachments.add(file_attachment)
 
         return file_attachment
+
+    def create_user_file_attachment(self, user,
+                                    caption='My Caption',
+                                    with_local_site=False,
+                                    local_site_name=None,
+                                    local_site=None,
+                                    has_file=False,
+                                    orig_filename='filename.png',
+                                    **kwargs):
+        """Creates a user FileAttachment for testing.
+
+        The FileAttachment is tied to the given User. It's populated
+        with default data that can be overridden by the caller.
+        Notably, by default the FileAttachment will be created without a file
+        or a local_site
+        """
+        return self._create_base_file_attachment(
+            caption=caption,
+            user=user,
+            has_file=has_file,
+            orig_filename=orig_filename,
+            with_local_site=with_local_site,
+            local_site_name=local_site_name,
+            local_site=local_site,
+            **kwargs)
 
     def create_file_attachment_comment(self, review, file_attachment,
                                        text='My comment', issue_opened=False,
@@ -497,6 +515,44 @@ class TestCase(DjbletsTestCase):
         review.screenshot_comments.add(comment)
 
         return comment
+
+    def _create_base_file_attachment(self,
+                                     caption='My Caption',
+                                     orig_filename='filename.png',
+                                     has_file=True,
+                                     user=None,
+                                     with_local_site=False,
+                                     local_site_name=None,
+                                     local_site=None,
+                                     **kwargs):
+        """Creates a FileAttachment object with the given parameters.
+
+        When creating a FileAttachment that will be associated to a review
+        request, a user and local_site should not be specified.
+        """
+        if with_local_site:
+            local_site = self.get_local_site(name=local_site_name)
+
+        file_attachment = FileAttachment(
+            caption=caption,
+            user=user,
+            uuid='test-uuid',
+            local_site=local_site,
+            **kwargs)
+
+        if has_file:
+            filename = os.path.join(settings.STATIC_ROOT, 'rb', 'images',
+                                    'trophy.png')
+
+            file_attachment.orig_filename = orig_filename
+            file_attachment.mimetype = 'image/png'
+
+            with open(filename, 'r') as f:
+                file_attachment.file.save(filename, File(f), save=True)
+
+        file_attachment.save()
+
+        return file_attachment
 
     def _fixture_setup(self):
         """Set up fixtures for unit tests.
