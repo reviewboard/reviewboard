@@ -74,6 +74,19 @@ if settings.DEBUG and not settings.PRODUCTION:
             TemplateView.as_view(template_name='js/tests.html')),
     )
 
+user_urlpatterns = patterns(
+    '',
+
+    # User info box
+    url(r'^infobox/$',
+        'reviewboard.reviews.views.user_infobox', name="user-infobox"),
+
+    # User file attachments
+    url(r'file-attachments/(?P<file_attachment_uuid>[a-zA-Z0-9\-]+)/$',
+        'reviewboard.attachments.views.user_file_attachment',
+        name='user-file-attachment'),
+)
+
 localsite_urlpatterns = patterns(
     '',
 
@@ -86,9 +99,9 @@ localsite_urlpatterns = patterns(
     url(r'^support/$',
         'reviewboard.admin.views.support_redirect', name="support"),
 
-    # User info box
-    url(r"^users/(?P<username>[A-Za-z0-9@_\-\.'\+]+)/infobox/$",
-        'reviewboard.reviews.views.user_infobox', name="user-infobox"),
+    # Users
+    (r"^users/(?P<username>[A-Za-z0-9@_\-\.'\+]+)/",
+     include(user_urlpatterns)),
 )
 
 localsite_urlpatterns += datagrid_urlpatterns

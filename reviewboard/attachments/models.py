@@ -74,6 +74,8 @@ class FileAttachment(models.Model):
                                    null=True,
                                    related_name="file_attachments")
 
+    uuid = models.CharField(_("uuid"), max_length=255, blank=True)
+
     file = models.FileField(_("file"),
                             max_length=512,
                             blank=True,
