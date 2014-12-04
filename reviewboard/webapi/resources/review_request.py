@@ -85,7 +85,7 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
                            '\n'
                            'On a default install, a review request is '
                            'approved if it has at least one Ship It! and '
-                           'open issues. Extensions may change these '
+                           'no open issues. Extensions may change these '
                            'requirements.',
             'added_in': '2.0',
         },
