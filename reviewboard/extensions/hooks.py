@@ -22,6 +22,8 @@ from reviewboard.reviews.fields import (get_review_request_fieldset,
                                         register_review_request_fieldset,
                                         unregister_review_request_fieldset)
 from reviewboard.reviews.ui.base import register_ui, unregister_ui
+from reviewboard.webapi.server_info import (register_webapi_capabilities,
+                                            unregister_webapi_capabilities)
 
 
 @six.add_metaclass(ExtensionHookPoint)
@@ -353,6 +355,24 @@ class ReviewRequestFieldsHook(ExtensionHook):
 
 
 @six.add_metaclass(ExtensionHookPoint)
+class WebAPICapabilitiesHook(ExtensionHook):
+    """This hook allows adding capabilities to the web API server info.
+
+    Note that this does not add the functionality, but adds to the server
+    info listing.
+    """
+    def __init__(self, extension, caps):
+        super(WebAPICapabilitiesHook, self).__init__(extension)
+
+        register_webapi_capabilities(extension.id, caps)
+
+    def shutdown(self):
+        super(WebAPICapabilitiesHook, self).shutdown()
+
+        unregister_webapi_capabilities(self.extension.id)
+
+
+@six.add_metaclass(ExtensionHookPoint)
 class CommentDetailDisplayHook(ExtensionHook):
     """This hook allows adding details to the display of comments.
 
@@ -552,4 +572,5 @@ __all__ = [
     'TemplateHook',
     'URLHook',
     'UserPageSidebarItemsHook',
+    'WebAPICapabilitiesHook',
 ]

@@ -36,3 +36,4 @@ The following hooks are available for use by extensions.
    template-hook
    url-hook
    user-page-sidebar-items-hook
+   webapi-capabilities-hook
