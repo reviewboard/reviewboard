@@ -79,6 +79,7 @@ RB.ReviewReply = RB.BaseResource.extend({
     COMMENT_LINK_NAMES: [
         'diff_comments',
         'file_attachment_comments',
+        'general_comments',
         'screenshot_comments'
     ],
 

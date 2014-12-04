@@ -30,7 +30,7 @@
    <pre class="body_top reviewtext {% rich_text_classname entry.review.body_top_rich_text %}">{{entry.review.body_top|render_markdown:entry.review.body_top_rich_text}}</pre>
 {%  reply_section entry "" "body_top" "rcbt" %}
 
-{%  if entry.comments.diff_comments or entry.comments.screenshot_comments or entry.comments.file_attachment_comments %}
+{%  if entry.comments.diff_comments or entry.comments.screenshot_comments or entry.comments.file_attachment_comments or entry.comments.general_comments %}
    <dl class="review-comments">
 
 {%   for comment in entry.comments.screenshot_comments %}
@@ -92,6 +92,25 @@
      </div>
 {%    endif %}
 {%    reply_section entry comment "file_attachment_comments" "rc" %}
+    </dd>
+{%   endfor %}
+
+{%   for comment in entry.comments.general_comments %}
+    <dt>
+     <a class="comment-anchor" name="{{comment.anchor_prefix}}{{comment.id}}"></a>
+     <div class="general-comment-header">
+      <a href="{{comment.get_absolute_url}}"></a>
+     </div>
+    </dt>
+    <dd>
+{%    comment_detail_display_hook comment "review" %}
+     <pre class="reviewtext comment-text rich-text" id="{{comment.anchor_prefix}}{{comment.id}}" data-rich-text="true">{{comment.text|render_markdown:comment.rich_text}}</pre>
+{%    if comment.issue_opened %}
+     <div class="issue-indicator">
+{%     comment_issue review_request_details comment "general_comments" %}
+     </div>
+{%    endif %}
+{%    reply_section entry comment "general_comments" "rc" %}
     </dd>
 {%   endfor %}
 

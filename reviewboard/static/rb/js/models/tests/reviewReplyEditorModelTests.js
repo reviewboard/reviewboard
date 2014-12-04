@@ -269,6 +269,24 @@ suite('rb/models/ReviewReplyEditor', function() {
                 });
             });
 
+            describe('With general comments', function() {
+                function testSave(richText) {
+                    testCommentSave({
+                        contextType: 'general_comments',
+                        model: RB.GeneralCommentReply,
+                        richText: richText
+                    });
+                }
+
+                it('richText=true', function() {
+                    testSave(true);
+                });
+
+                it('richText=false', function() {
+                    testSave(false);
+                });
+            });
+
             describe('With screenshot comments', function() {
                 function testSave(richText) {
                     testCommentSave({

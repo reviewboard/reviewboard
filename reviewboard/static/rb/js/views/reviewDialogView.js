@@ -4,6 +4,7 @@
 var BaseCommentView,
     DiffCommentView,
     FileAttachmentCommentView,
+    GeneralCommentView,
     ScreenshotCommentView,
     HeaderFooterCommentView;
 
@@ -198,6 +199,10 @@ BaseCommentView = Backbone.View.extend({
      * Renders the thumbnail for this comment.
      */
     renderThumbnail: function() {
+        if (this.thumbnailTemplate === null) {
+            return null;
+        }
+
         return $(this.thumbnailTemplate(this.model.attributes));
     },
 
@@ -316,6 +321,14 @@ FileAttachmentCommentView = BaseCommentView.extend({
             fileAttachment: this.model.get('fileAttachment').attributes
         }, this.model.attributes)));
     }
+});
+
+
+/*
+ * Displays a view for general comments.
+ */
+GeneralCommentView = BaseCommentView.extend({
+    thumbnailTemplate: null
 });
 
 
@@ -615,6 +628,18 @@ RB.ReviewDialogView = Backbone.View.extend({
             }));
         });
 
+        this._generalCommentsCollection = new RB.ResourceCollection([], {
+            model: RB.GeneralComment,
+            parentResource: this.model
+        });
+
+        this.listenTo(this._generalCommentsCollection, 'add',
+                      function(comment) {
+            this._renderComment(new GeneralCommentView({
+                model: comment
+            }));
+        });
+
         this._screenshotCommentsCollection = new RB.ResourceCollection([], {
             model: RB.ScreenshotComment,
             parentResource: this.model
@@ -739,6 +764,7 @@ RB.ReviewDialogView = Backbone.View.extend({
      */
     _loadComments: function() {
         var collections = [
+            this._generalCommentsCollection,
             this._screenshotCommentsCollection,
             this._fileAttachmentCommentsCollection,
             this._diffCommentsCollection

@@ -50,6 +50,14 @@
 <br />
 {% endfor %}
 
+{% for comment in review.general_comments.all %}
+<div style="margin-left: 2em;">
+{%  comment_detail_display_hook comment "html-email" %}
+ <pre style="{{precss}}">{{comment.text|markdown_email_html:comment.rich_text}}</pre>
+</div>
+<br />
+{% endfor %}
+
 {% for entry in comment_entries %}
 <div>
 {{entry.html|safe}}
