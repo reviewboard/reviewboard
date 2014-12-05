@@ -204,10 +204,6 @@ class SandboxTests(SpyAgency, TestCase):
 
         self.spy_on(widget.generate_cache_key)
 
-        # No data is returned inside cache_memoizes
-        self.assertRaisesMessage(TypeError,
-                                 "object of type 'NoneType' has no len()",
-                                 widget.render,
-                                 self.request)
+        widget.render(self.request)
 
         self.assertTrue(widget.generate_cache_key.called)

@@ -64,11 +64,12 @@ class Widget(object):
 
     def _wrapped_generate_data(self, request):
         try:
-            self.generate_data(request)
+            return self.generate_data(request)
         except Exception as e:
             logging.error('Error when calling generate_data for Admin Widget '
                           '%r: %s',
                           self, e, exc_info=1)
+            raise
 
     def render(self, request):
         """Renders a widget.
@@ -86,10 +87,12 @@ class Widget(object):
                                   self, e, exc_info=1)
                     cache_key = None
 
-                self.data = cache_memoize(
-                    cache_key,
-                    lambda: self._wrapped_generate_data(request))
-
+                try:
+                    self.data = cache_memoize(
+                        cache_key,
+                        lambda: self._wrapped_generate_data(request))
+                except Exception:
+                    pass
             else:
                 try:
                     self.data = self.generate_data(request)
