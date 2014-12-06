@@ -10,6 +10,8 @@ from reviewboard.webapi.resources import resources
 
 class ValidationResource(DjbletsRootResource):
     """Links to validation resources."""
+    added_in = '2.0'
+
     name = 'validation'
 
     def __init__(self, *args, **kwargs):

@@ -26,6 +26,8 @@ class ReviewReplyResource(BaseReviewResource):
     parent review. Every comment associated with a reply is also tied to
     a parent comment.
     """
+    added_in = '1.5'
+
     name = 'reply'
     name_plural = 'replies'
     policy_id = 'review_reply'
@@ -35,6 +37,7 @@ class ReviewReplyResource(BaseReviewResource):
             'description': 'The response to the review content below '
                            'the comments.',
             'supports_text_types': True,
+            'added_in': '1.5',
         },
         'body_bottom_text_type': {
             'type': MarkdownFieldsMixin.TEXT_TYPES,
@@ -47,6 +50,7 @@ class ReviewReplyResource(BaseReviewResource):
             'description': 'The response to the review content above '
                            'the comments.',
             'supports_text_types': True,
+            'added_in': '1.5',
         },
         'body_top_text_type': {
             'type': MarkdownFieldsMixin.TEXT_TYPES,
@@ -58,15 +62,18 @@ class ReviewReplyResource(BaseReviewResource):
             'type': dict,
             'description': 'Extra data as part of the reply. '
                            'This can be set by the API or extensions.',
+            'added_in': '2.0',
         },
         'id': {
             'type': int,
             'description': 'The numeric ID of the reply.',
+            'added_in': '1.5',
         },
         'public': {
             'type': bool,
             'description': 'Whether or not the reply is currently '
                            'visible to other users.',
+            'added_in': '1.5',
         },
         'text_type': {
             'type': MarkdownFieldsMixin.TEXT_TYPES,
@@ -81,10 +88,12 @@ class ReviewReplyResource(BaseReviewResource):
             'type': six.text_type,
             'description': 'The date and time that the reply was posted '
                            '(in YYYY-MM-DD HH:MM:SS format).',
+            'added_in': '1.5',
         },
         'user': {
             'type': UserResource,
             'description': 'The user who wrote the reply.',
+            'added_in': '1.5',
         },
     }
 
@@ -110,6 +119,7 @@ class ReviewReplyResource(BaseReviewResource):
             'description': 'The response to the review content above '
                            'the comments.',
             'supports_text_types': True,
+            'added_in': '1.5',
         },
         'body_top_text_type': {
             'type': MarkdownFieldsMixin.SAVEABLE_TEXT_TYPES,
@@ -122,6 +132,7 @@ class ReviewReplyResource(BaseReviewResource):
             'description': 'The response to the review content below '
                            'the comments.',
             'supports_text_types': True,
+            'added_in': '1.5',
         },
         'body_bottom_text_type': {
             'type': MarkdownFieldsMixin.SAVEABLE_TEXT_TYPES,
@@ -135,12 +146,14 @@ class ReviewReplyResource(BaseReviewResource):
                            'text fields. The contents will be converted '
                            'to the requested type in the payload, but '
                            'will not be saved as that type.',
+            'added_in': '2.0.9',
         },
         'public': {
             'type': bool,
             'description': 'Whether or not to make the reply public. '
                            'If a reply is public, it cannot be made '
                            'private again.',
+            'added_in': '1.5',
         },
         'text_type': {
             'type': MarkdownFieldsMixin.SAVEABLE_TEXT_TYPES,

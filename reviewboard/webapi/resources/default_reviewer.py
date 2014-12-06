@@ -36,38 +36,46 @@ class DefaultReviewerResource(WebAPIResource):
     default reviewer applied to every review request on the matched
     repositories.
     """
+    added_in = '1.6.16'
+
     name = 'default_reviewer'
     model = DefaultReviewer
     fields = {
         'id': {
             'type': int,
             'description': 'The numeric ID of the default reviewer.',
+            'added_in': '1.6.16',
         },
         'name': {
             'type': six.text_type,
             'description': 'The descriptive name of the entry.',
+            'added_in': '1.6.16',
         },
         'file_regex': {
             'type': six.text_type,
             'description': 'The regular expression that is used to match '
                            'files uploaded in a diff.',
+            'added_in': '1.6.16',
         },
         'repositories': {
             'type': six.text_type,
             'description': 'A comma-separated list of repository IDs that '
                            'this default reviewer will match against.',
+            'added_in': '1.6.16',
         },
         'users': {
             'type': six.text_type,
             'description': 'A comma-separated list of usernames that '
                            'this default reviewer applies to matched review '
                            'requests.',
+            'added_in': '1.6.16',
         },
         'groups': {
             'type': six.text_type,
             'description': 'A comma-separated list of group names that '
                            'this default reviewer applies to matched review '
                            'requests.',
+            'added_in': '1.6.16',
         },
     }
     uri_object_key = 'default_reviewer_id'
@@ -166,25 +174,30 @@ class DefaultReviewerResource(WebAPIResource):
             'name': {
                 'type': six.text_type,
                 'description': 'The name of the default reviewer entry.',
+                'added_in': '1.6.16',
             },
             'file_regex': {
                 'type': six.text_type,
                 'description': 'The regular expression used to match file '
                                'paths in newly uploaded diffs.',
+                'added_in': '1.6.16',
             },
         },
         optional={
             'repositories': {
                 'type': six.text_type,
                 'description': 'A comma-separated list of repository IDs.',
+                'added_in': '1.6.16',
             },
             'groups': {
                 'type': six.text_type,
                 'description': 'A comma-separated list of group names.',
+                'added_in': '1.6.16',
             },
             'users': {
                 'type': six.text_type,
                 'description': 'A comma-separated list of usernames.',
+                'added_in': '1.6.16',
             }
         },
     )
@@ -216,23 +229,28 @@ class DefaultReviewerResource(WebAPIResource):
             'name': {
                 'type': six.text_type,
                 'description': 'The name of the default reviewer entry.',
+                'added_in': '1.6.16',
             },
             'file_regex': {
                 'type': six.text_type,
                 'description': 'The regular expression used to match file '
                                'paths in newly uploaded diffs.',
+                'added_in': '1.6.16',
             },
             'repositories': {
                 'type': six.text_type,
                 'description': 'A comma-separated list of repository IDs.',
+                'added_in': '1.6.16',
             },
             'groups': {
                 'type': six.text_type,
                 'description': 'A comma-separated list of group names.',
+                'added_in': '1.6.16',
             },
             'users': {
                 'type': six.text_type,
                 'description': 'A comma-separated list of usernames.',
+                'added_in': '1.6.16',
             }
         },
     )

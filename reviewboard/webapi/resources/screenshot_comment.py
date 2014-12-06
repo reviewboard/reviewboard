@@ -14,6 +14,8 @@ class ScreenshotCommentResource(BaseScreenshotCommentResource):
     purely as a way to see existing comments that were made on a screenshot.
     These comments will span all public reviews.
     """
+    added_in = '1.5'
+
     model_parent_key = 'screenshot'
     uri_object_key = None
 

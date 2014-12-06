@@ -25,6 +25,8 @@ class ReviewReplyScreenshotCommentResource(BaseScreenshotCommentResource):
     changed on this list. However, if the reply is already published,
     then no changed can be made.
     """
+    added_in = '1.5'
+
     allowed_methods = ('GET', 'POST', 'PUT', 'DELETE')
     policy_id = 'review_reply_screenshot_comment'
     model_parent_key = 'review'
@@ -32,6 +34,7 @@ class ReviewReplyScreenshotCommentResource(BaseScreenshotCommentResource):
         'reply_to': {
             'type': ReviewScreenshotCommentResource,
             'description': 'The comment being replied to.',
+            'added_in': '1.5',
         },
     }, **BaseScreenshotCommentResource.fields)
 

@@ -15,6 +15,8 @@ class ReviewReplyDraftResource(WebAPIResource):
     This works as a convenience to access the current draft reply, so that
     clients can discover the proper location.
     """
+    added_in = '1.5'
+
     name = 'reply_draft'
     policy_id = 'review_reply_draft'
     singleton = True

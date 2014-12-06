@@ -38,33 +38,40 @@ class APITokenResource(WebAPIResource):
         'id': {
             'type': six.text_type,
             'description': 'The numeric ID of the token entry.',
+            'added_in': '2.1',
         },
         'token': {
             'type': six.text_type,
             'description': 'The token value.',
+            'added_in': '2.1',
         },
         'time_added': {
             'type': six.text_type,
             'description': 'The date and time that the token was added '
                            '(in YYYY-MM-DD HH:MM:SS format).',
+            'added_in': '2.1',
         },
         'last_updated': {
             'type': six.text_type,
             'description': 'The date and time that the token was last '
                            'updated (in YYYY-MM-DD HH:MM:SS format).',
+            'added_in': '2.1',
         },
         'note': {
             'type': six.text_type,
             'description': 'The note explaining the purpose of this token.',
+            'added_in': '2.1',
         },
         'policy': {
             'type': dict,
             'description': 'The access policies defined for this token.',
+            'added_in': '2.1',
         },
         'extra_data': {
             'type': dict,
             'description': 'Extra data as part of the token. '
                            'This can be set by the API or extensions.',
+            'added_in': '2.1',
         },
     }
 
@@ -108,11 +115,13 @@ class APITokenResource(WebAPIResource):
                 'type': six.text_type,
                 'description': 'The note explaining the purpose of '
                                'this token.',
+                'added_in': '2.1',
             },
             'policy': {
                 'type': six.text_type,
                 'description': 'The token access policy, encoded as a '
                                'JSON string.',
+                'added_in': '2.1',
             },
         },
         allow_unknown=True
@@ -173,11 +182,13 @@ class APITokenResource(WebAPIResource):
                 'type': six.text_type,
                 'description': 'The note explaining the purpose of '
                                'this token.',
+                'added_in': '2.1',
             },
             'policy': {
                 'type': six.text_type,
                 'description': 'The token access policy, encoded as a '
                                'JSON string.',
+                'added_in': '2.1',
             },
         },
         allow_unknown=True

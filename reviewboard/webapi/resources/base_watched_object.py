@@ -19,6 +19,8 @@ from reviewboard.webapi.resources import resources
 
 class BaseWatchedObjectResource(WebAPIResource):
     """A base resource for objects watched by a user."""
+    added_in = '1.5'
+
     watched_resource = None
     uri_object_key = 'watched_obj_id'
     profile_field = None
@@ -83,6 +85,7 @@ class BaseWatchedObjectResource(WebAPIResource):
         'object_id': {
             'type': six.text_type,
             'description': 'The ID of the object to watch.',
+            'added_in': '1.5',
         },
     })
     def create(self, request, object_id, *args, **kwargs):

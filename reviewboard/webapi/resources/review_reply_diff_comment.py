@@ -24,6 +24,8 @@ class ReviewReplyDiffCommentResource(BaseDiffCommentResource):
     changed on this list. However, if the reply is already published,
     then no changed can be made.
     """
+    added_in = '1.5'
+
     allowed_methods = ('GET', 'POST', 'PUT', 'DELETE')
     policy_id = 'review_reply_diff_comment'
     model_parent_key = 'review'
@@ -31,6 +33,7 @@ class ReviewReplyDiffCommentResource(BaseDiffCommentResource):
         'reply_to': {
             'type': ReviewDiffCommentResource,
             'description': 'The comment being replied to.',
+            'added_in': '1.5',
         },
     }, **BaseDiffCommentResource.fields)
 

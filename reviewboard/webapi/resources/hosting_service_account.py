@@ -29,20 +29,25 @@ class HostingServiceAccountResource(WebAPIResource):
     The list of accounts tied to hosting services can be retrieved, and new
     accounts can be linked through an HTTP POST.
     """
+    added_in = '1.6.7'
+
     name = 'hosting_service_account'
     model = HostingServiceAccount
     fields = {
         'id': {
             'type': int,
             'description': 'The numeric ID of the hosting service account.',
+            'added_in': '1.6.7',
         },
         'username': {
             'type': six.text_type,
             'description': 'The username of the account.',
+            'added_in': '1.6.7',
         },
         'service': {
             'type': six.text_type,
             'description': 'The ID of the service this account is on.',
+            'added_in': '1.6.7',
         },
     }
     uri_object_key = 'account_id'
@@ -99,10 +104,12 @@ class HostingServiceAccountResource(WebAPIResource):
             'username': {
                 'type': six.text_type,
                 'description': 'Filter accounts by username.',
+                'added_in': '2.1', # Unsure of which release this will be
             },
             'service': {
                 'type': six.text_type,
                 'description': 'Filter accounts by the hosting service ID.',
+                'added_in': '2.1', # Unsure of which release this will be
             },
         }, **WebAPIResource.get_list.optional_fields),
         required=WebAPIResource.get_list.required_fields
@@ -139,11 +146,13 @@ class HostingServiceAccountResource(WebAPIResource):
             'username': {
                 'type': six.text_type,
                 'description': 'The username on the account.',
+                'added_in': '1.6.7',
             },
             'service_id': {
                 'type': six.text_type,
                 'description': 'The registered ID of the service for the '
                                'account.',
+                'added_in': '1.6.7',
             },
         },
         optional={
@@ -151,11 +160,13 @@ class HostingServiceAccountResource(WebAPIResource):
                 'type': six.text_type,
                 'description': 'The hosting URL on the account, if the '
                                'hosting service is self-hosted.',
+                'added_in': '1.7.8',
             },
             'password': {
                 'type': six.text_type,
                 'description': 'The password on the account, if the hosting '
                                'service needs it.',
+                'added_in': '1.6.7',
             },
         }
     )

@@ -13,6 +13,8 @@ class WatchedResource(WebAPIResource):
     the root resource is. The sole purpose of this resource is for easy
     navigation to the more specific Watched Items resources.
     """
+    added_in = '1.5'
+
     name = 'watched'
     singleton = True
 

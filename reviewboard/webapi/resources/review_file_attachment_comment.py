@@ -22,6 +22,8 @@ class ReviewFileAttachmentCommentResource(BaseFileAttachmentCommentResource):
     changed on this list. However, if the review is already published,
     then no changes can be made.
     """
+    added_in = '1.6'
+
     allowed_methods = ('GET', 'POST', 'PUT', 'DELETE')
     policy_id = 'review_file_attachment_comment'
     model_parent_key = 'review'
@@ -41,6 +43,7 @@ class ReviewFileAttachmentCommentResource(BaseFileAttachmentCommentResource):
                 'type': int,
                 'description': 'The ID of the file attachment being '
                                'commented on.',
+                'added_in': '1.6',
             },
         }, **BaseFileAttachmentCommentResource.REQUIRED_CREATE_FIELDS),
         optional=dict({
@@ -50,6 +53,7 @@ class ReviewFileAttachmentCommentResource(BaseFileAttachmentCommentResource):
                                'file_attachment_id is diffed. The comment '
                                'applies to the diff between these two '
                                'attachments.',
+                'added_in': '2.0',
             },
         }, **BaseFileAttachmentCommentResource.OPTIONAL_CREATE_FIELDS),
         allow_unknown=True

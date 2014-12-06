@@ -23,6 +23,8 @@ class HostingServiceResource(WebAPIResource):
     This resource allows for querying that list and determining what
     capabilities of the hosting service can be used by Review Board.
     """
+    added_in = '2.1' # Unsure of which release this will be
+
     name = 'hosting_service'
     model_object_key = 'id'
     model = HostingService
@@ -33,42 +35,51 @@ class HostingServiceResource(WebAPIResource):
         'id': {
             'type': six.text_type,
             'description': "The hosting service's unique ID.",
+            'added_in': '2.1',
         },
         'name': {
             'type': six.text_type,
             'description': 'The name of the hosting service.',
+            'added_in': '2.1',
         },
         'needs_authorization': {
             'type': bool,
             'description': 'Whether an account must be authorized and linked '
                            'in order to use this service.',
+            'added_in': '2.1',
         },
         'self_hosted': {
             'type': bool,
             'description': 'Whether the service is meant to be self-hosted '
                            'in the network.',
+            'added_in': '2.1',
         },
         'supported_scmtools': {
             'type': [six.text_type],
             'description': 'The list of supported types of repositories.',
+            'added_in': '2.1',
         },
         'supports_bug_trackers': {
             'type': bool,
             'description': 'Whether bug trackers are available.',
+            'added_in': '2.1',
         },
         'supports_list_remote_repositories': {
             'type': bool,
             'description': 'Whether remote repositories on the hosting '
                            'service can be listed through the API.',
+            'added_in': '2.1',
         },
         'supports_repositories': {
             'type': bool,
             'description': 'Whether repository linking is supported.',
+            'added_in': '2.1',
         },
         'supports_two_factor_auth': {
             'type': bool,
             'description': 'Whether two-factor authentication is supported '
                            'when linking an account.',
+            'added_in': '2.1',
         },
     }
 

@@ -22,28 +22,36 @@ class BaseScreenshotResource(WebAPIResource):
     """A base resource representing screenshots."""
     model = Screenshot
     name = 'screenshot'
+
+    added_in = '1.5'
+
     fields = {
         'id': {
             'type': int,
             'description': 'The numeric ID of the screenshot.',
+            'added_in': '1.5',
         },
         'caption': {
             'type': six.text_type,
             'description': "The screenshot's descriptive caption.",
+            'added_in': '1.5',
         },
         'path': {
             'type': six.text_type,
             'description': "The path of the screenshot's image file, "
                            "relative to the media directory configured "
                            "on the Review Board server.",
+            'added_in': '1.5',
         },
         'filename': {
             'type': six.text_type,
             'description': "The base file name of the screenshot's image.",
+            'added_in': '1.7.10',
         },
         'review_url': {
             'type': six.text_type,
             'description': 'The URL to the review UI for this screenshot.',
+            'added_in': '1.7.10',
         },
         'url': {
             'type': six.text_type,
@@ -52,6 +60,7 @@ class BaseScreenshotResource(WebAPIResource):
                            "path), then it's relative to the Review Board "
                            "server's URL. This is deprecated and will be "
                            "removed in a future version.",
+            'added_in': '1.5',
             'deprecated_in': '2.0',
         },
         'absolute_url': {
@@ -65,6 +74,7 @@ class BaseScreenshotResource(WebAPIResource):
                            "If this is not an absolute URL (for example, "
                            "if it is just a path), then it's relative to "
                            "the Review Board server's URL.",
+            'added_in': '1.5',
         },
     }
 
@@ -137,6 +147,7 @@ class BaseScreenshotResource(WebAPIResource):
             'path': {
                 'type': file,
                 'description': 'The screenshot to upload.',
+                'added_in': '1.5',
             },
         },
         optional={
@@ -144,6 +155,7 @@ class BaseScreenshotResource(WebAPIResource):
                 'type': six.text_type,
                 'description': 'The optional caption describing the '
                                'screenshot.',
+                'added_in': '1.5',
             },
         },
     )
@@ -201,6 +213,7 @@ class BaseScreenshotResource(WebAPIResource):
             'caption': {
                 'type': six.text_type,
                 'description': 'The new caption for the screenshot.',
+                'added_in': '1.5',
             },
         }
     )

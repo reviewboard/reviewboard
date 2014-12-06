@@ -30,6 +30,8 @@ class WebAPIResource(DjbletsWebAPIResource):
 
     api_token_access_allowed = True
 
+    added_in = '1.5'
+
     @property
     def policy_id(self):
         """Returns the ID used for access policies.
@@ -87,6 +89,7 @@ class WebAPIResource(DjbletsWebAPIResource):
                 'description': 'If specified, a single ``count`` field is '
                                'returned with the number of results, instead '
                                'of the results themselves.',
+                'added_in': '1.5',
             },
         }, **DjbletsWebAPIResource.get_list.optional_fields),
         required=DjbletsWebAPIResource.get_list.required_fields,

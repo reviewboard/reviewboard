@@ -22,6 +22,8 @@ class ReviewDiffCommentResource(BaseDiffCommentResource):
     changed on this list. However, if the review is already published,
     then no changes can be made.
     """
+    added_in = '1.5'
+
     allowed_methods = ('GET', 'POST', 'PUT', 'DELETE')
     policy_id = 'review_diff_comment'
     model_parent_key = 'review'
@@ -43,14 +45,17 @@ class ReviewDiffCommentResource(BaseDiffCommentResource):
             'filediff_id': {
                 'type': int,
                 'description': 'The ID of the file diff the comment is on.',
+                'added_in': '1.5',
             },
             'first_line': {
                 'type': int,
                 'description': 'The line number the comment starts at.',
+                'added_in': '1.5',
             },
             'num_lines': {
                 'type': int,
                 'description': 'The number of lines the comment spans.',
+                'added_in': '1.5',
             },
         }, **BaseDiffCommentResource.REQUIRED_CREATE_FIELDS),
         optional=dict({
@@ -58,6 +63,7 @@ class ReviewDiffCommentResource(BaseDiffCommentResource):
                 'type': int,
                 'description': 'The ID of the second file diff in the '
                                'interdiff the comment is on.',
+                'added_in': '1.5',
             },
         }, **BaseDiffCommentResource.OPTIONAL_CREATE_FIELDS),
         allow_unknown=True,
@@ -129,10 +135,12 @@ class ReviewDiffCommentResource(BaseDiffCommentResource):
             'first_line': {
                 'type': int,
                 'description': 'The line number the comment starts at.',
+                'added_in': '1.5',
             },
             'num_lines': {
                 'type': int,
                 'description': 'The number of lines the comment spans.',
+                'added_in': '1.5',
             },
         }, **BaseDiffCommentResource.OPTIONAL_UPDATE_FIELDS),
         allow_unknown=True,

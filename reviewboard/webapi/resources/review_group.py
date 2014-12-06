@@ -24,38 +24,46 @@ class ReviewGroupResource(WebAPIResource):
     Review groups are groups of users that can be listed as an intended
     reviewer on a review request.
     """
+    added_in = '1.5'
+
     model = Group
     fields = {
         'id': {
             'type': int,
             'description': 'The numeric ID of the review group.',
+            'added_in': '1.5',
         },
         'name': {
             'type': six.text_type,
             'description': 'The short name of the group, used in the '
                            'reviewer list and the Dashboard.',
+            'added_in': '1.5',
         },
         'display_name': {
             'type': six.text_type,
             'description': 'The human-readable name of the group, sometimes '
                            'used as a short description.',
+            'added_in': '1.5',
         },
         'invite_only': {
             'type': bool,
             'description': 'Whether or not the group is invite-only. An '
                            'invite-only group is only accessible by members '
                            'of the group.',
+            'added_in': '1.6',
         },
         'mailing_list': {
             'type': six.text_type,
             'description': 'The e-mail address that all posts on a review '
                            'group are sent to.',
+            'added_in': '1.5',
         },
         'url': {
             'type': six.text_type,
             'description': "The URL to the user's page on the site. "
                            "This is deprecated and will be removed in a "
                            "future version.",
+            'added_in': '1.5',
             'deprecated_in': '2.0',
         },
         'absolute_url': {
@@ -68,11 +76,13 @@ class ReviewGroupResource(WebAPIResource):
             'description': 'Whether or not the group is visible to users '
                            'who are not members. This does not prevent users '
                            'from accessing the group if they know it, though.',
+            'added_in': '1.6',
         },
         'extra_data': {
             'type': dict,
             'description': 'Extra data as part of the review group. '
                            'This can be set by the API or extensions.',
+            'added_in': '2.0',
         },
     }
 
@@ -147,11 +157,13 @@ class ReviewGroupResource(WebAPIResource):
                                'display name when using ``displayname``) '
                                'must start with in order to be included in '
                                'the list. This is case-insensitive.',
+                'added_in': '1.5',
             },
             'displayname': {
                 'type': bool,
                 'description': 'Specifies whether ``q`` should also match '
-                               'the beginning of the display name.'
+                               'the beginning of the display name.',
+                'added_in': '1.5',
             },
         },
         allow_unknown=True
@@ -185,10 +197,12 @@ class ReviewGroupResource(WebAPIResource):
             'name': {
                 'type': six.text_type,
                 'description': 'The name of the group.',
+                'added_in': '1.6.14',
             },
             'display_name': {
                 'type': six.text_type,
                 'description': 'The human-readable name of the group.',
+                'added_in': '1.6.14',
             },
         },
         optional={
@@ -196,16 +210,19 @@ class ReviewGroupResource(WebAPIResource):
                 'type': six.text_type,
                 'description': 'The e-mail address that all posts on a review '
                                'group are sent to.',
+                'added_in': '1.6.14',
             },
             'visible': {
                 'type': bool,
                 'description': 'Whether or not the group is visible to users '
                                'who are not members. The default is true.',
+                'added_in': '1.6.14',
             },
             'invite_only': {
                 'type': bool,
                 'description': 'Whether or not the group is invite-only. '
                                'The default is false.',
+                'added_in': '1.6.14',
             },
         },
         allow_unknown=True
@@ -260,24 +277,29 @@ class ReviewGroupResource(WebAPIResource):
             'name': {
                 'type': six.text_type,
                 'description': 'The new name for the group.',
+                'added_in': '1.6.14',
             },
             'display_name': {
                 'type': six.text_type,
                 'description': 'The human-readable name of the group.',
+                'added_in': '1.6.14',
             },
             'mailing_list': {
                 'type': six.text_type,
                 'description': 'The e-mail address that all posts on a review '
                                'group are sent to.',
+                'added_in': '1.6.14',
             },
             'visible': {
                 'type': bool,
                 'description': 'Whether or not the group is visible to users '
                                'who are not members.',
+                'added_in': '1.6.14',
             },
             'invite_only': {
                 'type': bool,
-                'description': 'Whether or not the group is invite-only.'
+                'description': 'Whether or not the group is invite-only.',
+                'added_in': '1.6.14',
             },
         },
         allow_unknown=True

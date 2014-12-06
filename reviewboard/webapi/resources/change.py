@@ -55,31 +55,38 @@ class ChangeResource(MarkdownFieldsMixin, WebAPIResource):
     * ``new``: The new caption.
     * ``screenshot``: The screenshot that was updated.
     """
+    added_in = '1.6'
+
     model = ChangeDescription
     name = 'change'
     fields = {
         'id': {
             'type': int,
             'description': 'The numeric ID of the change description.',
+            'added_in': '1.6',
         },
         'fields_changed': {
             'type': dict,
             'description': 'The fields that were changed.',
+            'added_in': '1.6',
         },
         'text': {
             'type': six.text_type,
             'description': 'The description of the change written by the '
                            'submitter.',
             'supports_text_types': True,
+            'added_in': '1.6',
         },
         'text_type': {
             'type': MarkdownFieldsMixin.TEXT_TYPES,
             'description': 'The mode for the text field.',
+            'added_in': '2.0',
         },
         'timestamp': {
             'type': six.text_type,
             'description': 'The date and time that the change was made '
                            '(in YYYY-MM-DD HH:MM:SS format).',
+            'added_in': '1.6',
         },
     }
     uri_object_key = 'change_id'

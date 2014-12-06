@@ -20,24 +20,31 @@ class BaseDiffCommentResource(BaseCommentResource):
     """
     model = Comment
     name = 'diff_comment'
+
+    added_in = '1.5'
+
     fields = dict({
         'first_line': {
             'type': int,
             'description': 'The line number that the comment starts at.',
+            'added_in': '1.5',
         },
         'num_lines': {
             'type': int,
             'description': 'The number of lines the comment spans.',
+            'added_in': '1.5',
         },
         'filediff': {
             'type': 'reviewboard.webapi.resources.filediff.FileDiffResource',
             'description': 'The per-file diff that the comment was made on.',
+            'added_in': '1.5',
         },
         'interfilediff': {
             'type': 'reviewboard.webapi.resources.filediff.FileDiffResource',
             'description': "The second per-file diff in an interdiff that "
                            "the comment was made on. This will be ``null`` if "
                            "the comment wasn't made on an interdiff.",
+            'added_in': '1.5',
         },
     }, **BaseCommentResource.fields)
 
@@ -106,15 +113,18 @@ class BaseDiffCommentResource(BaseCommentResource):
                 'description': 'The second revision in an interdiff revision '
                                'range. The comments will be limited to this '
                                'range.',
+                'added_in': '1.5',
             },
             'line': {
                 'type': int,
                 'description': 'The line number that each comment must '
                                'start on.',
+                'added_in': '1.5',
             },
             'order-by': {
                 'type': six.text_type,
                 'description': 'Comma-separated list of fields to order by',
+                'added_in': '1.7.10'
             },
         },
         allow_unknown=True

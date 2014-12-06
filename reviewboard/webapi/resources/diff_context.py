@@ -29,6 +29,8 @@ class DiffContextResource(WebAPIResource):
     """
     # The javascript side of this is in DiffViewerPageModel and it's associated
     # sub-models.
+    added_in = '2.0'
+
     name = 'diff_context'
     singleton = True
 
@@ -39,16 +41,19 @@ class DiffContextResource(WebAPIResource):
             'revision': {
                 'type': int,
                 'description': 'Which revision of the diff to show.',
+                'added_in': '2.0',
             },
             'interdiff-revision': {
                 'type': int,
                 'description': 'A tip revision for showing interdiffs. If '
                                'this is provided, the ``revision`` field will '
                                'be the base diff.',
+                'added_in': '2.0.7',
             },
             'page': {
                 'type': int,
                 'description': 'The page number for paginated diffs.',
+                'added_in': '2.0',
             },
         },
     )

@@ -21,6 +21,8 @@ class WatchedReviewRequestResource(BaseWatchedObjectResource):
     listing the association's ID (which can be used for removing the
     association) and linking to the review request.
     """
+    added_in = '1.5'
+
     name = 'watched_review_request'
     uri_name = 'review-requests'
     profile_field = 'starred_review_requests'

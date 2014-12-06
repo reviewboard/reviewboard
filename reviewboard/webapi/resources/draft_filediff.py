@@ -21,6 +21,8 @@ class DraftFileDiffResource(FileDiffResource):
     Each of these contains a single, self-contained diff file that
     applies to exactly one file on a repository.
     """
+    added_in = '2.0'
+
     name = 'draft_file'
     policy_id = 'draft_file_diff'
     uri_name = 'files'
@@ -85,6 +87,7 @@ class DraftFileDiffResource(FileDiffResource):
                     'modified file. This can only be used for binary '
                     'files.'
                 ),
+                'added_in': '2.0',
             },
         },
         allow_unknown=True

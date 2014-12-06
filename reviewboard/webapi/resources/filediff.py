@@ -33,50 +33,61 @@ class FileDiffResource(WebAPIResource):
     """
     model = FileDiff
     name = 'file'
+
+    added_in = '1.5'
+
     policy_id = 'file_diff'
     allowed_methods = ('GET', 'PUT')
     fields = {
         'id': {
             'type': int,
             'description': 'The numeric ID of the file diff.',
+            'added_in': '1.5',
         },
         'extra_data': {
             'type': dict,
             'description': 'Extra data as part of the diff. '
                            'This can be set by the API or extensions.',
+            'added_in': '2.0',
         },
         'source_file': {
             'type': six.text_type,
             'description': 'The original name of the modified file in the '
                            'diff.',
+            'added_in': '1.5',
         },
         'dest_file': {
             'type': six.text_type,
             'description': 'The new name of the patched file. This may be '
                            'the same as the existing file.',
+            'added_in': '1.5',
         },
         'source_revision': {
             'type': six.text_type,
             'description': 'The revision of the file being modified. This '
                            'is a valid revision in the repository.',
+            'added_in': '1.5',
         },
         'dest_detail': {
             'type': six.text_type,
             'description': 'Additional information of the destination file. '
                            'This is parsed from the diff, but is usually '
                            'not used for anything.',
+            'added_in': '1.5',
         },
         'source_attachment': {
             'type': DiffFileAttachmentResource,
             'description': "The file attachment for the contents of the "
                            "original file for this file diff, if representing "
                            "a binary file.",
+            'added_in': '2.0',
         },
         'dest_attachment': {
             'type': DiffFileAttachmentResource,
             'description': "The file attachment for the contents of the "
                            "patched file for this file diff, if representing "
                            "a binary file.",
+            'added_in': '2.0',
         },
     }
     item_child_resources = [

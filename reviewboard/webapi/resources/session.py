@@ -18,6 +18,8 @@ class SessionResource(WebAPIResource):
     own resource, making it easy to figure out the user's information and
     any useful related resources.
     """
+    added_in = '1.5'
+
     name = 'session'
     singleton = True
     allowed_methods = ('GET', 'DELETE')

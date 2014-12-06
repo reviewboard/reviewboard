@@ -33,6 +33,8 @@ class ValidateDiffResource(DiffResource):
     diff) can be parsed and displayed, without actually creating a review
     request first.
     """
+    added_in = '2.0'
+
     singleton = True
     name = 'diff_validation'
     uri_name = 'diffs'
@@ -62,10 +64,12 @@ class ValidateDiffResource(DiffResource):
             'repository': {
                 'type': six.text_type,
                 'description': 'The path or ID of the repository.',
+                'added_in': '2.0',
             },
             'path': {
                 'type': file,
                 'description': 'The main diff file.',
+                'added_in': '2.0',
             },
         },
         optional={
@@ -77,10 +81,12 @@ class ValidateDiffResource(DiffResource):
                                'must be between the root of the repository '
                                'and the top directory referenced in the '
                                'diff paths.',
+                'added_in': '2.0',
             },
             'parent_diff_path': {
                 'type': file,
                 'description': 'The optional parent diff to upload.',
+                'added_in': '2.0',
             },
         }
     )

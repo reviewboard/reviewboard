@@ -16,47 +16,58 @@ class BaseCommentResource(MarkdownFieldsMixin, WebAPIResource):
 
     Provides common fields and functionality for all comment resources.
     """
+    added_in = '1.6'
+
     fields = {
         'id': {
             'type': int,
             'description': 'The numeric ID of the comment.',
+            'added_in': '2.0',
         },
         'extra_data': {
             'type': dict,
             'description': 'Extra data as part of the comment. This depends '
                            'on what is being commented on, and may be '
                            'used in conjunction with an extension.',
+            'added_in': '2.0',
         },
         'issue_opened': {
             'type': bool,
             'description': 'Whether or not a comment opens an issue.',
+            'added_in': '1.6',
         },
         'issue_status': {
             'type': ('dropped', 'open', 'resolved'),
             'description': 'The status of an issue.',
+            'added_in': '1.6',
         },
         'public': {
             'type': bool,
             'description': 'Whether or not the comment is part of a public '
                            'review.',
+            'added_in': '2.0',
         },
         'text': {
             'type': six.text_type,
             'description': 'The comment text.',
             'supports_text_types': True,
+            'added_in': '2.0',
         },
         'text_type': {
             'type': MarkdownFieldsMixin.TEXT_TYPES,
             'description': 'The mode for the comment text field.',
+            'added_in': '2.0',
         },
         'timestamp': {
             'type': six.text_type,
             'description': 'The date and time that the comment was made '
                            '(in YYYY-MM-DD HH:MM:SS format).',
+            'added_in': '2.0',
         },
         'user': {
             'type': 'reviewboard.webapi.resources.user.UserResource',
             'description': 'The user who made the comment.',
+            'added_in': '2.0',
         },
     }
     last_modified_field = 'timestamp'
@@ -67,6 +78,7 @@ class BaseCommentResource(MarkdownFieldsMixin, WebAPIResource):
             'type': six.text_type,
             'description': 'The comment text.',
             'supports_text_types': True,
+            'added_in': '2.0',
         },
     }
 
@@ -77,11 +89,13 @@ class BaseCommentResource(MarkdownFieldsMixin, WebAPIResource):
                            'text fields. The contents will be converted '
                            'to the requested type in the payload, but '
                            'will not be saved as that type.',
+            'added_in': '2.0.9',
         },
         'text_type': {
             'type': MarkdownFieldsMixin.SAVEABLE_TEXT_TYPES,
             'description': 'The content type for the comment text field. '
                            'The default is "plain".',
+            'added_in': '2.0',
         },
     }
 
@@ -92,16 +106,19 @@ class BaseCommentResource(MarkdownFieldsMixin, WebAPIResource):
                            'text fields. The contents will be converted '
                            'to the requested type in the payload, but '
                            'will not be saved as that type.',
+            'added_in': '2.0.9',
         },
         'text': {
             'type': six.text_type,
             'description': 'The comment text.',
             'supports_text_types': True,
+            'added_in': '2.0',
         },
         'text_type': {
             'type': MarkdownFieldsMixin.SAVEABLE_TEXT_TYPES,
             'description': 'The new content type for the comment text field. '
                            'The default is to leave the type unchanged.',
+            'added_in': '2.0',
         },
     }
 
@@ -112,6 +129,7 @@ class BaseCommentResource(MarkdownFieldsMixin, WebAPIResource):
         'issue_opened': {
             'type': bool,
             'description': 'Whether the comment opens an issue.',
+            'added_in': '2.0',
         },
     }, **_COMMON_OPTIONAL_CREATE_FIELDS)
 
@@ -119,10 +137,12 @@ class BaseCommentResource(MarkdownFieldsMixin, WebAPIResource):
         'issue_opened': {
             'type': bool,
             'description': 'Whether or not the comment opens an issue.',
+            'added_in': '2.0',
         },
         'issue_status': {
             'type': ('dropped', 'open', 'resolved'),
             'description': 'The status of an open issue.',
+            'added_in': '2.0',
         },
     }, **_COMMON_OPTIONAL_UPDATE_FIELDS)
 
@@ -131,6 +151,7 @@ class BaseCommentResource(MarkdownFieldsMixin, WebAPIResource):
         'reply_to_id': {
             'type': int,
             'description': 'The ID of the comment being replied to.',
+            'added_in': '2.0',
         },
     }, **_COMMON_REQUIRED_CREATE_FIELDS)
 

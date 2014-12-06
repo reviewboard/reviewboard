@@ -70,6 +70,8 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
     then be updated, again through the Review Request Draft resource, or closed
     as submitted or discarded.
     """
+    added_in = '1.5'
+
     model = ReviewRequest
     name = 'review_request'
 
@@ -77,6 +79,7 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
         'id': {
             'type': int,
             'description': 'The numeric ID of the review request.',
+            'added_in': '1.5',
         },
         'approved': {
             'type': bool,
@@ -100,6 +103,7 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
                      'ReviewRequestResource'],
             'description': 'The list of review requests that this '
                            'review request is blocking.',
+            'added_in': '1.7.9',
         },
         'close_description': {
             'type': six.text_type,
@@ -119,6 +123,7 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
                      'ReviewRequestResource'],
             'description': 'The list of review requests that this '
                            'review request depends on.',
+            'added_in': '1.7.9',
         },
         'extra_data': {
             'type': dict,
@@ -146,16 +151,19 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
         'submitter': {
             'type': UserResource,
             'description': 'The user who submitted the review request.',
+            'added_in': '1.5',
         },
         'time_added': {
             'type': six.text_type,
             'description': 'The date and time that the review request was '
                            'added (in YYYY-MM-DD HH:MM:SS format).',
+            'added_in': '1.5',
         },
         'last_updated': {
             'type': six.text_type,
             'description': 'The date and time that the review request was '
                            'last updated (in YYYY-MM-DD HH:MM:SS format).',
+            'added_in': '1.5',
         },
         'text_type': {
             'type': MarkdownFieldsMixin.TEXT_TYPES,
@@ -170,11 +178,13 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
         'status': {
             'type': ('discarded', 'pending', 'submitted'),
             'description': 'The current status of the review request.',
+            'added_in': '1.5',
         },
         'public': {
             'type': bool,
             'description': 'Whether or not the review request is currently '
                            'visible to other users.',
+            'added_in': '1.5',
         },
         'changenum': {
             'type': int,
@@ -186,6 +196,7 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
                            '\n'
                            'This is deprecated in favor of the ``commit_id`` '
                            'field.',
+            'added_in': '1.5',
             'deprecated_in': '2.0',
         },
         'commit_id': {
@@ -198,6 +209,7 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
             'type': RepositoryResource,
             'description': "The repository that the review request's code "
                            "is stored on.",
+            'added_in': '1.5',
         },
         'ship_it_count': {
             'type': int,
@@ -208,11 +220,13 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
         'summary': {
             'type': six.text_type,
             'description': "The review request's brief summary.",
+            'added_in': '1.5',
         },
         'description': {
             'type': six.text_type,
             'description': "The review request's description.",
             'supports_text_types': True,
+            'added_in': '1.5',
         },
         'description_text_type': {
             'type': MarkdownFieldsMixin.TEXT_TYPES,
@@ -225,6 +239,7 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
             'description': 'The information on the testing that was done '
                            'for the change.',
             'supports_text_types': True,
+            'added_in': '1.5',
         },
         'testing_done_text_type': {
             'type': MarkdownFieldsMixin.TEXT_TYPES,
@@ -236,28 +251,33 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
             'type': [six.text_type],
             'description': 'The list of bugs closed or referenced by this '
                            'change.',
+            'added_in': '1.5',
         },
         'branch': {
             'type': six.text_type,
             'description': 'The branch that the code was changed on or that '
                            'the code will be committed to. This is a '
                            'free-form field that can store any text.',
+            'added_in': '1.5',
         },
         'target_groups': {
             'type': [ReviewGroupResource],
             'description': 'The list of review groups who were requested '
                            'to review this change.',
+            'added_in': '1.5',
         },
         'target_people': {
             'type': [UserResource],
             'description': 'The list of users who were requested to review '
                            'this change.',
+            'added_in': '1.5',
         },
         'url': {
             'type': six.text_type,
             'description': "The URL to the review request's page on the site. "
                            "This is deprecated and will be removed in a "
                            "future version.",
+            'added_in': '1.7.8',
             'deprecated_in': '2.0',
         },
         'absolute_url': {
@@ -505,6 +525,7 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
                                '\n'
                                'This is deprecated in favor of the '
                                '``commit_id`` field.',
+                'added_in': '1.5',
                 'deprecated_in': '2.0',
             },
             'commit_id': {
@@ -532,11 +553,13 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
                                'text fields. The contents will be converted '
                                'to the requested type in the payload, but '
                                'will not be saved as that type.',
+                'added_in': '2.0.9',
             },
             'repository': {
                 'type': six.text_type,
                 'description': 'The path or ID of the repository that the '
                                'review request is for.',
+                'added_in': '1.5',
             },
             'submit_as': {
                 'type': six.text_type,
@@ -545,6 +568,7 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
                                'logged in user is either a superuser or has '
                                'the "reviews.can_submit_as_another_user" '
                                'permission.',
+                'added_in': '1.5',
             },
         },
         allow_unknown=True
@@ -688,6 +712,7 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
                 'description': 'The status of the review request. This can '
                                'be changed to close or reopen the review '
                                'request',
+                'added_in': '1.5',
             },
             'changenum': {
                 'type': int,
@@ -704,6 +729,7 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
                                'This is deprecated. Instead, set '
                                '``commit_id`` and ``update_from_commit_id=1`` '
                                ' on the draft.',
+                'added_in': '1.5.4',
                 'deprecated_in': '2.0',
             },
             'close_description': {
@@ -731,6 +757,7 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
                                '\n'
                                'This is deprecated. Instead, set '
                                '``close_description``.',
+                'added_in': '1.6',
                 'deprecated_in': '2.0.9',
                 'supports_text_types': True,
             },
@@ -740,6 +767,7 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
                                'text fields. The contents will be converted '
                                'to the requested type in the payload, but '
                                'will not be saved as that type.',
+                'added_in': '2.0.9',
             },
             'text_type': {
                 'type': MarkdownFieldsMixin.SAVEABLE_TEXT_TYPES,
@@ -893,6 +921,7 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
                                'repository types that support server-side '
                                'changesets. This is deprecated in favor of '
                                'the ``commit_id`` field.',
+                'added_in': '1.5',
             },
             'commit-id': {
                 'type': six.text_type,
@@ -909,6 +938,7 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
                                'be added before. This is compared against the '
                                'review request\'s ``time_added`` field. This '
                                'must be a valid :term:`date/time format`.',
+                'added_in': '1.5',
             },
             'time-added-from': {
                 'type': six.text_type,
@@ -916,6 +946,7 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
                                'could be added. This is compared against the '
                                'review request\'s ``time_added`` field. This '
                                'must be a valid :term:`date/time format`.',
+                'added_in': '1.5',
             },
             'last-updated-to': {
                 'type': six.text_type,
@@ -924,6 +955,7 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
                                'against the review request\'s '
                                '``last_updated`` field. This must be a valid '
                                ':term:`date/time format`.',
+                'added_in': '1.5',
             },
             'last-updated-from': {
                 'type': six.text_type,
@@ -932,16 +964,19 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
                                'against the review request\'s '
                                '``last_updated`` field. This must be a valid '
                                ':term:`date/time format`.',
+                'added_in': '1.5',
             },
             'from-user': {
                 'type': six.text_type,
                 'description': 'The username that the review requests must '
                                'be owned by.',
+                'added_in': '1.5',
             },
             'repository': {
                 'type': int,
                 'description': 'The ID of the repository that the review '
                                'requests must be on.',
+                'added_in': '1.5',
             },
             'show-all-unpublished': {
                 'type': bool,
@@ -1046,6 +1081,7 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
                                'review with Ship It set, if this is 1. '
                                'Otherwise, if 0, it must not have any marked '
                                'Ship It.',
+                'added_in': '1.6',
                 'deprecated_in': '2.0',
             },
             'ship-it-count': {
@@ -1080,19 +1116,22 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
             },
             'status': {
                 'type': ('all', 'discarded', 'pending', 'submitted'),
-                'description': 'The status of the review requests.'
+                'description': 'The status of the review requests.',
+                'added_in': '1.5',
             },
             'to-groups': {
                 'type': six.text_type,
                 'description': 'A comma-separated list of review group names '
                                'that the review requests must have in the '
                                'reviewer list.',
+                'added_in': '1.5',
             },
             'to-user-groups': {
                 'type': six.text_type,
                 'description': 'A comma-separated list of usernames who are '
                                'in groups that the review requests must have '
                                'in the reviewer list.',
+                'added_in': '1.5',
             },
             'to-users': {
                 'type': six.text_type,
@@ -1100,12 +1139,14 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
                                'review requests must either have in the '
                                'reviewer list specifically or by way of '
                                'a group.',
+                'added_in': '1.5',
             },
             'to-users-directly': {
                 'type': six.text_type,
                 'description': 'A comma-separated list of usernames that the '
                                'review requests must have in the reviewer '
                                'list specifically.',
+                'added_in': '1.5',
             }
         },
         allow_unknown=True
