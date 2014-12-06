@@ -35,6 +35,11 @@ def convert_to_unicode(s, encoding_list):
 
     Returns the encoding type which was used and the decoded unicode object.
     """
+    if isinstance(s, bytearray):
+        # Some SCMTool backends return file data as a bytearray instead of
+        # bytes.
+        s = bytes(s)
+
     if isinstance(s, six.text_type):
         # Nothing to do
         return 'utf-8', s
