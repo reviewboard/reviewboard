@@ -259,10 +259,10 @@ def get_markdown_element_tree(markdown_html):
     This will build the tree and return all nodes representing the rendered
     Markdown content.
     """
+    markdown_html = sanitize_illegal_chars_for_xml(markdown_html)
+
     if isinstance(markdown_html, six.text_type):
         markdown_html = markdown_html.encode('utf-8')
-
-    markdown_html = sanitize_illegal_chars_for_xml(markdown_html)
 
     doc = parseString(b'<html>%s</html>' % markdown_html)
     return doc.childNodes[0].childNodes
