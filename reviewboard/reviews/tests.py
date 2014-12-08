@@ -3171,6 +3171,17 @@ class MarkdownTemplateTagsTests(TestCase):
         self.assertEqual(t.render(self.context),
                          '\\u0026lt\\u003Bfoo **bar**')
 
+    def test_sanitize_illegal_chars(self):
+        """Testing sanitize_illegal_chars_for_xml"""
+        s = '<a>\u2018\u2019\u201c\u201d\u201c\u201d</a>'
+
+        # This used to cause a UnicodeDecodeError
+        nodes = get_markdown_element_tree(s)
+
+        self.assertEqual(len(nodes), 1)
+        self.assertEqual(nodes[0].toxml(),
+                         '<a>\u2018\u2019\u201c\u201d\u201c\u201d</a>')
+
 
 class InitReviewUI(FileAttachmentReviewUI):
     supported_mimetypes = ['image/jpg']
