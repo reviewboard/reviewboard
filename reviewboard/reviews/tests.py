@@ -3279,7 +3279,8 @@ class SandboxTests(SpyAgency, TestCase):
 
     def test_is_enabled_for(self):
         """Testing FileAttachmentReviewUI sandboxes for
-        is_enabled_for"""
+        is_enabled_for
+        """
         comment = "Comment"
 
         self.spy_on(SandboxReviewUI.is_enabled_for)
@@ -3298,7 +3299,8 @@ class SandboxTests(SpyAgency, TestCase):
 
     def test_get_comment_thumbnail(self):
         """Testing FileAttachmentReviewUI sandboxes for
-        get_comment_thumbnail"""
+        get_comment_thumbnail
+        """
         comment = "Comment"
 
         review_ui = self.file_attachment2.review_ui
@@ -3335,7 +3337,8 @@ class SandboxTests(SpyAgency, TestCase):
 
     def test_get_comment_link_text(self):
         """Testing FileAttachmentReviewUI sandboxes for
-        get_comment_link_text"""
+        get_comment_link_text
+        """
         comment = "Comment"
 
         review_ui = self.file_attachment2.review_ui
@@ -3354,8 +3357,8 @@ class SandboxTests(SpyAgency, TestCase):
 
     def test_get_extra_context(self):
         """Testing FileAttachmentReviewUI sandboxes for
-        get_extra_context"""
-
+        get_extra_context
+        """
         review_ui = self.file_attachment2.review_ui
         request = self.factory.get('test')
         request.user = self.user
@@ -3368,7 +3371,8 @@ class SandboxTests(SpyAgency, TestCase):
 
     def test_get_js_model_data(self):
         """Testing FileAttachmentReviewUI sandboxes for
-        get_js_model_data"""
+        get_js_model_data
+        """
         review_ui = self.file_attachment3.review_ui
         request = self.factory.get('test')
         request.user = self.user
@@ -3381,7 +3385,8 @@ class SandboxTests(SpyAgency, TestCase):
 
     def test_get_js_view_data(self):
         """Testing FileAttachmentReviewUI sandboxes for
-        get_js_view_data"""
+        get_js_view_data
+        """
         review_ui = self.file_attachment2.review_ui
         request = self.factory.get('test')
         request.user = self.user
@@ -3394,8 +3399,8 @@ class SandboxTests(SpyAgency, TestCase):
 
     def test_serialize_comments(self):
         """Testing FileAttachmentReviewUI sandboxes for
-        serialize_comments"""
-
+        serialize_comments
+        """
         review_ui = self.file_attachment2.review_ui
 
         self.spy_on(review_ui.serialize_comments)
@@ -3406,7 +3411,8 @@ class SandboxTests(SpyAgency, TestCase):
 
     def test_serialize_comment(self):
         """Testing FileAttachmentReviewUI sandboxes for
-        serialize_comment"""
+        serialize_comment
+        """
         comment = 'comment'
 
         review_ui = self.file_attachment3.review_ui
