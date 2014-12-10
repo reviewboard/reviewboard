@@ -29,7 +29,6 @@ class BaseFileAttachmentCommentResource(BaseCommentResource):
             'type': 'reviewboard.webapi.resources.file_attachment.'
                     'FileAttachmentResource',
             'description': 'The file the comment was made on.',
-            'added_in': '1.6',
         },
         'link_text': {
             'type': six.text_type,

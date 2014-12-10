@@ -20,8 +20,6 @@ class RepositoryInfoResource(WebAPIResource):
     This is not available for all types of repositories. The information
     will be specific to that type of repository.
     """
-    added_in = '1.5'
-
     name = 'info'
     policy_id = 'repository_info'
     singleton = True

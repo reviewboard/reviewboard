@@ -20,8 +20,6 @@ class DraftScreenshotResource(BaseScreenshotResource):
     These are screenshots that will be shown once the pending review request
     draft is published.
     """
-    added_in = '1.5'
-
     name = 'draft_screenshot'
     uri_name = 'screenshots'
     model_parent_key = 'drafts'

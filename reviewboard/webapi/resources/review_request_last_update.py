@@ -20,8 +20,6 @@ class ReviewRequestLastUpdateResource(WebAPIResource):
     Clients can periodically poll this to see if any new updates have been
     made.
     """
-    added_in = '1.5'
-
     name = 'last_update'
     policy_id = 'review_request_last_update'
     singleton = True
@@ -33,13 +31,11 @@ class ReviewRequestLastUpdateResource(WebAPIResource):
             'description': 'A short summary of the update. This should be one '
                            'of "Review request updated", "Diff updated", '
                            '"New reply" or "New review".',
-            'added_in': '1.5',
         },
         'timestamp': {
             'type': six.text_type,
             'description': 'The timestamp of this most recent update '
                            '(YYYY-MM-DD HH:MM:SS format).',
-            'added_in': '1.5',
         },
         'type': {
             'type': ('review-request', 'diff', 'reply', 'review'),
@@ -49,12 +45,10 @@ class ReviewRequestLastUpdateResource(WebAPIResource):
                            "new diff was uploaded. ``reply`` means a reply "
                            "was made to an existing review. ``review`` means "
                            "a new review was posted.",
-            'added_in': '1.5',
         },
         'user': {
             'type': six.text_type,
             'description': 'The user who made the last update.',
-            'added_in': '1.5',
         },
     }
 

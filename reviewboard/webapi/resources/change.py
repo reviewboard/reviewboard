@@ -63,19 +63,16 @@ class ChangeResource(MarkdownFieldsMixin, WebAPIResource):
         'id': {
             'type': int,
             'description': 'The numeric ID of the change description.',
-            'added_in': '1.6',
         },
         'fields_changed': {
             'type': dict,
             'description': 'The fields that were changed.',
-            'added_in': '1.6',
         },
         'text': {
             'type': six.text_type,
             'description': 'The description of the change written by the '
                            'submitter.',
             'supports_text_types': True,
-            'added_in': '1.6',
         },
         'text_type': {
             'type': MarkdownFieldsMixin.TEXT_TYPES,
@@ -86,7 +83,6 @@ class ChangeResource(MarkdownFieldsMixin, WebAPIResource):
             'type': six.text_type,
             'description': 'The date and time that the change was made '
                            '(in YYYY-MM-DD HH:MM:SS format).',
-            'added_in': '1.6',
         },
     }
     uri_object_key = 'change_id'

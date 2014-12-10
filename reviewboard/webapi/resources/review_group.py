@@ -24,26 +24,21 @@ class ReviewGroupResource(WebAPIResource):
     Review groups are groups of users that can be listed as an intended
     reviewer on a review request.
     """
-    added_in = '1.5'
-
     model = Group
     fields = {
         'id': {
             'type': int,
             'description': 'The numeric ID of the review group.',
-            'added_in': '1.5',
         },
         'name': {
             'type': six.text_type,
             'description': 'The short name of the group, used in the '
                            'reviewer list and the Dashboard.',
-            'added_in': '1.5',
         },
         'display_name': {
             'type': six.text_type,
             'description': 'The human-readable name of the group, sometimes '
                            'used as a short description.',
-            'added_in': '1.5',
         },
         'invite_only': {
             'type': bool,
@@ -56,14 +51,12 @@ class ReviewGroupResource(WebAPIResource):
             'type': six.text_type,
             'description': 'The e-mail address that all posts on a review '
                            'group are sent to.',
-            'added_in': '1.5',
         },
         'url': {
             'type': six.text_type,
             'description': "The URL to the user's page on the site. "
                            "This is deprecated and will be removed in a "
                            "future version.",
-            'added_in': '1.5',
             'deprecated_in': '2.0',
         },
         'absolute_url': {
@@ -157,13 +150,11 @@ class ReviewGroupResource(WebAPIResource):
                                'display name when using ``displayname``) '
                                'must start with in order to be included in '
                                'the list. This is case-insensitive.',
-                'added_in': '1.5',
             },
             'displayname': {
                 'type': bool,
                 'description': 'Specifies whether ``q`` should also match '
                                'the beginning of the display name.',
-                'added_in': '1.5',
             },
         },
         allow_unknown=True

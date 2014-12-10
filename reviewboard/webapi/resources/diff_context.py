@@ -41,7 +41,6 @@ class DiffContextResource(WebAPIResource):
             'revision': {
                 'type': int,
                 'description': 'Which revision of the diff to show.',
-                'added_in': '2.0',
             },
             'interdiff-revision': {
                 'type': int,
@@ -53,7 +52,6 @@ class DiffContextResource(WebAPIResource):
             'page': {
                 'type': int,
                 'description': 'The page number for paginated diffs.',
-                'added_in': '2.0',
             },
         },
     )

@@ -43,7 +43,6 @@ class ReviewFileAttachmentCommentResource(BaseFileAttachmentCommentResource):
                 'type': int,
                 'description': 'The ID of the file attachment being '
                                'commented on.',
-                'added_in': '1.6',
             },
         }, **BaseFileAttachmentCommentResource.REQUIRED_CREATE_FIELDS),
         optional=dict({

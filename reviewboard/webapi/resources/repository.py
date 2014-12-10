@@ -45,26 +45,20 @@ class RepositoryResource(WebAPIResource):
     """
     model = Repository
     name_plural = 'repositories'
-
-    added_in = '1.5'
-
     fields = {
         'id': {
             'type': int,
             'description': 'The numeric ID of the repository.',
-            'added_in': '1.5',
         },
         'name': {
             'type': six.text_type,
             'description': 'The name of the repository.',
-            'added_in': '1.5',
         },
         'path': {
             'type': six.text_type,
             'description': 'The main path to the repository, which is used '
                            'for communicating with the repository and '
                            'accessing files.',
-            'added_in': '1.5',
         },
         'mirror_path': {
             'type': six.text_type,
@@ -84,7 +78,6 @@ class RepositoryResource(WebAPIResource):
                            'communication class used to talk to the '
                            'repository. This is generally the type of the '
                            'repository.',
-            'added_in': '1.5',
         }
     }
     uri_object_key = 'repository_id'

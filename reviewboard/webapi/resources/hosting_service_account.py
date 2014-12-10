@@ -37,17 +37,14 @@ class HostingServiceAccountResource(WebAPIResource):
         'id': {
             'type': int,
             'description': 'The numeric ID of the hosting service account.',
-            'added_in': '1.6.7',
         },
         'username': {
             'type': six.text_type,
             'description': 'The username of the account.',
-            'added_in': '1.6.7',
         },
         'service': {
             'type': six.text_type,
             'description': 'The ID of the service this account is on.',
-            'added_in': '1.6.7',
         },
     }
     uri_object_key = 'account_id'
@@ -146,13 +143,11 @@ class HostingServiceAccountResource(WebAPIResource):
             'username': {
                 'type': six.text_type,
                 'description': 'The username on the account.',
-                'added_in': '1.6.7',
             },
             'service_id': {
                 'type': six.text_type,
                 'description': 'The registered ID of the service for the '
                                'account.',
-                'added_in': '1.6.7',
             },
         },
         optional={
@@ -166,7 +161,6 @@ class HostingServiceAccountResource(WebAPIResource):
                 'type': six.text_type,
                 'description': 'The password on the account, if the hosting '
                                'service needs it.',
-                'added_in': '1.6.7',
             },
         }
     )

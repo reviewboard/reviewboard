@@ -25,15 +25,12 @@ class BaseReviewResource(MarkdownFieldsMixin, WebAPIResource):
 
     Provides common fields and functionality for all review resources.
     """
-    added_in = '1.5'
-
     model = Review
     fields = {
         'body_bottom': {
             'type': six.text_type,
             'description': 'The review content below the comments.',
             'supports_text_types': True,
-            'added_in': '1.5',
         },
         'body_bottom_text_type': {
             'type': MarkdownFieldsMixin.TEXT_TYPES,
@@ -45,7 +42,6 @@ class BaseReviewResource(MarkdownFieldsMixin, WebAPIResource):
             'type': six.text_type,
             'description': 'The review content above the comments.',
             'supports_text_types': True,
-            'added_in': '1.5',
         },
         'body_top_text_type': {
             'type': MarkdownFieldsMixin.TEXT_TYPES,
@@ -62,19 +58,16 @@ class BaseReviewResource(MarkdownFieldsMixin, WebAPIResource):
         'id': {
             'type': int,
             'description': 'The numeric ID of the review.',
-            'added_in': '1.5',
         },
         'public': {
             'type': bool,
             'description': 'Whether or not the review is currently '
                            'visible to other users.',
-            'added_in': '1.5',
         },
         'ship_it': {
             'type': bool,
             'description': 'Whether or not the review has been marked '
                            '"Ship It!"',
-            'added_in': '1.5',
         },
         'text_type': {
             'type': MarkdownFieldsMixin.TEXT_TYPES,
@@ -89,12 +82,10 @@ class BaseReviewResource(MarkdownFieldsMixin, WebAPIResource):
             'type': six.text_type,
             'description': 'The date and time that the review was posted '
                            '(in YYYY-MM-DD HH:MM:SS format).',
-            'added_in': '1.5',
         },
         'user': {
             'type': UserResource,
             'description': 'The user who wrote the review.',
-            'added_in': '1.5',
         },
     }
     last_modified_field = 'timestamp'
@@ -105,13 +96,11 @@ class BaseReviewResource(MarkdownFieldsMixin, WebAPIResource):
         'ship_it': {
             'type': bool,
             'description': 'Whether or not to mark the review "Ship It!"',
-            'added_in': '1.5',
         },
         'body_top': {
             'type': six.text_type,
             'description': 'The review content above the comments.',
             'supports_text_types': True,
-            'added_in': '1.5',
         },
         'body_top_text_type': {
             'type': MarkdownFieldsMixin.SAVEABLE_TEXT_TYPES,
@@ -123,7 +112,6 @@ class BaseReviewResource(MarkdownFieldsMixin, WebAPIResource):
             'type': six.text_type,
             'description': 'The review content below the comments.',
             'supports_text_types': True,
-            'added_in': '1.5',
         },
         'body_bottom_text_type': {
             'type': MarkdownFieldsMixin.SAVEABLE_TEXT_TYPES,
@@ -144,7 +132,6 @@ class BaseReviewResource(MarkdownFieldsMixin, WebAPIResource):
             'description': 'Whether or not to make the review public. '
                            'If a review is public, it cannot be made '
                            'private again.',
-            'added_in': '1.5',
         },
         'text_type': {
             'type': MarkdownFieldsMixin.SAVEABLE_TEXT_TYPES,

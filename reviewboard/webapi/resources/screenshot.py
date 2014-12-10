@@ -8,8 +8,6 @@ from reviewboard.webapi.resources.base_screenshot import BaseScreenshotResource
 
 class ScreenshotResource(BaseScreenshotResource):
     """A resource representing a screenshot on a review request."""
-    added_in = '1.5'
-
     model_parent_key = 'review_request'
 
     item_child_resources = [

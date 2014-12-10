@@ -28,8 +28,6 @@ class UserResource(WebAPIResource, DjbletsUserResource):
     If a user's profile is private, the fields ``email``, ``first_name``,
     ``last_name``, and ``fullname`` will be omitted for non-staff users.
     """
-    added_in = '1.5'
-
     item_child_resources = [
         resources.api_token,
         resources.watched,
@@ -143,13 +141,11 @@ class UserResource(WebAPIResource, DjbletsUserResource):
                                'name or last name when using ``fullname``) '
                                'must start with in order to be included in '
                                'the list. This is case-insensitive.',
-                'added_in': '1.5',
             },
             'fullname': {
                 'type': bool,
                 'description': 'Specifies whether ``q`` should also match '
                                'the beginning of the first name or last name.',
-                'added_in': '1.5',
             },
         },
         allow_unknown=True

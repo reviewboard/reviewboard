@@ -35,20 +35,17 @@ class DiffFileAttachmentResource(BaseFileAttachmentResource):
             'type': six.text_type,
             'description': 'The file path inside the repository that this '
                            'file attachment represents.',
-            'added_in': '2.0',
         },
         'repository_revision': {
             'type': six.text_type,
             'description': 'The revision that introduced this version of the '
                            'file, if committed in the repository.',
-            'added_in': '2.0',
         },
         'added_in_filediff': {
             'type': 'reviewboard.webapi.resources.filediff.FileDiffResource',
             'description': 'The file diff that introduced this file. If set, '
                            'this file is just part of a proposed change, and '
                            'not necessarily committed in the repository.',
-            'added_in': '2.0',
         },
     }, **BaseFileAttachmentResource.fields)
 
@@ -105,7 +102,6 @@ class DiffFileAttachmentResource(BaseFileAttachmentResource):
                     'Filter file attachments with the given path in the '
                     'repository.'
                 ),
-                'added_in': '2.0',
             },
             'repository-revision': {
                 'type': six.text_type,
@@ -113,14 +109,12 @@ class DiffFileAttachmentResource(BaseFileAttachmentResource):
                     'Filter file attachments for files with the given '
                     'revision.'
                 ),
-                'added_in': '2.0',
             },
             'mimetype': {
                 'type': six.text_type,
                 'description': (
                     'Filter file attachments with the given mimetype.'
                 ),
-                'added_in': '2.0',
             },
         }, **BaseFileAttachmentResource.get_list.optional_fields),
         required=BaseFileAttachmentResource.get_list.required_fields

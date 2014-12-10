@@ -29,17 +29,14 @@ class BaseFileAttachmentResource(WebAPIResource):
         'id': {
             'type': int,
             'description': 'The numeric ID of the file.',
-            'added_in': '1.6',
         },
         'caption': {
             'type': six.text_type,
             'description': "The file's descriptive caption.",
-            'added_in': '1.6',
         },
         'filename': {
             'type': six.text_type,
             'description': "The name of the file.",
-            'added_in': '1.6',
         },
         'url': {
             'type': six.text_type,
@@ -48,7 +45,6 @@ class BaseFileAttachmentResource(WebAPIResource):
                            "relative to the Review Board server's URL. "
                            "This is deprecated and will be removed in a "
                            "future version.",
-            'added_in': '1.6',
             'deprecated_in': '2.0',
         },
         'absolute_url': {
@@ -60,7 +56,6 @@ class BaseFileAttachmentResource(WebAPIResource):
         'icon_url': {
             'type': six.text_type,
             'description': 'The URL to a 24x24 icon representing this file.',
-            'added_in': '1.6',
         },
         'mimetype': {
             'type': six.text_type,
@@ -162,7 +157,6 @@ class BaseFileAttachmentResource(WebAPIResource):
             'path': {
                 'type': file,
                 'description': 'The file to upload.',
-                'added_in': '1.6',
             },
         },
         optional={
@@ -170,7 +164,6 @@ class BaseFileAttachmentResource(WebAPIResource):
                 'type': six.text_type,
                 'description': 'The optional caption describing the '
                                'file.',
-                'added_in': '1.6',
             },
             'attachment_history': {
                 'type': int,
@@ -236,7 +229,6 @@ class BaseFileAttachmentResource(WebAPIResource):
             'caption': {
                 'type': six.text_type,
                 'description': 'The new caption for the file.',
-                'added_in': '1.6',
             },
             'thumbnail': {
                 'type': six.text_type,

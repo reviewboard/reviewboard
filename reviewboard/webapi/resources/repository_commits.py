@@ -69,7 +69,6 @@ class RepositoryCommitsResource(WebAPIResource):
             'start': {
                 'type': six.text_type,
                 'description': 'A commit ID to start listing from.',
-                'added_in': '2.0',
             },
         }
     )

@@ -22,7 +22,6 @@ class BaseCommentResource(MarkdownFieldsMixin, WebAPIResource):
         'id': {
             'type': int,
             'description': 'The numeric ID of the comment.',
-            'added_in': '2.0',
         },
         'extra_data': {
             'type': dict,
@@ -34,12 +33,10 @@ class BaseCommentResource(MarkdownFieldsMixin, WebAPIResource):
         'issue_opened': {
             'type': bool,
             'description': 'Whether or not a comment opens an issue.',
-            'added_in': '1.6',
         },
         'issue_status': {
             'type': ('dropped', 'open', 'resolved'),
             'description': 'The status of an issue.',
-            'added_in': '1.6',
         },
         'public': {
             'type': bool,
@@ -151,7 +148,6 @@ class BaseCommentResource(MarkdownFieldsMixin, WebAPIResource):
         'reply_to_id': {
             'type': int,
             'description': 'The ID of the comment being replied to.',
-            'added_in': '2.0',
         },
     }, **_COMMON_REQUIRED_CREATE_FIELDS)
 

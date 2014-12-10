@@ -24,7 +24,6 @@ class ReviewGroupUserResource(UserResource):
 
     policy_id = 'review_group_user'
 
-    added_in = '1.5'
 
     def get_queryset(self, request, group_name, local_site_name=None,
                      *args, **kwargs):

@@ -33,16 +33,12 @@ class FileDiffResource(WebAPIResource):
     """
     model = FileDiff
     name = 'file'
-
-    added_in = '1.5'
-
     policy_id = 'file_diff'
     allowed_methods = ('GET', 'PUT')
     fields = {
         'id': {
             'type': int,
             'description': 'The numeric ID of the file diff.',
-            'added_in': '1.5',
         },
         'extra_data': {
             'type': dict,
@@ -54,26 +50,22 @@ class FileDiffResource(WebAPIResource):
             'type': six.text_type,
             'description': 'The original name of the modified file in the '
                            'diff.',
-            'added_in': '1.5',
         },
         'dest_file': {
             'type': six.text_type,
             'description': 'The new name of the patched file. This may be '
                            'the same as the existing file.',
-            'added_in': '1.5',
         },
         'source_revision': {
             'type': six.text_type,
             'description': 'The revision of the file being modified. This '
                            'is a valid revision in the repository.',
-            'added_in': '1.5',
         },
         'dest_detail': {
             'type': six.text_type,
             'description': 'Additional information of the destination file. '
                            'This is parsed from the diff, but is usually '
                            'not used for anything.',
-            'added_in': '1.5',
         },
         'source_attachment': {
             'type': DiffFileAttachmentResource,

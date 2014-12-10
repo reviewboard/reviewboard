@@ -87,7 +87,6 @@ class DraftFileDiffResource(FileDiffResource):
                     'modified file. This can only be used for binary '
                     'files.'
                 ),
-                'added_in': '2.0',
             },
         },
         allow_unknown=True

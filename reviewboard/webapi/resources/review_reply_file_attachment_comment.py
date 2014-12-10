@@ -36,7 +36,6 @@ class ReviewReplyFileAttachmentCommentResource(
         'reply_to': {
             'type': ReviewFileAttachmentCommentResource,
             'description': 'The comment being replied to.',
-            'added_in': '1.6',
         },
     }, **BaseFileAttachmentCommentResource.fields)
 

@@ -22,8 +22,6 @@ class ReviewScreenshotCommentResource(BaseScreenshotCommentResource):
     changed on this list. However, if the review is already published,
     then no changes can be made.
     """
-    added_in = '1.5'
-
     allowed_methods = ('GET', 'POST', 'PUT', 'DELETE')
     policy_id = 'review_screenshot_comment'
     model_parent_key = 'review'
@@ -40,27 +38,22 @@ class ReviewScreenshotCommentResource(BaseScreenshotCommentResource):
             'screenshot_id': {
                 'type': int,
                 'description': 'The ID of the screenshot being commented on.',
-                'added_in': '1.5',
             },
             'x': {
                 'type': int,
                 'description': 'The X location for the comment.',
-                'added_in': '1.5',
             },
             'y': {
                 'type': int,
                 'description': 'The Y location for the comment.',
-                'added_in': '1.5',
             },
             'w': {
                 'type': int,
                 'description': 'The width of the comment region.',
-                'added_in': '1.5',
             },
             'h': {
                 'type': int,
                 'description': 'The height of the comment region.',
-                'added_in': '1.5',
             },
         }, **BaseScreenshotCommentResource.REQUIRED_CREATE_FIELDS),
         optional=BaseScreenshotCommentResource.OPTIONAL_CREATE_FIELDS,
@@ -112,22 +105,18 @@ class ReviewScreenshotCommentResource(BaseScreenshotCommentResource):
             'x': {
                 'type': int,
                 'description': 'The X location for the comment.',
-                'added_in': '1.5',
             },
             'y': {
                 'type': int,
                 'description': 'The Y location for the comment.',
-                'added_in': '1.5',
             },
             'w': {
                 'type': int,
                 'description': 'The width of the comment region.',
-                'added_in': '1.5',
             },
             'h': {
                 'type': int,
                 'description': 'The height of the comment region.',
-                'added_in': '1.5',
             },
         }, **BaseScreenshotCommentResource.OPTIONAL_UPDATE_FIELDS),
         allow_unknown=True

@@ -13,8 +13,6 @@ class FileDiffCommentResource(BaseDiffCommentResource):
     purely as a way to see existing comments that were made on a diff. These
     comments will span all public reviews.
     """
-    added_in = '1.5'
-
     allowed_methods = ('GET',)
     policy_id = 'diff_comment'
     model_parent_key = 'filediff'

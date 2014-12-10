@@ -16,39 +16,31 @@ class BaseScreenshotCommentResource(BaseCommentResource):
     """A base resource for screenshot comments."""
     model = ScreenshotComment
     name = 'screenshot_comment'
-
-    added_in = '1.5'
-
     fields = dict({
         'screenshot': {
             'type': 'reviewboard.webapi.resources.screenshot.'
                     'ScreenshotResource',
             'description': 'The screenshot the comment was made on.',
-            'added_in': '1.5',
         },
         'x': {
             'type': int,
             'description': 'The X location of the comment region on the '
                            'screenshot.',
-            'added_in': '1.5',
         },
         'y': {
             'type': int,
             'description': 'The Y location of the comment region on the '
                            'screenshot.',
-            'added_in': '1.5',
         },
         'w': {
             'type': int,
             'description': 'The width of the comment region on the '
                            'screenshot.',
-            'added_in': '1.5',
         },
         'h': {
             'type': int,
             'description': 'The height of the comment region on the '
                            'screenshot.',
-            'added_in': '1.5',
         },
         'thumbnail_url': {
             'type': six.text_type,

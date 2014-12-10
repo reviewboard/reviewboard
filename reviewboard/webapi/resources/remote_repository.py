@@ -73,37 +73,31 @@ class RemoteRepositoryResource(WebAPIResource):
             'type': six.text_type,
             'description': 'The unique ID for this repository on the '
                            'hosting service.',
-            'added_in': '2.1',
         },
         'name': {
             'type': six.text_type,
             'description': 'The name of the repository.',
-            'added_in': '2.1',
         },
         'owner': {
             'type': six.text_type,
             'description': 'The owner of the repository, which may be a user '
                            'account or an organization, depending on the '
                            'service.',
-            'added_in': '2.1',
         },
         'scm_type': {
             'type': six.text_type,
             'description': 'The type of repository, mapping to registered '
                            'SCMTools on Review Board.',
-            'added_in': '2.1',
         },
         'path': {
             'type': six.text_type,
             'description': 'The repository path as recommended by the hosting '
                            'service.',
-            'added_in': '2.1',
         },
         'mirror_path': {
             'type': six.text_type,
             'description': 'A secondary path that can be used to reach the '
                            'repository.',
-            'added_in': '2.1',
         },
     }
     uri_object_key = 'repository_id'
@@ -162,7 +156,6 @@ class RemoteRepositoryResource(WebAPIResource):
                 'description': 'The owner (user account or organization) '
                                'to look up repositories for. Defaults to '
                                'the owner of the hosting service account.',
-                'added_in': '2.1',
             },
             'owner-type': {
                 'type': six.text_type,
@@ -170,20 +163,17 @@ class RemoteRepositoryResource(WebAPIResource):
                                'represents. This may be required by some '
                                'services, and the values are dependent on '
                                'that service.',
-                'added_in': '2.1',
             },
             'filter-type': {
                 'type': six.text_type,
                 'description': 'Filters the list of results. Allowed values '
                                'are dependent on the hosting service. '
                                'Unexpected values will be ignored.',
-                'added_in': '2.1',
             },
             'start': {
                 'type': int,
                 'description': 'The 0-based index of the first page of '
                                'results to fetch.',
-                'added_in': '2.1',
             },
         },
         allow_unknown=True

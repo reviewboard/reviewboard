@@ -22,8 +22,6 @@ class ReviewResource(BaseReviewResource):
     approval of the change, once all issues raised on comments have been
     addressed.
     """
-    added_in = '1.5'
-
     uri_object_key = 'review_id'
     model_parent_key = 'review_request'
 

@@ -11,8 +11,6 @@ from reviewboard.webapi.resources import resources
 
 class ReviewDraftResource(WebAPIResource):
     """A redirecting resource that points to the current draft review."""
-    added_in = '1.5'
-
     name = 'review_draft'
     singleton = True
     uri_name = 'draft'

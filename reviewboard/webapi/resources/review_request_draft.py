@@ -48,8 +48,6 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
     request, or it must have the ``reviews.can_edit_reviewrequest`` permission
     set.
     """
-    added_in = '1.5'
-
     model = ReviewRequestDraft
     name = 'draft'
     policy_id = 'review_request_draft'
@@ -62,32 +60,27 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
             'type': int,
             'description': 'The numeric ID of the draft.',
             'mutable': False,
-            'added_in': '1.5',
         },
         'review_request': {
             'type': 'reviewboard.webapi.resources.review_request.'
                     'ReviewRequestResource',
             'description': 'The review request that owns this draft.',
             'mutable': False,
-            'added_in': '1.5',
         },
         'last_updated': {
             'type': six.text_type,
             'description': 'The date and time that the draft was last updated '
                            '(in YYYY-MM-DD HH:MM:SS format).',
             'mutable': False,
-            'added_in': '1.5',
         },
         'branch': {
             'type': six.text_type,
             'description': 'The branch name.',
-            'added_in': '1.5',
         },
         'bugs_closed': {
             'type': six.text_type,
             'description': 'The new list of bugs closed or referenced by this '
                            'change.',
-            'added_in': '1.5',
         },
         'depends_on': {
             'type': ['reviewboard.webapi.resources.review_request.'
@@ -102,7 +95,6 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
                            'made in this update. It often will be used to '
                            'describe the changes in the diff.',
             'supports_text_types': True,
-            'added_in': '1.5',
         },
         'changedescription_text_type': {
             'type': MarkdownFieldsMixin.TEXT_TYPES,
@@ -120,7 +112,6 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
             'type': six.text_type,
             'description': 'The new review request description.',
             'supports_text_types': True,
-            'added_in': '1.5',
         },
         'description_text_type': {
             'type': MarkdownFieldsMixin.TEXT_TYPES,
@@ -140,30 +131,25 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
                            'This will always be false up until the time '
                            'it is first made public. At that point, the '
                            'draft is deleted.',
-            'added_in': '1.5',
         },
         'summary': {
             'type': six.text_type,
             'description': 'The new review request summary.',
-            'added_in': '1.5',
         },
         'target_groups': {
             'type': six.text_type,
             'description': 'A comma-separated list of review groups '
                            'that will be on the reviewer list.',
-            'added_in': '1.5',
         },
         'target_people': {
             'type': six.text_type,
             'description': 'A comma-separated list of users that will '
                            'be on a reviewer list.',
-            'added_in': '1.5',
         },
         'testing_done': {
             'type': six.text_type,
             'description': 'The new testing done text.',
             'supports_text_types': True,
-            'added_in': '1.5',
         },
         'testing_done_text_type': {
             'type': MarkdownFieldsMixin.TEXT_TYPES,
@@ -195,12 +181,10 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
         'branch': {
             'type': six.text_type,
             'description': 'The new branch name.',
-            'added_in': '1.5',
         },
         'bugs_closed': {
             'type': six.text_type,
             'description': 'A comma-separated list of bug IDs.',
-            'added_in': '1.5',
         },
         'commit_id': {
             'type': six.text_type,
@@ -218,7 +202,6 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
             'type': six.text_type,
             'description': 'The change description for this update.',
             'supports_text_types': True,
-            'added_in': '1.5',
         },
         'changedescription_text_type': {
             'type': MarkdownFieldsMixin.SAVEABLE_TEXT_TYPES,
@@ -230,7 +213,6 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
             'type': six.text_type,
             'description': 'The new review request description.',
             'supports_text_types': True,
-            'added_in': '1.5',
         },
         'description_text_type': {
             'type': MarkdownFieldsMixin.SAVEABLE_TEXT_TYPES,
@@ -251,30 +233,25 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
             'description': 'Whether or not to make the review public. '
                            'If a review is public, it cannot be made '
                            'private again.',
-            'added_in': '1.5',
         },
         'summary': {
             'type': six.text_type,
             'description': 'The new review request summary.',
-            'added_in': '1.5',
         },
         'target_groups': {
             'type': six.text_type,
             'description': 'A comma-separated list of review groups '
                            'that will be on the reviewer list.',
-            'added_in': '1.5',
         },
         'target_people': {
             'type': six.text_type,
             'description': 'A comma-separated list of users that will '
                            'be on a reviewer list.',
-            'added_in': '1.5',
         },
         'testing_done': {
             'type': six.text_type,
             'description': 'The new testing done text.',
             'supports_text_types': True,
-            'added_in': '1.5',
         },
         'testing_done_text_type': {
             'type': MarkdownFieldsMixin.SAVEABLE_TEXT_TYPES,

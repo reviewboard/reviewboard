@@ -21,8 +21,6 @@ class WatchedReviewGroupResource(BaseWatchedObjectResource):
     association's ID (which can be used for removing the association) and
     linking to the review group.
     """
-    added_in = '1.5'
-
     name = 'watched_review_group'
     uri_name = 'review-groups'
     profile_field = 'starred_groups'

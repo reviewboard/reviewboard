@@ -18,7 +18,6 @@ class ServerInfoResource(WebAPIResource):
 
     This is deprecated in favor of the data in the root resource.
     """
-    added_in = '1.5'
     deprecated_in = '2.0'
 
     name = 'info'
