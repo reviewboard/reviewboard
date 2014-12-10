@@ -33,6 +33,8 @@ class ValidateDiffResource(DiffResource):
     diff) can be parsed and displayed, without actually creating a review
     request first.
     """
+    added_in = '2.0'
+
     singleton = True
     name = 'diff_validation'
     uri_name = 'diffs'

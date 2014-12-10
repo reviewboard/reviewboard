@@ -22,6 +22,8 @@ class DiffFileAttachmentResource(BaseFileAttachmentResource):
     of that diff will have the ``added_in_filediff`` link set, and
     ``repository_revision`` will be null.
     """
+    added_in = '2.0'
+
     name = 'diff_file_attachment'
     model_parent_key = 'repository'
 

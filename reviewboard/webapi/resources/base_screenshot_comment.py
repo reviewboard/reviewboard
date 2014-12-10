@@ -16,7 +16,6 @@ class BaseScreenshotCommentResource(BaseCommentResource):
     """A base resource for screenshot comments."""
     model = ScreenshotComment
     name = 'screenshot_comment'
-
     fields = dict({
         'screenshot': {
             'type': 'reviewboard.webapi.resources.screenshot.'
@@ -47,6 +46,7 @@ class BaseScreenshotCommentResource(BaseCommentResource):
             'type': six.text_type,
             'description': 'The URL to an image showing what was commented '
                            'on.',
+            'added_in': '1.7.10',
         },
     }, **BaseCommentResource.fields)
 
