@@ -10,6 +10,7 @@ the Review Board server, but it can be changed to store on `Amazon S3`_, a
 scalable file storage service provided by Amazon.
 
 .. _`Amazon S3`: http://aws.amazon.com/s3/
+.. _`OpenStack Swift`: http://swift.openstack.org/
 
 
 General Settings
