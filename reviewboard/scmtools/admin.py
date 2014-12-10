@@ -1,5 +1,7 @@
 from __future__ import unicode_literals
 
+import logging
+
 from django.contrib import admin
 from django.db.models.signals import pre_delete
 from django.dispatch import receiver
@@ -139,8 +141,17 @@ class RepositoryAdmin(admin.ModelAdmin):
             service = repository.hosting_account.service
 
             if service and service.has_repository_hook_instructions:
-                return HttpResponse(service.get_repository_hook_instructions(
-                    request, repository))
+                try:
+                    instructions = service.get_repository_hook_instructions(
+                        request, repository)
+                except Exception as e:
+                    logging.error('Error when calling '
+                                  'get_repository_hook_instructions for '
+                                  'HostingService %r: %s',
+                                  service, e, exc_info=1)
+                    return HttpResponseNotFound()
+
+                return HttpResponse(instructions)
 
         return HttpResponseNotFound()
 

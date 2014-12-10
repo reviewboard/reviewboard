@@ -9,11 +9,14 @@ from tempfile import mkdtemp
 
 from django import forms
 from django.conf import settings
+from django.contrib.admin.sites import AdminSite
 from django.contrib.auth.models import AnonymousUser, User
 from django.core.cache import cache
+from django.shortcuts import get_object_or_404
 from django.utils import six
 from django.utils.six.moves import zip_longest
 from djblets.util.filesystem import is_exe_in_path
+from kgb import SpyAgency
 import nose
 
 from reviewboard.diffviewer.diffutils import patch
@@ -24,6 +27,7 @@ from reviewboard.hostingsvcs.service import (HostingService,
                                              register_hosting_service,
                                              unregister_hosting_service)
 from reviewboard.reviews.models import Group
+from reviewboard.scmtools.admin import RepositoryAdmin
 from reviewboard.scmtools.core import (Branch, ChangeSet, Commit, Revision,
                                        HEAD, PRE_CREATION)
 from reviewboard.scmtools.errors import (SCMError, FileNotFoundError,
@@ -2940,3 +2944,95 @@ class RepositoryFormTests(TestCase):
 
         form = RepositoryForm(instance=repository)
         self.assertTrue(form._get_field_data('bug_tracker_use_hosting'))
+
+
+class SandboxHostingService(HostingService):
+    name = 'sandbox'
+    has_repository_hook_instructions = True
+
+    def get_password(self):
+        raise Exception
+
+    def get_branches(self, repository):
+        raise Exception
+
+    def get_commits(self, repository, branch=None, start=None):
+        raise Exception
+
+    def get_change(self, repository, revision):
+        raise Exception
+
+    def get_repository_hook_instructions(self, request, repository):
+        raise Exception
+
+
+class SandboxTests(SpyAgency, TestCase):
+    """Testing extension sandboxing."""
+    def setUp(self):
+        super(SandboxTests, self).setUp()
+
+        register_hosting_service(SandboxHostingService.name,
+                                 SandboxHostingService)
+        self.account = HostingServiceAccount.objects.create(
+            service_name='sandbox')
+        self.service = SandboxHostingService(account=self.account)
+        self.account._service = self.service
+        tool = Tool.objects.create()
+        self.repository = Repository.objects.create(
+            tool=tool,
+            hosting_account=self.account)
+
+    def tearDown(self):
+        super(SandboxTests, self).tearDown()
+
+        unregister_hosting_service(SandboxHostingService.name)
+
+    def test_get_password_hosting_service(self):
+        """Testing HostingService for get_password"""
+        self.spy_on(self.service.get_password)
+
+        self.repository.get_credentials()
+
+        self.assertTrue(self.service.get_password.called)
+
+    def test_get_branches_hosting_service(self):
+        """Testing HostingService for get_branches"""
+        self.spy_on(self.service.get_branches)
+
+        # No data should returned in cache_memoize
+        self.assertRaisesMessage(TypeError,
+                                 "object of type 'NoneType' has no len()",
+                                 self.repository.get_branches)
+        self.assertTrue(self.service.get_branches.called)
+
+    def test_get_commits_hosting_service(self):
+        """Testing HostingService for get_commits"""
+        self.spy_on(self.service.get_commits)
+
+        # No data should be returned in cache_memoize
+        self.assertRaisesMessage(TypeError,
+                                 "object of type 'NoneType' has no len()",
+                                 self.repository.get_commits)
+        self.assertTrue(self.service.get_commits.called)
+
+    def test_get_change_hosting_service(self):
+        """Testing HostingService for get_change"""
+        revision = Revision(name='sandbox')
+
+        self.spy_on(self.service.get_change)
+
+        self.repository.get_change(revision=revision)
+
+        self.assertTrue(self.service.get_change.called)
+
+    def test_get_repository_hook_instructions_hosting_service(self):
+        """Testing HostingService for get_repository_hook_instructions"""
+        admin = RepositoryAdmin(Repository, AdminSite())
+
+        self.spy_on(self.service.get_repository_hook_instructions)
+        self.spy_on(get_object_or_404,
+                    call_fake=lambda *args, **kwargs: self.repository)
+
+        admin.hooks_setup(None, self.repository.pk)
+
+        self.assertTrue(self.service.get_repository_hook_instructions.called)

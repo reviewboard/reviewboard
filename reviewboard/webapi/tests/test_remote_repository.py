@@ -8,6 +8,7 @@ from kgb import SpyAgency
 from reviewboard.hostingsvcs.github import GitHub
 from reviewboard.hostingsvcs.models import HostingServiceAccount
 from reviewboard.hostingsvcs.repository import RemoteRepository
+from reviewboard.hostingsvcs.service import HostingService
 from reviewboard.hostingsvcs.utils.paginator import APIPaginator
 from reviewboard.webapi.resources import resources
 from reviewboard.webapi.tests.base import BaseWebAPITestCase
@@ -100,6 +101,51 @@ class ResourceListTests(SpyAgency, BaseWebAPITestCase):
         return (get_remote_repository_list_url(account, local_site_name),
                 remote_repository_list_mimetype,
                 remote_repositories)
+
+    def test_get_remote_repositories_hosting_service(self):
+        """Testing the GET
+        hosting-service-accounts/<id>/remote-repositories/?id= API with
+        HostingService.get_remote_repositories failure
+        """
+        class SandboxHostingService(HostingService):
+            name = 'sandbox'
+
+            def get_remote_repositories(self,
+                                        owner=None,
+                                        owner_type=None,
+                                        filter_type=None,
+                                        start=None,
+                                        per_page=None):
+                raise Exception
+
+        self._login_user(admin=self.basic_get_use_admin)
+
+        account = HostingServiceAccount.objects.create()
+        service = SandboxHostingService(account=account)
+        account._service = service
+        remote_repository = [
+            RemoteRepository(service,
+                             repository_id='123',
+                             name='repo1',
+                             owner='bob',
+                             scm_type='Git',
+                             path='ssh://example.com/repo1')
+        ]
+
+        self.spy_on(service.get_remote_repositories)
+        self.spy_on(resources.hosting_service_account.get_object,
+                    call_fake=lambda *args, **kwargs: account)
+
+        self.assertRaisesMessage(AttributeError,
+                                 "'NoneType' object has no "
+                                 "attribute 'page_data'",
+                                 self.api_get,
+                                 get_remote_repository_list_url(account, None),
+                                 {'id': '123'},
+                                 remote_repository_list_mimetype,
+                                 remote_repository)
+
+        self.assertTrue(service.get_remote_repositories.called)
 
 
 @six.add_metaclass(BasicTestsMetaclass)
