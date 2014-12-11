@@ -6,11 +6,15 @@ from django.core import mail
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.testing.decorators import add_fixtures
 
+from reviewboard.accounts.models import Profile
 from reviewboard.admin.siteconfig import load_site_config
 from reviewboard.notifications.email import (build_email_address,
                                              get_email_address_for_user,
                                              get_email_addresses_for_group)
-from reviewboard.reviews.models import Group, Review, ReviewRequest
+from reviewboard.reviews.models import (Group,
+                                        Review,
+                                        ReviewRequest,
+                                        ReviewRequestDraft)
 from reviewboard.site.models import LocalSite
 from reviewboard.testing import TestCase
 
@@ -335,6 +339,128 @@ class ReviewRequestEmailTests(TestCase, EmailTestHelper):
         message = mail.outbox[0].message()
         self.assertEqual(message['Sender'],
                          self._get_sender(review_request.submitter))
+
+    def test_add_reviewer_review_request_email(self):
+        """Testing limited e-mail recipients
+        when adding a reviewer to an existing review request
+        """
+        review_request = self.create_review_request(
+            summary='My test review request',
+            public=True)
+        review_request.email_message_id = "junk"
+        review_request.target_people.add(User.objects.get(username='dopey'))
+        review_request.save()
+
+        draft = ReviewRequestDraft.create(review_request)
+        draft.target_people.add(User.objects.get(username='grumpy'))
+        draft.publish(user=review_request.submitter)
+
+        from_email = get_email_address_for_user(review_request.submitter)
+
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(mail.outbox[0].from_email, self.sender)
+        self.assertEqual(mail.outbox[0].extra_headers['From'], from_email)
+        self.assertEqual(mail.outbox[0].subject,
+                         'Re: Review Request %s: My test review request'
+                         % review_request.pk)
+        # The only included users should be the submitter and 'grumpy' (not
+        # 'dopey', since he was already included on the review request earlier)
+        self.assertValidRecipients([review_request.submitter.username,
+                                    'grumpy'])
+
+        message = mail.outbox[0].message()
+        self.assertEqual(message['Sender'],
+                         self._get_sender(review_request.submitter))
+
+    def test_add_group_review_request_email(self):
+        """Testing limited e-mail recipients
+        when adding a group to an existing review request
+        """
+        existing_group = Group.objects.create(
+            name='existing', mailing_list='existing@example.com')
+        review_request = self.create_review_request(
+            summary='My test review request',
+            public=True)
+        review_request.email_message_id = "junk"
+        review_request.target_groups.add(existing_group)
+        review_request.target_people.add(User.objects.get(username='dopey'))
+        review_request.save()
+
+        new_group = Group.objects.create(name='devgroup',
+                                         mailing_list='devgroup@example.com')
+        draft = ReviewRequestDraft.create(review_request)
+        draft.target_groups.add(new_group)
+        draft.publish(user=review_request.submitter)
+
+        from_email = get_email_address_for_user(review_request.submitter)
+
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(mail.outbox[0].from_email, self.sender)
+        self.assertEqual(mail.outbox[0].extra_headers['From'], from_email)
+        self.assertEqual(mail.outbox[0].subject,
+                         'Re: Review Request %s: My test review request'
+                         % review_request.pk)
+        # The only included users should be the submitter and 'devgroup' (not
+        # 'dopey' or 'existing', since they were already included on the
+        # review request earlier)
+        self.assertValidRecipients([review_request.submitter.username],
+                                   ['devgroup'])
+
+        message = mail.outbox[0].message()
+        self.assertEqual(message['Sender'],
+                         self._get_sender(review_request.submitter))
+
+    def test_limited_recipients_other_fields(self):
+        """Testing that recipient limiting only happens when adding reviewers
+        """
+        review_request = self.create_review_request(
+            summary='My test review request',
+            public=True)
+        review_request.email_message_id = "junk"
+        review_request.target_people.add(User.objects.get(username='dopey'))
+        review_request.save()
+
+        draft = ReviewRequestDraft.create(review_request)
+        draft.summary = 'Changed summary'
+        draft.target_people.add(User.objects.get(username='grumpy'))
+        draft.publish(user=review_request.submitter)
+
+        from_email = get_email_address_for_user(review_request.submitter)
+
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(mail.outbox[0].from_email, self.sender)
+        self.assertEqual(mail.outbox[0].extra_headers['From'], from_email)
+        self.assertEqual(mail.outbox[0].subject,
+                         'Re: Review Request %s: Changed summary'
+                         % review_request.pk)
+        self.assertValidRecipients([review_request.submitter.username,
+                                    'dopey', 'grumpy'])
+
+        message = mail.outbox[0].message()
+        self.assertEqual(message['Sender'],
+                         self._get_sender(review_request.submitter))
+
+    def test_limited_recipients_no_email(self):
+        """Testing limited e-mail recipients when operation results in zero
+        recipients
+        """
+        review_request = self.create_review_request(
+            summary='My test review request',
+            public=True)
+        review_request.email_message_id = "junk"
+        review_request.target_people.add(User.objects.get(username='dopey'))
+        review_request.save()
+
+        profile, is_new = Profile.objects.get_or_create(
+            user=review_request.submitter)
+        profile.should_send_own_updates = False
+        profile.save()
+
+        draft = ReviewRequestDraft.create(review_request)
+        draft.target_people.remove(User.objects.get(username='dopey'))
+        draft.publish(user=review_request.submitter)
+
+        self.assertEqual(len(mail.outbox), 0)
 
     def test_local_site_user_filters(self):
         """Testing sending e-mails and filtering out users not on a local site
