@@ -14,6 +14,8 @@ class FileAttachmentCommentResource(BaseFileAttachmentCommentResource):
     purely as a way to see existing comments that were made on a file. These
     comments will span all public reviews.
     """
+    added_in = '1.6'
+
     model_parent_key = 'file_attachment'
     uri_object_key = None
 

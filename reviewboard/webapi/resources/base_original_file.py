@@ -17,6 +17,8 @@ from reviewboard.webapi.errors import FILE_RETRIEVAL_ERROR
 
 class BaseOriginalFileResource(WebAPIResource):
     """Base class for the original file resources."""
+    added_in = '2.0.4'
+
     uri_name = 'original-file'
     link_name = 'original_file'
     singleton = True

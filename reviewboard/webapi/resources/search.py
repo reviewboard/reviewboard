@@ -17,6 +17,8 @@ class SearchResource(WebAPIResource, DjbletsUserResource):
     quick search. This resource helps filter for
     users, groups and review requests.
     """
+    added_in = '1.6'
+
     name = 'search'
     singleton = True
 

@@ -57,6 +57,7 @@ class ReviewGroupUserResource(UserResource):
         'username': {
             'type': six.text_type,
             'description': 'The user to add to the group.',
+            'added_in': '1.6.14',
         },
     })
     def create(self, request, username, *args, **kwargs):
