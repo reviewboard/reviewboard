@@ -1,8 +1,8 @@
 .. _webapi-capabilities-hook:
 
-====================
+======================
 WebAPICapabilitiesHook
-====================
+======================
 
 .. versionadded:: 2.1
 
