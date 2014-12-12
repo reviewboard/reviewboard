@@ -15,6 +15,7 @@ from django.utils.html import escape
 from django.utils.safestring import mark_safe
 
 from reviewboard.attachments.mimetypes import MIMETYPE_EXTENSIONS, score_match
+from reviewboard.attachments.models import FileAttachment
 from reviewboard.diffviewer.models import DiffSet
 from reviewboard.reviews.context import make_review_request_context
 from reviewboard.reviews.models import FileAttachmentComment, Review
@@ -336,10 +337,21 @@ class FileAttachmentReviewUI(ReviewUI):
         """
         data = {
             'fileAttachmentID': self.obj.pk,
+            'fileRevision': self.obj.attachment_revision,
         }
 
+        if self.obj.attachment_history is not None:
+            attach_history = FileAttachment.objects.filter(
+                attachment_history=self.obj.attachment_history)
+            data['attachmentRevisionIDs'] = list(
+                attach_history.order_by('attachment_revision')
+                .values_list('pk', flat=True))
+            data['numRevisions'] = attach_history.count()
+
         if self.diff_against_obj:
+            data['diffCaption'] = self.diff_against_obj.display_name
             data['diffAgainstFileAttachmentID'] = self.diff_against_obj.pk
+            data['diffRevision'] = self.diff_against_obj.attachment_revision
 
         return data
 

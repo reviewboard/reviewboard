@@ -92,9 +92,66 @@ RB.TextBasedReviewableView = RB.FileAttachmentReviewableView.extend({
 
         this.listenTo(this.model, 'change:viewMode', this._onViewChanged);
 
+        this.$el.before($('<div id="revision_label"></div>'))
+        this._revisionLabelView = new RB.FileAttachmentRevisionLabelView({
+            el: $('#revision_label'),
+            model: this.model
+        });
+        this._revisionLabelView.render();
+        this.listenTo(this._revisionLabelView, 'revisionSelected',
+                      this._onRevisionSelected);
+
+        if (this.model.get('numRevisions') > 1) {
+            this.$el.before($('<div id="attachment_revision_selector"></div>'));
+            this._revisionSelectorView = new RB.FileAttachmentRevisionSelectorView({
+                el: $('#attachment_revision_selector'),
+                model: this.model
+            });
+            this._revisionSelectorView.render();
+            this.listenTo(this._revisionSelectorView, 'revisionSelected',
+                          this._onRevisionSelected);
+        }
+
         Backbone.history.start({
             root: window.location
         });
+    },
+
+        /*
+     * Callback for when a new file revision is selected.
+     *
+     * This supports single revisions and diffs. If `base is 0, a
+     * single revision is selected, If not, the diff between `base` and
+     * `tip` will be shown.
+     */
+
+    _onRevisionSelected: function(revisions) {
+        var revisionIDs = this.model.get('attachmentRevisionIDs'),
+            base = revisions[0],
+            tip = revisions[1],
+            revisionBase,
+            revisionTip,
+            redirectURL;
+
+        // Ignore clicks on No Diff Label
+        if (tip === 0) {
+            return;
+        }
+
+        revisionTip = revisionIDs[tip-1];
+
+        /* Eventually these hard redirects will use a router
+         * (see diffViewerPageView.js for example)
+         * this.router.navigate(base + '-' + tip + '/', {trigger: true});
+         */
+
+        if (base === 0) {
+            redirectURL = '../' + revisionTip + '/';
+        } else {
+            revisionBase = revisionIDs[base-1];
+            redirectURL = '../' + revisionBase + '-' + revisionTip + '/';
+        }
+        window.location.replace(redirectURL);
     },
 
     /*

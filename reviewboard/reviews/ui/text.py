@@ -1,5 +1,6 @@
 from __future__ import unicode_literals
 
+import itertools
 import logging
 
 from django.template.context import Context
@@ -26,6 +27,7 @@ class TextBasedReviewUI(FileAttachmentReviewUI):
     template_name = 'reviews/ui/text.html'
     comment_thumbnail_template_name = 'reviews/ui/text_comment_thumbnail.html'
     can_render_text = False
+    supports_diffing = True
 
     extra_css_classes = []
 
@@ -44,16 +46,50 @@ class TextBasedReviewUI(FileAttachmentReviewUI):
         return data
 
     def get_extra_context(self, request):
+        file_line_list = [
+            mark_safe(line)
+            for line in self.get_text_lines()
+        ]
+
+        rendered_line_list = [
+           mark_safe(line)
+           for line in self.get_rendered_lines()
+        ]
+
+        diff_filename = None
+        diff_caption = None
+
+        if self.diff_against_obj:
+            diff_line_list = [
+                mark_safe(line)
+                for line in self.diff_against_obj.review_ui.get_text_lines()
+            ]
+
+            rendered_diff_line_list = [
+                mark_safe(line)
+                for line in
+                self.diff_against_obj.review_ui.get_rendered_lines()
+            ]
+
+            """Interleaves 2 arrays of file lines together, so a template
+            for-loop can access the contents of both files with 2 iterators
+            """
+            file_line_list = itertools.izip_longest(
+                file_line_list, diff_line_list, fillvalue="")
+
+            rendered_line_list = itertools.izip_longest(
+                rendered_line_list, rendered_diff_line_list, fillvalue="")
+
+            diff_caption = self.diff_against_obj.caption
+            diff_filename = self.diff_against_obj.filename
+
         return {
             'filename': self.obj.filename,
-            'text_lines': [
-                mark_safe(line)
-                for line in self.get_text_lines()
-            ],
-            'rendered_lines': [
-                mark_safe(line)
-                for line in self.get_rendered_lines()
-            ],
+            'text_lines': file_line_list,
+            'rendered_lines': rendered_line_list,
+            'is_diff': self.diff_against_obj is not None,
+            'diff_caption': diff_caption,
+            'diff_filename': diff_filename,
         }
 
     def get_text_lines(self):

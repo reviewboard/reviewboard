@@ -16,6 +16,16 @@
      {{filename}} - {{caption}}
 {%   endblocktrans %}
 {%  endif %}
+{%  if is_diff %}
+     &nbsp;&&nbsp;
+{%   if diff_filename == diff_caption %}
+      {{diff_filename}}
+{%   else %}
+{%    blocktrans %}
+      {{diff_filename}} - {{diff_caption}}
+{%    endblocktrans %}
+{%   endif %}
+{%  endif %}
     </h1>
 
 {%  if review_ui.can_render_text %}
@@ -25,36 +35,65 @@
     </ul>
 {%  endif %}
    </div>
-
 {%  if review_ui.can_render_text %}
    <table class="sidebyside text-review-ui-rendered-table">
     <colgroup>
+{%   if is_diff %}
+     <col class="line" />
+     <col class="left" />
+{%   endif %}
      <col class="line" />
      <col class="right" />
     </colgroup>
     <tbody>
-{%   for line in rendered_lines %}
+{%   if is_diff %}
+{%    for line1, line2 in rendered_lines %}
+     <tr line="{{forloop.counter}}">
+      <th>{{forloop.counter}}</th>
+      <td class="l">{{line1}}</td>
+      <th>{{forloop.counter}}</th>
+      <td class="2">{{line2}}</td>
+     </tr>
+{%    endfor %}
+{%   else %}
+{%    for line in rendered_lines %}
      <tr line="{{forloop.counter}}">
       <th>{{forloop.counter}}</th>
       <td class="l">{{line}}</td>
      </tr>
-{%   endfor %}
+{%    endfor %}
+{%   endif %}
     </tbody>
    </table>
 {%  endif %}
 
    <table class="sidebyside text-review-ui-text-table"{% if review_ui.can_render_text %} style="display:none"{% endif %}>
     <colgroup>
+{%  if is_diff %}
+     <col class="line" />
+     <col class="left" />
+{%  endif %}
      <col class="line" />
      <col class="right" />
     </colgroup>
     <tbody>
-{%  for line in text_lines %}
+{%  if is_diff %}
+{%   for line1, line2 in text_lines %}
+     <tr line="{{forloop.counter}}">
+      <th>{{forloop.counter}}</th>
+      <td class="l">{{line1}}</td>
+      <th>{{forloop.counter}}</th>
+      <td class="2">{{line2}}</td>
+     </tr>
+{%   endfor %}
+{%  else %}
+{%   for line in text_lines %}
      <tr line="{{forloop.counter}}">
       <th>{{forloop.counter}}</th>
       <td class="l">{{line}}</td>
      </tr>
-{%  endfor %}
+{%   endfor %}
+{%  endif %}
     </tbody>
    </table>
   </div>

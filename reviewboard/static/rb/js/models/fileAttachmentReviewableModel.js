@@ -4,8 +4,13 @@
 RB.FileAttachmentReviewable = RB.AbstractReviewable.extend({
     defaults: _.defaults({
         caption: '',
+        diffCaption: '',
         fileAttachmentID: null,
-        diffAgainstFileAttachmentID: null
+        diffAgainstFileAttachmentID: null,
+        fileRevision: null,
+        diffRevision: null,
+        numRevisions: null,
+        attachmentRevisionIDs: null
     }, RB.AbstractReviewable.prototype.defaults),
 
     defaultCommentBlockFields: [
