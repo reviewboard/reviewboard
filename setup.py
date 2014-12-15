@@ -37,8 +37,10 @@ if sys.hexversion < 0x02050000:
     sys.exit(1)
 elif sys.hexversion < 0x02060000:
     markdown_requirement = 'markdown==2.2.1'
+    pygments_requirement = 'Pygments>=1.5,<=1.6.9999'
 else:
     markdown_requirement = 'markdown>=2.2.1'
+    pygments_requirement = 'Pygments>=1.5'
 
 
 # Make sure we're actually in the directory containing setup.py.
@@ -179,7 +181,7 @@ setup(name=PACKAGE_NAME,
           markdown_requirement,
           'mimeparse>=0.1.3',
           'paramiko>=1.9.0',
-          'Pygments>=1.5',
+          pygments_requirement,
           'python-dateutil==1.5',
           'python-memcached',
           'pytz',
