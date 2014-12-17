@@ -467,6 +467,7 @@ class LDAPBackend(AuthBackend):
                     if settings.LDAP_FULL_NAME_ATTRIBUTE:
                         full_name = \
                             user_info[settings.LDAP_FULL_NAME_ATTRIBUTE][0]
+                        full_name = full_name.decode('utf-8')
                         first_name, last_name = full_name.split(' ', 1)
                 except AttributeError:
                     pass
