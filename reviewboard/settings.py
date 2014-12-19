@@ -262,7 +262,7 @@ REGISTER_SUPPORT_URL = (SUPPORT_URL_BASE +
 # messages for hosting service webhooks. These can be overriden in
 # settings_local.py.
 HOSTINGSVCS_HOOK_REGEX = (r'(?:Reviewed at %(server_url)sr/|Review request #)'
-                           '(?P<id>\d+)')
+                          r'(?P<id>\d+)')
 HOSTINGSVCS_HOOK_REGEX_FLAGS = re.IGNORECASE
 
 

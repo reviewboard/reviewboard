@@ -10,14 +10,20 @@ from reviewboard.accounts.backends import (register_auth_backend,
 from reviewboard.accounts.pages import (get_page_class,
                                         register_account_page_class,
                                         unregister_account_page_class)
+from reviewboard.admin.widgets import (register_admin_widget,
+                                       unregister_admin_widget)
 from reviewboard.attachments.mimetypes import (register_mimetype_handler,
                                                unregister_mimetype_handler)
 from reviewboard.datagrids.grids import (DashboardDataGrid,
                                          UserPageReviewRequestDataGrid)
+from reviewboard.hostingsvcs.service import (register_hosting_service,
+                                             unregister_hosting_service)
 from reviewboard.reviews.fields import (get_review_request_fieldset,
                                         register_review_request_fieldset,
                                         unregister_review_request_fieldset)
 from reviewboard.reviews.ui.base import register_ui, unregister_ui
+from reviewboard.webapi.server_info import (register_webapi_capabilities,
+                                            unregister_webapi_capabilities)
 
 
 @six.add_metaclass(ExtensionHookPoint)
@@ -111,6 +117,26 @@ class AccountPageFormsHook(ExtensionHook):
 
 
 @six.add_metaclass(ExtensionHookPoint)
+class AdminWidgetHook(ExtensionHook):
+    """A hook for adding a new widget to the admin screen.
+
+    By default the new widget is added as a small widget in the right column
+    of the admin page. To instead add the new widget as a large widget in the
+    center of the admin page, pass in True for ``primary``.
+    """
+    def __init__(self, extension, widget_cls, primary=False):
+        super(AdminWidgetHook, self).__init__(extension)
+
+        self.widget_cls = widget_cls
+        register_admin_widget(widget_cls, primary)
+
+    def shutdown(self):
+        super(AdminWidgetHook, self).shutdown()
+
+        unregister_admin_widget(self.widget_cls)
+
+
+@six.add_metaclass(ExtensionHookPoint)
 class DataGridSidebarItemsHook(ExtensionHook):
     """A hook for adding items to the sidebar of a datagrid.
 
@@ -177,6 +203,21 @@ class DashboardSidebarItemsHook(DataGridSidebarItemsHook):
     def __init__(self, extension, item_classes):
         super(DashboardSidebarItemsHook, self).__init__(
             extension, DashboardDataGrid, item_classes)
+
+
+@six.add_metaclass(ExtensionHookPoint)
+class HostingServiceHook(ExtensionHook):
+    """A hook for registering a hosting service."""
+    def __init__(self, extension, service_cls):
+        super(HostingServiceHook, self).__init__(extension)
+
+        self.name = service_cls.name
+        register_hosting_service(service_cls.name, service_cls)
+
+    def shutdown(self):
+        super(HostingServiceHook, self).shutdown()
+
+        unregister_hosting_service(self.name)
 
 
 @six.add_metaclass(ExtensionHookPoint)
@@ -311,6 +352,24 @@ class ReviewRequestFieldsHook(ExtensionHook):
 
         for field_cls in self.fields:
             fieldset.remove_field(field_cls)
+
+
+@six.add_metaclass(ExtensionHookPoint)
+class WebAPICapabilitiesHook(ExtensionHook):
+    """This hook allows adding capabilities to the web API server info.
+
+    Note that this does not add the functionality, but adds to the server
+    info listing.
+    """
+    def __init__(self, extension, caps):
+        super(WebAPICapabilitiesHook, self).__init__(extension)
+
+        register_webapi_capabilities(extension.id, caps)
+
+    def shutdown(self):
+        super(WebAPICapabilitiesHook, self).shutdown()
+
+        unregister_webapi_capabilities(self.extension.id)
 
 
 @six.add_metaclass(ExtensionHookPoint)
@@ -489,6 +548,7 @@ __all__ = [
     'AccountPageFormsHook',
     'AccountPagesHook',
     'ActionHook',
+    'AdminWidgetHook',
     'AuthBackendHook',
     'CommentDetailDisplayHook',
     'DashboardColumnsHook',
@@ -500,6 +560,7 @@ __all__ = [
     'FileAttachmentThumbnailHook',
     'HeaderActionHook',
     'HeaderDropdownActionHook',
+    'HostingServiceHook',
     'NavigationBarHook',
     'ReviewRequestActionHook',
     'ReviewRequestApprovalHook',
@@ -511,4 +572,5 @@ __all__ = [
     'TemplateHook',
     'URLHook',
     'UserPageSidebarItemsHook',
+    'WebAPICapabilitiesHook',
 ]

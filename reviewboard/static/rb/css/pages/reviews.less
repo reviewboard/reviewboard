@@ -834,7 +834,7 @@
     }
 
     a {
-      color: blue;
+      color: default;
       text-decoration: none;
 
       &:hover {
@@ -2093,6 +2093,18 @@
  */
 
 .rich-text {
+  .hide-br() {
+    br {
+      display: none;
+    }
+  }
+
+  .show-br() {
+    br {
+      display: block;
+    }
+  }
+
   line-height: @textarea-line-height;
   .box-sizing(border-box);
 
@@ -2103,6 +2115,8 @@
     line-height: inherit;
     text-rendering: inherit;
     white-space: normal;
+
+    .show-br();
   }
 
   h1, h2, h3, h4, h5, h6 {
@@ -2111,6 +2125,9 @@
 
   p {
     white-space: inherit;
+
+    /* Don't show both the <br> and the blank line. */
+    .hide-br();
   }
 
   ul, ol {
@@ -2118,17 +2135,52 @@
     margin: 0;
     padding: 0;
 
-    ul, ol {
-      margin-left: 2ch;
+    p {
+      /*
+       * <p> tags in a list do not preserve whitespace, since there's
+       * mandatory leading whitespace before the content.
+       */
+      .show-br();
     }
 
-    &:last-child li:last-child p:last-child {
-      margin-bottom: 0;
+    ul, ol {
+      margin-left: 2ch;
     }
   }
 
   ol {
+    /*
+     * We want to keep wrapped text within the confines of the list item. So:
+     *
+     * 1. This is long text that
+     *    wraps like this.
+     *
+     * Instead of:
+     *
+     * 1. This is long text that
+     * wraps like this.
+     *
+     * To do this, we need to use display: table and display: table-cell.
+     * However, that loses item counter rendering, so we have to do counters
+     * ourselves. In combination with StyledOListBlockProcessor in
+     * reviewboard/reviews/markdown_extensions.py, this maintains compatibility
+     * with the start= attribute.
+     */
+    counter-reset: li;
+    display: table;
     list-style-position: inside;
+
+    > li {
+      counter-increment: li;
+      display: table;
+
+      &::before {
+        content: counter(li) ". ";
+        padding-right: 1ch;
+        display: table-cell;
+        text-align: right;
+      }
+    }
   }
 
   ul {
@@ -2137,25 +2189,26 @@
     margin-left: 2ch;
   }
 
-  ol, ul, pre {
-    & + pre {
-      /*
-       * There are two blank lines between lists and code blocks, which won't
-       * otherwise be preserved. Try to keep that same spacing.
-       */
-      margin-top: @textarea-line-height;
-    }
-  }
-
   li {
     line-height: @textarea-line-height;
 
-    li:first-child {
-      margin-top: @textarea-line-height;
+    ~ li:last-child {
+      p:last-child {
+        margin-bottom: 0;
+      }
     }
 
     p {
       margin-bottom: @textarea-line-height;
+
+      /*
+       * If the list item ends up with a sole <p>, just remove the margins.
+       * Depending on neighboring elements, Python Markdown will sometimes
+       * create list items this way.
+       */
+      &:first-child:last-child {
+        margin: 0;
+      }
     }
   }
 
@@ -2172,6 +2225,7 @@
 
   pre {
     .pre-wrap;
+    font-size: inherit;
     margin-left: 2.5em;
 
     * {

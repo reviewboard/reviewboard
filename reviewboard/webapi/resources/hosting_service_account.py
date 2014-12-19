@@ -29,6 +29,8 @@ class HostingServiceAccountResource(WebAPIResource):
     The list of accounts tied to hosting services can be retrieved, and new
     accounts can be linked through an HTTP POST.
     """
+    added_in = '1.6.7'
+
     name = 'hosting_service_account'
     model = HostingServiceAccount
     fields = {
@@ -99,10 +101,12 @@ class HostingServiceAccountResource(WebAPIResource):
             'username': {
                 'type': six.text_type,
                 'description': 'Filter accounts by username.',
+                'added_in': '2.1',  # Unsure of which release this will be
             },
             'service': {
                 'type': six.text_type,
                 'description': 'Filter accounts by the hosting service ID.',
+                'added_in': '2.1',  # Unsure of which release this will be
             },
         }, **WebAPIResource.get_list.optional_fields),
         required=WebAPIResource.get_list.required_fields
@@ -151,6 +155,7 @@ class HostingServiceAccountResource(WebAPIResource):
                 'type': six.text_type,
                 'description': 'The hosting URL on the account, if the '
                                'hosting service is self-hosted.',
+                'added_in': '1.7.8',
             },
             'password': {
                 'type': six.text_type,

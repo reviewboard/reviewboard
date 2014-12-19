@@ -457,7 +457,7 @@ class ShipItColumn(Column):
         super(ShipItColumn, self).__init__(
             image_class='rb-icon rb-icon-shipit',
             image_alt=_('Ship It!'),
-            detailed_label = _('Ship It!'),
+            detailed_label=_('Ship It!'),
             db_field='shipit_count',
             sortable=True,
             shrink=True,

@@ -1,5 +1,6 @@
-from __future__ import unicode_literals
+from __future__ import absolute_import, unicode_literals
 
+import email
 import logging
 
 from django.conf import settings
@@ -15,7 +16,7 @@ from djblets.siteconfig.models import SiteConfiguration
 from djblets.auth.signals import user_registered
 
 from reviewboard.admin.server import get_server_url
-from reviewboard.reviews.models import ReviewRequest, Review
+from reviewboard.reviews.models import Group, ReviewRequest, Review
 from reviewboard.reviews.signals import (review_request_published,
                                          review_published, reply_published,
                                          review_request_closed)
@@ -184,7 +185,7 @@ class SpiffyEmailMessage(EmailMultiAlternatives):
 
 def send_review_mail(user, review_request, subject, in_reply_to,
                      extra_recipients, text_template_name,
-                     html_template_name, context={}):
+                     html_template_name, context={}, limit_recipients_to=None):
     """
     Formats and sends an e-mail out with the current domain and review request
     being added to the template context. Returns the resulting message ID.
@@ -215,27 +216,34 @@ def send_review_mail(user, review_request, subject, in_reply_to,
         review_request.submitter.should_send_email()):
         recipients.add(get_email_address_for_user(review_request.submitter))
 
-    for group in review_request.target_groups.all():
-        for address in get_email_addresses_for_group(group):
-            recipients.add(address)
-
     for profile in review_request.starred_by.all():
         if profile.user.is_active and profile.should_send_email:
             recipients.add(get_email_address_for_user(profile.user))
 
-    if extra_recipients:
-        for recipient in extra_recipients:
-            if recipient.is_active and recipient.should_send_email():
-                recipients.add(get_email_address_for_user(recipient))
+    if limit_recipients_to is not None:
+        recipients.update(limit_recipients_to)
+    else:
+        if extra_recipients:
+            for recipient in extra_recipients:
+                if recipient.is_active and recipient.should_send_email():
+                    recipients.add(get_email_address_for_user(recipient))
+
+        for group in review_request.target_groups.all():
+            recipients.update(get_email_addresses_for_group(group))
+
+        for u in target_people:
+            if u.should_send_email():
+                email_address = get_email_address_for_user(u)
+                recipients.add(email_address)
+                to_field.add(email_address)
 
     if not user.should_send_own_updates():
-        recipients.remove(from_email)
+        recipients.discard(from_email)
+        to_field.discard(from_email)
 
-    for u in target_people:
-        if u.should_send_email():
-            email_address = get_email_address_for_user(u)
-            recipients.add(email_address)
-            to_field.add(email_address)
+    if not recipients and not to_field:
+        # Nothing to send.
+        return
 
     siteconfig = current_site.config.get()
     domain_method = siteconfig.get("site_domain_method")
@@ -253,7 +261,7 @@ def send_review_mail(user, review_request, subject, in_reply_to,
 
     # Set the cc field only when the to field (i.e People) are mentioned,
     # so that to field consists of Reviewers and cc consists of all the
-    # other members of the group
+    # other members of the group.
     if to_field:
         cc_field = recipients.symmetric_difference(to_field)
     else:
@@ -318,7 +326,7 @@ def mail_review_request(review_request, changedesc=None, on_close=False):
     # If the review request is not yet public or has been discarded, don't send
     # any mail. Relax the "discarded" rule when e-mails are sent on closing
     # review requests
-    if (   not review_request.public
+    if (not review_request.public
         or (not on_close and review_request.status == 'D')):
         return
 
@@ -339,9 +347,33 @@ def mail_review_request(review_request, changedesc=None, on_close=False):
     if on_close:
         changedesc = review_request.changedescs.filter(public=True).latest()
 
+    limit_recipients_to = None
+
     if changedesc:
         extra_context['change_text'] = changedesc.text
         extra_context['changes'] = changedesc.fields_changed
+
+        fields_changed = changedesc.fields_changed
+        changed_field_names = set(fields_changed.keys())
+
+        if (changed_field_names == set(['target_people']) or
+            changed_field_names == set(['target_groups']) or
+            changed_field_names == set(['target_people', 'target_groups'])):
+            # If the only changes are to the target reviewers, try to send a
+            # much more targeted e-mail (rather than sending it out to
+            # everyone, only send it to new people).
+            limit_recipients_to = []
+
+            if 'target_people' in changed_field_names:
+                for item in fields_changed['target_people']['added']:
+                    user = User.objects.get(pk=item[2])
+                    limit_recipients_to.append(
+                        get_email_address_for_user(user))
+
+            if 'target_groups' in changed_field_names:
+                for item in fields_changed['target_groups']['added']:
+                    group = Group.objects.get(pk=item[2])
+                    limit_recipients_to += get_email_addresses_for_group(group)
 
     review_request.time_emailed = timezone.now()
     review_request.email_message_id = \
@@ -349,7 +381,8 @@ def mail_review_request(review_request, changedesc=None, on_close=False):
                          reply_message_id, extra_recipients,
                          'notifications/review_request_email.txt',
                          'notifications/review_request_email.html',
-                         extra_context)
+                         extra_context,
+                         limit_recipients_to=limit_recipients_to)
     review_request.save()
 
 
@@ -456,3 +489,15 @@ def mail_new_user(user):
         logging.error("Error sending e-mail notification with subject '%s' on "
                       "behalf of '%s' to admin: %s",
                       subject.strip(), from_email, e, exc_info=1)
+
+
+# Fixes bug #3613
+_old_header_init = email.header.Header.__init__
+
+
+def _unified_header_init(self, *args, **kwargs):
+    kwargs['continuation_ws'] = ' '
+
+    _old_header_init(self, *args, **kwargs)
+
+email.header.Header.__init__ = _unified_header_init

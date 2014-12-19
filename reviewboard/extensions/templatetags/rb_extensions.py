@@ -90,7 +90,8 @@ def navigation_bar_hooks(context):
 
                     context.push()
                     context['entry'] = nav_info
-                    s += render_to_string("extensions/navbar_entry.html", context)
+                    s += render_to_string("extensions/navbar_entry.html",
+                                          context)
                     context.pop()
         except Exception as e:
             extension = hook.extension

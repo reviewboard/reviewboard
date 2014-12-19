@@ -18,6 +18,8 @@ class DraftDiffResource(DiffResource):
     POSTing to this resource will create or update a review request draft
     with the provided diff. This also mirrors the public diff resource.
     """
+    added_in = '2.0'
+
     name = 'draft_diff'
     uri_name = 'diffs'
     model_parent_key = 'review_request_draft'

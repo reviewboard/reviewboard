@@ -1,6 +1,7 @@
 from __future__ import unicode_literals
 
 import re
+import sys
 from xml.dom.minidom import parseString
 
 from django.core.exceptions import ObjectDoesNotExist
@@ -20,20 +21,20 @@ MARKDOWN_SPECIAL_CHARS_RE = re.compile(r'([%s])' % MARKDOWN_SPECIAL_CHARS)
 # the markdown rendering, because otherwise it's annoying to look at the
 # source.
 MARKDOWN_ESCAPED_CHARS = set(Markdown.ESCAPED_CHARS)
-MARKDOWN_ESCAPED_CHARS -= set(['.', '#', '-', '+', '_', '(', ')', '*'])
+MARKDOWN_ESCAPED_CHARS -= set(['.', '#', '-', '+', '_', '(', ')', '*', '>'])
 
 ESCAPE_CHARS_RE = re.compile(r"""
     (
     # Numeric lists start with leading whitespace, one or more digits,
     # and then a period
-      ^\s*(\d+\.)+
+      ^\s*(\d+\.)\s
 
     # ATX-style headers start with a hash at the beginning of the line.
-    | ^\s*(\#)+
+    | ^\s*(\#+)
 
     # + and - have special meaning (lists, headers, and rules), but only if
     # they're at the start of the line.
-    | ^\s*[-\+]+
+    | ^\s*([-\+]+)
 
     # _ indicates italic, and __ indicates bold, but not when in the middle
     # of a word.
@@ -48,8 +49,14 @@ ESCAPE_CHARS_RE = re.compile(r"""
     # Named links are in the form of [name](url).
     | (\[) [^\]]* (\]) (\() [^\)]* (\))
 
+    # '>' need only be escaped for blockquotes ('> ...') or automatic links
+    # ('<http://...> or <user@example.com>).
+    | ^((?:\s*>)+)
+    | (?:<(?:(?:[Ff]|[Hh][Tt])[Tt][Pp][Ss]?://[^>]*))(>)
+    | (?:<[^> \!]*@[^> ]*)(>)
+
     # All other special characters
-    | [%s]
+    | ([%s])
     )
     """ % re.escape(''.join(MARKDOWN_ESCAPED_CHARS)),
     re.M | re.VERBOSE)
@@ -59,8 +66,10 @@ UNESCAPE_CHARS_RE = re.compile(r'\\([%s])' % MARKDOWN_SPECIAL_CHARS)
 MARKDOWN_KWARGS = {
     'safe_mode': 'escape',
     'output_format': 'xhtml1',
+    'lazy_ol': False,
     'extensions': [
-        'fenced_code', 'codehilite', 'sane_lists', 'smart_strong'
+        'fenced_code', 'codehilite', 'sane_lists', 'smart_strong', 'nl2br',
+        'reviewboard.reviews.markdown_extensions',
     ],
     'extension_configs': {
         'codehilite': {
@@ -70,15 +79,30 @@ MARKDOWN_KWARGS = {
 }
 
 
+ILLEGAL_XML_CHARS_RE = None
+
+
 def markdown_escape(text):
     """Escapes text for use in Markdown.
 
     This will escape the provided text so that none of the characters will
     be rendered specially by Markdown.
     """
-    return ESCAPE_CHARS_RE.sub(
-        lambda m: MARKDOWN_SPECIAL_CHARS_RE.sub(r'\\\1', m.group(0)),
-        text)
+    def _escape_matches(m):
+        prev_end = m.start(0)
+        new_s = []
+
+        for i, group in enumerate(m.groups()[1:], start=2):
+            if group:
+                new_s.append(m.string[prev_end:m.start(i)])
+                new_s.append(MARKDOWN_SPECIAL_CHARS_RE.sub(r'\\\1', group))
+                prev_end = m.end(i)
+
+        new_s.append(m.string[prev_end:m.end(0)])
+
+        return ''.join(new_s)
+
+    return ESCAPE_CHARS_RE.sub(_escape_matches, text)
 
 
 def markdown_unescape(escaped_text):
@@ -235,11 +259,48 @@ def get_markdown_element_tree(markdown_html):
     This will build the tree and return all nodes representing the rendered
     Markdown content.
     """
+    markdown_html = sanitize_illegal_chars_for_xml(markdown_html)
+
     if isinstance(markdown_html, six.text_type):
         markdown_html = markdown_html.encode('utf-8')
 
     doc = parseString(b'<html>%s</html>' % markdown_html)
     return doc.childNodes[0].childNodes
+
+
+def sanitize_illegal_chars_for_xml(s):
+    """Sanitize a string, removing characters illegal in XML.
+
+    This will remove a number of characters that would break the  XML parser.
+    They may be in the string due to a copy/paste.
+
+    This code is courtesy of the XmlRpcPlugin developers, as documented
+    here: http://stackoverflow.com/a/22273639
+    """
+    global ILLEGAL_XML_CHARS_RE
+
+    if ILLEGAL_XML_CHARS_RE is None:
+        _illegal_unichrs = [
+            (0x00, 0x08), (0x0B, 0x0C), (0x0E, 0x1F), (0x7F, 0x84),
+            (0x86, 0x9F), (0xFDD0, 0xFDDF), (0xFFFE, 0xFFFF)
+        ]
+
+        if sys.maxunicode > 0x10000:
+            _illegal_unichrs += [
+                (0x1FFFE, 0x1FFFF), (0x2FFFE, 0x2FFFF), (0x3FFFE, 0x3FFFF),
+                (0x4FFFE, 0x4FFFF), (0x5FFFE, 0x5FFFF), (0x6FFFE, 0x6FFFF),
+                (0x7FFFE, 0x7FFFF), (0x8FFFE, 0x8FFFF), (0x9FFFE, 0x9FFFF),
+                (0xAFFFE, 0xAFFFF), (0xBFFFE, 0xBFFFF), (0xCFFFE, 0xCFFFF),
+                (0xDFFFE, 0xDFFFF), (0xEFFFE, 0xEFFFF), (0xFFFFE, 0xFFFFF),
+                (0x10FFFE, 0x10FFFF)
+            ]
+
+        ILLEGAL_XML_CHARS_RE = re.compile('[%s]' % ''.join([
+            '%s-%s' % (unichr(low), unichr(high))
+            for low, high in _illegal_unichrs
+        ]))
+
+    return ILLEGAL_XML_CHARS_RE.sub('', s)
 
 
 def render_markdown(text):

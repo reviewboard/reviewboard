@@ -40,10 +40,12 @@ class BaseScreenshotResource(WebAPIResource):
         'filename': {
             'type': six.text_type,
             'description': "The base file name of the screenshot's image.",
+            'added_in': '1.7.10',
         },
         'review_url': {
             'type': six.text_type,
             'description': 'The URL to the review UI for this screenshot.',
+            'added_in': '1.7.10',
         },
         'url': {
             'type': six.text_type,

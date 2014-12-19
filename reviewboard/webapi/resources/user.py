@@ -38,6 +38,7 @@ class UserResource(WebAPIResource, DjbletsUserResource):
         'avatar_url': {
             'type': six.text_type,
             'description': 'The URL for an avatar representing the user.',
+            'added_in': '1.6.14',
         },
     }, **DjbletsUserResource.fields)
 
@@ -145,7 +146,7 @@ class UserResource(WebAPIResource, DjbletsUserResource):
             'fullname': {
                 'type': bool,
                 'description': 'Specifies whether ``q`` should also match '
-                               'the beginning of the first name or last name.'
+                               'the beginning of the first name or last name.',
             },
         },
         allow_unknown=True

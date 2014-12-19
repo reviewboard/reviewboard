@@ -36,6 +36,8 @@ class DefaultReviewerResource(WebAPIResource):
     default reviewer applied to every review request on the matched
     repositories.
     """
+    added_in = '1.6.16'
+
     name = 'default_reviewer'
     model = DefaultReviewer
     fields = {

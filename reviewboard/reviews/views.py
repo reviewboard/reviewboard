@@ -66,9 +66,9 @@ from reviewboard.site.urlresolvers import local_site_reverse
 from reviewboard.webapi.encoder import status_to_string
 
 
-#####
-##### Helper functions
-#####
+#
+# Helper functions
+#
 
 
 def _render_permission_denied(
@@ -226,9 +226,9 @@ def build_diff_comment_fragments(
     return had_error, comment_entries
 
 
-#####
-##### View functions
-#####
+#
+# View functions
+#
 
 @check_login_required
 @valid_prefs_required

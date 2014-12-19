@@ -26,6 +26,7 @@ class BaseReviewRequestFileAttachmentResource(BaseFileAttachmentResource):
         'review_url': {
             'type': six.text_type,
             'description': 'The URL to a review UI for this file.',
+            'added_in': '1.7',
         },
         'url': {
             'type': six.text_type,
@@ -178,6 +179,7 @@ class BaseReviewRequestFileAttachmentResource(BaseFileAttachmentResource):
             'thumbnail': {
                 'type': six.text_type,
                 'description': 'The thumbnail data for the file.',
+                'added_in': '1.7.7',
             },
         }
     )

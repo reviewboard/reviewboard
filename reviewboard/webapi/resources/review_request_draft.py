@@ -87,6 +87,7 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
                      'ReviewRequestResource'],
             'description': 'The list of review requests that this '
                            'review request depends on.',
+            'added_in': '1.7.8',
         },
         'changedescription': {
             'type': six.text_type,
@@ -122,6 +123,7 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
             'type': dict,
             'description': 'Extra data as part of the draft. '
                            'This can be set by the API or extensions.',
+            'added_in': '2.0',
         },
         'public': {
             'type': bool,
@@ -194,6 +196,7 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
             'type': six.text_type,
             'description': 'The new list of dependencies of this review '
                            'request.',
+            'added_in': '1.7.8',
         },
         'changedescription': {
             'type': six.text_type,
@@ -223,6 +226,7 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
                            'text fields. The contents will be converted '
                            'to the requested type in the payload, but '
                            'will not be saved as that type.',
+            'added_in': '2.0.9',
         },
         'public': {
             'type': bool,

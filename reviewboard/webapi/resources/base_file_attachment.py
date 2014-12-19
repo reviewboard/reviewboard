@@ -8,6 +8,8 @@ from reviewboard.webapi.base import WebAPIResource
 
 class BaseFileAttachmentResource(WebAPIResource):
     """A base resource representing file attachments."""
+    added_in = '1.6'
+
     model = FileAttachment
     name = 'file_attachment'
     fields = {
@@ -31,15 +33,17 @@ class BaseFileAttachmentResource(WebAPIResource):
         },
         'icon_url': {
             'type': six.text_type,
-            'description': 'The URL to a 24x24 icon representing this file.'
+            'description': 'The URL to a 24x24 icon representing this file.',
         },
         'mimetype': {
             'type': six.text_type,
             'description': 'The mimetype for the file.',
+            'added_in': '2.0',
         },
         'thumbnail': {
             'type': six.text_type,
             'description': 'A thumbnail representing this file.',
+            'added_in': '1.7',
         },
         'attachment_history_id': {
             'type': int,

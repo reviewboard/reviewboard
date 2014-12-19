@@ -371,6 +371,8 @@ class LDAPBackend(AuthBackend):
 
         if isinstance(username, six.text_type):
             username_bytes = username.encode('utf-8')
+        else:
+            username_bytes = username
 
         if isinstance(password, six.text_type):
             password = password.encode('utf-8')
@@ -408,7 +410,8 @@ class LDAPBackend(AuthBackend):
 
             # Now that we have the user, attempt to bind to verify
             # authentication
-            logging.debug("Attempting to authenticate as %s" % userdn.decode('utf-8'))
+            logging.debug("Attempting to authenticate as %s"
+                          % userdn.decode('utf-8'))
             ldapo.bind_s(userdn, password)
 
             return self.get_or_create_user(username_bytes, None, ldapo, userdn)
@@ -464,6 +467,7 @@ class LDAPBackend(AuthBackend):
                     if settings.LDAP_FULL_NAME_ATTRIBUTE:
                         full_name = \
                             user_info[settings.LDAP_FULL_NAME_ATTRIBUTE][0]
+                        full_name = full_name.decode('utf-8')
                         first_name, last_name = full_name.split(' ', 1)
                 except AttributeError:
                     pass
@@ -652,6 +656,8 @@ class ActiveDirectoryBackend(AuthBackend):
 
         if isinstance(username, six.text_type):
             username_bytes = username.encode('utf-8')
+        else:
+            username_bytes = username
 
         if isinstance(user_subdomain, six.text_type):
             user_subdomain = user_subdomain.encode('utf-8')

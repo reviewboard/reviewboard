@@ -45,6 +45,7 @@ class DiffResource(WebAPIResource):
             'type': dict,
             'description': 'Extra data as part of the diff. '
                            'This can be set by the API or extensions.',
+            'added_in': '2.0',
         },
         'name': {
             'type': six.text_type,
@@ -72,6 +73,7 @@ class DiffResource(WebAPIResource):
                            'of repositories. The directory must be between '
                            'the root of the repository and the top directory '
                            'referenced in the diff paths.',
+            'added_in': '1.7',
         },
         'base_commit_id': {
             'type': six.text_type,
@@ -80,6 +82,7 @@ class DiffResource(WebAPIResource):
                            'for that diff. This may not be provided for all '
                            'diffs or repository types, depending on how the '
                            'diff was uploaded.',
+            'added_in': '1.7.13',
         },
     }
     item_child_resources = [
@@ -217,6 +220,7 @@ class DiffResource(WebAPIResource):
                                'for that diff. This may not be provided for '
                                'all diffs or repository types, depending on '
                                'how the diff was uploaded.',
+                'added_in': '1.7.13',
             },
         },
         allow_unknown=True

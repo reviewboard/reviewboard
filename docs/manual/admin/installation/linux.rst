@@ -416,7 +416,7 @@ more information.
 
 
 Installing OpenStack Swift Support (optional)
-=======================================
+=============================================
 
 This is an optional step.
 

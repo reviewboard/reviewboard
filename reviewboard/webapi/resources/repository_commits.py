@@ -45,6 +45,8 @@ class RepositoryCommitsResource(WebAPIResource):
 
     This is not available for all types of repositories.
     """
+    added_in = '2.0'
+
     name = 'commits'
     policy_id = 'repository_commits'
     singleton = True
@@ -62,6 +64,7 @@ class RepositoryCommitsResource(WebAPIResource):
                 "description": "The ID of the branch to limit the commits "
                                "to, as provided by the 'id' field of the "
                                "repository branches API.",
+                'added_in': '2.1',
             },
             'start': {
                 'type': six.text_type,

@@ -47,6 +47,7 @@ class BaseScreenshotCommentResource(BaseCommentResource):
             'type': six.text_type,
             'description': 'The URL to an image showing what was commented '
                            'on.',
+            'added_in': '1.7.10',
         },
     }, **BaseCommentResource.fields)
 

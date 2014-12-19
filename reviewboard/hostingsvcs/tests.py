@@ -1390,7 +1390,7 @@ class GitHubTests(ServiceTests):
                          }
 
 
-                        +/* !(*%!(&^ (see http://www.positioniseverything.net/easyclearing.html) */
+                        +/* Add a rule for clearing floats, */
                         +.clearfix {
                         +  display: inline-block;
                         +
@@ -1420,7 +1420,7 @@ class GitHubTests(ServiceTests):
                            .border-radius(8px);
                          }
 
-                        -/* !(*%!(&^ (see http://www.positioniseverything.net/easyclearing.html) */
+                        -/* Add a rule for clearing floats, */
                         -.clearfix {
                         -  display: inline-block;
                         -
@@ -1439,7 +1439,7 @@ class GitHubTests(ServiceTests):
                         -/* End hide from IE-mac */
                         -
 
-                         /****************************************************************************
+                         /****************************************************
                           * Issue Summary"""),
                 },
             ]
@@ -1510,7 +1510,7 @@ class GitHubTests(ServiceTests):
 
         self.assertEqual(change.message, 'Move .clearfix to defs.less')
         self.assertEqual(md5(change.diff.encode('utf-8')).hexdigest(),
-                         '5f63bd4f1cd8c4d8b46f2f72ea8d33bc')
+                         '0dd1bde0a60c0a7bb92c27b50f51fcb6')
 
     def test_get_change_exception(self):
         """Testing GitHub get_change exception types"""

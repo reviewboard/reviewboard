@@ -372,9 +372,9 @@ class DiffOpcodeGenerator(object):
                         # changing whitespace).
                         if not is_replace or i_move_cur - ij1 != ri - ii1:
                             # We don't have any move ranges yet, or we're done
-                            # with the existing range, so it's time to build one
-                            # based on any removed lines we find that match the
-                            # inserted line.
+                            # with the existing range, so it's time to build
+                            # one based on any removed lines we find that
+                            # match the inserted line.
                             r_move_ranges[move_key] = \
                                 MoveRange(ri, ri, [(rgroup, rgroup_index)])
                             updated_range = True
@@ -558,9 +558,9 @@ class DiffOpcodeGenerator(object):
         valid = (
             valid and
             (new_end_i - r_move_range.start + 1 >=
-                 self.MOVE_PREFERRED_MIN_LINES or
+             self.MOVE_PREFERRED_MIN_LINES or
              len(self.differ.a[r_move_range.start].strip()) >=
-                 self.MOVE_MIN_LINE_LENGTH))
+             self.MOVE_MIN_LINE_LENGTH))
 
         if not valid:
             return None

@@ -1404,7 +1404,9 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
      * Generic handler for menu clicks.
      *
      * This simply prevents the click from bubbling up or invoking the
-     * default action.
+     * default action.  This function is used for dropdown menu titles
+     * so that their links do not send a request to the server when one
+     * of their dropdown actions are clicked.
      */
     _onMenuClicked: function() {
         return false;

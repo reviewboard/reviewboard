@@ -18,9 +18,11 @@ from kgb import SpyAgency
 from reviewboard.accounts.models import Profile, LocalSiteProfile
 from reviewboard.attachments.models import FileAttachment
 from reviewboard.reviews.forms import DefaultReviewerForm, GroupForm
-from reviewboard.reviews.markdown_utils import (markdown_escape,
+from reviewboard.reviews.markdown_utils import (get_markdown_element_tree,
+                                                markdown_escape,
                                                 markdown_unescape,
-                                                normalize_text_for_edit)
+                                                normalize_text_for_edit,
+                                                render_markdown)
 from reviewboard.reviews.models import (Comment,
                                         DefaultReviewer,
                                         Group,
@@ -641,13 +643,13 @@ class ReviewRequestManagerTests(TestCase):
 
         for summary in r_summaries:
             self.assertIn(summary, summaries,
-                            'summary "%s" not found in summary list'
-                            % summary)
+                          'summary "%s" not found in summary list'
+                          % summary)
 
         for summary in summaries:
             self.assertIn(summary, r_summaries,
-                            'summary "%s" not found in review request list'
-                            % summary)
+                          'summary "%s" not found in review request list'
+                          % summary)
 
 
 class ReviewRequestTests(SpyAgency, TestCase):
@@ -1279,6 +1281,7 @@ class ViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response['Content-Disposition'],
                          'attachment; filename=diffset')
+
 
 class DraftTests(TestCase):
     fixtures = ['test_users', 'test_scmtools']
@@ -2675,7 +2678,8 @@ class PolicyTests(TestCase):
         self.assertFalse(review_request.is_accessible_by(self.anonymous))
 
     @add_fixtures(['test_scmtools'])
-    def test_review_request_with_private_repository_allowed_by_review_group(self):
+    def test_review_request_with_private_repository_allowed_by_review_group(
+            self):
         """Testing access to a review request with a private repository with
         review group added
         """
@@ -2704,8 +2708,22 @@ class UserInfoboxTests(TestCase):
 
 
 class MarkdownUtilsTests(TestCase):
-    UNESCAPED_TEXT = r'\`*_{}[]()>#+-.!'
-    ESCAPED_TEXT = r'\\\`\*\_\{\}\[\]\(\)\>#+-.\!'
+    UNESCAPED_TEXT = r'\`*_{}[]()#+-.!'
+    ESCAPED_TEXT = r'\\\`\*\_\{\}\[\]\(\)#+-.\!'
+
+    def test_get_markdown_element_tree(self):
+        """Testing get_markdown_element_tree"""
+        node = get_markdown_element_tree(render_markdown('**Test**\nHi.'))
+
+        self.assertEqual(node[0].toxml(),
+                         '<p><strong>Test</strong><br/>\n'
+                         'Hi.</p>')
+
+    def test_get_markdown_element_tree_with_illegal_chars(self):
+        """Testing get_markdown_element_tree with illegal characters"""
+        node = get_markdown_element_tree(render_markdown('(**Test**\x0C)'))
+
+        self.assertEqual(node[0].toxml(), '<p>(<strong>Test</strong>)</p>')
 
     def test_markdown_escape(self):
         """Testing markdown_escape"""
@@ -2721,7 +2739,7 @@ class MarkdownUtilsTests(TestCase):
                             '  1. Line. 4.'),
             ('Line. 1.\n'
              '1\\. Line. 2.\n'
-             '1\\.2\\. Line. 3.\n'
+             '1.2. Line. 3.\n'
              '  1\\. Line. 4.'))
 
     def test_markdown_escape_atx_headers(self):
@@ -2789,6 +2807,28 @@ class MarkdownUtilsTests(TestCase):
         self.assertEqual(markdown_escape('](link)'), r'\](link)')
         self.assertEqual(markdown_escape('[foo] ](link)'),
                          r'\[foo\] \](link)')
+
+    def test_markdown_escape_gt_text(self):
+        """Testing markdown_escape with '>' for standard text"""
+        self.assertEqual(markdown_escape('<foo>'), r'<foo>')
+
+    def test_markdown_escape_gt_blockquotes(self):
+        """Testing markdown_escape with '>' for blockquotes"""
+        self.assertEqual(markdown_escape('>'), r'\>')
+        self.assertEqual(markdown_escape('> foo'), r'\> foo')
+        self.assertEqual(markdown_escape('  > foo'), r'  \> foo')
+        self.assertEqual(markdown_escape('> > foo'), r'\> \> foo')
+        self.assertEqual(markdown_escape('  > > foo'), r'  \> \> foo')
+
+    def test_markdown_escape_gt_autolinks(self):
+        """Testing markdown_escape with '>' for autolinks"""
+        self.assertEqual(markdown_escape('<http://www.example.com>'),
+                         r'<http://www.example.com\>')
+
+    def test_markdown_escape_gt_autoemail(self):
+        """Testing markdown_escape with '>' for autoemails"""
+        self.assertEqual(markdown_escape('<user@example.com>'),
+                         r'<user@example.com\>')
 
     def test_markdown_unescape(self):
         """Testing markdown_unescape"""
@@ -2879,6 +2919,225 @@ class MarkdownUtilsTests(TestCase):
         self.assertFalse(isinstance(text, SafeText))
 
 
+class MarkdownRenderTests(TestCase):
+    """Unit tests for Markdown rendering."""
+    def test_code_1_blank_line(self):
+        """Testing Markdown rendering with code block and 1 surrounding blank
+        line
+        """
+        self.assertEqual(
+            render_markdown(
+                'begin:\n'
+                '\n'
+                '    if (1) {}\n'
+                '\n'
+                'done.'),
+            ('<p>begin:</p>\n'
+             '<div class="codehilite"><pre>if (1) {}\n'
+             '</pre></div>\n'
+             '<p>done.</p>'))
+
+    def test_code_2_blank_lines(self):
+        """Testing Markdown rendering with code block and 2 surrounding blank
+        lines
+        """
+        self.assertEqual(
+            render_markdown(
+                'begin:\n'
+                '\n'
+                '\n'
+                '    if (1) {}\n'
+                '\n'
+                '\n'
+                'done.'),
+            ('<p>begin:</p>\n'
+             '<p></p>\n'
+             '<div class="codehilite"><pre>if (1) {}\n'
+             '</pre></div>\n'
+             '<p></p>\n'
+             '<p>done.</p>'))
+
+    def test_code_3_blank_lines(self):
+        """Testing Markdown rendering with code block and 3 surrounding blank
+        lines
+        """
+        self.assertEqual(
+            render_markdown(
+                'begin:\n'
+                '\n'
+                '\n'
+                '\n'
+                '    if (1) {}\n'
+                '\n'
+                '\n'
+                '\n'
+                'done.'),
+            ('<p>begin:</p>\n'
+             '<p></p>\n'
+             '<p></p>\n'
+             '<div class="codehilite"><pre>if (1) {}\n'
+             '</pre></div>\n'
+             '<p></p>\n'
+             '<p></p>\n'
+             '<p>done.</p>'))
+
+    def test_code_4_blank_lines(self):
+        """Testing Markdown rendering with code block and 4 surrounding blank
+        lines
+        """
+        self.assertEqual(
+            render_markdown(
+                'begin:\n'
+                '\n'
+                '\n'
+                '\n'
+                '\n'
+                '    if (1) {}\n'
+                '\n'
+                '\n'
+                '\n'
+                '\n'
+                'done.'),
+            ('<p>begin:</p>\n'
+             '<p></p>\n'
+             '<p></p>\n'
+             '<p></p>\n'
+             '<div class="codehilite"><pre>if (1) {}\n'
+             '</pre></div>\n'
+             '<p></p>\n'
+             '<p></p>\n'
+             '<p></p>\n'
+             '<p>done.</p>'))
+
+    def test_lists_1_blank_line(self):
+        """Testing Markdown rendering with 1 blank lines between lists"""
+        # This really just results in a single list. This is Python Markdown
+        # behavior.
+        self.assertEqual(
+            render_markdown(
+                '1. item\n'
+                '\n'
+                '1. item'),
+            ('<ol>\n'
+             '<li>\n'
+             '<p>item</p>\n'
+             '</li>\n'
+             '<li>\n'
+             '<p>item</p>\n'
+             '</li>\n'
+             '</ol>'))
+
+    def test_lists_2_blank_line(self):
+        """Testing Markdown rendering with 2 blank lines between lists"""
+        self.assertEqual(
+            render_markdown(
+                '1. item\n'
+                '\n'
+                '\n'
+                '1. item'),
+            ('<ol>\n'
+             '<li>item</li>\n'
+             '</ol>\n'
+             '<p></p>\n'
+             '<ol>\n'
+             '<li>item</li>\n'
+             '</ol>'))
+
+    def test_lists_3_blank_line(self):
+        """Testing Markdown rendering with 3 blank lines between lists"""
+        self.assertEqual(
+            render_markdown(
+                '1. item\n'
+                '\n'
+                '\n'
+                '\n'
+                '1. item'),
+            ('<ol>\n'
+             '<li>item</li>\n'
+             '</ol>\n'
+             '<p></p>\n'
+             '<p></p>\n'
+             '<ol>\n'
+             '<li>item</li>\n'
+             '</ol>'))
+
+    def test_ol(self):
+        """Testing Markdown rendering with ordered lists"""
+        self.assertEqual(
+            render_markdown(
+                '1. Foo\n'
+                '2. Bar'),
+            ('<ol>\n'
+             '<li>Foo</li>\n'
+             '<li>Bar</li>\n'
+             '</ol>'))
+
+    def test_ol_start(self):
+        """Testing Markdown rendering with ordered lists using start="""
+        self.assertEqual(
+            render_markdown(
+                '5. Foo\n'
+                '6. Bar'),
+            ('<ol start="5" style="counter-reset: li 4">\n'
+             '<li>Foo</li>\n'
+             '<li>Bar</li>\n'
+             '</ol>'))
+
+    def test_text_0_blank_lines(self):
+        """Testing Markdown rendering with 0 blank lines between text"""
+        self.assertEqual(
+            render_markdown(
+                'begin:\n'
+                'done.'),
+            ('<p>begin:<br />\n'
+             'done.</p>'))
+
+    def test_text_1_blank_line(self):
+        """Testing Markdown rendering with 1 blank line between text"""
+        self.assertEqual(
+            render_markdown(
+                'begin:\n'
+                '\n'
+                'done.'),
+            ('<p>begin:</p>\n'
+             '<p>done.</p>'))
+
+    def test_text_2_blank_lines(self):
+        """Testing Markdown rendering with 2 blank lines between text"""
+        self.assertEqual(
+            render_markdown(
+                'begin:\n'
+                '\n'
+                '\n'
+                'done.'),
+            ('<p>begin:</p>\n'
+             '<p></p>\n'
+             '<p>done.</p>'))
+
+    def test_text_3_blank_lines(self):
+        """Testing Markdown rendering with 3 blank lines between text"""
+        self.assertEqual(
+            render_markdown(
+                'begin:\n'
+                '\n'
+                '\n'
+                '\n'
+                'done.'),
+            ('<p>begin:</p>\n'
+             '<p></p>\n'
+             '<p></p>\n'
+             '<p>done.</p>'))
+
+    def test_trailing_p_trimmed(self):
+        """Testing Markdown rendering trims trailing paragraphs"""
+        self.assertEqual(
+            render_markdown(
+                'begin:\n'
+                '\n'
+                '\n'),
+            '<p>begin:</p>')
+
+
 class MarkdownTemplateTagsTests(TestCase):
     """Unit tests for Markdown-related template tags."""
     def setUp(self):
@@ -2911,6 +3170,17 @@ class MarkdownTemplateTagsTests(TestCase):
 
         self.assertEqual(t.render(self.context),
                          '\\u0026lt\\u003Bfoo **bar**')
+
+    def test_sanitize_illegal_chars(self):
+        """Testing sanitize_illegal_chars_for_xml"""
+        s = '<a>\u2018\u2019\u201c\u201d\u201c\u201d</a>'
+
+        # This used to cause a UnicodeDecodeError
+        nodes = get_markdown_element_tree(s)
+
+        self.assertEqual(len(nodes), 1)
+        self.assertEqual(nodes[0].toxml(),
+                         '<a>\u2018\u2019\u201c\u201d\u201c\u201d</a>')
 
 
 class InitReviewUI(FileAttachmentReviewUI):
@@ -3009,7 +3279,8 @@ class SandboxTests(SpyAgency, TestCase):
 
     def test_is_enabled_for(self):
         """Testing FileAttachmentReviewUI sandboxes for
-        is_enabled_for"""
+        is_enabled_for
+        """
         comment = "Comment"
 
         self.spy_on(SandboxReviewUI.is_enabled_for)
@@ -3028,7 +3299,8 @@ class SandboxTests(SpyAgency, TestCase):
 
     def test_get_comment_thumbnail(self):
         """Testing FileAttachmentReviewUI sandboxes for
-        get_comment_thumbnail"""
+        get_comment_thumbnail
+        """
         comment = "Comment"
 
         review_ui = self.file_attachment2.review_ui
@@ -3065,7 +3337,8 @@ class SandboxTests(SpyAgency, TestCase):
 
     def test_get_comment_link_text(self):
         """Testing FileAttachmentReviewUI sandboxes for
-        get_comment_link_text"""
+        get_comment_link_text
+        """
         comment = "Comment"
 
         review_ui = self.file_attachment2.review_ui
@@ -3084,8 +3357,8 @@ class SandboxTests(SpyAgency, TestCase):
 
     def test_get_extra_context(self):
         """Testing FileAttachmentReviewUI sandboxes for
-        get_extra_context"""
-
+        get_extra_context
+        """
         review_ui = self.file_attachment2.review_ui
         request = self.factory.get('test')
         request.user = self.user
@@ -3098,7 +3371,8 @@ class SandboxTests(SpyAgency, TestCase):
 
     def test_get_js_model_data(self):
         """Testing FileAttachmentReviewUI sandboxes for
-        get_js_model_data"""
+        get_js_model_data
+        """
         review_ui = self.file_attachment3.review_ui
         request = self.factory.get('test')
         request.user = self.user
@@ -3111,7 +3385,8 @@ class SandboxTests(SpyAgency, TestCase):
 
     def test_get_js_view_data(self):
         """Testing FileAttachmentReviewUI sandboxes for
-        get_js_view_data"""
+        get_js_view_data
+        """
         review_ui = self.file_attachment2.review_ui
         request = self.factory.get('test')
         request.user = self.user
@@ -3124,8 +3399,8 @@ class SandboxTests(SpyAgency, TestCase):
 
     def test_serialize_comments(self):
         """Testing FileAttachmentReviewUI sandboxes for
-        serialize_comments"""
-
+        serialize_comments
+        """
         review_ui = self.file_attachment2.review_ui
 
         self.spy_on(review_ui.serialize_comments)
@@ -3136,7 +3411,8 @@ class SandboxTests(SpyAgency, TestCase):
 
     def test_serialize_comment(self):
         """Testing FileAttachmentReviewUI sandboxes for
-        serialize_comment"""
+        serialize_comment
+        """
         comment = 'comment'
 
         review_ui = self.file_attachment3.review_ui

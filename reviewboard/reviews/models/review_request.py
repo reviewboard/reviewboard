@@ -130,13 +130,13 @@ class ReviewRequest(BaseReviewRequestDetails):
     internal state.
     """
     PENDING_REVIEW = "P"
-    SUBMITTED      = "S"
-    DISCARDED      = "D"
+    SUBMITTED = "S"
+    DISCARDED = "D"
 
     STATUSES = (
         (PENDING_REVIEW, _('Pending Review')),
-        (SUBMITTED,      _('Submitted')),
-        (DISCARDED,      _('Discarded')),
+        (SUBMITTED, _('Submitted')),
+        (DISCARDED, _('Discarded')),
     )
 
     ISSUE_COUNTER_FIELDS = {
@@ -908,8 +908,8 @@ class ReviewRequest(BaseReviewRequestDetails):
                     approved = result
                 else:
                     raise ValueError('%r returned an invalid value %r from '
-                                    'is_approved'
-                                    % (hook, result))
+                                     'is_approved'
+                                     % (hook, result))
 
                 if approved:
                     failure = None
