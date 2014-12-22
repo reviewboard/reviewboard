@@ -51,8 +51,8 @@ def dashboard(request, template_name="admin/dashboard.html"):
 
     selected_secondary_widgets = []
     unselected_secondary_widgets = []
-    secondary_widget_selections = \
-        profile_data.get('secondary_widget_selections')
+    secondary_widget_selections = profile_data.get(
+        'secondary_widget_selections')
     if secondary_widget_selections:
         for s in secondary_widgets:
             if secondary_widget_selections[s.widget_id] == "1":
@@ -67,7 +67,8 @@ def dashboard(request, template_name="admin/dashboard.html"):
     if primary_widget_positions:
         sorted_primary_widgets = sorted(
             selected_primary_widgets,
-            key=lambda y: primary_widget_positions[y.widget_id])
+            key=(lambda y: primary_widget_positions[y.widget_id] or
+                 len(primary_widget_positions)))
     else:
         sorted_primary_widgets = selected_primary_widgets
 
@@ -75,7 +76,8 @@ def dashboard(request, template_name="admin/dashboard.html"):
     if secondary_widget_positions:
         sorted_secondary_widgets = sorted(
             selected_secondary_widgets,
-            key=lambda y: secondary_widget_positions[y.widget_id])
+            key=(lambda y: secondary_widget_positions[y.widget_id] or
+                 len(secondary_widget_positions)))
     else:
         sorted_secondary_widgets = selected_secondary_widgets
 
