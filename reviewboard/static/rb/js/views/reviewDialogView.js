@@ -99,7 +99,7 @@ BaseCommentView = Backbone.View.extend({
             .append($(this.editorTemplate({
                 text: this.model.get('text'),
                 issueOpenedID: _.uniqueId('issue-opened'),
-                openAnIssueText: gettext('Open an issue'),
+                openAnIssueText: gettext('Open an Issue'),
                 enableMarkdownID: _.uniqueId('enable-markdown'),
                 enableMarkdownText: gettext('Enable Markdown')
             })));
