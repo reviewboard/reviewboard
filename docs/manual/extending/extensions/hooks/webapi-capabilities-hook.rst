@@ -20,7 +20,7 @@ Example
 .. code-block:: python
 
     from reviewboard.extensions.base import Extension
-    from reviewboard.extensions.hooks import WebAPICapabilityHook
+    from reviewboard.extensions.hooks import WebAPICapabilitiesHook
 
 
     class SampleExtension(Extension):
