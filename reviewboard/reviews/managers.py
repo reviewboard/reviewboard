@@ -101,7 +101,7 @@ class ReviewRequestManager(ConcurrencyManager):
                create_from_commit_id=False):
         """
         Creates a new review request, optionally filling in fields based off
-        a change number.
+        a commit ID.
         """
         if commit_id:
             # Try both the new commit_id and old changenum versions
