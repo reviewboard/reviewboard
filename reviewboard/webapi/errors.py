@@ -23,12 +23,12 @@ INVALID_ACTION = WebAPIError(
 
 INVALID_CHANGE_NUMBER = WebAPIError(
     203,
-    "The change number specified could not be found.",
+    "The commit ID specified could not be found.",
     http_status=404)  # 404 Not Found
 
 CHANGE_NUMBER_IN_USE = WebAPIError(
     204,
-    "The change number specified has already been used.",
+    "The commit ID specified has already been used.",
     http_status=409)  # 409 Conflict
 
 MISSING_REPOSITORY = WebAPIError(
@@ -68,7 +68,7 @@ NOTHING_TO_PUBLISH = WebAPIError(
 
 EMPTY_CHANGESET = WebAPIError(
     212,
-    "The change number specified represents an empty changeset.",
+    "The commit ID specified represents an empty changeset.",
     http_status=400)  # 400 Bad Request
 
 SERVER_CONFIG_ERROR = WebAPIError(
