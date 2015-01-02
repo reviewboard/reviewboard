@@ -34,7 +34,9 @@ class MarkdownReviewUI(TextBasedReviewUI):
                 yield line
         except Exception as e:
             logging.error('Failed to parse resulting Markdown XHTML for '
-                          'file attachment %d: %s' % (self.obj.pk, e))
+                          'file attachment %d: %s',
+                          self.obj.pk, e,
+                          exc_info=True)
             yield _('Error while rendering Markdown content: %s') % e
 
     def get_source_lexer(self, filename, data):

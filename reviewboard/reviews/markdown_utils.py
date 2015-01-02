@@ -300,6 +300,9 @@ def sanitize_illegal_chars_for_xml(s):
             for low, high in _illegal_unichrs
         ]))
 
+    if isinstance(s, bytes):
+        s = s.decode('utf-8')
+
     return ILLEGAL_XML_CHARS_RE.sub('', s)
 
 
