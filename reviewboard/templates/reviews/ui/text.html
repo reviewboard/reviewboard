@@ -7,45 +7,55 @@
 {% block review_ui_box_content_inner %}
  <div id="diffs">
   <div class="diff-container text-review-ui {{review_ui.extra_css_classes|join:' '}}">
-   <div class="text-review-ui-header">
-    <h1 class="caption">
-{%  if filename == caption %}
-     {{filename}}
-{%  else %}
-{%   blocktrans %}
-     {{filename}} - {{caption}}
-{%   endblocktrans %}
-{%  endif %}
-{%  if is_diff %}
-     &nbsp;&&nbsp;
-{%   if diff_filename == diff_caption %}
-      {{diff_filename}}
-{%   else %}
-{%    blocktrans %}
-      {{diff_filename}} - {{diff_caption}}
-{%    endblocktrans %}
-{%   endif %}
-{%  endif %}
-    </h1>
 
-{%  if review_ui.can_render_text %}
-    <ul class="text-review-ui-views">
-     <li class="active" data-view-mode="rendered"><a href="#rendered">{% trans "Rendered" %}</a></li>
-     <li data-view-mode="source"><a href="#source">{% trans "Source" %}</a></li>
-    </ul>
-{%  endif %}
-   </div>
-{%  if review_ui.can_render_text %}
-   <table class="sidebyside text-review-ui-rendered-table">
+   <table class="sidebyside">
     <colgroup>
-{%   if is_diff %}
+{%  if is_diff %}
      <col class="line" />
      <col class="left" />
-{%   endif %}
+{%  endif %}
      <col class="line" />
      <col class="right" />
     </colgroup>
-    <tbody>
+
+    <thead class="text-review-ui-header">
+     <tr>
+      <th colspan="2">
+       <h1 class="caption">
+	{{caption|default:filename}}
+{%  if num_revisions > 1 %}
+{%   blocktrans %}
+        (revision {{revision}})
+{%   endblocktrans %}
+{%  endif %}
+       </h1>
+      </th>
+
+{%  if is_diff %}
+      <th colspan="2">
+       <h1 class="caption">
+        {{diff_caption|default:diff_filename}}
+{%   blocktrans %}
+        (revision {{diff_revision}})
+{%   endblocktrans %}
+       </h1>
+      </th>
+{%  endif %}
+     </tr>
+{%  if review_ui.can_render_text %}
+     <tr>
+      <td colspan="{% if is_diff %}4{% else %}2{% endif %}">
+       <ul class="text-review-ui-views">
+        <li class="active" data-view-mode="rendered"><a href="#rendered">{% trans "Rendered" %}</a></li>
+        <li data-view-mode="source"><a href="#source">{% trans "Source" %}</a></li>
+       </ul>
+      </td>
+     </tr>
+{%  endif %}
+    </thead>
+
+{%  if review_ui.can_render_text %}
+    <tbody class="text-review-ui-rendered-table">
 {%   if is_diff %}
 {%    for line1, line2 in rendered_lines %}
      <tr line="{{forloop.counter}}">
@@ -64,19 +74,9 @@
 {%    endfor %}
 {%   endif %}
     </tbody>
-   </table>
 {%  endif %}
 
-   <table class="sidebyside text-review-ui-text-table"{% if review_ui.can_render_text %} style="display:none"{% endif %}>
-    <colgroup>
-{%  if is_diff %}
-     <col class="line" />
-     <col class="left" />
-{%  endif %}
-     <col class="line" />
-     <col class="right" />
-    </colgroup>
-    <tbody>
+    <tbody class="text-review-ui-text-table"{% if review_ui.can_render_text %} style="display:none;"{%endif%}>
 {%  if is_diff %}
 {%   for line1, line2 in text_lines %}
      <tr line="{{forloop.counter}}">
@@ -96,6 +96,7 @@
 {%  endif %}
     </tbody>
    </table>
+
   </div>
  </div>
 {% endblock %}

@@ -541,6 +541,18 @@ RB.ImageReviewableView = RB.FileAttachmentReviewableView.extend({
         '<li><a href="#" data-mode="<%- mode %>"><%- name %></a></li>'
     ),
 
+    captionTableTemplate: _.template(
+        '<table><tr><%= items %></tr></table>'
+    ),
+
+    captionItemTemplate: _.template([
+        '<td>',
+        ' <h1 class="caption">',
+        '  <%- caption %>',
+        ' </h1>',
+        '</td>'
+    ].join('')),
+
     ANIM_SPEED_MS: 200,
 
     /*
@@ -574,7 +586,12 @@ RB.ImageReviewableView = RB.FileAttachmentReviewableView.extend({
      * Any time the window resizes, the comment positions will be adjusted.
      */
     renderContent: function() {
-        var self = this;
+        var self = this,
+            hasDiff = this.model.get('diffAgainstFileAttachmentID') !== null,
+            captionItems = [],
+            $header,
+            $revisionLabel,
+            $revisionSelector;
 
         this._$selectionArea = $('<div/>')
             .addClass('selection-container')
@@ -586,19 +603,6 @@ RB.ImageReviewableView = RB.FileAttachmentReviewableView.extend({
             .prependTo(this._$selectionArea)
             .proxyTouchEvents()
             .hide();
-
-        if (!this.renderedInline) {
-            var diffCaption = this.model.get('diffCaption'),
-                caption = this.model.get('caption');
-            if (diffCaption) {
-                this.$el.append(
-                    $('<h1 class="caption"/>').text(
-                            diffCaption + ' & ' + caption));
-            } else {
-                this.$el.append(
-                    $('<h1 class="caption"/>').text(caption));
-            }
-        }
 
         this.$el
             /*
@@ -618,7 +622,7 @@ RB.ImageReviewableView = RB.FileAttachmentReviewableView.extend({
                 })
             .append(this._$selectionArea);
 
-        if (this.model.get('diffAgainstFileAttachmentID')) {
+        if (hasDiff) {
             this._$modeBar = $('<ul class="image-diff-modes"/>')
                 .appendTo(this.$el);
 
@@ -649,24 +653,65 @@ RB.ImageReviewableView = RB.FileAttachmentReviewableView.extend({
             .resize(this._adjustPos)
             .load(this._adjustPos);
 
-        this.$el.before($('<div id="revision_label"></div>'))
-        this._revisionLabelView = new RB.FileAttachmentRevisionLabelView({
-            el: $('#revision_label'),
-            model: this.model
-        });
-        this._revisionLabelView.render();
-        this.listenTo(this._revisionLabelView, 'revisionSelected',
-                      this._onRevisionSelected);
+        $header = $('<div />')
+            .addClass('image-review-ui-header')
+            .prependTo(this.$el);
 
         if (this.model.get('numRevisions') > 1) {
-            this.$el.before($('<div id="attachment_revision_selector"></div>'));
+            $revisionLabel = $('<div id="revision_label" />')
+                .appendTo($header);
+            this._revisionLabelView = new RB.FileAttachmentRevisionLabelView({
+                el: $revisionLabel,
+                model: this.model
+            });
+            this._revisionLabelView.render();
+            this.listenTo(this._revisionLabelView, 'revisionSelected',
+                          this._onRevisionSelected);
+
+            $revisionSelector = $('<div id="attachment_revision_selector" />')
+                .appendTo($header);
             this._revisionSelectorView = new RB.FileAttachmentRevisionSelectorView({
-                el: $('#attachment_revision_selector'),
+                el: $revisionSelector,
                 model: this.model
             });
             this._revisionSelectorView.render();
             this.listenTo(this._revisionSelectorView, 'revisionSelected',
                           this._onRevisionSelected);
+
+            if (!this.renderedInline) {
+                captionItems.push(this.captionItemTemplate({
+                    caption: interpolate(
+                        gettext('%(caption)s (revision %(revision)s)'),
+                        [],
+                        {
+                            caption: this.model.get('caption'),
+                            revision: this.model.get('fileRevision')
+                        })
+                }));
+
+                if (hasDiff) {
+                    captionItems.push(this.captionItemTemplate({
+                        caption: interpolate(
+                            gettext('%(caption)s (revision %(revision)s)'),
+                            [],
+                            {
+                                caption: this.model.get('diffCaption'),
+                                revision: this.model.get('diffRevision')
+                            })
+                    }));
+                }
+
+                $header.append(this.captionTableTemplate({
+                    items: captionItems.join('')
+                }));
+            }
+        } else {
+            if (!this.renderedInline) {
+                $('<h1 />')
+                    .addClass('caption')
+                    .text(this.model.get('caption'))
+                    .appendTo($header);
+            }
         }
 
         return this;

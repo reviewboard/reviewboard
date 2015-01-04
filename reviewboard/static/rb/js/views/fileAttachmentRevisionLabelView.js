@@ -12,20 +12,15 @@ RB.FileAttachmentRevisionLabelView = Backbone.View.extend({
      * to make sure that revision strings are HTML-escaped.
      */
     template: _.template([
-        '<h1><%- header %></h1>',
-        '<% if (detail) { %><p><%= detail %><% } %>'
+        '<p><%- header %></p>',
+        '<% if (detail) { %><p><%= detail %></p><% } %>'
     ].join('')),
-    _interdiffTemplate: _.template(gettext(
-        'Changes between revision <%- revision %> and <%- interdiffRevision %>')),
-    _latestTemplate: _.template(gettext(
-        'Diff Revision <%- revision %> (Latest)')),
-    _oldHeaderTemplate: _.template(gettext('Diff Revision <%- revision %>')),
+    _interdiffTemplate: _.template(gettext('This file attachment has multiple revisions. Showing changes between revision <%- revision %> and <%- interdiffRevision %>.')),
+    _latestTemplate: _.template(gettext('This file attachment has multiple revisions. Showing revision <%- revision %> (latest).')),
+    _oldHeaderTemplate: _.template(gettext('This file attachment has multiple revisions. Showing revision <%- revision %>.')),
     _oldDetailTemplate: _.template(
         /* Translators: This string should be valid HTML (including any necessary escaping for entities). */
-        gettext('This is not the most recent revision of the diff.' +
-            ' The <a href="#" class="select-latest">latest diff</a> is revision' +
-            ' <%- latestRevision %>. <a href="#" class="select-changed">' +
-            'See what\'s changed.</a>')),
+        gettext('This is not the most recent revision of the file. The <a href="#" class="select-latest">latest version</a> is revision <%- latestRevision %>. <a href="#" class="select-changed">See what\'s changed.</a>')),
 
      /*
      * Initialize the view.

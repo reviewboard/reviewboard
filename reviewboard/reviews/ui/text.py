@@ -11,6 +11,7 @@ from pygments import highlight
 from pygments.lexers import (ClassNotFound, guess_lexer_for_filename,
                              TextLexer)
 
+from reviewboard.attachments.models import FileAttachment
 from reviewboard.diffviewer.chunk_generator import NoWrapperHtmlFormatter
 from reviewboard.reviews.ui.base import FileAttachmentReviewUI
 
@@ -58,6 +59,7 @@ class TextBasedReviewUI(FileAttachmentReviewUI):
 
         diff_filename = None
         diff_caption = None
+        diff_revision = None
 
         if self.diff_against_obj:
             diff_line_list = [
@@ -71,9 +73,9 @@ class TextBasedReviewUI(FileAttachmentReviewUI):
                 self.diff_against_obj.review_ui.get_rendered_lines()
             ]
 
-            """Interleaves 2 arrays of file lines together, so a template
-            for-loop can access the contents of both files with 2 iterators
-            """
+            # Interleave the two arrays of file lines together, so a template
+            # for-loop can access the contents of both files with two
+            # iterators.
             file_line_list = itertools.izip_longest(
                 file_line_list, diff_line_list, fillvalue="")
 
@@ -82,14 +84,24 @@ class TextBasedReviewUI(FileAttachmentReviewUI):
 
             diff_caption = self.diff_against_obj.caption
             diff_filename = self.diff_against_obj.filename
+            diff_revision = self.diff_against_obj.attachment_revision
+
+        if self.obj.attachment_history is not None:
+            num_revisions = FileAttachment.objects.filter(
+                attachment_history=self.obj.attachment_history).count()
+        else:
+            num_revisions = 1
 
         return {
             'filename': self.obj.filename,
+            'revision': self.obj.attachment_revision,
             'text_lines': file_line_list,
             'rendered_lines': rendered_line_list,
             'is_diff': self.diff_against_obj is not None,
             'diff_caption': diff_caption,
             'diff_filename': diff_filename,
+            'diff_revision': diff_revision,
+            'num_revisions': num_revisions,
         }
 
     def get_text_lines(self):

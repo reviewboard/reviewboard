@@ -1500,7 +1500,6 @@ def review_file_attachment(request, review_request_id, file_attachment_id,
     review_ui = file_attachment.review_ui
 
     if file_attachment_diff_id:
-
         file_attachment_revision = get_object_or_404(
             FileAttachment.objects.filter(
                 attachment_history=file_attachment.attachment_history),

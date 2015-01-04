@@ -17,7 +17,7 @@ RB.FileAttachmentRevisionSelectorView = RB.RevisionSelectorView.extend({
      */
     render: function() {
         var numRevisions = this.model.get('numRevisions'),
-            labels = ['No Diff'],
+            labels = [gettext('No Diff')],
             i;
 
         for (i = 1; i <= numRevisions; i++) {

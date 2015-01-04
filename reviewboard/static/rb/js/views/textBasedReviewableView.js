@@ -68,6 +68,13 @@ RB.TextBasedReviewableView = RB.FileAttachmentReviewableView.extend({
      * Renders the view.
      */
     renderContent: function() {
+        var $fileHeader,
+            $tr,
+            $td,
+            $revisionLabel,
+            $revisionSelector,
+            hasDiff = this.model.get('diffRevision') !== null;
+
         this._$viewTabs = this.$('.text-review-ui-views li');
 
         /* Set up the source text table. */
@@ -92,23 +99,39 @@ RB.TextBasedReviewableView = RB.FileAttachmentReviewableView.extend({
 
         this.listenTo(this.model, 'change:viewMode', this._onViewChanged);
 
-        this.$el.before($('<div id="revision_label"></div>'))
-        this._revisionLabelView = new RB.FileAttachmentRevisionLabelView({
-            el: $('#revision_label'),
-            model: this.model
-        });
-        this._revisionLabelView.render();
-        this.listenTo(this._revisionLabelView, 'revisionSelected',
-                      this._onRevisionSelected);
+        $fileHeader = this.$('.text-review-ui-header');
 
         if (this.model.get('numRevisions') > 1) {
-            this.$el.before($('<div id="attachment_revision_selector"></div>'));
+            $tr = $('<tr />')
+                .prependTo($fileHeader);
+            $td = $('<td />')
+                .attr('colspan', hasDiff ? 4 : 2)
+                .appendTo($tr);
+
+            $revisionSelector = $('<div id="attachment_revision_selector" />')
+                .appendTo($td);
             this._revisionSelectorView = new RB.FileAttachmentRevisionSelectorView({
-                el: $('#attachment_revision_selector'),
+                el: $revisionSelector,
                 model: this.model
             });
             this._revisionSelectorView.render();
             this.listenTo(this._revisionSelectorView, 'revisionSelected',
+                          this._onRevisionSelected);
+
+            $tr = $('<tr />')
+                .prependTo($fileHeader);
+            $td = $('<td />')
+                .attr('colspan', hasDiff ? 4 : 2)
+                .appendTo($tr);
+
+            $revisionLabel = $('<div id="revision_label" />')
+                .prependTo($td);
+            this._revisionLabelView = new RB.FileAttachmentRevisionLabelView({
+                el: $revisionLabel,
+                model: this.model
+            });
+            this._revisionLabelView.render();
+            this.listenTo(this._revisionLabelView, 'revisionSelected',
                           this._onRevisionSelected);
         }
 

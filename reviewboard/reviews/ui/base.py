@@ -341,12 +341,12 @@ class FileAttachmentReviewUI(ReviewUI):
         }
 
         if self.obj.attachment_history is not None:
-            attach_history = FileAttachment.objects.filter(
+            attachments = FileAttachment.objects.filter(
                 attachment_history=self.obj.attachment_history)
             data['attachmentRevisionIDs'] = list(
-                attach_history.order_by('attachment_revision')
+                attachments.order_by('attachment_revision')
                 .values_list('pk', flat=True))
-            data['numRevisions'] = attach_history.count()
+            data['numRevisions'] = attachments.count()
 
         if self.diff_against_obj:
             data['diffCaption'] = self.diff_against_obj.display_name
