@@ -134,11 +134,8 @@ if sys.platform == "darwin":
 
 PACKAGE_NAME = 'ReviewBoard'
 
-if is_release():
-    download_url = 'http://downloads.reviewboard.org/releases/%s/%s.%s/' % \
-                   (PACKAGE_NAME, VERSION[0], VERSION[1])
-else:
-    download_url = 'http://downloads.reviewboard.org/nightlies/'
+download_url = 'http://downloads.reviewboard.org/releases/%s/%s.%s/' % \
+               (PACKAGE_NAME, VERSION[0], VERSION[1])
 
 
 # Build the reviewboard package.
@@ -201,7 +198,7 @@ setup(name=PACKAGE_NAME,
           'django_evolution>=0.7.4,<=0.7.999',
           'django-haystack>=2.1',
           'django-multiselectfield',
-          'Djblets>=0.8.12,<=0.8.999',
+          'Djblets>=0.9alpha0.dev,<=0.9.999',
           'docutils',
           'markdown>=2.4.0,<2.4.999',
           'mimeparse>=0.1.3',
@@ -215,9 +212,8 @@ setup(name=PACKAGE_NAME,
       ],
       dependency_links=[
           'http://downloads.reviewboard.org/mirror/',
-          'http://downloads.reviewboard.org/releases/Djblets/0.8/',
+          'http://downloads.reviewboard.org/releases/Djblets/0.9/',
           'http://downloads.reviewboard.org/releases/django-evolution/0.7/',
-          download_url,
       ],
       include_package_data=True,
       zip_safe=False,

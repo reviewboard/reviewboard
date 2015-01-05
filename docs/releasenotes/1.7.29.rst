@@ -1,0 +1,38 @@
+=================================
+Review Board 1.7.29 Release Notes
+=================================
+
+**Release date**: TBD
+
+
+Extensions
+==========
+
+* Added an is_enabled_for mechanism for ``NavigationBarHook``.
+
+  ``NavigationBarHook`` can now decide whether or not to enable itself for
+  each user.
+
+
+Bug Fixes
+=========
+
+* Fix Python 2.6 compatibility for the :command:`condensediffs` management
+  command.
+
+  Review Board 1.7.28 introduced this command, but a bug was preventing it from
+  working when using Python 2.6.
+
+* Prevent updating a closed review request.
+
+  After a review request was closed, it still had a fully-functioning "Update"
+  menu, which allowed new diffs and file attachments to be added. This has been
+  fixed, and all updates are now prevented until the review request is
+  reopened.
+
+
+Contributors
+============
+
+* Christian Hammond
+* David Trowbridge

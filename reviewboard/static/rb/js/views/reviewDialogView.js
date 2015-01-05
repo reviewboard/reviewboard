@@ -121,7 +121,7 @@ BaseCommentView = Backbone.View.extend({
                 fullName: userSession.get('fullName'),
                 id: _.uniqueId('draft_comment_'),
                 issueOpenedID: _.uniqueId('issue-opened'),
-                openAnIssueText: gettext('Open an issue'),
+                openAnIssueText: gettext('Open an Issue'),
                 text: text,
                 timestamp: RB.FormatTimestamp(now),
                 timestampISO: now.format(),

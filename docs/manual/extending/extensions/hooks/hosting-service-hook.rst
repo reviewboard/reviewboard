@@ -4,7 +4,7 @@
 HostingServiceHook
 ==================
 
-.. versionadded:: 2.1
+.. versionadded:: 2.0.12
 
 :py:class:`reviewboard.extensions.hooks.HostingServiceHook` allows extensions to
 register new hosting services, which can be used to configure repositories
@@ -32,6 +32,6 @@ Example
         name = 'Sample Hosting Service'
 
 
-      class SampleExtension(Extension):
-          def initialize(self):
-              HostingServiceHook(self, SampleHostingService)
+    class SampleExtension(Extension):
+        def initialize(self):
+            HostingServiceHook(self, SampleHostingService)

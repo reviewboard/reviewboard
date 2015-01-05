@@ -175,7 +175,7 @@ RB.CommentDialogView = Backbone.View.extend({
                 draftWarning: interpolate(
                     gettext('The review request\'s current <a href="%s">draft</a> needs to be published before you can comment.'),
                     [reviewRequest.get('reviewURL')]),
-                openAnIssueText: gettext('Open an <u>i</u>ssue'),
+                openAnIssueText: gettext('Open an <u>I</u>ssue'),
                 enableMarkdownText: gettext('Enable <u>M</u>arkdown'),
                 saveButton: gettext('Save'),
                 cancelButton: gettext('Cancel'),
@@ -279,18 +279,6 @@ RB.CommentDialogView = Backbone.View.extend({
                 evt.stopPropagation();
             })
             .proxyTouchEvents();
-
-        if (!$.browser.msie || $.browser.version >= 9) {
-            /*
-             * resizable is pretty broken in IE 6/7.
-             */
-            this.$el.resizable({
-                handles: $.support.touch ? "grip,se"
-                                         : "grip,n,e,s,w,se,sw,ne,nw",
-                transparent: true,
-                resize: _.bind(this._handleResize, this)
-            });
-        }
 
         this.$('.title').css('cursor', 'move');
         this.$el.draggable({
