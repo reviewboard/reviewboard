@@ -345,6 +345,10 @@ class AuthenticationForm(DjangoAuthenticationForm):
     This extends Django's built-in AuthenticationForm implementation to allow
     users to specify their e-mail address in place of their username.
     """
+    username = forms.CharField(
+        label=_("Username"),
+        widget=forms.TextInput(attrs={'autofocus': 'autofocus'}))
+
     def clean_username(self):
         username = self.cleaned_data.get('username')
 
