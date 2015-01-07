@@ -1,5 +1,6 @@
-from __future__ import unicode_literals
+from __future__ import absolute_import, unicode_literals
 
+import email
 import logging
 
 from django.conf import settings
@@ -488,3 +489,15 @@ def mail_new_user(user):
         logging.error("Error sending e-mail notification with subject '%s' on "
                       "behalf of '%s' to admin: %s",
                       subject.strip(), from_email, e, exc_info=1)
+
+
+# Fixes bug #3613
+_old_header_init = email.header.Header.__init__
+
+
+def _unified_header_init(self, *args, **kwargs):
+    kwargs['continuation_ws'] = b' '
+
+    _old_header_init(self, *args, **kwargs)
+
+email.header.Header.__init__ = _unified_header_init
