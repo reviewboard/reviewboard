@@ -1,0 +1,338 @@
+=================================
+Review Board 2.0.12 Release Notes
+=================================
+
+**Release date**: January 7, 2015
+
+
+Upgrade Notes
+=============
+
+* This release contains database schema changes to the ``reviews_review``,
+  ``reviews_reviewrequest``, ``reviews_reviewrequestdraft``, and
+  ``accounts_profile`` tables for the new Markdown support.
+
+
+New Features
+============
+
+* Added support for toggling Markdown per-field.
+
+  In 2.0, we introduced support for Markdown. All text fields in the UI
+  were Markdown-capable, and all new text was sent in Markdown.
+
+  Now, Markdown is optional and is stored per-field. When editing text, you
+  can toggle whether Markdown will be used for that field. This applies to
+  all review request fields, comments, reviews, and replies.
+
+  When in Markdown mode, the text fields will continue to be
+  syntax-highlighted. When in text mode, Review Board will use the browser's
+  standard textarea widget, enabling usage of spell-checking capabilities if
+  supported by the browser.
+
+  Custom fields provided by extensions will gain this support automatically.
+
+* Added a user option for setting whether to use Markdown by default.
+
+  The My Account page now has an
+  :guilabel:`Always use Markdown for text fields` setting for choosing whether
+  text fields will edit in Markdown by default. If set, all text fields,
+  regardless of the type of text stored on the review request, will begin
+  editing in Markdown mode. If unset, Markdown will only be used if the text
+  field already contained Markdown text, or if Markdown is chosen when editing
+  the text.
+
+* Reduced e-mail recipients when adding reviewers to review requests.
+
+  When adding new reviewers (either users or groups) to a review request
+  without updating any other fields, Review Board will now only send e-mails
+  to those new reviewers, rather than to all existing reviewers. This helps
+  to limit the number of e-mails going out when bringing people into the
+  review process.
+
+* Added support for adding repositories on Kiln_.
+
+* Added support for adding bug trackers on FogBugz_.
+
+.. _Kiln: http://www.kilnhg.com/
+.. _FogBugz: http://www.fogbugz.com/
+
+
+Usability Improvements
+======================
+
+* The log in page now focuses the username field by default. (:bug:`3643`)
+
+  Patch by Jessica Yuen.
+
+
+Extensions
+==========
+
+* Added a new hook for registering hosting services.
+
+  The new :ref:`hosting-service-hook` allows an extension to register a new
+  hosting service. It will handle registering when the extension is enabled
+  and unregistering when disabled.
+
+  Patch by Justin Maillet.
+
+* Extensions can now take advantage of the features available in
+  LessCSS 1.7.5.
+
+  Previously, Review Board was using LessCSS 1.5.1. We now ship 1.7.5, which
+  provides a number of enhancements.
+
+* Callbacks attached by a :ref:`signal-hook` are now provided with an
+  ``extension`` parameter pointing to the extension instance.
+
+  Patch by Justin Maillet.
+
+* Improved sandboxing throughout the product.
+
+  Most hooks and other integration points are now properly sandboxed,
+  preventing Review Board from crashing if an extension raises an exception.
+
+  Patches by Justin Maillet.
+
+
+Web API
+=======
+
+* Added support for fine-grained text types for text fields on several
+  models.
+
+  :ref:`webapi2.0-review-request-resource`,
+  :ref:`webapi2.0-review-request-draft-resource`,
+  :ref:`webapi2.0-review-resource`, and
+  :ref:`webapi2.0-review-reply-resource` all have new fields associated
+  with text fields that indicate the text type of that field. For example,
+  ``body_top_text_type`` indicates the text type of the ``body_top`` field.
+
+  Previously, a single ``text_type`` field indicated the text types of all
+  fields. This is now deprecated, and will not contain a value in the
+  resulting payload for these resources.
+
+  However, setting ``text_type``, for compatibility reasons, will update the
+  fine-grained text type fields.
+
+* Added ``?include-text-types=`` for many resources to include alternate
+  text conversion in payloads.
+
+  This takes a comma-separated list of text types (``html``, ``markdown``,
+  ``plain``, or ``raw``). The payload will contain a
+  :samp:`{type}_text_fields` dictionary for each type, with all text fields
+  represented and converted to the requested type.
+
+  Specifying ``raw`` will provide the original values for the fields. This
+  is useful when using this in conjunction with ``?force-text-type=``.
+
+  When issuing a PUT or POST request, the caller can POST/PUT an
+  ``include_text_types=`` field instead.
+
+  This replaces the now deprecated ``?include-raw-text-fields=``, which was
+  added in 2.0.9.
+
+* Group display names are no longer valid values when updating a
+  review request draft's ``target_groups`` field.
+
+  This was never documented as being a supported value, and can cause
+  errors when a display name matches another group name.
+
+* Attempting to add invalid users to a review request draft's
+  ``target_people`` field no longer causes the field to be emptied.
+
+* Errors involving commit IDs now say "commit ID" instead of
+  "change number."
+
+
+Bug Fixes
+=========
+
+General
+-------
+
+* Fixed several issues with running in a multi-threaded server environment.
+
+
+Markdown
+--------
+
+* Fixed the rendering of Markdown-rendered text to better match expectations.
+
+  We try to keep our Markdown rendered output as close as possible to the
+  source text's formatting. We've massively improved this in the following
+  ways:
+
+  * Blank lines in the source text will now appear in the rendered text,
+    no matter how many.
+
+  * Code blocks no longer have exactly 2 blank lines after. It's now based
+    on the number added in the source text.
+
+  * Line breaks in lists are preserved.
+
+  * Long lines of text inside an ordered list item are now wrapped
+    consistently.
+
+  * Ordered lists can now start at any number.
+
+* Fixed Markdown escaping of ``>`` characters.
+
+  When escaping plain text for use in Markdown, ``>`` characters are no
+  longer escaped unless they're used for blockquotes or auto-links
+  (like ``<user@example.com`` or ``<http://example.com>``). This means
+  that ``<h1>`` will no longer render as ``<h1\>``.
+
+* Fixed Markdown escaping of certain lines that look like ordered list items.
+
+  If a line started with a number like ``1.2.``, it was treated like a list
+  and escaped, despite not being a list. The escaping logic is now smarter,
+  and will only escape true ordered list items like ``1.``.
+
+
+Dashboard
+---------
+
+* Fixed batch closing of review requests on Local Sites. (:bug:`3561`)
+
+
+E-mails
+-------
+
+* Fixed a case where the
+  :guilabel:`Get e-mail notifications for my own activity` setting was being
+  ignored. (:bug:`3681`, :bug:`3684`).
+
+  If a user was explicitly listed in a review request along with being
+  a member of a group assigned to a review request, the setting would be
+  ignored.
+
+  Patch by Erik Lattimore.
+
+
+Diff Viewer
+-----------
+
+* Fixed a regression in selecting text on diffs introducing a new file.
+  (:bug:`3661`)
+
+* Moved files with no changes are no longer patched.
+
+  Patching could cause the file to break when showing it. Now, they should
+  appear correctly in all cases.
+
+* Fixed encoding issues with some types of repositories (generally Perforce)
+  when dealing with files marked as binary that are not actually binary.
+
+
+File Attachments
+----------------
+
+* Fixed a rare issue where file attachments could disappear if removing
+  them from a review request during server problems.
+
+  If the web server or database server happened to have problems at just
+  the wrong moment when deleting a file attachment from a review request,
+  the attachment wouldn't end up in the list of deleted file attachments.
+  We now add to this list before removing from the main list of attachments.
+
+* Missing file attachments no longer break review requests.
+
+  If a file attachment is missing from the database, the review request
+  owning that attachment will continue to load without breaking.
+
+* Fixed Unicode issues when rendering Markdown file attachments.
+
+
+Review Requests
+---------------
+
+* Attempting to add invalid users to a review request's list of target
+  reviewers no longer causes the field to be emptied.
+
+* Fixed a review reply banner remaining on the screen if discarding a review
+  twice.
+
+* Fixed visual issues when publishing a reply to a review and then publishing
+  a follow-up reply without reloading the page.
+
+* Pasting certain illegal (for XML) characters like Form Feeds will no longer
+  break the page when attempting to render the "Review request changed" box
+  for that field.
+
+* Fixed style inconsistencies between review request fields and their changes
+  in the "Review request changed" boxes.
+
+* Re-introduced some fixes for the auto-complete widget, now that we have
+  fixed some regressions:
+
+  * The first item in the auto-completion dropdown list will only replace
+    the input text if the input text is a prefix for the item. (:bug:`3444`)
+
+    Patch by Andrew Hong.
+
+  * The comma key no longer triggers auto-completion. (:bug:`3444`)
+
+    Now, only Tab and Enter trigger auto-completion of the selected item.
+
+    Patch by Andrew Hong.
+
+  * Pressing Delete no longer hides the auto-completion dropdown.
+
+    Patch by Andrew Hong.
+
+
+New Review Request Page
+-----------------------
+
+* Fixed filtering commits on GitHub by branch.
+
+
+Authentication
+--------------
+
+* Fixed a Unicode compatibility issue in some setups when talking to an
+  Active Directory server. (:bug:`3656`)
+
+  Patch by Erik Lattimore.
+
+* Fixed a breakage in the LDAP and Active Directory backends if attempting
+  to authenticate with a username represented as a non-Unicode string.
+  (:bug:`3528`)
+
+
+Administration
+--------------
+
+* Fixed a typo in the default encoding for source code on repositories.
+
+  Patch by Dmitry Vasiliev.
+
+
+CVS
+---
+
+* CVS/RCS keywords in source code and diffs no longer cause errors when
+  viewing the diff.
+
+
+Perforce
+--------
+
+* Fixed a "P4Exception" error that could occur under some circumstances.
+  (:bug:`3683`)
+
+
+Contributors
+============
+
+* Andrew Hong
+* Azad Salahli
+* Christian Hammond
+* David Trowbridge
+* Dmitry Vasiliev
+* Erik Lattimore
+* Jessica Yuen
+* Justin Maillet
+* Yanjia Xin
