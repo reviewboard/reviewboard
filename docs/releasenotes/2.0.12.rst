@@ -2,7 +2,7 @@
 Review Board 2.0.12 Release Notes
 =================================
 
-**Release date**: TBD
+**Release date**: January 7, 2015
 
 
 Upgrade Notes
