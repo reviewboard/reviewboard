@@ -953,10 +953,11 @@ class RepositoryForm(forms.ModelForm):
             # were detected, set an appropriate variable that is_valid()
             # method will check.
             if bug_tracker_type in self.bug_tracker_forms:
-                field = self.bug_tracker_forms[bug_tracker_type]['default']
-                self.bug_tracker_host_error = (
-                    hasattr(field, 'errors') and
-                    len(field.errors) > 0)
+                field = self.bug_tracker_forms[bug_tracker_type].get('default')
+                if field:
+                    self.bug_tracker_host_error = (
+                        hasattr(field, 'errors') and
+                        len(field.errors) > 0)
 
         return self.cleaned_data['bug_tracker_hosting_url'].strip()
 
