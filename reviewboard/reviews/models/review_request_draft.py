@@ -213,7 +213,7 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
         if not user:
             user = review_request.submitter
 
-        if not self.changedesc and review_request.public:
+        if not self.changedesc:
             self.changedesc = ChangeDescription()
 
         def update_list(a, b, name, record_changes=True, name_field=None):
@@ -316,7 +316,8 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
             self.diffset.save(update_fields=['history'])
 
         # If no changes were made, raise exception and do not save
-        if self.changedesc and not self.changedesc.has_modified_fields():
+        if (self.changedesc and not self.changedesc.has_modified_fields()
+            and review_request.public):
             raise NotModifiedError()
 
         if self.changedesc:

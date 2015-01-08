@@ -727,6 +727,75 @@ class ReviewRequestTests(SpyAgency, TestCase):
             summary='\u203e\u203e', publish=True)
         self.assertEqual(six.text_type(review_request), '\u203e\u203e')
 
+    def test_discard_unpublished_private(self):
+        """Testing ReviewRequest.close with private requests on discard
+        to ensure changes from draft are copied over
+        """
+        review_request = self.create_review_request(
+            publish=False,
+            public=False)
+
+        self.assertFalse(review_request.public)
+        self.assertNotEqual(review_request.status, ReviewRequest.DISCARDED)
+
+        draft = ReviewRequestDraft.create(review_request)
+
+        summary = 'Test summary'
+        description = 'Test description'
+        testing_done = 'Test testing done'
+
+        draft.summary = summary
+        draft.description = description
+        draft.testing_done = testing_done
+        draft.save()
+
+        review_request.close(ReviewRequest.DISCARDED)
+
+        latest_changedesc = \
+            review_request.changedescs.filter(public=True).latest()
+
+        fields = latest_changedesc.fields_changed
+
+        self.assertIn('summary', fields)
+        self.assertIn('description', fields)
+        self.assertIn('testing_done', fields)
+
+        self.assertEqual(fields["summary"]["new"][0], summary)
+        self.assertEqual(fields["description"]["new"][0], description)
+        self.assertEqual(fields["testing_done"]["new"][0], testing_done)
+
+    def test_discard_unpublished_public(self):
+        """Testing ReviewRequest.close with public requests on discard
+        to ensure changes from draft are not copied over
+        """
+        review_request = self.create_review_request(
+            publish=False,
+            public=True)
+
+        self.assertTrue(review_request.public)
+        self.assertNotEqual(review_request.status, ReviewRequest.DISCARDED)
+
+        draft = ReviewRequestDraft.create(review_request)
+
+        summary = 'Test summary'
+        description = 'Test description'
+        testing_done = 'Test testing done'
+
+        draft.summary = summary
+        draft.description = description
+        draft.testing_done = testing_done
+        draft.save()
+
+        review_request.close(ReviewRequest.DISCARDED)
+
+        latest_changedesc = \
+            review_request.changedescs.filter(public=True).latest()
+
+        fields = latest_changedesc.fields_changed
+
+        self.assertNotIn('summary', fields)
+        self.assertNotIn('description', fields)
+        self.assertNotIn('testing_done', fields)
 
 class ViewTests(TestCase):
     """Tests for views in reviewboard.reviews.views"""
