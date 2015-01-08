@@ -678,11 +678,19 @@ class ReviewRequest(BaseReviewRequestDetails):
         if type not in [self.SUBMITTED, self.DISCARDED]:
             raise AttributeError("%s is not a valid close type" % type)
 
+        draft = get_object_or_none(self.draft)
+
         if self.status != type:
-            # TODO: Use the user's default for rich_text.
-            changedesc = ChangeDescription(public=True,
-                                           text=description or "",
-                                           rich_text=rich_text or False)
+            if (draft is not None and
+                not self.public and type == self.DISCARDED):
+                # Copy over the draft information if this is a private discard.
+                changedesc = draft.publish(self, send_notification=False)
+            else:
+                # TODO: Use the user's default for rich_text.
+                changedesc = ChangeDescription(public=True,
+                                               text=description or "",
+                                               rich_text=rich_text or False)
+
             changedesc.record_field_change('status', self.status, type)
             changedesc.save()
 
@@ -710,11 +718,8 @@ class ReviewRequest(BaseReviewRequestDetails):
             # Needed to renew last-update.
             self.save()
 
-        try:
-            draft = self.draft.get()
-        except ObjectDoesNotExist:
-            pass
-        else:
+        # Delete the associated draft review request.
+        if draft is not None:
             draft.delete()
 
     def reopen(self, user=None):
