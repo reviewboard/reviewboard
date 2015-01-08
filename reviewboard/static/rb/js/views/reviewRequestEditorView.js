@@ -924,7 +924,7 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
             comments: fileAttachmentComments[fileAttachment.id],
             renderThumbnail: ($thumbnail === undefined),
             reviewRequest: this.model.get('reviewRequest'),
-            canEdit: (options.canEdit !== false)
+            canEdit: (this.model.get('editable') === true)
         });
 
         view.render();
