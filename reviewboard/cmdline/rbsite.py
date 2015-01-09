@@ -22,9 +22,9 @@ from django.utils.six.moves import input
 from django.utils.six.moves.urllib.request import urlopen
 
 from reviewboard import get_manual_url, get_version_string
-
-
-SITELIST_FILE_UNIX = "/etc/reviewboard/sites"
+from reviewboard.platform import (SITELIST_FILE_UNIX,
+                                  DEFAULT_FS_CACHE_PATH,
+                                  INSTALLED_SITE_PATH)
 
 
 # Ignore the PendingDeprecationWarnings that we'll get from Django.
@@ -131,8 +131,8 @@ class Site(object):
     }
 
     def __init__(self, install_dir, options):
-        self.install_dir = install_dir
-        self.abs_install_dir = os.path.abspath(install_dir)
+        self.install_dir = self.get_default_site_path(install_dir)
+        self.abs_install_dir = os.path.abspath(self.install_dir)
         self.site_id = \
             os.path.basename(install_dir).replace(" ", "_").replace(".", "_")
         self.options = options
@@ -159,6 +159,12 @@ class Site(object):
         self.admin_password = None
         self.reenter_admin_password = None
         self.send_support_usage_stats = True
+
+    def get_default_site_path(self, install_dir):
+        if os.path.isabs(install_dir):
+            return install_dir
+
+        return os.path.join(INSTALLED_SITE_PATH, install_dir)
 
     def rebuild_site_directory(self):
         """
@@ -1462,7 +1468,7 @@ class InstallCommand(Command):
                        is_visible_func=lambda: site.cache_type == "file")
 
         ui.prompt_input(page, "Cache Directory",
-                        site.cache_info or "/tmp/reviewboard_cache",
+                        site.cache_info or DEFAULT_FS_CACHE_PATH,
                         save_obj=site, save_var="cache_info")
 
     def ask_web_server_type(self):
