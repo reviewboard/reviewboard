@@ -22,9 +22,9 @@ from django.utils.six.moves import input
 from django.utils.six.moves.urllib.request import urlopen
 
 from reviewboard import get_manual_url, get_version_string
-from reviewboard.platform import (SITELIST_FILE_UNIX,
-                                  DEFAULT_FS_CACHE_PATH,
-                                  INSTALLED_SITE_PATH)
+from reviewboard.rb_platform import (SITELIST_FILE_UNIX,
+                                     DEFAULT_FS_CACHE_PATH,
+                                     INSTALLED_SITE_PATH)
 
 
 # Ignore the PendingDeprecationWarnings that we'll get from Django.
