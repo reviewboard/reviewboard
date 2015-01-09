@@ -84,6 +84,11 @@ review_request_urls = patterns(
         'review_file_attachment',
         name='file-attachment'),
 
+    # Download tarball of file attachments
+    url(r'^file/tar/$',
+        'download_review_attachments',
+        name="download-review-attachments"),
+
     # Screenshots
     url(r'^s/(?P<screenshot_id>[0-9]+)/$',
         'view_screenshot',

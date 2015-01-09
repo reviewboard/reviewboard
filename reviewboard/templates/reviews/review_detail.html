@@ -25,9 +25,6 @@
 {%   review_request_action_hooks %}
 {%   review_request_dropdown_action_hooks %}
 {%   include "reviews/review_request_actions_secondary.html" %}
-{%   if has_diffs %}
-   <li class="primary"><a href="diff/raw/">{% trans "Download Diff" %}</a></li>
-{%   endif %}
 {%   include "reviews/review_request_actions_primary.html" %}
 {%   if has_diffs %}
    <li class="primary"><a href="diff/#index_header">{% trans "View Diff" %}</a></li>

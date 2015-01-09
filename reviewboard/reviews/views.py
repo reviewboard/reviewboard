@@ -14,7 +14,8 @@ from django.http import (Http404,
                          HttpResponseNotFound,
                          HttpResponseNotModified,
                          HttpResponseRedirect,
-                         HttpResponseServerError)
+                         HttpResponseServerError,
+                         StreamingHttpResponse)
 from django.shortcuts import (get_object_or_404, get_list_or_404, render,
                               render_to_response)
 from django.template.context import RequestContext
@@ -39,6 +40,7 @@ from reviewboard.accounts.decorators import (check_login_required,
 from reviewboard.accounts.models import ReviewRequestVisit, Profile
 from reviewboard.attachments.models import (FileAttachment,
                                             FileAttachmentHistory)
+from reviewboard.attachments.streaming_tarfile import StreamingTarFile
 from reviewboard.changedescs.models import ChangeDescription
 from reviewboard.diffviewer.diffutils import (convert_to_unicode,
                                               get_file_chunks_in_range,
@@ -314,6 +316,35 @@ def _get_latest_file_attachments(file_attachments):
         if (not f.is_from_diff and
             f.attachment_revision == latest[f.attachment_history_id])
     ]
+
+
+@check_login_required
+@check_local_site_access
+def download_review_attachments(request,
+                                review_request_id,
+                                local_site=None,
+                                template_name=None):
+    """Downloads all file attachments on a review request as a tarball.
+
+    All file attachments associated with the given review request ID
+    are tarballed.
+    """
+    review_request, response = _find_review_request(
+        request, review_request_id, local_site)
+
+    if not review_request:
+        return response
+
+    out_filename = 'r%s-attachments.tar.gz' % review_request_id
+
+    stf = StreamingTarFile(out_filename, review_request.file_attachments.all())
+
+    response = StreamingHttpResponse(stf.generate(),
+                                     mimetype='application/x-gzip')
+    response[b'Content-Disposition'] = (
+        'attachment; filename=%s' % out_filename).encode('utf-8')
+
+    return response
 
 
 @check_login_required

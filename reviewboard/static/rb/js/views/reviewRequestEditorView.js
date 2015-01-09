@@ -876,7 +876,9 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
         var $closeDiscarded = this.$('#discard-review-request-link'),
             $closeSubmitted = this.$('#link-review-request-close-submitted'),
             $deletePermanently = this.$('#delete-review-request-link'),
-            $updateDiff = this.$('#upload-diff-link');
+            $updateDiff = this.$('#upload-diff-link'),
+            $downloadAttachments = this.$("#download-attachments-link"),
+            $downloadDiff = this.$('#download-diff-link');
 
         /*
          * We don't want the click event filtering from these down to the
@@ -1408,8 +1410,10 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
      * so that their links do not send a request to the server when one
      * of their dropdown actions are clicked.
      */
-    _onMenuClicked: function() {
-        return false;
+    _onMenuClicked: function(evt) {
+        if ($(evt.target).attr('href') == '#') {
+            return false;
+        }
     },
 
     _refreshPage: function() {
