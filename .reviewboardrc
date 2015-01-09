@@ -1,4 +1,4 @@
-REVIEWBOARD_URL = "http://reviews.reviewboard.org"
+REVIEWBOARD_URL = "https://reviews.reviewboard.org"
 REPOSITORY = "Review Board"
 BRANCH = "release-1.7.x"
 TRACKING_BRANCH = "origin/release-1.7.x"
