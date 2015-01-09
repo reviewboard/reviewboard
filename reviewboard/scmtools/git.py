@@ -246,7 +246,8 @@ class GitDiffParser(DiffParser):
             file_info.data += self.lines[linenum] + b"\n"
             file_info.data += self.lines[linenum + 1] + b"\n"
             linenum += 2
-        elif self._is_moved_file(linenum):
+
+        if self._is_moved_file(linenum):
             file_info.data += self.lines[linenum] + b"\n"
             file_info.data += self.lines[linenum + 1] + b"\n"
             file_info.data += self.lines[linenum + 2] + b"\n"
@@ -313,28 +314,33 @@ class GitDiffParser(DiffParser):
         return linenum, file_info
 
     def _is_new_file(self, linenum):
-        return self.lines[linenum].startswith(b"new file mode")
+        return (linenum < len(self.lines) and
+                self.lines[linenum].startswith(b'new file mode'))
 
     def _is_deleted_file(self, linenum):
-        return self.lines[linenum].startswith(b"deleted file mode")
+        return (linenum < len(self.lines) and
+                self.lines[linenum].startswith(b'deleted file mode'))
 
     def _is_mode_change(self, linenum):
-        return (self.lines[linenum].startswith(b"old mode")
-                and self.lines[linenum + 1].startswith(b"new mode"))
+        return (linenum + 1 < len(self.lines) and
+                self.lines[linenum].startswith(b'old mode') and
+                self.lines[linenum + 1].startswith(b'new mode'))
 
     def _is_copied_file(self, linenum):
-        return (self.lines[linenum].startswith(b'similarity index') and
+        return (linenum + 2 < len(self.lines) and
+                self.lines[linenum].startswith(b'similarity index') and
                 self.lines[linenum + 1].startswith(b'copy from') and
                 self.lines[linenum + 2].startswith(b'copy to'))
 
     def _is_moved_file(self, linenum):
-        return (self.lines[linenum].startswith(b"similarity index") and
-                self.lines[linenum + 1].startswith(b"rename from") and
-                self.lines[linenum + 2].startswith(b"rename to"))
+        return (linenum + 2 < len(self.lines) and
+                self.lines[linenum].startswith(b'similarity index') and
+                self.lines[linenum + 1].startswith(b'rename from') and
+                self.lines[linenum + 2].startswith(b'rename to'))
 
     def _is_index_range_line(self, linenum):
         return (linenum < len(self.lines) and
-                self.lines[linenum].startswith(b"index "))
+                self.lines[linenum].startswith(b'index '))
 
     def _is_git_diff(self, linenum):
         return self.lines[linenum].startswith(b'diff --git')

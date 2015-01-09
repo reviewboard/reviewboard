@@ -2382,6 +2382,36 @@ class GitTests(SCMTestCase):
         self.assertTrue(f.moved)
         self.assertFalse(f.copied)
 
+    def test_parse_diff_with_mode_change_and_rename(self):
+        """Testing Git diff parsing with mode change and rename"""
+        diff = (b'diff --git a/foo/bar b/foo/bar2\n'
+                b'old mode 100755\n'
+                b'new mode 100644\n'
+                b'similarity index 99%\n'
+                b'rename from foo/bar\n'
+                b'rename to foo/bar2\n'
+                b'index 612544e4343bf04967eb5ea80257f6c64d6f42c7..'
+                b'e88b7f15c03d141d0bb38c8e49bb6c411ebfe1f1\n'
+                b'--- a/foo/bar\n'
+                b'+++ b/foo/bar3\n'
+                b'@ -1,1 +1,1 @@\n'
+                b'-blah blah\n'
+                b'+blah\n')
+        files = self.tool.get_parser(diff).parse()
+        self.assertEqual(len(files), 1)
+
+        f = files[0]
+        self.assertEqual(f.origFile, 'foo/bar')
+        self.assertEqual(f.newFile, 'foo/bar2')
+        self.assertEqual(f.origInfo,
+                         '612544e4343bf04967eb5ea80257f6c64d6f42c7')
+        self.assertEqual(f.newInfo,
+                         'e88b7f15c03d141d0bb38c8e49bb6c411ebfe1f1')
+        self.assertEqual(f.insert_count, 1)
+        self.assertEqual(f.delete_count, 1)
+        self.assertTrue(f.moved)
+        self.assertFalse(f.copied)
+
     def test_file_exists(self):
         """Testing GitTool.file_exists"""
 
