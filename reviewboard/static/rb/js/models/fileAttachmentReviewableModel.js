@@ -10,7 +10,8 @@ RB.FileAttachmentReviewable = RB.AbstractReviewable.extend({
         fileRevision: null,
         diffRevision: null,
         numRevisions: null,
-        attachmentRevisionIDs: null
+        attachmentRevisionIDs: null,
+        diffTypeMismatch: false
     }, RB.AbstractReviewable.prototype.defaults),
 
     defaultCommentBlockFields: [

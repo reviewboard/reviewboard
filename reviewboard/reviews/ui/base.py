@@ -353,6 +353,9 @@ class FileAttachmentReviewUI(ReviewUI):
             data['diffAgainstFileAttachmentID'] = self.diff_against_obj.pk
             data['diffRevision'] = self.diff_against_obj.attachment_revision
 
+            if type(self) != type(self.diff_against_obj.review_ui):
+                data['diffTypeMismatch'] = True
+
         return data
 
     @classmethod

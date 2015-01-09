@@ -61,30 +61,35 @@ class TextBasedReviewUI(FileAttachmentReviewUI):
         diff_caption = None
         diff_revision = None
 
+        diff_type_mismatch = False
+
         if self.diff_against_obj:
-            diff_line_list = [
-                mark_safe(line)
-                for line in self.diff_against_obj.review_ui.get_text_lines()
-            ]
-
-            rendered_diff_line_list = [
-                mark_safe(line)
-                for line in
-                self.diff_against_obj.review_ui.get_rendered_lines()
-            ]
-
-            # Interleave the two arrays of file lines together, so a template
-            # for-loop can access the contents of both files with two
-            # iterators.
-            file_line_list = itertools.izip_longest(
-                file_line_list, diff_line_list, fillvalue="")
-
-            rendered_line_list = itertools.izip_longest(
-                rendered_line_list, rendered_diff_line_list, fillvalue="")
-
             diff_caption = self.diff_against_obj.caption
             diff_filename = self.diff_against_obj.filename
             diff_revision = self.diff_against_obj.attachment_revision
+
+            if type(self) != type(self.diff_against_obj.review_ui):
+                diff_type_mismatch = True
+            else:
+                diff_line_list = [
+                    mark_safe(line)
+                    for line in self.diff_against_obj.review_ui.get_text_lines()
+                ]
+
+                rendered_diff_line_list = [
+                    mark_safe(line)
+                    for line in
+                    self.diff_against_obj.review_ui.get_rendered_lines()
+                ]
+
+                # Interleave the two arrays of file lines together, so a template
+                # for-loop can access the contents of both files with two
+                # iterators.
+                file_line_list = itertools.izip_longest(
+                    file_line_list, diff_line_list, fillvalue="")
+
+                rendered_line_list = itertools.izip_longest(
+                    rendered_line_list, rendered_diff_line_list, fillvalue="")
 
         if self.obj.attachment_history is not None:
             num_revisions = FileAttachment.objects.filter(
@@ -102,6 +107,7 @@ class TextBasedReviewUI(FileAttachmentReviewUI):
             'diff_filename': diff_filename,
             'diff_revision': diff_revision,
             'num_revisions': num_revisions,
+            'diff_type_mismatch': diff_type_mismatch,
         }
 
     def get_text_lines(self):

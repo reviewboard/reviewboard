@@ -553,6 +553,13 @@ RB.ImageReviewableView = RB.FileAttachmentReviewableView.extend({
         '</td>'
     ].join('')),
 
+    errorTemplate: _.template([
+        '<div class="review-ui-error">',
+        ' <div class="rb-icon rb-icon-warning"></div>',
+        ' <%- errorStr %>',
+        '</div>'
+        ].join('')),
+
     ANIM_SPEED_MS: 200,
 
     /*
@@ -622,7 +629,11 @@ RB.ImageReviewableView = RB.FileAttachmentReviewableView.extend({
                 })
             .append(this._$selectionArea);
 
-        if (hasDiff) {
+        if (this.model.get('diffTypeMismatch')) {
+            this.$el.append(this.errorTemplate({
+                errorStr: gettext('These revisions cannot be compared because they are different file types.')
+            }));
+        } else if (hasDiff) {
             this._$modeBar = $('<ul class="image-diff-modes"/>')
                 .appendTo(this.$el);
 

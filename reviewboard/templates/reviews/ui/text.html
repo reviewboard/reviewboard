@@ -42,7 +42,7 @@
       </th>
 {%  endif %}
      </tr>
-{%  if review_ui.can_render_text %}
+{%  if review_ui.can_render_text and not diff_type_mismatch %}
      <tr>
       <td colspan="{% if is_diff %}4{% else %}2{% endif %}">
        <ul class="text-review-ui-views">
@@ -54,10 +54,47 @@
 {%  endif %}
     </thead>
 
-{%  if review_ui.can_render_text %}
+{%  if diff_type_mismatch %}
     <tbody class="text-review-ui-rendered-table">
+     <tr>
 {%   if is_diff %}
-{%    for line1, line2 in rendered_lines %}
+      <td colspan="4">
+{%   else %}
+      <td colspan="2">
+{%   endif %}
+       <div class="review-ui-error">
+        <div class="rb-icon rb-icon-warning"></div>
+	{% trans "These revisions cannot be compared because they are different file types." %}
+       </div>
+      </td>
+     </tr>
+    </tbody>
+{%  else %}
+{%   if review_ui.can_render_text %}
+    <tbody class="text-review-ui-rendered-table">
+{%    if is_diff %}
+{%     for line1, line2 in rendered_lines %}
+     <tr line="{{forloop.counter}}">
+      <th>{{forloop.counter}}</th>
+      <td class="l">{{line1}}</td>
+      <th>{{forloop.counter}}</th>
+      <td class="2">{{line2}}</td>
+     </tr>
+{%     endfor %}
+{%    else %}
+{%    for line in rendered_lines %}
+     <tr line="{{forloop.counter}}">
+      <th>{{forloop.counter}}</th>
+      <td class="l">{{line}}</td>
+     </tr>
+{%     endfor %}
+{%    endif %}
+    </tbody>
+{%   endif %}
+
+    <tbody class="text-review-ui-text-table"{% if review_ui.can_render_text %} style="display:none;"{%endif%}>
+{%   if is_diff %}
+{%    for line1, line2 in text_lines %}
      <tr line="{{forloop.counter}}">
       <th>{{forloop.counter}}</th>
       <td class="l">{{line1}}</td>
@@ -66,7 +103,7 @@
      </tr>
 {%    endfor %}
 {%   else %}
-{%    for line in rendered_lines %}
+{%    for line in text_lines %}
      <tr line="{{forloop.counter}}">
       <th>{{forloop.counter}}</th>
       <td class="l">{{line}}</td>
@@ -75,26 +112,6 @@
 {%   endif %}
     </tbody>
 {%  endif %}
-
-    <tbody class="text-review-ui-text-table"{% if review_ui.can_render_text %} style="display:none;"{%endif%}>
-{%  if is_diff %}
-{%   for line1, line2 in text_lines %}
-     <tr line="{{forloop.counter}}">
-      <th>{{forloop.counter}}</th>
-      <td class="l">{{line1}}</td>
-      <th>{{forloop.counter}}</th>
-      <td class="2">{{line2}}</td>
-     </tr>
-{%   endfor %}
-{%  else %}
-{%   for line in text_lines %}
-     <tr line="{{forloop.counter}}">
-      <th>{{forloop.counter}}</th>
-      <td class="l">{{line}}</td>
-     </tr>
-{%   endfor %}
-{%  endif %}
-    </tbody>
    </table>
 
   </div>
