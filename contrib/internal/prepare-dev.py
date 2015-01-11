@@ -117,7 +117,8 @@ def main():
     reviewboard.cmdline.rbsite.ui = ConsoleUI()
 
     # Re-use the Site class, since it has some useful functions.
-    site = Site("reviewboard", SiteOptions)
+    site_path = os.path.abspath('reviewboard')
+    site = Site(site_path, SiteOptions)
 
     create_settings()
     build_egg_info()
