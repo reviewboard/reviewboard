@@ -227,7 +227,14 @@ def iter_markdown_lines(markdown_html):
                 #
                 # For the case of numbers, we can set each list to start
                 # at the appropriate number so that they don't all say "1."
-                i = node.attributes.get('start', 1)
+                start = node.attributes.get('start')
+                if start is not None:
+                    try:
+                        i = int(start.value)
+                    except ValueError:
+                        i = 1
+                else:
+                    i = 1
 
                 for child_node in node.childNodes:
                     if (child_node.nodeType == child_node.ELEMENT_NODE and
