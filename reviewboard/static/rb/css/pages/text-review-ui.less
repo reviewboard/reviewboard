@@ -15,6 +15,7 @@
     h1 {
       margin: 0;
       padding: @header-padding;
+      font-size: 10pt;
     }
 
     .text-review-ui-views {
@@ -68,6 +69,11 @@
       border-bottom: 1px @diff-file-border-color solid;
     }
   }
+
+  .review-ui-error {
+    text-align: center;
+    padding: 2em;
+  }
 }
 
 .text-review-ui-comment-thumbnail {
@@ -90,6 +96,11 @@
   }
 }
 
+#attachment_revision_selector, #revision_label {
+  padding-top: 4px;
+  padding-left: 12px;
+}
+
 
 /****************************************************************************
  * Markdown-specific styles
@@ -98,7 +109,7 @@
   td {
     padding-left: 2px;
 
-    * {
+    tbody * {
       margin: 0;
       padding: 0;
     }

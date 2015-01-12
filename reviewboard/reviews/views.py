@@ -1488,7 +1488,7 @@ def preview_reply_email(request, review_request_id, review_id, reply_id,
 @check_login_required
 @check_local_site_access
 def review_file_attachment(request, review_request_id, file_attachment_id,
-                           local_site=None):
+                           file_attachment_diff_id=None, local_site=None):
     """Displays a file attachment with a review UI."""
     review_request, response = \
         _find_review_request(request, review_request_id, local_site)
@@ -1498,6 +1498,13 @@ def review_file_attachment(request, review_request_id, file_attachment_id,
 
     file_attachment = get_object_or_404(FileAttachment, pk=file_attachment_id)
     review_ui = file_attachment.review_ui
+
+    if file_attachment_diff_id:
+        file_attachment_revision = get_object_or_404(
+            FileAttachment.objects.filter(
+                attachment_history=file_attachment.attachment_history),
+            pk=file_attachment_diff_id)
+        review_ui.set_diff_against(file_attachment_revision)
 
     try:
         is_enabled_for = review_ui.is_enabled_for(

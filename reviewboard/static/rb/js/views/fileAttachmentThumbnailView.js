@@ -405,6 +405,7 @@ RB.FileAttachmentThumbnail = Backbone.View.extend({
 
         updateDlg = new RB.UploadAttachmentView({
             attachmentHistoryID: $(e.target).data('attachment-history-id'),
+            presetCaption: this.model.get('caption'),
             reviewRequest: this.options.reviewRequest
         });
         updateDlg.render();

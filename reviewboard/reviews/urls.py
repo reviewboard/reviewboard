@@ -83,6 +83,10 @@ review_request_urls = patterns(
     url(r'^file/(?P<file_attachment_id>[0-9]+)/$',
         'review_file_attachment',
         name='file-attachment'),
+    url(r'^file/(?P<file_attachment_id>[0-9]+)'
+        r'-(?P<file_attachment_diff_id>[0-9]+)/$',
+        'review_file_attachment',
+        name='file-attachment'),
 
     # Screenshots
     url(r'^s/(?P<screenshot_id>[0-9]+)/$',
