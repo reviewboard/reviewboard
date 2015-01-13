@@ -163,7 +163,7 @@ BaseCommentView = Backbone.View.extend({
                     });
                     this.model.save({
                         attrs: ['forceTextType', 'includeTextTypes',
-                                'richText', 'text'],
+                                'richText', 'text']
                     });
                 }, this)
             });
@@ -205,8 +205,7 @@ BaseCommentView = Backbone.View.extend({
      * Renders the text for this comment.
      */
     renderText: function(model, text) {
-        var reviewRequest = this.model.get('parentObject').get('parentObject'),
-            normTextFields;
+        var reviewRequest = this.model.get('parentObject').get('parentObject');
 
         if (this.$editor) {
             RB.formatText(this.$editor, {

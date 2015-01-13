@@ -15,7 +15,7 @@ RB.formatText = function($el, options) {
 
     if (options.richText) {
         if (options.newText !== undefined) {
-            $el.html(options.newText)
+            $el.html(options.newText);
         }
 
         $el

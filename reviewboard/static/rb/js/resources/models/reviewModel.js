@@ -87,9 +87,9 @@ RB.Review = RB.BaseResource.extend({
             data = RB.BaseResource.prototype.parseResourceData.call(this, rsp);
 
         data.bodyTopRichText =
-            (rawTextFields.body_top_text_type === 'markdown')
+            (rawTextFields.body_top_text_type === 'markdown');
         data.bodyBottomRichText =
-            (rawTextFields.body_bottom_text_type === 'markdown')
+            (rawTextFields.body_bottom_text_type === 'markdown');
 
         if (rsp.raw_text_fields) {
             data.rawTextFields = {

@@ -143,7 +143,9 @@ RB.DiffFragmentQueueView = Backbone.View.extend({
             chunkTop,
             chunkBottom,
             chunkHeight,
-            i;
+            i,
+            top,
+            bottom;
 
         if (len === 0) {
             return;
@@ -202,9 +204,8 @@ RB.DiffFragmentQueueView = Backbone.View.extend({
                      */
                     break;
                 } else {
-                    var top = Math.max(windowTop, chunkTop);
-                    var bottom = Math.min(windowTop + windowHeight,
-                                          chunkBottom);
+                    top = Math.max(windowTop, chunkTop);
+                    bottom = Math.min(windowTop + windowHeight, chunkBottom);
 
                     /*
                      * The area doesn't take up the entire height of the view.

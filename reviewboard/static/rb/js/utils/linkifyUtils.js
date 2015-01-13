@@ -134,6 +134,6 @@ RB.LinkifyUtils = {
                     RB.LinkifyUtils.linkifyChildren(node, bugTrackerURL);
                 }
             }
-        };
+        }
     }
 };
