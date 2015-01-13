@@ -19,6 +19,7 @@ from reviewboard.accounts.models import Profile, LocalSiteProfile
 from reviewboard.attachments.models import FileAttachment
 from reviewboard.reviews.forms import DefaultReviewerForm, GroupForm
 from reviewboard.reviews.markdown_utils import (get_markdown_element_tree,
+                                                iter_markdown_lines,
                                                 markdown_escape,
                                                 markdown_unescape,
                                                 normalize_text_for_edit,
@@ -2914,6 +2915,18 @@ class MarkdownUtilsTests(TestCase):
                               '&nbsp;\tcode'),
             ('\tcode\n'
              '\tcode'))
+
+    def test_markdown_list_start(self):
+        """Testing iteration of Markdown lists with a 'start' parameter"""
+        # In bug 3715, we were treating the 'start' parameter incorrectly. This
+        # checks that said bug is fixed.
+        rendered = '<ul start="2"><li>x</li><li>y</li></ul>'
+        lines = list(iter_markdown_lines(rendered))
+
+        self.assertEqual(lines, [
+            '<ul start="2"><li>x</li></ul>',
+            '<ul start="3"><li>y</li></ul>',
+        ])
 
     def test_normalize_text_for_edit_rich_text_default_rich_text(self):
         """Testing normalize_text_for_edit with rich text and

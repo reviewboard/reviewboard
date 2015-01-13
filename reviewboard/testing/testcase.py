@@ -17,6 +17,7 @@ from djblets.testing.testcases import TestCase as DjbletsTestCase
 
 from reviewboard import scmtools, initialize
 from reviewboard.attachments.models import FileAttachment
+from reviewboard.diffviewer.differ import DiffCompatVersion
 from reviewboard.diffviewer.models import DiffSet, DiffSetHistory, FileDiff
 from reviewboard.reviews.models import (Comment, FileAttachmentComment,
                                         Group, Review, ReviewRequest,
@@ -152,7 +153,8 @@ class TestCase(DjbletsTestCase):
         diffset = DiffSet.objects.create(
             name=name,
             revision=revision,
-            repository=repository)
+            repository=repository,
+            diffcompat=DiffCompatVersion.DEFAULT)
 
         if review_request:
             if draft:

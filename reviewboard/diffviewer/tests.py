@@ -27,6 +27,7 @@ from reviewboard.diffviewer.renderers import DiffRenderer
 from reviewboard.diffviewer.processors import (filter_interdiff_opcodes,
                                                post_process_filtered_equals)
 from reviewboard.diffviewer.templatetags.difftags import highlightregion
+from reviewboard.scmtools.core import PRE_CREATION
 from reviewboard.scmtools.models import Repository, Tool
 from reviewboard.testing import TestCase
 
@@ -1647,9 +1648,50 @@ class ProcessorsTests(TestCase):
 
 class DiffChunkGeneratorTests(TestCase):
     """Unit tests for DiffChunkGenerator."""
+    fixtures = ['test_scmtools']
+
     def setUp(self):
-        filediff = FileDiff(source_file='foo', diffset=DiffSet())
-        self.generator = DiffChunkGenerator(None, filediff)
+        self.repository = self.create_repository()
+        self.diffset = self.create_diffset(repository=self.repository)
+        self.filediff = self.create_filediff(diffset=self.diffset)
+        self.generator = DiffChunkGenerator(None, self.filediff)
+
+    def test_get_chunks_with_empty_added_file(self):
+        """Testing DiffChunkGenerator.get_chunks with empty added file"""
+        self.filediff.source_revision = PRE_CREATION
+        self.filediff.extra_data.update({
+            'raw_insert_count': 0,
+            'raw_delete_count': 0,
+        })
+
+        self.assertEqual(len(self.generator.get_chunks()), 0)
+
+    def test_get_chunks_with_replace_in_added_file_with_parent_diff(self):
+        """Testing DiffChunkGenerator.get_chunks with replace chunks in
+        added file with parent diff
+        """
+        self.filediff.diff = (
+            b'--- README\n'
+            b'+++ README\n'
+            b'@@ -1,1 +1,1 @@\n'
+            b'-line\n'
+            b'+line.\n'
+        )
+        self.filediff.parent_diff = (
+            b'--- README\n'
+            b'+++ README\n'
+            b'@@ -0,0 +1,1 @@\n'
+            b'+line\n'
+        )
+        self.filediff.source_revision = PRE_CREATION
+        self.filediff.extra_data.update({
+            'raw_insert_count': 1,
+            'raw_delete_count': 1,
+            'insert_count': 0,
+            'delete_count': 0,
+        })
+
+        self.assertEqual(len(self.generator.get_chunks()), 1)
 
     def test_indent_spaces(self):
         """Testing DiffChunkGenerator._serialize_indentation with spaces"""
