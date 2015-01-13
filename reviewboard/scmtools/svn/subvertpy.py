@@ -316,7 +316,7 @@ class Client(base.Client):
                                         B(path),
                                         diffopts=DIFF_UNIFIED)
 
-            diff = out.read().decode('utf-8')
+            diff = out.read()
         except Exception as e:
             logging.error('Failed to generate diff using subvertpy for '
                           'revisions %s:%s for path %s: %s',

@@ -10,6 +10,7 @@ from django.conf import settings
 from django.utils import six
 from django.utils.translation import ugettext as _
 
+from reviewboard.diffviewer.diffutils import convert_to_unicode
 from reviewboard.diffviewer.parser import DiffParser
 from reviewboard.scmtools.certs import Certificate
 from reviewboard.scmtools.core import (Branch, Commit, SCMTool, HEAD,
@@ -216,7 +217,9 @@ class SVNTool(SCMTool):
             base_revision = 0
 
         try:
-            diff = self.client.diff(base_revision, revision)
+            enc, diff = convert_to_unicode(
+                self.client.diff(base_revision, revision),
+                self.repository.get_encoding_list())
         except Exception as e:
             raise self.normalize_error(e)
 
