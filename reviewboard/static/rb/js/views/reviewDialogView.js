@@ -29,15 +29,7 @@ BaseCommentView = Backbone.View.extend({
         '  <div class="comment-text-field">',
         '   <dl>',
         '    <dt>',
-        '     <label for="<%= id %>">',
-        '      <a href="<%= userPageURL %>" class="user"><%- fullName %></a>',
-        '<% if (timestamp) { %>',
-        '      <span class="timestamp">',
-        '       <time class="timesince" datetime="<%= timestampISO %>">',
-        '<%= timestamp %></time> (<%= timestamp %>)',
-        '      </span>',
-        '<% } %>',
-        '     </label>',
+        '     <label for="<%= id %>"><%- editCommentText %></label>',
         '    </dt>',
         '    <dd><pre id="<%= id %>" class="reviewtext rich-text" ',
         '             data-rich-text="true"><%- text %></pre></dd>',
@@ -110,22 +102,17 @@ BaseCommentView = Backbone.View.extend({
      */
     render: function() {
         var $editFields,
-            text = this.model.get('text'),
-            userSession = RB.UserSession.instance,
-            now = moment().zone(userSession.get('timezoneOffset'));
+            text = this.model.get('text');
 
         this.$el
             .addClass('draft')
             .append(this.renderThumbnail())
             .append($(this.editorTemplate({
-                fullName: userSession.get('fullName'),
+                editCommentText: gettext('Edit comment'),
                 id: _.uniqueId('draft_comment_'),
                 issueOpenedID: _.uniqueId('issue-opened'),
                 openAnIssueText: gettext('Open an Issue'),
-                text: text,
-                timestamp: RB.FormatTimestamp(now),
-                timestampISO: now.format(),
-                userPageURL: userSession.get('userPageURL')
+                text: text
             })))
             .find('time.timesince')
                 .timesince()
@@ -357,15 +344,7 @@ HeaderFooterCommentView = Backbone.View.extend({
         '<div class="comment-text-field">',
         ' <dl>',
         '  <dt>',
-        '   <label for="<%= id %>">',
-        '    <a href="<%= userPageURL %>" class="user"><%- fullName %></a>',
-        '<% if (timestamp) { %>',
-        '    <span class="timestamp">',
-        '     <time class="timesince" datetime="<%= timestampISO %>">',
-        '<%= timestamp %></time> (<%= timestamp %>)',
-        '    </span>',
-        '<% } %>',
-        '   </label>',
+        '   <label for="<%= id %>"><%- editText %></label>',
         '  </dt>',
         '  <dd><pre id="<%= id %>" class="reviewtext rich-text" ',
         '           data-rich-text="true"><%- text %></pre></dd>',
@@ -381,6 +360,7 @@ HeaderFooterCommentView = Backbone.View.extend({
         this.propertyName = options.propertyName;
         this.richTextPropertyName = options.richTextPropertyName;
         this.linkText = options.linkText;
+        this.editText = options.editText;
 
         this.$editor = null;
         this.textEditor = null;
@@ -394,20 +374,15 @@ HeaderFooterCommentView = Backbone.View.extend({
      * Renders the view.
      */
     render: function() {
-        var text = this.model.get(this.propertyName),
-            userSession = RB.UserSession.instance,
-            now = moment().zone(userSession.get('timezoneOffset'));
+        var text = this.model.get(this.propertyName);
 
         this.$el
             .addClass('draft')
             .append($(this.editorTemplate({
-                fullName: userSession.get('fullName'),
+                editText: this.editText,
                 id: this.propertyName,
                 linkText: this.linkText,
-                text: text || '',
-                timestamp: RB.FormatTimestamp(now),
-                timestampISO: now.format(),
-                userPageURL: userSession.get('userPageURL')
+                text: text || ''
             })))
             .find('time.timesince')
                 .timesince()
@@ -682,7 +657,8 @@ RB.ReviewDialogView = Backbone.View.extend({
             el: this.$('.body-top'),
             propertyName: 'bodyTop',
             richTextPropertyName: 'bodyTopRichText',
-            linkText: gettext('Add header')
+            linkText: gettext('Add header'),
+            editText: gettext('Edit header')
         });
 
         this._bodyBottomView = new HeaderFooterCommentView({
@@ -690,7 +666,8 @@ RB.ReviewDialogView = Backbone.View.extend({
             el: this.$('.body-bottom'),
             propertyName: 'bodyBottom',
             richTextPropertyName: 'bodyBottomRichText',
-            linkText: gettext('Add footer')
+            linkText: gettext('Add footer'),
+            editText: gettext('Edit footer')
         });
 
         this.model.ready({
