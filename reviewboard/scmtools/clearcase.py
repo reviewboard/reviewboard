@@ -325,7 +325,9 @@ class ClearCaseDiffParser(DiffParser):
             # client side paths are enough to start reviewing.
             # So we can safely catch exception and restore client side paths
             # if not found.
-            currentFilename = info['origFile']
+            # Note: origFile and newFile attributes are not defined when
+            # managing binaries, so init to '' as fallback.
+            currentFilename = info.get('origFile', '')
             try:
                 info['origFile'] = self._oid2filename(m.group(1))
             except:
@@ -333,7 +335,7 @@ class ClearCaseDiffParser(DiffParser):
                               m.group(1))
                 info['origFile'] = self.client_relpath(currentFilename)
 
-            currentFilename = info['newFile']
+            currentFilename = info.get('newFile', '')
             try:
                 info['newFile'] = self._oid2filename(m.group(2))
             except:
