@@ -665,7 +665,7 @@ RB.ImageReviewableView = RB.FileAttachmentReviewableView.extend({
             .load(this._adjustPos);
 
         $header = $('<div />')
-            .addClass('image-review-ui-header')
+            .addClass('review-ui-header')
             .prependTo(this.$el);
 
         if (this.model.get('numRevisions') > 1) {
@@ -693,22 +693,22 @@ RB.ImageReviewableView = RB.FileAttachmentReviewableView.extend({
                 captionItems.push(this.captionItemTemplate({
                     caption: interpolate(
                         gettext('%(caption)s (revision %(revision)s)'),
-                        [],
                         {
                             caption: this.model.get('caption'),
                             revision: this.model.get('fileRevision')
-                        })
+                        },
+                        true)
                 }));
 
                 if (hasDiff) {
                     captionItems.push(this.captionItemTemplate({
                         caption: interpolate(
                             gettext('%(caption)s (revision %(revision)s)'),
-                            [],
                             {
                                 caption: this.model.get('diffCaption'),
                                 revision: this.model.get('diffRevision')
-                            })
+                            },
+                            true)
                     }));
                 }
 

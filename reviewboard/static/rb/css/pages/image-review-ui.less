@@ -20,25 +20,13 @@
 }
 
 .image-review-ui {
-  @header-padding: 8px;
-
   background: white;
   position: relative;
   .border-radius(0 0 @box-border-radius @box-border-radius);
 
-  .image-review-ui-header {
-    border-bottom: 1px @diff-file-border-color solid;
-    #gradient > .vertical-three-colors(#FFFFFF, @diff-file-color, 50%,
-                                       @diff-file-color);
-
+  .review-ui-header {
     table {
       width: 100%;
-    }
-
-    h1 {
-      margin: 0;
-      padding: @header-padding;
-      font-size: 10pt;
     }
   }
 

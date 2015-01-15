@@ -228,7 +228,7 @@ class ReviewUI(object):
         """
         try:
             return mark_safe(json.dumps(
-                self.serialize_comments(self.get_comments())))
+                list(self.serialize_comments(self.get_comments()))))
         except Exception as e:
                 logging.error('Error When calling serialize_comments for '
                               'FileAttachmentReviewUI %r: %s',
@@ -300,9 +300,12 @@ class FileAttachmentReviewUI(ReviewUI):
 
     This also handles much of the work for diffing FileAttachments.
     """
+    name = 'Unknown file type'
     object_key = 'file'
     diff_object_key = 'diff_against_file'
     supported_mimetypes = []
+    js_model_class = 'RB.DummyReviewable'
+    js_view_class = 'RB.DummyReviewableView'
 
     def get_comments(self):
         """Returns a list of comments made on the FileAttachment.

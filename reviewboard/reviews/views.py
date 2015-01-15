@@ -60,6 +60,7 @@ from reviewboard.reviews.models import (BaseComment, Comment,
                                         FileAttachmentComment,
                                         ReviewRequest, Review,
                                         Screenshot, ScreenshotComment)
+from reviewboard.reviews.ui.base import FileAttachmentReviewUI
 from reviewboard.scmtools.models import Repository
 from reviewboard.site.decorators import check_local_site_access
 from reviewboard.site.urlresolvers import local_site_reverse
@@ -1498,6 +1499,8 @@ def review_file_attachment(request, review_request_id, file_attachment_id,
 
     file_attachment = get_object_or_404(FileAttachment, pk=file_attachment_id)
     review_ui = file_attachment.review_ui
+    if not review_ui:
+        review_ui = FileAttachmentReviewUI(review_request, file_attachment)
 
     if file_attachment_diff_id:
         file_attachment_revision = get_object_or_404(

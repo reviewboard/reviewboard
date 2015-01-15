@@ -99,7 +99,7 @@ RB.TextBasedReviewableView = RB.FileAttachmentReviewableView.extend({
 
         this.listenTo(this.model, 'change:viewMode', this._onViewChanged);
 
-        $fileHeader = this.$('.text-review-ui-header');
+        $fileHeader = this.$('.review-ui-header');
 
         if (this.model.get('numRevisions') > 1) {
             $tr = $('<tr />')
