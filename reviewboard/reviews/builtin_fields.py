@@ -417,8 +417,8 @@ class DiffField(BuiltinLocalsFieldMixin, BaseReviewRequestField):
         # Fetch the total number of inserts/deletes. These will be shown
         # alongside the diff revision.
         counts = diffset.get_total_line_counts()
-        raw_insert_count = counts['raw_insert_count']
-        raw_delete_count = counts['raw_delete_count']
+        raw_insert_count = counts.get('raw_insert_count', 0)
+        raw_delete_count = counts.get('raw_delete_count', 0)
 
         line_counts = []
 
