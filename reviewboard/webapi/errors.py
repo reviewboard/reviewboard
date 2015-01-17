@@ -156,3 +156,8 @@ TOKEN_GENERATION_FAILED = WebAPIError(
     228,
     'There was an error generating the API token. Please try again.',
     http_status=500)  # 500 Internal Server Error.
+
+REPOSITORY_ALREADY_EXISTS = WebAPIError(
+    229,
+    "A repository with this name already exists.",
+    http_status=409)  # 409 Conflict

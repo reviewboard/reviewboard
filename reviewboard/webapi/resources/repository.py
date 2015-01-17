@@ -29,6 +29,7 @@ from reviewboard.webapi.errors import (BAD_HOST_KEY,
                                        MISSING_USER_KEY,
                                        REPO_AUTHENTICATION_ERROR,
                                        REPO_INFO_ERROR,
+                                       REPOSITORY_ALREADY_EXISTS,
                                        SERVER_CONFIG_ERROR,
                                        UNVERIFIED_HOST_CERT,
                                        UNVERIFIED_HOST_KEY)
@@ -223,8 +224,9 @@ class RepositoryResource(WebAPIResource):
     @webapi_login_required
     @webapi_response_errors(BAD_HOST_KEY, INVALID_FORM_DATA, NOT_LOGGED_IN,
                             PERMISSION_DENIED, REPO_AUTHENTICATION_ERROR,
+                            REPO_INFO_ERROR, REPOSITORY_ALREADY_EXISTS,
                             SERVER_CONFIG_ERROR, UNVERIFIED_HOST_CERT,
-                            UNVERIFIED_HOST_KEY, REPO_INFO_ERROR)
+                            UNVERIFIED_HOST_KEY)
     @webapi_request_fields(
         required={
             'name': {
@@ -374,11 +376,14 @@ class RepositoryResource(WebAPIResource):
         try:
             repository.full_clean()
         except ValidationError as e:
-            return INVALID_FORM_DATA, {
-                'fields': {
-                    e.params['field']: e.message,
-                },
-            }
+            if hasattr(e, 'params') and 'field' in e.params:
+                return INVALID_FORM_DATA, {
+                    'fields': {
+                        e.params['field']: e.message,
+                    },
+                }
+            else:
+                return REPOSITORY_ALREADY_EXISTS
 
         repository.save()
 
