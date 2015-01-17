@@ -146,3 +146,8 @@ COMMIT_ID_ALREADY_EXISTS = WebAPIError(
     227,
     "Review request with this commit ID already exists in the repository.",
     http_status=409)  # 409 Conflict
+
+REPOSITORY_ALREADY_EXISTS = WebAPIError(
+    228,
+    "A repository with this name already exists.",
+    http_status=409)  # 409 Conflict
