@@ -1234,6 +1234,30 @@ class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase):
         review_request = ReviewRequest.objects.get(pk=review_request.pk)
         self.compare_item(item_rsp, review_request)
 
+    @add_fixtures(['test_scmtools'])
+    def test_put_changenum_for_published_request(self):
+        """Testing the PUT review-requests/<id>/?changenum=<integer> API"""
+        changenum = '3141592653'
+        commit_id = '1234567890'
+        repository = self.create_repository(tool_name='Test')
+        r = self.create_review_request(submitter=self.user, publish=True,
+                                       repository=repository,
+                                       changenum=commit_id,
+                                       commit_id=commit_id)
+
+        rsp = self.api_put(
+            get_review_request_item_url(r.display_id),
+            {'changenum': changenum},
+            expected_mimetype=review_request_item_mimetype)
+
+        rr = rsp['review_request']
+        self.assertEqual(rr["changenum"], int(changenum))
+        self.assertEqual(rr["commit_id"], changenum)
+
+        r = ReviewRequest.objects.get(pk=r.id)
+        self.assertEqual(r.changenum, int(changenum))
+        self.assertEqual(r.commit_id, changenum)
+
     def test_put_status_legacy_description(self):
         """Testing the PUT review-requests/<id>/?status= API
         with legacy description= field

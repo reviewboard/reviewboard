@@ -833,12 +833,15 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
                 return self._no_access_error(request.user)
 
         # Preserve the old changenum behavior.
+        changed_fields = []
         if changenum is not None:
             if review_request.repository is None:
                 return INVALID_CHANGE_NUMBER
 
             if changenum != review_request.changenum:
-                review_request.commit = changenum
+                review_request.commit = six.text_type(changenum)
+                changed_fields.append('changenum')
+                changed_fields.append('commit_id')
 
             try:
                 draft = ReviewRequestDraftResource.prepare_draft(
@@ -859,7 +862,10 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
         if extra_fields:
             self.import_extra_data(review_request, review_request.extra_data,
                                    extra_fields)
-            review_request.save(update_fields=['extra_data'])
+            changed_fields.append('extra_data')
+
+        if changed_fields:
+            review_request.save(update_fields=changed_fields)
 
         return 200, {
             self.item_result_key: review_request,

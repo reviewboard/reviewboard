@@ -3,7 +3,7 @@ from __future__ import unicode_literals
 from django.utils import six
 from django.utils.six.moves import range
 
-from reviewboard.scmtools.core import Branch, Commit
+from reviewboard.scmtools.core import Branch, Commit, ChangeSet
 from reviewboard.scmtools.git import GitTool
 
 
@@ -71,3 +71,19 @@ class TestTool(GitTool):
     @classmethod
     def check_repository(cls, path, *args, **kwargs):
         pass
+
+
+class TestToolSupportsPendingChangeSets(TestTool):
+    supports_pending_changesets = True
+
+    def get_changeset(self, changesetid, allow_empty=False):
+        changeset = ChangeSet()
+        changeset.changenum = changesetid
+        changeset.description = 'Hello world!'
+        changeset.pending = True
+        if not allow_empty:
+            changeset.files = ['README.md']
+        changeset.summary = 'Added a README markdown to help explain what the'\
+            ' repository is used for. Hopefully, this takes off.'
+        changeset.testing_done = "None was performed"
+        return changeset

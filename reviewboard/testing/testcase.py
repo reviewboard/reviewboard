@@ -266,7 +266,8 @@ class TestCase(DjbletsTestCase):
                                     'testdata')
 
         if not path:
-            if tool_name in ('Git', 'Test'):
+            if tool_name in ('Git', 'Test',
+                             'TestToolSupportsPendingChangeSets'):
                 path = os.path.join(testdata_dir, 'git_repo')
             elif tool_name == 'Subversion':
                 path = 'file://' + os.path.join(testdata_dir, 'svn_repo')
@@ -291,7 +292,7 @@ class TestCase(DjbletsTestCase):
                               testing_done='Testing',
                               submitter='doc', local_id=1001,
                               status='P', public=False, publish=False,
-                              commit_id=None,
+                              commit_id=None, changenum=None,
                               repository=None, id=None,
                               create_repository=False):
         """Creates a ReviewRequest for testing.
@@ -335,6 +336,7 @@ class TestCase(DjbletsTestCase):
             repository=repository,
             public=public,
             commit_id=commit_id,
+            changenum=changenum,
             status=status)
 
         # Set this separately to avoid issues with CounterField updates.

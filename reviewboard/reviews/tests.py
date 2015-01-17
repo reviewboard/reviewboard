@@ -680,6 +680,16 @@ class ReviewRequestTests(SpyAgency, TestCase):
 
         self.assertIsNone(review_request.commit_id)
 
+    def test_changenum_against_changenum_and_commit_id(self):
+        """Testing create ReviewRequest with changenum against both changenum
+         and commit_id"""
+        changenum = 123
+        review_request = self.create_review_request(publish=True,
+                                                    changenum=changenum)
+        review_request = ReviewRequest.objects.get(pk=review_request.id)
+        self.assertEqual(review_request.changenum, changenum)
+        self.assertIsNone(review_request.commit_id)
+
     @add_fixtures(['test_scmtools'])
     def test_changeset_update_commit_id(self):
         """Testing ReviewRequest.changeset_is_pending update commit ID
