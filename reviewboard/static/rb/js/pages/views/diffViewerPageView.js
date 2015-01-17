@@ -12,7 +12,7 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
     ANCHOR_FILE: 2,
     ANCHOR_CHUNK: 4,
 
-    DIFF_SCROLLDOWN_AMOUNT: 100,
+    DIFF_SCROLLDOWN_AMOUNT: 15,
 
     keyBindings: {
         'aAKP<m': '_selectPreviousFile',
@@ -358,6 +358,7 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
         }
 
         if (scroll !== false) {
+            location.hash = "#" + $anchor.attr("name");
             $(window).scrollTop($anchor.offset().top -
                                 this.DIFF_SCROLLDOWN_AMOUNT);
         }
