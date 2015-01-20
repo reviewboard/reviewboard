@@ -1,5 +1,7 @@
 from __future__ import unicode_literals
 
+import copy
+
 from django.contrib.auth.models import User
 from django.db import models
 from django.db.models import F
@@ -142,7 +144,7 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
             draft.target_groups = review_request.target_groups.all()
             draft.target_people = review_request.target_people.all()
             draft.depends_on = review_request.depends_on.all()
-            draft.extra_data = review_request.extra_data
+            draft.extra_data = copy.deepcopy(review_request.extra_data)
             draft.save()
 
             review_request.screenshots.update(draft_caption=F('caption'))

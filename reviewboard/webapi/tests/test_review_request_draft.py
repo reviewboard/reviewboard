@@ -9,6 +9,7 @@ from kgb import SpyAgency
 
 from reviewboard.accounts.models import LocalSiteProfile
 from reviewboard.reviews.fields import (BaseTextAreaField,
+                                        BaseReviewRequestField,
                                         get_review_request_fieldset)
 from reviewboard.reviews.models import ReviewRequest, ReviewRequestDraft
 from reviewboard.site.models import LocalSite
@@ -173,6 +174,36 @@ class ResourceTests(SpyAgency, ExtraDataListMixin, ExtraDataItemMixin,
         self.assertIsNotNone(draft)
         self.assertFalse(draft.rich_text)
         self.compare_item(rsp['draft'], draft)
+
+    def test_post_with_publish_and_custom_field(self):
+        """Testing the POST review-requests/<id>/draft/ API with custom
+        field set in same request and public=1
+        """
+        class CustomField(BaseReviewRequestField):
+            can_record_change_entry = True
+            field_id = 'my-test'
+
+        fieldset = get_review_request_fieldset('info')
+        fieldset.add_field(CustomField)
+
+        review_request = self.create_review_request(submitter=self.user,
+                                                    publish=True)
+
+        rsp = self.api_post(
+            get_review_request_draft_url(review_request),
+            {
+                'extra_data.my-test': 123,
+                'public': True
+            },
+            expected_mimetype=review_request_draft_item_mimetype)
+
+        self.assertEqual(rsp['stat'], 'ok')
+
+        review_request = ReviewRequest.objects.get(pk=review_request.id)
+        self.assertIn('my-test', review_request.extra_data)
+        self.assertEqual(review_request.extra_data['my-test'], 123)
+        self.assertTrue(review_request.public)
+
 
     #
     # HTTP PUT tests
