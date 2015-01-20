@@ -17,6 +17,7 @@ from kgb import SpyAgency
 
 from reviewboard.accounts.models import Profile, LocalSiteProfile
 from reviewboard.attachments.models import FileAttachment
+from reviewboard.changedescs.models import ChangeDescription
 from reviewboard.reviews.forms import DefaultReviewerForm, GroupForm
 from reviewboard.reviews.markdown_utils import (get_markdown_element_tree,
                                                 iter_markdown_lines,
@@ -759,18 +760,9 @@ class ReviewRequestTests(SpyAgency, TestCase):
 
         review_request.close(ReviewRequest.DISCARDED)
 
-        latest_changedesc = \
-            review_request.changedescs.filter(public=True).latest()
-
-        fields = latest_changedesc.fields_changed
-
-        self.assertIn('summary', fields)
-        self.assertIn('description', fields)
-        self.assertIn('testing_done', fields)
-
-        self.assertEqual(fields["summary"]["new"][0], summary)
-        self.assertEqual(fields["description"]["new"][0], description)
-        self.assertEqual(fields["testing_done"]["new"][0], testing_done)
+        self.assertEqual(review_request.summary, summary)
+        self.assertEqual(review_request.description, description)
+        self.assertEqual(review_request.testing_done, testing_done)
 
     def test_discard_unpublished_public(self):
         """Testing ReviewRequest.close with public requests on discard
@@ -796,14 +788,20 @@ class ReviewRequestTests(SpyAgency, TestCase):
 
         review_request.close(ReviewRequest.DISCARDED)
 
-        latest_changedesc = \
+        self.assertNotEqual(review_request.summary, summary)
+        self.assertNotEqual(review_request.description, description)
+        self.assertNotEqual(review_request.testing_done, testing_done)
+
+    def test_publish_changedesc_none(self):
+        """Testing ReviewRequest.publish on a new request to ensure there are
+        no change descriptions
+        """
+        review_request = self.create_review_request(publish=True)
+
+        review_request.publish(review_request.submitter)
+
+        with self.assertRaises(ChangeDescription.DoesNotExist):
             review_request.changedescs.filter(public=True).latest()
-
-        fields = latest_changedesc.fields_changed
-
-        self.assertNotIn('summary', fields)
-        self.assertNotIn('description', fields)
-        self.assertNotIn('testing_done', fields)
 
 class ViewTests(TestCase):
     """Tests for views in reviewboard.reviews.views"""
