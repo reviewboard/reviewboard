@@ -690,12 +690,12 @@ class ReviewRequest(BaseReviewRequestDetails):
             if (draft is not None and
                 not self.public and type == self.DISCARDED):
                 # Copy over the draft information if this is a private discard.
-                changedesc = draft.publish(self, send_notification=False)
-            else:
-                # TODO: Use the user's default for rich_text.
-                changedesc = ChangeDescription(public=True,
-                                               text=description or "",
-                                               rich_text=rich_text or False)
+                draft.copy_fields_to_request(self)
+
+            # TODO: Use the user's default for rich_text.
+            changedesc = ChangeDescription(public=True,
+                                           text=description or "",
+                                           rich_text=rich_text or False)
 
             changedesc.record_field_change('status', self.status, type)
             changedesc.save()

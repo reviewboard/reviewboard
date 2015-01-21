@@ -488,11 +488,11 @@ Gitweb
 
 For Gitweb:
 
-:samp:`http://{servername}/?p={relative path to git repo};a=blob_plain;f=<filename>;hb=<revision>`
+:samp:`http://{servername}/?p={relative path to git repo};a=blob_plain;f=<filename>;h=<revision>`
 
 For example:
 
-:samp:`http://git.kernel.org/?p=bluetooth/bluez-gnome.git;a=blob_plain;f=<filename>;hb=<revision>`
+:samp:`http://git.kernel.org/?p=bluetooth/bluez-gnome.git;a=blob_plain;f=<filename>;h=<revision>`
 
 
 Perforce

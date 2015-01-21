@@ -1,5 +1,7 @@
 from __future__ import unicode_literals
 
+import copy
+
 from django.contrib.auth.models import User
 from django.db import models
 from django.db.models import F
@@ -142,7 +144,7 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
             draft.target_groups = review_request.target_groups.all()
             draft.target_people = review_request.target_people.all()
             draft.depends_on = review_request.depends_on.all()
-            draft.extra_data = review_request.extra_data
+            draft.extra_data = copy.deepcopy(review_request.extra_data)
             draft.save()
 
             review_request.screenshots.update(draft_caption=F('caption'))
@@ -213,9 +215,42 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
         if not user:
             user = review_request.submitter
 
-        if not self.changedesc:
+        if not self.changedesc and review_request.public:
             self.changedesc = ChangeDescription()
 
+        self.copy_fields_to_request(review_request)
+
+        if self.diffset:
+            self.diffset.history = review_request.diffset_history
+            self.diffset.save(update_fields=['history'])
+
+        # If no changes were made, raise exception and do not save
+        if self.changedesc and not self.changedesc.has_modified_fields():
+            raise NotModifiedError()
+
+        if self.changedesc:
+            self.changedesc.timestamp = timezone.now()
+            self.changedesc.public = True
+            self.changedesc.save()
+            review_request.changedescs.add(self.changedesc)
+
+        review_request.description_rich_text = self.description_rich_text
+        review_request.testing_done_rich_text = self.testing_done_rich_text
+        review_request.rich_text = self.rich_text
+        review_request.save()
+
+        if send_notification:
+            review_request_published.send(sender=review_request.__class__,
+                                          user=user,
+                                          review_request=review_request,
+                                          changedesc=self.changedesc)
+
+        return self.changedesc
+
+    def copy_fields_to_request(self, review_request):
+        """Copies the draft information to the review request and updates the
+        draft's change description.
+        """
         def update_list(a, b, name, record_changes=True, name_field=None):
             aset = set([x.id for x in a.all()])
             bset = set([x.id for x in b.all()])
@@ -310,34 +345,6 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
         # There's no change notification required for this field.
         review_request.inactive_file_attachments = \
             self.inactive_file_attachments.all()
-
-        if self.diffset:
-            self.diffset.history = review_request.diffset_history
-            self.diffset.save(update_fields=['history'])
-
-        # If no changes were made, raise exception and do not save
-        if (self.changedesc and not self.changedesc.has_modified_fields()
-            and review_request.public):
-            raise NotModifiedError()
-
-        if self.changedesc:
-            self.changedesc.timestamp = timezone.now()
-            self.changedesc.public = True
-            self.changedesc.save()
-            review_request.changedescs.add(self.changedesc)
-
-        review_request.description_rich_text = self.description_rich_text
-        review_request.testing_done_rich_text = self.testing_done_rich_text
-        review_request.rich_text = self.rich_text
-        review_request.save()
-
-        if send_notification:
-            review_request_published.send(sender=review_request.__class__,
-                                          user=user,
-                                          review_request=review_request,
-                                          changedesc=self.changedesc)
-
-        return self.changedesc
 
     def get_review_request(self):
         """Returns the associated review request."""
