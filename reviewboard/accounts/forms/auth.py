@@ -145,6 +145,22 @@ class StandardAuthSettingsForm(SiteSettingsForm):
         title = _('Basic Authentication Settings')
 
 
+class HTTPBasicSettingsForm(SiteSettingsForm):
+    auth_digest_file_location = forms.CharField(
+        label=_(".htpasswd File location"),
+        help_text=_("Location of the .htpasswd file which "
+                    "stores the usernames and passwords in digest format"),
+        widget=forms.TextInput(attrs={'size': '60'}))
+
+    auth_digest_realm = forms.CharField(
+        label=_("HTTP Digest Realm"),
+        help_text=_("Realm used for HTTP Digest authentication"),
+        widget=forms.TextInput(attrs={'size': '40'}))
+
+    class Meta:
+        title = _('HTTP Digest Authentication Settings')
+
+
 class LDAPSettingsForm(SiteSettingsForm):
     # TODO: Invent a URIField and use it.
     auth_ldap_uri = forms.CharField(

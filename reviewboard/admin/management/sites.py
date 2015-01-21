@@ -74,6 +74,7 @@ auth_backend_map = {
     'django.contrib.auth.backends.ModelBackend': 'builtin',
     'reviewboard.accounts.backends.NISBackend':  'nis',
     'reviewboard.accounts.backends.LDAPBackend': 'ldap',
+    'reviewboard.accounts.backends.HTTPDigestBackend': 'digest',
 }
 
 

@@ -59,6 +59,8 @@ storage_backend_map = {
 # A mapping of siteconfig setting names to Django settings.py names.
 # This also contains all the djblets-provided mappings as well.
 settings_map = {
+    'auth_digest_file_location':      'DIGEST_FILE_LOCATION',
+    'auth_digest_realm':              'DIGEST_REALM',
     'auth_ldap_anon_bind_uid':        'LDAP_ANON_BIND_UID',
     'auth_ldap_anon_bind_passwd':     'LDAP_ANON_BIND_PASSWD',
     'auth_ldap_given_name_attribute': 'LDAP_GIVEN_NAME_ATTRIBUTE',
