@@ -591,4 +591,4 @@ class DiffSizeColumn(Column):
             result.append('<span class="diff-size-column delete">-%d</span>' %
                           delete_count)
 
-        return ' '.join(result)
+        return '&nbsp;'.join(result)
