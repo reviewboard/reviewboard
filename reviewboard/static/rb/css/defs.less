@@ -42,12 +42,8 @@
 @draft-bg-color: #CDFF9C;
 @draft-border-color: darken(@draft-bg-color, 50%);
 
-@review-request-actions-bg: @review-request-action-primary-bg;
-@review-request-actions-border-color:
-  darken(@review-request-action-primary-bg, 40%);
-
 @review-request-action-bg: #E5D7A8;
-@review-request-action-border-color: @review-request-actions-border-color;
+@review-request-action-border-color: darken(@review-request-action-bg, 40%);
 @review-request-action-active-bg: darken(@review-request-action-bg, 20%);
 @review-request-action-hover-bg: darken(@review-request-action-bg, 12%);
 
@@ -55,7 +51,7 @@
 @review-request-action-primary-active-bg: @review-request-action-active-bg;
 @review-request-action-primary-hover-bg: @review-request-action-hover-bg;
 
-@review-request-action-menu-border-color: @review-request-actions-border-color;
+@review-request-action-menu-border-color: @review-request-action-border-color;
 @review-request-action-menu-bg: @review-request-action-active-bg;
 @review-request-action-menu-item-hover-bg: @review-request-action-hover-bg;
 
