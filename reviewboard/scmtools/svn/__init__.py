@@ -130,30 +130,31 @@ class SVNTool(SCMTool):
         except Exception as e:
             raise self.normalize_error(e)
 
+        default = True
         if 'trunk' in root_dirents:
             # Looks like the standard layout. Adds trunk and any branches.
             trunk = root_dirents['trunk']
             results.append(self._create_branch_from_dirent(
                 'trunk', trunk, default=True))
+            default = False
 
-            if 'branches' in root_dirents:
-                try:
-                    dirents = self.client.list_dir('branches')
+        if 'branches' in root_dirents:
+            try:
+                dirents = self.client.list_dir('branches')
 
-                    results += [
-                        self._create_branch_from_dirent(name, dirents[name])
-                        for name in sorted(six.iterkeys(dirents))
-                    ]
-                except Exception as e:
-                    raise self.normalize_error(e)
-        else:
-            # If the repository doesn't use the standard layout, just use a
-            # listing of the root directory as the "branches". This probably
-            # corresponds to a list of projects instead of branches, but it
-            # will at least give people a useful result.
-            default = True
+                results += [
+                    self._create_branch_from_dirent(name, dirents[name])
+                    for name in sorted(six.iterkeys(dirents))
+                ]
+            except Exception as e:
+                raise self.normalize_error(e)
 
-            for name in sorted(six.iterkeys(root_dirents)):
+        # Add anything else from the root of the repository. This is a
+        # catch-all for repositories which do not use the standard layout, and
+        # for those that do, will include any additional top-level directories
+        # that people may have.
+        for name in sorted(six.iterkeys(root_dirents)):
+            if name not in ('trunk', 'branches'):
                 results.append(self._create_branch_from_dirent(
                     name, root_dirents[name], default))
                 default = False

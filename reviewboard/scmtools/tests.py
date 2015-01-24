@@ -1141,12 +1141,15 @@ class CommonSVNTestsBase(SCMTestCase):
         """Testing SVN (<backend>) get_branches"""
         branches = self.tool.get_branches()
 
-        self.assertEqual(len(branches), 2)
+        self.assertEqual(len(branches), 3)
         self.assertEqual(branches[0], Branch(id='trunk', name='trunk',
                                              commit='9', default=True))
         self.assertEqual(branches[1], Branch(id='branches/branch1',
                                              name='branch1',
                                              commit='7', default=False))
+        self.assertEqual(branches[2], Branch(id='top-level-branch',
+                                             name='top-level-branch',
+                                             commit='10', default=False))
 
     def test_get_commits(self):
         """Testing SVN (<backend>) get_commits"""

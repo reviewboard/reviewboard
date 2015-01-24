@@ -1,0 +1,35 @@
+id: 1.2.r10/0
+type: dir
+pred: 1.0.r9/320
+count: 7
+text: 9 236 71 71 eebfb87e2465f63049de4ddabd706aff
+cpath: /top-level-branch
+copyfrom: 9 /trunk
+
+PLAIN
+K 8
+branches
+V 14
+dir a.0.r7/192
+K 16
+top-level-branch
+V 13
+dir 1.2.r10/0
+K 5
+trunk
+V 14
+dir 1.0.r9/320
+END
+ENDREP
+id: 0.0.r10/267
+type: dir
+pred: 0.0.r9/531
+count: 10
+text: 10 146 108 0 56c1071b723cd779cd0f191000381d0c
+cpath: /
+copyroot: 0 /
+
+1._0.t9-1 add false false /top-level-branch
+9 /trunk
+
+267 396

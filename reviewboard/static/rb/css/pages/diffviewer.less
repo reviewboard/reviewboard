@@ -211,6 +211,7 @@
       }
 
       td {
+        padding: 1px;
         vertical-align: top;
 
         .collapse-floater {
@@ -457,6 +458,7 @@
     }
 
     .filename-row th {
+      overflow: hidden;
       padding: 8px;
 
       #gradient > .vertical-three-colors(#FFFFFF, @diff-file-color, 50%, @diff-file-color);
@@ -467,6 +469,10 @@
       font-size: 100%;
       font-weight: normal;
       padding: 8px 0;
+
+      &.revision-col {
+        overflow: hidden;
+      }
 
       .rb-icon {
         vertical-align: text-top;
