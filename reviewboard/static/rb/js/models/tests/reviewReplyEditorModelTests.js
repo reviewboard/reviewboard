@@ -82,6 +82,8 @@ suite('rb/models/ReviewReplyEditor', function() {
 
                 expect(editor.get('replyObject')).toBe(reviewReply);
                 expect(editor.get('hasDraft')).toBe(true);
+                expect(editor.get('text')).toBe('My Text');
+                expect(editor.get('richText')).toBe(true);
                 expect(reviewReply.get(options.textAttr)).toBe('My Text');
                 expect(reviewReply.get(options.richTextAttr)).toBe(
                     options.richText);
@@ -118,6 +120,8 @@ suite('rb/models/ReviewReplyEditor', function() {
                 replyObject = editor.get('replyObject');
 
                 expect(editor.get('hasDraft')).toBe(true);
+                expect(editor.get('text')).toBe('My Text');
+                expect(editor.get('richText')).toBe(true);
                 expect(replyObject instanceof options.model).toBe(true);
                 expect(replyObject.get('text')).toBe('My Text');
                 expect(replyObject.get('richText')).toBe(options.richText);
