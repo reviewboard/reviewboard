@@ -15,9 +15,14 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
     commentsListName: 'diff_comments',
 
     cssTemplate: _.template([
-        '#<%= id %> td pre {',
-        '    min-width: <%= minWidth %>px;',
-        '    max-width: <%= maxWidth %>px;',
+        '#<%= id %> td pre,',
+        '#<%= id %> .revision-row th.revision-col {',
+        '    min-width: <%= minColWidth %>px;',
+        '    max-width: <%= maxColWidth %>px;',
+        '}',
+        '#<%= id %> .filename-row th {',
+        '    min-width: <%= minFilenameWidth %>px;',
+        '    max-width: <%= maxFilenameWidth %>px;',
         '}'
     ].join('\n')),
 
@@ -48,10 +53,13 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
         this._$collapseButtons = $();
 
         /* State for keeping consistent column widths for diff content. */
+        this._$filenameRow = null;
         this._$revisionRow = null;
         this._$css = null;
-        this._reservedWidths = 0;
+        this._filenameReservedWidths = 0;
+        this._colReservedWidths = 0;
         this._numColumns = 0;
+        this._numFilenameColumns = 0;
         this._prevContentWidth = null;
 
         /*
@@ -59,6 +67,7 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
          * the page scrolls.
          */
         this._$window = $(window);
+        this._$parent = this.$el.parent();
 
         this.on('commentBlockViewAdded', this._placeCommentBlockView, this);
     },
@@ -79,9 +88,14 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
      * Renders the reviewable.
      */
     render: function() {
+        var $thead;
+
         _super(this).render.call(this);
 
-        this._$revisionRow = this.$('thead .revision-row');
+        $head = this.$('thead');
+
+        this._$revisionRow = $head.find('.revision-row');
+        this._$filenameRow = $head.find('.filename-row');
         this._$css = $('<style/>').appendTo(this.$el);
 
         this._selector.render();
@@ -578,22 +592,38 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
      */
     _precalculateContentWidths: function() {
         var $cells,
+            containerExtents,
             cellPadding;
 
         if (!this.$el.hasClass('diff-error') && this._$revisionRow.length > 0) {
-            $cells = $(this._$revisionRow[0].cells);
-            cellPadding = this.$('pre:first').getExtents('p', 'lr');
+            containerExtents = this.$el.getExtents('p', 'lr');
 
-            this._reservedWidths = $cells.eq(0).width() + cellPadding;
+            /* Calculate the widths and state of the diff columns. */
+            $cells = $(this._$revisionRow[0].cells);
+            cellPadding = this.$('pre:first').parent().andSelf()
+                .getExtents('p', 'lr');
+
+            this._colReservedWidths = $cells.eq(0).outerWidth() + cellPadding +
+                                      containerExtents;
             this._numColumns = $cells.length;
 
             if (this._numColumns === 4) {
                 /* There's a left-hand side and a right-hand side. */
-                this._reservedWidths += $cells.eq(2).width() + cellPadding;
+                this._colReservedWidths += $cells.eq(2).outerWidth() +
+                                           cellPadding;
             }
+
+            /* Calculate the widths and state of the filename columns. */
+            $cells = $(this._$filenameRow[0].cells);
+            cellPadding = $cells.eq(0).getExtents('p', 'lr');
+            this._numFilenameColumns = $cells.length;
+            this._filenameReservedWidths = containerExtents +
+                                           2 * this._numFilenameColumns;
         } else {
-            this._reservedWidths = 0;
+            this._colReservedWidths = 0;
+            this._filenameReservedWidths = 0;
             this._numColumns = 0;
+            this._numFilenameColumns = 0;
         }
     },
 
@@ -606,26 +636,43 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
      * causing the other column to shrink too small.
      */
     _updateColumnSizes: function() {
-        var contentWidth;
+        var fullWidth,
+            contentWidth,
+            filenameWidth;
 
         if (this.$el.hasClass('diff-error')) {
             return;
         }
 
-        contentWidth = this.$el.parent().width() - this._reservedWidths;
+        fullWidth = this._$parent.width();
+
+        /* Calculate the desired widths of the diff columns. */
+        contentWidth = fullWidth - this._colReservedWidths;
 
         if (this._numColumns === 4) {
             contentWidth /= 2;
         }
 
-        if (contentWidth !== this._prevContentWidth) {
+        /* Calculate the desired widths of the filename columns. */
+        filenameWidth = fullWidth - this._filenameReservedWidths;
+
+        if (this._numFilenameColumns === 2) {
+            filenameWidth /= 2;
+        }
+
+        if (contentWidth !== this._prevContentWidth ||
+            filenameWidth !== this._prevFilenameWidth) {
+            /* The widths have changed, so force new minimums and maximums. */
             this._$css.html(this.cssTemplate({
                 id: this.el.id,
-                minWidth: Math.ceil(contentWidth * 0.66),
-                maxWidth: Math.ceil(contentWidth)
+                minColWidth: Math.ceil(contentWidth * 0.66),
+                maxColWidth: Math.ceil(contentWidth),
+                minFilenameWidth: Math.ceil(filenameWidth * 0.66),
+                maxFilenameWidth: Math.ceil(filenameWidth)
             }));
 
             this._prevContentWidth = contentWidth;
+            this._prevFilenameWidth = filenameWidth;
         }
     },
 

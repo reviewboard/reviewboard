@@ -86,7 +86,7 @@
 {%  else %}
 {%   if not file.is_new_file %}
    <th></th>
-   <th>
+   <th class="revision-col">
 {%    if download_orig_url %}
     <a class="rb-icon rb-icon-download download-link" href="{{download_orig_url}}" alt="{% trans 'Download' %}" title="{% trans 'Download' %}"></a>
 {%    endif %}
@@ -94,14 +94,16 @@
     </th>
 {%   endif %}
    <th></th>
-   <th>
 {%   if not file.deleted %}
+   <th class="revision-col">
 {%    if download_modified_url %}
     <a class="rb-icon rb-icon-download download-link" href="{{download_modified_url}}" alt="{% trans 'Download' %}" title="{% trans 'Download' %}"></a>
 {%    endif %}
     {{file.dest_revision}}
-{%   endif %}
    </th>
+{%   else %}
+   <th></th>
+{%   endif %}
 {%  endif %}{# num_changes and moved #}
   </tr>
  </thead>
