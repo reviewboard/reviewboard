@@ -194,7 +194,7 @@ RB.DiffFragmentQueueView = Backbone.View.extend({
                             position: 'fixed',
                             left: $button.offset().left,
                             top: Math.round((windowHeight -
-                                             $button.outerHeight) / 2)
+                                             $button.outerHeight()) / 2)
                         });
                     }
 
@@ -363,7 +363,7 @@ RB.DiffFragmentQueueView = Backbone.View.extend({
         this._addMouseWatcher();
 
         _.delay(_.bind(function() {
-            if (!this._isMouseOverContainer($expanded)) {
+            if (!this._isMouseOverTargetContainer($expanded)) {
                 this._hideControls($expanded);
             }
 
