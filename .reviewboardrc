@@ -3,3 +3,8 @@ REPOSITORY = "Review Board"
 BRANCH = "master"
 TRACKING_BRANCH = "origin/master"
 LAND_DEST_BRANCH = "master"
+
+ALIASES = {
+    'clear-pycs': '!find . -name "*.pyc" -delete',
+}
+
