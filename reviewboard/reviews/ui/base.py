@@ -228,7 +228,7 @@ class ReviewUI(object):
         """
         try:
             return mark_safe(json.dumps(
-                list(self.serialize_comments(self.get_comments()))))
+                self.serialize_comments(self.get_comments())))
         except Exception as e:
                 logging.error('Error When calling serialize_comments for '
                               'FileAttachmentReviewUI %r: %s',
@@ -244,6 +244,7 @@ class ReviewUI(object):
         """
         user = self.request.user
 
+        result = []
         for comment in comments:
             try:
                 review = comment.get_review()
@@ -253,11 +254,13 @@ class ReviewUI(object):
 
             try:
                 if review and (review.public or review.user == user):
-                    yield self.serialize_comment(comment)
+                    result.append(self.serialize_comment(comment))
             except Exception as e:
                 logging.error('Error when calling serialize_comment for '
                               'FileAttachmentReviewUI %r: %s',
                               self, e, exc_info=1)
+
+        return result
 
     def serialize_comment(self, comment):
         """Serializes a comment.
