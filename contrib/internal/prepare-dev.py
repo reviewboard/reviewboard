@@ -38,12 +38,16 @@ def create_settings():
                 out_fp.write("        'ENGINE': 'django.db.backends.%s',\n" %
                              options.db_type)
             elif line.strip().startswith("'NAME': "):
-                if options.db_type == 'sqlite':
-                    name = os.path.abspath(options.db_name)
+                if options.db_type == 'sqlite3':
+                    if options.db_name is not None:
+                        name = os.path.abspath(options.db_name)
+                        out_fp.write("        'NAME': '%s',\n" % name)
+                    else:
+                        out_fp.write("        'NAME': 'reviewboard-%d.%d.db' "
+                                     "% (VERSION[0], VERSION[1]),\n")
                 else:
                     name = options.db_name
-
-                out_fp.write("        'NAME': '%s',\n" % name)
+                    out_fp.write("        'NAME': '%s',\n" % name)
             elif line.strip().startswith("'USER': "):
                 out_fp.write("        'USER': '%s',\n" % options.db_user)
             elif line.strip().startswith("'PASSWORD': "):
@@ -86,7 +90,7 @@ def parse_options(args):
                       default='sqlite3',
                       help="Database type (postgresql, mysql, sqlite3)")
     parser.add_option('--database-name', dest='db_name',
-                      default='reviewboard.db',
+                      default=None,
                       help="Database name (or path, for sqlite3)")
     parser.add_option('--database-user', dest='db_user',
                       default='',
