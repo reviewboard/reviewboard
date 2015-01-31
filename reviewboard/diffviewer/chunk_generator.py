@@ -21,7 +21,8 @@ from reviewboard.diffviewer.differ import get_differ
 from reviewboard.diffviewer.diffutils import (get_line_changed_regions,
                                               get_original_file,
                                               get_patched_file,
-                                              convert_to_unicode)
+                                              convert_to_unicode,
+                                              split_line_endings)
 from reviewboard.diffviewer.opcode_generator import (DiffOpcodeGenerator,
                                                      get_diff_opcode_generator)
 
@@ -644,7 +645,8 @@ class DiffChunkGenerator(object):
                                        encoding='utf-8')
         lexer.add_filter('codetagify')
 
-        return highlight(data, lexer, NoWrapperHtmlFormatter()).splitlines()
+        return split_line_endings(
+            highlight(data, lexer, NoWrapperHtmlFormatter()))
 
     def _get_checksum(self, content):
         hasher = hashlib.sha1()
