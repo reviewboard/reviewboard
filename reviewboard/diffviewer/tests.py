@@ -221,6 +221,25 @@ class DiffParserTest(TestCase):
         files = diffparser.DiffParser(data).parse()
         self._compare_diffs(files, "context")
 
+    def test_form_feed(self):
+        """Testing DiffParser.parse with a form feed in the file"""
+        data = (
+            '--- README  123\n'
+            '+++ README  (new)\n'
+            '@ -1,4 +1,6 @@\n'
+            ' Line 1\n'
+            ' Line 2\n'
+            '+\x0c\n'
+            '+Inserted line\n'
+            ' Line 3\n'
+            ' Line 4\n')
+        files = diffparser.DiffParser(data).parse()
+
+        self.assertEqual(len(files), 1)
+        self.assertEqual(files[0].insert_count, 2)
+        self.assertEqual(files[0].delete_count, 0)
+        self.assertEqual(files[0].data, data)
+
     def test_patch(self):
         """Testing diffutils.patch"""
         file = 'foo.c'

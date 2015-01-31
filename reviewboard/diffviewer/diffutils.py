@@ -17,6 +17,7 @@ from reviewboard.scmtools.core import PRE_CREATION, HEAD
 
 
 NEWLINE_CONVERSION_RE = re.compile(r'\r(\r?\n)?')
+NEWLINE_RE = re.compile(r'(?:\n|\r(?:\r?\n)?)')
 
 ALPHANUM_RE = re.compile(r'\w')
 WHITESPACE_RE = re.compile(r'\s')
@@ -90,6 +91,29 @@ def convert_line_endings(data):
         data = data[:-1]
 
     return NEWLINE_CONVERSION_RE.sub(b'\n', data)
+
+
+def split_line_endings(data):
+    """Splits a string into lines while preserving all non-CRLF characters.
+
+    Unlike the string's splitlines(), this will only split on the following
+    character sequences: \\n, \\r, \\r\\n, and \\r\\r\\n.
+
+    This is needed to prevent the sort of issues encountered with
+    Unicode strings when calling splitlines(), which is that form feed
+    characters would be split. patch and diff accept form feed characters
+    as valid characters in diffs, and doesn't treat them as newlines, but
+    splitlines() will treat it as a newline anyway.
+    """
+    lines = NEWLINE_RE.split(data)
+
+    # splitlines() would chop off the last entry, if the string ends with
+    # a newline. split() doesn't do this. We need to retain that same
+    # behavior by chopping it off ourselves.
+    if not lines[-1]:
+        lines = lines[:-1]
+
+    return lines
 
 
 def patch(diff, file, filename, request=None):

@@ -2,6 +2,8 @@ from __future__ import unicode_literals
 
 import re
 
+from reviewboard.diffviewer.diffutils import split_line_endings
+
 
 CHUNK_RANGE_RE = re.compile(
     r'^@@ -(?P<orig_start>\d+)(,(?P<orig_len>\d+))? '
@@ -21,7 +23,7 @@ def filter_interdiff_opcodes(opcodes, filediff_data, interfilediff_data):
     ranges of lines dictated in the uploaded diff files.
     """
     def _find_range_info(diff):
-        lines = diff.splitlines()
+        lines = split_line_endings(diff)
         process_changes = False
         ranges = []
 
