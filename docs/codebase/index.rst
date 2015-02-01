@@ -29,6 +29,7 @@ Contributor Guides
    getting-started
    coding-standards
    contributing-patches
+   writing-good-descriptions
    custom-forks
    unit-tests/fixtures
 
