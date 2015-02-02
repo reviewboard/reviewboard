@@ -42,6 +42,7 @@ from reviewboard.attachments.models import (FileAttachment,
 from reviewboard.changedescs.models import ChangeDescription
 from reviewboard.diffviewer.diffutils import (convert_to_unicode,
                                               get_file_chunks_in_range,
+                                              get_last_line_number_in_diff,
                                               get_original_file,
                                               get_patched_file)
 from reviewboard.diffviewer.models import DiffSet
@@ -176,11 +177,11 @@ def build_diff_comment_fragments(
 
     for comment in comments:
         try:
-            line_count = comment.filediff.get_line_counts()['total_line_count']
+            max_line = get_last_line_number_in_diff(context, comment.filediff,
+                                                    comment.interfilediff)
 
             first_line = max(1, comment.first_line - lines_of_context[0])
-            last_line = min(comment.last_line + lines_of_context[1],
-                            line_count)
+            last_line = min(comment.last_line + lines_of_context[1], max_line)
             num_lines = last_line - first_line + 1
 
             content = render_to_string(comment_template_name, {
@@ -194,11 +195,10 @@ def build_diff_comment_fragments(
                 'domain_method': siteconfig.get('site_domain_method'),
                 'lines_of_context': lines_of_context,
                 'expandable_above': show_controls and first_line != 1,
-                'expandable_below': show_controls and last_line != line_count,
-                'expandable_all': num_lines != line_count,
+                'expandable_below': show_controls and last_line != max_line,
                 'collapsible': lines_of_context != [0, 0],
                 'lines_above': first_line - 1,
-                'lines_below': line_count - last_line,
+                'lines_below': max_line - last_line,
                 'first_line': first_line,
             })
         except Exception as e:

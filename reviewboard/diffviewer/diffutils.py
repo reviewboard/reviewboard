@@ -439,11 +439,60 @@ def populate_diff_chunks(files, enable_syntax_highlighting=True,
         })
 
 
+def get_file_from_filediff(context, filediff, interfilediff):
+    """Return the files that corresponds to the filediff/interfilediff.
+
+    This is primarily intended for use with templates. It takes a
+    RequestContext for looking up the user and for caching file lists,
+    in order to improve performance and reduce lookup times for files that have
+    already been fetched.
+
+    This function returns either exactly one file or ``None``.
+    """
+    interdiffset = None
+
+    key = "_diff_files_%s_%s" % (filediff.diffset.id, filediff.id)
+
+    if interfilediff:
+        key += "_%s" % (interfilediff.id)
+        interdiffset = interfilediff.diffset
+
+    if key in context:
+        files = context[key]
+    else:
+        assert 'user' in context
+
+        request = context.get('request', None)
+        files = get_diff_files(filediff.diffset, filediff, interdiffset,
+                               request=request)
+        populate_diff_chunks(files, get_enable_highlighting(context['user']),
+                             request=request)
+        context[key] = files
+
+    if not files:
+        return None
+
+    assert len(files) == 1
+    return files[0]
+
+
+def get_last_line_number_in_diff(context, filediff, interfilediff):
+    """Determine the last line of the filediff/interfilediff.
+
+    This returns the unified line number to be used in expandable diff
+    fragments.
+    """
+    f = get_file_from_filediff(context, filediff, interfilediff)
+
+    last_chunk = f['chunks'][-1]
+    last_line = last_chunk['lines'][-1]
+
+    return last_line[0]
+
+
 def get_file_chunks_in_range(context, filediff, interfilediff,
                              first_line, num_lines):
-    """
-    A generator that yields chunks within a range of lines in the specified
-    filediff/interfilediff.
+    """Generate the chunks within a range of lines in the specified filediff.
 
     This is primarily intended for use with templates. It takes a
     RequestContext for looking up the user and for caching file lists,
@@ -485,33 +534,14 @@ def get_file_chunks_in_range(context, filediff, interfilediff,
                     'text': header[1],
                 }
 
-    interdiffset = None
+    f = get_file_from_filediff(context, filediff, interfilediff)
 
-    key = "_diff_files_%s_%s" % (filediff.diffset.id, filediff.id)
-
-    if interfilediff:
-        key += "_%s" % (interfilediff.id)
-        interdiffset = interfilediff.diffset
-
-    if key in context:
-        files = context[key]
-    else:
-        assert 'user' in context
-
-        request = context.get('request', None)
-        files = get_diff_files(filediff.diffset, filediff, interdiffset,
-                               request=request)
-        populate_diff_chunks(files, get_enable_highlighting(context['user']),
-                             request=request)
-        context[key] = files
-
-    if not files:
+    if not f:
         raise StopIteration
 
-    assert len(files) == 1
     last_header = [None, None]
 
-    for chunk in files[0]['chunks']:
+    for chunk in f['chunks']:
         if ('headers' in chunk['meta'] and
                 (chunk['meta']['headers'][0] or chunk['meta']['headers'][1])):
             last_header = chunk['meta']['headers']
