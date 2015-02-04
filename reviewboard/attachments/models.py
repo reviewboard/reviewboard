@@ -132,6 +132,9 @@ class FileAttachment(models.Model):
 
     def _get_thumbnail(self):
         """Returns the thumbnail for display."""
+        if not self.mimetype_handler:
+            return None
+
         try:
             return self.mimetype_handler.get_thumbnail()
         except Exception as e:
@@ -142,6 +145,9 @@ class FileAttachment(models.Model):
 
     def _set_thumbnail(self, data):
         """Set the thumbnail."""
+        if not self.mimetype_handler:
+            return None
+
         try:
             self.mimetype_handler.set_thumbnail(data)
         except Exception as e:
@@ -176,6 +182,9 @@ class FileAttachment(models.Model):
     @property
     def icon_url(self):
         """Returns the icon URL for this file."""
+        if not self.mimetype_handler:
+            return None
+
         try:
             return self.mimetype_handler.get_icon_url()
         except Exception as e:
