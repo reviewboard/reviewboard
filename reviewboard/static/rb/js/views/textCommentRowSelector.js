@@ -325,11 +325,13 @@ RB.TextCommentRowSelector = Backbone.View.extend({
      */
     _copySelectionToClipboard: function(clipboardData) {
         var sel = window.getSelection(),
-            range = sel.getRangeAt(0),
-            doc = range.cloneContents(),
-            nodes = doc.querySelectorAll('tr'),
             s = '',
-            pre;
+            tdClass,
+            range,
+            doc,
+            nodes,
+            i,
+            j;
 
         if (this._newlineChar === null) {
             /*
@@ -345,36 +347,58 @@ RB.TextCommentRowSelector = Backbone.View.extend({
             }
         }
 
-        if (nodes.length > 0) {
+        if (this._selectedCellIndex === 3 || this.$el.hasClass('newfile')) {
+            tdClass = 'r';
+        } else {
+            tdClass = 'l';
+        }
+
+        for (i = 0; i < sel.rangeCount; i++) {
+            range = sel.getRangeAt(i);
+
+            if (range.collapsed) {
+                continue;
+            }
+
+            doc = range.cloneContents();
+            nodes = doc.querySelectorAll('td.' + tdClass + ' pre');
+
             /*
              * The selection spans multiple rows. Find the blocks of text
              * in the column we want, and copy those to the clipboard.
              */
-            _.each(nodes, function(tr, i) {
-                if (tr.cells.length === 1) {
-                    cell = tr.cells[0];
-                } else {
-                    cell = tr.cells[this._selectedCellIndex];
-                }
+            if (nodes.length > 0) {
+                for (j = 0; j < nodes.length; j++) {
+                    s += nodes[j].textContent;
 
-                if (cell) {
-                    pre = cell.querySelector('pre');
-
-                    if (pre) {
-                        if (i > 0) {
-                            s += this._newlineChar;
-                        }
-
-                        s += pre.textContent;
+                    /*
+                     * We only want to include a newline if this isn't the
+                     * last node, or the boundary ends within an element
+                     * (likely <pre>, but possibly another) and isn't ending
+                     * at the beginning of that element.
+                     *
+                     * This prevents a newline from appearing at the end of
+                     * a selection if the selection ends in the middle of a
+                     * line of code.
+                     */
+                    if (j < nodes.length - 1 ||
+                        (range.endContainer.nodeType === Node.ELEMENT_NODE &&
+                         range.endOffset > 0)) {
+                        s += this._newlineChar;
                     }
                 }
-            }, this);
-        } else {
-            /*
-             * The selection is constrained within a row. Grab the text
-             * from there.
-             */
-            s = $(doc).text();
+            } else if (sel.rangeCount === 1) {
+                /*
+                 * If we're here, then we selected a subset of a single
+                 * cell. There was only one Range, and no <pre> tags as
+                 * part of it. We can just grab the text of the document.
+                 *
+                 * (We don't really need to break here, but we're going to
+                 * in order to be clear that we're completely done.)
+                 */
+                s = $(doc).text();
+                break;
+            }
         }
 
         try {
