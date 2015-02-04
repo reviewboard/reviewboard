@@ -229,7 +229,7 @@ class ResourceItemTests(ReviewItemMixin, ReviewRequestChildItemMixin,
 
         self._testHttpCaching(
             get_review_reply_item_url(reply.base_reply_to, reply.id),
-            check_last_modified=True)
+            check_etags=True)
 
     #
     # HTTP PUT tests

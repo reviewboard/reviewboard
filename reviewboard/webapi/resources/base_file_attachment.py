@@ -70,7 +70,6 @@ class BaseFileAttachmentResource(WebAPIResource):
     }
 
     uri_object_key = 'file_attachment_id'
-    autogenerate_etags = True
 
     def get_queryset(self, request, is_list=False, *args, **kwargs):
         review_request = resources.review_request.get_object(

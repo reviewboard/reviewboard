@@ -87,7 +87,6 @@ class BaseReviewResource(MarkdownFieldsMixin, WebAPIResource):
             'description': 'The user who wrote the review.',
         },
     }
-    last_modified_field = 'timestamp'
 
     allowed_methods = ('GET', 'POST', 'PUT', 'DELETE')
 

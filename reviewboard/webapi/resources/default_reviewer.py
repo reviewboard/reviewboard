@@ -71,7 +71,6 @@ class DefaultReviewerResource(WebAPIResource):
         },
     }
     uri_object_key = 'default_reviewer_id'
-    autogenerate_etags = True
 
     allowed_methods = ('GET', 'POST', 'PUT', 'DELETE')
 

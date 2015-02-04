@@ -59,7 +59,6 @@ class BaseCommentResource(MarkdownFieldsMixin, WebAPIResource):
             'description': 'The user who made the comment.',
         },
     }
-    last_modified_field = 'timestamp'
 
     # Common field definitions for create/update requests
     _COMMON_REQUIRED_CREATE_FIELDS = {

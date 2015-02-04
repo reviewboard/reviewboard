@@ -269,7 +269,6 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
     }
     uri_object_key = 'review_request_id'
     model_object_key = 'display_id'
-    last_modified_field = 'last_updated'
     item_child_resources = [
         resources.change,
         resources.diff,

@@ -82,7 +82,6 @@ class ChangeResource(MarkdownFieldsMixin, WebAPIResource):
     }
     uri_object_key = 'change_id'
     model_parent_key = 'review_request'
-    last_modified_field = 'timestamp'
     allowed_methods = ('GET',)
     mimetype_list_resource_name = 'review-request-changes'
     mimetype_item_resource_name = 'review-request-change'

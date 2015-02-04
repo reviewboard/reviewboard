@@ -83,7 +83,6 @@ class ReviewGroupResource(WebAPIResource):
     uri_object_key = 'group_name'
     uri_object_key_regex = '[A-Za-z0-9_-]+'
     model_object_key = 'name'
-    autogenerate_etags = True
     mimetype_list_resource_name = 'review-groups'
     mimetype_item_resource_name = 'review-group'
 

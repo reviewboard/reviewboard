@@ -379,7 +379,7 @@ class ResourceItemTests(ReviewRequestChildItemMixin, BaseWebAPITestCase):
         review_request.changedescs.add(changedesc)
 
         self._testHttpCaching(get_change_item_url(changedesc),
-                              check_last_modified=True)
+                              check_etags=True)
 
     #
     # HTTP PUT tests

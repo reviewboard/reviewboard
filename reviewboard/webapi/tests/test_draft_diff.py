@@ -217,7 +217,7 @@ class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase):
 
         self._testHttpCaching(
             get_draft_diff_item_url(review_request, diffset.revision),
-            check_last_modified=True)
+            check_etags=True)
 
     def test_get_not_owner(self):
         """Testing the GET review-requests/<id>/draft/diffs/<revision>/ API
