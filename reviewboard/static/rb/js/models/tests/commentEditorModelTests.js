@@ -1,6 +1,7 @@
 suite('rb/models/CommentEditor', function() {
     var editor,
-        reviewRequest;
+        reviewRequest,
+        comment;
 
     function createComment() {
         return new RB.BaseComment({
@@ -87,6 +88,22 @@ suite('rb/models/CommentEditor', function() {
                     reviewRequest: reviewRequest
                 });
                 expect(editor.get('openIssue')).toBe(true);
+            });
+
+            it('When reloading the page with explicitly set value', function() {
+                RB.UserSession.instance.set('commentsOpenAnIssue', true);
+
+                comment = createComment();
+                comment.set({
+                    loaded: false,
+                    issueOpened: false
+                });
+
+                editor = new RB.CommentEditor({
+                    comment: comment,
+                    reviewRequest: reviewRequest
+                });
+                expect(editor.get('openIssue')).toBe(false);
             });
         });
 

@@ -239,9 +239,9 @@ RB.CommentEditor = Backbone.Model.extend({
             this.set({
                 dirty: false,
                 extraData: comment.get('extraData'),
-                openIssue: comment.get('loaded')
-                           ? comment.get('issueOpened')
-                           : this.defaults().openIssue,
+                openIssue: comment.get('issueOpened') === null
+                           ? this.defaults().openIssue
+                           : comment.get('issueOpened'),
                 text: comment.get('text')
             });
 
