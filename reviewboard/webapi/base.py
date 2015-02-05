@@ -26,6 +26,7 @@ EXTRA_DATA_LEN = len('extra_data.')
 class WebAPIResource(DjbletsWebAPIResource):
     """A specialization of the Djblets WebAPIResource for Review Board."""
 
+    autogenerate_etags = True
     mimetype_vendor = 'reviewboard.org'
 
     api_token_access_allowed = True

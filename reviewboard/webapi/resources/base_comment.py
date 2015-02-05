@@ -67,7 +67,6 @@ class BaseCommentResource(MarkdownFieldsMixin, WebAPIResource):
             'added_in': '2.0',
         },
     }
-    last_modified_field = 'timestamp'
 
     # Common field definitions for create/update requests
     _COMMON_REQUIRED_CREATE_FIELDS = {

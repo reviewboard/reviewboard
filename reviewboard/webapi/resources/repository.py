@@ -88,7 +88,6 @@ class RepositoryResource(WebAPIResource):
         resources.repository_commits,
         resources.repository_info,
     ]
-    autogenerate_etags = True
 
     allowed_methods = ('GET', 'POST', 'PUT', 'DELETE')
 

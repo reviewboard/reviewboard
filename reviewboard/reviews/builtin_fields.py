@@ -1,5 +1,6 @@
 from __future__ import unicode_literals
 
+from django.contrib.auth.models import User
 from django.core.urlresolvers import NoReverseMatch
 from django.db import models
 from django.template.loader import Context, get_template
@@ -10,12 +11,16 @@ from django.utils.translation import ugettext_lazy as _
 
 from reviewboard.attachments.models import FileAttachment
 from reviewboard.diffviewer.diffutils import get_sorted_filediffs
+from reviewboard.diffviewer.models import DiffSet
 from reviewboard.reviews.fields import (BaseCommaEditableField,
                                         BaseEditableField,
                                         BaseReviewRequestField,
                                         BaseReviewRequestFieldSet,
                                         BaseTextAreaField)
-from reviewboard.reviews.models import ReviewRequest, ReviewRequestDraft
+from reviewboard.reviews.models import (Group, ReviewRequest,
+                                        ReviewRequestDraft,
+                                        Screenshot)
+from reviewboard.scmtools.models import Repository
 from reviewboard.site.urlresolvers import local_site_reverse
 
 
@@ -108,6 +113,7 @@ class BaseCaptionsField(BuiltinLocalsFieldMixin, BaseReviewRequestField):
     for caption changes on file attachments or screenshots.
     """
     obj_map_attr = None
+    caption_object_field = None
 
     change_entry_renders_inline = False
 
@@ -132,6 +138,18 @@ class BaseCaptionsField(BuiltinLocalsFieldMixin, BaseReviewRequestField):
         s.append('</table>')
 
         return ''.join(s)
+
+    def serialize_change_entry(self, changedesc):
+        data = changedesc.fields_changed[self.field_id]
+
+        return [
+            {
+                'old': data[six.text_type(obj.pk)]['old'][0],
+                'new': data[six.text_type(obj.pk)]['new'][0],
+                self.caption_object_field: obj,
+            }
+            for obj in self.model.objects.filter(pk__in=six.iterkeys(data))
+        ]
 
 
 class BaseModelListEditableField(BaseCommaEditableField):
@@ -199,6 +217,7 @@ class SubmitterField(BuiltinFieldMixin, BaseReviewRequestField):
     """The Submitter field on a review request."""
     field_id = 'submitter'
     label = _('Submitter')
+    model = User
 
     def render_value(self, user):
         return format_html(
@@ -214,6 +233,7 @@ class RepositoryField(BuiltinFieldMixin, BaseReviewRequestField):
     """The Repository field on a review request."""
     field_id = 'repository'
     label = _('Repository')
+    model = Repository
 
     def should_render(self, value):
         review_request = self.review_request_details.get_review_request()
@@ -278,6 +298,7 @@ class DependsOnField(BuiltinFieldMixin, BaseModelListEditableField):
     """The Depends On field on a review request."""
     field_id = 'depends_on'
     label = _('Depends On')
+    model = ReviewRequest
     model_name_attr = 'summary'
 
     def render_change_entry_item_html(self, info, item):
@@ -311,6 +332,7 @@ class BlocksField(BuiltinFieldMixin, BaseReviewRequestField):
     """The Blocks field on a review request."""
     field_id = 'blocks'
     label = _('Blocks')
+    model = ReviewRequest
 
     def load_value(self, review_request_details):
         return review_request_details.get_review_request().get_blocks()
@@ -543,6 +565,13 @@ class DiffField(BuiltinLocalsFieldMixin, BaseReviewRequestField):
             )]
         }
 
+    def serialize_change_entry(self, changedesc):
+        diffset_id = changedesc.fields_changed['diff']['added'][0][2]
+
+        return {
+            'added': DiffSet.objects.get(pk=diffset_id),
+        }
+
 
 class FileAttachmentCaptionsField(BaseCaptionsField):
     """Renders caption changes for file attachments.
@@ -556,6 +585,8 @@ class FileAttachmentCaptionsField(BaseCaptionsField):
     label = _('File Captions')
     obj_map_attr = 'file_attachment_id_map'
     locals_vars = [obj_map_attr]
+    model = FileAttachment
+    caption_object_field = 'file_attachment'
 
 
 class FileAttachmentsField(BuiltinLocalsFieldMixin, BaseCommaEditableField):
@@ -569,6 +600,7 @@ class FileAttachmentsField(BuiltinLocalsFieldMixin, BaseCommaEditableField):
     field_id = 'files'
     label = _('Files')
     locals_vars = ['file_attachment_id_map']
+    model = FileAttachment
 
     thumbnail_template = 'reviews/parts/file_attachment_thumbnail.html'
 
@@ -634,6 +666,8 @@ class ScreenshotCaptionsField(BaseCaptionsField):
     label = _('Screenshot Captions')
     obj_map_attr = 'screenshot_id_map'
     locals_vars = [obj_map_attr]
+    model = Screenshot
+    caption_object_field = 'screenshot'
 
 
 class ScreenshotsField(BaseCommaEditableField):
@@ -646,12 +680,14 @@ class ScreenshotsField(BaseCommaEditableField):
     """
     field_id = 'screenshots'
     label = _('Screenshots')
+    model = Screenshot
 
 
 class TargetGroupsField(BuiltinFieldMixin, BaseModelListEditableField):
     """The Target Groups field on a review request."""
     field_id = 'target_groups'
     label = _('Groups')
+    model = Group
     model_name_attr = 'name'
 
     def render_item(self, group):
@@ -663,6 +699,7 @@ class TargetPeopleField(BuiltinFieldMixin, BaseModelListEditableField):
     """The Target People field on a review request."""
     field_id = 'target_people'
     label = _('People')
+    model = User
     model_name_attr = 'username'
 
     def render_item(self, user):

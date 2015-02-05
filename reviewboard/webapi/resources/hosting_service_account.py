@@ -48,7 +48,6 @@ class HostingServiceAccountResource(WebAPIResource):
         },
     }
     uri_object_key = 'account_id'
-    autogenerate_etags = True
 
     allowed_methods = ('GET', 'POST')
 

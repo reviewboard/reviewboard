@@ -53,7 +53,6 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
     policy_id = 'review_request_draft'
     singleton = True
     model_parent_key = 'review_request'
-    last_modified_field = 'last_updated'
     mimetype_item_resource_name = 'review-request-draft'
     fields = {
         'id': {

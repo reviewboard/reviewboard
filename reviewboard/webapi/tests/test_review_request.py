@@ -1243,7 +1243,7 @@ class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase):
         review_request = self.create_review_request(publish=True)
 
         self._testHttpCaching(get_review_request_item_url(review_request.id),
-                              check_last_modified=True)
+                              check_etags=True)
 
     #
     # HTTP PUT tests
