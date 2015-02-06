@@ -41,3 +41,20 @@ There are two ways to upload a file attachment:
 
    Note that this requires a modern HTML5-capable browser, such as
    Google Chrome or Firefox 3.6+.
+
+
+Updating File Attachments
+-------------------------
+
+File attachments have an associated history similar to source code if they
+are updated throughout the life of a review request.
+
+To update a file attachment:
+
+In the file attachment thumbnail for the respective file on the review
+request page, click the :menuselection:`Down Arrow -->Update File` then
+browse for the new version of the file to upload, and optionally change the
+caption for the file.
+
+See :ref:`reviewing-file-attachments` for more information on how file
+attachment histories are viewed.
