@@ -350,7 +350,8 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
      * the top of the view.
      */
     selectAnchor: function($anchor, scroll) {
-        var i;
+        var scrollAmount,
+            i;
 
         if (!$anchor || $anchor.length === 0 ||
             $anchor.parent().is(':hidden')) {
@@ -359,8 +360,14 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
 
         if (scroll !== false) {
             location.hash = "#" + $anchor.attr("name");
-            $(window).scrollTop($anchor.offset().top -
-                                this.DIFF_SCROLLDOWN_AMOUNT);
+
+            scrollAmount = this.DIFF_SCROLLDOWN_AMOUNT;
+
+            if (RB.DraftReviewBannerView.instance) {
+                scrollAmount += RB.DraftReviewBannerView.instance.getHeight();
+            }
+
+            $(window).scrollTop($anchor.offset().top - scrollAmount);
         }
 
         this._highlightAnchor($anchor);
