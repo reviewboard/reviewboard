@@ -1956,7 +1956,7 @@ class GitTests(SCMTestCase):
         self.assertEqual(file.newInfo, 'e69de29')
         self.assertFalse(file.binary)
         self.assertFalse(file.deleted)
-        self.assertEqual(len(file.data), 124)
+        self.assertEqual(len(file.data), 123)
         self.assertEqual(file.data.splitlines()[0],
                          "diff --git a/IAMNEW b/IAMNEW")
         self.assertEqual(file.data.splitlines()[-1], "+Hello")
@@ -2396,7 +2396,7 @@ class GitTests(SCMTestCase):
                 b'index 612544e4343bf04967eb5ea80257f6c64d6f42c7..'
                 b'e88b7f15c03d141d0bb38c8e49bb6c411ebfe1f1\n'
                 b'--- a/foo/bar\n'
-                b'+++ b/foo/bar3\n'
+                b'+++ b/foo/bar2\n'
                 b'@ -1,1 +1,1 @@\n'
                 b'-blah blah\n'
                 b'+blah\n')
@@ -2414,6 +2414,122 @@ class GitTests(SCMTestCase):
         self.assertEqual(f.delete_count, 1)
         self.assertTrue(f.moved)
         self.assertFalse(f.copied)
+
+    def test_diff_git_line_without_a_b(self):
+        """Testing parsing Git diff with deleted file without a/ and
+        b/ filename prefixes
+        """
+        diff = (b'diff --git foo foo\n'
+                b'deleted file mode 100644\n'
+                b'index 612544e4343bf04967eb5ea80257f6c64d6f42c7..'
+                b'0000000000000000000000000000000000000000\n')
+
+        files = self.tool.get_parser(diff).parse()
+        self.assertEqual(len(files), 1)
+
+        f = files[0]
+        self.assertEqual(f.origFile, 'foo')
+        self.assertEqual(f.newFile, 'foo')
+        self.assertTrue(f.deleted)
+
+    def test_diff_git_line_without_a_b_quotes(self):
+        """Testing parsing Git diff with deleted file without a/ and
+        b/ filename prefixes and with quotes
+        """
+        diff = (b'diff --git "foo" "foo"\n'
+                b'deleted file mode 100644\n'
+                b'index 612544e4343bf04967eb5ea80257f6c64d6f42c7..'
+                b'0000000000000000000000000000000000000000\n')
+
+        files = self.tool.get_parser(diff).parse()
+        self.assertEqual(len(files), 1)
+
+        f = files[0]
+        self.assertEqual(f.origFile, 'foo')
+        self.assertEqual(f.newFile, 'foo')
+        self.assertTrue(f.deleted)
+
+    def test_diff_git_line_without_a_b_and_spaces(self):
+        """Testing parsing Git diff with deleted file without a/ and
+        b/ filename prefixes and with spaces
+        """
+        diff = (b'diff --git foo bar1 foo bar1\n'
+                b'deleted file mode 100644\n'
+                b'index 612544e4343bf04967eb5ea80257f6c64d6f42c7..'
+                b'0000000000000000000000000000000000000000\n')
+
+        files = self.tool.get_parser(diff).parse()
+        self.assertEqual(len(files), 1)
+
+        f = files[0]
+        self.assertEqual(f.origFile, 'foo bar1')
+        self.assertEqual(f.newFile, 'foo bar1')
+        self.assertTrue(f.deleted)
+
+    def test_diff_git_line_without_a_b_and_spaces_quotes(self):
+        """Testing parsing Git diff with deleted file without a/ and
+        b/ filename prefixes and with space and quotes
+        """
+        diff = (b'diff --git "foo bar1" "foo bar1"\n'
+                b'deleted file mode 100644\n'
+                b'index 612544e4343bf04967eb5ea80257f6c64d6f42c7..'
+                b'0000000000000000000000000000000000000000\n')
+
+        files = self.tool.get_parser(diff).parse()
+        self.assertEqual(len(files), 1)
+
+        f = files[0]
+        self.assertEqual(f.origFile, 'foo bar1')
+        self.assertEqual(f.newFile, 'foo bar1')
+
+    def test_diff_git_line_without_a_b_and_spaces_changed(self):
+        """Testing parsing Git diff with deleted file without a/ and
+        b/ filename prefixes and with spaces, with filename changes
+        """
+        diff = (b'diff --git foo bar1 foo bar2\n'
+                b'deleted file mode 100644\n'
+                b'index 612544e4343bf04967eb5ea80257f6c64d6f42c7..'
+                b'0000000000000000000000000000000000000000\n')
+
+        with self.assertRaises(DiffParserError) as cm:
+            self.tool.get_parser(diff).parse()
+
+        self.assertTrue(six.text_type(cm.exception).startswith(
+            'Unable to parse the "diff --git" line'))
+
+    def test_diff_git_line_without_a_b_and_spaces_quotes_changed(self):
+        """Testing parsing Git diff with deleted file without a/ and
+        b/ filename prefixes and with spaces and quotes, with filename
+        changes
+        """
+        diff = (b'diff --git "foo bar1" "foo bar2"\n'
+                b'deleted file mode 100644\n'
+                b'index 612544e4343bf04967eb5ea80257f6c64d6f42c7..'
+                b'0000000000000000000000000000000000000000\n'
+                b'diff --git "foo bar1" foo\n'
+                b'deleted file mode 100644\n'
+                b'index 612544e4343bf04967eb5ea80257f6c64d6f42c7..'
+                b'0000000000000000000000000000000000000000\n'
+                b'diff --git foo "foo bar1"\n'
+                b'deleted file mode 100644\n'
+                b'index 612544e4343bf04967eb5ea80257f6c64d6f42c7..'
+                b'0000000000000000000000000000000000000000\n')
+
+        files = self.tool.get_parser(diff).parse()
+        self.assertEqual(len(files), 3)
+
+        f = files[0]
+        self.assertEqual(f.origFile, 'foo bar1')
+        self.assertEqual(f.newFile, 'foo bar2')
+        self.assertTrue(f.deleted)
+
+        f = files[1]
+        self.assertEqual(f.origFile, 'foo bar1')
+        self.assertEqual(f.newFile, 'foo')
+
+        f = files[2]
+        self.assertEqual(f.origFile, 'foo')
+        self.assertEqual(f.newFile, 'foo bar1')
 
     def test_file_exists(self):
         """Testing GitTool.file_exists"""
