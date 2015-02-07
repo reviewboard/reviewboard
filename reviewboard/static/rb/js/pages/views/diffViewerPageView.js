@@ -34,7 +34,8 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
      * Initializes the diff viewer page.
      */
     initialize: function() {
-        var url;
+        var url,
+            hash;
 
         _super(this).initialize.call(this);
 
@@ -88,12 +89,24 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
             window.location.replace('#');
         }
 
+        /*
+         * Backbone will attempt to convert the hash to part of the page
+         * URL, stripping away the "#". This will result in a URL pointing
+         * to an incorrect, possible non-existent diff revision. We need to
+         * temporarily remove the hash and put it back after calling
+         * Backbone.history.start.
+         */
+        hash = location.hash;
+        location.hash = '';
+
         Backbone.history.start({
             pushState: true,
             hashChange: false,
             root: this.options.reviewRequestData.reviewURL + 'diff/',
             silent: true
         });
+
+        location.hash = hash;
     },
 
     /*
