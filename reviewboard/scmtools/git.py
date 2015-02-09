@@ -151,6 +151,28 @@ class GitDiffParser(DiffParser):
     """
     pre_creation_regexp = re.compile(b"^0+$")
 
+    DIFF_GIT_LINE_RES = [
+        # Match with a/ and b/ prefixes. Common case.
+        re.compile(
+            b'^diff --git'
+            b' (?P<aq>")?a/(?P<orig_filename>[^"]+)(?(aq)")'
+            b' (?P<bq>")?b/(?P<new_filename>[^"]+)(?(bq)")$'),
+
+        # Match without a/ and b/ prefixes. Spaces are allowed only if using
+        # quotes around the filename.
+        re.compile(
+            b'^diff --git'
+            b' (?P<aq>")?(?!a/)(?P<orig_filename>(?(aq)[^"]|[^ ])+)(?(aq)")'
+            b' (?P<bq>")?(?!b/)(?P<new_filename>(?(bq)[^"]|[^ ])+)(?(bq)")$'),
+
+        # Match without a/ and b/ prefixes, without quotes, and with the
+        # original and new names being identical.
+        re.compile(
+            b'^diff --git'
+            b' (?!")(?!a/)(?P<orig_filename>[^"]+)(?!")'
+            b' (?!")(?!b/)(?P<new_filename>(?P=orig_filename))(?!")$'),
+    ]
+
     def parse(self):
         """
         Parses the diff, returning a list of File objects representing each
@@ -207,24 +229,11 @@ class GitDiffParser(DiffParser):
         # then skip
 
         # Now we have a diff we are going to use so get the filenames + commits
+        diff_git_line = self.lines[linenum]
+
         file_info = File()
-        file_info.data = self.lines[linenum] + b'\n'
+        file_info.data = diff_git_line + b'\n'
         file_info.binary = False
-        # We split at the b/ to deal with space in filenames
-        diff_line = self.lines[linenum].split(b' b/')
-
-        try:
-            file_info.origFile = diff_line[-2].replace(b'diff --git a/', b'')
-            file_info.newFile = diff_line[-1]
-
-            if isinstance(file_info.origFile, six.binary_type):
-                file_info.origFile = file_info.origFile.decode('utf-8')
-
-            if isinstance(file_info.newFile, six.binary_type):
-                file_info.newFile = file_info.newFile.decode('utf-8')
-        except ValueError:
-            raise DiffParserError('The diff file is missing revision '
-                                  'information', linenum)
 
         linenum += 1
 
@@ -232,30 +241,44 @@ class GitDiffParser(DiffParser):
         if linenum >= len(self.lines):
             return linenum, None
 
+        line = self.lines[linenum]
+
         # Parse the extended header to save the new file, deleted file,
         # mode change, file move, and index.
         if self._is_new_file(linenum):
-            file_info.data += self.lines[linenum] + b"\n"
+            file_info.data += line + b"\n"
             linenum += 1
         elif self._is_deleted_file(linenum):
-            file_info.data += self.lines[linenum] + b"\n"
+            file_info.data += line + b"\n"
             linenum += 1
             file_info.deleted = True
         elif self._is_mode_change(linenum):
-            file_info.data += self.lines[linenum] + b"\n"
+            file_info.data += line + b"\n"
             file_info.data += self.lines[linenum + 1] + b"\n"
             linenum += 2
 
         if self._is_moved_file(linenum):
-            file_info.data += self.lines[linenum] + b"\n"
-            file_info.data += self.lines[linenum + 1] + b"\n"
-            file_info.data += self.lines[linenum + 2] + b"\n"
+            rename_from = self.lines[linenum + 1]
+            rename_to = self.lines[linenum + 2]
+
+            file_info.origFile = rename_from[len(b'rename from '):]
+            file_info.newFile = rename_to[len(b'rename to '):]
+
+            file_info.data += line + b"\n"
+            file_info.data += rename_from + b"\n"
+            file_info.data += rename_to + b"\n"
             linenum += 3
             file_info.moved = True
         elif self._is_copied_file(linenum):
-            file_info.data += self.lines[linenum] + b"\n"
-            file_info.data += self.lines[linenum + 1] + b"\n"
-            file_info.data += self.lines[linenum + 2] + b"\n"
+            copy_from = self.lines[linenum + 1]
+            copy_to = self.lines[linenum + 2]
+
+            file_info.origFile = copy_from[len(b'copy from '):]
+            file_info.newFile = copy_to[len(b'copy to '):]
+
+            file_info.data += line + b"\n"
+            file_info.data += copy_from + b"\n"
+            file_info.data += copy_to + b"\n"
             linenum += 3
             file_info.copied = True
 
@@ -286,15 +309,50 @@ class GitDiffParser(DiffParser):
                 linenum += 1
                 break
             elif self._is_diff_fromfile_line(linenum):
-                if self.lines[linenum].split()[1] == b"/dev/null":
-                    file_info.origInfo = PRE_CREATION
+                orig_line = self.lines[linenum]
+                new_line = self.lines[linenum + 1]
 
-                file_info.data += self.lines[linenum] + b'\n'
-                file_info.data += self.lines[linenum + 1] + b'\n'
+                orig_filename = orig_line[len(b'--- '):]
+                new_filename = new_line[len(b'+++ '):]
+
+                if orig_filename.startswith(b'a/'):
+                    orig_filename = orig_filename[2:]
+
+                if new_filename.startswith(b'b/'):
+                    new_filename = new_filename[2:]
+
+                if orig_filename == b'/dev/null':
+                    file_info.origInfo = PRE_CREATION
+                    file_info.origFile = new_filename
+                else:
+                    file_info.origFile = orig_filename
+
+                if new_filename == b'/dev/null':
+                    file_info.newFile = orig_filename
+                else:
+                    file_info.newFile = new_filename
+
+                file_info.data += orig_line + b'\n'
+                file_info.data += new_line + b'\n'
                 linenum += 2
             else:
                 empty_change = False
                 linenum = self.parse_diff_line(linenum, file_info)
+
+        if not file_info.origFile:
+            # This file didn't have any --- or +++ lines. This usually means
+            # the file was deleted or moved without changes. We'll need to
+            # fall back to parsing the diff --git line, which is more
+            # error-prone.
+            assert not file_info.newFile
+
+            self._parse_diff_git_line(diff_git_line, file_info, linenum)
+
+        if isinstance(file_info.origFile, six.binary_type):
+            file_info.origFile = file_info.origFile.decode('utf-8')
+
+        if isinstance(file_info.newFile, six.binary_type):
+            file_info.newFile = file_info.newFile.decode('utf-8')
 
         # For an empty change, we keep the file's info only if it is a new
         # 0-length file, a moved file, a copied file, or a deleted 0-length
@@ -311,6 +369,36 @@ class GitDiffParser(DiffParser):
             file_info = None
 
         return linenum, file_info
+
+    def _parse_diff_git_line(self, diff_git_line, file_info, linenum):
+        """Parses the "diff --git" line for filename information.
+
+        Not all diffs have "---" and "+++" lines we can parse for the
+        filenames. Git leaves these out if there aren't any changes made
+        to the file.
+
+        This function attempts to extract this information from the
+        "diff --git" lines in the diff. It supports the following:
+
+        * All filenames with quotes.
+        * All filenames with a/ and b/ prefixes.
+        * Filenames without quotes, prefixes, or spaces.
+        * Filenames without quotes or prefixes, where the original and
+          modified filenames are identical.
+        """
+        for regex in self.DIFF_GIT_LINE_RES:
+            m = regex.match(diff_git_line)
+
+            if m:
+                file_info.origFile = m.group('orig_filename')
+                file_info.newFile = m.group('new_filename')
+                return
+
+        raise DiffParserError(
+            'Unable to parse the "diff --git" line for this file, due to '
+            'the use of filenames with spaces or --no-prefix, --src-prefix, '
+            'or --dst-prefix options.',
+            linenum)
 
     def _is_new_file(self, linenum):
         return (linenum < len(self.lines) and

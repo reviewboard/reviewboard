@@ -13,6 +13,13 @@ RB.DraftReviewBannerView = Backbone.View.extend({
         'click #review-banner-discard': '_onDiscardClicked'
     },
 
+    /*
+     * Returns the height of the banner.
+     */
+    getHeight: function() {
+        return this._$banner.outerHeight();
+    },
+
     render: function() {
         var model = this.model;
 
