@@ -490,6 +490,73 @@ def get_last_line_number_in_diff(context, filediff, interfilediff):
     return last_line[0]
 
 
+def get_last_header_before_line(context, filediff, interfilediff, line):
+    """Get the last header that occurs before the given line.
+
+    This returns a dictionary of ``left`` header and ``right`` header. Each
+    header is either ``None`` or a dictionary with the following fields:
+
+      ======== ==============================================================
+      Field    Description
+      ======== ==============================================================
+      ``line`` Virtual line number (union of the original and patched files)
+      ``text`` The header text
+      ======== ==============================================================
+    """
+    def find_header(headers, offset):
+        """Get the last header that occurs before a line.
+
+        The :param:`offset` parameter is the difference between the virtual
+        line number and actual line number in the chunk. This is required
+        because the header line numbers are original or patched line numbers,
+        not virtual line numbers.
+        """
+        for header in reversed(headers):
+            if header[0] + offset < line:
+                return {
+                    'line': header[0] + offset,
+                    'text': header[1]
+                }
+
+    # The most up-to-date header information
+    header = {
+        'left': None,
+        'right': None
+    }
+
+    f = get_file_from_filediff(context, filediff, interfilediff)
+
+    for chunk in f['chunks']:
+        lines = chunk['lines']
+        unified_first_line = lines[0][0]
+
+        if unified_first_line <= line:
+            if unified_first_line == line:
+                # The given line number is the first line of a new chunk so
+                # there can't be any relevant header information here.
+                break
+
+            # An insert chunk won't have original line numbers.
+            if 'left_headers' in chunk['meta'] and chunk['change'] != 'insert':
+                left_header = find_header(chunk['meta']['left_headers'],
+                                          unified_first_line - lines[0][1])
+
+                header['left'] = left_header or header['left']
+
+            # A delete chunk won't have patched line numbers.
+            if ('right_headers' in chunk['meta'] and
+                chunk['change'] != 'delete'):
+                right_header = find_header(chunk['meta']['right_headers'],
+                                           unified_first_line - lines[0][4])
+
+                header['right'] = right_header or header['right']
+        else:
+            # We've gone past the given line number.
+            break
+
+    return header
+
+
 def get_file_chunks_in_range(context, filediff, interfilediff,
                              first_line, num_lines):
     """Generate the chunks within a range of lines in the specified filediff.
@@ -526,26 +593,12 @@ def get_file_chunks_in_range(context, filediff, interfilediff,
       7        True if line consists of only whitespace changes
       ======== =============================================================
     """
-    def find_header(headers):
-        for header in reversed(headers):
-            if header[0] < first_line:
-                return {
-                    'line': header[0],
-                    'text': header[1],
-                }
-
     f = get_file_from_filediff(context, filediff, interfilediff)
 
     if not f:
         raise StopIteration
 
-    last_header = [None, None]
-
     for chunk in f['chunks']:
-        if ('headers' in chunk['meta'] and
-                (chunk['meta']['headers'][0] or chunk['meta']['headers'][1])):
-            last_header = chunk['meta']['headers']
-
         lines = chunk['lines']
 
         if lines[-1][0] >= first_line >= lines[0][0]:
@@ -562,19 +615,6 @@ def get_file_chunks_in_range(context, filediff, interfilediff,
                 'change': chunk['change'],
                 'meta': chunk.get('meta', {}),
             }
-
-            if 'left_headers' in chunk['meta']:
-                left_header = find_header(chunk['meta']['left_headers'])
-                right_header = find_header(chunk['meta']['right_headers'])
-                del new_chunk['meta']['left_headers']
-                del new_chunk['meta']['right_headers']
-
-                if left_header or right_header:
-                    header = (left_header, right_header)
-                else:
-                    header = last_header
-
-                new_chunk['meta']['headers'] = header
 
             yield new_chunk
 

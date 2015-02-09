@@ -567,20 +567,20 @@ def expand_fragment_link(context, expanding, tooltip,
 
 @register.tag
 @basictag(takes_context=True)
-def expand_fragment_header_link(context, tooltip, line, text):
+def expand_fragment_header_link(context, header):
     """Render a diff comment fragment header expansion link.
 
-    This link expands the context to contain the given line number."""
-
+    This link expands the context to contain the given line number.
+    """
     lines_of_context = context['lines_of_context']
-    num_lines = context['first_line'] - line
-    expand_pos = (lines_of_context[0] + num_lines, lines_of_context[1])
+    offset = context['first_line'] - header['line']
 
     return render_to_string('reviews/expand_link.html', {
-        'tooltip': tooltip,
-        'text': format_html('<code>{0}</code>', text),
+        'tooltip': _('Expand to header'),
+        'text': format_html('<code>{0}</code>', header['text']),
         'comment_id': context['comment'].id,
-        'expand_pos': expand_pos,
+        'expand_pos': (lines_of_context[0] + offset,
+                       lines_of_context[1]),
         'image_class': 'rb-icon-diff-expand-header',
     })
 

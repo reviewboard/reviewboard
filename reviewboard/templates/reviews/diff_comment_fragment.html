@@ -23,7 +23,7 @@
    </th>
   </tr>
  </thead>
-{% if expandable_above or chunks.0.meta.headers %}
+{% if expandable_above or header %}
  <tbody class="diff-header">
 {%  if expandable_above %}
   <tr>
@@ -36,27 +36,29 @@
    </div></td>
   </tr>
 {%  endif %}
-{%  if chunks.0.meta.headers %}
-{%   if chunks.0.meta.headers.0 or chunks.0.meta.headers.1 %}
+{%  if header.left or header.right %}
   <tr>
    <td colspan="1"></td>
-{%    if chunks.0.meta.headers.0.text == chunks.0.meta.headers.1.text %}
+{%   if header.left.text == header.right.text and header.left.virtual == header.right.virtual %}
    <td colspan="3"><div>
-    {% expand_fragment_header_link _('Expand to header') chunks.0.meta.headers.1.line chunks.0.meta.headers.1.text %}
+    {% expand_fragment_header_link header.left %}
    </div></td>
-{%    else %}
-{%     if not comment.filediff.is_new %}
-   <td><div>{{ chunks.0.meta.headers.0.text }}</div></td>
-   <td></td>
-{%     endif %}
+{%   else %}
+{%    if not comment.filediff.is_new %}
    <td><div>
-{%     if chunks.0.meta.headers.1.text %}
-    {% expand_fragment_header_link _('Expand to header') chunks.0.meta.headers.1.line chunks.0.meta.headers.1.text %}
+{%      if header.left %}
+       {% expand_fragment_header_link header.left %}
 {%     endif %}
    </div></td>
+   <td></td>
 {%    endif %}
-  </tr>
+   <td><div>
+{%    if header.right %}
+    {% expand_fragment_header_link header.right %}
+{%    endif %}
+   </div></td>
 {%   endif %}
+  </tr>
 {%  endif %}
  </tbody>
 {% endif %}

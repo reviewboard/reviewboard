@@ -42,6 +42,7 @@ from reviewboard.attachments.models import (FileAttachment,
 from reviewboard.changedescs.models import ChangeDescription
 from reviewboard.diffviewer.diffutils import (convert_to_unicode,
                                               get_file_chunks_in_range,
+                                              get_last_header_before_line,
                                               get_last_line_number_in_diff,
                                               get_original_file,
                                               get_patched_file)
@@ -186,6 +187,10 @@ def build_diff_comment_fragments(
 
             content = render_to_string(comment_template_name, {
                 'comment': comment,
+                'header': get_last_header_before_line(context,
+                                                      comment.filediff,
+                                                      comment.interfilediff,
+                                                      first_line),
                 'chunks': list(get_file_chunks_in_range(context,
                                                         comment.filediff,
                                                         comment.interfilediff,

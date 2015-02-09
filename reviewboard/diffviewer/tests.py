@@ -9,6 +9,7 @@ from django.utils.six.moves import zip_longest
 from djblets.cache.backend import cache_memoize
 from djblets.db.fields import Base64DecodedValue
 from djblets.siteconfig.models import SiteConfiguration
+from djblets.testing.decorators import add_fixtures
 from kgb import SpyAgency
 import nose
 
@@ -2201,3 +2202,116 @@ class DiffUtilsTests(TestCase):
         new = 'nopqrstuvwxyz'
         regions = diffutils.get_line_changed_regions(old, new)
         deep_equal(regions, (None, None))
+
+    @add_fixtures(['test_users', 'test_scmtools'])
+    def test_headers_use_correct_line_insert(self):
+        """Testing header generation for chunks with insert chunks above"""
+        # We turn off highlighting to compare lines.
+        siteconfig = SiteConfiguration.objects.get_current()
+        siteconfig.set('diffviewer_syntax_highlighting', False)
+        siteconfig.save()
+
+        line_number = 27  # This is a header line below the chunk of inserts
+
+        diff = (b"diff --git a/tests.py b/tests.py\n"
+                b"index a4fc53e..f2414cc 100644\n"
+                b"--- a/tests.py\n"
+                b"+++ b/tests.py\n"
+                b"@@ -20,6 +20,9 @@ from reviewboard.site.urlresolvers import "
+                b"local_site_reverse\n"
+                b" from reviewboard.site.models import LocalSite\n"
+                b" from reviewboard.webapi.errors import INVALID_REPOSITORY\n"
+                b"\n"
+                b"+class Foo(object):\n"
+                b"+    def bar(self):\n"
+                b"+        pass\n"
+                b"\n"
+                b" class BaseWebAPITestCase(TestCase, EmailTestHelper);\n"
+                b"     fixtures = ['test_users', 'test_reviewrequests', 'test_"
+                b"scmtools',\n")
+
+        repository = self.create_repository(tool_name='Git')
+        review_request = self.create_review_request(repository=repository)
+        diffset = self.create_diffset(review_request=review_request)
+
+        filediff = self.create_filediff(
+            diffset=diffset, source_file='tests.py', dest_file='tests.py',
+            source_revision='a4fc53e08863f5341effb5204b77504c120166ae',
+            diff=diff)
+
+        context = {'user': review_request.submitter}
+        header = diffutils.get_last_header_before_line(context, filediff, None,
+                                                       line_number)
+        chunks = diffutils.get_file_chunks_in_range(
+            context, filediff, None, 1,
+            diffutils.get_last_line_number_in_diff(context, filediff, None))
+
+        lines = []
+
+        for chunk in chunks:
+            lines.extend(chunk['lines'])
+
+        # The header we find should be before our line number (which has a
+        # header itself).
+        self.assertTrue(header['right']['line'] < line_number)
+        # The line numbers start at 1 and not 0.
+        self.assertEqual(header['right']['text'],
+                         lines[header['right']['line'] - 1][5])
+
+    @add_fixtures(['test_users', 'test_scmtools'])
+    def test_header_correct_line_delete(self):
+        """Testing header generation for chunks with delete chunks above"""
+        # We turn off highlighting to compare lines.
+        siteconfig = SiteConfiguration.objects.get_current()
+        siteconfig.set('diffviewer_syntax_highlighting', False)
+        siteconfig.save()
+
+        line_number = 53  # This is a header line below the chunk of deletes
+
+        diff = (b"diff --git a/tests.py b/tests.py\n"
+                b"index a4fc53e..ba7d34b 100644\n"
+                b"--- a/tests.py\n"
+                b"+++ b/tests.py\n"
+                b"@@ -47,9 +47,6 @@ class BaseWebAPITestCase(TestCase, "
+                b"EmailTestHelper);\n"
+                b"\n"
+                b"         yourself.base_url = 'http;//testserver'\n"
+                b"\n"
+                b"-    def tearDown(yourself);\n"
+                b"-        yourself.client.logout()\n"
+                b"-\n"
+                b"     def api_func_wrapper(yourself, api_func, path, query, "
+                b"expected_status,\n"
+                b"                          follow_redirects, expected_"
+                b"redirects);\n"
+                b"         response = api_func(path, query, follow=follow_"
+                b"redirects)\n")
+
+        repository = self.create_repository(tool_name='Git')
+        review_request = self.create_review_request(repository=repository)
+        diffset = self.create_diffset(review_request=review_request)
+
+        filediff = self.create_filediff(
+            diffset=diffset, source_file='tests.py', dest_file='tests.py',
+            source_revision='a4fc53e08863f5341effb5204b77504c120166ae',
+            diff=diff)
+
+        context = {'user': review_request.submitter}
+        header = diffutils.get_last_header_before_line(context, filediff, None,
+                                                       line_number)
+
+        chunks = diffutils.get_file_chunks_in_range(
+            context, filediff, None, 1,
+            diffutils.get_last_line_number_in_diff(context, filediff, None))
+
+        lines = []
+
+        for chunk in chunks:
+            lines.extend(chunk['lines'])
+
+        # The header we find should be before our line number (which has a
+        # header itself).
+        self.assertTrue(header['left']['line'] < line_number)
+        # The line numbers start at 1 and not 0.
+        self.assertEqual(header['left']['text'],
+                         lines[header['left']['line'] - 1][2])
