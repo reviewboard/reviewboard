@@ -58,7 +58,7 @@
 {%    for comment in comments %}
 {%     if comment.issue_opened %}
     <tr id="summary-table-entry-{{comment.id}}" reviewer="{{entry.review.user|user_displayname}}" class="issue {{comment.issue_status|pretty_print_issue_status}}{% if comment.issue_status != 'O' %} hidden{% endif %}">
-     <td class="summary-table-description"><a class="summary-anchor" comment-type="{{comment.comment_type}}" issue-id="{{comment.id}}" href="#{{comment.anchor_prefix}}{{comment.id}}">{{comment|truncatewords:20}}</a></td>
+     <td class="summary-table-description"><a class="summary-anchor {% rich_text_classname comment.rich_text %}" comment-type="{{comment.comment_type}}" issue-id="{{comment.id}}" href="#{{comment.anchor_prefix}}{{comment.id}}">{{comment.text|render_markdown:comment.rich_text|striptags|truncatewords:20}}</a></td>
      <td class="reviewer"><a href="{% url 'user' entry.review.user %}" class="user">{{entry.review.user|user_displayname}}</a></td>
      <td class="last-updated" timestamp={{comment.timestamp|date:"U"}}>{{comment.timestamp}}</td>
      <td class="status">{{comment.issue_status|pretty_print_issue_status|capfirst}}</td>
