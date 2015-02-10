@@ -2254,6 +2254,7 @@ class DiffUtilsTests(TestCase):
         # The header we find should be before our line number (which has a
         # header itself).
         self.assertTrue(header['right']['line'] < line_number)
+
         # The line numbers start at 1 and not 0.
         self.assertEqual(header['right']['text'],
                          lines[header['right']['line'] - 1][5])
@@ -2312,6 +2313,7 @@ class DiffUtilsTests(TestCase):
         # The header we find should be before our line number (which has a
         # header itself).
         self.assertTrue(header['left']['line'] < line_number)
+
         # The line numbers start at 1 and not 0.
         self.assertEqual(header['left']['text'],
                          lines[header['left']['line'] - 1][2])
