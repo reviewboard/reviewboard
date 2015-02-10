@@ -124,7 +124,7 @@ class StandardAuthSettingsForm(SiteSettingsForm):
         widget=forms.TextInput(attrs={'size': '60'}))
 
     def clean_recaptcha_public_key(self):
-        """Validates that the reCAPTCHA public key is specified if needed."""
+        """Validate that the reCAPTCHA public key is specified if needed."""
         key = self.cleaned_data['recaptcha_public_key'].strip()
 
         if self.cleaned_data['auth_registration_show_captcha'] and not key:
@@ -133,7 +133,7 @@ class StandardAuthSettingsForm(SiteSettingsForm):
         return key
 
     def clean_recaptcha_private_key(self):
-        """Validates that the reCAPTCHA private key is specified if needed."""
+        """Validate that the reCAPTCHA private key is specified if needed."""
         key = self.cleaned_data['recaptcha_private_key'].strip()
 
         if self.cleaned_data['auth_registration_show_captcha'] and not key:
@@ -341,7 +341,7 @@ class X509SettingsForm(SiteSettingsForm):
         required=False)
 
     def clean_auth_x509_username_regex(self):
-        """Validates that the specified regular expression is valid."""
+        """Validate that the specified regular expression is valid."""
         regex = self.cleaned_data['auth_x509_username_regex']
 
         try:
@@ -361,6 +361,7 @@ class AuthenticationForm(DjangoAuthenticationForm):
     This extends Django's built-in AuthenticationForm implementation to allow
     users to specify their e-mail address in place of their username.
     """
+
     username = forms.CharField(
         label=_("Username"),
         widget=forms.TextInput(attrs={'autofocus': 'autofocus'}))

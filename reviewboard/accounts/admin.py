@@ -21,9 +21,8 @@ USERNAME_ERROR_MESSAGE = _("This value must contain only letters, numbers, "
 
 
 class RBUserChangeForm(UserChangeForm):
-    """
-    A variation of UserChangeForm that allows "." in the username.
-    """
+    """A variation of UserChangeForm that allows "." in the username."""
+
     username = forms.RegexField(
         label=_("Username"), max_length=30,
         regex=USERNAME_REGEX,
@@ -32,9 +31,8 @@ class RBUserChangeForm(UserChangeForm):
 
 
 class RBUserCreationForm(UserCreationForm):
-    """
-    A variation of UserCreationForm that allows "." in the username.
-    """
+    """A variation of UserCreationForm that allows "." in the username."""
+
     username = forms.RegexField(
         label=_("Username"), max_length=30,
         regex=USERNAME_REGEX,

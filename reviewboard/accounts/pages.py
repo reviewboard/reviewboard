@@ -29,15 +29,16 @@ class AccountPage(ConfigPage):
     Extensions can provide custom pages in order to offer per-user
     customization.
     """
+
     @classmethod
     def add_form(cls, form_cls):
-        """Adds a form class to this page."""
+        """Add a form class to this page."""
         _register_form_class(form_cls)
         cls.form_classes.append(form_cls)
 
     @classmethod
     def remove_form(cls, form_cls):
-        """Removes a form class from this page.
+        """Remove a form class from this page.
 
         The form class must have been previously added to this page.
         """
@@ -54,6 +55,7 @@ class AccountPage(ConfigPage):
 
 class AccountSettingsPage(AccountPage):
     """A page containing the primary settings the user can customize."""
+
     page_id = 'settings'
     page_title = _('Settings')
     form_classes = [AccountSettingsForm]
@@ -61,6 +63,7 @@ class AccountSettingsPage(AccountPage):
 
 class APITokensPage(AccountPage):
     """A page containing settings for API tokens."""
+
     page_id = 'api-tokens'
     page_title = _('API Tokens')
     form_classes = [APITokensForm]
@@ -72,6 +75,7 @@ class AuthenticationPage(AccountPage):
     By default, this just shows the Change Password form, but extensions
     can provide additional forms for display.
     """
+
     page_id = 'authentication'
     page_title = _('Authentication')
     form_classes = [ChangePasswordForm]
@@ -79,6 +83,7 @@ class AuthenticationPage(AccountPage):
 
 class ProfilePage(AccountPage):
     """A page containing settings for the user's profile."""
+
     page_id = 'profile'
     page_title = _('Profile')
     form_classes = [ProfileForm]
@@ -86,13 +91,14 @@ class ProfilePage(AccountPage):
 
 class GroupsPage(AccountPage):
     """A page containing a filterable list of groups to join."""
+
     page_id = 'groups'
     page_title = _('Groups')
     form_classes = [GroupsForm]
 
 
 def _populate_defaults():
-    """Populates the default list of page classes."""
+    """Populate the default list of page classes."""
     global _populated
 
     if not _populated:
@@ -104,7 +110,7 @@ def _populate_defaults():
 
 
 def _clear_page_defaults():
-    """Clears the default list of pages.
+    """Clear the default list of pages.
 
     This is really only used by unit tests to put things back into a default
     state.
@@ -117,7 +123,7 @@ def _clear_page_defaults():
 
 
 def _register_form_class(form_cls):
-    """Registers an account form class.
+    """Register an account form class.
 
     This will check if the form has already been registered before adding it.
     It's called internally when first adding a page, or when adding a form
@@ -135,7 +141,7 @@ def _register_form_class(form_cls):
 
 
 def register_account_page_class(page_cls):
-    """Registers a custom account page class.
+    """Register a custom account page class.
 
     A page ID is considered unique and can only be registered once. A
     KeyError will be thrown if attempting to register a second time.
@@ -161,7 +167,7 @@ def register_account_page_class(page_cls):
 
 
 def unregister_account_page_class(page_cls):
-    """Unregisters a previously registered account page class."""
+    """Unregister a previously registered account page class."""
     _populate_defaults()
 
     page_id = page_cls.page_id
@@ -178,7 +184,7 @@ def unregister_account_page_class(page_cls):
 
 
 def get_page_class(page_id):
-    """Returns the My Account page class with the specified ID.
+    """Get the My Account page class with the specified ID.
 
     If the page could not be found, this will return None.
     """
@@ -191,7 +197,7 @@ def get_page_class(page_id):
 
 
 def get_page_classes():
-    """Returns all registered page classes."""
+    """Get all registered page classes."""
     _populate_defaults()
 
     return six.itervalues(_registered_page_classes)

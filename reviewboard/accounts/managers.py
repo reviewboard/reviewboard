@@ -27,8 +27,9 @@ class TrophyManager(Manager):
     Creates new trophies, updates the database and fetches trophies from the
     database.
     """
+
     def compute_trophies(self, review_request):
-        """Computes and returns trophies for a review request.
+        """Compute and return trophies for a review request.
 
         Computes trophies for a given review request by looping through all
         registered trophy types and seeing if any apply to the review request.

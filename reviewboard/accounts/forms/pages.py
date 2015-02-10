@@ -30,6 +30,7 @@ class AccountPageForm(ConfigPageForm):
 
 class AccountSettingsForm(AccountPageForm):
     """Form for the Settings page for an account."""
+
     form_id = 'settings'
     form_title = _('Settings')
     save_label = _('Save Settings')
@@ -93,6 +94,7 @@ class AccountSettingsForm(AccountPageForm):
 
 class APITokensForm(AccountPageForm):
     """Form for showing a user's API tokens."""
+
     form_id = 'api_tokens'
     form_title = _('API Tokens')
     save_label = None
@@ -143,6 +145,7 @@ class APITokensForm(AccountPageForm):
 
 class ChangePasswordForm(AccountPageForm):
     """Form for changing a user's password."""
+
     form_id = 'change_password'
     form_title = _('Change Password')
     save_label = _('Change Password')
@@ -215,6 +218,7 @@ class ChangePasswordForm(AccountPageForm):
 
 class ProfileForm(AccountPageForm):
     """Form for the Profile page for an account."""
+
     form_id = 'profile'
     form_title = _('Profile')
     save_label = _('Save Profile')
@@ -293,6 +297,7 @@ class GroupsForm(AccountPageForm):
     representing the groups. The View handles group membership through the
     API.
     """
+
     form_id = 'groups'
     form_title = _('Groups')
     save_label = None
