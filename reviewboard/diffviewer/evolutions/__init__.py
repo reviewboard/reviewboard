@@ -12,4 +12,5 @@ SEQUENCE = [
     'diffset_base_commit_id',
     'filediffdata_extra_data',
     'all_extra_data',
+    'raw_diff_file_data',
 ]

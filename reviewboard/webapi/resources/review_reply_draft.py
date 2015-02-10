@@ -16,6 +16,7 @@ class ReviewReplyDraftResource(WebAPIResource):
     clients can discover the proper location.
     """
     name = 'reply_draft'
+    policy_id = 'review_reply_draft'
     singleton = True
     uri_name = 'draft'
 

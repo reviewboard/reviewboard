@@ -78,7 +78,7 @@ RB.DiffRevisionLabelView = Backbone.View.extend({
      */
     _onSelectLatest: function(ev) {
         ev.preventDefault();
-        this.trigger('revisionSelected', 0, this.model.get('latestRevision'));
+        this.trigger('revisionSelected', [0, this.model.get('latestRevision')]);
         return false;
     },
 
@@ -89,8 +89,8 @@ RB.DiffRevisionLabelView = Backbone.View.extend({
     _onSelectChanged: function(ev) {
         ev.preventDefault();
         this.trigger('revisionSelected',
-                     this.model.get('revision'),
-                     this.model.get('latestRevision'));
+                     [this.model.get('revision'),
+                      this.model.get('latestRevision')]);
         return false;
     }
 });

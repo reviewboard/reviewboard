@@ -23,6 +23,7 @@ class ReviewScreenshotCommentResource(BaseScreenshotCommentResource):
     then no changes can be made.
     """
     allowed_methods = ('GET', 'POST', 'PUT', 'DELETE')
+    policy_id = 'review_screenshot_comment'
     model_parent_key = 'review'
 
     def get_queryset(self, request, review_id, *args, **kwargs):

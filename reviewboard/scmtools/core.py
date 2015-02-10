@@ -125,8 +125,6 @@ PRE_CREATION = Revision("PRE-CREATION")
 
 class SCMTool(object):
     name = None
-    uses_atomic_revisions = False
-    supports_authentication = False
     supports_pending_changesets = False
     supports_post_commit = False
     supports_raw_file_urls = False
@@ -166,9 +164,6 @@ class SCMTool(object):
         return False
 
     def get_changeset(self, changesetid, allow_empty=False):
-        raise NotImplementedError
-
-    def get_filenames_in_revision(self, revision):
         raise NotImplementedError
 
     def get_repository_info(self):

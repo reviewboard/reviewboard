@@ -15,7 +15,8 @@ from reviewboard.attachments.forms import UploadFileForm
 from reviewboard.attachments.mimetypes import (MimetypeHandler,
                                                register_mimetype_handler,
                                                unregister_mimetype_handler)
-from reviewboard.attachments.models import FileAttachment
+from reviewboard.attachments.models import (FileAttachment,
+                                            FileAttachmentHistory)
 from reviewboard.diffviewer.models import DiffSet, DiffSetHistory, FileDiff
 from reviewboard.reviews.models import ReviewRequest
 from reviewboard.scmtools.core import PRE_CREATION
@@ -70,17 +71,115 @@ class FileAttachmentTests(BaseFileAttachmentTestCase):
     @add_fixtures(['test_users', 'test_scmtools'])
     def test_upload_file(self):
         """Testing uploading a file attachment"""
+        review_request = self.create_review_request(publish=True)
+
         file = self.make_uploaded_file()
-        form = UploadFileForm(files={
+        form = UploadFileForm(review_request, files={
             'path': file,
         })
         self.assertTrue(form.is_valid())
 
-        review_request = self.create_review_request(publish=True)
-        file_attachment = form.create(file, review_request)
+        file_attachment = form.create()
         self.assertTrue(os.path.basename(file_attachment.file.name).endswith(
             '__trophy.png'))
         self.assertEqual(file_attachment.mimetype, 'image/png')
+
+    @add_fixtures(['test_users', 'test_scmtools'])
+    def test_upload_file_with_history(self):
+        """Testing uploading a file attachment to an existing
+        FileAttachmentHistory
+        """
+        review_request_1 = self.create_review_request(publish=True)
+        history = FileAttachmentHistory.objects.create(display_position=0)
+        review_request_1.file_attachment_histories.add(history)
+
+        file = self.make_uploaded_file()
+        form = UploadFileForm(review_request_1,
+                              data={'attachment_history': history.pk},
+                              files={'path': file})
+        self.assertTrue(form.is_valid())
+        form.create()
+
+    @add_fixtures(['test_users', 'test_scmtools'])
+    def test_upload_file_with_history_mismatch(self):
+        """Testing uploading a file attachment to an existing
+        FileAttachmentHistory with a mismatched review request
+        """
+        review_request_1 = self.create_review_request(publish=True)
+        review_request_2 = self.create_review_request(publish=True)
+
+        history = FileAttachmentHistory.objects.create(display_position=0)
+        review_request_1.file_attachment_histories.add(history)
+
+        form = UploadFileForm(review_request_2,
+                              data={'attachment_history': history.pk},
+                              files={'path': file})
+        self.assertFalse(form.is_valid())
+
+    @add_fixtures(['test_users', 'test_scmtools'])
+    def test_upload_file_revisions(self):
+        """Testing uploading multiple revisions of a file"""
+        review_request = self.create_review_request(publish=True)
+        history = FileAttachmentHistory.objects.create(display_position=0)
+        review_request.file_attachment_histories.add(history)
+        file = self.make_uploaded_file()
+
+        # Add a file with the given history
+        form = UploadFileForm(review_request,
+                              data={'attachment_history': history.pk},
+                              files={'path': file})
+        self.assertTrue(form.is_valid())
+        file_attachment = form.create()
+        history = FileAttachmentHistory.objects.get(pk=history.pk)
+        self.assertEqual(file_attachment.attachment_revision, 1)
+        self.assertEqual(history.latest_revision, 1)
+        self.assertEqual(history.display_position, 0)
+
+        review_request.get_draft().publish()
+
+        # Post an update
+        form = UploadFileForm(review_request,
+                              data={'attachment_history': history.pk},
+                              files={'path': file})
+        self.assertTrue(form.is_valid())
+        file_attachment = form.create()
+        history = FileAttachmentHistory.objects.get(pk=history.pk)
+        self.assertEqual(file_attachment.attachment_revision, 2)
+        self.assertEqual(history.latest_revision, 2)
+        self.assertEqual(history.display_position, 0)
+
+        review_request.get_draft().publish()
+
+        # Post two updates without publishing the draft in between
+        form = UploadFileForm(review_request,
+                              data={'attachment_history': history.pk},
+                              files={'path': file})
+        self.assertTrue(form.is_valid())
+        file_attachment = form.create()
+        history = FileAttachmentHistory.objects.get(pk=history.pk)
+        self.assertEqual(file_attachment.attachment_revision, 3)
+        self.assertEqual(history.latest_revision, 3)
+        self.assertEqual(history.display_position, 0)
+
+        form = UploadFileForm(review_request,
+                              data={'attachment_history': history.pk},
+                              files={'path': file})
+        self.assertTrue(form.is_valid())
+        file_attachment = form.create()
+        history = FileAttachmentHistory.objects.get(pk=history.pk)
+        self.assertEqual(file_attachment.attachment_revision, 3)
+        self.assertEqual(history.latest_revision, 3)
+        self.assertEqual(history.display_position, 0)
+
+        # Add another (unrelated) file to check display position
+        form = UploadFileForm(review_request,
+                              files={'path': file})
+        self.assertTrue(form.is_valid())
+        file_attachment = form.create()
+        self.assertEqual(file_attachment.attachment_revision, 1)
+        self.assertEqual(file_attachment.attachment_history.latest_revision, 1)
+        self.assertEqual(file_attachment.attachment_history.display_position,
+                         1)
 
     def test_is_from_diff_with_no_association(self):
         """Testing FileAttachment.is_from_diff with standard attachment"""
@@ -110,13 +209,16 @@ class FileAttachmentTests(BaseFileAttachmentTestCase):
         filename = os.path.join(os.path.dirname(__file__),
                                 'testdata', 'utf-16.txt')
         with open(filename) as f:
-            file = SimpleUploadedFile(f.name, f.read(),
-                                      content_type='text/plain;charset=utf-16le')
-            form = UploadFileForm(files={'path': file})
+            review_request = self.create_review_request(publish=True)
+
+            file = SimpleUploadedFile(
+                f.name,
+                f.read(),
+                content_type='text/plain;charset=utf-16le')
+            form = UploadFileForm(review_request, files={'path': file})
             form.is_valid()
 
-            review_request = self.create_review_request(publish=True)
-            file_attachment = form.create(file, review_request)
+            file_attachment = form.create()
 
             self.assertEqual(file_attachment.thumbnail,
                              '<div class="file-thumbnail-clipped"><pre>'

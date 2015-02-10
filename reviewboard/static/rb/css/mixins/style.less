@@ -1,0 +1,113 @@
+/*
+ * Sets the border radius of an element.
+ */
+.border-radius(...) {
+  -moz-border-radius: @arguments;
+  -webkit-border-radius: @arguments;
+  border-radius: @arguments;
+}
+
+/*
+ * Sets the box shadow of an element.
+ */
+.box-shadow(...) {
+  -moz-box-shadow: @arguments;
+  -webkit-box-shadow: @arguments;
+  box-shadow: @arguments;
+}
+
+/*
+ * Sets the box sizing mode of an element.
+ */
+.box-sizing(...) {
+  -moz-box-sizing: @arguments;
+  -webkit-box-sizing: @arguments;
+  box-sizing: @arguments;
+}
+
+/*
+ * Ellipsizes the text content in an element on supported browsers.
+ */
+.ellipsize() {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/*
+ * Sets the cursor to the CSS3 "grab" cursor in a cross-browser way.
+ */
+.grab-cursor() {
+  cursor: grab;
+  cursor: -moz-grab;
+  cursor: -webkit-grab;
+}
+
+.grabbing-cursor-important() {
+  /*
+   * XXX: We should be able in instantiate mixins with !important but for some
+   * reason it's not working for me.
+   */
+  cursor: grabbing !important;
+  cursor: -moz-grabbing !important;
+  cursor: -webkit-grabbing !important;
+}
+
+/*
+ * Sets the opacity of an element in a cross-browser way.
+ */
+.opacity(@value) {
+  opacity: @value / 100;
+  filter:alpha(opacity=@value);
+  -moz-opacity: @value / 100;
+}
+
+/*
+ * Sets the white-space mode for pre-like formatting, with wrapping.
+ */
+.pre-wrap() {
+  white-space: pre-wrap;      /* CSS 3 */
+  white-space: -moz-pre-wrap; /* Mozilla, 1999+ */
+  white-space: -pre-wrap;     /* Opera 4-6 */
+  white-space: -o-pre-wrap;   /* Opera 7 */
+  word-wrap: break-word;      /* IE 5.5+ */
+}
+
+/*
+ * Sets the CSS3 transition on an element.
+ */
+.transition(...) {
+  -webkit-transition: @arguments;
+  -moz-transition: @arguments;
+  transition: @arguments;
+}
+
+/*
+ * Sets whether selection of text is allowed on an element.
+ */
+.user-select(@arg) {
+  user-select: @arg;
+  -moz-user-select: @arg;
+  -ms-user-select: @arg;
+  -webkit-user-select: @arg;
+}
+
+.unselectable() {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -khtml-user-select: none;
+  -moz-user-select: none;
+  -moz-user-select: -moz-none;
+  -ms-user-select: none;
+  user-select: none;
+
+  /* These must be defined as two rules, or Firefox will drop them both. */
+  &::selection {
+    background: transparent;
+  }
+
+  &::-moz-selection {
+    background: transparent;
+  }
+}
+

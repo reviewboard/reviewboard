@@ -6,6 +6,7 @@ import re
 from django import forms
 from django.core.exceptions import ValidationError
 from django.core.validators import validate_email
+from django.utils import six
 from django.utils.six.moves.urllib.error import HTTPError, URLError
 from django.utils.six.moves.urllib.parse import quote
 from django.utils.translation import ugettext_lazy as _, ugettext
@@ -125,7 +126,7 @@ class GitLab(HostingService):
             rsp, headers = self.client.json_post(
                 url=self._build_api_url(hosting_url, 'session'),
                 fields={
-                    login_key : username,
+                    login_key: username,
                     'password': password,
                 })
         except HTTPError as e:
@@ -195,26 +196,57 @@ class GitLab(HostingService):
         # If the list doesn't return the repository, the user is out of luck.
         #
         # This is true as of GitLab 6.4.3.
-        repositories = self._api_get_repositories()
-
-        for repository_entry in repositories:
-            namespace = repository_entry['namespace']
-
-            if (namespace['path'] == owner and
-                repository_entry['path'] == repo_name):
-                # This is the repository we wanted to find.
-                return repository_entry['id']
-
         if plan == 'personal':
+            repositories = self._api_get_repositories()
+
+            for repository_entry in repositories:
+                namespace = repository_entry['namespace']
+
+                if (namespace['path'] == owner and
+                    repository_entry['path'] == repo_name):
+                    # This is the repository we wanted to find.
+                    return repository_entry['id']
+
             raise RepositoryError(
                 ugettext('A repository with this name was not found, or your '
                          'user may not own it.'))
         elif plan == 'group':
+            groups = self._api_get_groups()
+
+            for group_entry in groups:
+                if group_entry['name'] == owner:
+                    group_id = group_entry['id']
+                    group_data = self._api_get_group(group_id)
+                    repositories = group_data['projects']
+                    for repository_entry in repositories:
+                        if repository_entry['name'] == repo_name:
+                            return repository_entry['id']
+
+                    raise RepositoryError(
+                        ugettext('A repository with this name was not '
+                                 'found on this group, or your user may '
+                                 'not have access to it.'))
             raise RepositoryError(
-                ugettext('A repository with this name was not found on this '
-                         'group, or your user may not have access to it.'))
+                ugettext('A group with this name was not found, or your user '
+                         'may not have access to it.'))
         else:
             raise InvalidPlanError(plan)
+
+    def _api_get_group(self, group_id):
+        """Returns a list of projects in the given group."""
+        return self._api_get(
+            self._build_api_url(self.account.hosting_url, 'groups',
+                                six.text_type(group_id)))[0]
+
+    def _api_get_groups(self):
+        """Returns a list of groups the user has access to.
+
+        This will fetch up to 100 groups from GitLab. These are all groups the
+        user has any form of access to.
+        """
+        return self._api_get(
+            '%s?per_page=100'
+            % self._build_api_url(self.account.hosting_url, 'groups'))[0]
 
     def _api_get_repositories(self):
         """Returns a list of repositories the user has access to.
@@ -363,4 +395,3 @@ class GitLab(HostingService):
             return True
         except ValidationError:
             return False
-

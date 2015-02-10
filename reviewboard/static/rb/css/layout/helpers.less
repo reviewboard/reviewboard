@@ -1,0 +1,18 @@
+/*
+ * Prevents a floated element from affecting elements below it.
+ *
+ * This is used to allow an element with a float to remain floating without
+ * interfering with the layout of any elements that follow it. It is
+ * equivalent to placing an element immediately after with "clear: both;".
+ */
+.clearfix {
+  display: inline-block;
+
+  &:after {
+    clear: both;
+    content: ".";
+    display: block;
+    height: 0;
+    visibility: hidden;
+  }
+}

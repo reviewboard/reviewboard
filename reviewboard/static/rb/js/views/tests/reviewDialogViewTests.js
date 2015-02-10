@@ -63,7 +63,7 @@ suite('rb/views/ReviewDialogView', function() {
         review,
         dlg;
 
-    function createCommentDialog() {
+    function createReviewDialog() {
         return RB.ReviewDialogView.create({
             review: review,
             container: $testsScratch,
@@ -126,7 +126,7 @@ suite('rb/views/ReviewDialogView', function() {
             });
 
             it('With a review', function() {
-                dlg = createCommentDialog();
+                dlg = createReviewDialog();
 
                 expect(dlg).toBeTruthy();
                 expect(RB.ReviewDialogView._instance).toBe(dlg);
@@ -136,9 +136,9 @@ suite('rb/views/ReviewDialogView', function() {
             });
 
             it('With existing instance', function() {
-                dlg = createCommentDialog();
+                dlg = createReviewDialog();
 
-                expect(createCommentDialog).toThrow();
+                expect(createReviewDialog).toThrow();
 
                 expect(RB.ReviewDialogView._instance).toBe(dlg);
                 expect($testsScratch.children().length).toBe(2);
@@ -149,7 +149,7 @@ suite('rb/views/ReviewDialogView', function() {
     describe('Instances', function() {
         describe('Methods', function() {
             it('close', function() {
-                dlg = createCommentDialog();
+                dlg = createReviewDialog();
                 expect($testsScratch.children().length).toBe(2);
 
                 dlg.close();
@@ -168,10 +168,10 @@ suite('rb/views/ReviewDialogView', function() {
                     reviewRequestEditor: reviewRequestEditor
                 });
 
-                expect(dlg._bodyTopEditor.getText()).toBe('');
-                expect(dlg._bodyBottomEditor.getText()).toBe('');
+                expect(dlg._bodyTopView.$editor.text()).toBe('');
+                expect(dlg._bodyBottomView.$editor.text()).toBe('');
+                expect(dlg._bodyBottomView.$el.is(':visible')).toBe(false);
                 expect(dlg._$shipIt.prop('checked')).toBe(false);
-                expect(dlg._bodyBottomEditor.$el.is(':visible')).toBe(false);
                 expect(dlg._$spinner).toBe(null);
             });
 
@@ -231,12 +231,13 @@ suite('rb/views/ReviewDialogView', function() {
                             reviewRequestEditor: reviewRequestEditor
                         });
 
-                        expect(dlg._bodyTopEditor.getText()).toBe(bodyTopText);
-                        expect(dlg._bodyBottomEditor.getText())
+                        expect(dlg._bodyTopView.$editor.text())
+                            .toBe(bodyTopText);
+                        expect(dlg._bodyBottomView.$editor.text())
                             .toBe(bodyBottomText);
-                        expect(dlg._$shipIt.prop('checked')).toBe(shipIt);
-                        expect(dlg._bodyBottomEditor.$el.is(':visible'))
+                        expect(dlg._bodyBottomView.$el.is(':visible'))
                             .toBe(false);
+                        expect(dlg._$shipIt.prop('checked')).toBe(shipIt);
                         expect(dlg._$comments.children().length).toBe(0);
                         expect(dlg._$spinner).toBe(null);
                     }
@@ -246,10 +247,9 @@ suite('rb/views/ReviewDialogView', function() {
 
                         testLoadReview();
 
-                        console.log(review.ready.calls);
                         expect(review.ready.calls[0].args[0].data).toEqual({
-                            'force-text-type': 'markdown',
-                            'include-text-types': 'raw'
+                            'force-text-type': 'html',
+                            'include-text-types': 'raw,markdown'
                         });
                     });
 
@@ -261,8 +261,8 @@ suite('rb/views/ReviewDialogView', function() {
 
                         expect(review.ready.calls[0].args[0].data)
                             .toEqual({
-                                'force-text-type': undefined,
-                                'include-raw-text-fields': undefined
+                                'force-text-type': 'html',
+                                'include-text-types': 'raw'
                             });
                     });
                 });
@@ -291,12 +291,12 @@ suite('rb/views/ReviewDialogView', function() {
                         expect(dlg._commentViews.length).toBe(1);
 
                         commentView = dlg._commentViews[0];
-                        expect(commentView.textEditor.getText()).toBe(
-                            diffCommentPayload.text);
+                        expect(commentView.$editor.text())
+                            .toBe(diffCommentPayload.text);
                         expect(commentView.$issueOpened.prop('checked'))
                             .toBe(diffCommentPayload.issue_opened);
 
-                        expect(dlg._bodyBottomEditor.$el.is(':visible'))
+                        expect(dlg._bodyBottomView.$el.is(':visible'))
                             .toBe(true);
                         expect(dlg._$spinner).toBe(null);
                     }
@@ -311,8 +311,8 @@ suite('rb/views/ReviewDialogView', function() {
                             'max-results': 50,
                             'expand': 'filediff,interfilediff',
                             'order-by': 'filediff,first_line',
-                            'force-text-type': 'markdown',
-                            'include-text-types': 'raw'
+                            'force-text-type': 'html',
+                            'include-text-types': 'raw,markdown'
                         });
                     });
 
@@ -326,7 +326,9 @@ suite('rb/views/ReviewDialogView', function() {
                             'api_format': 'json',
                             'max-results': 50,
                             'expand': 'filediff,interfilediff',
-                            'order-by': 'filediff,first_line'
+                            'order-by': 'filediff,first_line',
+                            'force-text-type': 'html',
+                            'include-text-types': 'raw'
                         });
                     });
                 });
@@ -351,8 +353,8 @@ suite('rb/views/ReviewDialogView', function() {
                         expect(dlg._commentViews.length).toBe(1);
 
                         commentView = dlg._commentViews[0];
-                        expect(commentView.textEditor.getText()).toBe(
-                            fileAttachmentCommentPayload.text);
+                        expect(commentView.$editor.text())
+                            .toBe(fileAttachmentCommentPayload.text);
                         expect(commentView.$issueOpened.prop('checked')).toBe(
                             fileAttachmentCommentPayload.issue_opened);
                         expect(commentView.$('img').attr('src')).toBe(
@@ -364,7 +366,7 @@ suite('rb/views/ReviewDialogView', function() {
                         expect(commentView.$('.thumbnail').html()).toBe(
                             fileAttachmentCommentPayload.thumbnail_html);
 
-                        expect(dlg._bodyBottomEditor.$el.is(':visible'))
+                        expect(dlg._bodyBottomView.$el.is(':visible'))
                             .toBe(true);
                         expect(dlg._$spinner).toBe(null);
                     }
@@ -379,8 +381,8 @@ suite('rb/views/ReviewDialogView', function() {
                             'max-results': 50,
                             'expand': 'diff_against_file_attachment,' +
                                       'file_attachment',
-                            'force-text-type': 'markdown',
-                            'include-text-types': 'raw'
+                            'force-text-type': 'html',
+                            'include-text-types': 'raw,markdown'
                         });
                     });
 
@@ -394,7 +396,9 @@ suite('rb/views/ReviewDialogView', function() {
                             'api_format': 'json',
                             'max-results': 50,
                             'expand': 'diff_against_file_attachment,' +
-                                      'file_attachment'
+                                      'file_attachment',
+                            'force-text-type': 'html',
+                            'include-text-types': 'raw'
                         });
                     });
                 });
@@ -409,7 +413,7 @@ suite('rb/views/ReviewDialogView', function() {
                             screenshotCommentPayload
                         ];
 
-                        dlg = createCommentDialog();
+                        dlg = createReviewDialog();
 
                         expect($.ajax).toHaveBeenCalled();
                         expect($.ajax.calls[0].args[0].url).toBe(
@@ -419,8 +423,8 @@ suite('rb/views/ReviewDialogView', function() {
                         expect(dlg._commentViews.length).toBe(1);
 
                         commentView = dlg._commentViews[0];
-                        expect(commentView.textEditor.getText()).toBe(
-                            screenshotCommentPayload.text);
+                        expect(commentView.$editor.text())
+                            .toBe(screenshotCommentPayload.text);
                         expect(commentView.$issueOpened.prop('checked')).toBe(
                             screenshotCommentPayload.issue_opened);
 
@@ -440,7 +444,7 @@ suite('rb/views/ReviewDialogView', function() {
                         expect($filenameA.text()).toBe(
                             screenshotCommentPayload.screenshot.caption);
 
-                        expect(dlg._bodyBottomEditor.$el.is(':visible'))
+                        expect(dlg._bodyBottomView.$el.is(':visible'))
                             .toBe(true);
                         expect(dlg._$spinner).toBe(null);
                     }
@@ -454,8 +458,8 @@ suite('rb/views/ReviewDialogView', function() {
                             'api_format': 'json',
                             'max-results': 50,
                             'expand': 'screenshot',
-                            'force-text-type': 'markdown',
-                            'include-text-types': 'raw'
+                            'force-text-type': 'html',
+                            'include-text-types': 'raw,markdown'
                         });
                     });
 
@@ -468,7 +472,9 @@ suite('rb/views/ReviewDialogView', function() {
                         expect(ajaxData).toEqual({
                             'api_format': 'json',
                             'max-results': 50,
-                            'expand': 'screenshot'
+                            'expand': 'screenshot',
+                            'force-text-type': 'html',
+                            'include-text-types': 'raw'
                         });
                     });
                 });
@@ -483,28 +489,26 @@ suite('rb/views/ReviewDialogView', function() {
                 comment;
 
             function testSaveComment(richText) {
-                var newCommentText = 'New commet text',
-                    newIssueOpened = false;
+                var newCommentText = 'New comment text';
 
-                dlg = createCommentDialog();
+                dlg = createReviewDialog();
 
                 expect(dlg._commentViews.length).toBe(1);
 
                 commentView = dlg._commentViews[0];
                 comment = commentView.model;
 
-                /* Set some new state for the comment. */
-                commentView.textEditor.setText(newCommentText);
-                commentView.textEditor.setRichText(richText);
-                commentView.$issueOpened.prop('checked', newIssueOpened);
-
                 spyOn(comment, 'save');
 
-                dlg._saveReview();
+                /* Set some new state for the comment. */
+                commentView.$editor
+                    .inlineEditor('startEdit')
+                    .inlineEditor('setValue', newCommentText);
+                commentView.textEditor.setRichText(richText);
+                commentView.save();
 
                 expect(comment.save).toHaveBeenCalled();
                 expect(comment.get('text')).toBe(newCommentText);
-                expect(comment.get('issueOpened')).toBe(newIssueOpened);
                 expect(comment.get('richText')).toBe(richText);
             }
 
@@ -534,7 +538,9 @@ suite('rb/views/ReviewDialogView', function() {
 
                 spyOn(review, 'save').andCallFake(
                     function(options, context) {
-                        options.success.call(context);
+                        if (options && options.success) {
+                            options.success.call(context);
+                        }
                     });
 
                 spyOn($, 'ajax').andCallFake(function(options) {
@@ -550,18 +556,20 @@ suite('rb/views/ReviewDialogView', function() {
 
             describe('Review properties', function() {
                 beforeEach(function() {
-                    dlg = createCommentDialog();
+                    dlg = createReviewDialog();
                 });
 
                 describe('Body Top', function() {
                     function runTest(richText) {
-                        var text = 'My new text';
+                        var text = 'My new text',
+                            bodyTopEditor = dlg._bodyTopView.textEditor;
 
-                        dlg._bodyTopEditor.setText(text);
-                        dlg._bodyTopEditor.setRichText(richText);
-                        dlg._saveReview();
+                        dlg._bodyTopView.openEditor();
+                        bodyTopEditor.setText(text);
+                        bodyTopEditor.setRichText(richText);
+                        dlg._bodyTopView.save();
 
-                        expect(dlg._bodyTopEditor.getText()).toBe(text);
+                        expect(bodyTopEditor.getText()).toBe(text);
                         expect(review.save).toHaveBeenCalled();
                         expect(review.get('bodyTop')).toBe(text);
                         expect(review.get('bodyTopRichText')).toBe(richText);
@@ -578,13 +586,15 @@ suite('rb/views/ReviewDialogView', function() {
 
                 describe('Body Bottom', function() {
                     function runTest(richText) {
-                        var text = 'My new text';
+                        var text = 'My new text',
+                            bodyBottomEditor = dlg._bodyBottomView.textEditor;
 
-                        dlg._bodyBottomEditor.setText(text);
-                        dlg._bodyBottomEditor.setRichText(richText);
-                        dlg._saveReview();
+                        dlg._bodyBottomView.openEditor();
+                        bodyBottomEditor.setText(text);
+                        bodyBottomEditor.setRichText(richText);
+                        dlg._bodyBottomView.save();
 
-                        expect(dlg._bodyBottomEditor.getText()).toBe(text);
+                        expect(bodyBottomEditor.getText()).toBe(text);
                         expect(review.save).toHaveBeenCalled();
                         expect(review.get('bodyBottom')).toBe(text);
                         expect(review.get('bodyBottomRichText')).toBe(richText);

@@ -70,3 +70,15 @@ can still write new comments in the green area of the comment box.
 
           The view here is meant to be used only as a reference to see if
           other people have already said what you plan to say.
+
+
+Viewing Other Markdown Revisions
+================================
+
+.. versionadded:: 2.5
+
+As explained in :ref:`reviewing-file-attachments`, you can view and compare
+revisions of a markdown file attachment. When viewing :term:`interdiffs`,
+Review Board will display the two file revisions side by side. Changing from
+:guilabel:`Rendered` and :guilabel:`Source` will change both revisions at the
+same time.

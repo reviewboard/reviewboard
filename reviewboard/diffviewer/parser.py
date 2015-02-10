@@ -112,14 +112,14 @@ class DiffParser(object):
                     return linenum, None
 
             file = File()
-            file.binary          = info.get('binary', False)
-            file.deleted         = info.get('deleted', False)
-            file.moved           = info.get('moved', False)
-            file.copied          = info.get('copied', False)
-            file.origFile        = info.get('origFile')
-            file.newFile         = info.get('newFile')
-            file.origInfo        = info.get('origInfo')
-            file.newInfo         = info.get('newInfo')
+            file.binary = info.get('binary', False)
+            file.deleted = info.get('deleted', False)
+            file.moved = info.get('moved', False)
+            file.copied = info.get('copied', False)
+            file.origFile = info.get('origFile')
+            file.newFile = info.get('newFile')
+            file.origInfo = info.get('origInfo')
+            file.newInfo = info.get('newInfo')
             file.origChangesetId = info.get('origChangesetId')
 
             if isinstance(file.origFile, six.binary_type):

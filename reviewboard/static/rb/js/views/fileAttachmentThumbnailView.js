@@ -31,7 +31,8 @@ RB.FileAttachmentThumbnail = Backbone.View.extend({
 
     events: {
         'click .delete': '_onDeleteClicked',
-        'click .file-add-comment a': '_onAddCommentClicked'
+        'click .file-add-comment a': '_onAddCommentClicked',
+        'click .update a': '_onUpdateClicked'
     },
 
     template: _.template([
@@ -57,16 +58,24 @@ RB.FileAttachmentThumbnail = Backbone.View.extend({
 
     actionsTemplate: _.template([
         '<% if (loaded) { %>',
-        '<%   if (reviewURL) { %>',
-        ' <li class="file-review"><a href="<%- reviewURL %>"><%- reviewText %></a></li>',
-        '<%   } else { %>',
-        ' <li class="file-add-comment"><a href="#"><%- addCommentText %></a></li>',
+        '<%  if (reviewURL) { %>',
+        '   <li class="file-review"><a href="<%- reviewURL %>"><%- reviewText %></a></li>',
+        '<%  } else { %>',
+        '   <li class="file-add-comment"><a href="#"><%- commentText %></a></li>',
+        '<%  } %>',
+        ' <li>',
+        '  <a class="thumbnail-actions" href="#">&#9662;</a>',
+        '  <ul class="file-attachment-menu" style="display: none;">',
+        '<%   if (attachmentHistoryID) { %>',
+        '   <li class="update">',
+        '    <a href="#" data-attachment-history-id="<%- attachmentHistoryID %>"',
+        '       ><%- updateText %></a>',
+        '   </li>',
         '<%   } %>',
-        ' <li class="delete">',
-        '  <a href="#" alt="<%- deleteFileText %>"',
-        '     title="<%- deleteFileText %>">',
-        '   <span class="ui-icon ui-icon-trash"></span>',
-        '  </a>',
+        '   <li class="delete">',
+        '    <a href="#"><%- deleteText %></a>',
+        '   </li>',
+        '  </ul>',
         ' </li>',
         '<% } %>'
     ].join('')),
@@ -344,9 +353,10 @@ RB.FileAttachmentThumbnail = Backbone.View.extend({
         }
 
         this._$actions.html(this.actionsTemplate(_.defaults({
-            deleteFileText: gettext('Delete this file'),
+            deleteText: gettext('Delete'),
             reviewText: gettext('Review'),
-            addCommentText: gettext('New Comment')
+            commentText: gettext('Comment'),
+            updateText: gettext('Update')
         }, this.model.attributes)));
     },
 
@@ -380,6 +390,25 @@ RB.FileAttachmentThumbnail = Backbone.View.extend({
         e.stopPropagation();
 
         this.showCommentDlg();
+    },
+
+    /*
+     * Handler for the Update button.
+     *
+     * Shows the upload form.
+     */
+    _onUpdateClicked: function(e) {
+        var updateDlg;
+
+        e.preventDefault();
+        e.stopPropagation();
+
+        updateDlg = new RB.UploadAttachmentView({
+            attachmentHistoryID: $(e.target).data('attachment-history-id'),
+            presetCaption: this.model.get('caption'),
+            reviewRequest: this.options.reviewRequest
+        });
+        updateDlg.render();
     },
 
     /*

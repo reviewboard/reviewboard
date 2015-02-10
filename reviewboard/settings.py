@@ -157,7 +157,6 @@ RB_BUILTIN_APPS = [
     'djblets.pipeline',
     'djblets.siteconfig',
     'djblets.util',
-    'djblets.webapi',
     'haystack',
     'pipeline',  # Must be after djblets.pipeline
     'reviewboard',
@@ -165,16 +164,13 @@ RB_BUILTIN_APPS = [
     'reviewboard.admin',
     'reviewboard.attachments',
     'reviewboard.changedescs',
-    'reviewboard.datagrids',
     'reviewboard.diffviewer',
     'reviewboard.extensions',
     'reviewboard.hostingsvcs',
     'reviewboard.notifications',
     'reviewboard.reviews',
-    'reviewboard.reviews.ui',
     'reviewboard.scmtools',
     'reviewboard.site',
-    'reviewboard.ssh',
     'reviewboard.webapi',
 ]
 
@@ -190,6 +186,12 @@ RB_EXTRA_APPS = []
 
 WEB_API_ENCODERS = (
     'djblets.webapi.encoders.ResourceAPIEncoder',
+)
+
+# The backends that are used to authenticate requests against the web API.
+WEB_API_AUTH_BACKENDS = (
+    'djblets.webapi.auth.WebAPIBasicAuthBackend',
+    'reviewboard.webapi.auth_backends.WebAPITokenAuthBackend',
 )
 
 SESSION_ENGINE = 'django.contrib.sessions.backends.cached_db'
@@ -260,7 +262,7 @@ REGISTER_SUPPORT_URL = (SUPPORT_URL_BASE +
 # messages for hosting service webhooks. These can be overriden in
 # settings_local.py.
 HOSTINGSVCS_HOOK_REGEX = (r'(?:Reviewed at %(server_url)sr/|Review request #)'
-                           '(?P<id>\d+)')
+                          r'(?P<id>\d+)')
 HOSTINGSVCS_HOOK_REGEX_FLAGS = re.IGNORECASE
 
 

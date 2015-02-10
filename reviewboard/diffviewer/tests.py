@@ -1,12 +1,15 @@
 from __future__ import unicode_literals
 
+import bz2
 import os
 
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.http import HttpResponse
 from django.utils.six.moves import zip_longest
 from djblets.cache.backend import cache_memoize
+from djblets.db.fields import Base64DecodedValue
 from djblets.siteconfig.models import SiteConfiguration
+from djblets.testing.decorators import add_fixtures
 from kgb import SpyAgency
 import nose
 
@@ -16,7 +19,9 @@ from reviewboard.admin.import_utils import has_module
 from reviewboard.diffviewer.chunk_generator import DiffChunkGenerator
 from reviewboard.diffviewer.errors import UserVisibleError
 from reviewboard.diffviewer.forms import UploadDiffForm
-from reviewboard.diffviewer.models import DiffSet, FileDiff
+from reviewboard.diffviewer.models import (DiffSet, FileDiff,
+                                           LegacyFileDiffData,
+                                           RawFileDiffData)
 from reviewboard.diffviewer.myersdiff import MyersDiffer
 from reviewboard.diffviewer.opcode_generator import get_diff_opcode_generator
 from reviewboard.diffviewer.renderers import DiffRenderer
@@ -688,33 +693,85 @@ class FileDiffTests(TestCase):
         self.assertEqual(diff_hash.delete_count, 2)
 
 
+class RawFileDiffDataManagerTests(TestCase):
+    """Unit tests for RawFileDiffDataManager."""
+
+    small_diff = (
+        b'diff --git a/README b/README\n'
+        b'index d6613f5..5b50866 100644\n'
+        b'--- README\n'
+        b'+++ README\n'
+        b'@ -1,1 +1,1 @@\n'
+        b'-blah blah\n'
+        b'+blah!\n')
+
+    large_diff = (
+        b'diff --git a/README b/README\n'
+        b'index d6613f5..5b50866 100644\n'
+        b'--- README\n'
+        b'+++ README\n'
+        b'@ -1,1 +1,10 @@\n'
+        b'-blah blah\n'
+        b'+blah!\n'
+        b'+blah!\n'
+        b'+blah!\n'
+        b'+blah!\n'
+        b'+blah!\n'
+        b'+blah!\n'
+        b'+blah!\n'
+        b'+blah!\n'
+        b'+blah!\n'
+        b'+blah!\n')
+
+    def test_process_diff_data_small_diff_uncompressed(self):
+        """Testing RawFileDiffDataManager.process_diff_data with small diff
+        results in uncompressed storage
+        """
+        data, compression = \
+            RawFileDiffData.objects.process_diff_data(self.small_diff)
+
+        self.assertEqual(data, self.small_diff)
+        self.assertIsNone(compression)
+
+    def test_process_diff_data_large_diff_compressed(self):
+        """Testing RawFileDiffDataManager.process_diff_data with large diff
+        results in bzip2-compressed storage
+        """
+        data, compression = \
+            RawFileDiffData.objects.process_diff_data(self.large_diff)
+
+        self.assertEqual(data, bz2.compress(self.large_diff, 9))
+        self.assertEqual(compression, RawFileDiffData.COMPRESSION_BZIP2)
+
+
 class FileDiffMigrationTests(TestCase):
     fixtures = ['test_scmtools']
+
+    diff = (
+        b'diff --git a/README b/README\n'
+        b'index d6613f5..5b50866 100644\n'
+        b'--- README\n'
+        b'+++ README\n'
+        b'@ -1,1 +1,1 @@\n'
+        b'-blah blah\n'
+        b'+blah!\n')
+
+    parent_diff = (
+        b'diff --git a/README b/README\n'
+        b'index d6613f5..5b50866 100644\n'
+        b'--- README\n'
+        b'+++ README\n'
+        b'@ -1,1 +1,1 @@\n'
+        b'-blah..\n'
+        b'+blah blah\n')
 
     def setUp(self):
         super(FileDiffMigrationTests, self).setUp()
 
-        self.diff = (
-            b'diff --git a/README b/README\n'
-            b'index d6613f5..5b50866 100644\n'
-            b'--- README\n'
-            b'+++ README\n'
-            b'@ -1,1 +1,1 @@\n'
-            b'-blah blah\n'
-            b'+blah!\n')
-        self.parent_diff = (
-            b'diff --git a/README b/README\n'
-            b'index d6613f5..5b50866 100644\n'
-            b'--- README\n'
-            b'+++ README\n'
-            b'@ -1,1 +1,1 @@\n'
-            b'-blah..\n'
-            b'+blah blah\n')
-
-        repository = self.create_repository(tool_name='Test')
+        self.repository = self.create_repository(tool_name='Test')
         diffset = DiffSet.objects.create(name='test',
                                          revision=1,
-                                         repository=repository)
+                                         repository=self.repository)
         self.filediff = FileDiff(source_file='README',
                                  dest_file='README',
                                  diffset=diffset,
@@ -722,7 +779,7 @@ class FileDiffMigrationTests(TestCase):
                                  parent_diff64='')
 
     def test_migration_by_diff(self):
-        """Testing FileDiffData migration accessing FileDiff.diff"""
+        """Testing RawFileDiffData migration accessing FileDiff.diff"""
         self.filediff.diff64 = self.diff
 
         self.assertEqual(self.filediff.diff_hash, None)
@@ -742,7 +799,7 @@ class FileDiffMigrationTests(TestCase):
         self.assertEqual(self.filediff.parent_diff_hash, None)
 
     def test_migration_by_parent_diff(self):
-        """Testing FileDiffData migration accessing FileDiff.parent_diff"""
+        """Testing RawFileDiffData migration accessing FileDiff.parent_diff"""
         self.filediff.diff64 = self.diff
         self.filediff.parent_diff64 = self.parent_diff
 
@@ -760,7 +817,7 @@ class FileDiffMigrationTests(TestCase):
         self.assertEqual(self.filediff.parent_diff, self.parent_diff)
 
     def test_migration_by_delete_count(self):
-        """Testing FileDiffData migration accessing FileDiff.delete_count"""
+        """Testing RawFileDiffData migration accessing FileDiff.delete_count"""
         self.filediff.diff64 = self.diff
 
         self.assertEqual(self.filediff.diff_hash, None)
@@ -773,7 +830,7 @@ class FileDiffMigrationTests(TestCase):
         self.assertEqual(self.filediff.diff_hash.delete_count, 1)
 
     def test_migration_by_insert_count(self):
-        """Testing FileDiffData migration accessing FileDiff.insert_count"""
+        """Testing RawFileDiffData migration accessing FileDiff.insert_count"""
         self.filediff.diff64 = self.diff
 
         self.assertEqual(self.filediff.diff_hash, None)
@@ -786,7 +843,8 @@ class FileDiffMigrationTests(TestCase):
         self.assertEqual(self.filediff.diff_hash.insert_count, 1)
 
     def test_migration_by_set_line_counts(self):
-        """Testing FileDiffData migration calling FileDiff.set_line_counts"""
+        """Testing RawFileDiffData migration calling FileDiff.set_line_counts
+        """
         self.filediff.diff64 = self.diff
 
         self.assertEqual(self.filediff.diff_hash, None)
@@ -803,77 +861,126 @@ class FileDiffMigrationTests(TestCase):
         self.assertEqual(self.filediff.diff_hash.insert_count, 10)
         self.assertEqual(self.filediff.diff_hash.delete_count, 20)
 
+    def test_migration_by_legacy_diff_hash(self):
+        """Testing RawFileDiffData migration accessing FileDiff.diff
+        with associated LegacyFileDiffData
+        """
+        legacy = LegacyFileDiffData.objects.create(
+            binary_hash='abc123',
+            binary=Base64DecodedValue(self.diff))
 
-class FileDiffMigrationTests(TestCase):
-    fixtures = ['test_scmtools']
+        self.filediff.legacy_diff_hash = legacy
+        self.filediff.save()
 
-    def setUp(self):
-        super(FileDiffMigrationTests, self).setUp()
-
-        self.diff = (
-            'diff --git a/README b/README\n'
-            'index d6613f5..5b50866 100644\n'
-            '--- README\n'
-            '+++ README\n'
-            '@ -1,1 +1,1 @@\n'
-            '-blah blah\n'
-            '+blah!\n')
-        self.parent_diff = (
-            'diff --git a/README b/README\n'
-            'index d6613f5..5b50866 100644\n'
-            '--- README\n'
-            '+++ README\n'
-            '@ -1,1 +1,1 @@\n'
-            '-blah..\n'
-            '+blah blah\n')
-
-        repository = self.create_repository()
-        diffset = DiffSet.objects.create(name='test',
-                                         revision=1,
-                                         repository=repository)
-        self.filediff = FileDiff(source_file='README',
-                                 dest_file='README',
-                                 diffset=diffset,
-                                 diff64='',
-                                 parent_diff64='')
-
-    def test_migration_by_diff(self):
-        """Testing FileDiffData migration accessing FileDiff.diff"""
-        self.filediff.diff64 = self.diff
-
-        self.assertEqual(self.filediff.diff_hash, None)
-        self.assertEqual(self.filediff.parent_diff_hash, None)
-
-        # This should prompt the migration
+        # This should prompt the migration.
         diff = self.filediff.diff
 
-        self.assertEqual(self.filediff.parent_diff_hash, None)
-        self.assertNotEqual(self.filediff.diff_hash, None)
+        self.assertIsNotNone(self.filediff.diff_hash)
+        self.assertIsNone(self.filediff.parent_diff_hash)
+        self.assertIsNone(self.filediff.legacy_diff_hash)
+        self.assertEqual(LegacyFileDiffData.objects.count(), 0)
 
         self.assertEqual(diff, self.diff)
         self.assertEqual(self.filediff.diff64, '')
-        self.assertEqual(self.filediff.diff_hash.binary, self.diff)
+        self.assertEqual(self.filediff.diff_hash.content, self.diff)
         self.assertEqual(self.filediff.diff, diff)
-        self.assertEqual(self.filediff.parent_diff, None)
-        self.assertEqual(self.filediff.parent_diff_hash, None)
+        self.assertIsNone(self.filediff.parent_diff)
+        self.assertIsNone(self.filediff.parent_diff_hash)
 
-    def test_migration_by_parent_diff(self):
-        """Testing FileDiffData migration accessing FileDiff.parent_diff"""
-        self.filediff.diff64 = self.diff
-        self.filediff.parent_diff64 = self.parent_diff
+    def test_migration_by_shared_legacy_diff_hash(self):
+        """Testing RawFileDiffData migration accessing FileDiff.diff
+        with associated shared LegacyFileDiffData
+        """
+        legacy = LegacyFileDiffData.objects.create(
+            binary_hash='abc123',
+            binary=Base64DecodedValue(self.diff))
 
-        self.assertEqual(self.filediff.parent_diff_hash, None)
+        self.filediff.legacy_diff_hash = legacy
+        self.filediff.save()
 
-        # This should prompt the migration
+        # Create a second FileDiff using this legacy data.
+        diffset = DiffSet.objects.create(name='test',
+                                         revision=1,
+                                         repository=self.repository)
+        FileDiff.objects.create(source_file='README',
+                                dest_file='README',
+                                diffset=diffset,
+                                diff64='',
+                                parent_diff64='',
+                                legacy_diff_hash=legacy)
+
+        # This should prompt the migration.
+        diff = self.filediff.diff
+
+        self.assertIsNotNone(self.filediff.diff_hash)
+        self.assertIsNone(self.filediff.parent_diff_hash)
+        self.assertIsNone(self.filediff.legacy_diff_hash)
+        self.assertEqual(LegacyFileDiffData.objects.count(), 1)
+
+        self.assertEqual(diff, self.diff)
+        self.assertEqual(self.filediff.diff64, '')
+        self.assertEqual(self.filediff.diff_hash.content, self.diff)
+        self.assertEqual(self.filediff.diff, diff)
+        self.assertIsNone(self.filediff.parent_diff)
+        self.assertIsNone(self.filediff.parent_diff_hash)
+
+    def test_migration_by_legacy_parent_diff_hash(self):
+        """Testing RawFileDiffData migration accessing FileDiff.parent_diff
+        with associated LegacyFileDiffData
+        """
+        legacy = LegacyFileDiffData.objects.create(
+            binary_hash='abc123',
+            binary=Base64DecodedValue(self.parent_diff))
+
+        self.filediff.legacy_parent_diff_hash = legacy
+        self.filediff.save()
+
+        # This should prompt the migration.
         parent_diff = self.filediff.parent_diff
 
-        self.assertNotEqual(self.filediff.parent_diff_hash, None)
+        self.assertIsNotNone(self.filediff.parent_diff_hash)
+        self.assertIsNone(self.filediff.legacy_parent_diff_hash)
 
         self.assertEqual(parent_diff, self.parent_diff)
         self.assertEqual(self.filediff.parent_diff64, '')
-        self.assertEqual(self.filediff.parent_diff_hash.binary,
+        self.assertEqual(self.filediff.parent_diff_hash.content,
                          self.parent_diff)
-        self.assertEqual(self.filediff.parent_diff, self.parent_diff)
+        self.assertEqual(self.filediff.parent_diff, parent_diff)
+
+    def test_migration_by_shared_legacy_parent_diff_hash(self):
+        """Testing RawFileDiffData migration accessing FileDiff.parent_diff
+        with associated shared LegacyFileDiffData
+        """
+        legacy = LegacyFileDiffData.objects.create(
+            binary_hash='abc123',
+            binary=Base64DecodedValue(self.parent_diff))
+
+        self.filediff.legacy_parent_diff_hash = legacy
+        self.filediff.save()
+
+        # Create a second FileDiff using this legacy data.
+        diffset = DiffSet.objects.create(name='test',
+                                         revision=1,
+                                         repository=self.repository)
+        FileDiff.objects.create(source_file='README',
+                                dest_file='README',
+                                diffset=diffset,
+                                diff64='',
+                                parent_diff64='',
+                                legacy_parent_diff_hash=legacy)
+
+        # This should prompt the migration.
+        parent_diff = self.filediff.parent_diff
+
+        self.assertIsNotNone(self.filediff.parent_diff_hash)
+        self.assertIsNone(self.filediff.legacy_parent_diff_hash)
+        self.assertEqual(LegacyFileDiffData.objects.count(), 1)
+
+        self.assertEqual(parent_diff, self.parent_diff)
+        self.assertEqual(self.filediff.parent_diff64, '')
+        self.assertEqual(self.filediff.parent_diff_hash.content,
+                         self.parent_diff)
+        self.assertEqual(self.filediff.parent_diff, parent_diff)
 
 
 class HighlightRegionTest(TestCase):
@@ -2095,3 +2202,118 @@ class DiffUtilsTests(TestCase):
         new = 'nopqrstuvwxyz'
         regions = diffutils.get_line_changed_regions(old, new)
         deep_equal(regions, (None, None))
+
+    @add_fixtures(['test_users', 'test_scmtools'])
+    def test_headers_use_correct_line_insert(self):
+        """Testing header generation for chunks with insert chunks above"""
+        # We turn off highlighting to compare lines.
+        siteconfig = SiteConfiguration.objects.get_current()
+        siteconfig.set('diffviewer_syntax_highlighting', False)
+        siteconfig.save()
+
+        line_number = 27  # This is a header line below the chunk of inserts
+
+        diff = (b"diff --git a/tests.py b/tests.py\n"
+                b"index a4fc53e..f2414cc 100644\n"
+                b"--- a/tests.py\n"
+                b"+++ b/tests.py\n"
+                b"@@ -20,6 +20,9 @@ from reviewboard.site.urlresolvers import "
+                b"local_site_reverse\n"
+                b" from reviewboard.site.models import LocalSite\n"
+                b" from reviewboard.webapi.errors import INVALID_REPOSITORY\n"
+                b"\n"
+                b"+class Foo(object):\n"
+                b"+    def bar(self):\n"
+                b"+        pass\n"
+                b"\n"
+                b" class BaseWebAPITestCase(TestCase, EmailTestHelper);\n"
+                b"     fixtures = ['test_users', 'test_reviewrequests', 'test_"
+                b"scmtools',\n")
+
+        repository = self.create_repository(tool_name='Git')
+        review_request = self.create_review_request(repository=repository)
+        diffset = self.create_diffset(review_request=review_request)
+
+        filediff = self.create_filediff(
+            diffset=diffset, source_file='tests.py', dest_file='tests.py',
+            source_revision='a4fc53e08863f5341effb5204b77504c120166ae',
+            diff=diff)
+
+        context = {'user': review_request.submitter}
+        header = diffutils.get_last_header_before_line(context, filediff, None,
+                                                       line_number)
+        chunks = diffutils.get_file_chunks_in_range(
+            context, filediff, None, 1,
+            diffutils.get_last_line_number_in_diff(context, filediff, None))
+
+        lines = []
+
+        for chunk in chunks:
+            lines.extend(chunk['lines'])
+
+        # The header we find should be before our line number (which has a
+        # header itself).
+        self.assertTrue(header['right']['line'] < line_number)
+
+        # The line numbers start at 1 and not 0.
+        self.assertEqual(header['right']['text'],
+                         lines[header['right']['line'] - 1][5])
+
+    @add_fixtures(['test_users', 'test_scmtools'])
+    def test_header_correct_line_delete(self):
+        """Testing header generation for chunks with delete chunks above"""
+        # We turn off highlighting to compare lines.
+        siteconfig = SiteConfiguration.objects.get_current()
+        siteconfig.set('diffviewer_syntax_highlighting', False)
+        siteconfig.save()
+
+        line_number = 53  # This is a header line below the chunk of deletes
+
+        diff = (b"diff --git a/tests.py b/tests.py\n"
+                b"index a4fc53e..ba7d34b 100644\n"
+                b"--- a/tests.py\n"
+                b"+++ b/tests.py\n"
+                b"@@ -47,9 +47,6 @@ class BaseWebAPITestCase(TestCase, "
+                b"EmailTestHelper);\n"
+                b"\n"
+                b"         yourself.base_url = 'http;//testserver'\n"
+                b"\n"
+                b"-    def tearDown(yourself);\n"
+                b"-        yourself.client.logout()\n"
+                b"-\n"
+                b"     def api_func_wrapper(yourself, api_func, path, query, "
+                b"expected_status,\n"
+                b"                          follow_redirects, expected_"
+                b"redirects);\n"
+                b"         response = api_func(path, query, follow=follow_"
+                b"redirects)\n")
+
+        repository = self.create_repository(tool_name='Git')
+        review_request = self.create_review_request(repository=repository)
+        diffset = self.create_diffset(review_request=review_request)
+
+        filediff = self.create_filediff(
+            diffset=diffset, source_file='tests.py', dest_file='tests.py',
+            source_revision='a4fc53e08863f5341effb5204b77504c120166ae',
+            diff=diff)
+
+        context = {'user': review_request.submitter}
+        header = diffutils.get_last_header_before_line(context, filediff, None,
+                                                       line_number)
+
+        chunks = diffutils.get_file_chunks_in_range(
+            context, filediff, None, 1,
+            diffutils.get_last_line_number_in_diff(context, filediff, None))
+
+        lines = []
+
+        for chunk in chunks:
+            lines.extend(chunk['lines'])
+
+        # The header we find should be before our line number (which has a
+        # header itself).
+        self.assertTrue(header['left']['line'] < line_number)
+
+        # The line numbers start at 1 and not 0.
+        self.assertEqual(header['left']['text'],
+                         lines[header['left']['line'] - 1][2])

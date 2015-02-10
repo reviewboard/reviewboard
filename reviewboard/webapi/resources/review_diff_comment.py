@@ -23,6 +23,7 @@ class ReviewDiffCommentResource(BaseDiffCommentResource):
     then no changes can be made.
     """
     allowed_methods = ('GET', 'POST', 'PUT', 'DELETE')
+    policy_id = 'review_diff_comment'
     model_parent_key = 'review'
 
     mimetype_list_resource_name = 'review-diff-comments'

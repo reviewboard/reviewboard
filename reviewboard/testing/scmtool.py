@@ -9,8 +9,6 @@ from reviewboard.scmtools.git import GitTool
 
 class TestTool(GitTool):
     name = 'Test'
-    uses_atomic_revisions = True
-    supports_authentication = True
     supports_post_commit = True
 
     def get_repository_info(self):

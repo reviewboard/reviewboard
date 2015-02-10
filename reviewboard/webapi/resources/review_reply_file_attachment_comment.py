@@ -27,7 +27,10 @@ class ReviewReplyFileAttachmentCommentResource(
     changed on this list. However, if the reply is already published,
     then no changed can be made.
     """
+    added_in = '1.6'
+
     allowed_methods = ('GET', 'POST', 'PUT', 'DELETE')
+    policy_id = 'review_reply_file_attachment_comment'
     model_parent_key = 'review'
     fields = dict({
         'reply_to': {

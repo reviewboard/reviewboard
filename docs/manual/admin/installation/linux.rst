@@ -415,6 +415,23 @@ more information.
 .. _`Amazon S3`: http://aws.amazon.com/s3/
 
 
+Installing OpenStack Swift Support (optional)
+=============================================
+
+This is an optional step.
+
+Review Board can use `OpenStack Swift`_ to store uploaded screenshots. To install
+this, you will need the :mod:`django-storage-swift` module. Type::
+
+    $ easy_install django-storage-swift
+
+After you've installed Review Board and created your site, you will need
+to configure this. See the :ref:`file-storage-settings` documentation for
+more information.
+
+.. _`OpenStack Swift`: http://swift.openstack.org/
+
+
 Installing Development Tools (optional)
 =======================================
 

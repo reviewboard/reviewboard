@@ -3,6 +3,9 @@
  */
 RB.FileAttachment = RB.BaseResource.extend({
     defaults: _.defaults({
+        /* The file attachment's history ID. */
+        attachmentHistoryID: null,
+
         /* The file attachment's caption. */
         caption: null,
 
@@ -29,6 +32,7 @@ RB.FileAttachment = RB.BaseResource.extend({
     payloadFileKeys: ['path'],
 
     attrToJsonMap: {
+        attachmentHistoryID: 'attachment_history_id',
         downloadURL: 'url',
         file: 'path',
         iconURL: 'icon_url',
@@ -36,9 +40,14 @@ RB.FileAttachment = RB.BaseResource.extend({
         thumbnailHTML: 'thumbnail'
     },
 
-    serializedAttrs: ['caption', 'file'],
+    serializedAttrs: [
+        'attachmentHistoryID',
+        'caption',
+        'file'
+    ],
 
     deserializedAttrs: [
+        'attachmentHistoryID',
         'caption',
         'downloadURL',
         'filename',
@@ -48,6 +57,7 @@ RB.FileAttachment = RB.BaseResource.extend({
     ],
 
     serializers: {
+        attachmentHistoryID: RB.JSONSerializers.onlyIfNew,
         file: RB.JSONSerializers.onlyIfNew
     }
 });

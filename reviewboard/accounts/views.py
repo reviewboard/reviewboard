@@ -4,6 +4,7 @@ from django.contrib.auth.decorators import login_required
 from django.core.urlresolvers import reverse
 from django.http import HttpResponseRedirect
 from django.utils.decorators import method_decorator
+from django.utils.functional import cached_property
 from django.utils.translation import ugettext_lazy as _
 from django.views.decorators.csrf import csrf_protect
 from djblets.auth.views import register
@@ -44,7 +45,15 @@ class MyAccountView(ConfigPagesView):
     """
     title = _('My Account')
 
-    js_bundle_names = ['account-page']
+    css_bundle_names = [
+        'account-page',
+    ]
+
+    js_bundle_names = [
+        '3rdparty-jsonlint',
+        'config-forms',
+        'account-page',
+    ]
 
     @method_decorator(login_required)
     @augment_method_from(ConfigPagesView)
@@ -58,3 +67,7 @@ class MyAccountView(ConfigPagesView):
     @property
     def page_classes(self):
         return get_page_classes()
+
+    @cached_property
+    def ordered_user_local_sites(self):
+        return self.request.user.local_site.order_by('name')

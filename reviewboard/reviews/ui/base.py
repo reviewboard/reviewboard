@@ -15,6 +15,7 @@ from django.utils.html import escape
 from django.utils.safestring import mark_safe
 
 from reviewboard.attachments.mimetypes import MIMETYPE_EXTENSIONS, score_match
+from reviewboard.attachments.models import FileAttachment
 from reviewboard.diffviewer.models import DiffSet
 from reviewboard.reviews.context import make_review_request_context
 from reviewboard.reviews.models import FileAttachmentComment, Review
@@ -243,6 +244,7 @@ class ReviewUI(object):
         """
         user = self.request.user
 
+        result = []
         for comment in comments:
             try:
                 review = comment.get_review()
@@ -252,11 +254,13 @@ class ReviewUI(object):
 
             try:
                 if review and (review.public or review.user == user):
-                    yield self.serialize_comment(comment)
+                    result.append(self.serialize_comment(comment))
             except Exception as e:
                 logging.error('Error when calling serialize_comment for '
                               'FileAttachmentReviewUI %r: %s',
                               self, e, exc_info=1)
+
+        return result
 
     def serialize_comment(self, comment):
         """Serializes a comment.
@@ -299,9 +303,12 @@ class FileAttachmentReviewUI(ReviewUI):
 
     This also handles much of the work for diffing FileAttachments.
     """
+    name = 'Unknown file type'
     object_key = 'file'
     diff_object_key = 'diff_against_file'
     supported_mimetypes = []
+    js_model_class = 'RB.DummyReviewable'
+    js_view_class = 'RB.DummyReviewableView'
 
     def get_comments(self):
         """Returns a list of comments made on the FileAttachment.
@@ -336,10 +343,24 @@ class FileAttachmentReviewUI(ReviewUI):
         """
         data = {
             'fileAttachmentID': self.obj.pk,
+            'fileRevision': self.obj.attachment_revision,
         }
 
+        if self.obj.attachment_history is not None:
+            attachments = FileAttachment.objects.filter(
+                attachment_history=self.obj.attachment_history)
+            data['attachmentRevisionIDs'] = list(
+                attachments.order_by('attachment_revision')
+                .values_list('pk', flat=True))
+            data['numRevisions'] = attachments.count()
+
         if self.diff_against_obj:
+            data['diffCaption'] = self.diff_against_obj.display_name
             data['diffAgainstFileAttachmentID'] = self.diff_against_obj.pk
+            data['diffRevision'] = self.diff_against_obj.attachment_revision
+
+            if type(self) != type(self.diff_against_obj.review_ui):
+                data['diffTypeMismatch'] = True
 
         return data
 

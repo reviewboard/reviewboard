@@ -20,6 +20,7 @@ The following hooks are available for use by extensions.
    account-pages-hook
    account-page-forms-hook
    action-hooks
+   admin-widget-hook
    comment-detail-display-hook
    dashboard-sidebar-items-hook
    dashboard-columns-hook
@@ -35,3 +36,4 @@ The following hooks are available for use by extensions.
    template-hook
    url-hook
    user-page-sidebar-items-hook
+   webapi-capabilities-hook

@@ -19,6 +19,7 @@ from reviewboard.reviews.models import (Comment, DefaultReviewer,
                                         FileAttachmentComment)
 from reviewboard.scmtools.models import Repository
 from reviewboard.webapi.base import WebAPIResource
+from reviewboard.webapi.models import WebAPIToken
 
 
 class Resources(object):
@@ -107,6 +108,7 @@ class Resources(object):
                          self.review_reply_file_attachment_comment or
                          self.review_file_attachment_comment))
         register_resource_for_model(User, self.user)
+        register_resource_for_model(WebAPIToken, self.api_token)
 
 
 resources = Resources()

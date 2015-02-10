@@ -25,6 +25,7 @@ from reviewboard.reviews.models import (Comment, FileAttachmentComment,
                                         ScreenshotComment)
 from reviewboard.scmtools.models import Repository, Tool
 from reviewboard.site.models import LocalSite
+from reviewboard.webapi.models import WebAPIToken
 
 
 class TestCase(DjbletsTestCase):
@@ -39,6 +40,7 @@ class TestCase(DjbletsTestCase):
     and useless testing.
     """
     local_site_name = 'local-site-1'
+    local_site_id = 1
 
     _precompiled_fixtures = {}
     _fixture_dirs = []
@@ -58,6 +60,8 @@ class TestCase(DjbletsTestCase):
 
         initialize()
 
+        self._local_sites = {}
+
         # Clear the cache so that previous tests don't impact this one.
         cache.clear()
 
@@ -75,6 +79,34 @@ class TestCase(DjbletsTestCase):
             doc = self.ws_re.sub(' ', doc).strip()
 
         return doc
+
+    def get_local_site_or_none(self, name):
+        """Returns a LocalSite matching the name, if provided, or None."""
+        if name:
+            return self.get_local_site(name=name)
+        else:
+            return None
+
+    def get_local_site(self, name):
+        if name not in self._local_sites:
+            self._local_sites[name] = LocalSite.objects.get(name=name)
+
+        return self._local_sites[name]
+
+    def create_webapi_token(self, user, note='Sample note',
+                            policy={'access': 'rw'},
+                            with_local_site=False,
+                            **kwargs):
+        """Creates a WebAPIToken for testing."""
+        if with_local_site:
+            local_site = self.get_local_site(name=self.local_site_name)
+        else:
+            local_site = None
+
+        return WebAPIToken.objects.generate_token(user=user,
+                                                  note=note,
+                                                  policy=policy,
+                                                  local_site=local_site)
 
     def create_diff_file_attachment(self, filediff, from_modified=True,
                                     review_request=None,
@@ -258,7 +290,7 @@ class TestCase(DjbletsTestCase):
         """
         if not local_site:
             if with_local_site:
-                local_site = LocalSite.objects.get(name=self.local_site_name)
+                local_site = self.get_local_site(name=self.local_site_name)
             else:
                 local_site = None
 
@@ -309,7 +341,7 @@ class TestCase(DjbletsTestCase):
         """
         if not local_site:
             if with_local_site:
-                local_site = LocalSite.objects.get(name=self.local_site_name)
+                local_site = self.get_local_site(name=self.local_site_name)
             else:
                 local_site = None
 
@@ -384,7 +416,7 @@ class TestCase(DjbletsTestCase):
         populated with default data that can be overridden by the caller.
         """
         if not local_site and with_local_site:
-            local_site = LocalSite.objects.get(name=self.local_site_name)
+            local_site = self.get_local_site(name=self.local_site_name)
 
         return Group.objects.create(
             name=name,

@@ -2,16 +2,20 @@ from __future__ import unicode_literals
 
 from django.contrib.auth.models import User
 from django.db import models
+from django.dispatch import receiver
 from django.utils import timezone
 from django.utils.encoding import python_2_unicode_compatible
+from django.utils.functional import cached_property
 from django.utils.translation import ugettext_lazy as _
 from djblets.db.fields import CounterField, JSONField
 from djblets.db.managers import ConcurrencyManager
 from djblets.forms.fields import TIMEZONE_CHOICES
 from djblets.siteconfig.models import SiteConfiguration
 
-from reviewboard.accounts.managers import ProfileManager
+from reviewboard.accounts.managers import ProfileManager, TrophyManager
+from reviewboard.accounts.trophies import TrophyType
 from reviewboard.reviews.models import Group, ReviewRequest
+from reviewboard.reviews.signals import review_request_published
 from reviewboard.site.models import LocalSite
 
 
@@ -272,6 +276,31 @@ class LocalSiteProfile(models.Model):
         return '%s (%s)' % (self.user.username, self.local_site)
 
 
+class Trophy(models.Model):
+    """A trophy represents an achievement given to the user.
+
+    It is associated with a ReviewRequest and a User and can be associated
+    with a LocalSite.
+    """
+    category = models.CharField(max_length=100)
+    received_date = models.DateTimeField(default=timezone.now)
+    review_request = models.ForeignKey(ReviewRequest, related_name="trophies")
+    local_site = models.ForeignKey(LocalSite, null=True,
+                                   related_name="trophies")
+    user = models.ForeignKey(User, related_name="trophies")
+
+    objects = TrophyManager()
+
+    @cached_property
+    def trophy_type(self):
+        """Get the TrophyType instance for this trophy."""
+        return TrophyType.for_category(self.category)
+
+    def get_display_text(self):
+        """Get the display text for this trophy."""
+        return self.trophy_type.get_display_text(self)
+
+
 #
 # The following functions are patched onto the User model.
 #
@@ -358,3 +387,9 @@ User.get_site_profile = _get_site_profile
 User.should_send_email = _should_send_email
 User.should_send_own_updates = _should_send_own_updates
 User._meta.ordering = ('username',)
+
+
+@receiver(review_request_published)
+def _call_compute_trophies(sender, review_request, **kwargs):
+    if review_request.changedescs.count() == 0 and review_request.public:
+        Trophy.objects.compute_trophies(review_request)

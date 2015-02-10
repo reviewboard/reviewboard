@@ -38,7 +38,7 @@ import re
 from django.conf import settings, global_settings
 from django.core.exceptions import ImproperlyConfigured
 from django.utils import six
-from djblets.log import siteconfig as log_siteconfig
+from djblets.log import restart_logging, siteconfig as log_siteconfig
 from djblets.siteconfig.django_settings import (apply_django_settings,
                                                 get_django_defaults,
                                                 get_django_settings_map)
@@ -53,6 +53,7 @@ from reviewboard.signals import site_settings_loaded
 storage_backend_map = {
     'builtin': 'django.core.files.storage.FileSystemStorage',
     's3':      'storages.backends.s3boto.S3BotoStorage',
+    'swift':   'swift.storage.SwiftStorage',
 }
 
 
@@ -102,6 +103,11 @@ settings_map.update({
     'aws_querystring_expire':  'AWS_QUERYSTRING_EXPIRE',
     'aws_s3_secure_urls':      'AWS_S3_SECURE_URLS',
     'aws_s3_bucket_name':      'AWS_STORAGE_BUCKET_NAME',
+    'swift_auth_url':          'SWIFT_AUTH_URL',
+    'swift_username':          'SWIFT_USERNAME',
+    'swift_key':               'SWIFT_KEY',
+    'swift_auth_version':      'SWIFT_AUTH_VERSION',
+    'swift_container_name':    'SWIFT_CONTAINER_NAME',
     'couchdb_default_server':  'COUCHDB_DEFAULT_SERVER',
     'couchdb_storage_options': 'COUCHDB_STORAGE_OPTIONS',
 })
@@ -164,12 +170,17 @@ defaults.update({
     'aws_querystring_expire':  60,
     'aws_s3_secure_urls':      False,
     'aws_s3_bucket_name':      '',
+    'swift_auth_url':          '',
+    'swift_username':          '',
+    'swift_key':               '',
+    'swift_auth_version':      '1',
+    'swift_container_name':    '',
     'couchdb_default_server':  '',
     'couchdb_storage_options': {},
 })
 
 
-def load_site_config():
+def load_site_config(full_reload=False):
     """
     Loads any stored site configuration settings and populates the Django
     settings object with any that need to be there.
@@ -244,6 +255,10 @@ def load_site_config():
 
     # Populate the settings object with anything relevant from the siteconfig.
     apply_django_settings(siteconfig, settings_map)
+
+    if full_reload and not getattr(settings, 'RUNNING_TEST', False):
+        # Logging may have changed, so restart logging.
+        restart_logging()
 
     # Now for some more complicated stuff...
 
@@ -323,6 +338,11 @@ def load_site_config():
                 # Set the dirty flag so we save this back
                 dirty = True
 
+    # Add APITokenBackend to the list of auth backends. This one is always
+    # present, and is used only for API requests.
+    settings.AUTHENTICATION_BACKENDS += (
+        'reviewboard.webapi.auth_backends.TokenAuthBackend',
+    )
 
     # Set the storage backend
     storage_backend = siteconfig.settings.get('storage_backend', 'builtin')
@@ -344,6 +364,19 @@ def load_site_config():
         settings.AWS_CALLING_FORMAT = int(siteconfig.get('aws_calling_format'))
     except ValueError:
         settings.AWS_CALLING_FORMAT = 0
+
+    settings.SWIFT_AUTH_URL = six.text_type(
+        siteconfig.get('swift_auth_url'))
+    settings.SWIFT_USERNAME = six.text_type(
+        siteconfig.get('swift_username'))
+    settings.SWIFT_KEY = six.text_type(
+        siteconfig.get('swift_key'))
+    try:
+        settings.SWIFT_AUTH_VERSION = int(siteconfig.get('swift_auth_version'))
+    except:
+        settings.SWIFT_AUTH_VERSION = 1
+    settings.SWIFT_CONTAINER_NAME = six.text_type(
+        siteconfig.get('swift_container_name'))
 
     if siteconfig.settings.get('site_domain_method', 'http') == 'https':
         os.environ['HTTPS'] = 'on'

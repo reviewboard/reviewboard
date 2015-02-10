@@ -28,6 +28,7 @@ class ReviewReplyResource(BaseReviewResource):
     """
     name = 'reply'
     name_plural = 'replies'
+    policy_id = 'review_reply'
     fields = {
         'body_bottom': {
             'type': six.text_type,
@@ -57,6 +58,7 @@ class ReviewReplyResource(BaseReviewResource):
             'type': dict,
             'description': 'Extra data as part of the reply. '
                            'This can be set by the API or extensions.',
+            'added_in': '2.0',
         },
         'id': {
             'type': int,
@@ -134,6 +136,7 @@ class ReviewReplyResource(BaseReviewResource):
                            'text fields. The contents will be converted '
                            'to the requested type in the payload, but '
                            'will not be saved as that type.',
+            'added_in': '2.0.9',
         },
         'public': {
             'type': bool,

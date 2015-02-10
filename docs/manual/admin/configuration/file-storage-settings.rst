@@ -10,6 +10,7 @@ the Review Board server, but it can be changed to store on `Amazon S3`_, a
 scalable file storage service provided by Amazon.
 
 .. _`Amazon S3`: http://aws.amazon.com/s3/
+.. _`OpenStack Swift`: http://swift.openstack.org/
 
 
 General Settings
@@ -25,6 +26,12 @@ General Settings
       the files. You must have a working, paid account to use this.
 
       This requires that you install the :mod:`django-storages` Python
+      module. See the installation documentation for more information.
+
+    * :guilabel:`OpenStack Swift` - Review Board will use `OpenStack Swift`_
+      to store the files.
+
+      This requires that you install the :mod:`django-storage-swift` Python
       module. See the installation documentation for more information.
 
 
@@ -61,3 +68,22 @@ Amazon S3 Settings
       vanity domain in the format of
       ``http://{vanity_domain}}/key``. The vanity domain is configured in
       your Amazon S3 account.
+
+
+OpenStack Swift Settings
+========================
+
+* **Swift auth URL:**
+    The URL for the auth server, e.g. http://127.0.0.1:5000/v2.0
+
+* **Swift username:**
+    The username to use to authenticate, e.g. system:root
+
+* **Swift key:**
+    The key (password) to use to authenticate.
+
+* **Swift auth version:**
+    The version of the authentication protocol to use.
+
+* **Swift container name:**
+    The container in which to store the files. This container must be publicly readable.

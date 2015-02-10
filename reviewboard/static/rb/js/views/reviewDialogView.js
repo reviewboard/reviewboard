@@ -4,7 +4,15 @@
 var BaseCommentView,
     DiffCommentView,
     FileAttachmentCommentView,
-    ScreenshotCommentView;
+    ScreenshotCommentView,
+    HeaderFooterCommentView;
+
+
+function _getRawValueFieldsName() {
+    return RB.UserSession.instance.get('defaultUseRichText')
+           ? 'markdownTextFields'
+           : 'rawTextFields';
+}
 
 
 /*
@@ -18,32 +26,31 @@ BaseCommentView = Backbone.View.extend({
     editorTemplate: _.template([
         '<div class="edit-fields">',
         ' <div class="edit-field">',
-        '  <div class="comment-text-field"></div>',
+        '  <div class="comment-text-field">',
+        '   <dl>',
+        '    <dt>',
+        '     <label for="<%= id %>"><%- editCommentText %></label>',
+        '    </dt>',
+        '    <dd><pre id="<%= id %>" class="reviewtext rich-text" ',
+        '             data-rich-text="true"><%- text %></pre></dd>',
+        '   </dl>',
+        '  </div>',
         ' </div>',
         ' <div class="edit-field">',
         '  <input class="issue-opened" id="<%= issueOpenedID %>" ',
         '         type="checkbox" />',
         '  <label for="<%= issueOpenedID %>"><%- openAnIssueText %></label>',
         ' </div>',
-        ' <div class="edit-field">',
-        '  <input class="enable-markdown" id="<%= enableMarkdownID %>" ',
-        '         type="checkbox" />',
-        '  <label for="<%= enableMarkdownID %>"><%- enableMarkdownText %>',
-        '</label>',
-        ' </div>',
         '</div>'
     ].join('')),
 
     initialize: function() {
         this.$issueOpened = null;
+        this.$editor = null;
         this.textEditor = null;
-
-        this._origIssueOpened = this.model.get('issueOpened');
-        this._origRichText = this.model.get('richText');
         this._origExtraData = _.clone(this.model.get('extraData'));
-        this._hookViews = [];
 
-        this.model.set('includeTextTypes', 'raw');
+        this._hookViews = [];
     },
 
     remove: function() {
@@ -59,67 +66,103 @@ BaseCommentView = Backbone.View.extend({
     /*
      * Returns whether or not the comment needs to be saved.
      *
-     * The comment will need to be saved if the text field is dirty,
-     * or if the issueOpened checkbox has changed.
+     * The comment will need to be saved if the inline editor is currently
+     * open.
      */
     needsSave: function() {
-        var newValue = this.textEditor.getText(),
-            newIssueOpened = this.$issueOpened.prop('checked');
-            newRichText = this.textEditor.richText;
-
-        return this.model.get('text') !== newValue ||
-               this.model.get('issueOpened') !== newIssueOpened ||
-               this.model.get('richText') !== newRichText ||
-               !_.isEqual(this.model.get('extraData'), this._origExtraData);
+        return (this.$editor.inlineEditor('dirty') ||
+                !_.isEqual(this.model.get('extraData'), this._origExtraData));
     },
 
     /*
      * Saves the final state of the view.
      *
-     * This will trigger a save of the editable, which will update the
-     * comment. It will then invoke the provided callback.
+     * Saves the inline editor and notifies the caller when the model is
+     * synced.
      */
     save: function(options) {
-        this.model.set({
-            issueOpened: this.$issueOpened.prop('checked'),
-            richText: this.textEditor.richText,
-            text: this.textEditor.getText()
-        });
-        this.model.save(options);
+        /*
+         * If the inline editor needs to be saved, ask it to do so. This will
+         * call this.model.save(). If it does not, just save the model
+         * directly.
+         */
+        if (this.$editor.inlineEditor('dirty')) {
+            this.model.once('sync', function() {
+                options.success();
+            });
+
+            this.$editor.inlineEditor('submit');
+        } else {
+            this.model.save(options);
+        }
     },
 
     /*
      * Renders the comment view.
      */
     render: function() {
-        var $editFields;
+        var $editFields,
+            text = this.model.get('text');
 
         this.$el
+            .addClass('draft')
             .append(this.renderThumbnail())
             .append($(this.editorTemplate({
-                text: this.model.get('text'),
+                editCommentText: gettext('Edit comment'),
+                id: _.uniqueId('draft_comment_'),
                 issueOpenedID: _.uniqueId('issue-opened'),
                 openAnIssueText: gettext('Open an Issue'),
-                enableMarkdownID: _.uniqueId('enable-markdown'),
-                enableMarkdownText: gettext('Enable Markdown')
-            })));
-
-        this.textEditor = new RB.TextEditorView({
-            el: this.$('.comment-text-field'),
-            text: this.model.get('text'),
-            bindRichText: {
-                model: this.model,
-                attrName: 'richText'
-            }
-        });
-        this.textEditor.render();
-        this.textEditor.show();
-        this.textEditor.bindRichTextCheckbox(this.$('.enable-markdown'));
+                text: text
+            })))
+            .find('time.timesince')
+                .timesince()
+            .end();
 
         this.$issueOpened = this.$('.issue-opened')
-            .prop('checked', this.model.get('issueOpened'));
+            .prop('checked', this.model.get('issueOpened'))
+            .change(_.bind(function() {
+                this.model.set('issueOpened',
+                               this.$issueOpened.prop('checked'));
+                this.model.save({
+                    attrs: ['forceTextType', 'includeTextTypes', 'issueOpened']
+                });
+            }, this));
 
         $editFields = this.$('.edit-fields');
+
+        this.$editor = this.$('pre.reviewtext')
+            .inlineEditor(_.extend({
+                cls: 'inline-comment-editor',
+                editIconClass: 'rb-icon rb-icon-edit',
+                notifyUnchangedCompletion: true,
+                multiline: true
+            }, RB.TextEditorView.getInlineEditorOptions({
+                bindRichText: {
+                    model: this.model,
+                    attrName: 'richText'
+                }
+            })))
+            .on({
+                complete: _.bind(function(e, value) {
+                    this.model.set({
+                        text: value,
+                        richText: this.textEditor.richText
+                    });
+                    this.model.save({
+                        attrs: ['forceTextType', 'includeTextTypes',
+                                'richText', 'text']
+                    });
+                }, this)
+            });
+
+        this.textEditor = RB.TextEditorView.getFromInlineEditor(this.$editor);
+
+        this.listenTo(this.model, 'change:' + _getRawValueFieldsName(),
+                      this._updateRawValue);
+        this._updateRawValue();
+
+        this.listenTo(this.model, 'change:text', this.renderText);
+        this.renderText(this.model, text);
 
         RB.ReviewDialogCommentHook.each(function(hook) {
             var HookView = hook.get('viewType'),
@@ -143,6 +186,31 @@ BaseCommentView = Backbone.View.extend({
      */
     renderThumbnail: function() {
         return $(this.thumbnailTemplate(this.model.attributes));
+    },
+
+    /*
+     * Renders the text for this comment.
+     */
+    renderText: function(model, text) {
+        var reviewRequest = this.model.get('parentObject').get('parentObject');
+
+        if (this.$editor) {
+            RB.formatText(this.$editor, {
+                newText: text,
+                richText: this.model.get('richText'),
+                isHTMLEncoded: true,
+                bugTrackerURL: reviewRequest.get('bugTrackerURL')
+            });
+        }
+    },
+
+    _updateRawValue: function() {
+        if (this.$editor) {
+            this.$editor.inlineEditor('option', {
+                hasRawValue: true,
+                rawValue: this.model.get(_getRawValueFieldsName()).text
+            });
+        }
     }
 });
 
@@ -266,6 +334,191 @@ ScreenshotCommentView = BaseCommentView.extend({
 
 
 /*
+ * The header or footer for a review.
+ */
+HeaderFooterCommentView = Backbone.View.extend({
+    editorTemplate: _.template([
+        '<div class="add-link-container">',
+        ' <a href="#" class="add-link"><%- linkText %></a>',
+        '</div>',
+        '<div class="comment-text-field">',
+        ' <dl>',
+        '  <dt>',
+        '   <label for="<%= id %>"><%- editText %></label>',
+        '  </dt>',
+        '  <dd><pre id="<%= id %>" class="reviewtext rich-text" ',
+        '           data-rich-text="true"><%- text %></pre></dd>',
+        ' </dl>',
+        '</div>'
+    ].join('')),
+
+    events: {
+        'click .add-link': 'openEditor'
+    },
+
+    initialize: function(options) {
+        this.propertyName = options.propertyName;
+        this.richTextPropertyName = options.richTextPropertyName;
+        this.linkText = options.linkText;
+        this.editText = options.editText;
+
+        this.$editor = null;
+        this.textEditor = null;
+    },
+
+    setLinkText: function(linkText) {
+        this.$('.add-link').text(linkText);
+    },
+
+    /*
+     * Renders the view.
+     */
+    render: function() {
+        var text = this.model.get(this.propertyName);
+
+        this.$el
+            .addClass('draft')
+            .append($(this.editorTemplate({
+                editText: this.editText,
+                id: this.propertyName,
+                linkText: this.linkText,
+                text: text || ''
+            })))
+            .find('time.timesince')
+                .timesince()
+            .end();
+
+        this.$editor = this.$('pre.reviewtext')
+            .inlineEditor(_.extend({
+                cls: 'inline-comment-editor',
+                editIconClass: 'rb-icon rb-icon-edit',
+                notifyUnchangedCompletion: true,
+                multiline: true
+            }, RB.TextEditorView.getInlineEditorOptions({
+                bindRichText: {
+                    model: this.model,
+                    attrName: this.richTextPropertyName
+                }
+            })))
+            .on({
+                complete: _.bind(function(e, value) {
+                    this.model.set(this.propertyName, value);
+                    this.model.set(this.richTextPropertyName,
+                                   this.textEditor.richText);
+                    this.model.save({
+                        attrs: [this.propertyName, this.richTextPropertyName,
+                                'forceTextType', 'includeTextTypes']
+                    });
+                }, this),
+                cancel: _.bind(function() {
+                    if (!this.model.get(this.propertyName)) {
+                        this._$editorContainer.hide();
+                        this._$linkContainer.show();
+                    }
+                }, this)
+            });
+
+        this.textEditor = RB.TextEditorView.getFromInlineEditor(this.$editor);
+
+        this._$editorContainer = this.$('.comment-text-field');
+        this._$linkContainer = this.$('.add-link-container');
+
+        this.listenTo(this.model, 'change:' + _getRawValueFieldsName(),
+                      this._updateRawValue);
+        this._updateRawValue();
+
+        this.listenTo(this.model, 'change:' + this.propertyName,
+                      this.renderText);
+        this.renderText(this.model, text);
+    },
+
+    /*
+     * Renders the text for this comment.
+     */
+    renderText: function(model, text) {
+        var reviewRequest = this.model.get('parentObject'),
+            normTextFields;
+
+        if (this.$editor) {
+            normTextFields = RB.UserSession.instance.get('defaultUseRichText')
+                             ? this.model.get('markdownTextFields')
+                             : this.model.get('rawTextFields');
+
+            this.$editor.inlineEditor('option', {
+                hasRawValue: true,
+                rawValue: normTextFields[this.propertyName]
+            });
+
+            if (text) {
+                this._$editorContainer.show();
+                this._$linkContainer.hide();
+                RB.formatText(this.$editor, {
+                    newText: text,
+                    richText: this.model.get(this.richTextPropertyName),
+                    isHTMLEncoded: true,
+                    bugTrackerURL: reviewRequest.get('bugTrackerURL')
+                });
+            } else {
+                this._$editorContainer.hide();
+                this._$linkContainer.show();
+            }
+        }
+    },
+
+    /*
+     * Returns whether or not the comment needs to be saved.
+     *
+     * The comment will need to be saved if the inline editor is currently
+     * open.
+     */
+    needsSave: function() {
+        return this.$editor.inlineEditor('dirty');
+    },
+
+    /*
+     * Saves the final state of the view.
+     */
+    save: function(options) {
+        this.model.once('sync', function() {
+            options.success();
+        });
+
+        this.$editor.inlineEditor('submit');
+    },
+
+    /*
+     * Opens the editor. This is used for the 'Add ...' link handler, as well
+     * as for the default state of the dialog when there are no comments.
+     */
+    openEditor: function(ev) {
+        this._$linkContainer.hide();
+        this._$editorContainer.show();
+
+        this.$editor.inlineEditor('startEdit');
+
+        if (ev) {
+            ev.preventDefault();
+        }
+
+        return false;
+    },
+
+    _updateRawValue: function() {
+        var rawValues;
+
+        if (this.$editor) {
+            rawValues = this.model.get(_getRawValueFieldsName());
+
+            this.$editor.inlineEditor('option', {
+                hasRawValue: true,
+                rawValue: rawValues[this.propertyName]
+            });
+        }
+    }
+});
+
+
+/*
  * Creates a dialog for modifying a draft review.
  *
  * This provides editing capabilities for creating or modifying a new
@@ -283,24 +536,10 @@ RB.ReviewDialogView = Backbone.View.extend({
         ' <input id="id_shipit" type="checkbox" />',
         ' <label for="id_shipit"><%- shipItText %></label>',
         '</div>',
-        '<div class="edit-field">',
-        ' <div class="body-top"></div>',
-        ' <span class="enable-markdown">',
-        '  <input id="enable_body_top_markdown" type="checkbox" />',
-        '  <label for="enable_body_top_markdown">',
-        '<%- enableMarkdownText %></label>',
-        ' </span>',
-        '</div>',
+        '<div class="edit-field body-top"></div>',
         '<ul class="comments"></ul>',
         '<div class="spinner"></div>',
-        '<div class="edit-field" id="body_bottom_fields">',
-        ' <div class="body-bottom"></div>',
-        ' <span class="enable-markdown">',
-        '  <input id="enable_body_bottom_markdown" type="checkbox" />',
-        '  <label for="enable_body_bottom_markdown">',
-        '<%- enableMarkdownText %></label>',
-        ' </span>',
-        '</div>'
+        '<div class="edit-field body-bottom"></div>'
     ].join('')),
 
     /*
@@ -310,13 +549,10 @@ RB.ReviewDialogView = Backbone.View.extend({
         var reviewRequest = this.model.get('parentObject');
 
         this._$comments = null;
-        this._$shipIt = null;
         this._$dlg = null;
         this._$buttons = null;
         this._$spinner = null;
-        this._bodyTopEditor = null;
-        this._bodyBottomEditor = null;
-        this._$bodyBottomFields = null;
+        this._$shipIt = null;
 
         this._commentViews = [];
 
@@ -368,22 +604,17 @@ RB.ReviewDialogView = Backbone.View.extend({
         this._defaultUseRichText =
             RB.UserSession.instance.get('defaultUseRichText');
 
-        if (this._defaultUseRichText) {
-            this.model.set({
-                forceTextType: 'markdown',
-                includeTextTypes: 'raw'
-            });
+        this._queryData = {
+            'force-text-type': 'html'
+        };
 
-            this._queryData = {
-                'force-text-type': 'markdown',
-                'include-text-types': 'raw'
-            };
+        if (this._defaultUseRichText) {
+            this._queryData['include-text-types'] = 'raw,markdown';
         } else {
-            this._queryData = {
-                'force-text-type': undefined,
-                'include-text-types': undefined
-            };
+            this._queryData['include-text-types'] = 'raw';
         }
+
+        this._setTextTypeAttributes(this.model);
 
         this.options.reviewRequestEditor.incr('editCount');
     },
@@ -409,63 +640,63 @@ RB.ReviewDialogView = Backbone.View.extend({
      * the server will begin loading and rendering.
      */
     render: function() {
-        var data;
-
         this.$el.html(this.template({
+            addHeaderText: gettext('Add header'),
+            addFooterText: gettext('Add footer'),
             shipItText: gettext('Ship It'),
             markdownDocsURL: MANUAL_URL + 'users/markdown/',
-            markdownText: gettext('Markdown Reference'),
-            enableMarkdownText: gettext('Enable Markdown')
+            markdownText: gettext('Markdown Reference')
         }));
 
+        this._$comments = this.$('.comments');
+        this._$spinner = this.$('.spinner');
         this._$shipIt = this.$('#id_shipit');
-        this._$comments = this.$el.children('.comments');
-        this._$spinner = this.$el.children('.spinner');
-        this._$bodyBottomFields = this.$el.children('#body_bottom_fields');
 
-        this._bodyTopEditor = new RB.TextEditorView({
+        this._bodyTopView = new HeaderFooterCommentView({
+            model: this.model,
             el: this.$('.body-top'),
-            bindRichText: {
-                model: this.model,
-                attrName: 'bodyTopRichText'
-            }
+            propertyName: 'bodyTop',
+            richTextPropertyName: 'bodyTopRichText',
+            linkText: gettext('Add header'),
+            editText: gettext('Edit header')
         });
-        this._bodyTopEditor.render();
-        this._bodyTopEditor.show();
-        this._bodyTopEditor.bindRichTextCheckbox(
-            this.$('#enable_body_top_markdown'));
 
-        this._bodyBottomEditor = new RB.TextEditorView({
+        this._bodyBottomView = new HeaderFooterCommentView({
+            model: this.model,
             el: this.$('.body-bottom'),
-            bindRichText: {
-                model: this.model,
-                attrName: 'bodyBottomRichText'
-            }
+            propertyName: 'bodyBottom',
+            richTextPropertyName: 'bodyBottomRichText',
+            linkText: gettext('Add footer'),
+            editText: gettext('Edit footer')
         });
-        this._bodyBottomEditor.render();
-        this._bodyBottomEditor.hide();
-        this._$bodyBottomFields.hide();
-        this._bodyBottomEditor.bindRichTextCheckbox(
-            this.$('#enable_body_bottom_markdown'));
 
         this.model.ready({
             data: this._queryData,
             ready: function() {
-                var bodyBottom,
-                    bodyTop;
-
                 this._renderDialog();
+                this._bodyTopView.render();
+                this._bodyBottomView.render();
+
+                if (this.model.isNew() || this.model.get('bodyTop') === '') {
+                    this._bodyTopView.openEditor();
+                }
 
                 if (this.model.isNew()) {
                     this._$spinner.remove();
                     this._$spinner = null;
-                } else {
-                    bodyBottom = this.model.get('bodyBottom') || '';
-                    bodyTop = this.model.get('bodyTop') || '';
 
-                    this._bodyBottomEditor.setText(bodyBottom);
-                    this._bodyTopEditor.setText(bodyTop);
-                    this._$shipIt.prop('checked', this.model.get('shipIt'));
+                    this._handleEmptyReview();
+                } else {
+                    this._$shipIt
+                        .prop('checked', this.model.get('shipIt'))
+                        .change(_.bind(function() {
+                            this.model.set('shipIt',
+                                           this._$shipIt.prop('checked'));
+                            this.model.save({
+                                attrs: ['forceTextType', 'includeTextTypes',
+                                        'shipIt']
+                            });
+                        }, this));
 
                     this._loadComments();
                 }
@@ -493,16 +724,23 @@ RB.ReviewDialogView = Backbone.View.extend({
             this._$spinner.remove();
             this._$spinner = null;
 
-            if (this._commentViews.length > 0) {
-                /*
-                 * We only display the bottom textarea if we have
-                 * comments. Otherwise, it's weird to have both
-                 * textareas visible with nothing inbetween.
-                 */
-                this._$bodyBottomFields.show();
-                this._bodyBottomEditor.show();
-            }
+            this._handleEmptyReview();
         });
+    },
+
+    /*
+     * Properly set the view when the review is empty.
+     */
+    _handleEmptyReview: function() {
+        if (this._commentViews.length === 0) {
+            /*
+             * We only display the bottom textarea if we have
+             * comments. Otherwise, it's weird to have both
+             * textareas visible with nothing inbetween.
+             */
+            this._bodyBottomView.$el.hide();
+            this._bodyTopView.setLinkText(gettext('Add text'));
+        }
     },
 
     /*
@@ -539,6 +777,8 @@ RB.ReviewDialogView = Backbone.View.extend({
      * Renders a comment to the dialog.
      */
     _renderComment: function(view) {
+        this._setTextTypeAttributes(view.model);
+
         this._commentViews.push(view);
         view.$el.appendTo(this._$comments);
         view.render();
@@ -575,16 +815,9 @@ RB.ReviewDialogView = Backbone.View.extend({
                         .click(_.bind(this._onDiscardClicked, this)),
 
                     $('<input type="button"/>')
-                        .val(gettext('Cancel'))
+                        .val(gettext('Close'))
                         .click(_.bind(function() {
-                            this.close();
-                            return false;
-                        }, this)),
-
-                    $('<input type="button"/>')
-                        .val(gettext('Save'))
-                        .click(_.bind(function() {
-                            this._saveReview();
+                            this._saveReview(false);
                             return false;
                         }, this))
                 ]
@@ -595,7 +828,6 @@ RB.ReviewDialogView = Backbone.View.extend({
 
         /* Must be done after the dialog is rendered. */
         this._$buttons = this._$dlg.modalBox('buttons');
-        this._bodyTopEditor.focus();
     },
 
 
@@ -636,28 +868,23 @@ RB.ReviewDialogView = Backbone.View.extend({
     /*
      * Saves the review.
      *
-     * This will save all the modified comments and the review fields.
+     * First, this loops over all the comment editors and saves any which are
+     * still in the editing phase.
      *
-     * First, this loops over every comment and checks which needs
-     * to be saved. It then adds each save operation to a queue, to be
-     * performed later.
-     *
-     * The review saving or publishing is then added to the same queue,
-     * followed by closing the dialog and showing/hiding the review
-     * banner (depending on whether this is publishing).
-     *
-     * Once the queue contains all the operations we need to make,
-     * it's executed. The result is a saved and possibly published
-     * review.
+     * If requested, this will also publish the review (saving with
+     * public=true).
      */
     _saveReview: function(publish) {
+        var madeChanges = false;
+
         this._$buttons.prop('disabled');
 
         $.funcQueue('reviewForm').clear();
 
-        _.each(this._commentViews, function(view) {
+        function maybeSave(view) {
             if (view.needsSave()) {
                 $.funcQueue('reviewForm').add(function() {
+                    madeChanges = true;
                     view.save({
                         success: function() {
                             $.funcQueue('reviewForm').next();
@@ -665,26 +892,36 @@ RB.ReviewDialogView = Backbone.View.extend({
                     });
                 });
             }
-        });
+        }
+
+        maybeSave(this._bodyTopView);
+        maybeSave(this._bodyBottomView);
+        _.each(this._commentViews, maybeSave);
 
         $.funcQueue('reviewForm').add(function() {
-            this.model.set({
-                shipIt: this._$shipIt.prop('checked'),
-                bodyTop: this._bodyTopEditor.getText(),
-                bodyBottom: this._bodyBottomEditor.getText(),
-                'public': publish,
-                bodyTopRichText: this._bodyTopEditor.richText,
-                bodyBottomRichText: this._bodyBottomEditor.richText
-            });
+            var shipIt = this._$shipIt.prop('checked');
 
-            this.model.save({
-                success: function() {
-                    $.funcQueue('reviewForm').next();
-                },
-                error: function() {
-                    console.log(arguments);
-                }
-            });
+            if (this.model.get('public') === publish &&
+                this.model.get('shipIt') === shipIt) {
+                $.funcQueue('reviewForm').next();
+            } else {
+                madeChanges = true;
+                this.model.set({
+                    'public': publish,
+                    shipIt: shipIt
+                });
+
+                this.model.save({
+                    attrs: ['public', 'shipIt', 'forceTextType',
+                            'includeTextTypes'],
+                    success: function() {
+                        $.funcQueue('reviewForm').next();
+                    },
+                    error: function() {
+                        console.log(arguments);
+                    }
+                });
+            }
         }, this);
 
         $.funcQueue('reviewForm').add(function() {
@@ -695,6 +932,8 @@ RB.ReviewDialogView = Backbone.View.extend({
             if (reviewBanner) {
                 if (publish) {
                     reviewBanner.hideAndReload();
+                } else if (this.model.isNew() && !madeChanges) {
+                    reviewBanner.hide();
                 } else {
                     reviewBanner.show();
                 }
@@ -702,6 +941,17 @@ RB.ReviewDialogView = Backbone.View.extend({
         }, this);
 
         $.funcQueue('reviewForm').start();
+    },
+
+    /*
+     * Sets the text attributes on a model for forcing and including types.
+     */
+    _setTextTypeAttributes: function(model) {
+        model.set({
+            forceTextType: 'html',
+            includeTextTypes: this._defaultUseRichText
+                              ? 'raw,markdown' : 'raw'
+        });
     }
 }, {
     /*

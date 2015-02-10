@@ -3,6 +3,11 @@ from __future__ import unicode_literals
 from djblets.webapi.errors import WebAPIError
 
 
+class WebAPITokenGenerationError(Exception):
+    """An error generating a Web API token."""
+    pass
+
+
 #
 # Standard error messages
 #
@@ -147,7 +152,12 @@ COMMIT_ID_ALREADY_EXISTS = WebAPIError(
     "Review request with this commit ID already exists in the repository.",
     http_status=409)  # 409 Conflict
 
-REPOSITORY_ALREADY_EXISTS = WebAPIError(
+TOKEN_GENERATION_FAILED = WebAPIError(
     228,
+    'There was an error generating the API token. Please try again.',
+    http_status=500)  # 500 Internal Server Error.
+
+REPOSITORY_ALREADY_EXISTS = WebAPIError(
+    229,
     "A repository with this name already exists.",
     http_status=409)  # 409 Conflict

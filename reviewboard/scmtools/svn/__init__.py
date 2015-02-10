@@ -46,8 +46,6 @@ class SVNCertificateFailures:
 
 class SVNTool(SCMTool):
     name = "Subversion"
-    uses_atomic_revisions = True
-    supports_authentication = True
     supports_post_commit = True
     dependencies = {
         'modules': [],  # This will get filled in later in
@@ -286,9 +284,6 @@ class SVNTool(SCMTool):
             file_str = "%s/%s" % (relocated_file[4:], file_str)
 
         return file_str, revision
-
-    def get_filenames_in_revision(self, revision):
-        return self.client.get_filenames_in_revision(revision)
 
     def get_repository_info(self):
         return self.client.repository_info

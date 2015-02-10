@@ -45,7 +45,7 @@ In this guide, we'll assume this is in :file:`~/envs`. Then type::
 
 You can name the environment anything you want. One scheme is to have a name
 per-release. So, instead of ``reviewboard`` above, maybe ``rb-master`` or
-``rb-release-1.6.x``. This is up to you.
+``rb-release-2.0.x``. This is up to you.
 
 From then on, before doing any Review Board development, you'll want to switch
 to this environment::
@@ -55,7 +55,7 @@ to this environment::
 Note that once you're in your environment, you don't need to install packages
 as root. So, no need for :command:`sudo`.
 
-.. _virtualenv: http://pypi.python.org/pypi/virtualenv
+.. _virtualenv: https://pypi.python.org/pypi/virtualenv
 
 
 Dependencies
@@ -95,7 +95,7 @@ will persist only as long as the development web server is running.
 Sphinx and gettext are handy if you're going to be building the documentation
 or packages. On OS X, gettext is available through homebrew or fink.
 
-.. _`Administration Guide`: http://www.reviewboard.org/docs/manual/dev/admin/
+.. _`Administration Guide`: https://www.reviewboard.org/docs/manual/latest/admin/
 
 
 Djblets
@@ -103,7 +103,7 @@ Djblets
 
 Review Board requires the bleeding-edge version of Djblets. This is
 hosted on GitHub_, and you can `browse the Djblets repository
-<http://github.com/djblets/djblets>`_ and see details there.
+<https://github.com/djblets/djblets>`_ and see details there.
 
 First, find a nice place where the :file:`djblets` source directory will live
 (such as :file:`~/src/`) and type the following::
@@ -123,8 +123,8 @@ your bleeding-edge copy. Note that this version will take precedence on
 the system.
 
 
-.. _GitHub: http://github.com/
-.. _browse-djblets: http://github.com/djblets/djblets
+.. _GitHub: https://github.com/
+.. _browse-djblets: https://github.com/djblets/djblets
 
 
 Review Board
@@ -132,7 +132,7 @@ Review Board
 
 Review Board installation is very similar to Djblets. It too is hosted
 on GitHub_, and you can `browse the Review Board repository
-<http://github.com/reviewboard/reviewboard>`_.
+<https://github.com/reviewboard/reviewboard>`_.
 
 Go back to your source directory and check out a copy of Review Board::
 
@@ -157,12 +157,10 @@ Review Board.
 RBTools
 -------
 
-You will need the latest version of RBTools both for development and
-for a version of :command:`post-review` compatible with
-http://reviews.reviewboard.org/.
+You will need a modern version of RBTools for development.
 
 Like Djblets and Review Board, you can find RBTools on GitHub_, and you can
-`browse the RBTools repository <http://github.com/reviewboard/rbtools>`_.
+`browse the RBTools repository <https://github.com/reviewboard/rbtools>`_.
 
 Go back to your source directory and check out a copy of RBTools::
 
@@ -235,9 +233,9 @@ development on here.
 
 If instead you want to base this on a different branch, put that branch's
 name in place of ``master`` above. For example, to base something on
-the upstream ``release-1.6.x`` branch, you might type::
+the upstream ``release-2.0.x`` branch, you might type::
 
-    $ git checkout -b new-branch release-1.6.x
+    $ git checkout -b new-branch release-2.0.x
 
 
 Switching Branches
@@ -341,7 +339,7 @@ with :command:`gitk`, which works decently (run with the ``--all`` parameter).
 MacOS X uses may want to try `GitX`_.
 
 
-.. _`GitHub Guides`: http://github.com/guides/home
+.. _`GitHub Guides`: https://github.com/guides/home
 .. _GitX: http://gitx.frim.nl/
 
 
@@ -365,12 +363,10 @@ To launch the web server, run::
 This will start the server on port 8080. You should then be able to access
 your server by visiting ``http://localhost:8080``.
 
-If you need to use a different port, you can always run Django's development
-server manually by typing::
+If you need to use a different port, you can use the ``-p`` parameter.
+For example::
 
-    $ ./reviewboard/manage.py runserver 0.0.0.0:PORT_NUMBER --adminmedia=reviewboard/htdocs/media/admin/
-
-Specify the port you want to use in ``PORT_NUMBER`` above.
+    $ ./contrib/internal/devserver.py -p 8081
 
 
 Running Unit Tests
@@ -395,6 +391,35 @@ For RBTools, type::
 
     $ cd rbtools
     $ nosetests -v
+
+Running all Review Board unit tests may take a while. To speed up unit
+testing, there are options to run subsets of Review Board tests.
+
+To run only the tests in a specific module::
+
+    $ ./reviewboard/manage.py test -- reviewboard.scmtools.tests
+
+To run the tests in a specific class::
+
+    $ ./reviewboard/manage.py test -- reviewboard.scmtools.tests:GitTests
+
+To run only a specific test case::
+
+    $ ./reviewboard/manage.py test -- reviewboard.scmtools.tests:GitTests.testFilemodeWithFollowingDiff
+
+Some other flags which come in handy are -x, --pdb, and --pdb-failures.
+
+To stop the test runner after the first encountered failure::
+
+    $ ./reviewboard/manage.py test -- -x
+
+To drop into pdb (the python debugger shell) when an error occurs::
+
+    $ ./reviewboard/manage.py test -- --pdb
+
+To drop into pdb when a test case assertion fails::
+
+    $ ./reviewboard/manage.py test -- --pdb-failures
 
 If you're updating the unit tests, you may want to see the
 :ref:`Unit Test Fixtures` documentation.

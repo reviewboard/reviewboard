@@ -11,6 +11,7 @@ from django.db import models
 from django.db import IntegrityError
 from django.utils import six, timezone
 from django.utils.encoding import python_2_unicode_compatible
+from django.utils.functional import cached_property
 from django.utils.http import urlquote
 from django.utils.six.moves import range
 from django.utils.translation import ugettext_lazy as _
@@ -19,6 +20,7 @@ from djblets.db.fields import JSONField
 from djblets.log import log_timed
 
 from reviewboard.hostingsvcs.models import HostingServiceAccount
+from reviewboard.hostingsvcs.service import get_hosting_service
 from reviewboard.scmtools.crypto_utils import (decrypt_password,
                                                encrypt_password)
 from reviewboard.scmtools.managers import RepositoryManager, ToolManager
@@ -39,8 +41,6 @@ class Tool(models.Model):
     # Templates can't access variables on a class properly. It'll attempt to
     # instantiate the class, which will fail without the necessary parameters.
     # So, we use these as convenient wrappers to do what the template can't do.
-    supports_authentication = property(
-        lambda x: x.scmtool_class.supports_authentication)
     supports_raw_file_urls = property(
         lambda x: x.scmtool_class.supports_raw_file_urls)
     supports_ticket_auth = property(
@@ -229,10 +229,26 @@ class Repository(models.Model):
         cls = self.tool.get_scmtool_class()
         return cls(self)
 
-    @property
+    @cached_property
     def hosting_service(self):
         if self.hosting_account:
             return self.hosting_account.service
+
+        return None
+
+    @cached_property
+    def bug_tracker_service(self):
+        """Returns selected bug tracker service if one exists."""
+        if self.extra_data.get('bug_tracker_use_hosting'):
+            return self.hosting_service
+        else:
+            bug_tracker_type = self.extra_data.get('bug_tracker_type')
+            if bug_tracker_type:
+                bug_tracker_cls = get_hosting_service(bug_tracker_type)
+
+                # TODO: we need to figure out some way of storing a second
+                # hosting service account for bug trackers.
+                return bug_tracker_cls(HostingServiceAccount())
 
         return None
 

@@ -19,26 +19,32 @@ from reviewboard.site.urlresolvers import local_site_reverse
 register = template.Library()
 
 
-def action_hooks(context, hookcls, action_key="action",
+def action_hooks(context, hook_cls, action_key="action",
                  template_name="extensions/action.html"):
     """Displays all registered action hooks from the specified ActionHook."""
     s = ""
 
-    for hook in hookcls.hooks:
+    for hook in hook_cls.hooks:
         try:
             for actions in hook.get_actions(context):
                 if actions:
-                    new_context = {
-                        action_key: actions
-                    }
-                    context.update(new_context)
+                    context.push()
+                    context[action_key] = actions
 
-                    s += render_to_string(template_name, new_context)
+                    try:
+                        s += render_to_string(template_name, context)
+                    except Exception as e:
+                        logging.error(
+                            'Error when rendering template for action "%s" '
+                            'for hook %r in extension "%s": %s',
+                            action_key, hook, hook.extension.id, e,
+                            exc_info=1)
+
+                    context.pop()
         except Exception as e:
-            extension = hook.extension
-            logging.error('Error when running %s.get_actions function '
-                          'in extension: "%s": %s', hookcls,
-                          extension.metadata['Name'], e, exc_info=1)
+            logging.error('Error when running get_actions() on hook %r '
+                          'in extension "%s": %s',
+                          hook, hook.extension.id, e, exc_info=1)
 
     return s
 
@@ -84,13 +90,14 @@ def navigation_bar_hooks(context):
 
                     context.push()
                     context['entry'] = nav_info
-                    s += render_to_string("extensions/navbar_entry.html", context)
+                    s += render_to_string("extensions/navbar_entry.html",
+                                          context)
                     context.pop()
         except Exception as e:
             extension = hook.extension
             logging.error('Error when running NavigationBarHook.'
                           'get_entries function in extension: "%s": %s',
-                          extension.metadata['Name'], e, exc_info=1)
+                          extension.id, e, exc_info=1)
 
     return s
 
@@ -131,7 +138,6 @@ def comment_detail_display_hook(context, comment, render_mode):
             extension = hook.extension
             logging.error('Error when running CommentDetailDisplayHook with '
                           'render mode "%s" in extension: %s: %s',
-                          render_mode, extension.metadata['Name'], e,
-                          exc_info=1)
+                          render_mode, extension.id, e, exc_info=1)
 
     return s

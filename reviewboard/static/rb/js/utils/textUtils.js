@@ -15,7 +15,7 @@ RB.formatText = function($el, options) {
 
     if (options.richText) {
         if (options.newText !== undefined) {
-            $el.html(options.newText)
+            $el.html(options.newText);
         }
 
         $el
@@ -31,6 +31,15 @@ RB.formatText = function($el, options) {
                                               options.isHTMLEncoded))
             .removeClass('rich-text');
     }
+};
+
+
+/*
+ * Format a timestamp in the same way that Django templates would.
+ */
+RB.FormatTimestamp = function(timestamp) {
+    return timestamp.format('MMMM Do, YYYY, h:mm ') +
+           (timestamp.hour() < 12 ? 'a.m.' : 'p.m.');
 };
 
 

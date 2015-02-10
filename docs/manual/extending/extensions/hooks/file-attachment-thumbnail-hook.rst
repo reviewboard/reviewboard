@@ -27,6 +27,7 @@ Example
     from django.utils.safestring import mark_safe
     from reviewboard.attachments.mimetypes import MimetypeHandler
     from reviewboard.extensions.base import Extension
+    from reviewboard.extensions.hooks import FileAttachmentThumbnailHook
 
 
     class XMLMimetype(MimetypeHandler):

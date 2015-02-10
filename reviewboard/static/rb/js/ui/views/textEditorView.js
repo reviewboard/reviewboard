@@ -135,7 +135,7 @@ TextAreaWrapper = Backbone.View.extend({
      * Returns whether or not the editor's contents have changed.
      */
     isDirty: function(initialValue) {
-        var value = this.el.value;
+        var value = this.el.value || '';
 
         return value.length !== initialValue.length ||
                value !== initialValue;
@@ -341,7 +341,8 @@ RB.TextEditorView = Backbone.View.extend({
      */
     isDirty: function(initialValue) {
         return this._editor !== null &&
-               (this._richTextDirty || this._editor.isDirty(initialValue));
+               (this._richTextDirty ||
+                this._editor.isDirty(initialValue || ''));
     },
 
     /*

@@ -22,7 +22,9 @@ from distutils.command.install_data import install_data
 from distutils.command.install import INSTALL_SCHEMES
 from distutils.core import Command
 
-from reviewboard import get_package_version, is_release, VERSION, django_version
+from reviewboard import (get_package_version,
+                         is_release, VERSION,
+                         django_version)
 
 
 # Make sure this is a version of Python we are compatible with. This should
@@ -67,7 +69,7 @@ class osx_install_data(install_data):
     def finalize_options(self):
         # By the time finalize_options is called, install.install_lib is
         # set to the fixed directory, so we set the installdir to install_lib.
-        # The # install_data class uses ('install_data', 'install_dir') instead.
+        # The install_data class uses ('install_data', 'install_dir') instead.
         self.set_undefined_options('install', ('install_lib', 'install_dir'))
         install_data.finalize_options(self)
 
@@ -132,11 +134,8 @@ if sys.platform == "darwin":
 
 PACKAGE_NAME = 'ReviewBoard'
 
-if is_release():
-    download_url = 'http://downloads.reviewboard.org/releases/%s/%s.%s/' % \
-                   (PACKAGE_NAME, VERSION[0], VERSION[1])
-else:
-    download_url = 'http://downloads.reviewboard.org/nightlies/'
+download_url = 'http://downloads.reviewboard.org/releases/%s/%s.%s/' % \
+               (PACKAGE_NAME, VERSION[0], VERSION[1])
 
 
 # Build the reviewboard package.
@@ -151,7 +150,7 @@ setup(name=PACKAGE_NAME,
       maintainer="Christian Hammond",
       maintainer_email="christian@beanbaginc.com",
       packages=find_packages(),
-      entry_points = {
+      entry_points={
           'console_scripts': [
               'rb-site = reviewboard.cmdline.rbsite:main',
               'rbssh = reviewboard.cmdline.rbssh:main',
@@ -162,12 +161,13 @@ setup(name=PACKAGE_NAME,
               'bugzilla = reviewboard.hostingsvcs.bugzilla:Bugzilla',
               'codebasehq = reviewboard.hostingsvcs.codebasehq:CodebaseHQ',
               'fedorahosted = '
-                  'reviewboard.hostingsvcs.fedorahosted:FedoraHosted',
+              'reviewboard.hostingsvcs.fedorahosted:FedoraHosted',
               'fogbugz = reviewboard.hostingsvcs.fogbugz:FogBugz',
               'github = reviewboard.hostingsvcs.github:GitHub',
               'gitlab = reviewboard.hostingsvcs.gitlab:GitLab',
               'gitorious = reviewboard.hostingsvcs.gitorious:Gitorious',
               'googlecode = reviewboard.hostingsvcs.googlecode:GoogleCode',
+              'jira = reviewboard.hostingsvcs.jira:JIRA',
               'kiln = reviewboard.hostingsvcs.kiln:Kiln',
               'redmine = reviewboard.hostingsvcs.redmine:Redmine',
               'sourceforge = reviewboard.hostingsvcs.sourceforge:SourceForge',
@@ -197,8 +197,9 @@ setup(name=PACKAGE_NAME,
       install_requires=[
           django_version,
           'django_evolution>=0.7.4,<=0.7.999',
-          'Djblets>=0.8.14,<=0.8.999',
           'django-haystack>=2.1',
+          'django-multiselectfield',
+          'Djblets>=0.9alpha0.dev,<=0.9.999',
           'docutils',
           'markdown>=2.4.0,<2.4.999',
           'mimeparse>=0.1.3',
@@ -210,11 +211,10 @@ setup(name=PACKAGE_NAME,
           'recaptcha-client',
           'Whoosh>=2.6',
       ],
-      dependency_links = [
+      dependency_links=[
           'http://downloads.reviewboard.org/mirror/',
-          'http://downloads.reviewboard.org/releases/Djblets/0.8/',
+          'http://downloads.reviewboard.org/releases/Djblets/0.9/',
           'http://downloads.reviewboard.org/releases/django-evolution/0.7/',
-          download_url,
       ],
       include_package_data=True,
       zip_safe=False,
@@ -229,5 +229,4 @@ setup(name=PACKAGE_NAME,
           "Programming Language :: Python",
           "Topic :: Software Development",
           "Topic :: Software Development :: Quality Assurance",
-      ]
-)
+      ])

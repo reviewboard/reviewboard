@@ -9,13 +9,13 @@ from django.template import TemplateSyntaxError
 from django.template.defaultfilters import escapejs, stringfilter
 from django.template.loader import render_to_string
 from django.utils import six
-from django.utils.html import escape
+from django.utils.html import escape, format_html
 from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext_lazy as _
 from djblets.util.decorators import basictag, blocktag
 from djblets.util.humanize import humanize_list
 
-from reviewboard.accounts.models import Profile
+from reviewboard.accounts.models import Profile, Trophy
 from reviewboard.reviews.fields import (get_review_request_fieldset,
                                         get_review_request_fieldsets)
 from reviewboard.reviews.markdown_utils import (is_rich_text_default_for_user,
@@ -27,6 +27,34 @@ from reviewboard.reviews.models import (BaseComment, Group,
 
 
 register = template.Library()
+
+
+@register.tag
+@basictag(takes_context=False)
+def display_review_request_trophies(review_request):
+    """Returns the HTML for the trophies awarded to a review request."""
+    trophy_models = Trophy.objects.get_trophies(review_request)
+
+    if not trophy_models:
+        return ''
+
+    trophies = []
+    for trophy_model in trophy_models:
+        try:
+            trophy_type_cls = trophy_model.trophy_type
+            trophy_type = trophy_type_cls()
+            trophies.append({
+                'image_url': trophy_type.image_url,
+                'image_width': trophy_type.image_width,
+                'image_height': trophy_type.image_height,
+                'text': trophy_type.get_display_text(trophy_model),
+            })
+        except Exception as e:
+            logging.error('Error when rendering trophy %r (%r): %s',
+                          trophy_model.pk, trophy_type_cls, e,
+                          exc_info=1)
+
+    return render_to_string('reviews/trophy_box.html', {'trophies': trophies})
 
 
 @register.tag
@@ -349,11 +377,12 @@ def for_review_request_fieldset(context, nodelist, review_request_details):
                     'fieldset': fieldset,
                     'show_fieldset_required': (
                         fieldset.show_required and
-                        review_request.status == ReviewRequest.PENDING_REVIEW and
+                        review_request.status ==
+                            ReviewRequest.PENDING_REVIEW and
                         review_request.is_mutable_by(user)),
                     'forloop': {
                         'first': is_first,
-                        }
+                    }
                 })
                 s.append(nodelist.render(context))
                 context.pop()
@@ -508,6 +537,52 @@ def _render_markdown(text, is_rich_text):
         return mark_safe(render_markdown(text))
     else:
         return text
+
+
+@register.tag
+@basictag(takes_context=True)
+def expand_fragment_link(context, expanding, tooltip,
+                         expand_above, expand_below, text=None):
+    """Renders a diff comment fragment expansion link.
+
+    This link will expand the context by the supplied `expanding_above` and
+    `expanding_below` values.
+
+    `expanding` is expected to be one of 'above', 'below', or 'line'."""
+
+    lines_of_context = context['lines_of_context']
+
+    image_class = 'rb-icon-diff-expand-%s' % expanding
+    expand_pos = (lines_of_context[0] + expand_above,
+                  lines_of_context[1] + expand_below)
+
+    return render_to_string('reviews/expand_link.html', {
+        'tooltip': tooltip,
+        'text': text,
+        'comment_id': context['comment'].id,
+        'expand_pos': expand_pos,
+        'image_class': image_class,
+    })
+
+
+@register.tag
+@basictag(takes_context=True)
+def expand_fragment_header_link(context, header):
+    """Render a diff comment fragment header expansion link.
+
+    This link expands the context to contain the given line number.
+    """
+    lines_of_context = context['lines_of_context']
+    offset = context['first_line'] - header['line']
+
+    return render_to_string('reviews/expand_link.html', {
+        'tooltip': _('Expand to header'),
+        'text': format_html('<code>{0}</code>', header['text']),
+        'comment_id': context['comment'].id,
+        'expand_pos': (lines_of_context[0] + offset,
+                       lines_of_context[1]),
+        'image_class': 'rb-icon-diff-expand-header',
+    })
 
 
 @register.tag('normalize_text_for_edit')

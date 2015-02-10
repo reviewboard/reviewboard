@@ -7,7 +7,10 @@ from djblets.siteconfig.models import SiteConfiguration
 from djblets.testing.decorators import add_fixtures
 
 from reviewboard.datagrids.builtin_items import UserGroupsItem, UserProfileItem
-from reviewboard.reviews.models import Group, ReviewRequest, ReviewRequestDraft
+from reviewboard.reviews.models import (Group,
+                                        ReviewRequest,
+                                        ReviewRequestDraft,
+                                        Review)
 from reviewboard.testing import TestCase
 
 
@@ -412,11 +415,26 @@ class SubmitterListViewTests(BaseViewTestCase):
 
         datagrid = self._get_context_var(response, 'datagrid')
         self.assertTrue(datagrid)
-        self.assertEqual(len(datagrid.rows), 4)
+        self.assertEqual(len(datagrid.rows), 1)
         self.assertEqual(datagrid.rows[0]['object'].username, 'admin')
-        self.assertEqual(datagrid.rows[1]['object'].username, 'doc')
-        self.assertEqual(datagrid.rows[2]['object'].username, 'dopey')
-        self.assertEqual(datagrid.rows[3]['object'].username, 'grumpy')
+
+        response = self.client.get('/users/?letter=D')
+        self.assertEqual(response.status_code, 200)
+
+        datagrid = self._get_context_var(response, 'datagrid')
+        self.assertTrue(datagrid)
+        self.assertEqual(len(datagrid.rows), 2)
+        self.assertEqual(datagrid.rows[0]['object'].username, 'doc')
+        self.assertEqual(datagrid.rows[1]['object'].username, 'dopey')
+
+        response = self.client.get('/users/?letter=G')
+        self.assertEqual(response.status_code, 200)
+
+        datagrid = self._get_context_var(response, 'datagrid')
+        self.assertTrue(datagrid)
+        self.assertEqual(len(datagrid.rows), 1)
+
+        self.assertEqual(datagrid.rows[0]['object'].username, 'grumpy')
 
     @add_fixtures(['test_users'])
     def test_as_anonymous_and_redirect(self):
@@ -503,3 +521,41 @@ class SubmitterViewTests(BaseViewTestCase):
         """
         # Test if this throws an exception. Bug #1250
         reverse('user', args=['user@example.com'])
+
+    @add_fixtures(['test_users'])
+    def test_with_private_reviews(self):
+        """Testing reviews page of submitter view with private reviews"""
+        ReviewRequest.objects.all().delete()
+        Review.objects.all().delete()
+
+        user1 = User.objects.get(username='doc')
+        user2 = User.objects.get(username='grumpy')
+
+        user1.review_groups.clear()
+        user2.review_groups.clear()
+
+        group = Group.objects.create(name='test-group', invite_only=True)
+        group.users.add(user1)
+        group.users.add(user2)
+
+        review_request1 = self.create_review_request(summary='Summary 1',
+                                                     submitter=user1,
+                                                     publish=True)
+        review_request2 = self.create_review_request(summary='Summary 2',
+                                                     submitter=user1,
+                                                     publish=True)
+        review_request2.target_groups.add(group)
+
+        self.create_review(review_request1, user=user2,
+                           publish=True)
+        self.create_review(review_request2, user=user2,
+                           publish=True)
+
+        response = self.client.get('/users/grumpy/reviews/')
+        self.assertEqual(response.status_code, 200)
+
+        datagrid = self._get_context_var(response, 'datagrid')
+        self.assertIsNotNone(datagrid)
+        self.assertEqual(len(datagrid.rows), 1)
+        self.assertEqual(datagrid.rows[0]['object'].review_request,
+                         review_request1)

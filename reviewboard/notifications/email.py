@@ -102,17 +102,20 @@ def get_email_address_for_user(u):
 
 
 def get_email_addresses_for_group(g):
+    addresses = []
+
     if g.mailing_list:
-        if g.mailing_list.find(",") == -1:
-            # The mailing list field has only one e-mail address in it,
-            # so we can just use that and the group's display name.
-            return ['"%s" <%s>' % (g.display_name, g.mailing_list)]
-        else:
+        if ',' in g.mailing_list:
             # The mailing list field has multiple e-mail addresses in it.
             # We don't know which one should have the group's display name
             # attached to it, so just return their custom list as-is.
-            return g.mailing_list.split(',')
-    else:
+            addresses = g.mailing_list.split(',')
+        else:
+            # The mailing list field has only one e-mail address in it,
+            # so we can just use that and the group's display name.
+            addresses = [u'"%s" <%s>' % (g.display_name, g.mailing_list)]
+
+    if not (g.mailing_list and g.email_list_only):
         users_q = Q(is_active=True)
 
         local_site = g.local_site
@@ -122,9 +125,11 @@ def get_email_addresses_for_group(g):
 
         users = g.users.filter(users_q)
 
-        return [get_email_address_for_user(u)
-                for u in users
-                if u.should_send_email()]
+        addresses.extend([get_email_address_for_user(u)
+                          for u in users
+                          if u.should_send_email()])
+
+    return addresses
 
 
 class SpiffyEmailMessage(EmailMultiAlternatives):

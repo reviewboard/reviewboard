@@ -53,6 +53,8 @@ class ChangeResource(MarkdownFieldsMixin, WebAPIResource):
     * ``new``: The new caption.
     * ``screenshot``: The screenshot that was updated.
     """
+    added_in = '1.6'
+
     model = ChangeDescription
     name = 'change'
     fields = {
@@ -73,6 +75,7 @@ class ChangeResource(MarkdownFieldsMixin, WebAPIResource):
         'text_type': {
             'type': MarkdownFieldsMixin.TEXT_TYPES,
             'description': 'The mode for the text field.',
+            'added_in': '2.0',
         },
         'timestamp': {
             'type': six.text_type,

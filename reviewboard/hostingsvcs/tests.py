@@ -7,6 +7,7 @@ from hashlib import md5
 from textwrap import dedent
 
 from django.conf.urls import patterns, url
+from django.core.exceptions import ObjectDoesNotExist
 from django.core.urlresolvers import NoReverseMatch
 from django.http import HttpResponse
 from django.utils import six
@@ -19,6 +20,7 @@ from kgb import SpyAgency
 from reviewboard.hostingsvcs.errors import (AuthorizationError,
                                             RepositoryError)
 from reviewboard.hostingsvcs.models import HostingServiceAccount
+from reviewboard.hostingsvcs.repository import RemoteRepository
 from reviewboard.hostingsvcs.service import (get_hosting_service,
                                              HostingService,
                                              register_hosting_service,
@@ -1388,7 +1390,7 @@ class GitHubTests(ServiceTests):
                          }
 
 
-                        +/* !(*%!(&^ (see http://www.positioniseverything.net/easyclearing.html) */
+                        +/* Add a rule for clearing floats, */
                         +.clearfix {
                         +  display: inline-block;
                         +
@@ -1418,7 +1420,7 @@ class GitHubTests(ServiceTests):
                            .border-radius(8px);
                          }
 
-                        -/* !(*%!(&^ (see http://www.positioniseverything.net/easyclearing.html) */
+                        -/* Add a rule for clearing floats, */
                         -.clearfix {
                         -  display: inline-block;
                         -
@@ -1437,7 +1439,7 @@ class GitHubTests(ServiceTests):
                         -/* End hide from IE-mac */
                         -
 
-                         /****************************************************************************
+                         /****************************************************
                           * Issue Summary"""),
                 },
             ]
@@ -1508,7 +1510,7 @@ class GitHubTests(ServiceTests):
 
         self.assertEqual(change.message, 'Move .clearfix to defs.less')
         self.assertEqual(md5(change.diff.encode('utf-8')).hexdigest(),
-                         '5f63bd4f1cd8c4d8b46f2f72ea8d33bc')
+                         '0dd1bde0a60c0a7bb92c27b50f51fcb6')
 
     def test_get_change_exception(self):
         """Testing GitHub get_change exception types"""
@@ -1532,6 +1534,301 @@ class GitHubTests(ServiceTests):
         self.assertRaisesMessage(
             SCMError, 'Not Found',
             lambda: service.get_change(repository, commit_sha))
+
+    def test_get_remote_repositories_with_owner(self, **kwargs):
+        """Testing GitHub.get_remote_repositories with requesting
+        authenticated user's repositories
+        """
+        repos1 = [
+            {
+                'id': 1,
+                'owner': {
+                    'login': 'myuser',
+                },
+                'name': 'myrepo',
+                'clone_url': 'myrepo_path',
+                'mirror_url': 'myrepo_mirror',
+                'private': 'false'
+            }
+        ]
+
+        repos2 = [
+            {
+                'id': 2,
+                'owner': {
+                    'login': 'myuser',
+                },
+                'name': 'myrepo2',
+                'clone_url': 'myrepo_path2',
+                'mirror_url': 'myrepo_mirror2',
+                'private': 'true'
+            }
+        ]
+
+        def _http_get(service, url, *args, **kwargs):
+            base_url = 'https://api.github.com/user/repos?access_token=123'
+            self.assertIn(url, [base_url, '%s&page=2' % base_url])
+
+            if url == base_url:
+                return json.dumps(repos1), {
+                    'Link': '<%s&page=2>; rel="next"' % base_url,
+                }
+            else:
+                return json.dumps(repos2), {
+                    'Link': '<%s&page=1>; rel="prev"' % base_url,
+                }
+
+        account = self._get_hosting_account()
+        account.data['authorization'] = {
+            'token': '123',
+        }
+
+        service = account.service
+        self.spy_on(service.client.http_get, call_fake=_http_get)
+
+        paginator = service.get_remote_repositories('myuser')
+
+        # Check the first result.
+        self.assertEqual(len(paginator.page_data), 1)
+        self.assertFalse(paginator.has_prev)
+        self.assertTrue(paginator.has_next)
+        repo = paginator.page_data[0]
+
+        self.assertIsInstance(repo, RemoteRepository)
+        self.assertEqual(repo.id, 'myuser/myrepo')
+        self.assertEqual(repo.owner, 'myuser')
+        self.assertEqual(repo.name, 'myrepo')
+        self.assertEqual(repo.scm_type, 'Git')
+        self.assertEqual(repo.path, 'myrepo_path')
+        self.assertEqual(repo.mirror_path, 'myrepo_mirror')
+
+        # Check the second result.
+        paginator.next()
+        self.assertEqual(len(paginator.page_data), 1)
+        self.assertTrue(paginator.has_prev)
+        self.assertFalse(paginator.has_next)
+        repo = paginator.page_data[0]
+
+        self.assertIsInstance(repo, RemoteRepository)
+        self.assertEqual(repo.id, 'myuser/myrepo2')
+        self.assertEqual(repo.owner, 'myuser')
+        self.assertEqual(repo.name, 'myrepo2')
+        self.assertEqual(repo.scm_type, 'Git')
+        self.assertEqual(repo.path, 'myrepo_path2')
+        self.assertEqual(repo.mirror_path, 'myrepo_mirror2')
+
+    def test_get_remote_repositories_with_other_user(self, **kwargs):
+        """Testing GitHub.get_remote_repositories with requesting
+        user's repositories
+        """
+        repos1 = [
+            {
+                'id': 1,
+                'owner': {
+                    'login': 'other',
+                },
+                'name': 'myrepo',
+                'clone_url': 'myrepo_path',
+                'mirror_url': 'myrepo_mirror',
+                'private': 'false'
+            }
+        ]
+        repos2 = []
+
+        def _http_get(service, url, *args, **kwargs):
+            base_url = ('https://api.github.com/users/other/repos'
+                        '?access_token=123')
+
+            self.assertIn(url, [base_url, '%s&page=2' % base_url])
+
+            if url == base_url:
+                next_url = '<%s&page=2>; rel="next"' % base_url
+                return json.dumps(repos1), {'Link': next_url}
+            else:
+                return json.dumps(repos2), {}
+
+        account = self._get_hosting_account()
+        account.data['authorization'] = {
+            'token': '123',
+        }
+
+        service = account.service
+        self.spy_on(service.client.http_get, call_fake=_http_get)
+
+        paginator = service.get_remote_repositories('other')
+
+        self.assertEqual(len(paginator.page_data), 1)
+        public_repo = paginator.page_data[0]
+        self.assertIsInstance(public_repo, RemoteRepository)
+        self.assertEqual(public_repo.id, 'other/myrepo')
+        self.assertEqual(public_repo.owner, 'other')
+        self.assertEqual(public_repo.name, 'myrepo')
+        self.assertEqual(public_repo.scm_type, 'Git')
+        self.assertEqual(public_repo.path, 'myrepo_path')
+        self.assertEqual(public_repo.mirror_path, 'myrepo_mirror')
+
+    def test_get_remote_repositories_with_org(self, **kwargs):
+        """Testing GitHub.get_remote_repositories with requesting
+        organization's repositories
+        """
+        repos = [
+            {
+                'id': 1,
+                'owner': {
+                    'login': 'myorg',
+                },
+                'name': 'myrepo',
+                'clone_url': 'myrepo_path',
+                'mirror_url': 'myrepo_mirror',
+                'private': 'false'
+            },
+            {
+                'id': 2,
+                'owner': {
+                    'login': 'myuser',
+                },
+                'name': 'myrepo2',
+                'clone_url': 'myrepo_path2',
+                'mirror_url': 'myrepo_mirror2',
+                'private': 'true'
+            }
+        ]
+
+        def _http_get(service, url, *args, **kwargs):
+            self.assertEqual(
+                url,
+                'https://api.github.com/orgs/myorg/repos?access_token=123')
+            return json.dumps(repos), {}
+
+        account = self._get_hosting_account()
+        account.data['authorization'] = {
+            'token': '123',
+        }
+
+        service = account.service
+        self.spy_on(service.client.http_get, call_fake=_http_get)
+
+        paginator = service.get_remote_repositories('myorg', 'organization')
+        self.assertEqual(len(paginator.page_data), 2)
+        public_repo, private_repo = paginator.page_data
+
+        self.assertIsInstance(public_repo, RemoteRepository)
+        self.assertEqual(public_repo.id, 'myorg/myrepo')
+        self.assertEqual(public_repo.owner, 'myorg')
+        self.assertEqual(public_repo.name, 'myrepo')
+        self.assertEqual(public_repo.scm_type, 'Git')
+        self.assertEqual(public_repo.path, 'myrepo_path')
+        self.assertEqual(public_repo.mirror_path, 'myrepo_mirror')
+
+        self.assertIsInstance(private_repo, RemoteRepository)
+        self.assertEqual(private_repo.id, 'myuser/myrepo2')
+        self.assertEqual(private_repo.owner, 'myuser')
+        self.assertEqual(private_repo.name, 'myrepo2')
+        self.assertEqual(private_repo.scm_type, 'Git')
+        self.assertEqual(private_repo.path, 'myrepo_path2')
+        self.assertEqual(private_repo.mirror_path, 'myrepo_mirror2')
+
+    def test_get_remote_repositories_with_defaults(self, **kwargs):
+        """Testing GitHub.get_remote_repositories with default values"""
+        def _http_get(service, url, *args, **kwargs):
+            self.assertEqual(
+                url,
+                'https://api.github.com/user/repos?access_token=123')
+
+            return b'{}', {}
+
+        account = self._get_hosting_account()
+        account.data['authorization'] = {
+            'token': '123',
+        }
+
+        service = account.service
+        self.spy_on(service.client.http_get, call_fake=_http_get)
+
+        service.get_remote_repositories()
+
+    def test_get_remote_repositories_with_filter(self, **kwargs):
+        """Testing GitHub.get_remote_repositories with ?filter-type="""
+        def _http_get(service, url, *args, **kwargs):
+            self.assertEqual(url,
+                             'https://api.github.com/user/repos'
+                             '?access_token=123&type=private')
+
+            return json.dumps([]), {}
+
+        account = self._get_hosting_account()
+        account.data['authorization'] = {
+            'token': '123',
+        }
+
+        service = account.service
+        self.spy_on(service.client.http_get, call_fake=_http_get)
+
+        service.get_remote_repositories('myuser', filter_type='private')
+
+    def test_get_remote_repository(self, **kwargs):
+        """Testing GitHub.get_remote_repository"""
+        def _http_get(service, url, *args, **kwargs):
+            self.assertEqual(
+                url,
+                'https://api.github.com/repos/myuser/myrepo'
+                '?access_token=123')
+
+            repo_data = {
+                'id': 1,
+                'owner': {
+                    'login': 'myuser',
+                },
+                'name': 'myrepo',
+                'clone_url': 'myrepo_path',
+                'mirror_url': 'myrepo_mirror',
+                'private': 'false'
+            }
+
+            return json.dumps(repo_data), {}
+
+        account = self._get_hosting_account()
+        account.data['authorization'] = {
+            'token': '123',
+        }
+
+        service = account.service
+        self.spy_on(service.client.http_get, call_fake=_http_get)
+
+        remote_repository = service.get_remote_repository('myuser/myrepo')
+
+        self.assertIsInstance(remote_repository, RemoteRepository)
+        self.assertEqual(remote_repository.id, 'myuser/myrepo')
+        self.assertEqual(remote_repository.owner, 'myuser')
+        self.assertEqual(remote_repository.name, 'myrepo')
+        self.assertEqual(remote_repository.scm_type, 'Git')
+        self.assertEqual(remote_repository.path, 'myrepo_path')
+        self.assertEqual(remote_repository.mirror_path, 'myrepo_mirror')
+
+    def test_get_remote_repository_invalid(self, **kwargs):
+        """Testing GitHub.get_remote_repository with invalid repository ID"""
+        def _http_get(service, url, *args, **kwargs):
+            self.assertEqual(
+                url,
+                'https://api.github.com/repos/myuser/invalid'
+                '?access_token=123')
+
+            payload = {
+                'message': 'Not Found',
+            }
+
+            raise HTTPError(url, 404, '', {}, StringIO(json.dumps(payload)))
+
+        account = self._get_hosting_account()
+        account.data['authorization'] = {
+            'token': '123',
+        }
+
+        service = account.service
+        self.spy_on(service.client.http_get, call_fake=_http_get)
+
+        self.assertRaises(ObjectDoesNotExist,
+                          service.get_remote_repository, 'myuser/invalid')
 
     @add_fixtures(['test_users', 'test_scmtools'])
     def test_close_submitted_hook(self):
@@ -1908,16 +2205,25 @@ class GitLabTests(ServiceTests):
             expected_error='A repository with this name was not found, '
                            'or your user may not own it.')
 
-    def test_check_repository_group_not_found(self):
+    def test_check_repository_group_repo_not_found(self):
         """Testing GitLab check_repository with not found error and
         group repository"""
         self._test_check_repository_error(
             plan='group',
             gitlab_group_name='mygroup',
-            gitlab_group_repo_name='myrepo',
+            gitlab_group_repo_name='badrepo',
             expected_error='A repository with this name was not found on '
                            'this group, or your user may not have access '
                            'to it.')
+
+    def test_check_repository_group_not_found(self):
+        """Testing GitLab check_repository with an incorrect group name"""
+        self._test_check_repository_error(
+            plan='group',
+            gitlab_group_name='badgroup',
+            gitlab_group_repo_name='myrepo',
+            expected_error='A group with this name was not found, or your '
+                           'user may not have access to it.')
 
     def test_authorization(self):
         """Testing that GitLab account authorization sends expected data"""
@@ -1964,9 +2270,25 @@ class GitLabTests(ServiceTests):
                         },
                     }
                 ]
+            elif url == 'https://example.com/api/v3/groups?per_page=100':
+                payload = [
+                    {
+                        'id': 1,
+                        'name': 'mygroup',
+                    }
+                ]
             elif url == 'https://example.com/api/v3/projects/1':
                 # We don't care about the contents. Just that it exists.
                 payload = {}
+            elif url == 'https://example.com/api/v3/groups/1':
+                payload = {
+                    'projects': [
+                        {
+                            'id': 1,
+                            'name': 'myrepo',
+                        },
+                    ],
+                }
             else:
                 self.fail('Unexpected URL %s' % url)
 
@@ -1982,7 +2304,26 @@ class GitLabTests(ServiceTests):
 
     def _test_check_repository_error(self, expected_error, **kwargs):
         def _http_get(service, url, *args, **kwargs):
-            return '[]', {}
+            if url == 'https://example.com/api/v3/groups?per_page=100':
+                payload = [
+                    {
+                        'id': 1,
+                        'name': 'mygroup',
+                    }
+                ]
+            elif url == 'https://example.com/api/v3/groups/1':
+                payload = {
+                    'projects': [
+                        {
+                            'id': 1,
+                            'name': 'myrepo',
+                        },
+                    ],
+                }
+            else:
+                payload = []
+
+            return json.dumps(payload), {}
 
         account = self._get_hosting_account(use_url=True)
         service = account.service

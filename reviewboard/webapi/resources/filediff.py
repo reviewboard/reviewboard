@@ -33,6 +33,7 @@ class FileDiffResource(WebAPIResource):
     """
     model = FileDiff
     name = 'file'
+    policy_id = 'file_diff'
     allowed_methods = ('GET', 'PUT')
     fields = {
         'id': {
@@ -43,6 +44,7 @@ class FileDiffResource(WebAPIResource):
             'type': dict,
             'description': 'Extra data as part of the diff. '
                            'This can be set by the API or extensions.',
+            'added_in': '2.0',
         },
         'source_file': {
             'type': six.text_type,
@@ -70,12 +72,14 @@ class FileDiffResource(WebAPIResource):
             'description': "The file attachment for the contents of the "
                            "original file for this file diff, if representing "
                            "a binary file.",
+            'added_in': '2.0',
         },
         'dest_attachment': {
             'type': DiffFileAttachmentResource,
             'description': "The file attachment for the contents of the "
                            "patched file for this file diff, if representing "
                            "a binary file.",
+            'added_in': '2.0',
         },
     }
     item_child_resources = [

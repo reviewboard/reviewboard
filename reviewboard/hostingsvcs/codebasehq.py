@@ -70,23 +70,23 @@ class CodebaseHQ(HostingService):
         #       We don't have a way of requesting that data just for this
         #       type.
         #
-        #'Subversion': {
+        # 'Subversion': {
         #    'path': 'https://%(username)s@%(codebasehq_group_name)s/'
         #            '%(codebasehq_project_name)s/'
         #            '%(codebasehq_repo_name)s.svn',
-        #},
+        # },
 
         # NOTE: Mercurial doesn't work because they don't use HTTP Basic
         #       Auth for the authentication. A valid browser session cookie
         #       is needed instead.
         #
-        #'Mercurial': {
+        # 'Mercurial': {
         #    'username': '%(codebasehq_api_username)s',
         #    'password': '%(codebasehq_api_key)s',
         #    'path': 'https://%(codebasehq_group_name)s.codebasehq.com/'
         #            'projects/%(codebasehq_project_name)s/repositories/'
         #            '%(codebasehq_repo_name)s/'
-        #},
+        # },
 
         # TODO: Support Bazaar
     }

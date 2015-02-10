@@ -53,6 +53,7 @@ class BaseReviewResource(MarkdownFieldsMixin, WebAPIResource):
             'type': dict,
             'description': 'Extra data as part of the review. '
                            'This can be set by the API or extensions.',
+            'added_in': '2.0',
         },
         'id': {
             'type': int,
@@ -123,6 +124,7 @@ class BaseReviewResource(MarkdownFieldsMixin, WebAPIResource):
                            'text fields. The contents will be converted '
                            'to the requested type in the payload, but '
                            'will not be saved as that type.',
+            'added_in': '2.0.9',
         },
         'public': {
             'type': bool,

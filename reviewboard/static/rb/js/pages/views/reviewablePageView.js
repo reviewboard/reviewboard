@@ -151,9 +151,6 @@ RB.ReviewablePageView = Backbone.View.extend({
         this._updatesBubble = null;
         this._favIconURL = null;
         this._favIconNotifyURL = null;
-
-        /* XXX This is needed until other code is moved over. */
-        window.gReviewRequest = this.reviewRequest;
     },
 
     /*
@@ -178,6 +175,10 @@ RB.ReviewablePageView = Backbone.View.extend({
         this.reviewRequestEditorView.render();
 
         this._registerForUpdates();
+
+        // Assign handler for the 'Add File' button
+        this.$('#upload-file-link').click(
+            _.bind(this._onUploadFileClicked, this));
 
         return this;
     },
@@ -251,6 +252,18 @@ RB.ReviewablePageView = Backbone.View.extend({
         });
 
         return false;
+    },
+
+    /*
+     * Handler for when the "Add File" link is clicked.
+     *
+     * Displays popup for attachment upload.
+     */
+    _onUploadFileClicked: function() {
+        var uploadDialog = new RB.UploadAttachmentView({
+            reviewRequest: this.reviewRequest
+        });
+        uploadDialog.render();
     },
 
     /*

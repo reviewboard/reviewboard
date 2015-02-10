@@ -34,7 +34,10 @@ class RepositoryBranchesResource(WebAPIResource):
 
     This is not available for all types of repositories.
     """
+    added_in = '2.0'
+
     name = 'branches'
+    policy_id = 'repository_branches'
     singleton = True
     allowed_methods = ('GET',)
     mimetype_item_resource_name = 'repository-branches'

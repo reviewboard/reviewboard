@@ -1,5 +1,7 @@
 from __future__ import unicode_literals
 
+import logging
+
 from django.db.models import Q
 from django.utils import six
 from djblets.gravatars import get_gravatar_url
@@ -27,6 +29,7 @@ class UserResource(WebAPIResource, DjbletsUserResource):
     ``last_name``, and ``fullname`` will be omitted for non-staff users.
     """
     item_child_resources = [
+        resources.api_token,
         resources.watched,
     ]
 
@@ -34,6 +37,7 @@ class UserResource(WebAPIResource, DjbletsUserResource):
         'avatar_url': {
             'type': six.text_type,
             'description': 'The URL for an avatar representing the user.',
+            'added_in': '1.6.14',
         },
     }, **DjbletsUserResource.fields)
 
@@ -53,7 +57,12 @@ class UserResource(WebAPIResource, DjbletsUserResource):
         search_q = request.GET.get('q', None)
 
         for backend in get_enabled_auth_backends():
-            backend.query_users(search_q, request)
+            try:
+                backend.query_users(search_q, request)
+            except Exception as e:
+                logging.error('Error when calling query_users for auth '
+                              'backend %r: %s',
+                              backend, e, exc_info=1)
 
         local_site = self._get_local_site(local_site_name)
         is_list = kwargs.get('is_list', False)
@@ -74,7 +83,12 @@ class UserResource(WebAPIResource, DjbletsUserResource):
             # they'd like to be represented in search. If any auth backends
             # implement search_users, prefer that over the built-in searching.
             for backend in get_enabled_auth_backends():
-                q = backend.search_users(search_q, request)
+                try:
+                    q = backend.search_users(search_q, request)
+                except Exception as e:
+                    logging.error('Error when calling search_users for auth '
+                                  'backend %r: %s',
+                                  backend, e, exc_info=1)
 
                 if q:
                     break
@@ -131,7 +145,7 @@ class UserResource(WebAPIResource, DjbletsUserResource):
             'fullname': {
                 'type': bool,
                 'description': 'Specifies whether ``q`` should also match '
-                               'the beginning of the first name or last name.'
+                               'the beginning of the first name or last name.',
             },
         },
         allow_unknown=True

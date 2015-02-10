@@ -59,6 +59,13 @@ diffviewer_urls = patterns(
         include(diffviewer_interdiff_urls)),
 )
 
+bugs_urls = patterns(
+    'reviewboard.reviews.views',
+
+    url(r'^infobox/$', 'bug_infobox', name='bug_infobox'),
+    url(r'^$', 'bug_url', name='bug_url'),
+)
+
 review_request_urls = patterns(
     'reviewboard.reviews.views',
 
@@ -76,11 +83,18 @@ review_request_urls = patterns(
     url(r'^file/(?P<file_attachment_id>[0-9]+)/$',
         'review_file_attachment',
         name='file-attachment'),
+    url(r'^file/(?P<file_attachment_id>[0-9]+)'
+        r'-(?P<file_attachment_diff_id>[0-9]+)/$',
+        'review_file_attachment',
+        name='file-attachment'),
 
     # Screenshots
     url(r'^s/(?P<screenshot_id>[0-9]+)/$',
         'view_screenshot',
         name='screenshot'),
+
+    # Bugs
+    url(r'^bugs/(?P<bug_id>[A-Za-z0-9\-_.]+)/', include(bugs_urls)),
 
     # E-mail previews
     url(r'^preview-email/(?P<format>(text|html))/$',

@@ -16,6 +16,9 @@ urlpatterns = patterns(
     url(r'^users/$', 'users_list', name='all-users'),
     url(r"^users/(?P<username>[A-Za-z0-9@_\-\.'\+]+)/$",
         'submitter', name='user'),
+    url(r"^users/(?P<username>[A-Za-z0-9@_\-\.'\+]+)/(?P<grid>[a-z-]+)/$",
+        'submitter', name='user-grid'),
+
 
     # Groups
     url(r'^groups/$', 'group_list', name='all-groups'),
