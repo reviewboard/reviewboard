@@ -49,7 +49,7 @@ Example
 
     class SamplePage(AccountPage):
         page_id = 'myvendor_page'
-        form_title = 'My Page'
+        page_title = 'My Page'
         form_classes = [SamplePageForm]
 
 
