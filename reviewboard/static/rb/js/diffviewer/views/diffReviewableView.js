@@ -92,10 +92,10 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
 
         _super(this).render.call(this);
 
-        $head = this.$('thead');
+        $thead = this.$('thead');
 
-        this._$revisionRow = $head.find('.revision-row');
-        this._$filenameRow = $head.find('.filename-row');
+        this._$revisionRow = $thead.find('.revision-row');
+        this._$filenameRow = $thead.find('.filename-row');
         this._$css = $('<style/>').appendTo(this.$el);
 
         this._selector.render();
