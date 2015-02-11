@@ -56,12 +56,19 @@ class AuthBackend(object):
     login_instructions = None
 
     def authenticate(self, username, password):
+        """Authenticate the user.
+
+        This will authenticate the username and return the appropriate User
+        object, or None.
+        """
         raise NotImplementedError
 
     def get_or_create_user(self, username, request):
+        """Get an existing user, or create one if it does not exist."""
         raise NotImplementedError
 
     def get_user(self, user_id):
+        """Get an existing user, or None if it does not exist."""
         return get_object_or_none(User, pk=user_id)
 
     def update_password(self, user, password):
@@ -180,12 +187,19 @@ class StandardAuthBackend(AuthBackend, ModelBackend):
     ]
 
     def authenticate(self, username, password):
+        """Authenticate the user.
+
+        This will authenticate the username and return the appropriate User
+        object, or None.
+        """
         return ModelBackend.authenticate(self, username, password)
 
     def get_or_create_user(self, username, request):
+        """Get an existing user, or create one if it does not exist."""
         return ModelBackend.get_or_create_user(self, username, request)
 
     def update_password(self, user, password):
+        """Update the given user's password."""
         user.password = hashers.make_password(password)
 
     def get_all_permissions(self, user, obj=None):
@@ -291,6 +305,11 @@ class HTTPDigestBackend(AuthBackend):
         _('Use your standard username and password.')
 
     def authenticate(self, username, password):
+        """Authenticate the user.
+
+        This will authenticate the username and return the appropriate User
+        object, or None.
+        """
         username = username.strip()
 
         digest_text = '%s:%s:%s' % (username, settings.DIGEST_REALM, password)
@@ -319,6 +338,7 @@ class HTTPDigestBackend(AuthBackend):
         return None
 
     def get_or_create_user(self, username, request):
+        """Get an existing user, or create one if it does not exist."""
         try:
             user = User.objects.get(username=username)
         except User.DoesNotExist:
@@ -341,6 +361,11 @@ class NISBackend(AuthBackend):
         _('Use your standard NIS username and password.')
 
     def authenticate(self, username, password):
+        """Authenticate the user.
+
+        This will authenticate the username and return the appropriate User
+        object, or None.
+        """
         import crypt
         import nis
 
@@ -362,6 +387,7 @@ class NISBackend(AuthBackend):
         return None
 
     def get_or_create_user(self, username, request, passwd=None):
+        """Get an existing user, or create one if it does not exist."""
         import nis
 
         username = username.strip()
@@ -405,6 +431,11 @@ class LDAPBackend(AuthBackend):
         _('Use your standard LDAP username and password.')
 
     def authenticate(self, username, password):
+        """Authenticate the user.
+
+        This will authenticate the username and return the appropriate User
+        object, or None.
+        """
         username = username.strip()
 
         uidfilter = "(%(userattr)s=%(username)s)" % {
@@ -491,6 +522,7 @@ class LDAPBackend(AuthBackend):
         return None
 
     def get_or_create_user(self, username, request, ldapo, userdn):
+        """Get an existing user, or create one if it does not exist."""
         username = re.sub(INVALID_USERNAME_CHAR_REGEX, '', username).lower()
 
         try:
@@ -582,9 +614,11 @@ class ActiveDirectoryBackend(AuthBackend):
         _('Use your standard Active Directory username and password.')
 
     def get_domain_name(self):
+        """Return the current AD domain name."""
         return six.text_type(settings.AD_DOMAIN_NAME)
 
     def get_ldap_search_root(self, userdomain=None):
+        """Return the search root(s) for users in the LDAP server."""
         if getattr(settings, "AD_SEARCH_ROOT", None):
             root = [settings.AD_SEARCH_ROOT]
         else:
@@ -599,6 +633,7 @@ class ActiveDirectoryBackend(AuthBackend):
         return ','.join(root)
 
     def search_ad(self, con, filterstr, userdomain=None):
+        """Run a search on the given LDAP server."""
         import ldap
         search_root = self.get_ldap_search_root(userdomain)
         logging.debug('Search root ' + search_root)
@@ -606,6 +641,7 @@ class ActiveDirectoryBackend(AuthBackend):
                             filterstr=filterstr)
 
     def find_domain_controllers_from_dns(self, userdomain=None):
+        """Find and return the active domain controllers using DNS."""
         import DNS
         DNS.Base.DiscoverNameServers()
         q = '_ldap._tcp.%s' % (userdomain or self.get_domain_name())
@@ -613,10 +649,16 @@ class ActiveDirectoryBackend(AuthBackend):
         return [x['data'][-2:] for x in req.answers]
 
     def can_recurse(self, depth):
+        """Return whether the given recursion depth is too big."""
         return (settings.AD_RECURSION_DEPTH == -1 or
                 depth <= settings.AD_RECURSION_DEPTH)
 
     def get_member_of(self, con, search_results, seen=None, depth=0):
+        """Get the LDAP groups for the given users.
+
+        This iterates over the users specified in ``search_results`` and
+        returns a set of groups of which those users are members.
+        """
         depth += 1
         if seen is None:
             seen = set()
@@ -654,6 +696,11 @@ class ActiveDirectoryBackend(AuthBackend):
         return seen
 
     def get_ldap_connections(self, userdomain=None):
+        """Get a set of connections to LDAP servers.
+
+        This returns an iterable of connections to the LDAP servers specified
+        in AD_DOMAIN_CONTROLLER.
+        """
         import ldap
         if settings.AD_FIND_DC_FROM_DNS:
             dcs = self.find_domain_controllers_from_dns(userdomain)
@@ -694,6 +741,11 @@ class ActiveDirectoryBackend(AuthBackend):
             yield con
 
     def authenticate(self, username, password):
+        """Authenticate the user.
+
+        This will authenticate the username and return the appropriate User
+        object, or None.
+        """
         import ldap
 
         username = username.strip()
@@ -771,6 +823,7 @@ class ActiveDirectoryBackend(AuthBackend):
         return None
 
     def get_or_create_user(self, username, request, ad_user_data):
+        """Get an existing user, or create one if it does not exist."""
         username = re.sub(INVALID_USERNAME_CHAR_REGEX, '', username).lower()
 
         try:
@@ -813,10 +866,20 @@ class X509Backend(AuthBackend):
     supports_change_password = True
 
     def authenticate(self, x509_field=""):
+        """Authenticate the user.
+
+        This will extract the username from the provided certificate and return
+        the appropriate User object.
+        """
         username = self.clean_username(x509_field)
         return self.get_or_create_user(username, None)
 
     def clean_username(self, username):
+        """Validate the 'username' field.
+
+        This checks to make sure that the contents of the username field are
+        valid for X509 authentication.
+        """
         username = username.strip()
 
         if settings.X509_USERNAME_REGEX:
@@ -834,6 +897,7 @@ class X509Backend(AuthBackend):
         return username
 
     def get_or_create_user(self, username, request):
+        """Get an existing user, or create one if it does not exist."""
         user = None
         username = username.strip()
 

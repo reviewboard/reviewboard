@@ -38,6 +38,7 @@ class ReviewRequestVisit(models.Model):
     objects = ConcurrencyManager()
 
     def __str__(self):
+        """Return a string used for the admin site listing."""
         return "Review request visit"
 
     class Meta:
@@ -221,6 +222,7 @@ class Profile(models.Model):
             self.starred_groups.remove(review_group)
 
     def __str__(self):
+        """Return a string used for the admin site listing."""
         return self.user.username
 
 
@@ -276,6 +278,7 @@ class LocalSiteProfile(models.Model):
                            ('profile', 'local_site'))
 
     def __str__(self):
+        """Return a string used for the admin site listing."""
         return '%s (%s)' % (self.user.username, self.local_site)
 
 

@@ -61,16 +61,24 @@ class MyAccountView(ConfigPagesView):
     @method_decorator(login_required)
     @augment_method_from(ConfigPagesView)
     def dispatch(self, *args, **kwargs):
+        """Handle the view.
+
+        This just falls back to the djblets ConfigPagesView.dispatch
+        implementation.
+        """
         pass
 
     @property
     def nav_title(self):
+        """Get the title for the navigation section."""
         return self.request.user.username
 
     @property
     def page_classes(self):
+        """Get the list of page classes for this view."""
         return get_page_classes()
 
     @cached_property
     def ordered_user_local_sites(self):
+        """Get the user's local sites, ordered by name."""
         return self.request.user.local_site.order_by('name')

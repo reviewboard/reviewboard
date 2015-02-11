@@ -23,6 +23,7 @@ class RegistrationForm(DjbletsRegistrationForm):
     recaptcha_response_field = forms.CharField(required=False)
 
     def __init__(self, *args, **kwargs):
+        """Initialize the form."""
         super(RegistrationForm, self).__init__(*args, **kwargs)
         self.captcha_error_query_str = ""
 
@@ -34,6 +35,7 @@ class RegistrationForm(DjbletsRegistrationForm):
             self.recaptcha_url = 'http://www.google.com/recaptcha/api'
 
     def clean(self):
+        """Validate all form fields."""
         siteconfig = SiteConfiguration.objects.get_current()
 
         if siteconfig.get('auth_registration_show_captcha'):
@@ -69,6 +71,7 @@ class RegistrationForm(DjbletsRegistrationForm):
         return super(RegistrationForm, self).clean()
 
     def save(self):
+        """Save the form."""
         user = DjbletsRegistrationForm.save(self)
 
         if user:

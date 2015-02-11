@@ -9,7 +9,13 @@ from reviewboard.accounts.trophies import get_registered_trophy_types
 
 
 class ProfileManager(Manager):
+    """Manager for user profiles."""
+
     def get_or_create(self, user, *args, **kwargs):
+        """Return the profile for the user.
+
+        This will create the profile if one does not exist.
+        """
         if hasattr(user, '_profile'):
             return user._profile, False
 
