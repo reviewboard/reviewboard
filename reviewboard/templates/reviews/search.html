@@ -18,23 +18,25 @@
 {%  endif %}
 <br /><br />
 <form method="get" action=".">
-{% for result in page.object_list %}
+{%  for result in page.object_list %}
+{%   if result.object and result.object.id %}
  <div class="searchresult">
   <h2><a href="{{result.object.get_absolute_url}}">{{result.object.summary}}</a></h2>
   <div class="excerpt">{{result.object.description|truncatewords:30}}</div>
   <div class="by">{% blocktrans with result.object.time_added as added_timestamp and result.object.time_added|date:"c" as added_timestamp_raw and result.object.submitter|user_displayname as added_by %}<time class="timesince" datetime="{{added_timestamp_raw}}">{{added_timestamp}}</time> by {{added_by}}{% endblocktrans %}</div>
  </div>
-{% endfor %}
+{%   endif %}
+{%  endfor %}
  <div>
-{% if page.has_previous %}
+{%  if page.has_previous %}
   <a href="?q={{query}}&amp;page={{page.previous_page_number}}">&laquo; {% trans "Previous" %}</a>
-{% endif %}
-{% if page.has_previous and page.has_next %}
+{%  endif %}
+{%  if page.has_previous and page.has_next %}
   |
-{% endif %}
-{% if page.has_next %}
+{%  endif %}
+{%  if page.has_next %}
   <a href="?q={{query}}&amp;page={{page.next_page_number}}">{% trans "Next" %} &raquo;</a>
-{% endif %}
+{%  endif %}
  </div>
 </form>
 {% endblock %}
