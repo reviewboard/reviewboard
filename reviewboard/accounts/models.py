@@ -242,25 +242,25 @@ class LocalSiteProfile(models.Model):
         initializer=lambda p: (
             ReviewRequest.objects.to_user_directly(
                 p.user, local_site=p.local_site).count()
-            if p.pk else 0))
+            if p.user_id else 0))
     total_incoming_request_count = CounterField(
         _('total incoming review request count'),
         initializer=lambda p: (
             ReviewRequest.objects.to_user(
                 p.user, local_site=p.local_site).count()
-            if p.pk else 0))
+            if p.user_id else 0))
     pending_outgoing_request_count = CounterField(
         _('pending outgoing review request count'),
         initializer=lambda p: (
             ReviewRequest.objects.from_user(
                 p.user, p.user, local_site=p.local_site).count()
-            if p.pk else 0))
+            if p.user_id else 0))
     total_outgoing_request_count = CounterField(
         _('total outgoing review request count'),
         initializer=lambda p: (
             ReviewRequest.objects.from_user(
                 p.user, p.user, None, local_site=p.local_site).count()
-            if p.pk else 0))
+            if p.user_id else 0))
     starred_public_request_count = CounterField(
         _('starred public review request count'),
         initializer=lambda p: (
