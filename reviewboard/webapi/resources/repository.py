@@ -65,20 +65,18 @@ class RepositoryResource(WebAPIResource):
             'type': six.text_type,
             'description': 'An alternate path to the repository, for '
                            'lookup purposes.',
-            'added_in': '1.7.19',
         },
         'visible': {
             'type': bool,
             'description': 'Whether or not this repository is visible (admin '
                            'only).',
-            'added_in': '2.0',
         },
         'tool': {
             'type': six.text_type,
             'description': 'The name of the internal repository '
                            'communication class used to talk to the '
                            'repository. This is generally the type of the '
-                           'repository.',
+                           'repository.'
         }
     }
     uri_object_key = 'repository_id'
@@ -155,44 +153,37 @@ class RepositoryResource(WebAPIResource):
                 'type': str,
                 'description': 'Filter repositories by one or more '
                                'comma-separated names.',
-                'added_in': '1.7.21',
             },
             'path': {
                 'type': str,
                 'description': 'Filter repositories by one or more '
                                'comma-separated paths or mirror paths.',
-                'added_in': '1.7.21',
             },
             'name-or-path': {
                 'type': str,
                 'description': 'Filter repositories by one or more '
                                'comma-separated names, paths, or '
                                'mirror paths.',
-                'added_in': '1.7.21',
             },
             'tool': {
                 'type': str,
                 'description': 'Filter repositories by one or more '
                                'comma-separated tool names.',
-                'added_in': '1.7.21',
             },
             'hosting-service': {
                 'type': str,
                 'description': 'Filter repositories by one or more '
                                'comma-separated hosting service IDs.',
-                'added_in': '1.7.21',
             },
             'username': {
                 'type': str,
                 'description': 'Filter repositories by one or more '
                                'comma-separated usernames.',
-                'added_in': '1.7.21',
             },
             'show-invisible': {
                 'type': bool,
                 'description': 'Whether to list only visible repositories or '
                                'all repositories.',
-                'added_in': '2.0',
             },
         }, **WebAPIResource.get_list.optional_fields),
         required=WebAPIResource.get_list.required_fields,
@@ -231,17 +222,14 @@ class RepositoryResource(WebAPIResource):
             'name': {
                 'type': six.text_type,
                 'description': 'The human-readable name of the repository.',
-                'added_in': '1.6',
             },
             'path': {
                 'type': six.text_type,
                 'description': 'The path to the repository.',
-                'added_in': '1.6',
             },
             'tool': {
                 'type': six.text_type,
                 'description': 'The ID of the SCMTool to use.',
-                'added_in': '1.6',
             },
         },
         optional={
@@ -250,7 +238,6 @@ class RepositoryResource(WebAPIResource):
                 'description': 'The URL to a bug in the bug tracker for '
                                'this repository, with ``%s`` in place of the '
                                'bug ID.',
-                'added_in': '1.6',
             },
             'encoding': {
                 'type': six.text_type,
@@ -258,24 +245,20 @@ class RepositoryResource(WebAPIResource):
                                'repository. This is an advanced setting '
                                'and should only be used if you absolutely '
                                'need it.',
-                'added_in': '1.6',
             },
             'mirror_path': {
                 'type': six.text_type,
                 'description': 'An alternate path to the repository.',
-                'added_in': '1.6',
             },
             'password': {
                 'type': six.text_type,
                 'description': 'The password used to access the repository.',
-                'added_in': '1.6',
             },
             'public': {
                 'type': bool,
                 'description': 'Whether or not review requests on the '
                                'repository will be publicly accessible '
                                'by users on the site. The default is true.',
-                'added_in': '1.6',
             },
             'raw_file_url': {
                 'type': six.text_type,
@@ -285,7 +268,6 @@ class RepositoryResource(WebAPIResource):
                                "natively. Use ``<revision>`` and "
                                "``<filename>`` in the URL in place of the "
                                "revision and filename parts of the path.",
-                'added_in': '1.6',
             },
             'trust_host': {
                 'type': bool,
@@ -294,17 +276,14 @@ class RepositoryResource(WebAPIResource):
                                'is false, in which case this will error out '
                                'if encountering an unknown host key or '
                                'certificate.',
-                'added_in': '1.6',
             },
             'username': {
                 'type': six.text_type,
                 'description': 'The username used to access the repository.',
-                'added_in': '1.6',
             },
             'visible': {
                 'type': bool,
                 'description': 'Whether the repository is visible.',
-                'added_in': '2.0',
             },
         },
     )
@@ -404,7 +383,6 @@ class RepositoryResource(WebAPIResource):
                 'description': 'The URL to a bug in the bug tracker for '
                                'this repository, with ``%s`` in place of the '
                                'bug ID.',
-                'added_in': '1.6',
             },
             'encoding': {
                 'type': six.text_type,
@@ -412,34 +390,28 @@ class RepositoryResource(WebAPIResource):
                                'repository. This is an advanced setting '
                                'and should only be used if you absolutely '
                                'need it.',
-                'added_in': '1.6',
             },
             'mirror_path': {
                 'type': six.text_type,
                 'description': 'An alternate path to the repository.',
-                'added_in': '1.6',
             },
             'name': {
                 'type': six.text_type,
                 'description': 'The human-readable name of the repository.',
-                'added_in': '1.6',
             },
             'password': {
                 'type': six.text_type,
                 'description': 'The password used to access the repository.',
-                'added_in': '1.6',
             },
             'path': {
                 'type': six.text_type,
                 'description': 'The path to the repository.',
-                'added_in': '1.6',
             },
             'public': {
                 'type': bool,
                 'description': 'Whether or not review requests on the '
                                'repository will be publicly accessible '
                                'by users on the site. The default is true.',
-                'added_in': '1.6',
             },
             'raw_file_url': {
                 'type': six.text_type,
@@ -449,7 +421,6 @@ class RepositoryResource(WebAPIResource):
                                "natively. Use ``<revision>`` and "
                                "``<filename>`` in the URL in place of the "
                                "revision and filename parts of the path.",
-                'added_in': '1.6',
             },
             'trust_host': {
                 'type': bool,
@@ -458,12 +429,10 @@ class RepositoryResource(WebAPIResource):
                                'is false, in which case this will error out '
                                'if encountering an unknown host key or '
                                'certificate.',
-                'added_in': '1.6',
             },
             'username': {
                 'type': six.text_type,
                 'description': 'The username used to access the repository.',
-                'added_in': '1.6',
             },
             'archive_name': {
                 'type': bool,
@@ -471,12 +440,10 @@ class RepositoryResource(WebAPIResource):
                                "the repository should be changed so that it "
                                "(probably) won't conflict with any future "
                                "repository names.",
-                'added_in': '1.6.2',
             },
             'visible': {
                 'type': bool,
                 'description': 'Whether the repository is visible.',
-                'added_in': '2.0',
             },
         },
     )

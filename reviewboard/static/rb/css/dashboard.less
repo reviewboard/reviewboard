@@ -1,0 +1,276 @@
+@import "defs.less";
+
+
+@dashboard-sidebar-width: 18em;
+
+
+/****************************************************************************
+ * Dashboard
+ ****************************************************************************/
+#dashboard_page {
+  overflow: hidden;
+
+  // This helps compensate for the shadow on the box.
+  padding-bottom: 3px;
+
+  #dashboard_container {
+    display: none;
+  }
+}
+
+#dashboard_container {
+  .box-container, .box, .box-inner, #dashboard-wrapper {
+    margin-bottom: 0;
+    height: 100%;
+  }
+
+  .box-sizing(border-box);
+}
+
+#dashboard-main {
+  background: white;
+  border-left: 1px @box-border-color solid;
+  height: 100%;
+  vertical-align: top;
+  margin-left: @dashboard-sidebar-width;
+  .border-radius(0 @box-inner-border-radius @box-inner-border-radius 0);
+
+  table:after {
+    clear: both;
+  }
+
+  .datagrid td.bugs a {
+    text-decoration: underline;
+    color: @link-color;
+  }
+
+  .datagrid-body-container {
+    overflow-y: auto;
+    margin-right: 1px;
+  }
+
+  .datagrid-titlebox {
+    .border-radius(0 @box-inner-border-radius 0 0);
+  }
+
+  .datagrid-title {
+    background: transparent;
+  }
+
+  .datagrid-wrapper {
+    height: 100%;
+  }
+
+  .main {
+    padding: 0;
+  }
+
+  .repository-column {
+    white-space: nowrap;
+  }
+
+  .diff-size-column {
+    font-size: 90%;
+
+    &.delete {
+      color: @diff-delete-line-count-color;
+    }
+
+    &.insert {
+      color: @diff-insert-line-count-color;
+    }
+  }
+}
+
+
+#dashboard_actions {
+  background: #333333;
+  color: white;
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  padding: 5.5em 0 0 0;
+  width: 100%;
+  .border-radius(@box-inner-border-radius 0 0 @box-inner-border-radius);
+  .box-sizing(border-box);
+  .opacity(98);
+
+  a {
+    color: white;
+    font-size: 110%;
+    text-decoration: none;
+  }
+
+  h2 {
+    font-size: 130%;
+  }
+
+  ul {
+    list-style: none;
+    margin: 3em 1em 1em 1em;
+    padding: 0;
+    text-align: right;
+
+    li {
+      margin: 1em 0;
+      padding: 0;
+    }
+  }
+
+  .count {
+    margin: 0 0 2em 0;
+    text-align: center;
+  }
+}
+
+#dashboard_actions_content {
+  padding: 8px;
+  position: fixed;
+  width: @dashboard-sidebar-width;
+  .box-sizing(border-box);
+}
+
+#dashboard_sidebar {
+  float: left;
+  position: left;
+  top: 0;
+  bottom: 1px;
+  position: left;
+  width: @dashboard-sidebar-width;
+
+  &.scrollable {
+    float: none;
+    overflow-y: auto;
+    position: absolute;
+  }
+}
+
+#dashboard-navbar {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+
+  li {
+    display: block;
+    list-style: none;
+    margin: 0;
+    text-align: left;
+    word-break: break-all;
+
+    &.has-url {
+      cursor: pointer;
+    }
+
+    &.has-url:hover,
+    &.active {
+      .datagrid-sidebar-row {
+        background: @dashboard-sidebar-active-bg;
+      }
+    }
+
+    &.section {
+      margin: 0 0 1em 0;
+
+      & > .datagrid-sidebar-row .label {
+        font-size: 110%;
+        font-weight: bold;
+      }
+    }
+
+    a {
+      color: black;
+      text-decoration: none;
+      padding: 0;
+    }
+
+    ul {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+
+      li {
+        &.has-count .label {
+          /* Give room for the counts. */
+          margin-right: 4em;
+        }
+
+        &.new-subsection {
+          margin-top: 1em;
+        }
+
+        .label {
+          display: inline-block;
+
+          /* Give room for the icons. */
+          margin-left: 20px;
+        }
+
+        .rb-icon {
+          position: absolute;
+          top: @dashboard-sidebar-vert-padding;
+          left: @dashboard-sidebar-horiz-padding;
+        }
+      }
+    }
+
+    .count {
+      position: absolute;
+      top: @dashboard-sidebar-vert-padding;
+      right: @dashboard-sidebar-horiz-padding;
+      background: @dashboard-sidebar-count-bg;
+      border: 1px @dashboard-sidebar-count-border-color solid;
+      font-size: 90%;
+      padding: @dashboard-sidebar-count-vert-padding
+               @dashboard-sidebar-count-horiz-padding;
+      margin-top: -@dashboard-sidebar-count-vert-padding;
+      .border-radius(@dashboard-sidebar-count-border-radius);
+
+      &.count-zero {
+        color: #666666;
+        background: @dashboard-sidebar-count-zero-bg;
+        border-color: @dashboard-sidebar-count-zero-border-color;
+      }
+    }
+
+    .datagrid-sidebar-row {
+      line-height: 16px;
+      padding: @dashboard-sidebar-vert-padding @dashboard-sidebar-horiz-padding;
+      position: relative;
+
+      .rb-icon {
+        vertical-align: middle;
+      }
+    }
+  }
+}
+
+#dashboard-wrapper {
+  background-color: @dashboard-sidebar-bg;
+  position: relative;
+  .border-radius(@box-inner-border-radius);
+}
+
+#dashboard-navbar #user_page_profile {
+  margin-bottom: 1em;
+
+  .nickname {
+    font-size: 1.4em;
+    margin-bottom: 0;
+    padding-bottom: 0;
+  }
+
+  .email, .group {
+    color: #0000C0;
+  }
+
+  .fn, .email {
+    font-size: 1.2em;
+  }
+
+  .logged-in {
+    margin-top: 1.5em;
+  }
+}
+
+
+// vim: set et ts=2 sw=2:

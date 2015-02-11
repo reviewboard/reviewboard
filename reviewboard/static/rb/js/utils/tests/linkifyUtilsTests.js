@@ -1,5 +1,5 @@
 suite('rb/utils/linkifyUtils', function() {
-    var bugTrackerURL = 'http://issues/?id=--bug_id--';
+    var bugTrackerURL = 'http://issues/?id=%s';
 
     describe('linkifyChildren', function() {
         it('URLs', function() {

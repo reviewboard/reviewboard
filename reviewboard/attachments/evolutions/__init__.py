@@ -6,5 +6,4 @@ SEQUENCE = [
     'file_attachment_repo_info',
     'file_attachment_repo_path_no_index',
     'file_attachment_repo_revision_max_length_64',
-    'file_attachment_revision',
 ]

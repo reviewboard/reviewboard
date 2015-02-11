@@ -33,97 +33,100 @@ class Command(NoArgsCommand):
     CALC_TIME_REMAINING_STR = _('Calculating time remaining')
 
     def handle_noargs(self, **options):
-        counts = FileDiff.objects.get_migration_counts()
-        total_count = counts['total_count']
+        self.count = FileDiff.objects.unmigrated().count()
 
-        if total_count == 0:
-            self.stdout.write(_('All diffs have already been migrated.\n'))
+        if self.count == 0:
+            self.stdout.write('All diffs have already been migrated.\n')
             return
 
         self.stdout.write(
-            _('Processing %(count)d diffs for duplicates...\n'
-              '\n'
-              'This may take a while. It is safe to continue using '
-              'Review Board while this is\n'
-              'processing, but it may temporarily run slower.\n'
-              '\n')
-            % {'count': total_count})
+            'Processing %(count)d diffs for duplicates...\n'
+            '\n'
+            'This may take a while. It is safe to continue using '
+            'Review Board while this is\n'
+            'processing, but it may temporarily run slower.\n'
+            '\n'
+            % {
+                'count': self.count,
+            })
 
         # Don't allow queries to be stored.
         settings.DEBUG = False
 
+        self.i = 0
         self.start_time = datetime.now()
         self.prev_prefix_len = 0
         self.prev_time_remaining_s = ''
         self.show_remaining = False
 
-        info = FileDiff.objects.migrate_all(self._on_batch_done, counts)
+        info = FileDiff.objects.migrate_all(self._on_processed_filediff)
 
         old_diff_size = info['old_diff_size']
         new_diff_size = info['new_diff_size']
 
         self.stdout.write(
-            _('\n'
-              '\n'
-              'Condensed stored diffs from %(old_size)s bytes to '
-              '%(new_size)s bytes (%(savings_pct)0.2f%% savings)\n')
-            % {
-                'old_size': intcomma(old_diff_size),
-                'new_size': intcomma(new_diff_size),
-                'savings_pct': (float(old_diff_size - new_diff_size) /
-                                float(old_diff_size) * 100),
-            })
+            '\n'
+            '\n'
+            'Condensed stored diffs from %s bytes to %s bytes '
+            '(%d%% savings)\n'
+            % (intcomma(old_diff_size), intcomma(new_diff_size),
+               (float(old_diff_size - new_diff_size) /
+                float(old_diff_size) * 100)))
 
-    def _on_batch_done(self, processed_count, total_count):
-        """Handler for when a batch of diffs are processed.
+    def _on_processed_filediff(self, filediff):
+        self.i += 1
 
-        This will report the progress of the operation, showing the estimated
-        amount of time remaining.
-        """
-        pct = processed_count * 100 / total_count
-        delta = datetime.now() - self.start_time
+        # Pull these out in order to reduce repeated access of the same
+        # attributes.
+        count = self.count
+        i = self.i
 
-        # XXX: This can be replaced with total_seconds() once we no longer have
-        # to support Python 2.6
-        delta_secs = ((delta.microseconds +
-                       (delta.seconds + delta.days * 24 * 3600) * 10 ** 6)
-                      / 10 ** 6)
+        if i % 20 == 0 or i == count:
+            pct = i * 100 // count
+            delta = datetime.now() - self.start_time
 
-        if (not self.show_remaining and
-            delta_secs >= self.DELAY_SHOW_REMAINING_SECS):
-            self.show_remaining = True
+            # XXX: This can be replaced with total_seconds() once we no longer
+            # have to support Python 2.6
+            delta_secs = ((delta.microseconds +
+                           (delta.seconds + delta.days * 24 * 3600) * 10**6)
+                          / 10**6)
 
-        if self.show_remaining:
-            secs_left = ((delta_secs // processed_count) *
-                         (total_count - processed_count))
+            if (not self.show_remaining and
+                delta_secs >= self.DELAY_SHOW_REMAINING_SECS):
+                self.show_remaining = True
 
-            time_remaining_s = (self.TIME_REMAINING_STR
-                                % self._time_remaining(secs_left))
-        else:
-            time_remaining_s = self.CALC_TIME_REMAINING_STR
+            if self.show_remaining:
+                secs_left = (delta_secs // i) * (count - i)
 
-        prefix_s = '  [%s%%] %s/%s - ' % (pct, processed_count, total_count)
+                # We add a bunch of spaces in order to override any previous
+                # content on the line, for when it shrinks.
+                time_remaining_s = (self.TIME_REMAINING_STR
+                                    % self._time_remaining(secs_left))
+            else:
+                time_remaining_s = self.CALC_TIME_REMAINING_STR
 
-        # NOTE: We use sys.stdout here instead of self.stderr in order
-        #       to control newlines. Command.stderr will force a \n for
-        #       each write.
-        sys.stdout.write(prefix_s)
+            prefix_s = '  [%s%%] %s/%s - ' % (pct, i, count)
 
-        # Only write out the time remaining string if it has changed or
-        # there's been a shift in the length of the prefix. This reduces
-        # how much we have to write to the terminal, and how often, by
-        # a fair amount.
-        if (self.prev_prefix_len != len(prefix_s) or
-            self.prev_time_remaining_s != time_remaining_s):
-            # Something has changed, so output the string and then cache
-            # the values for the next call.
-            sys.stdout.write(time_remaining_s)
+            # NOTE: We use sys.stdout here instead of self.stderr in order
+            #       to control newlines. Command.stderr will force a \n for
+            #       each write.
+            sys.stdout.write(prefix_s)
 
-            self.prev_prefix_len = len(prefix_s)
-            self.prev_time_remaining_s = time_remaining_s
+            # Only write out the time remaining string if it has changed or
+            # there's been a shift in the length of the prefix. This reduces
+            # how much we have to write to the terminal, and how often, by
+            # a fair amount.
+            if (self.prev_prefix_len != len(prefix_s) or
+                self.prev_time_remaining_s != time_remaining_s):
+                # Something has changed, so output the string and then cache
+                # the values for the next call.
+                sys.stdout.write(time_remaining_s)
 
-        sys.stdout.write('\r')
-        sys.stdout.flush()
+                self.prev_prefix_len = len(prefix_s)
+                self.prev_time_remaining_s = time_remaining_s
+
+            sys.stdout.write('\r')
+            sys.stdout.flush()
 
     def _time_remaining(self, secs_left):
         """Returns a string representing the time remaining for the operation.
@@ -139,7 +142,7 @@ class Command(NoArgsCommand):
         since = delta.days * 24 * 60 * 60 + delta.seconds
 
         if since < 60:
-            return N_('%d second', '%d seconds') % since
+            return '%s seconds' % since
 
         for i, (seconds, name) in enumerate(self.TIME_REMAINING_CHUNKS):
             count = since // seconds

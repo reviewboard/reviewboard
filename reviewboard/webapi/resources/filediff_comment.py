@@ -14,7 +14,6 @@ class FileDiffCommentResource(BaseDiffCommentResource):
     comments will span all public reviews.
     """
     allowed_methods = ('GET',)
-    policy_id = 'diff_comment'
     model_parent_key = 'filediff'
     uri_object_key = None
 

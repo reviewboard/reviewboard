@@ -35,6 +35,8 @@ else:
 
 class ClearCaseTool(SCMTool):
     name = 'ClearCase'
+    uses_atomic_revisions = False
+    supports_authentication = False
     field_help_text = {
         'path': 'The absolute path to the VOB.',
     }

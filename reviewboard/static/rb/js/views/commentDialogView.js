@@ -280,6 +280,18 @@ RB.CommentDialogView = Backbone.View.extend({
             })
             .proxyTouchEvents();
 
+        if (!$.browser.msie || $.browser.version >= 9) {
+            /*
+             * resizable is pretty broken in IE 6/7.
+             */
+            this.$el.resizable({
+                handles: $.support.touch ? "grip,se"
+                                         : "grip,n,e,s,w,se,sw,ne,nw",
+                transparent: true,
+                resize: _.bind(this._handleResize, this)
+            });
+        }
+
         this.$('.title').css('cursor', 'move');
         this.$el.draggable({
             handle: '.title'

@@ -14,8 +14,6 @@ from reviewboard.webapi.resources.base_comment import BaseCommentResource
 
 class BaseFileAttachmentCommentResource(BaseCommentResource):
     """A base resource for file comments."""
-    added_in = '1.6'
-
     model = FileAttachmentComment
     name = 'file_attachment_comment'
     fields = dict({
@@ -23,7 +21,6 @@ class BaseFileAttachmentCommentResource(BaseCommentResource):
             'type': 'reviewboard.webapi.resources.file_attachment.'
                     'FileAttachmentResource',
             'description': 'The file changes were made against in a diff.',
-            'added_in': '2.0',
         },
         'file_attachment': {
             'type': 'reviewboard.webapi.resources.file_attachment.'
@@ -34,19 +31,16 @@ class BaseFileAttachmentCommentResource(BaseCommentResource):
             'type': six.text_type,
             'description': 'The text used to describe a link to the file. '
                            'This may differ depending on the comment.',
-            'added_in': '1.7.10',
         },
         'review_url': {
             'type': six.text_type,
             'description': 'The URL to the review UI for the comment on this '
                            'file attachment.',
-            'added_in': '1.7.10',
         },
         'thumbnail_html': {
             'type': six.text_type,
             'description': 'The HTML representing a thumbnail, if any, for '
                            'this comment.',
-            'added_in': '1.7.10',
         },
     }, **BaseCommentResource.fields)
 

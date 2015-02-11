@@ -118,6 +118,10 @@ class Client(object):
                            re.IGNORECASE)
         return regex.sub(repl, data)
 
+    def get_filenames_in_revision(self, revision):
+        """Returns a list of filenames associated with the revision."""
+        raise NotImplementedError
+
     @property
     def repository_info(self):
         """Returns metadata about the repository:

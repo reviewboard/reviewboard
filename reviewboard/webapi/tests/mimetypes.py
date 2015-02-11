@@ -5,10 +5,6 @@ def _build_mimetype(resource_name, fmt='json'):
     return 'application/vnd.reviewboard.org.%s+%s' % (resource_name, fmt)
 
 
-api_token_list_mimetype = _build_mimetype('api-tokens')
-api_token_item_mimetype = _build_mimetype('api-token')
-
-
 change_list_mimetype = _build_mimetype('review-request-changes')
 change_item_mimetype = _build_mimetype('review-request-change')
 
@@ -50,22 +46,8 @@ filediff_comment_list_mimetype = _build_mimetype('file-diff-comments')
 filediff_comment_item_mimetype = _build_mimetype('file-diff-comment')
 
 
-hosting_service_list_mimetype = _build_mimetype('hosting-services')
-hosting_service_item_mimetype = _build_mimetype('hosting-service')
-
-
-hosting_service_account_list_mimetype = \
-    _build_mimetype('hosting-service-accounts')
-hosting_service_account_item_mimetype = \
-    _build_mimetype('hosting-service-account')
-
-
 original_file_mimetype = 'text/plain'
 patched_file_mimetype = 'text/plain'
-
-
-remote_repository_list_mimetype = _build_mimetype('remote-repositories')
-remote_repository_item_mimetype = _build_mimetype('remote-repository')
 
 
 repository_list_mimetype = _build_mimetype('repositories')

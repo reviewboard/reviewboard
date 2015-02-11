@@ -1,7 +1,8 @@
 from __future__ import unicode_literals
 
+import logging
+
 from django.contrib.auth.models import User
-from django.core.urlresolvers import NoReverseMatch
 from django.db import models
 from django.template.loader import Context, get_template
 from django.utils import six
@@ -264,8 +265,7 @@ class BugsField(BuiltinFieldMixin, BaseCommaEditableField):
         bug_url = self._get_bug_url(bug_id)
 
         if bug_url:
-            return format_html('<a class="bug" href="{url}">{id}</a>',
-                               url=bug_url, id=bug_id)
+            return '<a href="%s">%s</a>' % (escape(bug_url), escape(bug_id))
         else:
             return escape(bug_id)
 
@@ -273,25 +273,19 @@ class BugsField(BuiltinFieldMixin, BaseCommaEditableField):
         return self.render_item(item[0])
 
     def _get_bug_url(self, bug_id):
-        review_request = self.review_request_details.get_review_request()
         repository = self.review_request_details.repository
-        local_site_name = None
-        bug_url = None
 
-        if review_request.local_site:
-            local_site_name = review_request.local_site.name
+        if (repository and
+            repository.bug_tracker and
+            '%s' in repository.bug_tracker):
+            try:
+                return repository.bug_tracker % bug_id
+            except TypeError:
+                logging.error("Error creating bug URL. The bug tracker "
+                              "URL '%s' is likely invalid.",
+                              repository.bug_tracker)
 
-        try:
-            if (repository and
-                repository.bug_tracker and
-                '%s' in repository.bug_tracker):
-                bug_url = local_site_reverse(
-                    'bug_url', local_site_name=local_site_name,
-                    args=(review_request.display_id, bug_id))
-        except NoReverseMatch:
-            pass
-
-        return bug_url
+        return None
 
 
 class DependsOnField(BuiltinFieldMixin, BaseModelListEditableField):

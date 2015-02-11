@@ -1,0 +1,119 @@
+@import "defs.less";
+
+
+/****************************************************************************
+ * General text-based review styles
+ ****************************************************************************/
+.text-review-ui {
+  @header-padding: 8px;
+
+  .text-review-ui-header {
+    border-bottom: 1px @diff-file-border-color solid;
+    #gradient > .vertical-three-colors(#FFFFFF, @diff-file-color, 50%,
+                                       @diff-file-color);
+
+    h1 {
+      margin: 0;
+      padding: @header-padding;
+    }
+
+    .text-review-ui-views {
+      list-style: none;
+      margin: 1em 0 0 5em;
+      padding: 0;
+
+      li {
+        background: lighten(@diff-file-color, 2%);
+        cursor: pointer;
+        display: inline-block;
+        margin: 0;
+        border: 1px @diff-file-border-color solid;
+        border-bottom: 0;
+        vertical-align: bottom;
+        .border-radius(@box-border-radius @box-border-radius 0 0);
+
+        &.active {
+          background: lighten(@diff-file-color, 5%);
+
+          a {
+            padding: 6px 12px;
+          }
+        }
+
+        a {
+          color: black;
+          display: block;
+          padding: 4px 12px;
+          text-decoration: none;
+        }
+      }
+    }
+  }
+
+  .text-review-ui-text-table,
+  .text-review-ui-rendered-table {
+    .border-radius(0 0 @box-inner-border-radius @box-inner-border-radius);
+
+    tr:last-child {
+      td {
+        .border-radius(0 0 @box-inner-border-radius 0);
+      }
+
+      th {
+        .border-radius(0 0 0 @box-inner-border-radius);
+      }
+    }
+
+    .filename-row {
+      border-bottom: 1px @diff-file-border-color solid;
+    }
+  }
+}
+
+.text-review-ui-comment-thumbnail {
+  background: inherit;
+
+  td {
+    background: white;
+  }
+
+  td, th {
+    border-right: 1px #DDD solid;
+  }
+
+  tr:first-child td {
+    border-top: 1px #DDD solid;
+  }
+
+  tr:last-child td {
+    border-bottom: 1px #DDD solid;
+  }
+}
+
+
+/****************************************************************************
+ * Markdown-specific styles
+ ****************************************************************************/
+.markdown-review-ui {
+  td {
+    padding-left: 2px;
+
+    * {
+      margin: 0;
+      padding: 0;
+    }
+
+    a {
+      color: blue;
+      text-decoration: underline;
+    }
+
+    h1 {
+      font-size: 2em;
+    }
+
+    ul, ol {
+      padding-left: 2em;
+    }
+  }
+}

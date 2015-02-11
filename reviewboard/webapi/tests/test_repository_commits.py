@@ -9,7 +9,6 @@ from reviewboard.webapi.tests.base import BaseWebAPITestCase
 from reviewboard.webapi.tests.mimetypes import repository_commits_item_mimetype
 from reviewboard.webapi.tests.mixins import BasicTestsMetaclass
 from reviewboard.webapi.tests.urls import get_repository_commits_url
-import nose
 
 
 @six.add_metaclass(BasicTestsMetaclass)
@@ -80,13 +79,9 @@ class ResourceTests(BaseWebAPITestCase):
         repository = self.create_repository(tool_name='CVS')
         repository.save()
 
-        try:
-            rsp = self.api_get(
-                get_repository_commits_url(repository),
-                query={'start': ''},
-                expected_status=501)
-        except ImportError:
-            raise nose.SkipTest("cvs binary not found")
-
+        rsp = self.api_get(
+            get_repository_commits_url(repository),
+            query={'start': ''},
+            expected_status=501)
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], REPO_NOT_IMPLEMENTED.code)

@@ -22,8 +22,6 @@ class ReviewGroupUserResource(UserResource):
     """Provides information on users that are members of a review group."""
     allowed_methods = ('GET', 'POST', 'DELETE')
 
-    policy_id = 'review_group_user'
-
     def get_queryset(self, request, group_name, local_site_name=None,
                      *args, **kwargs):
         group = Group.objects.get(name=group_name,
@@ -57,7 +55,6 @@ class ReviewGroupUserResource(UserResource):
         'username': {
             'type': six.text_type,
             'description': 'The user to add to the group.',
-            'added_in': '1.6.14',
         },
     })
     def create(self, request, username, *args, **kwargs):

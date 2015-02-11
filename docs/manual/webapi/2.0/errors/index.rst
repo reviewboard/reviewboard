@@ -40,4 +40,3 @@ Errors
    225-publish-error
    226-user-query-error
    227-commit-id-already-exists
-   228-token-generation-failed

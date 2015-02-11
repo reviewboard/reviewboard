@@ -1,0 +1,185 @@
+@import "defs.less";
+
+
+/* TODO: Reuse the colors from diffviewer.less, once they're moved out. */
+@orig-image-border-color: #FF7777;
+@modified-image-border-color: #63C363;
+
+
+.image-review-ui-diff-thumbnail {
+    .orig-image {
+      border: 1px @orig-image-border-color solid;
+      display: inline-block;
+    }
+
+    .modified-image {
+      border: 1px @modified-image-border-color solid;
+      display: inline-block;
+      margin-left: 5px;
+    }
+}
+
+.image-review-ui {
+  background: white;
+  padding: 2em;
+  position: relative;
+  .border-radius(0 0 @box-border-radius @box-border-radius);
+
+  .review-ui-inline & {
+    padding: 0;
+  }
+
+  img {
+    display: block;
+    margin: 0 auto;
+    padding: 0;
+  }
+
+  .caption {
+    margin-bottom: 1em;
+    text-align: center;
+  }
+
+  .image-diffs {
+    padding: 2em;
+    text-align: center;
+
+    .image-slider {
+      margin: 2em auto 0 auto;
+      width: 200px;
+    }
+
+    .orig-image {
+      border: 1px @orig-image-border-color solid;
+    }
+
+    .modified-image {
+      border: 1px @modified-image-border-color solid;
+    }
+
+    .image-container {
+      display: inline-block;
+      float: none;
+      margin: 0 2em;
+    }
+
+    .image-diff-difference {
+      canvas {
+        border: 1px #CCCCCC solid;
+      }
+    }
+
+    .image-diff-two-up {
+      img {
+        display: inline-block;
+      }
+
+      .image-container-orig {
+        right: 50%;
+      }
+
+      .image-container-modified {
+        left: 50%;
+      }
+    }
+
+    .image-diff-onion,
+    .image-diff-split {
+      .image-containers {
+        margin: auto;
+        position: relative;
+
+        .orig-image, .modified-image {
+          display: block;
+          margin: 0;
+          position: absolute;
+        }
+      }
+    }
+  }
+
+  .image-diff-split-container-orig,
+  .image-diff-split-container-modified {
+    overflow: hidden;
+    position: absolute;
+  }
+
+  .image-diff-split-container-orig {
+    .orig-image {
+      left: 0;
+    }
+  }
+
+  .image-diff-split-container-modified {
+    border-left: 1px solid #999999;
+    right: 0;
+
+    .modified-image {
+      right: 0;
+    }
+  }
+
+  .image-diff-modes {
+    background: darken(#f0f0f0, 3%);
+    border-bottom: 1px darken(#f0f0f0, 18%) solid;
+    list-style: none;
+    margin: 0;
+    padding: 1em;
+    text-align: center;
+
+    li {
+      display: inline-block;
+      margin: 0 1em;
+      padding: 0;
+      text-align: center;
+
+      &.selected {
+        a {
+          font-weight: bold;
+          color: #333;
+        }
+      }
+
+      a {
+        color: #444;
+        padding: 1em 0;
+      }
+    }
+  }
+
+  .selection {
+    border: 1px #a1c0e3 solid;
+    position: absolute;
+
+    &.draft {
+      border: 1px #aceb6f solid;
+
+      .selection-flag {
+        background: #aceb6f;
+      }
+    }
+  }
+
+  .selection-flag {
+    background-color: #a1c0e3;
+    cursor: pointer;
+    height: 2em;
+    left: 0px;
+    line-height: 170%;
+    text-align: center;
+    top: 0px;
+    width: 2em;
+  }
+
+  .selection-container {
+    cursor: crosshair;
+    position: absolute;
+    margin: 0;
+    z-index: @z-index-event-overlay;
+  }
+
+  .selection-rect {
+    border: 1px #ff0000 dashed;
+    position: absolute;
+  }
+}

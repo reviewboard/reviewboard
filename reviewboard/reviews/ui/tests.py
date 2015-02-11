@@ -249,6 +249,6 @@ class SandboxTests(SpyAgency, TestCase):
 
         serial_comments = review_ui.serialize_comments(
             comments=[file_attachment_comments])
-        self.assertEqual(len(serial_comments), 0)
+        self.assertRaises(StopIteration, next, serial_comments)
 
         self.assertTrue(review_ui.serialize_comment.called)

@@ -229,7 +229,7 @@ $(document).ready(function() {
     });
 
     choiceContainer
-        .on("widget-shown", function() {
+        .one("widget-shown", function() {
             getActivityData("none");
         })
         .find(".btn-s").click(function() {

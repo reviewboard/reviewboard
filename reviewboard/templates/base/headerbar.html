@@ -13,7 +13,7 @@
 {% if request.user.is_authenticated %}
   <li>
 {%  spaceless %}
-   <a class="user-nav-item" href="{% url 'user' request.user.username %}">
+   <a class="user-nav-item" href="{% url 'user-preferences' %}">
 {%   if siteconfig_settings.integration_gravatars %}
     {% gravatar user 32 %}
 {%   endif %}

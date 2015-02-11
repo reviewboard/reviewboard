@@ -1,10 +1,11 @@
 from __future__ import unicode_literals
 
+import logging
+
 from django.core.exceptions import ObjectDoesNotExist
-from django.core.urlresolvers import NoReverseMatch
 from django.template.defaultfilters import date
 from django.utils import six
-from django.utils.html import conditional_escape, escape, format_html
+from django.utils.html import conditional_escape, escape
 from django.utils.six.moves import reduce
 from django.utils.translation import ugettext_lazy as _, ugettext
 from djblets.datagrid.grids import CheckboxColumn, Column, DateTimeColumn
@@ -59,25 +60,15 @@ class BugsColumn(Column):
     def render_data(self, state, review_request):
         bugs = review_request.get_bug_list()
         repository = review_request.repository
-        local_site_name = None
-
-        if review_request.local_site:
-            local_site_name = review_request.local_site.name
 
         if repository and repository.bug_tracker:
-            links = []
-            for bug in bugs:
-                try:
-                    url = local_site_reverse(
-                        'bug_url',
-                        local_site_name=local_site_name,
-                        args=(review_request.display_id, bug))
-                    links.append(
-                        format_html('<a href="{0}">{1}</a>', url, bug))
-                except NoReverseMatch:
-                    links.append(escape(bug))
-
-            return ', '.join(links)
+            try:
+                return ', '.join(['<a href="%s">%s</a>' %
+                                  (repository.bug_tracker % bug, bug)
+                                  for bug in bugs])
+            except TypeError:
+                logging.warning('Invalid bug tracker format when rendering '
+                                'bugs column: %s' % repository.bug_tracker)
 
         return ', '.join(bugs)
 
@@ -433,31 +424,13 @@ class ReviewRequestStarColumn(BaseStarColumn):
         return queryset
 
 
-class ReviewSubmitterColumn(Column):
-    """Shows the submitter of the review request for a review."""
-    def __init__(self, *args, **kwargs):
-        super(ReviewSubmitterColumn, self).__init__(
-            label=_('Submitter'),
-            field_name='review_request',
-            shrink=True,
-            sortable=True,
-            link=True,
-            *args, **kwargs)
-
-    def render_data(self, state, review):
-        return conditional_escape(review.review_request.submitter)
-
-    def augment_queryset(self, state, queryset):
-        return queryset.select_related('reviews')
-
-
 class ShipItColumn(Column):
     """Shows the "Ship It" count for a review request."""
     def __init__(self, *args, **kwargs):
         super(ShipItColumn, self).__init__(
             image_class='rb-icon rb-icon-shipit',
             image_alt=_('Ship It!'),
-            detailed_label=_('Ship It!'),
+            detailed_label = _('Ship It!'),
             db_field='shipit_count',
             sortable=True,
             shrink=True,
@@ -551,27 +524,6 @@ class SummaryColumn(Column):
                 labels[label], label)
         display_data += summary
         return display_data
-
-
-class ReviewSummaryColumn(SummaryColumn):
-    """Shows the summary of the review request of a review.
-
-    This does not (yet) prepend the draft/submitted/discarded state, if any,
-    to the summary.
-    """
-    def __init__(self, *args, **kwargs):
-        super(SummaryColumn, self).__init__(
-            label=_('Review Request Summary'),
-            expand=True,
-            link=True,
-            css_class='summary',
-            *args, **kwargs)
-
-    def render_data(self, state, review):
-        return conditional_escape(review.review_request.summary)
-
-    def augment_queryset(self, state, queryset):
-        return queryset.select_related('reviews')
 
 
 class ToMeColumn(Column):

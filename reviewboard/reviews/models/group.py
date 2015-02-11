@@ -41,14 +41,6 @@ class Group(models.Model):
         max_length=254,
         help_text=_("The mailing list review requests and discussions "
                     "are sent to."))
-    email_list_only = models.BooleanField(
-        _('send e-mail only to the mailing list'),
-        default=True,
-        help_text=_('If a mailing list is specified and this option is '
-                    'checked, group memebers will not be individually '
-                    'included on e-mails, and only the mailing list '
-                    'will be used. This is highly recommended for '
-                    'large groups.'))
     users = models.ManyToManyField(User, blank=True,
                                    related_name="review_groups",
                                    verbose_name=_("users"))

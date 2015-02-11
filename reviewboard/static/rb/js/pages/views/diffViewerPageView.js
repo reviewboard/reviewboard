@@ -78,14 +78,14 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
         });
 
         /*
-         * If we have "index_header" or a file+line hash in the location,
-         * strip it off. Backbone's router makes use of the hash to try to
-         * be backwards compatible with browsers that don't support the
-         * history API, but we don't care about those, and if it's present
-         * when we call start(), it will change the page's URL to be
-         * /diff/index_header, which isn't a valid URL.
+         * If we have the "index_header" hash in the location, strip it off.
+         * Backbone's router makes use of the hash to try to be backwards
+         * compatible with browsers that don't support the history API, but we
+         * don't care about those, and if it's present when we call
+         * start(), it will change the page's URL to be /diff/index_header,
+         * which isn't a valid URL.
          */
-        if (window.location.hash) {
+        if (window.location.hash === '#index_header') {
             window.location.replace('#');
         }
 
@@ -215,10 +215,6 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
         '</div>'
     ].join('')),
 
-    /* Template for code line link anchor */
-    anchorTemplate: _.template(
-    '<a name="<%- anchorName %>" class="highlight-anchor"></a>'),
-
     /*
      * Set the displayed files.
      *
@@ -303,11 +299,9 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
      * pulled from the server.
      */
     _renderFileDiff: function(diffReviewable) {
-        var elementName = 'file' + diffReviewable.get('fileDiffID'),
-            $el = $('#' + elementName),
+        var $el = $('#file' + diffReviewable.get('fileDiffID')),
             diffReviewableView,
-            $anchor,
-            urlSplit;
+            $anchor;
 
         if ($el.length === 0) {
             /*
@@ -352,26 +346,6 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
         if (this._startAtAnchorName) {
             /* See if we've loaded the anchor the user wants to start at. */
             $anchor = $('a[name="' + this._startAtAnchorName + '"]');
-
-            /*
-             * Some anchors are added by the template (such as those at
-             * comment locations), but not all are. If the anchor isn't found,
-             * but the URL hash is indicating that we want to start at a
-             * location within this file, add the anchor.
-             * */
-            urlSplit = this._startAtAnchorName.split(',');
-            if ($anchor.length === 0 &&
-                urlSplit.length === 2 &&
-                elementName === urlSplit[0]) {
-                $anchor = $(this.anchorTemplate({
-                    anchorName: this._startAtAnchorName
-                }));
-
-                diffReviewableView.$el
-                    .find("tr[line='" + urlSplit[1] + "']")
-                        .addClass('highlight-anchor')
-                        .append($anchor);
-            }
 
             if ($anchor.length !== 0) {
                 this.selectAnchor($anchor);
@@ -610,10 +584,7 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
      *
      * This will always implicitly navigate to page 1 of any paginated diffs.
      */
-    _onRevisionSelected: function(revisions) {
-        var base = revisions[0],
-            tip = revisions[1];
-
+    _onRevisionSelected: function(base, tip) {
         if (base === 0) {
             this.router.navigate(tip + '/', {trigger: true});
         } else {

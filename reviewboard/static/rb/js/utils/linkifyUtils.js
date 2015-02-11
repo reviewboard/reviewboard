@@ -67,7 +67,7 @@ RB.LinkifyUtils = {
                      * depending on how this was typed, so try both.
                      */
                     var bugnum = bugnum1 || bugnum2,
-                        href = bugTrackerURL.replace("--bug_id--", bugnum);
+                        href = bugTrackerURL.replace("%s", bugnum);
 
                     if (markdown) {
                         return '[' + text + '](' + href + ')';
@@ -134,6 +134,6 @@ RB.LinkifyUtils = {
                     RB.LinkifyUtils.linkifyChildren(node, bugTrackerURL);
                 }
             }
-        }
+        };
     }
 };

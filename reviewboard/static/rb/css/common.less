@@ -1,5 +1,44 @@
-@import (reference) "defs.less";
+@import "defs.less";
 
+
+body {
+  background-color: white;
+  color: black;
+  font-family: Verdana, Arial, Helvetica, Sans-Serif;
+  font-size: 8pt;
+  margin: 0;
+  padding: 0;
+}
+
+form th {
+  text-align: right;
+  vertical-align: top;
+}
+
+h1 {
+  font-size: 10pt;
+}
+
+h3 {
+  margin-top: 2em;
+}
+
+img {
+  border: 0;
+}
+
+label.required:after {
+  content: ' *';
+  font-weight: bold;
+  font-size: 10px;
+  color: @required-flag-color;
+}
+
+pre, textarea, .CodeMirror, .editable.field-text-area {
+  font-size: @textarea-font-size;
+  font-family: @textarea-font-family;
+  line-height: @textarea-line-height;
+}
 
 span {
   &.label-draft {
@@ -15,77 +54,267 @@ span {
   }
 }
 
+td.help {
+  font-size: 10px;
+  color: #333;
+  padding-top: 0;
+}
+
+textarea {
+  resize: none;
+}
+
+ul.errorlist {
+  color: #DD0000;
+  display: inline;
+  font-weight: bold;
+  margin: 0 0 0 15px;
+  padding: 4px 8px;
+
+  li {
+    display: inline;
+  }
+}
+
 .loading img {
   margin-right: 4px;
   vertical-align: text-bottom;
+}
+
+
+/****************************************************************************
+ * Buttons
+ ****************************************************************************/
+
+.btn,
+input[type="button"],
+input[type="submit"] {
+  // Button Base
+  cursor: pointer;
+  display: inline-block;
+  #gradient > .vertical-three-colors(#ffffff, #ffffff, 25%, darken(#ffffff, 10%)); // Don't use .gradientbar() here since it does a three-color gradient
+  padding: 3px 8px;
+  text-shadow: 0 1px 1px rgba(255,255,255,.75);
+  color: #333;
+  font-size: 13px;
+  line-height: normal;
+  border: 1px solid #ccc;
+  border-bottom-color: #bbb;
+  .border-radius(4px);
+  .box-shadow(inset 0 1px 0 rgba(255,255,255,.2), 0 1px 2px rgba(0,0,0,.05));
+
+  &:hover {
+    background-position: 0 -15px;
+    color: #333;
+    text-decoration: none;
+  }
+
+  // Primary Button Type
+  &.primary, &.default {
+    color: white;
+    text-shadow: none;
+
+    .gradientBar(@btn-primary-color1, @btn-primary-color2);
+  }
+
+  // Transitions
+  .transition(.1s linear all);
+
+  // Active and Disabled states
+  &:active {
+    .box-shadow(inset 0 2px 4px rgba(0,0,0,.25), 0 1px 2px rgba(0,0,0,.05));
+  }
+
+  &.disabled {
+    cursor: default;
+    background-image: none;
+    .reset-filter();
+    .opacity(65);
+    .box-shadow(none);
+  }
+
+  &[disabled] {
+    // disabled pseudo can't be included with .disabled
+    // def because IE8 and below will drop it ;_;
+    cursor: default;
+    background-image: none;
+    .reset-filter();
+    .opacity(65);
+    .box-shadow(none);
+  }
+
+  // Button Sizes
+  &.large {
+    font-size: 130%;
+    line-height: normal;
+    padding: 9px 14px 9px;
+    .border-radius(6px);
+  }
+
+  &.small {
+    padding: 7px 9px 7px;
+    font-size: 11px;
+  }
+
+  &.danger {
+    color: white !important;
+    .gradientBar(#ee5f5b, #c43c35);
+  }
+}
+
+
+// Help Firefox not be a jerk about adding extra padding to buttons
+button.btn,
+input[type=submit].btn {
+  &::-moz-focus-inner {
+    padding: 0;
+    border: 0;
+  }
+}
+
+
+/****************************************************************************
+ * Banners
+ ****************************************************************************/
+.banner {
+  background: @draft-bg-color;
+  border: 1px @draft-border-color solid;
+  margin-bottom: 10px;
+  padding: 8px 10px;
+  z-index: @z-index-banner;
+
+  &>h1 {
+    display: inline;
+    margin-right: 0.2em;
+    padding: 0;
+  }
+
+  &>input {
+    margin-left: 10px;
+  }
+}
+
+
+/****************************************************************************
+ * Box classes
+ ****************************************************************************/
+.box, .modalbox {
+  background-color: @box-bg;
+  background-image: url('../images/box_top_bg.png');
+  background-position: top left;
+  background-repeat: repeat-x;
+  border: 1px @box-border-color solid;
+  .border-radius(@box-border-radius);
+  .box-shadow(@box-shadow);
+}
+
+.box.important {
+  background-color: #fdf2a0;
+  background-image: url('../images/gold_box_top_bg.png');
+  border: 1px #b7a93e solid;
+  padding: 0 10px;
+
+  .box-inner {
+    background: url("../images/important.png") no-repeat top left;
+    padding: 0 0 0 50px;
+  }
+}
+
+.box.tip {
+  background-color: #fdf2a0;
+  background-image: url('../images/gold_box_top_bg.png');
+  border: 1px #b7a93e solid;
+  padding: 0 10px;
+
+  .box-inner {
+    background: transparent;
+  }
+
+  h1 {
+    padding-left: 0;
+  }
+}
+
+.box.yay {
+  background-color: #fdf2a0;
+  background-image: url('../images/gold_box_top_bg.png');
+  border: 1px #b7a93e solid;
+  padding: 0 10px;
+
+  .box-inner {
+    background: transparent;
+    position: relative;
+  }
+
+  h1 {
+    padding-left: 2.5em;
+  }
+
+  img {
+    float: left;
+    left: -5px;
+    margin: 0;
+    padding: 0;
+    position: absolute;
+    top: -20px;
+  }
 }
 
 .box .star {
   cursor: pointer;
 }
 
-.datagrid-wrapper {
-  .datagrid-titlebox {
-    padding-left: 0px;
-
-    .datagrid-title {
-      padding-left: 10px;
-    }
-
-    .datagrid-showclosed {
-      display: inline-block ;
-    }
-  }
-
-  .datagrid-title,
-  .datagrid-titlebox {
-    background: @box-title-bg;
-    .border-radius(@box-border-radius @box-border-radius 0 0);
-  }
+.admin h1.title,
+.box-head,
+.modalbox-title {
+  background: @box-title-bg;
+  border-bottom: 1px #728eac solid;
+  margin: 0;
+  padding: 0.4em 0.6em;
+  .border-radius(@box-border-radius @box-border-radius 0 0);
 }
 
-#dashboard-main {
-  display: block;
+.box-title,
+.modalbox-title {
+  font-size: 120%;
+}
 
-  .datagrid-title-tabs {
-    display: block;
-    height: 1.5em;
-    list-style: none;
+.box-title {
+  margin: 0;
+  padding: 0;
+}
 
-    .datagrid-tab {
-      float: left;
+.box-main {
+  padding: 5px;
+}
 
-      &.active {
-        &:hover {
-          .datagrid-title {
-            background: darken(@box-title-bg, 20%);
-          }
-        }
+.box-container {
+  margin-bottom: 10px;
+  width: 100%;
+}
 
-        .datagrid-title {
-          background: darken(@box-title-bg, 10%);
-        }
-      }
+.box-inner,
+.modalbox-inner {
+  background-image: url('../images/box_bottom_bg.png');
+  background-position: bottom left;
+  background-repeat: repeat-x;
+  .border-radius(@box-border-radius);
 
-      .datagrid-title {
-        border-radius: 0;
-        border-right: 1px solid gray;
+  padding-bottom: 1px\9; /* IE wants this. The \9 targets IE 7,8,9. */
+}
 
-        &:hover {
-          background: darken(@box-title-bg, 10%);
-        }
+.box-inner form {
+  margin: 0;
+}
 
-        a {
-          text-decoration: none;
-          color: black;
-        }
-      }
-    }
+.modalbox, .modalbox-bg {
+  z-index: @z-index-dialog;
+}
 
-    .datagrid-showclosed {
-      padding: 2px 0px 0px 10px ;
-    }
-  }
+.datagrid-title,
+.datagrid-titlebox {
+  background: @box-title-bg !important;
+  .border-radius(@box-border-radius @box-border-radius 0 0);
 }
 
 .datagrid-main {
@@ -150,6 +379,10 @@ span {
     border: 1px #478a06 solid;
     color: #205003;
   }
+}
+
+.server-error-box .response-data {
+  margin-top: 2em;
 }
 
 
@@ -270,6 +503,15 @@ span {
 /****************************************************************************
  * Forms
  ****************************************************************************/
+form table td {
+  padding: 8px 8px 4px 4px;
+
+  &.label {
+    text-align: right;
+    font-weight: bold;
+  }
+}
+
 .formdlg {
   tr {
     padding-top: 4px;
@@ -316,6 +558,17 @@ span {
 /****************************************************************************
  * Account page
  ****************************************************************************/
+.prefsbuttons {
+  padding: 1em;
+  text-align: center;
+}
+
+.prefsgroup ul {
+  list-style: none;
+  padding-left: 0;
+  margin: 5px;
+}
+
 .section {
   margin-bottom: 20px;
 
@@ -328,6 +581,200 @@ span {
   .body {
     margin-left: 20px;
     padding: 10px;
+  }
+}
+
+#headerbar {
+  background: @headerbar-bg;
+  border-bottom: 1px #DDDDDD solid;
+  color: white;
+  margin: 0;
+  padding: @headerbar-padding;
+
+  br {
+    clear: both;
+    height: 0;
+  }
+
+  #title {
+    color: white;
+    display: inline;
+    font-weight: normal;
+    font-size: 120%;
+    vertical-align: middle;
+    margin: 0;
+    padding: 0;
+
+    a {
+      color: white;
+      font-size: 120%;
+      text-decoration: none;
+    }
+
+    .version {
+      color: #E0E0E0;
+      font-weight: normal;
+      font-size: 90%;
+    }
+  }
+
+  #logo {
+    position: absolute;
+    top: -2px;
+    left: @headerbar-logo-padding-horiz;
+  }
+
+  #search {
+   float: right;
+   margin: 0 1em;
+
+   input {
+     border: 1px black solid;
+     margin: 0;
+     padding: 2px;
+     .border-radius(6px);
+     background-color: #EEEEEE;
+     font-size: 1.2em;
+   }
+  }
+}
+
+#rbinfo {
+  float: left;
+  position: absolute;
+  left: 0;
+  padding-top: 0.2em;
+  padding-left: @headerbar-padding-left;
+
+  img {
+    display: inline;
+    vertical-align: middle;
+  }
+}
+
+#accountnav {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  z-index: @z-index-base;
+  float: right;
+
+  li {
+    display: block;
+    float: right;
+    margin: -@headerbar-padding 0;
+    padding: 0;
+    position: relative;
+    white-space: nowrap;
+
+    &:hover {
+      background: @headerbar-bg-active;
+
+      ul {
+        display: block;
+        z-index: @z-index-menu;
+      }
+    }
+
+    a {
+      color: white;
+      display: block;
+      font-size: 120%;
+      margin: 0;
+      padding: 0 1em;
+      text-decoration: none;
+      height: 32px;
+      vertical-align: middle;
+      line-height: 32px;
+
+      &.user-nav-item {
+        padding-left: 0.2em;
+      }
+    }
+
+    img {
+      display: inline;
+      vertical-align: top;
+      margin: 0;
+      padding: 0;
+    }
+
+    ul {
+      background-color: @headerbar-bg;
+      display: none;
+      margin: 0;
+      min-width: @headerbar-menu-min-width;
+      padding: 0;
+      position: absolute;
+      right: 0;
+      .border-radius(0 0 @box-border-radius @box-border-radius);
+
+      li {
+        float: none;
+        margin: 0;
+        padding: 0;
+        text-align: right;
+
+        &:last-child {
+          .border-radius(0 0 @box-border-radius @box-border-radius);
+        }
+
+        a {
+          margin: 0;
+        }
+      }
+    }
+  }
+}
+
+#activity-indicator {
+  position: fixed;
+  top: 0;
+  left: 50%;
+  text-align: center;
+  font-weight: bold;
+  background-color: #fce94f;
+  background-image: url("../images/spinner.gif");
+  background-position: 0.4em 0.4em;
+  background-repeat: no-repeat;
+  border: 1px #c4a000 solid;
+  border-top: 0;
+  margin-left: -3em;
+  padding: 0.5em 0.6em 0.5em 2.2em;
+  width: 6em;
+  z-index: @z-index-spinner;
+
+  &.error {
+    background-color: #ffcd9c;
+    width: 28em;
+    margin-left: -14em;
+    background-image: none;
+    padding-left: 0.6em;
+
+    a {
+      margin-left: 1em;
+      color: #0000CC;
+      text-decoration: none;
+    }
+  }
+}
+
+#error {
+  div {
+    background: #ffcd9c;
+    border: 1px #9a4306 solid;
+    margin-bottom: 10px;
+    padding: 8px 10px;
+  }
+
+  h1 {
+    display: inline;
+    margin: 0;
+    padding: 0;
+  }
+
+  input[type='submit'] {
+    margin-left: 10px;
   }
 }
 
@@ -347,6 +794,36 @@ span {
   }
 }
 
+#navbar-container {
+  margin: 0 0 1em 0;
+}
+
+#navbar {
+  background: @navbar-bg;
+  border-bottom: 1px @navbar-border-color solid;
+  list-style: none;
+  margin: 0;
+  min-height: 1.5em;
+  padding: @headerbar-padding;
+  padding-left: @headerbar-padding-left;
+
+  li {
+    display: inline;
+    height: 30px;
+    margin: 0 1em 0 0;
+  }
+
+  a {
+    color: @navbar-text-color;
+    font-size: 110%;
+    text-decoration: none;
+  }
+
+  .newreviewrequest {
+    text-align: right;
+  }
+}
+
 body.admin #navbar {
   background: url("../images/admin/yellow_bg_small.png") repeat-x #F9F2C9;
   margin: 0;
@@ -354,6 +831,16 @@ body.admin #navbar {
   a {
     color: black;
   }
+}
+
+#page-container {
+  padding: 0 @page-container-padding @page-container-padding @page-container-padding;
+}
+
+#searchbar {
+  position: absolute;
+  right: 0;
+  margin-top: -3px;
 }
 
 
@@ -547,7 +1034,18 @@ body.admin #navbar {
  * User page hover
  ****************************************************************************/
 
-#user_infobox {
+#user-infobox {
+  background: #F9F9F9;
+  border: 1px black solid;
+  display: block;
+  min-height: 12em;
+  padding: 1em;
+  position: absolute;
+  min-width: 30em;
+  z-index: @z-index-dialog;
+  .border-radius(10px);
+  .box-shadow(0px 0px 4px #000);
+
   &.loading {
     background-image: url("../images/spinner.gif");
     background-position: 1em 1em;
@@ -575,7 +1073,17 @@ body.admin #navbar {
     }
   }
 
+  p {
+    font-size: 1.2em;
+    margin: 0.5em 0;
+    padding: 0;
+  }
+
   h2 {
+    font-size: 1.4em;
+    margin: 0 0 0.5em 0;
+    padding: 0;
+
     a {
       color: inherit;
     }
@@ -601,55 +1109,29 @@ body.admin #navbar {
 
 
 /****************************************************************************
- * Bug hover
- ****************************************************************************/
-
-#bug_infobox {
-  max-width: 50em;
-  max-height: 25em;
-  overflow: hidden;
-
-  .bug-infobox-text {
-    color: black;
-    float: left;
-    word-wrap: break-word;
-
-    h2 {
-      margin-top: 0;
-      padding-top: 0;
-    }
-  }
-}
-
-#user_infobox, #bug_infobox {
-  background: #F9F9F9;
-  border: 1px black solid;
-  display: block;
-  min-height: 12em;
-  padding: 1em;
-  position: absolute;
-  min-width: 40em;
-  z-index: @z-index-dialog;
-  .border-radius(10px);
-  .box-shadow(0px 0px 4px #000);
-
-  h2 {
-    font-size: 1.4em;
-    margin: 0 0 0.5em 0;
-    padding: 0;
-  }
-
-  p {
-    font-size: 1.2em;
-    margin: 0.5em 0;
-    padding: 0;
-  }
-}
-
-/****************************************************************************
  * New Review Request
  ****************************************************************************/
-#id_basedir
+.new-review-request {
+  background-color: #fefadf;
+  background-image: url('../images/review_request_box_top_bg.png');
+
+  label {
+    color: #575012;
+    font-weight: bold;
+  }
+
+  tr {
+    padding-top: 4px;
+  }
+
+  .box-inner {
+    background-image: url('../images/review_request_box_bottom_bg.png');
+  }
+}
+
+
+.new-review-request table,
+#id_basedir,
 #id_diff_path,
 #id_parent_diff_path {
    width: 100%;

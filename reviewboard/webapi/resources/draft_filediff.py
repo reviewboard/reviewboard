@@ -21,10 +21,7 @@ class DraftFileDiffResource(FileDiffResource):
     Each of these contains a single, self-contained diff file that
     applies to exactly one file on a repository.
     """
-    added_in = '2.0'
-
     name = 'draft_file'
-    policy_id = 'draft_file_diff'
     uri_name = 'files'
     allowed_methods = ('GET', 'PUT')
     item_result_key = 'file'
@@ -139,7 +136,7 @@ class DraftFileDiffResource(FileDiffResource):
 
             dest_attachment_file = request.FILES.get('dest_attachment_file')
 
-            form = UploadFileForm(review_request_draft.review_request, {}, {
+            form = UploadFileForm({}, {
                 'path': dest_attachment_file,
             })
 
@@ -148,7 +145,9 @@ class DraftFileDiffResource(FileDiffResource):
                     'fields': self._get_form_errors(form),
                 }
 
-            form.create(filediff)
+            form.create(dest_attachment_file,
+                        review_request_draft.review_request,
+                        filediff)
 
         if extra_fields:
             self.import_extra_data(filediff, filediff.extra_data, extra_fields)

@@ -10,8 +10,6 @@ from reviewboard.webapi.resources.base_original_file import \
 
 class DraftOriginalFileResource(BaseOriginalFileResource):
     """Provides the unpatched file corresponding to a file diff."""
-    added_in = '2.0.4'
-
     name = 'draft_original_file'
 
     def get_filediff(self, request, *args, **kwargs):

@@ -172,9 +172,7 @@ class HostingService(object):
     supports_repositories = False
     supports_ssh_key_association = False
     supports_two_factor_auth = False
-    supports_list_remote_repositories = False
     has_repository_hook_instructions = False
-
     self_hosted = False
     repository_url_patterns = None
 
@@ -294,35 +292,6 @@ class HostingService(object):
 
         This should be implemented by subclasses, and is expected to return a
         tuple of (commit message, diff), both strings.
-        """
-        raise NotImplementedError
-
-    def get_remote_repositories(self, owner=None, owner_type=None,
-                                filter_type=None, start=None, per_page=None):
-        """Get a list of remote repositories for the owner.
-
-        This should be implemented by subclasses, and is expected to return an
-        APIPaginator providing pages of RemoteRepository objects.
-
-        The ``start`` and ``per_page`` parameters can be used to control
-        where pagination begins and how many results are returned per page,
-        if the subclass supports it.
-
-        ``owner`` is expected to default to a reasonable value (typically
-        the linked account's username). The hosting service may also require
-        an ``owner_type`` value that identifies what the ``owner`` means.
-        This value is specific to the hosting service backend.
-
-        Likewise, ``filter_type`` is specific to the hosting service backend.
-        If supported, it may be used to filter the types of hosting services.
-        """
-        raise NotImplementedError
-
-    def get_remote_repository(self, repository_id):
-        """Get the remote repository for the ID.
-
-        This should be implemented by subclasses, and is expected to return
-        a RemoteRepository if found, or raise ObjectDoesNotExist if not found.
         """
         raise NotImplementedError
 
@@ -474,10 +443,14 @@ def _add_hosting_service_url_pattern(name, cls):
 
 
 def get_hosting_services():
-    """Gets the list of hosting services."""
+    """Gets the list of hosting services.
+
+    This will return an iterator for iterating over each hosting service.
+    """
     _populate_hosting_services()
 
-    return _hosting_services.values()
+    for name, cls in six.iteritems(_hosting_services):
+        yield name, cls
 
 
 def get_hosting_service(name):
@@ -502,7 +475,6 @@ def register_hosting_service(name, cls):
         raise KeyError('"%s" is already a registered hosting service' % name)
 
     _hosting_services[name] = cls
-    cls.id = name
 
     _add_hosting_service_url_pattern(name, cls)
 

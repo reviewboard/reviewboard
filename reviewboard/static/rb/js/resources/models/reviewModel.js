@@ -26,14 +26,8 @@ RB.Review = RB.BaseResource.extend({
         includeTextTypes: null,
 
         /*
-         * Markdown-formatted text fields, if the caller fetches or posts with
-         * with includeTextTypes="markdown".
-         */
-        markdownTextFields: {},
-
-        /*
-         * Raw text fields, if the caller fetches or posts with
-         * includeTextTypes="raw".
+         * Raw text fields, if forceTextType is used and the caller
+         * fetches or posts with includeTextTypes="raw".
          */
         rawTextFields: {},
 
@@ -87,21 +81,14 @@ RB.Review = RB.BaseResource.extend({
             data = RB.BaseResource.prototype.parseResourceData.call(this, rsp);
 
         data.bodyTopRichText =
-            (rawTextFields.body_top_text_type === 'markdown');
+            (rawTextFields.body_top_text_type === 'markdown')
         data.bodyBottomRichText =
-            (rawTextFields.body_bottom_text_type === 'markdown');
+            (rawTextFields.body_bottom_text_type === 'markdown')
 
         if (rsp.raw_text_fields) {
             data.rawTextFields = {
                 bodyBottom: rsp.raw_text_fields.body_bottom,
                 bodyTop: rsp.raw_text_fields.body_top
-            };
-        }
-
-        if (rsp.markdown_text_fields) {
-            data.markdownTextFields = {
-                bodyBottom: rsp.markdown_text_fields.body_bottom,
-                bodyTop: rsp.markdown_text_fields.body_top
             };
         }
 

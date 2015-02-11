@@ -72,7 +72,6 @@ class DummyRequest(HttpRequest):
         self.method = 'GET'
         self.path = ''
         self.user = User.objects.all()[0]
-        self.session = {}
 
         # This is normally set internally by Djblets, but we don't
         # go through the standard __call__ flow.
@@ -270,10 +269,8 @@ class ResourceDirective(Directive):
         uri_template = get_resource_uri_template(resource, not is_list)
         append_detail_row(tbody, "URI", nodes.literal(text=uri_template))
 
-        # Token Policy ID
-        if hasattr(resource, 'policy_id'):
-            append_detail_row(tbody, "Token Policy ID",
-                              nodes.literal(text=resource.policy_id))
+        # URI Parameters
+        #append_detail_row(tbody, "URI Parameters", '')
 
         # HTTP Methods
         allowed_http_methods = self.get_http_methods(resource, is_list)
@@ -379,8 +376,8 @@ class ResourceDirective(Directive):
                 field_type = self.get_resource_class(field_type)
 
             if type(field_type) is list:
-                return ([nodes.inline(text='List of ')] +
-                        get_type_name(field_type[0]))
+                return [nodes.inline(text='List of ')] + \
+                       get_type_name(field_type[0])
             elif type(field_type) is tuple:
                 value_nodes = []
 
@@ -657,8 +654,7 @@ class ResourceTreeDirective(Directive):
             self,
             ':ref:`%s <%s>`' %
             (get_resource_title(resource, is_list, False),
-             'webapi2.0-%s-resource'
-             % get_resource_docname(resource, is_list)))
+             'webapi2.0-%s-resource' % get_resource_docname(resource, is_list)))
 
         bullet_list = nodes.bullet_list()
         item += bullet_list
@@ -864,7 +860,6 @@ def append_detail_row(tbody, header_text, detail):
 FIRST_CAP_RE = re.compile(r'(.)([A-Z][a-z]+)')
 ALL_CAP_RE = re.compile(r'([a-z0-9])([A-Z])')
 
-
 def uncamelcase(name, separator='_'):
     """
     Converts a string from CamelCase into a lowercase name separated by
@@ -876,12 +871,9 @@ def uncamelcase(name, separator='_'):
 
 def get_resource_title(resource, is_list, append_resource=True):
     """Returns a human-readable name for the resource."""
-    if hasattr(resource, 'verbose_name'):
-        normalized_title = resource.verbose_name
-    else:
-        class_name = resource.__class__.__name__
-        class_name = class_name.replace('Resource', '')
-        normalized_title = title(uncamelcase(class_name, ' '))
+    class_name = resource.__class__.__name__
+    class_name = class_name.replace('Resource', '')
+    normalized_title = title(uncamelcase(class_name, ' '))
 
     if is_list:
         s = '%s List' % normalized_title
@@ -892,7 +884,6 @@ def get_resource_title(resource, is_list, append_resource=True):
         s += ' Resource'
 
     return s
-
 
 def get_resource_docname(resource, is_list):
     """Returns the name of the page used for a resource's documentation."""

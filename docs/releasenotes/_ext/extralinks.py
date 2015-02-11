@@ -25,7 +25,7 @@ def bug_role(role, rawtext, text, linenum, inliner, options={}, content=[]):
 
     bugtracker_url = inliner.document.settings.env.config.bugtracker_url
 
-    if not bugtracker_url or '%s' not in bugtracker_url:
+    if not bugtracker_url or not '%s' in bugtracker_url:
         msg = inliner.reporter.error('bugtracker_url must be configured.',
                                      line=linenum)
         prb = inliner.problematic(rawtext, rawtext, msg)

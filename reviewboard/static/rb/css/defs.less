@@ -42,8 +42,12 @@
 @draft-bg-color: #CDFF9C;
 @draft-border-color: darken(@draft-bg-color, 50%);
 
+@review-request-actions-bg: @review-request-action-primary-bg;
+@review-request-actions-border-color:
+  darken(@review-request-action-primary-bg, 40%);
+
 @review-request-action-bg: #E5D7A8;
-@review-request-action-border-color: darken(@review-request-action-bg, 40%);
+@review-request-action-border-color: @review-request-actions-border-color;
 @review-request-action-active-bg: darken(@review-request-action-bg, 20%);
 @review-request-action-hover-bg: darken(@review-request-action-bg, 12%);
 
@@ -51,7 +55,7 @@
 @review-request-action-primary-active-bg: @review-request-action-active-bg;
 @review-request-action-primary-hover-bg: @review-request-action-hover-bg;
 
-@review-request-action-menu-border-color: @review-request-action-border-color;
+@review-request-action-menu-border-color: @review-request-actions-border-color;
 @review-request-action-menu-bg: @review-request-action-active-bg;
 @review-request-action-menu-item-hover-bg: @review-request-action-hover-bg;
 
@@ -95,9 +99,9 @@
 @z-index-event-overlay: 30;
 @z-index-filter-overlay: 40;
 @z-index-banner: 90;
+@z-index-dialog: 100;
 @z-index-diff-collapse-btn: 100;
 @z-index-menu: 110;
-@z-index-dialog: 120;
 @z-index-page-overlay: 130;
 @z-index-spinner: 140;
 
@@ -166,9 +170,6 @@
 @diff-insert-line-count-color: darkgreen;
 @diff-delete-line-count-color: darkred;
 
-// Diff highlighted line
-@diff-highlight-color: #F3CBFF;
-
 // Revisions selector
 @revisions-border-color: #999999;
 @revisions-hover-color: #E7E0A2;
@@ -200,8 +201,174 @@
 @dashboard-sidebar-count-horiz-padding: 8px;
 
 
-@import (reference) "mixins/gradients.less";
-@import (reference) "mixins/style.less";
+.border-radius (...) {
+  -moz-border-radius: @arguments;
+  -webkit-border-radius: @arguments;
+  border-radius: @arguments;
+}
+
+.box-shadow (...) {
+  -moz-box-shadow: @arguments;
+  -webkit-box-shadow: @arguments;
+  box-shadow: @arguments;
+}
+
+.box-sizing (...) {
+  -moz-box-sizing: @arguments;
+  -webkit-box-sizing: @arguments;
+  box-sizing: @arguments;
+}
+
+.opacity (@value) {
+  opacity: @value / 100;
+  filter:alpha(opacity=@value);
+  -moz-opacity: @value / 100;
+}
+
+.transition(@transition) {
+  -webkit-transition: @transition;
+     -moz-transition: @transition;
+          transition: @transition;
+}
+
+.pre-wrap () {
+  white-space: pre-wrap;      /* CSS 3 */
+  white-space: -moz-pre-wrap; /* Mozilla, 1999+ */
+  white-space: -pre-wrap;     /* Opera 4-6 */
+  white-space: -o-pre-wrap;   /* Opera 7 */
+  word-wrap: break-word;      /* IE 5.5+ */
+}
+
+.unselectable() {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -khtml-user-select: none;
+  -moz-user-select: none;
+  -moz-user-select: -moz-none;
+  -ms-user-select: none;
+  user-select: none;
+
+  /* These must be defined as two rules, or Firefox will drop them both. */
+  &::selection {
+    background: transparent;
+  }
+
+  &::-moz-selection {
+    background: transparent;
+  }
+}
+
+.ellipsize() {
+  /* Ellipsize the text contents. */
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+// Reset filters for IE
+.reset-filter() {
+  filter: e(%("progid:DXImageTransform.Microsoft.gradient(enabled = false)"));
+}
+
+// Gradient Bar Colors for buttons and allerts
+.gradientBar(@primaryColor, @secondaryColor) {
+  #gradient > .vertical(@primaryColor, @secondaryColor);
+  text-shadow: 0 -1px 0 rgba(0,0,0,.25);
+  border-color: @secondaryColor @secondaryColor darken(@secondaryColor, 15%);
+  border-color: rgba(0,0,0,.1) rgba(0,0,0,.1) fadein(rgba(0,0,0,.1), 15%);
+}
+
+#gradient {
+  .horizontal (@startColor: #555, @endColor: #333) {
+    background-color: @endColor;
+    background-repeat: repeat-x;
+    background-image: -khtml-gradient(linear, left top, right top, from(@startColor), to(@endColor)); // Konqueror
+    background-image: -moz-linear-gradient(left, @startColor, @endColor); // FF 3.6+
+    background-image: -ms-linear-gradient(left, @startColor, @endColor); // IE10
+    background-image: -webkit-gradient(linear, left top, right top, color-stop(0%, @startColor), color-stop(100%, @endColor)); // Safari 4+, Chrome 2+
+    background-image: -webkit-linear-gradient(left, @startColor, @endColor); // Safari 5.1+, Chrome 10+
+    background-image: -o-linear-gradient(left, @startColor, @endColor); // Opera 11.10
+    background-image: linear-gradient(left, @startColor, @endColor); // Le standard
+    filter: e(%("progid:DXImageTransform.Microsoft.gradient(startColorstr='%d', endColorstr='%d', GradientType=1)",@startColor,@endColor)); // IE9 and down
+  }
+  .vertical (@startColor: #555, @endColor: #333) {
+    background-color: @endColor;
+    background-repeat: repeat-x;
+    background-image: -khtml-gradient(linear, left top, left bottom, from(@startColor), to(@endColor)); // Konqueror
+    background-image: -moz-linear-gradient(top, @startColor, @endColor); // FF 3.6+
+    background-image: -ms-linear-gradient(top, @startColor, @endColor); // IE10
+    background-image: -webkit-gradient(linear, left top, left bottom, color-stop(0%, @startColor), color-stop(100%, @endColor)); // Safari 4+, Chrome 2+
+    background-image: -webkit-linear-gradient(top, @startColor, @endColor); // Safari 5.1+, Chrome 10+
+    background-image: -o-linear-gradient(top, @startColor, @endColor); // Opera 11.10
+    background-image: linear-gradient(top, @startColor, @endColor); // The standard
+    filter: e(%("progid:DXImageTransform.Microsoft.gradient(startColorstr='%d', endColorstr='%d', GradientType=0)",@startColor,@endColor)); // IE9 and down
+  }
+  .directional (@startColor: #555, @endColor: #333, @deg: 45deg) {
+    background-color: @endColor;
+    background-repeat: repeat-x;
+    background-image: -moz-linear-gradient(@deg, @startColor, @endColor); // FF 3.6+
+    background-image: -ms-linear-gradient(@deg, @startColor, @endColor); // IE10
+    background-image: -webkit-linear-gradient(@deg, @startColor, @endColor); // Safari 5.1+, Chrome 10+
+    background-image: -o-linear-gradient(@deg, @startColor, @endColor); // Opera 11.10
+    background-image: linear-gradient(@deg, @startColor, @endColor); // The standard
+  }
+  .vertical-three-colors(@startColor: #00b3ee, @midColor: #7a43b6, @colorStop: 50%, @endColor: #c3325f) {
+    background-color: @endColor;
+    background-repeat: no-repeat;
+    background-image: -webkit-gradient(linear, 0 0, 0 100%, from(@startColor), color-stop(@colorStop, @midColor), to(@endColor));
+    background-image: -webkit-linear-gradient(@startColor, @midColor @colorStop, @endColor);
+    background-image: -moz-linear-gradient(top, @startColor, @midColor @colorStop, @endColor);
+    background-image: -ms-linear-gradient(@startColor, @midColor @colorStop, @endColor);
+    background-image: -o-linear-gradient(@startColor, @midColor @colorStop, @endColor);
+    background-image: linear-gradient(@startColor, @midColor @colorStop, @endColor);
+    filter: e(%("progid:DXImageTransform.Microsoft.gradient(startColorstr='%d', endColorstr='%d', GradientType=0)",@startColor,@endColor)); // IE9 and down, gets no color-stop at all for proper fallback
+  }
+}
+
+
+.user-select(@arg) {
+  user-select: @arg;
+  -moz-user-select: @arg;
+  -ms-user-select: @arg;
+  -webkit-user-select: @arg;
+}
+
+
+// CSS3 cursors
+.grab-cursor() {
+  cursor: grab;
+  cursor: -moz-grab;
+  cursor: -webkit-grab;
+}
+
+.grabbing-cursor-important() {
+  /*
+   * XXX: We should be able in instantiate mixins with !important but for some
+   * reason it's not working for me.
+   */
+  cursor: grabbing !important;
+  cursor: -moz-grabbing !important;
+  cursor: -webkit-grabbing !important;
+}
+
+
+/* !(*%!(&^ (see http://www.positioniseverything.net/easyclearing.html) */
+.clearfix {
+  display: inline-block;
+
+  &:after {
+    clear: both;
+    content: ".";
+    display: block;
+    height: 0;
+    visibility: hidden;
+  }
+}
+
+/* Hides from IE-mac \*/
+* html .clearfix {height: 1%;}
+.clearfix {display: block;}
+/* End hide from IE-mac */
 
 
 // vim: set et ts=2 sw=2:

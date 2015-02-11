@@ -201,7 +201,7 @@ RB.NewReviewRequestView = Backbone.View.extend({
             });
         } else {
             this._preCommitView = new RB.PreCommitView({
-                model: new RB.UploadDiffModel({
+                model: new RB.PreCommitModel({
                     repository: repository
                 })
             });

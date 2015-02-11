@@ -12,14 +12,14 @@ from djblets.db.managers import ConcurrencyManager
 
 @python_2_unicode_compatible
 class BaseComment(models.Model):
-    OPEN = "O"
-    RESOLVED = "R"
-    DROPPED = "D"
+    OPEN           = "O"
+    RESOLVED       = "R"
+    DROPPED        = "D"
 
     ISSUE_STATUSES = (
-        (OPEN, _('Open')),
-        (RESOLVED, _('Resolved')),
-        (DROPPED, _('Dropped')),
+        (OPEN,      _('Open')),
+        (RESOLVED,  _('Resolved')),
+        (DROPPED,   _('Dropped')),
     )
     issue_opened = models.BooleanField(_("issue opened"), default=False)
     issue_status = models.CharField(_("issue status"),

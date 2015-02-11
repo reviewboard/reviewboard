@@ -1,5 +1,7 @@
 {% load djblets_utils i18n reviewtags staticfiles %}
 
+{% include "reviews/review_request_dlgs.html" %}
+
  <div class="header">
   <div id="summary_wrapper"><label for="field_summary">{% trans "Summary" %}:</label><h1 id="field_summary" class="field editable required" data-field-id="summary">{{review_request_details.summary|escape}}</h1></div>
   <p id="status">

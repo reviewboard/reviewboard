@@ -1,17 +1,14 @@
 from __future__ import unicode_literals
 
-import bz2
 import gc
-import hashlib
 import os
 
-from django.db import DatabaseError, models, reset_queries, connection
-from django.db.models import Count, Q
-from django.db.utils import IntegrityError
+from django.db import models, reset_queries
+from django.db.models import Q
 from django.utils.encoding import smart_unicode
-from django.utils.functional import cached_property
 from django.utils.six.moves import range
 from django.utils.translation import ugettext as _
+from djblets.db.fields import Base64DecodedValue
 from djblets.siteconfig.models import SiteConfiguration
 
 from reviewboard.diffviewer.differ import DiffCompatVersion
@@ -23,35 +20,16 @@ class FileDiffManager(models.Manager):
     """A manager for FileDiff objects.
 
     This contains utility methods for locating FileDiffs that haven't been
-    migrated to use RawFileDiffData.
+    migrated to use FileDiffData.
     """
-    MIGRATE_OBJECT_LIMIT = 200
-
     def unmigrated(self):
         """Queries FileDiffs that store their own diff content."""
         return self.exclude(
-            (Q(diff64='') | Q(diff64__isnull=True)) &
-            (Q(parent_diff64='') | Q(parent_diff64__isnull=True)))
+            Q(diff_hash__isnull=False) &
+            (Q(parent_diff_hash__isnull=False) | Q(parent_diff64='')))
 
-    def get_migration_counts(self):
-        """Returns the number of items that need to be migrated.
-
-        The result is a dictionary containing a breakdown of the various
-        counts, and the total count of all items for display.
-        """
-        from reviewboard.diffviewer.models import LegacyFileDiffData
-
-        unmigrated_filediffs_count = self.unmigrated().count()
-        legacy_fdd_count = LegacyFileDiffData.objects.count()
-
-        return {
-            'filediffs': unmigrated_filediffs_count,
-            'legacy_file_diff_data': legacy_fdd_count,
-            'total_count': unmigrated_filediffs_count + legacy_fdd_count,
-        }
-
-    def migrate_all(self, batch_done_cb=None, counts=None, batch_size=40):
-        """Migrates diff content in FileDiffs to use RawFileDiffData.
+    def migrate_all(self, processed_filediff_cb=None):
+        """Migrates diff content in FileDiffs to use FileDiffData for storage.
 
         This will run through all unmigrated FileDiffs and migrate them,
         condensing their storage needs and removing the content from
@@ -59,41 +37,45 @@ class FileDiffManager(models.Manager):
 
         This will return a dictionary with the result of the process.
         """
-        from reviewboard.diffviewer.models import LegacyFileDiffData
+        unmigrated_filediffs = self.unmigrated()
 
+        OBJECT_LIMIT = 200
         total_diffs_migrated = 0
         total_diff_size = 0
         total_bytes_saved = 0
 
-        unmigrated_filediffs = self.unmigrated()
-        legacy_data_items = LegacyFileDiffData.objects.all()
+        count = unmigrated_filediffs.count()
 
-        if counts:
-            unmigrated_filediffs_count = counts['filediffs']
-            legacy_data_items_count = counts['legacy_file_diff_data']
-            total_count = counts['total_count']
-        else:
-            unmigrated_filediffs_count = unmigrated_filediffs.count()
-            legacy_data_items_count = legacy_data_items.count()
-            total_count = legacy_data_items_count + unmigrated_filediffs_count
+        for i in range(0, count, OBJECT_LIMIT):
+            # Every time we work on a batch of FileDiffs, we're re-querying
+            # the list of unmigrated FileDiffs. No previously processed
+            # FileDiff will be returned in the results. That's why we're
+            # indexing from 0 to OBJECT_LIMIT, instead of from 'i'.
+            for filediff in unmigrated_filediffs[:OBJECT_LIMIT].iterator():
+                total_diffs_migrated += 1
 
-        migration_tasks = (
-            (self._migrate_filediffs,
-             unmigrated_filediffs,
-             unmigrated_filediffs_count),
-            (self._migrate_legacy_fdd,
-             legacy_data_items,
-             legacy_data_items_count),
-        )
+                diff_size = len(filediff.get_diff64_base64())
+                parent_diff_size = len(filediff.get_parent_diff64_base64())
 
-        for migrate_func, queryset, count in migration_tasks:
-            for batch_info in migrate_func(queryset, count, batch_size):
-                total_diffs_migrated += batch_info[0]
-                total_diff_size += batch_info[1]
-                total_bytes_saved += batch_info[2]
+                total_diff_size += diff_size + parent_diff_size
 
-                if callable(batch_done_cb):
-                    batch_done_cb(total_diffs_migrated, total_count)
+                diff_hash_is_new, parent_diff_hash_is_new = \
+                    filediff._migrate_diff_data(recalculate_counts=False)
+
+                if diff_size > 0 and not diff_hash_is_new:
+                    total_bytes_saved += diff_size
+
+                if parent_diff_size > 0 and not parent_diff_hash_is_new:
+                    total_bytes_saved += parent_diff_size
+
+                if callable(processed_filediff_cb):
+                    processed_filediff_cb(filediff)
+
+            # Do all we can to limit the memory usage by resetting any stored
+            # queries (if DEBUG is True), and force garbage collection of
+            # anything we may have from processing a FileDiff.
+            reset_queries()
+            gc.collect()
 
         return {
             'diffs_migrated': total_diffs_migrated,
@@ -102,266 +84,23 @@ class FileDiffManager(models.Manager):
             'bytes_saved': total_bytes_saved,
         }
 
-    def _migrate_legacy_fdd(self, legacy_data_items, count, batch_size):
-        """Migrates data from LegacyFileDiffData to RawFileDiffData.
 
-        This will go through every LegacyFileDiffData and convert them to
-        RawFileDiffData entries, removing the old versions. All associated
-        FileDiffs are then updated to point to the new RawFileDiffData entry
-        instead of the old LegacyFileDiffData.
-        """
-        from reviewboard.diffviewer.models import RawFileDiffData
-
-        cursor = connection.cursor()
-
-        legacy_data_items = legacy_data_items.annotate(
-            num_filediffs=Count('filediffs'),
-            num_parent_filediffs=Count('parent_filediffs'))
-
-        for batch in self._iter_batches(legacy_data_items, count, batch_size):
-            batch_total_diff_size = 0
-            batch_total_bytes_saved = 0
-            raw_fdds = []
-            all_diff_hashes = []
-            filediff_hashes = []
-            parent_filediff_hashes = []
-
-            for legacy_fdd in batch:
-                raw_fdd = RawFileDiffData.objects.create_from_legacy(
-                    legacy_fdd, save=False)
-
-                raw_fdds.append(raw_fdd)
-
-                binary_hash = legacy_fdd.binary_hash
-
-                old_diff_size = len(legacy_fdd.get_binary_base64())
-                batch_total_diff_size += old_diff_size
-                batch_total_bytes_saved += old_diff_size - len(raw_fdd.binary)
-
-                # Update all associated FileDiffs to use the new objects
-                # instead of the old ones.
-                if legacy_fdd.num_filediffs > 0:
-                    filediff_hashes.append(binary_hash)
-
-                if legacy_fdd.num_parent_filediffs > 0:
-                    parent_filediff_hashes.append(binary_hash)
-
-                all_diff_hashes.append(binary_hash)
-
-            try:
-                # Attempt to create all the entries we want in one go.
-                RawFileDiffData.objects.bulk_create(raw_fdds)
-            except IntegrityError:
-                # One or more entries in the batch conflicte with an existing
-                # entry, meaning it was already created. We'll just need to
-                # operate on the contents of this batch one-by-one.
-                for raw_fdd in raw_fdds:
-                    try:
-                        raw_fdd.save()
-                    except IntegrityError:
-                        raw_fdd = RawFileDiffData.objects.get(
-                            binary_hash=binary_hash)
-
-            if filediff_hashes:
-                self._transition_hashes(cursor, 'diff_hash', filediff_hashes)
-
-            if parent_filediff_hashes:
-                self._transition_hashes(cursor, 'parent_diff_hash',
-                                        parent_filediff_hashes)
-
-            legacy_data_items.filter(pk__in=all_diff_hashes).delete()
-
-            yield (len(batch), batch_total_diff_size,
-                   batch_total_bytes_saved, filediff_hashes,
-                   parent_filediff_hashes, all_diff_hashes)
-
-    def _migrate_filediffs(self, queryset, count, batch_size):
-        """Migrates old diff data from a FileDiff into a RawFileDiffData."""
-        for batch in self._iter_batches(queryset, count, batch_size):
-            batch_total_diff_size = 0
-            batch_total_bytes_saved = 0
-
-            for filediff in batch:
-                diff_size = len(filediff.get_diff64_base64())
-                parent_diff_size = len(filediff.get_parent_diff64_base64())
-
-                batch_total_diff_size += diff_size + parent_diff_size
-
-                diff_hash_is_new, parent_diff_hash_is_new = \
-                    filediff._migrate_diff_data(recalculate_counts=False)
-
-                if diff_size > 0 and not diff_hash_is_new:
-                    batch_total_bytes_saved += diff_size
-
-                if parent_diff_size > 0 and not parent_diff_hash_is_new:
-                    batch_total_bytes_saved += parent_diff_size
-
-            yield len(batch), batch_total_diff_size, batch_total_bytes_saved
-
-    def _iter_batches(self, queryset, count, batch_size, object_limit=200):
-        """Iterates through items in a queryset, yielding batches.
-
-        This will gather up to a specified number of items from a
-        queryset at a time, process them into batches of a specified
-        size, and yield them.
-
-        After each set of objects fetched from the database, garbage
-        collection will be forced and stored queries reset, in order to
-        reduce memory usage.
-        """
-        if count == 0:
-            return
-
-        batch = []
-
-        for i in range(0, count, object_limit):
-            # Every time we work on a batch,, we're re-querying the list of
-            # objects. This result from the query is expected not to have any
-            # previously-processed objects from a yielded batch. It may,
-            # however, have objects we've previously seen that haven't been
-            # yielded in a batch yet. That's why we're indexing from the
-            # length of the batch to the object limit.
-            for item in queryset[len(batch):object_limit].iterator():
-                batch.append(item)
-
-                if len(batch) == batch_size:
-                    yield batch
-                    batch = []
-
-            # Do all we can to limit the memory usage by resetting any stored
-            # queries (if DEBUG is True), and force garbage collection of
-            # anything we may have from processing an object.
-            reset_queries()
-            gc.collect()
-
-        if batch:
-            yield batch
-
-    def _transition_hashes(self, cursor, hash_field_name, diff_hashes):
-        """Transitions FileDiff-associated hashes to RawFileDiffData.
-
-        This queries all FileDiffs and RawFileDiffData entries referencing
-        the given list of diff hashes, and updates the FileDiffs to point
-        to those instead of the formerly-associated LegacyFileDiffDatas.
-        """
-        from reviewboard.diffviewer.models import RawFileDiffData
-
-        # If the database supports joins on updates, then we can craft
-        # a query that will massively speed up the diff transition time.
-        # Otherwise, we need to fall back on doing a select and then an
-        # update per result.
-        if self._db_supports_join_on_update:
-            cursor.execute(
-                'UPDATE %(filediff_table)s'
-                '  INNER JOIN %(raw_fdd_table)s raw_fdd'
-                '    ON raw_fdd.binary_hash = '
-                '       %(filediff_table)s.%(hash_field_name)s_id'
-                '  SET'
-                '    raw_%(hash_field_name)s_id = raw_fdd.id,'
-                '    %(hash_field_name)s_id = NULL'
-                '  WHERE raw_fdd.binary_hash IN (%(diff_hashes)s)'
-                % {
-                    'filediff_table': self.model._meta.db_table,
-                    'raw_fdd_table': RawFileDiffData._meta.db_table,
-                    'hash_field_name': hash_field_name,
-                    'diff_hashes': ','.join([
-                        "'%s'" % diff_hash
-                        for diff_hash in diff_hashes
-                    ]),
-                })
-        else:
-            legacy_hash_field_name = 'legacy_%s' % hash_field_name
-            legacy_hash_field_in = '%s__in' % legacy_hash_field_name
-
-            raw_fdds = RawFileDiffData.objects.filter(
-                binary_hash__in=diff_hashes).only('pk', 'binary_hash')
-
-            for raw_fdd in raw_fdds:
-                self.filter(**{
-                    legacy_hash_field_in: raw_fdd.binary_hash
-                }).update(**{
-                    hash_field_name: raw_fdd.pk,
-                    legacy_hash_field_name: None
-                })
-
-    @cached_property
-    def _db_supports_join_on_update(self):
-        """Determines whether the database supports joins with updates.
-
-        Modern databases allow you to do an UPDATE with an INNER JOIN, but
-        sqlite3 does not. This function will test whether such a query
-        results in a database error.
-        """
-        cursor = connection.cursor()
-        cursor.execute('DROP TABLE IF EXISTS _RB_UPDATE_JOIN_TEST_1')
-        cursor.execute('DROP TABLE IF EXISTS _RB_UPDATE_JOIN_TEST_2')
-        cursor.execute('CREATE TABLE _RB_UPDATE_JOIN_TEST_1 (X INT)')
-        cursor.execute('CREATE TABLE _RB_UPDATE_JOIN_TEST_2 (Y INT)')
-
-        try:
-            cursor.execute(
-                'UPDATE _RB_UPDATE_JOIN_TEST_1'
-                '  INNER JOIN _RB_UPDATE_JOIN_TEST_2'
-                '    ON _RB_UPDATE_JOIN_TEST_2.Y = _RB_UPDATE_JOIN_TEST_1.X'
-                '  SET _RB_UPDATE_JOIN_TEST_1.X = _RB_UPDATE_JOIN_TEST_2.Y')
-            has_support = True
-        except DatabaseError:
-            has_support = False
-
-        cursor.execute('DROP TABLE _RB_UPDATE_JOIN_TEST_1')
-        cursor.execute('DROP TABLE _RB_UPDATE_JOIN_TEST_2')
-
-        return has_support
-
-
-class RawFileDiffDataManager(models.Manager):
-    """A custom manager for RawFileDiffData.
-
-    This provides conveniences for creating an entry based on a
-    LegacyFileDiffData object.
+class FileDiffDataManager(models.Manager):
     """
-    def process_diff_data(self, data):
-        """Processes a diff, returning the resulting content and compression.
+    A custom manager for FileDiffData
 
-        If the content would benefit from being compressed, this will
-        return the compressed content and the value for the compression
-        flag. Otherwise, it will return the raw content.
-        """
-        compressed_data = bz2.compress(data, 9)
+    Sets the binary data to a Base64DecodedValue, so that Base64Field is
+    forced to encode the data. This is a workaround to Base64Field checking
+    if the object has been saved into the database using the pk.
+    """
+    def get_or_create(self, *args, **kwargs):
+        defaults = kwargs.get('defaults', {})
 
-        if len(compressed_data) < len(data):
-            return compressed_data, self.model.COMPRESSION_BZIP2
-        else:
-            return data, None
+        if defaults and defaults['binary']:
+            defaults['binary'] = \
+                Base64DecodedValue(kwargs['defaults']['binary'])
 
-    def get_or_create_from_data(self, data):
-        binary_hash = self._hash_hexdigest(data)
-        processed_data, compression = self.process_diff_data(data)
-
-        return self.get_or_create(
-            binary_hash=binary_hash,
-            defaults={
-                'binary': processed_data,
-                'compression': compression,
-            })
-
-    def create_from_legacy(self, legacy, save=True):
-        processed_data, compression = self.process_diff_data(legacy.binary)
-
-        raw_file_diff_data = self.model(binary_hash=legacy.binary_hash,
-                                        binary=processed_data,
-                                        compression=compression)
-        raw_file_diff_data.extra_data = legacy.extra_data
-
-        if save:
-            raw_file_diff_data.save()
-
-        return raw_file_diff_data
-
-    def _hash_hexdigest(self, diff):
-        hasher = hashlib.sha1()
-        hasher.update(diff)
-        return hasher.hexdigest()
+        return super(FileDiffDataManager, self).get_or_create(*args, **kwargs)
 
 
 class DiffSetManager(models.Manager):

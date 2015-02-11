@@ -124,7 +124,7 @@ class Command(NoArgsCommand):
 
         if review_requests:
             num_of_requests = self.parse_command("review_requests",
-                                                 review_requests)
+                                                review_requests)
 
             # Setup repository.
             repo_dir = os.path.abspath(
@@ -166,7 +166,7 @@ class Command(NoArgsCommand):
 
         if diff_comments:
             num_of_diff_comments = self.parse_command("diff-comments",
-                                                      diff_comments)
+                                                     diff_comments)
 
         # Users is required for any other operation.
         if not users:

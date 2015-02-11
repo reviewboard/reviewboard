@@ -8,7 +8,7 @@ from django.conf import settings
 from django.contrib.auth.models import AnonymousUser, User
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.template import Context, Template
-from django.test.client import RequestFactory
+from django.test import RequestFactory
 from django.utils import six
 from django.utils.safestring import SafeText
 from djblets.siteconfig.models import SiteConfiguration
@@ -642,13 +642,13 @@ class ReviewRequestManagerTests(TestCase):
 
         for summary in r_summaries:
             self.assertIn(summary, summaries,
-                          'summary "%s" not found in summary list'
-                          % summary)
+                            'summary "%s" not found in summary list'
+                            % summary)
 
         for summary in summaries:
             self.assertIn(summary, r_summaries,
-                          'summary "%s" not found in review request list'
-                          % summary)
+                            'summary "%s" not found in review request list'
+                            % summary)
 
 
 class ReviewRequestTests(SpyAgency, TestCase):
@@ -1356,7 +1356,6 @@ class ViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response['Content-Disposition'],
                          'attachment; filename=diffset')
-
 
 class DraftTests(TestCase):
     fixtures = ['test_users', 'test_scmtools']
@@ -2753,8 +2752,7 @@ class PolicyTests(TestCase):
         self.assertFalse(review_request.is_accessible_by(self.anonymous))
 
     @add_fixtures(['test_scmtools'])
-    def test_review_request_with_private_repository_allowed_by_review_group(
-            self):
+    def test_review_request_with_private_repository_allowed_by_review_group(self):
         """Testing access to a review request with a private repository with
         review group added
         """

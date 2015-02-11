@@ -229,18 +229,18 @@ class RepositoryForm(forms.ModelForm):
         hosting_service_choices = []
         bug_tracker_choices = []
 
-        for hosting_service in get_hosting_services():
+        for hosting_service_id, hosting_service in get_hosting_services():
             if hosting_service.supports_repositories:
-                hosting_service_choices.append((hosting_service.id,
+                hosting_service_choices.append((hosting_service_id,
                                                 hosting_service.name))
 
             if hosting_service.supports_bug_trackers:
-                bug_tracker_choices.append((hosting_service.id,
+                bug_tracker_choices.append((hosting_service_id,
                                             hosting_service.name))
 
-            self.bug_tracker_forms[hosting_service.id] = {}
-            self.repository_forms[hosting_service.id] = {}
-            self.hosting_service_info[hosting_service.id] = {
+            self.bug_tracker_forms[hosting_service_id] = {}
+            self.repository_forms[hosting_service_id] = {}
+            self.hosting_service_info[hosting_service_id] = {
                 'scmtools': hosting_service.supported_scmtools,
                 'plans': [],
                 'planInfo': {},
@@ -260,7 +260,7 @@ class RepositoryForm(forms.ModelForm):
                         'is_authorized': account.is_authorized,
                     }
                     for account in hosting_accounts
-                    if account.service_name == hosting_service.id
+                    if account.service_name == hosting_service_id
                 ],
             }
 
@@ -270,14 +270,14 @@ class RepositoryForm(forms.ModelForm):
                         form = info.get('form', None)
 
                         if form:
-                            self._load_hosting_service(hosting_service.id,
+                            self._load_hosting_service(hosting_service_id,
                                                        hosting_service,
                                                        type_id,
                                                        info['name'],
                                                        form,
                                                        *args, **kwargs)
                 elif hosting_service.form:
-                    self._load_hosting_service(hosting_service.id,
+                    self._load_hosting_service(hosting_service_id,
                                                hosting_service,
                                                self.DEFAULT_PLAN_ID,
                                                self.DEFAULT_PLAN_NAME,
@@ -285,7 +285,7 @@ class RepositoryForm(forms.ModelForm):
                                                *args, **kwargs)
             except Exception as e:
                 logging.error('Error loading hosting service %s: %s'
-                              % (hosting_service.id, e),
+                              % (hosting_service_id, e),
                               exc_info=1)
 
         # Build the list of hosting service choices, sorted, with

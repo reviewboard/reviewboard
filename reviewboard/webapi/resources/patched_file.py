@@ -10,8 +10,6 @@ from reviewboard.webapi.resources.base_patched_file import \
 
 class PatchedFileResource(BasePatchedFileResource):
     """Provides the patched file corresponding to a file diff."""
-    added_in = '2.0'
-
     name = 'patched_file'
 
     def get_filediff(self, request, *args, **kwargs):

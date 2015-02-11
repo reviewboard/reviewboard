@@ -8,7 +8,6 @@ from django.utils.translation import ugettext_lazy as _
 from djblets.configforms.pages import ConfigPage
 
 from reviewboard.accounts.forms.pages import (AccountSettingsForm,
-                                              APITokensForm,
                                               ChangePasswordForm,
                                               ProfileForm,
                                               GroupsForm)
@@ -59,13 +58,6 @@ class AccountSettingsPage(AccountPage):
     form_classes = [AccountSettingsForm]
 
 
-class APITokensPage(AccountPage):
-    """A page containing settings for API tokens."""
-    page_id = 'api-tokens'
-    page_title = _('API Tokens')
-    form_classes = [APITokensForm]
-
-
 class AuthenticationPage(AccountPage):
     """A page containing authentication-related forms.
 
@@ -99,7 +91,7 @@ def _populate_defaults():
         _populated = True
 
         for page_cls in (GroupsPage, AccountSettingsPage, AuthenticationPage,
-                         ProfilePage, APITokensPage):
+                         ProfilePage):
             register_account_page_class(page_cls)
 
 

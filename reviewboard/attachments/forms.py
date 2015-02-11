@@ -8,8 +8,7 @@ from django import forms
 from django.utils import timezone
 from djblets.util.filesystem import is_exe_in_path
 
-from reviewboard.attachments.models import (FileAttachment,
-                                            FileAttachmentHistory)
+from reviewboard.attachments.models import FileAttachment
 from reviewboard.reviews.models import (ReviewRequestDraft,
                                         FileAttachmentComment)
 
@@ -24,29 +23,8 @@ class UploadFileForm(forms.Form):
 
     caption = forms.CharField(required=False)
     path = forms.FileField(required=True)
-    attachment_history = forms.ModelChoiceField(
-        queryset=FileAttachmentHistory.objects.all(),
-        required=False)
 
-    def __init__(self, review_request, *args, **kwargs):
-        super(UploadFileForm, self).__init__(*args, **kwargs)
-
-        self.review_request = review_request
-
-    def clean_attachment_history(self):
-        history = self.cleaned_data['attachment_history']
-
-        if (history is not None and
-            not self.review_request.file_attachment_histories.filter(
-                pk=history.pk).exists()):
-            raise forms.ValidationError(
-                'The FileAttachmentHistory provided is not part of this '
-                'review request.')
-
-        return history
-
-    def create(self, filediff=None):
-        file = self.files['path']
+    def create(self, file, review_request, filediff=None):
         caption = self.cleaned_data['caption'] or file.name
 
         # There are several things that can go wrong with browser-provided
@@ -65,40 +43,7 @@ class UploadFileForm(forms.Form):
 
         filename = '%s__%s' % (uuid4(), file.name)
 
-        if self.cleaned_data['attachment_history'] is None:
-            # This is a new file: create a new FileAttachmentHistory for it
-            attachment_history = FileAttachmentHistory()
-            attachment_revision = 1
-
-            attachment_history.display_position = \
-                FileAttachmentHistory.compute_next_display_position(
-                    self.review_request)
-            attachment_history.save()
-            self.review_request.file_attachment_histories.add(
-                attachment_history)
-        else:
-            attachment_history = self.cleaned_data['attachment_history']
-
-            try:
-                latest = attachment_history.file_attachments.latest()
-            except FileAttachment.DoesNotExist:
-                latest = None
-
-            if latest is None:
-                # This should theoretically never happen, but who knows.
-                attachment_revision = 1
-            elif latest.review_request.exists():
-                # This is a new update in the draft.
-                attachment_revision = latest.attachment_revision + 1
-            else:
-                # The most recent revision is part of the same draft. Delete it
-                # and replace with the newly uploaded file.
-                attachment_revision = latest.attachment_revision
-                latest.delete()
-
         attachment_kwargs = {
-            'attachment_history': attachment_history,
-            'attachment_revision': attachment_revision,
             'caption': '',
             'draft_caption': caption,
             'orig_filename': os.path.basename(file.name),
@@ -115,7 +60,7 @@ class UploadFileForm(forms.Form):
 
         file_attachment.file.save(filename, file, save=True)
 
-        draft = ReviewRequestDraft.create(self.review_request)
+        draft = ReviewRequestDraft.create(review_request)
         draft.file_attachments.add(file_attachment)
         draft.save()
 

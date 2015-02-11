@@ -9,19 +9,14 @@ from django.contrib.auth.models import User
 from django.contrib.sites.models import Site
 from django.core.exceptions import MultipleObjectsReturned, ObjectDoesNotExist
 from django.db.models import Q
-from django.http import (Http404,
-                         HttpResponse,
-                         HttpResponseNotFound,
-                         HttpResponseNotModified,
-                         HttpResponseRedirect,
-                         HttpResponseServerError)
+from django.http import (HttpResponse, HttpResponseRedirect, Http404,
+                         HttpResponseNotModified, HttpResponseServerError)
 from django.shortcuts import (get_object_or_404, get_list_or_404, render,
                               render_to_response)
 from django.template.context import RequestContext
 from django.template.loader import render_to_string
 from django.utils import six, timezone
 from django.utils.decorators import method_decorator
-from django.utils.html import escape
 from django.utils.http import http_date
 from django.utils.safestring import mark_safe
 from django.utils.timezone import utc
@@ -37,19 +32,15 @@ from haystack.views import SearchView
 from reviewboard.accounts.decorators import (check_login_required,
                                              valid_prefs_required)
 from reviewboard.accounts.models import ReviewRequestVisit, Profile
-from reviewboard.attachments.models import (FileAttachment,
-                                            FileAttachmentHistory)
+from reviewboard.attachments.models import FileAttachment
 from reviewboard.changedescs.models import ChangeDescription
 from reviewboard.diffviewer.diffutils import (convert_to_unicode,
                                               get_file_chunks_in_range,
-                                              get_last_header_before_line,
-                                              get_last_line_number_in_diff,
                                               get_original_file,
                                               get_patched_file)
 from reviewboard.diffviewer.models import DiffSet
 from reviewboard.diffviewer.views import (DiffFragmentView, DiffViewerView,
                                           exception_traceback_string)
-from reviewboard.hostingsvcs.bugtracker import BugTracker
 from reviewboard.reviews.ui.screenshot import LegacyScreenshotReviewUI
 from reviewboard.reviews.context import (comment_counts,
                                          diffsets_with_comments,
@@ -62,16 +53,16 @@ from reviewboard.reviews.models import (BaseComment, Comment,
                                         FileAttachmentComment,
                                         ReviewRequest, Review,
                                         Screenshot, ScreenshotComment)
-from reviewboard.reviews.ui.base import FileAttachmentReviewUI
+from reviewboard.scmtools.core import PRE_CREATION
 from reviewboard.scmtools.models import Repository
 from reviewboard.site.decorators import check_local_site_access
 from reviewboard.site.urlresolvers import local_site_reverse
 from reviewboard.webapi.encoder import status_to_string
 
 
-#
-# Helper functions
-#
+#####
+##### Helper functions
+#####
 
 
 def _render_permission_denied(
@@ -165,46 +156,23 @@ def _query_for_diff(review_request, user, revision, draft):
 def build_diff_comment_fragments(
     comments, context,
     comment_template_name='reviews/diff_comment_fragment.html',
-    error_template_name='diffviewer/diff_fragment_error.html',
-    lines_of_context=None,
-    show_controls=False):
+    error_template_name='diffviewer/diff_fragment_error.html'):
 
     comment_entries = []
     had_error = False
     siteconfig = SiteConfiguration.objects.get_current()
 
-    if lines_of_context is None:
-        lines_of_context = [0, 0]
-
     for comment in comments:
         try:
-            max_line = get_last_line_number_in_diff(context, comment.filediff,
-                                                    comment.interfilediff)
-
-            first_line = max(1, comment.first_line - lines_of_context[0])
-            last_line = min(comment.last_line + lines_of_context[1], max_line)
-            num_lines = last_line - first_line + 1
-
             content = render_to_string(comment_template_name, {
                 'comment': comment,
-                'header': get_last_header_before_line(context,
-                                                      comment.filediff,
-                                                      comment.interfilediff,
-                                                      first_line),
                 'chunks': list(get_file_chunks_in_range(context,
                                                         comment.filediff,
                                                         comment.interfilediff,
-                                                        first_line,
-                                                        num_lines)),
+                                                        comment.first_line,
+                                                        comment.num_lines)),
                 'domain': Site.objects.get_current().domain,
-                'domain_method': siteconfig.get('site_domain_method'),
-                'lines_of_context': lines_of_context,
-                'expandable_above': show_controls and first_line != 1,
-                'expandable_below': show_controls and last_line != max_line,
-                'collapsible': lines_of_context != [0, 0],
-                'lines_above': first_line - 1,
-                'lines_below': max_line - last_line,
-                'first_line': first_line,
+                'domain_method': siteconfig.get("site_domain_method"),
             })
         except Exception as e:
             content = exception_traceback_string(
@@ -232,9 +200,9 @@ def build_diff_comment_fragments(
     return had_error, comment_entries
 
 
-#
-# View functions
-#
+#####
+##### View functions
+#####
 
 @check_login_required
 @valid_prefs_required
@@ -304,22 +272,6 @@ def new_review_request(request,
     return render_to_response(template_name, RequestContext(request, {
         'repos': valid_repos,
     }))
-
-
-def _get_latest_file_attachments(file_attachments):
-    file_attachment_histories = FileAttachmentHistory.objects.filter(
-        file_attachments__in=file_attachments)
-    latest = dict([
-        (data['id'], data['latest_revision'])
-        for data in file_attachment_histories.values('id', 'latest_revision')
-    ])
-
-    return [
-        f
-        for f in file_attachments
-        if (not f.is_from_diff and
-            f.attachment_revision == latest[f.attachment_history_id])
-    ]
 
 
 @check_login_required
@@ -741,8 +693,6 @@ def review_detail(request,
     close_description, close_description_rich_text = \
         review_request.get_close_description()
 
-    latest_file_attachments = _get_latest_file_attachments(file_attachments)
-
     context_data = make_review_request_context(request, review_request, {
         'blocks': blocks,
         'draft': draft,
@@ -753,9 +703,12 @@ def review_detail(request,
         'request': request,
         'close_description': close_description,
         'close_description_rich_text': close_description_rich_text,
+        'PRE_CREATION': PRE_CREATION,
         'issues': issues,
         'has_diffs': (draft and draft.diffset) or len(diffsets) > 0,
-        'file_attachments': latest_file_attachments,
+        'file_attachments': [file_attachment
+                             for file_attachment in file_attachments
+                             if not file_attachment.is_from_diff],
         'all_file_attachments': file_attachments,
         'screenshots': screenshots,
     })
@@ -861,9 +814,6 @@ class ReviewsDiffViewerView(DiffViewerView):
         file_attachments = list(self.review_request.get_file_attachments())
         screenshots = list(self.review_request.get_screenshots())
 
-        latest_file_attachments = \
-            _get_latest_file_attachments(file_attachments)
-
         # Compute the lists of comments based on filediffs and interfilediffs.
         # We do this using the 'through' table so that we can select_related
         # the reviews and comments.
@@ -893,7 +843,9 @@ class ReviewsDiffViewerView(DiffViewerView):
             'review_request_details': self.draft or self.review_request,
             'draft': self.draft,
             'last_activity_time': last_activity_time,
-            'file_attachments': latest_file_attachments,
+            'file_attachments': [file_attachment
+                                 for file_attachment in file_attachments
+                                 if not file_attachment.is_from_diff],
             'all_file_attachments': file_attachments,
             'screenshots': screenshots,
             'comments': comments,
@@ -1036,41 +988,17 @@ def comment_diff_fragments(
     if get_modified_since(request, latest_timestamp):
         return HttpResponseNotModified()
 
-    lines_of_context = request.GET.get('lines_of_context', '0,0')
-    container_prefix = request.GET.get('container_prefix')
-
-    try:
-        lines_of_context = [int(i) for i in lines_of_context.split(',')]
-
-        # Ensure that we have 2 values for lines_of_context. If only one is
-        # given, assume it is both the before and after context. If more than
-        # two are given, only consider the first two. If somehow we get no
-        # lines of context value, we will default to [0, 0].
-
-        if len(lines_of_context) == 1:
-            lines_of_context.append(lines_of_context[0])
-        elif len(lines_of_context) > 2:
-            lines_of_context = lines_of_context[0:2]
-        elif len(lines_of_context) == 0:
-            raise ValueError
-    except ValueError:
-        lines_of_context = [0, 0]
-
     context = RequestContext(request, {
         'comment_entries': [],
-        'container_prefix': container_prefix,
+        'container_prefix': request.GET.get('container_prefix'),
         'queue_name': request.GET.get('queue'),
-        'show_controls': request.GET.get('show_controls', False),
     })
 
-    had_error, context['comment_entries'] = (
-        build_diff_comment_fragments(
-            comments,
-            context,
-            comment_template_name,
-            error_template_name,
-            lines_of_context=lines_of_context,
-            show_controls='draft' not in container_prefix))
+    had_error, context['comment_entries'] = \
+        build_diff_comment_fragments(comments,
+                                     context,
+                                     comment_template_name,
+                                     error_template_name)
 
     page_content = render_to_string(template_name, context)
 
@@ -1494,7 +1422,7 @@ def preview_reply_email(request, review_request_id, review_id, reply_id,
 @check_login_required
 @check_local_site_access
 def review_file_attachment(request, review_request_id, file_attachment_id,
-                           file_attachment_diff_id=None, local_site=None):
+                           local_site=None):
     """Displays a file attachment with a review UI."""
     review_request, response = \
         _find_review_request(request, review_request_id, local_site)
@@ -1504,15 +1432,6 @@ def review_file_attachment(request, review_request_id, file_attachment_id,
 
     file_attachment = get_object_or_404(FileAttachment, pk=file_attachment_id)
     review_ui = file_attachment.review_ui
-    if not review_ui:
-        review_ui = FileAttachmentReviewUI(review_request, file_attachment)
-
-    if file_attachment_diff_id:
-        file_attachment_revision = get_object_or_404(
-            FileAttachment.objects.filter(
-                attachment_history=file_attachment.attachment_history),
-            pk=file_attachment_diff_id)
-        review_ui.set_diff_against(file_attachment_revision)
 
     try:
         is_enabled_for = review_ui.is_enabled_for(
@@ -1659,66 +1578,6 @@ def user_infobox(request, username,
     set_etag(response, etag)
 
     return response
-
-
-def bug_url(request, review_request_id, bug_id, local_site=None):
-    """Redirects user to bug tracker issue page."""
-    review_request, response = \
-        _find_review_request(request, review_request_id, local_site)
-
-    if not review_request:
-        return response
-
-    return HttpResponseRedirect(review_request.repository.bug_tracker % bug_id)
-
-
-def bug_infobox(request, review_request_id, bug_id,
-                template_name='reviews/bug_infobox.html',
-                local_site=None):
-    """Displays a bug info popup.
-
-    This is meant to be embedded in other pages, rather than being
-    a standalone page.
-    """
-    review_request, response = \
-        _find_review_request(request, review_request_id, local_site)
-
-    if not review_request:
-        return response
-
-    repository = review_request.repository
-
-    bug_tracker = repository.bug_tracker_service
-    if not bug_tracker:
-        return HttpResponseNotFound(_('Unable to find bug tracker service'))
-
-    if not isinstance(bug_tracker, BugTracker):
-        return HttpResponseNotFound(
-            _('Bug tracker %s does not support metadata') % bug_tracker.name)
-
-    bug_info = bug_tracker.get_bug_info(repository, bug_id)
-    bug_description = bug_info['description']
-    bug_summary = bug_info['summary']
-    bug_status = bug_info['status']
-
-    if not bug_summary and not bug_description:
-        return HttpResponseNotFound(
-            _('No bug metadata found for bug %(bug_id)s on bug tracker '
-              '%(bug_tracker)s') % {
-                'bug_id': bug_id,
-                'bug_tracker': bug_tracker.name,
-            })
-
-    # Don't do anything for single newlines, but treat two newlines as a
-    # paragraph break.
-    escaped_description = escape(bug_description).replace('\n\n', '<br/><br/>')
-
-    return render_to_response(template_name, RequestContext(request, {
-        'bug_id': bug_id,
-        'bug_description': mark_safe(escaped_description),
-        'bug_status': bug_status,
-        'bug_summary': bug_summary
-    }))
 
 
 def _download_diff_file(modified, request, review_request_id, revision,

@@ -1,6 +1,5 @@
 from __future__ import unicode_literals
 
-import itertools
 import logging
 
 from django.template.context import Context
@@ -11,7 +10,6 @@ from pygments import highlight
 from pygments.lexers import (ClassNotFound, guess_lexer_for_filename,
                              TextLexer)
 
-from reviewboard.attachments.models import FileAttachment
 from reviewboard.diffviewer.chunk_generator import NoWrapperHtmlFormatter
 from reviewboard.reviews.ui.base import FileAttachmentReviewUI
 
@@ -28,7 +26,6 @@ class TextBasedReviewUI(FileAttachmentReviewUI):
     template_name = 'reviews/ui/text.html'
     comment_thumbnail_template_name = 'reviews/ui/text_comment_thumbnail.html'
     can_render_text = False
-    supports_diffing = True
 
     extra_css_classes = []
 
@@ -47,67 +44,16 @@ class TextBasedReviewUI(FileAttachmentReviewUI):
         return data
 
     def get_extra_context(self, request):
-        file_line_list = [
-            mark_safe(line)
-            for line in self.get_text_lines()
-        ]
-
-        rendered_line_list = [
-           mark_safe(line)
-           for line in self.get_rendered_lines()
-        ]
-
-        diff_filename = None
-        diff_caption = None
-        diff_revision = None
-
-        diff_type_mismatch = False
-
-        if self.diff_against_obj:
-            diff_caption = self.diff_against_obj.caption
-            diff_filename = self.diff_against_obj.filename
-            diff_revision = self.diff_against_obj.attachment_revision
-
-            if type(self) != type(self.diff_against_obj.review_ui):
-                diff_type_mismatch = True
-            else:
-                diff_line_list = [
-                    mark_safe(line)
-                    for line in self.diff_against_obj.review_ui.get_text_lines()
-                ]
-
-                rendered_diff_line_list = [
-                    mark_safe(line)
-                    for line in
-                    self.diff_against_obj.review_ui.get_rendered_lines()
-                ]
-
-                # Interleave the two arrays of file lines together, so a template
-                # for-loop can access the contents of both files with two
-                # iterators.
-                file_line_list = itertools.izip_longest(
-                    file_line_list, diff_line_list, fillvalue="")
-
-                rendered_line_list = itertools.izip_longest(
-                    rendered_line_list, rendered_diff_line_list, fillvalue="")
-
-        if self.obj.attachment_history is not None:
-            num_revisions = FileAttachment.objects.filter(
-                attachment_history=self.obj.attachment_history).count()
-        else:
-            num_revisions = 1
-
         return {
             'filename': self.obj.filename,
-            'revision': self.obj.attachment_revision,
-            'text_lines': file_line_list,
-            'rendered_lines': rendered_line_list,
-            'is_diff': self.diff_against_obj is not None,
-            'diff_caption': diff_caption,
-            'diff_filename': diff_filename,
-            'diff_revision': diff_revision,
-            'num_revisions': num_revisions,
-            'diff_type_mismatch': diff_type_mismatch,
+            'text_lines': [
+                mark_safe(line)
+                for line in self.get_text_lines()
+            ],
+            'rendered_lines': [
+                mark_safe(line)
+                for line in self.get_rendered_lines()
+            ],
         }
 
     def get_text_lines(self):

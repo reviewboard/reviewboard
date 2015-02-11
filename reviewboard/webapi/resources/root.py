@@ -6,10 +6,10 @@ from djblets.webapi.resources import RootResource as DjbletsRootResource
 from reviewboard.webapi.server_info import get_server_info
 from reviewboard.webapi.decorators import (webapi_check_login_required,
                                            webapi_check_local_site)
-from reviewboard.webapi.resources import WebAPIResource, resources
+from reviewboard.webapi.resources import resources
 
 
-class RootResource(WebAPIResource, DjbletsRootResource):
+class RootResource(DjbletsRootResource):
     """Links to all the main resources, including URI templates to resources
     anywhere in the tree.
 
@@ -28,7 +28,6 @@ class RootResource(WebAPIResource, DjbletsRootResource):
         super(RootResource, self).__init__([
             resources.default_reviewer,
             resources.extension,
-            resources.hosting_service,
             resources.hosting_service_account,
             resources.repository,
             resources.review_group,

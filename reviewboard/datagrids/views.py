@@ -2,7 +2,6 @@ from __future__ import unicode_literals
 
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
-from django.core.urlresolvers import reverse
 from django.http import Http404
 from django.shortcuts import get_object_or_404
 from django.utils.translation import ugettext_lazy as _
@@ -13,8 +12,7 @@ from reviewboard.datagrids.grids import (DashboardDataGrid,
                                          GroupDataGrid,
                                          ReviewRequestDataGrid,
                                          UsersDataGrid,
-                                         UserPageReviewsDataGrid,
-                                         UserPageReviewRequestDataGrid)
+                                         UserPageDataGrid)
 from reviewboard.reviews.models import Group, ReviewRequest
 from reviewboard.reviews.views import _render_permission_denied
 from reviewboard.site.decorators import check_local_site_access
@@ -129,16 +127,10 @@ def group_members(request,
 @check_local_site_access
 def submitter(request,
               username,
-              grid=None,
               template_name='datagrids/datagrid.html',
               local_site=None):
-    """A user's profile page, showing their review requests and reviews.
-
-    The 'grid' parameter determines which is displayed, and can take on the
-    following values:
-
-        * 'reviews'
-        * 'review-requests'
+    """
+    A list of review requests owned by a particular user.
     """
     # Make sure the user exists
     if local_site:
@@ -149,21 +141,7 @@ def submitter(request,
     else:
         user = get_object_or_404(User, username=username)
 
-    if grid is None or grid == 'review-requests':
-        datagrid_cls = UserPageReviewRequestDataGrid
-    elif grid == 'reviews':
-        datagrid_cls = UserPageReviewsDataGrid
-    else:
-        raise Http404
-
-    datagrid = datagrid_cls(request, user, local_site=local_site)
-    datagrid.tabs = [
-        (UserPageReviewRequestDataGrid.tab_title(username),
-         reverse('user', args=[username])),
-        (UserPageReviewsDataGrid.tab_title(username),
-         reverse('user-grid', args=[username, 'reviews'])),
-    ]
-
+    datagrid = UserPageDataGrid(request, user, local_site=local_site)
     return datagrid.render_to_response(template_name)
 
 

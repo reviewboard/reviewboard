@@ -33,8 +33,6 @@ class ValidateDiffResource(DiffResource):
     diff) can be parsed and displayed, without actually creating a review
     request first.
     """
-    added_in = '2.0'
-
     singleton = True
     name = 'diff_validation'
     uri_name = 'diffs'
@@ -103,8 +101,8 @@ class ValidateDiffResource(DiffResource):
         try:
             query = Q(pk=int(repository), local_site=local_site)
         except ValueError:
-            query = (Q(local_site=local_site)
-                     & (Q(path=repository)
+            query = (  Q(local_site=local_site)
+                     & (  Q(path=repository)
                         | Q(mirror_path=repository)
                         | Q(name=repository)))
 

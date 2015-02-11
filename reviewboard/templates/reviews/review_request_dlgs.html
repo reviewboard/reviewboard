@@ -1,0 +1,37 @@
+{% load djblets_js djblets_utils i18n %}
+
+{% if request.user.pk == review_request.submitter_id or perms.reviews.can_edit_reviewrequest %}
+<script type="text/javascript">
+  $(document).ready(function() {
+{%  if upload_diff_form %}
+    $("#upload-diff-link").click(function() {
+      $("<div/>")
+        .formDlg({
+          title: "{% trans "Upload Diff" %}",
+          confirmLabel: "{% trans "Upload" %}",
+          dataStoreObject: gReviewRequest.createDiff(),
+          width: "60em",
+          upload: true,
+          fields: {% form_dialog_fields upload_diff_form %}
+        });
+
+      return false;
+    });
+{%  endif %}
+
+    $("#upload-file-link").click(function() {
+
+      $("<div/>").formDlg({
+        title: "{% trans "Upload File" %}",
+        confirmLabel: "{% trans "Upload" %}",
+        dataStoreObject: gReviewRequest.createFileAttachment(),
+        width: "50em",
+        upload: true,
+        fields: {% form_dialog_fields file_attachment_form %}
+      });
+
+      return false;
+    });
+  });
+</script>
+{% endif %}

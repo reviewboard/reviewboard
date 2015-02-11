@@ -37,10 +37,6 @@ Example: **XMLReviewUIExtension**:
 
 .. code-block:: python
 
-    from reviewboard.extensions.base import Extension
-    from reviewboard.extensions.hooks import ReviewUIHook
-
-
     class XMLReviewUIExtension(Extension):
         css_bundles = {
             'xmlreviewable': {

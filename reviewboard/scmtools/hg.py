@@ -15,6 +15,7 @@ from reviewboard.scmtools.core import \
 
 class HgTool(SCMTool):
     name = "Mercurial"
+    supports_authentication = True
     dependencies = {
         'modules': ['mercurial'],
     }
@@ -35,6 +36,8 @@ class HgTool(SCMTool):
                                       credentials['password'])
         else:
             self.client = HgClient(repository.path, repository.local_site)
+
+        self.uses_atomic_revisions = True
 
     def get_file(self, path, revision=HEAD):
         return self.client.cat_file(path, six.text_type(revision))

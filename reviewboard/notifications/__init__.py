@@ -9,10 +9,9 @@ def connect_signals(**kwargs):
     connect their signals. This is done so as to guarantee that django
     is loaded first.
     """
-    from reviewboard.notifications import email, webhooks
+    from reviewboard.notifications import email
 
     email.connect_signals()
-    webhooks.connect_signals()
 
 
 initializing.connect(connect_signals)

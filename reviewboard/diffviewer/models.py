@@ -1,75 +1,33 @@
 from __future__ import unicode_literals
 
-import bz2
+import hashlib
 import logging
 
 from django.db import models
-from django.db.models import Q
 from django.utils import six, timezone
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
 from djblets.db.fields import Base64Field, JSONField
 
 from reviewboard.diffviewer.errors import DiffParserError
-from reviewboard.diffviewer.managers import (RawFileDiffDataManager,
+from reviewboard.diffviewer.managers import (FileDiffDataManager,
                                              FileDiffManager,
                                              DiffSetManager)
 from reviewboard.scmtools.core import PRE_CREATION
 from reviewboard.scmtools.models import Repository
 
 
-class LegacyFileDiffData(models.Model):
-    """Deprecated, legacy class for base64-encoded diff data.
+class FileDiffData(models.Model):
+    """
+    Contains hash and base64 pairs.
 
-    This is no longer populated, and exists solely to store legacy data
-    that has not been migrated to RawFileDiffData.
+    These pairs are used to reduce diff database storage.
     """
     binary_hash = models.CharField(_("hash"), max_length=40, primary_key=True)
     binary = Base64Field(_("base64"))
+    objects = FileDiffDataManager()
 
     extra_data = JSONField(null=True)
-
-    class Meta:
-        db_table = 'diffviewer_filediffdata'
-
-
-class RawFileDiffData(models.Model):
-    """Stores raw diff data as binary content in the database.
-
-    This is the class used in Review Board 2.1+ to store diff content.
-    Unlike in previous versions, the content is not base64-encoded. Instead,
-    it is stored either as bzip2-compressed data (if the resulting
-    compressed data is smaller than the raw data), or as the raw data itself.
-    """
-    COMPRESSION_BZIP2 = 'B'
-
-    COMPRESSION_CHOICES = (
-        (COMPRESSION_BZIP2, _('BZip2-compressed')),
-    )
-
-    binary_hash = models.CharField(_("hash"), max_length=40, unique=True)
-    binary = models.BinaryField()
-    compression = models.CharField(max_length=1, choices=COMPRESSION_CHOICES,
-                                   null=True, blank=True)
-    extra_data = JSONField(null=True)
-
-    objects = RawFileDiffDataManager()
-
-    @property
-    def content(self):
-        """Returns the content of the diff.
-
-        The content will be uncompressed (if necessary) and returned as the
-        raw set of bytes originally uploaded.
-        """
-        if self.compression == self.COMPRESSION_BZIP2:
-            return bz2.decompress(self.binary)
-        elif self.compression is None:
-            return bytes(self.binary)
-        else:
-            raise NotImplementedError(
-                'Unsupported compression method %s for RawFileDiffData %s'
-                % (self.compression, self.pk))
 
     @property
     def insert_count(self):
@@ -94,17 +52,17 @@ class RawFileDiffData(models.Model):
         line counts through the parser.
         """
         logging.debug('Recalculating insert/delete line counts on '
-                      'RawFileDiffData %s' % self.pk)
+                      'FileDiffData %s' % self.pk)
 
         try:
-            files = tool.get_parser(self.content).parse()
+            files = tool.get_parser(self.binary).parse()
 
             if len(files) != 1:
                 raise DiffParserError(
                     'Got wrong number of files (%d)' % len(files))
         except DiffParserError as e:
             logging.error('Failed to correctly parse stored diff data in '
-                          'RawFileDiffData ID %s when trying to get '
+                          'FileDiffData ID %s when trying to get '
                           'insert/delete line counts: %s',
                           self.pk, e)
         else:
@@ -146,42 +104,14 @@ class FileDiff(models.Model):
                                        max_length=512)
     dest_detail = models.CharField(_("destination file details"),
                                    max_length=512)
+    diff64 = Base64Field(_("diff"), db_column="diff_base64", blank=True)
+    diff_hash = models.ForeignKey('FileDiffData', null=True, blank=True)
     binary = models.BooleanField(_("binary file"), default=False)
+    parent_diff64 = Base64Field(_("parent diff"),
+                                db_column="parent_diff_base64", blank=True)
+    parent_diff_hash = models.ForeignKey('FileDiffData', null=True, blank=True,
+                                         related_name='parent_filediff_set')
     status = models.CharField(_("status"), max_length=1, choices=STATUSES)
-
-    diff64 = Base64Field(
-        _("diff"),
-        db_column="diff_base64",
-        blank=True)
-    legacy_diff_hash = models.ForeignKey(
-        LegacyFileDiffData,
-        db_column='diff_hash_id',
-        related_name='filediffs',
-        null=True,
-        blank=True)
-    diff_hash = models.ForeignKey(
-        RawFileDiffData,
-        db_column='raw_diff_hash_id',
-        related_name='filediffs',
-        null=True,
-        blank=True)
-
-    parent_diff64 = Base64Field(
-        _("parent diff"),
-        db_column="parent_diff_base64",
-        blank=True)
-    legacy_parent_diff_hash = models.ForeignKey(
-        LegacyFileDiffData,
-        db_column='parent_diff_hash_id',
-        related_name='parent_filediffs',
-        null=True,
-        blank=True)
-    parent_diff_hash = models.ForeignKey(
-        RawFileDiffData,
-        db_column='raw_parent_diff_hash_id',
-        related_name='parent_filediffs',
-        null=True,
-        blank=True)
 
     extra_data = JSONField(null=True)
 
@@ -214,15 +144,17 @@ class FileDiff(models.Model):
         return self.source_revision == PRE_CREATION
 
     def _get_diff(self):
-        if self._needs_diff_migration():
+        if not self.diff_hash:
             self._migrate_diff_data()
 
-        return self.diff_hash.content
+        return self.diff_hash.binary
 
     def _set_diff(self, diff):
+        hashkey = self._hash_hexdigest(diff)
+
         # Add hash to table if it doesn't exist, and set diff_hash to this.
-        self.diff_hash, is_new = \
-            RawFileDiffData.objects.get_or_create_from_data(diff)
+        self.diff_hash, is_new = FileDiffData.objects.get_or_create(
+            binary_hash=hashkey, defaults={'binary': diff})
         self.diff64 = ""
 
         return is_new
@@ -230,24 +162,26 @@ class FileDiff(models.Model):
     diff = property(_get_diff, _set_diff)
 
     def _get_parent_diff(self):
-        if self._needs_parent_diff_migration():
+        if self.parent_diff64 and not self.parent_diff_hash:
             self._migrate_diff_data()
 
         if self.parent_diff_hash:
-            return self.parent_diff_hash.content
+            return self.parent_diff_hash.binary
         else:
             return None
 
     def _set_parent_diff(self, parent_diff):
-        if not parent_diff:
+        if parent_diff != "":
+            hashkey = self._hash_hexdigest(parent_diff)
+
+            # Add hash to table if it doesn't exist, and set diff_hash to this.
+            self.parent_diff_hash, is_new = FileDiffData.objects.get_or_create(
+                binary_hash=hashkey, defaults={'binary': parent_diff})
+            self.parent_diff64 = ""
+
+            return is_new
+        else:
             return False
-
-        # Add hash to table if it doesn't exist, and set diff_hash to this.
-        self.parent_diff_hash, is_new = \
-            RawFileDiffData.objects.get_or_create_from_data(parent_diff)
-        self.parent_diff64 = ""
-
-        return is_new
 
     parent_diff = property(_get_parent_diff, _set_parent_diff)
 
@@ -322,7 +256,7 @@ class FileDiff(models.Model):
 
         ``raw_insert_count`` and ``raw_delete_count`` correspond to the
         raw inserts and deletes in the actual patch, which will be set both
-        in this FileDiff and in the associated RawFileDiffData.
+        in this FileDiff and in the associated FileDiffData.
 
         The other counts are stored exclusively in FileDiff, as they are
         more render-specific.
@@ -342,7 +276,7 @@ class FileDiff(models.Model):
             self.diff_hash.insert_count != insert_count):
             # Allow overriding, but warn. This really shouldn't be called.
             logging.warning('Attempting to override insert count on '
-                            'RawFileDiffData %s from %s to %s (FileDiff %s)'
+                            'FileDiffData %s from %s to %s (FileDiff %s)'
                             % (self.diff_hash.pk,
                                self.diff_hash.insert_count,
                                insert_count,
@@ -354,7 +288,7 @@ class FileDiff(models.Model):
             self.diff_hash.delete_count != delete_count):
             # Allow overriding, but warn. This really shouldn't be called.
             logging.warning('Attempting to override delete count on '
-                            'RawFileDiffData %s from %s to %s (FileDiff %s)'
+                            'FileDiffData %s from %s to %s (FileDiff %s)'
                             % (self.diff_hash.pk,
                                self.diff_hash.delete_count,
                                delete_count,
@@ -388,68 +322,31 @@ class FileDiff(models.Model):
         if updated and self.pk:
             self.save(update_fields=['extra_data'])
 
-    def _needs_diff_migration(self):
-        return self.diff_hash_id is None
-
-    def _needs_parent_diff_migration(self):
-        return (self.parent_diff_hash_id is None and
-                (self.parent_diff64 or self.legacy_parent_diff_hash_id))
+    def _hash_hexdigest(self, diff):
+        hasher = hashlib.sha1()
+        hasher.update(diff)
+        return hasher.hexdigest()
 
     def _migrate_diff_data(self, recalculate_counts=True):
-        """Migrates diff data associated with a FileDiff to RawFileDiffData.
-
-        If the diff data is stored directly on the FileDiff, it will be
-        removed and stored on a RawFileDiffData instead.
-
-        If the diff data is stored on an associated LegacyFileDiffData,
-        that will be converted into a RawFileDiffData. The LegacyFileDiffData
-        will then be removed, if nothing else is using it.
-        """
+        """Migrates the data stored in the FileDiff to a FileDiffData."""
         needs_save = False
         diff_hash_is_new = False
         parent_diff_hash_is_new = False
-        legacy_pks = []
 
-        if self._needs_diff_migration():
+        if not self.diff_hash:
+            logging.debug('Migrating FileDiff %s diff data to FileDiffData'
+                          % self.pk)
             needs_save = True
-
-            if self.legacy_diff_hash_id:
-                logging.debug('Migrating LegacyFileDiffData %s to '
-                              'RawFileDiffData for diff in FileDiff %s',
-                              self.legacy_diff_hash_id, self.pk)
-
-                diff_hash_is_new = self._set_diff(self.legacy_diff_hash.binary)
-                legacy_pks.append(self.legacy_diff_hash_id)
-                self.legacy_diff_hash = None
-            else:
-                logging.debug('Migrating FileDiff %s diff data to '
-                              'RawFileDiffData',
-                              self.pk)
-
-                diff_hash_is_new = self._set_diff(self.diff64)
+            diff_hash_is_new = self._set_diff(self.diff64)
 
             if recalculate_counts:
                 self._recalculate_line_counts(self.diff_hash)
 
-        if self._needs_parent_diff_migration():
+        if self.parent_diff64 and not self.parent_diff_hash:
+            logging.debug('Migrating FileDiff %s parent_diff data to '
+                          'FileDiffData' % self.pk)
             needs_save = True
-
-            if self.legacy_parent_diff_hash_id:
-                logging.debug('Migrating LegacyFileDiffData %s to '
-                              'RawFileDiffData for parent diff in FileDiff %s',
-                              self.legacy_parent_diff_hash_id, self.pk)
-
-                parent_diff_hash_is_new = \
-                    self._set_parent_diff(self.legacy_parent_diff_hash.binary)
-                legacy_pks.append(self.legacy_parent_diff_hash_id)
-                self.legacy_parent_diff_hash = None
-            else:
-                logging.debug('Migrating FileDiff %s parent diff data to '
-                              'RawFileDiffData',
-                              self.pk)
-
-                parent_diff_hash_is_new = \
-                    self._set_parent_diff(self.parent_diff64)
+            parent_diff_hash_is_new = self._set_parent_diff(self.parent_diff64)
 
             if recalculate_counts:
                 self._recalculate_line_counts(self.parent_diff_hash)
@@ -457,19 +354,10 @@ class FileDiff(models.Model):
         if needs_save:
             self.save()
 
-        if legacy_pks:
-            # Delete any LegacyFileDiffData objects no longer associated
-            # with any FileDiffs.
-            LegacyFileDiffData.objects \
-                .filter(pk__in=legacy_pks) \
-                .exclude(Q(filediffs__pk__gt=0) |
-                         Q(parent_filediffs__pk__gt=0)) \
-                .delete()
-
         return diff_hash_is_new, parent_diff_hash_is_new
 
     def _recalculate_line_counts(self, diff_hash):
-        """Recalculates the line counts on the specified RawFileDiffData.
+        """Recalculates the line counts on the specified FileDiffData.
 
         This requires that diff_hash is set. Otherwise, it will assert.
         """

@@ -1,7 +1,5 @@
 from __future__ import unicode_literals
 
-import logging
-
 from django import forms
 from django.contrib import messages
 from django.forms import widgets
@@ -91,56 +89,6 @@ class AccountSettingsForm(AccountPageForm):
                              _('Your settings have been saved.'))
 
 
-class APITokensForm(AccountPageForm):
-    """Form for showing a user's API tokens."""
-    form_id = 'api_tokens'
-    form_title = _('API Tokens')
-    save_label = None
-
-    js_view_class = 'RB.APITokensView'
-
-    def get_js_view_data(self):
-        # Fetch the list of the user's API tokens, globally.
-        api_tokens = self.user.webapi_tokens.all()
-
-        # Group the API tokens by LocalSite or the global site.
-        serialized_api_tokens = SortedDict()
-        serialized_api_tokens[''] = \
-            self._serialize_api_tokens(None, api_tokens)
-
-        for local_site in self.page.config_view.ordered_user_local_sites:
-            serialized_api_tokens[local_site.name] = \
-                self._serialize_api_tokens(local_site, api_tokens)
-
-        return {
-            'apiTokens': serialized_api_tokens,
-        }
-
-    def _serialize_api_tokens(self, local_site, api_tokens):
-        if local_site:
-            local_site_prefix = local_site_reverse(
-                'root',
-                local_site_name=local_site.name)[1:]
-        else:
-            local_site_prefix = None
-
-        return {
-            'localSitePrefix': local_site_prefix,
-            'tokens': [
-                {
-                    'id': api_token.pk,
-                    'tokenValue': api_token.token,
-                    'timeAdded': api_token.time_added,
-                    'lastUpdated': api_token.last_updated,
-                    'note': api_token.note,
-                    'policy': api_token.policy,
-                }
-                for api_token in api_tokens
-                if api_token.local_site == local_site
-            ]
-        }
-
-
 class ChangePasswordForm(AccountPageForm):
     """Form for changing a user's password."""
     form_id = 'change_password'
@@ -170,18 +118,7 @@ class ChangePasswordForm(AccountPageForm):
 
         password = self.cleaned_data['old_password']
 
-        try:
-            is_authenticated = backend.authenticate(self.user.username,
-                                                    password)
-        except Exception as e:
-            logging.error('Error when calling authenticate for auth backend '
-                          '%r: %s',
-                          backend, e, exc_info=1)
-            raise forms.ValidationError(_('Unexpected error when validating '
-                                          'the password. Please contact the '
-                                          'administrator.'))
-
-        if not is_authenticated:
+        if not backend.authenticate(self.user.username, password):
             raise forms.ValidationError(_('This password is incorrect'))
 
     def clean_password2(self):
@@ -195,22 +132,11 @@ class ChangePasswordForm(AccountPageForm):
 
     def save(self):
         backend = get_enabled_auth_backends()[0]
+        backend.update_password(self.user, self.cleaned_data['password1'])
+        self.user.save()
 
-        try:
-            backend.update_password(self.user, self.cleaned_data['password1'])
-
-            self.user.save()
-
-            messages.add_message(self.request, messages.INFO,
-                                 _('Your password has been changed.'))
-        except Exception as e:
-            logging.error('Error when calling update_password for auth '
-                          'backend %r: %s',
-                          backend, e, exc_info=1)
-            messages.add_message(self.request, messages.INFO,
-                                 _('Unexpected error when changing your '
-                                   'password. Please contact the '
-                                   'administrator.'))
+        messages.add_message(self.request, messages.INFO,
+                             _('Your password has been changed.'))
 
 
 class ProfileForm(AccountPageForm):
@@ -255,26 +181,14 @@ class ProfileForm(AccountPageForm):
         if backend.supports_change_name:
             self.user.first_name = self.cleaned_data['first_name']
             self.user.last_name = self.cleaned_data['last_name']
-
-            try:
-                backend.update_name(self.user)
-            except Exception as e:
-                logging.error('Error when calling update_name for auth '
-                              'backend %r: %s',
-                              backend, e, exc_info=1)
+            backend.update_name(self.user)
 
         if backend.supports_change_email:
             new_email = self.cleaned_data['email']
 
             if new_email != self.user.email:
                 self.user.email = new_email
-
-                try:
-                    backend.update_email(self.user)
-                except Exception as e:
-                    logging.error('Error when calling update_email for auth '
-                                  'backend %r: %s',
-                                  backend, e, exc_info=1)
+                backend.update_email(self.user)
 
         self.user.save()
 
@@ -303,11 +217,11 @@ class GroupsForm(AccountPageForm):
         # Fetch the list of IDs of groups the user has joined.
         joined_group_ids = self.user.review_groups.values_list('pk', flat=True)
 
-        # Fetch the list of groups available to the user.
+        # Fetch the list of gorups available to the user.
         serialized_groups = SortedDict()
         serialized_groups[''] = self._serialize_groups(None, joined_group_ids)
 
-        for local_site in self.page.config_view.ordered_user_local_sites:
+        for local_site in self.user.local_site.order_by('name'):
             serialized_groups[local_site.name] = self._serialize_groups(
                 local_site, joined_group_ids)
 

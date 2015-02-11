@@ -282,22 +282,14 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
             useEditIconOnly: true,
             formatter: function(view, data, $el) {
                 var reviewRequest = view.model.get('reviewRequest'),
-                    bugTrackerURL = reviewRequest.get('bugTrackerURL'),
-                    bugList,
-                    $bugList;
+                    bugTrackerURL = reviewRequest.get('bugTrackerURL');
 
                 data = data || [];
 
                 if (bugTrackerURL) {
-                    bugList = view.urlizeList(data, function(item) {
-                        return bugTrackerURL.replace('--bug_id--', item);
-                    });
-
-                    $bugList = $(bugList)
-                        .addClass('bug')
-                        .bug_infobox();
-
-                    $el.html($bugList);
+                    $el.html(view.urlizeList(data, function(item) {
+                        return bugTrackerURL.replace('%s', item);
+                    }, _.escape));
                 } else {
                     $el.text(data.join(", "));
                 }
@@ -408,16 +400,10 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
         }
     ],
 
-    events: {
-        'click .has-menu': '_onMenuClicked'
-    },
-
     initialize: function() {
         var $issueSummary = $('#issue-summary');
 
-        _.bindAll(this, '_checkResizeLayout', '_scheduleResizeLayout',
-                  '_onCloseDiscardedClicked', '_onCloseSubmittedClicked',
-                  '_onDeleteReviewRequestClicked', '_onUpdateDiffClicked');
+        _.bindAll(this, '_checkResizeLayout', '_scheduleResizeLayout');
 
         this._fieldEditors = {};
         this._hasFields = (this.$('.editable').length > 0);
@@ -876,16 +862,40 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
         var $closeDiscarded = this.$('#discard-review-request-link'),
             $closeSubmitted = this.$('#link-review-request-close-submitted'),
             $deletePermanently = this.$('#delete-review-request-link'),
-            $updateDiff = this.$('#upload-diff-link');
+            $menuitem;
+
+        /* Provide support for expanding submenus in the action list. */
+        function showMenu() {
+            if ($menuitem) {
+                $menuitem.children('ul').fadeOut('fast');
+                $menuitem = null;
+            }
+
+            $(this).children('ul').fadeIn('fast');
+        }
+
+        function hideMenu() {
+            $menuitem = $(this);
+
+            setTimeout(function() {
+                if ($menuitem) {
+                    $menuitem.children('ul').fadeOut('fast');
+                }
+            }, 400);
+        }
+
+        this.$(".actions > li:has(ul.menu)")
+            .hover(showMenu, hideMenu)
+            .toggle(showMenu, hideMenu);
 
         /*
          * We don't want the click event filtering from these down to the
          * parent menu, so we can't use events above.
          */
-        $closeDiscarded.click(this._onCloseDiscardedClicked);
-        $closeSubmitted.click(this._onCloseSubmittedClicked);
-        $deletePermanently.click(this._onDeleteReviewRequestClicked);
-        $updateDiff.click(this._onUpdateDiffClicked);
+        $closeDiscarded.click(_.bind(this._onCloseDiscardedClicked, this));
+        $closeSubmitted.click(_.bind(this._onCloseSubmittedClicked, this));
+        $deletePermanently.click(_.bind(this._onDeleteReviewRequestClicked,
+                                        this));
     },
 
     /*
@@ -1381,34 +1391,6 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
                 ]
             });
 
-        return false;
-    },
-
-    /*
-     * Handler for Update -> Update Diff.
-     */
-    _onUpdateDiffClicked: function() {
-        var reviewRequest = this.model.get('reviewRequest');
-            updateDiffView = new RB.UpdateDiffView({
-                model: new RB.UploadDiffModel({
-                    changeNumber: reviewRequest.get('commitID'),
-                    repository: reviewRequest.get('repository'),
-                    reviewRequest: reviewRequest
-                })
-            });
-
-        updateDiffView.render();
-    },
-
-    /*
-     * Generic handler for menu clicks.
-     *
-     * This simply prevents the click from bubbling up or invoking the
-     * default action.  This function is used for dropdown menu titles
-     * so that their links do not send a request to the server when one
-     * of their dropdown actions are clicked.
-     */
-    _onMenuClicked: function() {
         return false;
     },
 

@@ -1,0 +1,62 @@
+@import "retina.less";
+
+
+.rb-icon {
+  background-repeat: no-repeat;
+  display: inline-block;
+  overflow: hidden;
+  text-indent: -99999px;
+  vertical-align: middle;
+
+  background-image: url("../images/icons.png");
+  .at2x('../images/icons.png', 155px, 109px);
+
+  // For IE7
+  zoom: 1;
+  *display: inline;
+}
+
+.icon(@name, @x, @y, @width: 16px, @height: 16px) {
+  .rb-icon-@{name} {
+    background-position: -@x -@y;
+    width: @width;
+    height: @height;
+  }
+}
+
+/*
+ * NOTE: Keep these in the same order as found in the spritesheet.
+ */
+.icon(issue-dropped, 5px, 5px);
+.icon(issue-open, 26px, 5px);
+.icon(issue-resolved, 47px, 5px);
+.icon(collapse-review, 68px, 5px, 18px, 18px);
+.icon(expand-review, 91px, 5px, 18px, 18px);
+.icon(collapse, 114px, 5px, 14px, 14px);
+.icon(expand, 5px, 28px, 14px, 14px);
+.icon(datagrid-comment-draft, 24px, 28px);
+.icon(datagrid-comment-shipit, 45px, 28px);
+.icon(datagrid-comment, 66px, 28px);
+.icon(shipit-checkmark, 87px, 28px, 9px, 10px);
+.icon(datagrid-new-updates, 101px, 28px, 18px, 16px);
+.icon(edit, 124px, 28px, 20px, 16px);
+.icon(delete, 5px, 49px, 12px, 12px);
+.icon(diff-collapse-chunk, 22px, 49px, 14px, 14px);
+.icon(diff-expand-above, 41px, 49px, 28px, 14px);
+.icon(diff-expand-all, 74px, 49px, 14px, 14px);
+.icon(diff-expand-below, 93px, 49px, 28px, 14px);
+.icon(diff-expand-header, 126px, 49px, 14px, 14px);
+.icon(shipit, 5px, 68px);
+.icon(admin-enabled, 5px, 68px);
+.icon(admin-disabled, 26px, 68px);
+.icon(admin-add, 47px, 68px);
+.icon(star-off, 68px, 68px);
+.icon(star-on, 89px, 68px);
+.icon(warning, 110px, 68px);
+.icon(search, 129px, 66px, 20px, 20px);
+.icon(search-dark, 3px, 86px, 20px, 20px);
+.icon(admin-collapse, 25px, 89px, 20px, 13px);
+.icon(admin-expand, 50px, 89px, 20px, 13px);
+.icon(jump-to, 76px, 86px, 21px, 18px);
+.icon(range-slider, 100px, 87px, 9px, 18px);
+.icon(download, 114px, 90px, 14px, 14px);

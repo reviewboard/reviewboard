@@ -1,7 +1,7 @@
 {% load djblets_js reviewtags %}
         el: document.body,
         reviewRequestData: {
-            bugTrackerURL: "{% if review_request.repository.bug_tracker %}{% url 'bug_url' review_request.display_id '--bug_id--' %}{% endif %}",
+            bugTrackerURL: "{{review_request.repository.bug_tracker|escapejs}}",
             id: {{review_request.display_id}},
             localSitePrefix: "{% if review_request.local_site %}s/{{review_request.local_site.name}}/{% endif %}",
             branch: "{{review_request_details.branch|escapejs}}",
@@ -10,24 +10,9 @@
             closeDescriptionRichText: {{close_description_rich_text|yesno:'true,false'}},
             description: "{% normalize_text_for_edit review_request_details.description review_request_details.description_rich_text True %}",
             descriptionRichText: {{review_request_details.description_rich_text|yesno:'true,false'}},
-            hasDraft: {{draft|yesno:'true,false'}},
+            hasDraft: {% if draft %}true{% else %}false{% endif %},
             lastUpdatedTimestamp: {{review_request.last_updated|json_dumps}},
-            public: {{review_request.public|yesno:'true,false'}},
-{% if review_request.repository %}
-            repository: new RB.Repository({
-{%  with repo=review_request.repository %}
-{%   with scmtool=repo.get_scmtool %}
-                id: {{repo.id}},
-                localSitePrefix: '{% if review_request.local_site %}s/{{review_request.local_site.name}}/{% endif %}',
-                name: '{{repo.name|escapejs}}',
-                requiresBasedir: {{scmtool.get_diffs_use_absolute_paths|yesno:'false,true'}},
-                requiresChangeNumber: {{scmtool.supports_pending_changesets|yesno:'true,false'}},
-                scmtoolName: '{{scmtool.name|escapejs}}',
-                supportsPostCommit: {{repo.supports_post_commit|yesno:'true,false'}}
-{%   endwith %}
-{%  endwith %}
-            }),
-{% endif %}
+            public: {% if review_request.public %}true{% else %}false{% endif %},
             reviewURL: "{{review_request.get_absolute_url|escapejs}}",
             state: RB.ReviewRequest.{% if review_request.status == 'P' %}PENDING{% elif review_request.status == 'D' %}CLOSE_DISCARDED{% elif review_request.status == 'S' %}CLOSE_SUBMITTED{% endif %},
             summary: "{{review_request_details.summary|escapejs}}",

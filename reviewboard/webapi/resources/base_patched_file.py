@@ -18,8 +18,6 @@ from reviewboard.webapi.errors import FILE_RETRIEVAL_ERROR
 
 class BasePatchedFileResource(WebAPIResource):
     """Base class for the patched file resources."""
-    added_in = '2.0.4'
-
     uri_name = 'patched-file'
     link_name = 'patched_file'
     singleton = True

@@ -103,6 +103,21 @@ class Client(base.Client):
 
         return revision
 
+    def get_filenames_in_revision(self, revision):
+        """Returns a list of filenames associated with the revision."""
+        paths = {}
+
+        def log_cb(changed_paths, rev, props, has_children=False):
+            paths.update(changed_paths)
+
+        revnum = self._normalize_revision(revision)
+        self.client.log(log_cb, self.repopath, revnum, revnum, limit=1,
+                        discover_changed_paths=True)
+        if paths:
+            return paths.keys()
+        else:
+            return []
+
     @property
     def repository_info(self):
         """Returns metadata about the repository:

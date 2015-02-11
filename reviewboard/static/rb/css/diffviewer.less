@@ -1,0 +1,809 @@
+@import "defs.less";
+
+
+/*
+ * The .diff-changes-* rules are used only within JavaScript code to
+ * figure out the colors used to display the file complexity icons.
+ */
+.diff-changes-icon-insert {
+  color: @diff-insert-dot-color;
+}
+
+.diff-changes-icon-replace {
+  color: @diff-replace-dot-color;
+}
+
+.diff-changes-icon-delete {
+  color: @diff-delete-dot-color;
+}
+
+
+.sidebyside {
+  @linenum-padding-right: 4px;
+  @moved-border-width: 4px;
+
+  background: white;
+  border-collapse: collapse;
+  padding: 2px;
+  width: 100%;
+
+  &.diff-error {
+    td {
+      background: #fff6a6;
+      padding: 1em;
+
+      a {
+        color: blue;
+        font-weight: bold;
+      }
+
+      h2 {
+        font-size: 10pt;
+        margin: 0em 0 2em 0;
+        padding: 0;
+
+        .rb-icon {
+          vertical-align: text-bottom;
+        }
+      }
+    }
+
+    .error-details {
+      display: none;
+
+      pre {
+        background: white;
+        border: 1px #999 solid;
+        padding: 1em;
+      }
+    }
+
+    .revision-row th {
+      padding-left: 4em;
+    }
+  }
+
+  &.newfile {
+    col {
+      &.left {
+        width: 0%;
+      }
+
+      &.right {
+        width: 100%;
+      }
+    }
+  }
+
+  &.selecting-col-1:not(.newfile) {
+    td.r {
+      &, * {
+        .unselectable();
+      }
+    }
+  }
+
+  &.selecting-col-3 {
+    td.l {
+      &, * {
+        .unselectable();
+      }
+    }
+  }
+
+  a {
+    color: black;
+    text-decoration: none;
+  }
+
+  col {
+    &.left {
+      width: 50%;
+    }
+
+    &.right {
+      width: 50%;
+    }
+
+    &.line {
+      width: 1%; /* Make sure this doesn't stretch if the header stretches. */
+    }
+  }
+
+  img.header-file-icon {
+    vertical-align: middle;
+  }
+
+  pre {
+    .pre-wrap;
+    font-size: 8pt;
+    line-height: 140%;
+    margin: 0;
+    padding-left: 2px;
+  }
+
+  .indent {
+    color: #CCDDCC;
+  }
+
+  .unindent {
+    color: #DDCCCC;
+  }
+
+  .moved-row-start {
+    pre {
+      margin-top: 4px;
+    }
+  }
+
+  .moved-row th {
+    /* Compensate for the increased border. */
+    padding-right: (@linenum-padding-right - @moved-border-width / 2);
+  }
+
+  .moved-to {
+    border-left: @moved-border-width @diff-moved-to-bg-color solid !important;
+
+    .moved-flag {
+      background-color: @diff-moved-to-bg-color !important;
+    }
+  }
+
+  .moved-from {
+    border-left: @moved-border-width @diff-moved-from-bg-color solid !important;
+
+    .moved-flag {
+      background-color: @diff-moved-from-bg-color !important;
+    }
+  }
+
+  .moved-flag {
+    background-color: inherit !important;
+    display: inline-block;
+    font-size: 7pt;
+    margin: -1px;
+    padding: 0;
+  }
+
+  .moved-to-start, .moved-from-start {
+    .moved-flag {
+      padding: 3px 1em 3px 0.5em;
+      .border-radius(0, 8px, 8px, 0);
+    }
+  }
+
+  tbody {
+    tr {
+      &.selected {
+        * {
+          background: @diff-selected-color;
+        }
+
+        td .diff-collapse-btn {
+          background: #E4D9CB;
+        }
+      }
+
+      &.first {
+        td, th {
+          border-top: 1px @diff-line-border-color solid;
+        }
+      }
+
+      &.last {
+        td, th {
+          border-bottom: 1px @diff-line-border-color solid;
+        }
+      }
+
+      td {
+        padding: 1px;
+        vertical-align: top;
+
+        .collapse-floater {
+          position: relative;
+        }
+
+        .diff-collapse-btn {
+          @image-size: 14px;
+
+          background: #E4D9CB;
+          border: 1px black solid;
+          padding: 5px;
+          cursor: pointer;
+          position: absolute;
+          right: -8px;
+          z-index: @z-index-diff-collapse-btn;
+          opacity: 0.8;
+          width: @image-size;
+          height: @image-size;
+
+          &:hover {
+            opacity: 1.0;
+          }
+        }
+      }
+
+      th {
+        background: @diff-linenum-color;
+        padding-left: 1em;
+        padding-right: @linenum-padding-right;
+        text-align: right;
+        vertical-align: top;
+        cursor: pointer;
+
+        .unselectable();
+      }
+    }
+
+    &.whitespace-file td {
+      background: @diff-replace-color;
+      padding: 1em;
+    }
+
+    &.deleted td {
+      background: @diff-delete-color;
+      padding: 1em;
+    }
+
+    &.new-empty-file td {
+      background: @diff-insert-color;
+      padding: 1em;
+    }
+
+    &.no-changes td {
+      padding: 1em;
+    }
+
+    &.binary {
+      .inline-actions-header {
+        background: @inline-actions-bg;
+        border-bottom: 1px @diff-file-border-color solid;
+
+        td {
+          padding: 0;
+
+          &:first-child {
+            border-right: 1px @diff-line-border-color solid;
+          }
+        }
+      }
+
+      .inline-actions-right, .inline-actions-left {
+        li {
+          .border-radius(0 0 0 0);
+
+          &:hover {
+            background-color: @inline-actions-hover-bg;
+          }
+        }
+      }
+
+      .inline-actions-right {
+        float: right;
+
+        a {
+          border-left: 1px @diff-file-border-color solid;
+        }
+      }
+
+      .inline-actions-left {
+        float: left;
+
+        a {
+          border-right: 1px @diff-file-border-color solid;
+          border-left: 0px;
+        }
+      }
+
+      .inline-files-container {
+        td {
+          &:first-child {
+            border-right: 1px @diff-line-border-color solid;
+          }
+
+          &.diff-review-ui {
+            padding: 0;
+          }
+        }
+      }
+
+      .file-thumbnail-container {
+        margin: 0;
+        overflow: hidden;
+        padding: 1em;
+        text-align: center;
+        white-space: nowrap;
+      }
+
+      p {
+        margin: 0;
+        padding: 4px;
+      }
+
+      td {
+        padding: 1em;
+      }
+    }
+
+    &.delete {
+      tr {
+        &.selected * { background: @diff-delete-selected-color; }
+
+        td {
+          background: @diff-delete-color;
+          border-color: @diff-delete-border-color;
+        }
+
+        th {
+          background: @diff-delete-linenum-color;
+          border-color: @diff-delete-linenum-border-color;
+        }
+      }
+    }
+
+    &.insert {
+      tr {
+        &.selected * { background: @diff-insert-selected-color; }
+
+        td {
+          background: @diff-insert-color;
+          border-color: @diff-insert-border-color;
+        }
+
+        th {
+          background: @diff-insert-linenum-color;
+          border-color: @diff-insert-linenum-border-color;
+        }
+      }
+    }
+
+    &.replace {
+      tr {
+        &.selected * { background: @diff-replace-selected-color; }
+
+        td {
+          background: @diff-replace-color;
+          border-color: @diff-replace-border-color;
+        }
+
+        th {
+          background: @diff-replace-linenum-color;
+          border-color: @diff-replace-linenum-border-color;
+        }
+      }
+
+      &.dimmed {
+        background: #FFFFFF;
+
+        .hl { background: #FFFFFF; }
+        th { background: #F0F0F0; }
+      }
+
+      .hl { background: #eff23d; }
+    }
+
+    &.diff-header {
+      a {
+        text-decoration: none;
+        color: black;
+      }
+
+      code {
+        margin: 0 2px;
+      }
+
+      img {
+        vertical-align: middle;
+        padding: 1px;
+      }
+
+      td {
+        background: @diff-header-color;
+        font-size: x-small;
+        text-align: center;
+      }
+
+      th {
+        background: @diff-header-color;
+      }
+
+      tr {
+        &:first-child {
+          border-top: 1px darken(@diff-header-color, 10%) solid;
+        }
+
+        &:last-child {
+          border-bottom: 1px darken(@diff-header-color, 10%) solid;
+        }
+      }
+    }
+  }
+
+  thead {
+    th {
+      background: @diff-file-color;
+      font-size: 120%;
+      font-weight: bold;
+      text-align: left;
+      text-overflow: ellipsis;
+    }
+
+    .filename-row th {
+      overflow: hidden;
+      padding: 8px;
+
+      #gradient > .vertical-three-colors(#FFFFFF, @diff-file-color, 50%, @diff-file-color);
+    }
+
+    .revision-row th {
+      border-bottom: 1px @diff-file-border-color solid;
+      font-size: 100%;
+      font-weight: normal;
+      padding: 8px 0;
+
+      &.revision-col {
+        overflow: hidden;
+      }
+
+      .rb-icon {
+        vertical-align: text-top;
+      }
+    }
+  }
+
+  thead th.controls,
+  th.controls {
+    font-size: 100%;
+    font-weight: normal;
+    padding: 2px 0 2px 2px;
+    vertical-align: top;
+  }
+}
+
+.commentflag {
+  .border-radius(@comment-flag-border-radius);
+  height: 20px;
+  left: -0.7em;
+  margin-top: -0.3em;
+  position: absolute;
+  width: 1.6em;
+
+  .commentflag-shadow {
+    .border-radius(@comment-flag-border-radius);
+    .opacity(10);
+    background-color: black;
+    border: 1px solid black;
+    bottom: 0;
+    left: 0.2em;
+    position: absolute;
+    right: 0;
+    top: 0.2em;
+    width: 100%;
+  }
+
+  .commentflag-inner {
+    .border-radius(@comment-flag-border-radius);
+    .opacity(95);
+    background-color: @comment-flag-color;
+    border: 1px solid @comment-flag-border-color;
+    bottom: 0.2em;
+    cursor: pointer;
+    font-size: 90%;
+    font-weight: normal;
+    left: 0;
+    line-height: 1.7em;
+    position: absolute;
+    right: 0.2em;
+    text-align: center;
+    top: 0;
+    vertical-align: top;
+    width: 100%;
+    z-index: @z-index-deco;
+
+    span {
+      background: transparent !important;
+      .unselectable();
+    }
+  }
+}
+
+.selected .commentflag .commentflag-inner {
+  background-color: @comment-flag-color;
+}
+
+.selected .commentflag .commentflag-inner,
+.commentflag .commentflag-inner:hover {
+  background-color: @comment-flag-hover-color;
+}
+
+.commentflag.draft .commentflag-inner {
+  background-color: @comment-flag-draft-color;
+  border-color: @comment-flag-draft-border-color;
+}
+
+.selected .commentflag.draft .commentflag-inner,
+.commentflag.draft .commentflag-inner:hover {
+  background-color: @comment-flag-draft-hover-color;
+}
+
+.ghost-commentflag {
+  cursor: pointer;
+  position: absolute;
+  left: 0.1em;
+  margin-top: -0.1em;
+  height: 21px;
+
+  .commentflag-inner {
+    background-color: @comment-flag-ghost-color;
+    border-color: @comment-flag-ghost-border-color;
+  }
+}
+
+#diffs {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+
+  /* Allows highlight chunks to be absolute relative to this. */
+  position: relative;
+
+  div.index ol {
+    margin-bottom: 20px;
+    padding-left: 30px;
+  }
+
+  .diff-container {
+    margin-bottom: 1em;
+    position: relative;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
+
+  .diff-box {
+    .border-radius(@box-border-radius);
+    border: 1px @diff-border-color solid;
+    overflow: hidden;
+    .box-shadow(@box-shadow);
+  }
+
+  .diff-highlight {
+    position: absolute;
+    left: 0;
+    top: 0;
+  }
+
+  .diff-highlight-border {
+    background-color: black;
+    display: block;
+    font-size: 0; /* Prevents the 13px minimum height in IE6 */
+    position: absolute;
+    width: 2px;
+    height: 2px;
+  }
+}
+
+#diff_index,
+.diff-index {
+  @icon-size: 20px;
+  @icon-offset: 2px;
+
+  border: 1px #BBB solid;
+  margin: 1em 0;
+
+  table {
+    padding: 0;
+    border-collapse: collapse;
+    width: 100%;
+
+    tr {
+      &:first-child td {
+        border-top: 0;
+      }
+
+      &.loading .diff-file-icon {
+        background-image: url("../images/spinner.gif");
+        background-position: center center;
+        background-repeat: no-repeat;
+        min-width: @icon-size;
+        width: @icon-size;
+        height: (@icon-size + @icon-offset);
+      }
+    }
+
+    td {
+      background: #FDFDFD;
+      padding: 0.6em;
+      margin: 0;
+      border-top: 1px #DDD solid;
+      vertical-align: top;
+
+      &.diff-chunks-cell {
+        color: #888;
+        text-align: right;
+        width: 70%;
+      }
+
+      &.diff-file-icon {
+        padding: @icon-offset 0 0 @icon-offset;
+
+        .rb-icon {
+          width: @icon-size;
+          height: @icon-size;
+        }
+      }
+
+      &.diff-file-info {
+        padding-left: 0.3em;
+        white-space: nowrap;
+        width: 30%;
+
+        .diff-file-rename {
+          color: #888;
+          display: block;
+          font-size: 90%;
+          font-style: italic;
+          padding: 1em 0 0 0;
+        }
+      }
+
+      a {
+        color: blue;
+        text-decoration: none;
+
+        &:hover {
+          text-decoration: underline;
+        }
+
+        &.dimmed {
+          color: #ABABAB;
+        }
+      }
+
+      .diff-chunks {
+        max-height: 2.5em;
+        overflow: hidden;
+        text-align: right;
+
+        a {
+          display: inline-block;
+          margin: 3px 2px 0 2px;
+          width: 8px;
+          height: 8px;
+          .border-radius(50%);
+
+          &.insert {
+            background-color: @diff-insert-dot-color;
+          }
+
+          &.delete {
+            background-color: @diff-delete-dot-color;
+          }
+
+          &.replace {
+            background-color: @diff-replace-dot-color;
+          }
+        }
+      }
+    }
+  }
+}
+
+
+/****************************************************************************
+ * Diff information
+ ****************************************************************************/
+#diff-details {
+  border-spacing: 8px;
+
+  &.loading {
+    #diff_index {
+      background: white url("../images/spinner.gif") no-repeat @box-padding @box-padding;
+      height: 16px;
+      padding: @box-padding;
+    }
+  }
+
+  #diff_revision_label h1 {
+    color: @review-request-label-color;
+    font-size: 120%;
+    margin: 0;
+    padding: 0;
+  }
+
+  .main {
+    padding: 1em;
+
+    h1, p {
+      margin: 1em 0;
+      padding: 0;
+    }
+  }
+}
+
+.revision-selector-grabbed,
+.revision-selector-grabbed * {
+  .grabbing-cursor-important;
+}
+
+.revision-selector {
+  margin: 3em 1.5em;
+  position: relative;
+
+  .revision-selector-trough {
+    border-bottom: 1px solid black;
+  }
+
+  .revision-selector-tick {
+    position: absolute;
+    top: -8px;
+    height: 16px;
+    border-left: 1px solid black;
+  }
+
+  .revision-selector-label {
+    position: absolute;
+    top: -26px;
+
+    .user-select(none);
+
+    &.revision-selector-label-active {
+      cursor: pointer;
+    }
+  }
+
+  .revision-selector-handle {
+    position: absolute;
+    top: -9px;
+    z-index: 2;
+    .grab-cursor;
+  }
+
+  .revision-selector-range {
+    position: absolute;
+    background-color: grey;
+    top: -1px;
+    height: 4px;
+    z-index: 1;
+  }
+}
+
+
+/****************************************************************************
+ * Comments hint
+ ****************************************************************************/
+.comments-hint li {
+  &.current {
+    font-weight: bold;
+  }
+
+  &:not(.current) {
+    color: @link-color;
+    text-decoration: underline;
+    cursor: pointer;
+  }
+}
+
+
+/****************************************************************************
+ * Pagination
+ ****************************************************************************/
+.paginate-link,
+.paginate-current {
+  padding: 2px 4px;
+  border: 1px solid @paginate-border-color;
+}
+
+.paginate-current {
+  background: @paginate-bg-color;
+  color: @paginate-text-color;
+  font-weight: bold;
+}
+
+#pagination2 {
+  margin-top: 1em;
+}
+
+// vim: set et ts=2 sw=2:

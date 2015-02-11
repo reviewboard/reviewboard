@@ -6,6 +6,7 @@ from djblets.testing.decorators import add_fixtures
 from djblets.webapi.errors import INVALID_FORM_DATA
 
 from reviewboard.reviews.models import DefaultReviewer, Group
+from reviewboard.site.models import LocalSite
 from reviewboard.webapi.resources import resources
 from reviewboard.webapi.tests.base import BaseWebAPITestCase
 from reviewboard.webapi.tests.mimetypes import (default_reviewer_item_mimetype,
@@ -70,7 +71,7 @@ class ResourceListTests(BaseWebAPITestCase):
     @add_fixtures(['test_site'])
     def test_get_with_site(self):
         """Testing the GET default-reviewers/ API with a local site"""
-        local_site = self.get_local_site(name=self.local_site_name)
+        local_site = LocalSite.objects.get(name=self.local_site_name)
         DefaultReviewer.objects.create(name='default1', file_regex='.*',
                                        local_site=local_site)
         DefaultReviewer.objects.create(name='default2', file_regex='/foo')
@@ -223,7 +224,7 @@ class ResourceListTests(BaseWebAPITestCase):
                                            path='test-repo-2')
 
             if with_local_site:
-                site = self.get_local_site(name=local_site_name)
+                site = LocalSite.objects.get(name=local_site_name)
                 site.users.add(User.objects.get(username='doc'))
                 site.users.add(User.objects.get(username='dopey'))
 
@@ -352,7 +353,7 @@ class ResourceListTests(BaseWebAPITestCase):
         """
         self._login_user(admin=True)
 
-        local_site = self.get_local_site(name=self.local_site_name)
+        local_site = LocalSite.objects.get(name=self.local_site_name)
 
         rsp = self.api_post(
             get_default_reviewer_list_url(local_site),
@@ -390,7 +391,7 @@ class ResourceListTests(BaseWebAPITestCase):
         """
         self._login_user(admin=True)
 
-        local_site = self.get_local_site(name=self.local_site_name)
+        local_site = LocalSite.objects.get(name=self.local_site_name)
         Group.objects.create(name='group1', local_site=local_site)
 
         rsp = self.api_post(
@@ -488,7 +489,7 @@ class ResourceItemTests(BaseWebAPITestCase):
 
     def setup_basic_delete_test(self, user, with_local_site, local_site_name):
         if with_local_site:
-            local_site = self.get_local_site(name=local_site_name)
+            local_site = LocalSite.objects.get(name=local_site_name)
         else:
             local_site = None
 
@@ -516,7 +517,7 @@ class ResourceItemTests(BaseWebAPITestCase):
 
         if with_local_site:
             default_reviewer.local_site = \
-                self.get_local_site(name=local_site_name)
+                LocalSite.objects.get(name=local_site_name)
             default_reviewer.save()
 
         default_reviewer.people.add(User.objects.get(username='doc'))
@@ -552,7 +553,7 @@ class ResourceItemTests(BaseWebAPITestCase):
             name='default1', file_regex='.*')
 
         if with_local_site:
-            local_site = self.get_local_site(name=local_site_name)
+            local_site = LocalSite.objects.get(name=local_site_name)
             local_site.users.add(User.objects.get(username='doc'))
             local_site.users.add(User.objects.get(username='dopey'))
 
@@ -640,7 +641,7 @@ class ResourceItemTests(BaseWebAPITestCase):
         """
         self._login_user(admin=True)
 
-        local_site = self.get_local_site(name=self.local_site_name)
+        local_site = LocalSite.objects.get(name=self.local_site_name)
         default_reviewer = DefaultReviewer.objects.create(
             name='default1', file_regex='.*', local_site=local_site)
 
@@ -676,7 +677,7 @@ class ResourceItemTests(BaseWebAPITestCase):
         """
         self._login_user(admin=True)
 
-        local_site = self.get_local_site(name=self.local_site_name)
+        local_site = LocalSite.objects.get(name=self.local_site_name)
         default_reviewer = DefaultReviewer.objects.create(
             name='default1', file_regex='.*')
         Group.objects.create(name='group1', local_site=local_site)

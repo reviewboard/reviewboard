@@ -1,34 +1,3 @@
-/* Convenience wrapper for enabling and disabling the activity indicator.
- *
- * status determines if the indicator will be enabled (true) or disabled
- * (false).
- *
- * The following field of options are inspected:
- *
- *     noActivityIndicator - specify not to use the activity indicator
- *     type                - determines if we are loading (GET) or saving
- *                           (POST) information
- */
-RB.setActivityIndicator = function(status, options) {
-    var $activityIndicator = $("#activity-indicator");
-
-    if (status) {
-        if (RB.ajaxOptions.enableIndicator && !options.noActivityIndicator) {
-            $activityIndicator
-                .removeClass("error")
-                .text((options.type || options.type === "GET")
-                      ? gettext("Loading...") : gettext("Saving..."))
-                .show();
-        }
-    } else if (RB.ajaxOptions.enableIndicator &&
-               !options.noActivityIndicator &&
-               !$activityIndicator.hasClass("error")) {
-        $activityIndicator
-            .delay(250)
-            .fadeOut("fast");
-    }
-};
-
 /*
  * Convenience wrapper for Review Board API functions. This will handle
  * any button disabling/enabling, write to the correct path prefix, form
@@ -57,14 +26,20 @@ RB.apiCall = function(options) {
         url = options.url || (SITE_ROOT + prefix + "api" + options.path);
 
     function doCall() {
-        var $activityIndicator = $("#activity-indicator"),
+        var activityIndicator = $("#activity-indicator"),
             data;
 
         if (options.buttons) {
             options.buttons.attr("disabled", true);
         }
 
-        RB.setActivityIndicator(true, options);
+        if (RB.ajaxOptions.enableIndicator && !options.noActivityIndicator) {
+            activityIndicator
+                .removeClass("error")
+                .text((options.type || options.type === "GET")
+                      ? gettext("Loading...") : gettext("Saving..."))
+                .show();
+        }
 
         data = $.extend(true, {
             url: url,
@@ -88,7 +63,7 @@ RB.apiCall = function(options) {
                 }
 
                 responseText = xhr.responseText;
-                $activityIndicator
+                activityIndicator
                     .addClass("error")
                     .text(gettext("A server error occurred."))
                     .append(
@@ -104,7 +79,7 @@ RB.apiCall = function(options) {
                             .text(gettext("Dismiss"))
                             .attr("href", "#")
                             .click(function() {
-                                $activityIndicator.fadeOut("fast");
+                                activityIndicator.fadeOut("fast");
                                 return false;
                             })
                     );
@@ -120,7 +95,13 @@ RB.apiCall = function(options) {
                 options.buttons.attr("disabled", false);
             }
 
-            RB.setActivityIndicator(false, options);
+            if (RB.ajaxOptions.enableIndicator &&
+                !options.noActivityIndicator &&
+                !activityIndicator.hasClass("error")) {
+                activityIndicator
+                    .delay(250)
+                    .fadeOut("fast");
+            }
 
             if ($.isFunction(options.complete)) {
                 options.complete(xhr, status);

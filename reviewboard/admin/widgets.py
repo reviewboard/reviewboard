@@ -1,7 +1,6 @@
 from __future__ import unicode_literals
 
 import datetime
-import logging
 import re
 import time
 
@@ -500,56 +499,31 @@ def init_widgets():
     post_delete.connect(_increment_sync_num, sender=Repository)
 
 
-def register_admin_widget(widget_cls, primary=False):
-    """Registers an administration widget.
-
-    This widget will appear in the list of primary or secondary widgets.
-
-    The widget class must have a widget_id attribute set, and can only
-    be registerd once in a single list. A KeyError will be thrown if
-    attempting to register a second time.
-    """
-    widget_id = widget_cls.widget_id
-
-    if not widget_id:
-        raise ValueError('The widget_id attribute must be set on %r'
-                         % widget_cls)
-
-    if widget_cls in primary_widgets or widget_cls in secondary_widgets:
-        raise KeyError('"%s" is already a registered administration widget'
-                       % widget_id)
-
+def register(widget, primary=False):
     if primary:
-        primary_widgets.append(widget_cls)
+        primary_widgets.append(widget)
     else:
-        secondary_widgets.append(widget_cls)
+        secondary_widgets.append(widget)
 
 
-def unregister_admin_widget(widget_cls):
-    """Unregisters a previously registered administration widget."""
-    widget_id = widget_cls.widget_id
-
+def unregister(widget):
     try:
-        primary_widgets.remove(widget_cls)
+        primary_widgets.remove(widget)
     except ValueError:
         try:
-            secondary_widgets.remove(widget_cls)
+            secondary_widgets.remove(widget)
         except ValueError:
-            logging.error('Failed to unregister unknown administration '
-                          'widget "%s".',
-                          widget_id)
-            raise KeyError('"%s" is not a registered administration widget'
-                           % widget_id)
+            pass
 
 
 # Register the built-in widgets
-register_admin_widget(ActivityGraphWidget, True)
-register_admin_widget(RepositoriesWidget, True)
-register_admin_widget(UserActivityWidget, True)
+register(ActivityGraphWidget, True)
+register(RepositoriesWidget, True)
+register(UserActivityWidget, True)
 
-register_admin_widget(ReviewRequestStatusesWidget)
-register_admin_widget(RecentActionsWidget)
-register_admin_widget(ReviewGroupsWidget)
-register_admin_widget(ServerCacheWidget)
-register_admin_widget(NewsWidget)
-register_admin_widget(DatabaseStatsWidget)
+register(ReviewRequestStatusesWidget)
+register(RecentActionsWidget)
+register(ReviewGroupsWidget)
+register(ServerCacheWidget)
+register(NewsWidget)
+register(DatabaseStatsWidget)

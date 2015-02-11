@@ -53,12 +53,8 @@ Hosting Services
 .. toctree::
    :maxdepth: 1
 
-   hosting-service-list
-   hosting-service
    hosting-service-account-list
    hosting-service-account
-   remote-repository-list
-   remote-repository
 
 
 Repositories
@@ -176,8 +172,6 @@ Users
 .. toctree::
    :maxdepth: 1
 
-   api-token-list
-   api-token
    session
    user-list
    user

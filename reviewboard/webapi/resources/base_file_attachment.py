@@ -21,8 +21,6 @@ from reviewboard.webapi.resources import resources
 
 class BaseFileAttachmentResource(WebAPIResource):
     """A base resource representing file attachments."""
-    added_in = '1.6'
-
     model = FileAttachment
     name = 'file_attachment'
     fields = {
@@ -55,27 +53,19 @@ class BaseFileAttachmentResource(WebAPIResource):
         },
         'icon_url': {
             'type': six.text_type,
-            'description': 'The URL to a 24x24 icon representing this file.',
+            'description': 'The URL to a 24x24 icon representing this file.'
         },
         'mimetype': {
             'type': six.text_type,
             'description': 'The mimetype for the file.',
-            'added_in': '2.0',
         },
         'thumbnail': {
             'type': six.text_type,
             'description': 'A thumbnail representing this file.',
-            'added_in': '1.7',
         },
         'review_url': {
             'type': six.text_type,
             'description': 'The URL to a review UI for this file.',
-            'added_in': '1.7',
-        },
-        'attachment_history_id': {
-            'type': int,
-            'description': 'ID of the corresponding FileAttachmentHistory.',
-            'added_in': '2.1',
         },
     }
 
@@ -164,12 +154,6 @@ class BaseFileAttachmentResource(WebAPIResource):
                 'description': 'The optional caption describing the '
                                'file.',
             },
-            'attachment_history': {
-                'type': int,
-                'description': 'ID of the corresponding '
-                               'FileAttachmentHistory.',
-                'added_in': '2.1',
-            },
         },
     )
     def create(self, request, *args, **kwargs):
@@ -199,7 +183,7 @@ class BaseFileAttachmentResource(WebAPIResource):
             return self._no_access_error(request.user)
 
         form_data = request.POST.copy()
-        form = UploadFileForm(review_request, form_data, request.FILES)
+        form = UploadFileForm(form_data, request.FILES)
 
         if not form.is_valid():
             return INVALID_FORM_DATA, {
@@ -207,7 +191,7 @@ class BaseFileAttachmentResource(WebAPIResource):
             }
 
         try:
-            file = form.create()
+            file = form.create(request.FILES['path'], review_request)
         except ValueError as e:
             return INVALID_FORM_DATA, {
                 'fields': {
@@ -232,7 +216,6 @@ class BaseFileAttachmentResource(WebAPIResource):
             'thumbnail': {
                 'type': six.text_type,
                 'description': 'The thumbnail data for the file.',
-                'added_in': '1.7.7',
             },
         }
     )
@@ -306,18 +289,8 @@ class BaseFileAttachmentResource(WebAPIResource):
         except PermissionDenied:
             return self._no_access_error(request.user)
 
-        if file_attachment.attachment_history_id is None:
-            draft.inactive_file_attachments.add(file_attachment)
-            draft.file_attachments.remove(file_attachment)
-        else:
-            # "Delete" all revisions of the given file
-            all_revs = FileAttachment.objects.filter(
-                attachment_history=file_attachment.attachment_history_id)
-
-            for revision in all_revs:
-                draft.inactive_file_attachments.add(revision)
-                draft.file_attachments.remove(revision)
-
+        draft.inactive_file_attachments.add(file_attachment)
+        draft.file_attachments.remove(file_attachment)
         draft.save()
 
         return 204, {}

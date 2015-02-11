@@ -20,8 +20,6 @@ class DraftFileAttachmentResource(BaseFileAttachmentResource):
     These are files that will be shown once the pending review request
     draft is published.
     """
-    added_in = '1.6'
-
     name = 'draft_file_attachment'
     uri_name = 'file-attachments'
     model_parent_key = 'drafts'

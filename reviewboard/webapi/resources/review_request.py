@@ -100,7 +100,6 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
                      'ReviewRequestResource'],
             'description': 'The list of review requests that this '
                            'review request is blocking.',
-            'added_in': '1.7.9',
         },
         'close_description': {
             'type': six.text_type,
@@ -120,7 +119,6 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
                      'ReviewRequestResource'],
             'description': 'The list of review requests that this '
                            'review request depends on.',
-            'added_in': '1.7.9',
         },
         'extra_data': {
             'type': dict,
@@ -260,7 +258,6 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
             'description': "The URL to the review request's page on the site. "
                            "This is deprecated and will be removed in a "
                            "future version.",
-            'added_in': '1.7.8',
             'deprecated_in': '2.0',
         },
         'absolute_url': {
@@ -534,7 +531,6 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
                                'text fields. The contents will be converted '
                                'to the requested type in the payload, but '
                                'will not be saved as that type.',
-                'added_in': '2.0.9',
             },
             'repository': {
                 'type': six.text_type,
@@ -707,7 +703,6 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
                                'This is deprecated. Instead, set '
                                '``commit_id`` and ``update_from_commit_id=1`` '
                                ' on the draft.',
-                'added_in': '1.5.4',
                 'deprecated_in': '2.0',
             },
             'close_description': {
@@ -735,7 +730,6 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
                                '\n'
                                'This is deprecated. Instead, set '
                                '``close_description``.',
-                'added_in': '1.6',
                 'deprecated_in': '2.0.9',
                 'supports_text_types': True,
             },
@@ -745,7 +739,6 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
                                'text fields. The contents will be converted '
                                'to the requested type in the payload, but '
                                'will not be saved as that type.',
-                'added_in': '2.0.9',
             },
             'text_type': {
                 'type': MarkdownFieldsMixin.SAVEABLE_TEXT_TYPES,
@@ -1058,7 +1051,6 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
                                'review with Ship It set, if this is 1. '
                                'Otherwise, if 0, it must not have any marked '
                                'Ship It.',
-                'added_in': '1.6',
                 'deprecated_in': '2.0',
             },
             'ship-it-count': {
@@ -1093,7 +1085,7 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
             },
             'status': {
                 'type': ('all', 'discarded', 'pending', 'submitted'),
-                'description': 'The status of the review requests.',
+                'description': 'The status of the review requests.'
             },
             'to-groups': {
                 'type': six.text_type,
@@ -1210,10 +1202,8 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
                 for backend in auth.get_backends():
                     try:
                         return backend.get_or_create_user(username, request)
-                    except Exception as e:
-                        logging.error('Error when calling get_or_create_user '
-                                      'for auth backend %r: %s',
-                                      backend, e, exc_info=1)
+                    except:
+                        pass
 
         return user
 

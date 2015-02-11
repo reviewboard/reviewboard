@@ -59,6 +59,14 @@ RB.FloatingBannerView = Backbone.View.extend({
             return;
         }
 
+        /*
+         * Something about the below causes the "Publish" button to never
+         * show up on IE8. Turn it into a fixed box on IE.
+         */
+        if ($.browser.msie) {
+            return;
+        }
+
         if (this._$floatSpacer === null) {
             this._$floatSpacer = this.$el.wrap($('<div/>')).parent();
             this._updateSize();

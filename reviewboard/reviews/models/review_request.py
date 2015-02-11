@@ -13,8 +13,7 @@ from djblets.cache.backend import make_cache_key
 from djblets.db.fields import CounterField, ModificationTimestampField
 from djblets.db.query import get_object_or_none
 
-from reviewboard.attachments.models import (FileAttachment,
-                                            FileAttachmentHistory)
+from reviewboard.attachments.models import FileAttachment
 from reviewboard.changedescs.models import ChangeDescription
 from reviewboard.diffviewer.models import DiffSet, DiffSetHistory
 from reviewboard.reviews.errors import PermissionError
@@ -130,13 +129,13 @@ class ReviewRequest(BaseReviewRequestDetails):
     internal state.
     """
     PENDING_REVIEW = "P"
-    SUBMITTED = "S"
-    DISCARDED = "D"
+    SUBMITTED      = "S"
+    DISCARDED      = "D"
 
     STATUSES = (
         (PENDING_REVIEW, _('Pending Review')),
-        (SUBMITTED, _('Submitted')),
-        (DISCARDED, _('Discarded')),
+        (SUBMITTED,      _('Submitted')),
+        (DISCARDED,      _('Discarded')),
     )
 
     ISSUE_COUNTER_FIELDS = {
@@ -206,11 +205,6 @@ class ReviewRequest(BaseReviewRequestDetails):
         help_text=_("A list of file attachments that used to be but are no "
                     "longer associated with this review request."),
         related_name="inactive_review_request",
-        blank=True)
-    file_attachment_histories = models.ManyToManyField(
-        FileAttachmentHistory,
-        related_name='review_request',
-        verbose_name=_('file attachment histories'),
         blank=True)
 
     changedescs = models.ManyToManyField(
@@ -913,8 +907,8 @@ class ReviewRequest(BaseReviewRequestDetails):
                     approved = result
                 else:
                     raise ValueError('%r returned an invalid value %r from '
-                                     'is_approved'
-                                     % (hook, result))
+                                    'is_approved'
+                                    % (hook, result))
 
                 if approved:
                     failure = None
@@ -922,7 +916,7 @@ class ReviewRequest(BaseReviewRequestDetails):
                 extension = hook.extension
                 logging.error('Error when running ReviewRequestApprovalHook.'
                               'is_approved function in extension: "%s": %s',
-                              extension.id, e, exc_info=1)
+                              extension.metadata['Name'], e, exc_info=1)
 
         self._approval_failure = failure
         self._approved = approved

@@ -240,6 +240,8 @@ class PerforceClient(object):
 
 class PerforceTool(SCMTool):
     name = "Perforce"
+    uses_atomic_revisions = True
+    supports_authentication = True
     supports_ticket_auth = True
     supports_pending_changesets = True
     field_help_text = {
@@ -331,6 +333,9 @@ class PerforceTool(SCMTool):
         if len(self.client.get_files_at_revision(revision_str)) == 0:
             revision = PRE_CREATION
         return filename, revision
+
+    def get_filenames_in_revision(self, revision):
+        return self.get_changeset(revision).files
 
     @staticmethod
     def parse_change_desc(changedesc, changenum, allow_empty=False):

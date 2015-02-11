@@ -20,7 +20,6 @@ from reviewboard.webapi.errors import (BAD_HOST_KEY,
                                        SERVER_CONFIG_ERROR,
                                        UNVERIFIED_HOST_CERT,
                                        UNVERIFIED_HOST_KEY)
-from reviewboard.webapi.resources import resources
 
 
 class HostingServiceAccountResource(WebAPIResource):
@@ -29,8 +28,6 @@ class HostingServiceAccountResource(WebAPIResource):
     The list of accounts tied to hosting services can be retrieved, and new
     accounts can be linked through an HTTP POST.
     """
-    added_in = '1.6.7'
-
     name = 'hosting_service_account'
     model = HostingServiceAccount
     fields = {
@@ -49,28 +46,13 @@ class HostingServiceAccountResource(WebAPIResource):
     }
     uri_object_key = 'account_id'
 
-    allowed_methods = ('GET', 'POST')
-
-    item_child_resources = [
-        resources.remote_repository,
-    ]
+    allowed_methods = ('GET', 'POST',)
 
     @webapi_check_login_required
-    def get_queryset(self, request, local_site_name=None, is_list=False,
-                     *args, **kwargs):
+    def get_queryset(self, request, local_site_name=None, *args, **kwargs):
         local_site = self._get_local_site(local_site_name)
-
-        queryset = self.model.objects.accessible(visible_only=True,
-                                                 local_site=local_site)
-
-        if is_list:
-            if 'username' in request.GET:
-                queryset = queryset.filter(username=request.GET['username'])
-
-            if 'service' in request.GET:
-                queryset = queryset.filter(service_name=request.GET['service'])
-
-        return queryset
+        return self.model.objects.accessible(visible_only=True,
+                                             local_site=local_site)
 
     def has_access_permissions(self, request, account, *args, **kwargs):
         return account.is_accessible_by(request.user)
@@ -81,35 +63,8 @@ class HostingServiceAccountResource(WebAPIResource):
     def has_delete_permissions(self, request, account, *args, **kwargs):
         return account.is_mutable_by(request.user)
 
-    def get_links(self, items, obj=None, *args, **kwargs):
-        links = super(HostingServiceAccountResource, self).get_links(
-            items, obj=obj, *args, **kwargs)
-
-        if obj:
-            service = obj.service
-
-            if not service.supports_list_remote_repositories:
-                del links['remote_repositories']
-
-        return links
-
     @webapi_check_local_site
     @augment_method_from(WebAPIResource)
-    @webapi_request_fields(
-        optional=dict({
-            'username': {
-                'type': six.text_type,
-                'description': 'Filter accounts by username.',
-                'added_in': '2.1',  # Unsure of which release this will be
-            },
-            'service': {
-                'type': six.text_type,
-                'description': 'Filter accounts by the hosting service ID.',
-                'added_in': '2.1',  # Unsure of which release this will be
-            },
-        }, **WebAPIResource.get_list.optional_fields),
-        required=WebAPIResource.get_list.required_fields
-    )
     def get_list(self, request, *args, **kwargs):
         """Retrieves the list of accounts on the server.
 
@@ -154,7 +109,6 @@ class HostingServiceAccountResource(WebAPIResource):
                 'type': six.text_type,
                 'description': 'The hosting URL on the account, if the '
                                'hosting service is self-hosted.',
-                'added_in': '1.7.8',
             },
             'password': {
                 'type': six.text_type,
@@ -209,7 +163,7 @@ class HostingServiceAccountResource(WebAPIResource):
                     'reason': six.text_type(e),
                 }
 
-        account.save()
+        service.save()
 
         return 201, {
             self.item_result_key: account,

@@ -13,6 +13,7 @@ from djblets.siteconfig.models import SiteConfiguration
 from reviewboard import initialize
 from reviewboard.notifications.tests import EmailTestHelper
 from reviewboard.reviews.models import Review
+from reviewboard.site.models import LocalSite
 from reviewboard.testing import TestCase
 from reviewboard.webapi.tests.mimetypes import (
     screenshot_comment_item_mimetype,
@@ -247,7 +248,7 @@ class BaseWebAPITestCase(TestCase, EmailTestHelper):
         if admin:
             if local_site:
                 user = User.objects.get(username=username)
-                local_site = self.get_local_site(name=self.local_site_name)
+                local_site = LocalSite.objects.get(name=self.local_site_name)
                 local_site.admins.add(user)
             else:
                 username = 'admin'

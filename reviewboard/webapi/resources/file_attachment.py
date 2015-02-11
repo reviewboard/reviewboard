@@ -11,8 +11,6 @@ from reviewboard.webapi.resources.base_file_attachment import \
 
 class FileAttachmentResource(BaseFileAttachmentResource):
     """A resource representing a file attachment on a review request."""
-    added_in = '1.6'
-
     model_parent_key = 'review_request'
 
     item_child_resources = [

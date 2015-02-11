@@ -29,12 +29,6 @@ RB.BaseComment = RB.BaseResource.extend({
         issueStatus: null,
 
         /*
-         * Markdown-formatted text fields, if the caller fetches or posts with
-         * include-text-types=raw.
-         */
-        markdownTextFields: {},
-
-        /*
          * Raw text fields, if the caller fetches or posts with
          * include-text-types=raw.
          */
@@ -124,12 +118,6 @@ RB.BaseComment = RB.BaseResource.extend({
         if (rsp.raw_text_fields) {
             data.rawTextFields = {
                 text: rsp.raw_text_fields.text
-            };
-        }
-
-        if (rsp.markdown_text_fields) {
-            data.markdownTextFields = {
-                text: rsp.markdown_text_fields.text
             };
         }
 

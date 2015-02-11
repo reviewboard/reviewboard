@@ -1,23 +1,15 @@
 from __future__ import unicode_literals
 
 import json
-import logging
 import os
-from collections import defaultdict
 
 from django import forms
-from django.conf.urls import patterns, url
-from django.http import HttpResponse
 from django.utils import six
 from django.utils.six.moves.urllib.error import HTTPError, URLError
 from django.utils.six.moves.urllib.parse import quote
 from django.utils.translation import ugettext_lazy as _
-from django.views.decorators.http import require_POST
 
-from reviewboard.admin.server import get_server_url
 from reviewboard.hostingsvcs.forms import HostingServiceForm
-from reviewboard.hostingsvcs.hook_utils import (close_all_review_requests,
-                                                get_review_request_id)
 from reviewboard.hostingsvcs.service import HostingService
 from reviewboard.scmtools.crypto_utils import (decrypt_password,
                                                encrypt_password)
@@ -67,12 +59,6 @@ class Beanstalk(HostingService):
                     '.svn.beanstalkapp.com/%(beanstalk_repo_name)s/',
         },
     }
-
-    repository_url_patterns = patterns(
-        '',
-        url(r'^hooks/post-receive/$',
-            'reviewboard.hostingsvcs.beanstalk.process_post_receive_hook'),
-    )
 
     def check_repository(self, beanstalk_account_domain=None,
                          beanstalk_repo_name=None, *args, **kwargs):
@@ -211,72 +197,3 @@ class Beanstalk(HostingService):
                 raise Exception('; '.join(rsp['errors']))
             else:
                 raise Exception(six.text_type(e))
-
-
-@require_POST
-def process_post_receive_hook(request, *args, **kwargs):
-    """Closes review requests as submitted automatically after a push."""
-    try:
-        server_url = get_server_url(request=request)
-
-        # Check if it's a git or an SVN repository and close accordingly.
-        if 'payload' in request.POST:
-            payload = json.loads(request.POST['payload'])
-            close_git_review_requests(payload, server_url)
-        else:
-            payload = json.loads(request.POST['commit'])
-            close_svn_review_request(payload, server_url)
-
-    except KeyError as e:
-        logging.error('There is no JSON payload in the POST request.: %s', e)
-        return HttpResponse(status=415)
-
-    except ValueError as e:
-        logging.error('The payload is not in JSON format: %s', e)
-        return HttpResponse(status=415)
-
-    return HttpResponse()
-
-
-def close_git_review_requests(payload, server_url):
-    """Closes all review requests for the git repository.
-
-    A git payload may contain multiple commits. If a commit's commit
-    message does not contain a review request ID, it closes based on
-    it's commit id.
-    """
-    review_id_to_commits_map = defaultdict(list)
-    branch_name = payload.get('branch')
-
-    if not branch_name:
-        return review_id_to_commits_map
-
-    commits = payload.get('commits', [])
-
-    for commit in commits:
-        commit_hash = commit.get('id')
-        commit_message = commit.get('message')
-        review_request_id = get_review_request_id(commit_message, server_url,
-                                                  commit_hash)
-        commit_entry = '%s (%s)' % (branch_name, commit_hash[:7])
-        review_id_to_commits_map[review_request_id].append(commit_entry)
-
-    close_all_review_requests(review_id_to_commits_map)
-
-
-def close_svn_review_request(payload, server_url):
-    """Closes the review request for an SVN repository.
-
-    The SVN payload may contains one commit. If a commit's commit
-    message does not contain a review request ID, it does not close
-    any review request.
-    """
-    review_id_to_commits_map = defaultdict(list)
-    commit_message = payload.get('message')
-    branch_name = payload.get('changeset_url', 'SVN Repository')
-    revision = '%s %d' % ('Revision: ', payload.get('revision'))
-    review_request_id = get_review_request_id(commit_message, server_url,
-                                              None)
-    commit_entry = '%s (%s)' % (branch_name, revision)
-    review_id_to_commits_map[review_request_id].append(commit_entry)
-    close_all_review_requests(review_id_to_commits_map)
