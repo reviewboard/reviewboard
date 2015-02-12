@@ -430,9 +430,7 @@ class DiffSetManager(models.Manager):
 
         tool = repository.get_scmtool()
 
-        encoding, diff_text = convert_to_unicode(
-            diff_file_contents, repository.get_encoding_list())
-        parser = tool.get_parser(diff_text)
+        parser = tool.get_parser(diff_file_contents)
 
         files = list(self._process_files(
             parser,
@@ -460,8 +458,7 @@ class DiffSetManager(models.Manager):
         if parent_diff_file_contents:
             diff_filenames = set([f.origFile for f in files])
 
-            parent_parser = tool.get_parser(
-                convert_to_unicode(parent_diff_file_contents, [encoding])[1])
+            parent_parser = tool.get_parser(parent_diff_file_contents)
 
             # If the user supplied a base diff, we need to parse it and
             # later apply each of the files that are in the main diff
@@ -487,20 +484,25 @@ class DiffSetManager(models.Manager):
         if save:
             diffset.save()
 
+        encoding_list = repository.get_encoding_list()
+
         for f in files:
             if f.origFile in parent_files:
                 parent_file = parent_files[f.origFile]
-                parent_content = parent_file.data.encode(encoding)
-                source_rev = parent_file.origInfo
+                parent_content = parent_file.data
+                orig_rev = parent_file.origInfo
             else:
-                parent_content = b""
+                parent_content = b''
 
                 if parent_commit_id and f.origInfo != PRE_CREATION:
-                    source_rev = parent_commit_id
+                    orig_rev = parent_commit_id
                 else:
-                    source_rev = f.origInfo
+                    orig_rev = f.origInfo
 
-            dest_file = os.path.join(basedir, f.newFile).replace("\\", "/")
+            enc, orig_file = convert_to_unicode(f.origFile, encoding_list)
+            enc, new_file = convert_to_unicode(f.newFile, encoding_list)
+
+            dest_file = os.path.join(basedir, new_file).replace("\\", "/")
 
             if f.deleted:
                 status = FileDiff.DELETED
@@ -513,11 +515,11 @@ class DiffSetManager(models.Manager):
 
             filediff = FileDiff(
                 diffset=diffset,
-                source_file=parser.normalize_diff_filename(f.origFile),
+                source_file=parser.normalize_diff_filename(orig_file),
                 dest_file=parser.normalize_diff_filename(dest_file),
-                source_revision=smart_unicode(source_rev),
+                source_revision=smart_unicode(orig_rev),
                 dest_detail=f.newInfo,
-                diff=f.data.encode(encoding),
+                diff=f.data,
                 parent_diff=parent_content,
                 binary=f.binary,
                 status=status)
