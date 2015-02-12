@@ -760,7 +760,7 @@ class GitHub(HostingService, BugTracker):
             commit = self.client.api_get_commits(repo_api_url, revision)[0]
 
             author_name = commit['commit']['author']['name']
-            date = commit['commit']['committer']['date'],
+            date = commit['commit']['committer']['date']
             parent_revision = commit['parents'][0]['sha']
             message = commit['commit']['message']
 
