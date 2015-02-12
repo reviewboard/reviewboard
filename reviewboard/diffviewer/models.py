@@ -3,17 +3,21 @@ from __future__ import unicode_literals
 import bz2
 import logging
 
+from dateutil.tz import tzoffset
+from django.core.validators import RegexValidator
 from django.db import models
 from django.db.models import Q
 from django.utils import six, timezone
 from django.utils.encoding import python_2_unicode_compatible
+from django.utils.functional import cached_property
 from django.utils.translation import ugettext_lazy as _
-from djblets.db.fields import Base64Field, JSONField
+from djblets.db.fields import Base64Field, JSONField, RelationCounterField
 
 from reviewboard.diffviewer.errors import DiffParserError
-from reviewboard.diffviewer.managers import (RawFileDiffDataManager,
+from reviewboard.diffviewer.managers import (DiffCommitManager,
+                                             DiffSetManager,
                                              FileDiffManager,
-                                             DiffSetManager)
+                                             RawFileDiffDataManager)
 from reviewboard.scmtools.core import PRE_CREATION
 from reviewboard.scmtools.models import Repository
 
@@ -139,6 +143,11 @@ class FileDiff(models.Model):
     diffset = models.ForeignKey('DiffSet',
                                 related_name='files',
                                 verbose_name=_("diff set"))
+
+    diff_commit = models.ForeignKey('DiffCommit',
+                                    related_name='files',
+                                    verbose_name=_('diff commit'),
+                                    null=True)
 
     source_file = models.CharField(_("source file"), max_length=1024)
     dest_file = models.CharField(_("destination file"), max_length=1024)
@@ -510,6 +519,8 @@ class DiffSet(models.Model):
 
     objects = DiffSetManager()
 
+    diff_commit_count = RelationCounterField('diff_commits')
+
     def get_total_line_counts(self):
         """Returns the total line counts from all files in this diffset."""
         counts = {}
@@ -575,3 +586,191 @@ class DiffSetHistory(models.Model):
 
     class Meta:
         verbose_name_plural = "Diff set histories"
+
+
+@python_2_unicode_compatible
+class DiffCommit(models.Model):
+    """A representation of a commit from a version control system.
+
+    A diff revision on a review request that represents a commit history will
+    have one or more DiffCommits. Each one belongs to a Diffset and has zero or
+    more associated FileDiffs (each of which will still also belong to the
+    parent DiffSet).
+
+    The information stored in a DiffCommit is intended to fully represent the
+    state of one commit in that history. A list of DiffCommits can be used to
+    re-create the original history of a series of commits posted to a review
+    request.
+    """
+    #: A commit is either a merge or a change. These constants are used for
+    #: storage in the database.
+    COMMIT_CHANGE_TYPE = 'C'
+    COMMIT_MERGE_TYPE = 'M'
+
+    COMMIT_TYPES = (
+        (COMMIT_CHANGE_TYPE, _('Change')),
+        (COMMIT_MERGE_TYPE, _('Merge')),
+    )
+
+    #: The maximum length for a commit's ID.
+    COMMIT_ID_LENGTH = 40
+
+    #: Maximum length of a name.
+    NAME_MAX_LENGTH = 256
+
+    #: Maximum length of an email
+    EMAIL_MAX_LENGTH = 256
+
+    #: The regular expression for a commit's ID.
+    COMMIT_ID_RE = r'[A-Za-z0-9]{1,40}'
+
+    #: ISO 8601 date and time format with timezone
+    DATE_FORMAT = '%Y-%m-%d %H:%M:%S%z'
+
+    #: A validator for commit ID fields that can also be used in forms.
+    validate_commit_id = RegexValidator(COMMIT_ID_RE,
+                                        _('Commit IDs must be alphanumeric.'))
+
+    objects = DiffCommitManager()
+
+    #: The name of the .diff file that is uploaded.
+    name = models.CharField(_('name'), max_length=256)
+
+    #: A commit belongs to a diffset, which may have many commits.
+    diffset = models.ForeignKey(DiffSet, related_name='diff_commits')
+
+    #: Not all SCM tools (e.g., quilt, monotone) have notions of an author
+    #: and a committer.
+    author_name = models.CharField(max_length=NAME_MAX_LENGTH)
+    author_email = models.CharField(max_length=EMAIL_MAX_LENGTH)
+    author_date_utc = models.DateTimeField()
+    author_date_offset = models.IntegerField()
+
+    committer_name = models.CharField(max_length=NAME_MAX_LENGTH, blank=True)
+    committer_email = models.CharField(max_length=EMAIL_MAX_LENGTH, blank=True)
+    committer_date_utc = models.DateTimeField(null=True)
+    committer_date_offset = models.IntegerField(null=True)
+
+    #: The commit's description.
+    description = models.TextField()
+
+    #: The commit's ID/revision.
+    commit_id = models.CharField(max_length=COMMIT_ID_LENGTH,
+                                 validators=[validate_commit_id])
+
+    #: The parent commit's ID/revision.
+    parent_id = models.CharField(max_length=COMMIT_ID_LENGTH,
+                                 validators=[validate_commit_id])
+
+    #: The type of the commit, either 'C' for change or 'M' for merge.
+    commit_type = models.CharField(max_length=1, choices=COMMIT_TYPES)
+
+    #: The extra data for this commit. This may include information for
+    #: SCM tools to re-create commits.
+    extra_data = JSONField(null=True)
+
+    @property
+    def author_date(self):
+        """Get the author date with its original timezone information."""
+        tz = tzoffset(None, self.author_date_offset)
+        return self.author_date_utc.astimezone(tz)
+
+    @author_date.setter
+    def author_date(self, value):
+        """Set the author date with timezone information."""
+        self.author_date_utc = value  # Django implicitly converts it to UTC
+        self.author_date_offset = self._normalize_offset(value.utcoffset())
+
+    @property
+    def committer_date(self):
+        """Get the committer date with its original timezone information."""
+        if self.committer_date_offset:
+            tz = tzoffset(None, self.committer_date_offset)
+            return self.committer_date_utc.astimezone(tz)
+
+        return None
+
+    @committer_date.setter
+    def committer_date(self, value):
+        """Set the committer date with timezone information."""
+        self.committer_date_utc = value  # Django implicitly converts it to UTC
+
+        if value is None:
+            self.committer_date_offset = None
+        else:
+            self.committer_date_offset = self._normalize_offset(
+                value.utcoffset())
+
+    @cached_property
+    def summary(self):
+        """Return the summary of a DiffCommit.
+
+        The summary is the first 80 characters of the first line of the
+        DiffCommit's description field. If the first line is more than 80
+        characters, it is truncated.
+        """
+        text = self.description
+
+        if text:
+            text = text.split('\n', 1)[0].strip()
+
+            if len(text) > 80:
+                text = text[:77] + '...'
+
+        return text
+
+    @cached_property
+    def author(self):
+        """Returns a nicely formatted author name and/or email string."""
+        return self._pretty_print_name_and_email(self.author_name,
+                                                 self.author_email)
+
+    @cached_property
+    def committer(self):
+        """Returns a nicely formatted committer name and/or email string."""
+        return self._pretty_print_name_and_email(self.committer_name,
+                                                 self.commiter_email)
+
+    def _pretty_print_name_and_email(self, name, email):
+        """Returns a formatted string of a name and/or email address."""
+        if name and email:
+            return "%s <%s>" % (name, email)
+
+        return name or email
+
+    def __str__(self):
+        """Represent this commit by its commit_id and summary."""
+        short_description = self.summary
+
+        if short_description:
+            return '%s: %s' % (self.commit_id, short_description)
+        else:
+            return self.commit_id
+
+    def _normalize_offset(self, value):
+        """Normalize a timedelta to be a number of seconds."""
+        return value.seconds + value.days * 24 * 3600
+
+    class Meta:
+        unique_together = ('diffset', 'commit_id')
+
+
+@python_2_unicode_compatible
+class MergeParent(models.Model):
+    """A MergeParent represents a parent revision of a merge commit."""
+    #: The commit ID for this parent.
+    commit_id = models.CharField(max_length=DiffCommit.COMMIT_ID_LENGTH,
+                                 validators=[DiffCommit.validate_commit_id])
+
+    #: The child commit.
+    child_commit = models.ForeignKey('DiffCommit',
+                                     related_name='merge_parent_ids')
+
+    #: The parent ordering, starting at 1.
+    merge_ordinal = models.PositiveSmallIntegerField()
+
+    def __str__(self):
+        return self.commit_id
+
+    class Meta:
+        unique_together = ('commit_id', 'child_commit', 'merge_ordinal')

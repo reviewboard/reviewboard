@@ -1,8 +1,9 @@
 from __future__ import unicode_literals
 
 import bz2
-import os
 
+import dateutil.parser
+import nose
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.http import HttpResponse
 from django.utils.six.moves import zip_longest
@@ -11,17 +12,15 @@ from djblets.db.fields import Base64DecodedValue
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.testing.decorators import add_fixtures
 from kgb import SpyAgency
-import nose
 
 import reviewboard.diffviewer.diffutils as diffutils
 import reviewboard.diffviewer.parser as diffparser
 from reviewboard.admin.import_utils import has_module
 from reviewboard.diffviewer.chunk_generator import DiffChunkGenerator
 from reviewboard.diffviewer.errors import UserVisibleError
-from reviewboard.diffviewer.forms import UploadDiffForm
-from reviewboard.diffviewer.models import (DiffSet, FileDiff,
-                                           LegacyFileDiffData,
-                                           RawFileDiffData)
+from reviewboard.diffviewer.forms import UploadDiffCommitForm, UploadDiffForm
+from reviewboard.diffviewer.models import (DiffCommit, DiffSet, FileDiff,
+                                           LegacyFileDiffData, RawFileDiffData)
 from reviewboard.diffviewer.myersdiff import MyersDiffer
 from reviewboard.diffviewer.opcode_generator import get_diff_opcode_generator
 from reviewboard.diffviewer.renderers import DiffRenderer
@@ -1453,12 +1452,87 @@ class DbTests(TestCase):
         self.assertEquals(filediff1.diff_hash, filediff2.diff_hash)
 
 
+class DiffCommitManagerTests(SpyAgency, TestCase):
+    """Unit tests for the DiffCommitManager."""
+    fixtures = ['test_scmtools']
+
+    def test_creating_with_diff_data(self):
+        """Testing creating a DiffCommit with diff file data"""
+        diff = (
+            b'diff --git a/README b/README\n'
+            b'index d6613f5..5b50866 100644\n'
+            b'--- README\n'
+            b'+++ README\n'
+            b'@ -1,1 +1,1 @@\n'
+            b'-blah..\n'
+            b'+blah blah\n'
+        )
+
+        repository = self.create_repository(tool_name='Test')
+        self.spy_on(repository.get_file_exists,
+                    call_fake=lambda *args, **kwargs: True)
+
+        diffset = DiffSet.objects.create_empty(
+            repository=repository,
+            request=None,
+            basedir='',
+            revision=1,
+            save=True)
+
+        raw_date = '2000-01-01 00:00:00-0600'
+        parsed_date = dateutil.parser.parse(raw_date)
+
+        merge_parents = ['foo', 'bar', 'baz']
+
+        commit = DiffCommit.objects.create_from_data(
+            repository=repository,
+            diff_file_name='diff',
+            diff_file_contents=diff,
+            parent_diff_file_name=None,
+            parent_diff_file_contents=None,
+            request=None,
+            commit_id='r1',
+            parent_id='r0',
+            merge_parent_ids=merge_parents,
+            author_name='Author',
+            author_email='author@example.com',
+            author_date=parsed_date,
+            committer_name='Committer',
+            committer_email='committer@example.com',
+            committer_date=parsed_date,
+            description='Description',
+            commit_type='change',
+            diffset=diffset)
+
+        self.assertEqual(commit.files.count(), 1)
+        self.assertEqual(diffset.files.count(), commit.files.count())
+        self.assertEqual(diffset.diff_commit_count, 1)
+
+        self.assertListEqual(map(lambda mp: mp.commit_id,
+                                 list(commit.merge_parent_ids.all())),
+                             merge_parents)
+
+        # We have to compare regular equality and equality after applying
+        # ``strftime`` because two datetimes with different timezone info
+        # may be equal
+        self.assertEqual(parsed_date, commit.author_date)
+        self.assertEqual(parsed_date, commit.committer_date)
+
+        self.assertEqual(
+            raw_date,
+            commit.author_date.strftime(DiffCommit.DATE_FORMAT))
+
+        self.assertEqual(
+            raw_date,
+            commit.committer_date.strftime(DiffCommit.DATE_FORMAT))
+
+
 class DiffSetManagerTests(SpyAgency, TestCase):
     """Unit tests for DiffSetManager."""
     fixtures = ['test_scmtools']
 
     def test_creating_with_diff_data(self):
-        """Test creating a DiffSet from diff file data"""
+        """Testing creating a DiffSet from diff file data"""
         diff = (
             b'diff --git a/README b/README\n'
             b'index d6613f5..5b50866 100644\n'
@@ -1479,13 +1553,25 @@ class DiffSetManagerTests(SpyAgency, TestCase):
 
         self.assertEqual(diffset.files.count(), 1)
 
+    def test_creating_empty_diffset(self):
+        """Testing creating an empty DiffSet"""
+        repository = self.create_repository(tool_name='Test')
+
+        diffset = DiffSet.objects.create_empty(
+            repository=repository,
+            request=None,
+            basedir='',
+            revision=1)
+
+        self.assertEqual(diffset.files.count(), 0)
+
 
 class UploadDiffFormTests(SpyAgency, TestCase):
     """Unit tests for UploadDiffForm."""
     fixtures = ['test_scmtools']
 
     def test_creating_diffsets(self):
-        """Test creating a DiffSet from form data"""
+        """Testing creating a DiffSet from form data"""
         diff = (
             b'diff --git a/README b/README\n'
             b'index d6613f5..5b50866 100644\n'
@@ -1642,6 +1728,83 @@ class UploadDiffFormTests(SpyAgency, TestCase):
 
         self.assertEqual(filediff.source_revision,
                          '661e5dd3c4938ecbe8f77e2fdfa905d70485f94c')
+
+
+class UploadDiffCommitFormTests(SpyAgency, TestCase):
+    """Unit tests for UploadDiffCommitForm."""
+    fixtures = ['test_scmtools', 'test_users']
+
+    def test_creating_commit(self):
+        """Testing creating a DiffCommit with form data"""
+        diff = (
+            b'diff --git a/README b/README\n'
+            b'index d6613f5..5b50866 100644\n'
+            b'--- README\n'
+            b'+++ README\n'
+            b'@ -1,1 +1,1 @@\n'
+            b'-blah..\n'
+            b'+blah blah\n'
+        )
+
+        diff_file = SimpleUploadedFile('diff', diff,
+                                       content_type='text/x-patch')
+
+        repository = self.create_repository(tool_name='Test')
+        review_request = self.create_review_request(repository=repository)
+
+        self.spy_on(repository.get_file_exists,
+                    call_fake=lambda *args, **kwargs: True)
+
+        raw_date = '2000-01-01 00:00:00-0600'
+        parsed_date = dateutil.parser.parse(raw_date)
+        merge_parents = ['foo', 'bar', 'baz']
+
+        form = UploadDiffCommitForm(
+            review_request=review_request,
+            data={
+                'author_name': 'Author name',
+                'author_email': 'author@example.com',
+                'author_date': raw_date,
+
+                'committer_name': 'Committer name',
+                'committer_email': 'committer@example.com',
+                'committer_date': raw_date,
+
+                'description': 'Description',
+                'commit_id': 'r1',
+                'parent_id': 'r0',
+                'commit_type': 'change',
+
+                'merge_parent_ids': ','.join(merge_parents)
+            },
+            files={
+                'path': diff_file,
+            }
+        )
+
+        self.assertTrue(form.is_valid())
+
+        diffset = self.create_diffset(repository=repository)
+        commit = form.create(diffset, diff_file, None)
+
+        self.assertEqual(commit.files.count(), 1)
+        self.assertEqual(diffset.diff_commit_count, 1)
+
+        # We have to compare regular equality and equality after applying
+        # ``strftime`` because two datetimes with different timezone info
+        # may be equal
+        self.assertEqual(commit.author_date, parsed_date)
+        self.assertEqual(commit.committer_date, parsed_date)
+
+        self.assertEqual(raw_date,
+                         commit.author_date.strftime(DiffCommit.DATE_FORMAT))
+        self.assertEqual(
+            raw_date,
+            commit.committer_date.strftime(DiffCommit.DATE_FORMAT))
+
+        self.assertListEqual(
+            list(commit.merge_parent_ids.values_list('commit_id', flat=True)),
+            merge_parents)
 
 
 class ProcessorsTests(TestCase):

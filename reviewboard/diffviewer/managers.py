@@ -364,85 +364,95 @@ class RawFileDiffDataManager(models.Manager):
         return hasher.hexdigest()
 
 
-class DiffSetManager(models.Manager):
-    """A custom manager for DiffSet objects.
+class DiffProcessorMixin(object):
+    """A mixin for handling the processing of diff files.
 
-    This includes utilities for creating diffsets based on the data from form
-    uploads, webapi requests, and upstream repositories.
+    This is intended to be subclassed by the DiffSetManager and CommitManager
+    classes to process and create FileDiffs from diff files.
+
+    This includes utilities for creating DiffSets and DiffCommits based on the
+    data from form uploads, webapi requests, and upstream repositories.
     """
-
     # Extensions used for intelligent sorting of header files
     # before implementation files.
-    HEADER_EXTENSIONS = ["h", "H", "hh", "hpp", "hxx", "h++"]
-    IMPL_EXTENSIONS = ["c", "C", "cc", "cpp", "cxx", "c++", "m", "mm", "M"]
+    HEADER_EXTENSIONS = ['h', 'H', 'hh', 'hpp', 'hxx', 'h++']
+    IMPL_EXTENSIONS = ['c', 'C', 'cc', 'cpp', 'cxx', 'c++', 'm', 'mm', 'M']
 
-    def create_from_upload(self, repository, diff_file, parent_diff_file,
-                           diffset_history, basedir, request,
-                           base_commit_id=None, save=True):
-        """Create a DiffSet from a form upload.
+    def _process_files(self, parser, basedir, repository, base_commit_id,
+                       request, check_existence=False, limit_to=None):
+        tool = repository.get_scmtool()
 
-        The diff_file and parent_diff_file parameters are django forms
-        UploadedFile objects.
+        for f in parser.parse():
+            f2, revision = tool.parse_diff_revision(f.origFile, f.origInfo,
+                                                    moved=f.moved,
+                                                    copied=f.copied)
+
+            if f2.startswith('/'):
+                filename = f2
+            else:
+                filename = os.path.join(basedir, f2).replace('\\', '/')
+
+            if limit_to is not None and filename not in limit_to:
+                # This file isn't actually needed for the diff, so save
+                # ourselves a remote file existence check and some storage.
+                continue
+
+            # FIXME: this would be a good place to find permissions errors
+            if (revision != PRE_CREATION and
+                revision != UNKNOWN and
+                not f.binary and
+                not f.deleted and
+                not f.moved and
+                not f.copied and
+                (check_existence and
+                 not repository.get_file_exists(filename, revision,
+                                                base_commit_id=base_commit_id,
+                                                request=request))):
+                raise FileNotFoundError(filename, revision, base_commit_id)
+
+            f.origFile = filename
+            f.origInfo = revision
+
+            yield f
+
+    def _compare_files(self, filename1, filename2):
+        """Compare two files, giving a precedence to header files.
+
+        This allows the resulting list of files to be more intelligently used.
         """
-        siteconfig = SiteConfiguration.objects.get_current()
-        max_diff_size = siteconfig.get('diffviewer_max_diff_size')
+        if filename1.find('.') != -1 and filename2.find('.') != -1:
+            basename1, ext1 = filename1.rsplit('.', 1)
+            basename2, ext2 = filename2.rsplit('.', 1)
 
-        if max_diff_size > 0:
-            if diff_file.size > max_diff_size:
-                raise DiffTooBigError(
-                    _('The supplied diff file is too large'),
-                    max_diff_size=max_diff_size)
+            if basename1 == basename2:
+                if (ext1 in self.HEADER_EXTENSIONS and
+                    ext2 in self.IMPL_EXTENSIONS):
+                    return -1
+                elif (ext1 in self.IMPL_EXTENSIONS and
+                      ext2 in self.HEADER_EXTENSIONS):
+                    return 1
 
-            if parent_diff_file and parent_diff_file.size > max_diff_size:
-                raise DiffTooBigError(
-                    _('The supplied parent diff file is too large'),
-                    max_diff_size=max_diff_size)
+            return cmp(filename1, filename2)
 
-        if parent_diff_file:
-            parent_diff_file_name = parent_diff_file.name
-            parent_diff_file_contents = parent_diff_file.read()
-        else:
-            parent_diff_file_name = None
-            parent_diff_file_contents = None
-
-        return self.create_from_data(repository,
-                                     diff_file.name,
-                                     diff_file.read(),
-                                     parent_diff_file_name,
-                                     parent_diff_file_contents,
-                                     diffset_history,
-                                     basedir,
-                                     request,
-                                     base_commit_id=base_commit_id,
-                                     save=save)
-
-    def create_from_data(self, repository, diff_file_name, diff_file_contents,
-                         parent_diff_file_name, parent_diff_file_contents,
-                         diffset_history, basedir, request,
-                         base_commit_id=None, save=True):
-        """Create a DiffSet from raw diff data.
-
-        The diff_file_contents and parent_diff_file_contents parameters are
-        strings with the actual diff contents.
-        """
-        from reviewboard.diffviewer.diffutils import convert_to_unicode
-        from reviewboard.diffviewer.models import FileDiff
-
+    def _prepare_file_list(self, diff_file_contents, parent_diff_file_contents,
+                           repository, request, basedir, base_commit_id):
+        """Prepare the file list for FileDiff creation."""
         tool = repository.get_scmtool()
 
         parser = tool.get_parser(diff_file_contents)
 
+        # Parse the diff.
         files = list(self._process_files(
-            parser,
-            basedir,
-            repository,
-            base_commit_id,
-            request,
-            check_existence=(not parent_diff_file_contents)))
+             parser,
+             basedir,
+             repository,
+             base_commit_id,
+             request,
+             check_existence=(not parent_diff_file_contents)))
 
-        # Parse the diff
+        # Ensure a non-empty diff.
         if len(files) == 0:
-            raise EmptyDiffError(_("The diff file is empty"))
+            raise EmptyDiffError(_('The diff file is empty'))
 
         # Sort the files so that header files come before implementation.
         files.sort(cmp=self._compare_files, key=lambda f: f.origFile)
@@ -473,18 +483,14 @@ class DiffSetManager(models.Manager):
             # IDs.
             parent_commit_id = parent_parser.get_orig_commit_id()
 
-        diffset = super(DiffSetManager, self).create(
-            name=diff_file_name, revision=0,
-            basedir=basedir,
-            history=diffset_history,
-            repository=repository,
-            diffcompat=DiffCompatVersion.DEFAULT,
-            base_commit_id=base_commit_id)
+        return files, parser, parent_commit_id, parent_files
 
-        if save:
-            diffset.save()
-
-        encoding_list = repository.get_encoding_list()
+    def _create_filediffs(self, files, parent_commit_id, parent_files,
+                          encoding_list, diffset, parser, basedir,
+                          diff_commit=None, save=True):
+        """Create FileDiffs given a list of files."""
+        from reviewboard.diffviewer.diffutils import convert_to_unicode
+        from reviewboard.diffviewer.models import FileDiff
 
         for f in files:
             if f.origFile in parent_files:
@@ -502,7 +508,7 @@ class DiffSetManager(models.Manager):
             enc, orig_file = convert_to_unicode(f.origFile, encoding_list)
             enc, new_file = convert_to_unicode(f.newFile, encoding_list)
 
-            dest_file = os.path.join(basedir, new_file).replace("\\", "/")
+            dest_file = os.path.join(basedir, new_file).replace('\\', '/')
 
             if f.deleted:
                 status = FileDiff.DELETED
@@ -515,6 +521,7 @@ class DiffSetManager(models.Manager):
 
             filediff = FileDiff(
                 diffset=diffset,
+                diff_commit=diff_commit,
                 source_file=parser.normalize_diff_filename(orig_file),
                 dest_file=parser.normalize_diff_filename(dest_file),
                 source_revision=smart_unicode(orig_rev),
@@ -529,61 +536,183 @@ class DiffSetManager(models.Manager):
             if save:
                 filediff.save()
 
+    def create_from_upload(self, repository, diff_file, parent_diff_file,
+                           request, base_commit_id=None, save=True, **kwargs):
+        """Create a DiffSet or DiffCommit from a form upload.
+
+        The diff_file and parent_diff_file parameters are django.forms
+        UploadedFile objects.
+
+        When calling this method on an instance of DiffSetManger, the kwargs
+        parameter should have the following keys:
+
+            * ``basedir``
+            * ``diffset_history``
+
+        When calling this method on an instance of CommitManager, the kwargs
+        parameter should have the following keys:
+
+            * ``diffset``
+            * ``commit_id``
+            * ``parent_id``
+            * ``merge_parent_ids``
+            * ``author_name``
+            * ``author_email``
+            * ``author_date``
+            * ``committer_name``
+            * ``committer_email``
+            * ``committer_date``
+            * ``description
+            * ``commit_type
+        """
+        siteconfig = SiteConfiguration.objects.get_current()
+        max_diff_size = siteconfig.get('diffviewer_max_diff_size')
+
+        if max_diff_size > 0:
+            if diff_file.size > max_diff_size:
+                raise DiffTooBigError(
+                    _('The supplied diff file is too large'),
+                    max_diff_size=max_diff_size)
+
+            if parent_diff_file and parent_diff_file.size > max_diff_size:
+                raise DiffTooBigError(
+                    _('The supplied parent diff file is too large'),
+                    max_diff_size=max_diff_size)
+
+        if parent_diff_file:
+            parent_diff_file_name = parent_diff_file.name
+            parent_diff_file_contents = parent_diff_file.read()
+        else:
+            parent_diff_file_name = None
+            parent_diff_file_contents = None
+
+        return self.create_from_data(repository,
+                                     diff_file.name,
+                                     diff_file.read(),
+                                     parent_diff_file_name,
+                                     parent_diff_file_contents,
+                                     request,
+                                     base_commit_id=base_commit_id,
+                                     save=save,
+                                     **kwargs)
+
+
+class DiffCommitManager(DiffProcessorMixin, models.Manager):
+    """A custom manager for DiffCommit objects."""
+    def create_from_data(self, repository, diff_file_name, diff_file_contents,
+                         parent_diff_file_name, parent_diff_file_contents,
+                         request, diffset, commit_id, parent_id,
+                         merge_parent_ids, author_name, author_email,
+                         author_date, committer_name, committer_email,
+                         committer_date, description, commit_type,
+                         base_commit_id=None, save=True):
+        """Create a DiffCommit form raw diff data
+
+        The diff_file_contents and parent_diff_file_contents parameters are
+        strings with the actual diff contents.
+
+        The :param:`save` parameter determines if the created model instances
+        will be saved. That is, setting :param:`save` to ``False`` will result
+        in the :class:``DiffCommit``, :class:`FileDiff`, and
+        :class:`MergeParent` instances not being written to the database.
+        """
+        from reviewboard.diffviewer.models import MergeParent
+
+        files, parser, parent_commit_id, parent_files = \
+            self._prepare_file_list(diff_file_contents,
+                                    parent_diff_file_contents,
+                                    repository,
+                                    request,
+                                    diffset.basedir,
+                                    base_commit_id)
+
+        diff_commit = super(DiffCommitManager, self).create(
+            name=diff_file_name,
+            diffset=diffset,
+            commit_id=commit_id,
+            parent_id=parent_id,
+            author_name=author_name,
+            author_email=author_email,
+            author_date=author_date,
+            committer_name=committer_name,
+            committer_email=committer_email,
+            committer_date=committer_date,
+            description=description,
+            commit_type=commit_type)
+
+        if save:
+            diff_commit.save()
+
+        if merge_parent_ids:
+            merge_parents = []
+            for i, id in enumerate(merge_parent_ids):
+                merge_parents.append(MergeParent(commit_id=id,
+                                                 child_commit=diff_commit,
+                                                 merge_ordinal=i))
+
+            if save:
+                MergeParent.objects.bulk_create(merge_parents)
+
+        self._create_filediffs(files, parent_commit_id, parent_files,
+                               repository.get_encoding_list(), diffset, parser,
+                               diffset.basedir, diff_commit=diff_commit,
+                               save=save)
+
+        return diff_commit
+
+
+class DiffSetManager(DiffProcessorMixin, models.Manager):
+    """A custom manager for DiffSet objects. """
+    def create_from_data(self, repository, diff_file_name, diff_file_contents,
+                         parent_diff_file_name, parent_diff_file_contents,
+                         request, basedir, diffset_history,
+                         base_commit_id=None, save=True):
+        """Create a DiffSet from raw diff data.
+
+        The diff_file_contents and parent_diff_file_contents parameters are
+        strings with the actual diff contents.
+        """
+        files, parser, parent_commit_id, parent_files = \
+            self._prepare_file_list(diff_file_contents,
+                                    parent_diff_file_contents,
+                                    repository,
+                                    request,
+                                    basedir,
+                                    base_commit_id)
+
+        diffset = super(DiffSetManager, self).create(
+            name=diff_file_name,
+            revision=0,
+            basedir=basedir,
+            history=diffset_history,
+            repository=repository,
+            diffcompat=DiffCompatVersion.DEFAULT,
+            base_commit_id=base_commit_id)
+
+        if save:
+            diffset.save()
+
+        self._create_filediffs(files, parent_commit_id, parent_files,
+                               repository.get_encoding_list(), diffset, parser,
+                               basedir, save=save)
+
         return diffset
 
-    def _process_files(self, parser, basedir, repository, base_commit_id,
-                       request, check_existence=False, limit_to=None):
-        tool = repository.get_scmtool()
+    def create_empty(self, repository, request, basedir, save=True, **kwargs):
+        """Create a DiffSet with no attached FileDiffs.
 
-        for f in parser.parse():
-            f2, revision = tool.parse_diff_revision(f.origFile, f.origInfo,
-                                                    moved=f.moved,
-                                                    copied=f.copied)
-
-            if f2.startswith("/"):
-                filename = f2
-            else:
-                filename = os.path.join(basedir, f2).replace("\\", "/")
-
-            if limit_to is not None and filename not in limit_to:
-                # This file isn't actually needed for the diff, so save
-                # ourselves a remote file existence check and some storage.
-                continue
-
-            # FIXME: this would be a good place to find permissions errors
-            if (revision != PRE_CREATION and
-                revision != UNKNOWN and
-                not f.binary and
-                not f.deleted and
-                not f.moved and
-                not f.copied and
-                (check_existence and
-                 not repository.get_file_exists(filename, revision,
-                                                base_commit_id=base_commit_id,
-                                                request=request))):
-                raise FileNotFoundError(filename, revision, base_commit_id)
-
-            f.origFile = filename
-            f.origInfo = revision
-
-            yield f
-
-    def _compare_files(self, filename1, filename2):
+        Empty DiffSets are required for creating review requests with commit
+        history. Commits and FileDiffs should be attached to the DiffSet via
+        the CommitManager.
         """
-        Compares two files, giving precedence to header files over source
-        files. This allows the resulting list of files to be more
-        intelligently sorted.
-        """
-        if filename1.find('.') != -1 and filename2.find('.') != -1:
-            basename1, ext1 = filename1.rsplit('.', 1)
-            basename2, ext2 = filename2.rsplit('.', 1)
+        diffset = super(DiffSetManager, self).create(
+            name='diff',
+            repository=repository,
+            diffcompat=DiffCompatVersion.DEFAULT,
+            basedir=basedir,
+            **kwargs)
 
-            if basename1 == basename2:
-                if (ext1 in self.HEADER_EXTENSIONS and
-                        ext2 in self.IMPL_EXTENSIONS):
-                    return -1
-                elif (ext1 in self.IMPL_EXTENSIONS and
-                      ext2 in self.HEADER_EXTENSIONS):
-                    return 1
+        if save:
+            diffset.save()
 
-        return cmp(filename1, filename2)
+        return diffset
