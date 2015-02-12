@@ -602,7 +602,7 @@ class GitHub(HostingService):
                 raise SCMError(six.text_type(e))
 
             author_name = commit['commit']['author']['name']
-            date = commit['commit']['committer']['date'],
+            date = commit['commit']['committer']['date']
             parent_revision = commit['parents'][0]['sha']
             message = commit['commit']['message']
 
