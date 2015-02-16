@@ -1,4 +1,4 @@
-{% autoescape off %}{% load djblets_email djblets_utils markdown_email rb_extensions %}
+{% autoescape off %}{% load djblets_email djblets_utils markdown_email rb_extensions reviewtags %}
 -----------------------------------------------------------
 This is an automatically generated e-mail. To reply, visit:
 {{domain_method}}://{{domain}}{{review.get_absolute_url}}
@@ -30,15 +30,15 @@ Screenshot: {{ comment.screenshot.caption }}
 {{comment.text|markdown_email_text:comment.rich_text}}
 {% endcondense %}{% endfilter %}
 
-{% endfor %}{% for comment in review.ordered_comments %}
+{% endfor %}{% for entry in comment_entries %}
 
-{{ comment.filediff.source_file_display }}
-<{{domain_method}}://{{domain}}{{comment.get_review_url}}>
+{{ entry.comment.filediff.source_file_display }} {% patched_file_line_numbers %}
+<{{domain_method}}://{{domain}}{{entry.comment.get_review_url}}>
 
 {% filter indent %}{% condense 2 %}
-{%  comment_detail_display_hook comment "text-email" %}
+{%  comment_detail_display_hook entry.comment "text-email" %}
 
-{{comment.text|markdown_email_text:comment.rich_text}}
+{{entry.comment.text|markdown_email_text:entry.comment.rich_text}}
 {% endcondense %}{% endfilter %}
 
 {% endfor %}{% if review.body_bottom %}
