@@ -185,17 +185,19 @@ def build_diff_comment_fragments(
             last_line = min(comment.last_line + lines_of_context[1], max_line)
             num_lines = last_line - first_line + 1
 
+            chunks = list(get_file_chunks_in_range(context,
+                                                   comment.filediff,
+                                                   comment.interfilediff,
+                                                   first_line,
+                                                   num_lines))
+
             content = render_to_string(comment_template_name, {
                 'comment': comment,
                 'header': get_last_header_before_line(context,
                                                       comment.filediff,
                                                       comment.interfilediff,
                                                       first_line),
-                'chunks': list(get_file_chunks_in_range(context,
-                                                        comment.filediff,
-                                                        comment.interfilediff,
-                                                        first_line,
-                                                        num_lines)),
+                'chunks': chunks,
                 'domain': Site.objects.get_current().domain,
                 'domain_method': siteconfig.get('site_domain_method'),
                 'lines_of_context': lines_of_context,
@@ -227,6 +229,7 @@ def build_diff_comment_fragments(
         comment_entries.append({
             'comment': comment,
             'html': content,
+            'chunks': chunks,
         })
 
     return had_error, comment_entries

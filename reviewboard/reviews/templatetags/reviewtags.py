@@ -604,3 +604,31 @@ def rich_text_classname(context, rich_text):
         return 'rich-text'
 
     return ''
+
+
+@register.tag
+@basictag(takes_context=True)
+def patched_file_line_numbers(context):
+    """Renders the line numbers of the patched file in a review comment entry.
+
+    Prints nothing if the only chunk is a 'delete' type.
+    """
+    chunks = context['entry']['chunks']
+    patched_start_line = context['entry']['comment'].last_line
+    patched_end_line = 1
+    rendering_text = False
+
+    for chunk in chunks:
+        if chunk['change'] != 'delete':
+            rendering_text = True
+            first_chunk_line = chunk['lines'][0]
+            last_chunk_line = chunk['lines'][-1]
+            patched_start_line = min(patched_start_line, first_chunk_line[4])
+            patched_end_line = max(patched_end_line, last_chunk_line[4])
+
+    if not rendering_text:
+        return ''
+    elif patched_start_line == patched_end_line:
+        return _('(line %d)') % patched_start_line
+    else:
+        return _('(lines %d - %d)') % (patched_start_line, patched_end_line)
