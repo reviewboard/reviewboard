@@ -461,6 +461,13 @@ def review_detail(request,
     for diffset in diffsets:
         diffsets_by_id[diffset.pk] = diffset
 
+    if draft and draft.diffset:
+        latest_diff_revision = draft.diffset.revision
+    elif len(diffsets) > 0:
+        latest_diff_revision = diffsets[-1].revision
+    else:
+        latest_diff_revision = None
+
     # Find out if we can bail early. Generate an ETag for this.
     last_activity_time, updated_object = \
         review_request.get_last_activity(diffsets, public_reviews)
@@ -752,6 +759,8 @@ def review_detail(request,
         'review_request_details': review_request_details,
         'entries': entries,
         'last_activity_time': last_activity_time,
+        'latest_revision': latest_diff_revision,
+        'review_request_id': review_request_id,
         'review': pending_review,
         'request': request,
         'close_description': close_description,
