@@ -27,6 +27,11 @@
   padding: 2px;
   width: 100%;
 
+  // This fixes an annoying 1px bright line between the bottom of the
+  // side-by-side diff view and the bottom border of the roundrect it's
+  // contained within.
+  margin-bottom: -1px;
+
   &.diff-error {
     td {
       background: #fff6a6;
