@@ -618,8 +618,10 @@ class ActiveDirectoryBackend(AuthBackend):
         for name, data in search_results:
             if name is None:
                 continue
+
             member_of = data.get('memberOf', [])
-            new_groups = [x.split(',')[0].split('=')[1] for x in member_of]
+            new_groups = [x.split(b',')[0].split(b'=')[1] for x in member_of]
+
             old_seen = seen.copy()
             seen.update(new_groups)
 
@@ -703,7 +705,10 @@ class ActiveDirectoryBackend(AuthBackend):
             userdomain = "%s.%s" % (user_subdomain, userdomain)
 
         connections = self.get_ldap_connections(userdomain)
+
         required_group = settings.AD_GROUP_NAME
+        if isinstance(required_group, six.text_type):
+            required_group = required_group.encode('utf-8')
 
         if isinstance(username, six.text_type):
             username_bytes = username.encode('utf-8')

@@ -290,10 +290,10 @@ def new_review_request(request,
                 'requires_change_number': scmtool.supports_pending_changesets,
                 'requires_basedir': not scmtool.get_diffs_use_absolute_paths(),
             })
-        except Exception as e:
-            logging.error('Error loading SCMTool for repository '
-                          '%s (ID %d): %s' % (repo.name, repo.id, e),
-                          exc_info=1)
+        except Exception:
+            logging.exception('Error loading SCMTool for repository "%s" '
+                              '(ID %d)',
+                              repo.name, repo.id)
 
     valid_repos.insert(0, {
         'id': '',
