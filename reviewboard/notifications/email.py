@@ -325,8 +325,12 @@ def mail_review_request(review_request, changedesc=None, on_close=False):
         or (not on_close and review_request.status == 'D')):
         return
 
+    summary = review_request.summary
+    if isinstance(summary, bytes):
+        summary = summary.decode('utf-8')
+
     subject = "Review Request %d: %s" % (review_request.display_id,
-                                         review_request.summary)
+                                         summary)
     reply_message_id = None
 
     if review_request.email_message_id:
