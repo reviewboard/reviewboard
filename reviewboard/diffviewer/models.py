@@ -490,8 +490,25 @@ class FileDiff(models.Model):
                                        self.dest_file, self.dest_detail)
 
 
+class DiffLineCountsMixin(object):
+    """A mixin that can find the total line counts of all child FileDiffs."""
+
+    def get_total_line_counts(self):
+        """Get the total line counts of all child FileDiffs."""
+        counts = {}
+
+        for filediff in self.files.all():
+            for key, value in six.iteritems(filediff.get_line_counts()):
+                if counts.get(key) is None:
+                    counts[key] = value
+                elif value is not None:
+                    counts[key] += value
+
+        return counts
+
+
 @python_2_unicode_compatible
-class DiffSet(models.Model):
+class DiffSet(DiffLineCountsMixin, models.Model):
     """
     A revisioned collection of FileDiffs.
     """
@@ -520,19 +537,6 @@ class DiffSet(models.Model):
     objects = DiffSetManager()
 
     diff_commit_count = RelationCounterField('diff_commits')
-
-    def get_total_line_counts(self):
-        """Returns the total line counts from all files in this diffset."""
-        counts = {}
-
-        for filediff in self.files.all():
-            for key, value in six.iteritems(filediff.get_line_counts()):
-                if counts.get(key) is None:
-                    counts[key] = value
-                elif value is not None:
-                    counts[key] += value
-
-        return counts
 
     def save(self, **kwargs):
         """
@@ -589,7 +593,7 @@ class DiffSetHistory(models.Model):
 
 
 @python_2_unicode_compatible
-class DiffCommit(models.Model):
+class DiffCommit(DiffLineCountsMixin, models.Model):
     """A representation of a commit from a version control system.
 
     A diff revision on a review request that represents a commit history will
