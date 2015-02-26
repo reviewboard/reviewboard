@@ -19,7 +19,7 @@ RB.BaseComment = RB.BaseResource.extend({
         includeTextTypes: null,
 
         /* Whether or not an issue is opened. */
-        issueOpened: true,
+        issueOpened: null,
 
         /*
          * The current state of the issue.
