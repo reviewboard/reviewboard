@@ -257,7 +257,7 @@ RB.BaseResource = Backbone.Model.extend({
     save: function(options, context) {
         options = options || {};
 
-        this.trigger('saving');
+        this.trigger('saving', options);
 
         this.ready({
             ready: function() {
@@ -307,7 +307,7 @@ RB.BaseResource = Backbone.Model.extend({
                     options.success.apply(context, arguments);
                 }
 
-                this.trigger('saved');
+                this.trigger('saved', options);
             }, this),
 
             error: _.bind(function() {
@@ -315,7 +315,7 @@ RB.BaseResource = Backbone.Model.extend({
                     options.error.apply(context, arguments);
                 }
 
-                this.trigger('saveFailed');
+                this.trigger('saveFailed', options);
             }, this)
         }, options);
 
@@ -447,7 +447,7 @@ RB.BaseResource = Backbone.Model.extend({
             destroyObject = _.bind(this._destroyObject,
                                    this, options, context);
 
-        this.trigger('destroying');
+        this.trigger('destroying', options);
 
         if (!this.isNew() && parentObject) {
             /*
@@ -528,7 +528,7 @@ RB.BaseResource = Backbone.Model.extend({
                     parentObject: parentObject
                 });
 
-                self.trigger('destroyed');
+                self.trigger('destroyed', options);
 
                 if (_.isFunction(options.success)) {
                     options.success.apply(context, arguments);
