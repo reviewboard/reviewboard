@@ -207,7 +207,8 @@ class Site(object):
             self.mkdir(writable_dir)
 
             try:
-                os.chown(writable_dir, writable_st.st_uid, writable_st.st_gid)
+                if hasattr(os, 'chown'):
+                    os.chown(writable_dir, writable_st.st_uid, writable_st.st_gid)
             except OSError:
                 # The user didn't have permission to change the ownership,
                 # they'll have to do this manually later.
