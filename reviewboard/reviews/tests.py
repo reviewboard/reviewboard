@@ -18,6 +18,7 @@ from kgb import SpyAgency
 from reviewboard.accounts.models import Profile, LocalSiteProfile
 from reviewboard.attachments.models import FileAttachment
 from reviewboard.changedescs.models import ChangeDescription
+from reviewboard.reviews.errors import PublishError
 from reviewboard.reviews.forms import DefaultReviewerForm, GroupForm
 from reviewboard.reviews.markdown_utils import (get_markdown_element_tree,
                                                 iter_markdown_lines,
@@ -666,6 +667,8 @@ class ReviewRequestTests(SpyAgency, TestCase):
         review_request.reopen()
         self.assertFalse(review_request.public)
 
+        review_request.publish(review_request.submitter)
+
         review_request.close(ReviewRequest.SUBMITTED)
         self.assertTrue(review_request.public)
 
@@ -802,6 +805,24 @@ class ReviewRequestTests(SpyAgency, TestCase):
 
         with self.assertRaises(ChangeDescription.DoesNotExist):
             review_request.changedescs.filter(public=True).latest()
+
+    def test_submit_nonpublic(self):
+        """ Testing ReviewRequest.close with non-public requests to ensure state
+        transitions to SUBMITTED from non-public review request is not allowed
+        """
+        review_request = self.create_review_request(public=False)
+
+        with self.assertRaises(PublishError):
+            review_request.close(ReviewRequest.SUBMITTED)
+
+    def test_submit_public(self):
+        """ Testing ReviewRequest.close with public requests to ensure
+        public requests can be transferred to SUBMITTED
+        """
+        review_request = self.create_review_request(public=True)
+
+        review_request.close(ReviewRequest.SUBMITTED)
+
 
 class ViewTests(TestCase):
     """Tests for views in reviewboard.reviews.views"""
@@ -1909,7 +1930,13 @@ class ReviewRequestCounterTests(TestCase):
         self._check_counters(total_outgoing=1,
                              pending_outgoing=1)
 
-        self.assertFalse(self.review_request.public)
+        self.review_request.publish(self.user)
+
+        self._check_counters(total_outgoing=1,
+                             pending_outgoing=1,
+                             starred_public=1)
+
+        self.assertTrue(self.review_request.public)
         self.assertEqual(self.review_request.status,
                          ReviewRequest.PENDING_REVIEW)
 
@@ -2061,7 +2088,7 @@ class ReviewRequestCounterTests(TestCase):
 
     def test_reopen_submitted_draft_requests(self):
         """Testing counters with reopening submitted draft review requests"""
-        self.test_closing_draft_requests(ReviewRequest.SUBMITTED)
+        self.test_closing_requests(ReviewRequest.SUBMITTED)
 
         # We're simulating what a DefaultReviewer would do by populating
         # the ReviewRequest's target users and groups while not public and
