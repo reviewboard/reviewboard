@@ -278,6 +278,12 @@ RB.CommentDialogView = Backbone.View.extend({
                  */
                 evt.stopPropagation();
             })
+            .resizable({
+                handles: $.support.touch ? "grip,se"
+                                         : "grip,n,e,s,w,se,sw,ne,nw",
+                transparent: true,
+                resize: _.bind(this._handleResize, this)
+            })
             .proxyTouchEvents();
 
         this.$('.title').css('cursor', 'move');
