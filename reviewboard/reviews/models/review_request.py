@@ -16,7 +16,8 @@ from djblets.db.query import get_object_or_none
 from reviewboard.attachments.models import FileAttachment
 from reviewboard.changedescs.models import ChangeDescription
 from reviewboard.diffviewer.models import DiffSet, DiffSetHistory
-from reviewboard.reviews.errors import PermissionError
+from reviewboard.reviews.errors import (PermissionError,
+                                        PublishError)
 from reviewboard.reviews.managers import ReviewRequestManager
 from reviewboard.reviews.models.base_comment import BaseComment
 from reviewboard.reviews.models.base_review_request_details import \
@@ -697,7 +698,8 @@ class ReviewRequest(BaseReviewRequestDetails):
             self.changedescs.add(changedesc)
 
             if type == self.SUBMITTED:
-                self.public = True
+                if not self.public:
+                    raise PublishError("The draft must be public first.")
             else:
                 self.commit_id = None
 
