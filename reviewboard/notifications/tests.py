@@ -543,6 +543,25 @@ class ReviewRequestEmailTests(TestCase, EmailTestHelper):
         self.assertEqual(message['Sender'],
                          self._get_sender(review_request.submitter))
 
+    def test_review_request_email_with_unicode_summary(self):
+        """Testing sending a review request e-mail with a unicode subject"""
+        review_request = self.create_review_request()
+        review_request.summary = '\ud83d\ude04'.encode('utf-8')
+
+        review_request.target_people.add(User.objects.get(username='grumpy'))
+        review_request.target_people.add(User.objects.get(username='doc'))
+        review_request.publish(review_request.submitter)
+
+        from_email = get_email_address_for_user(review_request.submitter)
+
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(mail.outbox[0].from_email, self.sender)
+        self.assertEqual(mail.outbox[0].extra_headers['From'], from_email)
+        self.assertEqual(mail.outbox[0].subject,
+                         'Review Request %s: \ud83d\ude04'
+                         % review_request.pk)
+        self.assertValidRecipients(['grumpy', 'doc'])
+
     def _get_sender(self, user):
         return build_email_address(user.get_full_name(), self.sender)
 
