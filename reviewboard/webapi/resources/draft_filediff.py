@@ -37,13 +37,18 @@ class DraftFileDiffResource(FileDiffResource):
         resources.draft_patched_file,
     ]
 
-    def get_queryset(self, request, diff_revision, *args, **kwargs):
+    def get_queryset(self, request, diff_revision, is_list=False, *args,
+                     **kwargs):
         draft = resources.review_request_draft.get_object(
             request, *args, **kwargs)
 
-        return self.model.objects.filter(
-            diffset__review_request_draft=draft,
-            diffset__revision=diff_revision)
+        q = self.model.objects.filter(diffset__review_request_draft=draft,
+                                      diffset__revision=diff_revision)
+
+        if is_list:
+            q = self._filter_by_commit(q, request, diff_revision)
+
+        return q
 
     def has_access_permissions(self, request, filediff, *args, **kwargs):
         draft = resources.review_request_draft.get_object(

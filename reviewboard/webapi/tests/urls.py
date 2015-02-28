@@ -81,6 +81,25 @@ def get_diff_item_url(review_request, diff_revision, local_site_name=None):
 
 
 #
+# DiffCommitResource
+#
+def get_diff_commit_list_url(review_request, diffset, local_site_name=None):
+    return resources.diff_commit.get_list_url(
+        local_site_name=local_site_name,
+        review_request_id=review_request.display_id,
+        diff_revision=diffset.revision)
+
+
+def get_diff_commit_item_url(review_request, diffset, commit,
+                             local_site_name=None):
+    return resources.diff_commit.get_item_url(
+        local_site_name=local_site_name,
+        review_request_id=review_request.display_id,
+        diff_revision=diffset.revision,
+        commit_id=commit.commit_id)
+
+
+#
 # DiffFileAttachmentResource
 #
 def get_diff_file_attachment_list_url(repository, local_site_name=None):
@@ -112,6 +131,26 @@ def get_draft_diff_item_url(review_request, diff_revision,
         local_site_name=local_site_name,
         review_request_id=review_request.display_id,
         diff_revision=diff_revision)
+
+
+#
+# DraftDiffCommitResource
+#
+def get_draft_diff_commit_list_url(review_request, diffset,
+                                   local_site_name=None):
+    return resources.draft_diff_commit.get_list_url(
+        local_site_name=local_site_name,
+        review_request_id=review_request.display_id,
+        diff_revision=diffset.revision)
+
+
+def get_draft_diff_commit_item_url(review_request, diffset, commit,
+                                   local_site_name=None):
+    return resources.draft_diff_commit.get_item_url(
+        local_site_name=local_site_name,
+        review_request_id=review_request.display_id,
+        diff_revision=diffset.revision,
+        commit_id=commit.commit_id)
 
 
 #

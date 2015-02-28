@@ -13,20 +13,13 @@ class NoBaseDirError(ValueError):
     pass
 
 
-class EmptyDiffForm(forms.Form):
-    """A form for creating empty DiffSets."""
-    basedir = forms.CharField(
-        label=_('Base directory'),
-        help_text=_('The absolute path in the repository the diff was '
-                    'generated in.'))
+class BasedirMixin(object):
+    """A form mixin for handling the basedir field.
 
-    def __init__(self, repository, data=None, files=None, request=None,
-                 *args, **kwargs):
-        super(EmptyDiffForm, self).__init__(data, files, *args, **kwargs)
-
-        self.repository = repository
-        self.request = request
-
+    The basedir field is common to both the EmptyDiffForm and the
+    UploadDiffForm, however the two forms require different initialization.
+    """
+    def _check_basedir_field(self):
         if self.repository.get_scmtool().get_diffs_use_absolute_paths():
             # This SCMTool uses absolute paths, so there's no need to ask
             # the user for the base directory.
@@ -44,14 +37,43 @@ class EmptyDiffForm(forms.Form):
 
         return basedir
 
+
+class EmptyDiffForm(BasedirMixin, forms.Form):
+    """A form for creating empty DiffSets."""
+    basedir = forms.CharField(
+        label=_('Base directory'),
+        help_text=_('The absolute path in the repository the diff was '
+                    'generated in.'))
+
+    def __init__(self, review_request, data=None, files=None, request=None,
+                 *args, **kwargs):
+        super(EmptyDiffForm, self).__init__(data, files, *args, **kwargs)
+
+        self.review_request = review_request
+        self.request = request
+        self.repository = review_request.repository
+
+        self._check_basedir_field()
+
     def create(self, **kwargs):
+        # TODO: It would be nice to later consolidate this with the logic in
+        #       DiffSet.save.
+        public_diffsets = self.review_request.diffset_history.diffsets
+
+        try:
+            latest_diffset = public_diffsets.latest()
+            revision = latest_diffset.revision + 1
+        except DiffSet.DoesNotExist:
+            revision = 1
+
         return DiffSet.objects.create_empty(repository=self.repository,
                                             request=self.request,
                                             basedir=self._get_basedir(),
+                                            revision=revision,
                                             **kwargs)
 
 
-class UploadDiffForm(EmptyDiffForm):
+class UploadDiffForm(BasedirMixin, forms.Form):
     """A form for uploading diffs as DiffSets."""
     path = forms.FileField(
         label=_('Diff'),
@@ -66,6 +88,20 @@ class UploadDiffForm(EmptyDiffForm):
         label=_('Base commit ID'),
         help_text=_('The ID/revision this change is built upon.'),
         required=False)
+
+    basedir = forms.CharField(
+        label=_('Base directory'),
+        help_text=_('The absolute path in the repository the diff was '
+                    'generated in.'))
+
+    def __init__(self, repository, data=None, files=None, request=None, *args,
+                 **kwargs):
+        super(UploadDiffForm, self).__init__(*args, data=data, files=files,
+                                             **kwargs)
+        self.repository = repository
+        self.request = request
+
+        self._check_basedir_field()
 
     def clean_base_commit_id(self):
         """Clean the base_commit_id.

@@ -29,6 +29,7 @@ class DraftDiffResource(DiffResource):
     mimetype_item_resource_name = 'diff'
 
     item_child_resources = [
+        resources.draft_diff_commit,
         resources.draft_filediff,
     ]
 

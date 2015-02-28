@@ -16,7 +16,7 @@ from djblets.webapi.responses import WebAPIResponse
 from reviewboard.attachments.models import FileAttachment
 from reviewboard.diffviewer.diffutils import (get_diff_files,
                                               populate_diff_chunks)
-from reviewboard.diffviewer.models import FileDiff
+from reviewboard.diffviewer.models import DiffCommit, FileDiff
 from reviewboard.webapi.base import CUSTOM_MIMETYPE_BASE, WebAPIResource
 from reviewboard.webapi.decorators import (webapi_check_login_required,
                                            webapi_check_local_site)
@@ -118,8 +118,24 @@ class FileDiffResource(WebAPIResource):
     def get_last_modified(self, request, obj, *args, **kwargs):
         return obj.diffset.timestamp
 
+    def _filter_by_commit(self, q, request, diff_revision):
+        commit_id = request.GET.get('commit-id')
+
+        if commit_id is not None:
+            try:
+                diff_commit = resources.diff_commit.get_object(
+                    request,
+                    diff_revision=diff_revision,
+                    commit_id=commit_id)
+            except DiffCommit.DoesNotExist:
+                return self.model.objects.none()
+
+            q = self.model.objects.filter(diff_commit=diff_commit)
+
+        return q
+
     def get_queryset(self, request, review_request_id, diff_revision,
-                     local_site_name=None, *args, **kwargs):
+                     local_site_name=None, is_list=False, *args, **kwargs):
         if local_site_name:
             review_request = resources.review_request.get_object(
                 request,
@@ -130,9 +146,14 @@ class FileDiffResource(WebAPIResource):
                 **kwargs)
             review_request_id = review_request.pk
 
-        return self.model.objects.filter(
+        q = self.model.objects.filter(
             diffset__history__review_request=review_request_id,
             diffset__revision=diff_revision)
+
+        if is_list:
+            q = self._filter_by_commit(q, request, diff_revision)
+
+        return q
 
     def has_access_permissions(self, request, filediff, *args, **kwargs):
         review_request = resources.review_request.get_object(

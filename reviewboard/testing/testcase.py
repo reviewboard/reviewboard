@@ -13,12 +13,14 @@ from django.core.files import File
 from django.db import (DatabaseError, DEFAULT_DB_ALIAS, IntegrityError,
                        connections, router)
 from django.db.models import get_apps
+from django.utils import timezone
 from djblets.testing.testcases import TestCase as DjbletsTestCase
 
 from reviewboard import scmtools, initialize
 from reviewboard.attachments.models import FileAttachment
 from reviewboard.diffviewer.differ import DiffCompatVersion
-from reviewboard.diffviewer.models import DiffSet, DiffSetHistory, FileDiff
+from reviewboard.diffviewer.models import (DiffCommit, DiffSet, DiffSetHistory,
+                                           FileDiff)
 from reviewboard.reviews.models import (Comment, FileAttachmentComment,
                                         Group, Review, ReviewRequest,
                                         ReviewRequestDraft, Screenshot,
@@ -53,6 +55,17 @@ class TestCase(DjbletsTestCase):
         b'@@ -1 +1 @@\n'
         b'-Hello, world!\n'
         b'+Hello, everybody!\n'
+    )
+
+    DEFAULT_COMMIT_FILEDIFF_DATA = (
+        b'diff --git a/readme b/readme\n'
+        b'index d6613f5..5b50866 100644\n'
+        b'--- a/readme\n'
+        b'+++ b/readme\n'
+        b'@@ -1 +1,3 @@\n'
+        b' Hello there\n'
+        b'+\n'
+        b'+Oh hi!\n'
     )
 
     def setUp(self):
@@ -166,6 +179,45 @@ class TestCase(DjbletsTestCase):
                 review_request.diffset_history.diffsets.add(diffset)
 
         return diffset
+
+    def create_diff_commit(self, diffset, repository, commit_id, parent_id,
+                           merge_parent_ids=None, diff_name='diff',
+                           diff_contents=DEFAULT_COMMIT_FILEDIFF_DATA,
+                           author_name='Author Name',
+                           author_email='author@example.com', author_date=None,
+                           committer_name='Committer Name',
+                           committer_email='committer@example.com',
+                           committer_date=None, description='description',
+                           commit_type=DiffCommit.COMMIT_CHANGE_TYPE):
+        """Create a DiffCommit for testing.
+
+        The DiffCommit is automatically populated with some default data.
+        """
+        if not author_date:
+            author_date = timezone.now()
+
+        if not committer_date and committer_name and committer_email:
+            committer_date = author_date
+
+        return DiffCommit.objects.create_from_data(
+            repository=repository,
+            diff_file_name=diff_name,
+            diff_file_contents=diff_contents,
+            parent_diff_file_name=None,
+            parent_diff_file_contents=None,
+            request=None,
+            commit_id=commit_id,
+            parent_id=parent_id,
+            merge_parent_ids=merge_parent_ids,
+            author_name=author_name,
+            author_email=author_email,
+            author_date=author_date,
+            committer_name=committer_name,
+            committer_email=committer_email,
+            committer_date=committer_date,
+            description=description,
+            commit_type=commit_type,
+            diffset=diffset)
 
     def create_diff_comment(self, review, filediff, interfilediff=None,
                             text='My comment', issue_opened=False,

@@ -91,8 +91,8 @@ class UploadDiffForm(diffviewer_forms.UploadDiffForm):
     requests.
     """
     def __init__(self, review_request, data=None, *args, **kwargs):
-        super(UploadDiffForm, self).__init__(review_request.repository,
-                                             data, *args, **kwargs)
+        super(UploadDiffForm, self).__init__(review_request.repository, data,
+                                             *args, **kwargs)
         self.review_request = review_request
 
         if ('basedir' in self.fields and

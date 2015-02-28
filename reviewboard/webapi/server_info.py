@@ -12,6 +12,7 @@ _registered_capabilities = {}
 _capabilities_defaults = {
     'diffs': {
         'base_commit_ids': True,
+        'commit_history': True,
         'moved_files': True,
     },
     'review_requests': {

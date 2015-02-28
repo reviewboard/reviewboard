@@ -14,6 +14,7 @@ from djblets.webapi.errors import (DOES_NOT_EXIST, INVALID_ATTRIBUTE,
                                    PERMISSION_DENIED)
 
 from reviewboard.diffviewer.errors import DiffTooBigError, EmptyDiffError
+from reviewboard.diffviewer.forms import EmptyDiffForm
 from reviewboard.diffviewer.models import DiffSet
 from reviewboard.reviews.forms import UploadDiffForm
 from reviewboard.reviews.models import ReviewRequest, ReviewRequestDraft
@@ -30,9 +31,9 @@ from reviewboard.webapi.resources import resources
 class DiffResource(WebAPIResource):
     """Provides information on a collection of complete diffs.
 
-    Each diff contains individual per-file diffs as child resources.
-    A diff is revisioned, and more than one can be associated with any
-    particular review request.
+    Each diff contains individual per-file diffs (and optionally commits) as
+    child resources. A diff is revisioned, and more than one can be associated
+    with any particular review request.
     """
     model = DiffSet
     name = 'diff'
@@ -85,8 +86,10 @@ class DiffResource(WebAPIResource):
             'added_in': '1.7.13',
         },
     }
+
     item_child_resources = [
         resources.filediff,
+        resources.diff_commit,
     ]
 
     allowed_methods = ('GET', 'POST', 'PUT')
@@ -193,13 +196,19 @@ class DiffResource(WebAPIResource):
                             REPO_FILE_NOT_FOUND, INVALID_FORM_DATA,
                             INVALID_ATTRIBUTE, DIFF_EMPTY, DIFF_TOO_BIG)
     @webapi_request_fields(
-        required={
+        optional={
             'path': {
                 'type': file,
-                'description': 'The main diff to upload.',
+                'description': 'The main diff to upload. The ``with_history`` '
+                               'and ``path`` fields are mutually exclusive.',
             },
-        },
-        optional={
+            'with_history': {
+                'type': bool,
+                'description': 'Determines if the DiffSet should support '
+                               'commit history. The ``with_history`` and '
+                               '``path`` fields are mutually exclusive.',
+                'added_in': '3.0',
+            },
             'basedir': {
                 'type': six.text_type,
                 'description': 'The base directory that will prepended to '
@@ -225,7 +234,8 @@ class DiffResource(WebAPIResource):
         },
         allow_unknown=True
     )
-    def create(self, request, extra_fields={}, *args, **kwargs):
+    def create(self, request, with_history=False, extra_fields={}, *args,
+               **kwargs):
         """Creates a new diff by parsing an uploaded diff file.
 
         This will implicitly create the new Review Request draft, which can
@@ -267,6 +277,16 @@ class DiffResource(WebAPIResource):
         from reviewboard.webapi.resources.review_request_draft import \
             ReviewRequestDraftResource
 
+        has_path = 'path' in request.FILES
+
+        if has_path == with_history:
+            return INVALID_FORM_DATA, {
+                'fields': {
+                    'path': ['Exactly one of with_history=1 or path must be '
+                             'specified. They are mutually exclusive.'],
+                },
+            }
+
         try:
             review_request = \
                 resources.review_request.get_object(request, *args, **kwargs)
@@ -282,43 +302,56 @@ class DiffResource(WebAPIResource):
                           'only, with no repository.'
             }
 
+        discarded_diffset = None
+
         form_data = request.POST.copy()
-        form = UploadDiffForm(review_request, form_data, request.FILES,
+
+        # When with_history is specified, we create a new empty diffset so that
+        # the child DiffCommits can be created.
+        if with_history:
+            form = EmptyDiffForm(review_request, form_data, request=request)
+
+            if not form.is_valid():
+                return INVALID_FORM_DATA, {
+                    'fields': self._get_form_errors(form)
+                }
+
+            diffset = form.create()
+        else:
+            form = UploadDiffForm(review_request, form_data, request.FILES,
+                                  request=request)
+
+            if not form.is_valid():
+                return INVALID_FORM_DATA, {
+                    'fields': self._get_form_errors(form),
+                }
+
+            try:
+                diffset = form.create(request.FILES['path'],
+                                      request.FILES.get('parent_diff_path'))
+            except FileNotFoundError as e:
+                return REPO_FILE_NOT_FOUND, {
+                    'file': e.path,
+                    'revision': six.text_type(e.revision)
+                }
+            except EmptyDiffError as e:
+                return DIFF_EMPTY
+            except DiffTooBigError as e:
+                return DIFF_TOO_BIG, {
+                    'reason': six.text_type(e),
+                    'max_size': e.max_diff_size,
+                }
+            except Exception as e:
+                # This could be very wrong, but at least they'll see the error.
+                # We probably want a new error type for this.
+                logging.error("Error uploading new diff: %s", e, exc_info=1,
                               request=request)
 
-        if not form.is_valid():
-            return INVALID_FORM_DATA, {
-                'fields': self._get_form_errors(form),
-            }
-
-        try:
-            diffset = form.create(request.FILES['path'],
-                                  request.FILES.get('parent_diff_path'))
-        except FileNotFoundError as e:
-            return REPO_FILE_NOT_FOUND, {
-                'file': e.path,
-                'revision': six.text_type(e.revision)
-            }
-        except EmptyDiffError as e:
-            return DIFF_EMPTY
-        except DiffTooBigError as e:
-            return DIFF_TOO_BIG, {
-                'reason': six.text_type(e),
-                'max_size': e.max_diff_size,
-            }
-        except Exception as e:
-            # This could be very wrong, but at least they'll see the error.
-            # We probably want a new error type for this.
-            logging.error("Error uploading new diff: %s", e, exc_info=1,
-                          request=request)
-
-            return INVALID_FORM_DATA, {
-                'fields': {
-                    'path': [six.text_type(e)]
+                return INVALID_FORM_DATA, {
+                    'fields': {
+                        'path': [six.text_type(e)]
+                    }
                 }
-            }
-
-        discarded_diffset = None
 
         try:
             draft = review_request.draft.get()
