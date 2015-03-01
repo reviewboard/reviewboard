@@ -10,7 +10,7 @@ from django.contrib.sites.models import Site
 from django.core.exceptions import MultipleObjectsReturned, ObjectDoesNotExist
 from django.db.models import Q
 from django.http import (HttpResponse, HttpResponseRedirect, Http404,
-                         HttpResponseNotModified, HttpResponseServerError)
+                         HttpResponseNotModified)
 from django.shortcuts import (get_object_or_404, get_list_or_404, render,
                               render_to_response)
 from django.template.context import RequestContext
@@ -193,6 +193,7 @@ def build_diff_comment_fragments(
             # still return content for anything we have. This will prevent any
             # caching.
             had_error = True
+            chunks = []
 
         comment_entries.append({
             'comment': comment,
@@ -725,9 +726,11 @@ def review_detail(request,
         'PRE_CREATION': PRE_CREATION,
         'issues': issues,
         'has_diffs': latest_diff_revision is not None,
-        'file_attachments': [file_attachment
-                             for file_attachment in file_attachments
-                             if not file_attachment.is_from_diff],
+        'file_attachments': [
+            attachment
+            for attachment in file_attachments
+            if not attachment.is_from_diff
+        ],
         'all_file_attachments': file_attachments,
         'screenshots': screenshots,
     })
@@ -1022,7 +1025,7 @@ def comment_diff_fragments(
     page_content = render_to_string(template_name, context)
 
     if had_error:
-        return HttpResponseServerError(page_content)
+        return HttpResponse(page_content)
 
     response = HttpResponse(page_content)
     set_last_modified(response, comment.timestamp)
