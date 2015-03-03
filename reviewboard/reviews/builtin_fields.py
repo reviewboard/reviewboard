@@ -3,7 +3,8 @@ from __future__ import unicode_literals
 from django.contrib.auth.models import User
 from django.core.urlresolvers import NoReverseMatch
 from django.db import models
-from django.template.loader import Context, get_template
+from django.db.models import Q
+from django.template.loader import Context, get_template, render_to_string
 from django.utils import six
 from django.utils.html import escape, format_html, format_html_join
 from django.utils.safestring import mark_safe
@@ -11,7 +12,7 @@ from django.utils.translation import ugettext_lazy as _
 
 from reviewboard.attachments.models import FileAttachment
 from reviewboard.diffviewer.diffutils import get_sorted_filediffs
-from reviewboard.diffviewer.models import DiffSet
+from reviewboard.diffviewer.models import DiffCommit, DiffSet
 from reviewboard.reviews.fields import (BaseCommaEditableField,
                                         BaseEditableField,
                                         BaseReviewRequestField,
@@ -31,11 +32,14 @@ class BuiltinFieldMixin(object):
     ReviewRequest or ReviewRequestDraft, rather than working with those
     stored in extra_data.
     """
+    force_review_request_if_no_draft_field = True
+
     def __init__(self, *args, **kwargs):
         super(BuiltinFieldMixin, self).__init__(*args, **kwargs)
 
         if (not hasattr(self.review_request_details, self.field_id) and
-            isinstance(self.review_request_details, ReviewRequestDraft)):
+            isinstance(self.review_request_details, ReviewRequestDraft) and
+            self.force_review_request_if_no_draft_field):
             # This field only exists in ReviewRequest, and not in
             # the draft, so we're going to work there instead.
             self.review_request_details = \
@@ -573,6 +577,158 @@ class DiffField(BuiltinLocalsFieldMixin, BaseReviewRequestField):
         }
 
 
+class DiffCommitListField(BuiltinLocalsFieldMixin, BaseReviewRequestField):
+    """Renders the list of commits with the author and the summary.
+
+    This field only renders on review requests that contain commit history.
+    """
+
+    field_id = 'diff_commits'
+    label = _('Commits')
+
+    locals_vars = ['diff_commits_by_id']
+
+    is_editable = False
+    can_record_change_entry = True
+
+    force_review_request_if_no_draft_field = False
+
+    def should_render(self, diffset_id):
+        """Determine if the DiffCommitListField should render.
+
+        This field renders if and only if the review request details have a
+        DiffSet which contains one or more DiffCommits.
+        """
+        return (diffset_id is not None and
+                DiffCommit.objects.filter(diffset__pk=diffset_id).exists())
+
+    def load_value(self, review_request_details):
+        """Load the diffset ID from the review request details."""
+        # The diffset ID is used to get the list of commits corresponding to
+        # the review request details.
+        if isinstance(review_request_details, ReviewRequest):
+            diffset = review_request_details.get_latest_diffset()
+        else:
+            diffset = review_request_details.diffset
+
+        if diffset is not None:
+            return diffset.pk
+
+        return None
+
+    def has_value_changed(self, old_value, new_value):
+        """Determine if the attached DiffCommits have changed.
+
+        The value has changed if and only if there is a new diff attached and
+        either of the DiffSets have commits associated with them (because if
+        so they must have changed).
+        """
+        if new_value is not None:
+            q = Q(diffset__pk=new_value)
+
+            if old_value is not None:
+                q |= Q(diffset__pk=old_value)
+
+            return DiffCommit.objects.filter(q).exists()
+
+        return False
+
+    def record_change_entry(self, changedesc, old_value, new_value):
+        change_entry = {}
+
+        diffsets = dict(
+            (diffset.pk, diffset)
+            for diffset in DiffSet.objects.filter(Q(pk=old_value) |
+                                                  Q(pk=new_value))
+        )
+
+        if old_value in diffsets and diffsets[old_value].diff_commit_count > 0:
+            change_entry['old'] = old_value
+
+        if new_value in diffsets and diffsets[new_value].diff_commit_count > 0:
+            change_entry['new'] = new_value
+
+        changedesc.fields_changed[self.field_id] = change_entry
+
+    def render_value(self, value):
+        # TODO: This ideally would pull the list of commits from
+        #       self.diff_commits_by_id via the locals_vars.
+        return render_to_string(
+            'reviews/boxes/commit_list.html',
+            {
+                'commits': DiffCommit.objects.filter(diffset__pk=value)
+            })
+
+    def render_change_entry_html(self, info):
+        old_commits = []
+        new_commits = []
+        i = 0
+        j = 0
+
+        commit_list = list(
+            DiffCommit.objects.select_related('diffset').filter(
+                diffset__pk__in=info.values()))
+
+        commits = []
+
+        if 'old' in info:
+            old_commits = [
+                c
+                for c in commit_list
+                if c.diffset.pk == info['old']
+            ]
+
+        if 'new' in info:
+            new_commits = [
+                c
+                for c in commit_list
+                if c.diffset.pk == info['new']
+            ]
+
+        while (i < len(old_commits) and
+               j < len(new_commits) and
+               old_commits[i].commit_id == new_commits[j].commit_id):
+            commits.append({
+                'type': 'unmodified',
+                'author_name': new_commits[j].author_name,
+                'summary': new_commits[j].summary,
+            })
+            i += 1
+            j += 1
+
+        commits.extend(
+            {
+                'type': 'removed',
+                'author_name': old_commit.author_name,
+                'summary': old_commit.summary,
+            }
+            for old_commit in old_commits[i:]
+        )
+
+        commits.extend(
+            {
+                'type': 'added',
+                'author_name': new_commit.author_name,
+                'summary': new_commit.summary,
+            }
+            for new_commit in new_commits[j:]
+        )
+
+        return render_to_string(
+            'reviews/boxes/commit_list_change.html',
+            {
+                'commits': commits,
+            })
+
+    def serialize_change_entry(self, changedesc):
+        changed_fields = changedesc.fields_changed[self.field_id]
+
+        return dict(
+            (section, DiffCommit.objects.filter(diffset__pk=diffset_id))
+            for section, diffset_id in six.iteritems(changed_fields)
+        )
+
+
 class FileAttachmentCaptionsField(BaseCaptionsField):
     """Renders caption changes for file attachments.
 
@@ -724,6 +880,7 @@ class MainFieldSet(BaseReviewRequestFieldSet):
         SummaryField,
         DescriptionField,
         TestingDoneField,
+        DiffCommitListField,
     ]
 
 

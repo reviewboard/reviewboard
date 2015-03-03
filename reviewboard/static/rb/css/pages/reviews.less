@@ -497,6 +497,31 @@
     }
   }
 
+  /* Styling for the "Diff Commits" review request field. */
+  .diff-commits {
+    border: 1px @review-request-table-border-color solid;
+    margin: 1em 0;
+
+    table {
+      padding: 0;
+      border-collapse: collapse;
+      width: 100%;
+
+      td, th {
+        background: #FDFDFD;
+        padding: 0.6em;
+      }
+
+      td {
+        border-top: 1px #DDD solid;
+      }
+
+      th {
+        text-align: left;
+      }
+    }
+  }
+
   .actions-container {
     .star {
       margin: 5px 0 0 5px;
@@ -1080,6 +1105,47 @@
 
         .insert-count {
           color: @diff-insert-line-count-color;
+        }
+      }
+    }
+
+    /* Styling for the "Diff Commits" change description field. */
+    .diff-commits {
+      border: 1px @review-request-table-border-color solid;
+      margin: 1em 0;
+
+      table {
+        padding: 0;
+        border-collapse: collapse;
+        width: 100%;
+
+        tr {
+          &.commit-entry-added td {
+            background: @diff-insert-color;
+          }
+
+          &.commit-entry-removed td {
+            background: @diff-delete-color;
+          }
+
+          td, th {
+            background: #FDFDFD;
+            padding: 0.6em;
+          }
+
+          td {
+            &.commit-entry-type {
+              min-width: 1em;
+              width: 1em;
+              font-weight: bold;
+            }
+
+            border-top: 1px #DDD solid;
+          }
+
+          th {
+            text-align: left;
+          }
         }
       }
     }

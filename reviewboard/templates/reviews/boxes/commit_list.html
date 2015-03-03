@@ -1,0 +1,19 @@
+{% load i18n %}
+<div class="diff-commits">
+ <table>
+  <thead>
+   <tr>
+    <th>{% trans "Summary" %}</th>
+    <th>{% trans "Author" %}</th>
+   </tr>
+  </thead>
+  <tbody>
+{% for commit in commits %}
+   <tr>
+    <td>{{commit.summary}}</td>
+    <td>{{commit.author_name}}</td>
+   </tr>
+{% endfor %}
+  </tbody>
+ </table>
+</div>

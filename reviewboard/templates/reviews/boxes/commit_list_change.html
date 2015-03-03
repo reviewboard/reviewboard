@@ -1,0 +1,29 @@
+{% load i18n %}
+<div class="diff-commits">
+ <table>
+  <thead>
+   <tr>
+    <th></th>
+    <th>{% trans "Summary" %}</th>
+    <th>{% trans "Author" %}</th>
+   </tr>
+  </thead>
+  <tbody>
+{% for commit in commits %}
+   <tr class="commit-entry-{{commit.type}}">
+    <td class="commit-entry-type">
+{%  if commit.type == 'added' %}
+     +
+{%  elif commit.type == 'removed' %}
+     -
+{%  elif commit.type == 'modified' %}
+     ~
+{%  endif %}
+    </td>
+    <td>{{commit.summary}}</td>
+    <td>{{commit.author_name}}</td>
+   </tr>
+{% endfor %}
+  </tbody>
+ </table>
+</div>

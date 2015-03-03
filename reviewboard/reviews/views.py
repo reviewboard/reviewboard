@@ -2,6 +2,7 @@ from __future__ import unicode_literals
 
 import logging
 import time
+from collections import defaultdict
 
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
@@ -46,7 +47,7 @@ from reviewboard.diffviewer.diffutils import (convert_to_unicode,
                                               get_last_line_number_in_diff,
                                               get_original_file,
                                               get_patched_file)
-from reviewboard.diffviewer.models import DiffSet
+from reviewboard.diffviewer.models import DiffCommit, DiffSet
 from reviewboard.diffviewer.views import (DiffFragmentView, DiffViewerView,
                                           exception_traceback_string)
 from reviewboard.hostingsvcs.bugtracker import BugTracker
@@ -454,9 +455,14 @@ def review_detail(request,
     # Map diffset IDs to their object.
     diffsets = review_request.get_diffsets()
     diffsets_by_id = {}
+    diff_commits = DiffCommit.objects.filter(diffset__in=diffsets)
+    diff_commits_by_id = defaultdict(list)
 
-    for diffset in diffsets:
-        diffsets_by_id[diffset.pk] = diffset
+    for diff_commit in diff_commits:
+        diff_commits_by_id[diff_commit.diffset_id].append(diff_commit)
+
+    if draft and draft.diffset:
+        diff_commits_by_id[draft.diffset.pk] = draft.diffset.diff_commits.all()
 
     # Find out if we can bail early. Generate an ETag for this.
     last_activity_time, updated_object = \
