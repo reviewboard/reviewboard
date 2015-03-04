@@ -172,9 +172,19 @@ class DiffViewerView(TemplateView):
         }
 
         if diffset.diff_commit_count > 0:
-            diff_context['diff_commits'] = \
-                list(diffset.diff_commits.values('author_name', 'commit_id',
-                                                 'description'))
+            # Minimize the number of queries we have to perform to get the line
+            # counts from the child FileDiffs.
+            commits = diffset.diff_commits.prefetch_related('files')
+
+            for commit in commits.all():
+                entry = {
+                    'author_name': commit.author_name,
+                    'commit_id': commit.commit_id,
+                    'description': commit.description,
+                }
+                entry.update(commit.get_total_line_counts())
+
+                diff_context['diff_commits'].append(entry)
 
         if page.has_next():
             diff_context['pagination']['next_page'] = page.next_page_number()

@@ -51,6 +51,9 @@ RB.DiffCommitIndexView = Backbone.View.extend({
      * DiffCommitCollection. If the collection is empty (i.e., the selected
      * diff revision has no commits associated with it), then the diff commit
      * list table will be hidden.
+     *
+     * It will also render diff complexity icons next to each commit showing
+     * the complexity in terms of lines inserted, removed, and changed.
      */
     update: function() {
         var $tbody;
@@ -61,7 +64,18 @@ RB.DiffCommitIndexView = Backbone.View.extend({
             $tbody = $('<tbody/>');
 
             this.collection.each(function(diffCommit) {
-                $tbody.append(this._itemTemplate(diffCommit.attributes));
+                var lineCounts = diffCommit.attributes.lineCounts,
+                    tr = this._itemTemplate(diffCommit.attributes),
+                    iconView = new RB.DiffComplexityIconView({
+                        numInserts: lineCounts.inserted,
+                        numDeletes: lineCounts.deleted,
+                        numReplaces: lineCounts.replaced,
+                        totalLines: diffCommit.getTotalLineCount()
+                    });
+
+                $tbody.append(tr);
+                iconView.$el.appendTo($tbody.find('.diff-file-icon').last());
+                iconView.render();
             }, this);
 
             this._$itemsTable.append(this._tableHeader);
