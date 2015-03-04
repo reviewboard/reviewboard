@@ -43,6 +43,7 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
         this._$anchors = $();
         this._$controls = null;
         this._diffReviewableViews = [];
+        this._diffCommitIndexView = null;
         this._diffFileIndexView = null;
         this._highlightedChunk = null;
 
@@ -131,6 +132,12 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
         $reviewRequest = this.$('.review-request');
 
         this._$controls = $reviewRequest.find('ul.controls');
+
+        this._diffCommitIndexView = new RB.DiffCommitIndexView({
+            el: $('#diff_commit_index'),
+            collection: this.model.get('diffCommits')
+        });
+        this._diffCommitIndexView.render();
 
         this._diffFileIndexView = new RB.DiffFileIndexView({
             el: $('#diff_index'),

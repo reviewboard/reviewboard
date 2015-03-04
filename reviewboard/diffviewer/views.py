@@ -168,7 +168,13 @@ class DiffViewerView(TemplateView):
                 'has_next': page.has_next(),
                 'has_previous': page.has_previous(),
             },
+            'diff_commits': [],
         }
+
+        if diffset.diff_commit_count > 0:
+            diff_context['diff_commits'] = \
+                list(diffset.diff_commits.values('author_name', 'commit_id',
+                                                 'description'))
 
         if page.has_next():
             diff_context['pagination']['next_page'] = page.next_page_number()
