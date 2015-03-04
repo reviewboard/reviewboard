@@ -297,14 +297,12 @@ def send_review_mail(user, review_request, subject, in_reply_to,
                                  list(cc_field), in_reply_to, headers)
     try:
         message.send()
-    except Exception as e:
-        logging.error("Error sending e-mail notification with subject '%s' on "
-                      "behalf of '%s' to '%s': %s",
-                      subject.strip(),
-                      from_email,
-                      ','.join(list(to_field) + list(cc_field)),
-                      e,
-                      exc_info=1)
+    except Exception:
+        logging.exception("Error sending e-mail notification with subject "
+                          "'%s' on behalf of '%s' to '%s'",
+                          subject.strip(),
+                          from_email,
+                          ','.join(list(to_field) + list(cc_field)))
 
     return message.message_id
 

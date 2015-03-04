@@ -3,6 +3,7 @@ from __future__ import unicode_literals
 import logging
 import os
 import re
+import platform
 
 from django.utils import six
 from django.utils.six.moves.urllib.parse import quote as urlquote
@@ -480,7 +481,11 @@ class GitClient(SCMClient):
         url_parts = urllib_urlparse(self.path)
 
         if url_parts[0] == 'file':
-            self.git_dir = url_parts[2]
+            if platform.system() == "Windows":
+                # Windows requires drive letter (e.g. C:/)
+                self.git_dir = url_parts[1] + url_parts[2]
+            else:
+                self.git_dir = url_parts[2]
 
             p = self._run_git(['--git-dir=%s' % self.git_dir, 'config',
                                'core.repositoryformatversion'])
