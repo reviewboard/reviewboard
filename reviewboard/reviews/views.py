@@ -703,6 +703,13 @@ def review_detail(request,
     close_description, close_description_rich_text = \
         review_request.get_close_description()
 
+    if draft and draft.diffset:
+        latest_diff_revision = draft.diffset.revision
+    elif diffsets:
+        latest_diff_revision = diffsets[-1].revision
+    else:
+        latest_diff_revision = None
+
     context_data = make_review_request_context(request, review_request, {
         'blocks': blocks,
         'draft': draft,
@@ -717,7 +724,7 @@ def review_detail(request,
         'close_description_rich_text': close_description_rich_text,
         'PRE_CREATION': PRE_CREATION,
         'issues': issues,
-        'has_diffs': (draft and draft.diffset) or len(diffsets) > 0,
+        'has_diffs': latest_diff_revision is not None,
         'file_attachments': [file_attachment
                              for file_attachment in file_attachments
                              if not file_attachment.is_from_diff],
