@@ -929,7 +929,7 @@ class WebHookSignalDispatchTests(SpyAgency, TestCase):
         target = WebHookTarget.objects.create(events='review_request_closed',
                                               url=self.ENDPOINT_URL)
 
-        review_request = self.create_review_request()
+        review_request = self.create_review_request(publish=True)
         review_request.close(review_request.SUBMITTED)
 
         spy = dispatch_webhook_event.spy
@@ -1006,7 +1006,7 @@ class WebHookSignalDispatchTests(SpyAgency, TestCase):
             events='review_request_reopened',
             url=self.ENDPOINT_URL)
 
-        review_request = self.create_review_request()
+        review_request = self.create_review_request(publish=True)
         review_request.close(review_request.SUBMITTED)
         review_request.reopen()
 
