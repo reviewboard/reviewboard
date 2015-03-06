@@ -9,7 +9,10 @@ from djblets.testing.decorators import add_fixtures
 from djblets.webapi.errors import PERMISSION_DENIED
 
 from reviewboard.changedescs.models import ChangeDescription
-from reviewboard.reviews.models import Group, ReviewRequestDraft, Screenshot
+from reviewboard.reviews.models import (Group,
+                                        ReviewRequest,
+                                        ReviewRequestDraft,
+                                        Screenshot)
 from reviewboard.webapi.tests.base import BaseWebAPITestCase
 from reviewboard.webapi.tests.mimetypes import (change_item_mimetype,
                                                 change_list_mimetype)
@@ -56,6 +59,21 @@ class ResourceListTests(ReviewRequestChildListMixin, BaseWebAPITestCase):
 
         self.assertEqual(rsp['changes'][0]['id'], change2.pk)
         self.assertEqual(rsp['changes'][1]['id'], change1.pk)
+
+    @add_fixtures(['test_scmtools'])
+    def test_get_with_status_change(self):
+        """Testing the GET review-requests/<id>/changes/ API
+        with review request status changes.
+        """
+        review_request = self.create_review_request(publish=True)
+        review_request.close(ReviewRequest.SUBMITTED, description='Closed!')
+
+        rsp = self.api_get(get_change_list_url(review_request),
+                           expected_mimetype=change_list_mimetype)
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(len(rsp['changes']), 1)
+
+        self.assertTrue('status' in rsp['changes'][0]['fields_changed'])
 
     @add_fixtures(['test_site'])
     def test_get_with_site(self):
