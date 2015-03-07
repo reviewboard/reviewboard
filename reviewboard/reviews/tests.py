@@ -18,6 +18,7 @@ from kgb import SpyAgency
 from reviewboard.accounts.models import Profile, LocalSiteProfile
 from reviewboard.attachments.models import FileAttachment
 from reviewboard.changedescs.models import ChangeDescription
+from reviewboard.reviews.errors import NotModifiedError
 from reviewboard.reviews.forms import DefaultReviewerForm, GroupForm
 from reviewboard.reviews.markdown_utils import (get_markdown_element_tree,
                                                 iter_markdown_lines,
@@ -802,6 +803,30 @@ class ReviewRequestTests(SpyAgency, TestCase):
 
         with self.assertRaises(ChangeDescription.DoesNotExist):
             review_request.changedescs.filter(public=True).latest()
+
+    @add_fixtures(['test_scmtools'])
+    def test_publish_same_commits(self):
+        """Testing ReviewRequest.publish where the draft has identical
+        DiffCommits
+        """
+        commit_id = 'r1'
+        parent_commit_id = 'r0'
+
+        repository = self.create_repository()
+        review_request = self.create_review_request(repository=repository,
+                                                    publish=True)
+        diffset = self.create_diffset(review_request)
+        self.create_diff_commit(diffset, repository, commit_id,
+                                parent_commit_id)
+
+        draft_diffset = self.create_diffset(review_request=review_request,
+                                            draft=True, revision=0)
+        self.create_diff_commit(draft_diffset, repository, commit_id,
+                                parent_commit_id)
+
+        self.assertRaises(
+            NotModifiedError,
+            lambda: review_request.publish(review_request.submitter))
 
 class ViewTests(TestCase):
     """Tests for views in reviewboard.reviews.views"""

@@ -220,13 +220,24 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
 
         self.copy_fields_to_request(review_request)
 
+        # If no changes were made, raise exception and do not save
+        if self.changedesc:
+            if not self.changedesc.has_modified_fields():
+                raise NotModifiedError()
+
+            if self.diffset:
+                # We import this here to avoid a circular import (as
+                # builtin_fields imports this module).
+                from reviewboard.reviews.builtin_fields import DiffField
+
+                if (len(self.changedesc.fields_changed) == 1 and
+                    self.diffset.diff_commit_count > 0 and
+                    DiffField.field_id in self.changedesc.fields_changed):
+                    raise NotModifiedError()
+
         if self.diffset:
             self.diffset.history = review_request.diffset_history
             self.diffset.save(update_fields=['history'])
-
-        # If no changes were made, raise exception and do not save
-        if self.changedesc and not self.changedesc.has_modified_fields():
-            raise NotModifiedError()
 
         if self.changedesc:
             self.changedesc.timestamp = timezone.now()

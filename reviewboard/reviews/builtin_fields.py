@@ -1,5 +1,7 @@
 from __future__ import unicode_literals
 
+from collections import defaultdict
+
 from django.contrib.auth.models import User
 from django.core.urlresolvers import NoReverseMatch
 from django.db import models
@@ -629,7 +631,23 @@ class DiffCommitListField(BuiltinLocalsFieldMixin, BaseReviewRequestField):
             if old_value is not None:
                 q |= Q(diffset__pk=old_value)
 
-            return DiffCommit.objects.filter(q).exists()
+                # TODO: it would be great to use the locals_var here instead
+                #       of rebuilding it.
+                diff_commits_by_diffset_id = defaultdict(list)
+                diff_commits = DiffCommit.objects.filter(q).values(
+                    'diffset_id', 'commit_id')
+
+                # We use only the commit ID so we can do a direct list
+                # comparison.
+                for diff_commit in diff_commits:
+                    diffset_id = diff_commit['diffset_id']
+                    diff_commits_by_diffset_id[diffset_id].append(
+                        diff_commit['commit_id'])
+
+                return (diff_commits_by_diffset_id[old_value] !=
+                        diff_commits_by_diffset_id[new_value])
+
+            return True
 
         return False
 
