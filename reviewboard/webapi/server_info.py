@@ -34,6 +34,9 @@ def get_server_info(request=None):
             'diffs': {
                 'base_commit_ids': True,
                 'moved_files': True,
+                'validation': {
+                    'base_commit_ids': True,
+                }
             },
             'review_requests': {
                 'commit_ids': True,
