@@ -3,7 +3,7 @@ from __future__ import unicode_literals
 import logging
 import traceback
 
-from django.core.paginator import Paginator
+from django.core.paginator import InvalidPage, Paginator
 from django.http import HttpResponseServerError, Http404
 from django.shortcuts import get_object_or_404
 from django.template import RequestContext
@@ -151,7 +151,10 @@ class DiffViewerView(TemplateView):
 
                     break
 
-        page = paginator.page(page_num)
+        try:
+            page = paginator.page(page_num)
+        except InvalidPage:
+            page = paginator.page(paginator.num_pages)
 
         diff_context = {
             'revision': {

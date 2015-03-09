@@ -13,8 +13,7 @@ from django.http import (Http404,
                          HttpResponse,
                          HttpResponseNotFound,
                          HttpResponseNotModified,
-                         HttpResponseRedirect,
-                         HttpResponseServerError)
+                         HttpResponseRedirect)
 from django.shortcuts import (get_object_or_404, get_list_or_404, render,
                               render_to_response)
 from django.template.context import RequestContext
@@ -225,6 +224,7 @@ def build_diff_comment_fragments(
             # still return content for anything we have. This will prevent any
             # caching.
             had_error = True
+            chunks = []
 
         comment_entries.append({
             'comment': comment,
@@ -746,27 +746,18 @@ def review_detail(request,
 
     latest_file_attachments = _get_latest_file_attachments(file_attachments)
 
-    if draft and draft.diffset:
-        latest_diff_revision = draft.diffset.revision
-    elif diffsets:
-        latest_diff_revision = diffsets[-1].revision
-    else:
-        latest_diff_revision = None
-
     context_data = make_review_request_context(request, review_request, {
         'blocks': blocks,
         'draft': draft,
         'review_request_details': review_request_details,
         'entries': entries,
         'last_activity_time': last_activity_time,
-        'latest_revision': latest_diff_revision,
-        'review_request_id': review_request_id,
         'review': pending_review,
         'request': request,
         'close_description': close_description,
         'close_description_rich_text': close_description_rich_text,
         'issues': issues,
-        'has_diffs': latest_diff_revision is not None,
+        'has_diffs': (draft and draft.diffset_id) or len(diffsets) > 0,
         'file_attachments': latest_file_attachments,
         'all_file_attachments': file_attachments,
         'screenshots': screenshots,
@@ -1087,7 +1078,7 @@ def comment_diff_fragments(
     page_content = render_to_string(template_name, context)
 
     if had_error:
-        return HttpResponseServerError(page_content)
+        return HttpResponse(page_content)
 
     response = HttpResponse(page_content)
     set_last_modified(response, comment.timestamp)

@@ -28,6 +28,9 @@ class ResourceTests(BaseWebAPITestCase):
     def compare_item(self, item_rsp, user):
         self.assertTrue(item_rsp['authenticated'])
         self.assertEqual(item_rsp['links']['user']['title'], user.username)
+        self.assertEqual(item_rsp['links']['delete']['href'],
+                         item_rsp['links']['self']['href'])
+        self.assertEqual(item_rsp['links']['delete']['method'], 'DELETE')
 
     #
     # HTTP GET tests

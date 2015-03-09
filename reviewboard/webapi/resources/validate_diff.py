@@ -84,10 +84,18 @@ class ValidateDiffResource(DiffResource):
                 'type': file,
                 'description': 'The optional parent diff to upload.',
             },
+            'base_commit_id': {
+                'type': six.text_type,
+                'description': 'The ID/revision this change is built upon. '
+                               'If using a parent diff, then this is the base '
+                               'for that diff. This may not be provided for '
+                               'all diffs or repository types, depending on '
+                               'how the diff was uploaded.',
+            },
         }
     )
     def create(self, request, repository, basedir=None, local_site_name=None,
-               *args, **kwargs):
+               base_commit_id=None, *args, **kwargs):
         """Validate a diff.
 
         This API has a similar signature to the ReviewRequest resource POST
@@ -134,6 +142,7 @@ class ValidateDiffResource(DiffResource):
         try:
             DiffSet.objects.create_from_upload(
                 repository, path, parent_diff_path, None, basedir, request,
+                base_commit_id=base_commit_id,
                 save=False)
         except FileNotFoundError as e:
             return REPO_FILE_NOT_FOUND, {

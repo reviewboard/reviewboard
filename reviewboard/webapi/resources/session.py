@@ -63,6 +63,18 @@ class SessionResource(WebAPIResource):
             href = user_resource.get_href(request.user, request,
                                           *args, **kwargs)
 
+            # Since there's no object, DELETE won't be populated automatically.
+            clean_href = request.build_absolute_uri()
+            i = clean_href.find('?')
+
+            if i != -1:
+                clean_href = clean_href[:i]
+
+            links['delete'] = {
+                'method': 'DELETE',
+                'href': clean_href,
+            }
+
             links['user'] = {
                 'method': 'GET',
                 'href': href,
