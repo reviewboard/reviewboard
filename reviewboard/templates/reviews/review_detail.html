@@ -30,7 +30,7 @@
 {%   endif %}
 {%   include "reviews/review_request_actions_primary.html" %}
 {%   if has_diffs %}
-   <li class="primary"><a href="{% url 'view-diff-revision' review_request.pk latest_revision %}#index_header">{% trans "View Diff" %}</a></li>
+   <li class="primary"><a href="{% url 'view-diff' review_request.display_id %}#index_header">{% trans "View Diff" %}</a></li>
 {%   endif %}
   </ul>
  </div>

@@ -414,13 +414,6 @@ def review_detail(request,
     for diffset in diffsets:
         diffsets_by_id[diffset.pk] = diffset
 
-    if draft and draft.diffset:
-        latest_diff_revision = draft.diffset.revision
-    elif len(diffsets) > 0:
-        latest_diff_revision = diffsets[-1].revision
-    else:
-        latest_diff_revision = None
-
     # Find out if we can bail early. Generate an ETag for this.
     last_activity_time, updated_object = \
         review_request.get_last_activity(diffsets, public_reviews)
@@ -704,28 +697,19 @@ def review_detail(request,
     close_description, close_description_rich_text = \
         review_request.get_close_description()
 
-    if draft and draft.diffset:
-        latest_diff_revision = draft.diffset.revision
-    elif diffsets:
-        latest_diff_revision = diffsets[-1].revision
-    else:
-        latest_diff_revision = None
-
     context_data = make_review_request_context(request, review_request, {
         'blocks': blocks,
         'draft': draft,
         'review_request_details': review_request_details,
         'entries': entries,
         'last_activity_time': last_activity_time,
-        'latest_revision': latest_diff_revision,
-        'review_request_id': review_request_id,
         'review': pending_review,
         'request': request,
         'close_description': close_description,
         'close_description_rich_text': close_description_rich_text,
         'PRE_CREATION': PRE_CREATION,
         'issues': issues,
-        'has_diffs': latest_diff_revision is not None,
+        'has_diffs': (draft and draft.diffset_id) or len(diffsets) > 0,
         'file_attachments': [
             attachment
             for attachment in file_attachments
