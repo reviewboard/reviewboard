@@ -5,6 +5,15 @@ Review Board 2.0.14 Release Notes
 **Release date**: March 9, 2015
 
 
+Compatibility
+=============
+
+* This release requires Django 1.6.10 or higher.
+
+  Django 1.6.10 provides a number of critical security updates that are
+  beneficial to all servers.
+
+
 New Features
 ============
 
