@@ -2,7 +2,7 @@
 Review Board 2.0.14 Release Notes
 =================================
 
-**Release date**: TBD
+**Release date**: March 9, 2015
 
 
 New Features
