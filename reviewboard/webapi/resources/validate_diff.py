@@ -142,7 +142,8 @@ class ValidateDiffResource(DiffResource):
         try:
             DiffSet.objects.create_from_upload(
                 repository, path, parent_diff_path, request, basedir=basedir,
-                base_commit_id=base_commit_id, save=False)
+                base_commit_id=base_commit_id, diffset_history=None,
+                save=False)
         except FileNotFoundError as e:
             return REPO_FILE_NOT_FOUND, {
                 'file': e.path,
