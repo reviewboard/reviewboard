@@ -698,7 +698,7 @@ class DiffSetManager(DiffManagerBase):
         The diff_file_contents and parent_diff_file_contents parameters are
         strings with the actual diff contents.
         """
-        diffset = super(DiffSetManager, self).create(
+        diffset = self.model(
             name=diff_file_name,
             revision=0,
             basedir=basedir,
