@@ -196,6 +196,14 @@ class StatusField(BuiltinFieldMixin, BaseReviewRequestField):
         """
         return False
 
+    def get_change_entry_sections_html(self, info):
+        """Return sections of change entries with titles and rendered HTML.
+
+        Because the status field is specially handled, this just returns an
+        empty list.
+        """
+        return []
+
 
 class SummaryField(BuiltinFieldMixin, BaseEditableField):
     """The Summary field on a review request."""
