@@ -18,6 +18,7 @@ from random import choice as random_choice
 
 from django.db.utils import OperationalError
 from django.utils import six
+from django.utils.encoding import force_str
 from django.utils.six.moves import input
 from django.utils.six.moves.urllib.request import urlopen
 
@@ -207,7 +208,8 @@ class Site(object):
             self.mkdir(writable_dir)
 
             try:
-                os.chown(writable_dir, writable_st.st_uid, writable_st.st_gid)
+                if hasattr(os, 'chown'):
+                    os.chown(writable_dir, writable_st.st_uid, writable_st.st_gid)
             except OSError:
                 # The user didn't have permission to change the ownership,
                 # they'll have to do this manually later.
@@ -939,7 +941,7 @@ class ConsoleUI(UIToolkit):
 
         while not value:
             if password:
-                temp_value = getpass.getpass(prompt)
+                temp_value = getpass.getpass(force_str(prompt))
                 if save_var.startswith('reenter'):
                     if not self.confirm_reentry(save_obj, save_var,
                                                 temp_value):

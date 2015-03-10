@@ -159,9 +159,13 @@ RB.AbstractCommentBlockView = Backbone.View.extend({
             }, this);
         }, this);
 
-        comment.on('saved', function() {
+        comment.on('saved', function(options) {
             this._updateTooltip();
-            this.notify(gettext('Comment Saved'));
+
+            if (!options.boundsUpdated) {
+                this.notify(gettext('Comment Saved'));
+            }
+
             RB.DraftReviewBannerView.instance.show();
         }, this);
 

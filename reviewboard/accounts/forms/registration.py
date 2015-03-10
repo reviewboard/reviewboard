@@ -16,6 +16,7 @@ class RegistrationForm(DjbletsRegistrationForm):
     for use when generating the widget so that the widget can properly display
     the error.
     """
+
     first_name = forms.CharField(required=False)
     last_name = forms.CharField(required=False)
     recaptcha_challenge_field = forms.CharField(required=False)

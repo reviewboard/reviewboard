@@ -29,6 +29,7 @@ class ReviewRequestVisit(models.Model):
     to review requests they've already seen, so that we can intelligently
     inform them that new discussions have taken place.
     """
+
     user = models.ForeignKey(User, related_name="review_request_visits")
     review_request = models.ForeignKey(ReviewRequest, related_name="visits")
     timestamp = models.DateTimeField(_('last visited'), default=timezone.now)
@@ -45,7 +46,8 @@ class ReviewRequestVisit(models.Model):
 
 @python_2_unicode_compatible
 class Profile(models.Model):
-    """User profile.  Contains some basic configurable settings"""
+    """User profile which contains some basic configurable settings."""
+
     user = models.ForeignKey(User, unique=True)
 
     # This will redirect new users to the account settings page the first time
@@ -138,7 +140,7 @@ class Profile(models.Model):
 
     @property
     def should_use_rich_text(self):
-        """Returns whether rich text should be used by default for this user.
+        """Get whether rich text should be used by default for this user.
 
         If the user has chosen whether or not to use rich text explicitly,
         then that choice will be respected. Otherwise, the system default is
@@ -152,7 +154,7 @@ class Profile(models.Model):
             return self.default_use_rich_text
 
     def star_review_request(self, review_request):
-        """Marks a review request as starred.
+        """Mark a review request as starred.
 
         This will mark a review request as starred for this user and
         immediately save to the database.
@@ -175,7 +177,7 @@ class Profile(models.Model):
         self.save()
 
     def unstar_review_request(self, review_request):
-        """Marks a review request as unstarred.
+        """Mark a review request as unstarred.
 
         This will mark a review request as starred for this user and
         immediately save to the database.
@@ -201,7 +203,7 @@ class Profile(models.Model):
         self.save()
 
     def star_review_group(self, review_group):
-        """Marks a review group as starred.
+        """Mark a review group as starred.
 
         This will mark a review group as starred for this user and
         immediately save to the database.
@@ -210,7 +212,7 @@ class Profile(models.Model):
             self.starred_groups.add(review_group)
 
     def unstar_review_group(self, review_group):
-        """Marks a review group as unstarred.
+        """Mark a review group as unstarred.
 
         This will mark a review group as starred for this user and
         immediately save to the database.
@@ -225,6 +227,7 @@ class Profile(models.Model):
 @python_2_unicode_compatible
 class LocalSiteProfile(models.Model):
     """User profile information specific to a LocalSite."""
+
     user = models.ForeignKey(User, related_name='site_profiles')
     profile = models.ForeignKey(Profile, related_name='site_profiles')
     local_site = models.ForeignKey(LocalSite, null=True, blank=True,
@@ -282,6 +285,7 @@ class Trophy(models.Model):
     It is associated with a ReviewRequest and a User and can be associated
     with a LocalSite.
     """
+
     category = models.CharField(max_length=100)
     received_date = models.DateTimeField(default=timezone.now)
     review_request = models.ForeignKey(ReviewRequest, related_name="trophies")
@@ -306,7 +310,7 @@ class Trophy(models.Model):
 #
 
 def _is_user_profile_visible(self, user=None):
-    """Returns whether or not a User's profile is viewable by a given user.
+    """Get whether or not a User's profile is viewable by a given user.
 
     A profile is viewable if it's not marked as private, or the viewing
     user owns the profile, or the user is a staff member.
@@ -330,10 +334,11 @@ def _is_user_profile_visible(self, user=None):
 
 
 def _should_send_email(self):
-    """Returns whether a user wants to receive emails.
+    """Get whether a user wants to receive emails.
 
     This is patched into the user object to make it easier to deal with missing
-    Profile objects."""
+    Profile objects.
+    """
     try:
         return self.get_profile().should_send_email
     except Profile.DoesNotExist:
@@ -341,10 +346,11 @@ def _should_send_email(self):
 
 
 def _should_send_own_updates(self):
-    """Returns whether a user wants to receive emails about their activity.
+    """Get whether a user wants to receive emails about their activity.
 
     This is patched into the user object to make it easier to deal with missing
-    Profile objects."""
+    Profile objects.
+    """
     try:
         return self.get_profile().should_send_own_updates
     except Profile.DoesNotExist:
@@ -352,7 +358,7 @@ def _should_send_own_updates(self):
 
 
 def _get_profile(self):
-    """Returns the profile for the User.
+    """Get the profile for the User.
 
     The profile will be cached, preventing queries for future lookups.
     """
@@ -364,7 +370,7 @@ def _get_profile(self):
 
 
 def _get_site_profile(self, local_site):
-    """Returns the LocalSiteProfile for a given LocalSite for the User.
+    """Get the LocalSiteProfile for a given LocalSite for the User.
 
     The profile will be cached, preventing queries for future lookups.
     """

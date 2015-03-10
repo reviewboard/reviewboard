@@ -104,6 +104,7 @@ PIPELINE_JS = dict({
             'rb/js/utils/apiErrors.js',
             'rb/js/utils/apiUtils.js',
             'rb/js/utils/linkifyUtils.js',
+            'rb/js/utils/mathUtils.js',
             'rb/js/utils/keyBindingUtils.js',
             'rb/js/collections/baseCollection.js',
             'rb/js/collections/filteredCollection.js',

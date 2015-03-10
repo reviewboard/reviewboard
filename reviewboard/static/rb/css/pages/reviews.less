@@ -740,6 +740,18 @@
         padding: 5px 10px;
       }
     }
+
+    .sidebyside th {
+      /*
+       * The line numbers aren't clickable in the comment fragments in reviews,
+       * so show a standard cursor instead of a pointer cursor.
+       */
+      cursor: initial;
+    }
+  }
+
+  .diff-error tbody {
+    border: 1px @diff-error-border-color solid;
   }
 
   .header {
@@ -1384,6 +1396,7 @@
     width: @file-attachment-width;
     .border-radius(@box-border-radius);
     .box-shadow(@box-shadow);
+    .box-sizing(border-box);
 
     .actions {
       li {

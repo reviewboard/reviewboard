@@ -25,7 +25,8 @@ from reviewboard.testing import TestCase
 
 
 class ProfileTests(TestCase):
-    """Testing the Profile model."""
+    """Test the Profile model."""
+
     fixtures = ['test_users']
 
     def test_is_profile_visible_with_public(self):
@@ -75,16 +76,17 @@ class ProfileTests(TestCase):
 
 
 class AccountPageTests(TestCase):
+    """Test account page functionality."""
+
     builtin_pages = set(['settings', 'authentication', 'profile', 'groups',
                          'api-tokens'])
 
-    """Testing account page functionality."""
     def tearDown(self):
         # Force the next request to re-populate the list of default pages.
         _clear_page_defaults()
 
     def test_default_pages(self):
-        """Testing default list of account pages"""
+        """Testing default list of account pages."""
         page_classes = list(get_page_classes())
         self.assertEqual(len(page_classes), len(self.builtin_pages))
 
@@ -92,7 +94,7 @@ class AccountPageTests(TestCase):
         self.assertEqual(set(page_class_ids), self.builtin_pages)
 
     def test_register_account_page_class(self):
-        """Testing register_account_page_class"""
+        """Testing register_account_page_class."""
         class MyPage(AccountPage):
             page_id = 'test-page'
             page_title = 'Test Page'
@@ -104,7 +106,7 @@ class AccountPageTests(TestCase):
         self.assertEqual(page_classes[-1], MyPage)
 
     def test_register_account_page_class_with_duplicate(self):
-        """Testing register_account_page_class with duplicate page"""
+        """Testing register_account_page_class with duplicate page."""
         class MyPage(AccountPage):
             page_id = 'test-page'
             page_title = 'Test Page'
@@ -114,7 +116,7 @@ class AccountPageTests(TestCase):
                           lambda: register_account_page_class(MyPage))
 
     def test_unregister_account_page_class(self):
-        """Testing unregister_account_page_class"""
+        """Testing unregister_account_page_class."""
         class MyPage(AccountPage):
             page_id = 'test-page'
             page_title = 'Test Page'
@@ -126,7 +128,7 @@ class AccountPageTests(TestCase):
         self.assertEqual(len(page_classes), len(self.builtin_pages))
 
     def test_unregister_unknown_account_page_class(self):
-        """Testing unregister_account_page_class with unknown page"""
+        """Testing unregister_account_page_class with unknown page."""
         class MyPage(AccountPage):
             page_id = 'test-page'
             page_title = 'Test Page'
@@ -135,7 +137,7 @@ class AccountPageTests(TestCase):
                           lambda: unregister_account_page_class(MyPage))
 
     def test_add_form_to_page(self):
-        """Testing AccountPage.add_form"""
+        """Testing AccountPage.add_form."""
         class MyPage(AccountPage):
             page_id = 'test-page'
             page_title = 'Test Page'
@@ -149,7 +151,7 @@ class AccountPageTests(TestCase):
         self.assertEqual(MyPage.form_classes, [MyForm])
 
     def test_add_duplicate_form_to_page(self):
-        """Testing AccountPage.add_form with duplicate form ID"""
+        """Testing AccountPage.add_form with duplicate form ID."""
         class MyForm(AccountPageForm):
             form_id = 'test-form'
 
@@ -163,7 +165,7 @@ class AccountPageTests(TestCase):
         self.assertEqual(MyPage.form_classes, [MyForm])
 
     def test_remove_form_from_page(self):
-        """Testing AccountPage.remove_form"""
+        """Testing AccountPage.remove_form."""
         class MyForm(AccountPageForm):
             form_id = 'test-form'
 
@@ -178,7 +180,7 @@ class AccountPageTests(TestCase):
         self.assertEqual(MyPage.form_classes, [])
 
     def test_remove_unknown_form_from_page(self):
-        """Testing AccountPage.remove_form with unknown form"""
+        """Testing AccountPage.remove_form with unknown form."""
         class MyForm(AccountPageForm):
             form_id = 'test-form'
 
@@ -204,7 +206,7 @@ class UsernameTests(TestCase):
     ]
 
     def test(self):
-        """Testing username regex for LDAP/AD backends"""
+        """Testing username regex for LDAP/AD backends."""
         for orig, new in self.cases:
             self.assertEqual(
                 re.sub(INVALID_USERNAME_CHAR_REGEX, '', orig).lower(),
@@ -212,7 +214,8 @@ class UsernameTests(TestCase):
 
 
 class TrophyTests(TestCase):
-    """Testing the Trophy Case."""
+    """Test the Trophy Case."""
+
     fixtures = ['test_users']
 
     def test_is_fish_trophy_awarded_for_new_review_request(self):
@@ -294,7 +297,8 @@ class SandboxAuthBackend(AuthBackend):
 
 
 class SandboxTests(SpyAgency, TestCase):
-    """Testing extension sandboxing."""
+    """Test extension sandboxing."""
+
     def setUp(self):
         super(SandboxTests, self).setUp()
 
@@ -314,7 +318,7 @@ class SandboxTests(SpyAgency, TestCase):
         super(SandboxTests, self).tearDown()
 
     def test_authenticate_auth_backend(self):
-        """Testing AuthBackend for authenticate"""
+        """Testing sandboxing of AuthBackend.authenticate."""
         form = ChangePasswordForm(page=None, request=self.request,
                                   user=self.user)
         form.cleaned_data = {
@@ -331,7 +335,7 @@ class SandboxTests(SpyAgency, TestCase):
         self.assertTrue(SandboxAuthBackend.authenticate.called)
 
     def test_update_password_auth_backend(self):
-        """Testing AuthBackend for update_password"""
+        """Testing sandboxing of AuthBackend.update_password."""
         form = ChangePasswordForm(page=None, request=self.request,
                                   user=self.user)
         form.cleaned_data = {
@@ -346,7 +350,7 @@ class SandboxTests(SpyAgency, TestCase):
         self.assertTrue(SandboxAuthBackend.update_password.called)
 
     def test_update_name_auth_backend(self):
-        """Testing AuthBackend for update_name"""
+        """Testing sandboxing of AuthBackend.update_name."""
         form = ProfileForm(page=None, request=self.request, user=self.user)
         form.cleaned_data = {
             'first_name': 'Barry',
@@ -362,7 +366,7 @@ class SandboxTests(SpyAgency, TestCase):
         self.assertTrue(SandboxAuthBackend.update_name.called)
 
     def test_update_email_auth_backend(self):
-        """Testing AuthBackend for update_email"""
+        """Testing sandboxing of AuthBackend.update_email."""
         form = ProfileForm(page=None, request=self.request, user=self.user)
         form.cleaned_data = {
             'first_name': 'Barry',

@@ -187,6 +187,22 @@ class BaseModelListEditableField(BaseCommaEditableField):
         setattr(self, self.field_id, value)
 
 
+class StatusField(BuiltinFieldMixin, BaseReviewRequestField):
+    """The Status field on a review request."""
+
+    field_id = 'status'
+    label = _('Status')
+    is_required = True
+
+    def should_render(self, status):
+        """Return whether this field should be rendered.
+
+        This field is "rendered" by displaying the publish and close banners,
+        and doesn't have a real field within the fieldsets.
+        """
+        return False
+
+
 class SummaryField(BuiltinFieldMixin, BaseEditableField):
     """The Summary field on a review request."""
     field_id = 'summary'
@@ -935,6 +951,7 @@ class ChangeEntryOnlyFieldSet(BaseReviewRequestFieldSet):
         ScreenshotCaptionsField,
         FileAttachmentsField,
         ScreenshotsField,
+        StatusField,
     ]
 
 

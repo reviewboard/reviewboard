@@ -19,9 +19,11 @@ from reviewboard.accounts.pages import get_page_classes
 
 @csrf_protect
 def account_register(request, next_url='dashboard'):
-    """
-    Handles redirection to the appropriate registration page, depending
-    on the authentication type the user has configured.
+    """Display the appropriate registration page.
+
+    If registration is enabled and the selected authentication backend supports
+    creation of users, this will return the appropriate registration page. If
+    registration is not supported, this will redirect to the login view.
     """
     siteconfig = SiteConfiguration.objects.get_current()
     auth_backends = get_enabled_auth_backends()
@@ -43,6 +45,7 @@ class MyAccountView(ConfigPagesView):
     it easy to plug in new bits of UI for the page, which is handy for
     extensions that want to offer customization for users.
     """
+
     title = _('My Account')
 
     css_bundle_names = [

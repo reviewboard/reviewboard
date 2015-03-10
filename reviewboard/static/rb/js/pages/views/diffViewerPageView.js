@@ -34,8 +34,11 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
      * Initializes the diff viewer page.
      */
     initialize: function() {
-        var url,
-            hash;
+        var revisionInfo = this.model.get('revision'),
+            curRevision = revisionInfo.get('revision'),
+            url = document.location.toString(),
+            hash = document.location.hash || '',
+            search = document.location.search || '';
 
         _super(this).initialize.call(this);
 
@@ -50,7 +53,6 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
         this.listenTo(this.model.get('files'), 'update', this._setFiles);
 
         /* Check to see if there's an anchor we need to scroll to. */
-        url = document.location.toString();
         this._startAtAnchorName = (url.match('#') ? url.split('#')[1] : null);
 
         this.router = new Backbone.Router({
@@ -79,27 +81,20 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
         });
 
         /*
-         * If we have "index_header" or a file+line hash in the location,
-         * strip it off. Backbone's router makes use of the hash to try to
-         * be backwards compatible with browsers that don't support the
-         * history API, but we don't care about those, and if it's present
-         * when we call start(), it will change the page's URL to be
-         * /diff/index_header, which isn't a valid URL.
-         */
-        if (window.location.hash) {
-            window.location.replace('#');
-        }
-
         /*
-         * Backbone will attempt to convert the hash to part of the page
-         * URL, stripping away the "#". This will result in a URL pointing
-         * to an incorrect, possible non-existent diff revision. We need to
-         * temporarily remove the hash and put it back after calling
-         * Backbone.history.start.
+         * Begin managing the URL history for the page, so that we can
+         * switch revisions and handle pagination while keeping the history
+         * clean and the URLs representative of the current state.
+         *
+         * Note that Backbone will attempt to convert the hash to part of
+         * the page URL, stripping away the "#". This will result in a
+         * URL pointing to an incorrect, possible non-existent diff revision.
+         *
+         * We work around that by saving the values for the hash and query
+         * string (up above), and by later replacing the current URL with a
+         * new one that, amongst other things, contains the hash present
+         * when the page was loaded.
          */
-        hash = location.hash;
-        location.hash = '';
-
         Backbone.history.start({
             pushState: true,
             hashChange: false,
@@ -107,7 +102,24 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
             silent: true
         });
 
-        location.hash = hash;
+        /*
+         * Navigating here accomplishes two things:
+         *
+         * 1. The user may have viewed diff/, and not diff/<revision>/, but
+         *    we want to always show the revision in the URL. This ensures
+         *    we have a URL equivalent to the one we get when clicking
+         *    a revision in the slider.
+         *
+         * 2. We want to add back any hash and query string that was
+         *    stripped away.
+         *
+         * We won't be invoking any routes or storing new history. The back
+         * button will correctly bring the user to the previous page.
+         */
+        this.router.navigate(curRevision + '/' + search + hash, {
+            replace: true,
+            trigger: false
+        });
     },
 
     /*

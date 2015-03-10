@@ -130,14 +130,20 @@ def main():
     if options.install_media:
         install_media(site)
 
-    if options.sync_db:
-        print("Synchronizing database...")
-        site.abs_install_dir = os.getcwd()
-        site.sync_database(allow_input=True)
+    try:
+        if options.sync_db:
+            print("Synchronizing database...")
+            site.abs_install_dir = os.getcwd()
+            site.sync_database(allow_input=True)
 
-    print()
-    print("Your Review Board tree is ready for development.")
-    print()
+        print()
+        print("Your Review Board tree is ready for development.")
+        print()
+    except KeyboardInterrupt:
+        sys.stderr.write(
+            'The process was canceled in the middle of creating the database, '
+            'which can result in a corrupted setup. Please remove the '
+            'database file and run prepare-dev.py again.')
 
 
 if __name__ == "__main__":

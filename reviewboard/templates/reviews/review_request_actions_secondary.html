@@ -5,7 +5,9 @@
  <li class="has-menu">
   <a class="menu-title" id="close-review-request-link" href="#">{% trans "Close" %} &#9662;</a>
   <ul class="menu" style="display: none;">
+{%   if review_request.public %}
    <li><a id="link-review-request-close-submitted" href="#">{% trans "Submitted" %}</a></li>
+{%   endif %}
    <li><a id="discard-review-request-link" href="#">{% trans "Discarded" %}</a></li>
 {%   if perms.reviews.delete_reviewrequest %}
    <li><a id="delete-review-request-link" href="#">{% trans "Delete Permanently" %}</a></li>

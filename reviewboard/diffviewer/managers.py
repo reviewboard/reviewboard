@@ -725,7 +725,7 @@ class DiffSetManager(DiffManagerBase):
         history. Commits and FileDiffs should be attached to the DiffSet via
         the CommitManager.
         """
-        diffset = super(DiffSetManager, self).create(
+        diffset = self.model(
             name='diff',
             repository=repository,
             diffcompat=DiffCompatVersion.DEFAULT,

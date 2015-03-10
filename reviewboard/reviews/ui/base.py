@@ -388,7 +388,12 @@ class FileAttachmentReviewUI(ReviewUI):
     def for_type(cls, attachment):
         """Returns the handler that is the best fit for provided mimetype."""
         if attachment.mimetype:
-            mimetype = mimeparse.parse_mime_type(attachment.mimetype)
+            try:
+                mimetype = mimeparse.parse_mime_type(attachment.mimetype)
+            except:
+                logging.error('Unable to parse MIME type "%s" for %s',
+                              attachment.mimetype, attachment)
+                return None
 
             # Override the mimetype if mimeparse is known to misinterpret this
             # type of file as 'octet-stream'

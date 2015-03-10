@@ -43,6 +43,7 @@ INVALID_USERNAME_CHAR_REGEX = re.compile(r'[^\w.@+-]')
 
 class AuthBackend(object):
     """The base class for Review Board authentication backends."""
+
     backend_id = None
     name = None
     settings_form = None
@@ -64,7 +65,7 @@ class AuthBackend(object):
         return get_object_or_none(User, pk=user_id)
 
     def update_password(self, user, password):
-        """Updates the user's password on the backend.
+        """Update the user's password on the backend.
 
         Authentication backends can override this to update the password
         on the backend. This will only be called if
@@ -75,7 +76,7 @@ class AuthBackend(object):
         raise NotImplementedError
 
     def update_name(self, user):
-        """Updates the user's name on the backend.
+        """Update the user's name on the backend.
 
         The first name and last name will already be stored in the provided
         ``user`` object.
@@ -89,7 +90,7 @@ class AuthBackend(object):
         pass
 
     def update_email(self, user):
-        """Updates the user's e-mail address on the backend.
+        """Update the user's e-mail address on the backend.
 
         The e-mail address will already be stored in the provided
         ``user`` object.
@@ -103,7 +104,7 @@ class AuthBackend(object):
         pass
 
     def query_users(self, query, request):
-        """Searches for users on the back end.
+        """Search for users on the back end.
 
         This call is executed when the User List web API resource is called,
         before the database is queried.
@@ -138,7 +139,7 @@ class AuthBackend(object):
 
 
 class StandardAuthBackend(AuthBackend, ModelBackend):
-    """Authenticates users against the local database.
+    """Authenticate users against the local database.
 
     This will authenticate a user against their entry in the database, if
     the user has a local password stored. This is the default form of
@@ -154,6 +155,7 @@ class StandardAuthBackend(AuthBackend, ModelBackend):
     handle authentication against locally added users and handle
     LocalSite-based permissions for all configurations.
     """
+
     backend_id = 'builtin'
     name = _('Standard Registration')
     settings_form = StandardAuthSettingsForm
@@ -187,7 +189,7 @@ class StandardAuthBackend(AuthBackend, ModelBackend):
         user.password = hashers.make_password(password)
 
     def get_all_permissions(self, user, obj=None):
-        """Returns a list of all permissions for a user.
+        """Get a list of all permissions for a user.
 
         If a LocalSite instance is passed as ``obj``, then the permissions
         returned will be those that the user has on that LocalSite. Otherwise,
@@ -246,7 +248,7 @@ class StandardAuthBackend(AuthBackend, ModelBackend):
         return permissions
 
     def has_perm(self, user, perm, obj=None):
-        """Returns whether a user has the given permission.
+        """Get whether or not a user has the given permission.
 
         If a LocalSite instance is passed as ``obj``, then the permissions
         checked will be those that the user has on that LocalSite. Otherwise,
@@ -281,6 +283,7 @@ class StandardAuthBackend(AuthBackend, ModelBackend):
 
 class HTTPDigestBackend(AuthBackend):
     """Authenticate against a user in a digest password file."""
+
     backend_id = 'digest'
     name = _('HTTP Digest Authentication')
     settings_form = HTTPBasicSettingsForm
@@ -330,6 +333,7 @@ class HTTPDigestBackend(AuthBackend):
 
 class NISBackend(AuthBackend):
     """Authenticate against a user on an NIS server."""
+
     backend_id = 'nis'
     name = _('NIS')
     settings_form = NISSettingsForm
@@ -393,6 +397,7 @@ class NISBackend(AuthBackend):
 
 class LDAPBackend(AuthBackend):
     """Authenticate against a user on an LDAP server."""
+
     backend_id = 'ldap'
     name = _('LDAP')
     settings_form = LDAPSettingsForm
@@ -569,6 +574,7 @@ class LDAPBackend(AuthBackend):
 
 class ActiveDirectoryBackend(AuthBackend):
     """Authenticate a user against an Active Directory server."""
+
     backend_id = 'ad'
     name = _('Active Directory')
     settings_form = ActiveDirectorySettingsForm
@@ -618,8 +624,10 @@ class ActiveDirectoryBackend(AuthBackend):
         for name, data in search_results:
             if name is None:
                 continue
+
             member_of = data.get('memberOf', [])
-            new_groups = [x.split(',')[0].split('=')[1] for x in member_of]
+            new_groups = [x.split(b',')[0].split(b'=')[1] for x in member_of]
+
             old_seen = seen.copy()
             seen.update(new_groups)
 
@@ -703,7 +711,10 @@ class ActiveDirectoryBackend(AuthBackend):
             userdomain = "%s.%s" % (user_subdomain, userdomain)
 
         connections = self.get_ldap_connections(userdomain)
+
         required_group = settings.AD_GROUP_NAME
+        if isinstance(required_group, six.text_type):
+            required_group = required_group.encode('utf-8')
 
         if isinstance(username, six.text_type):
             username_bytes = username.encode('utf-8')
@@ -790,11 +801,12 @@ class ActiveDirectoryBackend(AuthBackend):
 
 
 class X509Backend(AuthBackend):
+    """Authenticate a user from a X.509 client certificate.
+
+    The certificate is passed in by the browser. This backend relies on the
+    X509AuthMiddleware to extract a username field from the client certificate.
     """
-    Authenticate a user from a X.509 client certificate passed in by the
-    browser. This backend relies on the X509AuthMiddleware to extract a
-    username field from the client certificate.
-    """
+
     backend_id = 'x509'
     name = _('X.509 Public Key')
     settings_form = X509SettingsForm
@@ -842,7 +854,7 @@ class X509Backend(AuthBackend):
 
 
 def _populate_defaults():
-    """Populates the default list of authentication backends."""
+    """Populate the default list of authentication backends."""
     global _populated
 
     if not _populated:
@@ -874,7 +886,7 @@ def _populate_defaults():
 
 
 def get_registered_auth_backends():
-    """Returns all registered Review Board authentication backends.
+    """Return all registered Review Board authentication backends.
 
     This will return all backends provided both by Review Board and by
     third parties that have properly registered with the
@@ -886,7 +898,7 @@ def get_registered_auth_backends():
 
 
 def get_registered_auth_backend(backend_id):
-    """Returns the authentication backends with the specified ID.
+    """Return the authentication backends with the specified ID.
 
     If the authentication backend could not be found, this will return None.
     """
@@ -899,7 +911,7 @@ def get_registered_auth_backend(backend_id):
 
 
 def register_auth_backend(backend_cls):
-    """Registers an authentication backend.
+    """Register an authentication backend.
 
     This backend will appear in the list of available backends.
 
@@ -923,7 +935,7 @@ def register_auth_backend(backend_cls):
 
 
 def unregister_auth_backend(backend_cls):
-    """Unregisters a previously registered authentication backend."""
+    """Unregister a previously registered authentication backend."""
     _populate_defaults()
 
     backend_id = backend_cls.backend_id
@@ -939,7 +951,7 @@ def unregister_auth_backend(backend_cls):
 
 
 def get_enabled_auth_backends():
-    """Returns all authentication backends being used by Review Board.
+    """Get all authentication backends being used by Review Board.
 
     The returned list contains every authentication backend that Review Board
     will try, in order.
@@ -976,6 +988,6 @@ def get_enabled_auth_backends():
 
 
 def set_enabled_auth_backend(backend_id):
-    """Sets the authentication backend to be used."""
+    """Set the authentication backend to be used."""
     siteconfig = SiteConfiguration.objects.get_current()
     siteconfig.set('auth_backend', backend_id)

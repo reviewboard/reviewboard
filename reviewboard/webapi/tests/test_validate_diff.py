@@ -5,8 +5,10 @@ import os
 from django.utils import six
 from djblets.testing.decorators import add_fixtures
 from djblets.webapi.errors import INVALID_FORM_DATA
+from kgb import SpyAgency
 
 from reviewboard import scmtools
+from reviewboard.diffviewer.models import DiffSet
 from reviewboard.webapi.errors import DIFF_PARSE_ERROR, REPO_FILE_NOT_FOUND
 from reviewboard.webapi.resources import resources
 from reviewboard.webapi.tests.base import BaseWebAPITestCase
@@ -16,7 +18,7 @@ from reviewboard.webapi.tests.urls import get_validate_diff_url
 
 
 @six.add_metaclass(BasicTestsMetaclass)
-class ResourceTests(BaseWebAPITestCase):
+class ResourceTests(SpyAgency, BaseWebAPITestCase):
     """Testing the ValidateDiffResource APIs."""
     fixtures = ['test_users', 'test_scmtools']
     sample_api_url = 'validation/diffs/'
@@ -119,6 +121,32 @@ class ResourceTests(BaseWebAPITestCase):
                     'basedir': '/trunk',
                 },
                 expected_status=403)
+
+    def test_post_with_base_commit_id(self):
+        """Testing the POST validation/diffs/ API with base_commit_id"""
+        self.spy_on(DiffSet.objects.create_from_upload, call_original=True)
+
+        repository = self.create_repository(tool_name='Test')
+
+        diff_filename = os.path.join(os.path.dirname(scmtools.__file__),
+                                     'testdata', 'git_readme.diff')
+        f = open(diff_filename, "r")
+
+        self.api_post(
+            get_validate_diff_url(),
+            {
+                'repository': repository.pk,
+                'path': f,
+                'basedir': '/trunk',
+                'base_commit_id': '1234',
+            },
+            expected_status=200,
+            expected_mimetype=validate_diff_mimetype)
+
+        f.close()
+
+        last_call = DiffSet.objects.create_from_upload.last_call
+        self.assertEqual(last_call.kwargs.get('base_commit_id'), '1234')
 
     def test_post_with_missing_basedir(self):
         """Testing the POST validations/diffs/ API with a missing basedir"""

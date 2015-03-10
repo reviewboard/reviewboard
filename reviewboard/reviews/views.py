@@ -14,8 +14,7 @@ from django.http import (Http404,
                          HttpResponse,
                          HttpResponseNotFound,
                          HttpResponseNotModified,
-                         HttpResponseRedirect,
-                         HttpResponseServerError)
+                         HttpResponseRedirect)
 from django.shortcuts import (get_object_or_404, get_list_or_404, render,
                               render_to_response)
 from django.template.context import RequestContext
@@ -186,17 +185,19 @@ def build_diff_comment_fragments(
             last_line = min(comment.last_line + lines_of_context[1], max_line)
             num_lines = last_line - first_line + 1
 
+            chunks = list(get_file_chunks_in_range(context,
+                                                   comment.filediff,
+                                                   comment.interfilediff,
+                                                   first_line,
+                                                   num_lines))
+
             content = render_to_string(comment_template_name, {
                 'comment': comment,
                 'header': get_last_header_before_line(context,
                                                       comment.filediff,
                                                       comment.interfilediff,
                                                       first_line),
-                'chunks': list(get_file_chunks_in_range(context,
-                                                        comment.filediff,
-                                                        comment.interfilediff,
-                                                        first_line,
-                                                        num_lines)),
+                'chunks': chunks,
                 'domain': Site.objects.get_current().domain,
                 'domain_method': siteconfig.get('site_domain_method'),
                 'lines_of_context': lines_of_context,
@@ -224,10 +225,12 @@ def build_diff_comment_fragments(
             # still return content for anything we have. This will prevent any
             # caching.
             had_error = True
+            chunks = []
 
         comment_entries.append({
             'comment': comment,
             'html': content,
+            'chunks': chunks,
         })
 
     return had_error, comment_entries
@@ -288,10 +291,10 @@ def new_review_request(request,
                 'requires_change_number': scmtool.supports_pending_changesets,
                 'requires_basedir': not scmtool.get_diffs_use_absolute_paths(),
             })
-        except Exception as e:
-            logging.error('Error loading SCMTool for repository '
-                          '%s (ID %d): %s' % (repo.name, repo.id, e),
-                          exc_info=1)
+        except Exception:
+            logging.exception('Error loading SCMTool for repository "%s" '
+                              '(ID %d)',
+                              repo.name, repo.id)
 
     valid_repos.insert(0, {
         'id': '',
@@ -760,7 +763,7 @@ def review_detail(request,
         'close_description': close_description,
         'close_description_rich_text': close_description_rich_text,
         'issues': issues,
-        'has_diffs': (draft and draft.diffset) or len(diffsets) > 0,
+        'has_diffs': (draft and draft.diffset_id) or len(diffsets) > 0,
         'file_attachments': latest_file_attachments,
         'all_file_attachments': file_attachments,
         'screenshots': screenshots,
@@ -1081,7 +1084,7 @@ def comment_diff_fragments(
     page_content = render_to_string(template_name, context)
 
     if had_error:
-        return HttpResponseServerError(page_content)
+        return HttpResponse(page_content)
 
     response = HttpResponse(page_content)
     set_last_modified(response, comment.timestamp)

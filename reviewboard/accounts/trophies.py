@@ -18,6 +18,7 @@ class TrophyType(object):
 
     Contains methods to visually display itself.
     """
+
     def __init__(self, title, image_url, image_width=32, image_height=48):
         self.title = title
         self.image_url = image_url
@@ -42,6 +43,7 @@ class MilestoneTrophy(TrophyType):
     It is awarded if review request ID is greater than 1000 and is a non-zero
     digit followed by only zeroes (e.g. 1000, 5000, 10000).
     """
+
     category = 'milestone'
 
     def __init__(self):
@@ -66,6 +68,7 @@ class FishTrophy(TrophyType):
 
     Give a man a fish, he'll waste hours trying to figure out why.
     """
+
     category = 'fish'
 
     def __init__(self):
@@ -90,6 +93,7 @@ class UnknownTrophy(TrophyType):
     The data for this trophy exists in the database but its category does not
     match the category of any registered trophy types.
     """
+
     def __init__(self):
         super(UnknownTrophy, self).__init__(
             title=_('Unknown Trophy'),
@@ -97,7 +101,7 @@ class UnknownTrophy(TrophyType):
 
 
 def register_trophy(trophy):
-    """Registers a TrophyType subclass.
+    """Register a TrophyType subclass.
 
     This will register a type of trophy. Review Board will use it to calculate
     and display possible trophies.
@@ -117,7 +121,7 @@ def register_trophy(trophy):
 
 
 def unregister_trophy(trophy):
-    """Unregisters a TrophyType subclass.
+    """Unregister a TrophyType subclass.
 
     This will unregister a previously registered type of trophy.
 
@@ -146,7 +150,7 @@ def get_registered_trophy_types():
 
 
 def _register_trophies():
-    """Registers all bundled TrophyTypes."""
+    """Register all bundled TrophyTypes."""
     if not _trophy_types:
         for type in (MilestoneTrophy, FishTrophy):
             _trophy_types[type.category] = type

@@ -14,6 +14,9 @@ _capabilities_defaults = {
         'base_commit_ids': True,
         'commit_history': True,
         'moved_files': True,
+        'validation': {
+            'base_commit_ids': True,
+        }
     },
     'review_requests': {
         'commit_ids': True,

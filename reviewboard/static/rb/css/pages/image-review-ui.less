@@ -167,6 +167,21 @@
       .selection-flag {
         background: #aceb6f;
       }
+
+      &.can-update-bound {
+        .selection-flag {
+          cursor: move;
+        }
+        .resize-icon {
+          background-color: #aceb6f;
+          bottom: 0;
+          right: 0;
+          position: absolute;
+          height: 0.5em;
+          width: 0.5em;
+          cursor: se-resize;
+        }
+      }
     }
   }
 
