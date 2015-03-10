@@ -473,7 +473,7 @@ class DiffSetManager(models.Manager):
             # IDs.
             parent_commit_id = parent_parser.get_orig_commit_id()
 
-        diffset = super(DiffSetManager, self).create(
+        diffset = self.model(
             name=diff_file_name, revision=0,
             basedir=basedir,
             history=diffset_history,
