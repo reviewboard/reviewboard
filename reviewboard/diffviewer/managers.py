@@ -650,7 +650,7 @@ class DiffCommitManager(DiffManagerBase):
         """
         from reviewboard.diffviewer.models import MergeParent
 
-        diff_commit = super(DiffCommitManager, self).create(
+        diff_commit = self.model(
             name=diff_file_name,
             diffset=diffset,
             commit_id=commit_id,
@@ -669,8 +669,9 @@ class DiffCommitManager(DiffManagerBase):
 
         if merge_parent_ids:
             merge_parents = []
-            for i, id in enumerate(merge_parent_ids):
-                merge_parents.append(MergeParent(commit_id=id,
+
+            for i, merge_parent_id in enumerate(merge_parent_ids):
+                merge_parents.append(MergeParent(commit_id=merge_parent_id,
                                                  child_commit=diff_commit,
                                                  merge_ordinal=i))
 
@@ -689,6 +690,7 @@ class DiffCommitManager(DiffManagerBase):
 
 class DiffSetManager(DiffManagerBase):
     """A custom manager for DiffSet objects. """
+
     def create_from_data(self, repository, diff_file_name, diff_file_contents,
                          parent_diff_file_name, parent_diff_file_contents,
                          request, basedir, diffset_history,

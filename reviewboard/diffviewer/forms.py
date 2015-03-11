@@ -249,7 +249,7 @@ class UploadDiffCommitForm(forms.Form):
 
         return None
 
-    def create(self, diffset, diff_file, parent_diff_file=None):
+    def create(self, diffset, diff_file, parent_diff_file=None, save=True):
         return DiffCommit.objects.create_from_upload(
             repository=self.repository,
             diff_file=diff_file,
@@ -266,4 +266,5 @@ class UploadDiffCommitForm(forms.Form):
             committer_email=self.cleaned_data['committer_email'],
             committer_date=self.cleaned_data['committer_date'],
             description=self.cleaned_data['description'],
-            commit_type=self.cleaned_data['commit_type'])
+            commit_type=self.cleaned_data['commit_type'],
+            save=save)
