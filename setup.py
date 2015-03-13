@@ -23,7 +23,7 @@ from distutils.command.install import INSTALL_SCHEMES
 from distutils.core import Command
 
 from reviewboard import (get_package_version,
-                         is_release, VERSION,
+                         VERSION,
                          django_version)
 
 
@@ -169,6 +169,7 @@ setup(name=PACKAGE_NAME,
               'googlecode = reviewboard.hostingsvcs.googlecode:GoogleCode',
               'jira = reviewboard.hostingsvcs.jira:JIRA',
               'kiln = reviewboard.hostingsvcs.kiln:Kiln',
+              'rbgateway = reviewboard.hostingsvcs.rbgateway:ReviewBoardGateway',
               'redmine = reviewboard.hostingsvcs.redmine:Redmine',
               'sourceforge = reviewboard.hostingsvcs.sourceforge:SourceForge',
               'trac = reviewboard.hostingsvcs.trac:Trac',
