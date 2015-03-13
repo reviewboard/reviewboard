@@ -1,20 +1,51 @@
-.searchresult {
-  padding-bottom: 2em;
+#search_results {
+  margin: 3em;
 
-  h2 {
-    font-size: 110%;
-    font-weight: normal;
-    margin: 0;
+  .paginator {
+    border-top: 1px #E0E0E0 solid;
+    font-size: 120%;
+    margin-top: 2em;
+    padding-top: 2em;
+
+    a {
+      color: blue;
+      text-decoration: none;
+    }
+
+    a, b {
+      margin-right: 0.5em;
+    }
+  }
+
+  .search-results-stats {
+    color: #444444;
+    border-bottom: 1px #E0E0E0 solid;
+    padding-bottom: 2em;
+  }
+
+  .search-result {
+    line-height: 1.5;
+    margin-bottom: 2em;
+
+    h2 {
+      font-size: 140%;
+      font-weight: normal;
+      margin: 0;
+
+      a {
+        text-decoration: none;
+      }
+    }
+
+    .search-result-by {
+      color: #555555;
+      font-size: 85%;
+      margin-top: 0.3em;
+    }
+
+    .search-result-excerpt {
+      margin-top: 0.3em;
+      width: 60em;
+    }
   }
 }
-
-.excerpt {
-  width: 60em;
-}
-
-.by {
-  color: #555555;
-  font-size: 85%;
-}
-
-// vim: set et ts=2 sw=2:

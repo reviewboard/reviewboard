@@ -6,37 +6,59 @@
 <!-- TODO: highlight search terms in summaries/excerpts -->
 
 {% block content %}
+<div id="search_results">
 {%  if hits_returned == 0 %}
 {%   trans "No review requests matching your query" %}: <b>{{query}}</b>
 {%  else %}
+ <div class="search-results-stats">
 {%   blocktrans %}
-<b>{{hits_returned}}</b> results for <b>{{query}}</b>
+ <b>{{hits_returned}}</b> results for <b>{{query}}</b>
 {%   endblocktrans %}
+ </div>
 {%   if total_hits > hits_returned %}
 ({% trans "Additional results exist but are not returned. If you do not see the review request you're looking for, try making your query more specific." %})
 {%   endif %}
 {%  endif %}
-<br /><br />
-<form method="get" action=".">
+ <br /><br />
+ <form method="get" action=".">
 {%  for result in page.object_list %}
-{%   if result.object and result.object.id %}
- <div class="searchresult">
-  <h2><a href="{{result.object.get_absolute_url}}">{{result.object.summary}}</a></h2>
-  <div class="excerpt">{{result.object.description|truncatewords:30}}</div>
-  <div class="by">{% blocktrans with result.object.time_added as added_timestamp and result.object.time_added|date:"c" as added_timestamp_raw and result.object.submitter|user_displayname as added_by %}<time class="timesince" datetime="{{added_timestamp_raw}}">{{added_timestamp}}</time> by {{added_by}}{% endblocktrans %}</div>
- </div>
-{%   endif %}
+  <div class="search-result">
+   <h2><a href="{{result.url}}">{{result.summary}}</a></h2>
+   <div class="search-result-excerpt">{{result.description|truncatewords:30}}</div>
+   <div class="search-result-by">
+{%   blocktrans with result.last_updated as last_updated and result.last_updated|date:"c" as last_updated_raw and result.user_display_name as added_by %}
+    Last updated <time class="timesince" datetime="{{last_updated_raw}}">{{last_updated}}</time>
+    by {{added_by}}
+{%   endblocktrans %}
+   </div>
+  </div>
 {%  endfor %}
- <div>
-{%  if page.has_previous %}
-  <a href="?q={{query}}&amp;page={{page.previous_page_number}}">&laquo; {% trans "Previous" %}</a>
+
+{%  if is_paginated %}
+  <div class="paginator">
+{%   if show_first_page %}
+   <a href="?q={{query}}&amp;page=1">&laquo; {% trans "First Page" %}</a>
+{%   endif %}
+{%   if page.has_previous %}
+   <a href="?q={{query}}&amp;page={{page.previous_page_number}}">&lt; {% trans "Previous" %}</a>
+{%   endif %}
+
+{%   for pagenum in page_numbers %}
+{%    if page.number == pagenum %}
+   <b>{{pagenum}}</b>
+{%    else %}
+   <a href="?q={{query}}&amp;page={{pagenum}}">{{pagenum}}</a>
+{%    endif %}
+{%   endfor %}
+
+{%   if page.has_next %}
+   <a href="?q={{query}}&amp;page={{page.next_page_number}}">{% trans "Next" %} &gt;</a>
+{%   endif %}
+{%   if show_last_page %}
+   <a href="?q={{query}}&amp;page={{pages}}">{% trans "Last Page" %} &raquo;</a>
+{%   endif %}
+  </div>
 {%  endif %}
-{%  if page.has_previous and page.has_next %}
-  |
-{%  endif %}
-{%  if page.has_next %}
-  <a href="?q={{query}}&amp;page={{page.next_page_number}}">{% trans "Next" %} &raquo;</a>
-{%  endif %}
- </div>
-</form>
+ </form>
+</div>
 {% endblock %}

@@ -1,5 +1,5 @@
 {# Haystack data template for ReviewRequestIndex #}
-{{object.id}}
+{{object.display_id}}
 {{object.summary}}
 {{object.description}}
 {{object.testing_done}}

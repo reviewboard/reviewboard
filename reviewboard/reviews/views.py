@@ -1478,6 +1478,18 @@ def view_screenshot(request, review_request_id, screenshot_id,
 class ReviewRequestSearchView(SearchView):
     template = 'reviews/search.html'
 
+    ADJACENT_PAGES = 3
+
+    def __init__(self, *args, **kwargs):
+        siteconfig = SiteConfiguration.objects.get_current()
+        self.enabled = siteconfig.get('search_enable')
+
+        super(ReviewRequestSearchView, self).__init__(
+            load_all=False,
+            searchqueryset=SearchQuerySet,
+            results_per_page=siteconfig.get('search_results_per_page'),
+            *args, **kwargs)
+
     @method_decorator(check_login_required)
     @method_decorator(check_local_site_access)
     def __call__(self, request, local_site=None):
@@ -1496,14 +1508,8 @@ class ReviewRequestSearchView(SearchView):
             except ReviewRequest.DoesNotExist:
                 pass
 
-        siteconfig = SiteConfiguration.objects.get_current()
-
-        if not siteconfig.get("search_enable"):
+        if not self.enabled:
             return render(request, 'search/search_disabled.html')
-
-        self.max_search_results = siteconfig.get("max_search_results")
-        ReviewRequestSearchView.results_per_page = \
-            siteconfig.get("search_results_per_page")
 
         return super(ReviewRequestSearchView, self).__call__(request)
 
@@ -1511,18 +1517,17 @@ class ReviewRequestSearchView(SearchView):
         return self.request.GET.get('q', '').strip()
 
     def get_results(self):
-        # XXX: SearchQuerySet does not provide an API to limit the number of
-        # results returned. Unlike QuerySet, slicing a SearchQuerySet does not
-        # limit the number of results pulled from the database. There is a
-        # potential performance issue with this that needs to be addressed.
         if self.query.isdigit():
-            sqs = SearchQuerySet().filter(
-                review_request_id=self.query).load_all()
+            sqs = self.searchqueryset().filter(
+                review_request_id=self.query)
         else:
-            sqs = SearchQuerySet().raw_search(self.query).load_all()
+            sqs = self.searchqueryset().raw_search(self.query)
+
+        sqs = sqs.order_by('-last_updated')
 
         self.total_hits = len(sqs)
-        return sqs[:self.max_search_results]
+
+        return sqs
 
     def extra_context(self):
         return {
@@ -1541,10 +1546,18 @@ class ReviewRequestSearchView(SearchView):
                 self.results[0].object.get_absolute_url())
 
         paginator, page = self.build_page()
+        page_nums = range(max(1, page.number - self.ADJACENT_PAGES),
+                          min(paginator.num_pages,
+                              page.number + self.ADJACENT_PAGES) + 1)
+
         context = {
             'query': self.query,
             'page': page,
             'paginator': paginator,
+            'is_paginated': page.has_other_pages(),
+            'show_first_page': 1 not in page_nums,
+            'show_last_page': paginator.num_pages not in page_nums,
+            'page_numbers': page_nums,
         }
         context.update(self.extra_context())
 

@@ -118,12 +118,6 @@ class GeneralSettingsForm(SiteSettingsForm):
                     "review requests."),
         required=False)
 
-    max_search_results = forms.IntegerField(
-        label=_("Max number of results"),
-        help_text=_("Maximum number of search results to display."),
-        min_value=1,
-        required=False)
-
     search_results_per_page = forms.IntegerField(
         label=_("Search results per page"),
         help_text=_("Number of search results to show per page."),
@@ -317,8 +311,8 @@ class GeneralSettingsForm(SiteSettingsForm):
             {
                 'classes': ('wide',),
                 'title': _("Search"),
-                'fields': ('search_enable', 'max_search_results',
-                           'search_results_per_page', 'search_index_file'),
+                'fields': ('search_enable', 'search_results_per_page',
+                           'search_index_file'),
             },
             {
                 'classes': ('wide',),

@@ -1,4 +1,7 @@
+from __future__ import unicode_literals
+
 from django.db.models import Q
+from djblets.util.templatetags.djblets_utils import user_displayname
 from haystack import indexes
 
 from reviewboard.reviews.models import ReviewRequest
@@ -6,6 +9,7 @@ from reviewboard.reviews.models import ReviewRequest
 
 class ReviewRequestIndex(indexes.SearchIndex, indexes.Indexable):
     """A Haystack search index for Review Requests."""
+
     # By Haystack convention, the full-text template is automatically
     # referenced at
     # reviewboard/templates/search/indexes/reviews/reviewrequest_text.txt
@@ -13,13 +17,16 @@ class ReviewRequestIndex(indexes.SearchIndex, indexes.Indexable):
 
     # We shouldn't use 'id' as a field name because it's by default reserved
     # for Haystack. Hiding it will cause duplicates when updating the index.
-    review_request_id = indexes.IntegerField(model_attr='id')
+    review_request_id = indexes.IntegerField(model_attr='display_id')
     summary = indexes.CharField(model_attr='summary')
     description = indexes.CharField(model_attr='description')
     testing_done = indexes.CharField(model_attr='testing_done')
     bug = indexes.CharField(model_attr='bugs_closed')
     username = indexes.CharField(model_attr='submitter__username')
+    user_display_name = indexes.CharField()
     author = indexes.CharField(model_attr='submitter__get_full_name')
+    last_updated = indexes.DateTimeField(model_attr='last_updated')
+    url = indexes.CharField(model_attr='get_absolute_url')
     file = indexes.CharField()
 
     def get_model(self):
@@ -46,3 +53,6 @@ class ReviewRequestIndex(indexes.SearchIndex, indexes.Indexable):
             for diffset in obj.diffset_history.diffsets.all()
             for filediff in diffset.files.all()
         ])
+
+    def prepare_user_display_name(self, obj):
+        return user_displayname(obj.submitter)
