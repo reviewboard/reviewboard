@@ -155,6 +155,8 @@ class UploadFileForm(forms.Form):
 
         if ret == 0:
             mimetype = p.stdout.read().strip()
+        else:
+            mimetype = None
 
         # Reset the read position so we can properly save this.
         file.seek(0)
