@@ -180,40 +180,111 @@ def patch(diff, file, filename, request=None):
     return data
 
 
-def get_original_file(filediff, request, encoding_list):
-    """
-    Get a file either from the cache or the SCM, applying the parent diff if
-    it exists.
+def get_original_file_from_repo(filediff, request, encoding_list):
+    """Get the pre-patch file for the FileDiff from the repository.
 
     SCM exceptions are passed back to the caller.
     """
-    data = b""
+    repository = filediff.diffset.repository
+    data = repository.get_file(
+        filediff.source_file,
+        filediff.source_revision,
+        base_commit_id=filediff.diffset.base_commit_id,
+        request=request)
+
+    # Convert to unicode before we do anything to manipulate the string.
+    encoding, data = convert_to_unicode(data, encoding_list)
+
+    # Repository.get_file doesn't know or care about how we need line
+    # endings to work. So, we'll just transform every time.
+    #
+    # This is mostly only a problem if the diff chunks aren't in the
+    # cache, though if several people are working off the same file,
+    # we'll be doing extra work to convert those line endings for each
+    # of those instead of once.
+    #
+    # Only other option is to cache the resulting file, but then we're
+    # duplicating the cached contents.
+    data = convert_line_endings(data)
+
+    # Convert back to bytes using whichever encoding we used to decode.
+    data = data.encode(encoding)
+
+    return data
+
+
+def get_original_file_from_diffset_history(filediff, request, encoding_list):
+    """Get the pre-patch file of the FileDiff from the DiffSet history.
+
+    This function builds the pre-patch file from the FileDiffs in each
+    ancestor DiffCommit of the FileDiff.
+    """
+    from reviewboard.diffviewer.models import FileDiff
+
+    data = b''
+
+    filediffs_to_apply = []
+
+    diffset = filediff.diffset
+
+    current_filediff = filediff
+
+    while True:
+        try:
+            previous_filediff = diffset.files.get(
+                dest_file=current_filediff.source_file,
+                dest_detail=current_filediff.source_revision)
+        except FileDiff.DoesNotExist:
+            # The file was not originally created in this series of
+            # DiffCommits. We have to fetch the original file from the
+            # repository.
+            data = get_original_file_from_repo(current_filediff,
+                                               request,
+                                               encoding_list)
+            break
+
+        filediffs_to_apply.append(previous_filediff)
+        current_filediff = previous_filediff
+
+        if current_filediff.is_new:
+            # The file was originally created in this series of
+            # DiffCommits. We do not have to search any further to be
+            # able to build the original file for the FileDiff.
+            break
+
+    if current_filediff.parent_diff:
+        data = patch(current_filediff.parent_diff, data,
+                     current_filediff.source_file, request)
+
+    # Our FileDiffs are sorted in newest-to-oldest order, but we must
+    # apply them in oldest-to-newest order.
+    for filediff_to_apply in reversed(filediffs_to_apply):
+        data = patch(filediff_to_apply.diff, data,
+                     filediff_to_apply.source_file, request)
+
+    return data
+
+
+def get_original_file(filediff, request, encoding_list):
+    """Get the pre-patch file of the FileDiff, taking history into account.
+
+    This function also applies the first parent diff, if it exists.
+
+    SCM exceptions are passed back to the caller.
+    """
+    data = b''
 
     if not filediff.is_new:
-        repository = filediff.diffset.repository
-        data = repository.get_file(
-            filediff.source_file,
-            filediff.source_revision,
-            base_commit_id=filediff.diffset.base_commit_id,
-            request=request)
-
-        # Convert to unicode before we do anything to manipulate the string.
-        encoding, data = convert_to_unicode(data, encoding_list)
-
-        # Repository.get_file doesn't know or care about how we need line
-        # endings to work. So, we'll just transform every time.
-        #
-        # This is mostly only a problem if the diff chunks aren't in the
-        # cache, though if several people are working off the same file,
-        # we'll be doing extra work to convert those line endings for each
-        # of those instead of once.
-        #
-        # Only other option is to cache the resulting file, but then we're
-        # duplicating the cached contents.
-        data = convert_line_endings(data)
-
-        # Convert back to bytes using whichever encoding we used to decode.
-        data = data.encode(encoding)
+        # We first have to check if this FileDiff belongs to a DiffCommit. If
+        # it does, we may have to build the original file from other FileDiffs
+        # in the DiffCommit.
+        if filediff.diff_commit_id:
+            return get_original_file_from_diffset_history(filediff,
+                                                          request,
+                                                          encoding_list)
+        else:
+            data = get_original_file_from_repo(filediff, request,
+                                               encoding_list)
 
     # If there's a parent diff set, apply it to the buffer.
     if filediff.parent_diff:
