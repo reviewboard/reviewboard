@@ -15,6 +15,7 @@ from django.utils.translation import ugettext as _
 from djblets.siteconfig.models import SiteConfiguration
 
 from reviewboard.diffviewer.differ import DiffCompatVersion
+from reviewboard.diffviewer.diffutils import DiffCommitFileExistenceChecker
 from reviewboard.diffviewer.errors import DiffTooBigError, EmptyDiffError
 from reviewboard.scmtools.core import PRE_CREATION, UNKNOWN, FileNotFoundError
 
@@ -451,7 +452,7 @@ class DiffProcessor(object):
 
     def __init__(self, get_file_exists):
         """Create a new DiffProcessor with the given file existence checker."""
-        self.get_file_exists = get_file_exists
+        self._get_file_exists = get_file_exists
 
     def create_filediffs(self, diff_file_contents, parent_diff_file_contents,
                          repository, request, basedir, base_commit_id,
@@ -598,9 +599,9 @@ class DiffProcessor(object):
                 not f.moved and
                 not f.copied and
                 (check_existence and
-                 not self.get_file_exists(filename, revision,
-                                          base_commit_id=base_commit_id,
-                                          request=request))):
+                 not self._get_file_exists(filename, revision,
+                                           base_commit_id=base_commit_id,
+                                           request=request))):
                 raise FileNotFoundError(filename, revision, base_commit_id)
 
             f.origFile = filename
@@ -677,8 +678,14 @@ class DiffCommitManager(DiffManagerBase):
 
             if save:
                 MergeParent.objects.bulk_create(merge_parents)
+            else:
+                # If we are not saving to the database, we will need these
+                # available for the DiffCommit validation.
+                diff_commit.merge_parent_ids = merge_parents
 
-        diff_processor = DiffProcessor(repository.get_file_exists)
+        diff_processor = DiffProcessor(
+            DiffCommitFileExistenceChecker(repository, diffset, diff_commit))
+
         diff_processor.create_filediffs(diff_file_contents,
                                         parent_diff_file_contents, repository,
                                         request, diffset.basedir,

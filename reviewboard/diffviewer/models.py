@@ -1,6 +1,7 @@
 from __future__ import unicode_literals
 
 import bz2
+import itertools
 import logging
 
 from dateutil.tz import tzoffset
@@ -558,6 +559,33 @@ class DiffSet(DiffLineCountsMixin, models.Model):
             self.history.save()
 
         super(DiffSet, self).save()
+
+    def build_dag(self, *extra_commits):
+        """Build the directed acyclic graph of the DiffSet's commit history.
+
+        The returned DAG is represented as a dict. The keys of the dict are
+        commit IDs and the values are the commit IDs of the parent commits of
+        the corresponding commit (including merge parents).
+
+        If the DiffSet has no child DiffCommits, the empty dict is returned.
+
+        The :param:`extra_commits` parameter specifies extra commits that
+        should be added to the DAG if they don't already exist in it. This is
+        exclusively for the case of DiffCommit validation as the DiffCommit
+        being validated will not appear in the DiffSet's set of DiffCommits.
+        """
+        dag = {}
+
+        commits = self.diff_commits.prefetch_related('merge_parent_ids')
+
+        for commit in itertools.chain(commits.all(), extra_commits):
+            if commit.commit_id not in dag:
+                dag[commit.commit_id] = [commit.parent_id]
+                dag[commit.commit_id].extend(
+                    commit.merge_parent_ids.values_list('commit_id',
+                                                        flat=True))
+
+        return dag
 
     def __str__(self):
         return "[%s] %s r%s" % (self.id, self.name, self.revision)

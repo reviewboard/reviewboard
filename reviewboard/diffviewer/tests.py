@@ -6,6 +6,7 @@ import dateutil.parser
 import nose
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.http import HttpResponse
+from django.utils import timezone
 from django.utils.six.moves import zip_longest
 from djblets.cache.backend import cache_memoize
 from djblets.db.fields import Base64DecodedValue
@@ -20,7 +21,8 @@ from reviewboard.diffviewer.chunk_generator import DiffChunkGenerator
 from reviewboard.diffviewer.errors import UserVisibleError
 from reviewboard.diffviewer.forms import UploadDiffCommitForm, UploadDiffForm
 from reviewboard.diffviewer.models import (DiffCommit, DiffSet, FileDiff,
-                                           LegacyFileDiffData, RawFileDiffData)
+                                           LegacyFileDiffData, MergeParent,
+                                           RawFileDiffData)
 from reviewboard.diffviewer.myersdiff import MyersDiffer
 from reviewboard.diffviewer.opcode_generator import get_diff_opcode_generator
 from reviewboard.diffviewer.renderers import DiffRenderer
@@ -2693,6 +2695,85 @@ class DiffRendererTests(SpyAgency, TestCase):
         chunk = diff_file['chunks'][0]
         self.assertEqual(chunk['change'], 'replace')
 
+
+class DiffSetTests(TestCase):
+    """Test cases for DiffSets."""
+    fixtures = ['test_users', 'test_scmtools']
+
+    def test_build_dag_linear(self):
+        """Testing DAG generation for a linear history"""
+        repository = self.create_repository(tool_name='Test')
+        review_request = self.create_review_request(repository=repository)
+        diffset = self.create_diffset(review_request=review_request)
+
+        dag = {
+            'foo': ['bar'],
+            'bar': ['baz'],
+        }
+
+        common_fields = {
+            'name': 'diff',
+            'diffset': diffset,
+            'author_name': 'Author Name',
+            'author_email': 'email@example.com',
+            'author_date_utc': timezone.now().astimezone(timezone.utc),
+            'author_date_offset': 0,
+            'description': 'description',
+            'commit_type': DiffCommit.COMMIT_CHANGE_TYPE,
+        }
+
+        commits = [
+            DiffCommit(commit_id='foo', parent_id='bar', **common_fields),
+            DiffCommit(commit_id='bar', parent_id='baz', **common_fields),
+        ]
+
+        DiffCommit.objects.bulk_create(commits)
+
+        self.assertDictEqual(dag, diffset.build_dag())
+
+    def test_build_dag_merge(self):
+        """Testing DAG generation for a history with a merge"""
+        repository = self.create_repository(tool_name='Test')
+        review_request = self.create_review_request(repository=repository)
+        diffset = self.create_diffset(review_request=review_request)
+
+        dag = {
+            'foo': ['bar', 'baz'],
+            'bar': ['quux'],
+            'baz': ['quux'],
+        }
+
+        common_fields = {
+            'name': 'diff',
+            'diffset': diffset,
+            'author_name': 'Author Name',
+            'author_email': 'email@example.com',
+            'author_date_utc': timezone.now().astimezone(timezone.utc),
+            'author_date_offset': 0,
+            'description': 'description',
+        }
+
+        commits = {
+            'foo': DiffCommit(commit_id='foo', parent_id='bar',
+                              commit_type=DiffCommit.COMMIT_MERGE_TYPE,
+                              **common_fields),
+            'bar': DiffCommit(commit_id='bar', parent_id='quux',
+                              commit_type=DiffCommit.COMMIT_CHANGE_TYPE,
+                              **common_fields),
+            'baz': DiffCommit(commit_id='baz', parent_id='quux',
+                              commit_type=DiffCommit.COMMIT_CHANGE_TYPE,
+                              **common_fields),
+        }
+
+        # The bulk_create method does not update the pk for created objects.
+        for commit in commits:
+            commits[commit].save()
+
+        MergeParent(commit_id='baz',
+                    child_commit=commits['foo'],
+                    merge_ordinal=1).save()
+
+        self.assertDictEqual(dag, diffset.build_dag())
 
 class DiffUtilsTests(TestCase):
     """Unit tests for diffutils."""
