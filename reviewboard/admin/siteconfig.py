@@ -153,7 +153,6 @@ defaults.update({
     'search_index_file': os.path.join(settings.SITE_DATA_DIR,
                                       'search-index'),
     'search_results_per_page': 20,
-    'max_search_results': 200,
 
     # Overwrite this.
     'site_media_url': settings.SITE_ROOT + "media/",

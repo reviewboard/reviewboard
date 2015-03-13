@@ -484,10 +484,10 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
         if request.POST.get('public', False):
             try:
                 review_request.publish(user=request.user)
-            except PublishError as e:
-                return PUBLISH_ERROR.with_message(e.msg)
             except NotModifiedError:
                 return NOTHING_TO_PUBLISH
+            except PublishError as e:
+                return PUBLISH_ERROR.with_message(e.msg)
 
         return 200, {
             self.item_result_key: draft,

@@ -791,7 +791,17 @@ class ReviewRequest(BaseReviewRequestDetails):
 
         if draft is not None:
             # This will in turn save the review request, so we'll be done.
-            changes = draft.publish(self, send_notification=False)
+            try:
+                changes = draft.publish(self, send_notification=False)
+            except Exception:
+                # The draft failed to publish, for one reason or another.
+                # Check if we need to re-increment those counters we
+                # previously decremented.
+                if self.public:
+                    self._increment_reviewer_counts()
+
+                raise
+
             draft.delete()
         else:
             changes = None

@@ -18,7 +18,7 @@ from kgb import SpyAgency
 from reviewboard.accounts.models import Profile, LocalSiteProfile
 from reviewboard.attachments.models import FileAttachment
 from reviewboard.changedescs.models import ChangeDescription
-from reviewboard.reviews.errors import PublishError
+from reviewboard.reviews.errors import NotModifiedError, PublishError
 from reviewboard.reviews.forms import DefaultReviewerForm, GroupForm
 from reviewboard.reviews.markdown_utils import (get_markdown_element_tree,
                                                 iter_markdown_lines,
@@ -1820,7 +1820,7 @@ class IfNeatNumberTagTests(TestCase):
         self.assertEqual(t.render(Context({})), expected)
 
 
-class ReviewRequestCounterTests(TestCase):
+class ReviewRequestCounterTests(SpyAgency, TestCase):
     fixtures = ['test_scmtools']
 
     def setUp(self):
@@ -2164,6 +2164,33 @@ class ReviewRequestCounterTests(TestCase):
                              pending_outgoing=1,
                              starred_public=1)
 
+    def test_remove_group_and_fail_publish(self):
+        """Testing counters when removing a group reviewer and then
+        failing to publish the draft
+        """
+        self.test_add_group()
+
+        draft = ReviewRequestDraft.create(self.review_request)
+        draft.target_groups.remove(self.group)
+
+        self._check_counters(total_outgoing=1,
+                             pending_outgoing=1,
+                             total_incoming=1,
+                             group_incoming=1,
+                             starred_public=1)
+
+        self.spy_on(ReviewRequestDraft.publish,
+                    call_fake=self._raise_publish_error)
+
+        with self.assertRaises(NotModifiedError):
+            self.review_request.publish(self.user)
+
+        self._check_counters(total_outgoing=1,
+                             pending_outgoing=1,
+                             total_incoming=1,
+                             group_incoming=1,
+                             starred_public=1)
+
     def test_add_person(self):
         """Testing counters when adding a person reviewer"""
         draft = ReviewRequestDraft.create(self.review_request)
@@ -2197,6 +2224,33 @@ class ReviewRequestCounterTests(TestCase):
 
         self._check_counters(total_outgoing=1,
                              pending_outgoing=1,
+                             starred_public=1)
+
+    def test_remove_person_and_fail_publish(self):
+        """Testing counters when removing a person reviewer and then
+        failing to publish the draft
+        """
+        self.test_add_person()
+
+        draft = ReviewRequestDraft.create(self.review_request)
+        draft.target_people.remove(self.user)
+
+        self._check_counters(total_outgoing=1,
+                             pending_outgoing=1,
+                             direct_incoming=1,
+                             total_incoming=1,
+                             starred_public=1)
+
+        self.spy_on(ReviewRequestDraft.publish,
+                    call_fake=self._raise_publish_error)
+
+        with self.assertRaises(NotModifiedError):
+            self.review_request.publish(self.user)
+
+        self._check_counters(total_outgoing=1,
+                             pending_outgoing=1,
+                             direct_incoming=1,
+                             total_incoming=1,
                              starred_public=1)
 
     def test_populate_counters(self):
@@ -2323,6 +2377,9 @@ class ReviewRequestCounterTests(TestCase):
         self.site_profile2 = \
             LocalSiteProfile.objects.get(pk=self.site_profile2.pk)
         self.group = Group.objects.get(pk=self.group.pk)
+
+    def _raise_publish_error(self, *args, **kwargs):
+        raise NotModifiedError()
 
 
 class IssueCounterTests(TestCase):
