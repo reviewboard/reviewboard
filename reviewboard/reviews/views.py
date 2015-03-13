@@ -1476,7 +1476,7 @@ def view_screenshot(request, review_request_id, screenshot_id,
 
 
 class ReviewRequestSearchView(SearchView):
-    template = 'reviews/search.html'
+    template = 'search/results.html'
 
     ADJACENT_PAGES = 3
 

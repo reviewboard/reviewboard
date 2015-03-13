@@ -1,3 +1,6 @@
+@import (reference) "defs.less";
+
+
 #search_results {
   margin: 3em;
 
@@ -24,17 +27,18 @@
   }
 
   .search-result {
+    .clearfix();
     line-height: 1.5;
     margin-bottom: 2em;
+
+    a {
+      text-decoration: none;
+    }
 
     h2 {
       font-size: 140%;
       font-weight: normal;
       margin: 0;
-
-      a {
-        text-decoration: none;
-      }
     }
 
     .search-result-by {
@@ -43,9 +47,30 @@
       margin-top: 0.3em;
     }
 
+    .search-result-body {
+      float: left;
+    }
+
     .search-result-excerpt {
       margin-top: 0.3em;
       width: 60em;
+    }
+
+    .search-result-icon {
+      float: left;
+      margin-right: 1em;
+    }
+
+    .search-result-links {
+      margin-top: 1em;
+    }
+
+    .search-result-username {
+      font-size: 120%;
+    }
+
+    .search-result-user-groups {
+      margin-top: 1em;
     }
   }
 }

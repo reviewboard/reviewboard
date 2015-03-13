@@ -22,16 +22,11 @@
  <br /><br />
  <form method="get" action=".">
 {%  for result in page.object_list %}
-  <div class="search-result">
-   <h2><a href="{{result.url}}">{{result.summary}}</a></h2>
-   <div class="search-result-excerpt">{{result.description|truncatewords:30}}</div>
-   <div class="search-result-by">
-{%   blocktrans with result.last_updated as last_updated and result.last_updated|date:"c" as last_updated_raw and result.user_display_name as added_by %}
-    Last updated <time class="timesince" datetime="{{last_updated_raw}}">{{last_updated}}</time>
-    by {{added_by}}
-{%   endblocktrans %}
-   </div>
-  </div>
+{%   if result.content_type == "reviews.reviewrequest" %}
+{%    include "search/_review_request.html" %}
+{%   elif result.content_type == "auth.user" %}
+{%    include "search/_user.html" %}
+{%   endif %}
 {%  endfor %}
 
 {%  if is_paginated %}
