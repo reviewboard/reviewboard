@@ -14,11 +14,12 @@ from reviewboard import get_package_version
 
 
 def get_install_key():
-    """Returns the installation key for this server."""
+    """Return the installation key for this server."""
     return sha1(settings.SECRET_KEY).hexdigest()
 
 
 def _norm_siteconfig_value(siteconfig, key):
+    """Normalize site configuration values to strip extra quotation marks."""
     value = siteconfig.get(key)
 
     # To work around rb-site requiring values in previous releases for these,
@@ -31,7 +32,7 @@ def _norm_siteconfig_value(siteconfig, key):
 
 
 def serialize_support_data(request=None, force_is_admin=False):
-    """Serializes support data into a base64-encoded string."""
+    """Serialize support data into a base64-encoded string."""
     siteconfig = SiteConfiguration.objects.get_current()
 
     is_admin = (force_is_admin or
@@ -52,7 +53,7 @@ def serialize_support_data(request=None, force_is_admin=False):
 
 
 def get_default_support_url(request=None, force_is_admin=False):
-    """Returns the URL for the default Review Board support page."""
+    """Return the URL for the default Review Board support page."""
     siteconfig = SiteConfiguration.objects.get_current()
 
     if siteconfig.get('send_support_usage_stats'):
@@ -66,7 +67,7 @@ def get_default_support_url(request=None, force_is_admin=False):
 
 
 def get_register_support_url(request=None, force_is_admin=False):
-    """Returns the URL for registering the Review Board support page."""
+    """Return the URL for registering the Review Board support page."""
     siteconfig = SiteConfiguration.objects.get_current()
 
     if siteconfig.get('send_support_usage_stats'):
@@ -80,7 +81,7 @@ def get_register_support_url(request=None, force_is_admin=False):
 
 
 def get_support_url(request):
-    """Returns the URL for the configured support page."""
+    """Return the URL for the configured support page."""
     siteconfig = SiteConfiguration.objects.get_current()
 
     return (siteconfig.get('support_url') or

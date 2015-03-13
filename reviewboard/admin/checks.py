@@ -48,7 +48,7 @@ _install_fine = False
 
 
 def check_updates_required():
-    """Checks if there are manual updates required.
+    """Check if there are manual updates required.
 
     Sometimes, especially in developer installs, some things need to be tweaked
     by hand before Review Board can be used on this server.
@@ -205,7 +205,7 @@ def check_updates_required():
 
 
 def reset_check_cache():
-    """Resets the cached data of all checks.
+    """Reset the cached data of all checks.
 
     This is mainly useful during unit tests.
     """
@@ -215,7 +215,7 @@ def reset_check_cache():
 
 
 def get_can_enable_ldap():
-    """Checks whether LDAP authentication can be enabled."""
+    """Check whether LDAP authentication can be enabled."""
     if has_module('ldap'):
         return (True, None)
     else:
@@ -226,7 +226,7 @@ def get_can_enable_ldap():
 
 
 def get_can_enable_dns():
-    """Checks whether we can query DNS to find the domain controller to use."""
+    """Check whether we can query DNS to find the domain controller to use."""
     if has_module('DNS'):
         return (True, None)
     else:
@@ -237,7 +237,7 @@ def get_can_enable_dns():
 
 
 def get_can_use_amazon_s3():
-    """Checks whether django-storages (Amazon S3 backend) is installed."""
+    """Check whether django-storages (Amazon S3 backend) is installed."""
     try:
         if has_module('storages.backends.s3boto', members=['S3BotoStorage']):
             return (True, None)
@@ -250,7 +250,7 @@ def get_can_use_amazon_s3():
 
 
 def get_can_use_openstack_swift():
-    """Checks whether django-storage-swift is installed."""
+    """Check whether django-storage-swift is installed."""
     try:
         if has_module('swift.storage', members=['SwiftStorage']):
             return (True, None)
@@ -264,7 +264,7 @@ def get_can_use_openstack_swift():
 
 
 def get_can_use_couchdb():
-    """Checks whether django-storages (CouchDB backend) is installed."""
+    """Check whether django-storages (CouchDB backend) is installed."""
     if has_module('storages.backends.couchdb', members=['CouchDBStorage']):
         return (True, None)
     else:

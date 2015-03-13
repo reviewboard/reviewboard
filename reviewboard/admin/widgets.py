@@ -43,6 +43,7 @@ class Widget(object):
     There are a number of built-in widgets, but extensions can provide their
     own.
     """
+
     # Constants
     SMALL = 'small'
     LARGE = 'large'
@@ -57,13 +58,14 @@ class Widget(object):
     cache_data = True
 
     def __init__(self):
+        """Initialize the widget."""
         self.data = None
         self.name = NAME_TRANSFORM_RE.sub(
             lambda m: '-%s' % m.group(1).lower(),
             self.__class__.__name__)[1:]
 
     def render(self, request):
-        """Renders a widget.
+        """Render the widget.
 
         This will render the HTML for a widget. It takes care of generating
         and caching the data, depending on the widget's needs.
@@ -81,7 +83,7 @@ class Widget(object):
                                 }))
 
     def generate_data(self, request):
-        """Generates data for the widget.
+        """Generate data for the widget.
 
         Widgets should override this to provide extra data to pass to the
         template. This will be available in 'widget.data'.
@@ -91,7 +93,7 @@ class Widget(object):
         return {}
 
     def generate_cache_key(self, request):
-        """Generates a cache key for this widget's data.
+        """Generate a cache key for this widget's data.
 
         By default, the key takes into account the current day. If the
         widget is displaying specific to, for example, the user, this should
@@ -129,6 +131,7 @@ class UserActivityWidget(Widget):
     Displays a pie chart of the active application users based on their last
     login dates.
     """
+
     widget_id = 'user-activity-widget'
     title = _('User Activity')
     size = Widget.LARGE
@@ -146,6 +149,7 @@ class UserActivityWidget(Widget):
     ]
 
     def generate_data(self, request):
+        """Generate data for the widget."""
         now = timezone.now()
         users = User.objects
 
@@ -176,11 +180,13 @@ class ReviewRequestStatusesWidget(Widget):
 
     Displays a pie chart showing review request by status.
     """
+
     widget_id = 'review-request-statuses-widget'
     title = _('Request Statuses')
     template = 'admin/widgets/w-request-statuses.html'
 
     def generate_data(self, request):
+        """Generate data for the widget."""
         public_requests = ReviewRequest.objects.filter(public=True)
 
         return {
@@ -197,6 +203,7 @@ class RepositoriesWidget(Widget):
     This widget displays a table with the most recent repositories,
     their types, and visibility.
     """
+
     MAX_REPOSITORIES = 3
 
     widget_id = 'repositories-widget'
@@ -216,6 +223,7 @@ class RepositoriesWidget(Widget):
     ]
 
     def generate_data(self, request):
+        """Generate data for the widget."""
         repos = Repository.objects.accessible(request.user).order_by('-id')
 
         return {
@@ -223,6 +231,7 @@ class RepositoriesWidget(Widget):
         }
 
     def generate_cache_key(self, request):
+        """Generate a cache key for this widget's data."""
         syncnum = get_sync_num()
         key = "w-%s-%s-%s-%s" % (self.name,
                                  datetime.date.today(),
@@ -236,6 +245,7 @@ class ReviewGroupsWidget(Widget):
 
     Shows a list of recently created groups.
     """
+
     MAX_GROUPS = 5
 
     widget_id = 'review-groups-widget'
@@ -254,6 +264,7 @@ class ReviewGroupsWidget(Widget):
     ]
 
     def generate_data(self, request):
+        """Generate data for the widget."""
         return {
             'groups': Group.objects.all().order_by('-id')[:self.MAX_GROUPS]
         }
@@ -264,12 +275,14 @@ class ServerCacheWidget(Widget):
 
     Displays a list of memcached statistics, if available.
     """
+
     widget_id = 'server-cache-widget'
     title = _('Server Cache')
     template = 'admin/widgets/w-server-cache.html'
     cache_data = False
 
     def generate_data(self, request):
+        """Generate data for the widget."""
         uptime = {}
         cache_stats = get_cache_stats()
 
@@ -296,6 +309,7 @@ class NewsWidget(Widget):
 
     Displays the latest news headlines from reviewboard.org.
     """
+
     widget_id = 'news-widget'
     title = _('Review Board News')
     template = 'admin/widgets/w-news.html'
@@ -317,11 +331,13 @@ class DatabaseStatsWidget(Widget):
 
     Displays a list of totals for several important database tables.
     """
+
     widget_id = 'database-stats-widget'
     title = _('Database Stats')
     template = 'admin/widgets/w-stats.html'
 
     def generate_data(self, request):
+        """Generate data for the widget."""
         return {
             'count_comments': Comment.objects.all().count(),
             'count_reviews': Review.objects.all().count(),
@@ -337,6 +353,7 @@ class RecentActionsWidget(Widget):
 
     Displays a list of recent admin actions to the user.
     """
+
     widget_id = 'recent-actions-widget'
     title = _('Recent Actions')
     template = 'admin/widgets/w-recent-actions.html'
@@ -449,6 +466,7 @@ class ActivityGraphWidget(Widget):
     All displayed widget data is computed on demand, rather than up-front
     during creation of the widget.
     """
+
     widget_id = 'activity-graph-widget'
     title = _('Review Board Activity')
     size = Widget.LARGE
@@ -490,7 +508,7 @@ class ActivityGraphWidget(Widget):
 
 
 def init_widgets():
-    """Initializes the widgets subsystem.
+    """Initialize the widgets subsystem.
 
     This will listen for events in order to manage the widget caches.
     """
@@ -501,7 +519,7 @@ def init_widgets():
 
 
 def register_admin_widget(widget_cls, primary=False):
-    """Registers an administration widget.
+    """Register an administration widget.
 
     This widget will appear in the list of primary or secondary widgets.
 
@@ -526,7 +544,7 @@ def register_admin_widget(widget_cls, primary=False):
 
 
 def unregister_admin_widget(widget_cls):
-    """Unregisters a previously registered administration widget."""
+    """Unregister a previously registered administration widget."""
     widget_id = widget_cls.widget_id
 
     try:

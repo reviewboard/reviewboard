@@ -8,7 +8,7 @@ from reviewboard.site.urlresolvers import local_site_reverse
 
 
 def get_server_url(local_site_name=None, local_site=None, request=None):
-    """Returns the URL for the root of the server.
+    """Return the URL for the root of the server.
 
     This will construct a URL that points to the root of the server, factoring
     in whether to use HTTP or HTTPS.
@@ -29,7 +29,7 @@ def get_server_url(local_site_name=None, local_site=None, request=None):
 
 
 def build_server_url(*args, **kwargs):
-    """Builds an absolute URL containing the full URL to the server.
+    """Build an absolute URL containing the full URL to the server.
 
     All additional arguments passed will be appended as paths to the URL.
     """
