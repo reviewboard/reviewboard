@@ -55,7 +55,10 @@ class BaseFileAttachmentResource(WebAPIResource):
         },
         'icon_url': {
             'type': six.text_type,
-            'description': 'The URL to a 24x24 icon representing this file.',
+            'description': 'The URL to a 24x24 icon representing this file. '
+                           'The use of these icons is deprecated and this '
+                           'property will be removed in a future version.',
+            'deprecated_in': '2.5',
         },
         'mimetype': {
             'type': six.text_type,
@@ -116,15 +119,6 @@ class BaseFileAttachmentResource(WebAPIResource):
 
     def serialize_absolute_url_field(self, obj, request, **kwargs):
         return request.build_absolute_uri(obj.get_absolute_url())
-
-    def serialize_caption_field(self, obj, **kwargs):
-        # We prefer 'caption' here, because when creating a new file
-        # attachment, it won't be full of data yet (and since we're posting
-        # to file-attachments/, it doesn't hit DraftFileAttachmentResource).
-        # DraftFileAttachmentResource will prefer draft_caption, in case people
-        # are changing an existing one.
-
-        return obj.caption or obj.draft_caption
 
     def serialize_review_url_field(self, obj, **kwargs):
         if obj.review_ui:

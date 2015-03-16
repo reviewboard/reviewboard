@@ -90,7 +90,7 @@ class FileAttachmentComment(BaseComment):
             try:
                 return review_ui.get_comment_link_text(self)
             except Exception as e:
-                logging.error('Error when calling get_comment_thumbnail for '
+                logging.error('Error when calling get_comment_link_text for '
                               'FileAttachmentReviewUI %r: %s',
                               review_ui, e, exc_info=1)
         else:

@@ -108,9 +108,14 @@ class MimetypeHandler(object):
     This class also acts as a generic handler for mimetypes not matched
     explicitly by any handler. Note that this is not the same as '*/*'.
     """
+
     MIMETYPES_DIR = 'rb/images/mimetypes'
 
     supported_mimetypes = []
+
+    #: Subclasses (especially in extensions) can use this to introspect what
+    #: size thumbnails they should generate.
+    use_hd_thumbnails = True
 
     def __init__(self, attachment, mimetype):
         self.attachment = attachment
@@ -204,26 +209,30 @@ class MimetypeHandler(object):
 
 class ImageMimetype(MimetypeHandler):
     """Handles image mimetypes."""
+
     supported_mimetypes = ['image/*']
 
     def get_thumbnail(self):
-        """Returns a thumbnail of the image."""
-        return mark_safe('<img src="%s" data-at2x="%s" '
-                         'class="file-thumbnail" alt="%s" />'
-                         % (thumbnail(self.attachment.file),
-                            thumbnail(self.attachment.file, '800x200'),
-                            escape(self.attachment.caption)))
+        """Return a thumbnail of the image."""
+        return mark_safe(
+            '<div class="file-thumbnail">'
+            ' <img src="%s" data-at2x="%s" alt="%s" />'
+            '</div>'
+            % (thumbnail(self.attachment.file, (300, None)),
+               thumbnail(self.attachment.file, (600, None)),
+               escape(self.attachment.caption)))
 
 
 class TextMimetype(MimetypeHandler):
     """Handles text mimetypes."""
+
     supported_mimetypes = ['text/*']
 
     # Read up to 'FILE_CROP_CHAR_LIMIT' number of characters from
     # the file attachment to prevent long reads caused by malicious
     # or auto-generated files.
-    FILE_CROP_CHAR_LIMIT = 2000
-    TEXT_CROP_NUM_HEIGHT = 8
+    FILE_CROP_CHAR_LIMIT = 1000
+    TEXT_CROP_NUM_HEIGHT = 50
 
     def _generate_preview_html(self, data):
         """Returns the first few truncated lines of the text file."""
@@ -270,8 +279,11 @@ class TextMimetype(MimetypeHandler):
         finally:
             f.close()
 
-        return mark_safe('<div class="file-thumbnail-clipped">%s</div>'
-                         % self._generate_preview_html(data))
+        return mark_safe(
+            '<div class="file-thumbnail">'
+            ' <div class="file-thumbnail-clipped">%s</div>'
+            '</div>'
+            % self._generate_preview_html(data))
 
     def get_thumbnail(self):
         """Returns the thumbnail of the text file as rendered as html"""

@@ -200,7 +200,7 @@ class ReviewUI(object):
         This will normally just return the filename, but some may want to
         specialize to list things like page numbers or sections.
         """
-        return self.obj.filename
+        return self.obj.caption or self.obj.filename
 
     def get_extra_context(self, request):
         return {}

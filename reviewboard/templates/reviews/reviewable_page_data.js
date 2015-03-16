@@ -1,4 +1,4 @@
-{% load djblets_js reviewtags %}
+{% load djblets_js djblets_utils reviewtags %}
         el: document.body,
         reviewRequestData: {
             bugTrackerURL: "{% if review_request.repository.bug_tracker %}{% url 'bug_url' review_request.display_id '--bug_id--' %}{% endif %}",
@@ -57,6 +57,24 @@
         editorData: {
             mutableByUser: {{mutable_by_user|yesno:'true,false'}},
             statusMutableByUser: {{status_mutable_by_user|yesno:'true,false'}},
+            fileAttachments: [
+{% for file in file_attachments %}
+{%  has_usable_review_ui request.user review_request file as use_review_ui %}
+{%  definevar "caption" %}{% if draft %}{{file.draft_caption}}{% else %}{{file.caption}}{% endif %}{% enddefinevar %}
+{%  definevar "file_attachment_url" %}{% if use_review_ui %}{% url "file-attachment" review_request.display_id file.pk %}{% endif %}{% enddefinevar %}
+                {
+                    id: {{file.pk}},
+                    loaded: true,
+                    attachmentHistoryID: {{file.attachment_history_id}},
+                    caption: '{{caption|escapejs}}',
+                    downloadURL: '{{file.get_absolute_url|escapejs}}',
+                    filename: '{{file.filename}}|escapejs}}',
+                    reviewURL: '{{file_attachment_url|escapejs}}',
+                    revision: {{file.attachment_revision}},
+                    thumbnailHTML: '{{file.thumbnail|escapejs}}'
+                }{% if not forloop.last %},{% endif %}
+{% endfor %}
+            ],
             fileAttachmentComments: {
 {% if all_file_attachments %}
 {%  for file_attachment in all_file_attachments %}

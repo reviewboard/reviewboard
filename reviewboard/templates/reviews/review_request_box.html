@@ -1,103 +1,100 @@
 {% load djblets_utils i18n reviewtags staticfiles %}
 
- <div class="header">
-  <div id="summary_wrapper"><label for="field_summary">{% trans "Summary" %}:</label><h1 id="field_summary" class="field editable required" data-field-id="summary">{{review_request_details.summary|escape}}</h1></div>
-  <p id="status">
+<div class="header">
+ <div id="summary_wrapper"><label for="field_summary">{% trans "Summary" %}:</label><h1 id="field_summary" class="field editable required" data-field-id="summary">{{review_request_details.summary|escape}}</h1></div>
+ <p id="status">
 {% with review_request_details.time_added|date as dateadded and review_request_details.last_updated as lastupdated and review_request_details.last_updated|date:"c" as lastupdatedraw and latest_diffset.timestamp|date:"c" as lastdiffdateraw and latest_diffset.timestamp as lastdiffdate %}
 {%  blocktrans with review_request.display_id as review_request_id and review_request.get_absolute_url as review_request_url %}
-    Review Request <a href="{{review_request_url}}">#{{review_request_id}}</a> -
+   Review Request <a href="{{review_request_url}}">#{{review_request_id}}</a> -
 {%  endblocktrans %}
 {%  if review_request.status == 'S' %}
 {%   blocktrans %}
-   Created {{dateadded}} and submitted
-   <time class="timesince" datetime="{{lastupdatedraw}}">{{lastupdated}}</time>
+  Created {{dateadded}} and submitted
+  <time class="timesince" datetime="{{lastupdatedraw}}">{{lastupdated}}</time>
 {%   endblocktrans %}
 {%  elif review_request.status == 'D' %}
 {%   blocktrans %}
-   Created {{dateadded}} and discarded
-   <time class="timesince" datetime="{{lastupdatedraw}}">{{lastupdated}}</time>
+  Created {{dateadded}} and discarded
+  <time class="timesince" datetime="{{lastupdatedraw}}">{{lastupdated}}</time>
 {%   endblocktrans %}
 {%  elif review_request.status == 'P' %}
 {%   blocktrans %}
-   Created {{dateadded}} and updated
-   <time class="timesince" datetime="{{lastupdatedraw}}">{{lastupdated}}</time>
+  Created {{dateadded}} and updated
+  <time class="timesince" datetime="{{lastupdatedraw}}">{{lastupdated}}</time>
 {%   endblocktrans %}
 {%  endif %}
 {%  if latest_diffset %}
 {%   blocktrans %}
-   - Latest diff uploaded
-   <time class="timesince" datetime="{{lastdiffdateraw}}">{{lastdiffdate}}</time>
+  - Latest diff uploaded
+  <time class="timesince" datetime="{{lastdiffdateraw}}">{{lastdiffdate}}</time>
 {%   endblocktrans %}
 {%  endif %}
 {% endwith %}
-  </p>
- </div>
- <div id="review-request-warning"></div>
+ </p>
+</div>
+<div id="review-request-warning"></div>
 
- <table id="review_request_details">
-  <colgroup>
-   <col width="0%" />
-   <col width="100%" />
-  </colgroup>
+<table id="review_request_details">
+ <colgroup>
+  <col width="0%" />
+  <col width="100%" />
+ </colgroup>
 {% for_review_request_fieldset review_request_details %}
-  <thead{% if forloop.first %} class="first-fieldset"{% endif %}>
-   <tr>
-    <th colspan="2">{{fieldset.label}}
+ <thead{% if forloop.first %} class="first-fieldset"{% endif %}>
+  <tr>
+   <th colspan="2">{{fieldset.label}}
 {%  if show_fieldset_required %}
-     <span class="required-flag" aria-label="{% trans 'This field is required' %}" title="{% trans 'This field is required' %}">*</span>
+    <span class="required-flag" aria-label="{% trans 'This field is required' %}" title="{% trans 'This field is required' %}">*</span>
 {%  endif %}
-   </tr>
-  </thead>
-  <tbody>
+  </tr>
+ </thead>
+ <tbody>
 {%  for_review_request_field review_request_details fieldset %}
-   <tr>
-    <th><label for="field_{{field.field_id}}">{{field.label}}:</label></th>
-    <td><span id="field_{{field.field_id}}" data-field-id="{{field.field_id}}"
-              class="field {{field.get_css_classes|join:' '}}"{% for key, value in field.get_data_attributes.items %} data-{{key}}="{{value}}"{% endfor %}>{{field.as_html|safe}}</span></td>
-   </tr>
+  <tr>
+   <th><label for="field_{{field.field_id}}">{{field.label}}:</label></th>
+   <td><span id="field_{{field.field_id}}" data-field-id="{{field.field_id}}"
+             class="field {{field.get_css_classes|join:' '}}"{% for key, value in field.get_data_attributes.items %} data-{{key}}="{{value}}"{% endfor %}>{{field.as_html|safe}}</span></td>
+  </tr>
 {%  end_for_review_request_field %}
-  </tbody>
+ </tbody>
 {% end_for_review_request_fieldset %}
- </table>
+</table>
 
- <div id="review_request_main">
+<div id="review_request_main">
 {% for_review_request_field review_request_details 'main' %}
-  <div class="content">
-   <label class="textarea-label" for="field_{{field.field_id}}">{{field.label}}</label>
-   <div class="field-container">
-    <{{field.tag_name|default:"div"}} id="field_{{field.field_id}}" class="field {{field.get_css_classes|join:' '}}" data-field-id="{{field.field_id}}"{% for key, value in field.get_data_attributes.items %} data-{{key}}="{{value}}"{% endfor %}>{{field.as_html|safe}}</{{field.tag_name|default:"div"}}>
-   </div>
+ <div class="content">
+  <label class="textarea-label" for="field_{{field.field_id}}">{{field.label}}</label>
+  <div class="field-container">
+   <{{field.tag_name|default:"div"}} id="field_{{field.field_id}}" class="field {{field.get_css_classes|join:' '}}" data-field-id="{{field.field_id}}"{% for key, value in field.get_data_attributes.items %} data-{{key}}="{{value}}"{% endfor %}>{{field.as_html|safe}}</{{field.tag_name|default:"div"}}>
   </div>
-{% end_for_review_request_field %}
  </div>
+{% end_for_review_request_field %}
+</div>
 
- <div id="review_request_extra">
-  <div class="content"{% if not screenshots %} style="display: none;"{% endif %}>
-   <h3>{% trans "Screenshots" %}</h3>
-   <div id="screenshot-thumbnails">
+<div id="review_request_extra">
+ <div class="content"{% if not screenshots %} style="display: none;"{% endif %}>
+  <h3>{% trans "Screenshots" %}</h3>
+  <div id="screenshot-thumbnails">
 {% for image in screenshots %}
-    <div class="screenshot-container" data-screenshot-id="{{image.id}}">
-     <div class="image" onclick="javascript:window.location='{{image.get_absolute_url}}'; return false;"><a href="{{image.get_absolute_url}}">{{image.thumb}}</a></div>
-     <div class="screenshot-caption">
-      <a href="{{image.get_absolute_url}}" class="edit">{% if draft %}{{image.draft_caption|default:image.caption}}{% else %}{{image.caption}}{% endif %}</a>
+   <div class="screenshot-container" data-screenshot-id="{{image.id}}">
+    <div class="image" onclick="javascript:window.location='{{image.get_absolute_url}}'; return false;"><a href="{{image.get_absolute_url}}">{{image.thumb}}</a></div>
+    <div class="screenshot-caption">
+     <a href="{{image.get_absolute_url}}" class="edit">{% if draft %}{{image.draft_caption|default:image.caption}}{% else %}{{image.caption}}{% endif %}</a>
 {%  if request.user.pk == review_request.submitter_id or perms.reviews.delete_screenshot %}
 {%   if review_request.status == 'P' %}
-      <a href="#" class="delete rb-icon rb-icon-delete" title="{% trans "Delete Screenshot" %}"></a>
+     <a href="#" class="delete rb-icon rb-icon-delete" title="{% trans "Delete Screenshot" %}"></a>
 {%   endif %}
 {%  endif %}
-     </div>
     </div>
-{% endfor %}
-    <br clear="both" />
    </div>
-  </div>
-
-  <div class="content clearfix"{% if not file_attachments %} style="display: none;"{% endif %}>
-   <h3>{% trans "Files" %}</h3>
-   <div id="file-list">
-{% for file in file_attachments %}
-{%  include "reviews/parts/file_attachment_thumbnail.html" %}
 {% endfor %}
+   <br clear="both" />
+  </div>
+ </div>
+
+ <div class="content clearfix"{% if not file_attachments %} style="display: none;"{% endif %}>
+  <h3>{% trans "Files" %}</h3>
+  <div id="file-list">
    <br clear="both" />
   </div>
  </div>
