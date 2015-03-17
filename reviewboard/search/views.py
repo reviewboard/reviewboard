@@ -6,12 +6,13 @@ from django.shortcuts import render, render_to_response
 from django.utils.translation import ugettext_lazy as _
 from djblets.siteconfig.models import SiteConfiguration
 from haystack.inputs import Raw
-from haystack.query import SearchQuerySet
+from haystack.query import SearchQuerySet, SQ
 from haystack.views import SearchView
 
 from reviewboard.accounts.decorators import check_login_required
-from reviewboard.reviews.models import ReviewRequest
+from reviewboard.reviews.models import Group, ReviewRequest
 from reviewboard.search.indexes import BaseSearchIndex
+from reviewboard.scmtools.models import Repository
 from reviewboard.site.decorators import check_local_site_access
 from reviewboard.site.urlresolvers import local_site_reverse
 
@@ -114,9 +115,60 @@ class RBSearchView(SearchView):
             local_site_id = BaseSearchIndex.NO_LOCAL_SITE_ID
 
         sqs = sqs.filter_and(local_sites__contains=local_site_id)
-        sqs = sqs.order_by('-last_updated')
 
-        return sqs
+        # Filter out any private review requests the user doesn't have
+        # access to.
+        user = self.request.user
+
+        if not user.is_superuser:
+            private_sq = (SQ(django_ct='reviews.reviewrequest') &
+                          SQ(private=True))
+
+            if user.is_authenticated():
+                # We're going to build a series of queries that mimic the
+                # accessibility checks we have internally, based on the access
+                # permissions the user currently has, and the IDs listed in
+                # the indexed review request.
+                #
+                # This must always be kept in sync with
+                # ReviewRequestManager._query.
+                #
+                # Note that we are not performing Local Site checks here,
+                # because we're already filtering by Local Sites.
+
+                # Make sure they have access to the repository, if any.
+                accessible_repo_ids = \
+                    list(Repository.objects.accessible_ids(
+                        user, visible_only=False,
+                        local_site=self.local_site))
+                accessible_group_ids = \
+                    Group.objects.accessible_ids(user, visible_only=False)
+
+                repository_sq = \
+                    SQ(private_repository_id__in=[0] + accessible_repo_ids)
+
+                # Next, build a query to see if the review request targets any
+                # invite-only groups the user is a member of.
+                target_groups_sq = SQ(private_target_groups__contains=0)
+
+                for pk in accessible_group_ids:
+                    target_groups_sq |= SQ(private_target_groups__contains=pk)
+
+                # Build a query to see if the user is explicitly listed
+                # in the list of reviewers.
+                target_users_sq = SQ(target_users__contains=user.pk)
+
+                # And, of course, the owner of the review request can see it.
+                #
+                # With that, we'll put the whole query together, in the order
+                # matching ReviewRequest.is_accessible_by.
+                private_sq &= ~(SQ(username=user.username) |
+                                (repository_sq &
+                                 (target_users_sq | target_groups_sq)))
+
+            sqs = sqs.exclude(private_sq)
+
+        return sqs.order_by('-last_updated')
 
     def extra_context(self):
         """Return extra context for rendering the results list."""
