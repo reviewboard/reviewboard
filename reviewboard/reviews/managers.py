@@ -290,7 +290,8 @@ class ReviewRequestManager(ConcurrencyManager):
 
     def _query(self, user=None, status='P', with_counts=False,
                extra_query=None, local_site=None, filter_private=False,
-               show_inactive=False, show_all_unpublished=False):
+               show_inactive=False, show_all_unpublished=False,
+               show_all_local_sites=False):
         from reviewboard.reviews.models import Group
 
         is_authenticated = (user is not None and user.is_authenticated())
@@ -309,7 +310,10 @@ class ReviewRequestManager(ConcurrencyManager):
         if status:
             query = query & Q(status=status)
 
-        query = query & Q(local_site=local_site)
+        if show_all_local_sites:
+            assert local_site is None
+        else:
+            query = query & Q(local_site=local_site)
 
         if extra_query:
             query = query & extra_query

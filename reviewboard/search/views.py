@@ -2,13 +2,14 @@ from __future__ import unicode_literals
 
 from django.http import HttpResponseRedirect
 from django.shortcuts import render, render_to_response
-from django.utils.decorators import method_decorator
 from djblets.siteconfig.models import SiteConfiguration
+from haystack.inputs import Raw
 from haystack.query import SearchQuerySet
 from haystack.views import SearchView
 
 from reviewboard.accounts.decorators import check_login_required
 from reviewboard.reviews.models import ReviewRequest
+from reviewboard.search.indexes import BaseSearchIndex
 from reviewboard.site.decorators import check_local_site_access
 from reviewboard.site.urlresolvers import local_site_reverse
 
@@ -30,9 +31,8 @@ class RBSearchView(SearchView):
             results_per_page=siteconfig.get('search_results_per_page'),
             *args, **kwargs)
 
-    @method_decorator(check_login_required)
-    @method_decorator(check_local_site_access)
-    def __call__(self, request, local_site=None):
+    def __call__(self, request, local_site=None, local_site_name=None,
+                 *args, **kwargs):
         """Handles requests to this view.
 
         This will first check if the search result is just a digit, which is
@@ -42,6 +42,7 @@ class RBSearchView(SearchView):
         Otherwise, the search will be carried out based on the query.
         """
         self.request = request
+        self.local_site = local_site
 
         query = self.get_query()
 
@@ -72,8 +73,14 @@ class RBSearchView(SearchView):
         if self.query.isdigit():
             sqs = sqs.filter(review_request_id=self.query)
         else:
-            sqs = sqs.raw_search(self.query)
+            sqs = sqs.filter(content=Raw(self.query))
 
+        if self.local_site:
+            local_site_id = self.local_site.pk
+        else:
+            local_site_id = BaseSearchIndex.NO_LOCAL_SITE_ID
+
+        sqs = sqs.filter_and(local_sites__contains=local_site_id)
         sqs = sqs.order_by('-last_updated')
 
         self.total_hits = len(sqs)
@@ -117,3 +124,11 @@ class RBSearchView(SearchView):
         return render_to_response(
             self.template, context,
             context_instance=self.context_class(self.request))
+
+
+@check_login_required
+@check_local_site_access
+def search(*args, **kwargs):
+    """Provide results for a given search."""
+    search_view = RBSearchView()
+    return search_view(*args, **kwargs)

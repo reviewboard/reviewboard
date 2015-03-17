@@ -5,15 +5,13 @@ from djblets.util.templatetags.djblets_utils import user_displayname
 from haystack import indexes
 
 from reviewboard.reviews.models import ReviewRequest
+from reviewboard.search.indexes import BaseSearchIndex
 
 
-class ReviewRequestIndex(indexes.SearchIndex, indexes.Indexable):
+class ReviewRequestIndex(BaseSearchIndex, indexes.Indexable):
     """A Haystack search index for Review Requests."""
-
-    # By Haystack convention, the full-text template is automatically
-    # referenced at
-    # reviewboard/templates/search/indexes/reviews/reviewrequest_text.txt
-    text = indexes.CharField(document=True, use_template=True)
+    model = ReviewRequest
+    local_site_attr = 'local_site_id'
 
     # We shouldn't use 'id' as a field name because it's by default reserved
     # for Haystack. Hiding it will cause duplicates when updating the index.
@@ -40,7 +38,8 @@ class ReviewRequestIndex(indexes.SearchIndex, indexes.Indexable):
         """Index only public pending and submitted review requests."""
         queryset = self.get_model().objects.public(
             status=None,
-            extra_query=Q(status='P') | Q(status='S'))
+            extra_query=Q(status='P') | Q(status='S'),
+            show_all_local_sites=True)
         queryset = queryset.select_related('submitter', 'diffset_history')
         queryset = queryset.prefetch_related(
             'diffset_history__diffsets__files')
