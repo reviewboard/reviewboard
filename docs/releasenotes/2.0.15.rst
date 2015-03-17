@@ -53,7 +53,7 @@ Search
 
 * Search results are no longer sorted in a confusing order.
 
-* Typing the full name of a suer in the Search field will no longer break
+* Typing the full name of a user in the Search field will no longer break
   auto-completion.
 
 
