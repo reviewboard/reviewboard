@@ -9,6 +9,7 @@ from django.views.generic import TemplateView
 from reviewboard.datagrids.urls import urlpatterns as datagrid_urlpatterns
 from reviewboard.extensions.base import get_extension_manager
 from reviewboard.hostingsvcs.urls import urlpatterns as hostingsvcs_urlpatterns
+from reviewboard.search.urls import urlpatterns as search_urlpatterns
 from reviewboard.webapi.resources import resources
 
 
@@ -89,6 +90,9 @@ localsite_urlpatterns = patterns(
     # User info box
     url(r"^users/(?P<username>[A-Za-z0-9@_\-\.'\+]+)/infobox/$",
         'reviewboard.reviews.views.user_infobox', name="user-infobox"),
+
+    # Search
+    url(r'^search/', include(search_urlpatterns)),
 )
 
 localsite_urlpatterns += datagrid_urlpatterns

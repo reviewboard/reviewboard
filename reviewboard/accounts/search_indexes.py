@@ -3,14 +3,14 @@ from __future__ import unicode_literals
 from django.contrib.auth.models import User
 from haystack import indexes
 
+from reviewboard.search.indexes import BaseSearchIndex
 
-class UserIndex(indexes.SearchIndex, indexes.Indexable):
+
+class UserIndex(BaseSearchIndex, indexes.Indexable):
     """A Haystack search index for users."""
 
-    # By Haystack convention, the full-text template is automatically
-    # referenced at
-    # reviewboard/templates/search/indexes/accounts/user_text.txt
-    text = indexes.CharField(document=True, use_template=True)
+    model = User
+    local_site_attr = 'local_site'
 
     username = indexes.CharField(model_attr='username')
     email = indexes.CharField(model_attr='email')
@@ -18,10 +18,6 @@ class UserIndex(indexes.SearchIndex, indexes.Indexable):
     url = indexes.CharField(model_attr='get_absolute_url')
     show_profile = indexes.BooleanField(model_attr='is_profile_visible')
     groups = indexes.MultiValueField(indexed=False)
-
-    def get_model(self):
-        """Return the Django model for this index."""
-        return User
 
     def index_queryset(self, using=None):
         """Query the list of users for the index.

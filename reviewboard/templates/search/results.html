@@ -3,21 +3,24 @@
 
 {% block title %}{% trans "Search Review Requests" %}{% endblock %}
 
-<!-- TODO: highlight search terms in summaries/excerpts -->
-
 {% block content %}
 <div id="search_results">
+ <div class="search-results-filters">
+{%  for filter_type in filter_types %}
+  <a href="?q={{query}}{% if filter_type.id %}&filter={{filter_type.id}}{% endif %}"{% if filter_type.active %} class="active"{% endif %}>{{filter_type.name}}</a>
+{%  endfor %}
+ </div>
+
 {%  if hits_returned == 0 %}
 {%   trans "No review requests matching your query" %}: <b>{{query}}</b>
 {%  else %}
  <div class="search-results-stats">
-{%   blocktrans %}
+{%   blocktrans count hits_returned=hits_returned %}
+ <b>{{hits_returned}}</b> result for <b>{{query}}</b>
+{%   plural %}
  <b>{{hits_returned}}</b> results for <b>{{query}}</b>
 {%   endblocktrans %}
  </div>
-{%   if total_hits > hits_returned %}
-({% trans "Additional results exist but are not returned. If you do not see the review request you're looking for, try making your query more specific." %})
-{%   endif %}
 {%  endif %}
  <br /><br />
  <form method="get" action=".">

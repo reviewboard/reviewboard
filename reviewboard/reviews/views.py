@@ -30,8 +30,6 @@ from djblets.util.dates import get_latest_timestamp
 from djblets.util.decorators import augment_method_from
 from djblets.util.http import (set_last_modified, get_modified_since,
                                set_etag, etag_if_none_match)
-from haystack.query import SearchQuerySet
-from haystack.views import SearchView
 
 from reviewboard.accounts.decorators import (check_login_required,
                                              valid_prefs_required)
@@ -1551,97 +1549,6 @@ def view_screenshot(request, review_request_id, screenshot_id,
     review_ui = LegacyScreenshotReviewUI(review_request, screenshot)
 
     return review_ui.render_to_response(request)
-
-
-class ReviewRequestSearchView(SearchView):
-    template = 'search/results.html'
-
-    ADJACENT_PAGES = 3
-
-    def __init__(self, *args, **kwargs):
-        siteconfig = SiteConfiguration.objects.get_current()
-        self.enabled = siteconfig.get('search_enable')
-
-        super(ReviewRequestSearchView, self).__init__(
-            load_all=False,
-            searchqueryset=SearchQuerySet,
-            results_per_page=siteconfig.get('search_results_per_page'),
-            *args, **kwargs)
-
-    @method_decorator(check_login_required)
-    @method_decorator(check_local_site_access)
-    def __call__(self, request, local_site=None):
-        self.request = request
-
-        query = self.get_query()
-
-        # If the query is an integer, then assume that it's a review request
-        # ID that we'll want to redirect to. This mirrors behavior we've had
-        # since Review Board 1.7.
-        if query.isdigit():
-            try:
-                review_request = ReviewRequest.objects.for_id(query,
-                                                              local_site)
-                return HttpResponseRedirect(review_request.get_absolute_url())
-            except ReviewRequest.DoesNotExist:
-                pass
-
-        if not self.enabled:
-            return render(request, 'search/search_disabled.html')
-
-        return super(ReviewRequestSearchView, self).__call__(request)
-
-    def get_query(self):
-        return self.request.GET.get('q', '').strip()
-
-    def get_results(self):
-        if self.query.isdigit():
-            sqs = self.searchqueryset().filter(
-                review_request_id=self.query)
-        else:
-            sqs = self.searchqueryset().raw_search(self.query)
-
-        sqs = sqs.order_by('-last_updated')
-
-        self.total_hits = len(sqs)
-
-        return sqs
-
-    def extra_context(self):
-        return {
-            'hits_returned': len(self.results),
-            'total_hits': self.total_hits,
-        }
-
-    def create_response(self):
-        if not self.query:
-            return HttpResponseRedirect(
-                local_site_reverse('all-review-requests',
-                                   request=self.request))
-
-        if self.query.isdigit() and self.results:
-            return HttpResponseRedirect(
-                self.results[0].object.get_absolute_url())
-
-        paginator, page = self.build_page()
-        page_nums = range(max(1, page.number - self.ADJACENT_PAGES),
-                          min(paginator.num_pages,
-                              page.number + self.ADJACENT_PAGES) + 1)
-
-        context = {
-            'query': self.query,
-            'page': page,
-            'paginator': paginator,
-            'is_paginated': page.has_other_pages(),
-            'show_first_page': 1 not in page_nums,
-            'show_last_page': paginator.num_pages not in page_nums,
-            'page_numbers': page_nums,
-        }
-        context.update(self.extra_context())
-
-        return render_to_response(
-            self.template, context,
-            context_instance=self.context_class(self.request))
 
 
 @check_login_required

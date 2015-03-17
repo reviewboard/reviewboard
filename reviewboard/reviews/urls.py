@@ -3,8 +3,7 @@ from __future__ import unicode_literals
 from django.conf.urls import include, patterns, url
 
 from reviewboard.reviews.views import (ReviewsDiffFragmentView,
-                                       ReviewsDiffViewerView,
-                                       ReviewRequestSearchView)
+                                       ReviewsDiffViewerView)
 
 
 download_diff_urls = patterns(
@@ -118,5 +117,4 @@ urlpatterns = patterns(
 
     url(r'^new/$', 'new_review_request', name="new-review-request"),
     url(r'^(?P<review_request_id>[0-9]+)/', include(review_request_urls)),
-    url(r'^search/$', ReviewRequestSearchView(), name="search"),
 )

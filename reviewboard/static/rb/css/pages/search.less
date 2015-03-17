@@ -20,10 +20,35 @@
     }
   }
 
+  .search-results-filters {
+    @filter-border-color: #CCC;
+
+    border-bottom: 1px @filter-border-color solid;
+    margin-bottom: 2em;
+
+    a {
+      color: #666;
+      display: inline-block;
+      font-size: 130%;
+      text-decoration: none;
+      padding: 0.5em 1em;
+      border: 1px transparent solid;
+      border-top-width: 2px;
+
+      &.active {
+        color: black;
+        border: 1px @filter-border-color solid;
+        border-bottom: 1px white solid;
+        border-top-width: 2px;
+      }
+    }
+  }
+
   .search-results-stats {
     color: #444444;
-    border-bottom: 1px #E0E0E0 solid;
+    font-size: 110%;
     padding-bottom: 2em;
+    margin-left: 1em;
   }
 
   .search-result {
