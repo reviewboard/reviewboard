@@ -14,8 +14,8 @@ from django.utils.six.moves import range
 from django.utils.translation import ugettext as _
 from djblets.siteconfig.models import SiteConfiguration
 
+from reviewboard.diffviewer.commitutils import DiffCommitFileExistenceChecker
 from reviewboard.diffviewer.differ import DiffCompatVersion
-from reviewboard.diffviewer.diffutils import DiffCommitFileExistenceChecker
 from reviewboard.diffviewer.errors import DiffTooBigError, EmptyDiffError
 from reviewboard.scmtools.core import PRE_CREATION, UNKNOWN, FileNotFoundError
 
