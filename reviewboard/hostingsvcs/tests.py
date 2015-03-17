@@ -1841,6 +1841,13 @@ class GitHubTests(ServiceTests):
         self._test_post_commit_hook(
             LocalSite.objects.get(name=self.local_site_name))
 
+    @add_fixtures(['test_site', 'test_users', 'test_scmtools'])
+    def test_close_submitted_hook_with_unpublished_review_request(self):
+        """Testing GitHub close_submitted hook with an un-published review
+        request
+        """
+        self._test_post_commit_hook(publish=False)
+
     @add_fixtures(['test_users', 'test_scmtools'])
     def test_close_submitted_hook_ping(self):
         """Testing GitHub close_submitted hook ping"""
@@ -2012,7 +2019,7 @@ class GitHubTests(ServiceTests):
         self.assertEqual(review_request.status, review_request.PENDING_REVIEW)
         self.assertEqual(review_request.changedescs.count(), 0)
 
-    def _test_post_commit_hook(self, local_site=None):
+    def _test_post_commit_hook(self, local_site=None, publish=True):
         account = self._get_hosting_account(local_site=local_site)
         account.save()
 
@@ -2021,8 +2028,7 @@ class GitHubTests(ServiceTests):
 
         review_request = self.create_review_request(repository=repository,
                                                     local_site=local_site,
-                                                    publish=True)
-        self.assertTrue(review_request.public)
+                                                    publish=publish)
         self.assertEqual(review_request.status, review_request.PENDING_REVIEW)
 
         url = local_site_reverse(

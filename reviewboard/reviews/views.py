@@ -1000,6 +1000,11 @@ def raw_diff(request, review_request_id, revision=None, local_site=None):
     else:
         filename = six.text_type(diffset.name).encode('ascii', 'ignore')
 
+        # Content-Disposition headers containing commas break on Chrome 16 and
+        # newer. To avoid this, replace any commas in the filename with an
+        # underscore. Was bug 3704.
+        filename = filename.replace(',', '_')
+
     resp['Content-Disposition'] = 'attachment; filename=%s' % filename
     set_last_modified(resp, diffset.timestamp)
 
