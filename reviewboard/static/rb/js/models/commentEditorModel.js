@@ -242,6 +242,9 @@ RB.CommentEditor = Backbone.Model.extend({
                 openIssue: comment.get('issueOpened') === null
                            ? this.defaults().openIssue
                            : comment.get('issueOpened'),
+                richText: comment.get('richText') === null
+                          ? this.defaults().richText
+                          : comment.get('richText'),
                 text: comment.get('text')
             });
 
