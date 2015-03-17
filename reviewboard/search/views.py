@@ -1,7 +1,9 @@
 from __future__ import unicode_literals
 
+from django.contrib.auth.models import User
 from django.http import HttpResponseRedirect
 from django.shortcuts import render, render_to_response
+from django.utils.translation import ugettext_lazy as _
 from djblets.siteconfig.models import SiteConfiguration
 from haystack.inputs import Raw
 from haystack.query import SearchQuerySet
@@ -19,7 +21,24 @@ class RBSearchView(SearchView):
 
     template = 'search/results.html'
 
-    ADJACENT_PAGES = 3
+    ADJACENT_PAGES = 5
+
+    FILTER_TYPES = [
+        {
+            'id': '',
+            'name': _('All Results'),
+        },
+        {
+            'id': 'users',
+            'model': User,
+            'name': _('Users'),
+        },
+        {
+            'id': 'reviewrequests',
+            'model': ReviewRequest,
+            'name': _('Review Requests'),
+        },
+    ]
 
     def __init__(self, *args, **kwargs):
         siteconfig = SiteConfiguration.objects.get_current()
@@ -75,6 +94,20 @@ class RBSearchView(SearchView):
         else:
             sqs = sqs.filter(content=Raw(self.query))
 
+            # Filter the results by the user-requested set of models, if any.
+            self.active_filters = \
+                self.request.GET.get('filter', '').strip().split(',')
+
+            filter_models = [
+                filter_type['model']
+                for filter_type in self.FILTER_TYPES
+                if ('model' in filter_type and
+                    filter_type['id'] in self.active_filters)
+            ]
+
+            if filter_models:
+                sqs = sqs.models(*filter_models)
+
         if self.local_site:
             local_site_id = self.local_site.pk
         else:
@@ -83,15 +116,17 @@ class RBSearchView(SearchView):
         sqs = sqs.filter_and(local_sites__contains=local_site_id)
         sqs = sqs.order_by('-last_updated')
 
-        self.total_hits = len(sqs)
-
         return sqs
 
     def extra_context(self):
         """Return extra context for rendering the results list."""
         return {
             'hits_returned': len(self.results),
-            'total_hits': self.total_hits,
+            'filter_types': [
+                dict(active=(self.active_filters == [filter_type['id']]),
+                     **filter_type)
+                for filter_type in self.FILTER_TYPES
+            ],
         }
 
     def create_response(self):
