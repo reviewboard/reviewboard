@@ -1378,6 +1378,21 @@ class ViewTests(TestCase):
         self.assertEqual(response['Content-Disposition'],
                          'attachment; filename=diffset')
 
+    # Bug #3704
+    def test_diff_raw_multiple_content_disposition(self):
+        """Testing /diff/raw/ multiple Content-Disposition issue."""
+        review_request = self.create_review_request(create_repository=True,
+                                                    publish=True)
+
+        # Create a diffset with a comma in its name.
+        self.create_diffset(review_request=review_request, name="test, comma")
+
+        response = self.client.get('/r/%d/diff/raw/' % review_request.pk)
+        filename = response['Content-Disposition']\
+                           [len('attachment; filename='):]
+        self.assertFalse(',' in filename)
+
+
 class DraftTests(TestCase):
     fixtures = ['test_users', 'test_scmtools']
 
