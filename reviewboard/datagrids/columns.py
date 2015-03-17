@@ -170,6 +170,24 @@ class GroupMemberCountColumn(Column):
                                   args=[group.name])
 
 
+class GroupMembersUsernamesColumn(Column):
+    """Shows the names of users that are part of a review group."""
+    def __init__(self, *args, **kwargs):
+        super(GroupMembersUsernamesColumn, self).__init__(
+            link=True,
+            link_func=self.link_to_object,
+            *args, **kwargs)
+
+    def render_data(self, state, group):
+        users = list(group.users.all())
+        usernames = ", ".join([user.username for user in users])
+        return six.text_type(usernames)
+
+    def link_to_object(self, state, group, value):
+        return local_site_reverse('group-members',
+                                  request=state.datagrid.request,
+                                  args=[group.name])
+
 class GroupsColumn(Column):
     """Shows the list of groups requested to review the review request."""
     def __init__(self, *args, **kwargs):
