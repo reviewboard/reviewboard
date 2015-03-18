@@ -2,7 +2,7 @@
 Review Board 2.5 Beta 1 Release Notes
 =====================================
 
-**Release date**: TBD
+**Release date**: March 17, 2015
 
 
 This release contains all bug fixes and features found in Review Board version
