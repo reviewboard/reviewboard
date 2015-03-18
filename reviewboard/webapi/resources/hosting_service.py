@@ -23,7 +23,7 @@ class HostingServiceResource(WebAPIResource):
     This resource allows for querying that list and determining what
     capabilities of the hosting service can be used by Review Board.
     """
-    added_in = '2.1'  # Unsure of which release this will be
+    added_in = '2.5'
 
     name = 'hosting_service'
     model_object_key = 'id'

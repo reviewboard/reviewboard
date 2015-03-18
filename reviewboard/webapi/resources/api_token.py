@@ -32,7 +32,7 @@ class APITokenResource(WebAPIResource):
 
     api_token_access_allowed = False
 
-    added_in = '2.1'
+    added_in = '2.5'
 
     fields = {
         'id': {

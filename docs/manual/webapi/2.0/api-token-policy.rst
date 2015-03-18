@@ -4,9 +4,9 @@
 API Token Policies
 ==================
 
-.. versionadded:: 2.1
+.. versionadded:: 2.5
 
-API tokens are used in Review Board 2.1+ to provide a safe form of
+API tokens are used in Review Board 2.5+ to provide a safe form of
 authentication for clients without exposing any user passwords. It also offers
 a policy-based form of access control, limiting the capabilities of clients.
 

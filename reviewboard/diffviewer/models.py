@@ -36,7 +36,7 @@ class LegacyFileDiffData(models.Model):
 class RawFileDiffData(models.Model):
     """Stores raw diff data as binary content in the database.
 
-    This is the class used in Review Board 2.1+ to store diff content.
+    This is the class used in Review Board 2.5+ to store diff content.
     Unlike in previous versions, the content is not base64-encoded. Instead,
     it is stored either as bzip2-compressed data (if the resulting
     compressed data is smaller than the raw data), or as the raw data itself.

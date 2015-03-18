@@ -100,12 +100,12 @@ class HostingServiceAccountResource(WebAPIResource):
             'username': {
                 'type': six.text_type,
                 'description': 'Filter accounts by username.',
-                'added_in': '2.1',  # Unsure of which release this will be
+                'added_in': '2.5',
             },
             'service': {
                 'type': six.text_type,
                 'description': 'Filter accounts by the hosting service ID.',
-                'added_in': '2.1',  # Unsure of which release this will be
+                'added_in': '2.5',
             },
         }, **WebAPIResource.get_list.optional_fields),
         required=WebAPIResource.get_list.required_fields

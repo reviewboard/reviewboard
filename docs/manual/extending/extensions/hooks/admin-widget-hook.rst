@@ -4,7 +4,7 @@
 AdminWidgetHook
 ===============
 
-.. versionadded:: 2.1
+.. versionadded:: 2.5
 
 :py:class:`reviewboard.extensions.hooks.AdminWidgetHook` allows extensions to
 register new widgets for the administration dashboard.
