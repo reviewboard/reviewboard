@@ -1,8 +1,8 @@
 REVIEWBOARD_URL = "https://reviews.reviewboard.org"
 REPOSITORY = "Review Board"
-BRANCH = "master"
-TRACKING_BRANCH = "origin/master"
-LAND_DEST_BRANCH = "master"
+BRANCH = "release-2.5.x"
+TRACKING_BRANCH = "origin/release-2.5.x"
+LAND_DEST_BRANCH = "release-2.5.x"
 
 ALIASES = {
     'clear-pycs': '!find . -name *.pyc -delete',
