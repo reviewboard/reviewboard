@@ -375,7 +375,8 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
      */
     selectAnchor: function($anchor, scroll) {
         var scrollAmount,
-            i;
+            i,
+            url;
 
         if (!$anchor || $anchor.length === 0 ||
             $anchor.parent().is(':hidden')) {
@@ -383,7 +384,17 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
         }
 
         if (scroll !== false) {
-            location.hash = "#" + $anchor.attr("name");
+            url = [
+                this._getCurrentURL(),
+                location.search,
+                '#',
+                $anchor.attr('name')
+            ].join('');
+
+            this.router.navigate(url, {
+                replace: true,
+                trigger: false
+            });
 
             scrollAmount = this.DIFF_SCROLLDOWN_AMOUNT;
 
@@ -604,17 +615,29 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
     },
 
     /*
-     * Callback for when a new page is selected.
+     * Get the current URL.
      *
-     * Navigates to the same revision with a different page number.
+     * This will compute and return the current page's URL (relative to the
+     * router root), not including query parameters or hash locations.
      */
-    _onPageSelected: function(scroll, page) {
+    _getCurrentURL: function() {
         var revision = this.model.get('revision'),
             url = revision.get('revision');
 
         if (revision.get('interdiffRevision') !== null) {
             url += '-' + revision.get('interdiffRevision');
         }
+
+        return url;
+    },
+
+    /*
+     * Callback for when a new page is selected.
+     *
+     * Navigates to the same revision with a different page number.
+     */
+    _onPageSelected: function(scroll, page) {
+        var url = this._getCurrentURL();
 
         if (scroll) {
             this.selectAnchorByName('index_header', true);
