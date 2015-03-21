@@ -43,16 +43,6 @@ class UserResource(WebAPIResource, DjbletsUserResource):
 
     hidden_fields = ('email', 'first_name', 'last_name', 'fullname')
 
-    def get_etag(self, request, obj, *args, **kwargs):
-        if obj.is_profile_visible(request.user):
-            return self.generate_etag(obj, six.iterkeys(self.fields), request)
-        else:
-            return self.generate_etag(obj, [
-                field
-                for field in six.iterkeys(self.fields)
-                if field not in self.hidden_fields
-            ], request)
-
     def get_queryset(self, request, local_site_name=None, *args, **kwargs):
         search_q = request.GET.get('q', None)
 
