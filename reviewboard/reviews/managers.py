@@ -329,9 +329,11 @@ class ReviewRequestManager(ConcurrencyManager):
 
             if is_authenticated:
                 accessible_repo_ids = \
-                    Repository.objects.accessible_ids(user, visible_only=False)
+                    Repository.objects.accessible_ids(user, visible_only=False,
+                                                      local_site=local_site)
                 accessible_group_ids = \
-                    Group.objects.accessible(user, visible_only=False)
+                    Group.objects.accessible(user, visible_only=False,
+                                             local_site=local_site)
 
                 repo_query = repo_query | Q(repository__in=accessible_repo_ids)
                 group_query = (group_query |
