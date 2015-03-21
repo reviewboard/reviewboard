@@ -215,6 +215,25 @@ class ReviewRequestManagerTests(TestCase):
             ])
 
     @add_fixtures(['test_scmtools'])
+    def test_public_with_repository_on_local_site(self):
+        """Testing ReviewRequest.objects.public with repository on a
+        Local Site
+        """
+        local_site = LocalSite.objects.create(name='test')
+        user = User.objects.get(username='grumpy')
+        local_site.users.add(user)
+
+        repository = self.create_repository(local_site=local_site)
+        review_request = self.create_review_request(repository=repository,
+                                                    local_site=local_site,
+                                                    publish=True)
+        self.assertTrue(review_request.is_accessible_by(user))
+
+        review_requests = ReviewRequest.objects.public(user=user,
+                                                       local_site=local_site)
+        self.assertEqual(review_requests.count(), 1)
+
+    @add_fixtures(['test_scmtools'])
     def test_public_without_private_repo_access(self):
         """Testing ReviewRequest.objects.public without access to private
         repositories
@@ -227,6 +246,26 @@ class ReviewRequestManagerTests(TestCase):
         self.assertFalse(review_request.is_accessible_by(user))
 
         review_requests = ReviewRequest.objects.public(user=user)
+        self.assertEqual(review_requests.count(), 0)
+
+    @add_fixtures(['test_scmtools'])
+    def test_public_without_private_repo_access_on_local_site(self):
+        """Testing ReviewRequest.objects.public without access to private
+        repositories on a Local Site
+        """
+        local_site = LocalSite.objects.create(name='test')
+        user = User.objects.get(username='grumpy')
+        local_site.users.add(user)
+
+        repository = self.create_repository(public=False,
+                                            local_site=local_site)
+        review_request = self.create_review_request(repository=repository,
+                                                    local_site=local_site,
+                                                    publish=True)
+        self.assertFalse(review_request.is_accessible_by(user))
+
+        review_requests = ReviewRequest.objects.public(user=user,
+                                                       local_site=local_site)
         self.assertEqual(review_requests.count(), 0)
 
     @add_fixtures(['test_scmtools'])
@@ -246,6 +285,27 @@ class ReviewRequestManagerTests(TestCase):
         self.assertEqual(review_requests.count(), 1)
 
     @add_fixtures(['test_scmtools'])
+    def test_public_with_private_repo_access_on_local_site(self):
+        """Testing ReviewRequest.objects.public with access to private
+        repositories on a Local Site
+        """
+        local_site = LocalSite.objects.create(name='test')
+        user = User.objects.get(username='grumpy')
+        local_site.users.add(user)
+
+        repository = self.create_repository(public=False,
+                                            local_site=local_site)
+        repository.users.add(user)
+        review_request = self.create_review_request(repository=repository,
+                                                    publish=True,
+                                                    local_site=local_site)
+        self.assertTrue(review_request.is_accessible_by(user))
+
+        review_requests = ReviewRequest.objects.public(user=user,
+                                                       local_site=local_site)
+        self.assertEqual(review_requests.count(), 1)
+
+    @add_fixtures(['test_scmtools'])
     def test_public_with_private_repo_access_through_group(self):
         """Testing ReviewRequest.objects.public with access to private
         repositories
@@ -261,6 +321,30 @@ class ReviewRequestManagerTests(TestCase):
         self.assertTrue(review_request.is_accessible_by(user))
 
         review_requests = ReviewRequest.objects.public(user=user)
+        self.assertEqual(review_requests.count(), 1)
+
+    @add_fixtures(['test_scmtools'])
+    def test_public_with_private_repo_access_through_group_on_local_site(self):
+        """Testing ReviewRequest.objects.public with access to private
+        repositories on a Local Site
+        """
+        local_site = LocalSite.objects.create(name='test')
+        user = User.objects.get(username='grumpy')
+        local_site.users.add(user)
+
+        group = self.create_review_group(invite_only=True)
+        group.users.add(user)
+
+        repository = self.create_repository(public=False,
+                                            local_site=local_site)
+        repository.review_groups.add(group)
+        review_request = self.create_review_request(repository=repository,
+                                                    local_site=local_site,
+                                                    publish=True)
+        self.assertTrue(review_request.is_accessible_by(user))
+
+        review_requests = ReviewRequest.objects.public(user=user,
+                                                       local_site=local_site)
         self.assertEqual(review_requests.count(), 1)
 
     def test_public_without_private_group_access(self):
@@ -290,6 +374,27 @@ class ReviewRequestManagerTests(TestCase):
         self.assertTrue(review_request.is_accessible_by(user))
 
         review_requests = ReviewRequest.objects.public(user=user)
+        self.assertEqual(review_requests.count(), 1)
+
+    def test_public_with_private_group_access_on_local_site(self):
+        """Testing ReviewRequest.objects.public with access to private
+        group on a Local Site
+        """
+        local_site = LocalSite.objects.create(name='test')
+        user = User.objects.get(username='grumpy')
+        local_site.users.add(user)
+
+        group = self.create_review_group(invite_only=True,
+                                         local_site=local_site)
+        group.users.add(user)
+
+        review_request = self.create_review_request(publish=True,
+                                                    local_site=local_site)
+        review_request.target_groups.add(group)
+        self.assertTrue(review_request.is_accessible_by(user))
+
+        review_requests = ReviewRequest.objects.public(user=user,
+                                                       local_site=local_site)
         self.assertEqual(review_requests.count(), 1)
 
     @add_fixtures(['test_scmtools'])
@@ -343,6 +448,27 @@ class ReviewRequestManagerTests(TestCase):
         review_requests = ReviewRequest.objects.public(user=user)
         self.assertEqual(review_requests.count(), 1)
 
+    @add_fixtures(['test_scmtools'])
+    def test_public_with_private_repo_and_owner_on_local_site(self):
+        """Testing ReviewRequest.objects.public without access to private
+        repository and as the submitter on a Local Site
+        """
+        local_site = LocalSite.objects.create(name='test')
+        user = User.objects.get(username='grumpy')
+        local_site.users.add(user)
+
+        repository = self.create_repository(public=False,
+                                            local_site=local_site)
+        review_request = self.create_review_request(repository=repository,
+                                                    submitter=user,
+                                                    local_site=local_site,
+                                                    publish=True)
+        self.assertTrue(review_request.is_accessible_by(user))
+
+        review_requests = ReviewRequest.objects.public(user=user,
+                                                       local_site=local_site)
+        self.assertEqual(review_requests.count(), 1)
+
     def test_public_with_private_group_and_owner(self):
         """Testing ReviewRequest.objects.public without access to private
         group and as the submitter
@@ -356,6 +482,27 @@ class ReviewRequestManagerTests(TestCase):
         self.assertTrue(review_request.is_accessible_by(user))
 
         review_requests = ReviewRequest.objects.public(user=user)
+        self.assertEqual(review_requests.count(), 1)
+
+    def test_public_with_private_group_and_owner_on_local_site(self):
+        """Testing ReviewRequest.objects.public without access to private
+        group and as the submitter on a Local Site
+        """
+        local_site = LocalSite.objects.create(name='test')
+        user = User.objects.get(username='grumpy')
+        local_site.users.add(user)
+
+        group = self.create_review_group(invite_only=True,
+                                         local_site=local_site)
+
+        review_request = self.create_review_request(submitter=user,
+                                                    local_site=local_site,
+                                                    publish=True)
+        review_request.target_groups.add(group)
+        self.assertTrue(review_request.is_accessible_by(user))
+
+        review_requests = ReviewRequest.objects.public(user=user,
+                                                       local_site=local_site)
         self.assertEqual(review_requests.count(), 1)
 
     @add_fixtures(['test_scmtools'])
@@ -387,6 +534,27 @@ class ReviewRequestManagerTests(TestCase):
         self.assertTrue(review_request.is_accessible_by(user))
 
         review_requests = ReviewRequest.objects.public(user=user)
+        self.assertEqual(review_requests.count(), 1)
+
+    def test_public_with_private_group_and_target_people_on_local_site(self):
+        """Testing ReviewRequest.objects.public without access to private
+        group and user in target_people on a Local Site
+        """
+        local_site = LocalSite.objects.create(name='test')
+        user = User.objects.get(username='grumpy')
+        local_site.users.add(user)
+
+        group = self.create_review_group(invite_only=True,
+                                         local_site=local_site)
+
+        review_request = self.create_review_request(publish=True,
+                                                    local_site=local_site)
+        review_request.target_groups.add(group)
+        review_request.target_people.add(user)
+        self.assertTrue(review_request.is_accessible_by(user))
+
+        review_requests = ReviewRequest.objects.public(user=user,
+                                                       local_site=local_site)
         self.assertEqual(review_requests.count(), 1)
 
     def test_to_group(self):
