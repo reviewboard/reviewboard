@@ -4,38 +4,52 @@
 /****************************************************************************
  * General text-based review styles
  ****************************************************************************/
-.text-review-ui {
+.review-ui-box .text-review-ui {
   @header-padding: 8px;
 
+  .border-radius(@box-border-radius);
+
   .review-ui-header {
+    /*
+     * We set this instead of turning off the border to keep the gradient from
+     * stopping too soon on Chrome and Firefox.
+     */
+    border-bottom-color: transparent;
+
     .text-review-ui-views {
-      list-style: none;
-      margin: 1em 0 0 5em;
-      padding: 0;
+      border-bottom: 1px @diff-file-border-color solid;
 
-      li {
-        background: lighten(@diff-file-color, 2%);
-        cursor: pointer;
-        display: inline-block;
-        margin: 0;
-        border: 1px @diff-file-border-color solid;
-        border-bottom: 0;
-        vertical-align: bottom;
-        .border-radius(@box-border-radius @box-border-radius 0 0);
+      ul {
+        list-style: none;
+        margin: 1em 0 0 5em;
+        padding: 0;
 
-        &.active {
-          background: lighten(@diff-file-color, 5%);
+        li {
+          background: lighten(@diff-file-color, 2%);
+          cursor: pointer;
+          display: inline-block;
+          margin: 0;
+          border: 1px @diff-file-border-color solid;
+          border-bottom: 0;
+          font-size: 110%;
+          font-weight: normal;
+          vertical-align: bottom;
+          .border-radius(@box-border-radius @box-border-radius 0 0);
+
+          &.active {
+            background: lighten(@diff-file-color, 5%);
+
+            a {
+              padding: 6px 12px;
+            }
+          }
 
           a {
-            padding: 6px 12px;
+            color: black;
+            display: block;
+            padding: 4px 12px;
+            text-decoration: none;
           }
-        }
-
-        a {
-          color: black;
-          display: block;
-          padding: 4px 12px;
-          text-decoration: none;
         }
       }
     }
@@ -45,12 +59,16 @@
   .text-review-ui-rendered-table {
     .border-radius(0 0 @box-inner-border-radius @box-inner-border-radius);
 
+    .revision-row th {
+      font-weight: bold;
+    }
+
     tr:last-child {
-      td {
+      td:last-child {
         .border-radius(0 0 @box-inner-border-radius 0);
       }
 
-      th {
+      th:first-child {
         .border-radius(0 0 0 @box-inner-border-radius);
       }
     }
@@ -63,6 +81,11 @@
   .review-ui-error {
     text-align: center;
     padding: 2em;
+  }
+
+  .sidebyside {
+    .border-radius(0 0 @box-border-radius @box-border-radius);
+    margin-bottom: 0;
   }
 }
 
