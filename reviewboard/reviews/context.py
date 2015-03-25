@@ -5,7 +5,8 @@ from django.utils import six
 from reviewboard.attachments.forms import CommentFileForm
 from reviewboard.diffviewer.models import DiffSet
 from reviewboard.reviews.forms import UploadDiffForm
-from reviewboard.reviews.markdown_utils import normalize_text_for_edit
+from reviewboard.reviews.markdown_utils import (markdown_render_conditional,
+                                                normalize_text_for_edit)
 from reviewboard.reviews.models import BaseComment
 
 
@@ -49,6 +50,8 @@ def comment_counts(user, all_comments, filediff, interfilediff=None):
                 'comment_id': comment.id,
                 'text': normalize_text_for_edit(user, comment.text,
                                                 comment.rich_text),
+                'html': markdown_render_conditional(comment.text,
+                                                    comment.rich_text),
                 'rich_text': comment.rich_text,
                 'line': comment.first_line,
                 'num_lines': comment.num_lines,
