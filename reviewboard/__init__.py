@@ -81,6 +81,7 @@ def initialize():
     os.environ['RBSITE_PYTHONPATH'] = \
         os.path.dirname(settings_local.__file__)
 
+    from Crypto import Random
     from django.conf import settings
     from django.db import DatabaseError
     from djblets import log
@@ -97,6 +98,9 @@ def initialize():
     is_running_test = getattr(settings, 'RUNNING_TEST', False)
 
     if not is_running_test:
+        # Force PyCrypto to re-initialize the random number generator.
+        Random.atfork()
+
         # Set up logging.
         log.init_logging()
 
