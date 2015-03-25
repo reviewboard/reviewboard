@@ -4,6 +4,7 @@ import json
 import re
 
 from django import forms
+from django.core.cache import cache
 from django.core.exceptions import ValidationError
 from django.core.validators import validate_email
 from django.utils import six
@@ -20,6 +21,7 @@ from reviewboard.hostingsvcs.service import HostingService
 from reviewboard.scmtools.crypto_utils import (decrypt_password,
                                                encrypt_password)
 from reviewboard.scmtools.errors import FileNotFoundError
+from reviewboard.scmtools.core import Branch, Commit
 
 
 class GitLabPersonalForm(HostingServiceForm):
@@ -52,9 +54,13 @@ class GitLab(HostingService):
     """
     name = 'GitLab'
 
+    # The maximum number of commits returned from each call to get_commits()
+    COMMITS_PER_PAGE = 20
+
     self_hosted = True
     needs_authorization = True
     supports_bug_trackers = True
+    supports_post_commit = True
     supports_repositories = True
     supported_scmtools = ['Git']
 
@@ -180,6 +186,150 @@ class GitLab(HostingService):
             return True
         except (HTTPError, URLError):
             return False
+
+    def get_branches(self, repository):
+        """Get a list of branches.
+
+        This will perform an API request to fetch a list of branches.
+        """
+        repo_api_url = ('%s/repository/branches?private_token=%s'
+                        % (self._get_repo_api_url(repository),
+                           self._get_private_token()))
+        refs = self._api_get(repo_api_url)[0]
+
+        results = []
+
+        for ref in refs:
+            if 'name' in ref:
+                name = ref['name']
+                results.append(Branch(id=name,
+                                      commit=ref['commit']['id'],
+                                      default=(name == 'master')))
+
+        return results
+
+    def get_commits(self, repository, branch=None, start=None):
+        """Get a list of commits
+
+        This will perform an API request to fetch a list of commits.
+        The start parameter is a 40-character commit id.
+        """
+
+        # Ask GitLab for 21 commits per page. GitLab's API doesn't
+        # include the parent IDs, so we use subsequent commits to fill
+        # them in (allowing us to return 20 commits with parent IDs).
+        page_size = self.COMMITS_PER_PAGE + 1
+
+        repo_api_url = ('%s/repository/commits?private_token=%s&per_page=%s'
+                        % (self._get_repo_api_url(repository),
+                           self._get_private_token(),
+                           page_size))
+
+        if start:
+            # If start parameter is given, use it as the latest commit to log
+            # from, so that we fetch a page of commits, and the first commit id
+            # on the page is the start parameter.
+            repo_api_url += '&ref_name=%s' % start
+        elif branch:
+            # The branch is optional. If it is not given, use the default
+            # branch. The default branch is set to 'master' in get_branches()
+            repo_api_url += '&ref_name=%s' % branch
+
+        # The GitLab API will return a tuple consists of two elements.
+        # The first one is a list of commits, and the other one is an instance
+        # type object containing all kinds of headers, which is not required.
+        commits = self._api_get(repo_api_url)[0]
+
+        results = []
+
+        for idx, item in enumerate(commits):
+            commit = Commit(
+                author_name=item['author_name'],
+                id=item['id'],
+                date=item['created_at'],
+                message=item['message'],
+                parent='')
+
+            if idx > 0:
+                # Note that GitLab API documents do not show any returned
+                # 'parent_id' from the query for a list of commits. So we use
+                # the current commit id as the previous commit's parent id, and
+                # remove the last commit from results.
+                results[idx - 1].parent = commit.id
+
+            results.append(commit)
+
+        # Strip off the last commit since we don't know its parent id yet.
+        if len(commits) == page_size:
+            results.pop()
+
+        return results
+
+    def get_change(self, repository, revision):
+        """Get the diff of one commit with given commit ID.
+
+        Revision is a commit ID, which is a long SHA consisting of 40
+        characters.
+        """
+        repo_api_url = self._get_repo_api_url(repository)
+        private_token = self._get_private_token()
+
+        # Step 1: Fetch the commit itself that we want to review, to get
+        # the parent SHA and the commit message. Hopefully this information
+        # is still in cache so we don't have to fetch it again. However, the
+        # parent SHA is probably empty.
+        commit = cache.get(repository.get_commit_cache_key(revision))
+
+        if commit:
+            author_name = commit.author_name
+            date = commit.date
+            parent_revision = commit.parent
+            message = commit.message
+        else:
+            commit_api_url = ('%s/repository/commits/%s?private_token=%s'
+                              % (repo_api_url, revision, private_token))
+
+            # This response from GitLab consists of one dict type commit and
+            # on instance type header object. Only the first element is needed.
+            commit = self._api_get(commit_api_url)[0]
+
+            author_name = commit['author_name']
+            date = commit['created_at']
+            parent_revision = commit['parent_ids'][0]
+            message = commit['message']
+
+        # Step 2: Get the diff. The revision is the commit header in here.
+        # Firstly, a diff url should be built up, which has the format of
+        # https://gitlab.com/<user-name>/<project-name>/commit/<revision>.diff,
+        # then append the private_token to the end of the url and get the diff.
+
+        # Get the project path with the namespace.
+        path_api_url = ('%s?private_token=%s'
+                        % (repo_api_url, private_token))
+        project = self._api_get(path_api_url)[0]
+        path_with_namespace = project['path_with_namespace']
+
+        # Build up diff url and get diff.
+        diff_url = ('https://gitlab.com/%s/commit/%s.diff?private_token=%s'
+                    % (path_with_namespace, revision, private_token))
+        diff, headers = self.client.http_get(
+            diff_url,
+            headers={'Accept': 'text/plain'})
+
+        # Remove the last two lines. The last line is 'libgit <version>',
+        # and the second last line is '--', ending with '\n'. To avoid the
+        # error from parsing the empty file (size is 0), split the string into
+        # two parts using the delimiter '--\nlibgit'. If only use '\n' or '--'
+        # delimiter, more characters might be stripped out from file
+        # modification commit diff.
+        diff = diff.rsplit('--\nlibgit', 2)[0]
+
+        # Make sure there's a trailing newline.
+        if not diff.endswith('\n'):
+            diff += '\n'
+
+        return Commit(author_name, revision, date, message, parent_revision,
+                      diff=diff)
 
     def _find_repository_id(self, plan, owner, repo_name):
         """Finds the ID of a repository matching the given name and owner.

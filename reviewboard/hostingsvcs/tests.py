@@ -2264,6 +2264,190 @@ class GitLabTests(ServiceTests):
         self.assertEqual(fields['login'], 'myuser')
         self.assertEqual(fields['password'], 'mypass')
 
+    def test_get_branches(self):
+        """Testing GitLab get_branches implementation"""
+        branches_api_response = json.dumps([
+            {
+                'name': 'master',
+                'commit': {
+                    'id': 'ed899a2f4b50b4370feeea94676502b42383c746'
+                }
+            },
+            {
+                'name': 'branch1',
+                'commit': {
+                    'id': '6104942438c14ec7bd21c6cd5bd995272b3faff6'
+                }
+            },
+            {
+                'name': 'branch2',
+                'commit': {
+                    'id': '21b3bcabcff2ab3dc3c9caa172f783aad602c0b0'
+                }
+            },
+            {
+                'branch-name': 'branch3',
+                'commit': {
+                    'id': 'd5a3ff139356ce33e37e73add446f16869741b50'
+                }
+            }
+        ])
+
+        def _http_get(self, *args, **kwargs):
+            return branches_api_response, None
+
+        account = self._get_hosting_account(use_url=True)
+        account.data['private_token'] = encrypt_password('abc123')
+
+        service = account.service
+
+        repository = Repository(hosting_account=account)
+        repository.extra_data = {'gitlab_project_id': 123456}
+
+        self.spy_on(service.client.http_get, call_fake=_http_get)
+
+        branches = service.get_branches(repository)
+
+        self.assertTrue(service.client.http_get.called)
+        self.assertEqual(len(branches), 3)
+        self.assertEqual(
+            branches,
+            [
+                Branch(id='master',
+                       commit='ed899a2f4b50b4370feeea94676502b42383c746',
+                       default=True),
+                Branch(id='branch1',
+                       commit='6104942438c14ec7bd21c6cd5bd995272b3faff6',
+                       default=False),
+                Branch(id='branch2',
+                       commit='21b3bcabcff2ab3dc3c9caa172f783aad602c0b0',
+                       default=False)
+            ])
+
+    def test_get_commits(self):
+        """Testing GitLab get_commits implementation"""
+        commits_api_response = json.dumps([
+            {
+                'id': 'ed899a2f4b50b4370feeea94676502b42383c746',
+                'author_name': 'Chester Li',
+                'created_at': '2015-03-10T11:50:22+03:00',
+                'message': 'Replace sanitize with escape once'
+            },
+            {
+                'id': '6104942438c14ec7bd21c6cd5bd995272b3faff6',
+                'author_name': 'Chester Li',
+                'created_at': '2015-03-10T09:06:12+03:00',
+                'message': 'Sanitize for network graph'
+            },
+            {
+                'id': '21b3bcabcff2ab3dc3c9caa172f783aad602c0b0',
+                'author_name': 'East Coast',
+                'created_at': '2015-03-04T15:31:18.000-04:00',
+                'message': 'Add a timer to test file'
+            }
+        ])
+
+        def _http_get(self, *args, **kargs):
+            return commits_api_response, None
+
+        account = self._get_hosting_account(use_url=True)
+        account.data['private_token'] = encrypt_password('abc123')
+
+        service = account.service
+
+        repository = Repository(hosting_account=account)
+        repository.extra_data = {'gitlab_project_id': 123456}
+
+        self.spy_on(service.client.http_get, call_fake=_http_get)
+
+        commits = service.get_commits(
+            repository, start='ed899a2f4b50b4370feeea94676502b42383c746')
+
+        self.assertTrue(service.client.http_get.called)
+        self.assertEqual(len(commits), 3)
+        self.assertEqual(commits[0].id,
+                         'ed899a2f4b50b4370feeea94676502b42383c746')
+        self.assertNotEqual(commits[0].author_name, 'East Coast')
+        self.assertEqual(commits[1].date, '2015-03-10T09:06:12+03:00')
+        self.assertNotEqual(commits[1].message,
+                            'Replace sanitize with escape once')
+        self.assertEqual(commits[2].author_name, 'East Coast')
+
+    def test_get_change(self):
+        """Testing GitLab get_change implementation"""
+        commit_id = 'ed899a2f4b50b4370feeea94676502b42383c746'
+
+        commit_api_response = json.dumps(
+            {
+                'author_name': 'Chester Li',
+                'id': commit_id,
+                'created_at': '2015-03-10T11:50:22+03:00',
+                'message': 'Replace sanitize with escape once',
+                'parent_ids': ['ae1d9fb46aa2b07ee9836d49862ec4e2c46fbbba']
+            }
+        )
+
+        path_api_response = json.dumps(
+            {
+                'path_with_namespace': 'username/project_name'
+            }
+        )
+
+        diff = dedent(b'''\
+            ---
+            f1 | 1 +
+            f2 | 1 +
+            2 files changed, 2 insertions(+), 0 deletions(-)
+
+            diff --git a/f1 b/f1
+            index 11ac561..3ea0691 100644
+            --- a/f1
+            +++ b/f1
+            @@ -1 +1,2 @@
+            this is f1
+            +add one line to f1
+            diff --git a/f2 b/f2
+            index c837441..9302ecd 100644
+            --- a/f2
+            +++ b/f2
+            @@ -1 +1,2 @@
+            this is f2
+            +add one line to f2
+            ''')
+
+        def _http_get(service, url, *args, **kwargs):
+            parsed = urlparse(url)
+            if parsed.path.startswith(
+                    '/api/v3/projects/123456/repository/commits'):
+                # If the url is commit_api_url.
+                return commit_api_response, None
+            elif parsed.path == '/api/v3/projects/123456':
+                # If the url is path_api_url.
+                return path_api_response, None
+            elif parsed.path.endswith('.diff'):
+                # If the url is diff_url.
+                return diff, None
+            else:
+                print(parsed)
+                self.fail('Got an unexpected GET request')
+
+        account = self._get_hosting_account(use_url=True)
+        account.data['private_token'] = encrypt_password('abc123')
+
+        service = account.service
+
+        repository = Repository(hosting_account=account)
+        repository.extra_data = {'gitlab_project_id': 123456}
+
+        self.spy_on(service.client.http_get, call_fake=_http_get)
+
+        commit = service.get_change(repository, commit_id)
+
+        self.assertTrue(service.client.http_get.called)
+        self.assertEqual(commit.date, '2015-03-10T11:50:22+03:00')
+        self.assertEqual(commit.diff, diff)
+        self.assertNotEqual(commit.parent, '')
+
     def _test_check_repository(self, expected_user='myuser', **kwargs):
         def _http_get(service, url, *args, **kwargs):
             if url == 'https://example.com/api/v3/projects?per_page=100':
