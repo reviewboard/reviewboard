@@ -6,6 +6,7 @@ import os
 import subprocess
 import sys
 from os.path import abspath, dirname
+from wsgiref import simple_server
 
 from django.core.management import execute_from_command_line
 
@@ -128,6 +129,12 @@ def main(settings, in_subprocess):
             sys.stderr.write('Running dependency checks (set DEBUG=False '
                              'to turn this off)...\n')
             check_dependencies(settings)
+
+        if sys.argv[1] == 'runserver':
+            # Force using HTTP/1.1 for all responses, in order to work around
+            # some browsers (Chrome) failing to consistently handle some
+            # cache headers.
+            simple_server.ServerHandler.http_version = '1.1'
     else:
         # Some of our checks require access to django.conf.settings, so
         # tell Django about our settings.
