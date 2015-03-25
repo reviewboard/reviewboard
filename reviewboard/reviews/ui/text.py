@@ -86,10 +86,10 @@ class TextBasedReviewUI(FileAttachmentReviewUI):
                 # for-loop can access the contents of both files with two
                 # iterators.
                 file_line_list = itertools.izip_longest(
-                    file_line_list, diff_line_list, fillvalue="")
+                    diff_line_list, file_line_list, fillvalue="")
 
                 rendered_line_list = itertools.izip_longest(
-                    rendered_line_list, rendered_diff_line_list, fillvalue="")
+                    rendered_diff_line_list, rendered_line_list, fillvalue="")
 
         if self.obj.attachment_history is not None:
             num_revisions = FileAttachment.objects.filter(

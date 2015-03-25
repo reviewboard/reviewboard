@@ -20,17 +20,6 @@
 
     <thead class="review-ui-header">
      <tr>
-      <th colspan="2">
-       <h1 class="caption">
-	{{caption|default:filename}}
-{%  if num_revisions > 1 %}
-{%   blocktrans %}
-        (revision {{revision}})
-{%   endblocktrans %}
-{%  endif %}
-       </h1>
-      </th>
-
 {%  if is_diff %}
       <th colspan="2">
        <h1 class="caption">
@@ -41,7 +30,19 @@
        </h1>
       </th>
 {%  endif %}
+
+      <th colspan="2">
+       <h1 class="caption">
+    {{caption|default:filename}}
+{%  if num_revisions > 1 %}
+{%   blocktrans %}
+        (revision {{revision}})
+{%   endblocktrans %}
+{%  endif %}
+       </h1>
+      </th>
      </tr>
+
 {%  if review_ui.can_render_text and not diff_type_mismatch %}
      <tr>
       <td colspan="{% if is_diff %}4{% else %}2{% endif %}">
