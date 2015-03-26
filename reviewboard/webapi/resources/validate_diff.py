@@ -126,7 +126,7 @@ class ValidateDiffResource(DiffResource):
 
             return INVALID_FORM_DATA, {
                 'fields': {
-                    'basedir': 'Given repository requires a base directory',
+                    'basedir': ['Given repository requires a base directory'],
                 },
             }
 
