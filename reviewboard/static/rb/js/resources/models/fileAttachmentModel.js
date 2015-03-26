@@ -24,6 +24,9 @@ RB.FileAttachment = RB.BaseResource.extend({
         /* The URL to the review UI for this file attachment. */
         reviewURL: null,
 
+        /* The revision of the file attachment. */
+        revision: null,
+
         /* The HTML for the thumbnail depicting this file attachment. */
         thumbnailHTML: null
     }, RB.BaseResource.prototype.defaults),
@@ -53,6 +56,7 @@ RB.FileAttachment = RB.BaseResource.extend({
         'filename',
         'iconURL',
         'reviewURL',
+        'revision',
         'thumbnailHTML'
     ],
 
