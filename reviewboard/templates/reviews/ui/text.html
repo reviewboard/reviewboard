@@ -7,112 +7,27 @@
 {% block review_ui_box_content_inner %}
  <div id="diffs">
   <div class="diff-container text-review-ui {{review_ui.extra_css_classes|join:' '}}">
-
-   <table class="sidebyside">
-    <colgroup>
-{%  if is_diff %}
-     <col class="line" />
-     <col class="left" />
-{%  endif %}
-     <col class="line" />
-     <col class="right" />
-    </colgroup>
-
-    <thead class="review-ui-header">
-     <tr>
-      <th colspan="2">
-       <h1 class="caption">
-	{{caption|default:filename}}
+   <div class="review-ui-header">
 {%  if num_revisions > 1 %}
-{%   blocktrans %}
-        (revision {{revision}})
-{%   endblocktrans %}
+    <div id="revision_label"></div>
+    <div id="attachment_revision_selector"></div>
 {%  endif %}
-       </h1>
-      </th>
 
-{%  if is_diff %}
-      <th colspan="2">
-       <h1 class="caption">
-        {{diff_caption|default:diff_filename}}
-{%   blocktrans %}
-        (revision {{diff_revision}})
-{%   endblocktrans %}
-       </h1>
-      </th>
-{%  endif %}
-     </tr>
 {%  if review_ui.can_render_text and not diff_type_mismatch %}
-     <tr>
-      <td colspan="{% if is_diff %}4{% else %}2{% endif %}">
-       <ul class="text-review-ui-views">
-        <li class="active" data-view-mode="rendered"><a href="#rendered">{% trans "Rendered" %}</a></li>
-        <li data-view-mode="source"><a href="#source">{% trans "Source" %}</a></li>
-       </ul>
-      </td>
-     </tr>
+    <div class="text-review-ui-views">
+     <ul>
+      <li class="active" data-view-mode="rendered"><a href="#rendered">{% trans "Rendered" %}</a></li>
+      <li data-view-mode="source"><a href="#source">{% trans "Source" %}</a></li>
+     </ul>
+    </div>
 {%  endif %}
-    </thead>
+   </div>
 
-{%  if diff_type_mismatch %}
-    <tbody class="text-review-ui-rendered-table">
-     <tr>
-{%   if is_diff %}
-      <td colspan="4">
-{%   else %}
-      <td colspan="2">
-{%   endif %}
-       <div class="review-ui-error">
-        <div class="rb-icon rb-icon-warning"></div>
-	{% trans "These revisions cannot be compared because they are different file types." %}
-       </div>
-      </td>
-     </tr>
-    </tbody>
-{%  else %}
-{%   if review_ui.can_render_text %}
-    <tbody class="text-review-ui-rendered-table">
-{%    if is_diff %}
-{%     for line1, line2 in rendered_lines %}
-     <tr line="{{forloop.counter}}">
-      <th>{{forloop.counter}}</th>
-      <td class="l">{{line1}}</td>
-      <th>{{forloop.counter}}</th>
-      <td class="2">{{line2}}</td>
-     </tr>
-{%     endfor %}
-{%    else %}
-{%    for line in rendered_lines %}
-     <tr line="{{forloop.counter}}">
-      <th>{{forloop.counter}}</th>
-      <td class="l">{{line}}</td>
-     </tr>
-{%     endfor %}
-{%    endif %}
-    </tbody>
-{%   endif %}
-
-    <tbody class="text-review-ui-text-table"{% if review_ui.can_render_text %} style="display:none;"{%endif%}>
-{%   if is_diff %}
-{%    for line1, line2 in text_lines %}
-     <tr line="{{forloop.counter}}">
-      <th>{{forloop.counter}}</th>
-      <td class="l">{{line1}}</td>
-      <th>{{forloop.counter}}</th>
-      <td class="2">{{line2}}</td>
-     </tr>
-{%    endfor %}
-{%   else %}
-{%    for line in text_lines %}
-     <tr line="{{forloop.counter}}">
-      <th>{{forloop.counter}}</th>
-      <td class="l">{{line}}</td>
-     </tr>
-{%    endfor %}
-{%   endif %}
-    </tbody>
+{%  if review_ui.can_render_text %}
+{%   include "reviews/ui/_text_rendered_table.html" with lines=rendered_lines %}
 {%  endif %}
-   </table>
+
+{%  include "reviews/ui/_text_table.html" with hide=review_ui.can_render_text lines=text_lines %}
 
   </div>
  </div>

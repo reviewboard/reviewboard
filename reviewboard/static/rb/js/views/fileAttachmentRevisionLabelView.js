@@ -15,7 +15,7 @@ RB.FileAttachmentRevisionLabelView = Backbone.View.extend({
         '<p><%- header %></p>',
         '<% if (detail) { %><p><%= detail %></p><% } %>'
     ].join('')),
-    _interdiffTemplate: _.template(gettext('This file attachment has multiple revisions. Showing changes between revision <%- revision %> and <%- interdiffRevision %>.')),
+    _interdiffTemplate: _.template(gettext('This file attachment has multiple revisions. Showing changes between revision <%- diffAgainstRevision %> and <%- revision %>.')),
     _latestTemplate: _.template(gettext('This file attachment has multiple revisions. Showing revision <%- revision %> (latest).')),
     _oldHeaderTemplate: _.template(gettext('This file attachment has multiple revisions. Showing revision <%- revision %>.')),
     _oldDetailTemplate: _.template(
@@ -34,15 +34,15 @@ RB.FileAttachmentRevisionLabelView = Backbone.View.extend({
      */
     render: function() {
         var revision = this.model.get('fileRevision'),
-            interdiffRevision = this.model.get('diffRevision'),
+            diffAgainstRevision = this.model.get('diffRevision'),
             latestRevision = this.model.get('numRevisions'),
             header = '',
             detail = null;
 
-        if (interdiffRevision) {
+        if (diffAgainstRevision) {
             header = this._interdiffTemplate({
                 revision: revision,
-                interdiffRevision: interdiffRevision
+                diffAgainstRevision: diffAgainstRevision
             });
         } else if (revision === latestRevision) {
             header = this._latestTemplate({
